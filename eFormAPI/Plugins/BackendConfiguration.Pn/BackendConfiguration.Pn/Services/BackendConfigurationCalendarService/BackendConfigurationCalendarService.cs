@@ -2720,14 +2720,43 @@ public class BackendConfigurationCalendarService(
             }
             case 4: // Year — fixed month + day-of-month from the new pattern, same year.
             {
+                // #1217 — ANCHOR-AWARE for the START YEAR, for exactly the
+                // reason the Month arm above is. Since #1217 both enumerators
+                // emit the series' own StartDate as the START YEAR's occurrence
+                // whenever that year's pattern date sorts strictly earlier than
+                // the anchor. Mapping the start year to the pure pattern date
+                // would move a deployed row onto a day the renderer does NOT
+                // paint, while the renderer still emits the anchor — TWO tiles
+                // in one calendar year, and CompletedPeriodKey buckets both as
+                // "Y:yyyy", so completing either would silently suppress the
+                // other. Reuses the SAME helper both enumerators call.
+                //
+                // planning.StartDate is the POST-edit anchor here, exactly as
+                // in the Month arm above.
+                if (oldDeadline.Year == planning.StartDate.Year
+                    && YearStartAnchorIsDroppedOccurrence(planning, planning.StartDate.Date))
+                {
+                    return planning.StartDate.Date;
+                }
                 // Same single-source-of-truth as the renderer's Year branch:
                 // month + day-of-month come from planning, clamped to the month
-                // length (no 28-cap for yearly, matching GetOccurrencesInWeek).
+                // length by the shared helper (no 28-cap for yearly, matching
+                // GetOccurrencesInWeek — the helper only clamps to the month's
+                // length, it never caps at 28).
+                //
+                // Via DayOfMonthPatternDate so the `dom < 1` defense cannot
+                // drift: legacy rows carry DayOfMonth = 0, which the previous
+                // inline `new DateTime(y, m, Math.Min(0, daysInMonth))` turned
+                // into new DateTime(y, m, 0) — ArgumentOutOfRangeException.
+                // Null is the RIGHT verdict here rather than a fallback day:
+                // a 0 day-of-month has no representable per-period anchor, and
+                // both consumers already handle null non-destructively — the
+                // relocate path with `if (newDate == null) continue;`, and
+                // IsSameRecurrencePeriod by returning its tri-state null
+                // ("don't know"), which never unlocks the retract branch.
                 var month = planning.StartDate.Month;
-                var dom = planning.DayOfMonth ?? oldDeadline.Day;
-                var daysInMonth = DateTime.DaysInMonth(oldDeadline.Year, month);
-                return new DateTime(oldDeadline.Year, month,
-                    Math.Min(dom, daysInMonth), 0, 0, 0, DateTimeKind.Utc);
+                return DayOfMonthPatternDate(oldDeadline.Year, month,
+                    planning.DayOfMonth ?? oldDeadline.Day);
             }
             default:
                 return null; // Day / None — no single per-period anchor to relocate.
@@ -2797,6 +2826,23 @@ public class BackendConfigurationCalendarService(
     // anyway: with no stored DayOfMonth the pattern day IS the anchor day, so
     // relocate would leave the row on the old day while the rule renders on the
     // new one.
+    //
+    // #1217 made the Year arm anchor-aware too, and the same argument carries
+    // over unchanged (A is again constant per (planning, arp) — the guard reads
+    // planning.StartDate, never the probe — and when it is true the start
+    // year's representative becomes planning.StartDate.Date, which is inside
+    // the start year, so cross-year pairs still compare unequal). The one
+    // difference worth recording is that the DayOfMonth == null shape is
+    // STRICTLY safer for Year than for Month: YearPatternDateForStartYear
+    // deliberately omits the 28-cap (#922), so with DayOfMonth null the pattern
+    // date is Math.Min(StartDate.Day, DaysInMonth(StartDate)) == StartDate.Date
+    // exactly (both enumerators and this mapper pass planning.StartDate.Date,
+    // so there is no time component to make it sort earlier). The predicate is
+    // `pattern < startDate`, so A is ALWAYS false for that shape and the Year
+    // partition literally cannot change — no Month-style "more collapsing"
+    // case to reason about. DayOfMonth == 0 (legacy) yields a null pattern
+    // date, which also leaves A false and now returns null from the mapper
+    // instead of throwing, i.e. the tri-state "don't know".
     internal static bool? IsSameRecurrencePeriod(
         Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
         AreaRulePlanning arp,
@@ -4229,8 +4275,11 @@ public class BackendConfigurationCalendarService(
     ///
     /// <b>SCOPE: RepeatType.Month only, both arms</b> (Nth-weekday and
     /// day-of-month-number; #1207 CASE 4/4b show the day-number arm has the
-    /// identical defect). Deliberately NOT applied to:
-    ///   * Year  — already anchors on the start date's month + day.
+    /// identical defect). Year has its OWN twin of this helper,
+    /// <see cref="YearStartAnchorIsDroppedOccurrence"/> (#1217) — a yearly rule
+    /// anchors on StartDate's month + day only while planning.DayOfMonth agrees
+    /// with StartDate.Day, which the legacy pre-#933 cohort does not.
+    /// Deliberately NOT applied to:
     ///   * Day   — the anchor is always emitted.
     ///   * Week  — the anchor is emitted iff its own weekday is in the CSV,
     ///             and deselecting your own start weekday is a coherent
@@ -4285,12 +4334,76 @@ public class BackendConfigurationCalendarService(
         // yields 0 for the DayOfMonth = 0 rows the frontend writes, and
         // new DateTime(y, m, 0) throws ArgumentOutOfRangeException. Return
         // null rather than crash — a 0 day-of-month is not a pattern date.
-        var dom = Math.Min(planning.DayOfMonth ?? startDate.Day, 28);
-        if (dom < 1) return null;
-        var daysInMonth = DateTime.DaysInMonth(startDate.Year, startDate.Month);
-        return new DateTime(startDate.Year, startDate.Month, Math.Min(dom, daysInMonth),
-            0, 0, 0, DateTimeKind.Utc);
+        return DayOfMonthPatternDate(startDate.Year, startDate.Month,
+            Math.Min(planning.DayOfMonth ?? startDate.Day, 28));
     }
+
+    /// <summary>
+    /// The date a day-of-month rule produces inside (<paramref name="year"/>,
+    /// <paramref name="month"/>), clamped to that month's length, or null when
+    /// <paramref name="dom"/> is not a usable day number.
+    ///
+    /// Shared by <see cref="MonthPatternDateForStartMonth"/> (which caps
+    /// <paramref name="dom"/> at 28 before calling) and
+    /// <see cref="YearPatternDateForStartYear"/> (which does NOT cap — a yearly
+    /// rule stays in one fixed month, so the real day-of-month survives, #922).
+    /// One implementation so the <c>dom &lt; 1</c> defense cannot drift apart.
+    /// </summary>
+    private static DateTime? DayOfMonthPatternDate(int year, int month, int dom)
+    {
+        if (dom < 1) return null;
+        var daysInMonth = DateTime.DaysInMonth(year, month);
+        return new DateTime(year, month, Math.Min(dom, daysInMonth), 0, 0, 0, DateTimeKind.Utc);
+    }
+
+    /// <summary>
+    /// True when a yearly series (RepeatType cast 4) must emit its own
+    /// StartDate as an occurrence in its own right (#1217).
+    ///
+    /// The Year twin of <see cref="MonthStartAnchorIsDroppedOccurrence"/>, with
+    /// the identical option-(b) rule: emit the anchor ONLY when the start
+    /// YEAR's pattern date sorts STRICTLY EARLIER than it, i.e. only when an
+    /// occurrence would otherwise be lost. Strictness is what makes a duplicate
+    /// impossible — when the anchor already IS the pattern date (the ordinary
+    /// case, since <c>DeriveDayOfMonth</c> returns <c>startDate.Day</c> for
+    /// Year) this returns false and the pattern loop emits it exactly once.
+    /// When the pattern date falls AFTER the anchor inside the start year
+    /// (start 2026-09-08 with <c>planning.DayOfMonth</c> 20) the anchor is NOT
+    /// added, so 2026 keeps the 20th alone: <c>CompletedPeriodKey</c> buckets a
+    /// yearly occurrence as "Y:yyyy", so two occurrences in one year would mean
+    /// completing one silently suppresses the other.
+    ///
+    /// The exposed cohort is legacy data where <c>planning.DayOfMonth</c>
+    /// diverges from <c>StartDate.Day</c> — pre-#933 rows, where the custom
+    /// dialog hard-coded 1 January regardless of the chosen start date.
+    ///
+    /// Both enumerators (EnumerateOccurrences and GetOccurrencesInWeek) and the
+    /// "all"-scope relocation mapper (NewPatternDateForPeriodOf) call this ONE
+    /// helper, per the invariant stated on EnumerateOccurrences: never a second
+    /// implementation, or a backfilled occurrence and a rendered occurrence
+    /// could land on different days for the same rule.
+    /// </summary>
+    private static bool YearStartAnchorIsDroppedOccurrence(
+        Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
+        DateTime startDate)
+    {
+        var patternDate = YearPatternDateForStartYear(planning, startDate);
+        // No usable pattern date (DayOfMonth = 0) means nothing is lost that
+        // year — do not synthesise an anchor there.
+        return patternDate.HasValue && patternDate.Value < startDate;
+    }
+
+    /// <summary>
+    /// The date a yearly rule produces for the year that contains
+    /// <paramref name="startDate"/>. A yearly rule stays in StartDate's month
+    /// and keeps the real day-of-month (no 28-cap, #922), clamped to the
+    /// month's length. Mirrors the Year branch of both enumerators exactly.
+    /// </summary>
+    private static DateTime? YearPatternDateForStartYear(
+        Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
+        DateTime startDate)
+        => DayOfMonthPatternDate(startDate.Year, startDate.Month,
+            planning.DayOfMonth ?? startDate.Day);
 
     private static int[] ParseWeekdaysCsv(string? csv)
     {
@@ -4472,6 +4585,21 @@ public class BackendConfigurationCalendarService(
                 // iterator yielded nothing for yearly tasks, breaking the
                 // "after N occurrences" cap and every thisAndFollowing
                 // past-anchor backfill (MoveTask / ResizeTask / UpdateTask).
+                // #1217: the anchor is occurrence #1; the pattern governs #2
+                // onward — the rule #1207 established for Month, now reached for
+                // Year by the legacy cohort whose planning.DayOfMonth diverges
+                // from StartDate.Day. Emitted FIRST keeps the sequence
+                // ascending: this fires only when the start year's pattern date
+                // sorts strictly before startDate, hence strictly before
+                // rangeStart, so the loop's first emitted candidate is a whole
+                // repeatEvery period later. See
+                // YearStartAnchorIsDroppedOccurrence — the SAME helper
+                // GetOccurrencesInWeek's Year branch calls.
+                if (startDate >= rangeStart && startDate < rangeEnd
+                    && YearStartAnchorIsDroppedOccurrence(planning, startDate))
+                {
+                    yield return startDate;
+                }
                 var yearDom = planning.DayOfMonth ?? startDate.Day;
                 var yearMonth = startDate.Month;
                 var yearsSinceStart = rangeStart.Year - startDate.Year;
@@ -4480,11 +4608,21 @@ public class BackendConfigurationCalendarService(
                 var candidateYear = startDate.Year + yearPeriods * repeatEvery;
                 while (true)
                 {
-                    var daysInMonth = DateTime.DaysInMonth(candidateYear, yearMonth);
-                    var candidate = new DateTime(candidateYear, yearMonth,
-                        Math.Min(yearDom, daysInMonth), 0, 0, 0, DateTimeKind.Utc);
-                    if (candidate >= rangeEnd) break;
-                    if (candidate >= rangeStart) yield return candidate;
+                    // Shared helper (no 28-cap; it clamps to the candidate
+                    // month's length only) so the `dom < 1` guard applies here
+                    // too: legacy DayOfMonth = 0 rows used to reach
+                    // new DateTime(y, m, 0) and throw.
+                    var candidate = DayOfMonthPatternDate(candidateYear, yearMonth, yearDom);
+                    // BREAK, not skip: yearDom is loop-invariant, so a null is
+                    // null for EVERY candidate year — `continue` would spin
+                    // forever in this unbounded loop. The rule simply has no
+                    // representable pattern date, and the anchor arm above
+                    // already declined to synthesise one (its helper returns
+                    // false on a null pattern date), so the iterator yields
+                    // nothing at all for that shape.
+                    if (candidate == null) break;
+                    if (candidate.Value >= rangeEnd) break;
+                    if (candidate.Value >= rangeStart) yield return candidate.Value;
                     candidateYear += repeatEvery;
                 }
                 break;
@@ -4665,11 +4803,10 @@ public class BackendConfigurationCalendarService(
                         // series start painted here while EnumerateOccurrences
                         // (which floors its range at startDate) yielded nothing
                         // — a live divergence between the two enumerators IN
-                        // THE MONTH BRANCH. The Year branch below still gates
-                        // on weekStart alone and reproduces the same pre-start
-                        // leak when planning.DayOfMonth precedes startDate.Day
-                        // in the start year; deliberately out of scope for
-                        // #1207, which is Month-only.
+                        // THE MONTH BRANCH. The Year branch below carried the
+                        // identical leak when planning.DayOfMonth precedes
+                        // startDate.Day in the start year; out of scope for
+                        // #1207 (Month-only), closed by #1217.
                         if (candidate.Value >= weekStart && candidate.Value >= startDate)
                             occurrences.Add(candidate.Value);
                         candidateMonth = candidateMonth.AddMonths(repeatEvery);
@@ -4701,24 +4838,75 @@ public class BackendConfigurationCalendarService(
             case (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)4: // Year
             {
                 if (startDate > weekEnd) break;
+                // #1217: mirror of EnumerateOccurrences' Year branch — emit the
+                // series anchor itself when the start YEAR's pattern date sorts
+                // before it. Both enumerators MUST agree (see the invariant on
+                // EnumerateOccurrences), so the test lives in the single shared
+                // helper. Placed above the period maths so the skip can never
+                // shadow it.
+                if (startDate >= weekStart && startDate <= weekEnd
+                    && YearStartAnchorIsDroppedOccurrence(planning, startDate))
+                {
+                    occurrences.Add(startDate);
+                }
                 // Yearly stays in a fixed month, so keep the real day-of-month
                 // and clamp it to the candidate month's length below (#922) —
                 // unlike Month, which caps to 28 to dodge short-month overflow.
                 var yearDom = planning.DayOfMonth ?? startDate.Day;
                 var yearMonth = startDate.Month;
                 var yearsSinceStart = weekStart.Year - startDate.Year;
-                if (yearsSinceStart < 0) break;
+                // #1217: no `if (yearsSinceStart < 0) break;` here any more. A
+                // week that STRADDLES New Year has weekStart in the year before
+                // the start year (a series starting Thu 2026-01-01 rendered in
+                // Mon 2025-12-29..Sun 2026-01-04), and bailing out dropped the
+                // series' own first occurrence while EnumerateOccurrences —
+                // which floors its range at startDate — yielded it: a second
+                // divergence inside this very branch. A negative value simply
+                // means period 0, and the `startDate > weekEnd` guard above
+                // already rejects every week that ends before the series begins.
                 var yearPeriods = yearsSinceStart > 0 ? (int)Math.Ceiling((double)yearsSinceStart / repeatEvery) : 0;
                 for (var i = 0; i < 2; i++)
                 {
                     var candidateYear = startDate.Year + (yearPeriods + i) * repeatEvery;
-                    var daysInMonth = DateTime.DaysInMonth(candidateYear, yearMonth);
-                    var candidate = new DateTime(candidateYear, yearMonth,
-                        Math.Min(yearDom, daysInMonth), 0, 0, 0, DateTimeKind.Utc);
-                    if (candidate > weekEnd) break;
-                    if (candidate >= weekStart)
-                        occurrences.Add(candidate);
+                    // Shared helper (no 28-cap; it clamps to the candidate
+                    // month's length only) so the `dom < 1` guard applies here
+                    // too. Legacy DayOfMonth = 0 rows used to reach
+                    // new DateTime(y, m, 0) and throw, and #1217's removal of
+                    // the `yearsSinceStart < 0` bail-out newly ROUTED the
+                    // New-Year-straddling week into this loop — a series
+                    // starting 2026-01-01 rendered in Mon 2025-12-29..Sun
+                    // 2026-01-04 went from returning [] to throwing, which
+                    // GetTasksForWeek's outer try turns into a failure of the
+                    // WHOLE week for that property, not just this series.
+                    var candidate = DayOfMonthPatternDate(candidateYear, yearMonth, yearDom);
+                    // BREAK, not skip: yearDom is loop-invariant, so a null is
+                    // null for both i values — breaking and skipping are
+                    // equivalent, and break matches the `candidate > weekEnd`
+                    // exit right below. The week is still returned (with the
+                    // anchor if one fired), never thrown out.
+                    if (candidate == null) break;
+                    if (candidate.Value > weekEnd) break;
+                    // >= startDate (#1217): this branch used to gate on weekStart
+                    // alone, so a pattern date EARLIER than the series start
+                    // painted here — start 2026-09-08 with planning.DayOfMonth 7
+                    // rendered 2026-09-07, one day before the series exists —
+                    // while EnumerateOccurrences yielded nothing. The Year twin
+                    // of the Month leak #1207 closed.
+                    if (candidate.Value >= weekStart && candidate.Value >= startDate)
+                        occurrences.Add(candidate.Value);
                 }
+                // Defensive symmetry with the Month branch only — NOT a state
+                // this branch can reach. Unlike Month, a yearly rule cannot put
+                // two occurrences in one week: the anchor fires only when the
+                // START YEAR's pattern date sorts strictly before startDate, and
+                // that same date is then rejected by the `candidate >=
+                // startDate` guard in the loop; every other candidate is a
+                // whole repeatEvery (>= 1)
+                // year away, hence far past weekEnd. So this list holds at most
+                // one element and Sort() is a no-op. Kept so the two branches
+                // stay textually parallel and a future second contribution
+                // cannot silently ship a descending list (#1207).
+                occurrences.Sort();
                 break;
             }
             default:
