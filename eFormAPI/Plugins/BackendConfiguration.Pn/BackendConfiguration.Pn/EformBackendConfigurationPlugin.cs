@@ -167,6 +167,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<IBackendConfigurationCalendarService, BackendConfigurationCalendarService>();
         services.AddTransient<IBackendConfigurationCaseService, BackendConfigurationCaseService>();
         services.AddTransient<IBackendConfigurationTagsService, BackendConfigurationTagsService>();
+        services.AddTransient<Services.BackendConfigurationWorkerTagsService.IBackendConfigurationWorkerTagsService,
+            Services.BackendConfigurationWorkerTagsService.BackendConfigurationWorkerTagsService>();
         services.AddTransient<IChemicalService, ChemicalService>();
         services.AddSingleton<ITaskUpdateCompletionService, TaskUpdateCompletionService>();
         services.AddTransient<WorkorderCaseGroupIdBackfillService>();

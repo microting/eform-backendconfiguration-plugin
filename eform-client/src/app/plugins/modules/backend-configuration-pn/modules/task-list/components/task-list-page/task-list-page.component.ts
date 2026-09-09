@@ -6,7 +6,7 @@ import {of} from 'rxjs';
 import {finalize} from 'rxjs/operators';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {CommonDictionaryModel, SharedTagModel, TemplateRequestModel} from 'src/app/common/models';
-import {EFormService, EformTagService} from 'src/app/common/services';
+import {EFormService} from 'src/app/common/services';
 import {
   CalendarBoardModel,
   CalendarTaskListFiltrationModel,
@@ -16,6 +16,7 @@ import {
   BackendConfigurationPnCalendarService,
   BackendConfigurationPnPropertiesService,
   BackendConfigurationPnTaskListService,
+  BackendConfigurationPnWorkerTagsService,
 } from '../../../../services';
 import {TaskListRenameRequest} from '../../../../services/backend-configuration-pn-task-list.service';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
@@ -114,7 +115,7 @@ export class TaskListPageComponent implements OnInit {
     private propertiesService: BackendConfigurationPnPropertiesService,
     private tagsService: ItemsPlanningPnTagsService,
     private eformService: EFormService,
-    private eformTagService: EformTagService,
+    private workerTagsService: BackendConfigurationPnWorkerTagsService,
     private repeatService: CalendarRepeatService,
     private taskListService: BackendConfigurationPnTaskListService,
   ) {}
@@ -127,8 +128,14 @@ export class TaskListPageComponent implements OnInit {
     this.loadTasks();
   }
 
+  // Worker tags come from the PLUGIN endpoint, not the core
+  // `EformTagService.getAvailableTags()`: the SDK keeps worker groups and
+  // eForm/template tags in one `Tags` table, so the core list offered template
+  // tags here and picking one produced an event that reached nobody (#1213).
+  // The plugin endpoint filters server-side to tags that have at least one
+  // live worker member; nothing is discarded client-side.
   loadWorkerTags() {
-    this.eformTagService.getAvailableTags().subscribe(res => {
+    this.workerTagsService.getWorkerTags().subscribe(res => {
       if (res && res.success) {
         this.teams = res.model;
       }
