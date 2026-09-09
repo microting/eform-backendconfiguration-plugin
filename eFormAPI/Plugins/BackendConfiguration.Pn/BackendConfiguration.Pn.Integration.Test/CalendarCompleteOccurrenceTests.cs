@@ -24,6 +24,7 @@ using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
 using BackendConfiguration.Pn.Services.EventDeployService;
 using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
 using BackendConfiguration.Pn.Services.CalendarChangeNotification;
+using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure.Constants;
@@ -172,7 +173,8 @@ public class CalendarCompleteOccurrenceTests : TestBaseSetup
             NullLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            Substitute.For<IBackendConfigurationComplianceReportService>());
+            Substitute.For<IBackendConfigurationComplianceReportService>(),
+            new WorkerTagMembershipService(coreHelper));
 
         // Calendar UI fetch (ActionableOnly=false) for the week of the series.
         var result = await service.GetTasksForWeek(new CalendarTaskRequestModel

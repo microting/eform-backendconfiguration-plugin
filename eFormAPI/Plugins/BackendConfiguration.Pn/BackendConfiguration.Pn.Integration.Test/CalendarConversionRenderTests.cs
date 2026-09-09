@@ -33,6 +33,7 @@ using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
 using BackendConfiguration.Pn.Services.CalendarChangeNotification;
 using BackendConfiguration.Pn.Services.CalendarConfigurationBackfillService;
 using BackendConfiguration.Pn.Services.EventDeployService;
+using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
@@ -210,7 +211,8 @@ public class CalendarConversionRenderTests : TestBaseSetup
             NullLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            Substitute.For<IBackendConfigurationComplianceReportService>());
+            Substitute.For<IBackendConfigurationComplianceReportService>(),
+            new WorkerTagMembershipService(coreHelper));
     }
 
     /// <summary>

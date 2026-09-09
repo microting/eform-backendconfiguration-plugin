@@ -34,6 +34,7 @@ using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
 using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
 using BackendConfiguration.Pn.Services.CalendarChangeNotification;
 using BackendConfiguration.Pn.Services.EventDeployService;
+using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure;
@@ -217,9 +218,11 @@ public class CalendarWorkerTagFilterTests : TestBaseSetup
 
     /// <param name="removed">
     /// Seeds the Site already soft-deleted, the state <c>Core.SiteDelete</c> leaves
-    /// behind (<c>PnBase.Delete</c> only flips <c>WorkflowState</c>). No SiteWorker is
-    /// created either way, so the resigned-worker clause is not what such a site is
-    /// being excluded by.
+    /// behind (<c>PnBase.Delete</c> routes through <c>UpdateInternal</c>: it sets
+    /// <c>WorkflowState</c> to <c>Removed</c>, increments <c>Version</c>, stamps
+    /// <c>UpdatedAt</c> and inserts a <c>*Version</c> audit row — the Site row itself
+    /// survives). No SiteWorker is created either way, so the resigned-worker clause is
+    /// not what such a site is being excluded by.
     /// </param>
     private async Task<int> SeedSdkSite(bool removed = false)
     {
@@ -354,7 +357,11 @@ public class CalendarWorkerTagFilterTests : TestBaseSetup
             NullLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            Substitute.For<IBackendConfigurationComplianceReportService>());
+            Substitute.For<IBackendConfigurationComplianceReportService>(),
+            // The real membership service: this fixture is entirely about the
+            // site -> worker-tag expansion it owns, so a substitute would make every
+            // assertion below vacuous.
+            new WorkerTagMembershipService(coreHelper));
     }
 
     /// <summary>
@@ -702,8 +709,10 @@ public class CalendarWorkerTagFilterTests : TestBaseSetup
     /// <summary>
     /// The other half of the strict membership rule, and the reason it cannot be
     /// folded into the resigned check. <c>Core.SiteDelete</c> soft-removes the
-    /// <c>Site</c> and its <c>Worker</c> (<c>PnBase.Delete</c> flips
-    /// <c>WorkflowState</c> only — it does NOT set <c>Resigned</c>) and leaves the
+    /// <c>Site</c> and its <c>Worker</c> (<c>PnBase.Delete</c> soft-deletes — it sets
+    /// <c>WorkflowState</c> to <c>Removed</c>, bumps <c>Version</c>, stamps
+    /// <c>UpdatedAt</c> and writes a <c>*Version</c> audit row, leaving the row in place,
+    /// but it does NOT set <c>Resigned</c>) and leaves the
     /// <c>SiteTags</c> rows behind entirely. Without the
     /// <c>Site.WorkflowState != Removed</c> clause a deleted device user therefore
     /// keeps resolving to their old team forever.

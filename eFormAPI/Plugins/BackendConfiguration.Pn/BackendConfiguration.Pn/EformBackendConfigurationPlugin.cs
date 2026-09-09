@@ -138,6 +138,15 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         // pooled DbContext (see CalendarChangeNotifier).
         services.AddTransient<Services.CalendarChangeNotification.ICalendarChangeNotifier,
             Services.CalendarChangeNotification.CalendarChangeNotifier>();
+        // The single owner of the live worker-tag membership rule. Three services (the
+        // deploy resolver, the teams dropdown and the calendar's assignee filter) used to
+        // spell that rule out separately — the dropdown and the filter identically, the
+        // resolver one clause short — a gap that was known and deferred, not
+        // undiscovered (the deferral was of the FIX, not a decision to omit). They all
+        // go through this now, so they cannot be edited apart. Transient like the resolver
+        // it feeds — it holds only IEFormCoreService and opens its own SDK context per call.
+        services.AddTransient<Services.WorkerTagMembership.IWorkerTagMembershipService,
+            Services.WorkerTagMembership.WorkerTagMembershipService>();
         services.AddTransient<Services.CalendarAssignmentReconciliation.ICalendarAssignmentResolver,
             Services.CalendarAssignmentReconciliation.CalendarAssignmentResolver>();
         services.AddTransient<Services.CalendarAssignmentReconciliation.ICalendarAssignmentReconciliationService,

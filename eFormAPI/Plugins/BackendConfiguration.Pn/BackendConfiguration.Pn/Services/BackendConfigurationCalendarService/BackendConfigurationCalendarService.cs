@@ -17,6 +17,7 @@ using CalendarAssignmentReconciliation;
 using CalendarChangeNotification;
 using CalendarOccurrenceRetraction;
 using CalendarPastSeriesBackfill;
+using WorkerTagMembership;
 using EventDeployService;
 using Infrastructure.Models.Calendar;
 using Infrastructure.Models.ComplianceReport;
@@ -55,7 +56,13 @@ public class BackendConfigurationCalendarService(
     // #1161 — GetComplianceReport's implementation now lives in the standalone
     // compliance-report service; this class keeps only an unpaged delegate onto
     // it so the calendar's Compliance view survives until #1170 removes it.
-    IBackendConfigurationComplianceReportService complianceReportService)
+    IBackendConfigurationComplianceReportService complianceReportService,
+    // The single owner of the live worker-tag ("team") membership rule, shared with
+    // CalendarAssignmentResolver and BackendConfigurationWorkerTagsService. REQUIRED on
+    // purpose: an optional one would make the assignee filter's tag expansion opt-in, so
+    // a fixture that simply forgot the argument would get a green test asserting nothing.
+    // The compiler catches the omission instead.
+    IWorkerTagMembershipService workerTagMembershipService)
     : IBackendConfigurationCalendarService
 {
     public async Task<OperationDataResult<List<CalendarTaskResponseModel>>> GetTasksForWeek(
@@ -102,13 +109,14 @@ public class BackendConfigurationCalendarService(
             // instead of tag -> sites) and is bounded by the filter's own site
             // list, which is what makes it one query rather than one per event.
             //
-            // Membership is the STRICT rule, by product decision: a SiteTag counts
-            // only when the SiteTag row is live, its Site is live, and that site has
-            // no resigned worker. This is deliberately the same three clauses
-            // BackendConfigurationWorkerTagsService.GetWorkerTags applies when it
-            // decides which teams to offer in this very filter's dropdown — the two
-            // MUST stay in step, or the dropdown offers a team the week query then
-            // resolves differently (or vice versa). Change one, change the other.
+            // Membership is the STRICT rule, by product decision, and it is NOT spelled
+            // out here: IWorkerTagMembershipService owns it, and the teams dropdown this
+            // filter is populated from (BackendConfigurationWorkerTagsService) plus the
+            // deploy resolver use the very same predicate. When this block and the
+            // dropdown each carried their own copy they agreed clause for clause; the
+            // point of sharing one predicate is that they cannot be edited apart later.
+            // The copy that DID differ was the deploy resolver's — it lacked the
+            // Site.WorkflowState clause — and adopting the shared rule closed that.
             //
             // Note this reverses the original #1212 reasoning, which left resigned
             // workers in on the grounds that the explicit-assignee half of the same
@@ -116,39 +124,35 @@ public class BackendConfigurationCalendarService(
             // membership ends when the member resigns, so a resigned worker no
             // longer resolves to their old team here.
             //
-            // The coreHelper null-guard mirrors the siteNamesById block below: a few
-            // fixtures construct this service without a core, and a site filter must
-            // then simply degrade to the pre-#1212 explicit-assignee match rather
-            // than throw.
+            // There is deliberately NO `coreHelper != null` guard on the expansion below.
+            // It used to have one. Before the membership rule was extracted, this block
+            // reached the SDK through an OPTIONAL core and, when a fixture had not
+            // supplied one, skipped tag expansion entirely — degrading to the pre-#1212
+            // explicit-assignee match rather than throwing. That guard was removed on
+            // purpose, and this paragraph is the inverse of the one that justified it:
+            // an optional dependency made tag expansion opt-in per fixture, so a fixture
+            // that omitted the core got a GREEN test that asserted nothing about team
+            // matching. A loud failure is preferred over silent degradation.
+            //
+            // Six fixtures still construct `new WorkerTagMembershipService(null)`
+            // (CalendarRepeatPersistenceTests, CalendarUpdateTaskScopeTests,
+            // CalendarOccurrenceExceptionTests, CalendarRecurrenceRulePersistenceFixTests,
+            // CalendarResizeTests, CalendarYearlyMoveTests). They are safe for exactly one
+            // reason: none of them populates requestModel.SiteIds, so the call below is
+            // never reached. Add SiteIds to a request in any of those fixtures and it will
+            // throw on the null core — that is the intended signal, not a regression to be
+            // worked around by restoring a guard here; give the fixture a real core
+            // instead.
+            //
+            // Unrelated: the `if (coreHelper != null)` guard further down this file (the
+            // site-name lookup) is untouched and still guards a different concern.
             var effectiveWorkerTagIds = new HashSet<int>(requestModel.WorkerTagIds ?? new List<int>());
-            if (coreHelper != null && requestModel.SiteIds is { Count: > 0 })
+            if (requestModel.SiteIds is { Count: > 0 })
             {
-                var filterSiteIds = requestModel.SiteIds;
-                var sdkCoreForWorkerTags = await coreHelper.GetCore().ConfigureAwait(false);
-                await using var sdkDbContextForWorkerTags = sdkCoreForWorkerTags.DbContextHelper.GetDbContext();
-                var tagIdsOfFilterSites = await sdkDbContextForWorkerTags.SiteTags
-                    .Where(x => x.SiteId != null && filterSiteIds.Contains(x.SiteId.Value))
-                    .Where(x => x.TagId != null)
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    // Core.SiteDelete soft-removes the Site (and its Worker) but leaves
-                    // the SiteTags rows behind, so without this a deleted device user
-                    // would still resolve to their old team forever. Note the deleted
-                    // worker is only WorkflowState-removed, NOT Resigned, so the clause
-                    // below does not cover this case.
-                    .Where(x => sdkDbContextForWorkerTags.Sites.Any(s => s.Id == x.SiteId
-                        && s.WorkflowState != Constants.WorkflowStates.Removed))
-                    // Resigned members no longer belong to the team (#1184 governs
-                    // deployment; the product owner extended the same rule to this
-                    // read filter).
-                    .Where(x => !sdkDbContextForWorkerTags.SiteWorkers.Any(sw =>
-                        sw.SiteId == x.SiteId && sw.Worker.Resigned))
-                    .Select(x => x.TagId.Value)
-                    .Distinct()
-                    .ToListAsync();
-                foreach (var tagId in tagIdsOfFilterSites)
-                {
-                    effectiveWorkerTagIds.Add(tagId);
-                }
+                effectiveWorkerTagIds.UnionWith(
+                    await workerTagMembershipService
+                        .GetTagIdsForSitesAsync(requestModel.SiteIds)
+                        .ConfigureAwait(false));
             }
 
             // Get the default board for this property (first created board)

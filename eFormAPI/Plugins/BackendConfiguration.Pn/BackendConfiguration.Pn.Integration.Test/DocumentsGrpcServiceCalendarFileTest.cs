@@ -9,6 +9,7 @@ using BackendConfiguration.Pn.Services.UserPropertyAccess;
 using BackendConfiguration.Pn.Services.EventDeployService;
 using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
 using BackendConfiguration.Pn.Services.CalendarChangeNotification;
+using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using Grpc.Core;
 using static Grpc.Core.ServerCallContext;
 using Microsoft.AspNetCore.Http;
@@ -109,7 +110,8 @@ public class DocumentsGrpcServiceCalendarFileTest : TestBaseSetup
             NullLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            Substitute.For<IBackendConfigurationComplianceReportService>()
+            Substitute.For<IBackendConfigurationComplianceReportService>(),
+            new WorkerTagMembershipService(new EFormCoreService(_sdkConnectionString))
         );
 
         // Setup mocks for DocumentsGrpcService dependencies

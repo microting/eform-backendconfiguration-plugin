@@ -23,6 +23,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Calendar;
 using BackendConfiguration.Pn.Infrastructure.Models.TaskWizard;
+using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
@@ -137,7 +138,7 @@ public class CalendarUpdateTaskRetractGateTests : TestBaseSetup
         _backfillService = new CalendarPastSeriesBackfillService(
             ItemsPlanningPnDbContext!, BackendConfigurationPnDbContext!, _coreHelper,
             _deployService,
-            new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, _coreHelper),
+            new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, new WorkerTagMembershipService(_coreHelper)),
             NullLogger<CalendarPastSeriesBackfillService>.Instance);
 
         _service = new BackendConfigurationCalendarService(
@@ -153,7 +154,8 @@ public class CalendarUpdateTaskRetractGateTests : TestBaseSetup
             NullLogger<BackendConfigurationCalendarService>.Instance,
             _retractionService,
             _backfillService,
-            Substitute.For<IBackendConfigurationComplianceReportService>());
+            Substitute.For<IBackendConfigurationComplianceReportService>(),
+            new WorkerTagMembershipService(_coreHelper));
     }
 
     /// <summary>

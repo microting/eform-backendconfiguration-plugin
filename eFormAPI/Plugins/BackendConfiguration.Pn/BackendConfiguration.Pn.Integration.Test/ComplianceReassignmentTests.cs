@@ -16,6 +16,7 @@ copies or substantial portions of the Software.
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
+using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
 using BackendConfiguration.Pn.Services.CalendarChangeNotification;
@@ -221,7 +222,7 @@ public class ComplianceReassignmentTests : TestBaseSetup
             BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, coreHelper, sp,
             NullLogger<EventDeployService>.Instance);
 
-        var resolver = new CalendarAssignmentResolver(BackendConfigurationPnDbContext, coreHelper);
+        var resolver = new CalendarAssignmentResolver(BackendConfigurationPnDbContext, new WorkerTagMembershipService(coreHelper));
 
         var engine = new CalendarAssignmentReconciliationService(
             BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, coreHelper,

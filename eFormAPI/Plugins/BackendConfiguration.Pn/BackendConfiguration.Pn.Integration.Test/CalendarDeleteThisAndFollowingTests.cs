@@ -25,6 +25,7 @@ using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
 using BackendConfiguration.Pn.Services.EventDeployService;
 using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
 using BackendConfiguration.Pn.Services.CalendarChangeNotification;
+using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure.Constants;
@@ -309,7 +310,8 @@ public class CalendarDeleteThisAndFollowingTests : TestBaseSetup
             // halves of a cross-period re-anchor. Neither fires in these fixtures.
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            Substitute.For<IBackendConfigurationComplianceReportService>());
+            Substitute.For<IBackendConfigurationComplianceReportService>(),
+            new WorkerTagMembershipService(coreHelper));
     }
 
     private async Task<List<CalendarTaskResponseModel>> TilesForWeek(

@@ -32,6 +32,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
+using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 
@@ -64,23 +65,27 @@ using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 /// </para>
 ///
 /// <para>
-/// <b>Liveness is deliberately STRICTER than</b> <see cref="BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation.CalendarAssignmentResolver"/>,
-/// which decides who actually receives a tag-assigned event. The resigned clause is
-/// identical to the resolver's, but this query adds one the resolver does not have:
-/// <c>Sites.Any(s =&gt; s.Id == st.SiteId &amp;&amp; s.WorkflowState != Removed)</c>. Stricter is the
-/// safe direction — "appears in the Teams list" still implies "would resolve to at least
-/// one recipient", because every tag listed here passes a superset of the resolver's
-/// conditions. The asymmetry does expose a pre-existing resolver gap in the other
-/// direction: a tag whose only member is a soft-deleted Site is (correctly) not listed
-/// here, yet the resolver would still return that removed site id as a deploy target.
-/// That is tracked separately and is not fixed here. This service also shares the
-/// resolver's quirk of treating a site as resigned when ANY of its SiteWorker rows points
-/// at a resigned Worker; device users are 1:1 with sites in practice, and diverging on
-/// that predicate would be worse than a shared quirk.
+/// <b>Liveness is not defined here.</b> It comes from
+/// <see cref="BackendConfiguration.Pn.Services.WorkerTagMembership.IWorkerTagMembershipService"/>,
+/// the single owner of the rule, which this list, the deploy resolver
+/// (<see cref="BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation.CalendarAssignmentResolver"/>)
+/// and the calendar's assignee filter all now share. The predicate moved there
+/// UNCHANGED — this service's behaviour is identical before and after. What changed is
+/// that the resolver, which lacked the <c>Site.WorkflowState</c> clause this list
+/// already had, now shares it. The asymmetry documented here is therefore REDUCED, not
+/// removed: exactly one clause of it survives, and it is this list's own
+/// <c>Tag.WorkflowState == Created</c> filter (below), which
+/// <c>GetTagIdsWithLiveMembersAsync</c> does not apply at all. A soft-removed <c>Tag</c>
+/// with live members is consequently absent from this list while still resolving to
+/// recipients through the resolver — see
+/// <c>WorkerTagsListTests.GetWorkerTags_ExcludesRemovedTagEvenWithLiveMembers</c>. So
+/// "appears in the Teams list" implies "would resolve to at least one recipient", but not
+/// the reverse.
 /// </para>
 /// </summary>
 public class BackendConfigurationWorkerTagsService(
     IEFormCoreService coreHelper,
+    IWorkerTagMembershipService workerTagMembershipService,
     ILogger<BackendConfigurationWorkerTagsService> logger)
     : IBackendConfigurationWorkerTagsService
 {
@@ -91,27 +96,29 @@ public class BackendConfigurationWorkerTagsService(
             var core = await coreHelper.GetCore().ConfigureAwait(false);
             await using var sdkDbContext = core.DbContextHelper.GetDbContext();
 
-            // Server-side filter: one query, no "fetch every tag and discard in the
-            // browser". EXISTS over SiteTags is the whole of the worker-group rule.
+            // Server-side filter: no "fetch every tag and discard in the browser".
+            // Which tags have at least one live member — the whole of the worker-group
+            // rule, owned by IWorkerTagMembershipService and shared with the deploy
+            // resolver and the calendar's assignee filter. One query, server-side; the
+            // id set then filters Tags with a plain IN (...).
+            var liveTagIds = await workerTagMembershipService
+                .GetTagIdsWithLiveMembersAsync().ConfigureAwait(false);
+
+            if (liveTagIds.Count == 0)
+            {
+                return new OperationDataResult<List<CommonDictionaryModel>>(
+                    true, new List<CommonDictionaryModel>());
+            }
+
+            var liveTagIdList = liveTagIds.ToList();
+
             var tags = await sdkDbContext.Tags
                 .AsNoTracking()
                 // Same tag liveness the core list uses (SqlController.GetAllTags(false)
                 // filters on == Created, not != Removed), so this list is always a strict
                 // SUBSET of what the calendar received before — never a superset.
                 .Where(t => t.WorkflowState == Constants.WorkflowStates.Created)
-                .Where(t => sdkDbContext.SiteTags.Any(st =>
-                    st.TagId == t.Id
-                    && st.SiteId != null
-                    && st.WorkflowState != Constants.WorkflowStates.Removed
-                    // Core.SiteDelete soft-removes the Site (and its Worker) but leaves
-                    // the SiteTags rows behind, so a deleted device user would otherwise
-                    // keep an empty team alive in this list forever.
-                    && sdkDbContext.Sites.Any(s => s.Id == st.SiteId
-                                                   && s.WorkflowState != Constants.WorkflowStates.Removed)
-                    // Resigned members do not receive new occurrences (#1184), so a tag
-                    // whose members have all resigned delivers to nobody and is treated
-                    // exactly like an empty tag.
-                    && !sdkDbContext.SiteWorkers.Any(sw => sw.SiteId == st.SiteId && sw.Worker.Resigned)))
+                .Where(t => liveTagIdList.Contains(t.Id))
                 // The core list is unordered (PK order in practice); keep that, so this
                 // change alters membership only and never the order of what remains.
                 .OrderBy(t => t.Id)
@@ -130,8 +137,9 @@ public class BackendConfigurationWorkerTagsService(
             // No localisation key: Resources/localization.json requires a real
             // translation in all 26 shipped locales for every entry (pinned file-wide by
             // ExportLocalizationCompletenessTests), and this string is never rendered —
-            // the only caller (the calendar's loadTeams) reads `success` and drops the
-            // message. Adding a 26-locale entry for text nobody sees is not worth it.
+            // all three Angular callers (the calendar's loadTeams, the calendar task
+            // list's and the task list's) read `success` and drop the message. Adding a
+            // 26-locale entry for text nobody sees is not worth it.
             return new OperationDataResult<List<CommonDictionaryModel>>(false, e.Message);
         }
     }

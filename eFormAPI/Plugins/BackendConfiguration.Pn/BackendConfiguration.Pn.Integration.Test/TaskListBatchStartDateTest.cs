@@ -25,6 +25,7 @@ SOFTWARE.
 using BackendConfiguration.Pn.Infrastructure.Models.Calendar;
 using BackendConfiguration.Pn.Infrastructure.Models.TaskList;
 using BackendConfiguration.Pn.Infrastructure.Models.TaskWizard;
+using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.BackendConfigurationTaskListService;
@@ -229,7 +230,7 @@ public class TaskListBatchStartDateTest : TestBaseSetup
         _backfillService = new CalendarPastSeriesBackfillService(
             ItemsPlanningPnDbContext!, BackendConfigurationPnDbContext!, coreHelper,
             _deployService,
-            new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, coreHelper),
+            new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, new WorkerTagMembershipService(coreHelper)),
             NullLogger<CalendarPastSeriesBackfillService>.Instance);
 
         _taskListService = new BackendConfigurationTaskListService(
@@ -469,7 +470,8 @@ public class TaskListBatchStartDateTest : TestBaseSetup
             NullLogger<BackendConfigurationCalendarService>.Instance,
             _retractionService,
             _backfillService,
-            Substitute.For<IBackendConfigurationComplianceReportService>());
+            Substitute.For<IBackendConfigurationComplianceReportService>(),
+            new WorkerTagMembershipService(_coreHelper));
 
         return new BackendConfigurationTaskListService(
             _localizationService,
