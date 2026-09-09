@@ -46,20 +46,28 @@ namespace BackendConfiguration.Pn.Integration.Test;
 /// <summary>
 /// Mostly CHARACTERIZATION tests — they pin what the three legacy compliance-completion
 /// entry points do <b>today</b>, so the upcoming change to completion semantics
-/// cannot alter them silently. Nothing in sections 1-3 is a statement about what the
+/// cannot alter them silently. Most of sections 1-3 is not a statement about what the
 /// code <i>should</i> do; several assertions deliberately pin behaviour that is
-/// arguably wrong, and each of those says so on the individual test. Section 4 is the
-/// exception: those five ARE regression tests, for the occurrence lookup (#1156 /
-/// PR #1158) and for the ownership guard beneath it (#1218).
+/// arguably wrong, and each of those says so on the individual test.
+///
+/// <para>Two groups are the exception and ARE regression tests. Section 4 covers the
+/// occurrence lookup (#1156 / PR #1158) and the ownership guard beneath it (#1218).
+/// Separately, every <c>*_MutatesNothing</c> test — they sit in sections 1, 2 and 4 —
+/// covers #1157: <c>Update</c>/<c>UpdateFromCalendar</c> now resolve the Compliance, the
+/// SDK case and the <c>PlanningCaseSite</c> BEFORE the first irreversible write, so a
+/// rejected completion leaves no partial write behind. Several of those tests previously
+/// pinned the opposite and were rewritten deliberately, not incidentally.</para>
 ///
 /// <para>The three paths, all previously untested:</para>
 /// <list type="number">
 ///   <item><description><see cref="BackendConfigurationCompliancesService.Update"/>
-///     (<c>PUT api/backend-configuration-pn/compliances/cases</c>) — soft-deletes the
-///     Compliance FIRST, then completes the SDK Case (<c>Status = 100</c>, DoneAt with
-///     time-of-day preserved), then the matching <c>PlanningCaseSite</c>/<c>PlanningCase</c>,
-///     then recomputes <c>Property.ComplianceStatus</c>, then retracts the device case
-///     SYNCHRONOUSLY via <c>core.CaseDelete</c>.</description></item>
+///     (<c>PUT api/backend-configuration-pn/compliances/cases</c>) — since #1157
+///     validates FIRST (Compliance still live, SDK case present, PlanningCaseSite found
+///     and owned by the compliance's planning), then soft-deletes the Compliance, then
+///     completes the SDK Case (<c>Status = 100</c>, DoneAt with time-of-day preserved),
+///     then the matching <c>PlanningCaseSite</c>/<c>PlanningCase</c>, then recomputes
+///     <c>Property.ComplianceStatus</c>, then retracts the device case SYNCHRONOUSLY via
+///     <c>core.CaseDelete</c>.</description></item>
 ///   <item><description><see cref="BackendConfigurationCompliancesService.UpdateFromCalendar"/>
 ///     — byte-for-byte the same writes, except the retraction is fire-and-forget
 ///     (<c>_ = Task.Run(...)</c>).</description></item>
@@ -307,6 +315,16 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
         return compliance;
     }
 
+    /// <summary>
+    /// Soft-deletes a seeded Compliance through the SAME call the production paths use
+    /// (<c>PnBase.Delete</c> — WorkflowState to <c>removed</c>, Version bumped, a
+    /// ComplianceVersion row written), so the row left behind is byte-identical to the one
+    /// a completed — or a partially-failed pre-#1157 — completion leaves. Used by the
+    /// <c>*_RetryAgainstSoftDeletedCompliance_*</c> tests.
+    /// </summary>
+    private async Task SoftDeleteComplianceAsync(Compliance compliance) =>
+        await compliance.Delete(BackendConfigurationPnDbContext!);
+
     private BackendConfigurationCompliancesService MakeCompliancesService(Scenario s)
     {
         var userService = Substitute.For<IUserService>();
@@ -336,7 +354,13 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
             s.CoreHelper, access, siteResolver, BackendConfigurationPnDbContext!);
     }
 
-    private static ReplyRequest MakeReply(Scenario s, int complianceId, int caseId, DateTime doneAt) =>
+    /// <summary>
+    /// <paramref name="siteId"/> overrides the scenario's own SDK site — only the
+    /// <c>*_UnknownSiteId_*</c> tests pass it, to reach the pre-flight's site check with
+    /// an id no <c>Sites</c> row carries.
+    /// </summary>
+    private static ReplyRequest MakeReply(Scenario s, int complianceId, int caseId, DateTime doneAt,
+        int? siteId = null) =>
         new()
         {
             Id = caseId,
@@ -344,7 +368,7 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
             DoneAt = doneAt,
             IsDoneAtEditable = true,
             ExtraId = complianceId,
-            SiteId = s.Site.Id,
+            SiteId = siteId ?? s.Site.Id,
             ElementList = []
         };
 
@@ -381,7 +405,7 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
     /// <c>CaseHasBeenUpdated</c> even though the synchronous <c>core.CaseDelete</c>
     /// threw (see the class remarks — the duplicate MicrotingUid makes it throw
     /// offline). The retraction is best-effort and its failure is swallowed
-    /// (:397-401), so the worker's device can keep a form the backend believes is
+    /// (:472-476), so the worker's device can keep a form the backend believes is
     /// retracted and the caller is told everything succeeded.</para>
     /// </summary>
     [Test]
@@ -444,21 +468,28 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
     }
 
     /// <summary>
-    /// Pins the ordering hazard at BackendConfigurationCompliancesService.cs:212-217:
-    /// <c>compliance.Delete()</c> runs BEFORE the SDK case is even looked up, and the
-    /// method has no transaction and no compensation. So when the case cannot be found
-    /// the caller gets <c>CaseNotFound</c> while the occurrence has ALREADY been soft-deleted
-    /// — the task vanishes from the calendar and the compliance list, permanently, and
-    /// nothing was ever completed.
+    /// #1157: a completion whose SDK case cannot be found must mutate NOTHING.
     ///
-    /// <para>This is the arguably-wrong behaviour the fixture exists to freeze: it is
-    /// pinned, not fixed. The corroborating half of the assertion is that everything
-    /// downstream is untouched — PlanningCaseSite/PlanningCase still 66 and
-    /// <c>Property.ComplianceStatus</c> still 2 — proving the early return happened
-    /// after the delete and before any completion work.</para>
+    /// <para><b>This test used to pin the exact opposite</b>, under the name
+    /// <c>Update_CaseNotFound_StillSoftDeletesCompliance</c>, and its own doc comment
+    /// called that "the arguably-wrong behaviour the fixture exists to freeze: it is
+    /// pinned, not fixed". <c>compliance.Delete()</c> ran before the SDK case was even
+    /// looked up, with no transaction and no compensation, so the caller got
+    /// <c>CaseNotFound</c> over an occurrence that had ALREADY been soft-deleted — gone
+    /// from the calendar and the compliance list, permanently, nothing completed, and a
+    /// retry could not repair it because the Compliance lookup was not filtered on
+    /// WorkflowState. #1157 hoists the whole validation above the first write, which
+    /// necessarily inverts this outcome. <b>That is a deliberate product decision: a
+    /// failed operation must not destroy data.</b></para>
+    ///
+    /// <para>What discriminates: <c>reloadedCompliance.WorkflowState</c> is
+    /// <c>created</c>; on pre-fix code it is <c>removed</c>. The corroborating
+    /// assertions — PlanningCaseSite/PlanningCase still 66 and
+    /// <c>Property.ComplianceStatus</c> still 2 — are unchanged and still hold: nothing
+    /// downstream ever ran.</para>
     /// </summary>
     [Test]
-    public async Task Update_CaseNotFound_StillSoftDeletesCompliance()
+    public async Task Update_CaseNotFound_MutatesNothing()
     {
         var s = await SeedScenarioAsync("update-case-missing");
         var sdkCase = await SeedSdkCaseAsync(s, 970_002);
@@ -481,9 +512,10 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
             Assert.That(result.Success, Is.False);
             Assert.That(result.Message, Is.EqualTo("CaseNotFound"));
 
-            // The occurrence is gone even though nothing was completed.
-            Assert.That(reloadedCompliance.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed),
-                "Compliance.Delete() runs before the case lookup and is never rolled back");
+            // #1157: the occurrence survives a failed completion.
+            Assert.That(reloadedCompliance.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created),
+                "#1157: the SDK-case check now runs in the pre-flight, above compliance.Delete(), "
+                + "so a rejected completion leaves the occurrence intact (pre-fix: removed)");
 
             // ...and nothing downstream ran.
             Assert.That(reloadedCase.Status, Is.EqualTo(OpenCaseStatus));
@@ -502,7 +534,7 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
     /// <summary>
     /// Pins that <c>UpdateFromCalendar</c> resolves the MicrotingUid to retract but
     /// hands the actual <c>core.CaseDelete</c> to <c>_ = Task.Run(...)</c>
-    /// (BackendConfigurationCompliancesService.cs:576-588) and returns immediately.
+    /// (BackendConfigurationCompliancesService.cs:723-739) and returns immediately.
     /// The observable consequence, asserted with NO delay and NO polling: the moment
     /// the call returns the SDK case is still <c>WorkflowState = created</c> with its
     /// <c>MicrotingUid</c> intact, i.e. from the caller's point of view the device form
@@ -567,6 +599,52 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
             Assert.That(reloadedPlanningCaseSite.MicrotingSdkCaseDoneAt, Is.EqualTo(doneAt));
             Assert.That(reloadedPlanningCase.Status, Is.EqualTo(CompletedStatus));
             Assert.That(reloadedPlanningCase.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Processed));
+        });
+    }
+
+    /// <summary>
+    /// #1157 twin of <see cref="Update_CaseNotFound_MutatesNothing"/> against
+    /// <c>UpdateFromCalendar</c>. The two production methods are verbatim copy-paste of
+    /// each other — including the whole pre-flight — so a fix applied to only one of them
+    /// is a live hole that a single test cannot see. The calendar variant is also the
+    /// reachable one: the calendar completes occurrences through <c>UpdateFromCalendar</c>.
+    ///
+    /// <para>What discriminates: <c>reloadedCompliance.WorkflowState</c> is
+    /// <c>created</c>. On pre-fix code it is <c>removed</c>.</para>
+    /// </summary>
+    [Test]
+    public async Task UpdateFromCalendar_CaseNotFound_MutatesNothing()
+    {
+        var s = await SeedScenarioAsync("calendar-case-missing");
+        var sdkCase = await SeedSdkCaseAsync(s, 970_013);
+        var planningCase = await SeedPlanningCaseAsync(s);
+        var planningCaseSite = await SeedPlanningCaseSiteAsync(s, planningCase, sdkCase);
+        var compliance = await SeedComplianceAsync(s, planningCase, sdkCase);
+
+        // A case id that cannot exist — Cases.Id is an int identity starting at 1.
+        var result = await MakeCompliancesService(s)
+            .UpdateFromCalendar(MakeReply(s, compliance.Id, int.MaxValue, new DateTime(2026, 3, 17, 14, 35, 0)));
+
+        var reloadedCompliance = await ReadComplianceAsync(compliance.Id);
+        var reloadedCase = await ReadCaseAsync(sdkCase.Id);
+        var reloadedPlanningCaseSite = await ReadPlanningCaseSiteAsync(planningCaseSite.Id);
+        var reloadedPlanningCase = await ReadPlanningCaseAsync(planningCase.Id);
+        var reloadedProperty = await ReadPropertyAsync(s.Property.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Is.EqualTo("CaseNotFound"));
+
+            Assert.That(reloadedCompliance.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created),
+                "#1157: UpdateFromCalendar carries its own copy of the pre-flight and must leave "
+                + "the occurrence intact too (pre-fix: removed)");
+
+            Assert.That(reloadedCase.Status, Is.EqualTo(OpenCaseStatus));
+            Assert.That(reloadedCase.DoneAt, Is.Null);
+            Assert.That(reloadedPlanningCaseSite.Status, Is.EqualTo(OpenPlanningStatus));
+            Assert.That(reloadedPlanningCase.Status, Is.EqualTo(OpenPlanningStatus));
+            Assert.That(reloadedProperty.ComplianceStatus, Is.EqualTo(OverdueComplianceStatus));
         });
     }
 
@@ -711,19 +789,27 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
     //
     // PR #1158 shipped with no test that changes outcome on revert; the rest of this
     // fixture passes either way, because no other fixture seeds two PlanningCaseSites
-    // for one planning sharing a CreatedAt day. These five close that gap, and they
+    // for one planning sharing a CreatedAt day. These tests close that gap, and they
     // pin three DIFFERENT things:
     //
     //   * the two *_TwoBackfilledOccurrencesOnOneDay_* tests pin the PREDICATE — revert
     //     it from  x.MicrotingSdkCaseId == foundCase.Id  back to
     //     x.CreatedAt.Date == compliance.StartDate.Date && x.PlanningId == compliance.PlanningId
     //     and they fail on the second occurrence;
-    //   * Update_NoPlanningCaseSiteForSdkCase_* pins the new `else` branch (the old code
-    //     had none and returned success). It does NOT discriminate on the predicate:
-    //     with no PlanningCaseSite at all, both predicates find nothing.
+    //   * the two *_NoPlanningCaseSiteForSdkCase_* tests pin the rejection the old code
+    //     had no branch for at all (it fell through and returned success). They do NOT
+    //     discriminate on the predicate: with no PlanningCaseSite at all, both predicates
+    //     find nothing. Their second half is #1157 cover — see below.
     //   * the two *_MismatchedCaseAndCompliance_* tests pin the #1218 guard that sits
     //     AFTER the lookup — the PlanningId cross-check that #1158 dropped along with
     //     the old predicate, re-added without touching the selector.
+    //
+    // Every *_MutatesNothing test in this section additionally pins #1157: since the
+    // lookup and the guard moved into the pre-flight, above the first irreversible write,
+    // a rejected request leaves neither a soft-deleted Compliance nor a completed SDK
+    // case. Those assertions were inverted from what they pinned before; the two
+    // *_RetryAgainstSoftDeletedCompliance_* tests at the end of the section cover the
+    // WorkflowState filter that makes a retry fail fast instead of re-running.
     //
     // The bug is not hypothetical: it is the "all occurrences green in the calendar,
     // only one row in Logbøger" report. The calendar reads sdkCase.Status, which every
@@ -882,26 +968,30 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
     }
 
     /// <summary>
-    /// Covers the <c>else</c> branch PR #1158 added underneath the new lookup: when the
-    /// SDK case EXISTS but no <c>PlanningCaseSite</c> references it, the caller now gets
-    /// <c>OperationResult(false, "CaseNotFound")</c>. The old code had no else — it fell
-    /// through silently, recomputed the property and returned
+    /// Covers the rejection PR #1158 added underneath the new lookup (an <c>else</c>
+    /// branch then; the pre-flight's <c>planningCaseSite == null</c> early return since
+    /// #1157): when the SDK case EXISTS but no <c>PlanningCaseSite</c> references it, the
+    /// caller gets <c>OperationResult(false, "CaseNotFound")</c>. The old code had neither
+    /// — it fell through silently, recomputed the property and returned
     /// <c>CaseHasBeenUpdated</c> over an occurrence it had never completed.
     ///
-    /// <para>Distinct from <see cref="Update_CaseNotFound_StillSoftDeletesCompliance"/>,
-    /// which trips the OTHER <c>CaseNotFound</c> — the one where <c>foundCase</c> itself
-    /// is null. Here the case is real and IS completed (Status 100 is written before the
-    /// items-planning lookup runs); only the items-planning half is missing.</para>
+    /// <para>Distinct from <see cref="Update_CaseNotFound_MutatesNothing"/>, which trips
+    /// the OTHER <c>CaseNotFound</c> — the one where the SDK case itself is missing. Here
+    /// the case is real; only the items-planning half is missing.</para>
     ///
-    /// <para>Arguably wrong, pinned as-is rather than as it ought to be: the same
-    /// ordering hazard as the sibling test. <c>compliance.Delete()</c> runs long before
-    /// this lookup and there is no transaction and no compensation, so the user gets a
-    /// failure toast over an occurrence that is already gone from the calendar AND an
-    /// SDK case that is already at 100 — a genuine partial write, not a clean
-    /// rejection.</para>
+    /// <para><b>#1157 inverted the second half of this test.</b> It used to pin a genuine
+    /// partial write, "as-is rather than as it ought to be": <c>compliance.Delete()</c>
+    /// and the SDK-case completion both ran long before this lookup, so the user got a
+    /// failure toast over an occurrence already gone from the calendar AND a case already
+    /// at 100. The lookup now runs in the pre-flight, above the first write, so the
+    /// rejection is clean.</para>
+    ///
+    /// <para>What discriminates: <c>reloadedCompliance.WorkflowState</c> is <c>created</c>
+    /// and <c>reloadedCase.Status</c> is still 33. Pre-fix they are <c>removed</c> and
+    /// 100.</para>
     /// </summary>
     [Test]
-    public async Task Update_NoPlanningCaseSiteForSdkCase_ReturnsCaseNotFoundAndStillSoftDeletesCompliance()
+    public async Task Update_NoPlanningCaseSiteForSdkCase_ReturnsCaseNotFoundAndMutatesNothing()
     {
         var s = await SeedScenarioAsync("update-no-pcs");
         var sdkCase = await SeedSdkCaseAsync(s, 970_010);
@@ -923,13 +1013,65 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
                 "an unresolvable occurrence must not be reported as completed");
             Assert.That(result.Message, Is.EqualTo("CaseNotFound"));
 
-            // The partial write, pinned as it actually is.
-            Assert.That(reloadedCompliance.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed),
-                "compliance.Delete() runs before the PlanningCaseSite lookup and is never rolled back");
-            Assert.That(reloadedCase.Status, Is.EqualTo(CompletedStatus),
-                "the SDK case is completed before the lookup, so the failure leaves it at 100");
+            // #1157: the rejection is clean — no partial write is left behind.
+            Assert.That(reloadedCompliance.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created),
+                "#1157: the PlanningCaseSite lookup now runs in the pre-flight, so the rejection "
+                + "happens before compliance.Delete() (pre-fix: removed)");
+            Assert.That(reloadedCase.Status, Is.EqualTo(OpenCaseStatus),
+                "#1157: a request that is then rejected must not complete the SDK case "
+                + "(pre-fix: 100)");
+            Assert.That(reloadedCase.DoneAt, Is.Null);
 
             // Everything after the early return did not run.
+            Assert.That(reloadedPlanningCase.Status, Is.EqualTo(OpenPlanningStatus));
+            Assert.That(reloadedProperty.ComplianceStatus, Is.EqualTo(OverdueComplianceStatus),
+                "the Property recompute sits after the early return");
+        });
+    }
+
+    /// <summary>
+    /// Twin of
+    /// <see cref="Update_NoPlanningCaseSiteForSdkCase_ReturnsCaseNotFoundAndMutatesNothing"/>
+    /// against <c>UpdateFromCalendar</c>, and the branch's FIRST coverage on that method
+    /// — #1157 noted it had none, only the missing-SDK-case one. The two production
+    /// methods are verbatim copy-paste of each other, including this lookup and the
+    /// pre-flight it now sits in, so a fix applied to only one of them is a live hole a
+    /// single test cannot see. The calendar variant is also the reachable one.
+    ///
+    /// <para>What discriminates: <c>reloadedCompliance.WorkflowState</c> is <c>created</c>
+    /// and <c>reloadedCase.Status</c> is still 33. Pre-fix they are <c>removed</c> and
+    /// 100. Reverting only <c>Update</c>'s pre-flight leaves this test green and its
+    /// sibling red, which is the point of pinning both.</para>
+    /// </summary>
+    [Test]
+    public async Task UpdateFromCalendar_NoPlanningCaseSiteForSdkCase_ReturnsCaseNotFoundAndMutatesNothing()
+    {
+        var s = await SeedScenarioAsync("calendar-no-pcs");
+        var sdkCase = await SeedSdkCaseAsync(s, 970_014);
+        var planningCase = await SeedPlanningCaseAsync(s);
+        // Deliberately NO SeedPlanningCaseSiteAsync — nothing references this SDK case.
+        var compliance = await SeedComplianceAsync(s, planningCase, sdkCase);
+
+        var result = await MakeCompliancesService(s)
+            .UpdateFromCalendar(MakeReply(s, compliance.Id, sdkCase.Id, new DateTime(2026, 3, 17, 11, 20, 0)));
+
+        var reloadedCompliance = await ReadComplianceAsync(compliance.Id);
+        var reloadedCase = await ReadCaseAsync(sdkCase.Id);
+        var reloadedPlanningCase = await ReadPlanningCaseAsync(planningCase.Id);
+        var reloadedProperty = await ReadPropertyAsync(s.Property.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.False,
+                "an unresolvable occurrence must not be reported as completed");
+            Assert.That(result.Message, Is.EqualTo("CaseNotFound"));
+
+            Assert.That(reloadedCompliance.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created),
+                "#1157: UpdateFromCalendar carries its own copy of the pre-flight (pre-fix: removed)");
+            Assert.That(reloadedCase.Status, Is.EqualTo(OpenCaseStatus),
+                "#1157: a request that is then rejected must not complete the SDK case (pre-fix: 100)");
+            Assert.That(reloadedCase.DoneAt, Is.Null);
+
             Assert.That(reloadedPlanningCase.Status, Is.EqualTo(OpenPlanningStatus));
             Assert.That(reloadedProperty.ComplianceStatus, Is.EqualTo(OverdueComplianceStatus),
                 "the Property recompute sits after the early return");
@@ -1000,18 +1142,22 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
     /// <c>MicrotingSdkCaseId</c> remains its sole selector (the #1158 fix is untouched),
     /// and rejects the pair with <c>CaseDoesNotBelongToCompliance</c>.</para>
     ///
-    /// <para><b>The rejection is not clean, and this test pins that too.</b>
-    /// <c>compliance.Delete()</c> and the SDK-case completion both run BEFORE the lookup,
-    /// with no transaction and no compensation (#1157), so a rejected request still
-    /// leaves the quoted Compliance soft-deleted and its SDK case at Status 100 — the
-    /// same partial write every other failure exit on this method already leaves (see
-    /// <see cref="Update_NoPlanningCaseSiteForSdkCase_ReturnsCaseNotFoundAndStillSoftDeletesCompliance"/>).
-    /// What the guard prevents is the CROSS-PROPERTY damage: no items-planning row of an
-    /// unrelated planning is promoted, and no property's compliance counters are
-    /// recomputed. Repairing the partial write is #1157, not this test.</para>
+    /// <para><b>The rejection is now clean, and this test pins that too.</b> When the
+    /// guard shipped, <c>compliance.Delete()</c> and the SDK-case completion both ran
+    /// BEFORE the lookup it follows, so a rejected request still left the quoted
+    /// Compliance soft-deleted and its SDK case at Status 100 — and this test asserted
+    /// exactly that, labelled <c>#1157</c>. #1157 has since moved the lookup and the guard
+    /// into the pre-flight, above the first irreversible write, so those two assertions
+    /// are inverted here. The guard's own purpose is unchanged: no items-planning row of
+    /// an unrelated planning is promoted, and no property's counters are recomputed.</para>
+    ///
+    /// <para>What discriminates for #1157: <c>reloadedStrangerCompliance.WorkflowState</c>
+    /// is <c>created</c> and <c>reloadedSdkCase.Status</c> is still 33. Pre-#1157 they are
+    /// <c>removed</c> and 100. What discriminates for #1218 is unchanged: remove the
+    /// PlanningId cross-check and the owner planning's rows get promoted.</para>
     /// </summary>
     [Test]
-    public async Task Update_MismatchedCaseAndCompliance_IsRejectedAndPromotesNothing()
+    public async Task Update_MismatchedCaseAndCompliance_IsRejectedAndMutatesNothing()
     {
         // Property/planning 1 owns the SDK case and its occurrence...
         var owner = await SeedScenarioAsync("mismatch-owner");
@@ -1056,13 +1202,15 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
             // request is rejected outright, it is not re-routed.
             Assert.That(reloadedStrangerCase.Status, Is.EqualTo(OpenPlanningStatus));
 
-            // Pre-existing partial write (#1157), pinned as it is rather than as it
-            // ought to be: both of these run before the lookup the guard follows.
+            // #1157: the rejection leaves no partial write behind — both of these used to
+            // run before the lookup the guard follows, and now run after it.
             Assert.That(reloadedStrangerCompliance.WorkflowState,
-                Is.EqualTo(Constants.WorkflowStates.Removed),
-                "#1157: compliance.Delete() runs before the lookup and is never rolled back");
-            Assert.That(reloadedSdkCase.Status, Is.EqualTo(CompletedStatus),
-                "#1157: the SDK case is completed before the lookup, so the rejection leaves it at 100");
+                Is.EqualTo(Constants.WorkflowStates.Created),
+                "#1157: the guard now runs in the pre-flight, above compliance.Delete() "
+                + "(pre-fix: removed)");
+            Assert.That(reloadedSdkCase.Status, Is.EqualTo(OpenCaseStatus),
+                "#1157: a rejected pair must not complete the SDK case (pre-fix: 100)");
+            Assert.That(reloadedSdkCase.DoneAt, Is.Null);
 
             // Everything after the early return did not run.
             Assert.That(reloadedStrangerProperty.ComplianceStatus, Is.EqualTo(OverdueComplianceStatus),
@@ -1072,7 +1220,7 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
     }
 
     /// <summary>
-    /// Twin of <see cref="Update_MismatchedCaseAndCompliance_IsRejectedAndPromotesNothing"/>
+    /// Twin of <see cref="Update_MismatchedCaseAndCompliance_IsRejectedAndMutatesNothing"/>
     /// against <c>UpdateFromCalendar</c>. The two production methods are verbatim
     /// copy-paste of each other — including this lookup and the #1218 guard beneath it —
     /// so a guard added to only one of them is a live hole that a single test cannot
@@ -1083,7 +1231,7 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
     /// occurrences through <c>UpdateFromCalendar</c>.</para>
     /// </summary>
     [Test]
-    public async Task UpdateFromCalendar_MismatchedCaseAndCompliance_IsRejectedAndPromotesNothing()
+    public async Task UpdateFromCalendar_MismatchedCaseAndCompliance_IsRejectedAndMutatesNothing()
     {
         var owner = await SeedScenarioAsync("calendar-mismatch-owner");
         var sdkCase = await SeedSdkCaseAsync(owner, 970_012);
@@ -1120,13 +1268,242 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
 
             Assert.That(reloadedStrangerCase.Status, Is.EqualTo(OpenPlanningStatus));
 
-            // Same pre-existing partial write (#1157) as the Update twin.
+            // Same clean rejection (#1157) as the Update twin — pre-fix these were
+            // removed / 100.
             Assert.That(reloadedStrangerCompliance.WorkflowState,
-                Is.EqualTo(Constants.WorkflowStates.Removed));
-            Assert.That(reloadedSdkCase.Status, Is.EqualTo(CompletedStatus));
+                Is.EqualTo(Constants.WorkflowStates.Created),
+                "#1157: UpdateFromCalendar carries its own copy of the pre-flight");
+            Assert.That(reloadedSdkCase.Status, Is.EqualTo(OpenCaseStatus));
+            Assert.That(reloadedSdkCase.DoneAt, Is.Null);
 
             Assert.That(reloadedStrangerProperty.ComplianceStatus, Is.EqualTo(OverdueComplianceStatus));
             Assert.That(reloadedStrangerProperty.ComplianceStatusThirty, Is.EqualTo(OverdueComplianceStatus));
+        });
+    }
+
+    /// <summary>
+    /// #1157 option 3, the retry path. Before the fix the Compliance lookup was
+    /// <c>SingleOrDefaultAsync(x =&gt; x.Id == model.ExtraId)</c> with NO WorkflowState
+    /// filter, so a retry after an earlier partially-failed completion re-found the
+    /// already-soft-deleted row, re-ran the entire cascade against it — promoting the
+    /// items-planning rows and completing the SDK case for an occurrence that no longer
+    /// exists — and reported <c>CaseHasBeenUpdated</c>. There was no path back to a
+    /// consistent state from the UI. The filter makes the retry fail fast and
+    /// distinguishably instead.
+    ///
+    /// <para>The already-removed row is produced with the same <c>PnBase.Delete</c> the
+    /// production paths call, so this is the state a real earlier completion leaves, not a
+    /// hand-forged one.</para>
+    ///
+    /// <para>What discriminates: <c>result.Success</c> is false and
+    /// <c>reloadedPlanningCaseSite.Status</c> is still 66. On pre-fix code the call
+    /// succeeds and promotes both items-planning rows to 100.</para>
+    /// </summary>
+    [Test]
+    public async Task Update_RetryAgainstSoftDeletedCompliance_IsRejectedAndMutatesNothing()
+    {
+        var s = await SeedScenarioAsync("update-retry-removed");
+        var sdkCase = await SeedSdkCaseAsync(s, 970_015);
+        var planningCase = await SeedPlanningCaseAsync(s);
+        var planningCaseSite = await SeedPlanningCaseSiteAsync(s, planningCase, sdkCase);
+        var compliance = await SeedComplianceAsync(s, planningCase, sdkCase);
+        await SoftDeleteComplianceAsync(compliance);
+
+        var result = await MakeCompliancesService(s)
+            .Update(MakeReply(s, compliance.Id, sdkCase.Id, new DateTime(2026, 3, 20, 10, 0, 0)));
+
+        var reloadedCompliance = await ReadComplianceAsync(compliance.Id);
+        var reloadedCase = await ReadCaseAsync(sdkCase.Id);
+        var reloadedPlanningCaseSite = await ReadPlanningCaseSiteAsync(planningCaseSite.Id);
+        var reloadedPlanningCase = await ReadPlanningCaseAsync(planningCase.Id);
+        var reloadedProperty = await ReadPropertyAsync(s.Property.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.False,
+                "#1157: a completion quoting an already-soft-deleted Compliance must be rejected, "
+                + "not re-run (pre-fix: success)");
+            Assert.That(result.Message, Is.EqualTo("CaseCouldNotBeUpdated"),
+                "the compliance-missing exit reuses CaseCouldNotBeUpdated, which is what "
+                + "distinguishes it from the CaseNotFound exits");
+
+            // The row stays exactly as the earlier completion left it.
+            Assert.That(reloadedCompliance.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+
+            // Nothing else was touched.
+            Assert.That(reloadedCase.Status, Is.EqualTo(OpenCaseStatus),
+                "#1157: the retry must not complete the SDK case (pre-fix: 100)");
+            Assert.That(reloadedCase.DoneAt, Is.Null);
+            Assert.That(reloadedPlanningCaseSite.Status, Is.EqualTo(OpenPlanningStatus),
+                "#1157: the retry must not promote the occurrence (pre-fix: 100)");
+            Assert.That(reloadedPlanningCaseSite.MicrotingSdkCaseDoneAt, Is.Null);
+            Assert.That(reloadedPlanningCase.Status, Is.EqualTo(OpenPlanningStatus));
+            Assert.That(reloadedProperty.ComplianceStatus, Is.EqualTo(OverdueComplianceStatus));
+        });
+    }
+
+    /// <summary>
+    /// Twin of
+    /// <see cref="Update_RetryAgainstSoftDeletedCompliance_IsRejectedAndMutatesNothing"/>
+    /// against <c>UpdateFromCalendar</c> — the WorkflowState filter is duplicated verbatim
+    /// in the calendar copy, so it needs its own pin. Same discriminator.
+    /// </summary>
+    [Test]
+    public async Task UpdateFromCalendar_RetryAgainstSoftDeletedCompliance_IsRejectedAndMutatesNothing()
+    {
+        var s = await SeedScenarioAsync("calendar-retry-removed");
+        var sdkCase = await SeedSdkCaseAsync(s, 970_016);
+        var planningCase = await SeedPlanningCaseAsync(s);
+        var planningCaseSite = await SeedPlanningCaseSiteAsync(s, planningCase, sdkCase);
+        var compliance = await SeedComplianceAsync(s, planningCase, sdkCase);
+        await SoftDeleteComplianceAsync(compliance);
+
+        var result = await MakeCompliancesService(s)
+            .UpdateFromCalendar(MakeReply(s, compliance.Id, sdkCase.Id, new DateTime(2026, 3, 20, 10, 0, 0)));
+
+        var reloadedCompliance = await ReadComplianceAsync(compliance.Id);
+        var reloadedCase = await ReadCaseAsync(sdkCase.Id);
+        var reloadedPlanningCaseSite = await ReadPlanningCaseSiteAsync(planningCaseSite.Id);
+        var reloadedPlanningCase = await ReadPlanningCaseAsync(planningCase.Id);
+        var reloadedProperty = await ReadPropertyAsync(s.Property.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.False,
+                "#1157: UpdateFromCalendar carries its own copy of the WorkflowState filter "
+                + "(pre-fix: success)");
+            Assert.That(result.Message, Is.EqualTo("CaseCouldNotBeUpdated"));
+
+            Assert.That(reloadedCompliance.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+
+            Assert.That(reloadedCase.Status, Is.EqualTo(OpenCaseStatus));
+            Assert.That(reloadedCase.DoneAt, Is.Null);
+            Assert.That(reloadedPlanningCaseSite.Status, Is.EqualTo(OpenPlanningStatus));
+            Assert.That(reloadedPlanningCaseSite.MicrotingSdkCaseDoneAt, Is.Null);
+            Assert.That(reloadedPlanningCase.Status, Is.EqualTo(OpenPlanningStatus));
+            Assert.That(reloadedProperty.ComplianceStatus, Is.EqualTo(OverdueComplianceStatus));
+        });
+    }
+
+    /// <summary>
+    /// #1157, the last routine partial write: a completion whose <c>SiteId</c> matches no
+    /// live SDK <c>Sites</c> row must mutate NOTHING.
+    ///
+    /// <para><c>model.SiteId</c> is client-supplied and nothing else validates it. The
+    /// site used to be resolved INSIDE the mutation block and dereferenced without a null
+    /// guard at <c>planningCaseSite.DoneByUserName = site.Name</c> — i.e. after
+    /// <c>compliance.Delete</c>, <c>core.CaseUpdate</c> and <c>foundCase.Update</c> had
+    /// all committed. It is now resolved in the pre-flight, above the first write.</para>
+    ///
+    /// <para><b>What fails pre-fix.</b> Not an escaping exception: the
+    /// <c>NullReferenceException</c> is caught by the method's own outer
+    /// <c>catch (Exception)</c>, which returns
+    /// <c>OperationResult(false, "CaseCouldNotBeUpdated Exception: ...")</c>. So pre-fix
+    /// this test fails on ASSERTIONS — <c>result.Message</c> (which is that concatenated
+    /// exception string, not <c>SiteNotFound</c>), <c>reloadedCompliance.WorkflowState</c>
+    /// (<c>removed</c>) and <c>reloadedCase.Status</c> (100). The <c>Success</c>
+    /// assertion is the one thing that passes either way, which is exactly why the
+    /// partial write went unnoticed.</para>
+    /// </summary>
+    [Test]
+    public async Task Update_UnknownSiteId_MutatesNothing()
+    {
+        // Sites.Id is auto-increment from 1, so int.MaxValue is unreachable for this
+        // database. Deliberately NOT "max(Id) + n": other fixtures insert sites
+        // concurrently (ParallelScope.Fixtures, and TestBaseSetup does not reset the
+        // database per test), which would make that racy.
+        const int nonExistentSiteId = int.MaxValue;
+
+        var s = await SeedScenarioAsync("update-unknown-site");
+        var sdkCase = await SeedSdkCaseAsync(s, 970_017);
+        var planningCase = await SeedPlanningCaseAsync(s);
+        var planningCaseSite = await SeedPlanningCaseSiteAsync(s, planningCase, sdkCase);
+        var compliance = await SeedComplianceAsync(s, planningCase, sdkCase);
+
+        var result = await MakeCompliancesService(s)
+            .Update(MakeReply(s, compliance.Id, sdkCase.Id, new DateTime(2026, 3, 24, 9, 15, 0),
+                nonExistentSiteId));
+
+        var reloadedCompliance = await ReadComplianceAsync(compliance.Id);
+        var reloadedCase = await ReadCaseAsync(sdkCase.Id);
+        var reloadedPlanningCaseSite = await ReadPlanningCaseSiteAsync(planningCaseSite.Id);
+        var reloadedPlanningCase = await ReadPlanningCaseAsync(planningCase.Id);
+        var reloadedProperty = await ReadPropertyAsync(s.Property.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.False,
+                "a completion naming a site that does not exist must not be reported as completed");
+            Assert.That(result.Message, Is.EqualTo("SiteNotFound"),
+                "#1157: the site is now resolved in the pre-flight and rejected by its own message "
+                + "(pre-fix: \"CaseCouldNotBeUpdated Exception: <NullReferenceException>\", produced "
+                + "by the outer catch AFTER the writes had committed)");
+
+            Assert.That(reloadedCompliance.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created),
+                "#1157: the rejection happens before compliance.Delete() (pre-fix: removed)");
+            Assert.That(reloadedCase.Status, Is.EqualTo(OpenCaseStatus),
+                "#1157: a rejected request must not complete the SDK case (pre-fix: 100)");
+            Assert.That(reloadedCase.DoneAt, Is.Null);
+            Assert.That(reloadedCase.SiteId, Is.EqualTo(s.Site.Id),
+                "the SDK case must keep its own site, not the unknown one from the request");
+
+            Assert.That(reloadedPlanningCaseSite.Status, Is.EqualTo(OpenPlanningStatus));
+            Assert.That(reloadedPlanningCaseSite.MicrotingSdkCaseDoneAt, Is.Null);
+            Assert.That(reloadedPlanningCase.Status, Is.EqualTo(OpenPlanningStatus));
+            Assert.That(reloadedProperty.ComplianceStatus, Is.EqualTo(OverdueComplianceStatus),
+                "the Property recompute sits after the early return");
+        });
+    }
+
+    /// <summary>
+    /// Twin of <see cref="Update_UnknownSiteId_MutatesNothing"/> against
+    /// <c>UpdateFromCalendar</c> — the site lookup and its guard are duplicated verbatim
+    /// in the calendar copy, and the calendar path is the reachable one, so reverting the
+    /// hoist in only one method must leave exactly one of these two red. Same
+    /// discriminators, same reason they are assertion failures rather than a thrown
+    /// exception (the outer catch swallows the NRE either way).
+    /// </summary>
+    [Test]
+    public async Task UpdateFromCalendar_UnknownSiteId_MutatesNothing()
+    {
+        const int nonExistentSiteId = int.MaxValue;
+
+        var s = await SeedScenarioAsync("calendar-unknown-site");
+        var sdkCase = await SeedSdkCaseAsync(s, 970_018);
+        var planningCase = await SeedPlanningCaseAsync(s);
+        var planningCaseSite = await SeedPlanningCaseSiteAsync(s, planningCase, sdkCase);
+        var compliance = await SeedComplianceAsync(s, planningCase, sdkCase);
+
+        var result = await MakeCompliancesService(s)
+            .UpdateFromCalendar(MakeReply(s, compliance.Id, sdkCase.Id,
+                new DateTime(2026, 3, 24, 9, 15, 0), nonExistentSiteId));
+
+        var reloadedCompliance = await ReadComplianceAsync(compliance.Id);
+        var reloadedCase = await ReadCaseAsync(sdkCase.Id);
+        var reloadedPlanningCaseSite = await ReadPlanningCaseSiteAsync(planningCaseSite.Id);
+        var reloadedPlanningCase = await ReadPlanningCaseAsync(planningCase.Id);
+        var reloadedProperty = await ReadPropertyAsync(s.Property.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.False,
+                "a completion naming a site that does not exist must not be reported as completed");
+            Assert.That(result.Message, Is.EqualTo("SiteNotFound"),
+                "#1157: UpdateFromCalendar carries its own copy of the hoisted site lookup "
+                + "(pre-fix: \"CaseCouldNotBeUpdated Exception: <NullReferenceException>\")");
+
+            Assert.That(reloadedCompliance.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created),
+                "#1157: the rejection happens before compliance.Delete() (pre-fix: removed)");
+            Assert.That(reloadedCase.Status, Is.EqualTo(OpenCaseStatus),
+                "#1157: a rejected request must not complete the SDK case (pre-fix: 100)");
+            Assert.That(reloadedCase.DoneAt, Is.Null);
+            Assert.That(reloadedCase.SiteId, Is.EqualTo(s.Site.Id));
+
+            Assert.That(reloadedPlanningCaseSite.Status, Is.EqualTo(OpenPlanningStatus));
+            Assert.That(reloadedPlanningCaseSite.MicrotingSdkCaseDoneAt, Is.Null);
+            Assert.That(reloadedPlanningCase.Status, Is.EqualTo(OpenPlanningStatus));
+            Assert.That(reloadedProperty.ComplianceStatus, Is.EqualTo(OverdueComplianceStatus),
+                "the Property recompute sits after the early return");
         });
     }
 }
@@ -1166,6 +1543,12 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
 /// the English one passes here, and nothing automated can tell those apart. The exact
 /// translated strings are editorial and are deliberately NOT asserted.
 /// </para>
+///
+/// <para>
+/// <b>Also covers <c>SiteNotFound</c></b>, the message #1157's hoisted site lookup
+/// returns. Same shape of exposure, same blind spot in the sibling tests, so it is
+/// checked here rather than in a fixture of its own; the class name predates it.
+/// </para>
 /// </summary>
 [Parallelizable(ParallelScope.All)]
 [TestFixture]
@@ -1173,9 +1556,18 @@ public class ComplianceOwnershipGuardLocalizationTests
 {
     /// <summary>
     /// The key both <c>GetString</c> call sites of the #1218 guard pass
-    /// (BackendConfigurationCompliancesService.cs:340 and :555).
+    /// (BackendConfigurationCompliancesService.cs:293 and :599).
     /// </summary>
     private const string GuardKey = "CaseDoesNotBelongToCompliance";
+
+    /// <summary>
+    /// The message the hoisted site lookup returns when <c>model.SiteId</c> matches no
+    /// live SDK <c>Sites</c> row (#1157 — BackendConfigurationCompliancesService.cs, both
+    /// methods' pre-flight). It has exactly the same exposure as <see cref="GuardKey"/>:
+    /// the <c>*_UnknownSiteId_MutatesNothing</c> tests assert the raw key against a stub
+    /// that echoes keys, so nothing but this fixture notices a missing JSON entry.
+    /// </summary>
+    private const string SiteKey = "SiteNotFound";
 
     /// <summary>
     /// The entry whose locale set defines "every locale the plugin ships". Derived from
@@ -1204,7 +1596,26 @@ public class ComplianceOwnershipGuardLocalizationTests
     /// one-line fix in the JSON rather than a debugging session.</para>
     /// </summary>
     [Test]
-    public void GuardKeyResolvesInEveryShippedLocale()
+    public void GuardKeyResolvesInEveryShippedLocale() =>
+        AssertKeyResolvesInEveryShippedLocale(GuardKey,
+            "The #1218 guard returns _localizationService.GetString(\"" + GuardKey + "\"). The "
+            + "sibling *_MismatchedCaseAndCompliance_* tests cannot catch a missing entry: the "
+            + "test project's localisation stub echoes keys, so they pass either way.");
+
+    /// <summary>
+    /// The same assertion for <see cref="SiteKey"/> — the #1157 site pre-flight's message.
+    /// A separate <c>[Test]</c> rather than a second key inside the one above, so a
+    /// failure names which key regressed without the other masking it.
+    /// </summary>
+    [Test]
+    public void SiteNotFoundKeyResolvesInEveryShippedLocale() =>
+        AssertKeyResolvesInEveryShippedLocale(SiteKey,
+            "The #1157 site pre-flight returns _localizationService.GetString(\"" + SiteKey + "\") "
+            + "from both Update and UpdateFromCalendar. The sibling *_UnknownSiteId_MutatesNothing "
+            + "tests cannot catch a missing entry: the test project's localisation stub echoes "
+            + "keys, so they pass either way.");
+
+    private static void AssertKeyResolvesInEveryShippedLocale(string key, string missingKeyRationale)
     {
         var entries = Entries();
 
@@ -1218,29 +1629,27 @@ public class ComplianceOwnershipGuardLocalizationTests
             $"'{ReferenceKey}' resolved only {shippedLocales.Count} locales — the reference entry "
             + "is broken, so every assertion below would be vacuous");
 
-        Assert.That(entries.Any(e => e.Key == GuardKey), Is.True,
-            $"'{GuardKey}' is missing from Resources/localization.json. The #1218 guard returns "
-            + "_localizationService.GetString(\"" + GuardKey + "\"), and JsonStringLocalizer hands "
+        Assert.That(entries.Any(e => e.Key == key), Is.True,
+            $"'{key}' is missing from Resources/localization.json, and JsonStringLocalizer hands "
             + "back the raw key when there is no entry — so the user sees the identifier itself in "
-            + "the failure toast. The sibling *_MismatchedCaseAndCompliance_* tests cannot catch "
-            + "this: the test project's localisation stub echoes keys, so they pass either way.");
+            + $"the failure toast. {missingKeyRationale}");
 
         var unresolved = shippedLocales
-            .Where(locale => string.IsNullOrWhiteSpace(Resolve(entries, GuardKey, locale)))
+            .Where(locale => string.IsNullOrWhiteSpace(Resolve(entries, key, locale)))
             .ToList();
 
-        var extra = entries.First(e => e.Key == GuardKey).Values.Keys
+        var extra = entries.First(e => e.Key == key).Values.Keys
             .Where(locale => !shippedLocales.Contains(locale))
             .ToList();
 
         Assert.Multiple(() =>
         {
             Assert.That(unresolved, Is.Empty,
-                $"'{GuardKey}' has no usable value in {unresolved.Count} locale(s) — JsonStringLocalizer "
+                $"'{key}' has no usable value in {unresolved.Count} locale(s) — JsonStringLocalizer "
                 + "returns the raw key for each of them. Offenders: " + string.Join(", ", unresolved));
 
             Assert.That(extra, Is.Empty,
-                $"'{GuardKey}' carries locale(s) that '{ReferenceKey}' does not, which means the entry "
+                $"'{key}' carries locale(s) that '{ReferenceKey}' does not, which means the entry "
                 + "was hand-edited against a different locale set than the rest of the file. "
                 + "Offenders: " + string.Join(", ", extra));
         });
