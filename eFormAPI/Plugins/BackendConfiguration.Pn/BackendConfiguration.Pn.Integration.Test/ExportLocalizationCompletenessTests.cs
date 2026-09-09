@@ -49,10 +49,21 @@ using System.Text.Json;
 /// <c>GetString</c> / <c>GetStringWithFormat</c> call in the five files under
 /// <c>Services/BackendConfigurationComplianceExportService/</c> — the service, the
 /// document builder, the Word writer, the CSV writer (which reads none) and the
-/// PDF converter (likewise). It is deliberately not "every key in the file": the
-/// file has pre-existing locale gaps on keys outside this path, and widening the
-/// assertion would make the fixture fail for reasons that have nothing to do with
-/// the export.
+/// PDF converter (likewise). It stays enumerated rather than "all keys" because
+/// two of the export assertions are export-specific: <c>ExportKeys</c> also pins
+/// that the code and the file have not drifted apart on those particular names,
+/// and <see cref="FormattedExportKey"/>'s <c>{0}</c> check applies to one key
+/// only.
+/// </para>
+///
+/// <para>
+/// <b>Whole-file health.</b> The four <c>TheFileHas…</c> tests at the bottom cover
+/// the file as a whole and are NOT scoped to the export: no locale code outside the
+/// shipped set, no duplicate keys, no blank values, and every entry carrying the
+/// full locale set. They were red when this fixture was first written — hence the
+/// export-only scope at the time — and went green with #1221, which fixed the four
+/// unresolvable locale codes, the five duplicate keys and the seven under-translated
+/// or missing entries they were failing on.
 /// </para>
 ///
 /// <para>
@@ -267,6 +278,134 @@ public class ExportLocalizationCompletenessTests
         Assert.That(gaps, Is.Empty,
             $"'{FormattedExportKey}' has lost its {{0}} placeholder, so the image count is dropped "
             + "silently from the rendered cell. Offenders (key / locale): " + string.Join(", ", gaps));
+    }
+
+    // ==================================================================
+    // Whole-file health (#1221) — not scoped to the export path
+    // ==================================================================
+
+    /// <summary>
+    /// No entry carries a locale code outside the set the plugin ships.
+    ///
+    /// <para>
+    /// <c>JsonStringLocalizer</c> matches <c>CultureInfo.CurrentCulture.Name</c> with
+    /// <c>==</c>. A mistyped code is therefore not a near miss that degrades to
+    /// something readable — it is DEAD WEIGHT: the translation is in the file, the
+    /// localizer never looks at it, and the user is shown the raw key. Worse, it is
+    /// invisible to <see cref="TheFileHasEveryLocaleOnEveryKey"/> in the one case it
+    /// most needs catching, because a key whose only Ukrainian value sits under
+    /// <c>Uk-UA</c> reads as "missing uk-UA" there but as a fully translated entry to
+    /// a human skimming the JSON.
+    /// </para>
+    /// <para>
+    /// #1221 removed four of these: <c>pl-Pl</c>, <c>uk-UK</c>, <c>Uk-UA</c> and a
+    /// bare <c>en</c> (the platform uses <c>en-US</c>).
+    /// </para>
+    /// </summary>
+    [Test]
+    public void TheFileHasNoLocaleCodeOutsideTheShippedSet()
+    {
+        var shipped = Locales().ToHashSet();
+
+        var strays = (from entry in Entries()
+                from locale in entry.Values.Keys
+                where !shipped.Contains(locale)
+                select $"{entry.Key} / {locale}")
+            .ToList();
+
+        Assert.That(strays, Is.Empty,
+            $"{strays.Count} locale code(s) do not exist in the shipped set, so "
+            + "JsonStringLocalizer can never match them and the user is shown the raw key "
+            + $"instead (the shipped set is whatever '{ReferenceKey}' carries). "
+            + "Offenders (key / locale): " + string.Join(", ", strays));
+    }
+
+    /// <summary>
+    /// No key appears twice.
+    ///
+    /// <para>
+    /// <c>GetString</c> filters by CULTURE PRESENCE first and only then takes the
+    /// first key match, so with two copies of a key "the winner" is decided per
+    /// locale: whichever copy happens to carry that culture first. Two copies that
+    /// agree today can be edited apart tomorrow, and the resulting UI reads
+    /// inconsistently in some languages and not others — with nothing in the diff
+    /// to suggest why.
+    /// </para>
+    /// <para>
+    /// #1221 removed five: <c>ErrorWhileReadPlanning</c>, <c>Ongoing</c>,
+    /// <c>TaskCreatedSuccessful</c>, <c>TaskUpdatedSuccessful</c> and
+    /// <c>TaskDeletedSuccessful</c>.
+    /// </para>
+    /// </summary>
+    [Test]
+    public void TheFileHasNoDuplicateKeys()
+    {
+        var duplicates = Entries()
+            .GroupBy(entry => entry.Key)
+            .Where(copies => copies.Count() > 1)
+            .Select(copies => $"{copies.Key} (x{copies.Count()})")
+            .ToList();
+
+        Assert.That(duplicates, Is.Empty,
+            $"{duplicates.Count} key(s) appear more than once in Resources/localization.json. "
+            + "JsonStringLocalizer picks per locale between the copies, so they drift silently. "
+            + "Offenders: " + string.Join(", ", duplicates));
+    }
+
+    /// <summary>
+    /// Every entry carries the full shipped locale set.
+    ///
+    /// <para>
+    /// This is the assertion that would have caught
+    /// <c>WorkerStillAssignedToEventsCannotResign</c>, which shipped with Danish and
+    /// English only and left 24 languages reading the identifier itself in a failure
+    /// toast. A per-locale blank check alone would NOT have caught it — an absent
+    /// locale is not a blank one — which is why this test asserts on the locale SET
+    /// rather than on the values.
+    /// </para>
+    /// </summary>
+    [Test]
+    public void TheFileHasEveryLocaleOnEveryKey()
+    {
+        var shipped = Locales();
+
+        var gaps = (from entry in Entries()
+                let missing = shipped.Where(locale => !entry.Values.ContainsKey(locale)).ToList()
+                where missing.Count > 0
+                select $"{entry.Key} / {string.Join(" + ", missing)}")
+            .ToList();
+
+        Assert.That(gaps, Is.Empty,
+            $"{gaps.Count} entry/entries do not carry every locale the file ships. "
+            + "JsonStringLocalizer does not fall back to English, so each missing locale is a "
+            + "customer reading the bare key. Offenders (key / missing locales): "
+            + string.Join("; ", gaps));
+    }
+
+    /// <summary>
+    /// No entry has a present-but-blank value.
+    ///
+    /// <para>
+    /// The empty string is the worse of the two failure modes: it looks translated in
+    /// the JSON and in <see cref="TheFileHasEveryLocaleOnEveryKey"/>, but
+    /// <c>GetString</c> treats <c>IsNullOrEmpty</c> exactly like a miss and hands the
+    /// key back. #1221 removed one — <c>DocumentTranslationNotFound</c> carried an
+    /// empty <c>uk-UK</c>.
+    /// </para>
+    /// </summary>
+    [Test]
+    public void TheFileHasNoBlankValues()
+    {
+        var blanks = (from entry in Entries()
+                from pair in entry.Values
+                where string.IsNullOrWhiteSpace(pair.Value)
+                select $"{entry.Key} / {pair.Key}")
+            .ToList();
+
+        Assert.That(blanks, Is.Empty,
+            $"{blanks.Count} localisation value(s) are present but blank. GetString treats a blank "
+            + "exactly like a missing entry and returns the raw key. Offenders (key / locale): "
+            + string.Join(", ", blanks));
     }
 
     // ==================================================================
