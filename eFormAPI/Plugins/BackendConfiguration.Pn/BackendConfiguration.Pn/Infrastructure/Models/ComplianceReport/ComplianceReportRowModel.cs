@@ -23,10 +23,13 @@ public class ComplianceReportRowModel
     public string BoardName { get; set; }
     public List<string> Tags { get; set; } = [];
     public List<string> WorkerNames { get; set; } = [];
-    /// <summary>#1187: the ARP's non-removed PlanningSites site ids — the same set
-    /// <see cref="WorkerNames"/> is mapped from, so the complete modal can group
-    /// "assigned" vs "other" workers. NOT positionally aligned with
-    /// <see cref="WorkerNames"/>, which drops ids that have no Sites row.</summary>
+    /// <summary>#1187: the ARP's non-removed PlanningSites site ids, so the complete
+    /// modal can group "assigned" vs "other" workers and pre-select a lone assignee.
+    /// This is the row's ASSIGNMENT and is deliberately NARROWER than
+    /// <see cref="WorkerNames"/>, which since #1232 also names the live members of any
+    /// worker tag the ARP is assigned to. It is neither the same set nor positionally
+    /// aligned with it — see the assignment site in
+    /// <c>BackendConfigurationComplianceReportService.Index</c>.</summary>
     public List<int> WorkerSiteIds { get; set; } = [];
     public bool Completed { get; set; }
     public DateTime? DoneAt { get; set; }

@@ -1175,9 +1175,33 @@ public class BackendConfigurationCalendarService(
             if (filters.EformIds.Any())
                 query = query.Where(x => x.AreaRule.EformId.HasValue && filters.EformIds.Contains(x.AreaRule.EformId.Value));
             if (filters.AssignToIds.Any())
+            {
+                // #1233 — the same assignee semantics ShouldIncludeTask applies on the
+                // week view: an event assigned to a worker tag ("team") instead of to
+                // named individuals has no PlanningSites row for the team's members, so
+                // the explicit-assignee match alone hid it from the people in it.
+                //
+                // Resolved ONCE, before the predicate: this is composed into an EF query,
+                // so the tag set has to be a plain list of ids the provider can push down
+                // as an IN (...). IWorkerTagMembershipService owns the membership rule —
+                // it is not restated here, and must not be.
+                //
+                // The site match below is unchanged and the tag match is OR'd beside it,
+                // so this can only widen the result. With no live membership the list is
+                // empty, the tag half can never match, and the result is what it was.
+                var effectiveWorkerTagIds = (await workerTagMembershipService
+                        .GetTagIdsForSitesAsync(filters.AssignToIds)
+                        .ConfigureAwait(false))
+                    .ToList();
+
                 query = query.Where(x => x.PlanningSites
-                    .Where(z => z.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Any(y => filters.AssignToIds.Contains(y.SiteId)));
+                        .Where(z => z.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Any(y => filters.AssignToIds.Contains(y.SiteId))
+                    || backendConfigurationPnDbContext.AreaRulePlanningWorkerTags.Any(wt =>
+                        wt.AreaRulePlanningId == x.Id
+                        && wt.WorkflowState != Constants.WorkflowStates.Removed
+                        && effectiveWorkerTagIds.Contains(wt.TagId)));
+            }
             if (filters.TagIds.Any())
             {
                 foreach (var tagId in filters.TagIds)
@@ -5727,12 +5751,21 @@ public class BackendConfigurationCalendarService(
                 .ToDictionaryAsync(x => x.Id);
 
             // PlanningSite ↔ Site mapping for the per-row Worker filter.
-            // Parity with BackendConfigurationTaskTrackerHelper.cs:166-184.
+            // Parity with BackendConfigurationTaskTrackerHelper's planningSiteIds read.
             var planningSiteIdsByPlanning = await itemsPlanningPnDbContext.PlanningSites
                 .Where(x => planningIds.Contains(x.PlanningId))
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .GroupBy(x => x.PlanningId)
                 .ToDictionaryAsync(g => g.Key, g => g.Select(p => p.SiteId).Distinct().ToList());
+
+            // #1231 — the worker tags the filtered site is a live member of, resolved
+            // once for the whole list rather than per row. Empty when no site filter is
+            // in play (admin-style callers), which leaves the loop's filter untouched.
+            HashSet<int> effectiveWorkerTagIds = sdkSiteIdForFilter.HasValue
+                ? await workerTagMembershipService
+                    .GetTagIdsForSitesAsync([sdkSiteIdForFilter.Value])
+                    .ConfigureAwait(false)
+                : [];
 
             foreach (var compliance in compliances)
             {
@@ -5762,14 +5795,27 @@ public class BackendConfigurationCalendarService(
                     continue;
                 }
 
-                // Per-row Worker filter (parity with TaskTrackerHelper.cs:178-192,
-                // collapsed to a single sdk-site check because the mobile worker
+                // Per-row Worker filter (parity with TaskTrackerHelper.cs's WorkerIds
+                // filter, collapsed to a single sdk-site check because the mobile worker
                 // call passes exactly one site id; null disables the filter for
                 // admin-style callers).
+                //
+                // #1231 — the explicit site match is unchanged; a worker-tag ("team")
+                // match is OR'd beside it, exactly as ShouldIncludeTask does on the week
+                // view. complianceWorkerTagIdsByArpId is already loaded above for the
+                // response's WorkerTagIds field, so the tag half costs no extra query.
                 if (sdkSiteIdForFilter.HasValue)
                 {
-                    if (!planningSiteIdsByPlanning.TryGetValue(compliance.PlanningId, out var planningSiteIds)
-                        || !planningSiteIds.Contains(sdkSiteIdForFilter.Value))
+                    var siteMatch =
+                        planningSiteIdsByPlanning.TryGetValue(compliance.PlanningId, out var planningSiteIds)
+                        && planningSiteIds.Contains(sdkSiteIdForFilter.Value);
+
+                    var workerTagMatch =
+                        effectiveWorkerTagIds.Count > 0
+                        && complianceWorkerTagIdsByArpId.TryGetValue(arp.Id, out var arpWorkerTagIds)
+                        && arpWorkerTagIds.Any(effectiveWorkerTagIds.Contains);
+
+                    if (!siteMatch && !workerTagMatch)
                     {
                         continue;
                     }

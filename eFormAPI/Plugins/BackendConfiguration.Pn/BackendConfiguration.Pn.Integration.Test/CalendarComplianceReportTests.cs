@@ -167,7 +167,8 @@ public class CalendarComplianceReportTests : TestBaseSetup
             new BackendConfigurationComplianceReportService(
                 new BackendConfigurationLocalizationService(), userService,
                 BackendConfigurationPnDbContext!, coreHelper, ItemsPlanningPnDbContext!,
-                NullLogger<BackendConfigurationComplianceReportService>.Instance),
+                NullLogger<BackendConfigurationComplianceReportService>.Instance,
+                new WorkerTagMembershipService(coreHelper)),
             new WorkerTagMembershipService(coreHelper));
     }
 
