@@ -4,11 +4,12 @@ import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {TranslateModule} from '@ngx-translate/core';
 import {of} from 'rxjs';
-import {EFormService, EformTagService} from 'src/app/common/services';
+import {EFormService} from 'src/app/common/services';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
 import {
   BackendConfigurationPnCalendarService,
   BackendConfigurationPnPropertiesService,
+  BackendConfigurationPnWorkerTagsService,
 } from '../../../../services';
 import {CalendarRepeatService} from '../../../calendar/services/calendar-repeat.service';
 import {CalendarTaskListPageComponent} from './calendar-task-list-page.component';
@@ -22,7 +23,7 @@ describe('CalendarTaskListPageComponent', () => {
   let propertiesServiceStub: any;
   let tagsServiceStub: any;
   let eformServiceStub: any;
-  let eformTagServiceStub: any;
+  let workerTagsServiceStub: any;
   let dialogStub: any;
   let afterClosed$: any;
 
@@ -41,8 +42,8 @@ describe('CalendarTaskListPageComponent', () => {
     eformServiceStub = {
       getAll: jest.fn().mockReturnValue(of({success: true, model: {templates: []}})),
     };
-    eformTagServiceStub = {
-      getAvailableTags: jest.fn().mockReturnValue(of({success: true, model: []})),
+    workerTagsServiceStub = {
+      getWorkerTags: jest.fn().mockReturnValue(of({success: true, model: [{id: 3, name: 'Team A'}]})),
     };
     afterClosed$ = of(false);
     dialogStub = {
@@ -63,7 +64,7 @@ describe('CalendarTaskListPageComponent', () => {
         {provide: BackendConfigurationPnPropertiesService, useValue: propertiesServiceStub},
         {provide: ItemsPlanningPnTagsService, useValue: tagsServiceStub},
         {provide: EFormService, useValue: eformServiceStub},
-        {provide: EformTagService, useValue: eformTagServiceStub},
+        {provide: BackendConfigurationPnWorkerTagsService, useValue: workerTagsServiceStub},
         {provide: CalendarRepeatService, useValue: {}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
@@ -80,7 +81,11 @@ describe('CalendarTaskListPageComponent', () => {
     expect(component).toBeTruthy();
     expect(propertiesServiceStub.getAllPropertiesDictionary).toHaveBeenCalled();
     expect(tagsServiceStub.getPlanningsTags).toHaveBeenCalled();
-    expect(eformTagServiceStub.getAvailableTags).toHaveBeenCalled();
+    // Worker tags must come from the plugin endpoint (#1213), never the core
+    // eForm tag index — the core list also contains eForm/template tags, which
+    // resolve to zero recipients when picked in the edit modal.
+    expect(workerTagsServiceStub.getWorkerTags).toHaveBeenCalled();
+    expect(component.teams).toEqual([{id: 3, name: 'Team A'}]);
     expect(eformServiceStub.getAll).toHaveBeenCalled();
     expect(calendarServiceStub.getTasksIndex).toHaveBeenCalled();
   });

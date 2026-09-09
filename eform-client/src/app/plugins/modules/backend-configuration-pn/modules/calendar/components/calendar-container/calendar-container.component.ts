@@ -9,6 +9,7 @@ import {selectCurrentUserIsAdmin} from 'src/app/state/auth/auth.selector';
 import {
   BackendConfigurationPnCalendarService,
   BackendConfigurationPnPropertiesService,
+  BackendConfigurationPnWorkerTagsService,
 } from '../../../../services';
 import {
   CalendarBoardModel,
@@ -118,6 +119,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     private stateService: CalendarStateService,
     private tagsService: ItemsPlanningPnTagsService,
     private eformTagService: EformTagService,
+    private workerTagsService: BackendConfigurationPnWorkerTagsService,
     private eformService: EFormService,
     private dialog: MatDialog,
     private store: Store,
@@ -263,8 +265,18 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Teams (worker groups) come from the PLUGIN endpoint, not the core
+  // `EformTagService.getAvailableTags()`: the SDK keeps worker groups and
+  // eForm/template tags in one `Tags` table, so the core list offered template
+  // tags as teams and picking one produced an event that reached nobody
+  // (#1213). The plugin endpoint filters server-side to tags that have at
+  // least one live worker member. Trade-off: a worker group with no members at
+  // all is not listed until someone is added to it.
+  // Create/update/delete below still go through the core tag CRUD — the SDK
+  // `Tag` row is the same row either way, and those handlers are currently
+  // unreachable anyway (the sidebar's "My teams" panel is commented out).
   loadTeams() {
-    this.eformTagService.getAvailableTags().subscribe(res => {
+    this.workerTagsService.getWorkerTags().subscribe(res => {
       if (res && res.success) this.teams = res.model;
     });
   }
