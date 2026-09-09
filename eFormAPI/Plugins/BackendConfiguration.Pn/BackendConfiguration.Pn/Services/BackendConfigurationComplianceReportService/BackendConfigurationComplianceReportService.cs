@@ -49,7 +49,13 @@ public class BackendConfigurationComplianceReportService(
     BackendConfigurationPnDbContext backendConfigurationPnDbContext,
     IEFormCoreService coreHelper,
     ItemsPlanningPnDbContext itemsPlanningPnDbContext,
-    ILogger<BackendConfigurationComplianceReportService> logger)
+    ILogger<BackendConfigurationComplianceReportService> logger,
+    // #1232 — the employee filter and the worker column both have to see worker-tag
+    // ("team") assignment, not only explicit PlanningSites rows. This is the single
+    // owner of the membership rule, shared with the calendar week view and the task
+    // tracker. Required rather than optional: an optional one would make the tag
+    // expansion opt-in per caller and let a fixture that omitted it pass vacuously.
+    WorkerTagMembership.IWorkerTagMembershipService workerTagMembershipService)
     : IBackendConfigurationComplianceReportService
 {
     /// <summary>
@@ -217,17 +223,9 @@ public class BackendConfigurationComplianceReportService(
                     .ToDictionaryAsync(x => x.Id, x => x.Name)
                 : new Dictionary<int, string>();
 
-            var siteIdsByArpId = new Dictionary<int, List<int>>();
-            foreach (var arpId in pageArpIds)
-            {
-                if (!arpDetailsById.TryGetValue(arpId, out var detail)) continue;
-                siteIdsByArpId[arpId] = (detail.PlanningSites ?? new List<PlanningSite>())
-                    .Where(ps => ps.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Select(ps => ps.SiteId)
-                    .ToList();
-            }
+            var siteSetsByArpId = await ResolveWorkerSiteIdsByArpId(pageArpIds, arpDetailsById);
 
-            var siteIdsNeeded = siteIdsByArpId.Values.SelectMany(x => x).Distinct().ToList();
+            var siteIdsNeeded = siteSetsByArpId.Values.SelectMany(x => x.AllSiteIds).Distinct().ToList();
             var siteNamesById = siteIdsNeeded.Count > 0
                 ? await sdkDbContext.Sites
                     .Where(s => siteIdsNeeded.Contains(s.Id))
@@ -244,9 +242,10 @@ public class BackendConfigurationComplianceReportService(
                 var rowTagIds = row.Arp != null
                     ? tagIdsByArpId.GetValueOrDefault(row.Arp.Id, new List<int>())
                     : new List<int>();
-                var rowSiteIds = row.Arp != null
-                    ? siteIdsByArpId.GetValueOrDefault(row.Arp.Id, new List<int>())
-                    : new List<int>();
+                var rowSiteSets = row.Arp != null
+                    ? siteSetsByArpId.GetValueOrDefault(row.Arp.Id, WorkerSiteSets.Empty)
+                    : WorkerSiteSets.Empty;
+                var rowSiteIds = rowSiteSets.AllSiteIds;
                 var arpDetail = row.Arp != null ? arpDetailsById.GetValueOrDefault(row.Arp.Id) : null;
 
                 entities.Add(new ComplianceReportRowModel
@@ -269,7 +268,19 @@ public class BackendConfigurationComplianceReportService(
                         .Select(id => siteNamesById.GetValueOrDefault(id, string.Empty))
                         .Where(n => !string.IsNullOrEmpty(n))
                         .ToList(),
-                    WorkerSiteIds = rowSiteIds.ToList(),
+                    // DELIBERATELY the NARROW set — the ARP's own non-removed
+                    // PlanningSites — while WorkerNames just above is the WIDENED one
+                    // (PlanningSites plus live worker-tag members, #1232). Do not
+                    // "fix" the inconsistency by feeding it rowSiteIds: this field is
+                    // not display-only. The frontend's compliance-details view passes
+                    // it to the complete-event modal as assigneeIds, which
+                    // pre-selects the completing worker when it holds exactly one id
+                    // and groups "assigned to this event" vs "other" workers. The
+                    // calendar grid feeds that same modal the ARP's PlanningSites
+                    // only, so widening here would make the two views disagree about
+                    // who is assigned, and would silently pre-select a team member as
+                    // the person completing the case.
+                    WorkerSiteIds = rowSiteSets.PlanningSiteIds.ToList(),
                     Completed = row.Completed,
                     DoneAt = row.DoneAt,
                     SdkCaseId = row.Candidate.MicrotingSdkCaseId,
@@ -369,14 +380,36 @@ public class BackendConfigurationComplianceReportService(
 
         if (filter.SiteIds is { Count: > 0 } siteIds)
         {
+            // #1232 — an occurrence whose event is assigned to a worker tag ("team")
+            // instead of to named individuals has NO PlanningSites row for the team's
+            // members, so the EXISTS below could never reach it. The tag ids the
+            // requested sites are live members of are resolved once, here, so the
+            // widened predicate is still one SQL statement with an IN (...) — the
+            // membership rule itself belongs to IWorkerTagMembershipService and is
+            // not restated.
+            //
+            // The PlanningSites EXISTS is unchanged and the tag EXISTS is OR'd beside
+            // it, both inside the SAME AreaRulePlannings.Any: the ARP that carries the
+            // team must be the same ARP the compliance hangs off. With no live
+            // membership the id list is empty, the tag half matches nothing, and the
+            // result is exactly what it was.
+            var workerTagIds = (await workerTagMembershipService
+                    .GetTagIdsForSitesAsync(siteIds)
+                    .ConfigureAwait(false))
+                .ToList();
+
             complianceQuery = complianceQuery.Where(c =>
                 backendConfigurationPnDbContext.AreaRulePlannings.Any(arp =>
                     arp.ItemPlanningId == c.PlanningId
                     && arp.WorkflowState != Constants.WorkflowStates.Removed
-                    && backendConfigurationPnDbContext.PlanningSites.Any(ps =>
-                        ps.AreaRulePlanningsId == arp.Id
-                        && ps.WorkflowState != Constants.WorkflowStates.Removed
-                        && siteIds.Contains(ps.SiteId))));
+                    && (backendConfigurationPnDbContext.PlanningSites.Any(ps =>
+                            ps.AreaRulePlanningsId == arp.Id
+                            && ps.WorkflowState != Constants.WorkflowStates.Removed
+                            && siteIds.Contains(ps.SiteId))
+                        || backendConfigurationPnDbContext.AreaRulePlanningWorkerTags.Any(wt =>
+                            wt.AreaRulePlanningId == arp.Id
+                            && wt.WorkflowState != Constants.WorkflowStates.Removed
+                            && workerTagIds.Contains(wt.TagId)))));
         }
 
         // Project rather than materialise entities: nothing downstream writes
@@ -978,17 +1011,9 @@ public class BackendConfigurationComplianceReportService(
                     .ToDictionaryAsync(x => x.Id, x => x.Name)
                 : new Dictionary<int, string>();
 
-            var siteIdsByArpId = new Dictionary<int, List<int>>();
-            foreach (var arpId in arpIds)
-            {
-                if (!arpDetailsById.TryGetValue(arpId, out var detail)) continue;
-                siteIdsByArpId[arpId] = (detail.PlanningSites ?? new List<PlanningSite>())
-                    .Where(ps => ps.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Select(ps => ps.SiteId)
-                    .ToList();
-            }
+            var siteSetsByArpId = await ResolveWorkerSiteIdsByArpId(arpIds, arpDetailsById);
 
-            var siteIdsNeeded = siteIdsByArpId.Values.SelectMany(x => x).Distinct().ToList();
+            var siteIdsNeeded = siteSetsByArpId.Values.SelectMany(x => x.AllSiteIds).Distinct().ToList();
             var siteNamesById = siteIdsNeeded.Count > 0
                 ? await sdkDbContext.Sites
                     .Where(s => siteIdsNeeded.Contains(s.Id))
@@ -1054,7 +1079,7 @@ public class BackendConfigurationComplianceReportService(
                 var headlineTagId = HeadlineTagIdOf(row.Arp);
 
                 var rowSiteIds = row.Arp != null
-                    ? siteIdsByArpId.GetValueOrDefault(row.Arp.Id, new List<int>())
+                    ? siteSetsByArpId.GetValueOrDefault(row.Arp.Id, WorkerSiteSets.Empty).AllSiteIds
                     : new List<int>();
 
                 var images = projection.ImagesByCaseId.GetValueOrDefault(sdkCaseId, []);
@@ -1330,6 +1355,113 @@ public class BackendConfigurationComplianceReportService(
             .ThenInclude(x => x.AreaRuleTranslations)
             .Include(x => x.PlanningSites)
             .ToDictionaryAsync(x => x.Id);
+    }
+
+    /// <summary>
+    /// The two worker-site sets one ARP resolves to. <see cref="AllSiteIds"/> is what
+    /// the worker COLUMN renders; <see cref="PlanningSiteIds"/> is the assignment the
+    /// complete-event modal acts on. They differ only for a worker-tag ("team")
+    /// assignment, and the difference is deliberate — see the <c>WorkerSiteIds</c>
+    /// assignment in <see cref="Index"/>.
+    /// </summary>
+    /// <param name="PlanningSiteIds">The ARP's own non-removed <c>PlanningSites</c>
+    /// site ids, in row order and without de-duplication: exactly the list the
+    /// pre-#1232 projection produced.</param>
+    /// <param name="AllSiteIds"><paramref name="PlanningSiteIds"/> followed by the live
+    /// members of every worker tag the ARP is assigned to, appended only when not
+    /// already present.</param>
+    private sealed record WorkerSiteSets(List<int> PlanningSiteIds, List<int> AllSiteIds)
+    {
+        /// <summary>The both-empty value used for a row with no ARP. Two distinct
+        /// lists, and never handed to a caller that mutates them.</summary>
+        public static WorkerSiteSets Empty => new([], []);
+    }
+
+    /// <summary>
+    /// The SDK Site ids the worker column renders for each of the given ARPs: the
+    /// explicit <c>PlanningSites</c> rows first, then the live members of any worker
+    /// tag ("team") the ARP is assigned to (#1232) — plus, alongside it, the
+    /// PlanningSites-only set on its own, because the two are NOT interchangeable
+    /// downstream (<see cref="WorkerSiteSets"/>).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Before #1232 this was two copies of the PlanningSites-only projection, one in
+    /// <see cref="Index"/>'s phase E and one in <see cref="EformColumns"/>. Both are
+    /// now this method, so the worker column cannot come out different on the two
+    /// surfaces.
+    /// </para>
+    /// <para>
+    /// Additive by construction: the PlanningSites half is appended first, in its
+    /// original order and without de-duplication, and tag members are appended only
+    /// when not already present. An ARP with no worker tags therefore gets an
+    /// <c>AllSiteIds</c> list identical to the one the old projection produced — and
+    /// <c>PlanningSiteIds</c> is that same half, kept separately rather than
+    /// recomputed, so the narrow set can never drift from the wide one's prefix.
+    /// </para>
+    /// <para>
+    /// Membership is resolved one tag at a time because the shared service answers
+    /// "which sites are in THIS set of tags" as a flat set, and the worker column
+    /// needs it per tag to attribute members to the right row. The loop is bounded by
+    /// the DISTINCT worker tags on one page of rows, not by rows.
+    /// </para>
+    /// </remarks>
+    private async Task<Dictionary<int, WorkerSiteSets>> ResolveWorkerSiteIdsByArpId(
+        List<int> arpIds, Dictionary<int, AreaRulePlanning> arpDetailsById)
+    {
+        var siteIdsByArpId = new Dictionary<int, WorkerSiteSets>();
+        if (arpIds.Count == 0)
+        {
+            return siteIdsByArpId;
+        }
+
+        var workerTagIdsByArpId = await backendConfigurationPnDbContext.AreaRulePlanningWorkerTags
+            .Where(x => arpIds.Contains(x.AreaRulePlanningId))
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .GroupBy(x => x.AreaRulePlanningId)
+            .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.TagId).Distinct().ToList());
+
+        var memberSiteIdsByTagId = new Dictionary<int, HashSet<int>>();
+        foreach (var tagId in workerTagIdsByArpId.Values.SelectMany(x => x).Distinct())
+        {
+            memberSiteIdsByTagId[tagId] = await workerTagMembershipService
+                .GetLiveMemberSiteIdsAsync([tagId]).ConfigureAwait(false);
+        }
+
+        foreach (var arpId in arpIds)
+        {
+            var planningSiteIds = new List<int>();
+
+            if (arpDetailsById.TryGetValue(arpId, out var detail))
+            {
+                planningSiteIds.AddRange((detail.PlanningSites ?? new List<PlanningSite>())
+                    .Where(ps => ps.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(ps => ps.SiteId));
+            }
+            else if (!workerTagIdsByArpId.ContainsKey(arpId))
+            {
+                // No detail and no team: the pre-#1232 code left such an ARP out of
+                // the dictionary entirely. Keep doing that.
+                continue;
+            }
+
+            var allSiteIds = new List<int>(planningSiteIds);
+            foreach (var tagId in workerTagIdsByArpId.GetValueOrDefault(arpId, []))
+            {
+                if (!memberSiteIdsByTagId.TryGetValue(tagId, out var memberSiteIds)) continue;
+                foreach (var siteId in memberSiteIds)
+                {
+                    if (!allSiteIds.Contains(siteId))
+                    {
+                        allSiteIds.Add(siteId);
+                    }
+                }
+            }
+
+            siteIdsByArpId[arpId] = new WorkerSiteSets(planningSiteIds, allSiteIds);
+        }
+
+        return siteIdsByArpId;
     }
 
     private async Task<Dictionary<int, string>> LoadPropertyNames(List<MatchedRow> rows)

@@ -42,11 +42,25 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Enums;
 using PlanningSite = Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite;
+using eFormCore;
+using BackendConfiguration.Pn.Services.WorkerTagMembership;
 
 [Parallelizable(ParallelScope.Fixtures)]
 [TestFixture]
 public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 {
+
+	/// <summary>
+	/// The REAL membership service (#1231): the Workers filter now matches worker-tag
+	/// ("team") assignment as well as explicit PlanningSites rows, and a substitute
+	/// would answer "no membership" for every site.
+	/// </summary>
+	private static IWorkerTagMembershipService WorkerTagMembership(Core core)
+	{
+		var coreHelper = Substitute.For<IEFormCoreService>();
+		coreHelper.GetCore().Returns(Task.FromResult(core));
+		return new WorkerTagMembershipService(coreHelper);
+	}
 	[Test]
 	public async Task BackendConfigurationTaskTrackerServiceHelper_IndexTasks_WithoutFilters()
 	{
@@ -189,7 +203,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		};
 
 		// Assert
-		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!);
+		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!, WorkerTagMembership(core));
 
 		// Assert result
 		Assert.That(result, Is.Not.Null);
@@ -335,7 +349,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		};
 
 		// Assert
-		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!);
+		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!, WorkerTagMembership(core));
 
 		// Assert result
 		Assert.That(result, Is.Not.Null);
@@ -477,7 +491,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		};
 
 		// Assert
-		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!);
+		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!, WorkerTagMembership(core));
 
 		// Assert result
 		Assert.That(result, Is.Not.Null);
@@ -619,7 +633,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		};
 
 		// Assert
-		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!);
+		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!, WorkerTagMembership(core));
 
 		// Assert result
 		Assert.That(result, Is.Not.Null);
@@ -770,7 +784,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		// Act + Assert - filtering on the live tag returns the task, and it renders that tag
 		var liveTagResult = await BackendConfigurationTaskTrackerHelper.Index(
 			new TaskTrackerFiltrationModel { PropertyIds = [], TagIds = [liveTag.Id], WorkerIds = [] },
-			BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!);
+			BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!, WorkerTagMembership(core));
 
 		Assert.That(liveTagResult, Is.Not.Null);
 		Assert.That(liveTagResult.Success, Is.EqualTo(true));
@@ -786,7 +800,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		{
 			var unmatchedResult = await BackendConfigurationTaskTrackerHelper.Index(
 				new TaskTrackerFiltrationModel { PropertyIds = [], TagIds = [unmatchableTagId], WorkerIds = [] },
-				BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!);
+				BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!, WorkerTagMembership(core));
 
 			Assert.That(unmatchedResult, Is.Not.Null);
 			Assert.That(unmatchedResult.Success, Is.EqualTo(true));

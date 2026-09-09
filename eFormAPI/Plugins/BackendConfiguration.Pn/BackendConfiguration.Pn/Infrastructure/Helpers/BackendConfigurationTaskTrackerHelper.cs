@@ -40,15 +40,23 @@ using Enums;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Infrastructure.Helpers;
+using BackendConfiguration.Pn.Services.WorkerTagMembership;
 
 public static class BackendConfigurationTaskTrackerHelper
 {
+	/// <param name="workerTagMembershipService">
+	/// Owner of the live worker-tag ("team") membership rule (#1231). Required, not
+	/// optional: an optional dependency would make the tag half of the worker filter
+	/// opt-in per caller, so a caller that omitted it would silently fall back to the
+	/// explicit-assignee-only match this parameter exists to fix.
+	/// </param>
 	public static async Task<OperationDataResult<List<TaskTrackerModel>>> Index(
 		TaskTrackerFiltrationModel filtersModel,
 		BackendConfigurationPnDbContext backendConfigurationPnDbContext,
 		Core core,
 		int userLanguageId,
-		ItemsPlanningPnDbContext itemsPlanningPnDbContext)
+		ItemsPlanningPnDbContext itemsPlanningPnDbContext,
+		IWorkerTagMembershipService workerTagMembershipService)
 	{
 		try
 		{
@@ -125,6 +133,57 @@ public static class BackendConfigurationTaskTrackerHelper
 				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
 				.ToList();
 
+			// #1231 — worker-tag ("team") awareness, of BOTH the Workers filter and the
+			// Workers column.
+			//
+			// An event assigned to a team rather than to named individuals has no
+			// PlanningSites row for the team's members, so neither the sitesWithNames
+			// match nor the workerNames/workerIds projection below could ever see them:
+			// pre-fix such a row was invisible to a member's filter and, when it did
+			// come back, showed nobody in the Workers column.
+			//
+			// Everything is resolved ONCE here rather than inside the per-compliance
+			// loop. The tag links are loaded UNCONDITIONALLY because the column needs
+			// them even with no filter set — that is one extra query per call, and it is
+			// the price of the column being right. The per-tag membership loop below
+			// costs nothing when no event on the page is team-assigned.
+			//
+			// The membership rule itself lives in IWorkerTagMembershipService and is
+			// deliberately not restated here.
+			var compliancePlanningIds = complianceList
+				.Select(x => x.PlanningId)
+				.Distinct()
+				.ToList();
+
+			var workerTagIdsByArpId = compliancePlanningIds.Count > 0
+				? await backendConfigurationPnDbContext.AreaRulePlanningWorkerTags
+					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+					.Where(x => backendConfigurationPnDbContext.AreaRulePlannings
+						.Any(arp => arp.Id == x.AreaRulePlanningId
+						            && arp.WorkflowState != Constants.WorkflowStates.Removed
+						            && compliancePlanningIds.Contains(arp.ItemPlanningId)))
+					.GroupBy(x => x.AreaRulePlanningId)
+					.ToDictionaryAsync(g => g.Key, g => g.Select(x => x.TagId).Distinct().ToList())
+				: new Dictionary<int, List<int>>();
+
+			// Per TAG, not per row: the Workers column has to attribute members to the
+			// right event, and the shared service answers "which sites are in this set
+			// of tags" as one flat set. The loop is bounded by the distinct worker tags
+			// in play, never by the number of compliance rows.
+			var memberSiteIdsByTagId = new Dictionary<int, HashSet<int>>();
+			foreach (var tagId in workerTagIdsByArpId.Values.SelectMany(x => x).Distinct())
+			{
+				memberSiteIdsByTagId[tagId] = await workerTagMembershipService
+					.GetLiveMemberSiteIdsAsync([tagId]).ConfigureAwait(false);
+			}
+
+			// The filter's own half: the tags the REQUESTED sites are live members of.
+			// Empty when no worker filter is set, which leaves the filter untouched.
+			HashSet<int> effectiveWorkerTagIds = filtersModel.WorkerIds.Any()
+				? await workerTagMembershipService
+					.GetTagIdsForSitesAsync(filtersModel.WorkerIds).ConfigureAwait(false)
+				: [];
+
 			foreach (var compliance in complianceList)
 			{
 				var propertyName = properties
@@ -172,9 +231,24 @@ public static class BackendConfigurationTaskTrackerHelper
 					.Select(site => new KeyValuePair<int, string>(site.Id, site.Name))
 					.ToList();
 
+				var arpWorkerTagIds = workerTagIdsByArpId.GetValueOrDefault(areaRulePlanning.Id, []);
+
 				if (filtersModel.WorkerIds.Any() /* && !filtersModel.WorkerIds.Contains(-1)*/) // filtration by workers
 				{
-					if (!sitesWithNames.Any(siteWithNames => filtersModel.WorkerIds.Contains(siteWithNames.Key)))
+					// Explicit-assignee match, byte-identical to what it always was —
+					// deliberately still reading sitesWithNames, which stays the
+					// PlanningSites-only set even though the Workers COLUMN below is
+					// widened. Widening the filter's own site half instead would make
+					// the OR below unreachable and hide which half did the matching.
+					var siteMatch = sitesWithNames
+						.Any(siteWithNames => filtersModel.WorkerIds.Contains(siteWithNames.Key));
+
+					// #1231 — team match, OR'd beside it, never AND'd. Same shape as
+					// ShouldIncludeTask on the calendar week view.
+					var workerTagMatch = effectiveWorkerTagIds.Count > 0
+					                     && arpWorkerTagIds.Any(effectiveWorkerTagIds.Contains);
+
+					if (!siteMatch && !workerTagMatch)
 					{
 						continue;
 					}
@@ -208,14 +282,41 @@ public static class BackendConfigurationTaskTrackerHelper
 					.Select(x => x.Name)
 					.FirstOrDefaultAsync();
 
-				var workerNames = planningSiteIds
-					.Select(x => sitesWithNames.Where(y => y.Key == x)
+				// #1231 — the Workers COLUMN, widened the same way the filter was.
+				//
+				// Union, never replace: the explicit PlanningSites ids keep their
+				// original order and are appended to only with live members of the
+				// event's worker tags that are not already in the list. An event with no
+				// worker tags therefore produces byte-identical workerNames/workerIds to
+				// the pre-#1231 projection, which is what the tripwire test pins.
+				//
+				// Deliberately a SEPARATE set from the sitesWithNames the filter reads —
+				// see the filter block above.
+				var displaySiteIds = planningSiteIds.ToList();
+				foreach (var tagId in arpWorkerTagIds)
+				{
+					foreach (var memberSiteId in memberSiteIdsByTagId.GetValueOrDefault(tagId, []))
+					{
+						if (!displaySiteIds.Contains(memberSiteId))
+						{
+							displaySiteIds.Add(memberSiteId);
+						}
+					}
+				}
+
+				var displaySitesWithNames = sites
+					.Where(x => displaySiteIds.Contains(x.Id))
+					.Select(site => new KeyValuePair<int, string>(site.Id, site.Name))
+					.ToList();
+
+				var workerNames = displaySiteIds
+					.Select(x => displaySitesWithNames.Where(y => y.Key == x)
 						.Select(y => y.Value)
 						.FirstOrDefault())
 					.OrderBy(x => x)
 					.ToList();
 
-				var workerIds = sitesWithNames.Select(x => x.Key).ToList();
+				var workerIds = displaySitesWithNames.Select(x => x.Key).ToList();
 				var areaRuleCreatedInWizard = await backendConfigurationPnDbContext.AreaRules
 					.Where(x => x.Id == areaRulePlanning.AreaRuleId)
 					.Select(x => x.CreatedInGuide)

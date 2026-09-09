@@ -19,6 +19,7 @@ namespace BackendConfiguration.Pn.Integration.Test;
 using eFormCore;
 using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
+using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure.Constants;
@@ -156,7 +157,11 @@ public class ComplianceReportOverviewTests : TestBaseSetup
         return new BackendConfigurationComplianceReportService(
             new BackendConfigurationLocalizationService(), userService,
             BackendConfigurationPnDbContext!, coreHelper, ItemsPlanningPnDbContext!,
-            NullLogger<BackendConfigurationComplianceReportService>.Instance);
+            NullLogger<BackendConfigurationComplianceReportService>.Instance,
+            // The real membership service: #1232 made the employee filter and the
+            // worker column depend on it, and a substitute would silently answer
+            // "no team membership" for every site.
+            new WorkerTagMembershipService(coreHelper));
     }
 
     // ------------------------------------------------------------------

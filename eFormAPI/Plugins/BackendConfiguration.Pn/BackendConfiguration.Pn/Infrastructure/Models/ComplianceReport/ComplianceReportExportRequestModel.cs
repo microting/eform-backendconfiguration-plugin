@@ -44,7 +44,12 @@ public class ComplianceReportExportRequestModel
     /// <summary>Items-planning PlanningTag ids (same ids the sidebar tag filter uses).</summary>
     public List<int> TagIds { get; set; } = [];
 
-    /// <summary>Employee filter — SDK Site ids, via AreaRulePlanning.PlanningSites.</summary>
+    /// <summary>
+    /// Employee filter — SDK Site ids. Matches an AreaRulePlanning either through its
+    /// explicit PlanningSites rows OR through an AreaRulePlanningWorkerTag whose worker
+    /// tag ("team") one of these sites is a live member of (#1232) — a team-assigned
+    /// event has no PlanningSites row for its members at all.
+    /// </summary>
     public List<int> SiteIds { get; set; } = [];
 
     /// <summary>

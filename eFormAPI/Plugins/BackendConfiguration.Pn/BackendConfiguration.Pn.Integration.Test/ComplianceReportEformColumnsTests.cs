@@ -20,6 +20,7 @@ using System.Globalization;
 using eFormCore;
 using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
+using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure.Constants;
@@ -75,7 +76,19 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         // FK-safe cleanup, children before parents, so each test starts from an
         // empty compliance/template world and group counts can be asserted as
         // absolute numbers.
-        BackendConfigurationPnDbContext!.CalendarOccurrenceExceptionSites.RemoveRange(
+        //
+        // AreaRulePlanningWorkerTags FIRST. Its FK to AreaRulePlannings is
+        // DeleteBehavior.Restrict, which is why the ORDER matters: leaving a link
+        // behind would fail the AreaRulePlannings RemoveRange further down — in the
+        // NEXT test, not in the one that wrote it. Restrict says nothing about the
+        // MECHANISM: the sibling AreaRulePlanningTags has the same FK shape and is
+        // cleared with RemoveRange a few lines below. Raw SQL here is just the
+        // cheaper equivalent — one statement, with no load-then-track round trip —
+        // and it is the form the other worker-tag fixtures already use.
+        await BackendConfigurationPnDbContext!.Database
+            .ExecuteSqlRawAsync("DELETE FROM `AreaRulePlanningWorkerTags`;");
+
+        BackendConfigurationPnDbContext.CalendarOccurrenceExceptionSites.RemoveRange(
             BackendConfigurationPnDbContext.CalendarOccurrenceExceptionSites);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
@@ -171,7 +184,11 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         return new BackendConfigurationComplianceReportService(
             new BackendConfigurationLocalizationService(), userService,
             BackendConfigurationPnDbContext!, coreHelper, ItemsPlanningPnDbContext!,
-            NullLogger<BackendConfigurationComplianceReportService>.Instance);
+            NullLogger<BackendConfigurationComplianceReportService>.Instance,
+            // The real membership service: #1232 made the employee filter and the
+            // worker column depend on it, and a substitute would silently answer
+            // "no team membership" for every site.
+            new WorkerTagMembershipService(coreHelper));
     }
 
     private Task<Language> Danish() =>
@@ -434,6 +451,49 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         await MicrotingDbContext.Sites.AddAsync(sdkSite);
         await MicrotingDbContext.SaveChangesAsync();
         return sdkSite.Id;
+    }
+
+    /// <summary>An SDK <c>Tag</c> is what the product calls a worker tag / team.</summary>
+    private async Task<int> SeedSdkWorkerTag()
+    {
+        var tag = new Tag
+        {
+            Name = $"team-{Guid.NewGuid()}",
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext!.Tags.AddAsync(tag);
+        await MicrotingDbContext.SaveChangesAsync();
+        return tag.Id;
+    }
+
+    private async Task LinkSiteToTag(int tagId, int siteId)
+    {
+        await MicrotingDbContext!.SiteTags.AddAsync(new SiteTag
+        {
+            TagId = tagId,
+            SiteId = siteId,
+            WorkflowState = Constants.WorkflowStates.Created
+        });
+        await MicrotingDbContext.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Team assignment: an <c>AreaRulePlanningWorkerTag</c> link and deliberately NO
+    /// <c>PlanningSites</c> row for anyone. That absence is the whole of #1232 — the
+    /// worker column had nothing to project from.
+    /// </summary>
+    private async Task AssignWorkerTag(int arpId, int tagId)
+    {
+        await BackendConfigurationPnDbContext!.AreaRulePlanningWorkerTags.AddAsync(
+            new AreaRulePlanningWorkerTag
+            {
+                AreaRulePlanningId = arpId,
+                TagId = tagId,
+                WorkflowState = Constants.WorkflowStates.Created,
+                CreatedByUserId = 1,
+                UpdatedByUserId = 1
+            });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
     }
 
     private async Task<int> SeedSdkCase(int? checkListId, int status = 100, DateTime? doneAt = null)
@@ -1844,5 +1904,72 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         Assert.That(caseModel.Cells[$"f{fieldId}"], Is.EqualTo("2019-01-01"));
         Assert.That(caseModel.TaskDate, Is.EqualTo(today.AddDays(-1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
         Assert.That(caseModel.SdkCaseId, Is.EqualTo(caseId));
+    }
+
+    // ==================================================================
+    // WORKER COLUMN
+    // ==================================================================
+
+    /// <summary>
+    /// #1232's worker column, on THIS surface. <c>ResolveWorkerSiteIdsByArpId</c> is
+    /// called from both <see cref="BackendConfigurationComplianceReportService.Index"/>
+    /// and <see cref="BackendConfigurationComplianceReportService.EformColumns"/>, and
+    /// its remarks claim the column "cannot come out different on the two surfaces".
+    /// Sharing one method makes that structurally true; this drives it, so the claim is
+    /// tested rather than asserted.
+    ///
+    /// <para>
+    /// The event is assigned to a TEAM and to nobody by name, so there is no
+    /// <c>PlanningSites</c> row at all: pre-#1232 both surfaces projected the column
+    /// from <c>detail.PlanningSites</c> alone and rendered this row EMPTY. Both halves
+    /// are checked in one test because the point is the agreement, not either value on
+    /// its own.
+    /// </para>
+    ///
+    /// <para>
+    /// It lives here rather than in <c>WorkerTagCrossViewFilterTests</c> because
+    /// <c>EformColumns</c> renders only ANSWERED rows — it needs a real SDK
+    /// <c>CheckList</c>/<c>Case</c> graph behind the compliance, which is exactly what
+    /// this fixture's <c>SeedOneCase</c> builds and what that fixture (which seeds
+    /// <c>MicrotingSdkCaseId = 0</c> on purpose) does not.
+    /// </para>
+    /// </summary>
+    [Test]
+    public async Task EformColumns_WorkerColumn_PopulatesFromTeamMembership_AndAgreesWithIndex()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("Hold", da.Id, (Constants.FieldTypes.Comment, "Kommentar"));
+
+        var teamTagId = await SeedSdkWorkerTag();
+        var memberSiteId = await SeedSdkSite("team-member");
+        await LinkSiteToTag(teamTagId, memberSiteId);
+        await AssignWorkerTag(fixture.ArpId, teamTagId);
+
+        var memberName = await MicrotingDbContext!.Sites
+            .Where(s => s.Id == memberSiteId)
+            .Select(s => s.Name)
+            .FirstAsync();
+
+        var (from, to) = Window();
+
+        var caseModel = OnlyGroup(await Run(core, da, from, to)).Cases.Single();
+        Assert.That(caseModel.WorkerNames, Is.EqualTo(new List<string> { memberName }),
+            "EformColumns: a tag-assigned row's worker column must be filled from live "
+            + "team membership, not left empty because there is no PlanningSites row");
+
+        var index = await BuildService(core, da).Index(Request(from, to));
+        Assert.That(index.Success, Is.True, index.Message);
+        var row = index.Model!.Entities.Single(e => e.AreaRulePlanningId == fixture.ArpId);
+
+        Assert.That(row.WorkerNames, Is.EqualTo(new List<string> { memberName }),
+            "Index: the same ARP resolves to the same member");
+        Assert.That(row.WorkerSiteIds, Is.Empty,
+            "Index's WorkerSiteIds is the row's PlanningSites ASSIGNMENT, not its worker "
+            + "column: it feeds the complete-event modal's assigneeIds and stays narrow "
+            + "even when the column is filled from team membership");
+        Assert.That(caseModel.WorkerNames, Is.EqualTo(row.WorkerNames),
+            "the two surfaces share ResolveWorkerSiteIdsByArpId and must therefore "
+            + "render the same worker column for the same ARP");
     }
 }
