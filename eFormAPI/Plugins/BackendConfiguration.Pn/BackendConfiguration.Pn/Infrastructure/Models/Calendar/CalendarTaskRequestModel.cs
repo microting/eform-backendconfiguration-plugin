@@ -12,6 +12,19 @@ public class CalendarTaskRequestModel
     public List<int> SiteIds { get; set; } = [];
 
     /// <summary>
+    /// Optional worker-tag ("team") filter (#1212). Independent of
+    /// <see cref="SiteIds"/>: the two lists combine with OR, never AND — a
+    /// task survives the assignee filter when its explicit assignees intersect
+    /// <see cref="SiteIds"/> <em>or</em> its assigned worker tags intersect this
+    /// list. Empty/absent leaves the assignee filter driven by
+    /// <see cref="SiteIds"/> alone.
+    ///
+    /// Not to be confused with <see cref="TagNames"/>, which is the
+    /// planning/eForm tag filter — a different concept entirely.
+    /// </summary>
+    public List<int> WorkerTagIds { get; set; } = [];
+
+    /// <summary>
     /// When true, the calendar emits only *actionable* compliance rows for the requested
     /// week — i.e. compliances whose backing SDK Case still exists, is not soft-deleted,
     /// and is not yet completed (Status != 100). This is intended for the mobile-worker
