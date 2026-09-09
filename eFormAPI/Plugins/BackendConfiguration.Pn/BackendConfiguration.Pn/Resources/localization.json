@@ -130,7 +130,6 @@
       "de": "Es muss ein Enddatum festgelegt werden",
       "en-US": "An end date must be set",
       "uk-UA": "Потрібно встановити кінцеву дату",
-      "pl-Pl": "Należy ustawić datę zakończenia",
       "pl-PL": "Należy ustawić datę końcową",
       "no-NO": "En sluttdato må angis",
       "sv-SE": "Ett slutdatum måste anges",
@@ -160,7 +159,6 @@
     "LocalizedValue": {
       "da": "Der mangler en eller flere oversættelser",
       "en-US": "One or more translations are missing",
-      "uk-UK": "",
       "de": "Eine oder mehrere Übersetzungen fehlen",
       "uk-UA": "Один або кілька перекладів відсутні",
       "pl-PL": "Brakuje jednego lub więcej tłumaczeń",
@@ -1335,37 +1333,6 @@
     }
   },
   {
-    "Key": "ErrorWhileReadPlanning",
-    "LocalizedValue": {
-      "da": "Fejl",
-      "de": "Fehler",
-      "en-US": "Error while read planning",
-      "uk-UA": "Помилка",
-      "pl-PL": "Błąd podczas odczytu planu",
-      "no-NO": "Feil under lesing av plan",
-      "sv-SE": "Fel vid läsning av plan",
-      "es-ES": "Error al leer la planificación",
-      "fr-FR": "Erreur lors de la lecture de la planification",
-      "it-IT": "Errore durante la lettura della pianificazione",
-      "nl-NL": "Fout bij lezen planning",
-      "pt-BR": "Erro ao ler planejamento",
-      "pt-PT": "Erro ao ler planejamento",
-      "fi-FI": "Virhe luettaessa suunnitelmaa",
-      "et-ET": "Viga planeerimise lugemisel",
-      "lv-LV": "Kļūda lasot plānošanu",
-      "lt-LT": "Klaida skaitant planavimą",
-      "ro-RO": "Eroare la citirea planificării",
-      "hr-HR": "Pogreška prilikom čitanja planiranja",
-      "sl-SL": "Napaka med branjem načrtovanja",
-      "cs-CZ": "Chyba při plánování čtení",
-      "sk-SK": "Chyba pri plánovaní čítania",
-      "hu-HU": "Hiba a tervezés olvasása közben",
-      "bg-BG": "Грешка при четене на планирането",
-      "el-GR": "Σφάλμα κατά την ανάγνωση του προγραμματισμού",
-      "is-IS": "Villa við lestur áætlanagerðar"
-    }
-  },
-  {
     "Key": "SuccessfullyCreatedPlanning",
     "LocalizedValue": {
       "da": "Gemt",
@@ -1399,9 +1366,9 @@
   {
     "Key": "PropertyAlreadyExists",
     "LocalizedValue": {
-      "da": "Ejendommen findes allered",
+      "da": "Ejendommen findes allerede",
       "de": "Die Immobilie ist schon da",
-      "en": "Property already exits",
+      "en-US": "Property already exists",
       "uk-UA": "Майно вже є",
       "pl-PL": "Nieruchomość już istnieje",
       "no-NO": "Eiendommen finnes allerede",
@@ -1412,7 +1379,19 @@
       "nl-NL": "Eigendom bestaat al",
       "pt-BR": "A propriedade já existe",
       "pt-PT": "A propriedade já existe",
-      "fi-FI": "Ominaisuus on jo olemassa"
+      "fi-FI": "Ominaisuus on jo olemassa",
+      "et-ET": "Kinnisvara on juba olemas",
+      "lv-LV": "Īpašums jau pastāv",
+      "lt-LT": "Nekilnojamasis turtas jau egzistuoja",
+      "ro-RO": "Proprietatea există deja",
+      "hr-HR": "Nekretnina već postoji",
+      "sl-SL": "Nepremičnina že obstaja",
+      "cs-CZ": "Nemovitost již existuje",
+      "sk-SK": "Nehnuteľnosť už existuje",
+      "hu-HU": "Az ingatlan már létezik",
+      "bg-BG": "Имотът вече съществува",
+      "el-GR": "Το ακίνητο υπάρχει ήδη",
+      "is-IS": "Eignin er þegar til"
     }
   },
   {
@@ -1420,7 +1399,6 @@
     "LocalizedValue": {
       "da": "Alle",
       "de": "Alle",
-      "en": "All",
       "uk-UA": "всі",
       "pl-PL": "Wszystko",
       "no-NO": "Alle",
@@ -1452,7 +1430,7 @@
     "LocalizedValue": {
       "da": "Afsluttet",
       "de": "Abgeschlossen",
-      "en": "Completed",
+      "en-US": "Completed",
       "uk-UA": "Завершено",
       "pl-PL": "Zakończono",
       "no-NO": "Fullført",
@@ -1463,7 +1441,19 @@
       "nl-NL": "Voltooid",
       "pt-BR": "Concluído",
       "pt-PT": "Concluído",
-      "fi-FI": "Valmis"
+      "fi-FI": "Valmis",
+      "et-ET": "Lõpetatud",
+      "lv-LV": "Pabeigts",
+      "lt-LT": "Užbaigta",
+      "ro-RO": "Finalizat",
+      "hr-HR": "Završeno",
+      "sl-SL": "Zaključeno",
+      "cs-CZ": "Dokončeno",
+      "sk-SK": "Dokončené",
+      "hu-HU": "Befejezve",
+      "bg-BG": "Завършено",
+      "el-GR": "Ολοκληρώθηκε",
+      "is-IS": "Lokið"
     }
   },
   {
@@ -1471,8 +1461,8 @@
     "LocalizedValue": {
       "da": "Maks antal CHR numre oprettet",
       "de": "Maximale Anzahl erstellter CHR-Nummern",
-      "en": "Maximum number of CHR numbers reached",
-      "Uk-UA": "Максимальна кількість створених номерів CHR",
+      "en-US": "Maximum number of CHR numbers reached",
+      "uk-UA": "Максимальна кількість створених номерів CHR",
       "pl-PL": "Osiągnięto maksymalną liczbę numerów CHR",
       "no-NO": "Maksimalt antall CHR-numre opprettet",
       "sv-SE": "Max antal CHR-nummer skapade",
@@ -1482,7 +1472,19 @@
       "nl-NL": "Maximaal aantal CHR-nummers bereikt",
       "pt-BR": "Número máximo de números CHR atingido",
       "pt-PT": "Número máximo de números CHR atingido",
-      "fi-FI": "Maksimi CHR-numerojen määrä saavutettu"
+      "fi-FI": "Maksimi CHR-numerojen määrä saavutettu",
+      "et-ET": "CHR-numbrite maksimaalne arv on saavutatud",
+      "lv-LV": "Sasniegts maksimālais CHR numuru skaits",
+      "lt-LT": "Pasiektas didžiausias CHR numerių skaičius",
+      "ro-RO": "S-a atins numărul maxim de numere CHR",
+      "hr-HR": "Dosegnut je najveći broj CHR brojeva",
+      "sl-SL": "Doseženo je največje število številk CHR",
+      "cs-CZ": "Byl dosažen maximální počet čísel CHR",
+      "sk-SK": "Bol dosiahnutý maximálny počet čísel CHR",
+      "hu-HU": "Elérte a CHR-számok maximális számát",
+      "bg-BG": "Достигнат е максималният брой CHR номера",
+      "el-GR": "Συμπληρώθηκε ο μέγιστος αριθμός αριθμών CHR",
+      "is-IS": "Hámarksfjölda CHR-númera er náð"
     }
   },
   {
@@ -1490,8 +1492,8 @@
     "LocalizedValue": {
       "da": "Maks antal CVR numre oprettet",
       "de": "Maximale Anzahl erstellter CVR-Nummern",
-      "en": "Maximum number of CVR numbers reached",
-      "Uk-UA": "Максимальна кількість створених номерів CVR",
+      "en-US": "Maximum number of CVR numbers reached",
+      "uk-UA": "Максимальна кількість створених номерів CVR",
       "pl-PL": "Osiągnięto maksymalną liczbę numerów CVR",
       "no-NO": "Maksimalt antall CVR-numre opprettet",
       "sv-SE": "Max antal CVR-nummer skapade",
@@ -1501,7 +1503,19 @@
       "nl-NL": "Maximaal aantal CVR-nummers bereikt",
       "pt-BR": "Número máximo de números CVR atingido",
       "pt-PT": "Número máximo de números CVR atingido",
-      "fi-FI": "Maksimi CVR-numerojen määrä saavutettu"
+      "fi-FI": "Maksimi CVR-numerojen määrä saavutettu",
+      "et-ET": "CVR-numbrite maksimaalne arv on saavutatud",
+      "lv-LV": "Sasniegts maksimālais CVR numuru skaits",
+      "lt-LT": "Pasiektas didžiausias CVR numerių skaičius",
+      "ro-RO": "S-a atins numărul maxim de numere CVR",
+      "hr-HR": "Dosegnut je najveći broj CVR brojeva",
+      "sl-SL": "Doseženo je največje število številk CVR",
+      "cs-CZ": "Byl dosažen maximální počet čísel CVR",
+      "sk-SK": "Bol dosiahnutý maximálny počet čísel CVR",
+      "hu-HU": "Elérte a CVR-számok maximális számát",
+      "bg-BG": "Достигнат е максималният брой CVR номера",
+      "el-GR": "Συμπληρώθηκε ο μέγιστος αριθμός αριθμών CVR",
+      "is-IS": "Hámarksfjölda CVR-númera er náð"
     }
   },
   {
@@ -2315,7 +2329,6 @@
     "LocalizedValue": {
       "da": "Måned",
       "en-US": "Month",
-      "Uk-UA": "Місяць",
       "de": "Monat",
       "pl-PL": "Miesiąc",
       "no-NO": "Måned",
@@ -2619,37 +2632,6 @@
       "bg-BG": "В очакване",
       "el-GR": "Αναμονή",
       "is-IS": "Bíður"
-    }
-  },
-  {
-    "Key": "Ongoing",
-    "LocalizedValue": {
-      "da": "Igangværende",
-      "de": "Laufend",
-      "en-US": "Ongoing",
-      "uk-UA": "В процесі",
-      "pl-PL": "Trwające",
-      "no-NO": "Pågår",
-      "sv-SE": "Pågår",
-      "es-ES": "En curso",
-      "fr-FR": "En cours",
-      "it-IT": "In corso",
-      "nl-NL": "Lopend",
-      "pt-BR": "Em andamento",
-      "pt-PT": "Em andamento",
-      "fi-FI": "Käynnissä",
-      "et-ET": "Jätkuv",
-      "lv-LV": "Notiek",
-      "lt-LT": "Vykdoma",
-      "ro-RO": "În curs de desfășurare",
-      "hr-HR": "U tijeku",
-      "sl-SL": "V teku",
-      "cs-CZ": "Pokračující",
-      "sk-SK": "Prebieha",
-      "hu-HU": "Folyamatban lévő",
-      "bg-BG": "Продължава",
-      "el-GR": "Σε εξέλιξη",
-      "is-IS": "Í gangi"
     }
   },
   {
@@ -4141,37 +4123,6 @@
     }
   },
   {
-    "Key": "TaskCreatedSuccessful",
-    "LocalizedValue": {
-      "da": "Opgave oprettet med succes",
-      "de": "Aufgabe erfolgreich erstellt",
-      "en-US": "Task created successful",
-      "uk-UA": "Завдання створено успішно",
-      "pl-PL": "Zadanie utworzone pomyślnie",
-      "no-NO": "Oppgave opprettet",
-      "sv-SE": "Uppgift skapades framgångsrikt",
-      "es-ES": "Tarea creada correctamente",
-      "fr-FR": "Tâche créée avec succès",
-      "it-IT": "Attività creata correttamente",
-      "nl-NL": "Taak succesvol aangemaakt",
-      "pt-BR": "Tarefa criada com sucesso",
-      "pt-PT": "Tarefa criada com sucesso",
-      "fi-FI": "Tehtävä luotu onnistuneesti",
-      "et-ET": "Ülesanne loodud õnnestus",
-      "lv-LV": "Uzdevums izveidots veiksmīgi",
-      "lt-LT": "Užduotis sukurta sėkmingai",
-      "ro-RO": "Sarcina creată cu succes",
-      "hr-HR": "Zadatak je uspješno izrađen",
-      "sl-SL": "Naloga je bila uspešno ustvarjena",
-      "cs-CZ": "Úkol byl úspěšně vytvořen",
-      "sk-SK": "Úloha bola úspešne vytvorená",
-      "hu-HU": "A feladat sikeresen létrehozva",
-      "bg-BG": "Задачата е създадена успешно",
-      "el-GR": "Η εργασία δημιουργήθηκε με επιτυχία",
-      "is-IS": "Verkefni búið til tókst"
-    }
-  },
-  {
     "Key": "ErrorWhileCreatingTask",
     "LocalizedValue": {
       "da": "Fejl ved oprettelse af opgave",
@@ -4203,37 +4154,6 @@
     }
   },
   {
-    "Key": "TaskUpdatedSuccessful",
-    "LocalizedValue": {
-      "da": "Opgave opdateret med succes",
-      "de": "Aufgabe erfolgreich aktualisiert",
-      "en-US": "Task updated successful",
-      "uk-UA": "Завдання оновлено успішно",
-      "pl-PL": "Zadanie zaktualizowane pomyślnie",
-      "no-NO": "Oppgave oppdatert",
-      "sv-SE": "Uppgift uppdaterades framgångsrikt",
-      "es-ES": "Tarea actualizada correctamente",
-      "fr-FR": "Tâche mise à jour avec succès",
-      "it-IT": "Attività aggiornata correttamente",
-      "nl-NL": "Taak succesvol bijgewerkt",
-      "pt-BR": "Tarefa atualizada com sucesso",
-      "pt-PT": "Tarefa atualizada com sucesso",
-      "fi-FI": "Tehtävä päivitetty onnistuneesti",
-      "et-ET": "Ülesande värskendamine õnnestus",
-      "lv-LV": "Uzdevums ir veiksmīgi atjaunināts",
-      "lt-LT": "Užduotis sėkmingai atnaujinta",
-      "ro-RO": "Sarcina a fost actualizată cu succes",
-      "hr-HR": "Zadatak je uspješno ažuriran",
-      "sl-SL": "Naloga je bila uspešno posodobljena",
-      "cs-CZ": "Úkol byl úspěšně aktualizován",
-      "sk-SK": "Úloha bola úspešne aktualizovaná",
-      "hu-HU": "A feladat frissítése sikeres volt",
-      "bg-BG": "Задачата е актуализирана успешно",
-      "el-GR": "Η εργασία ενημερώθηκε με επιτυχία",
-      "is-IS": "Verkefni uppfært tókst"
-    }
-  },
-  {
     "Key": "ErrorWhileUpdatingTask",
     "LocalizedValue": {
       "da": "Fejl ved opdatering af opgave",
@@ -4262,37 +4182,6 @@
       "bg-BG": "Грешка при актуализиране на задачата",
       "el-GR": "Σφάλμα κατά την ενημέρωση της εργασίας",
       "is-IS": "Villa við að uppfæra verkefni"
-    }
-  },
-  {
-    "Key": "TaskDeletedSuccessful",
-    "LocalizedValue": {
-      "da": "Opgave slettet med succes",
-      "de": "Aufgabe erfolgreich gelöscht",
-      "en-US": "Task deleted successful",
-      "uk-UA": "Завдання успішно видалено",
-      "pl-PL": "Zadanie usunięte pomyślnie",
-      "no-NO": "Oppgave slettet",
-      "sv-SE": "Uppgift raderad framgångsrikt",
-      "es-ES": "Tarea eliminada correctamente",
-      "fr-FR": "Tâche supprimée avec succès",
-      "it-IT": "Attività eliminata correttamente",
-      "nl-NL": "Taak succesvol verwijderd",
-      "pt-BR": "Tarefa excluída com sucesso",
-      "pt-PT": "Tarefa excluída com sucesso",
-      "fi-FI": "Tehtävä poistettu onnistuneesti",
-      "et-ET": "Ülesande kustutamine õnnestus",
-      "lv-LV": "Uzdevums izdzēsts veiksmīgi",
-      "lt-LT": "Užduotis sėkmingai ištrinta",
-      "ro-RO": "Sarcina a fost ștearsă cu succes",
-      "hr-HR": "Zadatak uspješno izbrisan",
-      "sl-SL": "Naloga uspešno izbrisana",
-      "cs-CZ": "Úkol byl úspěšně smazán",
-      "sk-SK": "Úloha bola úspešne odstránená",
-      "hu-HU": "A feladat törlése sikeres volt",
-      "bg-BG": "Задачата е изтрита успешно",
-      "el-GR": "Η εργασία διαγράφηκε με επιτυχία",
-      "is-IS": "Verkefni eytt tókst"
     }
   },
   {
@@ -4670,8 +4559,32 @@
   {
     "Key": "WorkerStillAssignedToEventsCannotResign",
     "LocalizedValue": {
+      "da": "Medarbejderen er stadig tildelt en eller flere opgaver og kan ikke fratræde. Fjern medarbejderen fra opgaverne (eller tags) først.",
+      "de": "Der Mitarbeiter ist noch einer oder mehreren Aufgaben zugewiesen und kann nicht ausgetragen werden. Entfernen Sie ihn zuerst aus diesen Aufgaben (oder den Tags).",
       "en-US": "Worker is still assigned to one or more events and cannot be resigned. Remove them from those events (or the tags) first.",
-      "da": "Medarbejderen er stadig tildelt en eller flere opgaver og kan ikke fratræde. Fjern medarbejderen fra opgaverne (eller tags) først."
+      "uk-UA": "Працівник усе ще призначений на одне або кілька завдань і не може бути звільнений. Спочатку видаліть його з цих завдань (або з тегів).",
+      "pl-PL": "Pracownik jest nadal przypisany do co najmniej jednego zadania i nie może zostać zwolniony. Najpierw usuń go z tych zadań (lub z tagów).",
+      "no-NO": "Medarbeideren er fortsatt tildelt en eller flere oppgaver og kan ikke fratre. Fjern medarbeideren fra disse oppgavene (eller merkene) først.",
+      "sv-SE": "Arbetaren är fortfarande tilldelad en eller flera uppgifter och kan inte avregistreras. Ta först bort arbetaren från dessa uppgifter (eller taggarna).",
+      "es-ES": "El trabajador sigue asignado a una o varias tareas y no puede darse de baja. Elimínelo primero de esas tareas (o de las etiquetas).",
+      "fr-FR": "Le travailleur est encore assigné à une ou plusieurs tâches et ne peut pas être retiré. Retirez-le d'abord de ces tâches (ou des étiquettes).",
+      "it-IT": "Il lavoratore è ancora assegnato a una o più attività e non può essere dimesso. Rimuovilo prima da tali attività (o dai tag).",
+      "nl-NL": "De medewerker is nog toegewezen aan een of meer taken en kan niet worden uitgeschreven. Verwijder de medewerker eerst uit die taken (of de labels).",
+      "pt-BR": "O trabalhador ainda está atribuído a uma ou mais tarefas e não pode ser desligado. Remova-o primeiro dessas tarefas (ou das tags).",
+      "pt-PT": "O trabalhador ainda está atribuído a uma ou mais tarefas e não pode ser desligado. Remova-o primeiro dessas tarefas (ou das tags).",
+      "fi-FI": "Työntekijä on yhä määritetty yhdelle tai useammalle tehtävälle, eikä häntä voi merkitä lähteneeksi. Poista hänet ensin näistä tehtävistä (tai tunnisteista).",
+      "et-ET": "Töötaja on endiselt määratud ühele või mitmele ülesandele ja teda ei saa lahkunuks märkida. Eemaldage ta kõigepealt nendelt ülesannetelt (või siltidelt).",
+      "lv-LV": "Darbinieks joprojām ir piešķirts vienam vai vairākiem uzdevumiem, un viņu nevar atbrīvot. Vispirms noņemiet viņu no šiem uzdevumiem (vai no tagiem).",
+      "lt-LT": "Darbuotojas vis dar priskirtas vienai ar kelioms užduotims ir negali būti atleistas. Pirmiausia pašalinkite jį iš šių užduočių (arba iš žymių).",
+      "ro-RO": "Lucrătorul este încă alocat uneia sau mai multor sarcini și nu poate fi retras. Eliminați-l mai întâi din aceste sarcini (sau din etichete).",
+      "hr-HR": "Radnik je i dalje dodijeljen jednom ili više zadataka i ne može se razriješiti. Najprije ga uklonite s tih zadataka (ili s oznaka).",
+      "sl-SL": "Delavec je še vedno dodeljen eni ali več nalogam in ga ni mogoče razrešiti. Najprej ga odstranite s teh nalog (ali z oznak).",
+      "cs-CZ": "Pracovník je stále přiřazen k jednomu nebo více úkolům a nelze jej odhlásit. Nejprve jej odeberte z těchto úkolů (nebo ze štítků).",
+      "sk-SK": "Pracovník je stále priradený k jednej alebo viacerým úlohám a nemožno ho odhlásiť. Najprv ho odstráňte z týchto úloh (alebo zo štítkov).",
+      "hu-HU": "A dolgozó még mindig hozzá van rendelve egy vagy több feladathoz, ezért nem léptethető ki. Először távolítsa el őt ezekből a feladatokból (vagy a címkékből).",
+      "bg-BG": "Работникът все още е назначен на една или повече задачи и не може да бъде освободен. Първо го премахнете от тези задачи (или от етикетите).",
+      "el-GR": "Ο εργαζόμενος έχει ακόμη ανατεθεί σε μία ή περισσότερες εργασίες και δεν μπορεί να αποχωρήσει. Αφαιρέστε τον πρώτα από αυτές τις εργασίες (ή από τις ετικέτες).",
+      "is-IS": "Starfsmaðurinn er enn úthlutaður einu eða fleiri verkefnum og getur ekki hætt. Fjarlægðu hann fyrst úr þessum verkefnum (eða merkjunum)."
     }
   },
   {
@@ -5354,6 +5267,99 @@
       "bg-BG": "Избраният случай не принадлежи към този запис за съответствие",
       "el-GR": "Η επιλεγμένη υπόθεση δεν ανήκει σε αυτήν την εγγραφή συμμόρφωσης",
       "is-IS": "Valið mál tilheyrir ekki þessari samræmisskrá"
+    }
+  },
+  {
+    "Key": "CaseNotFound",
+    "LocalizedValue": {
+      "da": "Sagen blev ikke fundet",
+      "de": "Der Fall wurde nicht gefunden",
+      "en-US": "The case was not found",
+      "uk-UA": "Справу не знайдено",
+      "pl-PL": "Nie znaleziono sprawy",
+      "no-NO": "Saken ble ikke funnet",
+      "sv-SE": "Ärendet hittades inte",
+      "es-ES": "No se encontró el caso",
+      "fr-FR": "Le dossier est introuvable",
+      "it-IT": "Il caso non è stato trovato",
+      "nl-NL": "De zaak is niet gevonden",
+      "pt-BR": "O caso não foi encontrado",
+      "pt-PT": "O caso não foi encontrado",
+      "fi-FI": "Tapausta ei löytynyt",
+      "et-ET": "Juhtumit ei leitud",
+      "lv-LV": "Lieta netika atrasta",
+      "lt-LT": "Atvejis nerastas",
+      "ro-RO": "Cazul nu a fost găsit",
+      "hr-HR": "Slučaj nije pronađen",
+      "sl-SL": "Primer ni bil najden",
+      "cs-CZ": "Případ nebyl nalezen",
+      "sk-SK": "Prípad sa nenašiel",
+      "hu-HU": "Az eset nem található",
+      "bg-BG": "Случаят не е намерен",
+      "el-GR": "Η υπόθεση δεν βρέθηκε",
+      "is-IS": "Málið fannst ekki"
+    }
+  },
+  {
+    "Key": "SiteNotFound",
+    "LocalizedValue": {
+      "da": "Den valgte medarbejder kunne ikke findes",
+      "de": "Der ausgewählte Mitarbeiter konnte nicht gefunden werden",
+      "en-US": "The selected worker could not be found",
+      "uk-UA": "Не вдалося знайти вибраного працівника",
+      "pl-PL": "Nie znaleziono wybranego pracownika",
+      "no-NO": "Den valgte arbeideren ble ikke funnet",
+      "sv-SE": "Den valda arbetaren kunde inte hittas",
+      "es-ES": "No se pudo encontrar el trabajador seleccionado",
+      "fr-FR": "Le travailleur sélectionné est introuvable",
+      "it-IT": "Il lavoratore selezionato non è stato trovato",
+      "nl-NL": "De geselecteerde medewerker kon niet worden gevonden",
+      "pt-BR": "Não foi possível encontrar o trabalhador selecionado",
+      "pt-PT": "Não foi possível encontrar o trabalhador selecionado",
+      "fi-FI": "Valittua työntekijää ei löytynyt",
+      "et-ET": "Valitud töötajat ei leitud",
+      "lv-LV": "Izvēlētais darbinieks netika atrasts",
+      "lt-LT": "Pasirinktas darbuotojas nerastas",
+      "ro-RO": "Lucrătorul selectat nu a fost găsit",
+      "hr-HR": "Odabrani radnik nije pronađen",
+      "sl-SL": "Izbranega delavca ni bilo mogoče najti",
+      "cs-CZ": "Vybraný pracovník nebyl nalezen",
+      "sk-SK": "Vybraný pracovník sa nenašiel",
+      "hu-HU": "A kiválasztott dolgozó nem található",
+      "bg-BG": "Избраният служител не е намерен",
+      "el-GR": "Ο επιλεγμένος εργαζόμενος δεν βρέθηκε",
+      "is-IS": "Valinn starfsmaður fannst ekki"
+    }
+  },
+  {
+    "Key": "CaseCouldNotBeUpdated",
+    "LocalizedValue": {
+      "da": "Sagen kunne ikke opdateres",
+      "de": "Der Fall konnte nicht aktualisiert werden",
+      "en-US": "The case could not be updated",
+      "uk-UA": "Не вдалося оновити справу",
+      "pl-PL": "Nie można było zaktualizować sprawy",
+      "no-NO": "Saken kunne ikke oppdateres",
+      "sv-SE": "Ärendet kunde inte uppdateras",
+      "es-ES": "No se pudo actualizar el caso",
+      "fr-FR": "Le dossier n'a pas pu être mis à jour",
+      "it-IT": "Non è stato possibile aggiornare il caso",
+      "nl-NL": "De zaak kon niet worden bijgewerkt",
+      "pt-BR": "Não foi possível atualizar o caso",
+      "pt-PT": "Não foi possível atualizar o caso",
+      "fi-FI": "Tapausta ei voitu päivittää",
+      "et-ET": "Juhtumit ei õnnestunud värskendada",
+      "lv-LV": "Lietu neizdevās atjaunināt",
+      "lt-LT": "Nepavyko atnaujinti atvejo",
+      "ro-RO": "Cazul nu a putut fi actualizat",
+      "hr-HR": "Slučaj nije bilo moguće ažurirati",
+      "sl-SL": "Primera ni bilo mogoče posodobiti",
+      "cs-CZ": "Případ se nepodařilo aktualizovat",
+      "sk-SK": "Prípad sa nepodarilo aktualizovať",
+      "hu-HU": "Az esetet nem sikerült frissíteni",
+      "bg-BG": "Случаят не можа да бъде актуализиран",
+      "el-GR": "Δεν ήταν δυνατή η ενημέρωση της υπόθεσης",
+      "is-IS": "Ekki tókst að uppfæra málið"
     }
   },
   {

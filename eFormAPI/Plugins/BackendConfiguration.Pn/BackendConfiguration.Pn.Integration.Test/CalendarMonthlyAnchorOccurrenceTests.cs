@@ -422,8 +422,22 @@ public class CalendarMonthlyAnchorOccurrenceTests
     //
     // These are deliberate regression tripwires: #1207 is scoped to
     // RepeatType.Month only. A later "completion" of the fix that extends the
-    // anchor rule to Year / Week / Day turns them red.
+    // anchor rule to Week or Day turns them red.
+    //
+    // Year is NO LONGER out of scope: #1217 gave it its own anchor rule (and
+    // its own helper, YearStartAnchorIsDroppedOccurrence) because a yearly rule
+    // whose planning.DayOfMonth diverges from StartDate.Day has the identical
+    // defect. The yearly tripwire below still passes UNCHANGED, and must: its
+    // DayOfMonth is null, so the start year's pattern date EQUALS the anchor
+    // and the strict "<" in the new helper declines to synthesise anything.
+    // CalendarYearlyAnchorOccurrenceTests covers the diverging cohort.
 
+    /// <summary>
+    /// Green before AND after #1217 by construction — a yearly series with a
+    /// null DayOfMonth anchors on StartDate's own month + day, so nothing about
+    /// its sequence moves. Kept as the "the ordinary yearly cohort did not
+    /// shift" guard.
+    /// </summary>
     [Test]
     public void Enumerate_Yearly_IsUnchanged()
     {
