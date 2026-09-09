@@ -209,27 +209,135 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
 
         try
         {
-            var compliance = await _backendConfigurationPnDbContext.Compliances.SingleOrDefaultAsync(x => x.Id == model.ExtraId).ConfigureAwait(false);
-            if (compliance != null)
+            // #1157 pre-flight validation. This method used to soft-delete the
+            // Compliance and complete the SDK case BEFORE it had finished validating,
+            // with no transaction and no compensation, so every late rejection below
+            // left an unrecoverable partial write: the occurrence vanished from the
+            // calendar and the compliance list while nothing was ever completed, and a
+            // retry could not repair it. Everything the completion needs is therefore
+            // resolved and checked FIRST. The first irreversible write is the
+            // compliance.Delete() below the "pre-flight complete" line; nothing above it
+            // mutates. No write moved relative to another write: the order
+            // (compliance.Delete, core.CaseUpdate, foundCase.Update, the items-planning
+            // promotion, the property recompute, the retraction) is unchanged. A READ did
+            // cross a write, though: the PlanningCaseSite lookup now runs here in the
+            // pre-flight, before core.CaseUpdate and before the CaseUpdateDelegate
+            // invocation loop, where it used to run after both - and that same tracked
+            // entity is mutated and saved further down. Inert today: no
+            // CaseUpdateDelegate subscriber is registered anywhere in the workspace (the
+            // only registrations are commented out, e.g.
+            // ItemsPlanning.Pn/EformItemsPlanningPlugin.cs:113), and core.CaseUpdate
+            // writes only SDK tables. A future subscriber must not write PlanningCaseSites
+            // through a different DbContext - this method's tracked snapshot would then be
+            // saved back over the delegate's changes, a silent lost update.
+            //
+            // #1157 option 3, defence in depth: the WorkflowState filter on the
+            // Compliance lookup. Without it a retry after an earlier partial failure
+            // re-found the already-soft-deleted row, re-ran the whole cascade against it
+            // and reported success over an occurrence that no longer exists. With it the
+            // retry fails fast and distinguishably instead.
+            var compliance = await _backendConfigurationPnDbContext.Compliances
+                .SingleOrDefaultAsync(x => x.Id == model.ExtraId
+                                           && x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ConfigureAwait(false);
+            if (compliance == null)
             {
-                await compliance.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
-            }
-            else
-            {
+                Log.LogException(
+                    $"[ERROR] BackendConfigurationCompliancesService.Update: no live Compliance {model.ExtraId} (never existed, or already soft-deleted by an earlier completion) - nothing was mutated");
                 return new OperationResult(false, $"{_localizationService.GetString("CaseCouldNotBeUpdated")}");
             }
 
+            var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+            // Existence check only. The tracked instance that actually gets mutated is
+            // re-read further down, AFTER core.CaseUpdate/CaseUpdateFieldValues have
+            // written to the row, so the completion still operates on post-update state
+            // exactly as it did before this hoist.
+            var sdkCaseExists = await sdkDbContext.Cases
+                .AsNoTracking()
+                .AnyAsync(x => x.Id == model.Id)
+                .ConfigureAwait(false);
+            if (!sdkCaseExists)
+            {
+                Log.LogException(
+                    $"[ERROR] BackendConfigurationCompliancesService.Update: no SDK Case {model.Id} (complianceId: {compliance.Id}) - nothing was mutated");
+                return new OperationResult(false, _localizationService.GetString("CaseNotFound"));
+            }
+
+            // Resolve the occurrence by its SDK case id — the only per-occurrence
+            // key. The previous CreatedAt.Date == Compliance.StartDate.Date
+            // heuristic assumed a planning deploys at most one occurrence per day;
+            // back-filled past series break that (every back-filled
+            // PlanningCaseSite.CreatedAt and Compliance.StartDate collapse to the
+            // day the backfill ran), so it kept returning the same sibling row and
+            // only the first completed occurrence ever reached Status 100.
+            // Matches the mobile path (EventsGrpcService.cs:1703-1707) and the
+            // scheduler path (eFormCompletedHandler.cs:62-63).
+            // model.Id is the SDK case id the existence check above just confirmed, and
+            // is by construction the id the re-read foundCase carries, so this is the
+            // same selector it used to run with foundCase.Id.
+            var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
+                .FirstOrDefaultAsync(x => x.MicrotingSdkCaseId == model.Id).ConfigureAwait(false);
+            if (planningCaseSite == null)
+            {
+                Log.LogException(
+                    $"[ERROR] BackendConfigurationCompliancesService.Update: no PlanningCaseSite found for MicrotingSdkCaseId {model.Id} (complianceId: {compliance.Id}, planningId: {compliance.PlanningId}) - nothing was mutated");
+                return new OperationResult(false, _localizationService.GetString("CaseNotFound"));
+            }
+            // #1218: cross-check that the occurrence reached via the SDK case id really
+            // belongs to the planning the quoted Compliance is on. The SDK case comes from
+            // model.Id and `compliance` from model.ExtraId — both client-supplied, and
+            // nothing else pairs them, so without this a request quoting one property's
+            // compliance id together with another property's case id promotes the
+            // unrelated property's occurrence.
+            // Deliberately AFTER the lookup, not folded back into its predicate:
+            // MicrotingSdkCaseId must stay the SOLE selector (#1158 — adding
+            // PlanningId back into the Where would re-introduce a second selector and
+            // report a genuine mismatch as the indistinguishable "no occurrence found"
+            // instead of as a mismatch).
+            if (planningCaseSite.PlanningId != compliance.PlanningId)
+            {
+                Log.LogException(
+                    $"[ERROR] BackendConfigurationCompliancesService.Update: PlanningCaseSite {planningCaseSite.Id} (planningId: {planningCaseSite.PlanningId}) resolved from MicrotingSdkCaseId {model.Id} does not belong to compliance {compliance.Id} (planningId: {compliance.PlanningId}) - rejecting mismatched case/compliance pair, nothing was mutated");
+                return new OperationResult(false, _localizationService.GetString("CaseDoesNotBelongToCompliance"));
+            }
+
+            // #1157: the completing worker's SDK Site is resolved HERE, in the pre-flight,
+            // not beside its first use inside the mutation block. model.SiteId is
+            // client-supplied and nothing above validates it, so an unknown - or
+            // soft-deleted - site was discovered only at the `site.Name` dereference
+            // below, i.e. AFTER compliance.Delete, core.CaseUpdate and foundCase.Update
+            // had all committed; the NullReferenceException was then swallowed by the
+            // outer catch into a generic CaseCouldNotBeUpdated. That was the last routine
+            // failure mode still leaving the partial write #1157 is about.
+            var site = await sdkDbContext.Sites
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .FirstOrDefaultAsync(x => x.Id == model.SiteId).ConfigureAwait(false);
+            if (site == null)
+            {
+                Log.LogException(
+                    $"[ERROR] BackendConfigurationCompliancesService.Update: no live SDK Site {model.SiteId} (complianceId: {compliance.Id}, caseId: {model.Id}) - nothing was mutated");
+                return new OperationResult(false, _localizationService.GetString("SiteNotFound"));
+            }
+
+            // ---- pre-flight complete; everything below this line mutates ----
+
+            await compliance.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
             await core.CaseUpdate(model.Id, fieldValueList, checkListValueList).ConfigureAwait(false);
             await core.CaseUpdateFieldValues(model.Id, language).ConfigureAwait(false);
-
-            var sdkDbContext = core.DbContextHelper.GetDbContext();
 
             var foundCase = await sdkDbContext.Cases
                 .Where(x => x.Id == model.Id)
                 .FirstOrDefaultAsync().ConfigureAwait(false);
 
-            if(foundCase != null) {
+            // Only reachable if the case was hard-deleted between the pre-flight check
+            // and this re-read. Kept as a guard so the promotion below cannot dereference
+            // null; it is the one exit that can still leave the partial write #1157 is
+            // about, and it is a race, not a routine outcome.
+            if (foundCase != null)
+            {
                 // Preserve the caller-supplied time-of-day so calendar
                 // event.start (Deadline day + CalendarConfiguration.StartHour)
                 // survives the round-trip. Existing consumers (task-tracker,
@@ -243,9 +351,6 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
                 foundCase.DoneAtUserModifiable = newDoneAt;
                 foundCase.DoneAt = newDoneAt;
 
-                var site = await sdkDbContext.Sites
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .FirstOrDefaultAsync(x => x.Id == model.SiteId).ConfigureAwait(false);
                 // if (site != null)
                 // {
                 //     foundCase.SiteId = site.Id;
@@ -310,69 +415,31 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
                 // }
                 // else
                 // {
-                // Resolve the occurrence by its SDK case id — the only per-occurrence
-                // key. The previous CreatedAt.Date == Compliance.StartDate.Date
-                // heuristic assumed a planning deploys at most one occurrence per day;
-                // back-filled past series break that (every back-filled
-                // PlanningCaseSite.CreatedAt and Compliance.StartDate collapse to the
-                // day the backfill ran), so it kept returning the same sibling row and
-                // only the first completed occurrence ever reached Status 100.
-                // Matches the mobile path (EventsGrpcService.cs:1703-1707) and the
-                // scheduler path (eFormCompletedHandler.cs:62-63).
-                var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
-                    .FirstOrDefaultAsync(x => x.MicrotingSdkCaseId == foundCase.Id).ConfigureAwait(false);
-                // #1218: cross-check that the occurrence reached via the SDK case id really
-                // belongs to the planning the quoted Compliance is on. `foundCase` comes from
-                // model.Id and `compliance` from model.ExtraId — both client-supplied, and
-                // nothing else pairs them, so without this a request quoting one property's
-                // compliance id together with another property's case id promotes the
-                // unrelated property's occurrence.
-                // Deliberately AFTER the lookup, not folded back into its predicate:
-                // MicrotingSdkCaseId must stay the SOLE selector (#1158 — adding
-                // PlanningId back into the Where would re-introduce a second selector and
-                // report a genuine mismatch as the indistinguishable "no occurrence found"
-                // instead of as a mismatch).
-                if (planningCaseSite != null && planningCaseSite.PlanningId != compliance.PlanningId)
-                {
-                    Log.LogException(
-                        $"[ERROR] BackendConfigurationCompliancesService.Update: PlanningCaseSite {planningCaseSite.Id} (planningId: {planningCaseSite.PlanningId}) resolved from MicrotingSdkCaseId {foundCase.Id} does not belong to compliance {compliance.Id} (planningId: {compliance.PlanningId}) - rejecting mismatched case/compliance pair");
-                    return new OperationResult(false, _localizationService.GetString("CaseDoesNotBelongToCompliance"));
-                }
-                if (planningCaseSite != null)
-                {
-                    planningCaseSite.Status = 100;
-                    planningCaseSite = await SetFieldValue(planningCaseSite, foundCase.Id, language).ConfigureAwait(false);
+                planningCaseSite.Status = 100;
+                planningCaseSite = await SetFieldValue(planningCaseSite, foundCase.Id, language).ConfigureAwait(false);
 
-                    planningCaseSite.MicrotingSdkCaseId = foundCase.Id;
-                    planningCaseSite.MicrotingSdkCaseDoneAt = foundCase.DoneAt;
-                    planningCaseSite.DoneByUserId = (int)foundCase.SiteId;
-                    planningCaseSite.DoneByUserName = site.Name;
-                    await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                planningCaseSite.MicrotingSdkCaseId = foundCase.Id;
+                planningCaseSite.MicrotingSdkCaseDoneAt = foundCase.DoneAt;
+                planningCaseSite.DoneByUserId = (int)foundCase.SiteId;
+                planningCaseSite.DoneByUserName = site.Name;
+                await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
 
-                    var planningCase = await _itemsPlanningPnDbContext.PlanningCases
-                        .SingleAsync(x => x.Id == planningCaseSite.PlanningCaseId).ConfigureAwait(false);
-                    if (planningCase.Status != 100)
-                    {
-                        planningCase.Status = 100;
-                        planningCase.MicrotingSdkCaseDoneAt = foundCase.DoneAt;
-                        planningCase.MicrotingSdkCaseId = foundCase.Id;
-                        planningCase.DoneByUserId = (int)foundCase.SiteId;
-                        planningCase.DoneByUserName = planningCaseSite.DoneByUserName;
-                        planningCase.WorkflowState = Constants.WorkflowStates.Processed;
-
-                        planningCase = await SetFieldValue(planningCase, foundCase.Id, language).ConfigureAwait(false);
-                        await planningCase.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
-                    }
-                    planningCaseSite.PlanningCaseId = planningCase.Id;
-                    await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
-                }
-                else
+                var planningCase = await _itemsPlanningPnDbContext.PlanningCases
+                    .SingleAsync(x => x.Id == planningCaseSite.PlanningCaseId).ConfigureAwait(false);
+                if (planningCase.Status != 100)
                 {
-                    Log.LogException(
-                        $"[ERROR] BackendConfigurationCompliancesService.Update: no PlanningCaseSite found for MicrotingSdkCaseId {foundCase.Id} (complianceId: {compliance.Id}, planningId: {compliance.PlanningId})");
-                    return new OperationResult(false, _localizationService.GetString("CaseNotFound"));
+                    planningCase.Status = 100;
+                    planningCase.MicrotingSdkCaseDoneAt = foundCase.DoneAt;
+                    planningCase.MicrotingSdkCaseId = foundCase.Id;
+                    planningCase.DoneByUserId = (int)foundCase.SiteId;
+                    planningCase.DoneByUserName = planningCaseSite.DoneByUserName;
+                    planningCase.WorkflowState = Constants.WorkflowStates.Processed;
+
+                    planningCase = await SetFieldValue(planningCase, foundCase.Id, language).ConfigureAwait(false);
+                    await planningCase.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                 }
+                planningCaseSite.PlanningCaseId = planningCase.Id;
+                await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                 // }
             }
             else
@@ -473,27 +540,135 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
 
         try
         {
-            var compliance = await _backendConfigurationPnDbContext.Compliances.SingleOrDefaultAsync(x => x.Id == model.ExtraId).ConfigureAwait(false);
-            if (compliance != null)
+            // #1157 pre-flight validation. This method used to soft-delete the
+            // Compliance and complete the SDK case BEFORE it had finished validating,
+            // with no transaction and no compensation, so every late rejection below
+            // left an unrecoverable partial write: the occurrence vanished from the
+            // calendar and the compliance list while nothing was ever completed, and a
+            // retry could not repair it. Everything the completion needs is therefore
+            // resolved and checked FIRST. The first irreversible write is the
+            // compliance.Delete() below the "pre-flight complete" line; nothing above it
+            // mutates. No write moved relative to another write: the order
+            // (compliance.Delete, core.CaseUpdate, foundCase.Update, the items-planning
+            // promotion, the property recompute, the retraction) is unchanged. A READ did
+            // cross a write, though: the PlanningCaseSite lookup now runs here in the
+            // pre-flight, before core.CaseUpdate and before the CaseUpdateDelegate
+            // invocation loop, where it used to run after both - and that same tracked
+            // entity is mutated and saved further down. Inert today: no
+            // CaseUpdateDelegate subscriber is registered anywhere in the workspace (the
+            // only registrations are commented out, e.g.
+            // ItemsPlanning.Pn/EformItemsPlanningPlugin.cs:113), and core.CaseUpdate
+            // writes only SDK tables. A future subscriber must not write PlanningCaseSites
+            // through a different DbContext - this method's tracked snapshot would then be
+            // saved back over the delegate's changes, a silent lost update.
+            //
+            // #1157 option 3, defence in depth: the WorkflowState filter on the
+            // Compliance lookup. Without it a retry after an earlier partial failure
+            // re-found the already-soft-deleted row, re-ran the whole cascade against it
+            // and reported success over an occurrence that no longer exists. With it the
+            // retry fails fast and distinguishably instead.
+            var compliance = await _backendConfigurationPnDbContext.Compliances
+                .SingleOrDefaultAsync(x => x.Id == model.ExtraId
+                                           && x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ConfigureAwait(false);
+            if (compliance == null)
             {
-                await compliance.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
-            }
-            else
-            {
+                Log.LogException(
+                    $"[ERROR] BackendConfigurationCompliancesService.UpdateFromCalendar: no live Compliance {model.ExtraId} (never existed, or already soft-deleted by an earlier completion) - nothing was mutated");
                 return new OperationResult(false, $"{_localizationService.GetString("CaseCouldNotBeUpdated")}");
             }
 
+            var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+            // Existence check only. The tracked instance that actually gets mutated is
+            // re-read further down, AFTER core.CaseUpdate/CaseUpdateFieldValues have
+            // written to the row, so the completion still operates on post-update state
+            // exactly as it did before this hoist.
+            var sdkCaseExists = await sdkDbContext.Cases
+                .AsNoTracking()
+                .AnyAsync(x => x.Id == model.Id)
+                .ConfigureAwait(false);
+            if (!sdkCaseExists)
+            {
+                Log.LogException(
+                    $"[ERROR] BackendConfigurationCompliancesService.UpdateFromCalendar: no SDK Case {model.Id} (complianceId: {compliance.Id}) - nothing was mutated");
+                return new OperationResult(false, _localizationService.GetString("CaseNotFound"));
+            }
+
+            // Resolve the occurrence by its SDK case id — the only per-occurrence
+            // key. The previous CreatedAt.Date == Compliance.StartDate.Date
+            // heuristic assumed a planning deploys at most one occurrence per day;
+            // back-filled past series break that (every back-filled
+            // PlanningCaseSite.CreatedAt and Compliance.StartDate collapse to the
+            // day the backfill ran), so it kept returning the same sibling row and
+            // only the first completed occurrence ever reached Status 100.
+            // Matches the mobile path (EventsGrpcService.cs:1703-1707) and the
+            // scheduler path (eFormCompletedHandler.cs:62-63).
+            // model.Id is the SDK case id the existence check above just confirmed, and
+            // is by construction the id the re-read foundCase carries, so this is the
+            // same selector it used to run with foundCase.Id.
+            var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
+                .FirstOrDefaultAsync(x => x.MicrotingSdkCaseId == model.Id).ConfigureAwait(false);
+            if (planningCaseSite == null)
+            {
+                Log.LogException(
+                    $"[ERROR] BackendConfigurationCompliancesService.UpdateFromCalendar: no PlanningCaseSite found for MicrotingSdkCaseId {model.Id} (complianceId: {compliance.Id}, planningId: {compliance.PlanningId}) - nothing was mutated");
+                return new OperationResult(false, _localizationService.GetString("CaseNotFound"));
+            }
+            // #1218: cross-check that the occurrence reached via the SDK case id really
+            // belongs to the planning the quoted Compliance is on. The SDK case comes from
+            // model.Id and `compliance` from model.ExtraId — both client-supplied, and
+            // nothing else pairs them, so without this a request quoting one property's
+            // compliance id together with another property's case id promotes the
+            // unrelated property's occurrence.
+            // Deliberately AFTER the lookup, not folded back into its predicate:
+            // MicrotingSdkCaseId must stay the SOLE selector (#1158 — adding
+            // PlanningId back into the Where would re-introduce a second selector and
+            // report a genuine mismatch as the indistinguishable "no occurrence found"
+            // instead of as a mismatch).
+            if (planningCaseSite.PlanningId != compliance.PlanningId)
+            {
+                Log.LogException(
+                    $"[ERROR] BackendConfigurationCompliancesService.UpdateFromCalendar: PlanningCaseSite {planningCaseSite.Id} (planningId: {planningCaseSite.PlanningId}) resolved from MicrotingSdkCaseId {model.Id} does not belong to compliance {compliance.Id} (planningId: {compliance.PlanningId}) - rejecting mismatched case/compliance pair, nothing was mutated");
+                return new OperationResult(false, _localizationService.GetString("CaseDoesNotBelongToCompliance"));
+            }
+
+            // #1157: the completing worker's SDK Site is resolved HERE, in the pre-flight,
+            // not beside its first use inside the mutation block. model.SiteId is
+            // client-supplied and nothing above validates it, so an unknown - or
+            // soft-deleted - site was discovered only at the `site.Name` dereference
+            // below, i.e. AFTER compliance.Delete, core.CaseUpdate and foundCase.Update
+            // had all committed; the NullReferenceException was then swallowed by the
+            // outer catch into a generic CaseCouldNotBeUpdated. That was the last routine
+            // failure mode still leaving the partial write #1157 is about.
+            var site = await sdkDbContext.Sites
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .FirstOrDefaultAsync(x => x.Id == model.SiteId).ConfigureAwait(false);
+            if (site == null)
+            {
+                Log.LogException(
+                    $"[ERROR] BackendConfigurationCompliancesService.UpdateFromCalendar: no live SDK Site {model.SiteId} (complianceId: {compliance.Id}, caseId: {model.Id}) - nothing was mutated");
+                return new OperationResult(false, _localizationService.GetString("SiteNotFound"));
+            }
+
+            // ---- pre-flight complete; everything below this line mutates ----
+
+            await compliance.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
             await core.CaseUpdate(model.Id, fieldValueList, checkListValueList).ConfigureAwait(false);
             await core.CaseUpdateFieldValues(model.Id, language).ConfigureAwait(false);
-
-            var sdkDbContext = core.DbContextHelper.GetDbContext();
 
             var foundCase = await sdkDbContext.Cases
                 .Where(x => x.Id == model.Id)
                 .FirstOrDefaultAsync().ConfigureAwait(false);
 
-            if(foundCase != null) {
+            // Only reachable if the case was hard-deleted between the pre-flight check
+            // and this re-read. Kept as a guard so the promotion below cannot dereference
+            // null; it is the one exit that can still leave the partial write #1157 is
+            // about, and it is a race, not a routine outcome.
+            if (foundCase != null)
+            {
                 // Preserve the caller-supplied time-of-day so calendar
                 // event.start (Deadline day + CalendarConfiguration.StartHour)
                 // survives the round-trip. Existing consumers (task-tracker,
@@ -506,10 +681,6 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
                 var newDoneAt = DateTime.SpecifyKind(model.DoneAt, DateTimeKind.Utc);
                 foundCase.DoneAtUserModifiable = newDoneAt;
                 foundCase.DoneAt = newDoneAt;
-
-                var site = await sdkDbContext.Sites
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .FirstOrDefaultAsync(x => x.Id == model.SiteId).ConfigureAwait(false);
 
                 foundCase.SiteId = model.SiteId;
                 foundCase.Status = 100;
@@ -525,69 +696,31 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
                         func.DynamicInvoke(model.Id);
                     }
                 }
-                // Resolve the occurrence by its SDK case id — the only per-occurrence
-                // key. The previous CreatedAt.Date == Compliance.StartDate.Date
-                // heuristic assumed a planning deploys at most one occurrence per day;
-                // back-filled past series break that (every back-filled
-                // PlanningCaseSite.CreatedAt and Compliance.StartDate collapse to the
-                // day the backfill ran), so it kept returning the same sibling row and
-                // only the first completed occurrence ever reached Status 100.
-                // Matches the mobile path (EventsGrpcService.cs:1703-1707) and the
-                // scheduler path (eFormCompletedHandler.cs:62-63).
-                var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
-                    .FirstOrDefaultAsync(x => x.MicrotingSdkCaseId == foundCase.Id).ConfigureAwait(false);
-                // #1218: cross-check that the occurrence reached via the SDK case id really
-                // belongs to the planning the quoted Compliance is on. `foundCase` comes from
-                // model.Id and `compliance` from model.ExtraId — both client-supplied, and
-                // nothing else pairs them, so without this a request quoting one property's
-                // compliance id together with another property's case id promotes the
-                // unrelated property's occurrence.
-                // Deliberately AFTER the lookup, not folded back into its predicate:
-                // MicrotingSdkCaseId must stay the SOLE selector (#1158 — adding
-                // PlanningId back into the Where would re-introduce a second selector and
-                // report a genuine mismatch as the indistinguishable "no occurrence found"
-                // instead of as a mismatch).
-                if (planningCaseSite != null && planningCaseSite.PlanningId != compliance.PlanningId)
-                {
-                    Log.LogException(
-                        $"[ERROR] BackendConfigurationCompliancesService.UpdateFromCalendar: PlanningCaseSite {planningCaseSite.Id} (planningId: {planningCaseSite.PlanningId}) resolved from MicrotingSdkCaseId {foundCase.Id} does not belong to compliance {compliance.Id} (planningId: {compliance.PlanningId}) - rejecting mismatched case/compliance pair");
-                    return new OperationResult(false, _localizationService.GetString("CaseDoesNotBelongToCompliance"));
-                }
-                if (planningCaseSite != null)
-                {
-                    planningCaseSite.Status = 100;
-                    planningCaseSite = await SetFieldValue(planningCaseSite, foundCase.Id, language).ConfigureAwait(false);
+                planningCaseSite.Status = 100;
+                planningCaseSite = await SetFieldValue(planningCaseSite, foundCase.Id, language).ConfigureAwait(false);
 
-                    planningCaseSite.MicrotingSdkCaseId = foundCase.Id;
-                    planningCaseSite.MicrotingSdkCaseDoneAt = foundCase.DoneAt;
-                    planningCaseSite.DoneByUserId = (int)foundCase.SiteId;
-                    planningCaseSite.DoneByUserName = site.Name;
-                    await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                planningCaseSite.MicrotingSdkCaseId = foundCase.Id;
+                planningCaseSite.MicrotingSdkCaseDoneAt = foundCase.DoneAt;
+                planningCaseSite.DoneByUserId = (int)foundCase.SiteId;
+                planningCaseSite.DoneByUserName = site.Name;
+                await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
 
-                    var planningCase = await _itemsPlanningPnDbContext.PlanningCases
-                        .SingleAsync(x => x.Id == planningCaseSite.PlanningCaseId).ConfigureAwait(false);
-                    if (planningCase.Status != 100)
-                    {
-                        planningCase.Status = 100;
-                        planningCase.MicrotingSdkCaseDoneAt = foundCase.DoneAt;
-                        planningCase.MicrotingSdkCaseId = foundCase.Id;
-                        planningCase.DoneByUserId = (int)foundCase.SiteId;
-                        planningCase.DoneByUserName = planningCaseSite.DoneByUserName;
-                        planningCase.WorkflowState = Constants.WorkflowStates.Processed;
-
-                        planningCase = await SetFieldValue(planningCase, foundCase.Id, language).ConfigureAwait(false);
-                        await planningCase.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
-                    }
-                    planningCaseSite.PlanningCaseId = planningCase.Id;
-                    await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
-                }
-                else
+                var planningCase = await _itemsPlanningPnDbContext.PlanningCases
+                    .SingleAsync(x => x.Id == planningCaseSite.PlanningCaseId).ConfigureAwait(false);
+                if (planningCase.Status != 100)
                 {
-                    Log.LogException(
-                        $"[ERROR] BackendConfigurationCompliancesService.UpdateFromCalendar: no PlanningCaseSite found for MicrotingSdkCaseId {foundCase.Id} (complianceId: {compliance.Id}, planningId: {compliance.PlanningId})");
-                    return new OperationResult(false, _localizationService.GetString("CaseNotFound"));
+                    planningCase.Status = 100;
+                    planningCase.MicrotingSdkCaseDoneAt = foundCase.DoneAt;
+                    planningCase.MicrotingSdkCaseId = foundCase.Id;
+                    planningCase.DoneByUserId = (int)foundCase.SiteId;
+                    planningCase.DoneByUserName = planningCaseSite.DoneByUserName;
+                    planningCase.WorkflowState = Constants.WorkflowStates.Processed;
+
+                    planningCase = await SetFieldValue(planningCase, foundCase.Id, language).ConfigureAwait(false);
+                    await planningCase.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                 }
+                planningCaseSite.PlanningCaseId = planningCase.Id;
+                await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
             }
             else
             {
