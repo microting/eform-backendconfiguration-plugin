@@ -109,8 +109,10 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   // True from the moment an edit dialog issues its getAssignedSite GET until that
   // GET answers - and for good if it fails. Until then the dialog cannot know
   // whether the worker has a saved AssignedSite, let alone its 1-minute flag, so
-  // applyOneMinuteIntervalsRule() must neither force the value nor offer the choice.
-  private savedAssignedSiteUnknown = false;
+  // applyOneMinuteIntervalsRule() must neither force the value nor offer the choice,
+  // and the template shows the box indeterminate: unchecked would read as 5-minute
+  // mode, checked as one-minute, and either is a guess. Protected for that binding.
+  protected savedAssignedSiteUnknown = false;
 
 
   private updateDisabledFieldsBasedOnResigned() {
@@ -142,8 +144,8 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       return;
     }
     if (this.savedAssignedSiteUnknown) {
-      // Locked with the value left alone; oneMinuteIntervalsForPayload() sends
-      // nothing for it in the meantime.
+      // Locked with the value left alone and shown indeterminate (template);
+      // oneMinuteIntervalsForPayload() sends nothing for it in the meantime.
       control.disable({emitEvent: false});
       return;
     }

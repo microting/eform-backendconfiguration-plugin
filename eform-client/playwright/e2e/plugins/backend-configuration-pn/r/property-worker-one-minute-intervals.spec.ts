@@ -133,10 +133,17 @@ async function openTimeRegistrationTab(page: Page, via: 'pointer' | 'keyboard' =
  * Both halves of the invariant, asserted separately: ticked (the state the server
  * will save) AND disabled (no choice offered). Neither is inferred from the other —
  * a locked-but-unticked box and an editable-but-ticked box are different defects.
+ * Ticked also means NOT indeterminate: the native input keeps its `checked` flag
+ * underneath a mixed display, so `toBeChecked()` alone would not notice a box
+ * still showing "unknown".
  */
 async function expectCheckedAndLocked(page: Page, context: string): Promise<void> {
   const input = oneMinuteIntervalsInput(page);
   await expect(input, `${context}: "Use 1-minute intervals" must be checked`).toBeChecked({
+    timeout: UI_TIMEOUT,
+  });
+  await expect(input, `${context}: "Use 1-minute intervals" must not be indeterminate`).not.toBeChecked({
+    indeterminate: true,
     timeout: UI_TIMEOUT,
   });
   await expect(input, `${context}: "Use 1-minute intervals" must be disabled`).toBeDisabled({
@@ -416,9 +423,10 @@ test.describe.serial('Property-worker 1-minute intervals are locked on', () => {
     // WHAT THIS PROTECTS: the checkbox rule used to run from ngOnInit before the
     // getAssignedSite GET landed, saw no saved row yet, and forced the box checked
     // and locked — for a worker whose saved row is in 5-minute mode. formReady is
-    // not gated on that GET, so a user (or a test) could read "one-minute mode,
-    // locked" off a dialog that did not know. While the GET is in flight the box
-    // must be locked WITHOUT a forced value; once it lands the saved state rules.
+    // not gated on that GET, so the dialog showed "one-minute mode, locked" without
+    // knowing. While the GET is in flight the box must be locked and INDETERMINATE —
+    // unknown shown as unknown, neither mode claimed; once it lands the saved state
+    // rules.
     const workersPage = new BackendConfigurationPropertyWorkersPage(page);
     await workersPage.goToPropertyWorkers();
 
@@ -468,11 +476,12 @@ test.describe.serial('Property-worker 1-minute intervals are locked on', () => {
       await expect(input, 'while the saved row is loading the checkbox must be locked').toBeDisabled({
         timeout: UI_TIMEOUT,
       });
-      // The assertion the old code fails: it forced the value to true here.
+      // The assertion the old code fails: it forced the box checked here, and an
+      // unforced plain box would read unchecked — 5-minute mode — just as wrongly.
       await expect(
         input,
-        'while the saved row is loading the checkbox must not claim one-minute mode — the dialog does not know it yet'
-      ).not.toBeChecked({ timeout: UI_TIMEOUT });
+        'while the saved row is loading the checkbox must show indeterminate — the dialog does not know the mode yet'
+      ).toBeChecked({ indeterminate: true, timeout: UI_TIMEOUT });
 
       // Registered before the release; the held response cannot arrive earlier.
       const heldResponse = waitForApiResponse(
@@ -498,6 +507,10 @@ test.describe.serial('Property-worker 1-minute intervals are locked on', () => {
     // --- Assert: the saved state now rules -----------------------------------
     const input = oneMinuteIntervalsInput(page);
     await expect(input, 'a saved 5-minute row is editable once loaded').toBeEnabled({ timeout: UI_TIMEOUT });
+    await expect(input, 'once loaded the checkbox is no longer indeterminate').not.toBeChecked({
+      indeterminate: true,
+      timeout: UI_TIMEOUT,
+    });
     await expect(input, 'a saved 5-minute row shows unchecked once loaded').not.toBeChecked({ timeout: UI_TIMEOUT });
 
     // Nothing to save — the assertions are about what the dialog shows.
