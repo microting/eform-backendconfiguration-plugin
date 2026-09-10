@@ -351,6 +351,8 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
         var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        // The create branch is skipped for EformUser Id 1 - see EnsureAdminHoldsUserIdOne.
+        await EnsureAdminHoldsUserIdOne(userManager);
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
             TimePlanningPnDbContext!, BaseDbContext!,
@@ -563,6 +565,8 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
         var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        // The create branch is skipped for EformUser Id 1 - see EnsureAdminHoldsUserIdOne.
+        await EnsureAdminHoldsUserIdOne(userManager);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -682,6 +686,8 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
         var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        // The create branch is skipped for EformUser Id 1 - see EnsureAdminHoldsUserIdOne.
+        await EnsureAdminHoldsUserIdOne(userManager);
 
         // Time registration deliberately OFF at creation: the legacy AssignedSite is built by hand
         // below so its FIRST version row carries UseOneMinuteIntervals = false, the way a site set up
@@ -1154,6 +1160,8 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
         var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        // The create branch is skipped for EformUser Id 1 - see EnsureAdminHoldsUserIdOne.
+        await EnsureAdminHoldsUserIdOne(userManager);
 
         var createResult = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(new DeviceUserModel
         {
@@ -1174,6 +1182,42 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         return new ArrangedWorker(core, userService, userManager, Substitute.For<ILogger>(),
             (int)currentSite.MicrotingUid!, Guid.NewGuid().ToString(), Guid.NewGuid().ToString(),
             $"{Guid.NewGuid()}@test.com");
+    }
+
+    /// <summary>
+    /// UpdateDeviceUser reaches its time-registration branches — the create branch every carry-over test
+    /// exercises included — only for <c>user != null &amp;&amp; user.Id != 1</c>: Id 1 is an install's
+    /// admin, whom time registration never touches. 420_Angular is only EnsureCreated(), never seeded,
+    /// and keeps its rows across this fixture's tests, so otherwise whichever test first creates an
+    /// EformUser takes Id 1. Run on its own (dotnet test --filter) a carry-over test would then skip the
+    /// create branch and fail on a misleading row count. Seed an admin stand-in at Id 1 up front so the
+    /// worker's user never gets it. Idempotent.
+    /// </summary>
+    private async Task EnsureAdminHoldsUserIdOne(UserManager<EformUser> userManager)
+    {
+        if (await BaseDbContext!.Users.AnyAsync(x => x.Id == 1))
+        {
+            return;
+        }
+
+        var result = await userManager.CreateAsync(new EformUser
+        {
+            Id = 1,
+            Email = "admin-stand-in@test.com",
+            UserName = "admin-stand-in@test.com",
+            FirstName = "Admin",
+            LastName = "Stand-in",
+            Locale = "da",
+            EmailConfirmed = true,
+            TwoFactorEnabled = false,
+            IsGoogleAuthenticatorEnabled = false,
+            TimeZone = "Europe/Copenhagen",
+            Formats = "de-DE"
+        });
+        Assert.That(result.Succeeded, Is.True,
+            "Seeding the admin stand-in failed: " + string.Join("; ", result.Errors.Select(x => x.Description)));
+        Assert.That(await BaseDbContext.Users.AnyAsync(x => x.Id == 1), Is.True,
+            "Precondition: EformUser Id 1 must belong to the admin stand-in, not to the worker under test.");
     }
 
     /// <summary>
