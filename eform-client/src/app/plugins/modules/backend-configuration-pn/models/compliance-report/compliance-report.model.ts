@@ -72,8 +72,19 @@ export interface ComplianceReportRowModel {
   boardName: string;
   tags: string[];
   workerNames: string[];
-  /** Site ids behind `workerNames` — the ARP's non-removed PlanningSites, as a set (not index-aligned with the names). */
+  /**
+   * The row's EXPLICIT individual assignees — the ARP's non-removed PlanningSites, as
+   * a set (not index-aligned with `workerNames`, which since #1232 is wider). The only
+   * set the complete-event modal pre-selects a lone completer from.
+   */
   workerSiteIds: number[];
+  /**
+   * The sites assigned via a worker tag ("team") — the live members of the ARP's worker
+   * tags (#1236). Optional so a response from an older backend reads as "no team half".
+   * The complete-event modal groups on `workerSiteIds ∪ teamAssigneeIds` and
+   * pre-selects only from `workerSiteIds`.
+   */
+  teamAssigneeIds?: number[];
   completed: boolean;
   doneAt: string | null;
   sdkCaseId: number;

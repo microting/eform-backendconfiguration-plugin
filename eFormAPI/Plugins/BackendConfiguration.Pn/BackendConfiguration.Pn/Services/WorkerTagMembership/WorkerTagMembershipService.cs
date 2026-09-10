@@ -93,6 +93,19 @@ namespace BackendConfiguration.Pn.Services.WorkerTagMembership;
 /// cost of having a single owner for the rule, written down so it is not mistaken for an
 /// oversight.
 /// </para>
+///
+/// <para>
+/// Keeping that loop out of the callers is also why
+/// <see cref="GetLiveMemberSiteIdsByTagAsync"/> exists beside
+/// <see cref="GetLiveMemberSiteIdsAsync"/>: a consumer that needs to know WHICH tag a
+/// site came from would otherwise have to call the flat lookup once per tag, moving the
+/// loop out of here and into the caller. Two callers were doing exactly that before the
+/// by-tag overload existed — <c>BackendConfigurationTaskTrackerHelper</c>'s Workers
+/// column and the compliance report's <c>ResolveWorkerSiteIdsByArpId</c>. Three further
+/// call sites added in #1236 — <c>BackendConfigurationCalendarService</c>'s
+/// <c>GetTasksForWeek</c>, <c>Index</c> and <c>GetTaskTrackerList</c> — would have
+/// needed the same loop had this overload not existed; they never wrote one.
+/// </para>
 /// </summary>
 public class WorkerTagMembershipService(IEFormCoreService coreHelper) : IWorkerTagMembershipService
 {
@@ -134,6 +147,47 @@ public class WorkerTagMembershipService(IEFormCoreService coreHelper) : IWorkerT
             .ToListAsync(ct).ConfigureAwait(false);
 
         return [..siteIds];
+    }
+
+    /// <summary>
+    /// The batched, attribution-preserving forward lookup. ONE statement for the whole
+    /// tag set: the <c>(TagId, SiteId)</c> pairs are projected off the same
+    /// <see cref="LiveMemberships"/> query — the predicate is not restated, and the
+    /// grouping happens in memory over the rows that query already returns, not over the
+    /// table.
+    /// </summary>
+    /// <remarks>
+    /// Every requested id is seeded into the dictionary first, so a tag with no live
+    /// members comes back with an empty set rather than missing. That is the contract on
+    /// <see cref="IWorkerTagMembershipService.GetLiveMemberSiteIdsByTagAsync"/>; it also
+    /// means the pair loop can index rather than test-and-add.
+    /// </remarks>
+    public async Task<Dictionary<int, HashSet<int>>> GetLiveMemberSiteIdsByTagAsync(
+        IReadOnlyCollection<int> tagIds, CancellationToken ct = default)
+    {
+        if (tagIds == null || tagIds.Count == 0)
+        {
+            return new Dictionary<int, HashSet<int>>();
+        }
+
+        var tagIdList = tagIds.Distinct().ToList();
+        var byTagId = tagIdList.ToDictionary(id => id, _ => new HashSet<int>());
+
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+        var pairs = await LiveMemberships(sdkDbContext)
+            .Where(st => tagIdList.Contains(st.TagId.Value))
+            .Select(st => new { TagId = st.TagId.Value, SiteId = st.SiteId.Value })
+            .Distinct()
+            .ToListAsync(ct).ConfigureAwait(false);
+
+        foreach (var pair in pairs)
+        {
+            byTagId[pair.TagId].Add(pair.SiteId);
+        }
+
+        return byTagId;
     }
 
     public async Task<HashSet<int>> GetTagIdsForSitesAsync(

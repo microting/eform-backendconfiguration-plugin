@@ -20,6 +20,38 @@ public interface IWorkerTagMembershipService
         IReadOnlyCollection<int> tagIds, CancellationToken ct = default);
 
     /// <summary>
+    /// The same forward lookup as <see cref="GetLiveMemberSiteIdsAsync"/>, but keeping
+    /// per-tag attribution instead of flattening: tag id → that tag's live member site
+    /// ids. One database round trip for the whole set of tags.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This exists because the flat overload forces a caller that needs to know WHICH tag
+    /// a site came from into a query per tag, and five call sites needed exactly that:
+    /// <c>BackendConfigurationCalendarService</c>'s <c>GetTasksForWeek</c>, <c>Index</c>
+    /// and <c>GetTaskTrackerList</c>, <c>BackendConfigurationTaskTrackerHelper</c>'s
+    /// Workers column, and the compliance report's <c>ResolveWorkerSiteIdsByArpId</c>. On
+    /// the week view — which <c>calendar-container.component.ts</c> reloads on every
+    /// property selection and every week navigation — that would be one round trip per
+    /// distinct worker tag in the response, issued sequentially, where before #1236 there
+    /// were none.
+    /// </para>
+    /// <para>
+    /// <b>Every requested tag id is a key of the result</b>, mapping to an empty set when
+    /// it has no live members. Callers therefore never have to distinguish "absent" from
+    /// "empty" — both mean the same thing and neither occurs for a requested id. Ids not
+    /// asked for are never keys.
+    /// </para>
+    /// <para>
+    /// Returns an empty dictionary for a null/empty input without querying — the same
+    /// short-circuit as the other lookups, and what lets a caller with no team-assigned
+    /// row avoid touching the SDK context at all.
+    /// </para>
+    /// </remarks>
+    Task<Dictionary<int, HashSet<int>>> GetLiveMemberSiteIdsByTagAsync(
+        IReadOnlyCollection<int> tagIds, CancellationToken ct = default);
+
+    /// <summary>
     /// Reverse lookup: the worker tag ids that any of <paramref name="siteIds"/> is a
     /// live member of. Returns an empty set for a null/empty input without querying.
     /// </summary>
