@@ -1,4 +1,7 @@
-import { expect, Page, test } from '@playwright/test';
+import { expect, Page, Response, test } from '@playwright/test';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+import DatabaseConfigurationConstants from '../../../Constants/DatabaseConfigurationConstants';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
 import {
@@ -97,10 +100,19 @@ function oneMinuteIntervalsInput(page: Page) {
  * holds Advanced settings) is the sub-group's default, so no second click is
  * needed. The label is unique across every tab in the dialog on purpose: a
  * `.first()` here could silently land on a nested sub-tab instead.
+ *
+ * `via: 'keyboard'` is for while a request is held: the app's LoaderInterceptor
+ * puts a full-screen spinner overlay over everything while ANY request is
+ * pending, so a pointer click would never reach the tab. Focusing the tab and
+ * pressing Enter is the keyboard path mat-tab-group supports for every user.
  */
-async function openTimeRegistrationTab(page: Page): Promise<void> {
+async function openTimeRegistrationTab(page: Page, via: 'pointer' | 'keyboard' = 'pointer'): Promise<void> {
   const tab = dialog(page).locator('.mat-mdc-tab').filter({ hasText: TIME_REGISTRATION_TAB });
-  await tab.click({ timeout: UI_TIMEOUT });
+  if (via === 'keyboard') {
+    await tab.press('Enter', { timeout: UI_TIMEOUT });
+  } else {
+    await tab.click({ timeout: UI_TIMEOUT });
+  }
   await expect(tab, 'Timeregistration tab must become the selected tab').toHaveAttribute(
     'aria-selected',
     'true',
@@ -128,6 +140,55 @@ async function expectCheckedAndLocked(page: Page, context: string): Promise<void
   await expect(input, `${context}: "Use 1-minute intervals" must be disabled`).toBeDisabled({
     timeout: UI_TIMEOUT,
   });
+}
+
+const ASSIGNED_SITES_PATH = '/api/time-planning-pn/settings/assigned-sites';
+
+/** The edit dialog's saved-row GET — not the singular `assigned-site` PUT that saves it. */
+function isAssignedSiteGet(r: Response): boolean {
+  return new URL(r.url()).pathname.endsWith(ASSIGNED_SITES_PATH) && r.request().method() === 'GET';
+}
+
+const execFileAsync = promisify(execFile);
+
+/**
+ * Puts a saved AssignedSite back into 5-minute mode, straight in the CI database.
+ *
+ * No API can do this any more, which is the point of the PR: every create path
+ * hardcodes UseOneMinuteIntervals = true, and TimePlanning's updateAssignedSite
+ * ORs the incoming flag into the stored one (one-way). Yet every site set up
+ * before one-minute intervals became the default still looks exactly like this in
+ * production, and the edit dialog has to handle it. The container name and root
+ * password are the ones the "Start MariaDB" step of
+ * .github/workflows/dotnet-core-pr.yml starts the database with; the schema is the
+ * time-planning plugin's, under the customer number the database-configuration
+ * step sets up. Tests run in CI only (CLAUDE.md), where all of that holds.
+ */
+async function setSavedOneMinuteIntervalsToFalse(assignedSiteId: number): Promise<void> {
+  if (!Number.isInteger(assignedSiteId) || assignedSiteId <= 0) {
+    throw new Error(`Refusing to build SQL for AssignedSite id ${String(assignedSiteId)}`);
+  }
+  const database = `${DatabaseConfigurationConstants.customerNo}_eform-angular-time-planning-plugin`;
+  const sql =
+    `UPDATE AssignedSites SET UseOneMinuteIntervals = 0 ` +
+    `WHERE Id = ${assignedSiteId} AND WorkflowState <> 'removed'; SELECT ROW_COUNT();`;
+  let stdout: string;
+  try {
+    ({ stdout } = await execFileAsync(
+      'docker',
+      ['exec', 'mariadbtest', 'mariadb', '-u', 'root', '--password=secretpassword', '-N', '-B',
+        `--database=${database}`, '-e', sql],
+      { timeout: API_TIMEOUT }
+    ));
+  } catch (error) {
+    throw new Error(
+      `Could not put AssignedSite ${assignedSiteId} back into 5-minute mode via docker exec: ${String(error)}`
+    );
+  }
+  expect(
+    stdout.trim(),
+    `exactly one active AssignedSite row (id ${assignedSiteId}) must have been switched to 5-minute mode`
+  ).toBe('1');
 }
 
 /**
@@ -335,6 +396,105 @@ test.describe.serial('Property-worker 1-minute intervals are locked on', () => {
     });
     await expect(dialog(page).locator('#saveCreateBtn')).toHaveCount(0, { timeout: UI_TIMEOUT });
 
+    await cancelEditModal(workersPage);
+  });
+
+  // Runs LAST: it leaves timeRegWorker's saved row in 5-minute mode.
+  test('the edit dialog claims no 1-minute state until the saved row has loaded', async ({ page }) => {
+    // 3 min: login, two edit-modal round trips (one to read the AssignedSite id,
+    // one with its GET held) and one SQL statement. No device-user provisioning.
+    test.setTimeout(180000);
+
+    // WHAT THIS PROTECTS: the checkbox rule used to run from ngOnInit before the
+    // getAssignedSite GET landed, saw no saved row yet, and forced the box checked
+    // and locked — for a worker whose saved row is in 5-minute mode. formReady is
+    // not gated on that GET, so a user (or a test) could read "one-minute mode,
+    // locked" off a dialog that did not know. While the GET is in flight the box
+    // must be locked WITHOUT a forced value; once it lands the saved state rules.
+    const workersPage = new BackendConfigurationPropertyWorkersPage(page);
+    await workersPage.goToPropertyWorkers();
+
+    // --- Arrange: timeRegWorker's saved row, switched back to 5-minute mode ---
+    const firstLoad = waitForApiResponse(
+      page,
+      'GET /api/time-planning-pn/settings/assigned-sites (reads the saved AssignedSite id)',
+      isAssignedSiteGet,
+      API_TIMEOUT
+    );
+    // openEditModalFor() can fail before we reach the await below.
+    ignoreUnhandledRejections(firstLoad);
+    await workersPage.openEditModalFor(timeRegWorkerFullName);
+    const firstBody = await (await firstLoad).json();
+    expect(firstBody?.success, `assigned-sites GET (${firstBody?.message ?? ''})`).toBe(true);
+    const assignedSiteId = firstBody?.model?.id;
+    expect(typeof assignedSiteId, 'the worker must have a saved AssignedSite row').toBe('number');
+    await cancelEditModal(workersPage);
+
+    await setSavedOneMinuteIntervalsToFalse(assignedSiteId);
+
+    // --- Act: reopen with the saved-row GET held -----------------------------
+    const row = workerRow(page, timeRegWorkerFullName);
+    await expect(row, 'the worker to edit must be listed exactly once').toHaveCount(1, { timeout: UI_TIMEOUT });
+    const menuItem = await openRowActionMenu(page, row, `Device-user row "${timeRegWorkerFullName}"`);
+
+    // TimePlanningPnSettingsService.getAssignedSite() -> GET
+    // api/time-planning-pn/settings/assigned-sites?siteId=..., fired from the
+    // dialog's ngOnInit for a worker with time registration on.
+    const assignedSite = await holdApiGetRequests(
+      page,
+      'GET /api/time-planning-pn/settings/assigned-sites (edit dialog loads the saved AssignedSite)',
+      ASSIGNED_SITES_PATH,
+      UI_TIMEOUT
+    );
+    try {
+      await menuItem('editDeviceUserBtn').click({ timeout: UI_TIMEOUT });
+      await assignedSite.held;
+
+      // The window is real: the dialog reports itself ready while the saved row
+      // is still unknown, because formReady only waits for languages.
+      await expect(
+        dialog(page).locator('form[data-form-ready]'),
+        'the dialog must report ready even with the saved-row GET held — this is the window a user can act in'
+      ).toHaveAttribute('data-form-ready', 'true', { timeout: API_TIMEOUT });
+
+      await openTimeRegistrationTab(page, 'keyboard');
+      const input = oneMinuteIntervalsInput(page);
+      await expect(input, 'while the saved row is loading the checkbox must be locked').toBeDisabled({
+        timeout: UI_TIMEOUT,
+      });
+      // The assertion the old code fails: it forced the value to true here.
+      await expect(
+        input,
+        'while the saved row is loading the checkbox must not claim one-minute mode — the dialog does not know it yet'
+      ).not.toBeChecked({ timeout: UI_TIMEOUT });
+
+      // Registered before the release; the held response cannot arrive earlier.
+      const heldResponse = waitForApiResponse(
+        page,
+        'GET /api/time-planning-pn/settings/assigned-sites (the released saved-row GET)',
+        isAssignedSiteGet,
+        API_TIMEOUT
+      );
+      ignoreUnhandledRejections(heldResponse);
+      await assignedSite.release();
+
+      // What the dialog was handed: the real saved row, in 5-minute mode.
+      const response = await heldResponse;
+      expect(response.status(), 'assigned-sites GET status').toBe(200);
+      const body = await response.json();
+      expect(body?.success, `assigned-sites GET (${body?.message ?? ''})`).toBe(true);
+      expect(body?.model?.id, 'the GET must return the row arranged above').toBe(assignedSiteId);
+      expect(body?.model?.useOneMinuteIntervals, 'precondition: the saved row is in 5-minute mode').toBe(false);
+    } finally {
+      await assignedSite.release();
+    }
+
+    // --- Assert: the saved state now rules -----------------------------------
+    const input = oneMinuteIntervalsInput(page);
+    await expect(input, 'a saved 5-minute row is editable once loaded').toBeEnabled({ timeout: UI_TIMEOUT });
+    await expect(input, 'a saved 5-minute row shows unchecked once loaded').not.toBeChecked({ timeout: UI_TIMEOUT });
+
+    // Nothing to save — the assertions are about what the dialog shows.
     await cancelEditModal(workersPage);
   });
 });

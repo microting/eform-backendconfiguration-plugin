@@ -106,6 +106,11 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   private languagesLoaded$ = new ReplaySubject<void>(1);
   private formReadyWatcher$: Subscription;
   private globalAutoBreakSettings: GlobalAutoBreakSettingsModel;
+  // True from the moment an edit dialog issues its getAssignedSite GET until that
+  // GET answers - and for good if it fails. Until then the dialog cannot know
+  // whether the worker has a saved AssignedSite, let alone its 1-minute flag, so
+  // applyOneMinuteIntervalsRule() must neither force the value nor offer the choice.
+  private savedAssignedSiteUnknown = false;
 
 
   private updateDisabledFieldsBasedOnResigned() {
@@ -128,11 +133,18 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
    * UseOneMinuteIntervals=true on the row it is about to create - both when
    * creating a worker and when time registration is switched on for an existing
    * one - so the box shows checked and locked rather than offering a choice that
-   * would be ignored.
+   * would be ignored. While an edit dialog is still waiting for the saved row it
+   * cannot tell that case from a saved true or false, so it claims none of them.
    */
   private applyOneMinuteIntervalsRule() {
     const control = this.form.get('useOneMinuteIntervals');
     if (!control) {
+      return;
+    }
+    if (this.savedAssignedSiteUnknown) {
+      // Locked with the value left alone. A disabled control is left out of
+      // form.value, so nothing can be submitted from it in the meantime.
+      control.disable({emitEvent: false});
       return;
     }
     const backendWillCreateAssignedSite = !this.selectedAssignedSite.id;
@@ -305,8 +317,15 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       }
     });
 
+    this.savedAssignedSiteUnknown = !!this.timeRegistrationEnabled;
     this.timeRegistrationEnabled ? this.timePlanningPnSettingsService.getAssignedSite(this.selectedDeviceUser.id).pipe(
       tap((response) => {
+        // Any answer settles it. No model means the site has no active AssignedSite
+        // (the endpoint answers "Site not found"), so saving mints one hardcoded to
+        // one-minute mode - the rule's "no saved row" case. An HTTP error, or the
+        // 401 interceptor's silent EMPTY, never reaches this tap, so the control
+        // stays locked and unforced rather than guessing.
+        this.savedAssignedSiteUnknown = false;
         if (response && response.success && response.model) {
           this.selectedAssignedSite = response.model;
             this.form.patchValue({
@@ -329,8 +348,6 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
               payRuleSetId: this.selectedAssignedSite.payRuleSetId ?? null,
               useOneMinuteIntervals: this.selectedAssignedSite.useOneMinuteIntervals || false,
             });
-
-            this.applyOneMinuteIntervalsRule();
 
             // Patch auto break settings from assigned site
             const autoBreakFg = this.form.get('autoBreakSettings') as FormGroup;
@@ -355,6 +372,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
             this.onEntryMethodChange(this.entryMethod, { emitEvent: false });
             this.onEditingPolicyChange(this.editingPolicy, { emitEvent: false });
         }
+        this.applyOneMinuteIntervalsRule();
       })
     ).subscribe() : null;
 
