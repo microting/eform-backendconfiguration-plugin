@@ -862,6 +862,14 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                         var previousVersions = await timePlanningDbContext.AssignedSiteVersions
                                             .AsNoTracking()
                                             .Where(x => x.AssignedSiteId == previousAssignment.Id)
+                                            // Only the trail as it stood while the site was LIVE. Disabling time
+                                            // registration soft-deletes the row through PnBase.Delete, which writes a
+                                            // version row (WorkflowState = removed) copying the CURRENT flag. For a
+                                            // site flipped to true outside the audited path, that removal row would be
+                                            // the first to record true and pass the DISABLE date off as the switch —
+                                            // turning everything registered between the last live save and the disable
+                                            // into 5-minute mode, where the old row's own timeline had read one-minute.
+                                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                             .OrderBy(x => x.Id)
                                             // UpdatedAt is the version row's save time; CreatedAt (a copy of the base
                                             // entity's creation time) is the stand-in for legacy rows without one.
@@ -870,7 +878,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
                                         if (previousVersions.Count == 0 || previousVersions[0].UseOneMinuteIntervals)
                                         {
-                                            // No version rows at all: OneMinuteModeTimeline falls back to the current
+                                            // No live version rows at all: OneMinuteModeTimeline falls back to the current
                                             // flag, which was true. Earliest version row already true: its
                                             // _initialValue rule makes one-minute hold from the beginning of time.
                                             // Either way there is no transition to record.

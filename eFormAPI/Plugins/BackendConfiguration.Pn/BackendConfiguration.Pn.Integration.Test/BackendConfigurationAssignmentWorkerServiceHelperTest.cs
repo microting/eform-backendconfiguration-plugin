@@ -906,9 +906,9 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         await legacyAssignment.Create(TimePlanningPnDbContext!);
 
         // A row older than AssignedSiteVersions itself: no audit trail at all. Drop the version row
-        // Create just wrote, and soft-delete the row outside PnBase so its removal is not audited
-        // either — the app's own disable path would write a (true) version row and send this site
-        // down the "earliest row already true" branch instead of the empty-trail one.
+        // Create just wrote, and soft-delete the row outside PnBase so no removal row exists either.
+        // (Through the app's disable path the removal row is written but filtered out of the trail,
+        // which lands on this same branch.)
         TimePlanningPnDbContext!.AssignedSiteVersions.RemoveRange(
             await TimePlanningPnDbContext.AssignedSiteVersions
                 .Where(x => x.AssignedSiteId == legacyAssignment.Id)
@@ -1042,9 +1042,8 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         await TimePlanningPnDbContext.SaveChangesAsync();
 
         // The un-audited flip, and an un-audited removal: plain SaveChanges writes no version row,
-        // standing in for a raw-SQL ops change. (Through the app's disable path the removal IS audited
-        // and its version row would record true, so this branch would not be reached — the trail must
-        // genuinely never record true for it to apply.)
+        // standing in for a raw-SQL ops change. The same history disabled through the app — whose
+        // removal row DOES record true — is ..._DisabledThroughApp_CarriesLastLiveSave below.
         legacyAssignment.UseOneMinuteIntervals = true;
         legacyAssignment.WorkflowState = Constants.WorkflowStates.Removed;
         await TimePlanningPnDbContext.SaveChangesAsync();
@@ -1082,6 +1081,85 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         Assert.That(timeline.WasOneMinuteAt(lastAuditedSave), Is.True,
             "From the last audited save onwards the un-audited flip may already have happened.");
         Assert.That(timeline.WasOneMinuteAt(lastAuditedSave.AddDays(1)), Is.True);
+    }
+
+    // The divergence case again, but disabled through the REAL path: UpdateDeviceUser with
+    // TimeRegistrationEnabled = false soft-deletes the row via PnBase.Delete, which writes a version row
+    // (WorkflowState = removed) copying the CURRENT flag — true. That removal row is the first row in the
+    // trail to record true, so unless the carry-over ignores it, the DISABLE date passes for the switch.
+    [Test]
+    public async Task
+        BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_TimeRegistrationReEnabledOnSiteFlippedOutsideAudit_DisabledThroughApp_CarriesLastLiveSave()
+    {
+        // Arrange
+        var worker = await ArrangeWorkerWithoutTimeRegistration();
+
+        var legacyAssignment = new AssignedSite
+        {
+            SiteId = worker.SiteMicrotingUid,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1,
+            UseOneMinuteIntervals = false
+        };
+        await legacyAssignment.Create(TimePlanningPnDbContext!);
+        legacyAssignment.UseOnlyPlanHours = true;
+        await legacyAssignment.Update(TimePlanningPnDbContext!);
+
+        var liveVersions = await TimePlanningPnDbContext!.AssignedSiteVersions
+            .Where(x => x.AssignedSiteId == legacyAssignment.Id)
+            .OrderBy(x => x.Id)
+            .ToListAsync();
+        Assert.That(liveVersions.Count, Is.EqualTo(2), "Precondition: exactly two live audited saves.");
+        Assert.That(liveVersions.All(x => !x.UseOneMinuteIntervals), Is.True,
+            "Precondition: no live audited save may record one-minute mode.");
+        var lastLiveSave = DateTime.UtcNow.AddDays(-30);
+        liveVersions[0].UpdatedAt = DateTime.UtcNow.AddDays(-60);
+        liveVersions[1].UpdatedAt = lastLiveSave;
+        await TimePlanningPnDbContext.SaveChangesAsync();
+
+        // The un-audited flip (raw-SQL ops change stand-in): the row is live and true, its trail says false.
+        legacyAssignment.UseOneMinuteIntervals = true;
+        await TimePlanningPnDbContext.SaveChangesAsync();
+
+        // Act — disable through the app, then re-enable
+        var disableResult = await SetTimeRegistration(worker, false);
+        Assert.That(disableResult.Success, Is.True, disableResult.Message);
+
+        // Precondition, asserted: the disable wrote the removal row this test is about, and it records true.
+        var removalVersions = await TimePlanningPnDbContext.AssignedSiteVersions.AsNoTracking()
+            .Where(x => x.AssignedSiteId == legacyAssignment.Id
+                        && x.WorkflowState == Constants.WorkflowStates.Removed)
+            .ToListAsync();
+        Assert.That(removalVersions.Count, Is.EqualTo(1), "The app's disable must write exactly one removal row.");
+        Assert.That(removalVersions[0].UseOneMinuteIntervals, Is.True,
+            "The removal row copies the current flag — the true the live trail never recorded.");
+
+        var result = await SetTimeRegistration(worker, true);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var assignmentsForSite = await AssignmentsForSite(worker.SiteMicrotingUid);
+        Assert.That(assignmentsForSite.Count, Is.EqualTo(2));
+        Assert.That(assignmentsForSite[0].Id, Is.EqualTo(legacyAssignment.Id));
+        Assert.That(assignmentsForSite[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+
+        var reEnabled = assignmentsForSite[1];
+        Assert.That(reEnabled.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(reEnabled.UseOneMinuteIntervals, Is.True);
+        Assert.That(reEnabled.UseOneMinuteIntervalsFrom, Is.Not.Null);
+        Assert.That(reEnabled.UseOneMinuteIntervalsFrom!.Value.Date, Is.EqualTo(lastLiveSave.Date),
+            "The stamp must be the last LIVE audited save, not the disable date the removal row carries.");
+
+        // WRONG outcome this pins: counting the removal row as the transition stamps the disable date
+        // (today), which turns the 30 days between the last live save and the disable — one-minute
+        // mode by the old row's own divergence correction before it was disabled — into 5-minute.
+        var timeline = await OneMinuteModeTimeline.BuildAsync(TimePlanningPnDbContext!, reEnabled);
+        Assert.That(timeline.WasOneMinuteAt(lastLiveSave.AddDays(-1)), Is.False,
+            "Before the last live save the site was provably in 5-minute mode.");
+        Assert.That(timeline.WasOneMinuteAt(lastLiveSave.AddDays(15)), Is.True,
+            "A registration between the last live save and the disable resolves as one-minute mode.");
+        Assert.That(timeline.WasOneMinuteAt(DateTime.UtcNow), Is.True);
     }
 
     /// <summary>
