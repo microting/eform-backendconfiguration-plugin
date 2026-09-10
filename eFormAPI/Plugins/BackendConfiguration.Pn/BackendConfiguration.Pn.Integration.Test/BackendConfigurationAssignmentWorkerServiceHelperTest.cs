@@ -843,15 +843,8 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var recordedFrom = DateTime.UtcNow.AddDays(-30);
         // Created true, so version row #0 is already true: were the stamp branch deleted, the
         // version-trail branch would see "earliest row already true" and carry NULL instead.
-        var legacyAssignment = new AssignedSite
-        {
-            SiteId = worker.SiteMicrotingUid,
-            CreatedByUserId = 1,
-            UpdatedByUserId = 1,
-            UseOneMinuteIntervals = true,
-            UseOneMinuteIntervalsFrom = recordedFrom
-        };
-        await legacyAssignment.Create(TimePlanningPnDbContext!);
+        var legacyAssignment = await CreateLegacyAssignment(worker, useOneMinuteIntervals: true,
+            useOneMinuteIntervalsFrom: recordedFrom);
         // Read back what the database actually holds (column precision), which is what gets carried.
         var storedFrom = (await TimePlanningPnDbContext!.AssignedSites.AsNoTracking()
             .FirstAsync(x => x.Id == legacyAssignment.Id)).UseOneMinuteIntervalsFrom;
@@ -896,14 +889,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // Arrange
         var worker = await ArrangeWorkerWithoutTimeRegistration();
 
-        var legacyAssignment = new AssignedSite
-        {
-            SiteId = worker.SiteMicrotingUid,
-            CreatedByUserId = 1,
-            UpdatedByUserId = 1,
-            UseOneMinuteIntervals = true
-        };
-        await legacyAssignment.Create(TimePlanningPnDbContext!);
+        var legacyAssignment = await CreateLegacyAssignment(worker, useOneMinuteIntervals: true);
 
         // A row older than AssignedSiteVersions itself: no audit trail at all. Drop the version row
         // Create just wrote, and soft-delete the row outside PnBase so no removal row exists either.
@@ -956,14 +942,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var worker = await ArrangeWorkerWithoutTimeRegistration();
 
         // Created true on purpose: PnBase.Create writes version row #0, so the trail starts at true.
-        var legacyAssignment = new AssignedSite
-        {
-            SiteId = worker.SiteMicrotingUid,
-            CreatedByUserId = 1,
-            UpdatedByUserId = 1,
-            UseOneMinuteIntervals = true
-        };
-        await legacyAssignment.Create(TimePlanningPnDbContext!);
+        var legacyAssignment = await CreateLegacyAssignment(worker, useOneMinuteIntervals: true);
 
         // Backdate version row #0 so that mistaking it for a false→true transition produces a date
         // 30 days back — visible on the timeline — rather than one indistinguishable from "now".
@@ -1015,14 +994,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // Arrange
         var worker = await ArrangeWorkerWithoutTimeRegistration();
 
-        var legacyAssignment = new AssignedSite
-        {
-            SiteId = worker.SiteMicrotingUid,
-            CreatedByUserId = 1,
-            UpdatedByUserId = 1,
-            UseOneMinuteIntervals = false
-        };
-        await legacyAssignment.Create(TimePlanningPnDbContext!);
+        var legacyAssignment = await CreateLegacyAssignment(worker, useOneMinuteIntervals: false);
         // A second audited save, still in 5-minute mode, so the trail has a FIRST and a LAST row with
         // different dates — carrying the first one instead of the last must show on the timeline.
         legacyAssignment.UseOnlyPlanHours = true;
@@ -1094,14 +1066,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // Arrange
         var worker = await ArrangeWorkerWithoutTimeRegistration();
 
-        var legacyAssignment = new AssignedSite
-        {
-            SiteId = worker.SiteMicrotingUid,
-            CreatedByUserId = 1,
-            UpdatedByUserId = 1,
-            UseOneMinuteIntervals = false
-        };
-        await legacyAssignment.Create(TimePlanningPnDbContext!);
+        var legacyAssignment = await CreateLegacyAssignment(worker, useOneMinuteIntervals: false);
         legacyAssignment.UseOnlyPlanHours = true;
         await legacyAssignment.Update(TimePlanningPnDbContext!);
 
@@ -1209,6 +1174,25 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         return new ArrangedWorker(core, userService, userManager, Substitute.For<ILogger>(),
             (int)currentSite.MicrotingUid!, Guid.NewGuid().ToString(), Guid.NewGuid().ToString(),
             $"{Guid.NewGuid()}@test.com");
+    }
+
+    /// <summary>
+    /// Hand-builds an earlier AssignedSite for <paramref name="worker"/>'s site. PnBase.Create writes its
+    /// version row #0, so the trail starts at <paramref name="useOneMinuteIntervals"/>.
+    /// </summary>
+    private async Task<AssignedSite> CreateLegacyAssignment(ArrangedWorker worker, bool useOneMinuteIntervals,
+        DateTime? useOneMinuteIntervalsFrom = null)
+    {
+        var legacyAssignment = new AssignedSite
+        {
+            SiteId = worker.SiteMicrotingUid,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1,
+            UseOneMinuteIntervals = useOneMinuteIntervals,
+            UseOneMinuteIntervalsFrom = useOneMinuteIntervalsFrom
+        };
+        await legacyAssignment.Create(TimePlanningPnDbContext!);
+        return legacyAssignment;
     }
 
     /// <summary>Switches time registration on or off for <paramref name="worker"/> through UpdateDeviceUser.</summary>

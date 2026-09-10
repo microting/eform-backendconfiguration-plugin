@@ -12,7 +12,7 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
-import { openRowActionMenu } from '../row-action-menu';
+import { ActionMenuItem, openRowActionMenu } from '../row-action-menu';
 import {
   API_TIMEOUT,
   holdApiGetRequests,
@@ -76,9 +76,11 @@ const plainWorker: PropertyWorker = {
 };
 const plainWorkerFullName = `${plainWorker.name} ${plainWorker.surname}`;
 
-/** The device-user table row of `workerFullName`; asserted unique before use. */
-function workerRow(page: Page, workerFullName: string) {
-  return page.locator('.mat-mdc-row').filter({ hasText: workerFullName });
+/** Opens the action menu of `workerFullName`'s device-user row, after asserting the row is unique. */
+async function openWorkerRowMenu(page: Page, workerFullName: string): Promise<ActionMenuItem> {
+  const row = page.locator('.mat-mdc-row').filter({ hasText: workerFullName });
+  await expect(row, 'the worker to edit must be listed exactly once').toHaveCount(1, { timeout: UI_TIMEOUT });
+  return openRowActionMenu(page, row, `Device-user row "${workerFullName}"`);
 }
 
 /** The open create/edit dialog. Every locator below hangs off this, never off the page. */
@@ -359,9 +361,7 @@ test.describe.serial('Property-worker 1-minute intervals are locked on', () => {
     const workersPage = new BackendConfigurationPropertyWorkersPage(page);
     await workersPage.goToPropertyWorkers();
 
-    const row = workerRow(page, timeRegWorkerFullName);
-    await expect(row, 'the worker to edit must be listed exactly once').toHaveCount(1, { timeout: UI_TIMEOUT });
-    const menuItem = await openRowActionMenu(page, row, `Device-user row "${timeRegWorkerFullName}"`);
+    const menuItem = await openWorkerRowMenu(page, timeRegWorkerFullName);
 
     // AppSettingsService.getLanguages() -> GET api/settings/languages, fired from
     // the dialog's ngOnInit. Installed right before the click that opens it.
@@ -441,9 +441,7 @@ test.describe.serial('Property-worker 1-minute intervals are locked on', () => {
     await setSavedOneMinuteIntervalsToFalse(assignedSiteId);
 
     // --- Act: reopen with the saved-row GET held -----------------------------
-    const row = workerRow(page, timeRegWorkerFullName);
-    await expect(row, 'the worker to edit must be listed exactly once').toHaveCount(1, { timeout: UI_TIMEOUT });
-    const menuItem = await openRowActionMenu(page, row, `Device-user row "${timeRegWorkerFullName}"`);
+    const menuItem = await openWorkerRowMenu(page, timeRegWorkerFullName);
 
     // TimePlanningPnSettingsService.getAssignedSite() -> GET
     // api/time-planning-pn/settings/assigned-sites?siteId=..., fired from the
