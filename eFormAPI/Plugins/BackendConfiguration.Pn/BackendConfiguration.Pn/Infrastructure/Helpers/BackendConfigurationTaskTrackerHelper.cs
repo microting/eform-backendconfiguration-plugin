@@ -290,11 +290,12 @@ public static class BackendConfigurationTaskTrackerHelper
 				// Deliberately a SEPARATE set from the sitesWithNames the filter reads —
 				// see the filter block above.
 				var displaySiteIds = planningSiteIds.ToList();
+				var seenDisplaySiteIds = new HashSet<int>(displaySiteIds);
 				foreach (var tagId in arpWorkerTagIds)
 				{
 					foreach (var memberSiteId in memberSiteIdsByTagId.GetValueOrDefault(tagId, []))
 					{
-						if (!displaySiteIds.Contains(memberSiteId))
+						if (seenDisplaySiteIds.Add(memberSiteId))
 						{
 							displaySiteIds.Add(memberSiteId);
 						}

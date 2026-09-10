@@ -560,12 +560,13 @@ public class BackendConfigurationCalendarService(
             List<int> TeamAssigneesOf(List<int> tagIds)
             {
                 var siteIds = new List<int>();
+                var seenSiteIds = new HashSet<int>();
                 foreach (var tagId in tagIds)
                 {
                     if (!memberSiteIdsByTagId.TryGetValue(tagId, out var memberSiteIds)) continue;
                     foreach (var siteId in memberSiteIds)
                     {
-                        if (!siteIds.Contains(siteId))
+                        if (seenSiteIds.Add(siteId))
                         {
                             siteIds.Add(siteId);
                         }
@@ -1383,12 +1384,13 @@ public class BackendConfigurationCalendarService(
 
                 var arpWorkerTagIds = workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>());
                 var teamAssigneeIds = new List<int>();
+                var seenTeamAssigneeIds = new HashSet<int>();
                 foreach (var workerTagId in arpWorkerTagIds)
                 {
                     if (!memberSiteIdsByTagId.TryGetValue(workerTagId, out var memberSiteIds)) continue;
                     foreach (var memberSiteId in memberSiteIds)
                     {
-                        if (!teamAssigneeIds.Contains(memberSiteId))
+                        if (seenTeamAssigneeIds.Add(memberSiteId))
                         {
                             teamAssigneeIds.Add(memberSiteId);
                         }
@@ -5984,12 +5986,13 @@ public class BackendConfigurationCalendarService(
                     ? complianceWorkerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>())
                     : new List<int>();
                 var rowTeamAssigneeIds = new List<int>();
+                var seenRowTeamAssigneeIds = new HashSet<int>();
                 foreach (var workerTagId in rowWorkerTagIds)
                 {
                     if (!memberSiteIdsByTagId.TryGetValue(workerTagId, out var memberSiteIds)) continue;
                     foreach (var memberSiteId in memberSiteIds)
                     {
-                        if (!rowTeamAssigneeIds.Contains(memberSiteId))
+                        if (seenRowTeamAssigneeIds.Add(memberSiteId))
                         {
                             rowTeamAssigneeIds.Add(memberSiteId);
                         }

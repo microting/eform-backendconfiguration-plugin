@@ -1466,12 +1466,13 @@ public class BackendConfigurationComplianceReportService(
             // replaces: teamSiteIds is de-duped in tag order, so appending it yields
             // exactly the order that loop produced.
             var teamSiteIds = new List<int>();
+            var seenTeamSiteIds = new HashSet<int>();
             foreach (var tagId in workerTagIdsByArpId.GetValueOrDefault(arpId, []))
             {
                 if (!memberSiteIdsByTagId.TryGetValue(tagId, out var memberSiteIds)) continue;
                 foreach (var siteId in memberSiteIds)
                 {
-                    if (!teamSiteIds.Contains(siteId))
+                    if (seenTeamSiteIds.Add(siteId))
                     {
                         teamSiteIds.Add(siteId);
                     }
@@ -1479,9 +1480,10 @@ public class BackendConfigurationComplianceReportService(
             }
 
             var allSiteIds = new List<int>(planningSiteIds);
+            var seenAllSiteIds = new HashSet<int>(planningSiteIds);
             foreach (var siteId in teamSiteIds)
             {
-                if (!allSiteIds.Contains(siteId))
+                if (seenAllSiteIds.Add(siteId))
                 {
                     allSiteIds.Add(siteId);
                 }
