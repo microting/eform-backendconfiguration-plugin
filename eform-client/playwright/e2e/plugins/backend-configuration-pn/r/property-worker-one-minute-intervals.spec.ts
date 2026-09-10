@@ -273,10 +273,11 @@ test.describe.serial('Property-worker 1-minute intervals are locked on', () => {
     ).toHaveCount(1, { timeout: UI_TIMEOUT });
   });
 
-  test('reopening the created worker shows one-minute mode saved and still locked', async ({ page }) => {
-    // 3 min: login plus one edit-modal round trip (row action menu, the modal's
-    // assigned-site GET, form-ready). No device-user provisioning here.
-    test.setTimeout(180000);
+  test('reopening the created worker shows one-minute mode locked, and saving sends exactly that', async ({ page }) => {
+    // 4 min: login, one edit-modal round trip (row action menu, the modal's
+    // assigned-site GET, form-ready), then one save: update-device-user (SDK-backed,
+    // SLOW_API_TIMEOUT), the assigned-site PUT and the list refresh.
+    test.setTimeout(240000);
 
     const workersPage = new BackendConfigurationPropertyWorkersPage(page);
     await workersPage.goToPropertyWorkers();
@@ -312,7 +313,68 @@ test.describe.serial('Property-worker 1-minute intervals are locked on', () => {
     await openTimeRegistrationTab(page);
     await expectCheckedAndLocked(page, 'edit modal for a worker whose AssignedSite is saved in one-minute mode');
 
-    await cancelEditModal(workersPage);
+    // Saving from the edit dialog sends the flag twice — on the device user and on
+    // the assigned site — and both must say what the locked box shows. The device-
+    // user payload used to say false here: the component mirrors form valueChanges
+    // into the model, one emission captured the control's default false during
+    // init, and a disabled control is absent from form.value, so nothing replaced
+    // it. updateSingle() now reads the control itself (oneMinuteIntervalsForPayload).
+    const updateDeviceUserRequest = waitForApiResponse(
+      page,
+      'POST /api/backend-configuration-pn/properties/assignment/update-device-user (edit save)',
+      r =>
+        r.url().includes('/api/backend-configuration-pn/properties/assignment/update-device-user') &&
+        r.request().method() === 'POST',
+      SLOW_API_TIMEOUT
+    );
+    const assignedSitePut = waitForApiResponse(
+      page,
+      'PUT /api/time-planning-pn/settings/assigned-site (edit save)',
+      r =>
+        new URL(r.url()).pathname.endsWith('/api/time-planning-pn/settings/assigned-site') &&
+        r.request().method() === 'PUT',
+      SLOW_API_TIMEOUT
+    );
+    const listRefresh = waitForApiResponse(
+      page,
+      'POST /api/backend-configuration-pn/properties/assignment/index-device-user (list refresh after save)',
+      r =>
+        r.url().includes('/api/backend-configuration-pn/properties/assignment/index-device-user') &&
+        r.request().method() === 'POST',
+      SLOW_API_TIMEOUT
+    );
+    // Awaited one after another below; a later one can reject while an earlier one is pending.
+    ignoreUnhandledRejections(updateDeviceUserRequest, assignedSitePut, listRefresh);
+
+    const saveBtn = dialog(page).locator('#saveEditBtn');
+    await expect(saveBtn, 'the edit form must be valid to save').toBeEnabled({ timeout: UI_TIMEOUT });
+    await saveBtn.click({ timeout: UI_TIMEOUT });
+
+    const updateResponse = await updateDeviceUserRequest;
+    const updateResult = await updateResponse.json().catch(() => null);
+    expect(updateResponse.status(), `update-device-user status (${JSON.stringify(updateResult)})`).toBe(200);
+    expect(updateResult?.success, `update-device-user success (${updateResult?.message ?? ''})`).toBe(true);
+    const updateBody = JSON.parse(updateResponse.request().postData() || '{}');
+    expect(
+      updateBody.useOneMinuteIntervals,
+      'the update-device-user payload must say what the checked, locked box shows'
+    ).toBe(true);
+
+    const putResponse = await assignedSitePut;
+    const putResult = await putResponse.json().catch(() => null);
+    expect(putResponse.status(), `assigned-site PUT status (${JSON.stringify(putResult)})`).toBe(200);
+    expect(putResult?.success, `assigned-site PUT success (${putResult?.message ?? ''})`).toBe(true);
+    const putBody = JSON.parse(putResponse.request().postData() || '{}');
+    expect(
+      putBody.useOneMinuteIntervals,
+      'the assigned-site PUT payload must say what the checked, locked box shows'
+    ).toBe(true);
+
+    // The save closes the dialog and refreshes the list; wait for both before the
+    // next test touches the row.
+    await listRefresh;
+    await saveBtn.waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
+    await workersPage.newDeviceUserBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   });
 
   test('switching time registration on for an existing worker locks it too', async ({ page }) => {
