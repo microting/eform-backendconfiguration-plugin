@@ -142,8 +142,8 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       return;
     }
     if (this.savedAssignedSiteUnknown) {
-      // Locked with the value left alone. A disabled control is left out of
-      // form.value, so nothing can be submitted from it in the meantime.
+      // Locked with the value left alone; oneMinuteIntervalsForPayload() sends
+      // nothing for it in the meantime.
       control.disable({emitEvent: false});
       return;
     }
@@ -159,6 +159,23 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       // the worker is resigned - then the resigned rule keeps everything disabled.
       control.enable({emitEvent: false});
     }
+  }
+
+  /**
+   * The 1-minute-intervals value a save sends: exactly what the checkbox shows,
+   * read from the control itself. Neither shortcut works - a disabled control is
+   * absent from form.value, and the valueChanges mirror into selectedDeviceUser
+   * can hold a value captured before applyOneMinuteIntervalsRule() ran (any
+   * updateValueAndValidity() bubbling up while the control is still enabled at
+   * its default false), so without this a checked box was sent as false.
+   * Undefined - key omitted - while the saved state is unknown: the dialog
+   * claims nothing then.
+   */
+  private oneMinuteIntervalsForPayload(): boolean | undefined {
+    if (this.savedAssignedSiteUnknown) {
+      return undefined;
+    }
+    return !!this.form.get('useOneMinuteIntervals')?.value;
   }
 
   get languages() {
@@ -498,6 +515,11 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     const formValue = this.form.value;
     Object.assign(this.selectedDeviceUser, formValue);
     Object.assign(this.selectedAssignedSite, formValue);
+    const useOneMinuteIntervals = this.oneMinuteIntervalsForPayload();
+    this.selectedDeviceUser.useOneMinuteIntervals = useOneMinuteIntervals;
+    if (useOneMinuteIntervals !== undefined) {
+      this.selectedAssignedSite.useOneMinuteIntervals = useOneMinuteIntervals;
+    }
 
     // Map auto break settings from nested form group to flat model properties
     if (formValue.autoBreakSettings) {
@@ -592,6 +614,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     }
     const formValue = this.form.value;
     Object.assign(this.selectedDeviceUser, formValue);
+    this.selectedDeviceUser.useOneMinuteIntervals = this.oneMinuteIntervalsForPayload();
     this.deviceUserCreate$ = this.propertiesService
       .createSingleDeviceUser(this.selectedDeviceUser)
       .subscribe((operation) => {

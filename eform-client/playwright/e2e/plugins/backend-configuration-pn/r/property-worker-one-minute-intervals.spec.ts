@@ -158,11 +158,15 @@ const execFileAsync = promisify(execFile);
  * hardcodes UseOneMinuteIntervals = true, and TimePlanning's updateAssignedSite
  * ORs the incoming flag into the stored one (one-way). Yet every site set up
  * before one-minute intervals became the default still looks exactly like this in
- * production, and the edit dialog has to handle it. The container name and root
- * password are the ones the "Start MariaDB" step of
- * .github/workflows/dotnet-core-pr.yml starts the database with; the schema is the
- * time-planning plugin's, under the customer number the database-configuration
- * step sets up. Tests run in CI only (CLAUDE.md), where all of that holds.
+ * production, and the edit dialog has to handle it.
+ *
+ * Depends on .github/workflows/dotnet-core-pr.yml, job pn-playwright-test: its
+ * "Start MariaDB" step (`docker run --name mariadbtest ...`, line 137 at the time
+ * of writing) starts the database on the same runner host this spec runs on, with
+ * the root password it passes as MYSQL_ROOT_PASSWORD; the job's own "Change
+ * rabbitmq hostname" step already runs `docker exec -i mariadbtest mariadb -u root
+ * ...` the same way. The schema is the time-planning plugin's, under the customer
+ * number the database-configuration step sets up. Tests run in CI only (CLAUDE.md).
  */
 async function setSavedOneMinuteIntervalsToFalse(assignedSiteId: number): Promise<void> {
   if (!Number.isInteger(assignedSiteId) || assignedSiteId <= 0) {
@@ -208,7 +212,7 @@ test.describe.serial('Property-worker 1-minute intervals are locked on', () => {
     await new LoginPage(page).login();
   });
 
-  test('the create modal shows it checked and locked, and never sends a choice', async ({ page }) => {
+  test('the create modal shows it checked and locked, and sends exactly that', async ({ page }) => {
     // 5 min: login (up to 2 min on a cold app), one property create, and one
     // device-user create — the SDK provisioning call alone gets SLOW_API_TIMEOUT
     // (60s), followed by the assignment POST and the list refresh (30s each).
@@ -228,9 +232,13 @@ test.describe.serial('Property-worker 1-minute intervals are locked on', () => {
     await openTimeRegistrationTab(page);
     await expectCheckedAndLocked(page, 'create modal');
 
-    // The disabled control is left out of `form.value` and DeviceUserModel declares
-    // no useOneMinuteIntervals field, so the payload must not carry the key at all —
-    // which also rules out the `false` the server would silently overrule.
+    // The payload must carry exactly what the checkbox shows: true. It used to say
+    // false while the box showed checked — the component mirrors form valueChanges
+    // into the model, one such emission captured the control's default false before
+    // the rule ticked and locked it, and a disabled control is absent from
+    // form.value, so nothing overwrote the stale value. The server overrules it
+    // today (create hardcodes true), but a payload contradicting the UI is the same
+    // lie this spec exists to catch, and it would persist the day that changes.
     const createRequest = waitForApiResponse(
       page,
       'PUT /api/backend-configuration-pn/properties/assignment/create-device-user (create payload)',
@@ -247,8 +255,8 @@ test.describe.serial('Property-worker 1-minute intervals are locked on', () => {
     const createBody = JSON.parse((await createRequest).request().postData() || '{}');
     expect(
       createBody.useOneMinuteIntervals,
-      'the locked checkbox must leave useOneMinuteIntervals out of the create payload entirely'
-    ).toBeUndefined();
+      'the create payload must say what the checked, locked box shows: useOneMinuteIntervals = true'
+    ).toBe(true);
 
     await expect(
       page.locator('.mat-mdc-row').filter({ hasText: timeRegWorkerFullName }),

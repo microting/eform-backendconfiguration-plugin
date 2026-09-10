@@ -55,4 +55,10 @@ export class DeviceUserModel {
   resigned: boolean;
   resignedAtDate: Date;
   tags: number[];
+  /**
+   * What the "Use 1-minute intervals" checkbox showed when the dialog saved. The
+   * C# DeviceUserModel accepts it for wire compatibility but no server path reads
+   * it (create hardcodes true). Omitted while the dialog does not know the saved state.
+   */
+  useOneMinuteIntervals?: boolean;
 }
