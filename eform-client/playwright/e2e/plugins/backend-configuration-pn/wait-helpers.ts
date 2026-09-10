@@ -91,7 +91,10 @@ export async function waitForApiRequest(
 export interface HeldApiRequest {
   /** Resolves once the first matching request has been issued — and is therefore being held. */
   held: Promise<Request>;
-  /** Lets every held matching request through and removes the hold. Safe to call more than once. */
+  /**
+   * Lets every held matching request through; later matching requests pass
+   * straight through too. Safe to call more than once.
+   */
   release: () => Promise<void>;
 }
 
@@ -105,6 +108,13 @@ export interface HeldApiRequest {
  * bounded wait whose `timeout` runs from here. Always call `release()` in a
  * `finally`, so a failing assertion cannot leave the page stuck on a request
  * that is never answered.
+ *
+ * `release()` deliberately does NOT unroute. Removing a route handler while one
+ * of its routes is still in flight makes Playwright continue that route itself,
+ * racing the handler's own `route.continue()`: in CI the handler lost with
+ * "route.continue: Route is already handled!" and the released request was never
+ * delivered to the page. Once released, the handler is a pass-through that lives
+ * as long as the page — one test — so exactly one party ever handles each route.
  */
 export async function holdApiGetRequests(
   page: Page,
@@ -140,7 +150,6 @@ export async function holdApiGetRequests(
     held,
     release: async () => {
       releaseHeld();
-      await page.unroute(matchesPath, handler);
     },
   };
 }
