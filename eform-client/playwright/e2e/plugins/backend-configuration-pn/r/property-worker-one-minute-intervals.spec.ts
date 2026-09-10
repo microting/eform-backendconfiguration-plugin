@@ -161,6 +161,20 @@ function isAssignedSiteGet(r: Response): boolean {
 const execFileAsync = promisify(execFile);
 
 /**
+ * The MariaDB root password, taken from the connection credentials the
+ * database-configuration step (DatabaseConfigurationConstants.authenticationType)
+ * sets the app up with — the same root account the workflow starts the container
+ * with — rather than repeated here.
+ */
+function mariadbRootPassword(): string {
+  const match = /password\s*=\s*([^;]+);/.exec(DatabaseConfigurationConstants.authenticationType);
+  if (!match) {
+    throw new Error('DatabaseConfigurationConstants.authenticationType carries no "password = ...;" part');
+  }
+  return match[1].trim();
+}
+
+/**
  * Puts a saved AssignedSite back into 5-minute mode, straight in the CI database.
  *
  * No API can do this any more, which is the point of the PR: every create path
@@ -176,6 +190,10 @@ const execFileAsync = promisify(execFile);
  * rabbitmq hostname" step already runs `docker exec -i mariadbtest mariadb -u root
  * ...` the same way. The schema is the time-planning plugin's, under the customer
  * number the database-configuration step sets up. Tests run in CI only (CLAUDE.md).
+ *
+ * The password travels as MYSQL_PWD — `docker exec -e MYSQL_PWD` forwards it from
+ * this process's environment into the container — never on a command line, so it
+ * stays out of the process list and mariadb's "password on the command line" warning.
  */
 async function setSavedOneMinuteIntervalsToFalse(assignedSiteId: number): Promise<void> {
   if (!Number.isInteger(assignedSiteId) || assignedSiteId <= 0) {
@@ -189,9 +207,9 @@ async function setSavedOneMinuteIntervalsToFalse(assignedSiteId: number): Promis
   try {
     ({ stdout } = await execFileAsync(
       'docker',
-      ['exec', 'mariadbtest', 'mariadb', '-u', 'root', '--password=secretpassword', '-N', '-B',
+      ['exec', '-e', 'MYSQL_PWD', 'mariadbtest', 'mariadb', '-u', 'root', '-N', '-B',
         `--database=${database}`, '-e', sql],
-      { timeout: API_TIMEOUT }
+      { timeout: API_TIMEOUT, env: { ...process.env, MYSQL_PWD: mariadbRootPassword() } }
     ));
   } catch (error) {
     throw new Error(
@@ -526,11 +544,14 @@ test.describe.serial('Property-worker 1-minute intervals are locked on', () => {
       await menuItem('editDeviceUserBtn').click({ timeout: UI_TIMEOUT });
       await assignedSite.held;
 
-      // The window is real: the dialog reports itself ready while the saved row
-      // is still unknown, because formReady only waits for languages.
+      // Precondition, not a contract: the rest of the dialog has settled, so what
+      // follows is the checkbox's in-flight state and not a half-initialised form.
+      // Today formReady only waits for languages; if it is ever made to wait for
+      // this GET as well, this wait is what must change — nothing here depends on
+      // the user being able to act (the spinner overlay blocks pointer input anyway).
       await expect(
         dialog(page).locator('form[data-form-ready]'),
-        'the dialog must report ready even with the saved-row GET held — this is the window a user can act in'
+        'precondition: the dialog must have settled apart from the held saved-row GET'
       ).toHaveAttribute('data-form-ready', 'true', { timeout: API_TIMEOUT });
 
       await openTimeRegistrationTab(page, 'keyboard');
