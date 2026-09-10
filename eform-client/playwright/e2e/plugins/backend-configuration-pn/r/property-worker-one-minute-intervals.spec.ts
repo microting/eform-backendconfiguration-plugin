@@ -9,8 +9,10 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
+import { openRowActionMenu } from '../row-action-menu';
 import {
   API_TIMEOUT,
+  holdApiGetRequests,
   ignoreUnhandledRejections,
   SLOW_API_TIMEOUT,
   UI_TIMEOUT,
@@ -35,7 +37,9 @@ import {
 // PropertyWorkerCreateEditModalComponent.applyOneMinuteIntervalsRule() does by
 // locking the control while `!selectedAssignedSite.id`.
 //
-// The three tests below are the three ways a user reaches that state.
+// The first three tests below are the three ways a user reaches that state. The
+// ones after them pin what the edit dialog shows while its own requests are
+// still in flight, by holding those requests with page.route.
 
 const TIME_REGISTRATION_TAB = 'Timeregistrering';
 
@@ -68,6 +72,11 @@ const plainWorker: PropertyWorker = {
   workerEmail: `${generateRandmString(5)}@test.com`,
 };
 const plainWorkerFullName = `${plainWorker.name} ${plainWorker.surname}`;
+
+/** The device-user table row of `workerFullName`; asserted unique before use. */
+function workerRow(page: Page, workerFullName: string) {
+  return page.locator('.mat-mdc-row').filter({ hasText: workerFullName });
+}
 
 /** The open create/edit dialog. Every locator below hangs off this, never off the page. */
 function dialog(page: Page) {
@@ -264,6 +273,68 @@ test.describe.serial('Property-worker 1-minute intervals are locked on', () => {
 
     // Nothing to save — the assertion is about what the modal offers, and leaving
     // the worker untouched keeps the row usable for whatever runs next.
+    await cancelEditModal(workersPage);
+  });
+
+  test('an existing worker opens in edit mode before the languages request returns', async ({ page }) => {
+    // 2 min: login plus one edit-modal round trip. The languages GET is held only
+    // for as long as the in-flight assertions take, each bounded by UI_TIMEOUT.
+    test.setTimeout(120000);
+
+    // WHAT THIS PROTECTS: `edit` used to be set inside the getEnabledLanguages()
+    // callback, so until that GET returned an EDIT dialog rendered as a create
+    // dialog — title "New employee" and #saveCreateBtn — and the save button's
+    // `edit ? updateSingle() : createDeviceUser()` sent a fast click down the
+    // CREATE path, minting a duplicate worker. It is now known synchronously from
+    // the dialog data. Holding the languages GET makes that window deterministic.
+    const workersPage = new BackendConfigurationPropertyWorkersPage(page);
+    await workersPage.goToPropertyWorkers();
+
+    const row = workerRow(page, timeRegWorkerFullName);
+    await expect(row, 'the worker to edit must be listed exactly once').toHaveCount(1, { timeout: UI_TIMEOUT });
+    const menuItem = await openRowActionMenu(page, row, `Device-user row "${timeRegWorkerFullName}"`);
+
+    // AppSettingsService.getLanguages() -> GET api/settings/languages, fired from
+    // the dialog's ngOnInit. Installed right before the click that opens it.
+    const languages = await holdApiGetRequests(
+      page,
+      'GET /api/settings/languages (edit dialog ngOnInit)',
+      '/api/settings/languages',
+      UI_TIMEOUT
+    );
+    try {
+      await menuItem('editDeviceUserBtn').click({ timeout: UI_TIMEOUT });
+      await languages.held;
+
+      // Proof that this IS the in-flight window: formReady waits for languages.
+      await expect(
+        dialog(page).locator('form[data-form-ready]'),
+        'with the languages request held the form must not report itself ready'
+      ).toHaveAttribute('data-form-ready', 'false', { timeout: UI_TIMEOUT });
+
+      await expect(
+        dialog(page).locator('#saveEditBtn'),
+        'an existing worker must get the edit Save button before languages load'
+      ).toBeVisible({ timeout: UI_TIMEOUT });
+      await expect(
+        dialog(page).locator('#saveCreateBtn'),
+        'the create button must never render for an existing worker — clicking it creates a duplicate'
+      ).toHaveCount(0, { timeout: UI_TIMEOUT });
+    } finally {
+      await languages.release();
+    }
+
+    // Released: the dialog settles and is still in edit mode.
+    await expect(dialog(page).locator('form[data-form-ready]'), 'the dialog must settle once languages load').toHaveAttribute(
+      'data-form-ready',
+      'true',
+      { timeout: API_TIMEOUT }
+    );
+    await expect(dialog(page).locator('#saveEditBtn'), 'still in edit mode after languages load').toBeVisible({
+      timeout: UI_TIMEOUT,
+    });
+    await expect(dialog(page).locator('#saveCreateBtn')).toHaveCount(0, { timeout: UI_TIMEOUT });
+
     await cancelEditModal(workersPage);
   });
 });
