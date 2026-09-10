@@ -753,6 +753,15 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       complianceId: row.complianceId,
       taskDate: row.taskDate,
       propertyId: row.propertyId,
+      // The calendar's own Compliance view. CalendarComplianceReportRowModel carries
+      // no site ids of either kind, so this synthesised task has an empty assignment
+      // and the modal falls back to its ungrouped list, with nothing pre-selected FROM
+      // THE ASSIGNMENT — the behaviour this entry point has always had. That is not the
+      // same as nothing being pre-selected at all: with both halves empty,
+      // applyPreselect falls through to prepared.assignedSiteId (the site the case is
+      // deployed to), so a case with a deployed site in the property's worker list still
+      // preselects it. teamAssigneeIds is left off for the same reason (#1236): there is
+      // nothing to put in it.
       assigneeIds: [],
     } as CalendarTaskLayoutModel);
   }
@@ -774,6 +783,11 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         occurrenceDate: task.taskDate,
         propertyId: task.propertyId,
         assigneeIds: task.assigneeIds ?? [],
+        // The team half of the assignment (#1236): the modal groups these under
+        // "assigned to this event" but never pre-selects from them. The compliance
+        // report's row click passes the same pair, so the two views agree about who
+        // is assigned.
+        teamAssigneeIds: task.teamAssigneeIds ?? [],
         // Title the dialog with the task, not with the eForm template it
         // embeds (#1205).
         taskTitle: task.title,

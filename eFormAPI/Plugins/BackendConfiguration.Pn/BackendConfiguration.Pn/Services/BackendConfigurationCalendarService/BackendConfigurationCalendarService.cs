@@ -512,6 +512,72 @@ public class BackendConfigurationCalendarService(
                 .GroupBy(x => x.AreaRulePlanningId)
                 .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.TagId).ToList());
 
+            // #1236 — the live members behind each worker tag, so every model can carry
+            // its TeamAssigneeIds. Resolved for the whole response in ONE batched call
+            // per half, never per task: the loops below run once per occurrence per
+            // week, so a lookup in there would be a query per rendered event. Same shape
+            // as BackendConfigurationTaskTrackerHelper.Index and
+            // BackendConfigurationComplianceReportService.ResolveWorkerSiteIdsByArpId.
+            // The membership rule itself belongs to IWorkerTagMembershipService and is
+            // deliberately not restated here.
+            //
+            // The week view reloads on every property selection and every week
+            // navigation (see calendar-container.component.ts), so the tags are handed
+            // over as a SET rather than one at a time: the batched lookup keeps per-tag
+            // attribution and still costs one round trip, where a per-tag loop would
+            // cost one per distinct worker tag in the response.
+            //
+            // Nothing is queried at all when no ARP in the response carries a worker
+            // tag, which is what keeps the fixtures that construct the membership
+            // service over a null core working (see the effectiveWorkerTagIds note
+            // above for the list) — the batched call short-circuits an empty input
+            // exactly as the flat one did.
+            var memberSiteIdsByTagId = new Dictionary<int, HashSet<int>>();
+
+            // Called once per half of the response (recurrence, then compliance), and
+            // asks only for the tags the earlier half did not already resolve. Two
+            // round trips at most, regardless of how many tags are in play.
+            async Task CacheTeamMembersAsync(IEnumerable<int> tagIds)
+            {
+                var missing = tagIds
+                    .Distinct()
+                    .Where(tagId => !memberSiteIdsByTagId.ContainsKey(tagId))
+                    .ToList();
+                if (missing.Count == 0) return;
+
+                foreach (var entry in await workerTagMembershipService
+                             .GetLiveMemberSiteIdsByTagAsync(missing).ConfigureAwait(false))
+                {
+                    memberSiteIdsByTagId[entry.Key] = entry.Value;
+                }
+            }
+
+            // The team assignment of one ARP: the cached members of its tags, in tag
+            // order, de-duplicated. Order WITHIN one tag is the membership set's own
+            // enumeration order and is not specified. Sites that are ALSO explicit
+            // assignees stay in — the two fields are separate halves the client unions,
+            // not a partition.
+            List<int> TeamAssigneesOf(List<int> tagIds)
+            {
+                var siteIds = new List<int>();
+                var seenSiteIds = new HashSet<int>();
+                foreach (var tagId in tagIds)
+                {
+                    if (!memberSiteIdsByTagId.TryGetValue(tagId, out var memberSiteIds)) continue;
+                    foreach (var siteId in memberSiteIds)
+                    {
+                        if (seenSiteIds.Add(siteId))
+                        {
+                            siteIds.Add(siteId);
+                        }
+                    }
+                }
+
+                return siteIds;
+            }
+
+            await CacheTeamMembersAsync(workerTagIdsByArpId.Values.SelectMany(x => x));
+
             // Batch-load occurrence exceptions for this week
             var exceptionsInWeek = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
                 .Where(x => arpIds.Contains(x.AreaRulePlanningId))
@@ -698,7 +764,12 @@ public class BackendConfigurationCalendarService(
                         DescriptionHtml = description,
                         Translations = translations,
                         Attachments = MapAttachments(arp),
-                        WorkerTagIds = workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>())
+                        WorkerTagIds = workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>()),
+                        // #1236 — the team half of the assignment, beside AssigneeIds
+                        // and never merged into it. Read from the per-tag cache built
+                        // above, so this costs no query per occurrence.
+                        TeamAssigneeIds = TeamAssigneesOf(
+                            workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>()))
                     };
 
                     // Per-occurrence field overrides from a "this"-scope edit (#885).
@@ -808,7 +879,9 @@ public class BackendConfigurationCalendarService(
                             DescriptionHtml = description,
                             Translations = translations,
                             Attachments = MapAttachments(arp),
-                            WorkerTagIds = workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>())
+                            WorkerTagIds = workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>()),
+                            TeamAssigneeIds = TeamAssigneesOf(
+                                workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>()))
                         };
 
                         ApplyOccurrenceFieldOverrides(orphanModel, orphan);
@@ -895,7 +968,9 @@ public class BackendConfigurationCalendarService(
                     DescriptionHtml = description,
                     Translations = translations,
                     Attachments = MapAttachments(arp),
-                    WorkerTagIds = workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>())
+                    WorkerTagIds = workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>()),
+                    TeamAssigneeIds = TeamAssigneesOf(
+                        workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>()))
                 };
 
                 ApplyOccurrenceFieldOverrides(movedModel, movedIn);
@@ -938,6 +1013,10 @@ public class BackendConfigurationCalendarService(
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .GroupBy(x => x.AreaRulePlanningId)
                 .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.TagId).ToList());
+
+            // Top up the #1236 member cache with any tag the recurrence half did not
+            // already resolve. Still once per DISTINCT tag across the whole response.
+            await CacheTeamMembersAsync(complianceWorkerTagIdsByArpId.Values.SelectMany(x => x));
 
             // Top up exceptionsByArp with any exceptions for compliance ARPs not
             // already covered. arpIds now contains all non-Removed plannings
@@ -1128,6 +1207,12 @@ public class BackendConfigurationCalendarService(
                     WorkerTagIds = arp != null
                         ? complianceWorkerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>())
                         : new List<int>(),
+                    // #1236. An orphan compliance row has no live ARP and therefore no
+                    // worker tags, so it gets the empty list — same as its AssigneeIds.
+                    TeamAssigneeIds = arp != null
+                        ? TeamAssigneesOf(
+                            complianceWorkerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>()))
+                        : new List<int>(),
                 };
 
                 ApplyOccurrenceFieldOverrides(model, complianceException);
@@ -1242,6 +1327,15 @@ public class BackendConfigurationCalendarService(
                 .GroupBy(x => x.AreaRulePlanningId)
                 .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.TagId).ToList());
 
+            // #1236 — live members per distinct worker tag, resolved BEFORE the
+            // projection below because that projection is a synchronous Select. One
+            // batched round trip for every tag in the result, and none at all when
+            // nothing is team-assigned.
+            var memberSiteIdsByTagId = await workerTagMembershipService
+                .GetLiveMemberSiteIdsByTagAsync(
+                    workerTagIdsByArpId.Values.SelectMany(x => x).Distinct().ToList())
+                .ConfigureAwait(false);
+
             var planningTagIds = areaRulePlannings
                 .SelectMany(x => x.AreaRulePlanningTags
                     .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
@@ -1288,6 +1382,21 @@ public class BackendConfigurationCalendarService(
                 // real recurrence; otherwise it defaults to 09:00-10:00.
                 var indexIsAllDay = ComputeIsAllDay(arp, calConfig);
 
+                var arpWorkerTagIds = workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>());
+                var teamAssigneeIds = new List<int>();
+                var seenTeamAssigneeIds = new HashSet<int>();
+                foreach (var workerTagId in arpWorkerTagIds)
+                {
+                    if (!memberSiteIdsByTagId.TryGetValue(workerTagId, out var memberSiteIds)) continue;
+                    foreach (var memberSiteId in memberSiteIds)
+                    {
+                        if (seenTeamAssigneeIds.Add(memberSiteId))
+                        {
+                            teamAssigneeIds.Add(memberSiteId);
+                        }
+                    }
+                }
+
                 return new CalendarTaskResponseModel
                 {
                     Id = arp.Id,
@@ -1318,7 +1427,11 @@ public class BackendConfigurationCalendarService(
                     ItemPlanningTagId = arp.ItemPlanningTagId,
                     DescriptionHtml = description,
                     Translations = translations,
-                    WorkerTagIds = workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>()),
+                    WorkerTagIds = arpWorkerTagIds,
+                    // #1236 — the team half of the assignment, beside AssigneeIds. This
+                    // list feeds the complete modal's "assigned to this event" group;
+                    // AssigneeIds alone still drives its pre-select.
+                    TeamAssigneeIds = teamAssigneeIds,
                 };
             }).ToList();
 
@@ -5735,6 +5848,13 @@ public class BackendConfigurationCalendarService(
                 .GroupBy(x => x.AreaRulePlanningId)
                 .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.TagId).ToList());
 
+            // #1236 — live members for every distinct worker tag, resolved for the whole
+            // list in one batched round trip rather than inside the row loop below.
+            var memberSiteIdsByTagId = await workerTagMembershipService
+                .GetLiveMemberSiteIdsByTagAsync(
+                    complianceWorkerTagIdsByArpId.Values.SelectMany(x => x).Distinct().ToList())
+                .ConfigureAwait(false);
+
             var complianceArpTags = await backendConfigurationPnDbContext.AreaRulePlanningTags
                 .Where(x => complianceArpIds.Contains(x.AreaRulePlanningId))
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -5862,6 +5982,23 @@ public class BackendConfigurationCalendarService(
                 bool completed = sdkCase?.Status == 100;
                 var taskIsExpired = ComputeTaskIsExpired(sdkCase, effectiveDate, dateTimeNow);
 
+                var rowWorkerTagIds = arp != null
+                    ? complianceWorkerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>())
+                    : new List<int>();
+                var rowTeamAssigneeIds = new List<int>();
+                var seenRowTeamAssigneeIds = new HashSet<int>();
+                foreach (var workerTagId in rowWorkerTagIds)
+                {
+                    if (!memberSiteIdsByTagId.TryGetValue(workerTagId, out var memberSiteIds)) continue;
+                    foreach (var memberSiteId in memberSiteIds)
+                    {
+                        if (seenRowTeamAssigneeIds.Add(memberSiteId))
+                        {
+                            rowTeamAssigneeIds.Add(memberSiteId);
+                        }
+                    }
+                }
+
                 var model = new CalendarTaskResponseModel
                 {
                     Id = arp?.Id ?? 0,
@@ -5901,9 +6038,9 @@ public class BackendConfigurationCalendarService(
                     DescriptionHtml = descriptionHtml,
                     Attachments = MapAttachments(arp),
                     TaskIsExpired = taskIsExpired,
-                    WorkerTagIds = arp != null
-                        ? complianceWorkerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>())
-                        : new List<int>()
+                    WorkerTagIds = rowWorkerTagIds,
+                    // #1236 — the team half of the assignment, beside AssigneeIds.
+                    TeamAssigneeIds = rowTeamAssigneeIds
                 };
 
                 result.Add(model);

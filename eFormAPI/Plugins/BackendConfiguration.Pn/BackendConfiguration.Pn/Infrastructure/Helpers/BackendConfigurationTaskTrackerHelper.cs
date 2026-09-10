@@ -145,7 +145,7 @@ public static class BackendConfigurationTaskTrackerHelper
 			// Everything is resolved ONCE here rather than inside the per-compliance
 			// loop. The tag links are loaded UNCONDITIONALLY because the column needs
 			// them even with no filter set — that is one extra query per call, and it is
-			// the price of the column being right. The per-tag membership loop below
+			// the price of the column being right. The batched membership lookup below
 			// costs nothing when no event on the page is team-assigned.
 			//
 			// The membership rule itself lives in IWorkerTagMembershipService and is
@@ -167,15 +167,12 @@ public static class BackendConfigurationTaskTrackerHelper
 				: new Dictionary<int, List<int>>();
 
 			// Per TAG, not per row: the Workers column has to attribute members to the
-			// right event, and the shared service answers "which sites are in this set
-			// of tags" as one flat set. The loop is bounded by the distinct worker tags
-			// in play, never by the number of compliance rows.
-			var memberSiteIdsByTagId = new Dictionary<int, HashSet<int>>();
-			foreach (var tagId in workerTagIdsByArpId.Values.SelectMany(x => x).Distinct())
-			{
-				memberSiteIdsByTagId[tagId] = await workerTagMembershipService
-					.GetLiveMemberSiteIdsAsync([tagId]).ConfigureAwait(false);
-			}
+			// right event. The batched lookup keeps that attribution and still costs one
+			// round trip for the whole page — and none when nothing here is team-assigned.
+			var memberSiteIdsByTagId = await workerTagMembershipService
+				.GetLiveMemberSiteIdsByTagAsync(
+					workerTagIdsByArpId.Values.SelectMany(x => x).Distinct().ToList())
+				.ConfigureAwait(false);
 
 			// The filter's own half: the tags the REQUESTED sites are live members of.
 			// Empty when no worker filter is set, which leaves the filter untouched.
@@ -293,11 +290,12 @@ public static class BackendConfigurationTaskTrackerHelper
 				// Deliberately a SEPARATE set from the sitesWithNames the filter reads —
 				// see the filter block above.
 				var displaySiteIds = planningSiteIds.ToList();
+				var seenDisplaySiteIds = new HashSet<int>(displaySiteIds);
 				foreach (var tagId in arpWorkerTagIds)
 				{
 					foreach (var memberSiteId in memberSiteIdsByTagId.GetValueOrDefault(tagId, []))
 					{
-						if (!displaySiteIds.Contains(memberSiteId))
+						if (seenDisplaySiteIds.Add(memberSiteId))
 						{
 							displaySiteIds.Add(memberSiteId);
 						}

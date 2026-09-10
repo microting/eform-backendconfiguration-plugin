@@ -118,6 +118,9 @@ describe('CalendarCompleteEventModalComponent', () => {
   it('leaves the list ungrouped when every worker is assigned', async () => {
     await setup({assigneeIds: [1, 2, 3]});
     expect(component.groupedSites.every(s => s.group === undefined)).toBe(true);
+    // `.every()` is vacuously true on an empty array — the length is what stops this
+    // passing against a groupedSites that never got built. Same guard as its siblings.
+    expect(component.groupedSites.length).toBe(3);
   });
 
   // U17
@@ -147,6 +150,75 @@ describe('CalendarCompleteEventModalComponent', () => {
 
   it('declines to guess a worker for a multi-assignee event', async () => {
     await setup({assigneeIds: [1, 2]});
+    expect(component.selectedWorkerId).toBeNull();
+  });
+
+  // -------------------------------------------------------------------
+  // #1236 — worker-tag ("team") members group as assigned, but never preselect.
+  // -------------------------------------------------------------------
+
+  it('groups a team member under "assigned to this event"', async () => {
+    await setup({assigneeIds: [], teamAssigneeIds: [2]});
+
+    expect(component.groupedSites.map(s => s.group)).toEqual(['assigned', 'other', 'other']);
+    expect(component.groupedSites[0].id).toBe(2);
+  });
+
+  // Not named for de-duplication: `inGroup`/`rest` are filters over `this.sites`, so a
+  // site cannot appear twice however the union is built. The overlap is here to make the
+  // union path realistic, not because this test could catch a duplicate.
+  it('groups explicit assignees and team members together under one assigned group', async () => {
+    // Site 1 is both an explicit assignee and a member of the assigned team.
+    await setup({assigneeIds: [1], teamAssigneeIds: [1, 3]});
+
+    const assigned = component.groupedSites.filter(s => s.group === 'assigned');
+    expect(assigned.map(s => s.id)).toEqual([1, 3]);
+    expect(component.groupedSites.filter(s => s.group === 'other').map(s => s.id)).toEqual([2]);
+    // Grouping must not add or drop a worker.
+    expect(component.groupedSites.length).toBe(3);
+  });
+
+  /**
+   * The decision #1236 records. A lone TEAM member is grouped as assigned but is not
+   * chosen for the user: the control this would set is the site recorded as having
+   * COMPLETED the case.
+   */
+  it('does not preselect a lone team member', async () => {
+    await setup({assigneeIds: [], teamAssigneeIds: [2]});
+    expect(component.selectedWorkerId).toBeNull();
+  });
+
+  it('still preselects a lone explicit assignee when a team is also assigned', async () => {
+    await setup({assigneeIds: [1], teamAssigneeIds: [2, 3]});
+    expect(component.selectedWorkerId).toBe(1);
+  });
+
+  // Deliberately NOT named for the union path. buildGroupedSites bails out on
+  // `inGroup.length === 0 || rest.length === 0`, and both arms produce the same
+  // ungrouped list, so this test cannot tell "the team covered everyone, leaving no
+  // 'other'" from "the team was ignored, leaving no 'assigned'" — it pins the fallback
+  // only. That the team half reaches `assigned` at all is pinned above, by
+  // 'groups a team member under "assigned to this event"'. The length assertion is what
+  // stops this passing against a groupedSites that came out empty.
+  it('leaves the list ungrouped when the split would leave a group empty', async () => {
+    await setup({assigneeIds: [], teamAssigneeIds: [1, 2, 3]});
+    expect(component.groupedSites.every(s => s.group === undefined)).toBe(true);
+    expect(component.groupedSites.length).toBe(3);
+  });
+
+  // A caller with no team information at all — the calendar's Compliance view
+  // synthesises its task without one — must group exactly as before the field existed.
+  //
+  // The selectedWorkerId half is NOT a claim that such an event never preselects: with
+  // both halves empty, applyPreselect falls through to `prepared.assignedSiteId`. That
+  // branch DOES run here — it just declines: `setup()` stubs prepareComplete to fail, so
+  // `prepared` stays null, `prepared?.assignedSiteId` is undefined and the `!= null`
+  // guard rejects it. The null is a stub artifact, not a guarantee. What this pins is
+  // that the ABSENT teamAssigneeIds does not itself select anybody.
+  it('groups as an unassigned event, and selects nobody off a team, when teamAssigneeIds is omitted', async () => {
+    await setup({assigneeIds: []});
+    expect(component.groupedSites.every(s => s.group === undefined)).toBe(true);
+    expect(component.groupedSites.length).toBe(3);
     expect(component.selectedWorkerId).toBeNull();
   });
 

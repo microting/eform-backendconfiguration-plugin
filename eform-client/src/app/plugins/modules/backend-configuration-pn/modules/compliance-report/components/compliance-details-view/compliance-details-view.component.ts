@@ -321,16 +321,26 @@ export class ComplianceDetailsViewComponent implements OnInit, OnDestroy {
   /**
    * Repackages the compliance row into the calendar's task shape and opens the
    * existing completion pipeline (`CalendarCompleteEventModalComponent` →
-   * `prepare-complete` → the case editor), byte for byte as
-   * `calendar-container.component.ts`'s `onComplianceRowCompleteRequested`
-   * (~:734) and `onToggleCompleteRequested` (~:756) do it.
+   * `prepare-complete` → the case editor), the same way
+   * `calendar-container.component.ts`'s `onToggleCompleteRequested` does it — the single
+   * handler every calendar entry point funnels through, the calendar's own Compliance view
+   * included (`onComplianceRowCompleteRequested` delegates to it). The calendar grid hands
+   * it BOTH halves of the assignment off a real `CalendarTaskLayoutModel`
+   * (`assigneeIds` and `teamAssigneeIds`), and so does this method.
    *
-   * `assigneeIds` comes from the row's `workerSiteIds` (#1187): "assigned" is
-   * the ARP's non-removed PlanningSites, the same set the calendar grid passes,
-   * so the modal groups the dropdown into assigned / other workers and
-   * pre-selects a single assignee exactly as it does from the calendar. The
-   * modal's own empty-group fallback still applies: a row with no assignee, or
-   * whose property has no worker left over, gets the flat list.
+   * The ONE path that omits a half is that delegating synthesiser:
+   * `CalendarComplianceReportRowModel` carries no site ids of either kind, so it passes an
+   * empty `assigneeIds` and no `teamAssigneeIds` at all — there is nothing to put in them.
+   * This method is not in that position; its row model carries both.
+   *
+   * `assigneeIds` comes from the row's `workerSiteIds` (#1187) — the ARP's
+   * non-removed PlanningSites — and `teamAssigneeIds` from the row's own
+   * `teamAssigneeIds`, the live members of its worker tags (#1236). The calendar
+   * grid passes the same pair off `CalendarTaskResponseModel`, so both views group
+   * and pre-select identically: the modal's "assigned to this event" group is the
+   * union of the two, while only `assigneeIds` can pre-select a lone completer. The
+   * modal's own empty-group fallback still applies: a row with no assignee of either
+   * kind, or whose property has no worker left over, gets the flat list.
    */
   onRowClicked(row: ComplianceReportRowModel, event?: Event): void {
     if (!this.isRowCompletable(row)) {
@@ -355,6 +365,7 @@ export class ComplianceDetailsViewComponent implements OnInit, OnDestroy {
         occurrenceDate: row.taskDate,
         propertyId: row.propertyId,
         assigneeIds: row.workerSiteIds ?? [],
+        teamAssigneeIds: row.teamAssigneeIds ?? [],
         // The dialog is titled with the TASK name — the same string this row
         // prints in its "Opgave" column — not the embedded eForm's name (#1205).
         taskTitle: row.title,

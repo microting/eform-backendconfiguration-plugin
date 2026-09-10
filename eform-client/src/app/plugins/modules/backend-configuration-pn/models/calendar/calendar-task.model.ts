@@ -17,7 +17,22 @@ export interface CalendarTaskModel {
   startText: string;         // "09:30"
   endText: string;           // "10:00"
   tags: string[];
+  /**
+   * The EXPLICIT individual assignees (backend
+   * `CalendarTaskResponseModel.AssigneeIds` — the ARP's own PlanningSites, or an
+   * occurrence exception's sites). Worker-tag members are NOT in here; they are in
+   * `teamAssigneeIds`.
+   */
   assigneeIds: number[];
+  /**
+   * The sites assigned via a worker tag ("team") — the live members of
+   * `workerTagIds`, from `CalendarTaskResponseModel.TeamAssigneeIds` (#1236).
+   * Optional so a response from an older backend simply reads as "no team half".
+   *
+   * The complete-event modal groups its worker dropdown on
+   * `assigneeIds ∪ teamAssigneeIds` but pre-selects only from `assigneeIds`.
+   */
+  teamAssigneeIds?: number[];
   workerNames: string[];
   // Worker-tag assignment (distinct from the item-planning `tags` above).
   // Backend CalendarTaskResponseModel.WorkerTagIds — ids only; the container

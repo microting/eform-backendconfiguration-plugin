@@ -88,6 +88,18 @@ namespace BackendConfiguration.Pn.Integration.Test;
 /// </para>
 ///
 /// <para>
+/// <b>The batched lookup.</b>
+/// <see cref="BatchedLookup_AgreesWithPerTagLookup_AndKeepsExcludedTagsAsEmpty"/> covers
+/// <c>GetLiveMemberSiteIdsByTagAsync</c>, which exists purely so the consumers that need
+/// per-tag attribution stop issuing one query per worker tag. It adds no rule of its own,
+/// so it is tested BOTH ways: every requested tag's entry is compared against the flat
+/// overload's answer for that same tag, AND six literal assertions pin the two live tags'
+/// members and the four excluded tags' empty entries outright. The literals are
+/// load-bearing — the comparison on its own passes when both sides return nothing — so do
+/// not delete them as redundant with the comparison.
+/// </para>
+///
+/// <para>
 /// <b>Two of the three consumers, not three.</b> This file constructs
 /// <see cref="CalendarAssignmentResolver"/> and
 /// <see cref="BackendConfigurationWorkerTagsService"/> for real, but never
@@ -109,8 +121,9 @@ namespace BackendConfiguration.Pn.Integration.Test;
 /// matters under accumulation: every assertion is scoped to ids the test itself seeded,
 /// under GUID-based names — no whole-table counts, no hard-coded ids, no ordering
 /// assertions (Danish collation sorts <c>aa</c> after <c>z</c>, so ordering on generated
-/// names is a trap). WHAT each test seeds varies: three of the seven seed no property at
-/// all, and <see cref="EmptyOrNullInput_ReturnsEmptySet"/> seeds nothing.
+/// names is a trap). WHAT each test seeds varies: five of the nine seed no property at
+/// all, and two — <see cref="EmptyOrNullInput_ReturnsEmptySet"/> and
+/// <see cref="BatchedLookup_EmptyOrNullInput_ReturnsEmptyDictionary"/> — seed nothing.
 /// </para>
 ///
 /// <para>
@@ -688,6 +701,133 @@ public class WorkerTagMembershipParityTests : TestBaseSetup
             Assert.That(memberSites, Is.Empty);
             Assert.That(deployTargets, Is.Empty,
                 "an event whose only assignment is a member-less tag deploys to nobody");
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 8 — the batched lookup answers exactly what the per-tag one does
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// <c>GetLiveMemberSiteIdsByTagAsync</c> exists so the five call sites that need
+    /// per-tag ATTRIBUTION (the calendar's <c>GetTasksForWeek</c>, <c>Index</c> and
+    /// <c>GetTaskTrackerList</c>, the task tracker helper's Workers column and the
+    /// compliance report's) stop issuing one query per distinct worker tag. It is
+    /// therefore only correct if it is indistinguishable from the loop it replaces, which
+    /// is what this asserts: every tag's entry is compared against the flat overload's
+    /// answer for that same tag, on one seeded dataset.
+    ///
+    /// <para>
+    /// The comparison is the assertion — no expected set is written down for the live
+    /// tags — precisely so the two cannot drift apart. It is backed by explicit
+    /// assertions on the live members, without which "both return nothing" would pass.
+    /// </para>
+    ///
+    /// <para>
+    /// Each of the three exclusion clauses gets a tag of its own whose ONLY member is
+    /// excluded by it. Those tags must be KEYS with empty values, not missing keys: the
+    /// contract is that every requested id is present, so a caller never has to tell
+    /// "absent" from "empty". A batched implementation that grouped only the returned
+    /// rows would drop them, which is the mutation this half catches — an assertion that
+    /// merely asked for no members would pass against it.
+    /// </para>
+    ///
+    /// <para>
+    /// Two live tags with different members, so cross-attribution is covered too: a
+    /// grouping bug that unioned every tag's members would satisfy every "contains"
+    /// assertion and fail the equality against the per-tag answer.
+    /// </para>
+    /// </summary>
+    [Test]
+    public async Task BatchedLookup_AgreesWithPerTagLookup_AndKeepsExcludedTagsAsEmpty()
+    {
+        // Workers.Resigned only exists after the Core has migrated the SDK schema, which
+        // is why the resigned member is seeded through BuildAsync's SDK context and not
+        // through the fixture's own MicrotingDbContext.
+        var (membership, _, _, sdk) = await BuildAsync();
+
+        var liveTagA = await SeedSdkTag();
+        var liveTagB = await SeedSdkTag();
+        var removedLinkTag = await SeedSdkTag();
+        var removedSiteTag = await SeedSdkTag();
+        var resignedWorkerTag = await SeedSdkTag();
+        var memberlessTag = await SeedSdkTag();
+
+        var memberA = await SeedSdkSite();
+        var memberB = await SeedSdkSite();
+        var formerMember = await SeedSdkSite();
+        var removedSite = await SeedSdkSite(removed: true);
+        var resignedMember = await SeedSdkSiteWithWorker(sdk, resigned: true);
+
+        await LinkSiteToTag(liveTagA, memberA);
+        await LinkSiteToTag(liveTagB, memberB);
+        await LinkSiteToTag(removedLinkTag, formerMember, removed: true);
+        await LinkSiteToTag(removedSiteTag, removedSite);
+        await LinkSiteToTag(resignedWorkerTag, resignedMember);
+
+        var requested = new List<int>
+        {
+            liveTagA, liveTagB, removedLinkTag, removedSiteTag, resignedWorkerTag, memberlessTag
+        };
+
+        var batched = await membership.GetLiveMemberSiteIdsByTagAsync(requested);
+
+        // The per-tag answers the batched call is standing in for, gathered the old way.
+        var perTag = new Dictionary<int, HashSet<int>>();
+        foreach (var tagId in requested)
+        {
+            perTag[tagId] = await membership.GetLiveMemberSiteIdsAsync([tagId]);
+        }
+
+        Assert.That(batched.Keys, Is.EquivalentTo(requested),
+            "every requested tag id is a key — including the ones with no live member, "
+            + "so no caller has to tell 'absent' from 'empty'");
+
+        // Awaited work is done; a plain loop of assertions is safe inside the scope.
+        Assert.Multiple(() =>
+        {
+            foreach (var tagId in requested)
+            {
+                Assert.That(batched[tagId], Is.EquivalentTo(perTag[tagId]),
+                    $"batched and per-tag answers must agree for tag {tagId}");
+            }
+
+            // Positive controls: without these, "both return nothing" would pass.
+            Assert.That(batched[liveTagA], Is.EquivalentTo(new[] { memberA }),
+                "the live member of tag A, attributed to tag A and to nothing else");
+            Assert.That(batched[liveTagB], Is.EquivalentTo(new[] { memberB }),
+                "and tag B's own member — a union bug would put both members in both");
+
+            // One tag per exclusion clause, each PRESENT and empty.
+            Assert.That(batched[removedLinkTag], Is.Empty,
+                "a soft-deleted SiteTag row is not membership");
+            Assert.That(batched[removedSiteTag], Is.Empty,
+                "a soft-deleted Site is not a live member, though its SiteTag row survives");
+            Assert.That(batched[resignedWorkerTag], Is.Empty,
+                "a site whose Worker has resigned is not a live member");
+            Assert.That(batched[memberlessTag], Is.Empty,
+                "a tag with no SiteTags rows at all — an eForm TEMPLATE tag (#1213)");
+        });
+    }
+
+    /// <summary>
+    /// The batched lookup short-circuits an empty or null input like its siblings, and
+    /// for the same reason: the answer is known without a round trip. The calendar week
+    /// view leans on this — a response with no team-assigned event must not touch the SDK
+    /// context at all.
+    /// </summary>
+    [Test]
+    public async Task BatchedLookup_EmptyOrNullInput_ReturnsEmptyDictionary()
+    {
+        var (membership, _, _, _) = await BuildAsync();
+
+        var empty = await membership.GetLiveMemberSiteIdsByTagAsync([]);
+        var nulled = await membership.GetLiveMemberSiteIdsByTagAsync(null);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(empty, Is.Empty);
+            Assert.That(nulled, Is.Empty);
         });
     }
 }

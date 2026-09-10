@@ -1103,13 +1103,18 @@ public class WorkerTagCrossViewFilterTests : TestBaseSetup
     ///
     /// <para>
     /// The column is <c>WorkerNames</c>. <c>WorkerSiteIds</c> is asserted EMPTY in the
-    /// same test on purpose: it is the row's ASSIGNMENT, not its worker column, and it
-    /// must stay the ARP's own <c>PlanningSites</c> — the frontend hands it to the
-    /// complete-event modal as <c>assigneeIds</c>, where a single id pre-selects the
-    /// completing worker, and the calendar grid feeds that same modal the
-    /// PlanningSites-only set. Widening both would have made the two views disagree
-    /// about who is assigned. This assertion is what stops a later "the two fields
-    /// should surely match" edit.
+    /// same test on purpose: it is the row's EXPLICIT INDIVIDUAL assignment, not its
+    /// worker column, and it must stay the ARP's own <c>PlanningSites</c> — the
+    /// frontend hands it to the complete-event modal as <c>assigneeIds</c>, where a
+    /// single id pre-selects the completing worker. This assertion is what stops a
+    /// later "the two fields should surely match" edit.
+    /// </para>
+    ///
+    /// <para>
+    /// #1236 answered the product question this left open by adding a SECOND field,
+    /// <c>TeamAssigneeIds</c>, rather than widening this one: the modal now groups team
+    /// members under "assigned to this event" and still pre-selects from
+    /// <c>WorkerSiteIds</c> alone. See section 11 below.
     /// </para>
     /// </summary>
     [Test]
@@ -1288,5 +1293,260 @@ public class WorkerTagCrossViewFilterTests : TestBaseSetup
             new WorkerTagMembershipService(CoreHelper(core)));
         Assert.That(res.Success, Is.True, res.Message);
         return res.Model!.Single(x => x.AreaRulePlanId == arpId);
+    }
+
+    // ───────────────────────────────────────────────────────────────────────────
+    // 11 — #1236: the team half of the assignment, carried BESIDE the narrow one
+    // ───────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// The compliance-report row of a team-assigned event carries its team's live
+    /// members in <c>TeamAssigneeIds</c> while <c>WorkerSiteIds</c> stays the ARP's own
+    /// (here empty) PlanningSites. The frontend's complete-event modal groups on the
+    /// union of the two and pre-selects from the narrow one alone, so this pair is what
+    /// makes "team members are assigned, but nobody is auto-selected" true.
+    ///
+    /// <para>
+    /// The three exclusions are asserted through the model rather than re-derived:
+    /// membership belongs to <c>IWorkerTagMembershipService</c> and each of these sites
+    /// is excluded by a different clause of its rule — a soft-deleted <c>SiteTag</c>, a
+    /// soft-deleted <c>Site</c>, and a <c>Worker</c> with <c>Resigned</c> set.
+    /// </para>
+    /// </summary>
+    [Test]
+    public async Task ComplianceReport_TeamAssigneeIds_HoldsLiveMembersOnly()
+    {
+        var property = await SeedProperty();
+        var teamTagId = await SeedSdkWorkerTag();
+
+        // Workers.Resigned only exists after the Core has migrated the SDK schema.
+        var core = await SharedCore();
+        await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+        var memberSiteId = await SeedSdkSiteWithWorker(sdkDbContext, resigned: false);
+        var formerMemberSiteId = await SeedSdkSite();
+        var removedSiteId = await SeedSdkSite(removed: true);
+        var resignedMemberSiteId = await SeedSdkSiteWithWorker(sdkDbContext, resigned: true);
+
+        await LinkSiteToTag(teamTagId, memberSiteId);
+        await LinkSiteToTag(teamTagId, formerMemberSiteId, removed: true);
+        await LinkSiteToTag(teamTagId, removedSiteId);
+        await LinkSiteToTag(teamTagId, resignedMemberSiteId);
+
+        var teamEvent = await SeedEvent(property.Id);
+        await AssignWorkerTag(teamEvent, teamTagId);
+
+        var row = await ComplianceReportRow(property.Id, teamEvent.ArpId);
+
+        Assert.That(row.TeamAssigneeIds, Is.EquivalentTo(new[] { memberSiteId }),
+            "TeamAssigneeIds is the team's LIVE members: the removed SiteTag, the removed "
+            + "Site and the resigned Worker are each excluded by the shared membership rule");
+        Assert.That(row.WorkerSiteIds, Is.Empty,
+            "WorkerSiteIds must stay the ARP's own PlanningSites — it is the only set the "
+            + "complete-event modal pre-selects a completer from (#1236)");
+    }
+
+    /// <summary>
+    /// Tripwire. An individually-assigned row is untouched by #1236: the explicit id in
+    /// <c>WorkerSiteIds</c> and an EMPTY team half, so the modal groups and pre-selects
+    /// exactly as it did.
+    /// </summary>
+    [Test]
+    public async Task Tripwire_ComplianceReport_IndividualAssignment_HasNoTeamHalf()
+    {
+        var property = await SeedProperty();
+        var assignedSiteId = await SeedSdkSite();
+
+        var individualEvent = await SeedEvent(property.Id);
+        await AssignSite(individualEvent, assignedSiteId);
+
+        var row = await ComplianceReportRow(property.Id, individualEvent.ArpId);
+
+        Assert.That(row.WorkerSiteIds, Is.EqualTo(new List<int> { assignedSiteId }));
+        Assert.That(row.TeamAssigneeIds, Is.Empty,
+            "an event with no worker tag has an empty team half — never null");
+    }
+
+    /// <summary>
+    /// The calendar grid's half of the same pair, and the reason both callers had to
+    /// change together: the week view feeds the SAME modal, so its
+    /// <c>AssigneeIds</c>/<c>TeamAssigneeIds</c> split must match the compliance
+    /// report's <c>WorkerSiteIds</c>/<c>TeamAssigneeIds</c> split for one event. Two
+    /// views disagreeing about who is assigned is the defect this batch removes.
+    ///
+    /// <para>
+    /// The event is assigned to a team AND to one named individual, so the assertion
+    /// can see both halves at once and can see that they are not merged.
+    /// </para>
+    ///
+    /// <para>
+    /// <b>The named individual is ALSO a member of the team</b>, and that is the point of
+    /// the seed rather than an accident of it. The two halves are not a partition: a site
+    /// that is both must appear in BOTH, because the client unions them and pre-selects
+    /// from the explicit half alone. Both producers say so in prose
+    /// (<c>CalendarTaskResponseModel.TeamAssigneeIds</c> and the compliance report's
+    /// <c>WorkerSiteSets.TeamSiteIds</c>) and they are two INDEPENDENT implementations,
+    /// so without this overlap seeded, a later "tidy-up" that subtracted the explicit half
+    /// out of the team half in one of them would break nothing here.
+    /// </para>
+    ///
+    /// <para>
+    /// Team-half assertions are order-INDEPENDENT on purpose: within one tag the members
+    /// come out of a <c>HashSet</c>, so only tag-granularity ordering is specified.
+    /// </para>
+    /// </summary>
+    [Test]
+    public async Task WeekView_And_ComplianceReport_AgreeOnBothHalvesOfTheAssignment()
+    {
+        var property = await SeedProperty();
+        var teamTagId = await SeedSdkWorkerTag();
+        var memberSiteId = await SeedSdkSite();
+        var formerMemberSiteId = await SeedSdkSite();
+        await LinkSiteToTag(teamTagId, memberSiteId);
+        await LinkSiteToTag(teamTagId, formerMemberSiteId, removed: true);
+
+        // Explicitly assigned AND a live member of the same team — the overlap case.
+        var namedSiteId = await SeedSdkSite();
+        await LinkSiteToTag(teamTagId, namedSiteId);
+
+        var mixedEvent = await SeedEvent(property.Id);
+        await AssignWorkerTag(mixedEvent, teamTagId);
+        await AssignSite(mixedEvent, namedSiteId);
+
+        var tasks = await WeekViewTasks(property.Id, mixedEvent.ArpId);
+        Assert.That(tasks, Is.Not.Empty,
+            "the seeded event must render in the week view for this assertion to mean anything");
+
+        foreach (var task in tasks)
+        {
+            Assert.That(task.AssigneeIds, Is.EqualTo(new List<int> { namedSiteId }),
+                "AssigneeIds stays the explicit individual assignment");
+            Assert.That(task.TeamAssigneeIds, Is.EquivalentTo(new[] { memberSiteId, namedSiteId }),
+                "TeamAssigneeIds is the team's live members, and the removed membership "
+                + "is not among them");
+            Assert.That(task.TeamAssigneeIds, Does.Contain(namedSiteId),
+                "a site that is both an explicit assignee and a live team member belongs "
+                + "in BOTH halves — they are unioned by the client, not partitioned");
+        }
+
+        var row = await ComplianceReportRow(property.Id, mixedEvent.ArpId);
+        Assert.That(row.WorkerSiteIds, Is.EqualTo(new List<int> { namedSiteId }));
+        Assert.That(row.TeamAssigneeIds, Is.EquivalentTo(new[] { memberSiteId, namedSiteId }));
+        Assert.That(row.TeamAssigneeIds, Does.Contain(namedSiteId),
+            "the compliance report is the second, INDEPENDENT implementation of the same "
+            + "rule: it must not subtract WorkerSiteIds out of the team half either");
+
+        // The pair the two views hand the modal, compared directly rather than each
+        // against a literal — the requirement is that the views AGREE. Grouping is the
+        // union of the two halves; the pre-select reads the narrow half only, which is
+        // why the halves stay apart.
+        Assert.That(row.WorkerSiteIds.OrderBy(x => x).ToList(),
+            Is.EqualTo(tasks[0].AssigneeIds.OrderBy(x => x).ToList()),
+            "the two views must agree on the explicit half");
+        Assert.That(row.TeamAssigneeIds.OrderBy(x => x).ToList(),
+            Is.EqualTo(tasks[0].TeamAssigneeIds.OrderBy(x => x).ToList()),
+            "the two views must agree on the team half");
+    }
+
+    /// <summary>
+    /// The gRPC/mobile task tracker builds <c>CalendarTaskResponseModel</c> too, from
+    /// its own worker-tag dictionary. Pinned so the third producer cannot be left
+    /// behind the two the modal reads from.
+    /// </summary>
+    [Test]
+    public async Task TaskTrackerGrpcList_CarriesTheTeamHalfToo()
+    {
+        var property = await SeedProperty();
+        var teamTagId = await SeedSdkWorkerTag();
+        var memberSiteId = await SeedSdkSite();
+        await LinkSiteToTag(teamTagId, memberSiteId);
+
+        var teamEvent = await SeedEvent(property.Id);
+        await AssignWorkerTag(teamEvent, teamTagId);
+
+        var core = await SharedCore();
+        var res = await BuildCalendarService(core).GetTaskTrackerList(property.Id, null, 1);
+        Assert.That(res.Success, Is.True, res.Message);
+
+        var task = res.Model!.Single(t => t.Id == teamEvent.ArpId);
+        Assert.That(task.TeamAssigneeIds, Is.EquivalentTo(new[] { memberSiteId }));
+        Assert.That(task.AssigneeIds, Is.Empty);
+    }
+
+    /// <summary>
+    /// The calendar task list (<c>Index</c>) is the fourth producer. It has no date
+    /// window, so it is queried by property alone.
+    /// </summary>
+    [Test]
+    public async Task CalendarTaskList_CarriesTheTeamHalfToo()
+    {
+        var property = await SeedProperty();
+        var teamTagId = await SeedSdkWorkerTag();
+        var memberSiteId = await SeedSdkSite();
+        await LinkSiteToTag(teamTagId, memberSiteId);
+
+        var teamEvent = await SeedEvent(property.Id);
+        await AssignWorkerTag(teamEvent, teamTagId);
+
+        var core = await SharedCore();
+        var res = await BuildCalendarService(core).Index(new CalendarTaskIndexRequestModel
+        {
+            Filters = new CalendarTaskListFiltrationModel
+            {
+                PropertyIds = [property.Id],
+                AssignToIds = []
+            }
+        });
+        Assert.That(res.Success, Is.True, res.Message);
+
+        var task = res.Model!.Single(t => t.Id == teamEvent.ArpId);
+        Assert.That(task.TeamAssigneeIds, Is.EquivalentTo(new[] { memberSiteId }));
+        Assert.That(task.AssigneeIds, Is.Empty);
+    }
+
+    /// <summary>
+    /// One seeded event's compliance-report row, unfiltered by worker so the row is
+    /// reached on its own merits rather than by a filter.
+    /// </summary>
+    private async Task<ComplianceReportRowModel> ComplianceReportRow(int propertyId, int arpId)
+    {
+        var core = await SharedCore();
+        var res = await BuildComplianceReportService(core).Index(new ComplianceReportRequestModel
+        {
+            PropertyId = propertyId,
+            BoardIds = [],
+            TagIds = [],
+            SiteIds = [],
+            Status = "all",
+            DateFrom = WeekMonday,
+            DateTo = WeekMonday.AddDays(6),
+            PageSize = 0
+        });
+        Assert.That(res.Success, Is.True, res.Message);
+        return res.Model!.Entities.Single(e => e.AreaRulePlanningId == arpId);
+    }
+
+    /// <summary>
+    /// Every week-view task belonging to one seeded event. A seeded event renders on
+    /// BOTH paths of <c>GetTasksForWeek</c> — the weekly recurrence series and the
+    /// Wednesday compliance row — so this returns a list and the caller asserts over
+    /// all of them, which is what pins the two paths to the same answer.
+    /// </summary>
+    private async Task<List<CalendarTaskResponseModel>> WeekViewTasks(int propertyId, int arpId)
+    {
+        var core = await SharedCore();
+        var res = await BuildCalendarService(core).GetTasksForWeek(new CalendarTaskRequestModel
+        {
+            PropertyId = propertyId,
+            WeekStart = IsoUtc(WeekMonday),
+            WeekEnd = IsoUtc(WeekMonday.AddDays(6).AddHours(23).AddMinutes(59)),
+            ActionableOnly = false,
+            BoardIds = [],
+            TagNames = [],
+            SiteIds = [],
+            WorkerTagIds = []
+        });
+        Assert.That(res.Success, Is.True, res.Message);
+        return res.Model!.Where(t => t.Id == arpId).ToList();
     }
 }

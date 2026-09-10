@@ -273,14 +273,18 @@ public class BackendConfigurationComplianceReportService(
                     // (PlanningSites plus live worker-tag members, #1232). Do not
                     // "fix" the inconsistency by feeding it rowSiteIds: this field is
                     // not display-only. The frontend's compliance-details view passes
-                    // it to the complete-event modal as assigneeIds, which
-                    // pre-selects the completing worker when it holds exactly one id
-                    // and groups "assigned to this event" vs "other" workers. The
-                    // calendar grid feeds that same modal the ARP's PlanningSites
-                    // only, so widening here would make the two views disagree about
-                    // who is assigned, and would silently pre-select a team member as
-                    // the person completing the case.
+                    // it to the complete-event modal as assigneeIds, and the modal
+                    // pre-selects the completing worker when it holds exactly one id.
+                    // Widening it would auto-select a lone team member as the person
+                    // who completed the case, which #1236 decided against.
                     WorkerSiteIds = rowSiteSets.PlanningSiteIds.ToList(),
+                    // The team half of the same assignment, carried separately (#1236).
+                    // The modal groups its dropdown on WorkerSiteIds ∪ TeamAssigneeIds,
+                    // so a team's members appear under "assigned to this event" without
+                    // reaching the pre-select above. The calendar grid feeds that modal
+                    // the same two-field split (CalendarTaskResponseModel.AssigneeIds +
+                    // TeamAssigneeIds), so the two views agree about who is assigned.
+                    TeamAssigneeIds = rowSiteSets.TeamSiteIds.ToList(),
                     Completed = row.Completed,
                     DoneAt = row.DoneAt,
                     SdkCaseId = row.Candidate.MicrotingSdkCaseId,
@@ -1370,11 +1374,24 @@ public class BackendConfigurationComplianceReportService(
     /// <param name="AllSiteIds"><paramref name="PlanningSiteIds"/> followed by the live
     /// members of every worker tag the ARP is assigned to, appended only when not
     /// already present.</param>
-    private sealed record WorkerSiteSets(List<int> PlanningSiteIds, List<int> AllSiteIds)
+    /// <param name="TeamSiteIds">The live members of every worker tag the ARP is
+    /// assigned to, de-duplicated among themselves and grouped in tag order — tag by
+    /// tag, but with the members WITHIN one tag in the membership set's own unspecified
+    /// enumeration order — and WITHOUT the
+    /// <paramref name="PlanningSiteIds"/> PREFIX that <paramref name="AllSiteIds"/>
+    /// carries. It is not the complement of that half: a site that is both an explicit
+    /// assignee and a live team member appears here AND in
+    /// <paramref name="PlanningSiteIds"/>, because the two are separate halves the
+    /// client unions rather than a partition (see
+    /// <c>CalendarTaskResponseModel.TeamAssigneeIds</c>, which says the same of the
+    /// calendar's pair). Empty for an ARP with no worker tag. This is the row's team
+    /// assignment (#1236) — <c>ComplianceReportRowModel.TeamAssigneeIds</c>.</param>
+    private sealed record WorkerSiteSets(
+        List<int> PlanningSiteIds, List<int> AllSiteIds, List<int> TeamSiteIds)
     {
-        /// <summary>The both-empty value used for a row with no ARP. Two distinct
+        /// <summary>The all-empty value used for a row with no ARP. Three distinct
         /// lists, and never handed to a caller that mutates them.</summary>
-        public static WorkerSiteSets Empty => new([], []);
+        public static WorkerSiteSets Empty => new([], [], []);
     }
 
     /// <summary>
@@ -1400,10 +1417,10 @@ public class BackendConfigurationComplianceReportService(
     /// recomputed, so the narrow set can never drift from the wide one's prefix.
     /// </para>
     /// <para>
-    /// Membership is resolved one tag at a time because the shared service answers
-    /// "which sites are in THIS set of tags" as a flat set, and the worker column
-    /// needs it per tag to attribute members to the right row. The loop is bounded by
-    /// the DISTINCT worker tags on one page of rows, not by rows.
+    /// Membership is resolved per TAG rather than flattened, because the worker column
+    /// has to attribute members to the right row. It is ONE batched round trip covering
+    /// every distinct worker tag on the page — not one round trip per tag — and none at
+    /// all when no row on the page is team-assigned.
     /// </para>
     /// </remarks>
     private async Task<Dictionary<int, WorkerSiteSets>> ResolveWorkerSiteIdsByArpId(
@@ -1421,12 +1438,10 @@ public class BackendConfigurationComplianceReportService(
             .GroupBy(x => x.AreaRulePlanningId)
             .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.TagId).Distinct().ToList());
 
-        var memberSiteIdsByTagId = new Dictionary<int, HashSet<int>>();
-        foreach (var tagId in workerTagIdsByArpId.Values.SelectMany(x => x).Distinct())
-        {
-            memberSiteIdsByTagId[tagId] = await workerTagMembershipService
-                .GetLiveMemberSiteIdsAsync([tagId]).ConfigureAwait(false);
-        }
+        var memberSiteIdsByTagId = await workerTagMembershipService
+            .GetLiveMemberSiteIdsByTagAsync(
+                workerTagIdsByArpId.Values.SelectMany(x => x).Distinct().ToList())
+            .ConfigureAwait(false);
 
         foreach (var arpId in arpIds)
         {
@@ -1445,20 +1460,36 @@ public class BackendConfigurationComplianceReportService(
                 continue;
             }
 
-            var allSiteIds = new List<int>(planningSiteIds);
+            // The team half on its own first, then appended to the PlanningSites half.
+            // Building AllSiteIds FROM teamSiteIds rather than re-walking the tags is
+            // what keeps AllSiteIds order-identical to the single-pass version this
+            // replaces: teamSiteIds is de-duped in tag order, so appending it yields
+            // exactly the order that loop produced.
+            var teamSiteIds = new List<int>();
+            var seenTeamSiteIds = new HashSet<int>();
             foreach (var tagId in workerTagIdsByArpId.GetValueOrDefault(arpId, []))
             {
                 if (!memberSiteIdsByTagId.TryGetValue(tagId, out var memberSiteIds)) continue;
                 foreach (var siteId in memberSiteIds)
                 {
-                    if (!allSiteIds.Contains(siteId))
+                    if (seenTeamSiteIds.Add(siteId))
                     {
-                        allSiteIds.Add(siteId);
+                        teamSiteIds.Add(siteId);
                     }
                 }
             }
 
-            siteIdsByArpId[arpId] = new WorkerSiteSets(planningSiteIds, allSiteIds);
+            var allSiteIds = new List<int>(planningSiteIds);
+            var seenAllSiteIds = new HashSet<int>(planningSiteIds);
+            foreach (var siteId in teamSiteIds)
+            {
+                if (seenAllSiteIds.Add(siteId))
+                {
+                    allSiteIds.Add(siteId);
+                }
+            }
+
+            siteIdsByArpId[arpId] = new WorkerSiteSets(planningSiteIds, allSiteIds, teamSiteIds);
         }
 
         return siteIdsByArpId;
