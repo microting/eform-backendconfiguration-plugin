@@ -11,6 +11,7 @@ using Microting.eForm.Infrastructure.Constants;
 using Microting.EformAngularFrontendBase.Infrastructure.Data.Entities.Permissions;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
+using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.TimePlanningBase.Infrastructure.Data.Entities;
 using Microting.TimePlanningBase.Infrastructure.Helpers;
 using NSubstitute;
@@ -783,6 +784,392 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         Assert.That(timeline.WasOneMinuteAt(transitionDate.AddDays(1)), Is.True,
             "Registrations from after the legacy switch resolve as one-minute mode.");
     }
+
+    // ---------------------------------------------------------------------------------------------
+    // The effective-date carry-over in UpdateDeviceUser's create branch, one test per outcome.
+    //
+    // Re-enabling time registration mints a NEW AssignedSite hardcoded to one-minute mode. Its own
+    // version trail starts at true, so OneMinuteModeTimeline reads one-minute mode all the way back
+    // UNLESS UseOneMinuteIntervalsFrom says otherwise. Every branch therefore decides how the site's
+    // pre-existing registrations are paid, and each test below asserts both the stored value and the
+    // timeline verdict on dates either side of the expected boundary — the timeline is what payroll
+    // reads. The 5-minute and the recovered-transition outcomes are the two tests above.
+    // ---------------------------------------------------------------------------------------------
+
+    // Branch: no earlier AssignedSite at all — genuinely the site's first time registration setup.
+    [Test]
+    public async Task
+        BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_TimeRegistrationEnabledOnSiteWithNoEarlierAssignment_LeavesEffectiveDateNull()
+    {
+        // Arrange
+        var worker = await ArrangeWorkerWithoutTimeRegistration();
+        Assert.That(await TimePlanningPnDbContext!.AssignedSites.AnyAsync(x => x.SiteId == worker.SiteMicrotingUid),
+            Is.False, "Precondition: the site must never have had an AssignedSite, removed or not.");
+
+        // Act
+        var result = await SetTimeRegistration(worker, true);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var assignmentsForSite = await AssignmentsForSite(worker.SiteMicrotingUid);
+        Assert.That(assignmentsForSite.Count, Is.EqualTo(1));
+        var created = assignmentsForSite[0];
+        Assert.That(created.UseOneMinuteIntervals, Is.True);
+        Assert.That(created.UseOneMinuteIntervalsFrom, Is.Null,
+            "No earlier history exists to protect, so nothing may be stamped.");
+
+        // WRONG outcomes this pins: deleting the null-check branch dereferences the missing row, the
+        // create branch swallows the exception and the enable silently fails; treating "no earlier row"
+        // like a 5-minute site stamps now, which would push everything registered before today into
+        // 5-minute mode on a site that never had any 5-minute history.
+        var timeline = await OneMinuteModeTimeline.BuildAsync(TimePlanningPnDbContext!, created);
+        Assert.That(timeline.WasOneMinuteAt(DateTime.UtcNow.AddYears(-5)), Is.True,
+            "A first setup is one-minute mode from the beginning of time.");
+        Assert.That(timeline.WasOneMinuteAt(DateTime.UtcNow.AddDays(-1)), Is.True,
+            "Yesterday must not read as 5-minute mode — nothing was ever registered under it.");
+        Assert.That(timeline.WasOneMinuteAt(DateTime.UtcNow), Is.True);
+    }
+
+    // Branch: the earlier row was already one-minute WITH a recorded effective date — carried unchanged.
+    [Test]
+    public async Task
+        BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_TimeRegistrationReEnabledOnStampedOneMinuteSite_CarriesStampUnchanged()
+    {
+        // Arrange
+        var worker = await ArrangeWorkerWithoutTimeRegistration();
+
+        // Backdated 30 days so a carried stamp is distinguishable from a fresh "now" stamp.
+        var recordedFrom = DateTime.UtcNow.AddDays(-30);
+        // Created true, so version row #0 is already true: were the stamp branch deleted, the
+        // version-trail branch would see "earliest row already true" and carry NULL instead.
+        var legacyAssignment = new AssignedSite
+        {
+            SiteId = worker.SiteMicrotingUid,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1,
+            UseOneMinuteIntervals = true,
+            UseOneMinuteIntervalsFrom = recordedFrom
+        };
+        await legacyAssignment.Create(TimePlanningPnDbContext!);
+        // Read back what the database actually holds (column precision), which is what gets carried.
+        var storedFrom = (await TimePlanningPnDbContext!.AssignedSites.AsNoTracking()
+            .FirstAsync(x => x.Id == legacyAssignment.Id)).UseOneMinuteIntervalsFrom;
+        Assert.That(storedFrom, Is.Not.Null, "Precondition: the earlier row must carry a stamp.");
+
+        // Act — disable, then re-enable
+        var disableResult = await SetTimeRegistration(worker, false);
+        Assert.That(disableResult.Success, Is.True, disableResult.Message);
+        var result = await SetTimeRegistration(worker, true);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var assignmentsForSite = await AssignmentsForSite(worker.SiteMicrotingUid);
+        Assert.That(assignmentsForSite.Count, Is.EqualTo(2));
+        Assert.That(assignmentsForSite[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+
+        var reEnabled = assignmentsForSite[1];
+        Assert.That(reEnabled.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(reEnabled.UseOneMinuteIntervals, Is.True);
+        Assert.That(reEnabled.UseOneMinuteIntervalsFrom, Is.EqualTo(storedFrom),
+            "The recorded effective date must be carried across exactly, not re-derived or re-stamped.");
+
+        // WRONG outcomes this pins: carrying NULL (stamp branch deleted, or the version trail consulted
+        // first) makes one-minute mode hold from the beginning of time and reinterprets the 5-minute
+        // history before the recorded date; re-stamping now pushes the 30 one-minute days since the
+        // recorded date back into 5-minute mode.
+        var timeline = await OneMinuteModeTimeline.BuildAsync(TimePlanningPnDbContext!, reEnabled);
+        Assert.That(timeline.WasOneMinuteAt(recordedFrom.AddDays(-1)), Is.False,
+            "Registrations from before the recorded date must still resolve as 5-minute mode.");
+        Assert.That(timeline.WasOneMinuteAt(recordedFrom), Is.True,
+            "The recorded date itself is the first one-minute day.");
+        Assert.That(timeline.WasOneMinuteAt(recordedFrom.AddDays(1)), Is.True,
+            "Registrations after the recorded date — but before the re-enable — stay one-minute mode.");
+    }
+
+    // Branch: one-minute, no stamp, and NO version rows — nothing to recover, so NULL is carried.
+    [Test]
+    public async Task
+        BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_TimeRegistrationReEnabledOnUnstampedOneMinuteSiteWithoutVersions_LeavesEffectiveDateNull()
+    {
+        // Arrange
+        var worker = await ArrangeWorkerWithoutTimeRegistration();
+
+        var legacyAssignment = new AssignedSite
+        {
+            SiteId = worker.SiteMicrotingUid,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1,
+            UseOneMinuteIntervals = true
+        };
+        await legacyAssignment.Create(TimePlanningPnDbContext!);
+
+        // A row older than AssignedSiteVersions itself: no audit trail at all. Drop the version row
+        // Create just wrote, and soft-delete the row outside PnBase so its removal is not audited
+        // either — the app's own disable path would write a (true) version row and send this site
+        // down the "earliest row already true" branch instead of the empty-trail one.
+        TimePlanningPnDbContext!.AssignedSiteVersions.RemoveRange(
+            await TimePlanningPnDbContext.AssignedSiteVersions
+                .Where(x => x.AssignedSiteId == legacyAssignment.Id)
+                .ToListAsync());
+        legacyAssignment.WorkflowState = Constants.WorkflowStates.Removed;
+        await TimePlanningPnDbContext.SaveChangesAsync();
+        Assert.That(await TimePlanningPnDbContext.AssignedSiteVersions
+                .AnyAsync(x => x.AssignedSiteId == legacyAssignment.Id),
+            Is.False, "Precondition: the earlier row must have no version rows.");
+
+        // Act
+        var result = await SetTimeRegistration(worker, true);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var assignmentsForSite = await AssignmentsForSite(worker.SiteMicrotingUid);
+        Assert.That(assignmentsForSite.Count, Is.EqualTo(2));
+        Assert.That(assignmentsForSite[0].Id, Is.EqualTo(legacyAssignment.Id));
+
+        var reEnabled = assignmentsForSite[1];
+        Assert.That(reEnabled.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(reEnabled.UseOneMinuteIntervals, Is.True);
+        Assert.That(reEnabled.UseOneMinuteIntervalsFrom, Is.Null,
+            "An empty trail records no transition, so there is no date to carry.");
+
+        // WRONG outcomes this pins: without the Count == 0 guard the branch indexes an empty list, the
+        // create branch swallows the exception and the enable silently fails; stamping now instead
+        // would move the site's whole one-minute history — which the old row's timeline read as
+        // one-minute throughout (no version rows means "current flag for all dates") — into 5-minute.
+        var timeline = await OneMinuteModeTimeline.BuildAsync(TimePlanningPnDbContext!, reEnabled);
+        Assert.That(timeline.WasOneMinuteAt(DateTime.UtcNow.AddYears(-5)), Is.True,
+            "The site read as one-minute mode for all dates before the re-enable, and must still.");
+        Assert.That(timeline.WasOneMinuteAt(DateTime.UtcNow.AddDays(-1)), Is.True);
+        Assert.That(timeline.WasOneMinuteAt(DateTime.UtcNow), Is.True);
+    }
+
+    // Branch: one-minute, no stamp, and the EARLIEST version row is already true — the site was
+    // one-minute from its creation, so there is no transition and NULL is carried.
+    [Test]
+    public async Task
+        BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_TimeRegistrationReEnabledOnSiteOneMinuteSinceCreation_LeavesEffectiveDateNull()
+    {
+        // Arrange
+        var worker = await ArrangeWorkerWithoutTimeRegistration();
+
+        // Created true on purpose: PnBase.Create writes version row #0, so the trail starts at true.
+        var legacyAssignment = new AssignedSite
+        {
+            SiteId = worker.SiteMicrotingUid,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1,
+            UseOneMinuteIntervals = true
+        };
+        await legacyAssignment.Create(TimePlanningPnDbContext!);
+
+        // Backdate version row #0 so that mistaking it for a false→true transition produces a date
+        // 30 days back — visible on the timeline — rather than one indistinguishable from "now".
+        var firstVersion = await TimePlanningPnDbContext!.AssignedSiteVersions
+            .Where(x => x.AssignedSiteId == legacyAssignment.Id)
+            .OrderBy(x => x.Id)
+            .FirstAsync();
+        Assert.That(firstVersion.UseOneMinuteIntervals, Is.True, "Precondition: version row #0 must be true.");
+        var createdAt = DateTime.UtcNow.AddDays(-30);
+        firstVersion.UpdatedAt = createdAt;
+        await TimePlanningPnDbContext.SaveChangesAsync();
+
+        // Act — disable, then re-enable
+        var disableResult = await SetTimeRegistration(worker, false);
+        Assert.That(disableResult.Success, Is.True, disableResult.Message);
+        var result = await SetTimeRegistration(worker, true);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var assignmentsForSite = await AssignmentsForSite(worker.SiteMicrotingUid);
+        Assert.That(assignmentsForSite.Count, Is.EqualTo(2));
+        Assert.That(assignmentsForSite[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+
+        var reEnabled = assignmentsForSite[1];
+        Assert.That(reEnabled.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(reEnabled.UseOneMinuteIntervals, Is.True);
+        Assert.That(reEnabled.UseOneMinuteIntervalsFrom, Is.Null,
+            "A trail that starts at true records no transition, so there is no date to carry.");
+
+        // WRONG outcome this pins: without the "earliest row already true" clause the branch takes the
+        // first true row as the transition and stamps its date — 30 days back — which would push the
+        // site's one-minute history before that day into 5-minute mode. The old row's timeline read it
+        // as one-minute from the beginning of time (its _initialValue was true).
+        var timeline = await OneMinuteModeTimeline.BuildAsync(TimePlanningPnDbContext!, reEnabled);
+        Assert.That(timeline.WasOneMinuteAt(createdAt.AddDays(-1)), Is.True,
+            "The day before version row #0 must still resolve as one-minute mode.");
+        Assert.That(timeline.WasOneMinuteAt(DateTime.UtcNow.AddYears(-5)), Is.True,
+            "One-minute mode holds from the beginning of time.");
+        Assert.That(timeline.WasOneMinuteAt(DateTime.UtcNow), Is.True);
+    }
+
+    // Branch: one-minute, no stamp, and the trail NEVER records true — the flag was flipped outside the
+    // audited path, so the LAST audited save is the earliest possible flip point and is carried.
+    [Test]
+    public async Task
+        BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_TimeRegistrationReEnabledOnSiteFlippedOutsideAudit_CarriesLastAuditedSave()
+    {
+        // Arrange
+        var worker = await ArrangeWorkerWithoutTimeRegistration();
+
+        var legacyAssignment = new AssignedSite
+        {
+            SiteId = worker.SiteMicrotingUid,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1,
+            UseOneMinuteIntervals = false
+        };
+        await legacyAssignment.Create(TimePlanningPnDbContext!);
+        // A second audited save, still in 5-minute mode, so the trail has a FIRST and a LAST row with
+        // different dates — carrying the first one instead of the last must show on the timeline.
+        legacyAssignment.UseOnlyPlanHours = true;
+        await legacyAssignment.Update(TimePlanningPnDbContext!);
+
+        var versions = await TimePlanningPnDbContext!.AssignedSiteVersions
+            .Where(x => x.AssignedSiteId == legacyAssignment.Id)
+            .OrderBy(x => x.Id)
+            .ToListAsync();
+        Assert.That(versions.Count, Is.EqualTo(2), "Precondition: exactly two audited saves.");
+        Assert.That(versions.All(x => !x.UseOneMinuteIntervals), Is.True,
+            "Precondition: no audited save may record one-minute mode.");
+        var firstAuditedSave = DateTime.UtcNow.AddDays(-60);
+        var lastAuditedSave = DateTime.UtcNow.AddDays(-30);
+        versions[0].UpdatedAt = firstAuditedSave;
+        versions[1].UpdatedAt = lastAuditedSave;
+        await TimePlanningPnDbContext.SaveChangesAsync();
+
+        // The un-audited flip, and an un-audited removal: plain SaveChanges writes no version row,
+        // standing in for a raw-SQL ops change. (Through the app's disable path the removal IS audited
+        // and its version row would record true, so this branch would not be reached — the trail must
+        // genuinely never record true for it to apply.)
+        legacyAssignment.UseOneMinuteIntervals = true;
+        legacyAssignment.WorkflowState = Constants.WorkflowStates.Removed;
+        await TimePlanningPnDbContext.SaveChangesAsync();
+        Assert.That(await TimePlanningPnDbContext.AssignedSiteVersions
+                .CountAsync(x => x.AssignedSiteId == legacyAssignment.Id),
+            Is.EqualTo(2), "Precondition: the flip and the removal must not have been audited.");
+
+        // Act
+        var result = await SetTimeRegistration(worker, true);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var assignmentsForSite = await AssignmentsForSite(worker.SiteMicrotingUid);
+        Assert.That(assignmentsForSite.Count, Is.EqualTo(2));
+        Assert.That(assignmentsForSite[0].Id, Is.EqualTo(legacyAssignment.Id));
+
+        var reEnabled = assignmentsForSite[1];
+        Assert.That(reEnabled.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(reEnabled.UseOneMinuteIntervals, Is.True);
+        Assert.That(reEnabled.UseOneMinuteIntervalsFrom, Is.Not.Null);
+        Assert.That(reEnabled.UseOneMinuteIntervalsFrom!.Value.Date, Is.EqualTo(lastAuditedSave.Date),
+            "The stamp must be the LAST audited save — the earliest possible un-audited flip point.");
+
+        // WRONG outcomes this pins: dropping the "?? previousVersions[^1]" fallback dereferences a null
+        // transition and the enable silently fails; taking the FIRST row instead stamps 60 days back
+        // and turns 30 audited 5-minute days into one-minute mode; carrying NULL makes one-minute hold
+        // from the beginning of time; stamping now turns the 30 days since the last audited save —
+        // which OneMinuteModeTimeline's divergence correction read as one-minute — into 5-minute.
+        var timeline = await OneMinuteModeTimeline.BuildAsync(TimePlanningPnDbContext!, reEnabled);
+        Assert.That(timeline.WasOneMinuteAt(firstAuditedSave.AddDays(-1)), Is.False,
+            "Before the first audited save the site was in 5-minute mode.");
+        Assert.That(timeline.WasOneMinuteAt(lastAuditedSave.AddDays(-1)), Is.False,
+            "Between the two audited saves the site was provably still in 5-minute mode.");
+        Assert.That(timeline.WasOneMinuteAt(lastAuditedSave), Is.True,
+            "From the last audited save onwards the un-audited flip may already have happened.");
+        Assert.That(timeline.WasOneMinuteAt(lastAuditedSave.AddDays(1)), Is.True);
+    }
+
+    /// <summary>
+    /// A worker created WITHOUT time registration — so CreateDeviceUser mints no AssignedSite — plus
+    /// everything <see cref="SetTimeRegistration"/> needs to drive UpdateDeviceUser for it. The tests
+    /// above then hand-build whatever earlier AssignedSite history their branch needs.
+    /// </summary>
+    private async Task<ArrangedWorker> ArrangeWorkerWithoutTimeRegistration()
+    {
+        var core = await GetCore();
+
+        var propertyCreateModel = new PropertyCreateModel
+        {
+            Address = Guid.NewGuid().ToString(),
+            Chr = Guid.NewGuid().ToString(),
+            IndustryCode = Guid.NewGuid().ToString(),
+            Cvr = Guid.NewGuid().ToString(),
+            IsFarm = true,
+            LanguagesIds = [1],
+            MainMailAddress = Guid.NewGuid().ToString(),
+            Name = Guid.NewGuid().ToString(),
+            WorkorderEnable = false
+        };
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
+
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+
+        var createResult = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
+        }, core, 1, TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+        Assert.That(createResult.Success, Is.True, createResult.Message);
+
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+
+        return new ArrangedWorker(core, userService, userManager, Substitute.For<ILogger>(),
+            (int)currentSite.MicrotingUid!, Guid.NewGuid().ToString(), Guid.NewGuid().ToString(),
+            $"{Guid.NewGuid()}@test.com");
+    }
+
+    /// <summary>Switches time registration on or off for <paramref name="worker"/> through UpdateDeviceUser.</summary>
+    private async Task<OperationResult> SetTimeRegistration(ArrangedWorker worker, bool timeRegistrationEnabled)
+    {
+        return await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(new DeviceUserModel
+            {
+                SiteMicrotingUid = worker.SiteMicrotingUid,
+                CustomerNo = 0,
+                HasWorkOrdersAssigned = false,
+                IsBackendUser = false,
+                IsLocked = false,
+                LanguageCode = "da",
+                TimeRegistrationEnabled = timeRegistrationEnabled,
+                UserFirstName = worker.FirstName,
+                UserLastName = worker.LastName,
+                WorkerEmail = worker.WorkerEmail
+            }, worker.Core, 1, worker.UserService, worker.UserManager, BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, worker.Logger, ItemsPlanningPnDbContext!);
+    }
+
+    /// <summary>Every AssignedSite ever minted for the site, removed ones included, oldest first.</summary>
+    private async Task<List<AssignedSite>> AssignmentsForSite(int siteMicrotingUid)
+    {
+        return await TimePlanningPnDbContext!.AssignedSites.AsNoTracking()
+            .Where(x => x.SiteId == siteMicrotingUid)
+            .OrderBy(x => x.Id)
+            .ToListAsync();
+    }
+
+    private sealed record ArrangedWorker(
+        Core Core,
+        IUserService UserService,
+        UserManager<EformUser> UserManager,
+        ILogger Logger,
+        int SiteMicrotingUid,
+        string FirstName,
+        string LastName,
+        string WorkerEmail);
 
     // Should test the CreateDeviceUser method with TimeRegistrationEnabled and OverMidnight set,
     // verifying the flag passes through onto the created AssignedSite
