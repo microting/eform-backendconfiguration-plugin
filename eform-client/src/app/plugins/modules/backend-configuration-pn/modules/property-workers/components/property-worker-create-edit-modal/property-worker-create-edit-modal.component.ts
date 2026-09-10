@@ -119,9 +119,33 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
         }
       }
     });
-    // One-way: a saved 1-minute-intervals=true can never be re-enabled for editing
-    if (this.selectedAssignedSite.useOneMinuteIntervals) {
-      this.form.get('useOneMinuteIntervals')?.disable({emitEvent: false});
+    this.applyOneMinuteIntervalsRule();
+  }
+
+  /**
+   * Single source of truth for the 1-minute-intervals checkbox state.
+   * Whenever the worker has no saved AssignedSite yet, the backend hardcodes
+   * UseOneMinuteIntervals=true on the row it is about to create - both when
+   * creating a worker and when time registration is switched on for an existing
+   * one - so the box shows checked and locked rather than offering a choice that
+   * would be ignored.
+   */
+  private applyOneMinuteIntervalsRule() {
+    const control = this.form.get('useOneMinuteIntervals');
+    if (!control) {
+      return;
+    }
+    const backendWillCreateAssignedSite = !this.selectedAssignedSite.id;
+    if (backendWillCreateAssignedSite) {
+      control.setValue(true, {emitEvent: false});
+      control.disable({emitEvent: false});
+    } else if (this.selectedAssignedSite.useOneMinuteIntervals) {
+      // One-way: a saved true can never be turned off again.
+      control.disable({emitEvent: false});
+    } else if (!this.form.get('resigned')?.value) {
+      // A saved false is editable again once the assigned site has loaded, unless
+      // the worker is resigned - then the resigned rule keeps everything disabled.
+      control.enable({emitEvent: false});
     }
   }
 
@@ -170,6 +194,9 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     this.availableProperties = [...this.model.availableProperties];
     this.selectedDeviceUser = {...this.model.deviceUser ?? new DeviceUserModel()};
     this.selectedDeviceUserCopy = {...this.model.deviceUser};
+    // Known synchronously from the injected dialog data, so every mode-dependent
+    // rule below (and the title/save button in the template) can rely on it.
+    this.edit = !!this.selectedDeviceUser.id;
     this.assignmentsCopy = [...this.model.assignments];
     this.taskManagementEnabled = this.selectedDeviceUserCopy.taskManagementEnabled;
     this.timeRegistrationEnabled = this.selectedDeviceUserCopy.timeRegistrationEnabled;
@@ -303,9 +330,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
               useOneMinuteIntervals: this.selectedAssignedSite.useOneMinuteIntervals || false,
             });
 
-            if (this.selectedAssignedSite.useOneMinuteIntervals) {
-              this.form.get('useOneMinuteIntervals')?.disable({emitEvent: false});
-            }
+            this.applyOneMinuteIntervalsRule();
 
             // Patch auto break settings from assigned site
             const autoBreakFg = this.form.get('autoBreakSettings') as FormGroup;
@@ -619,9 +644,6 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
         if (data && data.success && data.model) {
           this.appLanguages = data.model;
           this.activeLanguages = this.appLanguages.languages.filter((x) => x.isActive);
-          if (this.selectedDeviceUser.id) {
-            this.edit = true;
-          }
           if (!this.edit) {
             this.form.patchValue({languageCode: this.languages[0].languageCode});
             if (this.authStateService.checkClaim('task_management_enable')) {

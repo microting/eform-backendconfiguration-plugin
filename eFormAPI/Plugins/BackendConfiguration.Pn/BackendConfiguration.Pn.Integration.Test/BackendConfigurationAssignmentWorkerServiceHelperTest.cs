@@ -12,6 +12,7 @@ using Microting.EformAngularFrontendBase.Infrastructure.Data.Entities.Permission
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 using Microting.TimePlanningBase.Infrastructure.Data.Entities;
+using Microting.TimePlanningBase.Infrastructure.Helpers;
 using NSubstitute;
 
 namespace BackendConfiguration.Pn.Integration.Test;
@@ -142,16 +143,18 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(31));
         Assert.That(timeregistrationSiteAssignments[30].SiteId, Is.EqualTo(sites[2].MicrotingUid));
 
-        // Newly-created AssignedSite no longer hardcodes UseOneMinuteIntervals to true; it defaults to
-        // false when the DeviceUserModel does not specify it (CreateDeviceUser path)
-        Assert.That(timeregistrationSiteAssignments[30].UseOneMinuteIntervals, Is.False);
+        // Create hardcodes UseOneMinuteIntervals to true even when the DeviceUserModel leaves it unset,
+        // and leaves UseOneMinuteIntervalsFrom NULL so OneMinuteModeTimeline reports one-minute mode for
+        // the site's whole history.
+        Assert.That(timeregistrationSiteAssignments[30].UseOneMinuteIntervals, Is.True);
+        Assert.That(timeregistrationSiteAssignments[30].UseOneMinuteIntervalsFrom, Is.Null);
     }
 
-    // Should test the CreateDeviceUser method with TimeRegistrationEnabled, UseOneMinuteIntervals and
-    // PayRuleSetId set, verifying both new fields pass through onto the created AssignedSite
+    // Should test the CreateDeviceUser method with TimeRegistrationEnabled and PayRuleSetId set,
+    // verifying PayRuleSetId passes through while a client-sent UseOneMinuteIntervals=false is IGNORED
     [Test]
     public async Task
-        BackendConfigurationAssignmentWorkerServiceHelper_CreateDeviceUser_TimeRegistrationEnabled_UseOneMinuteIntervalsAndPayRuleSetId_ReturnsSuccess()
+        BackendConfigurationAssignmentWorkerServiceHelper_CreateDeviceUser_TimeRegistrationEnabled_ClientSentUseOneMinuteIntervalsIgnoredAndPayRuleSetId_ReturnsSuccess()
     {
         // Arrange
         var core = await GetCore();
@@ -170,7 +173,8 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             IsLocked = false,
             LanguageCode = "da",
             TimeRegistrationEnabled = true,
-            UseOneMinuteIntervals = true,
+            // Deliberately false: the create path must ignore it and still persist true.
+            UseOneMinuteIntervals = false,
             PayRuleSetId = payRuleSetId,
             UserFirstName = Guid.NewGuid().ToString(),
             UserLastName = Guid.NewGuid().ToString(),
@@ -199,7 +203,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(31));
         Assert.That(timeregistrationSiteAssignments[30].SiteId, Is.EqualTo(sites[2].MicrotingUid));
 
-        // Newly-created AssignedSite must pass through UseOneMinuteIntervals and PayRuleSetId from the DeviceUserModel
+        // True even though the client explicitly sent false — create hardcodes the flag.
         Assert.That(timeregistrationSiteAssignments[30].UseOneMinuteIntervals, Is.True);
         Assert.That(timeregistrationSiteAssignments[30].PayRuleSetId, Is.EqualTo(payRuleSetId));
     }
@@ -405,9 +409,12 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(31));
         Assert.That(timeregistrationSiteAssignments[30].SiteId, Is.EqualTo(sites[2].MicrotingUid));
 
-        // Newly-created AssignedSite no longer hardcodes UseOneMinuteIntervals to true; it defaults to
-        // false when the DeviceUserModel does not specify it (UpdateDeviceUser create path)
-        Assert.That(timeregistrationSiteAssignments[30].UseOneMinuteIntervals, Is.False);
+        // The UpdateDeviceUser create path hardcodes UseOneMinuteIntervals to true. This site has no
+        // earlier assignment, so no effective date is stamped and the derived timeline covers its whole
+        // history. The re-enable case, where a stamp IS required, is covered by
+        // ..._TimeRegistrationReEnabledOnFiveMinuteSite_StampsEffectiveDate below.
+        Assert.That(timeregistrationSiteAssignments[30].UseOneMinuteIntervals, Is.True);
+        Assert.That(timeregistrationSiteAssignments[30].UseOneMinuteIntervalsFrom, Is.Null);
     }
 
     // Should test the UpdateDeviceUser method with timeRegistration set to false and return success
@@ -521,6 +528,260 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
 
         // Assert propertyWorkers
         Assert.That(propertyWorkers.Count, Is.EqualTo(0));
+    }
+
+    // Disabling time registration soft-deletes the AssignedSite, so re-enabling it creates a NEW row
+    // for a site that keeps its old PlanRegistrations (they hang off SdkSitId). The new row is
+    // hardcoded to one-minute mode, but for a site that was previously in 5-minute mode the effective
+    // date must be stamped, otherwise OneMinuteModeTimeline — which sees no version rows on the new
+    // row — would derive one-minute mode all the way back and reinterpret every historical tick row.
+    [Test]
+    public async Task
+        BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_TimeRegistrationReEnabledOnFiveMinuteSite_StampsEffectiveDate()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+
+        var propertyCreateModel = new PropertyCreateModel
+        {
+            Address = Guid.NewGuid().ToString(),
+            Chr = Guid.NewGuid().ToString(),
+            IndustryCode = Guid.NewGuid().ToString(),
+            Cvr = Guid.NewGuid().ToString(),
+            IsFarm = true,
+            LanguagesIds = [1],
+            MainMailAddress = Guid.NewGuid().ToString(),
+            Name = Guid.NewGuid().ToString(),
+            WorkorderEnable = false
+        };
+
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
+
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = true,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
+        };
+
+        await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var siteMicrotingUid = (int)currentSite.MicrotingUid!;
+
+        // Backdate the assignment to 5-minute mode, standing in for a site that was set up before
+        // one-minute intervals became the default for every new time registration setup.
+        var legacyAssignment = await TimePlanningPnDbContext!.AssignedSites
+            .OrderByDescending(x => x.Id)
+            .FirstAsync(x => x.SiteId == siteMicrotingUid);
+        legacyAssignment.UseOneMinuteIntervals = false;
+        legacyAssignment.UseOneMinuteIntervalsFrom = null;
+        await legacyAssignment.Update(TimePlanningPnDbContext!);
+
+        var userFirstName = Guid.NewGuid().ToString();
+        var userLastName = Guid.NewGuid().ToString();
+        var workerEmail = $"{Guid.NewGuid()}@test.com";
+
+        DeviceUserModel UpdateModel(bool timeRegistrationEnabled) => new()
+        {
+            SiteMicrotingUid = siteMicrotingUid,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = timeRegistrationEnabled,
+            UserFirstName = userFirstName,
+            UserLastName = userLastName,
+            WorkerEmail = workerEmail
+        };
+
+        // Act — disable, then re-enable
+        await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(UpdateModel(false), core, 1,
+            userService, userManager, BackendConfigurationPnDbContext!, TimePlanningPnDbContext!, BaseDbContext!,
+            logger, ItemsPlanningPnDbContext!);
+
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(UpdateModel(true), core, 1,
+            userService, userManager, BackendConfigurationPnDbContext!, TimePlanningPnDbContext!, BaseDbContext!,
+            logger, ItemsPlanningPnDbContext!);
+
+        // Assert
+        // The create branch swallows exceptions into a failure result, so Is.Not.Null would pass on a
+        // broken run; assert the operation actually succeeded.
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var assignmentsForSite = await TimePlanningPnDbContext!.AssignedSites.AsNoTracking()
+            .Where(x => x.SiteId == siteMicrotingUid)
+            .OrderBy(x => x.Id)
+            .ToListAsync();
+
+        // The old row was soft-deleted and a brand new one minted alongside it.
+        Assert.That(assignmentsForSite.Count, Is.EqualTo(2));
+        Assert.That(assignmentsForSite[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(assignmentsForSite[0].UseOneMinuteIntervals, Is.False);
+
+        var reEnabled = assignmentsForSite[1];
+        Assert.That(reEnabled.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(reEnabled.UseOneMinuteIntervals, Is.True);
+        // Stamped, so the site's pre-existing registrations keep reading as 5-minute mode.
+        Assert.That(reEnabled.UseOneMinuteIntervalsFrom, Is.Not.Null);
+        // Not-null alone is too weak: DateTime.MinValue is non-null and would reinterpret every
+        // historical row exactly as before the fix. Assert the behaviour the stamp exists for.
+        var timeline = await OneMinuteModeTimeline.BuildAsync(TimePlanningPnDbContext!, reEnabled);
+        Assert.That(timeline.WasOneMinuteAt(DateTime.UtcNow.AddDays(-1)), Is.False,
+            "Registrations from before the re-enable must still resolve as 5-minute mode.");
+        Assert.That(timeline.WasOneMinuteAt(DateTime.UtcNow), Is.True,
+            "From the re-enable onwards the site is in one-minute mode.");
+    }
+
+    // The legacy un-backfilled shape: an AssignedSite switched from 5-minute to one-minute mode BEFORE
+    // UseOneMinuteIntervalsFrom existed, so the flag is true but the stamp is NULL and the transition
+    // survives ONLY as an AssignedSiteVersions row. Those version rows are keyed to the OLD
+    // AssignedSiteId and therefore do not follow the site into the new row that re-enabling time
+    // registration mints, so carrying the NULL across would make the new row's timeline read one-minute
+    // mode all the way back. The create path must recover the transition date from the old row's
+    // version rows instead.
+    [Test]
+    public async Task
+        BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_TimeRegistrationReEnabledOnUnstampedOneMinuteSite_RecoversEffectiveDateFromVersions()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+
+        var propertyCreateModel = new PropertyCreateModel
+        {
+            Address = Guid.NewGuid().ToString(),
+            Chr = Guid.NewGuid().ToString(),
+            IndustryCode = Guid.NewGuid().ToString(),
+            Cvr = Guid.NewGuid().ToString(),
+            IsFarm = true,
+            LanguagesIds = [1],
+            MainMailAddress = Guid.NewGuid().ToString(),
+            Name = Guid.NewGuid().ToString(),
+            WorkorderEnable = false
+        };
+
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
+
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+
+        // Time registration deliberately OFF at creation: the legacy AssignedSite is built by hand
+        // below so its FIRST version row carries UseOneMinuteIntervals = false, the way a site set up
+        // before one-minute intervals became the default looks. (CreateDeviceUser would hardcode true,
+        // which is a different history entirely.)
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
+        };
+
+        await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var siteMicrotingUid = (int)currentSite.MicrotingUid!;
+
+        var legacyAssignment = new AssignedSite
+        {
+            SiteId = siteMicrotingUid,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1,
+            UseOneMinuteIntervals = false
+        };
+        await legacyAssignment.Create(TimePlanningPnDbContext!);
+
+        // The legacy switch: the flag flips to true and NO stamp is written, so the false→true
+        // transition exists only in the version row this Update writes.
+        legacyAssignment.UseOneMinuteIntervals = true;
+        legacyAssignment.UseOneMinuteIntervalsFrom = null;
+        await legacyAssignment.Update(TimePlanningPnDbContext!);
+
+        // Backdate that version row so the recovered date is provably the transition's own and not
+        // simply "now" — a stamp of today would be indistinguishable from the 5-minute-site case.
+        var transitionVersion = await TimePlanningPnDbContext!.AssignedSiteVersions
+            .Where(x => x.AssignedSiteId == legacyAssignment.Id && x.UseOneMinuteIntervals)
+            .OrderBy(x => x.Id)
+            .FirstAsync();
+        var transitionDate = DateTime.UtcNow.AddDays(-30);
+        transitionVersion.UpdatedAt = transitionDate;
+        await TimePlanningPnDbContext!.SaveChangesAsync();
+
+        var userFirstName = Guid.NewGuid().ToString();
+        var userLastName = Guid.NewGuid().ToString();
+        var workerEmail = $"{Guid.NewGuid()}@test.com";
+
+        DeviceUserModel UpdateModel(bool timeRegistrationEnabled) => new()
+        {
+            SiteMicrotingUid = siteMicrotingUid,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = timeRegistrationEnabled,
+            UserFirstName = userFirstName,
+            UserLastName = userLastName,
+            WorkerEmail = workerEmail
+        };
+
+        // Act — disable, then re-enable
+        await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(UpdateModel(false), core, 1,
+            userService, userManager, BackendConfigurationPnDbContext!, TimePlanningPnDbContext!, BaseDbContext!,
+            logger, ItemsPlanningPnDbContext!);
+
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(UpdateModel(true), core, 1,
+            userService, userManager, BackendConfigurationPnDbContext!, TimePlanningPnDbContext!, BaseDbContext!,
+            logger, ItemsPlanningPnDbContext!);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var assignmentsForSite = await TimePlanningPnDbContext!.AssignedSites.AsNoTracking()
+            .Where(x => x.SiteId == siteMicrotingUid)
+            .OrderBy(x => x.Id)
+            .ToListAsync();
+
+        // The old row was soft-deleted and a brand new one minted alongside it.
+        Assert.That(assignmentsForSite.Count, Is.EqualTo(2));
+        Assert.That(assignmentsForSite[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+
+        var reEnabled = assignmentsForSite[1];
+        Assert.That(reEnabled.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(reEnabled.UseOneMinuteIntervals, Is.True);
+        // Recovered from the OLD row's version rows — the new row has none of its own.
+        Assert.That(reEnabled.UseOneMinuteIntervalsFrom, Is.Not.Null);
+        Assert.That(reEnabled.UseOneMinuteIntervalsFrom!.Value.Date, Is.EqualTo(transitionDate.Date),
+            "The stamp must be the legacy false→true transition date, not the re-enable date.");
+
+        var timeline = await OneMinuteModeTimeline.BuildAsync(TimePlanningPnDbContext!, reEnabled);
+        Assert.That(timeline.WasOneMinuteAt(transitionDate.AddDays(-1)), Is.False,
+            "Registrations from before the legacy switch must still resolve as 5-minute mode.");
+        Assert.That(timeline.WasOneMinuteAt(transitionDate.AddDays(1)), Is.True,
+            "Registrations from after the legacy switch resolve as one-minute mode.");
     }
 
     // Should test the CreateDeviceUser method with TimeRegistrationEnabled and OverMidnight set,
