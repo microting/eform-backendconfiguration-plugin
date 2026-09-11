@@ -126,6 +126,73 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
     public const string NoPermissionsSecurityGroupName = "none";
 
     /// <summary>
+    /// The groups this plugin assigns to workers' logins: its own <c>none</c>,
+    /// <c>Kun arkiv</c> and <c>Kun tid</c>, and core's default <c>eForm users</c>.
+    /// </summary>
+    private static readonly string[] PluginManagedSecurityGroupNames =
+        [NoPermissionsSecurityGroupName, "eForm users", "Kun arkiv", "Kun tid"];
+
+    /// <summary>
+    /// The groups an existing account may hold for CreateDeviceUser to link a new
+    /// worker to it. <c>eForm users</c> is excluded because it is also core's
+    /// default group for office users; UpdateDeviceUser still maintains logins the
+    /// plugin itself placed there.
+    /// </summary>
+    private static readonly string[] LinkableSecurityGroupNames =
+        [NoPermissionsSecurityGroupName, "Kun arkiv", "Kun tid"];
+
+    /// <summary>
+    /// True when this plugin maintains <paramref name="login"/> for the worker
+    /// linked to it: it keeps the account's name, locale, address and plugin
+    /// groups in step with that worker. UpdateDeviceUser applies this rule. See
+    /// <see cref="IsOutsideAdminAndOnlyInGroupsAsync"/> with
+    /// <see cref="PluginManagedSecurityGroupNames"/>.
+    /// </summary>
+    private static Task<bool> IsPluginManagedLoginAsync(
+        UserManager<EformUser> userManager, BaseDbContext baseDbContext, EformUser login)
+        => IsOutsideAdminAndOnlyInGroupsAsync(userManager, baseDbContext, login, PluginManagedSecurityGroupNames);
+
+    /// <summary>
+    /// True when CreateDeviceUser may link a new worker to the existing account
+    /// <paramref name="login"/>. See <see cref="IsOutsideAdminAndOnlyInGroupsAsync"/>
+    /// with <see cref="LinkableSecurityGroupNames"/>.
+    /// </summary>
+    private static Task<bool> MayLinkNewWorkerToLoginAsync(
+        UserManager<EformUser> userManager, BaseDbContext baseDbContext, EformUser login)
+        => IsOutsideAdminAndOnlyInGroupsAsync(userManager, baseDbContext, login, LinkableSecurityGroupNames);
+
+    /// <summary>
+    /// True when all three hold for <paramref name="login"/>:
+    /// <list type="bullet">
+    ///   <item>the account is not user id 1;</item>
+    ///   <item>it does not hold the admin role;</item>
+    ///   <item>every security group it belongs to is one of <paramref name="allowedGroupNames"/>.</item>
+    /// </list>
+    /// An account in no group at all qualifies, because the fallback rule puts it
+    /// in <c>none</c>. Every other account stays exactly as its owner configured it.
+    /// Group names are compared in memory and case-sensitively, so a group that
+    /// merely resembles an allowed group counts as foreign.
+    /// </summary>
+    private static async Task<bool> IsOutsideAdminAndOnlyInGroupsAsync(
+        UserManager<EformUser> userManager, BaseDbContext baseDbContext, EformUser login,
+        IReadOnlyCollection<string> allowedGroupNames)
+    {
+        if (login.Id == 1 || await userManager.IsInRoleAsync(login, EformRole.Admin).ConfigureAwait(false))
+        {
+            return false;
+        }
+
+        var groupNames = await (
+            from sgu in baseDbContext.SecurityGroupUsers
+            join sg in baseDbContext.SecurityGroups on sgu.SecurityGroupId equals sg.Id
+            where sgu.EformUserId == login.Id
+            select sg.Name
+        ).ToListAsync().ConfigureAwait(false);
+
+        return groupNames.All(allowedGroupNames.Contains);
+    }
+
+    /// <summary>
     /// Enforces "every user is in <c>none</c> unless they have another group".
     /// Call AFTER the eForm users / Kun arkiv / Kun tid membership sync, so it sees
     /// the final set: expressing the rule once downstream keeps it true regardless
@@ -690,38 +757,29 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         // refuse the whole save either way.
                         var user = await FindLoginWithoutSideEffectsAsync(userManager, oldEmail).ConfigureAwait(false);
 
-                        // When the worker's resolved login is an admin account or user
-                        // id 1, this save never writes to that login and never syncs its
-                        // groups; the worker's own SDK fields still save below. Such rows
-                        // exist in production (core can promote a worker's login to admin,
-                        // and the backfill skips such rows as "taken"), so the check runs
-                        // on every save.
-                        var skipLoginWork = user != null && (user.Id == 1
-                            || await userManager.IsInRoleAsync(user, EformRole.Admin).ConfigureAwait(false));
+                        // This plugin writes only to logins it manages - see
+                        // IsPluginManagedLoginAsync. A worker linked to any other
+                        // account still saves its own fields, but the account's
+                        // name, locale, address and groups are never touched.
+                        var skipLoginWork = user != null
+                            && !await IsPluginManagedLoginAsync(userManager, baseDbContext, user).ConfigureAwait(false);
                         var emailChanged = !string.Equals(oldEmail, deviceUserModel.WorkerEmail,
                             StringComparison.OrdinalIgnoreCase);
                         if (skipLoginWork)
                         {
-                            // The resolved login is an admin account: never write to it or
-                            // sync its groups. A changing address still passes the same
-                            // collision/format check as every other row, even though no
-                            // login write follows here.
+                            // That account never follows the worker, so the worker's
+                            // address cannot move away from it either: refuse the
+                            // change before any write.
                             if (emailChanged)
                             {
-                                var adminRowValidation = await ValidateCandidateEmailAsync(
-                                    userManager, deviceUserModel.WorkerEmail, existingUserId: 0).ConfigureAwait(false);
-                                if (!adminRowValidation.Succeeded)
-                                {
-                                    logger.LogWarning(
-                                        "[UpdateDeviceUser] refusing to change an admin-owned row's email to {Email}: {Errors}",
-                                        deviceUserModel.WorkerEmail,
-                                        string.Join(",", adminRowValidation.Errors.Select(e => e.Description)));
-                                    return new OperationDataResult<int>(false, EmailRefusalErrorKey(adminRowValidation, DeviceUserCouldNotBeUpdatedKey));
-                                }
+                                logger.LogWarning(
+                                    "[UpdateDeviceUser] refusing to change the address {Email} of a worker linked to an account this plugin does not manage",
+                                    oldEmail);
+                                return new OperationDataResult<int>(false, EmailIsAlreadyInUseKey);
                             }
 
                             logger.LogWarning(
-                                "[UpdateDeviceUser] the login resolved for {Email} is an admin account - saving the worker's own fields, skipping all login/group work for it",
+                                "[UpdateDeviceUser] the login resolved for {Email} is not managed by this plugin - saving the worker's own fields, skipping all login/group work for it",
                                 oldEmail);
                             user = null;
                         }
@@ -1118,35 +1176,42 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         }
                         else
                         {
-                            if (deviceUserModel.TimeRegistrationEnabled == true && user != null && user.Id != 1)
+                            // Time-registration settings belong to the worker and save
+                            // whether or not this plugin manages its login - only the
+                            // "Kun tid" membership below needs a managed login, since
+                            // that is a login-side grant, not a worker field.
+                            if (deviceUserModel.TimeRegistrationEnabled == true)
                             {
-                                var securityGroupUserTime = await baseDbContext.SecurityGroupUsers
-                                    .Include(x => x.SecurityGroup)
-                                    .Where(x => x.EformUserId == user!.Id)
-                                    .Where(x => x.SecurityGroup.Name == "Kun tid")
-                                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                                    .FirstOrDefaultAsync().ConfigureAwait(false);
-                                if (deviceUserModel.EnableMobileAccess)
+                                if (user != null && user.Id != 1)
                                 {
-                                    if (securityGroupUserTime == null)
+                                    var securityGroupUserTime = await baseDbContext.SecurityGroupUsers
+                                        .Include(x => x.SecurityGroup)
+                                        .Where(x => x.EformUserId == user!.Id)
+                                        .Where(x => x.SecurityGroup.Name == "Kun tid")
+                                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                        .FirstOrDefaultAsync().ConfigureAwait(false);
+                                    if (deviceUserModel.EnableMobileAccess)
                                     {
-                                        var newSecurityGroupUser = new SecurityGroupUser
+                                        if (securityGroupUserTime == null)
                                         {
-                                            EformUserId = user!.Id,
-                                            SecurityGroupId = await GetOrCreateSecurityGroupId(baseDbContext, "Kun tid",
-                                                timePlanningDbContext, backendConfigurationPnDbContext)
-                                        };
-                                        baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
-                                        await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+                                            var newSecurityGroupUser = new SecurityGroupUser
+                                            {
+                                                EformUserId = user!.Id,
+                                                SecurityGroupId = await GetOrCreateSecurityGroupId(baseDbContext, "Kun tid",
+                                                    timePlanningDbContext, backendConfigurationPnDbContext)
+                                            };
+                                            baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
+                                            await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+                                        }
                                     }
-                                }
-                                else
-                                {
-                                    if (securityGroupUserTime != null)
+                                    else
                                     {
-                                        var forDelete = await baseDbContext.SecurityGroupUsers.FirstAsync(x => x.Id == securityGroupUserTime.Id);
-                                        baseDbContext.SecurityGroupUsers.RemoveRange(forDelete);
-                                        await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+                                        if (securityGroupUserTime != null)
+                                        {
+                                            var forDelete = await baseDbContext.SecurityGroupUsers.FirstAsync(x => x.Id == securityGroupUserTime.Id);
+                                            baseDbContext.SecurityGroupUsers.RemoveRange(forDelete);
+                                            await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+                                        }
                                     }
                                 }
                                 var assignments = await timePlanningDbContext.AssignedSites.Where(x =>
@@ -1458,19 +1523,20 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     return new OperationDataResult<int>(false, EmailIsAlreadyInUseKey);
                 }
 
-                // Refuse to adopt an ADMIN account before any SDK or Identity write.
-                // A NON-mutating lookup: production's GetByUsernameAsync renames and
-                // SAVES whatever account its email-fallback finds, so it would mutate an
-                // admin's UserName before any refusal. The account found here is also
-                // the one adopted further down, so the gate and the adoption agree.
+                // Link a new worker only to an existing account outside admin whose
+                // groups are all among none, Kun arkiv and Kun tid (or that has no
+                // group) - see MayLinkNewWorkerToLoginAsync. An account in core's
+                // default eForm users group is never linked. The lookup writes
+                // nothing, and it runs before any SDK or Identity write, so a refusal
+                // leaves nothing behind. The account it finds is the one linked
+                // further down.
                 var existingAccountForEmail =
                     await FindLoginWithoutSideEffectsAsync(userManager, deviceUserModel.WorkerEmail).ConfigureAwait(false);
                 if (existingAccountForEmail != null
-                    && (existingAccountForEmail.Id == 1
-                        || await userManager.IsInRoleAsync(existingAccountForEmail, EformRole.Admin).ConfigureAwait(false)))
+                    && !await MayLinkNewWorkerToLoginAsync(userManager, baseDbContext, existingAccountForEmail).ConfigureAwait(false))
                 {
                     Console.WriteLine(
-                        $"[CreateDeviceUser] refusing to adopt admin account for email={deviceUserModel.WorkerEmail}");
+                        $"[CreateDeviceUser] refusing to link a new worker to an account outside the linkable groups (none, Kun arkiv, Kun tid), email={deviceUserModel.WorkerEmail}");
                     return new OperationDataResult<int>(false, EmailIsAlreadyInUseKey);
                 }
 
@@ -1482,8 +1548,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 // that, means a refusal leaves nothing to clean up. existingUserId is the
                 // resolved account's own id (0 if none), so validation does not flag the
                 // account against itself when the address is simply unchanged. (The
-                // guard above already ruled out existingAccountForEmail being the id-1
-                // or admin account.) A worker created with no email at all (e.g.
+                // guard above already ruled out an account CreateDeviceUser may not
+                // link to.) A worker created with no email at all (e.g.
                 // TimeRegistrationEnabled with no login) gets no candidate check here -
                 // there is no login for it to collide with, and Identity's own
                 // UserValidator would otherwise refuse the empty username outright.
@@ -1556,10 +1622,11 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 worker.PhoneNumber = deviceUserModel.PhoneNumber;
                 await worker.Update(sdkDbContext).ConfigureAwait(false);
 
-                // Link the SAME instance the checks above evaluated (id-1/admin
-                // refused, collision refused), not a fresh GetByUsernameAsync
-                // lookup (whose email fallback renames and saves what it finds),
-                // so the linked account is always the one those checks ran against.
+                // Link the same account the checks above accepted - one
+                // CreateDeviceUser may link to, with no collision - not a fresh
+                // GetByUsernameAsync lookup (whose email fallback renames and saves
+                // what it finds), so the linked account is always the one those
+                // checks ran against.
                 var user = existingAccountForEmail;
                 Console.WriteLine($"[CreateDeviceUser] email={deviceUserModel.WorkerEmail} TimeRegEnabled={deviceUserModel.TimeRegistrationEnabled} MobileAccess={deviceUserModel.EnableMobileAccess} userExists={user != null}");
                 // CleanupOrphanSiteAsync leaves a FULLY-FORMED site/worker (an active
@@ -1568,14 +1635,14 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 // already created that link by the time the refusal below can be reached.
                 // Removing it first is what makes this site/worker recognised as an
                 // orphan, so the shared cleanup actually removes them instead of a no-op.
-                // The admin-adoption case and any non-race collision are both refused
-                // further up, before core.SiteCreate ever runs, so by the time this
-                // UpdateAsync can fail it is either a genuine race (another request
-                // created or renamed a colliding account after this call's own pre-check
-                // passed) or a refusal that is not about the address at all. The failing
-                // result decides the key, so a non-validation failure (e.g.
-                // ConcurrencyFailure) is reported as DeviceUserCouldNotBeCreated, not as
-                // a collision.
+                // An account CreateDeviceUser may not link to, and any non-race
+                // collision, are both refused further up, before core.SiteCreate ever
+                // runs, so by the time this UpdateAsync can fail it is either a genuine
+                // race (another request created or renamed a colliding account after
+                // this call's own pre-check passed) or a refusal that is not about the
+                // address at all. The failing result decides the key, so a
+                // non-validation failure (e.g. ConcurrencyFailure) is reported as
+                // DeviceUserCouldNotBeCreated, not as a collision.
                 async Task<OperationDataResult<int>> RefuseAdoptionAndCleanUpAsync(IdentityResult failedUpdate)
                 {
                     var siteWorkerLink = await sdkDbContext.SiteWorkers
