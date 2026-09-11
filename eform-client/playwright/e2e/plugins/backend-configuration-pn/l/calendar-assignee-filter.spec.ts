@@ -39,6 +39,15 @@ import {
  * the tag — is not a team event and must NOT appear under a team filter. Only
  * a tag-assigned event can prove the team half works.
  *
+ * The matching rule expands in ONE direction, sites -> tags, and the
+ * assertions below depend on that asymmetry:
+ *   - selecting a SITE also matches tasks tagged with any team that site
+ *     belongs to (`GetTasksForWeek` unions the selected sites' tags into
+ *     `effectiveWorkerTagIds`), so picking worker B pulls in the team event;
+ *   - selecting a TEAM does NOT match that team's members' own events —
+ *     there is no tags -> sites expansion, so worker B's event stays out
+ *     under a team-only filter.
+ *
  * The suite is `serial`: test 1 does the seeding, and tests 2 and 3 reuse what
  * it left in the database rather than paying for it three times.
  */
@@ -185,9 +194,16 @@ test.describe.serial('Calendar toolbar employee/team filter', () => {
 
     await expect(calendar.findEventBlock(eventA)).toBeVisible({ timeout: UI_TIMEOUT });
     await expect(calendar.findEventBlock(eventB)).toBeVisible({ timeout: UI_TIMEOUT });
-    // Still no team picked, so the tag-assigned event stays out — a mixed
-    // selection is a union, never "show me everything".
-    await expect(calendar.findEventBlock(eventTeam)).toBeHidden({ timeout: UI_TIMEOUT });
+    // The tag-assigned event IS in now, and no team was picked. That is the
+    // documented expansion, not a leak: `GetTasksForWeek` seeds
+    // `effectiveWorkerTagIds` from the requested WorkerTagIds and then unions
+    // in the tags of every requested SITE, so selecting worker B — who carries
+    // the team tag — makes every task tagged with that team match too.
+    // Contrast the single-employee step above: with only the UNTAGGED worker A
+    // selected there is nothing to expand to, and this same event is hidden.
+    // That pair is what proves the expansion is membership-driven rather than
+    // "any selection shows everything".
+    await expect(calendar.findEventBlock(eventTeam)).toBeVisible({ timeout: UI_TIMEOUT });
 
     // --- unticking is the inverse ----------------------------------------
     const unpick = await calendar.captureNextWeekRequest(() =>
@@ -198,6 +214,10 @@ test.describe.serial('Calendar toolbar employee/team filter', () => {
     expect(await calendar.assigneeFilterLabel()).toBe(workerBName);
     await expect(calendar.findEventBlock(eventA)).toBeHidden({ timeout: UI_TIMEOUT });
     await expect(calendar.findEventBlock(eventB)).toBeVisible({ timeout: UI_TIMEOUT });
+    // Worker B is the tagged one, so the expansion survives the untick: the
+    // remaining selection still resolves to the team and the tag-assigned
+    // event stays on screen. Unticking A removes A's event, not B's team.
+    await expect(calendar.findEventBlock(eventTeam)).toBeVisible({ timeout: UI_TIMEOUT });
   });
 
   test('a team and an employee combine as a union, and the two lists stay independent', async ({ page }) => {

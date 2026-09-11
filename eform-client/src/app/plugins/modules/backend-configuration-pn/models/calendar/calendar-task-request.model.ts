@@ -45,11 +45,20 @@ export type RepeatDeleteScope = 'this' | 'thisAndFollowing' | 'thisAndFollowingI
  * positional form already ended in three same-typed collections, where a
  * transposed pair compiles cleanly and silently filters by the wrong thing.
  *
- * `siteIds` and `workerTagIds` are two INDEPENDENT assignee filters and the
- * server ORs them (#1212): a task survives when its explicit assignees
- * intersect `siteIds` OR its assigned worker tags intersect `workerTagIds`.
- * They are never intersected, and the client never post-filters — everything
- * the grid narrows by travels on this model.
+ * `siteIds` and `workerTagIds` are two assignee filters the server ORs (#1212),
+ * but they are NOT symmetric. Before matching, the server widens the tag set to
+ * `workerTagIds` plus every worker tag the selected `siteIds` belong to; a task
+ * survives when its explicit assignees intersect `siteIds` OR its assigned
+ * worker tags intersect that widened set.
+ *
+ * The widening runs one way only, sites → tags — there is no tags → sites
+ * expansion. So picking an individual ALSO matches tasks assigned to a team
+ * that individual is in, while picking a team does NOT match that team's
+ * members' own individually-assigned events. An empty `workerTagIds` therefore
+ * does not mean "no tag matching" whenever `siteIds` is non-empty.
+ *
+ * The lists are never intersected, and the client never post-filters —
+ * everything the grid narrows by travels on this model.
  *
  * `tagNames` is the planning/eForm tag filter and has nothing to do with
  * `workerTagIds`; see the note on the server model of the same name.
