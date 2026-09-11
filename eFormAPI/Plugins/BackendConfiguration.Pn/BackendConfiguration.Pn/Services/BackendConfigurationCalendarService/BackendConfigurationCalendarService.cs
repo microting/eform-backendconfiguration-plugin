@@ -2748,8 +2748,96 @@ public class BackendConfigurationCalendarService(
         }
     }
 
-    private async Task<OperationResult> DeleteEntireSeries(int arpId)
+    /// <summary>
+    /// Removes a whole event series: the planning behind it (through the task
+    /// wizard) plus the calendar-side rows that point at it.
+    ///
+    /// Ordering: the wizard delete runs FIRST, the calendar-side rows
+    /// (CalendarConfiguration, CalendarOccurrenceExceptions,
+    /// AreaRulePlanningWorkerTags) afterwards. The wizard delete reads none of
+    /// those three tables, so on the success path the order is immaterial; on
+    /// the failure path it is not. If the wizard fails we return before touching
+    /// any calendar-side row, so the calendar still points at the series and the
+    /// caller can simply retry it. With the calendar rows removed first, a wizard
+    /// failure would instead leave the AreaRulePlanning alive but no longer
+    /// reachable from the calendar (it is looked up through
+    /// CalendarConfiguration).
+    ///
+    /// That guarantee covers the CALENDAR-side rows only. The wizard itself has
+    /// no transaction — PnBase.Delete calls SaveChangesAsync per entity — so a
+    /// wizard failure part-way through (for instance the
+    /// sdkDbContext.CheckListSites.SingleAsync lookup throwing when a
+    /// PlanningCaseSite's MicrotingCheckListSitId has no row) leaves whatever it
+    /// had already soft-deleted soft-deleted. Several of its failure modes ARE
+    /// genuinely no-op — among them a throw from its opening _coreHelper.GetCore()
+    /// call, a throw from the AreaRulePlannings lookup that follows it, the
+    /// TaskNotFound early return, and a throw from its Plannings.First lookup — all
+    /// of which precede its first write.
+    ///
+    /// Already-deleted series: an AreaRulePlanning can be removed by paths that
+    /// do not clear its CalendarConfiguration — the task-list batch delete
+    /// (BackendConfigurationTaskListService.Delete) and
+    /// DELETE /task-wizard/{id} both do exactly that — which leaves a live
+    /// CalendarConfiguration pointing at a Removed AreaRulePlanning. Nothing
+    /// else reaps those rows. So when the AreaRulePlanning is ALREADY gone we
+    /// skip the wizard (it would only answer TaskNotFound) and go straight to
+    /// removing the calendar-side rows: there is no planning left to orphan, and
+    /// without this the stale row is undeletable — it would fail the same way on
+    /// every retry, permanently blocking DeleteBoard.
+    ///
+    /// Such an orphan does NOT render as a phantom event: both GetTasksForWeek row
+    /// producers join through live AreaRulePlannings (the recurrence path and the
+    /// compliance path each filter WorkflowState != Removed), so it is joined out of
+    /// the calendar. It does inflate GetBoardEventCount, which counts
+    /// CalendarConfigurations with no live-ARP join, so the delete-confirmation
+    /// dialog overstates the event count — pre-existing, unrelated to this branch,
+    /// and deliberately not addressed here.
+    ///
+    /// The check is on the specific already-removed condition and is made BEFORE
+    /// the wizard call, so it cannot mask a wizard failure: any wizard call we do
+    /// make is still honoured, and a genuine failure still aborts with everything
+    /// on the calendar side intact. If the planning is removed by someone else in
+    /// the window between the check and the call, the wizard answers TaskNotFound,
+    /// we abort, and the next attempt takes the already-gone branch.
+    ///
+    /// Reachability of that branch is narrower than the call sites suggest: the
+    /// thisAndFollowing / thisAndFollowingIncludingCompleted scopes in DeleteTask do
+    /// their own live-ARP lookup and return AreaRulePlanningNotFound before they can
+    /// reach here, so only scope all/default and the DeleteBoard cascade can arrive
+    /// with an already-removed planning.
+    ///
+    /// <paramref name="deferRetraction"/> picks the wizard variant:
+    /// <c>false</c> uses <see cref="IBackendConfigurationTaskWizardService.DeleteTask"/>,
+    /// which awaits one <c>core.CaseDelete</c> per deployed case inline;
+    /// <c>true</c> uses <see cref="IBackendConfigurationTaskWizardService.DeleteTaskDeferredRetraction"/>,
+    /// which performs the identical DB soft-deletes synchronously and then runs
+    /// the <c>core.CaseDelete</c> calls fire-and-forget.
+    /// </summary>
+    private async Task<OperationResult> DeleteEntireSeries(int arpId, bool deferRetraction = false)
     {
+        var areaRulePlanningStillLive = await backendConfigurationPnDbContext.AreaRulePlannings
+            .AsNoTracking()
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .AnyAsync(x => x.Id == arpId);
+
+        if (areaRulePlanningStillLive)
+        {
+            var wizardResult = deferRetraction
+                ? await taskWizardService.DeleteTaskDeferredRetraction(arpId)
+                : await taskWizardService.DeleteTask(arpId);
+
+            if (!wizardResult.Success)
+            {
+                return wizardResult;
+            }
+        }
+        else
+        {
+            logger.LogInformation(
+                "BackendConfigurationCalendarService.DeleteEntireSeries: AreaRulePlanning {ArpId} is already removed; skipping the task wizard and clearing the calendar-side rows that still point at it",
+                arpId);
+        }
+
         var calConfig = await backendConfigurationPnDbContext.CalendarConfigurations
             .Where(x => x.AreaRulePlanningId == arpId)
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -2771,10 +2859,10 @@ public class BackendConfigurationCalendarService(
         }
 
         // Soft-delete the event's worker-tag links so they don't linger after the
-        // series is gone. The wizard DeleteTask below already retracts every case
-        // (core.CaseDelete) and soft-deletes Planning/PlanningSites/ARP/Compliances,
-        // so reconciliation is not needed here (and would early-return anyway once
-        // the event is removed/inactive).
+        // series is gone. The wizard delete above already retracts every case
+        // (core.CaseDelete, inline or deferred) and soft-deletes
+        // Planning/PlanningSites/ARP/Compliances, so reconciliation is not needed
+        // here (and would early-return anyway once the event is removed/inactive).
         var workerTagLinks = await backendConfigurationPnDbContext.AreaRulePlanningWorkerTags
             .Where(x => x.AreaRulePlanningId == arpId)
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -2784,12 +2872,6 @@ public class BackendConfigurationCalendarService(
         {
             link.UpdatedByUserId = userService.UserId;
             await link.Delete(backendConfigurationPnDbContext);
-        }
-
-        var wizardResult = await taskWizardService.DeleteTask(arpId);
-        if (!wizardResult.Success)
-        {
-            return wizardResult;
         }
 
         return new OperationResult(true,
@@ -4319,6 +4401,53 @@ public class BackendConfigurationCalendarService(
         }
     }
 
+    /// <summary>
+    /// Deletes a calendar board and every event placed on it.
+    ///
+    /// The cascade reuses the per-event series-delete path, but with
+    /// <c>deferRetraction: true</c>, i.e.
+    /// <see cref="IBackendConfigurationTaskWizardService.DeleteTaskDeferredRetraction"/>
+    /// rather than <see cref="IBackendConfigurationTaskWizardService.DeleteTask"/>.
+    /// Both soft-delete the same rows; the deferred variant runs the external
+    /// <c>core.CaseDelete</c> retractions fire-and-forget instead of awaiting one
+    /// per deployed case per assignee inside this request. That is the same trade
+    /// BackendConfigurationTaskListService.Delete makes for its batch delete.
+    /// Every database write the request is responsible for still happens before
+    /// it returns, so the board and its events are gone from the very next read.
+    ///
+    /// Failure handling: events first, board last, and the loop aborts on the
+    /// first failing series before <c>board.Delete</c> — so the board and every
+    /// series not yet processed survive a mid-way failure, and the caller (who is
+    /// still waiting, since this stays synchronous) is told it failed. Re-issuing
+    /// the delete resumes: the series already removed no longer have a live
+    /// CalendarConfiguration and are not collected again, while the failing
+    /// series still has one and is collected and retried.
+    ///
+    /// What "retried" is worth depends on how far the wizard got. DeleteEntireSeries
+    /// leaves the failing series' CALENDAR-side rows (CalendarConfiguration,
+    /// CalendarOccurrenceExceptions, AreaRulePlanningWorkerTags) untouched, which is
+    /// what keeps the series reachable for a second attempt. The wizard's own deletes
+    /// are not transactional (PnBase.Delete saves per entity), so they may be partial —
+    /// several of its failure modes do leave nothing written (see DeleteEntireSeries),
+    /// but not all of them. So the honest guarantee is: the board survives, the
+    /// unprocessed series survive whole, and the failing series stays reachable and
+    /// gets another attempt — not that the failing series is bit-for-bit as it was.
+    /// If the wizard did get as far as removing the AreaRulePlanning itself,
+    /// DeleteEntireSeries takes its already-removed branch on the retry and clears
+    /// the calendar rows without calling the wizard again.
+    ///
+    /// The DB cascade deliberately is NOT moved to a background task. The two
+    /// DbContexts it writes through are registered with AddDbContextPool
+    /// (EformBackendConfigurationPlugin.ConfigureDbContext), so the instances
+    /// this service holds go back to the pool when the request scope ends, and
+    /// the UpdatedByUserId every Delete() stamps comes from IUserService, which
+    /// reads the request's own principal. A background cascade would also have
+    /// to report its partial failures to a user who has already navigated away.
+    /// Keeping the DB work in the request preserves both the intact-board
+    /// guarantee and a synchronous error for the caller; the only work that
+    /// moves off the request is the device retraction, which was already
+    /// best-effort (neither wizard variant consumes its result).
+    /// </summary>
     public async Task<OperationResult> DeleteBoard(int id)
     {
         try
@@ -4334,9 +4463,6 @@ public class BackendConfigurationCalendarService(
                     localizationService.GetString("CalendarBoardNotFound"));
             }
 
-            // Cascade: delete every event placed on this board, reusing the exact
-            // per-event series-delete path used for manual deletes. Events first,
-            // board last, so a mid-way failure leaves the board intact (recoverable).
             var arpIds = await backendConfigurationPnDbContext.CalendarConfigurations
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.BoardId == id)
@@ -4344,16 +4470,21 @@ public class BackendConfigurationCalendarService(
                 .Distinct()
                 .ToListAsync();
 
+            var deletedSeries = 0;
             foreach (var arpId in arpIds)
             {
-                var seriesResult = await DeleteEntireSeries(arpId);
+                var seriesResult = await DeleteEntireSeries(arpId, deferRetraction: true);
                 if (!seriesResult.Success)
                 {
                     logger.LogError(
-                        "BackendConfigurationCalendarService.DeleteBoard: aborting; failed to delete event series {ArpId} for board {BoardId}",
-                        arpId, id);
-                    return seriesResult;
+                        "BackendConfigurationCalendarService.DeleteBoard: aborting; failed to delete event series {ArpId} for board {BoardId}. {DeletedSeries} of {TotalSeries} series were deleted; the board and the remaining {RemainingSeries} series are left in place and the delete can be re-issued. Reason: {Reason}",
+                        arpId, id, deletedSeries, arpIds.Count, arpIds.Count - deletedSeries,
+                        seriesResult.Message);
+                    return new OperationResult(false,
+                        $"{localizationService.GetString("ErrorWhileDeletingCalendarBoard")}: {seriesResult.Message}");
                 }
+
+                deletedSeries++;
             }
 
             await board.Delete(backendConfigurationPnDbContext);

@@ -1657,13 +1657,30 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         var retractionCore = await _coreHelper.GetCore().ConfigureAwait(false);
                         foreach (var uid in uidsToRetract)
                         {
-                            await retractionCore.CaseDelete(uid).ConfigureAwait(false);
+                            // Per-uid, so one device/case that cannot be retracted
+                            // does not skip the remaining ones. Nobody is waiting on
+                            // this result, so each failure is reported on its own with
+                            // the uid and the task it belonged to — that pair is what a
+                            // manual retraction needs.
+                            try
+                            {
+                                await retractionCore.CaseDelete(uid).ConfigureAwait(false);
+                            }
+                            catch (Exception ex)
+                            {
+                                SentrySdk.CaptureException(ex);
+                                _logger.LogError(ex,
+                                    "BackendConfigurationTaskWizardService.DeleteTaskDeferredRetraction: background retraction failed for case {MicrotingUid} of task {AreaRulePlanningId}; the database rows are already removed, so this case must be retracted manually",
+                                    uid, id);
+                            }
                         }
                     }
                     catch (Exception ex)
                     {
                         SentrySdk.CaptureException(ex);
-                        _logger.LogError(ex.Message);
+                        _logger.LogError(ex,
+                            "BackendConfigurationTaskWizardService.DeleteTaskDeferredRetraction: background retraction could not start for task {AreaRulePlanningId}; {CaseCount} case(s) were not retracted",
+                            id, uidsToRetract.Count);
                         _logger.LogTrace(ex.StackTrace);
                     }
                 });
