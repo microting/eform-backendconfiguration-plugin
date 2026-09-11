@@ -149,7 +149,7 @@
       </button>
       <button
         mat-menu-item
-        *ngIf="row.timeRegistrationEnabled || row.webAccessEnabled || row.archiveEnabled"
+        *ngIf="row.workerEmail"
         id="setPasswordBtn-{{i}}"
         (click)="openSetPasswordModal(row)"
       >
@@ -158,7 +158,7 @@
       </button>
       <button
         mat-menu-item
-        *ngIf="row.timeRegistrationEnabled || row.webAccessEnabled || row.archiveEnabled"
+        *ngIf="row.workerEmail"
         id="sendResetPasswordEmailBtn-{{i}}"
         (click)="sendResetPasswordEmail(row)"
       >
