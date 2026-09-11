@@ -35,6 +35,12 @@ describe('CalendarTaskListPageComponent', () => {
     propertiesServiceStub = {
       getAllPropertiesDictionary: jest.fn().mockReturnValue(of({success: true, model: []})),
       getDeviceUsersFiltered: jest.fn().mockReturnValue(of({success: true, model: []})),
+      // #1135 — the page resolves the property's Logbøger folder before opening
+      // the edit modal. Nested one level down so the recursive search is exercised.
+      getLinkedFolderDtos: jest.fn().mockReturnValue(of({
+        success: true,
+        model: [{id: 5, name: 'Property root', children: [{id: 77, name: 'Logbøger', children: []}]}],
+      })),
     };
     tagsServiceStub = {
       getPlanningsTags: jest.fn().mockReturnValue(of({success: true, model: []})),
@@ -114,20 +120,74 @@ describe('CalendarTaskListPageComponent', () => {
   });
 
   describe('onEditTask', () => {
-    it('opens the edit modal via dialog.open', () => {
-      const task = {
-        id: 7,
-        boardId: 10,
-        propertyId: 1,
-        taskDate: '2026-06-09',
-        startHour: 9,
-        workerNames: [],
-        tags: [],
-      } as unknown as CalendarTaskModel;
+    const buildTask = (propertyId = 1) => ({
+      id: 7,
+      boardId: 10,
+      propertyId,
+      taskDate: '2026-06-09',
+      startHour: 9,
+      workerNames: [],
+      tags: [],
+    } as unknown as CalendarTaskModel);
 
-      component.onEditTask(task);
+    it('opens the edit modal via dialog.open', () => {
+      component.onEditTask(buildTask());
 
       expect(dialogStub.open).toHaveBeenCalledTimes(1);
+    });
+
+    // #1135 — a null folderId made the server throw on EVERY save from this
+    // page ("Nullable object must have a value"), so the modal never closed.
+    it('passes the property\'s Logbøger folder id to the modal', () => {
+      component.onEditTask(buildTask(1));
+
+      expect(propertiesServiceStub.getLinkedFolderDtos).toHaveBeenCalledWith(1);
+      const data = dialogStub.open.mock.calls[0][1].data;
+      expect(data.folderId).toBe(77);
+    });
+
+    it('resolves the folder once per property and reuses it', () => {
+      component.onEditTask(buildTask(1));
+      component.onEditTask(buildTask(1));
+
+      expect(propertiesServiceStub.getLinkedFolderDtos).toHaveBeenCalledTimes(1);
+      expect(dialogStub.open.mock.calls[1][1].data.folderId).toBe(77);
+    });
+
+    it('re-resolves for a different property, because the grid spans properties', () => {
+      propertiesServiceStub.getLinkedFolderDtos.mockImplementation((propertyId: number) => of({
+        success: true,
+        model: [{id: 100 + propertyId, name: 'Logbøger', children: []}],
+      }));
+
+      component.onEditTask(buildTask(1));
+      component.onEditTask(buildTask(2));
+
+      expect(dialogStub.open.mock.calls[0][1].data.folderId).toBe(101);
+      expect(dialogStub.open.mock.calls[1][1].data.folderId).toBe(102);
+    });
+
+    // Never another property's folder: that would refile the task under a
+    // property it does not belong to (#1239). null is the supported "no folder
+    // supplied" value — the backend keeps the task's current folder.
+    it('passes null when the folder lookup fails, and retries on the next edit', () => {
+      propertiesServiceStub.getLinkedFolderDtos.mockReturnValueOnce(of({success: false, message: 'boom'}));
+
+      component.onEditTask(buildTask(1));
+      expect(dialogStub.open.mock.calls[0][1].data.folderId).toBeNull();
+
+      component.onEditTask(buildTask(1));
+      expect(propertiesServiceStub.getLinkedFolderDtos).toHaveBeenCalledTimes(2);
+      expect(dialogStub.open.mock.calls[1][1].data.folderId).toBe(77);
+    });
+
+    it('passes null without a lookup when the task has no property', () => {
+      propertiesServiceStub.getLinkedFolderDtos.mockClear();
+
+      component.onEditTask(buildTask(0));
+
+      expect(propertiesServiceStub.getLinkedFolderDtos).not.toHaveBeenCalled();
+      expect(dialogStub.open.mock.calls[0][1].data.folderId).toBeNull();
     });
   });
 });

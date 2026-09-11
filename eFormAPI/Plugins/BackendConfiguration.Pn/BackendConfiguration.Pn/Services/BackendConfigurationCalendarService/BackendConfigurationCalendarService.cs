@@ -1670,6 +1670,67 @@ public class BackendConfigurationCalendarService(
                     localizationService.GetString("AtLeastOneWorkerMustBeAssigned"));
             }
 
+            // #1135 — resolve a missing FolderId to the task's current folder
+            // HERE, before any scope handler runs, not only inside the wizard.
+            //
+            // The wizard has its own "null means unchanged" rule (see
+            // BackendConfigurationTaskWizardService.UpdateTask) and that is the
+            // defence that matters for direct wizard callers. But it only runs
+            // once UpdateTaskThisAndFollowing has already COMMITTED its
+            // past-occurrence backfill anchors and, on a date change, the
+            // series re-anchor — so any wizard-level refusal there lands
+            // half-applied: series moved, task not updated. Deciding the folder
+            // up front means every scope either proceeds with a usable value or
+            // is refused before it has written anything.
+            //
+            // Scope "this" (UpdateTaskThisOccurrence) never reads FolderId at
+            // all; it is included only so a task whose folder cannot be
+            // resolved fails the same way on every scope.
+            //
+            // `0` counts as unset alongside `null`, matching CreateTask's
+            // `resolvedFolderId is null or 0` above — this closes a pre-existing
+            // asymmetry between the two paths rather than a new regression.
+            // Both entity columns are non-nullable `int`, so 0 is the CLR
+            // default a legacy row carries, and a live caller sends it:
+            // BackendConfigurationTaskListService.BuildUpdateModel copies
+            // `FolderId = arp.FolderId` (an `int`), and every task-list batch
+            // action routes that model through here. Treating 0 as a real id
+            // would overwrite AreaRule.FolderId — the only surviving folder on
+            // exactly the legacy row the fallback below exists for — with 0,
+            // after which the row is unhealable: both fallback candidates are
+            // then 0 and every later edit is refused.
+            if (updateModel.FolderId is null or 0)
+            {
+                // The AreaRule projection is an INNER JOIN, so a live ARP whose
+                // AreaRule row is hard-deleted reports TaskNotFound here. That
+                // is broken data only, and the wizard dereferences the same
+                // navigation unconditionally further down, so such a row could
+                // never have been updated anyway.
+                var currentFolder = await backendConfigurationPnDbContext.AreaRulePlannings
+                    .Where(x => x.Id == updateModel.Id)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(x => new { x.FolderId, AreaRuleFolderId = x.AreaRule.FolderId })
+                    .FirstOrDefaultAsync();
+                if (currentFolder == null)
+                {
+                    return new OperationResult(false, localizationService.GetString("TaskNotFound"));
+                }
+
+                // Same precedence as the wizard: the planning row's folder, and
+                // the AreaRule's only when the planning row never got one.
+                //
+                // May resolve to 0, and that is NOT refused: a task that was
+                // never filed under a folder is an ordinary shape (many
+                // fixtures and real rows have none), and the contract this
+                // implements is "null means unchanged", not "must have a
+                // folder". The wizard turns a 0 into a skip of every folder
+                // write rather than a write of 0 — see its own
+                // `hasResolvedFolder`.
+                updateModel.FolderId = currentFolder.FolderId > 0
+                    ? currentFolder.FolderId
+                    : currentFolder.AreaRuleFolderId;
+            }
+
             // Scope-aware edit (issue #885). "this"/"thisAndFollowing" must NOT
             // relocate the series anchor (which the task wizard's StartDate
             // write does); they record per-occurrence overrides on a
