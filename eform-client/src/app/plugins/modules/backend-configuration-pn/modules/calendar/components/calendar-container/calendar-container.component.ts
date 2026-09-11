@@ -66,12 +66,43 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   // Transient: 'month' only after the month view's Tidsplan link; any
   // dropdown-driven view change resets it (see onViewModeChange).
   scheduleScope: 'week' | 'month' = 'week';
-  // Guards loadMonthTasks against out-of-order responses: rapid month
-  // stepping launches overlapping 6-call batches, and forkJoin resolves at
-  // the SLOWEST call — without this, an older batch finishing last would
-  // overwrite the newer month's data and stick. clearTasks() bumps it too, so a
-  // clear cannot be undone by a batch that was already in flight.
-  private monthLoadSeq = 0;
+  // The single sequence guarding BOTH task-load paths against out-of-order
+  // responses. Every load — the week path's one call and the month path's
+  // 6-call forkJoin batch — takes a ticket from it and applies its result only
+  // while that ticket is still the newest. Without it a response for the
+  // property or week the user has already left can land last and stick: the
+  // month batch resolves at its SLOWEST call, and the week call is a plain
+  // HTTP race. clearTasks() bumps it too, so a clear cannot be undone by a
+  // load that was already in flight.
+  //
+  // Deliberately ONE counter for both paths, not one each: the week path
+  // originally had no guard at all (#1246) precisely because the month guard
+  // was a private detail of loadMonthTasks that nobody had to keep in step.
+  // A single counter cannot drift out of step with itself.
+  private loadSeq = 0;
+
+  // The scope the buffers currently on screen were filled for: property +
+  // render path (see `renderPath`). Null means "nothing on screen", which is
+  // what clearTasks() leaves behind. loadTasks() compares it against the scope
+  // now in effect and drops the buffers when they no longer match, so a view
+  // can never paint another property's — or the other path's — events while
+  // its own load is in flight. Date is deliberately NOT part of the key: a
+  // week step or a month step keeps the previous range rendered until the new
+  // one lands, which is the existing (wanted) behaviour, not a defect.
+  private loadedScopeKey: string | null = null;
+
+  // Which of the two task buffers the template reads right now. The week path
+  // ('week' | 'day' | week-scoped 'schedule') renders tasksByDay /
+  // allDayTasksByDay; the month path ('month' | month-scoped 'schedule')
+  // renders monthTasksByDate / monthScheduleTasksByDay. Each path only ever
+  // writes its own buffers, so switching between them puts whatever the other
+  // path last loaded — possibly for a property the user has since left — on
+  // screen instantly, the ngSwitch being synchronous.
+  private get renderPath(): 'week' | 'month' {
+    return this.viewMode === 'month' || (this.viewMode === 'schedule' && this.scheduleScope === 'month')
+      ? 'month'
+      : 'week';
+  }
 
   get scheduleRangeStart(): string {
     if (this.scheduleScope === 'month') {
@@ -192,15 +223,44 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   onPropertySelected(propertyId: number | null) {
     this.stateService.updatePropertyId(propertyId);
     if (propertyId) {
+      // Drop the previous property's events NOW, not when the new ones arrive.
+      // updatePropertyId() above dispatched synchronously, so the header pill
+      // already names the new property, while the grid still holds the old
+      // one's events — and keeps rendering them under the new name for the
+      // whole boards -> folder -> tasks round-trip chain that starts below.
+      // Placed before loadBoards() on purpose: clearTasks() bumps loadSeq, and
+      // no ticket has been taken yet (loadTasks() runs later, from the boards
+      // callback, and takes a fresh one); loadBoards()/loadEmployees() guard on
+      // property identity rather than on loadSeq, so the bump cannot cancel
+      // them either.
+      this.clearTasks();
       this.loadBoards(propertyId, true);
       this.loadEmployees();
     } else {
+      // No property selected. Not reachable from the toolbar today (the header
+      // only ever emits a real id), but the invariant must hold for every
+      // property change, not just the ones the current UI can produce: a task
+      // load started for the property being left has to be invalidated, or it
+      // lands afterwards and paints that property's events with no property
+      // selected. clearTasks() does that bump as its first statement, and also
+      // removes what is already drawn — loadTasks() returns early without a
+      // property, so nothing else will ever clear it.
+      this.clearTasks();
       this.employees = [];
     }
   }
 
   loadBoards(propertyId: number, autoSelectDefault = false) {
     this.calendarService.getBoards(propertyId).subscribe(res => {
+      // Superseded: the user picked another property while this was in flight.
+      // Everything below is scoped to `propertyId` — the calendars themselves,
+      // the Logbøger folder lookup, the auto-selected default board and the
+      // loadTasks() it kicks off — so applying it now would put one property's
+      // calendars under another's name, and its failure branch would clear the
+      // newly selected property's data. Guarded on the argument rather than a
+      // loadSeq ticket because boards are not week-scoped: a loadSeq bump from
+      // an ordinary week step would wrongly discard a legitimate board reload.
+      if (propertyId !== this.currentPropertyId) return;
       if (!res || !res.success) {
         // The error itself is already surfaced: BackendConfigurationPnCalendarService
         // .getBoards pipes through notifyError(), which toasts on !success.
@@ -223,6 +283,9 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         this.lastActivatedBoardId = defaultBoard.id;
       }
       this.propertiesService.getLinkedFolderDtos(propertyId).subscribe(folderRes => {
+        // Same race, one level deeper: this call outlives its loadBoards()
+        // callback, so re-check before writing a property-scoped folder id.
+        if (propertyId !== this.currentPropertyId) return;
         if (folderRes && folderRes.success) {
           const logFolder = this.findFolderByName(folderRes.model, 'Logbøger');
           this.logboegerFolderId = logFolder ? logFolder.id : null;
@@ -248,16 +311,19 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   }
 
   private clearTasks() {
-    // Invalidates any month load still in flight. loadMonthTasks() only applies
-    // its result when `seq === monthLoadSeq`, so without this bump a slower
-    // 6-call batch launched for the PREVIOUS property/month would resolve after
-    // the clear and repopulate monthTasksByDate with data the clear removed.
-    this.monthLoadSeq++;
+    // Invalidates any task load still in flight, week or month. Both paths
+    // apply their result only while `seq === loadSeq`, so without this bump a
+    // slower request launched for the PREVIOUS property/week/month would
+    // resolve after the clear and repopulate the grid with data the clear
+    // removed.
+    this.loadSeq++;
     this.tasks = [];
     this.tasksByDay = Array.from({length: 7}, () => []);
     this.allDayTasksByDay = Array.from({length: 7}, () => []);
     this.monthTasksByDate = new Map();
     this.rebuildMonthSchedule();
+    // Nothing is on screen any more, so no scope describes it.
+    this.loadedScopeKey = null;
   }
 
   loadTags() {
@@ -280,14 +346,24 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   }
 
   loadEmployees() {
+    // Captured, not re-read in the callback: this list is property-scoped and
+    // the request is a plain HTTP race, so a slow load for the property the
+    // user has already left must not repaint (or, on its failure branch,
+    // clear) the employee list belonging to the current one. Property identity
+    // is the whole staleness axis here — loadEmployees() is only ever called
+    // from onPropertySelected() — so it is the guard, rather than a ticket
+    // from loadSeq, which is the TASK sequence and is bumped by every week
+    // step and every clearTasks().
+    const propertyId = this.currentPropertyId;
     this.propertiesService.getDeviceUsersFiltered({
-      propertyIds: this.currentPropertyId ? [this.currentPropertyId] : [],
+      propertyIds: propertyId ? [propertyId] : [],
       nameFilter: '',
       sort: 'Name',
       isSortDsc: false,
       showResigned: false,
       tagIds: this.activeTeamIds,
     }).subscribe(res => {
+      if (propertyId !== this.currentPropertyId) return;
       if (res && res.success) {
         this.employees = res.model.map(u => ({
           id: u.siteId,
@@ -306,8 +382,33 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   loadTasks() {
     if (!this.currentPropertyId) return;
 
-    if (this.viewMode === 'month' || (this.viewMode === 'schedule' && this.scheduleScope === 'month')) {
-      this.loadMonthTasks();
+    // Scope change: the buffers on screen were filled for another property or
+    // by the OTHER render path, and the template is already reading them —
+    // onViewModeChange() dispatches synchronously, so the ngSwitch has swapped
+    // views before this call and would paint the stale buffer for the whole
+    // load (six round-trips on the month path). Drop them first.
+    //
+    // Only on a scope change, never on an ordinary refetch: a week step, a
+    // board toggle or a reload after saving a task keeps the same key, so the
+    // grid does not blink on every navigation.
+    //
+    // MUST stay above the ticket below: clearTasks() bumps loadSeq, so clearing
+    // after `++this.loadSeq` would make this load supersede itself and nothing
+    // would ever render.
+    const scopeKey = `${this.currentPropertyId}|${this.renderPath}`;
+    if (this.loadedScopeKey !== scopeKey) {
+      this.clearTasks();
+    }
+    this.loadedScopeKey = scopeKey;
+
+    // One ticket per user-visible load, shared by both paths below.
+    const seq = ++this.loadSeq;
+
+    // Same expression as the scope key above — via `renderPath`, so the two
+    // cannot drift apart and leave the month path loading while the week
+    // buffers are the ones being kept.
+    if (this.renderPath === 'month') {
+      this.loadMonthTasks(seq);
       return;
     }
 
@@ -327,6 +428,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         this.activeSiteIds,
       )
       .subscribe(res => {
+        // Superseded while in flight — by another property, another week, or a
+        // clearTasks(). Dropping it here also keeps the failure branch below
+        // from clearing a grid that now belongs to a newer load.
+        if (seq !== this.loadSeq) return;
         if (!res || !res.success) {
           // getTasksForWeek toasts through notifyError(); drop what is on the
           // grid so the previous property/week's events are not left rendered
@@ -353,8 +458,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   // per weekday per call), so the month is fetched as six proper week
   // windows and merged client-side — bit-identical semantics with the week
   // view. A failed week degrades to an empty row instead of a blank month.
-  private loadMonthTasks() {
-    const seq = ++this.monthLoadSeq;
+  private loadMonthTasks(seq: number) {
     const anchor = new Date(this.currentDate);
     const gridStart = this.getMondayOfWeek(new Date(anchor.getFullYear(), anchor.getMonth(), 1));
     const calls = Array.from({length: 6}, (_, i) => {
@@ -375,7 +479,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     });
 
     forkJoin(calls).subscribe(results => {
-      if (seq !== this.monthLoadSeq) return;
+      if (seq !== this.loadSeq) return;
       const teamNameById = new Map(this.teams.map(t => [t.id, t.name]));
       const boardColorMap = new Map(this.boards.map(b => [b.id, b.color]));
       const byDate = new Map<string, CalendarTaskLayoutModel[]>();
@@ -626,9 +730,15 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   }
 
   onBoardToggled(boardId: number) {
-    // The store update is async, so activeBoardIds here still reflects the
-    // pre-toggle state: if the calendar is not currently active, this click is
-    // turning it ON — remember it as the default for new tasks.
+    // activeBoardIds still reflects the pre-toggle state because this line runs
+    // BEFORE toggleBoard() below — not because the store is async. ngrx
+    // Store.select emits synchronously on dispatch, so the filters$
+    // subscription in ngOnInit has already rewritten activeBoardIds by the time
+    // toggleBoard() returns. (That synchrony is load-bearing elsewhere in this
+    // file: loadTasks()' scope check and the property/board guards all read
+    // state a dispatch has just written.)
+    // So: if the calendar is not currently active, this click is turning it ON
+    // — remember it as the default for new tasks.
     if (!this.activeBoardIds.includes(boardId)) {
       this.lastActivatedBoardId = boardId;
     }
