@@ -105,7 +105,11 @@
             <mat-icon>more_vert</mat-icon>
           </button>
           <mat-menu #boardMenu="matMenu" class="board-edit-menu">
-            <div class="board-edit-popover" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+            <!-- keydown goes through onBoardEditKeydown, NOT a blanket
+                 stopPropagation: the typeahead has to be stopped, but Escape
+                 must still reach the overlay or this popover is a keyboard
+                 trap. See onBoardEditKeydown for the full reasoning. -->
+            <div class="board-edit-popover" (click)="$event.stopPropagation()" (keydown)="onBoardEditKeydown($event)">
               <label class="field-label">{{ 'Calendar name' | translate }}</label>
               <mat-form-field appearance="outline" style="width: 100%;">
                 <input matInput [(ngModel)]="editingBoardName" (keydown.enter)="submitEditBoard()">

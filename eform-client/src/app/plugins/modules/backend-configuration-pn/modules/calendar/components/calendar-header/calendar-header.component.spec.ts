@@ -141,5 +141,31 @@ describe('CalendarHeaderComponent', () => {
 
       expect(emitted).toEqual([]);
     });
+
+    describe('onBoardEditKeydown', () => {
+      function keydown(key: string) {
+        let stopped = false;
+        const event = {key, stopPropagation: () => (stopped = true)} as unknown as KeyboardEvent;
+        component.onBoardEditKeydown(event);
+        return stopped;
+      }
+
+      // The popover's input lives inside a MatMenu panel, so an unstopped
+      // keystroke drives the panel's FocusKeyManager typeahead and yanks focus
+      // off the input mid-word.
+      it('stops typing from reaching the menu panel', () => {
+        expect(keydown('a')).toBe(true);
+        expect(keydown('ArrowDown')).toBe(true);
+        expect(keydown('Enter')).toBe(true);
+      });
+
+      // Regression: a blanket stopPropagation() here swallowed Escape as well.
+      // The CDK's OverlayKeyboardDispatcher listens on `body` in the bubble
+      // phase, so the event never reached ANY overlay — the popover and the
+      // calendars panel behind it both became impossible to close by keyboard.
+      it('lets Escape through so the overlay can close', () => {
+        expect(keydown('Escape')).toBe(false);
+      });
+    });
   });
 });

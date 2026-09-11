@@ -61,6 +61,29 @@ export class CalendarHeaderComponent implements OnInit {
     this.editingBoardId = null;
   }
 
+  /**
+   * Keydown guard for the row `⋮` rename popover.
+   *
+   * The popover hosts a text input inside a MatMenu panel, so without this every
+   * keystroke also reaches the panel's FocusKeyManager and drives its typeahead:
+   * typing a calendar name would yank focus from the input onto whichever menu
+   * item matched the letters. Stopping the event fixes that.
+   *
+   * ESCAPE is deliberately let through. The CDK's OverlayKeyboardDispatcher
+   * listens on `body` in the BUBBLE phase, so a blanket stopPropagation() here
+   * means Escape never reaches any overlay at all — neither this popover nor the
+   * calendars panel behind it can be closed from the keyboard, and the menu
+   * becomes a keyboard trap. Letting it through closes only this submenu:
+   * MatMenu emits `closed('keydown')`, and MatMenuTrigger forwards a close to the
+   * parent menu for `'click'`/`'tab'` only.
+   */
+  onBoardEditKeydown(event: KeyboardEvent) {
+    if (event.key === 'Escape') {
+      return;
+    }
+    event.stopPropagation();
+  }
+
   // The calendars button label, in the mock-up's three forms: the single
   // selected calendar's name, "All calendars" when every one is checked, and
   // "N calendars" in between. Counting is done over `boards` so an id left in

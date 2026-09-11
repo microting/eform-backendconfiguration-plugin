@@ -94,11 +94,16 @@ export class CalendarUiEnhancementsPage {
   }
 
   /**
-   * NB: Escape cannot close the panel while a row's `⋮` popover is open — that
-   * popover stops `keydown` (carried over verbatim from the sidebar), which
-   * kills the overlay keyboard dispatcher MatMenu's Escape relies on. No spec
-   * opens it today; one that does must close the popover first, or this burns
-   * a full UI_TIMEOUT.
+   * NB: a row's `⋮` popover is a nested overlay, and the CDK keyboard
+   * dispatcher hands Escape to the TOP-MOST overlay only. So with the popover
+   * open the first Escape closes the popover and the panel stays put — a spec
+   * that opened one must close it (and wait for it to detach) before calling
+   * this, or the trigger is still `aria-expanded="true"` when we look.
+   *
+   * The popover used to swallow Escape outright (`(keydown)=stopPropagation`
+   * carried over verbatim from the sidebar), which made the panel impossible to
+   * close from the keyboard at all and burned a full UI_TIMEOUT here — see
+   * CalendarHeaderComponent.onBoardEditKeydown.
    */
   async closeBoardMenu(): Promise<void> {
     const trigger = this.page.locator('#calendarBoardsButton');

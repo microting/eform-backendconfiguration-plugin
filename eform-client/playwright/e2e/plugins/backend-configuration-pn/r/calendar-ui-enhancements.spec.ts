@@ -615,7 +615,19 @@ test.describe.serial('Calendar UI enhancements', () => {
       // (click) handler would never have fired here.
       await expect(page.locator('.board-edit-popover input')).toHaveValue(/.+/, { timeout: UI_TIMEOUT });
 
+      // Escape must close the popover — and ONLY the popover. The CDK keyboard
+      // dispatcher hands the event to the top-most overlay, and MatMenu forwards
+      // a close to its parent for 'click'/'tab' but not for 'keydown', so the
+      // calendars panel is still open underneath. This also guards the regression
+      // where the popover's blanket `(keydown)="$event.stopPropagation()"`
+      // swallowed Escape before it ever reached the overlay, leaving the whole
+      // menu impossible to close from the keyboard.
       await page.keyboard.press('Escape');
+      await expect(page.locator('.board-edit-popover')).toHaveCount(0, { timeout: UI_TIMEOUT });
+      await expect(page.locator('#calendarBoardsButton')).toHaveAttribute('aria-expanded', 'true', {
+        timeout: UI_TIMEOUT,
+      });
+
       await calendarPage.closeBoardMenu();
     });
   });
