@@ -3,9 +3,9 @@
  * mirroring `BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport`
  * as landed by #1161.
  *
- * Deliberately NOT an extension of `CalendarComplianceReportRequestModel`:
- * that model belongs to the calendar view mode #1170 deletes, and this page
- * posts to a different controller
+ * Deliberately NOT an extension of the calendar view mode's former
+ * `CalendarComplianceReportRequestModel`: that model was deleted with the view
+ * mode by #1170, and this page posts to a different controller
  * (`api/backend-configuration-pn/compliance-report/index`).
  */
 

@@ -8,8 +8,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationComplianceReportS
 /// <summary>
 /// Backend for the standalone Compliance page (#1160). Owns the compliance
 /// report read model that used to live on
-/// <c>BackendConfigurationCalendarService.GetComplianceReport</c>; that method is
-/// now an unpaged delegate onto <see cref="Index"/> and is removed by #1170.
+/// <c>BackendConfigurationCalendarService.GetComplianceReport</c>, which #1170
+/// removed together with the calendar's Compliance view mode.
 /// </summary>
 public interface IBackendConfigurationComplianceReportService
 {
@@ -25,26 +25,15 @@ public interface IBackendConfigurationComplianceReportService
     /// the ones that can only run in memory (occurrence delete/move, effective
     /// board, status) — and BEFORE paging.
     /// </summary>
+    /// <remarks>
+    /// The <c>MaxRowsReturned</c> safety cap always applies: the page (#1163) and
+    /// its unpaged consumers (#1167/#1169) degrade to a capped row set rather than
+    /// pulling an unbounded one. The opt-out that existed for the legacy
+    /// <c>POST calendar/compliance-report</c> delegate went away with it (#1170).
+    /// </remarks>
     /// <param name="requestModel">Filters, paging and sorting for the report.</param>
-    /// <param name="enforceRowCap">
-    /// Whether the <c>MaxRowsReturned</c> safety cap applies. It defaults to
-    /// <c>true</c>, which is what the public <c>ComplianceReportController.Index</c>
-    /// endpoint uses: the new page (#1163) and its unpaged consumers (#1167/#1169)
-    /// degrade to a capped row set rather than pulling an unbounded one.
-    ///
-    /// The ONLY caller that passes <c>false</c> is the legacy delegate
-    /// <c>BackendConfigurationCalendarService.GetComplianceReport</c>, which backs
-    /// <c>POST calendar/compliance-report</c>. That endpoint predates the cap and
-    /// its contract is "every matching row"; capping it would silently truncate a
-    /// response that used to be complete (#1161 §11). #1170 removes the legacy
-    /// delegate and this parameter together.
-    ///
-    /// Deliberately a method parameter and NOT a property on
-    /// <c>ComplianceReportRequestModel</c>: it must never become part of the JSON
-    /// request contract, where a client could switch the cap off.
-    /// </param>
     Task<OperationDataResult<ComplianceReportPagedModel>> Index(
-        ComplianceReportRequestModel requestModel, bool enforceRowCap = true);
+        ComplianceReportRequestModel requestModel);
 
     /// <summary>
     /// One compliance summary row per property, plus a WEIGHTED totals row, for

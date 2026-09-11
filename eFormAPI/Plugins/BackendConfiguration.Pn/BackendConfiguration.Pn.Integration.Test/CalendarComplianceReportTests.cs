@@ -18,13 +18,9 @@ namespace BackendConfiguration.Pn.Integration.Test;
 
 using System.Globalization;
 using eFormCore;
-using BackendConfiguration.Pn.Infrastructure.Models.Calendar;
-using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
+using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
+using BackendConfiguration.Pn.Services.BackendConfigurationComplianceReportService;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
-using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
-using BackendConfiguration.Pn.Services.EventDeployService;
-using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
-using BackendConfiguration.Pn.Services.CalendarChangeNotification;
 using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -40,9 +36,15 @@ using NSubstitute;
 
 /// <summary>
 /// DB-backed integration coverage for
-/// <see cref="BackendConfigurationCalendarService.GetComplianceReport"/> — the
-/// flat, non-recurrence-expanding report over existing <c>Compliance</c> rows
-/// used by the calendar compliance report view.
+/// <see cref="BackendConfigurationComplianceReportService.Index"/> — the flat,
+/// non-recurrence-expanding report over existing <c>Compliance</c> rows.
+///
+/// These cases were written against the calendar's Compliance view mode and its
+/// <c>POST calendar/compliance-report</c> endpoint. #1170 deleted both; the
+/// semantics they pin did not move, so the fixture was retargeted at the service
+/// that owns them rather than dropped. Every request here is unpaged
+/// (<c>PageSize = 0</c>) and left on the default taskDate-descending sort, which
+/// is the shape the deleted endpoint had — see <see cref="Request"/>.
 ///
 /// Semantics under test (see the method's own inline comments for the
 /// authoritative rules):
@@ -136,7 +138,7 @@ public class CalendarComplianceReportTests : TestBaseSetup
         await MicrotingDbContext.SaveChangesAsync();
     }
 
-    private BackendConfigurationCalendarService BuildService(Core core)
+    private BackendConfigurationComplianceReportService BuildService(Core core)
     {
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
@@ -148,27 +150,13 @@ public class CalendarComplianceReportTests : TestBaseSetup
         var coreHelper = Substitute.For<IEFormCoreService>();
         coreHelper.GetCore().Returns(Task.FromResult(core));
 
-        var taskWizardService = Substitute.For<IBackendConfigurationTaskWizardService>();
-        taskWizardService.DeleteTask(Arg.Any<int>())
-            .Returns(Task.FromResult(new OperationResult(true)));
-
-        return new BackendConfigurationCalendarService(
+        return new BackendConfigurationComplianceReportService(
             new BackendConfigurationLocalizationService(), userService,
-            BackendConfigurationPnDbContext!, coreHelper, Substitute.For<IEventDeployService>(),
-            ItemsPlanningPnDbContext!, taskWizardService,
-            Substitute.For<ICalendarAssignmentReconciliationService>(),
-            Substitute.For<ICalendarChangeNotifier>(),
-            NullLogger<BackendConfigurationCalendarService>.Instance,
-            Substitute.For<ICalendarOccurrenceRetractionService>(),
-            Substitute.For<ICalendarPastSeriesBackfillService>(),
-            // #1161: GetComplianceReport is now an unpaged delegate onto this
-            // service, so it must be the REAL implementation - these tests
-            // exercise its behaviour through the delegate.
-            new BackendConfigurationComplianceReportService(
-                new BackendConfigurationLocalizationService(), userService,
-                BackendConfigurationPnDbContext!, coreHelper, ItemsPlanningPnDbContext!,
-                NullLogger<BackendConfigurationComplianceReportService>.Instance,
-                new WorkerTagMembershipService(coreHelper)),
+            BackendConfigurationPnDbContext!, coreHelper, ItemsPlanningPnDbContext!,
+            NullLogger<BackendConfigurationComplianceReportService>.Instance,
+            // The real membership service: #1232 made the employee filter and the
+            // worker column depend on it, and a substitute would silently answer
+            // "no team membership" for every site.
             new WorkerTagMembershipService(coreHelper));
     }
 
@@ -390,7 +378,14 @@ public class CalendarComplianceReportTests : TestBaseSetup
         return exception.Id;
     }
 
-    private static CalendarComplianceReportRequestModel Request(
+    /// <summary>
+    /// The request shape the deleted <c>POST calendar/compliance-report</c> used:
+    /// unpaged (<c>PageSize = 0</c>) and on the default taskDate-descending sort,
+    /// so every assertion below still sees the whole matching set in the order it
+    /// was written against. Paging and the other sort keys have their own fixture
+    /// (<c>ComplianceReportIndexTests</c>).
+    /// </summary>
+    private static ComplianceReportRequestModel Request(
         DateTime from, DateTime to, string status = "open",
         int? propertyId = null, List<int> boardIds = null, List<int> tagIds = null, List<int> siteIds = null)
         => new()
@@ -401,7 +396,11 @@ public class CalendarComplianceReportTests : TestBaseSetup
             PropertyId = propertyId,
             BoardIds = boardIds ?? [],
             TagIds = tagIds ?? [],
-            SiteIds = siteIds ?? []
+            SiteIds = siteIds ?? [],
+            PageIndex = 0,
+            PageSize = 0,
+            Sort = null,
+            IsSortDsc = true
         };
 
     // ------------------------------------------------------------------
@@ -409,7 +408,7 @@ public class CalendarComplianceReportTests : TestBaseSetup
     // ------------------------------------------------------------------
 
     [Test]
-    public async Task GetComplianceReport_OpenRowInRange_ReturnedOnceWithCoreFields()
+    public async Task Index_OpenRowInRange_ReturnedOnceWithCoreFields()
     {
         var core = await GetCore();
         var today = DateTime.UtcNow.Date;
@@ -421,12 +420,12 @@ public class CalendarComplianceReportTests : TestBaseSetup
         var complianceId = await SeedCompliance(planningId, propertyId, areaId, today, openCaseId);
 
         var service = BuildService(core);
-        var result = await service.GetComplianceReport(
+        var result = await service.Index(
             Request(today.AddDays(-3), today.AddDays(3), status: "open"));
 
         Assert.That(result.Success, Is.True, result.Message);
         Assert.That(result.Model, Is.Not.Null);
-        var rows = result.Model.Where(r => r.ComplianceId == complianceId).ToList();
+        var rows = result.Model.Entities.Where(r => r.ComplianceId == complianceId).ToList();
         Assert.That(rows, Has.Count.EqualTo(1), "the open row must be returned exactly once");
         var row = rows[0];
         Assert.Multiple(() =>
@@ -446,7 +445,7 @@ public class CalendarComplianceReportTests : TestBaseSetup
     // ------------------------------------------------------------------
 
     [Test]
-    public async Task GetComplianceReport_CompletedRow_OnlyReturnedForDoneAndAll()
+    public async Task Index_CompletedRow_OnlyReturnedForDoneAndAll()
     {
         var core = await GetCore();
         var today = DateTime.UtcNow.Date;
@@ -461,16 +460,16 @@ public class CalendarComplianceReportTests : TestBaseSetup
 
         var service = BuildService(core);
 
-        var openResult = await service.GetComplianceReport(
+        var openResult = await service.Index(
             Request(today.AddDays(-3), today.AddDays(3), status: "open"));
         Assert.That(openResult.Success, Is.True, openResult.Message);
-        Assert.That(openResult.Model!.Any(r => r.ComplianceId == complianceId), Is.False,
+        Assert.That(openResult.Model!.Entities.Any(r => r.ComplianceId == complianceId), Is.False,
             "a completed row must not be returned for status=open");
 
-        var doneResult = await service.GetComplianceReport(
+        var doneResult = await service.Index(
             Request(today.AddDays(-3), today.AddDays(3), status: "done"));
         Assert.That(doneResult.Success, Is.True, doneResult.Message);
-        var doneRows = doneResult.Model!.Where(r => r.ComplianceId == complianceId).ToList();
+        var doneRows = doneResult.Model!.Entities.Where(r => r.ComplianceId == complianceId).ToList();
         Assert.That(doneRows, Has.Count.EqualTo(1), "the completed row must be returned for status=done");
         Assert.Multiple(() =>
         {
@@ -478,10 +477,10 @@ public class CalendarComplianceReportTests : TestBaseSetup
             Assert.That(doneRows[0].DoneAt, Is.EqualTo(doneAt));
         });
 
-        var allResult = await service.GetComplianceReport(
+        var allResult = await service.Index(
             Request(today.AddDays(-3), today.AddDays(3), status: "all"));
         Assert.That(allResult.Success, Is.True, allResult.Message);
-        Assert.That(allResult.Model!.Any(r => r.ComplianceId == complianceId), Is.True,
+        Assert.That(allResult.Model!.Entities.Any(r => r.ComplianceId == complianceId), Is.True,
             "the completed row must be returned for status=all");
     }
 
@@ -491,7 +490,7 @@ public class CalendarComplianceReportTests : TestBaseSetup
     // ------------------------------------------------------------------
 
     [Test]
-    public async Task GetComplianceReport_UserDeletedRow_NeverReturnedForAnyStatus()
+    public async Task Index_UserDeletedRow_NeverReturnedForAnyStatus()
     {
         var core = await GetCore();
         var today = DateTime.UtcNow.Date;
@@ -507,10 +506,10 @@ public class CalendarComplianceReportTests : TestBaseSetup
 
         foreach (var status in new[] { "open", "done", "all" })
         {
-            var result = await service.GetComplianceReport(
+            var result = await service.Index(
                 Request(today.AddDays(-3), today.AddDays(3), status: status));
             Assert.That(result.Success, Is.True, result.Message);
-            Assert.That(result.Model!.Any(r => r.ComplianceId == complianceId), Is.False,
+            Assert.That(result.Model!.Entities.Any(r => r.ComplianceId == complianceId), Is.False,
                 $"a user-deleted row must never be returned (status={status})");
         }
     }
@@ -521,7 +520,7 @@ public class CalendarComplianceReportTests : TestBaseSetup
     // ------------------------------------------------------------------
 
     [Test]
-    public async Task GetComplianceReport_DateRangeBoundaries_InclusiveFromAndTo()
+    public async Task Index_DateRangeBoundaries_InclusiveFromAndTo()
     {
         var core = await GetCore();
         var today = DateTime.UtcNow.Date;
@@ -548,10 +547,10 @@ public class CalendarComplianceReportTests : TestBaseSetup
         var afterId = await SeedCompliance(planningId, propertyId, areaId, dateTo.AddDays(1), afterCaseId);
 
         var service = BuildService(core);
-        var result = await service.GetComplianceReport(Request(dateFrom, dateTo, status: "open"));
+        var result = await service.Index(Request(dateFrom, dateTo, status: "open"));
         Assert.That(result.Success, Is.True, result.Message);
 
-        var ids = result.Model!.Select(r => r.ComplianceId).ToList();
+        var ids = result.Model!.Entities.Select(r => r.ComplianceId).ToList();
         Assert.Multiple(() =>
         {
             Assert.That(ids, Does.Not.Contain(beforeId), "the day before DateFrom must be excluded");
@@ -567,7 +566,7 @@ public class CalendarComplianceReportTests : TestBaseSetup
     // ------------------------------------------------------------------
 
     [Test]
-    public async Task GetComplianceReport_PropertyIdFilter_NullReturnsAllSetReturnsOne()
+    public async Task Index_PropertyIdFilter_NullReturnsAllSetReturnsOne()
     {
         var core = await GetCore();
         var today = DateTime.UtcNow.Date;
@@ -584,25 +583,25 @@ public class CalendarComplianceReportTests : TestBaseSetup
 
         var service = BuildService(core);
 
-        var allResult = await service.GetComplianceReport(
+        var allResult = await service.Index(
             Request(today.AddDays(-1), today.AddDays(1), status: "open", propertyId: null));
         Assert.That(allResult.Success, Is.True, allResult.Message);
-        var allIds = allResult.Model!.Select(r => r.ComplianceId).ToList();
+        var allIds = allResult.Model!.Entities.Select(r => r.ComplianceId).ToList();
         Assert.Multiple(() =>
         {
             Assert.That(allIds, Does.Contain(compliance1));
             Assert.That(allIds, Does.Contain(compliance2));
         });
 
-        var scopedResult = await service.GetComplianceReport(
+        var scopedResult = await service.Index(
             Request(today.AddDays(-1), today.AddDays(1), status: "open", propertyId: prop1));
         Assert.That(scopedResult.Success, Is.True, scopedResult.Message);
-        var scopedIds = scopedResult.Model!.Select(r => r.ComplianceId).ToList();
+        var scopedIds = scopedResult.Model!.Entities.Select(r => r.ComplianceId).ToList();
         Assert.Multiple(() =>
         {
             Assert.That(scopedIds, Does.Contain(compliance1));
             Assert.That(scopedIds, Does.Not.Contain(compliance2));
-            Assert.That(scopedResult.Model!.All(r => r.PropertyId == prop1), Is.True);
+            Assert.That(scopedResult.Model!.Entities.All(r => r.PropertyId == prop1), Is.True);
         });
     }
 
@@ -612,7 +611,7 @@ public class CalendarComplianceReportTests : TestBaseSetup
     // ------------------------------------------------------------------
 
     [Test]
-    public async Task GetComplianceReport_TagIdsFilter_MatchesArpTagsExcludesOthers()
+    public async Task Index_TagIdsFilter_MatchesArpTagsExcludesOthers()
     {
         var core = await GetCore();
         var today = DateTime.UtcNow.Date;
@@ -629,16 +628,16 @@ public class CalendarComplianceReportTests : TestBaseSetup
 
         var service = BuildService(core);
 
-        var matchResult = await service.GetComplianceReport(
+        var matchResult = await service.Index(
             Request(today.AddDays(-1), today.AddDays(1), status: "open", tagIds: [matchingTagId]));
         Assert.That(matchResult.Success, Is.True, matchResult.Message);
-        Assert.That(matchResult.Model!.Any(r => r.ComplianceId == complianceId), Is.True,
+        Assert.That(matchResult.Model!.Entities.Any(r => r.ComplianceId == complianceId), Is.True,
             "the matching tag filter must include the row");
 
-        var nonMatchResult = await service.GetComplianceReport(
+        var nonMatchResult = await service.Index(
             Request(today.AddDays(-1), today.AddDays(1), status: "open", tagIds: [unrelatedTagId]));
         Assert.That(nonMatchResult.Success, Is.True, nonMatchResult.Message);
-        Assert.That(nonMatchResult.Model!.Any(r => r.ComplianceId == complianceId), Is.False,
+        Assert.That(nonMatchResult.Model!.Entities.Any(r => r.ComplianceId == complianceId), Is.False,
             "a non-matching tag filter must exclude the row");
     }
 
@@ -647,7 +646,7 @@ public class CalendarComplianceReportTests : TestBaseSetup
     // ------------------------------------------------------------------
 
     [Test]
-    public async Task GetComplianceReport_SiteIdsFilter_MatchesPlanningSitesExcludesOthers()
+    public async Task Index_SiteIdsFilter_MatchesPlanningSitesExcludesOthers()
     {
         var core = await GetCore();
         var today = DateTime.UtcNow.Date;
@@ -664,16 +663,16 @@ public class CalendarComplianceReportTests : TestBaseSetup
 
         var service = BuildService(core);
 
-        var matchResult = await service.GetComplianceReport(
+        var matchResult = await service.Index(
             Request(today.AddDays(-1), today.AddDays(1), status: "open", siteIds: [assignedSiteId]));
         Assert.That(matchResult.Success, Is.True, matchResult.Message);
-        Assert.That(matchResult.Model!.Any(r => r.ComplianceId == complianceId), Is.True,
+        Assert.That(matchResult.Model!.Entities.Any(r => r.ComplianceId == complianceId), Is.True,
             "the assigned site filter must include the row");
 
-        var nonMatchResult = await service.GetComplianceReport(
+        var nonMatchResult = await service.Index(
             Request(today.AddDays(-1), today.AddDays(1), status: "open", siteIds: [otherSiteId]));
         Assert.That(nonMatchResult.Success, Is.True, nonMatchResult.Message);
-        Assert.That(nonMatchResult.Model!.Any(r => r.ComplianceId == complianceId), Is.False,
+        Assert.That(nonMatchResult.Model!.Entities.Any(r => r.ComplianceId == complianceId), Is.False,
             "a non-assigned site filter must exclude the row");
     }
 
@@ -684,7 +683,7 @@ public class CalendarComplianceReportTests : TestBaseSetup
     // ------------------------------------------------------------------
 
     [Test]
-    public async Task GetComplianceReport_BoardIdsFilter_ExplicitConfigAndDefaultFallback()
+    public async Task Index_BoardIdsFilter_ExplicitConfigAndDefaultFallback()
     {
         var core = await GetCore();
         var today = DateTime.UtcNow.Date;
@@ -713,24 +712,24 @@ public class CalendarComplianceReportTests : TestBaseSetup
         var service = BuildService(core);
         var range = (From: today.AddDays(-1), To: today.AddDays(1));
 
-        var explicitMatch = await service.GetComplianceReport(
+        var explicitMatch = await service.Index(
             Request(range.From, range.To, status: "open", boardIds: [boardX]));
-        Assert.That(explicitMatch.Model!.Any(r => r.ComplianceId == explicitComplianceId), Is.True,
+        Assert.That(explicitMatch.Model!.Entities.Any(r => r.ComplianceId == explicitComplianceId), Is.True,
             "filtering by the configured board must include the row");
 
-        var explicitNonMatch = await service.GetComplianceReport(
+        var explicitNonMatch = await service.Index(
             Request(range.From, range.To, status: "open", boardIds: [boardY]));
-        Assert.That(explicitNonMatch.Model!.Any(r => r.ComplianceId == explicitComplianceId), Is.False,
+        Assert.That(explicitNonMatch.Model!.Entities.Any(r => r.ComplianceId == explicitComplianceId), Is.False,
             "filtering by a different board must exclude the row");
 
-        var defaultMatch = await service.GetComplianceReport(
+        var defaultMatch = await service.Index(
             Request(range.From, range.To, status: "open", boardIds: [oldestBoard]));
-        Assert.That(defaultMatch.Model!.Any(r => r.ComplianceId == defaultComplianceId), Is.True,
+        Assert.That(defaultMatch.Model!.Entities.Any(r => r.ComplianceId == defaultComplianceId), Is.True,
             "filtering by the property's first-created board must include the unconfigured row");
 
-        var defaultNonMatch = await service.GetComplianceReport(
+        var defaultNonMatch = await service.Index(
             Request(range.From, range.To, status: "open", boardIds: [newerBoard]));
-        Assert.That(defaultNonMatch.Model!.Any(r => r.ComplianceId == defaultComplianceId), Is.False,
+        Assert.That(defaultNonMatch.Model!.Entities.Any(r => r.ComplianceId == defaultComplianceId), Is.False,
             "filtering by a non-default board must exclude the unconfigured row");
     }
 
@@ -739,7 +738,7 @@ public class CalendarComplianceReportTests : TestBaseSetup
     // ------------------------------------------------------------------
 
     [Test]
-    public async Task GetComplianceReport_ExceptionIsDeleted_HidesRow()
+    public async Task Index_ExceptionIsDeleted_HidesRow()
     {
         var core = await GetCore();
         var today = DateTime.UtcNow.Date;
@@ -753,10 +752,10 @@ public class CalendarComplianceReportTests : TestBaseSetup
         await SeedException(arpId, today, isDeleted: true);
 
         var service = BuildService(core);
-        var result = await service.GetComplianceReport(
+        var result = await service.Index(
             Request(today.AddDays(-1), today.AddDays(1), status: "all"));
         Assert.That(result.Success, Is.True, result.Message);
-        Assert.That(result.Model!.Any(r => r.ComplianceId == complianceId), Is.False,
+        Assert.That(result.Model!.Entities.Any(r => r.ComplianceId == complianceId), Is.False,
             "an IsDeleted exception must hide the occurrence for any status");
     }
 
@@ -766,7 +765,7 @@ public class CalendarComplianceReportTests : TestBaseSetup
     // ------------------------------------------------------------------
 
     [Test]
-    public async Task GetComplianceReport_ExceptionNewDate_MovesTaskDateAndOutOfRangeExcludes()
+    public async Task Index_ExceptionNewDate_MovesTaskDateAndOutOfRangeExcludes()
     {
         var core = await GetCore();
         var today = DateTime.UtcNow.Date;
@@ -790,16 +789,16 @@ public class CalendarComplianceReportTests : TestBaseSetup
         await SeedException(arpOut, today, newDate: newDateOutOfRange);
 
         var service = BuildService(core);
-        var result = await service.GetComplianceReport(
+        var result = await service.Index(
             Request(today.AddDays(-1), today.AddDays(3), status: "open"));
         Assert.That(result.Success, Is.True, result.Message);
 
-        var movedRows = result.Model!.Where(r => r.ComplianceId == movedComplianceId).ToList();
+        var movedRows = result.Model!.Entities.Where(r => r.ComplianceId == movedComplianceId).ToList();
         Assert.That(movedRows, Has.Count.EqualTo(1), "the moved row must still be returned exactly once");
         Assert.That(movedRows[0].TaskDate, Is.EqualTo(Key(newDateInRange)),
             "the row's TaskDate must reflect the exception's NewDate");
 
-        Assert.That(result.Model!.Any(r => r.ComplianceId == outComplianceId), Is.False,
+        Assert.That(result.Model!.Entities.Any(r => r.ComplianceId == outComplianceId), Is.False,
             "a NewDate outside the requested range must exclude the row");
     }
 
@@ -808,7 +807,7 @@ public class CalendarComplianceReportTests : TestBaseSetup
     // ------------------------------------------------------------------
 
     [Test]
-    public async Task GetComplianceReport_ReturnsRowsSortedByTaskDateDescending()
+    public async Task Index_ReturnsRowsSortedByTaskDateDescending()
     {
         var core = await GetCore();
         var today = DateTime.UtcNow.Date;
@@ -826,11 +825,11 @@ public class CalendarComplianceReportTests : TestBaseSetup
         var latestId = await SeedCompliance(planningId, propertyId, areaId, today.AddDays(2), latestCase);
 
         var service = BuildService(core);
-        var result = await service.GetComplianceReport(
+        var result = await service.Index(
             Request(today.AddDays(-3), today.AddDays(3), status: "open"));
         Assert.That(result.Success, Is.True, result.Message);
 
-        var ourRows = result.Model!
+        var ourRows = result.Model!.Entities
             .Where(r => r.ComplianceId == earliestId || r.ComplianceId == middleId || r.ComplianceId == latestId)
             .ToList();
         Assert.That(ourRows, Has.Count.EqualTo(3));

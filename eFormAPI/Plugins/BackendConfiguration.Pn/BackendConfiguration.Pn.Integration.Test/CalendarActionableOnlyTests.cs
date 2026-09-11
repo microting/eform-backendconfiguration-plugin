@@ -217,7 +217,6 @@ public class CalendarActionableOnlyTests : TestBaseSetup
             NullLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            Substitute.For<IBackendConfigurationComplianceReportService>(),
             new WorkerTagMembershipService(coreHelper));
 
         // Act — ListEvents-style mobile-worker fetch (ActionableOnly=true) for

@@ -571,13 +571,10 @@ export const enUS= {
   '12 months': '12 months',
   'Year to date': 'Year to date',
   'Set period': 'Set period',
-  'Show report': 'Show report',
   'Download as': 'Download as',
   Download: 'Download',
   'Show all': 'Show all',
   Showing: 'Showing',
-  'Select filters and click Show report': 'Select filters and click Show report',
-  'No tasks in the selected period': 'No tasks in the selected period',
   'Delete log': 'Delete log',
   'This action cannot be undone': 'This action cannot be undone',
   Employees: 'Employees',
@@ -756,8 +753,9 @@ export const enUS= {
   // Standalone Compliance page (#1160/#1163). The nine filter-bar strings the
   // page reuses already exist above ('All properties' .. 'Showing'); only the
   // wording the prototype changed, and the shell's own chrome, are new.
-  // 'Show report'/'Select filters and click Show report' are deliberately left
-  // alone — the calendar view mode #1170 deletes still uses them.
+  // 'Show report', 'Select filters and click Show report' and 'No tasks in the
+  // selected period' were the calendar view mode's wording and were removed
+  // from all 26 locales when #1170 deleted that view; nothing reads them now.
   // #1185: filter changes re-query by themselves; the only button left is the
   // custom-period commit, and the placeholder is reachable only before it.
   'Update period': 'Update period',

@@ -257,7 +257,6 @@ public class CalendarOrphanRenderComplianceTests : TestBaseSetup
             // halves of a cross-period re-anchor. Neither fires in these fixtures.
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            Substitute.For<IBackendConfigurationComplianceReportService>(),
             new WorkerTagMembershipService(coreHelper));
     }
 

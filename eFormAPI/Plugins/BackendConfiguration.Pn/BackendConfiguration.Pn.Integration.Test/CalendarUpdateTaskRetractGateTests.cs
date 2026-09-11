@@ -154,7 +154,6 @@ public class CalendarUpdateTaskRetractGateTests : TestBaseSetup
             NullLogger<BackendConfigurationCalendarService>.Instance,
             _retractionService,
             _backfillService,
-            Substitute.For<IBackendConfigurationComplianceReportService>(),
             new WorkerTagMembershipService(_coreHelper));
     }
 

@@ -323,15 +323,9 @@ export class ComplianceDetailsViewComponent implements OnInit, OnDestroy {
    * existing completion pipeline (`CalendarCompleteEventModalComponent` →
    * `prepare-complete` → the case editor), the same way
    * `calendar-container.component.ts`'s `onToggleCompleteRequested` does it — the single
-   * handler every calendar entry point funnels through, the calendar's own Compliance view
-   * included (`onComplianceRowCompleteRequested` delegates to it). The calendar grid hands
-   * it BOTH halves of the assignment off a real `CalendarTaskLayoutModel`
-   * (`assigneeIds` and `teamAssigneeIds`), and so does this method.
-   *
-   * The ONE path that omits a half is that delegating synthesiser:
-   * `CalendarComplianceReportRowModel` carries no site ids of either kind, so it passes an
-   * empty `assigneeIds` and no `teamAssigneeIds` at all — there is nothing to put in them.
-   * This method is not in that position; its row model carries both.
+   * handler every calendar entry point funnels through. The calendar grid hands it BOTH
+   * halves of the assignment off a real `CalendarTaskLayoutModel` (`assigneeIds` and
+   * `teamAssigneeIds`), and so does this method.
    *
    * `assigneeIds` comes from the row's `workerSiteIds` (#1187) — the ARP's
    * non-removed PlanningSites — and `teamAssigneeIds` from the row's own

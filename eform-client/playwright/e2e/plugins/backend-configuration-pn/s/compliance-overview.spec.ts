@@ -21,7 +21,8 @@ import {
  * totals row, and the empty state.
  *
  * SELF-SEEDED, because shard `s` seeds no SQL. The fixture is the one proved by
- * `r/calendar-compliance-view.spec.ts`: create properties + a worker through the
+ * `r/calendar-compliance-view.spec.ts` (deleted by #1170): create properties +
+ * a worker through the
  * UI, create a one-off task NEXT WEEK on each property's calendar, then
  * materialise an OPEN Compliance row by clicking the task's `.completion-btn`
  * (POST `/tasks/{id}/prepare-complete` calls
@@ -249,7 +250,8 @@ async function ariaSortOf(page: Page, index: number): Promise<string | null> {
 }
 
 // ---------------------------------------------------------------------------
-// Seed helpers — lifted from r/calendar-compliance-view.spec.ts.
+// Seed helpers — lifted from r/calendar-compliance-view.spec.ts (since deleted
+// by #1170; this file is now one of the two homes for the fixture).
 // ---------------------------------------------------------------------------
 
 async function handleWorkerSelectModal(page: Page): Promise<void> {

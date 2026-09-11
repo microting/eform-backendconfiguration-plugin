@@ -6,14 +6,14 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 /// <summary>
 /// Request contract for <c>POST api/backend-configuration-pn/compliance-report/index</c>.
 ///
-/// The filter half is moved verbatim from
-/// <see cref="Calendar.CalendarComplianceReportRequestModel"/> — the multi-select
-/// contract was already a list per filter and is unchanged. What is new here is
-/// paging and sorting.
+/// The filter half is moved verbatim from the calendar view mode's former
+/// <c>CalendarComplianceReportRequestModel</c> (deleted by #1170) — the
+/// multi-select contract was already a list per filter and is unchanged. What is
+/// new here is paging and sorting.
 /// </summary>
 public class ComplianceReportRequestModel
 {
-    // --- unchanged, moved verbatim from CalendarComplianceReportRequestModel ---
+    // --- unchanged, moved verbatim from the calendar request model ---
     public int? PropertyId { get; set; }
     public List<int> BoardIds { get; set; } = [];
     /// <summary>Items-planning PlanningTag ids (same ids the sidebar tag filter uses).</summary>

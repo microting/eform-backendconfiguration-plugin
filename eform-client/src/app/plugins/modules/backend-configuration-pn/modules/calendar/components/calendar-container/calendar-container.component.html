@@ -1,6 +1,5 @@
-<div class="calendar-shell" [class.sidebar-closed]="!sidebarOpen || viewMode === 'compliance'">
+<div class="calendar-shell" [class.sidebar-closed]="!sidebarOpen">
   <app-calendar-sidebar
-    *ngIf="viewMode !== 'compliance'"
     [properties]="properties"
     [boards]="boards"
     [teams]="teams"
@@ -33,7 +32,6 @@
       [viewMode]="viewMode"
       [sidebarOpen]="sidebarOpen"
       [propertyName]="selectedPropertyName"
-      [isAdmin]="isAdmin"
       [scheduleScope]="scheduleScope"
       (navigate)="onNavigate($event)"
       (goToToday)="onGoToToday()"
@@ -97,19 +95,6 @@
           (dayClicked)="onMonthDayClicked($event)"
           (scheduleClicked)="onMonthScheduleClicked()"
         ></app-calendar-month-view>
-      </ng-container>
-
-      <ng-container *ngSwitchCase="'compliance'">
-        <app-calendar-compliance-view
-          *ngIf="isAdmin"
-          #complianceView
-          [properties]="properties"
-          [boards]="boards"
-          [tags]="tags"
-          [employees]="employees"
-          [currentPropertyId]="currentPropertyId"
-          (completeRequested)="onComplianceRowCompleteRequested($event)"
-        ></app-calendar-compliance-view>
       </ng-container>
     </ng-container>
   </div>

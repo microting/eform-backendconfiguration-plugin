@@ -45,8 +45,9 @@ import {
  *     else completes silently in place" branch in the UI (that used to gate
  *     on the old ToggleComplete's RequiresForm flag). Every modal opened in
  *     e2e embeds the seeded task's eForm (`app-case-edit-element`), which
- *     carries mandatory fields (see calendar-compliance-view.spec.ts's seed
- *     comment). `#completeSaveBtn` is gated only on
+ *     carries mandatory fields (see `s/compliance-overview.spec.ts`'s seed
+ *     comment — inherited from `r/calendar-compliance-view.spec.ts`, deleted
+ *     by #1170). `#completeSaveBtn` is gated only on
  *     `selectedWorkerId != null && !!replyElement.doneAt` (both auto-filled
  *     for a single-worker seed), so it is *clickable* — but `saveCase()`
  *     submits the nested eForm reply via `updateCaseFromCalendar`, and
@@ -563,8 +564,9 @@ test.describe.serial('Calendar task completion (#894)', () => {
   //   fixme rationale: materialization now actually happens as soon as the
   //   combined modal opens — `PrepareComplete` calls
   //   `EnsureComplianceForOccurrenceAsync` synchronously inside the
-  //   prepare-complete POST (see calendar-compliance-view.spec.ts's seed,
-  //   which already exercises this on-demand-materialize-then-cancel path).
+  //   prepare-complete POST (see `s/compliance-overview.spec.ts`'s seed, which
+  //   already exercises this on-demand-materialize-then-cancel path; it was
+  //   `r/calendar-compliance-view.spec.ts`'s until #1170 deleted that file).
   //   What remains unautomatable here is asserting the row PERSISTS through
   //   a full completion (block flips to `.completed`), which needs saving
   //   the modal — not automatable (see X03). Covered server-side (the

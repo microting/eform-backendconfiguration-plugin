@@ -470,7 +470,6 @@ public class TaskListBatchStartDateTest : TestBaseSetup
             NullLogger<BackendConfigurationCalendarService>.Instance,
             _retractionService,
             _backfillService,
-            Substitute.For<IBackendConfigurationComplianceReportService>(),
             new WorkerTagMembershipService(_coreHelper));
 
         return new BackendConfigurationTaskListService(

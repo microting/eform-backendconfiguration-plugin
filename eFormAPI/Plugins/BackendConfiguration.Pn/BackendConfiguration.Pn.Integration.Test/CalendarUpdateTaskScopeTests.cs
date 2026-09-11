@@ -110,7 +110,6 @@ public class CalendarUpdateTaskScopeTests : TestBaseSetup
             NullLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            Substitute.For<IBackendConfigurationComplianceReportService>(),
             // This fixture builds the calendar service without a core, so the shared
             // membership rule gets the same null: it is only reached when a request
             // carries SiteIds, and nothing here filters by site.

@@ -88,9 +88,9 @@ export function mondayOf(date: Date): Date {
 }
 
 /**
- * ISO-8601 week number. Carried forward verbatim from
- * `calendar-compliance-view.component.ts`'s `isoWeek()` — a correct
- * implementation that #1170 would otherwise delete along with that component.
+ * ISO-8601 week number. Carried forward verbatim from the `isoWeek()` of the
+ * calendar's former compliance view — a correct implementation that would
+ * otherwise have been lost when #1170 deleted that component.
  */
 export function isoWeekNumber(date: Date): number {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));

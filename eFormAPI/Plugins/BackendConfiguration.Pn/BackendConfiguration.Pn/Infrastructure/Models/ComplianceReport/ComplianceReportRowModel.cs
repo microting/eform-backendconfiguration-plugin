@@ -4,8 +4,8 @@ using System.Collections.Generic;
 namespace BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 
 /// <summary>
-/// One compliance-report row. Every field of
-/// <see cref="Calendar.CalendarComplianceReportRowModel"/> plus
+/// One compliance-report row. Every field of the calendar view mode's former
+/// <c>CalendarComplianceReportRowModel</c> (deleted by #1170) plus
 /// <see cref="CheckListId"/>.
 /// </summary>
 public class ComplianceReportRowModel

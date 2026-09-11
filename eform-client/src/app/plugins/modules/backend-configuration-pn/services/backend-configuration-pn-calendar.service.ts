@@ -7,8 +7,6 @@ import {ApiBaseService} from 'src/app/common/services';
 import {OperationDataResult, OperationResult} from 'src/app/common/models';
 import {
   CalendarBoardModel,
-  CalendarComplianceReportRequestModel,
-  CalendarComplianceReportRowModel,
   CalendarPrepareCompleteResult,
   CalendarTaskCreateModel,
   CalendarTaskIndexRequestModel,
@@ -25,7 +23,6 @@ export let BackendConfigurationPnCalendarMethods = {
   MoveTask: 'api/backend-configuration-pn/calendar/tasks/move',
   ResizeTask: 'api/backend-configuration-pn/calendar/tasks/resize',
   Boards: 'api/backend-configuration-pn/calendar/boards',
-  ComplianceReport: 'api/backend-configuration-pn/calendar/compliance-report',
 };
 
 @Injectable({providedIn: 'root'})
@@ -70,13 +67,6 @@ export class BackendConfigurationPnCalendarService {
 
   getTasksIndex(model: CalendarTaskIndexRequestModel): Observable<OperationDataResult<CalendarTaskModel[]>> {
     return this.apiBaseService.postNoToast(BackendConfigurationPnCalendarMethods.Index, model)
-      .pipe(tap((res) => this.notifyError(res)));
-  }
-
-  getComplianceReport(
-    model: CalendarComplianceReportRequestModel
-  ): Observable<OperationDataResult<CalendarComplianceReportRowModel[]>> {
-    return this.apiBaseService.postNoToast(BackendConfigurationPnCalendarMethods.ComplianceReport, model)
       .pipe(tap((res) => this.notifyError(res)));
   }
 

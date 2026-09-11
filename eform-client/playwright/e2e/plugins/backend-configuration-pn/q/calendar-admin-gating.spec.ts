@@ -1,17 +1,30 @@
 import { test, expect, Page } from '@playwright/test';
 import { CalendarUiEnhancementsPage } from '../calendar-ui-enhancements.page';
 import { generateRandmString } from '../../../helper-functions';
+import { UI_TIMEOUT } from '../wait-helpers';
 
 /**
- * Calendar COMPLIANCE admin-gating suite.
+ * Calendar view-mode dropdown — NON-ADMIN parity suite.
  *
- * The view-mode dropdown's admin-only option ("Compliance") is built
- * conditionally on `isAdmin` in calendar-header.component.ts's
- * `buildViewModeOptions()`. "Måned"/Month is NOT gated — it is available to
- * every user, exactly like Dag/Uge/Tidsplan (see
- * `q/calendar-month-view.spec.ts`, MV1, for the ADMIN dropdown order:
- * Dag, Uge, Måned, Tidsplan, Compliance). A NON-ADMIN user must see exactly
- * ['Dag', 'Uge', 'Måned', 'Tidsplan'] — never 'Compliance'.
+ * Historically this file asserted that the dropdown's admin-only
+ * "Compliance" option was hidden from non-admins. #1170 deleted the
+ * Compliance view mode outright (it now lives on its own page,
+ * `/plugins/backend-configuration-pn/compliance-report`) and #1160
+ * decision 6 dropped its access gating, so `buildViewModeOptions()` in
+ * calendar-header.component.ts no longer branches on `isAdmin` at all.
+ *
+ * What survives is the inverse invariant, and it is the one worth pinning:
+ * a NON-ADMIN is offered exactly the same four view modes as an admin —
+ * ['Dag', 'Uge', 'Måned', 'Tidsplan'] — no more, no fewer. The ADMIN half of
+ * that pair is `q/calendar-month-view.spec.ts` MV1, which asserts the same
+ * four for admin@admin.com and costs no extra seeding; this file is the only
+ * place the list is checked as a non-admin, so it is what would catch a
+ * re-introduced `isAdmin` branch that HIDES an option (MV1 only catches one
+ * that ADDS one). The assertion is exhaustive — `toHaveText` on the whole
+ * option list — so a reinstated fifth option fails here too.
+ *
+ * Deliberately kept to ONE assertion test plus its seed: duplicating MV1's
+ * admin case here would buy nothing.
  *
  * `loginViaApi`/`loginAs`/`setupNonAdminUser` are copied VERBATIM from
  * `r/property-workers-nonadmin-no-logout.spec.ts` (lines 23-166) — the same
@@ -171,7 +184,7 @@ async function setupNonAdminUser(page: Page, rand: string): Promise<string> {
   return userEmail;
 }
 
-test.describe.serial('Calendar compliance view — non-admin dropdown gating', () => {
+test.describe.serial('Calendar view modes — non-admin sees the same four as an admin', () => {
   const rand = generateRandmString(8).toLowerCase();
   let userEmail = '';
 
@@ -190,9 +203,9 @@ test.describe.serial('Calendar compliance view — non-admin dropdown gating', (
   });
 
   // =======================================================================
-  // Non-admin dropdown gating — Måned stays present, Compliance does not.
+  // Non-admin parity — the dropdown is ungated, so the list is the admin's.
   // =======================================================================
-  test('non-admin sees Måned but not Compliance', async ({ page }) => {
+  test('non-admin is offered exactly Dag, Uge, Måned, Tidsplan', async ({ page }) => {
     test.setTimeout(300000);
     expect(userEmail).not.toBe('');
 
@@ -202,9 +215,14 @@ test.describe.serial('Calendar compliance view — non-admin dropdown gating', (
 
     const calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await page.waitForTimeout(2000);
-    await page.locator('#calendarViewModeSelect').click();
-    const options = page.locator('.ng-dropdown-panel .ng-option');
+    // The header rendering IS the post-condition of reaching the calendar as
+    // a non-admin — assert it rather than sleeping on it.
+    const viewModeSelect = page.locator('#calendarViewModeSelect');
+    await viewModeSelect.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    await viewModeSelect.click();
+    const panel = page.locator('.ng-dropdown-panel');
+    await panel.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    const options = panel.locator('.ng-option');
     await expect(options).toHaveText(['Dag', 'Uge', 'Måned', 'Tidsplan']);
   });
 });

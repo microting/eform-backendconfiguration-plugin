@@ -1,4 +1,3 @@
-import {SimpleChange} from '@angular/core';
 import {TranslateService} from '@ngx-translate/core';
 import {CalendarHeaderComponent} from './calendar-header.component';
 
@@ -18,25 +17,14 @@ describe('CalendarHeaderComponent', () => {
     component = new CalendarHeaderComponent(makeTranslate());
   });
 
-  it('hides the Compliance option from non-admin users', () => {
-    // ngOnInit builds the option list; isAdmin defaults to false.
+  it('offers exactly the four calendar view modes', () => {
+    // ngOnInit builds the option list.
     component.ngOnInit();
 
     const values = component.viewModeOptions.map(o => o.value);
-    // Month is available to everyone, exactly like day/week/schedule —
-    // only Compliance is admin-gated.
+    // The list is unconditional: every option is available to every user, and
+    // the component no longer takes an isAdmin input to gate one with (#1170 —
+    // compliance moved to its own page and is no longer a calendar view mode).
     expect(values).toEqual(['day', 'week', 'month', 'schedule']);
-  });
-
-  it('offers the Compliance option once isAdmin arrives from the store', () => {
-    component.ngOnInit();
-
-    // isAdmin is delivered asynchronously by the store after init, arriving
-    // as an @Input change — ngOnChanges must rebuild the option list.
-    component.isAdmin = true;
-    component.ngOnChanges({isAdmin: new SimpleChange(false, true, false)});
-
-    const values = component.viewModeOptions.map(o => o.value);
-    expect(values).toEqual(['day', 'week', 'month', 'schedule', 'compliance']);
   });
 });

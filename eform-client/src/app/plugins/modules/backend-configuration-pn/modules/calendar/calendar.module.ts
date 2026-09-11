@@ -39,7 +39,6 @@ import {TagDeleteDialogComponent} from './components/calendar-sidebar/tag-delete
 import {CALENDAR_MAT_DATE_FORMATS} from './calendar-date-formats';
 import {CalendarRouting} from './calendar.routing';
 import {
-  CalendarComplianceViewComponent,
   CalendarContainerComponent,
   CalendarDayColumnComponent,
   CalendarHeaderComponent,
@@ -90,7 +89,6 @@ export {
     CalendarTaskBlockComponent,
     CalendarScheduleViewComponent,
     CalendarMiniCalendarComponent,
-    CalendarComplianceViewComponent,
     CalendarMonthViewComponent,
     // Modals
     TaskCreateEditModalComponent,
