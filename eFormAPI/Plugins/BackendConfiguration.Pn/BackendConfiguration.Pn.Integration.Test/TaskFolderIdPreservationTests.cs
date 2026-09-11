@@ -151,7 +151,7 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
     /// "planning row has no folder, fall back to the AreaRule" case can be
     /// reproduced.
     /// </summary>
-    private async Task<(int ArpId, int PlanningId)> SeedWeeklyTask(
+    private async Task<(int ArpId, int PlanningId, int PropertyId)> SeedWeeklyTask(
         DateTime startDate, int arpFolderId, int areaRuleFolderId, bool active = true,
         int? planningSdkFolderId = null)
     {
@@ -220,7 +220,7 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
         await BackendConfigurationPnDbContext.CalendarConfigurations.AddAsync(calConfig);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
-        return (arp.Id, planning.Id);
+        return (arp.Id, planning.Id, property.Id);
     }
 
     /// <summary>
@@ -267,7 +267,7 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
         const int existingFolderId = 1289;
         var nextMonday = GetNextMonday();
         var seriesStart = DateTime.SpecifyKind(nextMonday, DateTimeKind.Utc);
-        var (arpId, _) = await SeedWeeklyTask(seriesStart, existingFolderId, existingFolderId);
+        var (arpId, _, _) = await SeedWeeklyTask(seriesStart, existingFolderId, existingFolderId);
 
         var result = await _calendarService.UpdateTask(
             BuildEditWithoutFolder(arpId, nextMonday, "all", nextMonday));
@@ -285,7 +285,7 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
         var seriesStart = DateTime.SpecifyKind(nextMonday, DateTimeKind.Utc);
         // Older rows left AreaRulePlanning.FolderId at its 0 default while the
         // AreaRule carried the real folder.
-        var (arpId, _) = await SeedWeeklyTask(seriesStart, 0, areaRuleFolderId);
+        var (arpId, _, _) = await SeedWeeklyTask(seriesStart, 0, areaRuleFolderId);
 
         var result = await _calendarService.UpdateTask(
             BuildEditWithoutFolder(arpId, nextMonday, "all", nextMonday));
@@ -315,7 +315,7 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
         var nextMonday = GetNextMonday();
         var seriesStart = DateTime.SpecifyKind(nextMonday, DateTimeKind.Utc);
         // The legacy shape: nothing on the planning row, the real id on the rule.
-        var (arpId, _) = await SeedWeeklyTask(seriesStart, 0, areaRuleFolderId);
+        var (arpId, _, _) = await SeedWeeklyTask(seriesStart, 0, areaRuleFolderId);
 
         var result = await _calendarService.UpdateTask(
             BuildEditWithoutFolder(arpId, nextMonday, "all", nextMonday, folderId: 0));
@@ -332,7 +332,7 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
         var nextMonday = GetNextMonday();
         // Four occurrences already behind the edited one, so the backfill runs.
         var seriesStart = DateTime.SpecifyKind(nextMonday.AddDays(-28), DateTimeKind.Utc);
-        var (arpId, _) = await SeedWeeklyTask(seriesStart, existingFolderId, existingFolderId);
+        var (arpId, _, _) = await SeedWeeklyTask(seriesStart, existingFolderId, existingFolderId);
 
         var result = await _calendarService.UpdateTask(
             BuildEditWithoutFolder(arpId, nextMonday, "thisAndFollowing", nextMonday));
@@ -356,7 +356,7 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
         const int existingFolderId = 1292;
         var nextMonday = GetNextMonday();
         var seriesStart = DateTime.SpecifyKind(nextMonday, DateTimeKind.Utc);
-        var (arpId, _) = await SeedWeeklyTask(seriesStart, existingFolderId, existingFolderId);
+        var (arpId, _, _) = await SeedWeeklyTask(seriesStart, existingFolderId, existingFolderId);
 
         var result = await _calendarService.UpdateTask(
             BuildEditWithoutFolder(arpId, nextMonday, "this", nextMonday));
@@ -400,7 +400,7 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
     {
         var nextMonday = GetNextMonday();
         var seriesStart = DateTime.SpecifyKind(nextMonday.AddDays(-28), DateTimeKind.Utc);
-        var (arpId, planningId) = await SeedWeeklyTask(seriesStart, 0, 0);
+        var (arpId, planningId, _) = await SeedWeeklyTask(seriesStart, 0, 0);
 
         // A DATE change, which is what makes thisAndFollowing re-anchor the
         // series on top of writing the past-occurrence backfill.
@@ -442,6 +442,23 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
     // Task wizard — the defence that also covers direct wizard callers.
     // ------------------------------------------------------------------
 
+    /// <summary>
+    /// The real wizard, wired against the SDK Core the fixture's container hosts.
+    ///
+    /// <para>
+    /// PAYLOAD CONSTRAINT for every test that calls it: <c>PropertyId</c> must be
+    /// the seeded property's real id, never 0. <c>UpdateTask</c> writes
+    /// <c>updateModel.PropertyId</c> straight onto <c>AreaRule.PropertyId</c>,
+    /// which EF maps as a REQUIRED foreign key to <c>Properties.Id</c> (the
+    /// convention pairing of <c>AreaRule.Property</c>; see the model snapshot).
+    /// A 0 therefore fails the constraint at
+    /// <c>areaRulePlanning.AreaRule.Update(...)</c> — inside the wizard's own
+    /// catch-all, so it surfaces as the generic <c>ErrorWhileUpdatingTask</c>
+    /// and says nothing about what the test was measuring. Production never
+    /// sends 0: <c>BackendConfigurationTaskListService.BuildUpdateModel</c>
+    /// copies <c>arp.PropertyId</c>, and the calendar passes it through.
+    /// </para>
+    /// </summary>
     private async Task<BackendConfigurationTaskWizardService> BuildRealWizardServiceAsync()
     {
         var core = await GetCore();
@@ -500,12 +517,12 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
         // Inactive → inactive: the branch with no deploy, so the test measures
         // only the AreaRulePlanning/AreaRule writes the unbox used to sit on.
         var startDate = DateTime.UtcNow.Date.AddDays(30);
-        var (arpId, _) = await SeedWeeklyTask(startDate, folder.Id, folder.Id, active: false);
+        var (arpId, _, propertyId) = await SeedWeeklyTask(startDate, folder.Id, folder.Id, active: false);
 
         var result = await wizardService.UpdateTask(new TaskWizardCreateModel
         {
             Id = arpId,
-            PropertyId = 0,
+            PropertyId = propertyId, // real, not 0 — see BuildRealWizardServiceAsync
             FolderId = null,
             EformId = 0,
             StartDate = startDate,
@@ -544,12 +561,12 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
 
         var startDate = DateTime.UtcNow.Date.AddDays(30);
         // Planning row has no folder; the rule carries the real one.
-        var (arpId, _) = await SeedWeeklyTask(startDate, 0, folder.Id, active: false);
+        var (arpId, _, propertyId) = await SeedWeeklyTask(startDate, 0, folder.Id, active: false);
 
         var result = await wizardService.UpdateTask(new TaskWizardCreateModel
         {
             Id = arpId,
-            PropertyId = 0,
+            PropertyId = propertyId, // real, not 0 — see BuildRealWizardServiceAsync
             // What BuildUpdateModel sends for this row, since arp.FolderId is int.
             FolderId = 0,
             EformId = 0,
@@ -587,7 +604,7 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
         // unchanged, but Planning.SdkFolderId IS rewritten from updateModel —
         // a null there would blank the folder the scheduler files cases into.
         var startDate = DateTime.UtcNow.Date.AddDays(30);
-        var (arpId, planningId) = await SeedWeeklyTask(startDate, folder.Id, folder.Id);
+        var (arpId, planningId, propertyId) = await SeedWeeklyTask(startDate, folder.Id, folder.Id);
 
         var arpBefore = await BackendConfigurationPnDbContext!.AreaRulePlannings
             .FirstAsync(x => x.Id == arpId);
@@ -600,10 +617,26 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
             });
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
+        // BOTH assignee tables, not just BC's. "Nothing is (re)deployed" needs
+        // the ITEMS-PLANNING PlanningSite too: the active -> active branch
+        // RECOMPUTES currentSiteIds from planning.PlanningSites, so with only
+        // the BC row seeded its own sitesToAdd would be [101] and it would call
+        // PairItemWithSiteHelper.Pair — which starts with
+        // sdkDbContext.Sites.SingleAsync(101) against an SDK site this fixture
+        // never seeds, and would then read eForm 0 and folder 0. That deploy is
+        // not what these tests measure.
+        await ItemsPlanningPnDbContext!.PlanningSites.AddAsync(
+            new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
+            {
+                SiteId = 101, PlanningId = planningId,
+                WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+            });
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
         var result = await wizardService.UpdateTask(new TaskWizardCreateModel
         {
             Id = arpId,
-            PropertyId = 0,
+            PropertyId = propertyId, // real, not 0 — see BuildRealWizardServiceAsync
             FolderId = null,
             EformId = 0,
             StartDate = startDate,
@@ -649,12 +682,12 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
         var wizardService = await BuildRealWizardServiceAsync();
 
         var startDate = DateTime.UtcNow.Date.AddDays(30);
-        var (arpId, _) = await SeedWeeklyTask(startDate, 0, 0, active: false);
+        var (arpId, _, propertyId) = await SeedWeeklyTask(startDate, 0, 0, active: false);
 
         var result = await wizardService.UpdateTask(new TaskWizardCreateModel
         {
             Id = arpId,
-            PropertyId = 0,
+            PropertyId = propertyId, // real, not 0 — see BuildRealWizardServiceAsync
             FolderId = null,
             EformId = 0,
             StartDate = startDate,
@@ -708,7 +741,7 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
         var startDate = DateTime.UtcNow.Date.AddDays(30);
         // The divergent shape: nothing on either ARP column, a REAL folder on
         // the linked Planning.
-        var (arpId, planningId) = await SeedWeeklyTask(
+        var (arpId, planningId, propertyId) = await SeedWeeklyTask(
             startDate, 0, 0, planningSdkFolderId: folder.Id);
 
         var arpBefore = await BackendConfigurationPnDbContext!.AreaRulePlannings
@@ -722,12 +755,28 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
             });
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
+        // BOTH assignee tables, not just BC's. "Nothing is (re)deployed" needs
+        // the ITEMS-PLANNING PlanningSite too: the active -> active branch
+        // RECOMPUTES currentSiteIds from planning.PlanningSites, so with only
+        // the BC row seeded its own sitesToAdd would be [101] and it would call
+        // PairItemWithSiteHelper.Pair — which starts with
+        // sdkDbContext.Sites.SingleAsync(101) against an SDK site this fixture
+        // never seeds, and would then read eForm 0 and folder 0. That deploy is
+        // not what these tests measure.
+        await ItemsPlanningPnDbContext!.PlanningSites.AddAsync(
+            new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
+            {
+                SiteId = 101, PlanningId = planningId,
+                WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+            });
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
         // Active → active, the branch that rewrites Planning.SdkFolderId. The
         // assignee set is unchanged, so nothing is (re)deployed.
         var result = await wizardService.UpdateTask(new TaskWizardCreateModel
         {
             Id = arpId,
-            PropertyId = 0,
+            PropertyId = propertyId, // real, not 0 — see BuildRealWizardServiceAsync
             FolderId = null,
             EformId = 0,
             StartDate = startDate,
@@ -759,7 +808,7 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
     {
         var nextMonday = GetNextMonday();
         var seriesStart = DateTime.SpecifyKind(nextMonday, DateTimeKind.Utc);
-        var (arpId, _) = await SeedWeeklyTask(seriesStart, 0, 0);
+        var (arpId, _, _) = await SeedWeeklyTask(seriesStart, 0, 0);
 
         var result = await _calendarService.UpdateTask(
             BuildEditWithoutFolder(arpId, nextMonday, "this", nextMonday));
