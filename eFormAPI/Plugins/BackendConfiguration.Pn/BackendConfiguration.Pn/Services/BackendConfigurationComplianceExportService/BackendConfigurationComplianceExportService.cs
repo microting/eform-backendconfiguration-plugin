@@ -140,9 +140,8 @@ public class BackendConfigurationComplianceExportService(
                 {
                     // PageSize 0 = unpaged: the export covers the full filtered set
                     // regardless of what is paginated on screen (#1169 §3,
-                    // behaviour 1, deliberately kept). enforceRowCap stays at its
-                    // default true, so a too-wide filter degrades to the service's
-                    // 5000-row ceiling — logged there — instead of pulling an
+                    // behaviour 1, deliberately kept). The service's 5000-row
+                    // ceiling still applies — logged there — instead of pulling an
                     // unbounded set into memory.
                     var result = await complianceReportService.Index(BuildReportRequest(requestModel));
 

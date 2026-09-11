@@ -72,8 +72,8 @@ export interface CompliancePeriodBounds {
 
 /**
  * `setMonth` overflows at month ends (31 May − 3 months → 3 March); clamp back
- * to the last day of the intended month. Carried forward verbatim from
- * `calendar-compliance-view.component.ts:131-141` — the prototype's bare
+ * to the last day of the intended month. Carried forward verbatim from the
+ * calendar's former compliance view, deleted by #1170 — the prototype's bare
  * `setMonth` (compliance.js:477) has the bug. `months` may be negative.
  */
 export function addClampedMonths(date: Date, months: number): Date {
@@ -691,10 +691,10 @@ export class ComplianceReportStateService {
 
   /**
    * Windowed page buttons: first / … / five around current / … / last, once
-   * there are more than nine pages. Carried forward from
-   * `calendar-compliance-view.component.ts:161-172` — the prototype renders one
-   * button per page unbounded (compliance.js:1912-1917), which is 300 buttons
-   * at 3000 rows.
+   * there are more than nine pages. Carried forward from the calendar's former
+   * compliance view, deleted by #1170 — the prototype renders one button per
+   * page unbounded (compliance.js:1912-1917), which is 300 buttons at 3000
+   * rows.
    */
   get pageNumbers(): (number | 'gap')[] {
     const total = this.totalPages;

@@ -357,7 +357,6 @@ public class CalendarWorkerTagFilterTests : TestBaseSetup
             NullLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            Substitute.For<IBackendConfigurationComplianceReportService>(),
             // The real membership service: this fixture is entirely about the
             // site -> worker-tag expansion it owns, so a substitute would make every
             // assertion below vacuous.

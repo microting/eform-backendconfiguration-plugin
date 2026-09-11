@@ -63,16 +63,12 @@ public class BackendConfigurationComplianceReportService(
     /// the unpaged path (<c>PageSize &lt;= 0</c>), which #1167/#1169 need; the
     /// cap is applied silently and logged, rather than thrown, so an export of a
     /// too-wide filter degrades instead of failing.
-    ///
-    /// It is skipped entirely when the caller passes <c>enforceRowCap: false</c>
-    /// — see the parameter doc on
-    /// <see cref="IBackendConfigurationComplianceReportService.Index"/>.
     /// </summary>
     public const int MaxRowsReturned = 5000;
 
     /// <inheritdoc />
     public async Task<OperationDataResult<ComplianceReportPagedModel>> Index(
-        ComplianceReportRequestModel requestModel, bool enforceRowCap = true)
+        ComplianceReportRequestModel requestModel)
     {
         try
         {
@@ -148,9 +144,7 @@ public class BackendConfigurationComplianceReportService(
             if (requestModel.PageSize <= 0)
             {
                 // Unpaged: #1167 groups the whole filtered set, #1169 exports it.
-                // The legacy calendar delegate also lands here, with
-                // enforceRowCap: false — its contract is every matching row.
-                if (enforceRowCap && sorted.Count > MaxRowsReturned)
+                if (sorted.Count > MaxRowsReturned)
                 {
                     logger.LogWarning(
                         "BackendConfigurationComplianceReportService.Index: unpaged request matched {Total} rows, "
@@ -167,9 +161,7 @@ public class BackendConfigurationComplianceReportService(
             }
             else
             {
-                var take = enforceRowCap
-                    ? Math.Min(requestModel.PageSize, MaxRowsReturned)
-                    : requestModel.PageSize;
+                var take = Math.Min(requestModel.PageSize, MaxRowsReturned);
                 if (take < requestModel.PageSize)
                 {
                     logger.LogWarning(
@@ -492,8 +484,7 @@ public class BackendConfigurationComplianceReportService(
         // no uniqueness annotation, so two live configurations on one ARP is a
         // data anomaly rather than an impossibility — and arpIds comes from the
         // PRE-status candidate set, so it is strictly wider than the baseline's.
-        // Failing the whole report (both compliance-report/index and the legacy
-        // calendar/compliance-report, for the entire date window) over one
+        // Failing the whole report, for the entire date window, over one
         // anomalous ARP is worse than deterministically picking the lowest-Id
         // configuration.
         var calConfigList = await backendConfigurationPnDbContext.CalendarConfigurations

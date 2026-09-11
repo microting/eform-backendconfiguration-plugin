@@ -258,7 +258,6 @@ public class TaskListRenameTest : TestBaseSetup
             NullLogger<BackendConfigurationCalendarService>.Instance,
             retraction,
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            Substitute.For<IBackendConfigurationComplianceReportService>(),
             new WorkerTagMembershipService(coreHelper));
 
         // Echoes the key back, matching the plugin's convention where

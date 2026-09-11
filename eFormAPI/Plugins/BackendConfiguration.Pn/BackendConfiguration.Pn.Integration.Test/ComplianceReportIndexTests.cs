@@ -147,8 +147,8 @@ public class ComplianceReportIndexTests : TestBaseSetup
     }
 
     /// <summary>
-    /// The REAL service under test — mirrors how <c>CalendarComplianceReportTests.BuildService</c>
-    /// constructs the same instance for the calendar delegate.
+    /// The REAL service under test — constructed exactly as
+    /// <c>CalendarComplianceReportTests.BuildService</c> does.
     /// </summary>
     private BackendConfigurationComplianceReportService BuildService(Core core)
     {

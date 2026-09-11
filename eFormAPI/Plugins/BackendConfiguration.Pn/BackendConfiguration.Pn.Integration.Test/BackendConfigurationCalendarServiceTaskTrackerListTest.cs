@@ -116,7 +116,6 @@ public class BackendConfigurationCalendarServiceTaskTrackerListTest : TestBaseSe
             NullLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            Substitute.For<IBackendConfigurationComplianceReportService>(),
             new WorkerTagMembershipService(new EFormCoreService(sdkConnectionString))
         );
     }

@@ -838,7 +838,6 @@ public class CalendarMonthlyAnchorRenderTests : TestBaseSetup
             NullLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            Substitute.For<IBackendConfigurationComplianceReportService>(),
             new WorkerTagMembershipService(coreHelper));
     }
 

@@ -9,7 +9,6 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
-using BackendConfigurationComplianceReportService;
 using BackendConfigurationLocalizationService;
 using BackendConfigurationTaskWizardService;
 using Infrastructure.Helpers;
@@ -20,7 +19,6 @@ using CalendarPastSeriesBackfill;
 using WorkerTagMembership;
 using EventDeployService;
 using Infrastructure.Models.Calendar;
-using Infrastructure.Models.ComplianceReport;
 using Infrastructure.Models.TaskWizard;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -53,10 +51,6 @@ public class BackendConfigurationCalendarService(
     // batch/background callers of #1122 §4 can reuse them without this class.
     ICalendarOccurrenceRetractionService occurrenceRetractionService,
     ICalendarPastSeriesBackfillService pastSeriesBackfillService,
-    // #1161 — GetComplianceReport's implementation now lives in the standalone
-    // compliance-report service; this class keeps only an unpaged delegate onto
-    // it so the calendar's Compliance view survives until #1170 removes it.
-    IBackendConfigurationComplianceReportService complianceReportService,
     // The single owner of the live worker-tag ("team") membership rule, shared with
     // CalendarAssignmentResolver and BackendConfigurationWorkerTagsService. REQUIRED on
     // purpose: an optional one would make the assignee filter's tag expansion opt-in, so
@@ -6077,73 +6071,5 @@ public class BackendConfigurationCalendarService(
         if (!string.IsNullOrWhiteSpace(any)) return any!;
         // 3) caller-supplied fallback (e.g. compliance.ItemName), else empty
         return string.IsNullOrWhiteSpace(finalFallback) ? "" : finalFallback!;
-    }
-
-    /// <inheritdoc />
-    /// <remarks>
-    /// #1161 — the implementation moved to
-    /// <see cref="IBackendConfigurationComplianceReportService.Index"/>. What is
-    /// left here is an UNPAGED passthrough (PageSize = 0, default taskDate
-    /// descending order), kept so the calendar's Compliance view and its 11
-    /// integration tests keep working with an identical row set. #1170 deletes it
-    /// — conditionally; read its gate before doing so.
-    /// </remarks>
-    public async Task<OperationDataResult<List<CalendarComplianceReportRowModel>>> GetComplianceReport(
-        CalendarComplianceReportRequestModel requestModel)
-    {
-        var paged = await complianceReportService.Index(new ComplianceReportRequestModel
-        {
-            PropertyId = requestModel.PropertyId,
-            BoardIds = requestModel.BoardIds ?? [],
-            TagIds = requestModel.TagIds ?? [],
-            SiteIds = requestModel.SiteIds ?? [],
-            Status = requestModel.Status,
-            DateFrom = requestModel.DateFrom,
-            DateTo = requestModel.DateTo,
-            // The old contract has no paging and no sorting: everything, ordered
-            // by task date descending with StartHour ascending as the tiebreak.
-            PageIndex = 0,
-            PageSize = 0,
-            Sort = null,
-            IsSortDsc = true
-            // enforceRowCap: false — POST api/backend-configuration-pn/calendar/compliance-report
-            // predates the 5000-row safety cap. #1161 §11 requires this legacy endpoint to
-            // return the identical row set it returned before the cap existed; letting the cap
-            // apply would silently truncate a response that used to be complete. #1170 removes
-            // this delegate and the parameter together.
-        }, enforceRowCap: false);
-
-        if (!paged.Success)
-        {
-            return new OperationDataResult<List<CalendarComplianceReportRowModel>>(false, paged.Message);
-        }
-
-        // CheckListId is the one field the new row model adds; the old contract
-        // does not carry it, so it is dropped here rather than exposed.
-        var rows = paged.Model.Entities
-            .Select(r => new CalendarComplianceReportRowModel
-            {
-                ComplianceId = r.ComplianceId,
-                TaskDate = r.TaskDate,
-                StartHour = r.StartHour,
-                Duration = r.Duration,
-                IsAllDay = r.IsAllDay,
-                Title = r.Title,
-                PropertyId = r.PropertyId,
-                PropertyName = r.PropertyName,
-                BoardId = r.BoardId,
-                BoardName = r.BoardName,
-                Tags = r.Tags,
-                WorkerNames = r.WorkerNames,
-                Completed = r.Completed,
-                DoneAt = r.DoneAt,
-                SdkCaseId = r.SdkCaseId,
-                EformId = r.EformId,
-                PlanningId = r.PlanningId,
-                AreaRulePlanningId = r.AreaRulePlanningId
-            })
-            .ToList();
-
-        return new OperationDataResult<List<CalendarComplianceReportRowModel>>(true, rows);
     }
 }

@@ -16,9 +16,13 @@ import {
  *
  * The view-mode dropdown (`#calendarViewModeSelect`) gains a third
  * option — "Måned" — between "Uge" and "Tidsplan", available to every user.
- * For an ADMIN the full order is: Dag, Uge, Måned, Tidsplan, Compliance
- * (see `q/calendar-admin-gating.spec.ts` for the non-admin variant, which
- * keeps Måned but lacks the admin-only Compliance).
+ * The full order is: Dag, Uge, Måned, Tidsplan. There is no fifth option and
+ * no user-dependent option: #1170 moved Compliance out of the calendar and
+ * onto its own page (`/plugins/backend-configuration-pn/compliance-report`),
+ * and #1160 decision 6 dropped the admin gating with it. MV1 below is the
+ * ADMIN pin on that exact four-item list; `q/calendar-admin-gating.spec.ts`
+ * is the NON-ADMIN pin on the same list — together they are what would catch
+ * a re-introduced `isAdmin`-conditional view mode in either direction.
  *
  * Month view renders 6 `.month-week-row` rows, 6 `.wk-cell` week-number
  * buttons, and `.month-day-cell` cells (each carrying a `.day-number`
@@ -141,8 +145,7 @@ test.describe.serial('Calendar month view', () => {
   // ----- shared helpers ---------------------------------------------------
 
   // Switch the calendar view mode via the header dropdown. `label` matches
-  // the visible Danish option text ('Dag', 'Uge', 'Måned', 'Tidsplan',
-  // 'Compliance').
+  // the visible Danish option text ('Dag', 'Uge', 'Måned', 'Tidsplan').
   async function selectViewMode(page: import('@playwright/test').Page, label: string): Promise<void> {
     await page.locator('#calendarViewModeSelect').click();
     await page.locator('.ng-dropdown-panel .ng-option', {hasText: label}).first().click();
@@ -162,7 +165,11 @@ test.describe.serial('Calendar month view', () => {
 
     await page.locator('#calendarViewModeSelect').click();
     const options = page.locator('.ng-dropdown-panel .ng-option');
-    await expect(options).toHaveText(['Dag', 'Uge', 'Måned', 'Tidsplan', 'Compliance']);
+    // Exhaustive: an ADMIN is offered these four and nothing else. Compliance
+    // is no longer a view mode (#1170) and nothing here is admin-gated (#1160
+    // decision 6), so this list must be identical to the non-admin one pinned
+    // by `q/calendar-admin-gating.spec.ts`.
+    await expect(options).toHaveText(['Dag', 'Uge', 'Måned', 'Tidsplan']);
     await options.filter({hasText: 'Måned'}).first().click();
     await page.waitForTimeout(1200);
 

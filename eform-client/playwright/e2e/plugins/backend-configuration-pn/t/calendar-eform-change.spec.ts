@@ -43,7 +43,9 @@ import {
  *   calls `EnsureComplianceForOccurrenceAsync` synchronously inside the
  *   POST `/tasks/{id}/prepare-complete`, and cancelling leaves the freshly
  *   materialised Compliance row + SDK case OPEN. This is the same
- *   materialise-then-cancel fixture `r/calendar-compliance-view.spec.ts` uses.
+ *   materialise-then-cancel fixture that `r/calendar-compliance-view.spec.ts`
+ *   used before #1170 deleted it; `u/compliance-details-complete-worker-groups
+ *   .spec.ts` and `s/compliance-overview.spec.ts` carry it now.
  *   Only after that does the spec swap the eForm — so the assertions run
  *   against an occurrence that WAS deployed with A, which is exactly the case
  *   the old code got wrong.

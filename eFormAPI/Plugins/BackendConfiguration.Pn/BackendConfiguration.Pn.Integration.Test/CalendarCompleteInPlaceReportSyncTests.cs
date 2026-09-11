@@ -240,7 +240,6 @@ public class CalendarCompleteInPlaceReportSyncTests : TestBaseSetup
             NullLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            Substitute.For<IBackendConfigurationComplianceReportService>(),
             new WorkerTagMembershipService(coreHelper));
 
         // Act: complete the past occurrence in place.
@@ -540,7 +539,6 @@ public class CalendarCompleteInPlaceReportSyncTests : TestBaseSetup
             NullLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            Substitute.For<IBackendConfigurationComplianceReportService>(),
             new WorkerTagMembershipService(coreHelper));
 
         return new InPlaceScenario
