@@ -871,6 +871,58 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     .FirstOrDefault();
             }
 
+            // #1135 — a null FolderId on the wire means "no folder supplied",
+            // NOT "move this task out of its folder". Same convention as the
+            // EformId block directly above: the update models let the field be
+            // absent, and every caller that has no folder picker to show simply
+            // leaves it unset (the task-list edit modal sent `folderId: null`
+            // on every save, and the calendar container sends null when its
+            // Logbøger lookup fails rather than reusing the previous
+            // property's folder — #1239). Both entity columns are
+            // non-nullable `int`, so the unconditional `(int)` casts here and
+            // on AreaRule below threw "Nullable object must have a value" and
+            // the whole save failed.
+            //
+            // Falls back to the AreaRule's folder when the planning row has
+            // none: older rows were created with AreaRulePlanning.FolderId
+            // left at its 0 default while AreaRule.FolderId carried the real
+            // one, and 0 is not a folder any SDK read resolves.
+            //
+            // `0` on the wire counts as unset for the same reason, matching
+            // CreateTask's own `resolvedFolderId is null or 0` in
+            // BackendConfigurationCalendarService — a pre-existing asymmetry
+            // between create and update, not a new regression. It is reachable:
+            // BackendConfigurationTaskListService.BuildUpdateModel copies
+            // `FolderId = arp.FolderId` (a non-nullable `int`), so every
+            // task-list batch action sends 0 for such a legacy row. Writing
+            // that 0 through would destroy the real id still held on
+            // AreaRule.FolderId and leave the row unhealable, since both
+            // fallback candidates would then be 0.
+            if (updateModel.FolderId is null or 0)
+            {
+                var currentFolderId = areaRulePlanning.FolderId > 0
+                    ? areaRulePlanning.FolderId
+                    : areaRulePlanning.AreaRule.FolderId;
+                if (currentFolderId <= 0)
+                {
+                    // Nothing to keep — same refusal CreateTask gives for a
+                    // missing folder, rather than writing a 0 no reader resolves.
+                    return new OperationResult(false,
+                        _localizationService.GetString("FolderIsRequired"));
+                }
+
+                _logger.LogWarning(
+                    "BackendConfigurationTaskWizardService.UpdateTask: task {AreaRulePlanningId} was saved with FolderId {IncomingFolderId}; keeping the current folder {CurrentFolderId} instead of clearing it.",
+                    areaRulePlanning.Id, updateModel.FolderId, currentFolderId);
+                updateModel.FolderId = currentFolderId;
+                // folderName was resolved from the incoming (null) id above.
+                folderName = sdkDbContext.FolderTranslations
+                    .Where(x => x.FolderId == updateModel.FolderId)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(x => x.Name)
+                    .FirstOrDefault();
+            }
+
             // update area rule plannings and area rule with translations
             var oldStatus = areaRulePlanning.Status;
             areaRulePlanning.FolderId = (int)updateModel.FolderId;
