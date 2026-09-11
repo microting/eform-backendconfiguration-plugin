@@ -98,74 +98,15 @@ describe('CalendarHeaderComponent', () => {
     });
   });
 
-  describe('inline calendar edit', () => {
-    it('startEditBoard seeds the popover from the row', () => {
-      component.startEditBoard(board(9, 'Drift', '#aabbcc'));
-
-      expect(component.editingBoardId).toBe(9);
-      expect(component.editingBoardName).toBe('Drift');
-      expect(component.editingBoardColor).toBe('#aabbcc');
-    });
-
-    it('submitEditBoard emits the trimmed name and clears the editing row', () => {
-      const emitted: {id: number; name: string; color: string}[] = [];
-      component.updateBoard.subscribe(e => emitted.push(e));
-
-      component.startEditBoard(board(9, 'Drift', '#aabbcc'));
-      component.editingBoardName = '  Drift 2  ';
-      component.submitEditBoard();
-
-      expect(emitted).toEqual([{id: 9, name: 'Drift 2', color: '#aabbcc'}]);
-      expect(component.editingBoardId).toBeNull();
-    });
-
-    it('submitEditBoard emits nothing for a blank name', () => {
-      const emitted: unknown[] = [];
-      component.updateBoard.subscribe(e => emitted.push(e));
-
-      component.startEditBoard(board(9, 'Drift'));
-      component.editingBoardName = '   ';
-      component.submitEditBoard();
-
-      expect(emitted).toEqual([]);
-      // Still closed: a blank name cancels the edit rather than trapping it.
-      expect(component.editingBoardId).toBeNull();
-    });
-
-    it('submitEditBoard emits nothing when no row is being edited', () => {
-      const emitted: unknown[] = [];
-      component.updateBoard.subscribe(e => emitted.push(e));
-
-      component.editingBoardName = 'Drift';
-      component.submitEditBoard();
-
-      expect(emitted).toEqual([]);
-    });
-
-    describe('onBoardEditKeydown', () => {
-      function keydown(key: string) {
-        let stopped = false;
-        const event = {key, stopPropagation: () => (stopped = true)} as unknown as KeyboardEvent;
-        component.onBoardEditKeydown(event);
-        return stopped;
-      }
-
-      // The popover's input lives inside a MatMenu panel, so an unstopped
-      // keystroke drives the panel's FocusKeyManager typeahead and yanks focus
-      // off the input mid-word.
-      it('stops typing from reaching the menu panel', () => {
-        expect(keydown('a')).toBe(true);
-        expect(keydown('ArrowDown')).toBe(true);
-        expect(keydown('Enter')).toBe(true);
-      });
-
-      // Regression: a blanket stopPropagation() here swallowed Escape as well.
-      // The CDK's OverlayKeyboardDispatcher listens on `body` in the bubble
-      // phase, so the event never reached ANY overlay — the popover and the
-      // calendars panel behind it both became impossible to close by keyboard.
-      it('lets Escape through so the overlay can close', () => {
-        expect(keydown('Escape')).toBe(false);
-      });
-    });
-  });
+  // NOTE (#1210): the inline rename popover, its editing state, its submit
+  // handler and its onBoardEditKeydown guard are gone — the row ⋮ menu now
+  // only emits editBoard / duplicateBoard / deleteBoard and the container owns
+  // the dialogs. Their specs went with them rather than being rewritten into
+  // assertions that an EventEmitter emits; the behaviour that replaced them is
+  // covered by board-create-edit-modal.component.spec.ts,
+  // board-delete-modal.component.spec.ts and calendar-board-name.helper.spec.ts.
+  //
+  // With no text input left inside the menu panel there is no FocusKeyManager
+  // typeahead to stop, which is why dropping the keydown guard is not the
+  // regression it would have been while the popover existed.
 });

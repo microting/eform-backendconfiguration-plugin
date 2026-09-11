@@ -757,4 +757,15 @@ export const ukUA = {
   'Select all': 'Вибрати все',
   Clear: 'Очистити',
   'Calendar actions': 'Дії календаря',
+  // Calendar CRUD from the calendars dropdown (#1210): the edit dialog's
+  // title, the row menu's Duplicate action, the client-side duplicate-name
+  // guard, the name a duplicate gets, and the two notes the delete dialog
+  // shows (a new default calendar replaces the last one; the cascade aborted).
+  'Edit calendar': 'Редагувати календар',
+  Duplicate: 'Дублювати',
+  'A calendar with this name already exists': 'Календар із такою назвою вже існує',
+  '{{name}} (copy)': '{{name}} (копія)',
+  '{{name}} (copy {{index}})': '{{name}} (копія {{index}})',
+  'This is the last calendar, so a new default calendar is created in its place.': 'Це останній календар, тому замість нього створюється новий типовий календар.',
+  'The calendar could not be deleted. It still has events that could not be removed.': 'Не вдалося видалити календар. У ньому досі є події, які не вдалося вилучити.',
 };

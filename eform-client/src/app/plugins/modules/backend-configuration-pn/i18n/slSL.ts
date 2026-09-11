@@ -757,4 +757,15 @@ export const slSL = {
   'Select all': 'Izberi vse',
   Clear: 'Počisti',
   'Calendar actions': 'Dejanja koledarja',
+  // Calendar CRUD from the calendars dropdown (#1210): the edit dialog's
+  // title, the row menu's Duplicate action, the client-side duplicate-name
+  // guard, the name a duplicate gets, and the two notes the delete dialog
+  // shows (a new default calendar replaces the last one; the cascade aborted).
+  'Edit calendar': 'Uredi koledar',
+  Duplicate: 'Podvoji',
+  'A calendar with this name already exists': 'Koledar s tem imenom že obstaja',
+  '{{name}} (copy)': '{{name}} (kopija)',
+  '{{name}} (copy {{index}})': '{{name}} (kopija {{index}})',
+  'This is the last calendar, so a new default calendar is created in its place.': 'To je zadnji koledar, zato se namesto njega ustvari nov privzeti koledar.',
+  'The calendar could not be deleted. It still has events that could not be removed.': 'Koledarja ni bilo mogoče izbrisati. Še vedno vsebuje dogodke, ki jih ni bilo mogoče odstraniti.',
 };

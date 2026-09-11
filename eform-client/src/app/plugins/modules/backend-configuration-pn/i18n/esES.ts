@@ -757,4 +757,15 @@ export const esES = {
   'Select all': 'Seleccionar todo',
   Clear: 'Borrar',
   'Calendar actions': 'Acciones del calendario',
+  // Calendar CRUD from the calendars dropdown (#1210): the edit dialog's
+  // title, the row menu's Duplicate action, the client-side duplicate-name
+  // guard, the name a duplicate gets, and the two notes the delete dialog
+  // shows (a new default calendar replaces the last one; the cascade aborted).
+  'Edit calendar': 'Editar calendario',
+  Duplicate: 'Duplicar',
+  'A calendar with this name already exists': 'Ya existe un calendario con este nombre',
+  '{{name}} (copy)': '{{name}} (copia)',
+  '{{name}} (copy {{index}})': '{{name}} (copia {{index}})',
+  'This is the last calendar, so a new default calendar is created in its place.': 'Este es el último calendario, por lo que se crea un nuevo calendario predeterminado en su lugar.',
+  'The calendar could not be deleted. It still has events that could not be removed.': 'No se pudo eliminar el calendario. Todavía tiene eventos que no se pudieron quitar.',
 };

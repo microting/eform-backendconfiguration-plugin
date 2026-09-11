@@ -757,4 +757,15 @@ export const csCZ = {
   'Select all': 'Vybrat vše',
   Clear: 'Vymazat',
   'Calendar actions': 'Akce kalendáře',
+  // Calendar CRUD from the calendars dropdown (#1210): the edit dialog's
+  // title, the row menu's Duplicate action, the client-side duplicate-name
+  // guard, the name a duplicate gets, and the two notes the delete dialog
+  // shows (a new default calendar replaces the last one; the cascade aborted).
+  'Edit calendar': 'Upravit kalendář',
+  Duplicate: 'Duplikovat',
+  'A calendar with this name already exists': 'Kalendář s tímto názvem již existuje',
+  '{{name}} (copy)': '{{name}} (kopie)',
+  '{{name}} (copy {{index}})': '{{name}} (kopie {{index}})',
+  'This is the last calendar, so a new default calendar is created in its place.': 'Toto je poslední kalendář, proto se na jeho místě vytvoří nový výchozí kalendář.',
+  'The calendar could not be deleted. It still has events that could not be removed.': 'Kalendář se nepodařilo smazat. Stále obsahuje události, které nebylo možné odstranit.',
 };

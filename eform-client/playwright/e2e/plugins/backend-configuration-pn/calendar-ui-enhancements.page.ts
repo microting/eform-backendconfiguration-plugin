@@ -94,16 +94,14 @@ export class CalendarUiEnhancementsPage {
   }
 
   /**
-   * NB: a row's `⋮` popover is a nested overlay, and the CDK keyboard
-   * dispatcher hands Escape to the TOP-MOST overlay only. So with the popover
-   * open the first Escape closes the popover and the panel stays put — a spec
+   * NB: a row's `⋮` actions menu is a nested overlay, and the CDK keyboard
+   * dispatcher hands Escape to the TOP-MOST overlay only. So with that menu
+   * open the first Escape closes it and the calendars panel stays put — a spec
    * that opened one must close it (and wait for it to detach) before calling
    * this, or the trigger is still `aria-expanded="true"` when we look.
    *
-   * The popover used to swallow Escape outright (`(keydown)=stopPropagation`
-   * carried over verbatim from the sidebar), which made the panel impossible to
-   * close from the keyboard at all and burned a full UI_TIMEOUT here — see
-   * CalendarHeaderComponent.onBoardEditKeydown.
+   * #1210 replaced the inline rename popover that used to live in that submenu
+   * with modals, so nothing inside it swallows Escape any more.
    */
   async closeBoardMenu(): Promise<void> {
     const trigger = this.page.locator('#calendarBoardsButton');
@@ -126,6 +124,66 @@ export class CalendarUiEnhancementsPage {
     return this.boardMenuPanel()
       .locator('.board-item')
       .filter({ has: this.page.locator('.board-name', { hasText: exact }) });
+  }
+
+  // ----- Calendar CRUD (#1210) ---------------------------------------------
+
+  /** The row `⋮` submenu: Rediger / Dupliker / Slet. */
+  boardActionsPanel(): Locator {
+    return this.page.locator('.cdk-overlay-container .board-actions-menu');
+  }
+
+  /** The create/edit and delete dialogs both render as a single mat-dialog. */
+  boardDialog(): Locator {
+    return this.page.locator('.cdk-overlay-container mat-dialog-container');
+  }
+
+  /**
+   * Open one calendar row's `⋮` menu, leaving the calendars panel open behind
+   * it. The trigger is `opacity: 0` until the row is hovered or focused — that
+   * is a paint-level hide, so Playwright would click it regardless, but hovering
+   * first is what a user does and keeps the screenshot on a failure readable.
+   */
+  async openBoardActions(name: string): Promise<void> {
+    await this.openBoardMenu();
+    const row = this.boardItem(name);
+    await row.hover();
+    const trigger = row.locator('.board-menu-btn');
+    if ((await trigger.getAttribute('aria-expanded')) !== 'true') {
+      await trigger.click();
+    }
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true', { timeout: UI_TIMEOUT });
+    await this.boardActionsPanel().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+  }
+
+  /**
+   * Pick one action from a row's `⋮` menu. Every action closes both overlays
+   * on its way to a dialog, so this waits for the calendars panel to detach —
+   * without that a following `openBoardMenu()` would read the panel that is
+   * still mid-exit-animation as open.
+   */
+  async runBoardAction(name: string, action: 'edit' | 'duplicate' | 'delete'): Promise<void> {
+    await this.openBoardActions(name);
+    await this.boardActionsPanel().locator(`.board-action-${action}`).click();
+    await this.boardMenuPanel().waitFor({ state: 'detached', timeout: UI_TIMEOUT });
+  }
+
+  /**
+   * Create a calendar through the dropdown's "Opret kalender" footer.
+   *
+   * Buttons and fields are matched by id, never by their localized text: the
+   * e2e run is in Danish and the dialog's primary button is labelled "Opret"
+   * here and "Gem" in edit mode.
+   */
+  async createBoard(name: string): Promise<void> {
+    await this.openBoardMenu();
+    await this.boardMenuPanel().locator('#calendarCreateBoardBtn').click();
+    await this.boardDialog().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    await this.boardDialog().locator('#calendarBoardName').fill(name);
+    await this.boardDialog().locator('#calendarBoardSaveBtn').click();
+    await this.boardDialog().waitFor({ state: 'detached', timeout: API_TIMEOUT });
+    await this.openBoardMenu();
+    await expect(this.boardItem(name)).toBeVisible({ timeout: API_TIMEOUT });
   }
 
 

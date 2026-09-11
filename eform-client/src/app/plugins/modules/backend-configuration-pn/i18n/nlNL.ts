@@ -757,4 +757,15 @@ export const nlNL = {
   'Select all': 'Alles selecteren',
   Clear: 'Wissen',
   'Calendar actions': 'Kalenderacties',
+  // Calendar CRUD from the calendars dropdown (#1210): the edit dialog's
+  // title, the row menu's Duplicate action, the client-side duplicate-name
+  // guard, the name a duplicate gets, and the two notes the delete dialog
+  // shows (a new default calendar replaces the last one; the cascade aborted).
+  'Edit calendar': 'Kalender bewerken',
+  Duplicate: 'Dupliceren',
+  'A calendar with this name already exists': 'Er bestaat al een kalender met deze naam',
+  '{{name}} (copy)': '{{name}} (kopie)',
+  '{{name}} (copy {{index}})': '{{name}} (kopie {{index}})',
+  'This is the last calendar, so a new default calendar is created in its place.': 'Dit is de laatste kalender, dus er wordt een nieuwe standaardkalender voor in de plaats gemaakt.',
+  'The calendar could not be deleted. It still has events that could not be removed.': 'De kalender kon niet worden verwijderd. Er staan nog gebeurtenissen in die niet konden worden verwijderd.',
 };

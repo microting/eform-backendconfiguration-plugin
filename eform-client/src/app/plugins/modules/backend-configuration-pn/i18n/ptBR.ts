@@ -757,4 +757,15 @@ export const ptBR = {
   'Select all': 'Selecionar tudo',
   Clear: 'Limpar',
   'Calendar actions': 'Ações do calendário',
+  // Calendar CRUD from the calendars dropdown (#1210): the edit dialog's
+  // title, the row menu's Duplicate action, the client-side duplicate-name
+  // guard, the name a duplicate gets, and the two notes the delete dialog
+  // shows (a new default calendar replaces the last one; the cascade aborted).
+  'Edit calendar': 'Editar calendário',
+  Duplicate: 'Duplicar',
+  'A calendar with this name already exists': 'Já existe um calendário com este nome',
+  '{{name}} (copy)': '{{name}} (cópia)',
+  '{{name}} (copy {{index}})': '{{name}} (cópia {{index}})',
+  'This is the last calendar, so a new default calendar is created in its place.': 'Este é o último calendário, portanto um novo calendário padrão é criado em seu lugar.',
+  'The calendar could not be deleted. It still has events that could not be removed.': 'Não foi possível excluir o calendário. Ele ainda tem eventos que não puderam ser removidos.',
 };

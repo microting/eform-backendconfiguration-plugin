@@ -757,4 +757,15 @@ export const svSE = {
   'Select all': 'Välj alla',
   Clear: 'Rensa',
   'Calendar actions': 'Kalenderåtgärder',
+  // Calendar CRUD from the calendars dropdown (#1210): the edit dialog's
+  // title, the row menu's Duplicate action, the client-side duplicate-name
+  // guard, the name a duplicate gets, and the two notes the delete dialog
+  // shows (a new default calendar replaces the last one; the cascade aborted).
+  'Edit calendar': 'Redigera kalender',
+  Duplicate: 'Duplicera',
+  'A calendar with this name already exists': 'Det finns redan en kalender med det här namnet',
+  '{{name}} (copy)': '{{name}} (kopia)',
+  '{{name}} (copy {{index}})': '{{name}} (kopia {{index}})',
+  'This is the last calendar, so a new default calendar is created in its place.': 'Detta är den sista kalendern, så en ny standardkalender skapas i stället.',
+  'The calendar could not be deleted. It still has events that could not be removed.': 'Kalendern kunde inte tas bort. Den har fortfarande händelser som inte kunde tas bort.',
 };

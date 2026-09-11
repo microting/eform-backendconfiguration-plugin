@@ -757,4 +757,15 @@ export const ltLT = {
   'Select all': 'Pažymėti visus',
   Clear: 'Išvalyti',
   'Calendar actions': 'Kalendoriaus veiksmai',
+  // Calendar CRUD from the calendars dropdown (#1210): the edit dialog's
+  // title, the row menu's Duplicate action, the client-side duplicate-name
+  // guard, the name a duplicate gets, and the two notes the delete dialog
+  // shows (a new default calendar replaces the last one; the cascade aborted).
+  'Edit calendar': 'Redaguoti kalendorių',
+  Duplicate: 'Dubliuoti',
+  'A calendar with this name already exists': 'Kalendorius tokiu pavadinimu jau yra',
+  '{{name}} (copy)': '{{name}} (kopija)',
+  '{{name}} (copy {{index}})': '{{name}} (kopija {{index}})',
+  'This is the last calendar, so a new default calendar is created in its place.': 'Tai paskutinis kalendorius, todėl jo vietoje sukuriamas naujas numatytasis kalendorius.',
+  'The calendar could not be deleted. It still has events that could not be removed.': 'Kalendoriaus ištrinti nepavyko. Jame vis dar yra įvykių, kurių nepavyko pašalinti.',
 };

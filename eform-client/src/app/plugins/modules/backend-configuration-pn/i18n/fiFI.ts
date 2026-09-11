@@ -757,4 +757,15 @@ export const fiFI = {
   'Select all': 'Valitse kaikki',
   Clear: 'Tyhjennä',
   'Calendar actions': 'Kalenterin toiminnot',
+  // Calendar CRUD from the calendars dropdown (#1210): the edit dialog's
+  // title, the row menu's Duplicate action, the client-side duplicate-name
+  // guard, the name a duplicate gets, and the two notes the delete dialog
+  // shows (a new default calendar replaces the last one; the cascade aborted).
+  'Edit calendar': 'Muokkaa kalenteria',
+  Duplicate: 'Monista',
+  'A calendar with this name already exists': 'Tämän niminen kalenteri on jo olemassa',
+  '{{name}} (copy)': '{{name}} (kopio)',
+  '{{name}} (copy {{index}})': '{{name}} (kopio {{index}})',
+  'This is the last calendar, so a new default calendar is created in its place.': 'Tämä on viimeinen kalenteri, joten sen tilalle luodaan uusi oletuskalenteri.',
+  'The calendar could not be deleted. It still has events that could not be removed.': 'Kalenteria ei voitu poistaa. Siinä on yhä tapahtumia, joita ei voitu poistaa.',
 };

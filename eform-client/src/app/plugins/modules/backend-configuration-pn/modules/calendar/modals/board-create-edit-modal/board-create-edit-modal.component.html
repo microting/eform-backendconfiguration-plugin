@@ -1,0 +1,61 @@
+<h2 mat-dialog-title id="calendarBoardModalTitle">
+  <mat-icon style="vertical-align: middle; margin-right: 8px;">dashboard</mat-icon>
+  {{ titleKey | translate }}
+</h2>
+<mat-dialog-content>
+  <form [formGroup]="form">
+    <label class="field-label" for="calendarBoardName">{{ 'Calendar name' | translate }}</label>
+    <mat-form-field appearance="outline" style="width: 100%;">
+      <input
+        matInput
+        id="calendarBoardName"
+        formControlName="name"
+        [placeholder]="'Enter calendar name' | translate"
+      >
+    </mat-form-field>
+
+    <!-- The guard is client-side only (see calendar-board-name.helper.ts):
+         the server accepts a duplicate, so this message is the only thing
+         standing between the user and two identically named calendars.
+
+         Deliberately a plain <span> OUTSIDE the mat-form-field, not a
+         <mat-error> inside it. Material projects a <mat-error> only while the
+         control is in its error STATE, and the default ErrorStateMatcher gates
+         that on `touched || form.submitted`. This form has no submit, nothing
+         calls markAsTouched, and there is no ErrorStateMatcher override in the
+         app — so the message stayed hidden for exactly as long as the user was
+         still in the field, leaving the Create button dead with no stated
+         reason. Verified in the browser: typing a duplicate name leaves the
+         input `ng-untouched ng-invalid` and the subscript wrapper renders the
+         hint slot, with no error node in the DOM until the field is blurred.
+         Same remedy, for the same reason, as `#compliancePeriodError` in
+         compliance-report-filters.component.html. -->
+    <span *ngIf="duplicateName" id="calendarBoardNameDuplicateError" class="field-error">
+      {{ 'A calendar with this name already exists' | translate }}
+    </span>
+
+    <div class="color-picker-grid" id="calendarBoardColors">
+      <button
+        type="button"
+        class="color-swatch"
+        *ngFor="let c of colors"
+        [style.background]="c"
+        [class.selected]="form.value.color === c"
+        [attr.aria-label]="c"
+        [attr.aria-pressed]="form.value.color === c"
+        (click)="selectColor(c)"
+      ></button>
+    </div>
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button class="btn-cancel" id="calendarBoardCancelBtn" (click)="onCancel()">{{ 'Cancel' | translate }}</button>
+  <button
+    class="btn-primary btn-primary--icon-left"
+    id="calendarBoardSaveBtn"
+    [disabled]="form.invalid || saving"
+    (click)="onSave()"
+  >
+    <span>{{ submitKey | translate }}</span>
+  </button>
+</mat-dialog-actions>

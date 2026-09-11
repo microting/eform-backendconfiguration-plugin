@@ -757,4 +757,15 @@ export const bgBG = {
   'Select all': 'Избери всички',
   Clear: 'Изчисти',
   'Calendar actions': 'Действия за календара',
+  // Calendar CRUD from the calendars dropdown (#1210): the edit dialog's
+  // title, the row menu's Duplicate action, the client-side duplicate-name
+  // guard, the name a duplicate gets, and the two notes the delete dialog
+  // shows (a new default calendar replaces the last one; the cascade aborted).
+  'Edit calendar': 'Редактиране на календар',
+  Duplicate: 'Дублиране',
+  'A calendar with this name already exists': 'Вече съществува календар с това име',
+  '{{name}} (copy)': '{{name}} (копие)',
+  '{{name}} (copy {{index}})': '{{name}} (копие {{index}})',
+  'This is the last calendar, so a new default calendar is created in its place.': 'Това е последният календар, затова на негово място се създава нов календар по подразбиране.',
+  'The calendar could not be deleted. It still has events that could not be removed.': 'Календарът не можа да бъде изтрит. В него все още има събития, които не можаха да бъдат премахнати.',
 };

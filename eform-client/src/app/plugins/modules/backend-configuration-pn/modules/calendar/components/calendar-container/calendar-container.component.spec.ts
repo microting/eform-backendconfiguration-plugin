@@ -4,7 +4,7 @@ import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {Router} from '@angular/router';
 import {Store} from '@ngrx/store';
-import {TranslateModule} from '@ngx-translate/core';
+import {TranslateModule, TranslateService} from '@ngx-translate/core';
 import {BehaviorSubject, of, Subject} from 'rxjs';
 import {EFormService} from 'src/app/common/services';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
@@ -587,5 +587,212 @@ describe('CalendarContainerComponent', () => {
 
     expect(calendarServiceStub.moveTaskWithScope).toHaveBeenCalled();
     expect(calendarServiceStub.getTasksForWeek.mock.calls.length).toBeGreaterThan(callsBefore);
+  });
+
+  // #1210 — "Duplicate" has no endpoint. The client POSTs a second calendar
+  // with the source's colour and a "(copy)" name, and copies NO events: the
+  // only call it is allowed to make is createBoard.
+  describe('duplicating a calendar', () => {
+    beforeEach(() => {
+      calendarServiceStub.createBoard = jest.fn().mockReturnValue(of({success: true, model: 99}));
+      // ngx-translate returns the raw key for a key it has no translation for,
+      // and does NOT interpolate it — which would make every generated name the
+      // same string. Interpolate here so the assertions are on the name a user
+      // would actually get.
+      jest.spyOn(TestBed.inject(TranslateService), 'instant').mockImplementation(
+        ((key: string, params?: Record<string, unknown>) =>
+          params ? key.replace(/\{\{(\w+)}}/g, (_m, n) => String(params[n] ?? '')) : key) as any);
+    });
+
+    it('posts the source colour under a "(copy)" name to the same property', () => {
+      component.onDuplicateBoard({id: 10, name: 'Default', color: '#123456', propertyId: PROPERTY_A});
+
+      expect(calendarServiceStub.createBoard).toHaveBeenCalledWith({
+        name: 'Default (copy)',
+        color: '#123456',
+        propertyId: PROPERTY_A,
+      });
+    });
+
+    it('numbers the copy past a "(copy)" that already exists', () => {
+      component.boards = [
+        {id: 10, name: 'Default', color: '#123456', propertyId: PROPERTY_A},
+        {id: 11, name: 'Default (copy)', color: '#123456', propertyId: PROPERTY_A},
+      ];
+
+      component.onDuplicateBoard(component.boards[0]);
+
+      expect(calendarServiceStub.createBoard).toHaveBeenCalledWith({
+        name: 'Default (copy 2)',
+        color: '#123456',
+        propertyId: PROPERTY_A,
+      });
+    });
+
+    it('reloads the calendar list once the copy lands', () => {
+      const callsBefore = calendarServiceStub.getBoards.mock.calls.length;
+
+      component.onDuplicateBoard({id: 10, name: 'Default', color: '#123456', propertyId: PROPERTY_A});
+
+      expect(calendarServiceStub.getBoards.mock.calls.length).toBeGreaterThan(callsBefore);
+    });
+
+    it('does nothing at all when no property is selected', () => {
+      component.currentPropertyId = null as any;
+
+      component.onDuplicateBoard({id: 10, name: 'Default', color: '#123456', propertyId: PROPERTY_A});
+
+      expect(calendarServiceStub.createBoard).not.toHaveBeenCalled();
+    });
+
+    // The copy name is derived from `this.boards` as of the last COMPLETED
+    // load, so a second Duplicate fired before the reload lands recomputes the
+    // identical name and mints a second "Default (copy)". Clicking closes the
+    // dropdown, but the user only has to reopen it — the latch is the guard.
+    it('ignores a second Duplicate while the first POST is still in flight', () => {
+      const pendingPost = new Subject<any>();
+      calendarServiceStub.createBoard = jest.fn().mockReturnValue(pendingPost);
+      const row = {id: 10, name: 'Default', color: '#123456', propertyId: PROPERTY_A};
+
+      component.onDuplicateBoard(row);
+      component.onDuplicateBoard(row);
+
+      expect(calendarServiceStub.createBoard).toHaveBeenCalledTimes(1);
+    });
+
+    it('re-arms once the copy has landed and the calendar list has reloaded', () => {
+      const row = {id: 10, name: 'Default', color: '#123456', propertyId: PROPERTY_A};
+
+      // getBoards resolves synchronously in this harness, so the reload — and
+      // with it loadBoards' onSettled — has already run by the time this
+      // returns.
+      component.onDuplicateBoard(row);
+      expect(component.duplicatingBoard).toBe(false);
+
+      component.onDuplicateBoard(row);
+      expect(calendarServiceStub.createBoard).toHaveBeenCalledTimes(2);
+    });
+
+    it('re-arms when the POST itself fails, so the user can retry', () => {
+      calendarServiceStub.createBoard = jest.fn().mockReturnValue(of({success: false, message: 'boom'}));
+      const row = {id: 10, name: 'Default', color: '#123456', propertyId: PROPERTY_A};
+
+      component.onDuplicateBoard(row);
+
+      expect(component.duplicatingBoard).toBe(false);
+    });
+
+    // loadBoards' onSettled has to fire on the superseded path too, or the
+    // latch strands and Duplicate is dead until the page is reloaded.
+    it('re-arms even when the property changed while the reload was in flight', () => {
+      const row = {id: 10, name: 'Default', color: '#123456', propertyId: PROPERTY_A};
+      const pendingBoards = new Subject<any>();
+      calendarServiceStub.getBoards.mockReturnValueOnce(pendingBoards);
+
+      component.onDuplicateBoard(row);
+      expect(component.duplicatingBoard).toBe(true);
+
+      component.onPropertySelected(PROPERTY_B);
+      pendingBoards.next({success: true, model: []});
+      pendingBoards.complete();
+
+      expect(component.duplicatingBoard).toBe(false);
+    });
+  });
+
+  // loadBoards' success path ends in loadTasks(). An extra loadTasks() at the
+  // call site was not just a wasted round-trip (six of them in month view) —
+  // firing BEFORE the reloaded calendars land, it built boardColorMap from the
+  // pre-edit `this.boards` and painted one frame in the old colour.
+  describe('refetching after a calendar edit or delete', () => {
+    it('loads the week exactly once after a successful edit', () => {
+      const dialog = TestBed.inject(MatDialog);
+      (dialog.open as jest.Mock).mockReturnValue({afterClosed: () => of(true)});
+      calendarServiceStub.getTasksForWeek.mockClear();
+
+      component.onEditBoard({id: 10, name: 'Default', color: '#123456', propertyId: PROPERTY_A});
+
+      expect(calendarServiceStub.getTasksForWeek).toHaveBeenCalledTimes(1);
+    });
+
+    it('loads the week exactly once after a successful delete', () => {
+      const dialog = TestBed.inject(MatDialog);
+      (dialog.open as jest.Mock).mockReturnValue({afterClosed: () => of(true)});
+      calendarServiceStub.getTasksForWeek.mockClear();
+
+      component.onDeleteBoard({id: 10, name: 'Default', color: '#123456', propertyId: PROPERTY_A});
+
+      expect(calendarServiceStub.getTasksForWeek).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // The create/edit dialog cannot fetch the property's calendars itself:
+  // GET boards/{propertyId} auto-creates a Default board for an empty property,
+  // so a load inside the dialog would be a write. The opener hands over the list
+  // it already has, and the duplicate-name guard reads it from there.
+  describe('the create/edit dialog', () => {
+    it('is handed the property id and the loaded calendars, with no board for create', () => {
+      const dialog = TestBed.inject(MatDialog);
+
+      component.onCreateBoard();
+
+      const [, config] = (dialog.open as jest.Mock).mock.calls[0];
+      expect(config.data.propertyId).toBe(PROPERTY_A);
+      expect(config.data.boards).toBe(component.boards);
+      expect(config.data.board).toBeUndefined();
+    });
+
+    it('is handed the row being edited', () => {
+      const dialog = TestBed.inject(MatDialog);
+      const row = {id: 10, name: 'Default', color: '#123456', propertyId: PROPERTY_A};
+
+      component.onEditBoard(row);
+
+      const [, config] = (dialog.open as jest.Mock).mock.calls[0];
+      expect(config.data.board).toBe(row);
+      expect(config.data.boards).toBe(component.boards);
+    });
+  });
+
+  describe('the delete dialog', () => {
+    const row = {id: 10, name: 'Default', color: '#123456', propertyId: PROPERTY_A};
+
+    // It needs the calendar count to warn that deleting the last one mints a
+    // fresh Default rather than leaving the property empty.
+    it('is handed the calendar and how many the property has', () => {
+      const dialog = TestBed.inject(MatDialog);
+
+      component.onDeleteBoard(row);
+
+      const [, config] = (dialog.open as jest.Mock).mock.calls[0];
+      expect(config.data.board).toBe(row);
+      expect(config.data.boardCount).toBe(component.boards.length);
+    });
+
+    // Leaving the deleted id in activeBoardIds narrows GetTasksForWeek to a
+    // calendar that no longer exists, and the grid comes back empty. An empty
+    // set is "no filter", which is the right resting state here.
+    it('drops the deleted calendar from the active filter before refetching', () => {
+      const dialog = TestBed.inject(MatDialog);
+      (dialog.open as jest.Mock).mockReturnValue({afterClosed: () => of(true)});
+      stateServiceStub.setActiveBoardIds([10, 11]);
+      stateServiceStub.setActiveBoardIds.mockClear();
+
+      component.onDeleteBoard(row);
+
+      expect(stateServiceStub.setActiveBoardIds).toHaveBeenCalledWith([11]);
+      expect(component.activeBoardIds).toEqual([11]);
+    });
+
+    it('leaves the filter alone when the deleted calendar was not in it', () => {
+      const dialog = TestBed.inject(MatDialog);
+      (dialog.open as jest.Mock).mockReturnValue({afterClosed: () => of(true)});
+      stateServiceStub.setActiveBoardIds([11]);
+      stateServiceStub.setActiveBoardIds.mockClear();
+
+      component.onDeleteBoard(row);
+
+      expect(stateServiceStub.setActiveBoardIds).not.toHaveBeenCalled();
+    });
   });
 });

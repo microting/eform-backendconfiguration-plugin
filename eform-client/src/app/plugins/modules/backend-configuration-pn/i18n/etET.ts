@@ -757,4 +757,15 @@ export const etET = {
   'Select all': 'Vali kõik',
   Clear: 'Tühjenda',
   'Calendar actions': 'Kalendri toimingud',
+  // Calendar CRUD from the calendars dropdown (#1210): the edit dialog's
+  // title, the row menu's Duplicate action, the client-side duplicate-name
+  // guard, the name a duplicate gets, and the two notes the delete dialog
+  // shows (a new default calendar replaces the last one; the cascade aborted).
+  'Edit calendar': 'Muuda kalendrit',
+  Duplicate: 'Dubleeri',
+  'A calendar with this name already exists': 'Selle nimega kalender on juba olemas',
+  '{{name}} (copy)': '{{name}} (koopia)',
+  '{{name}} (copy {{index}})': '{{name}} (koopia {{index}})',
+  'This is the last calendar, so a new default calendar is created in its place.': 'See on viimane kalender, seega luuakse selle asemele uus vaikekalender.',
+  'The calendar could not be deleted. It still has events that could not be removed.': 'Kalendrit ei õnnestunud kustutada. Sellel on endiselt sündmusi, mida ei saanud eemaldada.',
 };
