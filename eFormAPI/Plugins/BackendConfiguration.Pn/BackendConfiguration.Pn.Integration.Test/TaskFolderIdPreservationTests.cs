@@ -152,7 +152,8 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
     /// reproduced.
     /// </summary>
     private async Task<(int ArpId, int PlanningId)> SeedWeeklyTask(
-        DateTime startDate, int arpFolderId, int areaRuleFolderId, bool active = true)
+        DateTime startDate, int arpFolderId, int areaRuleFolderId, bool active = true,
+        int? planningSdkFolderId = null)
     {
         var area = new Area
         {
@@ -190,7 +191,11 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
         {
             Enabled = active, RepeatEvery = 1,
             RepeatType = Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Week,
-            StartDate = startDate, SdkFolderId = arpFolderId > 0 ? arpFolderId : areaRuleFolderId,
+            StartDate = startDate,
+            // Defaults to whichever ARP column holds the folder, but can be set
+            // independently: the two are NOT kept in lockstep in production.
+            SdkFolderId = planningSdkFolderId
+                          ?? (arpFolderId > 0 ? arpFolderId : areaRuleFolderId),
             Description = "Original description",
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         };
@@ -375,12 +380,26 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
         });
     }
 
+    /// <summary>
+    /// The half-applied guarantee, stated positively.
+    ///
+    /// <c>UpdateTaskThisAndFollowing</c> commits its past-occurrence backfill
+    /// and (on a date change) the series re-anchor BEFORE it calls the wizard.
+    /// Resolving the folder in the pre-flight — ahead of the scope dispatch —
+    /// is what removes the folder as a possible failure between those two
+    /// halves. The proof that the pre-flight really does run first is that the
+    /// wizard receives a NON-NULL FolderId: the request carried null, and
+    /// nothing after the dispatch would have filled it in.
+    ///
+    /// The row here has no folder at all, which resolves to 0 rather than being
+    /// refused — a task that was never filed under a folder is an ordinary
+    /// shape, and this update must still go through end to end.
+    /// </summary>
     [Test]
-    public async Task UpdateTask_ScopeThisAndFollowing_UnresolvableFolder_RefusesBeforeAnythingIsWritten()
+    public async Task UpdateTask_ScopeThisAndFollowing_FolderlessRow_ResolvesBeforeDispatch_AndCommitsBothHalves()
     {
         var nextMonday = GetNextMonday();
         var seriesStart = DateTime.SpecifyKind(nextMonday.AddDays(-28), DateTimeKind.Utc);
-        // Neither row carries a folder, so null cannot be resolved to anything.
         var (arpId, planningId) = await SeedWeeklyTask(seriesStart, 0, 0);
 
         // A DATE change, which is what makes thisAndFollowing re-anchor the
@@ -389,11 +408,12 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
         var result = await _calendarService.UpdateTask(
             BuildEditWithoutFolder(arpId, movedTo, "thisAndFollowing", nextMonday));
 
-        Assert.That(result.Success, Is.False);
+        Assert.That(result.Success, Is.True, result.Message);
 
-        // The point of resolving the folder before the scope dispatch: a refusal
-        // must leave the series exactly as it was, not re-anchored with the task
-        // itself un-updated.
+        // Ordering proof: null on the wire, non-null at the wizard.
+        await _taskWizardService.Received(1).UpdateTask(
+            Arg.Is<TaskWizardCreateModel>(m => m.FolderId != null));
+
         var anchors = await BackendConfigurationPnDbContext!.CalendarOccurrenceExceptions
             .Where(x => x.AreaRulePlanningId == arpId)
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -402,22 +422,20 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
             .AsNoTracking().FirstAsync(x => x.Id == arpId);
         var planning = await ItemsPlanningPnDbContext!.Plannings
             .AsNoTracking().FirstAsync(x => x.Id == planningId);
-
         var calConfig = await BackendConfigurationPnDbContext.CalendarConfigurations
             .AsNoTracking().FirstAsync(x => x.AreaRulePlanningId == arpId);
 
+        // BOTH halves landed — the failure mode this replaces was the first
+        // half committing and the second throwing.
         Assert.Multiple(() =>
         {
-            Assert.That(anchors, Is.Empty, "no past-occurrence backfill may have been committed");
-            Assert.That(arp.StartDate!.Value.Date, Is.EqualTo(seriesStart.Date),
-                "the series must not have been re-anchored");
-            Assert.That(planning.StartDate.Date, Is.EqualTo(seriesStart.Date),
-                "the items-planning anchor must not have been moved either");
-            // The payload carries 11.0/2.0; the seed is 9.0/1.0.
-            Assert.That(calConfig.StartHour, Is.EqualTo(9.0), "the edit's own fields must not have landed");
-            Assert.That(calConfig.Duration, Is.EqualTo(1.0));
+            Assert.That(anchors, Has.Count.EqualTo(4), "first half: past occurrences anchored");
+            Assert.That(arp.StartDate!.Value.Date, Is.EqualTo(movedTo.Date), "first half: series re-anchored");
+            Assert.That(planning.StartDate.Date, Is.EqualTo(movedTo.Date));
+            // The payload carries 11.0/2.0; the seed was 9.0/1.0.
+            Assert.That(calConfig.StartHour, Is.EqualTo(11.0), "second half: the edit's own fields landed");
+            Assert.That(calConfig.Duration, Is.EqualTo(2.0));
         });
-        await _taskWizardService.DidNotReceive().UpdateTask(Arg.Any<TaskWizardCreateModel>());
     }
 
     // ------------------------------------------------------------------
@@ -614,8 +632,19 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
         });
     }
 
+    /// <summary>
+    /// No folder anywhere is an ordinary shape — plenty of AreaRulePlannings
+    /// were never filed under one — so the save must SUCCEED and simply leave
+    /// both columns as they were. "Unchanged" is the contract; "must have a
+    /// folder" would be a different and much stronger rule, and refusing here
+    /// blocked every update to such a row on every scope.
+    ///
+    /// Success alone is not enough to discriminate, so the message is pinned
+    /// too: the unfixed code reaches the `(int)` unbox, throws, and returns
+    /// Success=false with "ErrorWhileUpdatingTask".
+    /// </summary>
     [Test]
-    public async Task WizardUpdateTask_NullFolderId_WithNoFolderAnywhere_IsRefused()
+    public async Task WizardUpdateTask_NullFolderId_WithNoFolderAnywhere_SucceedsAndChangesNothing()
     {
         var wizardService = await BuildRealWizardServiceAsync();
 
@@ -638,17 +667,12 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
             ComplianceEnabled = false
         });
 
-        // Success alone does NOT discriminate: on the unfixed code the same
-        // input reaches the `(int)updateModel.FolderId` unbox, throws, and
-        // UpdateTask's own catch returns Success=false with
-        // "ErrorWhileUpdatingTask". So assert WHICH refusal this is — the
-        // deliberate FolderIsRequired guard, the same key CreateTask uses —
-        // and that the guard returned before writing anything.
         var localizationService = new BackendConfigurationLocalizationService();
         Assert.Multiple(() =>
         {
+            Assert.That(result.Success, Is.True, result.Message);
             Assert.That(result.Message,
-                Is.EqualTo(localizationService.GetString("FolderIsRequired")));
+                Is.EqualTo(localizationService.GetString("TaskUpdatedSuccessful")));
             Assert.That(result.Message,
                 Is.Not.EqualTo(localizationService.GetString("ErrorWhileUpdatingTask")),
                 "a crash-shaped failure would mean the unbox is still live");
@@ -658,24 +682,80 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
             .AsNoTracking().Include(x => x.AreaRule).FirstAsync(x => x.Id == arpId);
         Assert.Multiple(() =>
         {
-            Assert.That(arp.FolderId, Is.Zero, "the refusal must not have half-written a folder");
+            Assert.That(arp.FolderId, Is.Zero, "left exactly as it was");
             Assert.That(arp.AreaRule.FolderId, Is.Zero);
         });
     }
 
     /// <summary>
-    /// The pre-flight runs for EVERY scope, but <c>UpdateTaskThisOccurrence</c>
-    /// never reads <c>FolderId</c> — so on a row with no resolvable folder a
-    /// single-occurrence edit that used to succeed is now refused.
+    /// The reason an unresolvable folder SKIPS the folder writes instead of
+    /// substituting 0 into them.
     ///
-    /// That is a deliberate choice (a task whose folder cannot be resolved
-    /// fails identically on every scope, rather than one scope silently
-    /// diverging), but it IS a functional narrowing on exactly the legacy rows
-    /// the fallback exists for. Pinned here so reversing it has to be
-    /// deliberate rather than accidental.
+    /// <c>Planning.SdkFolderId</c> is not kept in lockstep with the two ARP
+    /// columns: <c>BackendConfigurationAreaRulePlanningsServiceHelper</c>
+    /// overwrites it with a folder of its own after
+    /// <c>CreateItemPlanningObject</c> seeded it from <c>areaRule.FolderId</c>
+    /// (the chemicals/BMD path at :2240), so a Planning can hold a real
+    /// SdkFolderId while both ARP columns are 0. Writing a substituted 0 into
+    /// it would clear that folder and orphan the planning's deploys.
     /// </summary>
     [Test]
-    public async Task UpdateTask_ScopeThis_UnresolvableFolder_IsRefused_DeliberateNarrowing()
+    public async Task WizardUpdateTask_FolderlessRow_DoesNotClearARealSdkFolderOnThePlanning()
+    {
+        var wizardService = await BuildRealWizardServiceAsync();
+        var folder = await SeedSdkFolderAsync("folder-preservation-divergent", 810_004);
+
+        var startDate = DateTime.UtcNow.Date.AddDays(30);
+        // The divergent shape: nothing on either ARP column, a REAL folder on
+        // the linked Planning.
+        var (arpId, planningId) = await SeedWeeklyTask(
+            startDate, 0, 0, planningSdkFolderId: folder.Id);
+
+        var arpBefore = await BackendConfigurationPnDbContext!.AreaRulePlannings
+            .FirstAsync(x => x.Id == arpId);
+        await BackendConfigurationPnDbContext.PlanningSites.AddAsync(
+            new Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.PlanningSite
+            {
+                SiteId = 101, AreaRulePlanningsId = arpBefore.Id, AreaId = arpBefore.AreaId,
+                AreaRuleId = arpBefore.AreaRuleId,
+                WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+            });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        // Active → active, the branch that rewrites Planning.SdkFolderId. The
+        // assignee set is unchanged, so nothing is (re)deployed.
+        var result = await wizardService.UpdateTask(new TaskWizardCreateModel
+        {
+            Id = arpId,
+            PropertyId = 0,
+            FolderId = null,
+            EformId = 0,
+            StartDate = startDate,
+            RepeatType = BackendConfiguration.Pn.Infrastructure.Enums.RepeatType.Week,
+            RepeatEvery = 1,
+            Status = BackendConfiguration.Pn.Infrastructure.Enums.TaskWizardStatuses.Active,
+            Sites = [101],
+            TagIds = [],
+            Translates = [],
+            ComplianceEnabled = false
+        });
+
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var planning = await ItemsPlanningPnDbContext!.Plannings
+            .AsNoTracking().FirstAsync(x => x.Id == planningId);
+        Assert.That(planning.SdkFolderId, Is.EqualTo(folder.Id),
+            "an unresolvable ARP folder must not blank the Planning's own SDK folder");
+    }
+
+    /// <summary>
+    /// Scope "this" never reads FolderId, and a row with no folder is ordinary,
+    /// so a single-occurrence edit on one goes through untouched. This pins
+    /// that the pre-flight — which runs for every scope — did not narrow what
+    /// scope "this" accepts.
+    /// </summary>
+    [Test]
+    public async Task UpdateTask_ScopeThis_FolderlessRow_SucceedsAndWritesTheOccurrenceOverride()
     {
         var nextMonday = GetNextMonday();
         var seriesStart = DateTime.SpecifyKind(nextMonday, DateTimeKind.Utc);
@@ -684,20 +764,21 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
         var result = await _calendarService.UpdateTask(
             BuildEditWithoutFolder(arpId, nextMonday, "this", nextMonday));
 
-        var localizationService = new BackendConfigurationLocalizationService();
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.Success, Is.False);
-            Assert.That(result.Message,
-                Is.EqualTo(localizationService.GetString("FolderIsRequired")));
-        });
+        Assert.That(result.Success, Is.True, result.Message);
 
-        // And the occurrence override the scope would have written is absent,
-        // because the refusal happens before the dispatch.
-        var exceptions = await BackendConfigurationPnDbContext!.CalendarOccurrenceExceptions
+        // The scope did its own work rather than being short-circuited.
+        var exception = await BackendConfigurationPnDbContext!.CalendarOccurrenceExceptions
             .Where(x => x.AreaRulePlanningId == arpId)
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-            .ToListAsync();
-        Assert.That(exceptions, Is.Empty);
+            .SingleAsync();
+        var arp = await BackendConfigurationPnDbContext.AreaRulePlannings
+            .AsNoTracking().Include(x => x.AreaRule).FirstAsync(x => x.Id == arpId);
+        Assert.Multiple(() =>
+        {
+            Assert.That(exception.OriginalDate.Date, Is.EqualTo(nextMonday.Date));
+            Assert.That(exception.StartHour, Is.EqualTo(11.0));
+            Assert.That(arp.FolderId, Is.Zero, "and the folder columns stay as they were");
+            Assert.That(arp.AreaRule.FolderId, Is.Zero);
+        });
     }
 }

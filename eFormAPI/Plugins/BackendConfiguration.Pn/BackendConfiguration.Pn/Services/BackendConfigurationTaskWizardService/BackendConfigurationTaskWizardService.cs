@@ -900,16 +900,13 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             // fallback candidates would then be 0.
             if (updateModel.FolderId is null or 0)
             {
+                // May itself be 0 — a task that was never filed under a folder
+                // is an ordinary shape, not an error. "Unchanged" is what the
+                // fix promises, so an unresolvable folder must NOT refuse the
+                // save; it makes every folder write below a no-op instead.
                 var currentFolderId = areaRulePlanning.FolderId > 0
                     ? areaRulePlanning.FolderId
                     : areaRulePlanning.AreaRule.FolderId;
-                if (currentFolderId <= 0)
-                {
-                    // Nothing to keep — same refusal CreateTask gives for a
-                    // missing folder, rather than writing a 0 no reader resolves.
-                    return new OperationResult(false,
-                        _localizationService.GetString("FolderIsRequired"));
-                }
 
                 _logger.LogWarning(
                     "BackendConfigurationTaskWizardService.UpdateTask: task {AreaRulePlanningId} was saved with FolderId {IncomingFolderId}; keeping the current folder {CurrentFolderId} instead of clearing it.",
@@ -923,9 +920,28 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     .FirstOrDefault();
             }
 
+            // Whether this save has a real folder to write. False only when the
+            // task has none anywhere, and then EVERY folder write below is
+            // skipped rather than given a 0.
+            //
+            // On AreaRulePlanning/AreaRule that is merely tidy — we only get
+            // here when both are already 0, so writing 0 back would be a no-op.
+            // On the linked Planning it is load-bearing:
+            // Planning.SdkFolderId is NOT kept in lockstep with those two
+            // columns. BackendConfigurationAreaRulePlanningsServiceHelper
+            // overwrites it with a folder of its own AFTER
+            // CreateItemPlanningObject has seeded it from areaRule.FolderId
+            // (the chemicals/BMD path, :2240), so a Planning can legitimately
+            // hold a real SdkFolderId while both ARP columns are 0. Writing 0
+            // there would CLEAR that folder and orphan the planning's deploys.
+            var hasResolvedFolder = updateModel.FolderId is > 0;
+
             // update area rule plannings and area rule with translations
             var oldStatus = areaRulePlanning.Status;
-            areaRulePlanning.FolderId = (int)updateModel.FolderId;
+            if (hasResolvedFolder)
+            {
+                areaRulePlanning.FolderId = updateModel.FolderId!.Value;
+            }
             areaRulePlanning.Status = updateModel.Status == TaskWizardStatuses.Active;
             areaRulePlanning.StartDate = updateModel.StartDate;
             areaRulePlanning.RepeatEvery = updateModel.RepeatEvery;
@@ -982,8 +998,11 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             areaRulePlanning.AreaRule.EformId = updateModel.EformId;
             areaRulePlanning.AreaRule.EformName = eformName;
             areaRulePlanning.AreaRule.PropertyId = updateModel.PropertyId;
-            areaRulePlanning.AreaRule.FolderId = (int)updateModel.FolderId;
-            areaRulePlanning.AreaRule.FolderName = folderName;
+            if (hasResolvedFolder)
+            {
+                areaRulePlanning.AreaRule.FolderId = updateModel.FolderId!.Value;
+                areaRulePlanning.AreaRule.FolderName = folderName;
+            }
             areaRulePlanning.AreaRule.RepeatEvery = updateModel.RepeatEvery;
             areaRulePlanning.AreaRule.RepeatType = (int?)updateModel.RepeatType;
             areaRulePlanning.AreaRule.UpdatedByUserId = _userService.UserId;
@@ -1045,8 +1064,11 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     planning.DayOfWeek = planning.StartDate.DayOfWeek;
                     planning.RepeatEvery = updateModel.RepeatEvery;
                     planning.ReportGroupPlanningTagId = updateModel.ItemPlanningTagId;
-                    planning.SdkFolderName = folderName;
-                    planning.SdkFolderId = updateModel.FolderId;
+                    if (hasResolvedFolder)
+                    {
+                        planning.SdkFolderName = folderName;
+                        planning.SdkFolderId = updateModel.FolderId;
+                    }
                     planning.ShowExpireDate = true;
                     // The eForm must be written in EVERY branch, not just the
                     // "still active" one: PairItemWithSiteHelper.Pair below
@@ -1205,8 +1227,11 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     planning.RelatedEFormId = updateModel.EformId;
                     planning.RelatedEFormName = eformName;
                     planning.RepeatEvery = updateModel.RepeatEvery;
-                    planning.SdkFolderName = folderName;
-                    planning.SdkFolderId = updateModel.FolderId;
+                    if (hasResolvedFolder)
+                    {
+                        planning.SdkFolderName = folderName;
+                        planning.SdkFolderId = updateModel.FolderId;
+                    }
                     planning.UpdatedByUserId = _userService.UserId;
                     planning.ReportGroupPlanningTagId = updateModel.ItemPlanningTagId;
                     planning.ShowExpireDate = true;
@@ -1315,7 +1340,11 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                             sitesToAdd,
                             updateModel.EformId,
                             planning.Id,
-                            (int)planning.SdkFolderId, core, _itemsPlanningPnDbContext,
+                            // Not `(int)`: the folder writes above are skipped
+                            // for a task with no folder, so this can still be
+                            // null. Same shape as
+                            // BackendConfigurationAreaRulePlanningsServiceHelper:1010.
+                            planning.SdkFolderId ?? 0, core, _itemsPlanningPnDbContext,
                             areaRulePlanning.UseStartDateAsStartOfPeriod, _localizationService);
                     }
 

@@ -1718,15 +1718,17 @@ public class BackendConfigurationCalendarService(
 
                 // Same precedence as the wizard: the planning row's folder, and
                 // the AreaRule's only when the planning row never got one.
-                var resolvedFolderId = currentFolder.FolderId > 0
+                //
+                // May resolve to 0, and that is NOT refused: a task that was
+                // never filed under a folder is an ordinary shape (many
+                // fixtures and real rows have none), and the contract this
+                // implements is "null means unchanged", not "must have a
+                // folder". The wizard turns a 0 into a skip of every folder
+                // write rather than a write of 0 — see its own
+                // `hasResolvedFolder`.
+                updateModel.FolderId = currentFolder.FolderId > 0
                     ? currentFolder.FolderId
                     : currentFolder.AreaRuleFolderId;
-                if (resolvedFolderId <= 0)
-                {
-                    return new OperationResult(false, localizationService.GetString("FolderIsRequired"));
-                }
-
-                updateModel.FolderId = resolvedFolderId;
             }
 
             // Scope-aware edit (issue #885). "this"/"thisAndFollowing" must NOT
