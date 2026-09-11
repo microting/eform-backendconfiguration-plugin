@@ -70,7 +70,8 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   // Guards loadMonthTasks against out-of-order responses: rapid month
   // stepping launches overlapping 6-call batches, and forkJoin resolves at
   // the SLOWEST call — without this, an older batch finishing last would
-  // overwrite the newer month's data and stick.
+  // overwrite the newer month's data and stick. clearTasks() bumps it too, so a
+  // clear cannot be undone by a batch that was already in flight.
   private monthLoadSeq = 0;
 
   get scheduleRangeStart(): string {
@@ -198,22 +199,63 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
   loadBoards(propertyId: number, autoSelectDefault = false) {
     this.calendarService.getBoards(propertyId).subscribe(res => {
-      if (res && res.success) {
-        this.boards = res.model;
-        if (autoSelectDefault && this.boards.length > 0) {
-          const defaultBoard = this.boards.reduce((min, b) => b.id < min.id ? b : min);
-          this.stateService.setActiveBoardIds([defaultBoard.id]);
-          this.lastActivatedBoardId = defaultBoard.id;
-        }
-        this.propertiesService.getLinkedFolderDtos(propertyId).subscribe(folderRes => {
-          if (folderRes && folderRes.success) {
-            const logFolder = this.findFolderByName(folderRes.model, 'Logbøger');
-            this.logboegerFolderId = logFolder ? logFolder.id : null;
-          }
-        });
-        this.loadTasks();
+      if (!res || !res.success) {
+        // The error itself is already surfaced: BackendConfigurationPnCalendarService
+        // .getBoards pipes through notifyError(), which toasts on !success.
+        // What is left to do here is stop the screen from contradicting itself.
+        // onPropertySelected() dispatched the new property id BEFORE this call, so
+        // the header pill (propertyName -> selectedPropertyName) already names the
+        // new property; keeping the previous property's calendars and events would
+        // present them as belonging to it.
+        // Clearing rather than reverting the selection: updatePropertyId() also
+        // wipes activeBoardIds/activeSiteIds/activeTeamIds/activeTagNames, so the
+        // filter set the visible tasks were fetched under no longer exists - putting
+        // the old id back would restore the label but not the state behind it.
+        this.clearPropertyScopedData();
+        return;
       }
+      this.boards = res.model;
+      if (autoSelectDefault && this.boards.length > 0) {
+        const defaultBoard = this.boards.reduce((min, b) => b.id < min.id ? b : min);
+        this.stateService.setActiveBoardIds([defaultBoard.id]);
+        this.lastActivatedBoardId = defaultBoard.id;
+      }
+      this.propertiesService.getLinkedFolderDtos(propertyId).subscribe(folderRes => {
+        if (folderRes && folderRes.success) {
+          const logFolder = this.findFolderByName(folderRes.model, 'Logbøger');
+          this.logboegerFolderId = logFolder ? logFolder.id : null;
+        } else {
+          // Passed to the task create/edit modals as `folderId`; a stale value
+          // would file a new task's eForm under the PREVIOUS property's Logbøger
+          // folder. null is already the supported "no Logbøger folder" value.
+          this.logboegerFolderId = null;
+        }
+      });
+      this.loadTasks();
     });
+  }
+
+  // Resets everything on screen that belongs to one specific property, so a
+  // failed load cannot leave one property's data under another's name.
+  // `employees` is deliberately NOT reset here: loadEmployees() runs as its own
+  // request for the newly selected property and handles its own failure.
+  private clearPropertyScopedData() {
+    this.boards = [];
+    this.logboegerFolderId = null;
+    this.clearTasks();
+  }
+
+  private clearTasks() {
+    // Invalidates any month load still in flight. loadMonthTasks() only applies
+    // its result when `seq === monthLoadSeq`, so without this bump a slower
+    // 6-call batch launched for the PREVIOUS property/month would resolve after
+    // the clear and repopulate monthTasksByDate with data the clear removed.
+    this.monthLoadSeq++;
+    this.tasks = [];
+    this.tasksByDay = Array.from({length: 7}, () => []);
+    this.allDayTasksByDay = Array.from({length: 7}, () => []);
+    this.monthTasksByDate = new Map();
+    this.rebuildMonthSchedule();
   }
 
   loadTags() {
@@ -290,6 +332,11 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
           name: u.fullName || `${u.userFirstName} ${u.userLastName}`.trim() || u.siteName,
           description: '',
         } as CommonDictionaryModel));
+      } else {
+        // Same failure mode as loadBoards: the list is property-scoped, and the
+        // sidebar/create-modal would otherwise offer the previous property's
+        // employees under the newly selected property.
+        this.employees = [];
       }
     });
   }
@@ -318,19 +365,24 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         this.activeSiteIds,
       )
       .subscribe(res => {
-        if (res && res.success) {
-          const teamNameById = new Map(this.teams.map(t => [t.id, t.name]));
-          this.tasks = (res.model || []).map((t: any) => {
-            const task = mapResponseToCalendarTask(t);
-            // Resolve worker-tag ids to display names here (the container owns
-            // `teams`); child views render the names without needing the list.
-            task.workerTagNames = (task.workerTagIds ?? [])
-              .map(id => teamNameById.get(id))
-              .filter((name): name is string => !!name);
-            return task;
-          });
-          this.rebuildLayout(monday);
+        if (!res || !res.success) {
+          // getTasksForWeek toasts through notifyError(); drop what is on the
+          // grid so the previous property/week's events are not left rendered
+          // under the header the failed request was made for.
+          this.clearTasks();
+          return;
         }
+        const teamNameById = new Map(this.teams.map(t => [t.id, t.name]));
+        this.tasks = (res.model || []).map((t: any) => {
+          const task = mapResponseToCalendarTask(t);
+          // Resolve worker-tag ids to display names here (the container owns
+          // `teams`); child views render the names without needing the list.
+          task.workerTagNames = (task.workerTagIds ?? [])
+            .map(id => teamNameById.get(id))
+            .filter((name): name is string => !!name);
+          return task;
+        });
+        this.rebuildLayout(monday);
       });
   }
 
@@ -663,9 +715,11 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         isRepeating ? scope ?? 'this' : 'all',
         event.originalDate,
       );
-      obs.subscribe(res => {
-        if (res && res.success) this.loadTasks();
-      });
+      // Refetch on failure too: calendar-week-grid moves the block locally
+      // before emitting (so the drag does not flash), so skipping the reload
+      // would leave it drawn at a position the server rejected. Same shape as
+      // doResize() below, which always reloads.
+      obs.subscribe(() => this.loadTasks());
     };
 
     if (isRepeating) {
