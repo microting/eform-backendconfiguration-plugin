@@ -180,8 +180,20 @@ test.describe.serial('Task list — inline rename of the task name', () => {
       }
     };
 
-    const page = await browser.newPage();
+    // browser.newPage() can itself reject — a browser that crashed or got
+    // disconnected during a long run — and an exception thrown here escapes the
+    // hook and fails the job, which is exactly what this guarded teardown exists
+    // to prevent. Record it and fall through to the reporting in `finally`.
+    const page = await browser.newPage().catch((err: any) => {
+      problems.push(`cleanup harness: browser.newPage() failed: ${err?.message ?? err}`);
+      return undefined;
+    });
     try {
+      if (!page) {
+        // Nothing to drive the cleanup with; `finally` still reports what the
+        // next spec in this shard inherits.
+        return;
+      }
       const workersPage = new BackendConfigurationPropertyWorkersPage(page);
       const propertiesPage = new BackendConfigurationPropertiesPage(page);
 
@@ -239,7 +251,9 @@ test.describe.serial('Task list — inline rename of the task name', () => {
           problems.join(' | '),
         );
       }
-      try { await page.close(); } catch {}
+      if (page) {
+        try { await page.close(); } catch {}
+      }
     }
   });
 

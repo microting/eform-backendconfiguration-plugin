@@ -109,6 +109,13 @@ jobs:
   pn-playwright-test:
     needs: [backend-pn-build, prewarm-playwright]
     runs-on: ubuntu-latest
+    # Without this a hung step burns the GitHub default of 6 hours; one stall on
+    # `npx playwright install --with-deps` had to be cancelled by hand. The
+    # slowest shard measured ~15 min end to end (docker + MariaDB + yarn +
+    # browsers + the specs; shard `a` additionally seeds the SQL dump), so 45
+    # gives ~3x headroom over the observed worst case while still failing a hang
+    # in well under an hour.
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:

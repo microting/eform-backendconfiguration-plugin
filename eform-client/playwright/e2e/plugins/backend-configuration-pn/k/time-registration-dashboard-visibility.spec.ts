@@ -8,7 +8,12 @@ import {
   PropertyCreateUpdate,
 } from '../BackendConfigurationProperties.page';
 import { generateRandmString } from '../../../helper-functions';
-import { API_TIMEOUT } from '../wait-helpers';
+import {
+  API_TIMEOUT,
+  UI_TIMEOUT,
+  ignoreUnhandledRejections,
+  waitForApiResponse,
+} from '../wait-helpers';
 
 // New accounts have no password set, so every worker gets this password through
 // setWorkerPasswordViaApi before it can log in.
@@ -166,7 +171,9 @@ async function loginAs(page: Page, email: string, password: string): Promise<voi
   ).catch(() => null);
   await loginBtn.click();
   await loginResponsePromise;
-  await page.waitForTimeout(2000);
+  // No settle sleep here on purpose: both callers below assert their own
+  // post-login landmark (#newEFormBtn for admin, the planning datepicker for a
+  // worker), which is the real "logged in and rendered" condition.
   console.log(`Login ${email}: URL=${page.url()}`);
 }
 
@@ -175,7 +182,36 @@ async function loginAsAdmin(page: Page): Promise<void> {
   await page.locator('#newEFormBtn').waitFor({ state: 'visible', timeout: 120000 });
 }
 
-async function loginAsWorker(page: Page, email: string): Promise<void> {
+/**
+ * Logs a worker in and waits until the planning page KNOWS how many sites that
+ * worker may see.
+ *
+ * `#workingHoursSite` sits behind `*ngIf="availableSites.length > 1"`
+ * (time-plannings-container.component.html), fed by an async
+ * `GET /api/time-planning-pn/settings/sites`. Until that response lands,
+ * `availableSites` is `[]` and the dropdown is absent — so the phases below
+ * that assert `not.toBeVisible()` would pass against a page that had simply
+ * not loaded yet. That is what the `waitForTimeout(2000)` this replaces was
+ * really guarding, badly: a sleep cannot tell "hidden because the worker has
+ * one site" from "hidden because the call has not come back".
+ *
+ * `expectedSiteCount` therefore asserts the gate's own input. It also gives a
+ * regression here a name — "the server returned 2 sites for a worker" — rather
+ * than an unexplained dropdown appearing in a DOM assertion.
+ */
+async function loginAsWorker(page: Page, email: string, expectedSiteCount: number): Promise<void> {
+  // Registered before the login click: the request fires on the planning page's
+  // init, i.e. after the post-login redirect.
+  const availableSites = waitForApiResponse(
+    page,
+    `GET /api/time-planning-pn/settings/sites (sites visible to ${email})`,
+    r =>
+      r.url().includes('/api/time-planning-pn/settings/sites') &&
+      r.request().method() === 'GET',
+    API_TIMEOUT
+  );
+  ignoreUnhandledRejections(availableSites);
+
   await loginAs(page, email, WORKER_PASSWORD);
   await page.waitForURL('**/plugins/time-planning-pn/planning**', { timeout: 30000 }).catch(() => {
     console.log(`Worker ${email}: did not navigate to planning, URL=${page.url()}`);
@@ -183,7 +219,15 @@ async function loginAsWorker(page: Page, email: string): Promise<void> {
   console.log(`Worker ${email}: final URL=${page.url()}`);
   // Wait for the planning page to finish loading (date picker is always visible)
   await page.locator('mat-datepicker-toggle').first().waitFor({ state: 'visible', timeout: 120000 });
-  await page.waitForTimeout(2000);
+
+  const sitesBody = await (await availableSites).json().catch(() => null);
+  console.log(
+    `Worker ${email}: settings/sites returned ${JSON.stringify(sitesBody?.model?.map((s: any) => s.siteName))}`
+  );
+  expect(
+    sitesBody?.model?.length,
+    `${email}: GET settings/sites is what gates the worker dropdown`
+  ).toBe(expectedSiteCount);
 }
 
 async function logout(page: Page): Promise<void> {
@@ -195,66 +239,248 @@ async function logout(page: Page): Promise<void> {
   await page.locator('#loginBtn').waitFor({ state: 'visible', timeout: 60000 });
 }
 
+/**
+ * Navigates to the device-user list and waits for the LIST, not just the page
+ * chrome.
+ *
+ * `goToPropertyWorkers()` only clicks the menu item, and `clearTable()` counts
+ * `.mat-mdc-row` the moment it is called — so clearing before the grid has
+ * rendered counts 0 rows and silently deletes nothing. The page builds its rows
+ * from a `forkJoin` of three calls (property-workers-page.component.ts
+ * `updateTable`), of which two are observable here: the POST that fetches the
+ * device users and the GET that fetches their property assignments. Both
+ * landing is the real signal that the grid has its data; the pre-existing
+ * `waitForTimeout(1000)` this replaces was a guess at the same thing.
+ */
+async function goToPropertyWorkersAndAwaitGrid(
+  page: Page,
+  workersPage: BackendConfigurationPropertyWorkersPage
+): Promise<void> {
+  const deviceUsers = waitForApiResponse(
+    page,
+    'POST /api/backend-configuration-pn/properties/assignment/index-device-user (device user list)',
+    r =>
+      r.url().includes('/api/backend-configuration-pn/properties/assignment/index-device-user') &&
+      r.request().method() === 'POST',
+    API_TIMEOUT
+  );
+  const assignments = waitForApiResponse(
+    page,
+    'GET /api/backend-configuration-pn/properties/assignment (worker property assignments)',
+    r =>
+      r.url().includes('/api/backend-configuration-pn/properties/assignment') &&
+      r.request().method() === 'GET',
+    API_TIMEOUT
+  );
+  // Either wait can reject before the `await` below reaches it.
+  ignoreUnhandledRejections(deviceUsers, assignments);
+
+  await workersPage.goToPropertyWorkers();
+  await Promise.all([deviceUsers, assignments]);
+  await workersPage.newDeviceUserBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+}
+
 async function navigateToPlannings(page: Page): Promise<void> {
-  const timePlanningMenu = page.locator('#time-planning-pn');
-  if (!await timePlanningMenu.isVisible()) {
-    await page.waitForTimeout(1000);
-  }
   const planningBtn = page.locator('#time-planning-pn-planning');
   if (!await planningBtn.isVisible()) {
-    await timePlanningMenu.click();
-    await page.waitForTimeout(500);
+    await page.locator('#time-planning-pn').click();
+    await planningBtn.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   }
   await planningBtn.click();
-  await page.waitForTimeout(2000);
+  // The caller's own `#workingHoursSite` wait is the landing condition.
 }
 
 async function getAvailableSiteNames(page: Page): Promise<string[]> {
   const siteSelector = page.locator('#workingHoursSite');
   await siteSelector.waitFor({ state: 'visible', timeout: 30000 });
   await siteSelector.click();
-  await page.waitForTimeout(500);
   const dropdownPanel = page.locator('ng-dropdown-panel');
-  await dropdownPanel.waitFor({ state: 'visible', timeout: 10000 });
+  await dropdownPanel.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+  // The panel element appears before ng-select has rendered its options, so
+  // reading `allInnerTexts()` on a bare panel can return []. Every caller here
+  // expects at least one site, so the first option being present is the real
+  // "options rendered" condition.
+  await dropdownPanel.locator('.ng-option').first().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   const names = await dropdownPanel.locator('.ng-option').allInnerTexts();
   await page.keyboard.press('Escape');
-  await page.waitForTimeout(300);
+  await dropdownPanel.waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
   return names.map(n => n.trim());
 }
 
 test.describe('Time Registration Dashboard Visibility', () => {
+  // Hoisted out of the test body so `afterAll` can name the same entities it
+  // has to delete. Everything is suffixed with `rand`, so a leaked row from an
+  // earlier run can never be mistaken for one of ours.
+  const rand = generateRandmString(8);
+  const tagName = `TeamAlpha-${rand}`;
+  const propertyName = `TestProp-${rand}`;
+
+  const managerEmail = `manager-${rand}@test.com`;
+  const taggedWorkerEmail = `tagged-${rand}@test.com`;
+  const untaggedWorkerEmail = `untagged-${rand}@test.com`;
+  const notagMgrEmail = `notagmgr-${rand}@test.com`;
+
+  const managerName = `MgrFirst-${rand}`;
+  const managerSurname = `MgrLast-${rand}`;
+  const taggedName = `TaggedFirst-${rand}`;
+  const taggedSurname = `TaggedLast-${rand}`;
+  const untaggedName = `UntaggedFirst-${rand}`;
+  const untaggedSurname = `UntaggedLast-${rand}`;
+  const notagMgrName = `NotagMgrFirst-${rand}`;
+  const notagMgrSurname = `NotagMgrLast-${rand}`;
+
+  /**
+   * Teardown (#1146). This used to be the test body's own phase 7, which made
+   * it unreachable the moment any assertion above it threw — a failed run left
+   * four device users, a property and a tag behind — and made it compete for
+   * the test's timeout, so it was the part that got squeezed when the earlier
+   * phases ran slow.
+   *
+   * Same shape as the task-list suites (b/task-list-inline-rename.spec.ts):
+   * one wall-clock budget across all phases, every failure collected and
+   * logged rather than thrown, so cleanup can never itself fail the run.
+   */
+  test.afterAll(async ({ browser }) => {
+    // Playwright gives a hook the config-level 120s timeout, which is below the
+    // budget this teardown needs (four device-user deletes, each an SDK-backed
+    // round trip bounded at API_TIMEOUT, plus an admin login). Raised so our
+    // own guard is what stops the work, not the harness killing the hook
+    // mid-delete.
+    const CLEANUP_BUDGET_MS = 150000;
+    test.setTimeout(CLEANUP_BUDGET_MS + 30000);
+
+    const deadline = Date.now() + CLEANUP_BUDGET_MS;
+    const problems: string[] = [];
+    let aborted = false;
+
+    // Never throws. Returns whether the phase actually completed.
+    const phase = async (label: string, fn: () => Promise<void>): Promise<boolean> => {
+      if (aborted) {
+        problems.push(`${label}: skipped, an earlier phase did not complete`);
+        return false;
+      }
+      const budget = deadline - Date.now();
+      if (budget <= 0) {
+        problems.push(`${label}: skipped, cleanup budget exhausted`);
+        aborted = true;
+        return false;
+      }
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const outcome = await Promise.race([
+          fn().then(() => 'done' as const),
+          new Promise<'timeout'>(resolve => {
+            timer = setTimeout(() => resolve('timeout'), budget);
+          }),
+        ]);
+        if (outcome === 'timeout') {
+          aborted = true;
+          problems.push(`${label}: timed out after ${budget}ms`);
+          return false;
+        }
+        return true;
+      } catch (err: any) {
+        problems.push(`${label}: ${err?.message ?? err}`);
+        return false;
+      } finally {
+        if (timer) {
+          clearTimeout(timer);
+        }
+      }
+    };
+
+    // browser.newPage() can itself reject — a browser that crashed or got
+    // disconnected during a long run — and an exception thrown here escapes the
+    // hook and fails the job, which is exactly what this guarded teardown exists
+    // to prevent. Record it and fall through to the reporting in `finally`.
+    const page = await browser.newPage().catch((err: any) => {
+      problems.push(`cleanup harness: browser.newPage() failed: ${err?.message ?? err}`);
+      return undefined;
+    });
+    try {
+      if (!page) {
+        // Nothing to drive the cleanup with; `finally` still reports what the
+        // next spec in this shard inherits.
+        return;
+      }
+      const workersPage = new BackendConfigurationPropertyWorkersPage(page);
+      const propertiesPage = new BackendConfigurationPropertiesPage(page);
+
+      const loggedIn = await phase('login', async () => {
+        await page.goto(BASE_URL);
+        await loginAsAdmin(page);
+      });
+      if (!loggedIn) {
+        // Nothing below can work unauthenticated; stop rather than spend the
+        // remaining budget on waits that are certain to time out.
+        aborted = true;
+      }
+
+      // Workers first: the property cannot go while a worker is assigned to it.
+      await phase('clear workers', async () => {
+        await goToPropertyWorkersAndAwaitGrid(page, workersPage);
+        await workersPage.clearTable();
+      });
+
+      // The tags dialog is opened from the device-user page we are already on,
+      // and the tag is only free to delete once no worker carries it.
+      await phase('delete tag', async () => {
+        await workersPage.deleteTag(tagName);
+      });
+
+      await phase('clear properties', async () => {
+        // goToProperties() and clearTable() both wait for the properties table
+        // themselves, so there is nothing left to pad here.
+        await propertiesPage.goToProperties();
+        await propertiesPage.clearTable();
+      });
+
+      await phase('verify', async () => {
+        await propertiesPage.goToProperties();
+        await page.locator('app-properties-table').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+        const propertiesLeft = await propertiesPage.rowNum();
+        if (propertiesLeft > 0) {
+          problems.push(`verify: ${propertiesLeft} property row(s) still present`);
+        }
+        await goToPropertyWorkersAndAwaitGrid(page, workersPage);
+        const workersLeft = await workersPage.rowNum();
+        if (workersLeft > 0) {
+          problems.push(`verify: ${workersLeft} worker row(s) still present`);
+        }
+      });
+    } catch (err: any) {
+      problems.push(`cleanup harness: ${err?.message ?? err}`);
+    } finally {
+      if (problems.length > 0) {
+        console.log(
+          '[time-registration-dashboard-visibility] afterAll cleanup INCOMPLETE (non-fatal) — ' +
+          `may have left property "${propertyName}", tag "${tagName}" and up to four device ` +
+          `users (${managerEmail}, ${taggedWorkerEmail}, ${untaggedWorkerEmail}, ` +
+          `${notagMgrEmail}) for the next spec in this shard: ` +
+          problems.join(' | '),
+        );
+      }
+      if (page) {
+        try { await page.close(); } catch {}
+      }
+    }
+  });
+
   test('should show correct workers based on user role and tags', async ({ page }) => {
     // 7 min: the heaviest spec in the suite — one tag, one property, four device
-    // users (each a ~60s SDK provisioning call at worst), six login/logout phases
-    // and a full cleanup. Kept generous because the work is genuinely long, not
-    // to cover for an unbounded wait. For scale, the whole k shard (this spec
-    // plus two others) ran in 86s on green trunk run 33406521590.
+    // users (each a ~60s SDK provisioning call at worst) and six login/logout
+    // phases. Kept generous because the work is genuinely long, not to cover for
+    // an unbounded wait. Cleanup is NOT in here: it has its own budget in
+    // afterAll (#1146). For scale, the whole k shard (this spec plus two others)
+    // ran in 86s on green trunk run 33406521590.
     test.setTimeout(420000);
-
-    const rand = generateRandmString(8);
-    const tagName = `TeamAlpha-${rand}`;
-    const propertyName = `TestProp-${rand}`;
-
-    const managerEmail = `manager-${rand}@test.com`;
-    const taggedWorkerEmail = `tagged-${rand}@test.com`;
-    const untaggedWorkerEmail = `untagged-${rand}@test.com`;
-    const notagMgrEmail = `notagmgr-${rand}@test.com`;
-
-    const managerName = `MgrFirst-${rand}`;
-    const managerSurname = `MgrLast-${rand}`;
-    const taggedName = `TaggedFirst-${rand}`;
-    const taggedSurname = `TaggedLast-${rand}`;
-    const untaggedName = `UntaggedFirst-${rand}`;
-    const untaggedSurname = `UntaggedLast-${rand}`;
-    const notagMgrName = `NotagMgrFirst-${rand}`;
-    const notagMgrSurname = `NotagMgrLast-${rand}`;
 
     const propertiesPage = new BackendConfigurationPropertiesPage(page);
     const workersPage = new BackendConfigurationPropertyWorkersPage(page);
 
     // ==================== PHASE 1: SETUP (as admin) ====================
 
-    await page.goto('http://localhost:4200');
+    await page.goto(BASE_URL);
     await loginAsAdmin(page);
     await setupSecurityGroupsViaApi(page);
 
@@ -268,28 +494,28 @@ test.describe('Time Registration Dashboard Visibility', () => {
       );
     }
 
-    // Create a property
+    // Create a property. createProperty() already waits for the list refresh
+    // and for the dialog to close, so it needs no padding after it.
     await propertiesPage.goToProperties();
     await propertiesPage.createProperty({
       name: propertyName, cvrNumber: '1111111',
       chrNumber: rand.substring(0, 6), address: 'Test Address 1',
     });
-    await page.waitForTimeout(1000);
 
-    // Navigate to property workers and create tag
-    await workersPage.goToPropertyWorkers();
-    await page.waitForTimeout(1000);
+    // Navigate to property workers and create tag. createTag() waits for the
+    // saved row inside the dialog and for the dialog to close.
+    await goToPropertyWorkersAndAwaitGrid(page, workersPage);
     await workersPage.createTag(tagName);
-    await page.waitForTimeout(1000);
 
-    // Worker A: Manager with tag and managing tag
+    // Worker A: Manager with tag and managing tag.
+    // create() waits for the create-device-user PUT, the assignment POST and
+    // the list refresh, then for the dialog to close — nothing to pad.
     await workersPage.create({
       name: managerName, surname: managerSurname, workerEmail: managerEmail,
       language: 'Dansk', properties: [propertyName],
       timeRegistrationEnabled: true, enableMobileAccess: true,
       isManager: true, managingTags: [tagName], tags: [tagName],
     });
-    await page.waitForTimeout(2000);
     await setWorkerPasswordViaApi(page, adminToken, managerEmail, WORKER_PASSWORD);
 
     // Worker B: Tagged worker (same tag as manager)
@@ -298,7 +524,6 @@ test.describe('Time Registration Dashboard Visibility', () => {
       language: 'Dansk', properties: [propertyName],
       timeRegistrationEnabled: true, enableMobileAccess: true, tags: [tagName],
     });
-    await page.waitForTimeout(2000);
     await setWorkerPasswordViaApi(page, adminToken, taggedWorkerEmail, WORKER_PASSWORD);
 
     // Worker C: Untagged worker
@@ -307,7 +532,6 @@ test.describe('Time Registration Dashboard Visibility', () => {
       language: 'Dansk', properties: [propertyName],
       timeRegistrationEnabled: true, enableMobileAccess: true,
     });
-    await page.waitForTimeout(2000);
     await setWorkerPasswordViaApi(page, adminToken, untaggedWorkerEmail, WORKER_PASSWORD);
 
     // Worker D: Manager without managing tags
@@ -316,7 +540,6 @@ test.describe('Time Registration Dashboard Visibility', () => {
       language: 'Dansk', properties: [propertyName],
       timeRegistrationEnabled: true, enableMobileAccess: true, isManager: true,
     });
-    await page.waitForTimeout(2000);
     await setWorkerPasswordViaApi(page, adminToken, notagMgrEmail, WORKER_PASSWORD);
 
     // ==================== PHASE 2: ADMIN sees all workers ====================
@@ -336,7 +559,7 @@ test.describe('Time Registration Dashboard Visibility', () => {
     // ==================== PHASE 3: MANAGER WITH TAGS sees self + tagged workers ====================
 
     await logout(page);
-    await loginAsWorker(page, managerEmail);
+    await loginAsWorker(page, managerEmail, 2);
     expect(page.url()).toContain('/plugins/time-planning-pn/planning');
 
     // Manager with tags should see the dropdown (more than 1 site)
@@ -355,7 +578,7 @@ test.describe('Time Registration Dashboard Visibility', () => {
     // ==================== PHASE 4: TAGGED WORKER sees only self, no dropdown ====================
 
     await logout(page);
-    await loginAsWorker(page, taggedWorkerEmail);
+    await loginAsWorker(page, taggedWorkerEmail, 1);
     expect(page.url()).toContain('/plugins/time-planning-pn/planning');
 
     // Non-manager should NOT see the dropdown (only 1 site returned, dropdown hidden)
@@ -365,7 +588,7 @@ test.describe('Time Registration Dashboard Visibility', () => {
     // ==================== PHASE 5: UNTAGGED WORKER sees only self, no dropdown ====================
 
     await logout(page);
-    await loginAsWorker(page, untaggedWorkerEmail);
+    await loginAsWorker(page, untaggedWorkerEmail, 1);
     expect(page.url()).toContain('/plugins/time-planning-pn/planning');
 
     await expect(page.locator('#workingHoursSite')).not.toBeVisible();
@@ -374,29 +597,12 @@ test.describe('Time Registration Dashboard Visibility', () => {
     // ==================== PHASE 6: MANAGER WITHOUT TAGS sees only self, no dropdown ====================
 
     await logout(page);
-    await loginAsWorker(page, notagMgrEmail);
+    await loginAsWorker(page, notagMgrEmail, 1);
     expect(page.url()).toContain('/plugins/time-planning-pn/planning');
 
     await expect(page.locator('#workingHoursSite')).not.toBeVisible();
     console.log('Manager without tags: dropdown correctly hidden (single site)');
 
-    // ==================== PHASE 7: CLEANUP (as admin) ====================
-
-    await logout(page);
-    await loginAsAdmin(page);
-
-    await workersPage.goToPropertyWorkers();
-    await page.waitForTimeout(1000);
-    await workersPage.clearTable();
-    await page.waitForTimeout(1000);
-
-    await propertiesPage.goToProperties();
-    await page.waitForTimeout(1000);
-    await propertiesPage.clearTable();
-    await page.waitForTimeout(1000);
-
-    await workersPage.goToPropertyWorkers();
-    await page.waitForTimeout(1000);
-    await workersPage.deleteTag(tagName);
+    // Teardown is afterAll's job (#1146) — deliberately not done here.
   });
 });
