@@ -139,7 +139,7 @@ export const ltLT = {
   'Download selected files': 'Atsisiųskite pasirinktus failus',
   'Name ZIP-folder': 'Pavadinkite ZIP aplanką',
   Back: 'Atgal',
-  'Download Document': 'Atsisiųskite {{kalbą}} {{plėtinys}}',
+  'Download Document': 'Atsisiųskite {{language}} {{extension}}',
   'Select DOCX': 'Pasirinkite DOCX',
   'Select PDF': 'Pasirinkite PDF',
   'Every month': 'Kiekvieną mėnesį',
