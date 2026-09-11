@@ -1209,6 +1209,81 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
                                 try
                                 {
+                                    // Disabling time registration soft-deletes the AssignedSite, so re-enabling it
+                                    // lands here and mints a NEW row for a site that may already have years of
+                                    // PlanRegistrations (they hang off SdkSitId, not AssignedSiteId, so they survive
+                                    // the delete). A new row has no AssignedSiteVersions, so OneMinuteModeTimeline
+                                    // would derive one-minute mode from the beginning of time and silently
+                                    // reinterpret every pre-existing tick row. Carry the effective date across.
+                                    var previousAssignment = await timePlanningDbContext.AssignedSites
+                                        .AsNoTracking()
+                                        .Where(x => x.SiteId == siteDto.SiteId)
+                                        .OrderByDescending(x => x.Id)
+                                        .FirstOrDefaultAsync().ConfigureAwait(false);
+
+                                    DateTime? useOneMinuteIntervalsFrom;
+                                    if (previousAssignment == null)
+                                    {
+                                        // Genuinely first setup: no earlier history to protect, so one-minute mode
+                                        // holds all the way back.
+                                        useOneMinuteIntervalsFrom = null;
+                                    }
+                                    else if (!previousAssignment.UseOneMinuteIntervals)
+                                    {
+                                        // The site was in 5-minute mode until now — the switch happens right here, so
+                                        // everything registered before this instant keeps reading as 5-minute mode.
+                                        useOneMinuteIntervalsFrom = DateTime.UtcNow;
+                                    }
+                                    else if (previousAssignment.UseOneMinuteIntervalsFrom != null)
+                                    {
+                                        // Already one-minute WITH a recorded effective date: carry it through unchanged.
+                                        useOneMinuteIntervalsFrom = previousAssignment.UseOneMinuteIntervalsFrom;
+                                    }
+                                    else
+                                    {
+                                        // Legacy un-backfilled shape: one-minute mode with no stamp. Such a site's mode
+                                        // history lives ONLY in the OLD row's AssignedSiteVersions, and those are keyed
+                                        // to the old AssignedSiteId — they do NOT follow the site to the new row, so the
+                                        // new row's timeline cannot see them. Recovering the transition date here is
+                                        // what keeps the pre-switch history in 5-minute mode; carrying the NULL forward
+                                        // would make the new timeline's _initialValue true and reinterpret all of it.
+                                        var previousVersions = await timePlanningDbContext.AssignedSiteVersions
+                                            .AsNoTracking()
+                                            .Where(x => x.AssignedSiteId == previousAssignment.Id)
+                                            // Only the trail as it stood while the site was LIVE. Disabling time
+                                            // registration soft-deletes the row through PnBase.Delete, which writes a
+                                            // version row (WorkflowState = removed) copying the CURRENT flag. For a
+                                            // site flipped to true outside the audited path, that removal row would be
+                                            // the first to record true and pass the DISABLE date off as the switch —
+                                            // turning everything registered between the last live save and the disable
+                                            // into 5-minute mode, where the old row's own timeline had read one-minute.
+                                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                            .OrderBy(x => x.Id)
+                                            // UpdatedAt is the version row's save time; CreatedAt (a copy of the base
+                                            // entity's creation time) is the stand-in for legacy rows without one.
+                                            .Select(x => new { x.UseOneMinuteIntervals, x.UpdatedAt, x.CreatedAt })
+                                            .ToListAsync().ConfigureAwait(false);
+
+                                        if (previousVersions.Count == 0 || previousVersions[0].UseOneMinuteIntervals)
+                                        {
+                                            // No live version rows at all: OneMinuteModeTimeline falls back to the current
+                                            // flag, which was true. Earliest version row already true: its
+                                            // _initialValue rule makes one-minute hold from the beginning of time.
+                                            // Either way there is no transition to record.
+                                            useOneMinuteIntervalsFrom = null;
+                                        }
+                                        else
+                                        {
+                                            // The false→true transition is the first version row carrying true. When
+                                            // the trail never records it, the flag was flipped outside the audited
+                                            // path, and the last audited save is the earliest possible flip point —
+                                            // the same divergence correction OneMinuteModeTimeline applies.
+                                            var transition = previousVersions.FirstOrDefault(x => x.UseOneMinuteIntervals)
+                                                             ?? previousVersions[^1];
+                                            useOneMinuteIntervalsFrom = transition.UpdatedAt ?? transition.CreatedAt;
+                                        }
+                                    }
+
                                     var assignmentSite = new AssignedSite
                                     {
                                         SiteId = siteDto.SiteId,
@@ -1252,7 +1327,11 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                         FourthShiftActive = deviceUserModel.FourthShiftActive ?? false,
                                         FifthShiftActive = deviceUserModel.FifthShiftActive ?? false,
                                         IsManager = deviceUserModel.IsManager ?? false,
-                                        UseOneMinuteIntervals = deviceUserModel.UseOneMinuteIntervals ?? false,
+                                        // Hardcoded: one-minute intervals are the standard for every new time registration
+                                        // setup and the client's value is ignored (see DeviceUserModel.UseOneMinuteIntervals).
+                                        // The effective date is the one carried across above.
+                                        UseOneMinuteIntervals = true,
+                                        UseOneMinuteIntervalsFrom = useOneMinuteIntervalsFrom,
                                         PayRuleSetId = deviceUserModel.PayRuleSetId
                                         // ManagingTagIds = deviceUserModel.ManagingTagIds ?? [] // TODO: Handle ManagingTagIds separately
                                     };
@@ -1684,7 +1763,12 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             FourthShiftActive = deviceUserModel.FourthShiftActive ?? false,
                             FifthShiftActive = deviceUserModel.FifthShiftActive ?? false,
                             IsManager = deviceUserModel.IsManager ?? false,
-                            UseOneMinuteIntervals = deviceUserModel.UseOneMinuteIntervals ?? false,
+                            // Hardcoded: one-minute intervals are the standard for every new time registration
+                            // setup and the client's value is ignored (see DeviceUserModel.UseOneMinuteIntervals).
+                            // UseOneMinuteIntervalsFrom is left NULL on purpose: OneMinuteModeTimeline then derives
+                            // one-minute mode for the site's whole history, whereas stamping today would push
+                            // back-dated rows into 5-minute mode.
+                            UseOneMinuteIntervals = true,
                             PayRuleSetId = deviceUserModel.PayRuleSetId,
                             // ManagingTagIds = deviceUserModel.ManagingTagIds ?? [] // TODO: Handle ManagingTagIds separately
                         };
