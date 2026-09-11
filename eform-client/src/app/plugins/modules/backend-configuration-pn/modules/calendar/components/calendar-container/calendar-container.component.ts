@@ -26,7 +26,6 @@ import {TaskCreateEditModalComponent, TaskCreateEditModalData} from '../../modal
 import {CalendarWeekGridComponent} from '../calendar-week-grid/calendar-week-grid.component';
 import {TaskPreviewModalComponent, TaskPreviewModalData} from '../../modals/task-preview-modal/task-preview-modal.component';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
-import {EformTagService} from 'src/app/common/services';
 import {BoardCreateModalComponent, BoardCreateModalData} from '../../modals/board-create-modal/board-create-modal.component';
 import {BoardDeleteModalComponent, BoardDeleteModalData} from '../../modals/board-delete-modal/board-delete-modal.component';
 import {RepeatScopeModalComponent} from '../../modals/repeat-scope-modal/repeat-scope-modal.component';
@@ -98,14 +97,19 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   currentDate: string = (() => { const d = new Date(); return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`; })();
   viewMode: 'week' | 'day' | 'schedule' | 'month' = 'week';
   activeBoardIds: number[] = [];
-  // The calendar (board) the user most recently turned ON in the sidebar.
+  // The calendar (board) the user most recently turned ON in the toolbar's
+  // calendars dropdown.
   // Transient (in-memory only) — used to default the create-task modal to
   // that calendar even when several stay checked. Re-seeded on board load.
   lastActivatedBoardId: number | null = null;
   activeSiteIds: number[] = [];
   activeTeamIds: number[] = [];
+  // Always empty: the planning-tag filter has no UI. Its sidebar panel was
+  // commented out long before #1209 retired the sidebar, and #1209 (epic #1208,
+  // Q5) removed the remaining dead client code while deliberately keeping the
+  // server-side TagNames parameter this feeds, so the request shape is
+  // unchanged and an empty list excludes nothing.
   activeTagNames: string[] = [];
-  sidebarOpen = true;
   isAdmin = false;
 
   constructor(
@@ -116,7 +120,6 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     private layoutService: CalendarLayoutService,
     private stateService: CalendarStateService,
     private tagsService: ItemsPlanningPnTagsService,
-    private eformTagService: EformTagService,
     private workerTagsService: BackendConfigurationPnWorkerTagsService,
     private eformService: EFormService,
     private dialog: MatDialog,
@@ -138,7 +141,6 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       this.activeSiteIds = filters.activeSiteIds;
       this.activeTeamIds = filters.activeTeamIds;
       this.activeTagNames = filters.activeTagNames;
-      this.sidebarOpen = filters.sidebarOpen;
     });
 
     this.loadProperties();
@@ -264,25 +266,6 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     });
   }
 
-  onCreateTag(name: string) {
-    if (!name.trim()) return;
-    this.tagsService.createPlanningTag({name: name.trim()}).subscribe(res => {
-      if (res && res.success) this.loadTags();
-    });
-  }
-
-  onUpdateTag(tag: SharedTagModel) {
-    this.tagsService.updatePlanningTag(tag).subscribe(res => {
-      if (res && res.success) this.loadTags();
-    });
-  }
-
-  onDeleteTag(id: number) {
-    this.tagsService.deletePlanningTag(id).subscribe(res => {
-      if (res && res.success) this.loadTags();
-    });
-  }
-
   // Teams (worker groups) come from the PLUGIN endpoint, not the core
   // `EformTagService.getAvailableTags()`: the SDK keeps worker groups and
   // eForm/template tags in one `Tags` table, so the core list offered template
@@ -290,30 +273,9 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   // (#1213). The plugin endpoint filters server-side to tags that have at
   // least one live worker member. Trade-off: a worker group with no members at
   // all is not listed until someone is added to it.
-  // Create/update/delete below still go through the core tag CRUD — the SDK
-  // `Tag` row is the same row either way, and those handlers are currently
-  // unreachable anyway (the sidebar's "My teams" panel is commented out).
   loadTeams() {
     this.workerTagsService.getWorkerTags().subscribe(res => {
       if (res && res.success) this.teams = res.model;
-    });
-  }
-
-  onCreateTeam(name: string) {
-    this.eformTagService.createTag({name} as any).subscribe(res => {
-      if (res && res.success) this.loadTeams();
-    });
-  }
-
-  onUpdateTeam(event: {id: number; name: string}) {
-    this.eformTagService.updateTag({id: event.id, name: event.name, description: null} as any).subscribe(res => {
-      if (res && res.success) this.loadTeams();
-    });
-  }
-
-  onDeleteTeam(teamId: number) {
-    this.eformTagService.deleteTag(teamId).subscribe(res => {
-      if (res && res.success) this.loadTeams();
     });
   }
 
@@ -334,7 +296,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         } as CommonDictionaryModel));
       } else {
         // Same failure mode as loadBoards: the list is property-scoped, and the
-        // sidebar/create-modal would otherwise offer the previous property's
+        // create-modal would otherwise offer the previous property's
         // employees under the newly selected property.
         this.employees = [];
       }
@@ -663,16 +625,6 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     this.loadTasks();
   }
 
-  onToggleSidebar() {
-    this.stateService.toggleSidebar();
-  }
-
-  onPropertyPillClicked() {
-    if (!this.sidebarOpen) {
-      this.onToggleSidebar();
-    }
-  }
-
   onBoardToggled(boardId: number) {
     // The store update is async, so activeBoardIds here still reflects the
     // pre-toggle state: if the calendar is not currently active, this click is
@@ -684,18 +636,23 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     this.loadTasks();
   }
 
-  onTagToggled(tagName: string) {
-    this.stateService.toggleTag(tagName);
+  onSelectAllBoards() {
+    this.stateService.setActiveBoardIds(this.boards.map(b => b.id));
     this.loadTasks();
   }
 
-  onTeamToggled(teamId: number) {
-    this.stateService.toggleTeam(teamId);
-    this.loadEmployees();
-  }
-
-  onEmployeeToggled(siteId: number) {
-    this.stateService.toggleSite(siteId);
+  onClearBoards() {
+    // lastActivatedBoardId is deliberately left alone: openCreateModal only
+    // honours it while it is still in activeBoardIds, so clearing the filter
+    // already neutralises it, and re-checking that calendar restores it.
+    //
+    // Known consequence, unchanged on purpose: with nothing active,
+    // openCreateModal's `selectedBoardId` falls through to `undefined`, so the
+    // create-task modal opens with no calendar preselected. That state was
+    // already reachable by unchecking every row one at a time; this makes it
+    // one click. Left as-is pending the product call on Ryd (an empty filter
+    // is "no filter" server-side, so Ryd and "Vælg alle" render the same grid).
+    this.stateService.setActiveBoardIds([]);
     this.loadTasks();
   }
 

@@ -751,4 +751,10 @@ export const nlNL = {
   'Change a filter or click Overview to load the table': 'Wijzig een filter of klik op Overzicht om de tabel te laden.',
   'Without report headline': 'Zonder rapportkop',
   'Columns unavailable for template #{{id}}': 'Kolommen niet beschikbaar voor sjabloon #{{id}}',
+  // Calendar toolbar (#1209): the calendars multi-select button label, its
+  // bulk actions, and the accessible name of a calendar row's actions menu.
+  '{{count}} calendars': '{{count}} kalenders',
+  'Select all': 'Alles selecteren',
+  Clear: 'Wissen',
+  'Calendar actions': 'Kalenderacties',
 };

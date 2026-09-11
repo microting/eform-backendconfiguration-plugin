@@ -751,4 +751,10 @@ export const hrHR = {
   'Change a filter or click Overview to load the table': 'Promijenite filtar ili kliknite Pregled za učitavanje tablice.',
   'Without report headline': 'Bez naslova izvještaja',
   'Columns unavailable for template #{{id}}': 'Kolumne nisu dostupne za predložak #{{id}}',
+  // Calendar toolbar (#1209): the calendars multi-select button label, its
+  // bulk actions, and the accessible name of a calendar row's actions menu.
+  '{{count}} calendars': '{{count}} kalendara',
+  'Select all': 'Odaberi sve',
+  Clear: 'Očisti',
+  'Calendar actions': 'Radnje kalendara',
 };

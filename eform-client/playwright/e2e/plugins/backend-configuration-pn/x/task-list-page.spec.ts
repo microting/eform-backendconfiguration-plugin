@@ -150,7 +150,6 @@ test.describe.serial('Task list page', () => {
 
     const calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
     await calendarPage.selectProperty(property.name);
     await page.waitForTimeout(1000);
 
@@ -227,7 +226,6 @@ test.describe.serial('Task list page', () => {
   test('PP5: sort by task name reorders rows', async ({ page }) => {
     const calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
     await calendarPage.selectProperty(property.name);
     await page.waitForTimeout(1000);
     await calendarPage.openCreateModalAtSlot(1, 10);
@@ -370,7 +368,6 @@ test.describe.serial('Task list page', () => {
     test.setTimeout(180000);
     const calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
     await calendarPage.selectProperty(emptyProperty.name);
     await page.waitForTimeout(1000);
     await calendarPage.openCreateModalAtSlot(1, 10);

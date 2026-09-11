@@ -751,4 +751,10 @@ export const elGR = {
   'Change a filter or click Overview to load the table': 'Αλλάξτε ένα φίλτρο ή κάντε κλικ στην Επισκόπηση για να φορτώσετε τον πίνακα.',
   'Without report headline': 'Χωρίς επικεφαλίδα αναφοράς',
   'Columns unavailable for template #{{id}}': 'Οι στήλες δεν είναι διαθέσιμες για το πρότυπο #{{id}}',
+  // Calendar toolbar (#1209): the calendars multi-select button label, its
+  // bulk actions, and the accessible name of a calendar row's actions menu.
+  '{{count}} calendars': '{{count}} ημερολόγια',
+  'Select all': 'Επιλογή όλων',
+  Clear: 'Καθαρισμός',
+  'Calendar actions': 'Ενέργειες ημερολογίου',
 };

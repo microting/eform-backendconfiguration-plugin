@@ -14,7 +14,6 @@ import {MatChipsModule} from '@angular/material/chips';
 import {MatDatepickerModule} from '@angular/material/datepicker';
 import {MAT_DATE_FORMATS} from '@angular/material/core';
 import {MatDialogModule} from '@angular/material/dialog';
-import {MatExpansionModule} from '@angular/material/expansion';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatIconModule} from '@angular/material/icon';
 import {MatInputModule} from '@angular/material/input';
@@ -31,11 +30,6 @@ import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-share
 import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
 import {EformCasesModule} from 'src/app/common/modules/eform-cases/eform-cases.module';
 import {CasesModule} from 'src/app/modules';
-import {TeamCreateDialogComponent} from './components/calendar-sidebar/team-create-dialog.component';
-import {TeamDeleteDialogComponent} from './components/calendar-sidebar/team-delete-dialog.component';
-import {TagCreateDialogComponent} from './components/calendar-sidebar/tag-create-dialog.component';
-import {TagDeleteDialogComponent} from './components/calendar-sidebar/tag-delete-dialog.component';
-
 import {CALENDAR_MAT_DATE_FORMATS} from './calendar-date-formats';
 import {CalendarRouting} from './calendar.routing';
 import {
@@ -45,7 +39,6 @@ import {
   CalendarMiniCalendarComponent,
   CalendarMonthViewComponent,
   CalendarScheduleViewComponent,
-  CalendarSidebarComponent,
   CalendarTaskBlockComponent,
   CalendarWeekGridComponent,
 } from './components';
@@ -84,7 +77,6 @@ export {
     CalendarContainerComponent,
     CalendarDayColumnComponent,
     CalendarHeaderComponent,
-    CalendarSidebarComponent,
     CalendarWeekGridComponent,
     CalendarTaskBlockComponent,
     CalendarScheduleViewComponent,
@@ -102,10 +94,6 @@ export {
     CalendarSelectWorkerModalComponent,
     CalendarCompleteEventModalComponent,
     CalendarImageLightboxComponent,
-    TeamCreateDialogComponent,
-    TeamDeleteDialogComponent,
-    TagCreateDialogComponent,
-    TagDeleteDialogComponent,
   ],
   imports: [
     CommonModule,
@@ -128,7 +116,6 @@ export {
     MatChipsModule,
     MatDatepickerModule,
     MatDialogModule,
-    MatExpansionModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,

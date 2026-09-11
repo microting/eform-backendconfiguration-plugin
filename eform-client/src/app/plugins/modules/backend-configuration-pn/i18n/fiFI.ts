@@ -751,4 +751,10 @@ export const fiFI = {
   'Change a filter or click Overview to load the table': 'Muuta suodatinta tai napsauta Yleiskatsaus ladataksesi taulukon.',
   'Without report headline': 'Ilman raportin otsikkoa',
   'Columns unavailable for template #{{id}}': 'Sarakkeet eivät ole käytettävissä mallille #{{id}}',
+  // Calendar toolbar (#1209): the calendars multi-select button label, its
+  // bulk actions, and the accessible name of a calendar row's actions menu.
+  '{{count}} calendars': '{{count}} kalenteria',
+  'Select all': 'Valitse kaikki',
+  Clear: 'Tyhjennä',
+  'Calendar actions': 'Kalenterin toiminnot',
 };

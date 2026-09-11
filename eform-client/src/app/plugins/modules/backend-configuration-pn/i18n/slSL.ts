@@ -751,4 +751,10 @@ export const slSL = {
   'Change a filter or click Overview to load the table': 'Spremenite filter ali kliknite Pregled za nalaganje tabele.',
   'Without report headline': 'Brez naslova poročila',
   'Columns unavailable for template #{{id}}': 'Stolpci niso na voljo za predlogo #{{id}}',
+  // Calendar toolbar (#1209): the calendars multi-select button label, its
+  // bulk actions, and the accessible name of a calendar row's actions menu.
+  '{{count}} calendars': '{{count}} koledarjev',
+  'Select all': 'Izberi vse',
+  Clear: 'Počisti',
+  'Calendar actions': 'Dejanja koledarja',
 };

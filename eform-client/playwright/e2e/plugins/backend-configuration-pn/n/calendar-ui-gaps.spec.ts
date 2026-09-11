@@ -82,7 +82,6 @@ test.describe.serial('Calendar UI gaps (#897)', () => {
 
     const calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
 
     if (seeded) {
       const folderResponsePromise = page.waitForResponse(

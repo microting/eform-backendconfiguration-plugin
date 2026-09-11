@@ -751,4 +751,10 @@ export const ptPT = {
   'Change a filter or click Overview to load the table': 'Altere um filtro ou clique em Visão geral para carregar a tabela.',
   'Without report headline': 'Sem título de relatório',
   'Columns unavailable for template #{{id}}': 'Colunas indisponíveis para o modelo #{{id}}',
+  // Calendar toolbar (#1209): the calendars multi-select button label, its
+  // bulk actions, and the accessible name of a calendar row's actions menu.
+  '{{count}} calendars': '{{count}} calendários',
+  'Select all': 'Selecionar tudo',
+  Clear: 'Limpar',
+  'Calendar actions': 'Ações do calendário',
 };

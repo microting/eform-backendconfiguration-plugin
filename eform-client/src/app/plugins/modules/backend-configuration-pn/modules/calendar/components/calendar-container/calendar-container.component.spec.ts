@@ -6,7 +6,7 @@ import {Router} from '@angular/router';
 import {Store} from '@ngrx/store';
 import {TranslateModule} from '@ngx-translate/core';
 import {BehaviorSubject, of} from 'rxjs';
-import {EFormService, EformTagService} from 'src/app/common/services';
+import {EFormService} from 'src/app/common/services';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
 import {
   BackendConfigurationPnCalendarService,
@@ -81,7 +81,6 @@ describe('CalendarContainerComponent', () => {
       activeSiteIds: [],
       activeTeamIds: [],
       activeTagNames: [],
-      sidebarOpen: true,
     });
 
     // Stands in for the real ngrx-backed CalendarStateService. Only the two
@@ -106,8 +105,6 @@ describe('CalendarContainerComponent', () => {
       toggleBoard: jest.fn(),
       toggleSite: jest.fn(),
       toggleTeam: jest.fn(),
-      toggleTag: jest.fn(),
-      toggleSidebar: jest.fn(),
     };
 
     boardsByProperty = new Map<number, any>([
@@ -153,7 +150,6 @@ describe('CalendarContainerComponent', () => {
         {provide: CalendarStateService, useValue: stateServiceStub},
         {provide: CalendarLayoutService, useValue: {computeLayout: (tasks: any[]) => tasks}},
         {provide: ItemsPlanningPnTagsService, useValue: {getPlanningsTags: jest.fn().mockReturnValue(of({success: true, model: []}))}},
-        {provide: EformTagService, useValue: {}},
         {provide: BackendConfigurationPnWorkerTagsService, useValue: {getWorkerTags: jest.fn().mockReturnValue(of({success: true, model: []}))}},
         {provide: EFormService, useValue: {getAll: jest.fn().mockReturnValue(of({success: true, model: {templates: []}}))}},
       ],

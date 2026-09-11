@@ -751,4 +751,10 @@ export const csCZ = {
   'Change a filter or click Overview to load the table': 'Změňte filtr nebo klikněte na Přehled pro načtení tabulky.',
   'Without report headline': 'Bez nadpisu zprávy',
   'Columns unavailable for template #{{id}}': 'Sloupce nejsou k dispozici pro šablonu #{{id}}',
+  // Calendar toolbar (#1209): the calendars multi-select button label, its
+  // bulk actions, and the accessible name of a calendar row's actions menu.
+  '{{count}} calendars': '{{count}} kalendářů',
+  'Select all': 'Vybrat vše',
+  Clear: 'Vymazat',
+  'Calendar actions': 'Akce kalendáře',
 };

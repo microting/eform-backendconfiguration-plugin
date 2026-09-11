@@ -88,7 +88,6 @@ function isPrepareComplete(r: import('@playwright/test').Response): boolean {
 async function openCreateModal(page: Page, dayOffset: number, hour: number): Promise<CalendarUiEnhancementsPage> {
   const calendarPage = new CalendarUiEnhancementsPage(page);
   await calendarPage.goToCalendar();
-  await calendarPage.ensureSidebarOpen();
   const folderResp = page.waitForResponse(
     r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos'),
     { timeout: API_TIMEOUT }
