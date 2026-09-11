@@ -772,4 +772,10 @@ export const da = {
   'Update period': 'Opdater periode',
   'Select a period and click Update period': 'Vælg en periode og klik Opdater periode.',
   'Change a filter or click Overview to load the table': 'Skift et filter, eller klik Oversigt for at hente tabellen.',
+  // Calendar toolbar (#1209): the calendars multi-select button label, its
+  // bulk actions, and the accessible name of a calendar row's actions menu.
+  '{{count}} calendars': '{{count}} kalendere',
+  'Select all': 'Vælg alle',
+  Clear: 'Ryd',
+  'Calendar actions': 'Kalenderhandlinger',
 };

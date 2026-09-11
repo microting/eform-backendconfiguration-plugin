@@ -139,7 +139,6 @@ test.describe.serial('Task list — batch change start date', () => {
 
     const calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
     await calendarPage.selectProperty(property.name);
     await page.waitForTimeout(1000);
 

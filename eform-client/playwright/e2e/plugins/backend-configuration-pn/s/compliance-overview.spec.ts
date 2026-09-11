@@ -302,7 +302,6 @@ async function seedOpenComplianceRow(page: Page, propertyName: string, title: st
   // A fresh calendar load per property, so the week offset is always "this
   // week" before openCreateModalAtSlot advances it exactly once.
   await calendarPage.goToCalendar();
-  await calendarPage.ensureSidebarOpen();
   const folderResponse = page.waitForResponse(
     r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos'),
     { timeout: 60000 },

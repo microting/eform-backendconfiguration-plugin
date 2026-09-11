@@ -128,7 +128,6 @@ test.describe.serial('Calendar copy flows (#886)', () => {
 
     const calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
 
     if (seeded) {
       const folderResp = page.waitForResponse(

@@ -112,7 +112,6 @@ test.describe.serial('Calendar edit-event field combinations (#891)', () => {
 
     const calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
 
     if (seeded) {
       const folderResp = page.waitForResponse(
@@ -174,7 +173,6 @@ test.describe.serial('Calendar edit-event field combinations (#891)', () => {
     // in the assignee panel.
     const calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
     const folderResp = page.waitForResponse(
       r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos'),
       { timeout: 60000 }

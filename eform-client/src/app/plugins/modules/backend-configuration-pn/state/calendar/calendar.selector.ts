@@ -31,5 +31,3 @@ export const selectCalendarActiveTeamIds =
 export const selectCalendarActiveTagNames =
   createSelector(selectCalendarFilters, (f) => f.activeTagNames);
 
-export const selectCalendarSidebarOpen =
-  createSelector(selectCalendarFilters, (f) => f.sidebarOpen);

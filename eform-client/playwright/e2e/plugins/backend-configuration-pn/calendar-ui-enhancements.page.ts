@@ -1,4 +1,5 @@
 import { Page, Locator, expect } from '@playwright/test';
+import { API_TIMEOUT, UI_TIMEOUT } from './wait-helpers';
 
 /**
  * Self-contained page object for the calendar UI-enhancements suite under
@@ -20,10 +21,108 @@ export class CalendarUiEnhancementsPage {
       .waitFor({ state: 'visible', timeout: 30000 });
   }
 
+  /**
+   * Pick a property from the toolbar's property dropdown (#1209 — the property
+   * list moved out of the retired sidebar into a mat-menu, so it has to be
+   * opened before an option exists). The panel renders into
+   * `.cdk-overlay-container`; the option keeps the `.property-item` class it
+   * had in the sidebar.
+   *
+   * The pick fires `loadBoards` -> `loadTasks`, and callers act on the grid
+   * immediately afterwards. Both responses are awaited instead of sleeping
+   * (this helper is on ~60 call sites, so a 1s guess is a minute of pure sleep
+   * per run — and the repo forbids a sleep standing in for a condition). Each
+   * wait is `.catch(() => null)`-guarded, mirroring `task-list.page.ts`, so a
+   * call that legitimately does not fire cannot hang the helper.
+   */
   async selectProperty(name: string): Promise<void> {
-    await this.page.locator('.property-item').filter({ hasText: name }).click();
-    await this.page.waitForTimeout(1000);
+    await this.openPropertyMenu();
+    const boardsLoaded = this.page
+      .waitForResponse(r => r.url().includes('/api/backend-configuration-pn/calendar/boards/'), { timeout: API_TIMEOUT })
+      .catch(() => null);
+    const tasksLoaded = this.page
+      .waitForResponse(r => r.url().includes('/api/backend-configuration-pn/calendar/tasks/week'), { timeout: API_TIMEOUT })
+      .catch(() => null);
+    await this.propertyMenuPanel()
+      .locator('.property-item')
+      .filter({ hasText: name })
+      .click();
+    // Single-select: the menu closes itself on pick.
+    await this.propertyMenuPanel().waitFor({ state: 'detached', timeout: UI_TIMEOUT });
+    await Promise.all([boardsLoaded, tasksLoaded]);
   }
+
+  // ----- Toolbar dropdowns (#1209) -----------------------------------------
+
+  propertyMenuPanel(): Locator {
+    return this.page.locator('.cdk-overlay-container .calendar-property-menu');
+  }
+
+  boardMenuPanel(): Locator {
+    return this.page.locator('.cdk-overlay-container .calendar-boards-menu');
+  }
+
+  /**
+   * Gate on the TRIGGER's `aria-expanded`, not on whether a panel element
+   * exists: a panel that is mid-exit-animation is still in the DOM, so a
+   * count-based check would read "already open", skip the click, and then pass
+   * a `waitFor visible` on a panel that is about to detach — and Material sets
+   * `pointer-events: none` on `.mat-mdc-menu-panel-animating`, so the next
+   * click would silently stall. MatMenuTrigger binds `aria-expanded` to
+   * `menuOpen`, which is already false while the exit animation runs.
+   */
+  private async openMenuVia(triggerId: string, panel: Locator): Promise<void> {
+    const trigger = this.page.locator(triggerId);
+    if ((await trigger.getAttribute('aria-expanded')) !== 'true') {
+      await trigger.click();
+    }
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true', { timeout: UI_TIMEOUT });
+    await panel.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+  }
+
+  async openPropertyMenu(): Promise<void> {
+    await this.openMenuVia('#calendarPropertyButton', this.propertyMenuPanel());
+  }
+
+  /**
+   * Open the "Kalendere" multi-select. The panel deliberately stays open while
+   * calendars are checked (the component stops click propagation so MatMenu's
+   * close-on-click does not fire), so this is a no-op when it is already open.
+   */
+  async openBoardMenu(): Promise<void> {
+    await this.openMenuVia('#calendarBoardsButton', this.boardMenuPanel());
+  }
+
+  /**
+   * NB: Escape cannot close the panel while a row's `⋮` popover is open — that
+   * popover stops `keydown` (carried over verbatim from the sidebar), which
+   * kills the overlay keyboard dispatcher MatMenu's Escape relies on. No spec
+   * opens it today; one that does must close the popover first, or this burns
+   * a full UI_TIMEOUT.
+   */
+  async closeBoardMenu(): Promise<void> {
+    const trigger = this.page.locator('#calendarBoardsButton');
+    if ((await trigger.getAttribute('aria-expanded')) !== 'true') return;
+    await this.page.keyboard.press('Escape');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false', { timeout: UI_TIMEOUT });
+    await this.boardMenuPanel().waitFor({ state: 'detached', timeout: UI_TIMEOUT });
+  }
+
+  /**
+   * One row of the calendars dropdown, located by its calendar name.
+   *
+   * Anchored, not substring: a plain `hasText` makes "Drift" match "Drift 2"
+   * as well, which surfaces as an opaque strict-mode violation rather than a
+   * clear failure. `\s*` on both sides because a regex `hasText` matches the
+   * element's RAW text, and the name sits inside Material's label span.
+   */
+  boardItem(name: string): Locator {
+    const exact = new RegExp(`^\\s*${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`);
+    return this.boardMenuPanel()
+      .locator('.board-item')
+      .filter({ has: this.page.locator('.board-name', { hasText: exact }) });
+  }
+
 
   // ----- Calendar slot click ----------------------------------------------
 
@@ -275,41 +374,16 @@ export class CalendarUiEnhancementsPage {
     return out;
   }
 
-  // ----- Header / sidebar --------------------------------------------------
-
-  async clickPropertyPill(): Promise<void> {
-    await this.page.locator('.property-pill').click();
-    // Brief settle so the sidebar transition can flip the class.
-    await this.page.waitForTimeout(150);
-  }
+  // ----- Header ------------------------------------------------------------
 
   /**
-   * The menu-toggle button — the leading button in `.calendar-header`
-   * containing a `<mat-icon>menu</mat-icon>`. Filtering by the icon text
-   * keeps this stable even if more icon-buttons are added to the header
-   * later.
+   * Click the toolbar's property pill. Since #1209 it is the property
+   * dropdown's trigger, so this opens the panel (it used to only toggle the
+   * sidebar, which was hidden in some view modes — the dead-pill bug).
    */
-  getMenuToggleButton(): Locator {
-    return this.page
-      .locator('.calendar-header button')
-      .filter({ has: this.page.locator('mat-icon', { hasText: 'menu' }) })
-      .first();
-  }
-
-  async clickMenuToggleButton(): Promise<void> {
-    await this.getMenuToggleButton().click();
-    await this.page.waitForTimeout(150);
-  }
-
-  async isSidebarClosed(): Promise<boolean> {
-    return (await this.page.locator('.calendar-shell.sidebar-closed').count()) > 0;
-  }
-
-  async ensureSidebarOpen(): Promise<void> {
-    if (await this.isSidebarClosed()) {
-      await this.clickMenuToggleButton();
-      await this.page.waitForTimeout(150);
-    }
+  async clickPropertyPill(): Promise<void> {
+    await this.page.locator('.property-pill').click();
+    await this.propertyMenuPanel().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   }
 
   /**

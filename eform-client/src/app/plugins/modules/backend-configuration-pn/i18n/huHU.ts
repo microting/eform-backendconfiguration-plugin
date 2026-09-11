@@ -751,4 +751,10 @@ export const huHU = {
   'Change a filter or click Overview to load the table': 'Módosítson egy szűrőt, vagy kattintson az Áttekintés gombra a táblázat betöltéséhez.',
   'Without report headline': 'Jelentéscím nélkül',
   'Columns unavailable for template #{{id}}': 'Oszlopok nem érhetők el a(z) #{{id}} sablonhoz',
+  // Calendar toolbar (#1209): the calendars multi-select button label, its
+  // bulk actions, and the accessible name of a calendar row's actions menu.
+  '{{count}} calendars': '{{count}} naptár',
+  'Select all': 'Összes kijelölése',
+  Clear: 'Törlés',
+  'Calendar actions': 'Naptárműveletek',
 };

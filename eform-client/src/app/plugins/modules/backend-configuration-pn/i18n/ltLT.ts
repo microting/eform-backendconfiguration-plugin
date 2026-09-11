@@ -751,4 +751,10 @@ export const ltLT = {
   'Change a filter or click Overview to load the table': 'Pakeiskite filtrą arba spustelėkite „Apžvalga“, kad įkeltumėte lentelę.',
   'Without report headline': 'Be ataskaitos antraštės',
   'Columns unavailable for template #{{id}}': 'Stulpeliai nepasiekiami šablonui #{{id}}',
+  // Calendar toolbar (#1209): the calendars multi-select button label, its
+  // bulk actions, and the accessible name of a calendar row's actions menu.
+  '{{count}} calendars': '{{count}} kalendorių',
+  'Select all': 'Pažymėti visus',
+  Clear: 'Išvalyti',
+  'Calendar actions': 'Kalendoriaus veiksmai',
 };

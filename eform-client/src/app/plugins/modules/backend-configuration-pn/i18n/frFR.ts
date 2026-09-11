@@ -750,4 +750,10 @@ export const frFR = {
   'Change a filter or click Overview to load the table': 'Modifiez un filtre ou cliquez sur Aperçu pour charger le tableau.',
   'Without report headline': 'Sans en-tête de rapport',
   'Columns unavailable for template #{{id}}': 'Colonnes indisponibles pour le modèle #{{id}}',
+  // Calendar toolbar (#1209): the calendars multi-select button label, its
+  // bulk actions, and the accessible name of a calendar row's actions menu.
+  '{{count}} calendars': '{{count}} calendriers',
+  'Select all': 'Tout sélectionner',
+  Clear: 'Effacer',
+  'Calendar actions': 'Actions du calendrier',
 };

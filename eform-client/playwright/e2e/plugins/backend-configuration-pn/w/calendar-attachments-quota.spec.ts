@@ -72,7 +72,6 @@ test.describe.serial('Calendar attachment quota', () => {
 
     const calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
 
     if (seeded) {
       const folderResp = page.waitForResponse(
@@ -260,7 +259,6 @@ test.describe.serial('Calendar attachment quota', () => {
     }
     await page.waitForTimeout(2000);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
     await calendarPage.selectProperty(property.name);
     await page.waitForTimeout(1500);
     // openCreateModalAtSlot advanced one week to create the event.

@@ -3,6 +3,7 @@ import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
 import { CalendarUiEnhancementsPage } from '../calendar-ui-enhancements.page';
 import { BackendConfigurationPropertiesPage, PropertyCreateUpdate } from '../BackendConfigurationProperties.page';
+import { API_TIMEOUT, UI_TIMEOUT } from '../wait-helpers';
 
 // Regression for the user report: the create-task modal pre-selected the
 // lowest-id board (first created) whenever more than one board was active,
@@ -22,32 +23,60 @@ const boardB = 'B-' + generateRandmString(5);
 
 // --- helpers --------------------------------------------------------------
 
+// #1209 moved the calendar list out of the retired sidebar and into the
+// toolbar's "Kalendere" dropdown. The rows keep their `.board-item` /
+// `.board-name` / `.board-checkbox` classes, but they now live in a mat-menu
+// panel in `.cdk-overlay-container`, so every helper opens the dropdown first.
+// The panel deliberately stays open across check/uncheck gestures.
+//
+// The locators themselves live on CalendarUiEnhancementsPage so this spec and
+// `r/calendar-ui-enhancements.spec.ts` cannot drift apart; the page object is
+// a thin wrapper over `page`, so constructing one per call is free.
+function ui(page: import('@playwright/test').Page): CalendarUiEnhancementsPage {
+  return new CalendarUiEnhancementsPage(page);
+}
+
+async function openBoardMenu(page: import('@playwright/test').Page) {
+  await ui(page).openBoardMenu();
+}
+
+// NB: Escape cannot close the panel while a row's `⋮` popover is open (it
+// stops keydown). No helper here opens that popover.
+async function closeBoardMenu(page: import('@playwright/test').Page) {
+  await ui(page).closeBoardMenu();
+}
+
+function boardItem(page: import('@playwright/test').Page, name: string) {
+  return ui(page).boardItem(name);
+}
+
 async function createBoard(page: import('@playwright/test').Page, name: string) {
-  // The "Create board" sidebar link renders as "Opret kalender" in the Danish
-  // e2e locale (key 'Create board' → da 'Opret kalender' — boards are named
-  // "calendars" in the UI); it's the only board link.
-  await page.locator('a.sidebar-action-link', { hasText: 'Opret kalender' }).click();
+  await openBoardMenu(page);
+  // The create action renders as "Opret kalender" in the Danish e2e locale
+  // (key 'Create calendar'); it is matched by id, not by the localized text.
+  // It closes the dropdown before opening the dialog.
+  await ui(page).boardMenuPanel().locator('#calendarCreateBoardBtn').click();
   const dialog = page.locator('mat-dialog-container');
   await dialog.locator('input[formcontrolname="name"]').fill(name);
   // The board-create dialog has a single primary button — match by class, not
   // by localized text, so key/translation changes don't break this.
   await dialog.locator('button.btn-primary').click();
-  await dialog.waitFor({ state: 'detached', timeout: 10000 });
-  await expect(page.locator('.board-list .board-name', { hasText: name })).toBeVisible({ timeout: 10000 });
-}
-
-function boardItem(page: import('@playwright/test').Page, name: string) {
-  return page.locator('.board-item', { has: page.locator('.board-name', { hasText: name }) });
+  await dialog.waitFor({ state: 'detached', timeout: UI_TIMEOUT });
+  await openBoardMenu(page);
+  await expect(ui(page).boardMenuPanel().locator('.board-name', { hasText: name }))
+    .toBeVisible({ timeout: API_TIMEOUT });
 }
 
 async function activateBoard(page: import('@playwright/test').Page, name: string) {
+  await openBoardMenu(page);
   await boardItem(page, name).locator('.board-name').click();
-  await expect(boardItem(page, name).locator('.board-checkbox.active')).toBeVisible({ timeout: 5000 });
+  await expect(boardItem(page, name).locator('.board-checkbox.active')).toBeVisible({ timeout: API_TIMEOUT });
 }
 
 async function deactivateBoard(page: import('@playwright/test').Page, name: string) {
+  await openBoardMenu(page);
   await boardItem(page, name).locator('.board-name').click();
-  await expect(boardItem(page, name).locator('.board-checkbox.active')).toHaveCount(0, { timeout: 5000 });
+  await expect(boardItem(page, name).locator('.board-checkbox.active')).toHaveCount(0, { timeout: API_TIMEOUT });
 }
 
 // The mtx-select displays the selected board's name as its value label.
@@ -79,8 +108,9 @@ test.describe.serial('Calendar new-task default board', () => {
     // Activate A first, then B — both stay checked, B is the last activated.
     await activateBoard(page, boardA);
     await activateBoard(page, boardB);
-    await expect(boardItem(page, boardA).locator('.board-checkbox.active')).toBeVisible();
-    await expect(boardItem(page, boardB).locator('.board-checkbox.active')).toBeVisible();
+    await expect(boardItem(page, boardA).locator('.board-checkbox.active')).toBeVisible({ timeout: UI_TIMEOUT });
+    await expect(boardItem(page, boardB).locator('.board-checkbox.active')).toBeVisible({ timeout: UI_TIMEOUT });
+    await closeBoardMenu(page);
   });
 
   test('create modal defaults to the last-activated board (B), not the lowest-id board (A)', async ({ page }) => {
@@ -91,12 +121,15 @@ test.describe.serial('Calendar new-task default board', () => {
     // Re-activate A then B (a fresh page load reset the in-memory filter).
     await activateBoard(page, boardA);
     await activateBoard(page, boardB);
+    // The dropdown stays open across check gestures and its overlay backdrop
+    // would swallow the grid click below, so close it before touching the grid.
+    await closeBoardMenu(page);
 
     // Advance to next week so the clicked slot is in the future (a current-week
     // morning slot is in the past once CI runs after that hour) and reset the
     // grid's scrollToNow auto-scroll, so the create modal reliably opens.
     await calendarPage.openCreateModalAtSlot(1, 9);
-    await expect(page.locator('#calendarEventTitle')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#calendarEventTitle')).toBeVisible({ timeout: UI_TIMEOUT });
 
     expect(await selectedBoardLabel(page)).toBe(boardB);
   });
@@ -109,9 +142,10 @@ test.describe.serial('Calendar new-task default board', () => {
     await activateBoard(page, boardA);
     await activateBoard(page, boardB);
     await deactivateBoard(page, boardB); // B (the last-activated) is no longer active
+    await closeBoardMenu(page);
 
     await calendarPage.openCreateModalAtSlot(1, 9); // next-week future slot
-    await expect(page.locator('#calendarEventTitle')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#calendarEventTitle')).toBeVisible({ timeout: UI_TIMEOUT });
 
     // The guard drops the no-longer-active last-activated board: the modal must
     // NOT default to B. It falls back to the existing behavior (the lowest-id

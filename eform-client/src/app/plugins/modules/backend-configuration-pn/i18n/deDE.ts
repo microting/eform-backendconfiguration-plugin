@@ -797,4 +797,10 @@ export const deDE = {
   'Change a filter or click Overview to load the table': 'Ändern Sie einen Filter oder klicken Sie auf „Überblick“, um die Tabelle zu laden.',
   'Without report headline': 'Ohne Berichtsüberschrift',
   'Columns unavailable for template #{{id}}': 'Spalten nicht verfügbar für Vorlage #{{id}}',
+  // Calendar toolbar (#1209): the calendars multi-select button label, its
+  // bulk actions, and the accessible name of a calendar row's actions menu.
+  '{{count}} calendars': '{{count}} Kalender',
+  'Select all': 'Alle auswählen',
+  Clear: 'Zurücksetzen',
+  'Calendar actions': 'Kalenderaktionen',
 };

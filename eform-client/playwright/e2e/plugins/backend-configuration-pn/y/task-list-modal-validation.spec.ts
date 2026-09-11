@@ -165,7 +165,6 @@ test.describe('Task list — batch modal validation', () => {
 
     const calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
     await calendarPage.selectProperty(sourceProperty.name);
     await page.waitForTimeout(1000);
     await calendarPage.openCreateModalAtSlot(0, 9);

@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
 import { CalendarUiEnhancementsPage } from '../calendar-ui-enhancements.page';
+import { UI_TIMEOUT } from '../wait-helpers';
 import {
   BackendConfigurationPropertiesPage,
   PropertyCreateUpdate,
@@ -87,7 +88,6 @@ test.describe.serial('Calendar UI enhancements', () => {
 
     const calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
 
     if (seeded) {
       const folderResponsePromise = page.waitForResponse(
@@ -474,33 +474,149 @@ test.describe.serial('Calendar UI enhancements', () => {
   });
 
   // =======================================================================
-  // C. Property pill clickability (2 tests)
+  // C. Property pill — the toolbar's property dropdown (3 tests)
+  //
+  // #1209 retired the calendar's left column: the pill no longer toggles a
+  // sidebar (which was the dead-pill bug — in a view mode that hid the
+  // sidebar, clicking the pill did nothing visible). It is now the trigger of
+  // the property dropdown itself, so "the pill does something" is asserted as
+  // "the panel opens and a pick changes the selection".
   // =======================================================================
-  test.describe('Property pill — sidebar shortcut', () => {
-    test('C1: pill opens sidebar when closed', async ({ page }) => {
+  test.describe('Property pill — property dropdown', () => {
+    test('C1: the pill opens the property dropdown and lists the property', async ({ page }) => {
       const calendarPage = new CalendarUiEnhancementsPage(page);
 
-      // Start from open (beforeEach guarantees it). Close via menu toggle.
-      await calendarPage.clickMenuToggleButton();
-      await expect(page.locator('.calendar-shell.sidebar-closed')).toHaveCount(1);
+      // The sidebar is gone from every view mode, not merely hidden.
+      await expect(page.locator('app-calendar-sidebar')).toHaveCount(0, { timeout: UI_TIMEOUT });
 
-      // Click the pill — it's now a real <button>.
       await calendarPage.clickPropertyPill();
-      // Immediate assertion (no waitForTimeout) — the click toggles
-      // sidebarOpen synchronously in onPropertyPillClicked().
-      await expect(page.locator('.calendar-shell.sidebar-closed')).toHaveCount(0);
+      await expect(
+        calendarPage.propertyMenuPanel().locator('.property-item').filter({ hasText: property.name })
+      ).toBeVisible({ timeout: UI_TIMEOUT });
     });
 
-    test('C2: pill is no-op when sidebar already open', async ({ page }) => {
+    test('C2: Escape closes the property dropdown without changing the selection', async ({ page }) => {
       const calendarPage = new CalendarUiEnhancementsPage(page);
 
-      // beforeEach already calls ensureSidebarOpen, but be explicit.
-      await calendarPage.ensureSidebarOpen();
-      await expect(page.locator('.calendar-shell.sidebar-closed')).toHaveCount(0);
-
+      const labelBefore = (await page.locator('#calendarPropertyButton .pill-label').textContent())?.trim();
       await calendarPage.clickPropertyPill();
-      // Still open — the pill click handler is a no-op when already open.
-      await expect(page.locator('.calendar-shell.sidebar-closed')).toHaveCount(0);
+      await page.keyboard.press('Escape');
+      await calendarPage.propertyMenuPanel().waitFor({ state: 'detached', timeout: UI_TIMEOUT });
+
+      const labelAfter = (await page.locator('#calendarPropertyButton .pill-label').textContent())?.trim();
+      expect(labelAfter).toBe(labelBefore);
+    });
+
+    test('C3: picking a property closes the dropdown and names it on the pill', async ({ page }) => {
+      const calendarPage = new CalendarUiEnhancementsPage(page);
+
+      await calendarPage.selectProperty(property.name);
+
+      await expect(calendarPage.propertyMenuPanel()).toHaveCount(0, { timeout: UI_TIMEOUT });
+      await expect(page.locator('#calendarPropertyButton .pill-label'))
+        .toHaveText(property.name as string, { timeout: UI_TIMEOUT });
+    });
+  });
+
+  // =======================================================================
+  // CB. Calendars multi-select (#1209) — 4 tests
+  // The calendars dropdown replaces the sidebar's calendar list. It stays
+  // open while calendars are checked, and its button label takes the
+  // mock-up's three forms.
+  // =======================================================================
+  test.describe('Calendars dropdown — multi-select', () => {
+    test('CB1: Vælg alle / Ryd drive the button label, and the panel stays open', async ({ page }) => {
+      const calendarPage = new CalendarUiEnhancementsPage(page);
+
+      await calendarPage.openBoardMenu();
+
+      await calendarPage.boardMenuPanel().locator('#calendarBoardsClear').click();
+      // Still open: the panel stops click propagation so MatMenu's
+      // close-on-click never fires for a multi-select gesture.
+      await expect(calendarPage.boardMenuPanel()).toBeVisible({ timeout: UI_TIMEOUT });
+      await expect(calendarPage.boardMenuPanel().locator('.board-checkbox.active'))
+        .toHaveCount(0, { timeout: UI_TIMEOUT });
+      // "Alle kalendere", NOT "vælg en kalender": an empty filter is "no
+      // filter" server-side (GetTasksForWeek only narrows when BoardIds is
+      // non-empty), so the grid is showing every calendar and the label says so.
+      await expect(page.locator('#calendarBoardsButton .pill-label'))
+        .toHaveText('Alle kalendere', { timeout: UI_TIMEOUT });
+
+      // The label's three forms depend on how many calendars the property has,
+      // so derive the expectation from the rendered rows rather than assuming
+      // the seed's count: one calendar names itself, several read "Alle
+      // kalendere" once every one is checked.
+      const rows = calendarPage.boardMenuPanel().locator('.board-item');
+      const rowCount = await rows.count();
+      expect(rowCount).toBeGreaterThan(0);
+      const soleName = ((await rows.first().locator('.board-name').textContent()) ?? '').trim();
+
+      await calendarPage.boardMenuPanel().locator('#calendarBoardsSelectAll').click();
+      await expect(calendarPage.boardMenuPanel()).toBeVisible({ timeout: UI_TIMEOUT });
+      await expect(calendarPage.boardMenuPanel().locator('.board-checkbox.active'))
+        .toHaveCount(rowCount, { timeout: UI_TIMEOUT });
+      await expect(page.locator('#calendarBoardsButton .pill-label'))
+        .toHaveText(rowCount === 1 ? soleName : 'Alle kalendere', { timeout: UI_TIMEOUT });
+
+      await calendarPage.closeBoardMenu();
+    });
+
+    test('CB2: Escape closes the calendars dropdown', async ({ page }) => {
+      const calendarPage = new CalendarUiEnhancementsPage(page);
+
+      await calendarPage.openBoardMenu();
+      await page.keyboard.press('Escape');
+      await expect(calendarPage.boardMenuPanel()).toHaveCount(0, { timeout: UI_TIMEOUT });
+    });
+
+    test('CB3: arrow keys move through the calendar rows and Enter toggles one', async ({ page }) => {
+      const calendarPage = new CalendarUiEnhancementsPage(page);
+
+      await calendarPage.openBoardMenu();
+      // Every row is a real mat-menu-item, so the panel's FocusKeyManager owns
+      // them: MatMenu focuses the first item on open ("Vælg alle"), and
+      // ArrowDown walks the list in DOM order. Two steps land on the first
+      // calendar row (Vælg alle -> Ryd -> first row).
+      const firstRow = calendarPage.boardMenuPanel().locator('.board-row-toggle').first();
+      await page.keyboard.press('ArrowDown');
+      await page.keyboard.press('ArrowDown');
+      await expect(firstRow).toBeFocused({ timeout: UI_TIMEOUT });
+
+      const checkedBefore = await firstRow.getAttribute('aria-checked');
+      await page.keyboard.press('Enter');
+      await expect(firstRow).toHaveAttribute(
+        'aria-checked',
+        checkedBefore === 'true' ? 'false' : 'true',
+        { timeout: UI_TIMEOUT }
+      );
+
+      await calendarPage.closeBoardMenu();
+    });
+
+    test('CB4: the row actions trigger is arrow-key reachable and opens its popover', async ({ page }) => {
+      const calendarPage = new CalendarUiEnhancementsPage(page);
+
+      await calendarPage.openBoardMenu();
+      // Item order is DOM order: Vælg alle, Ryd, [row toggle, row ⋮], ...
+      // The ⋮ is a mat-menu-item submenu trigger, so it joins the panel's
+      // FocusKeyManager (as a plain icon-button it was skipped entirely) and
+      // Right-Arrow opens it — MatMenuTrigger._handleKeydown's submenu branch.
+      await page.keyboard.press('ArrowDown');
+      await page.keyboard.press('ArrowDown');
+      await page.keyboard.press('ArrowDown');
+
+      const actions = calendarPage.boardMenuPanel().locator('.board-menu-btn').first();
+      await expect(actions).toBeFocused({ timeout: UI_TIMEOUT });
+      // Focus must not land on something invisible.
+      await expect(actions).toBeVisible({ timeout: UI_TIMEOUT });
+
+      await page.keyboard.press('ArrowRight');
+      // Seeded from (menuOpened), so the keyboard path fills the form too — a
+      // (click) handler would never have fired here.
+      await expect(page.locator('.board-edit-popover input')).toHaveValue(/.+/, { timeout: UI_TIMEOUT });
+
+      await page.keyboard.press('Escape');
+      await calendarPage.closeBoardMenu();
     });
   });
 
@@ -835,7 +951,6 @@ test.describe.serial('Calendar UI enhancements', () => {
       // Reload the calendar route directly so we exercise the GET-back path
       // (week tasks → mapper → DTO → frontend reconstruction).
       await calendarPage.goToCalendar();
-      await calendarPage.ensureSidebarOpen();
       const folderResponsePromise = page.waitForResponse(
         r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos'),
         { timeout: 60000 }

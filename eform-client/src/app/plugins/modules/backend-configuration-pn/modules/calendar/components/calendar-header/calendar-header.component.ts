@@ -1,5 +1,7 @@
 import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
 import {TranslateService} from '@ngx-translate/core';
+import {CommonDictionaryModel} from 'src/app/common/models';
+import {boardTextColor, CalendarBoardModel, CALENDAR_COLORS} from '../../../../models/calendar';
 import {getCurrentLocale} from '../../services/calendar-locale.helper';
 
 @Component({
@@ -11,19 +13,75 @@ import {getCurrentLocale} from '../../services/calendar-locale.helper';
 export class CalendarHeaderComponent implements OnInit {
   @Input() currentDate: string = '';
   @Input() viewMode: 'week' | 'day' | 'schedule' | 'month' = 'week';
-  @Input() sidebarOpen = true;
   @Input() propertyName: string = '';
   @Input() scheduleScope: 'week' | 'month' = 'week';
+  @Input() properties: CommonDictionaryModel[] = [];
+  @Input() selectedPropertyId: number | null = null;
+  @Input() boards: CalendarBoardModel[] = [];
+  @Input() activeBoardIds: number[] = [];
 
   viewModeOptions: {value: string; label: string}[] = [];
 
   @Output() navigate = new EventEmitter<-1 | 1>();
   @Output() goToToday = new EventEmitter<void>();
   @Output() viewModeChange = new EventEmitter<'week' | 'day' | 'schedule' | 'month'>();
-  @Output() toggleSidebar = new EventEmitter<void>();
-  @Output() propertyPillClicked = new EventEmitter<void>();
+  @Output() propertySelected = new EventEmitter<number>();
+  @Output() boardToggled = new EventEmitter<number>();
+  @Output() selectAllBoards = new EventEmitter<void>();
+  @Output() clearBoards = new EventEmitter<void>();
+  @Output() createBoard = new EventEmitter<void>();
+  @Output() updateBoard = new EventEmitter<{id: number; name: string; color: string}>();
+  @Output() deleteBoard = new EventEmitter<CalendarBoardModel>();
+
+  readonly boardTextColor = boardTextColor;
+  readonly boardColors = CALENDAR_COLORS;
+
+  // Inline calendar rename / recolour, carried over from the retired sidebar's
+  // row popover. #1210 replaces it with a modal and a duplicate-name guard.
+  editingBoardId: number | null = null;
+  editingBoardName = '';
+  editingBoardColor = '';
 
   constructor(private translate: TranslateService) {}
+
+  isBoardActive(boardId: number): boolean {
+    return this.activeBoardIds.includes(boardId);
+  }
+
+  startEditBoard(board: CalendarBoardModel) {
+    this.editingBoardId = board.id;
+    this.editingBoardName = board.name;
+    this.editingBoardColor = board.color;
+  }
+
+  submitEditBoard() {
+    if (this.editingBoardId !== null && this.editingBoardName.trim()) {
+      this.updateBoard.emit({id: this.editingBoardId, name: this.editingBoardName.trim(), color: this.editingBoardColor});
+    }
+    this.editingBoardId = null;
+  }
+
+  // The calendars button label, in the mock-up's three forms: the single
+  // selected calendar's name, "All calendars" when every one is checked, and
+  // "N calendars" in between. Counting is done over `boards` so an id left in
+  // the filter for a calendar this property does not have cannot inflate it.
+  //
+  // The EMPTY selection reads "All calendars" too, and that is not a slip:
+  // GetTasksForWeek only narrows when the filter is non-empty
+  // (`if (filter.BoardIds is { Count: > 0 } ...)` in
+  // BackendConfigurationCalendarService.cs), so an empty set is "no filter"
+  // and renders exactly the grid every-calendar-checked renders. A label
+  // reading "select a calendar" over a grid showing all of them would be a
+  // lie. There is no selection that empties the grid, so no such branch
+  // exists.
+  get boardsLabel(): string {
+    const selected = this.boards.filter(b => this.activeBoardIds.includes(b.id));
+    if (selected.length === 1) return selected[0].name;
+    if (selected.length === 0 || selected.length === this.boards.length) {
+      return this.translate.instant('All calendars');
+    }
+    return this.translate.instant('{{count}} calendars', {count: selected.length});
+  }
 
   ngOnInit() {
     this.buildViewModeOptions();

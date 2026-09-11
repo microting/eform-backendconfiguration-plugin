@@ -873,4 +873,10 @@ export const enUS= {
   // Generic toast for a failed export call. The interceptor cannot surface a
   // blob 400, so the plugin service toasts this itself (#1189 decision 8a).
   'Export failed': 'Export failed',
+  // Calendar toolbar (#1209): the calendars multi-select button label, its
+  // bulk actions, and the accessible name of a calendar row's actions menu.
+  '{{count}} calendars': '{{count}} calendars',
+  'Select all': 'Select all',
+  Clear: 'Clear',
+  'Calendar actions': 'Calendar actions',
 };

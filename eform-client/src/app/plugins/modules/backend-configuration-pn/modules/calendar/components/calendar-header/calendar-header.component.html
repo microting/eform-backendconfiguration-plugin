@@ -1,22 +1,149 @@
 <div class="calendar-header">
+  <!-- What am I looking at: property (single-select) + calendars (multi-select) -->
   <button
-    class="btn-secondary btn-secondary--icon-rounded-border"
-    (click)="toggleSidebar.emit()"
-    [matTooltip]="sidebarOpen ? ('Close sidebar' | translate) : ('Open sidebar' | translate)"
+    type="button"
+    id="calendarPropertyButton"
+    class="toolbar-pill property-pill"
+    [matMenuTriggerFor]="propertyMenu"
+    [matTooltip]="'Change property' | translate"
   >
-    <mat-icon>menu</mat-icon>
+    <span class="pill-label">{{ propertyName || ('Select property' | translate) }}</span>
+    <mat-icon class="pill-caret">expand_more</mat-icon>
   </button>
+  <mat-menu #propertyMenu="matMenu" class="calendar-toolbar-menu calendar-property-menu">
+    <button
+      mat-menu-item
+      type="button"
+      class="property-item"
+      *ngFor="let prop of properties"
+      [class.active]="prop.id === selectedPropertyId"
+      (click)="propertySelected.emit(prop.id)"
+    >
+      {{ prop.name }}
+    </button>
+  </mat-menu>
 
   <button
     type="button"
-    class="property-pill"
-    *ngIf="propertyName"
-    (click)="propertyPillClicked.emit()"
-    [matTooltip]="'Change property' | translate"
+    id="calendarBoardsButton"
+    class="toolbar-pill board-pill"
+    #boardsMenuTrigger="matMenuTrigger"
+    [matMenuTriggerFor]="boardsMenu"
+    [matTooltip]="'My calendars' | translate"
   >
-    {{ propertyName }}
+    <span class="pill-label">{{ boardsLabel }}</span>
+    <mat-icon class="pill-caret">expand_more</mat-icon>
   </button>
+  <mat-menu #boardsMenu="matMenu" class="calendar-toolbar-menu calendar-boards-menu">
+    <!-- stopPropagation on CLICK only: the menu panel closes on any click that
+         reaches it (MatMenu's panel carries `(click)="closed.emit('click')"`),
+         which would shut a multi-select after every checkbox. Keydown is
+         deliberately NOT stopped — MatMenu reads Escape and the arrow keys off
+         the overlay's keydown events, and every row below is a real
+         `mat-menu-item`, so the panel's FocusKeyManager can drive them. -->
+    <div class="boards-panel" (click)="$event.stopPropagation()">
+      <div class="boards-bulk-actions">
+        <button
+          mat-menu-item
+          type="button"
+          id="calendarBoardsSelectAll"
+          class="board-bulk-action"
+          (click)="selectAllBoards.emit()"
+        >
+          {{ 'Select all' | translate }}
+        </button>
+        <button
+          mat-menu-item
+          type="button"
+          id="calendarBoardsClear"
+          class="board-bulk-action"
+          (click)="clearBoards.emit()"
+        >
+          {{ 'Clear' | translate }}
+        </button>
+      </div>
 
+      <div class="board-list">
+        <div class="board-item" *ngFor="let board of boards">
+          <button
+            mat-menu-item
+            type="button"
+            role="menuitemcheckbox"
+            class="board-row-toggle"
+            [attr.aria-checked]="isBoardActive(board.id)"
+            (click)="boardToggled.emit(board.id)"
+          >
+            <span
+              class="board-checkbox"
+              [class.active]="isBoardActive(board.id)"
+              [style.background]="isBoardActive(board.id) ? board.color : 'transparent'"
+              [style.border-color]="isBoardActive(board.id) ? board.color : '#9e9e9e'"
+            >
+              <mat-icon *ngIf="isBoardActive(board.id)" class="board-check-icon" [style.color]="boardTextColor(board.color)">check</mat-icon>
+            </span>
+            <span class="board-name">{{ board.name }}</span>
+          </button>
+          <!-- Outside the row button, because a button cannot nest inside a
+               button — but still a `mat-menu-item`, which is what makes this a
+               real MatMenu SUBMENU trigger. As a plain icon-button inside a
+               menu it had `_parentMaterialMenu` set but `_menuItemInstance`
+               null, so MatMenuTrigger's hover guard
+               (`filter(active => active !== this._menuItemInstance)`) was
+               always true and any row hover closed the open popover. Being a
+               menu item also puts it in the panel's FocusKeyManager, so arrow
+               keys reach it and Right-Arrow/Enter opens it.
+               Seeded from (menuOpened), not (click): a submenu trigger also
+               opens on HOVER, which no click handler would see. -->
+          <button
+            mat-menu-item
+            type="button"
+            class="board-menu-btn"
+            [matMenuTriggerFor]="boardMenu"
+            [attr.aria-label]="'Calendar actions' | translate"
+            (menuOpened)="startEditBoard(board)"
+          >
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #boardMenu="matMenu" class="board-edit-menu">
+            <div class="board-edit-popover" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+              <label class="field-label">{{ 'Calendar name' | translate }}</label>
+              <mat-form-field appearance="outline" style="width: 100%;">
+                <input matInput [(ngModel)]="editingBoardName" (keydown.enter)="submitEditBoard()">
+              </mat-form-field>
+              <div class="color-picker-grid">
+                <div
+                  class="color-swatch"
+                  *ngFor="let c of boardColors"
+                  [style.background]="c"
+                  [class.selected]="editingBoardColor === c"
+                  (click)="editingBoardColor = c; submitEditBoard()"
+                ></div>
+              </div>
+              <button mat-menu-item class="btn-delete-menu" (click)="boardsMenuTrigger.closeMenu(); deleteBoard.emit(board)">
+                <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
+                <span>{{ 'Delete calendar' | translate }}</span>
+              </button>
+            </div>
+          </mat-menu>
+        </div>
+      </div>
+
+      <button
+        mat-menu-item
+        type="button"
+        id="calendarCreateBoardBtn"
+        class="board-create-action"
+        (click)="boardsMenuTrigger.closeMenu(); createBoard.emit()"
+      >
+        <mat-icon class="board-create-icon">add</mat-icon>
+        <span>{{ 'Create calendar' | translate }}</span>
+      </button>
+    </div>
+  </mat-menu>
+
+  <span class="toolbar-divider" role="separator"></span>
+
+  <!-- When -->
   <button
     class="btn-secondary btn-secondary--icon-rounded-border"
     (click)="goToToday.emit()"
@@ -45,6 +172,7 @@
 
   <span class="spacer"></span>
 
+  <!-- How -->
   <div class="text-field--rounded">
     <mat-form-field>
       <mtx-select id="calendarViewModeSelect" [ngModel]="viewMode" (ngModelChange)="viewModeChange.emit($event)" [items]="viewModeOptions" bindValue="value" bindLabel="label" [clearable]="false"></mtx-select>

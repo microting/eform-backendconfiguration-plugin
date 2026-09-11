@@ -94,7 +94,6 @@ test.describe.serial('Calendar custom repeat — day & week scheduling (#898)', 
 
     const calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
 
     if (seeded) {
       const folderResp = page.waitForResponse(

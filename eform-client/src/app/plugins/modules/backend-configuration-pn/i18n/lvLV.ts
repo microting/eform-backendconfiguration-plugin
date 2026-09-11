@@ -751,4 +751,10 @@ export const lvLV = {
   'Change a filter or click Overview to load the table': 'Mainiet filtru vai noklikšķiniet uz Pārskats, lai ielādētu tabulu.',
   'Without report headline': 'Bez atskaites virsraksta',
   'Columns unavailable for template #{{id}}': 'Kolonnas nav pieejamas veidnei #{{id}}',
+  // Calendar toolbar (#1209): the calendars multi-select button label, its
+  // bulk actions, and the accessible name of a calendar row's actions menu.
+  '{{count}} calendars': '{{count}} kalendāri',
+  'Select all': 'Atlasīt visus',
+  Clear: 'Notīrīt',
+  'Calendar actions': 'Kalendāra darbības',
 };
