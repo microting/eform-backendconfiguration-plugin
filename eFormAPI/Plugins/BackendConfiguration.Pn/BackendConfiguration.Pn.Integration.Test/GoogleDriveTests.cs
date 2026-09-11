@@ -140,7 +140,7 @@ public class GoogleDriveTests : TestBaseSetup
             proxyClient,
             new MemoryCache(new MemoryCacheOptions()),
             Options.Create(_options),
-            NullLogger<GoogleDriveAuthService>.Instance);
+            TestContextLogger<GoogleDriveAuthService>.Instance);
     }
 
     /// <summary>
@@ -158,7 +158,7 @@ public class GoogleDriveTests : TestBaseSetup
             proxyClient,
             new MemoryCache(new MemoryCacheOptions()),
             Options.Create(_options),
-            NullLogger<GoogleDriveAuthService>.Instance,
+            TestContextLogger<GoogleDriveAuthService>.Instance,
             configuration: null,
             httpClientFactory: factory);
     }
@@ -375,7 +375,7 @@ public class GoogleDriveTests : TestBaseSetup
             proxyClient,
             new MemoryCache(new MemoryCacheOptions()),
             Options.Create(_options),
-            NullLogger<GoogleDriveAuthService>.Instance);
+            TestContextLogger<GoogleDriveAuthService>.Instance);
 
         var access = await sut.GetAccessTokenAsync(userId);
 
@@ -409,7 +409,7 @@ public class GoogleDriveTests : TestBaseSetup
             proxyClient,
             new MemoryCache(new MemoryCacheOptions()),
             Options.Create(_options),
-            NullLogger<GoogleDriveAuthService>.Instance);
+            TestContextLogger<GoogleDriveAuthService>.Instance);
 
         Assert.ThrowsAsync<GoogleDriveTokenRevokedException>(
             async () => await sut.GetAccessTokenAsync(userId));
@@ -995,7 +995,7 @@ public class GoogleDriveTests : TestBaseSetup
             throwingAuth,
             Substitute.For<IGoogleDriveFileService>(),
             new RewritingHttpClientFactory(_proxyServer.Url!),
-            NullLogger<GoogleDriveChangeProcessor>.Instance);
+            TestContextLogger<GoogleDriveChangeProcessor>.Instance);
 
         var outcome = await processor.ProcessFileAsync(file.Id);
 
@@ -1301,7 +1301,7 @@ public class GoogleDriveTests : TestBaseSetup
             BackendConfigurationPnDbContext!,
             protectionProvider,
             Options.Create(_options),
-            NullLogger<GoogleDriveController>.Instance);
+            TestContextLogger<GoogleDriveController>.Instance);
     }
 
     /// <summary>
@@ -1320,7 +1320,7 @@ public class GoogleDriveTests : TestBaseSetup
             proxyClient,
             new MemoryCache(new MemoryCacheOptions()),
             Options.Create(_options),
-            NullLogger<GoogleDriveAuthService>.Instance);
+            TestContextLogger<GoogleDriveAuthService>.Instance);
 
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(userId);
@@ -1332,14 +1332,14 @@ public class GoogleDriveTests : TestBaseSetup
             userService,
             new BackendConfigurationLocalizationService(),
             fakeFactory,
-            NullLogger<GoogleDriveFileService>.Instance);
+            TestContextLogger<GoogleDriveFileService>.Instance);
 
         var processor = new GoogleDriveChangeProcessor(
             BackendConfigurationPnDbContext!,
             auth,
             fileService,
             fakeFactory,
-            NullLogger<GoogleDriveChangeProcessor>.Instance);
+            TestContextLogger<GoogleDriveChangeProcessor>.Instance);
         return (processor, fileService);
     }
 
@@ -1515,7 +1515,7 @@ public class GoogleDriveTests : TestBaseSetup
             BackendConfigurationPnDbContext!,
             protectionProvider,
             Options.Create(_options),
-            NullLogger<GoogleDriveController>.Instance);
+            TestContextLogger<GoogleDriveController>.Instance);
     }
 
     /// <summary>
@@ -1560,7 +1560,7 @@ public class GoogleDriveTests : TestBaseSetup
             proxyClient,
             new MemoryCache(new MemoryCacheOptions()),
             Options.Create(_options),
-            NullLogger<GoogleDriveAuthService>.Instance);
+            TestContextLogger<GoogleDriveAuthService>.Instance);
 
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(userId);
@@ -1572,7 +1572,7 @@ public class GoogleDriveTests : TestBaseSetup
             userService,
             new BackendConfigurationLocalizationService(),
             fakeFactory,
-            NullLogger<GoogleDriveFileService>.Instance);
+            TestContextLogger<GoogleDriveFileService>.Instance);
     }
 
     /// <summary>

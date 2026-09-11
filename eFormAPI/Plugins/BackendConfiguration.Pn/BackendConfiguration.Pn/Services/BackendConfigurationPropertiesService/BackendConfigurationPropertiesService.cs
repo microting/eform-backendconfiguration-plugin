@@ -175,7 +175,7 @@ public class BackendConfigurationPropertiesService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogTrace(e.StackTrace);
             return new OperationDataResult<PropertiesModel>(false,
                 $"{backendConfigurationLocalizationService.GetString("ErrorWhileReadProperty")}: {e.Message}");
@@ -472,7 +472,7 @@ public class BackendConfigurationPropertiesService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogTrace(e.StackTrace);
             return new OperationResult(false,
                 $"{backendConfigurationLocalizationService.GetString("ErrorWhileDeleteProperties")}: {e.Message}");
@@ -571,7 +571,7 @@ public class BackendConfigurationPropertiesService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogTrace(e.StackTrace);
             return new OperationDataResult<List<CommonDictionaryModel>>(false, e.Message);
         }
@@ -609,7 +609,7 @@ public class BackendConfigurationPropertiesService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogTrace(e.StackTrace);
             return new OperationDataResult<List<CommonDictionaryModel>>(false, e.Message);
         }
@@ -653,7 +653,7 @@ public class BackendConfigurationPropertiesService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogTrace(e.StackTrace);
             return new OperationDataResult<List<PropertyFolderModel>>(false, e.Message);
         }
@@ -696,7 +696,7 @@ public class BackendConfigurationPropertiesService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogTrace(e.StackTrace);
             return new OperationDataResult<List<PropertyFolderModel>>(false, e.Message);
         }
@@ -753,7 +753,7 @@ public class BackendConfigurationPropertiesService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogTrace(e.StackTrace);
             return new OperationDataResult<List<SiteLanguageDictionaryModel>>(false, e.Message);
         }
@@ -802,7 +802,7 @@ public class BackendConfigurationPropertiesService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogTrace(e.StackTrace);
             return new OperationDataResult<List<CommonDictionaryModel>>(false, e.Message);
         }

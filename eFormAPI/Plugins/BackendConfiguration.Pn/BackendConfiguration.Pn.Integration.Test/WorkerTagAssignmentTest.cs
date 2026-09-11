@@ -260,7 +260,7 @@ public class WorkerTagAssignmentTest : TestBaseSetup
         var engine = new CalendarAssignmentReconciliationService(
             BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, coreHelper,
             deploy, resolver, notifier,
-            NullLogger<CalendarAssignmentReconciliationService>.Instance);
+            TestContextLogger<CalendarAssignmentReconciliationService>.Instance);
         return (engine, deploy, batches);
     }
 

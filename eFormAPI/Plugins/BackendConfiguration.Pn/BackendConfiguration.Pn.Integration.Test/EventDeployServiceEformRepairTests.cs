@@ -209,7 +209,7 @@ public class EventDeployServiceEformRepairTests : TestBaseSetup
 
         var service = new EventDeployService(
             BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, coreHelper, sp,
-            NullLogger<EventDeployService>.Instance);
+            TestContextLogger<EventDeployService>.Instance);
 
         arp = await BackendConfigurationPnDbContext.AreaRulePlannings
             .Include(x => x.AreaRule)

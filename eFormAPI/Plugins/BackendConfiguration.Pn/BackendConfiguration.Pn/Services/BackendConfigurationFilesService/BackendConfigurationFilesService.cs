@@ -179,7 +179,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 		catch (Exception e)
 		{
 			Console.WriteLine(e);
-			_logger.LogError(e.Message);
+			_logger.LogError(e, e.Message);
 			return new OperationDataResult<Paged<BackendConfigurationFilesModel>>(false,
 				_localizationService.GetString("ErrorWhileObtainingFiles"));
 		}
@@ -234,7 +234,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 		catch (Exception e)
 		{
 			Console.WriteLine(e);
-			_logger.LogError(e.Message);
+			_logger.LogError(e, e.Message);
 			return new OperationResult(false, _localizationService.GetString("ErrorWhileUpdateFile"));
 		}
 	}
@@ -277,7 +277,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 		catch (Exception e)
 		{
 			Console.WriteLine(e);
-			_logger.LogError(e.Message);
+			_logger.LogError(e, e.Message);
 			return new OperationResult(false, _localizationService.GetString("ErrorWhileUpdateFileTags"));
 		}
 	}
@@ -403,7 +403,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 		catch (Exception e)
 		{
 			Console.WriteLine(e);
-			_logger.LogError(e.Message);
+			_logger.LogError(e, e.Message);
 			return new OperationResult(false, _localizationService.GetString("ErrorWhileCreateFiles"));
 		}
 	}
@@ -455,7 +455,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 		catch (Exception e)
 		{
 			Console.WriteLine(e);
-			_logger.LogError(e.Message);
+			_logger.LogError(e, e.Message);
 			return new OperationResult(false, _localizationService.GetString("ErrorWhileDeleteFile"));
 		}
 	}
@@ -502,7 +502,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 		catch (Exception e)
 		{
 			Console.WriteLine(e);
-			_logger.LogError(e.Message);
+			_logger.LogError(e, e.Message);
 			return new OperationDataResult<BackendConfigurationFileModel>(false,
 				_localizationService.GetString("ErrorWhileGetFile"));
 		}

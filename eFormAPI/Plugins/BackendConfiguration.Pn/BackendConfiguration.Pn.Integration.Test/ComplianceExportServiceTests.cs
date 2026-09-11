@@ -402,7 +402,7 @@ public class ComplianceExportServiceTests
             new BackendConfigurationLocalizationService(),
             null!,
             null!,
-            NullLogger<BackendConfigurationComplianceExportService>.Instance);
+            TestContextLogger<BackendConfigurationComplianceExportService>.Instance);
 
     private static ComplianceReportExportRequestModel Request(string viewMode, string format) => new()
     {

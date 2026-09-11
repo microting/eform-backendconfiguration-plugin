@@ -510,7 +510,7 @@ public class EventsGrpcCompleteEventRaceTests : TestBaseSetup
                 bc,
                 ip,
                 Substitute.For<IEventDeployService>(),
-                NullLogger<EventsGrpcService>.Instance);
+                TestContextLogger<EventsGrpcService>.Instance);
         }
 
         return new Race(

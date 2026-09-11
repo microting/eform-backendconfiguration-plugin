@@ -305,7 +305,7 @@ public class CalendarDeleteThisAndFollowingTests : TestBaseSetup
             ItemsPlanningPnDbContext!, taskWizardService,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
             Substitute.For<ICalendarChangeNotifier>(),
-            NullLogger<BackendConfigurationCalendarService>.Instance,
+            TestContextLogger<BackendConfigurationCalendarService>.Instance,
             // #1122 — the calendar service now delegates the retract/backfill
             // halves of a cross-period re-anchor. Neither fires in these fixtures.
             Substitute.For<ICalendarOccurrenceRetractionService>(),

@@ -240,7 +240,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            _logger.LogError(e.Message);
+            _logger.LogError(e, e.Message);
             _logger.LogTrace(e.StackTrace);
             return new OperationDataResult<List<TaskWizardModel>>(false,
                 _localizationService.GetString("ErrorWhileObtainingTasks"));
@@ -348,7 +348,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            _logger.LogError(e.Message);
+            _logger.LogError(e, e.Message);
             _logger.LogTrace(e.StackTrace);
             return new OperationDataResult<TaskWizardTaskModel>(false,
                 _localizationService.GetString("ErrorWhileObtainingTask"));
@@ -626,7 +626,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            _logger.LogError(e.Message);
+            _logger.LogError(e, e.Message);
             _logger.LogTrace(e.StackTrace);
             return new OperationResult(false,
                 _localizationService.GetString("ErrorWhileCreatingTask"));
@@ -1412,7 +1412,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            _logger.LogError(e.Message);
+            _logger.LogError(e, e.Message);
             _logger.LogTrace(e.StackTrace);
             return new OperationResult(false,
                 _localizationService.GetString("ErrorWhileUpdatingTask"));
@@ -1496,7 +1496,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            _logger.LogError(e.Message);
+            _logger.LogError(e, e.Message);
             _logger.LogTrace(e.StackTrace);
             return new OperationResult(false,
                 _localizationService.GetString("ErrorWhileUpdatingTask"));
@@ -1602,7 +1602,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            _logger.LogError(e.Message);
+            _logger.LogError(e, e.Message);
             _logger.LogTrace(e.StackTrace);
             return new OperationResult(false,
                 _localizationService.GetString("ErrorWhileDeletingTask"));
@@ -1772,7 +1772,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            _logger.LogError(e.Message);
+            _logger.LogError(e, e.Message);
             _logger.LogTrace(e.StackTrace);
             return new OperationResult(false,
                 _localizationService.GetString("ErrorWhileDeletingTask"));

@@ -62,7 +62,7 @@ public class SettingsGrpcServicePushTokenTests : TestBaseSetup
         return new SettingsGrpcService(
             BackendConfigurationPnDbContext!,
             resolver,
-            NullLogger<SettingsGrpcService>.Instance);
+            TestContextLogger<SettingsGrpcService>.Instance);
     }
 
     private static RegisterPushTokenRequest MakeRequest(

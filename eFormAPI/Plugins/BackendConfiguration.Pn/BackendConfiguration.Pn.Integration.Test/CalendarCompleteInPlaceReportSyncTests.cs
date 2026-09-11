@@ -237,7 +237,7 @@ public class CalendarCompleteInPlaceReportSyncTests : TestBaseSetup
             ItemsPlanningPnDbContext, taskWizardService,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
             Substitute.For<ICalendarChangeNotifier>(),
-            NullLogger<BackendConfigurationCalendarService>.Instance,
+            TestContextLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
             new WorkerTagMembershipService(coreHelper));
@@ -536,7 +536,7 @@ public class CalendarCompleteInPlaceReportSyncTests : TestBaseSetup
             ItemsPlanningPnDbContext, taskWizardService,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
             Substitute.For<ICalendarChangeNotifier>(),
-            NullLogger<BackendConfigurationCalendarService>.Instance,
+            TestContextLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
             new WorkerTagMembershipService(coreHelper));

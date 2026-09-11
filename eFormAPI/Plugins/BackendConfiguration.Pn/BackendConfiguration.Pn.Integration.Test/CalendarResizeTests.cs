@@ -78,7 +78,7 @@ public class CalendarResizeTests : TestBaseSetup
             _taskWizardService,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
             Substitute.For<ICalendarChangeNotifier>(),
-            NullLogger<BackendConfigurationCalendarService>.Instance,
+            TestContextLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
             // This fixture builds the calendar service without a core, so the shared

@@ -112,7 +112,7 @@ public class WordService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogTrace(e.StackTrace);
             return new OperationDataResult<Stream>(
                 false,
@@ -741,7 +741,7 @@ public class WordService(
                     {
                         SentrySdk.CaptureException(e);
                         Trace.TraceError(e.Message);
-                        logger.LogError(e.Message);
+                        logger.LogError(e, e.Message);
                     }
                 }
             }
@@ -760,7 +760,7 @@ public class WordService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogTrace(e.StackTrace);
             return new OperationDataResult<Stream>(
                 false,
@@ -945,7 +945,7 @@ public class WordService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogTrace(e.StackTrace);
             return new OperationDataResult<Stream>(
                 false,
@@ -1015,7 +1015,7 @@ public class WordService(
         {
             SentrySdk.CaptureException(e);
             logger.LogError(e.StackTrace);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             return itemsHtml;
         }
     }

@@ -164,7 +164,7 @@ public class ComplianceReportIndexTests : TestBaseSetup
         return new BackendConfigurationComplianceReportService(
             new BackendConfigurationLocalizationService(), userService,
             BackendConfigurationPnDbContext!, coreHelper, ItemsPlanningPnDbContext!,
-            NullLogger<BackendConfigurationComplianceReportService>.Instance,
+            TestContextLogger<BackendConfigurationComplianceReportService>.Instance,
             // The real membership service: #1232 made the employee filter and the
             // worker column depend on it, and a substitute would silently answer
             // "no team membership" for every site.

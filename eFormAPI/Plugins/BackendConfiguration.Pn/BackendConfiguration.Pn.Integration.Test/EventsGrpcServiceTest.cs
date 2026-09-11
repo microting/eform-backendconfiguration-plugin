@@ -126,7 +126,7 @@ public class EventsGrpcServiceTest : TestBaseSetup
             BackendConfigurationPnDbContext!,
             ItemsPlanningPnDbContext!,
             deploy,
-            logger ?? NullLogger<EventsGrpcService>.Instance);
+            logger ?? TestContextLogger<EventsGrpcService>.Instance);
     }
 
     /// <summary>

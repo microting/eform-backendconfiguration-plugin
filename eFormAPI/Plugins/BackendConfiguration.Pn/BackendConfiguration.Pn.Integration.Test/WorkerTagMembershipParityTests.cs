@@ -335,7 +335,7 @@ public class WorkerTagMembershipParityTests : TestBaseSetup
             membership,
             new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, membership),
             new BackendConfigurationWorkerTagsService(
-                coreHelper, membership, NullLogger<BackendConfigurationWorkerTagsService>.Instance),
+                coreHelper, membership, TestContextLogger<BackendConfigurationWorkerTagsService>.Instance),
             core.DbContextHelper.GetDbContext());
     }
 
