@@ -102,7 +102,7 @@ public class CalendarConversionRenderTests : TestBaseSetup
         _sut = new CalendarConfigurationBackfillService(
             BackendConfigurationPnDbContext!,
             ItemsPlanningPnDbContext!,
-            NullLogger<CalendarConfigurationBackfillService>.Instance);
+            TestContextLogger<CalendarConfigurationBackfillService>.Instance);
     }
 
     private async Task<Property> SeedProperty()
@@ -208,7 +208,7 @@ public class CalendarConversionRenderTests : TestBaseSetup
             ItemsPlanningPnDbContext!, taskWizardService,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
             Substitute.For<ICalendarChangeNotifier>(),
-            NullLogger<BackendConfigurationCalendarService>.Instance,
+            TestContextLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
             new WorkerTagMembershipService(coreHelper));

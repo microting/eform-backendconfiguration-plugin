@@ -130,7 +130,7 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
             _taskWizardService,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
             Substitute.For<ICalendarChangeNotifier>(),
-            NullLogger<BackendConfigurationCalendarService>.Instance,
+            TestContextLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
             new WorkerTagMembershipService(null));
@@ -479,7 +479,7 @@ public class TaskFolderIdPreservationTests : TestBaseSetup
             ItemsPlanningPnDbContext!,
             Substitute.For<IEventDeployService>(),
             Substitute.For<ICalendarOccurrenceRetractionService>(),
-            NullLogger<BackendConfigurationTaskWizardService>.Instance);
+            TestContextLogger<BackendConfigurationTaskWizardService>.Instance);
     }
 
     /// <summary>

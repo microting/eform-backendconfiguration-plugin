@@ -447,7 +447,7 @@ public class EventsGrpcCompleteEventTests : TestBaseSetup
             BackendConfigurationPnDbContext,
             ItemsPlanningPnDbContext,
             Substitute.For<IEventDeployService>(),
-            NullLogger<EventsGrpcService>.Instance);
+            TestContextLogger<EventsGrpcService>.Instance);
 
         return new Scenario(
             service, property.Id, arp.Id, compliance.Id, sdkCase.Id,

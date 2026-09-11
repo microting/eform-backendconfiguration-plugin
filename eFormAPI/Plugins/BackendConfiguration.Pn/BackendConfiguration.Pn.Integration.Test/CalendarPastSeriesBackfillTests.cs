@@ -238,7 +238,7 @@ public class CalendarPastSeriesBackfillTests : TestBaseSetup
         var service = new CalendarPastSeriesBackfillService(
             ItemsPlanningPnDbContext!, BackendConfigurationPnDbContext!, coreHelper,
             deploy, resolver,
-            NullLogger<CalendarPastSeriesBackfillService>.Instance);
+            TestContextLogger<CalendarPastSeriesBackfillService>.Instance);
 
         return (service, deploy);
     }

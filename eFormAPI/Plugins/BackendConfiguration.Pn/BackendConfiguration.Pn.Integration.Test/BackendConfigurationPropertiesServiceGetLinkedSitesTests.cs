@@ -171,7 +171,7 @@ public class BackendConfigurationPropertiesServiceGetLinkedSitesTests : TestBase
             new BackendConfigurationLocalizationService(),
             ItemsPlanningPnDbContext!,
             Substitute.For<IPluginDbOptions<BackendConfigurationBaseSettings>>(),
-            NullLogger<BackendConfigurationPropertiesService>.Instance);
+            TestContextLogger<BackendConfigurationPropertiesService>.Instance);
     }
 
     // ------------------------------------------------------------------

@@ -93,7 +93,7 @@ public class CalendarConfigurationBackfillTest : TestBaseSetup
         _sut = new CalendarConfigurationBackfillService(
             BackendConfigurationPnDbContext!,
             ItemsPlanningPnDbContext!,
-            NullLogger<CalendarConfigurationBackfillService>.Instance);
+            TestContextLogger<CalendarConfigurationBackfillService>.Instance);
     }
 
     /// <summary>

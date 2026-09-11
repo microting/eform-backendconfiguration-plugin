@@ -133,13 +133,13 @@ public class CalendarUpdateTaskRetractGateTests : TestBaseSetup
 
         _retractionService = new CalendarOccurrenceRetractionService(
             BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, _coreHelper,
-            NullLogger<CalendarOccurrenceRetractionService>.Instance);
+            TestContextLogger<CalendarOccurrenceRetractionService>.Instance);
 
         _backfillService = new CalendarPastSeriesBackfillService(
             ItemsPlanningPnDbContext!, BackendConfigurationPnDbContext!, _coreHelper,
             _deployService,
             new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, new WorkerTagMembershipService(_coreHelper)),
-            NullLogger<CalendarPastSeriesBackfillService>.Instance);
+            TestContextLogger<CalendarPastSeriesBackfillService>.Instance);
 
         _service = new BackendConfigurationCalendarService(
             new BackendConfigurationLocalizationService(),
@@ -151,7 +151,7 @@ public class CalendarUpdateTaskRetractGateTests : TestBaseSetup
             _taskWizardService,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
             Substitute.For<ICalendarChangeNotifier>(),
-            NullLogger<BackendConfigurationCalendarService>.Instance,
+            TestContextLogger<BackendConfigurationCalendarService>.Instance,
             _retractionService,
             _backfillService,
             new WorkerTagMembershipService(_coreHelper));

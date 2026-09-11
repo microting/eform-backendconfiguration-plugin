@@ -92,7 +92,7 @@ public class EventDeployServiceTest : TestBaseSetup
     /// Build the SUT against the contexts inherited from <see cref="TestBaseSetup"/>.
     /// Pass a custom <paramref name="logger"/> when the test needs to inspect log
     /// output (idempotence-guard test); otherwise defaults to
-    /// <see cref="NullLogger{T}.Instance"/>.
+    /// <see cref="TestContextLogger{T}.Instance"/>.
     /// </summary>
     private EventDeployService MakeService(
         IBackendConfigurationCalendarService calendar,
@@ -107,7 +107,7 @@ public class EventDeployServiceTest : TestBaseSetup
             ItemsPlanningPnDbContext!,
             coreHelper,
             sp,
-            logger ?? NullLogger<EventDeployService>.Instance);
+            logger ?? TestContextLogger<EventDeployService>.Instance);
     }
 
     /// <summary>
@@ -1203,7 +1203,7 @@ public class EventDeployServiceTest : TestBaseSetup
             try
             {
                 var service = new EventDeployService(
-                    bc, ip, coreHelper, sp, NullLogger<EventDeployService>.Instance);
+                    bc, ip, coreHelper, sp, TestContextLogger<EventDeployService>.Instance);
                 // Release all passes simultaneously (timeout guards against a hang
                 // if a sibling task faulted before reaching the gate).
                 startGate.SignalAndWait(TimeSpan.FromSeconds(60));

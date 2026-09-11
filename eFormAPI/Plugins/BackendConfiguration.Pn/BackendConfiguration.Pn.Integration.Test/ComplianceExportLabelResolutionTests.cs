@@ -375,7 +375,7 @@ public class ComplianceExportLabelResolutionTests : TestBaseSetup
             new DanishShellLocalizer(),
             null!,
             BackendConfigurationPnDbContext!,
-            NullLogger<BackendConfigurationComplianceExportService>.Instance);
+            TestContextLogger<BackendConfigurationComplianceExportService>.Instance);
 
     private static IBackendConfigurationComplianceReportService StubReportService()
     {
@@ -450,7 +450,7 @@ public class ComplianceExportLabelResolutionTests : TestBaseSetup
             ]
         };
 
-        var writer = new ComplianceExportWordWriter(new DanishShellLocalizer(), NullLogger.Instance);
+        var writer = new ComplianceExportWordWriter(new DanishShellLocalizer(), TestContextLogger.Instance);
         await using var stream = await writer.WriteAsync(document, null);
         using var word = WordprocessingDocument.Open(stream, false);
 

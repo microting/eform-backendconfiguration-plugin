@@ -537,7 +537,7 @@ public class BackendConfigurationReportService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogError(e.StackTrace);
             return new OperationDataResult<List<OldReportEformModel>>(false,
                 backendConfigurationLocalizationService.GetString("ErrorWhileGeneratingReport") + e.Message);
@@ -992,7 +992,7 @@ public class BackendConfigurationReportService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogError(e.StackTrace);
             return new OperationDataResult<List<ReportEformModel>>(false,
                 backendConfigurationLocalizationService.GetString("ErrorWhileGeneratingReport") + e.Message);
@@ -1077,7 +1077,7 @@ public class BackendConfigurationReportService(
             catch (Exception e)
             {
                 SentrySdk.CaptureException(e);
-                logger.LogError(e.Message);
+                logger.LogError(e, e.Message);
                 logger.LogError(e.StackTrace);
                 return new OperationDataResult<Stream>(
                     false,
@@ -1158,7 +1158,7 @@ public class BackendConfigurationReportService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogError(e.StackTrace);
             return new OperationDataResult<Stream>(
                 false,

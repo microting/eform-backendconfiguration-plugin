@@ -1252,7 +1252,7 @@ public class ComplianceExportWriterTests
     }
 
     private static ComplianceExportWordWriter NewWordWriter() =>
-        new(new DanishShellLocalizer(), NullLogger.Instance);
+        new(new DanishShellLocalizer(), TestContextLogger.Instance);
 
     private static SectionProperties SectionProperties(WordprocessingDocument word)
     {
@@ -1408,7 +1408,7 @@ public class ComplianceExportWriterTests
 
         var before = ExportTempDirectories();
 
-        var pdf = await ComplianceExportPdfConverter.ConvertAsync(docx, NullLogger.Instance);
+        var pdf = await ComplianceExportPdfConverter.ConvertAsync(docx, TestContextLogger.Instance);
 
         Assert.That(pdf, Is.Null);
         Assert.That(ExportTempDirectories(), Is.EquivalentTo(before));

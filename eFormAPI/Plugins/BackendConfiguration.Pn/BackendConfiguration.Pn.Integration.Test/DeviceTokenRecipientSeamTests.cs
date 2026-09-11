@@ -75,7 +75,7 @@ public class DeviceTokenRecipientSeamTests : TestBaseSetup
         return new SettingsGrpcService(
             BackendConfigurationPnDbContext!,
             resolver,
-            NullLogger<SettingsGrpcService>.Instance);
+            TestContextLogger<SettingsGrpcService>.Instance);
     }
 
     private static ServerCallContext Context() => Substitute.For<ServerCallContext>();

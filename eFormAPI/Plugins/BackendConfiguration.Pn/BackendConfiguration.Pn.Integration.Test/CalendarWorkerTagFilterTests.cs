@@ -354,7 +354,7 @@ public class CalendarWorkerTagFilterTests : TestBaseSetup
             ItemsPlanningPnDbContext!, Substitute.For<IBackendConfigurationTaskWizardService>(),
             Substitute.For<ICalendarAssignmentReconciliationService>(),
             Substitute.For<ICalendarChangeNotifier>(),
-            NullLogger<BackendConfigurationCalendarService>.Instance,
+            TestContextLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
             // The real membership service: this fixture is entirely about the

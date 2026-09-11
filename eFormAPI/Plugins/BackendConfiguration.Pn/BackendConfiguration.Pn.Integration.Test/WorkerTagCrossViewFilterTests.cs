@@ -582,7 +582,7 @@ public class WorkerTagCrossViewFilterTests : TestBaseSetup
             ItemsPlanningPnDbContext!, Substitute.For<IBackendConfigurationTaskWizardService>(),
             Substitute.For<ICalendarAssignmentReconciliationService>(),
             Substitute.For<ICalendarChangeNotifier>(),
-            NullLogger<BackendConfigurationCalendarService>.Instance,
+            TestContextLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
             // The real membership service — this fixture is entirely about the
@@ -597,7 +597,7 @@ public class WorkerTagCrossViewFilterTests : TestBaseSetup
         return new BackendConfigurationComplianceReportService(
             new BackendConfigurationLocalizationService(), UserService(),
             BackendConfigurationPnDbContext!, coreHelper, ItemsPlanningPnDbContext!,
-            NullLogger<BackendConfigurationComplianceReportService>.Instance,
+            TestContextLogger<BackendConfigurationComplianceReportService>.Instance,
             new WorkerTagMembershipService(coreHelper));
     }
 

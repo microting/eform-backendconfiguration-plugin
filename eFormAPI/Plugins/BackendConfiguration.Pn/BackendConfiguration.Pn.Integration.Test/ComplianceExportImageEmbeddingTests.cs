@@ -255,7 +255,7 @@ public class ComplianceExportImageEmbeddingTests : TestBaseSetup
     }
 
     private static ComplianceExportWordWriter NewWordWriter() =>
-        new(new AppendixLocalizer(), NullLogger.Instance);
+        new(new AppendixLocalizer(), TestContextLogger.Instance);
 
     /// <summary>
     /// The appendix grid is the LAST table in the body: the writer emits every

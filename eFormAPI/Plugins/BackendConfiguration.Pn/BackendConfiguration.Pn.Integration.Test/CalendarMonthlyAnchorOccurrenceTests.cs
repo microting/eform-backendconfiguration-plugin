@@ -835,7 +835,7 @@ public class CalendarMonthlyAnchorRenderTests : TestBaseSetup
             ItemsPlanningPnDbContext!, Substitute.For<IBackendConfigurationTaskWizardService>(),
             Substitute.For<ICalendarAssignmentReconciliationService>(),
             Substitute.For<ICalendarChangeNotifier>(),
-            NullLogger<BackendConfigurationCalendarService>.Instance,
+            TestContextLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
             new WorkerTagMembershipService(coreHelper));

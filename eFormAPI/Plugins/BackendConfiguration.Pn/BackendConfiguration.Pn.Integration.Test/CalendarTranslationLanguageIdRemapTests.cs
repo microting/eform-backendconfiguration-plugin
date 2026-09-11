@@ -102,7 +102,7 @@ public class CalendarTranslationLanguageIdRemapTests : TestBaseSetup
         };
 
         await AreaRuleLanguageHelper.RemapCommonTranslationLanguageIdsAsync(
-            translates, MicrotingDbContext!, NullLogger.Instance);
+            translates, MicrotingDbContext!, TestContextLogger.Instance);
 
         Assert.That(translates[0].LanguageId, Is.EqualTo(daId),
             "Absent app-locale id 1 must be remapped to the real SDK Danish Languages.Id");
@@ -125,7 +125,7 @@ public class CalendarTranslationLanguageIdRemapTests : TestBaseSetup
         };
 
         await AreaRuleLanguageHelper.RemapCommonTranslationLanguageIdsAsync(
-            translates, MicrotingDbContext!, NullLogger.Instance);
+            translates, MicrotingDbContext!, TestContextLogger.Instance);
 
         Assert.That(translates[0].LanguageId, Is.EqualTo(enUsId),
             "A valid SDK en-US id must be left unchanged — never reinterpreted via the static map");
@@ -144,7 +144,7 @@ public class CalendarTranslationLanguageIdRemapTests : TestBaseSetup
         };
 
         await AreaRuleLanguageHelper.RemapCommonTranslationLanguageIdsAsync(
-            translates, MicrotingDbContext!, NullLogger.Instance);
+            translates, MicrotingDbContext!, TestContextLogger.Instance);
 
         Assert.That(translates[0].LanguageId, Is.EqualTo(deDeId),
             "A valid SDK de-DE id must be left unchanged");
@@ -165,7 +165,7 @@ public class CalendarTranslationLanguageIdRemapTests : TestBaseSetup
         };
 
         await AreaRuleLanguageHelper.RemapCommonTranslationLanguageIdsAsync(
-            translates, MicrotingDbContext!, NullLogger.Instance);
+            translates, MicrotingDbContext!, TestContextLogger.Instance);
 
         Assert.Multiple(() =>
         {
@@ -190,7 +190,7 @@ public class CalendarTranslationLanguageIdRemapTests : TestBaseSetup
         };
 
         await AreaRuleLanguageHelper.RemapCommonTranslationLanguageIdsAsync(
-            translates, MicrotingDbContext!, NullLogger.Instance);
+            translates, MicrotingDbContext!, TestContextLogger.Instance);
 
         Assert.Multiple(() =>
         {

@@ -518,7 +518,7 @@ public class ComplianceCompletionCalendarAndReportTests : TestBaseSetup
 
         var service = new BackendConfigurationCaseService(
             ItemsPlanningPnDbContext!,
-            NullLogger<BackendConfigurationCaseService>.Instance,
+            TestContextLogger<BackendConfigurationCaseService>.Instance,
             coreHelper,
             new BackendConfigurationLocalizationService(),
             userService);
@@ -607,7 +607,7 @@ public class ComplianceCompletionCalendarAndReportTests : TestBaseSetup
 
         var service = new BackendConfigurationReportService(
             new BackendConfigurationLocalizationService(),
-            NullLogger<BackendConfigurationReportService>.Instance,
+            TestContextLogger<BackendConfigurationReportService>.Instance,
             coreHelper,
             Substitute.For<IWordService>(),
             Substitute.For<IExcelService>(),
@@ -872,7 +872,7 @@ public class ComplianceCompletionCalendarAndReportTests : TestBaseSetup
             ItemsPlanningPnDbContext, taskWizardService,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
             Substitute.For<ICalendarChangeNotifier>(),
-            NullLogger<BackendConfigurationCalendarService>.Instance,
+            TestContextLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
             new WorkerTagMembershipService(coreHelper));

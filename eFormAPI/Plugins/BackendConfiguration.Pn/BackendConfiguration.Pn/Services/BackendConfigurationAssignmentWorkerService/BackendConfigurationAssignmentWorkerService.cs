@@ -346,7 +346,7 @@ public class BackendConfigurationAssignmentWorkerService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogTrace(e.StackTrace);
             return new OperationResult(false,
                 $"{backendConfigurationLocalizationService.GetString("ErrorWhilDeleteAssignmentsProperties")}: {e.Message}");
@@ -580,7 +580,7 @@ public class BackendConfigurationAssignmentWorkerService(
             catch (Exception e)
             {
                 SentrySdk.CaptureException(e);
-                logger.LogError(e.Message);
+                logger.LogError(e, e.Message);
                 logger.LogTrace(e.StackTrace);
             }
 
