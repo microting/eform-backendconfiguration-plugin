@@ -110,8 +110,29 @@ describe('CalendarContainerComponent', () => {
       updateViewMode: jest.fn((viewMode: string) =>
         filters$.next({...filters$.value, viewMode})),
       toggleBoard: jest.fn(),
-      toggleSite: jest.fn(),
-      toggleTeam: jest.fn(),
+      // Emit, like the real (ngrx-backed, synchronous) service: the container
+      // dispatches and then calls loadTasks() in the same tick, relying on the
+      // filters$ subscription having already written back
+      // activeSiteIds/activeTeamIds. A recording-only stub would let a handler
+      // that reads stale ids pass.
+      toggleSite: jest.fn((siteId: number) => {
+        const ids: number[] = filters$.value.activeSiteIds;
+        filters$.next({
+          ...filters$.value,
+          activeSiteIds: ids.includes(siteId) ? ids.filter(id => id !== siteId) : [...ids, siteId],
+        });
+      }),
+      toggleTeam: jest.fn((teamId: number) => {
+        const ids: number[] = filters$.value.activeTeamIds;
+        filters$.next({
+          ...filters$.value,
+          activeTeamIds: ids.includes(teamId) ? ids.filter(id => id !== teamId) : [...ids, teamId],
+        });
+      }),
+      // ONE dispatch for both lists, as CalendarStateService.clearAssignees
+      // does, and scoped to the assignee filter — boards and tags survive it.
+      clearAssignees: jest.fn(() =>
+        filters$.next({...filters$.value, activeSiteIds: [], activeTeamIds: []})),
     };
 
     boardsByProperty = new Map<number, any>([
@@ -723,6 +744,111 @@ describe('CalendarContainerComponent', () => {
       component.onDeleteBoard({id: 10, name: 'Default', color: '#123456', propertyId: PROPERTY_A});
 
       expect(calendarServiceStub.getTasksForWeek).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // #1211's container wiring. The three handlers share one shape — mutate the
+  // filter in the store, then re-read the grid — and every defect this epic has
+  // produced has been in exactly that wiring, so it is asserted here rather
+  // than only in the Playwright spec (which a quarantined shard can silently
+  // stop running).
+  describe('the assignee filter handlers', () => {
+    beforeEach(() => {
+      calendarServiceStub.getTasksForWeek.mockClear();
+      propertiesServiceStub.getDeviceUsersFiltered.mockClear();
+      stateServiceStub.toggleSite.mockClear();
+      stateServiceStub.toggleTeam.mockClear();
+      stateServiceStub.clearAssignees.mockClear();
+    });
+
+    it('sends an employee toggle to the site list only, and puts it on the request', () => {
+      component.onEmployeeToggled(5);
+
+      expect(stateServiceStub.toggleSite).toHaveBeenCalledWith(5);
+      // No member-syncing in either direction: an employee is not expanded
+      // into (or out of) the teams they belong to.
+      expect(stateServiceStub.toggleTeam).not.toHaveBeenCalled();
+      expect(component.activeSiteIds).toEqual([5]);
+      expect(component.activeTeamIds).toEqual([]);
+      expect(calendarServiceStub.getTasksForWeek).toHaveBeenCalledTimes(1);
+      expect(calendarServiceStub.getTasksForWeek).toHaveBeenCalledWith(
+        expect.objectContaining({siteIds: [5], workerTagIds: []}));
+    });
+
+    it('sends a team toggle to the team list only, and puts it on the request', () => {
+      component.onTeamToggled(7);
+
+      expect(stateServiceStub.toggleTeam).toHaveBeenCalledWith(7);
+      expect(stateServiceStub.toggleSite).not.toHaveBeenCalled();
+      expect(component.activeTeamIds).toEqual([7]);
+      expect(component.activeSiteIds).toEqual([]);
+      expect(calendarServiceStub.getTasksForWeek).toHaveBeenCalledWith(
+        expect.objectContaining({siteIds: [], workerTagIds: [7]}));
+    });
+
+    // The inversion #1211 fixes: a team pick used to re-fetch the EMPLOYEE
+    // list (narrowing it under the user's own selection) instead of re-reading
+    // the grid. Teams are a task filter in their own right now, so the
+    // employee list must not move.
+    it('reloads the tasks on a team toggle, never the employee list', () => {
+      component.onTeamToggled(7);
+
+      expect(calendarServiceStub.getTasksForWeek).toHaveBeenCalledTimes(1);
+      expect(propertiesServiceStub.getDeviceUsersFiltered).not.toHaveBeenCalled();
+    });
+
+    it('reloads the tasks on an employee toggle, never the employee list', () => {
+      component.onEmployeeToggled(5);
+
+      expect(calendarServiceStub.getTasksForWeek).toHaveBeenCalledTimes(1);
+      expect(propertiesServiceStub.getDeviceUsersFiltered).not.toHaveBeenCalled();
+    });
+
+    it('untoggles, rather than re-adding, an id that is already active', () => {
+      component.onEmployeeToggled(5);
+      component.onTeamToggled(7);
+      calendarServiceStub.getTasksForWeek.mockClear();
+
+      component.onEmployeeToggled(5);
+
+      expect(component.activeSiteIds).toEqual([]);
+      expect(component.activeTeamIds).toEqual([7]);
+      expect(calendarServiceStub.getTasksForWeek).toHaveBeenCalledWith(
+        expect.objectContaining({siteIds: [], workerTagIds: [7]}));
+    });
+
+    it('clears both lists in ONE dispatch, and reloads the grid once', () => {
+      component.onEmployeeToggled(5);
+      component.onTeamToggled(7);
+      calendarServiceStub.getTasksForWeek.mockClear();
+      stateServiceStub.toggleSite.mockClear();
+      stateServiceStub.toggleTeam.mockClear();
+
+      component.onClearAssignees();
+
+      expect(stateServiceStub.clearAssignees).toHaveBeenCalledTimes(1);
+      // Not cleared one entry at a time: two dispatches would emit a
+      // half-cleared filter, and the reload it triggers could land last.
+      expect(stateServiceStub.toggleSite).not.toHaveBeenCalled();
+      expect(stateServiceStub.toggleTeam).not.toHaveBeenCalled();
+      expect(component.activeSiteIds).toEqual([]);
+      expect(component.activeTeamIds).toEqual([]);
+      expect(calendarServiceStub.getTasksForWeek).toHaveBeenCalledTimes(1);
+      expect(propertiesServiceStub.getDeviceUsersFiltered).not.toHaveBeenCalled();
+    });
+
+    // The reset is the ASSIGNEE reset, not a filter reset: the calendars
+    // picker and the planning tags are separate controls beside it.
+    it('leaves the calendar and tag filters alone when clearing assignees', () => {
+      stateServiceStub.setActiveBoardIds([10]);
+      component.onTeamToggled(7);
+
+      component.onClearAssignees();
+
+      expect(component.activeBoardIds).toEqual([10]);
+      expect(component.activeTagNames).toEqual([]);
+      expect(calendarServiceStub.getTasksForWeek).toHaveBeenCalledWith(
+        expect.objectContaining({boardIds: [10], siteIds: [], workerTagIds: []}));
     });
   });
 

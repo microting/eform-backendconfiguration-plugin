@@ -768,4 +768,7 @@ export const plPL = {
   '{{name}} (copy {{index}})': '{{name}} (kopia {{index}})',
   'This is the last calendar, so a new default calendar is created in its place.': 'To jest ostatni kalendarz, więc w jego miejsce tworzony jest nowy kalendarz domyślny.',
   'The calendar could not be deleted. It still has events that could not be removed.': 'Nie udało się usunąć kalendarza. Nadal zawiera zdarzenia, których nie udało się usunąć.',
+  Teams: 'Zespoły',
+  '{{count}} selected': 'Wybrano: {{count}}',
+  'Teams and employees': 'Zespoły i pracownicy',
 };

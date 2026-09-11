@@ -768,4 +768,7 @@ export const ltLT = {
   '{{name}} (copy {{index}})': '{{name}} (kopija {{index}})',
   'This is the last calendar, so a new default calendar is created in its place.': 'Tai paskutinis kalendorius, todėl jo vietoje sukuriamas naujas numatytasis kalendorius.',
   'The calendar could not be deleted. It still has events that could not be removed.': 'Kalendoriaus ištrinti nepavyko. Jame vis dar yra įvykių, kurių nepavyko pašalinti.',
+  Teams: 'Komandos',
+  '{{count}} selected': 'Pasirinkta: {{count}}',
+  'Teams and employees': 'Komandos ir darbuotojai',
 };

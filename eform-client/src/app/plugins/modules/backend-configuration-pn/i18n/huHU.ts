@@ -768,4 +768,7 @@ export const huHU = {
   '{{name}} (copy {{index}})': '{{name}} (másolat {{index}})',
   'This is the last calendar, so a new default calendar is created in its place.': 'Ez az utolsó naptár, ezért a helyén új alapértelmezett naptár jön létre.',
   'The calendar could not be deleted. It still has events that could not be removed.': 'A naptárat nem sikerült törölni. Még mindig vannak benne események, amelyeket nem lehetett eltávolítani.',
+  Teams: 'Csapatok',
+  '{{count}} selected': '{{count}} kiválasztva',
+  'Teams and employees': 'Csapatok és alkalmazottak',
 };

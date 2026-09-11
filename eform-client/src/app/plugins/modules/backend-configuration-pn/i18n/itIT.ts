@@ -768,4 +768,7 @@ export const itIT = {
   '{{name}} (copy {{index}})': '{{name}} (copia {{index}})',
   'This is the last calendar, so a new default calendar is created in its place.': 'Questo è l’ultimo calendario, quindi al suo posto viene creato un nuovo calendario predefinito.',
   'The calendar could not be deleted. It still has events that could not be removed.': 'Non è stato possibile eliminare il calendario. Contiene ancora eventi che non è stato possibile rimuovere.',
+  Teams: 'Squadre',
+  '{{count}} selected': '{{count}} selezionati',
+  'Teams and employees': 'Squadre e dipendenti',
 };

@@ -768,4 +768,7 @@ export const ptPT = {
   '{{name}} (copy {{index}})': '{{name}} (cópia {{index}})',
   'This is the last calendar, so a new default calendar is created in its place.': 'Este é o último calendário, pelo que é criado um novo calendário predefinido no seu lugar.',
   'The calendar could not be deleted. It still has events that could not be removed.': 'Não foi possível excluir o calendário. Ainda tem eventos que não foi possível remover.',
+  Teams: 'Equipas',
+  '{{count}} selected': '{{count}} selecionados',
+  'Teams and employees': 'Equipas e funcionários',
 };

@@ -768,4 +768,7 @@ export const nlNL = {
   '{{name}} (copy {{index}})': '{{name}} (kopie {{index}})',
   'This is the last calendar, so a new default calendar is created in its place.': 'Dit is de laatste kalender, dus er wordt een nieuwe standaardkalender voor in de plaats gemaakt.',
   'The calendar could not be deleted. It still has events that could not be removed.': 'De kalender kon niet worden verwijderd. Er staan nog gebeurtenissen in die niet konden worden verwijderd.',
+  Teams: 'Teams',
+  '{{count}} selected': '{{count}} geselecteerd',
+  'Teams and employees': 'Teams en medewerkers',
 };

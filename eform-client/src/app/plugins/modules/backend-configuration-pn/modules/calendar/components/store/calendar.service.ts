@@ -70,6 +70,20 @@ export class CalendarStateService {
     this.dispatch({activeSiteIds});
   }
 
+  /**
+   * The toolbar's "All employees" reset (#1211). Clears BOTH assignee lists in
+   * ONE dispatch — two calls would emit two filter states, and the caller
+   * reloads the grid after each dispatch, so the first reload would fire for a
+   * half-cleared filter and could still land last.
+   *
+   * Scoped to the assignee filter on purpose: the calendars (`activeBoardIds`)
+   * and the planning tags (`activeTagNames`) are separate controls and must
+   * survive it. `updatePropertyId` remains the only thing that clears everything.
+   */
+  clearAssignees() {
+    this.dispatch({activeSiteIds: [], activeTeamIds: []});
+  }
+
   private dispatch(partial: Partial<CalendarFiltersModel>) {
     this.store.dispatch(calendarUpdateFilters(partial));
   }

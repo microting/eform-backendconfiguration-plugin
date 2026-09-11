@@ -768,4 +768,7 @@ export const skSK = {
   '{{name}} (copy {{index}})': '{{name}} (kópia {{index}})',
   'This is the last calendar, so a new default calendar is created in its place.': 'Toto je posledný kalendár, preto sa na jeho mieste vytvorí nový predvolený kalendár.',
   'The calendar could not be deleted. It still has events that could not be removed.': 'Kalendár sa nepodarilo odstrániť. Stále obsahuje udalosti, ktoré sa nepodarilo odstrániť.',
+  Teams: 'Tímy',
+  '{{count}} selected': 'Vybraté: {{count}}',
+  'Teams and employees': 'Tímy a zamestnanci',
 };

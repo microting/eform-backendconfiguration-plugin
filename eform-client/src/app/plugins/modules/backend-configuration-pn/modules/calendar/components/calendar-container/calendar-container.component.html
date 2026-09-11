@@ -8,6 +8,10 @@
       [selectedPropertyId]="currentPropertyId"
       [boards]="boards"
       [activeBoardIds]="activeBoardIds"
+      [teams]="teams"
+      [employees]="employees"
+      [activeSiteIds]="activeSiteIds"
+      [activeTeamIds]="activeTeamIds"
       [scheduleScope]="scheduleScope"
       (navigate)="onNavigate($event)"
       (goToToday)="onGoToToday()"
@@ -20,6 +24,9 @@
       (editBoard)="onEditBoard($event)"
       (duplicateBoard)="onDuplicateBoard($event)"
       (deleteBoard)="onDeleteBoard($event)"
+      (employeeToggled)="onEmployeeToggled($event)"
+      (teamToggled)="onTeamToggled($event)"
+      (clearAssignees)="onClearAssignees()"
     ></app-calendar-header>
 
     <ng-container [ngSwitch]="viewMode">

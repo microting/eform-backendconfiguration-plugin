@@ -12,6 +12,7 @@ import {
   CalendarTaskIndexRequestModel,
   CalendarTaskModel,
   CalendarTaskUpdateModel,
+  CalendarTaskWeekRequestModel,
   RepeatDeleteScope,
   RepeatEditScope,
 } from '../models';
@@ -47,22 +48,20 @@ export class BackendConfigurationPnCalendarService {
     }
   }
 
+  /**
+   * The grid's read path. Takes the whole request as one model rather than a
+   * positional argument list — see `CalendarTaskWeekRequestModel`, which also
+   * documents why `siteIds` and `workerTagIds` are ORed server-side.
+   *
+   * The model is posted as-is: no field is defaulted or dropped here, so a
+   * filter the caller forgot shows up as a compile error rather than as a
+   * silently unfiltered grid.
+   */
   getTasksForWeek(
-    propertyId: number,
-    weekStart: string,
-    weekEnd: string,
-    boardIds: number[],
-    tagNames: string[],
-    siteIds: number[] = []
+    model: CalendarTaskWeekRequestModel
   ): Observable<OperationDataResult<CalendarTaskModel[]>> {
-    return this.apiBaseService.postNoToast(BackendConfigurationPnCalendarMethods.TasksWeek, {
-      propertyId,
-      weekStart,
-      weekEnd,
-      boardIds,
-      tagNames,
-      siteIds,
-    }).pipe(tap((res) => this.notifyError(res)));
+    return this.apiBaseService.postNoToast(BackendConfigurationPnCalendarMethods.TasksWeek, model)
+      .pipe(tap((res) => this.notifyError(res)));
   }
 
   getTasksIndex(model: CalendarTaskIndexRequestModel): Observable<OperationDataResult<CalendarTaskModel[]>> {

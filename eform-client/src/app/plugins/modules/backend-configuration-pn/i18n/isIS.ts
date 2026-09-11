@@ -768,4 +768,7 @@ export const isIS = {
   '{{name}} (copy {{index}})': '{{name}} (afrit {{index}})',
   'This is the last calendar, so a new default calendar is created in its place.': 'Þetta er síðasta dagatalið, því er nýtt sjálfgefið dagatal búið til í staðinn.',
   'The calendar could not be deleted. It still has events that could not be removed.': 'Ekki tókst að eyða dagatalinu. Það inniheldur enn atburði sem ekki tókst að fjarlægja.',
+  Teams: 'Teymi',
+  '{{count}} selected': '{{count}} valin',
+  'Teams and employees': 'Teymi og starfsmenn',
 };

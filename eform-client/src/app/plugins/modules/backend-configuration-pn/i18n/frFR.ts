@@ -767,4 +767,7 @@ export const frFR = {
   '{{name}} (copy {{index}})': '{{name}} (copie {{index}})',
   'This is the last calendar, so a new default calendar is created in its place.': 'Ceci est le dernier calendrier ; un nouveau calendrier par défaut est donc créé à sa place.',
   'The calendar could not be deleted. It still has events that could not be removed.': 'Le calendrier n’a pas pu être supprimé. Il contient encore des événements qui n’ont pas pu être retirés.',
+  Teams: 'Équipes',
+  '{{count}} selected': '{{count}} sélectionné(s)',
+  'Teams and employees': 'Équipes et employés',
 };
