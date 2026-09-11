@@ -301,6 +301,13 @@ jobs:
     - uses: actions/checkout@v3
       with:
         path: eform-backendconfiguration-plugin
+    - name: i18n interpolation tokens
+      # Guards issue #1181: a translateTsFiles.py run once translated the
+      # placeholder *names* inside {{...}}, so ngx-translate found no matching
+      # interpolation param and rendered the braces literally in the UI.
+      # The i18n files are ours, so the check runs against our own checkout.
+      # Costs <1s and sits before the heavy steps so it fails fast.
+      run: python3 eform-backendconfiguration-plugin/check_i18n_tokens.py eform-backendconfiguration-plugin/eform-client/src/app/plugins/modules/backend-configuration-pn/i18n
     - name: Extract branch name
       id: extract_branch
       run: echo "BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_OUTPUT

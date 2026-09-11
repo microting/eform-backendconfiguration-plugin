@@ -159,7 +159,7 @@ export const fiFI = {
   Repeat: 'Toista',
   Deadline: 'Määräaika',
   'Show/hide columns': 'Näytä/piilota sarakkeet',
-  GenerateWithTypeDoc: 'Luo {{tyyppi}}',
+  GenerateWithTypeDoc: 'Luo {{type}}',
   copyFromTo: 'Kopioi arvot kohteesta {{from}} kohteeseen {{to}}',
   'Add new task': 'Lisää uusi tehtävä',
   Folders: 'Kansiot',

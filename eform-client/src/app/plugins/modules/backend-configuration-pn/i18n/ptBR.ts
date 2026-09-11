@@ -159,7 +159,7 @@ export const ptBR = {
   Repeat: 'Repita',
   Deadline: 'Prazo',
   'Show/hide columns': 'Mostrar/ocultar colunas',
-  GenerateWithTypeDoc: 'Gerar {{tipo}}',
+  GenerateWithTypeDoc: 'Gerar {{type}}',
   copyFromTo: 'Copie valores de {{from}} para {{to}}',
   'Add new task': 'Adicionar nova tarefa',
   Folders: 'Pastas',
