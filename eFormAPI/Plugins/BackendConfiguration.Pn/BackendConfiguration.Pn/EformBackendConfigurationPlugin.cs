@@ -96,6 +96,7 @@ using Services.WordService;
 using Services.WorkorderCaseGroupIdBackfillService;
 using Services.CalendarConfigurationBackfillService;
 using Services.AreaRulePlanningTagPurgeService;
+using Services.SecurityGroupBackfillService;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -183,6 +184,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<WorkorderCaseGroupIdBackfillService>();
         services.AddTransient<CalendarConfigurationBackfillService>();
         services.AddTransient<AreaRulePlanningTagPurgeService>();
+        services.AddTransient<SecurityGroupBackfillService>();
         services.AddTransient<IExcelService, ExcelService>();
         services.AddTransient<IWordService, WordService>();
         services.AddTransient<IGoogleDriveAuthService, GoogleDriveAuthService>();
@@ -888,6 +890,21 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         catch (Exception e)
         {
             Console.WriteLine($"AreaRulePlanningTagPurge failed at startup: {e}");
+        }
+
+        // One-time sweep bringing existing users up to the "none unless another
+        // group" rule and clearing the retired hardcoded password. Gated on its own
+        // PluginConfigurationValues marker. Wrapped because this hook blocks startup
+        // synchronously: a backfill failure must not stop the plugin from loading.
+        try
+        {
+            var securityGroupBackfill = scope.ServiceProvider
+                .GetRequiredService<SecurityGroupBackfillService>();
+            securityGroupBackfill.RunIfNeededAsync().GetAwaiter().GetResult();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"SecurityGroupBackfill failed at startup: {e}");
         }
 
         appBuilder.UseEndpoints(endpoints =>

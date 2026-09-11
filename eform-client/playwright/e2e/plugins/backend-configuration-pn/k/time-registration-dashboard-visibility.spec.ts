@@ -8,17 +8,63 @@ import {
   PropertyCreateUpdate,
 } from '../BackendConfigurationProperties.page';
 import { generateRandmString } from '../../../helper-functions';
+import { API_TIMEOUT } from '../wait-helpers';
 
-const WORKER_PASSWORD = 'Replace_me_with_a_proper_password_2024!';
+// New accounts have no password set, so every worker gets this password through
+// setWorkerPasswordViaApi before it can log in.
+// Generated at runtime rather than a literal (GitGuardian flags any committed
+// password-shaped string, even a fabricated test one) - the fixed "Aa1"
+// prefix guarantees lower/upper/digit regardless of generateRandmString's own
+// charset, satisfying the server's Identity policy and the set-password
+// modal's own rules (>= 8 chars, lower/upper/digit), same shape as
+// r/property-worker-set-password-gate.spec.ts's NEW_PASSWORD.
+const WORKER_PASSWORD = `Aa1${generateRandmString(12)}`;
 const BASE_URL = 'http://localhost:4200';
 
-async function loginViaApi(page: Page, email: string, password: string): Promise<string> {
+// `timeout` is optional so pre-existing callers (setupSecurityGroupsViaApi's
+// admin login) keep their prior, unbounded-by-this-function behaviour; pass it
+// explicitly at any new call site per CLAUDE.md's "every wait carries an
+// explicit timeout" rule.
+async function loginViaApi(page: Page, email: string, password: string, timeout?: number): Promise<string> {
   const res = await page.request.post(`${BASE_URL}/api/auth/token`, {
-    form: { username: email, password: password, grant_type: 'password' }
+    form: { username: email, password: password, grant_type: 'password' },
+    timeout,
   });
   console.log(`loginViaApi ${email}: status=${res.status()}`);
   const json = await res.json();
   return json?.model?.accessToken || '';
+}
+
+/**
+ * Sets a worker's password through api/account/change-password-admin, the
+ * endpoint the property-worker "Set password" dialog calls. Driven through the
+ * API like the rest of this spec's admin setup (loginViaApi,
+ * setupSecurityGroupsViaApi), which skips opening a row menu + dialog for each
+ * of the four workers. A direct `request.post` is its own bounded round trip
+ * (explicit `timeout`), so there is no separate network event to await with
+ * `waitForApiResponse`.
+ *
+ * Asserts 200 and `success: true` itself, so a failure names itself here
+ * instead of surfacing 60+ seconds later as the worker's login silently
+ * failing and loginAsWorker timing out on the datepicker.
+ */
+async function setWorkerPasswordViaApi(
+  page: Page,
+  adminToken: string,
+  email: string,
+  password: string
+): Promise<void> {
+  const res = await page.request.post(`${BASE_URL}/api/account/change-password-admin`, {
+    headers: { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+    data: { newPassword: password, confirmPassword: password, email },
+    timeout: API_TIMEOUT,
+  });
+  const json = await res.json().catch(() => null);
+  if (res.status() !== 200 || json?.success !== true) {
+    throw new Error(
+      `change-password-admin failed for ${email}: status=${res.status()} body=${JSON.stringify(json)}`
+    );
+  }
 }
 
 /**
@@ -212,6 +258,16 @@ test.describe('Time Registration Dashboard Visibility', () => {
     await loginAsAdmin(page);
     await setupSecurityGroupsViaApi(page);
 
+    // Used by setWorkerPasswordViaApi below - see the comment on WORKER_PASSWORD.
+    const adminToken = await loginViaApi(page, 'admin@admin.com', 'secretpassword', API_TIMEOUT);
+    if (!adminToken) {
+      throw new Error(
+        'loginViaApi returned an empty admin token - cannot set worker passwords without one, ' +
+          'and every loginAsWorker call below would otherwise fail silently and surface 120s later ' +
+          'as an unrelated-looking datepicker timeout.'
+      );
+    }
+
     // Create a property
     await propertiesPage.goToProperties();
     await propertiesPage.createProperty({
@@ -234,6 +290,7 @@ test.describe('Time Registration Dashboard Visibility', () => {
       isManager: true, managingTags: [tagName], tags: [tagName],
     });
     await page.waitForTimeout(2000);
+    await setWorkerPasswordViaApi(page, adminToken, managerEmail, WORKER_PASSWORD);
 
     // Worker B: Tagged worker (same tag as manager)
     await workersPage.create({
@@ -242,6 +299,7 @@ test.describe('Time Registration Dashboard Visibility', () => {
       timeRegistrationEnabled: true, enableMobileAccess: true, tags: [tagName],
     });
     await page.waitForTimeout(2000);
+    await setWorkerPasswordViaApi(page, adminToken, taggedWorkerEmail, WORKER_PASSWORD);
 
     // Worker C: Untagged worker
     await workersPage.create({
@@ -250,6 +308,7 @@ test.describe('Time Registration Dashboard Visibility', () => {
       timeRegistrationEnabled: true, enableMobileAccess: true,
     });
     await page.waitForTimeout(2000);
+    await setWorkerPasswordViaApi(page, adminToken, untaggedWorkerEmail, WORKER_PASSWORD);
 
     // Worker D: Manager without managing tags
     await workersPage.create({
@@ -258,6 +317,7 @@ test.describe('Time Registration Dashboard Visibility', () => {
       timeRegistrationEnabled: true, enableMobileAccess: true, isManager: true,
     });
     await page.waitForTimeout(2000);
+    await setWorkerPasswordViaApi(page, adminToken, notagMgrEmail, WORKER_PASSWORD);
 
     // ==================== PHASE 2: ADMIN sees all workers ====================
 
