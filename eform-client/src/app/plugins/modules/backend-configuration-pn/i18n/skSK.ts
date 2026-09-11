@@ -757,4 +757,15 @@ export const skSK = {
   'Select all': 'Vybrať všetko',
   Clear: 'Vymazať',
   'Calendar actions': 'Akcie kalendára',
+  // Calendar CRUD from the calendars dropdown (#1210): the edit dialog's
+  // title, the row menu's Duplicate action, the client-side duplicate-name
+  // guard, the name a duplicate gets, and the two notes the delete dialog
+  // shows (a new default calendar replaces the last one; the cascade aborted).
+  'Edit calendar': 'Upraviť kalendár',
+  Duplicate: 'Duplikovať',
+  'A calendar with this name already exists': 'Kalendár s týmto názvom už existuje',
+  '{{name}} (copy)': '{{name}} (kópia)',
+  '{{name}} (copy {{index}})': '{{name}} (kópia {{index}})',
+  'This is the last calendar, so a new default calendar is created in its place.': 'Toto je posledný kalendár, preto sa na jeho mieste vytvorí nový predvolený kalendár.',
+  'The calendar could not be deleted. It still has events that could not be removed.': 'Kalendár sa nepodarilo odstrániť. Stále obsahuje udalosti, ktoré sa nepodarilo odstrániť.',
 };

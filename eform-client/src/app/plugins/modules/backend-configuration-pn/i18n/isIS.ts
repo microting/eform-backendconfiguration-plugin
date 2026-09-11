@@ -757,4 +757,15 @@ export const isIS = {
   'Select all': 'Velja allt',
   Clear: 'Hreinsa',
   'Calendar actions': 'Aðgerðir dagatals',
+  // Calendar CRUD from the calendars dropdown (#1210): the edit dialog's
+  // title, the row menu's Duplicate action, the client-side duplicate-name
+  // guard, the name a duplicate gets, and the two notes the delete dialog
+  // shows (a new default calendar replaces the last one; the cascade aborted).
+  'Edit calendar': 'Breyta dagatali',
+  Duplicate: 'Afrita',
+  'A calendar with this name already exists': 'Dagatal með þessu nafni er þegar til',
+  '{{name}} (copy)': '{{name}} (afrit)',
+  '{{name}} (copy {{index}})': '{{name}} (afrit {{index}})',
+  'This is the last calendar, so a new default calendar is created in its place.': 'Þetta er síðasta dagatalið, því er nýtt sjálfgefið dagatal búið til í staðinn.',
+  'The calendar could not be deleted. It still has events that could not be removed.': 'Ekki tókst að eyða dagatalinu. Það inniheldur enn atburði sem ekki tókst að fjarlægja.',
 };

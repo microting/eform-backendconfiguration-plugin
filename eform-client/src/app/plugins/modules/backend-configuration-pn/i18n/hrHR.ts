@@ -757,4 +757,15 @@ export const hrHR = {
   'Select all': 'Odaberi sve',
   Clear: 'Očisti',
   'Calendar actions': 'Radnje kalendara',
+  // Calendar CRUD from the calendars dropdown (#1210): the edit dialog's
+  // title, the row menu's Duplicate action, the client-side duplicate-name
+  // guard, the name a duplicate gets, and the two notes the delete dialog
+  // shows (a new default calendar replaces the last one; the cascade aborted).
+  'Edit calendar': 'Uredi kalendar',
+  Duplicate: 'Dupliciraj',
+  'A calendar with this name already exists': 'Kalendar s ovim nazivom već postoji',
+  '{{name}} (copy)': '{{name}} (kopija)',
+  '{{name}} (copy {{index}})': '{{name}} (kopija {{index}})',
+  'This is the last calendar, so a new default calendar is created in its place.': 'Ovo je posljednji kalendar, pa se umjesto njega stvara novi zadani kalendar.',
+  'The calendar could not be deleted. It still has events that could not be removed.': 'Kalendar nije bilo moguće izbrisati. I dalje sadrži događaje koji se nisu mogli ukloniti.',
 };

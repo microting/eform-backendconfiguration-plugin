@@ -593,7 +593,7 @@ test.describe.serial('Calendar UI enhancements', () => {
       await calendarPage.closeBoardMenu();
     });
 
-    test('CB4: the row actions trigger is arrow-key reachable and opens its popover', async ({ page }) => {
+    test('CB4: the row actions trigger is arrow-key reachable and opens its menu', async ({ page }) => {
       const calendarPage = new CalendarUiEnhancementsPage(page);
 
       await calendarPage.openBoardMenu();
@@ -611,19 +611,20 @@ test.describe.serial('Calendar UI enhancements', () => {
       await expect(actions).toBeVisible({ timeout: UI_TIMEOUT });
 
       await page.keyboard.press('ArrowRight');
-      // Seeded from (menuOpened), so the keyboard path fills the form too — a
-      // (click) handler would never have fired here.
-      await expect(page.locator('.board-edit-popover input')).toHaveValue(/.+/, { timeout: UI_TIMEOUT });
+      // #1210 replaced the inline rename form that used to open here with the
+      // three actions Rediger / Dupliker / Slet, each of which hands over to a
+      // dialog.
+      const actionsPanel = calendarPage.boardActionsPanel();
+      await expect(actionsPanel.locator('.board-action-edit')).toBeVisible({ timeout: UI_TIMEOUT });
+      await expect(actionsPanel.locator('.board-action-duplicate')).toBeVisible({ timeout: UI_TIMEOUT });
+      await expect(actionsPanel.locator('.board-action-delete')).toBeVisible({ timeout: UI_TIMEOUT });
 
-      // Escape must close the popover — and ONLY the popover. The CDK keyboard
+      // Escape must close this submenu — and ONLY this submenu. The CDK keyboard
       // dispatcher hands the event to the top-most overlay, and MatMenu forwards
       // a close to its parent for 'click'/'tab' but not for 'keydown', so the
-      // calendars panel is still open underneath. This also guards the regression
-      // where the popover's blanket `(keydown)="$event.stopPropagation()"`
-      // swallowed Escape before it ever reached the overlay, leaving the whole
-      // menu impossible to close from the keyboard.
+      // calendars panel is still open underneath.
       await page.keyboard.press('Escape');
-      await expect(page.locator('.board-edit-popover')).toHaveCount(0, { timeout: UI_TIMEOUT });
+      await expect(actionsPanel).toHaveCount(0, { timeout: UI_TIMEOUT });
       await expect(page.locator('#calendarBoardsButton')).toHaveAttribute('aria-expanded', 'true', {
         timeout: UI_TIMEOUT,
       });

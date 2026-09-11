@@ -778,4 +778,15 @@ export const da = {
   'Select all': 'Vælg alle',
   Clear: 'Ryd',
   'Calendar actions': 'Kalenderhandlinger',
+  // Calendar CRUD from the calendars dropdown (#1210): the edit dialog's
+  // title, the row menu's Duplicate action, the client-side duplicate-name
+  // guard, the name a duplicate gets, and the two notes the delete dialog
+  // shows (a new default calendar replaces the last one; the cascade aborted).
+  'Edit calendar': 'Rediger kalender',
+  Duplicate: 'Dupliker',
+  'A calendar with this name already exists': 'Der findes allerede en kalender med dette navn',
+  '{{name}} (copy)': '{{name}} (kopi)',
+  '{{name}} (copy {{index}})': '{{name}} (kopi {{index}})',
+  'This is the last calendar, so a new default calendar is created in its place.': 'Dette er den sidste kalender, så der oprettes en ny standardkalender i stedet.',
+  'The calendar could not be deleted. It still has events that could not be removed.': 'Kalenderen kunne ikke slettes. Den har stadig begivenheder, som ikke kunne fjernes.',
 };

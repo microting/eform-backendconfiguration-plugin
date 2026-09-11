@@ -280,47 +280,33 @@
   }
 }
 
-.board-edit-popover {
-  padding: 12px 16px;
-  min-width: 352px;
-
-  .field-label {
-    font-size: 13px;
-    color: #5f6368;
-    margin-bottom: 4px;
-    display: block;
+// #1210: the row `⋮` submenu (Rediger / Dupliker / Slet) deliberately carries
+// NO panel styling of its own. It is an ordinary row-action menu, and
+// styles.scss already dresses `.mat-mdc-menu-panel .mat-mdc-menu-content`
+// button rows — `.btn-delete-menu` included — for every other table in the
+// app. The 352px panel override this file used to carry went with the inline
+// rename popover: it existed to fit the eight-swatch colour picker, which now
+// lives in the create/edit dialog.
+//
+// The one exception is the danger colour on "Slet". `.btn-delete-menu` in
+// scss/styles.scss:1339 paints it, but that rule's ancestor chain starts at
+// `body.theme-eform` — so under `theme-workspace` the destructive action
+// rendered as plain body text, indistinguishable from Rediger and Dupliker.
+// Repeating it here, scoped to this panel, puts it in both themes.
+// `--error` is defined on `body` in styles.scss (light) and `.theme-dark`
+// (dark), independently of which theme class is on, so one declaration covers
+// all four combinations. `!important` answers theme-workspace's own
+// `.mat-mdc-menu-panel .mat-mdc-menu-content button.mat-mdc-menu-item .mat-icon
+// { color: var(--md-on-surface-variant) }` (_workspace-mat-overrides.scss:1205),
+// which out-specifies anything a panel-scoped selector can reach; it is also
+// exactly what the theme-eform rule does with the same custom property, so the
+// two never disagree on a value. theme-eform's `:hover` inversion to
+// `--btn-delete-text` is one class more specific than this and still wins.
+::ng-deep .board-actions-menu.mat-mdc-menu-panel {
+  .board-action-delete,
+  .board-action-delete span,
+  .board-action-delete mat-icon,
+  .board-action-delete .mat-mdc-menu-item-text {
+    color: var(--error, #DB0D0D) !important;
   }
-
-  .color-picker-grid {
-    display: grid;
-    grid-template-columns: repeat(8, 32px);
-    gap: 8px;
-    margin: 4px 0 8px;
-  }
-
-  .color-swatch {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: transform 0.15s;
-
-    &:hover {
-      transform: scale(1.15);
-    }
-
-    &.selected {
-      outline: 2px solid var(--text-header, #333);
-      outline-offset: 2px;
-    }
-  }
-}
-
-// The calendar edit popover renders inside a mat-menu panel in the CDK overlay
-// (outside :host), so this override must be global — NOT :host-scoped — to
-// reach the panel and lift Material's default 280px panel cap, fitting all
-// 8 colour swatches (8×32px + 7×8px gaps + padding = 352px) without clipping.
-::ng-deep .board-edit-menu.mat-mdc-menu-panel {
-  max-width: none;
-  min-width: 352px;
 }

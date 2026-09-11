@@ -757,4 +757,15 @@ export const elGR = {
   'Select all': 'Επιλογή όλων',
   Clear: 'Καθαρισμός',
   'Calendar actions': 'Ενέργειες ημερολογίου',
+  // Calendar CRUD from the calendars dropdown (#1210): the edit dialog's
+  // title, the row menu's Duplicate action, the client-side duplicate-name
+  // guard, the name a duplicate gets, and the two notes the delete dialog
+  // shows (a new default calendar replaces the last one; the cascade aborted).
+  'Edit calendar': 'Επεξεργασία ημερολογίου',
+  Duplicate: 'Δημιουργία αντιγράφου',
+  'A calendar with this name already exists': 'Υπάρχει ήδη ημερολόγιο με αυτό το όνομα',
+  '{{name}} (copy)': '{{name}} (αντίγραφο)',
+  '{{name}} (copy {{index}})': '{{name}} (αντίγραφο {{index}})',
+  'This is the last calendar, so a new default calendar is created in its place.': 'Αυτό είναι το τελευταίο ημερολόγιο, οπότε στη θέση του δημιουργείται ένα νέο προεπιλεγμένο ημερολόγιο.',
+  'The calendar could not be deleted. It still has events that could not be removed.': 'Δεν ήταν δυνατή η διαγραφή του ημερολογίου. Εξακολουθεί να περιέχει συμβάντα που δεν μπόρεσαν να αφαιρεθούν.',
 };

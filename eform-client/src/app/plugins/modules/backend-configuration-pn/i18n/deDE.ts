@@ -803,4 +803,15 @@ export const deDE = {
   'Select all': 'Alle auswählen',
   Clear: 'Zurücksetzen',
   'Calendar actions': 'Kalenderaktionen',
+  // Calendar CRUD from the calendars dropdown (#1210): the edit dialog's
+  // title, the row menu's Duplicate action, the client-side duplicate-name
+  // guard, the name a duplicate gets, and the two notes the delete dialog
+  // shows (a new default calendar replaces the last one; the cascade aborted).
+  'Edit calendar': 'Kalender bearbeiten',
+  Duplicate: 'Duplizieren',
+  'A calendar with this name already exists': 'Ein Kalender mit diesem Namen existiert bereits',
+  '{{name}} (copy)': '{{name}} (Kopie)',
+  '{{name}} (copy {{index}})': '{{name}} (Kopie {{index}})',
+  'This is the last calendar, so a new default calendar is created in its place.': 'Dies ist der letzte Kalender, daher wird an seiner Stelle ein neuer Standardkalender erstellt.',
+  'The calendar could not be deleted. It still has events that could not be removed.': 'Der Kalender konnte nicht gelöscht werden. Er enthält noch Ereignisse, die nicht entfernt werden konnten.',
 };

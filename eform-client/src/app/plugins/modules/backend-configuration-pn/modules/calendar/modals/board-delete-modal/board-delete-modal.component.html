@@ -1,13 +1,19 @@
 <h3 mat-dialog-title>{{ 'Delete calendar' | translate }}</h3>
 
 <div mat-dialog-content>
-  <p>{{ 'Are you sure you want to delete the calendar' | translate }} <strong>{{ data.board.name }}</strong>?</p>
-  <p>
+  <p>{{ 'Are you sure you want to delete the calendar' | translate }} <strong id="calendarBoardDeleteName">{{ data.board.name }}</strong>?</p>
+  <p id="calendarBoardDeleteCount">
     {{ 'This will permanently delete the calendar and its {{count}} events. This cannot be undone.' | translate:{count: eventCount} }}
+  </p>
+  <p class="board-delete-hint" id="calendarBoardDeleteLastHint" *ngIf="isLastBoard">
+    {{ 'This is the last calendar, so a new default calendar is created in its place.' | translate }}
+  </p>
+  <p class="text-danger" id="calendarBoardDeleteError" *ngIf="failed">
+    {{ 'The calendar could not be deleted. It still has events that could not be removed.' | translate }}
   </p>
 </div>
 
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
-  <button class="btn-cancel" (click)="onCancel()">{{ 'Cancel' | translate }}</button>
-  <button class="btn-delete" [disabled]="!countLoaded" (click)="onConfirm()">{{ 'Delete' | translate }}</button>
+  <button class="btn-cancel" id="calendarBoardDeleteCancelBtn" (click)="onCancel()">{{ 'Cancel' | translate }}</button>
+  <button class="btn-delete" id="calendarBoardDeleteConfirmBtn" [disabled]="!countLoaded || deleting" (click)="onConfirm()">{{ 'Delete' | translate }}</button>
 </div>

@@ -40,8 +40,8 @@ async function openBoardMenu(page: import('@playwright/test').Page) {
   await ui(page).openBoardMenu();
 }
 
-// NB: Escape cannot close the panel while a row's `⋮` popover is open (it
-// stops keydown). No helper here opens that popover.
+// NB: Escape reaches the TOP-MOST overlay only, so it closes a row's `⋮`
+// actions menu before the panel behind it. No helper here opens that menu.
 async function closeBoardMenu(page: import('@playwright/test').Page) {
   await ui(page).closeBoardMenu();
 }
@@ -50,21 +50,12 @@ function boardItem(page: import('@playwright/test').Page, name: string) {
   return ui(page).boardItem(name);
 }
 
+// #1210 turned the create dialog into a shared create/EDIT dialog, so its
+// field and its primary button are matched by id rather than by
+// `formcontrolname` / `.btn-primary`: the same button reads "Opret" here and
+// "Gem" when the dialog is opened from a row's Rediger action.
 async function createBoard(page: import('@playwright/test').Page, name: string) {
-  await openBoardMenu(page);
-  // The create action renders as "Opret kalender" in the Danish e2e locale
-  // (key 'Create calendar'); it is matched by id, not by the localized text.
-  // It closes the dropdown before opening the dialog.
-  await ui(page).boardMenuPanel().locator('#calendarCreateBoardBtn').click();
-  const dialog = page.locator('mat-dialog-container');
-  await dialog.locator('input[formcontrolname="name"]').fill(name);
-  // The board-create dialog has a single primary button — match by class, not
-  // by localized text, so key/translation changes don't break this.
-  await dialog.locator('button.btn-primary').click();
-  await dialog.waitFor({ state: 'detached', timeout: UI_TIMEOUT });
-  await openBoardMenu(page);
-  await expect(ui(page).boardMenuPanel().locator('.board-name', { hasText: name }))
-    .toBeVisible({ timeout: API_TIMEOUT });
+  await ui(page).createBoard(name);
 }
 
 async function activateBoard(page: import('@playwright/test').Page, name: string) {

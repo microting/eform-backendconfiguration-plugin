@@ -1,7 +1,7 @@
 import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
 import {TranslateService} from '@ngx-translate/core';
 import {CommonDictionaryModel} from 'src/app/common/models';
-import {boardTextColor, CalendarBoardModel, CALENDAR_COLORS} from '../../../../models/calendar';
+import {boardTextColor, CalendarBoardModel} from '../../../../models/calendar';
 import {getCurrentLocale} from '../../services/calendar-locale.helper';
 
 @Component({
@@ -30,58 +30,18 @@ export class CalendarHeaderComponent implements OnInit {
   @Output() selectAllBoards = new EventEmitter<void>();
   @Output() clearBoards = new EventEmitter<void>();
   @Output() createBoard = new EventEmitter<void>();
-  @Output() updateBoard = new EventEmitter<{id: number; name: string; color: string}>();
+  // #1210: the row `⋮` menu no longer edits in place. Each action just names
+  // the calendar and hands over to the container, which owns the dialogs.
+  @Output() editBoard = new EventEmitter<CalendarBoardModel>();
+  @Output() duplicateBoard = new EventEmitter<CalendarBoardModel>();
   @Output() deleteBoard = new EventEmitter<CalendarBoardModel>();
 
   readonly boardTextColor = boardTextColor;
-  readonly boardColors = CALENDAR_COLORS;
-
-  // Inline calendar rename / recolour, carried over from the retired sidebar's
-  // row popover. #1210 replaces it with a modal and a duplicate-name guard.
-  editingBoardId: number | null = null;
-  editingBoardName = '';
-  editingBoardColor = '';
 
   constructor(private translate: TranslateService) {}
 
   isBoardActive(boardId: number): boolean {
     return this.activeBoardIds.includes(boardId);
-  }
-
-  startEditBoard(board: CalendarBoardModel) {
-    this.editingBoardId = board.id;
-    this.editingBoardName = board.name;
-    this.editingBoardColor = board.color;
-  }
-
-  submitEditBoard() {
-    if (this.editingBoardId !== null && this.editingBoardName.trim()) {
-      this.updateBoard.emit({id: this.editingBoardId, name: this.editingBoardName.trim(), color: this.editingBoardColor});
-    }
-    this.editingBoardId = null;
-  }
-
-  /**
-   * Keydown guard for the row `⋮` rename popover.
-   *
-   * The popover hosts a text input inside a MatMenu panel, so without this every
-   * keystroke also reaches the panel's FocusKeyManager and drives its typeahead:
-   * typing a calendar name would yank focus from the input onto whichever menu
-   * item matched the letters. Stopping the event fixes that.
-   *
-   * ESCAPE is deliberately let through. The CDK's OverlayKeyboardDispatcher
-   * listens on `body` in the BUBBLE phase, so a blanket stopPropagation() here
-   * means Escape never reaches any overlay at all — neither this popover nor the
-   * calendars panel behind it can be closed from the keyboard, and the menu
-   * becomes a keyboard trap. Letting it through closes only this submenu:
-   * MatMenu emits `closed('keydown')`, and MatMenuTrigger forwards a close to the
-   * parent menu for `'click'`/`'tab'` only.
-   */
-  onBoardEditKeydown(event: KeyboardEvent) {
-    if (event.key === 'Escape') {
-      return;
-    }
-    event.stopPropagation();
   }
 
   // The calendars button label, in the mock-up's three forms: the single

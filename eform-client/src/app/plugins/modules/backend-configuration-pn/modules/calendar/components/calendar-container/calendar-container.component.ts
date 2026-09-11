@@ -5,6 +5,7 @@ import {Router} from '@angular/router';
 import {BehaviorSubject, firstValueFrom, forkJoin, Observable, of, Subject} from 'rxjs';
 import {catchError, takeUntil} from 'rxjs/operators';
 import {Store} from '@ngrx/store';
+import {TranslateService} from '@ngx-translate/core';
 import {selectCurrentUserIsAdmin} from 'src/app/state/auth/auth.selector';
 import {
   BackendConfigurationPnCalendarService,
@@ -26,7 +27,8 @@ import {TaskCreateEditModalComponent, TaskCreateEditModalData} from '../../modal
 import {CalendarWeekGridComponent} from '../calendar-week-grid/calendar-week-grid.component';
 import {TaskPreviewModalComponent, TaskPreviewModalData} from '../../modals/task-preview-modal/task-preview-modal.component';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
-import {BoardCreateModalComponent, BoardCreateModalData} from '../../modals/board-create-modal/board-create-modal.component';
+import {BoardCreateEditModalComponent, BoardCreateEditModalData} from '../../modals/board-create-edit-modal/board-create-edit-modal.component';
+import {buildDuplicateBoardName} from '../../services/calendar-board-name.helper';
 import {BoardDeleteModalComponent, BoardDeleteModalData} from '../../modals/board-delete-modal/board-delete-modal.component';
 import {RepeatScopeModalComponent} from '../../modals/repeat-scope-modal/repeat-scope-modal.component';
 import {CalendarSelectWorkerModalComponent} from '../../modals';
@@ -48,6 +50,8 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
   properties: CommonDictionaryModel[] = [];
   boards: CalendarBoardModel[] = [];
+  /** In-flight latch for onDuplicateBoard — see the doc comment there. */
+  duplicatingBoard = false;
   teams: CommonDictionaryModel[] = [];
   employees: CommonDictionaryModel[] = [];
   tags: SharedTagModel[] = [];
@@ -156,6 +160,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     private dialog: MatDialog,
     private store: Store,
     private router: Router,
+    private translateService: TranslateService,
   ) {
     this.store.select(selectCurrentUserIsAdmin).pipe(takeUntil(this.destroy$))
       .subscribe(isAdmin => {
@@ -250,7 +255,11 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     }
   }
 
-  loadBoards(propertyId: number, autoSelectDefault = false) {
+  /**
+   * `onSettled` runs on EVERY exit path — superseded and failed included — so a
+   * caller can hold a latch across the reload without ever stranding it.
+   */
+  loadBoards(propertyId: number, autoSelectDefault = false, onSettled?: () => void) {
     this.calendarService.getBoards(propertyId).subscribe(res => {
       // Superseded: the user picked another property while this was in flight.
       // Everything below is scoped to `propertyId` — the calendars themselves,
@@ -260,7 +269,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       // newly selected property's data. Guarded on the argument rather than a
       // loadSeq ticket because boards are not week-scoped: a loadSeq bump from
       // an ordinary week step would wrongly discard a legitimate board reload.
-      if (propertyId !== this.currentPropertyId) return;
+      if (propertyId !== this.currentPropertyId) {
+        onSettled?.();
+        return;
+      }
       if (!res || !res.success) {
         // The error itself is already surfaced: BackendConfigurationPnCalendarService
         // .getBoards pipes through notifyError(), which toasts on !success.
@@ -274,6 +286,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         // filter set the visible tasks were fetched under no longer exists - putting
         // the old id back would restore the label but not the state behind it.
         this.clearPropertyScopedData();
+        onSettled?.();
         return;
       }
       this.boards = res.model;
@@ -297,6 +310,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         }
       });
       this.loadTasks();
+      onSettled?.();
     });
   }
 
@@ -632,8 +646,33 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
   onCreateBoard() {
     if (!this.currentPropertyId) return;
-    const dialogRef = this.dialog.open(BoardCreateModalComponent, {
-      data: {propertyId: this.currentPropertyId} as BoardCreateModalData,
+    this.openBoardModal();
+  }
+
+  onEditBoard(board: CalendarBoardModel) {
+    if (!this.currentPropertyId) return;
+    this.openBoardModal(board);
+  }
+
+  /**
+   * Create / edit share one dialog; `board` absent means create.
+   *
+   * `this.boards` is handed over for the duplicate-name guard rather than being
+   * re-fetched inside the dialog, because `GET boards/{propertyId}` auto-creates
+   * a Default calendar for an empty property — a load there would be a write.
+   *
+   * A successful save reloads the tasks as well as the calendar list — the
+   * colour is part of the edit, and every task block on the grid is painted
+   * from its calendar's colour (see the boardColorMap in rebuildLayout). That
+   * refetch is loadBoards()' own: its success path ends in loadTasks(). An
+   * extra loadTasks() here would not just be a wasted round-trip (six of them
+   * on the month path); running BEFORE the reloaded calendars land, it would
+   * build boardColorMap from the pre-edit `this.boards` and paint one frame in
+   * the old colour.
+   */
+  private openBoardModal(board?: CalendarBoardModel) {
+    const dialogRef = this.dialog.open(BoardCreateEditModalComponent, {
+      data: {propertyId: this.currentPropertyId, board, boards: this.boards} as BoardCreateEditModalData,
       width: '400px',
     });
     dialogRef.afterClosed().subscribe(result => {
@@ -643,22 +682,74 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     });
   }
 
-  onUpdateBoard(event: {id: number; name: string; color: string}) {
-    this.calendarService.updateBoard(event).subscribe(res => {
-      if (res && res.success && this.currentPropertyId) {
-        this.loadBoards(this.currentPropertyId);
-        this.loadTasks();
-      }
-    });
+  /**
+   * "Duplicate" has no endpoint (#1210): it is a plain `POST boards` with the
+   * source's colour and a "(copy)" name, and it copies NO events. If copying
+   * the events is what is wanted, that is a separate ticket — a client-side
+   * cascade over a series would be inventing behaviour the server does not have.
+   *
+   * Latched for the whole POST + reload, for the same reason the create/edit
+   * dialog latches `saving` (board-create-edit-modal.component.ts:119-125): the
+   * copy name is derived from `this.boards` as of the last COMPLETED load, so a
+   * second Duplicate fired before the reload lands recomputes the identical
+   * name and mints a second "X (kopi)". Closing the dropdown on click is not
+   * the guard — the user only has to reopen it.
+   */
+  onDuplicateBoard(board: CalendarBoardModel) {
+    if (!this.currentPropertyId || this.duplicatingBoard) return;
+    const name = buildDuplicateBoardName(
+      board.name,
+      this.boards,
+      (base, index) => index === 1
+        ? this.translateService.instant('{{name}} (copy)', {name: base})
+        : this.translateService.instant('{{name}} (copy {{index}})', {name: base, index}),
+    );
+    this.duplicatingBoard = true;
+    this.calendarService.createBoard({name, color: board.color, propertyId: this.currentPropertyId})
+      .subscribe({
+        next: res => {
+          if (res && res.success && this.currentPropertyId) {
+            // Released by loadBoards' onSettled rather than here: `name` above
+            // is computed from `this.boards`, so re-arming at POST-success
+            // would still let a second click read the PRE-copy list and derive
+            // the very same name again. onSettled fires on every exit path
+            // loadBoards has, so the latch cannot strand.
+            this.loadBoards(this.currentPropertyId, false, () => this.duplicatingBoard = false);
+            return;
+          }
+          // createBoard pipes through notifyError(), so the failure is already
+          // toasted; re-arm so the user can retry instead of being stuck.
+          this.duplicatingBoard = false;
+        },
+        error: () => {
+          this.duplicatingBoard = false;
+        },
+      });
   }
 
   onDeleteBoard(board: CalendarBoardModel) {
     const dialogRef = this.dialog.open(BoardDeleteModalComponent, {
-      data: {board} as BoardDeleteModalData,
+      // The dialog only closes truthy once the server confirms: DeleteBoard
+      // cascades DeleteEntireSeries and aborts with the board intact if any one
+      // series fails, so the row must never be removed optimistically.
+      data: {board, boardCount: this.boards.length} as BoardDeleteModalData,
       width: '400px',
     });
     dialogRef.afterClosed().subscribe(result => {
       if (result && this.currentPropertyId) {
+        // Drop the deleted calendar from the filter FIRST. Leaving its id in
+        // activeBoardIds would narrow GetTasksForWeek to a calendar that no
+        // longer exists and draw an empty grid; dropping it can empty the set,
+        // which is the documented "no filter" state (every calendar shown), not
+        // an empty one. setActiveBoardIds writes through synchronously, so the
+        // refetch below already reads the corrected filter.
+        if (this.activeBoardIds.includes(board.id)) {
+          this.stateService.setActiveBoardIds(this.activeBoardIds.filter(id => id !== board.id));
+        }
+        // The deleted calendar took its events with it, so the grid has to be
+        // refetched too — that is loadBoards' own loadTasks(), at the end of
+        // its success path. A second one here would just be a duplicate round
+        // trip (six of them in month view) reading the pre-delete calendar list.
         this.loadBoards(this.currentPropertyId);
       }
     });

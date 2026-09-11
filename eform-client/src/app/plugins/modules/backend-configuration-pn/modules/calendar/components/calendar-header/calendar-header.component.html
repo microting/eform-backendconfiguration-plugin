@@ -89,45 +89,51 @@
                menu it had `_parentMaterialMenu` set but `_menuItemInstance`
                null, so MatMenuTrigger's hover guard
                (`filter(active => active !== this._menuItemInstance)`) was
-               always true and any row hover closed the open popover. Being a
+               always true and any row hover closed the open submenu. Being a
                menu item also puts it in the panel's FocusKeyManager, so arrow
-               keys reach it and Right-Arrow/Enter opens it.
-               Seeded from (menuOpened), not (click): a submenu trigger also
-               opens on HOVER, which no click handler would see. -->
+               keys reach it and Right-Arrow/Enter opens it. -->
           <button
             mat-menu-item
             type="button"
             class="board-menu-btn"
             [matMenuTriggerFor]="boardMenu"
             [attr.aria-label]="'Calendar actions' | translate"
-            (menuOpened)="startEditBoard(board)"
           >
             <mat-icon>more_vert</mat-icon>
           </button>
-          <mat-menu #boardMenu="matMenu" class="board-edit-menu">
-            <!-- keydown goes through onBoardEditKeydown, NOT a blanket
-                 stopPropagation: the typeahead has to be stopped, but Escape
-                 must still reach the overlay or this popover is a keyboard
-                 trap. See onBoardEditKeydown for the full reasoning. -->
-            <div class="board-edit-popover" (click)="$event.stopPropagation()" (keydown)="onBoardEditKeydown($event)">
-              <label class="field-label">{{ 'Calendar name' | translate }}</label>
-              <mat-form-field appearance="outline" style="width: 100%;">
-                <input matInput [(ngModel)]="editingBoardName" (keydown.enter)="submitEditBoard()">
-              </mat-form-field>
-              <div class="color-picker-grid">
-                <div
-                  class="color-swatch"
-                  *ngFor="let c of boardColors"
-                  [style.background]="c"
-                  [class.selected]="editingBoardColor === c"
-                  (click)="editingBoardColor = c; submitEditBoard()"
-                ></div>
-              </div>
-              <button mat-menu-item class="btn-delete-menu" (click)="boardsMenuTrigger.closeMenu(); deleteBoard.emit(board)">
-                <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
-                <span>{{ 'Delete calendar' | translate }}</span>
-              </button>
-            </div>
+          <!-- #1210: the row actions are three plain menu items, and every one
+               of them closes the calendars dropdown before handing over to a
+               dialog. The inline rename input that used to live here is gone —
+               with no text field in the panel there is no FocusKeyManager
+               typeahead to fight, so no keydown guard is needed either. -->
+          <mat-menu #boardMenu="matMenu" class="board-actions-menu">
+            <button
+              mat-menu-item
+              type="button"
+              class="board-action board-action-edit"
+              (click)="boardsMenuTrigger.closeMenu(); editBoard.emit(board)"
+            >
+              <mat-icon fontSet="material-symbols-outlined">edit_square</mat-icon>
+              <span>{{ 'Edit' | translate }}</span>
+            </button>
+            <button
+              mat-menu-item
+              type="button"
+              class="board-action board-action-duplicate"
+              (click)="boardsMenuTrigger.closeMenu(); duplicateBoard.emit(board)"
+            >
+              <mat-icon fontSet="material-symbols-outlined">content_copy</mat-icon>
+              <span>{{ 'Duplicate' | translate }}</span>
+            </button>
+            <button
+              mat-menu-item
+              type="button"
+              class="board-action board-action-delete btn-delete-menu"
+              (click)="boardsMenuTrigger.closeMenu(); deleteBoard.emit(board)"
+            >
+              <mat-icon fontSet="material-symbols-outlined">delete</mat-icon>
+              <span>{{ 'Delete' | translate }}</span>
+            </button>
           </mat-menu>
         </div>
       </div>

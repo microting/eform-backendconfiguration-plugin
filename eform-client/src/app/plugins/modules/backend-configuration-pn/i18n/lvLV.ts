@@ -757,4 +757,15 @@ export const lvLV = {
   'Select all': 'Atlasīt visus',
   Clear: 'Notīrīt',
   'Calendar actions': 'Kalendāra darbības',
+  // Calendar CRUD from the calendars dropdown (#1210): the edit dialog's
+  // title, the row menu's Duplicate action, the client-side duplicate-name
+  // guard, the name a duplicate gets, and the two notes the delete dialog
+  // shows (a new default calendar replaces the last one; the cascade aborted).
+  'Edit calendar': 'Rediģēt kalendāru',
+  Duplicate: 'Dublēt',
+  'A calendar with this name already exists': 'Kalendārs ar šādu nosaukumu jau pastāv',
+  '{{name}} (copy)': '{{name}} (kopija)',
+  '{{name}} (copy {{index}})': '{{name}} (kopija {{index}})',
+  'This is the last calendar, so a new default calendar is created in its place.': 'Šis ir pēdējais kalendārs, tāpēc tā vietā tiek izveidots jauns noklusējuma kalendārs.',
+  'The calendar could not be deleted. It still has events that could not be removed.': 'Kalendāru neizdevās dzēst. Tajā joprojām ir notikumi, kurus neizdevās noņemt.',
 };
