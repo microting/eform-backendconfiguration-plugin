@@ -789,4 +789,7 @@ export const da = {
   '{{name}} (copy {{index}})': '{{name}} (kopi {{index}})',
   'This is the last calendar, so a new default calendar is created in its place.': 'Dette er den sidste kalender, så der oprettes en ny standardkalender i stedet.',
   'The calendar could not be deleted. It still has events that could not be removed.': 'Kalenderen kunne ikke slettes. Den har stadig begivenheder, som ikke kunne fjernes.',
+  Teams: 'Hold',
+  '{{count}} selected': '{{count}} valgt',
+  'Teams and employees': 'Hold og medarbejdere',
 };

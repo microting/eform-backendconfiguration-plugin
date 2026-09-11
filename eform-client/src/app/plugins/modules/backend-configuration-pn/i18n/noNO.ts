@@ -768,4 +768,7 @@ export const noNO = {
   '{{name}} (copy {{index}})': '{{name}} (kopi {{index}})',
   'This is the last calendar, so a new default calendar is created in its place.': 'Dette er den siste kalenderen, så en ny standardkalender opprettes i stedet.',
   'The calendar could not be deleted. It still has events that could not be removed.': 'Kalenderen kunne ikke slettes. Den har fortsatt hendelser som ikke kunne fjernes.',
+  Teams: 'Team',
+  '{{count}} selected': '{{count}} valgt',
+  'Teams and employees': 'Team og ansatte',
 };

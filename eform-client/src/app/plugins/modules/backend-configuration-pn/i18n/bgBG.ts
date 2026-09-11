@@ -768,4 +768,7 @@ export const bgBG = {
   '{{name}} (copy {{index}})': '{{name}} (копие {{index}})',
   'This is the last calendar, so a new default calendar is created in its place.': 'Това е последният календар, затова на негово място се създава нов календар по подразбиране.',
   'The calendar could not be deleted. It still has events that could not be removed.': 'Календарът не можа да бъде изтрит. В него все още има събития, които не можаха да бъдат премахнати.',
+  Teams: 'Екипи',
+  '{{count}} selected': '{{count}} избрани',
+  'Teams and employees': 'Екипи и служители',
 };

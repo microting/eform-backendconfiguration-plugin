@@ -814,4 +814,7 @@ export const deDE = {
   '{{name}} (copy {{index}})': '{{name}} (Kopie {{index}})',
   'This is the last calendar, so a new default calendar is created in its place.': 'Dies ist der letzte Kalender, daher wird an seiner Stelle ein neuer Standardkalender erstellt.',
   'The calendar could not be deleted. It still has events that could not be removed.': 'Der Kalender konnte nicht gelöscht werden. Er enthält noch Ereignisse, die nicht entfernt werden konnten.',
+  Teams: 'Teams',
+  '{{count}} selected': '{{count}} ausgewählt',
+  'Teams and employees': 'Teams und Mitarbeiter',
 };

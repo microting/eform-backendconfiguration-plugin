@@ -768,4 +768,7 @@ export const etET = {
   '{{name}} (copy {{index}})': '{{name}} (koopia {{index}})',
   'This is the last calendar, so a new default calendar is created in its place.': 'See on viimane kalender, seega luuakse selle asemele uus vaikekalender.',
   'The calendar could not be deleted. It still has events that could not be removed.': 'Kalendrit ei õnnestunud kustutada. Sellel on endiselt sündmusi, mida ei saanud eemaldada.',
+  Teams: 'Meeskonnad',
+  '{{count}} selected': '{{count}} valitud',
+  'Teams and employees': 'Meeskonnad ja töötajad',
 };

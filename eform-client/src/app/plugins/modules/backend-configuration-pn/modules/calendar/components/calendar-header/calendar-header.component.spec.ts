@@ -20,6 +20,10 @@ function board(id: number, name: string, color = '#123456') {
   return {id, name, color} as any;
 }
 
+function person(id: number, name: string) {
+  return {id, name, description: ''} as any;
+}
+
 describe('CalendarHeaderComponent', () => {
   let component: CalendarHeaderComponent;
 
@@ -85,6 +89,102 @@ describe('CalendarHeaderComponent', () => {
       component.activeBoardIds = [1, 98, 99];
 
       expect(component.boardsLabel).toBe('Default');
+    });
+  });
+
+  // #1211 — the assignee filter's button label. Deliberately NOT a copy of the
+  // boardsLabel rules: there is no all-selected form, because an empty assignee
+  // filter and a fully-ticked one render different grids.
+  describe('assigneesLabel', () => {
+    beforeEach(() => {
+      component.teams = [person(10, 'Drift'), person(11, 'Tilsyn')];
+      component.employees = [person(1, 'Anna'), person(2, 'Bo'), person(3, 'Carl')];
+    });
+
+    it('reads "All employees" when neither list has a selection', () => {
+      component.activeTeamIds = [];
+      component.activeSiteIds = [];
+
+      expect(component.assigneesLabel).toBe('All employees');
+    });
+
+    it('names the employee when exactly one is selected', () => {
+      component.activeSiteIds = [2];
+
+      expect(component.assigneesLabel).toBe('Bo');
+    });
+
+    it('names the team when exactly one is selected', () => {
+      component.activeTeamIds = [11];
+
+      expect(component.assigneesLabel).toBe('Tilsyn');
+    });
+
+    // The two lists are ONE control, so the count spans both — a team plus a
+    // person is "2 selected", not two separate labels.
+    it('counts teams and employees together', () => {
+      component.activeTeamIds = [10];
+      component.activeSiteIds = [1];
+
+      expect(component.assigneesLabel).toBe('2 selected');
+    });
+
+    it('counts a multi-employee selection', () => {
+      component.activeSiteIds = [1, 3];
+
+      expect(component.assigneesLabel).toBe('2 selected');
+    });
+
+    // Unlike the calendars label there is no all-selected shortcut: ticking
+    // every employee is not the same filter as ticking none, because a task
+    // assigned to nobody (or only through an unticked team) survives the empty
+    // filter and not the full one.
+    it('does not collapse a fully-ticked employee list to "All employees"', () => {
+      component.activeSiteIds = [1, 2, 3];
+
+      expect(component.assigneesLabel).toBe('3 selected');
+    });
+
+    // The label describes the FILTER, not the rendered rows. A worker tag
+    // deleted from Property workers while it is still in `activeTeamIds` is
+    // reachable (`teams` is loaded once, in ngOnInit) and the request still
+    // carries it, so it has to keep counting — the old implementation counted
+    // over the rendered lists and answered 'Bo' here, naming one of the three
+    // active ids as if it were the whole filter.
+    it('counts active ids that no rendered row matches', () => {
+      component.activeSiteIds = [2, 99];
+      component.activeTeamIds = [98];
+
+      expect(component.assigneesLabel).toBe('3 selected');
+    });
+
+    // The worst case of the same bug: with every active id unresolvable the
+    // old label read 'All employees' over a grid the server had narrowed.
+    it('never reads "All employees" while ids are active but unrendered', () => {
+      component.activeSiteIds = [99];
+      component.activeTeamIds = [98];
+
+      expect(component.assigneesLabel).toBe('2 selected');
+    });
+
+    // One active id, no row to name it with: there is no name to show, so it
+    // falls back to the count form rather than claiming an empty filter.
+    it('falls back to the count form when the single active id resolves to no row', () => {
+      component.activeTeamIds = [98];
+
+      expect(component.assigneesLabel).toBe('1 selected');
+    });
+  });
+
+  describe('isEmployeeActive / isTeamActive', () => {
+    it('reads each list independently, so a team id never ticks an employee row', () => {
+      component.activeSiteIds = [4];
+      component.activeTeamIds = [4];
+
+      expect(component.isEmployeeActive(4)).toBe(true);
+      expect(component.isTeamActive(4)).toBe(true);
+      expect(component.isEmployeeActive(5)).toBe(false);
+      expect(component.isTeamActive(5)).toBe(false);
     });
   });
 

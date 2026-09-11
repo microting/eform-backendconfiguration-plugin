@@ -890,4 +890,7 @@ export const enUS= {
   '{{name}} (copy {{index}})': '{{name}} (copy {{index}})',
   'This is the last calendar, so a new default calendar is created in its place.': 'This is the last calendar, so a new default calendar is created in its place.',
   'The calendar could not be deleted. It still has events that could not be removed.': 'The calendar could not be deleted. It still has events that could not be removed.',
+  Teams: 'Teams',
+  '{{count}} selected': '{{count}} selected',
+  'Teams and employees': 'Teams and employees',
 };

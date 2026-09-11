@@ -768,4 +768,7 @@ export const lvLV = {
   '{{name}} (copy {{index}})': '{{name}} (kopija {{index}})',
   'This is the last calendar, so a new default calendar is created in its place.': 'Šis ir pēdējais kalendārs, tāpēc tā vietā tiek izveidots jauns noklusējuma kalendārs.',
   'The calendar could not be deleted. It still has events that could not be removed.': 'Kalendāru neizdevās dzēst. Tajā joprojām ir notikumi, kurus neizdevās noņemt.',
+  Teams: 'Komandas',
+  '{{count}} selected': 'Atlasīti: {{count}}',
+  'Teams and employees': 'Komandas un darbinieki',
 };

@@ -768,4 +768,7 @@ export const csCZ = {
   '{{name}} (copy {{index}})': '{{name}} (kopie {{index}})',
   'This is the last calendar, so a new default calendar is created in its place.': 'Toto je poslední kalendář, proto se na jeho místě vytvoří nový výchozí kalendář.',
   'The calendar could not be deleted. It still has events that could not be removed.': 'Kalendář se nepodařilo smazat. Stále obsahuje události, které nebylo možné odstranit.',
+  Teams: 'Týmy',
+  '{{count}} selected': 'Vybráno: {{count}}',
+  'Teams and employees': 'Týmy a zaměstnanci',
 };

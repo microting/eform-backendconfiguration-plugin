@@ -768,4 +768,7 @@ export const svSE = {
   '{{name}} (copy {{index}})': '{{name}} (kopia {{index}})',
   'This is the last calendar, so a new default calendar is created in its place.': 'Detta är den sista kalendern, så en ny standardkalender skapas i stället.',
   'The calendar could not be deleted. It still has events that could not be removed.': 'Kalendern kunde inte tas bort. Den har fortfarande händelser som inte kunde tas bort.',
+  Teams: 'Team',
+  '{{count}} selected': '{{count}} valda',
+  'Teams and employees': 'Team och anställda',
 };

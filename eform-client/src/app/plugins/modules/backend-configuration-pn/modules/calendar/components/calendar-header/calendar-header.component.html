@@ -151,6 +151,94 @@
     </div>
   </mat-menu>
 
+  <!-- Who (#1211): ONE dropdown over two peer filters — worker tags ("teams")
+       and the property's workers. Multi-select, applied on change: there is no
+       confirmation step and no Apply button, matching the task-list filter row.
+
+       Built as a mat-menu pill rather than an mtx-select because the acceptance
+       criterion is a BUTTON whose label names the current filter — an
+       mtx-select renders chips, and its `mat-form-field` is capped at 320px by
+       a global theme rule. This also makes it the same control as the calendars
+       picker beside it, which is what "mirror the three-form pattern" asks for.
+
+       Teams are shipped ENABLED: #1212 landed, so `CalendarTaskRequestModel`
+       carries `WorkerTagIds` and `ShouldIncludeTask` ORs it beside `SiteIds`
+       (and unions in team membership). -->
+  <button
+    type="button"
+    id="calendarAssigneesButton"
+    class="toolbar-pill"
+    [matMenuTriggerFor]="assigneesMenu"
+    [matTooltip]="'Teams and employees' | translate"
+  >
+    <span class="pill-label">{{ assigneesLabel }}</span>
+    <mat-icon class="pill-caret">expand_more</mat-icon>
+  </button>
+  <mat-menu #assigneesMenu="matMenu" class="calendar-toolbar-menu calendar-assignees-menu">
+    <!-- stopPropagation on CLICK only, for the same reason as the calendars
+         panel: MatMenu's panel closes on any click that reaches it, which
+         would shut a multi-select after every row. Keydown is left alone so
+         Escape and the arrow keys still reach the overlay, and every row below
+         is a real `mat-menu-item` the panel's FocusKeyManager can drive. -->
+    <div class="assignees-panel" (click)="$event.stopPropagation()">
+      <!-- The reset entry. Clearing BOTH lists is one dispatch and one grid
+           reload; it is not a "select all", which would mean something else
+           entirely here (see `assigneesLabel`). -->
+      <button
+        mat-menu-item
+        type="button"
+        id="calendarAssigneesClear"
+        class="assignee-reset-action"
+        [class.active]="activeTeamIds.length === 0 && activeSiteIds.length === 0"
+        (click)="clearAssignees.emit()"
+      >
+        {{ 'All employees' | translate }}
+      </button>
+
+      <div class="assignee-scroll">
+        <!-- Teams first, matching the mock-up's ordering. Hidden when the
+             property's installation has no worker groups with members at all
+             — an empty heading over nothing is noise, and #1213 already
+             guarantees every listed tag has a member to filter by. -->
+        <div class="assignee-section" *ngIf="teams.length > 0">
+          <div class="assignee-section-heading" id="calendarTeamsHeading">{{ 'Teams' | translate }}</div>
+          <button
+            mat-menu-item
+            type="button"
+            role="menuitemcheckbox"
+            class="assignee-row team-row"
+            *ngFor="let team of teams"
+            [attr.aria-checked]="isTeamActive(team.id)"
+            (click)="teamToggled.emit(team.id)"
+          >
+            <span class="assignee-checkbox" [class.active]="isTeamActive(team.id)">
+              <mat-icon *ngIf="isTeamActive(team.id)" class="assignee-check-icon">check</mat-icon>
+            </span>
+            <span class="assignee-name">{{ team.name }}</span>
+          </button>
+        </div>
+
+        <div class="assignee-section" *ngIf="employees.length > 0">
+          <div class="assignee-section-heading" id="calendarEmployeesHeading">{{ 'Employees' | translate }}</div>
+          <button
+            mat-menu-item
+            type="button"
+            role="menuitemcheckbox"
+            class="assignee-row employee-row"
+            *ngFor="let employee of employees"
+            [attr.aria-checked]="isEmployeeActive(employee.id)"
+            (click)="employeeToggled.emit(employee.id)"
+          >
+            <span class="assignee-checkbox" [class.active]="isEmployeeActive(employee.id)">
+              <mat-icon *ngIf="isEmployeeActive(employee.id)" class="assignee-check-icon">check</mat-icon>
+            </span>
+            <span class="assignee-name">{{ employee.name }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </mat-menu>
+
   <span class="toolbar-divider" role="separator"></span>
 
   <!-- When -->

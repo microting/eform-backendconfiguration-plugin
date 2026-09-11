@@ -1236,4 +1236,210 @@ export class CalendarUiEnhancementsPage {
     await this.getMiniPickerOverlay().waitFor({ state: 'hidden', timeout: 5000 });
     await this.page.waitForTimeout(300);
   }
+
+  // ---------------------------------------------------------------------
+  // Assignee filter (#1211) — the toolbar's Teams + Employees dropdown.
+  //
+  // A mat-menu, like the calendars picker, so the panel is projected into the
+  // CDK overlay and must be located there rather than inside the toolbar.
+  // ---------------------------------------------------------------------
+
+  assigneeFilterPanel(): Locator {
+    return this.page.locator('.cdk-overlay-container .calendar-assignees-menu');
+  }
+
+  /**
+   * The panel deliberately stays open across toggles (the component stops
+   * click propagation so MatMenu's close-on-click does not fire), so this is a
+   * no-op when it is already open — same contract as `openBoardMenu`.
+   */
+  async openAssigneeFilter(): Promise<void> {
+    await this.openMenuVia('#calendarAssigneesButton', this.assigneeFilterPanel());
+  }
+
+  async closeAssigneeFilter(): Promise<void> {
+    const trigger = this.page.locator('#calendarAssigneesButton');
+    if ((await trigger.getAttribute('aria-expanded')) !== 'true') return;
+    await this.page.keyboard.press('Escape');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false', { timeout: UI_TIMEOUT });
+    await this.assigneeFilterPanel().waitFor({ state: 'detached', timeout: UI_TIMEOUT });
+  }
+
+  /**
+   * One row of the filter, located by the displayed name within its section.
+   *
+   * Matched on the row's `.assignee-name` CHILD, not on the row itself. A
+   * regex `hasText` tests the element's RAW text, and a ticked row's raw text
+   * begins with the tick's own ligature — `"check\nAnna Alpha"` — so an
+   * anchored regex on the row would match while unticked and stop matching the
+   * instant it is ticked. That is a locator that resolves to zero elements
+   * halfway through a test and burns the whole timeout saying nothing.
+   * `.assignee-name` holds the name and nothing else.
+   *
+   * Anchored rather than substring so "Anna" cannot also resolve "Anna B" and
+   * fail as an opaque strict-mode violation. Never addressed by index: the two
+   * sections render in one panel, so `nth()` drifts the moment a team is added.
+   */
+  filterTeamRow(name: string): Locator {
+    return this.assigneeFilterPanel()
+      .locator('.team-row')
+      .filter({ has: this.page.locator('.assignee-name', { hasText: new RegExp(`^\\s*${name}\\s*$`) }) });
+  }
+
+  filterEmployeeRow(name: string): Locator {
+    return this.assigneeFilterPanel()
+      .locator('.employee-row')
+      .filter({ has: this.page.locator('.assignee-name', { hasText: new RegExp(`^\\s*${name}\\s*$`) }) });
+  }
+
+  /** The filter button's own label — "All employees", one name, or "N selected". */
+  async assigneeFilterLabel(): Promise<string> {
+    return (
+      (await this.page.locator('#calendarAssigneesButton .pill-label').textContent()) ?? ''
+    ).trim();
+  }
+
+  /** The reset row's label, so a spec can compare it to the button without hardcoding a locale. */
+  async assigneeResetLabel(): Promise<string> {
+    return ((await this.assigneeFilterPanel().locator('#calendarAssigneesClear').textContent()) ?? '').trim();
+  }
+
+  /** Every employee currently offered by the filter, in render order. */
+  async filterEmployeeNames(): Promise<string[]> {
+    return (
+      await this.assigneeFilterPanel().locator('.employee-row .assignee-name').allTextContents()
+    ).map(t => t.trim());
+  }
+
+  /** How many rows — teams and employees together — are currently ticked. */
+  async checkedFilterCount(): Promise<number> {
+    return await this.assigneeFilterPanel()
+      .locator('[role="menuitemcheckbox"][aria-checked="true"]')
+      .count();
+  }
+
+  /**
+   * Click a filter row and wait for the grid reload it triggers.
+   *
+   * The response is awaited rather than slept on, and the wait is armed BEFORE
+   * the click so a fast reply cannot land first. Month and month-scoped
+   * schedule views fire six of these (one per grid week); only the first is
+   * awaited here, which is enough to prove the request left with the new
+   * filter — a spec asserting on the rendered grid should assert on the grid.
+   */
+  private async clickFilterRow(row: Locator): Promise<void> {
+    const reload = this.page.waitForResponse(
+      r => r.url().includes('/api/backend-configuration-pn/calendar/tasks/week'),
+      { timeout: API_TIMEOUT }
+    );
+    reload.catch(() => undefined);
+    await row.click();
+    await reload;
+  }
+
+  async toggleFilterTeam(name: string): Promise<void> {
+    await this.clickFilterRow(this.filterTeamRow(name));
+  }
+
+  async toggleFilterEmployee(name: string): Promise<void> {
+    await this.clickFilterRow(this.filterEmployeeRow(name));
+  }
+
+  /** The "All employees" reset row — clears teams AND employees in one reload. */
+  async resetAssigneeFilter(): Promise<void> {
+    await this.clickFilterRow(this.assigneeFilterPanel().locator('#calendarAssigneesClear'));
+  }
+
+  /**
+   * The body of the next `tasks/week` POST the page makes, captured around
+   * `action`. Proves a filter reached the SERVER rather than being applied in
+   * the browser — the whole point of #1211's "no client-side post-filtering".
+   */
+  async captureNextWeekRequest(action: () => Promise<void>): Promise<any> {
+    const req = this.page.waitForRequest(
+      r =>
+        r.url().includes('/api/backend-configuration-pn/calendar/tasks/week') &&
+        r.method() === 'POST',
+      { timeout: API_TIMEOUT }
+    );
+    req.catch(() => undefined);
+    await action();
+    return (await req).postDataJSON();
+  }
+
+  /**
+   * Create an event assigned to ONE NAMED worker (rather than
+   * `fillAndSaveEvent`'s "first option", which cannot say which worker it
+   * picked). Assumes the create modal is already open.
+   */
+  async fillAndSaveEventForWorker(title: string, workerName: string): Promise<void> {
+    await this.page.locator('#calendarEventTitle').fill(title);
+    await this.pickFirstOption('#calendarEventEform');
+    await this.pickFirstOption('#calendarEventPlanningTag');
+    await this.pickOptionByLabel('#calendarEventAssignee', workerName);
+    await this.saveEventModal(title);
+  }
+
+  /**
+   * Create an event assigned to a WORKER TAG only — no individual assignee.
+   * This is the one shape a team filter can match: `ShouldIncludeTask` tests
+   * the tags assigned to the TASK, so an event assigned to a person who
+   * happens to carry the tag is not a team event.
+   */
+  async fillAndSaveEventForTeam(title: string, teamName: string): Promise<void> {
+    await this.page.locator('#calendarEventTitle').fill(title);
+    await this.pickFirstOption('#calendarEventEform');
+    await this.pickFirstOption('#calendarEventPlanningTag');
+    await this.pickOptionByLabel('#calendarEventWorkerTags', teamName);
+    await this.saveEventModal(title);
+  }
+
+  private async pickFirstOption(selectId: string): Promise<void> {
+    await this.page.locator(selectId).click();
+    const panel = this.page.locator('.ng-dropdown-panel');
+    await panel.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    await panel.locator('.ng-option').first().click();
+    // Multi-selects keep the panel open; close it by focusing the title field
+    // so the next control's own panel is the only one on screen.
+    await this.page.locator('#calendarEventTitle').click();
+  }
+
+  /**
+   * Pick an ng-select option BY LABEL, never by index — option order is not a
+   * contract, and an `nth()` pick silently selects the wrong worker when the
+   * list grows.
+   */
+  private async pickOptionByLabel(selectId: string, label: string): Promise<void> {
+    await this.page.locator(selectId).click();
+    const panel = this.page.locator('.ng-dropdown-panel');
+    await panel.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    // Substring, deliberately: an ng-option's raw text can carry more than the
+    // label, and the callers pass random-suffixed seeded names that cannot
+    // collide. What matters is that the pick is BY LABEL and not by index.
+    await panel.locator('.ng-option').filter({ hasText: label }).click();
+    await this.page.locator('#calendarEventTitle').click();
+    // `.ng-value-label` rather than `.ng-value`: the latter's text includes the
+    // clear-icon glyph, so an equality assertion on it can never match.
+    await expect(
+      this.page.locator(`${selectId} .ng-value-label`).filter({ hasText: label })
+    ).toBeVisible({ timeout: UI_TIMEOUT });
+  }
+
+  private async saveEventModal(title: string): Promise<void> {
+    const createResp = this.page.waitForResponse(
+      r =>
+        r.url().includes('/api/backend-configuration-pn/calendar/tasks') &&
+        !r.url().includes('/tasks/week') &&
+        !r.url().includes('/tasks/move') &&
+        !r.url().includes('/tasks/resize') &&
+        r.request().method() === 'POST',
+      { timeout: API_TIMEOUT }
+    );
+    createResp.catch(() => undefined);
+    await this.page.locator('#calendarEventSaveBtn').click();
+    const resp = await createResp;
+    expect(resp.status(), `creating "${title}" should return 200`).toBe(200);
+    await this.findEventBlock(title).waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+  }
+
 }

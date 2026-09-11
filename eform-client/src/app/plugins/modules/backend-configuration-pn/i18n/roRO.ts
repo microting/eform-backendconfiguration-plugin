@@ -768,4 +768,7 @@ export const roRO = {
   '{{name}} (copy {{index}})': '{{name}} (copie {{index}})',
   'This is the last calendar, so a new default calendar is created in its place.': 'Acesta este ultimul calendar, așa că în locul lui se creează un nou calendar implicit.',
   'The calendar could not be deleted. It still has events that could not be removed.': 'Calendarul nu a putut fi șters. Încă are evenimente care nu au putut fi eliminate.',
+  Teams: 'Echipe',
+  '{{count}} selected': '{{count}} selectate',
+  'Teams and employees': 'Echipe și angajați',
 };

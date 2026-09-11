@@ -768,4 +768,7 @@ export const elGR = {
   '{{name}} (copy {{index}})': '{{name}} (αντίγραφο {{index}})',
   'This is the last calendar, so a new default calendar is created in its place.': 'Αυτό είναι το τελευταίο ημερολόγιο, οπότε στη θέση του δημιουργείται ένα νέο προεπιλεγμένο ημερολόγιο.',
   'The calendar could not be deleted. It still has events that could not be removed.': 'Δεν ήταν δυνατή η διαγραφή του ημερολογίου. Εξακολουθεί να περιέχει συμβάντα που δεν μπόρεσαν να αφαιρεθούν.',
+  Teams: 'Ομάδες',
+  '{{count}} selected': '{{count}} επιλεγμένα',
+  'Teams and employees': 'Ομάδες και υπάλληλοι',
 };

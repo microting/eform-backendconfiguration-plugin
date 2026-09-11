@@ -375,7 +375,15 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       sort: 'Name',
       isSortDsc: false,
       showResigned: false,
-      tagIds: this.activeTeamIds,
+      // Deliberately empty (#1211, Q3): the toolbar's employee list is EVERY
+      // worker linked to the property, not the ones carrying the currently
+      // selected teams. Passing `activeTeamIds` here made Teams a
+      // list-NARROWER rather than a filter — picking a team shrank the
+      // Employees section under the user's own selection, and a worker with no
+      // team could never be reached. Teams are now a task filter in their own
+      // right (`workerTagIds` on the week request), so nothing about this list
+      // depends on them; it is also why nothing reloads it on a team toggle.
+      tagIds: [],
     }).subscribe(res => {
       if (propertyId !== this.currentPropertyId) return;
       if (res && res.success) {
@@ -433,14 +441,15 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     const weekEnd = this.toLocalDateString(sunday);
 
     this.calendarService
-      .getTasksForWeek(
-        this.currentPropertyId,
+      .getTasksForWeek({
+        propertyId: this.currentPropertyId,
         weekStart,
         weekEnd,
-        this.activeBoardIds,
-        this.activeTagNames,
-        this.activeSiteIds,
-      )
+        boardIds: this.activeBoardIds,
+        tagNames: this.activeTagNames,
+        siteIds: this.activeSiteIds,
+        workerTagIds: this.activeTeamIds,
+      })
       .subscribe(res => {
         // Superseded while in flight — by another property, another week, or a
         // clearTasks(). Dropping it here also keeps the failure branch below
@@ -481,14 +490,15 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       const sunday = new Date(monday);
       sunday.setDate(monday.getDate() + 6);
       return this.calendarService
-        .getTasksForWeek(
-          this.currentPropertyId!,
-          this.toLocalDateString(monday),
-          this.toLocalDateString(sunday),
-          this.activeBoardIds,
-          this.activeTagNames,
-          this.activeSiteIds,
-        )
+        .getTasksForWeek({
+          propertyId: this.currentPropertyId!,
+          weekStart: this.toLocalDateString(monday),
+          weekEnd: this.toLocalDateString(sunday),
+          boardIds: this.activeBoardIds,
+          tagNames: this.activeTagNames,
+          siteIds: this.activeSiteIds,
+          workerTagIds: this.activeTeamIds,
+        })
         .pipe(catchError(() => of(null)));
     });
 
@@ -854,6 +864,47 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     // one click. Left as-is pending the product call on Ryd (an empty filter
     // is "no filter" server-side, so Ryd and "Vælg alle" render the same grid).
     this.stateService.setActiveBoardIds([]);
+    this.loadTasks();
+  }
+
+  // --- Assignee filter (#1211): employees and teams -------------------------
+  // Three handlers, one shape: mutate the filter in the store, then re-read the
+  // grid through loadTasks(). loadTasks() takes its own loadSeq ticket, so a
+  // rapid series of toggles cannot paint an earlier selection's result.
+  //
+  // Nothing here is post-filtered in the browser: `activeSiteIds` and
+  // `activeTeamIds` both travel on the week request model and the SERVER ORs
+  // them (#1212). Filtering client-side would be wrong twice over — the payload
+  // has already been narrowed by siteIds, so a mixed selection would come out
+  // as an intersection, and it would miss events assigned to an individual
+  // member of a selected team.
+  //
+  // The two lists are also deliberately INDEPENDENT (settled 2026-09-09):
+  // toggling a team never ticks or unticks its members, and vice versa. Syncing
+  // them would make the checked boxes and the actual request diverge the moment
+  // team membership changed, and unticking one member would silently freeze a
+  // team filter into an enumeration of today's members.
+  //
+  // Note the store is synchronous (see onBoardToggled): by the time these
+  // dispatches return, the filters$ subscription has already rewritten
+  // activeSiteIds/activeTeamIds, so loadTasks() reads the post-toggle state.
+
+  onEmployeeToggled(siteId: number) {
+    this.stateService.toggleSite(siteId);
+    this.loadTasks();
+  }
+
+  onTeamToggled(teamId: number) {
+    // Reloads the TASKS, not the employee list — that inversion was the bug
+    // #1211 fixes. See loadEmployees() for why the list no longer moves.
+    this.stateService.toggleTeam(teamId);
+    this.loadTasks();
+  }
+
+  // The "All employees" reset row. Clears BOTH lists in one dispatch, so the
+  // grid reloads once rather than once per cleared entry.
+  onClearAssignees() {
+    this.stateService.clearAssignees();
     this.loadTasks();
   }
 

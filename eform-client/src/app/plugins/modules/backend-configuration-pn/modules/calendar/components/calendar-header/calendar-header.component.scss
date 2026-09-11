@@ -310,3 +310,135 @@
     color: var(--error, #DB0D0D) !important;
   }
 }
+
+// #1211 — the assignee (teams + employees) panel. Panel class doubled for the
+// same reason as the calendars panel: theme-workspace sets
+// `body.theme-workspace .mat-mdc-menu-panel { min-width: 200px }`
+// (_workspace-mat-overrides.scss:1163-1168), which out-specifies a single class
+// and would squeeze worker names into an ellipsis.
+::ng-deep .calendar-assignees-menu.mat-mdc-menu-panel.mat-mdc-menu-panel {
+  max-width: none;
+  min-width: 260px;
+
+  .assignees-panel {
+    font-family: var(--font-family);
+  }
+
+  // The reset row is the panel's ghost action, styled like "Vælg alle" / "Ryd"
+  // in the calendars panel. Same two-selector accent for the same reason: the
+  // colour has to reach BOTH the button and Material's inner label span, and
+  // the `.mat-mdc-menu-content button` chain is what out-counts
+  // `body.theme-workspace .mat-mdc-menu-panel .mat-mdc-menu-content
+  // button.mat-mdc-menu-item`. Under theme-eform styles.scss:1364-1371 still
+  // wins on the span with `!important`; that is the same trade-off the
+  // calendars panel already accepts rather than starting an `!important` war.
+  .mat-mdc-menu-content button.assignee-reset-action,
+  .mat-mdc-menu-content button.assignee-reset-action .mat-mdc-menu-item-text {
+    color: var(--md-primary, #0b57d0);
+    font-weight: 500;
+  }
+
+  .assignee-reset-action {
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border, #e0e0e0);
+    margin-bottom: 4px;
+
+    // "No filter" is a real state of this control, so the reset row is marked
+    // as the active one while both lists are empty — otherwise the panel shows
+    // nothing checked anywhere and reads as "the filter is broken".
+    &.active {
+      background: color-mix(in srgb, var(--md-primary, #0b57d0) 10%, transparent);
+    }
+  }
+
+  // ONE scroller over both sections, not one each: with a scroller per section
+  // a long employee list would shrink to half the panel while the Teams half
+  // sat mostly empty.
+  .assignee-scroll {
+    display: flex;
+    flex-direction: column;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+
+  // Not a `mat-menu-item`: a heading is not an option, and making it one would
+  // put it in the panel's FocusKeyManager, so arrow-keying through the list
+  // would stop on something that cannot be actioned.
+  .assignee-section-heading {
+    padding: 8px 16px 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--md-on-surface-variant, #444746);
+  }
+
+  .assignee-row {
+    align-items: center;
+
+    .mat-mdc-menu-item-text {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+  }
+
+  // Same 18px box as the calendars panel, but filled from --md-primary instead
+  // of a per-row colour: a team or a worker has no colour of its own, and a
+  // grey-on-grey tick is the one thing that has to stay legible in all four
+  // theme/mode combinations. Both custom properties are defined by theme-eform
+  // and theme-workspace in light and dark alike, so one declaration covers all
+  // four.
+  .assignee-checkbox {
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
+    border: 2px solid var(--md-outline, #c4c7c5);
+    background: transparent;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &.active {
+      background: var(--md-primary, #0b57d0);
+      border-color: var(--md-primary, #0b57d0);
+    }
+  }
+
+  // The tick, and every declaration in it, answers one rule in theme-workspace:
+  // `body.theme-workspace .mat-mdc-menu-panel .mat-mdc-menu-content
+  // button.mat-mdc-menu-item .mat-icon` (_workspace-mat-overrides.scss:1205-1211)
+  // paints EVERY menu-item icon `--md-on-surface-variant` at 20px with a 12px
+  // right margin. Verified in the browser before this rule existed: under
+  // theme-workspace dark the tick computed to rgb(196,199,197) at 20x20 —
+  // grey-on-blue, overflowing an 18px box, and pushed off-centre by the margin.
+  // It read as a filled checkbox with no tick at all.
+  //
+  // Two escalations, both needed. The selector goes through
+  // `.mat-mdc-menu-content button.assignee-row` so the chain carries seven
+  // classes against the theme's five (the theme buys two elements, which never
+  // outweigh a class); `!important` then covers the margin, which Material's
+  // own base also sets on a menu item's leading icon. This is the same call
+  // `.board-menu-btn` and `.board-action-delete` already make in this file.
+  // The calendars panel needs none of it only because its check colour is an
+  // inline `[style.color]` binding, which no stylesheet can reach.
+  .mat-mdc-menu-content button.assignee-row .assignee-checkbox .assignee-check-icon {
+    font-size: 14px !important;
+    width: 14px !important;
+    height: 14px !important;
+    line-height: 14px !important;
+    margin: 0 !important;
+    color: var(--md-on-primary, #ffffff) !important;
+  }
+
+  .assignee-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

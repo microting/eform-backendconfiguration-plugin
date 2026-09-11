@@ -768,4 +768,7 @@ export const slSL = {
   '{{name}} (copy {{index}})': '{{name}} (kopija {{index}})',
   'This is the last calendar, so a new default calendar is created in its place.': 'To je zadnji koledar, zato se namesto njega ustvari nov privzeti koledar.',
   'The calendar could not be deleted. It still has events that could not be removed.': 'Koledarja ni bilo mogoče izbrisati. Še vedno vsebuje dogodke, ki jih ni bilo mogoče odstraniti.',
+  Teams: 'Ekipe',
+  '{{count}} selected': 'Izbranih: {{count}}',
+  'Teams and employees': 'Ekipe in zaposleni',
 };

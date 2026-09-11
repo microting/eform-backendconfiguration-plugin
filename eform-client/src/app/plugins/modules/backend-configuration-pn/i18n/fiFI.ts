@@ -768,4 +768,7 @@ export const fiFI = {
   '{{name}} (copy {{index}})': '{{name}} (kopio {{index}})',
   'This is the last calendar, so a new default calendar is created in its place.': 'Tämä on viimeinen kalenteri, joten sen tilalle luodaan uusi oletuskalenteri.',
   'The calendar could not be deleted. It still has events that could not be removed.': 'Kalenteria ei voitu poistaa. Siinä on yhä tapahtumia, joita ei voitu poistaa.',
+  Teams: 'Tiimit',
+  '{{count}} selected': '{{count}} valittu',
+  'Teams and employees': 'Tiimit ja työntekijät',
 };
