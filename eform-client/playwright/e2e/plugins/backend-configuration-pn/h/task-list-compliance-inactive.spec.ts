@@ -133,7 +133,6 @@ test.describe.serial('Task list compliance rendering for inactive tasks', () => 
 
     const calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
     await calendarPage.selectProperty(property.name);
     await page.waitForTimeout(1000);
 
@@ -237,7 +236,6 @@ test.describe.serial('Task list compliance rendering for inactive tasks', () => 
     const calendarPage = new CalendarUiEnhancementsPage(page);
 
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
     await calendarPage.selectProperty(property.name);
     await page.waitForTimeout(1000);
     await calendarPage.navigateToNextWeek();

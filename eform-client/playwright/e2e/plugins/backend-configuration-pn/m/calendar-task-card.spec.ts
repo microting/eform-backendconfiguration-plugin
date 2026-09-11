@@ -103,7 +103,6 @@ test.describe.serial('Calendar task-card preview (task-card-preview-fields)', ()
 
     const uiPage = new CalendarUiEnhancementsPage(page);
     await uiPage.goToCalendar();
-    await uiPage.ensureSidebarOpen();
 
     if (seeded) {
       const folderResp = page.waitForResponse(

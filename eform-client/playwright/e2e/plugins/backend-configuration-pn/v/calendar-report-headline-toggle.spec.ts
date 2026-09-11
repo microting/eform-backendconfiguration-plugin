@@ -73,7 +73,6 @@ test.describe.serial('Calendar report-headline checkbox', () => {
 
     calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
 
     if (seeded) {
       const folderResp = page.waitForResponse(
@@ -133,7 +132,6 @@ test.describe.serial('Calendar report-headline checkbox', () => {
     // seeded worker, so the assignee-dependent legs below are exercisable.
     const seedCalendarPage = new CalendarUiEnhancementsPage(page);
     await seedCalendarPage.goToCalendar();
-    await seedCalendarPage.ensureSidebarOpen();
     const folderResp = page.waitForResponse(
       r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos'),
       { timeout: 60000 }

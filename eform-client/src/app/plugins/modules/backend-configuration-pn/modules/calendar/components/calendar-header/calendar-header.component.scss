@@ -7,17 +7,28 @@
   z-index: 10;
   flex-shrink: 0;
   border-bottom: 1px solid var(--border, #e0e0e0);
+  flex-wrap: wrap;
 
   .date-range {
     font-size: 1rem;
     font-weight: 500;
   }
 
-  .property-pill {
-    padding: 6px 14px;
+  // Property + calendars dropdown triggers. `.property-pill` is kept as a
+  // second class on the property one: the workspace theme re-points it at
+  // --md-surface-variant in _workspace-patterns.scss, and the e2e suite
+  // locates it by that class.
+  .toolbar-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px 6px 14px;
     border: none;
     border-radius: 18px;
-    background: var(--bg-soft, #f1f3f4);
+    // --md-surface-variant is defined by both themes, light and dark
+    // (scss/themes/_eform.scss and _workspace.scss), so the pill tracks the
+    // active theme instead of falling back to a hardcoded grey.
+    background: var(--md-surface-variant, #f1f3f4);
     color: inherit;
     font-family: inherit;
     font-size: 0.95rem;
@@ -28,13 +39,33 @@
     transition: background 0.15s ease;
 
     &:hover {
-      background: var(--bg-soft-hover, #e4e7ea);
+      background: color-mix(in srgb, var(--md-on-surface, #1f1f1f) 8%, var(--md-surface-variant, #e4e7ea));
     }
 
     &:focus-visible {
-      outline: 2px solid var(--primary, #1976d2);
+      outline: 2px solid var(--md-primary, #1976d2);
       outline-offset: 2px;
     }
+
+    .pill-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 220px;
+    }
+
+    .pill-caret {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      line-height: 18px;
+    }
+  }
+
+  .toolbar-divider {
+    width: 1px;
+    align-self: stretch;
+    margin: 0 4px;
+    background: var(--border, #e0e0e0);
   }
 
   .week-badge {
@@ -53,8 +84,8 @@
     flex: 1;
   }
 
-  // The view-mode dropdown (Dag / Uge / Tidsplan) — the global mtx-select
-  // form-field cap makes the trigger shrink to the currently-selected
+  // The view-mode dropdown (Dag / Uge / Måned / Tidsplan) — the global
+  // mtx-select form-field cap makes the trigger shrink to the currently-selected
   // label's width, which leaves the arrow overlapping "Uge". Pin a
   // min-width sized for the longest option ("Tidsplan" renders ~66 px;
   // plus arrow + form-field padding ≈ 120 px) so the trigger fits every
@@ -62,4 +93,234 @@
   .text-field--rounded {
     min-width: 120px;
   }
+}
+
+// The toolbar dropdowns render into a mat-menu panel in the CDK overlay —
+// outside :host — so their rules must be global, scoped by the panel class.
+//
+// The selected-property row is painted on the mat-menu-item AND on Material's
+// inner `.mat-mdc-menu-item-text` span: under `theme-workspace`,
+// scss/components/_workspace-mat-overrides.scss:1183-1204 pins both the
+// button's and that span's colour and font-weight to --md-on-surface / 400
+// from a selector carrying `body.theme-workspace`, so a single panel class
+// does not reach it — the doubled panel class buys the class count that does.
+// Under `theme-eform`, styles.scss:1364-1371 sets the same span `!important`,
+// so there the row is distinguished by the tinted background alone; that is
+// how every other menu item renders in that theme, and escalating to
+// `!important` here only to win a colour is not worth the next collision.
+::ng-deep .calendar-property-menu.mat-mdc-menu-panel.mat-mdc-menu-panel {
+  .property-item.active {
+    background: color-mix(in srgb, var(--md-primary, #0b57d0) 10%, transparent);
+  }
+
+  .property-item.active,
+  .property-item.active .mat-mdc-menu-item-text {
+    color: var(--md-primary, #0b57d0);
+    font-weight: 500;
+  }
+}
+
+// Panel class doubled for the same reason as the property menu: theme-workspace
+// sets `body.theme-workspace .mat-mdc-menu-panel { min-width: 200px }`
+// (_workspace-mat-overrides.scss:1163-1168), which out-specifies a single class
+// and squeezes calendar names into an ellipsis.
+::ng-deep .calendar-boards-menu.mat-mdc-menu-panel.mat-mdc-menu-panel {
+  max-width: none;
+  min-width: 260px;
+
+  // No side padding: the rows are mat-menu-items and carry the theme's own
+  // horizontal padding, so this lets hover and focus reach the panel edge the
+  // way every other Material menu in the app does.
+  .boards-panel {
+    font-family: var(--font-family);
+  }
+
+  .boards-bulk-actions {
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border, #e0e0e0);
+    margin-bottom: 4px;
+  }
+
+  // "Vælg alle" / "Ryd" are stacked full-width rows rather than the mock-up's
+  // inline pair: they are mat-menu-items so the panel's key manager can reach
+  // them, and theme-workspace pins `.mat-mdc-menu-item { width: 100%
+  // !important }` (scss/components/_workspace-mat-overrides.scss:1183-1186),
+  // which an inline pair would have to fight in one theme but not the other.
+  //
+  // The accent needs BOTH the button and Material's inner label span, and it
+  // needs the `.mat-mdc-menu-content button` chain to out-count
+  // `body.theme-workspace .mat-mdc-menu-panel .mat-mdc-menu-content
+  // button.mat-mdc-menu-item` (_workspace-mat-overrides.scss:1183-1196).
+  // Under theme-eform it still loses: styles.scss:1364-1371 sets that span's
+  // colour and `font-weight: 600` `!important`, so there these read as ordinary
+  // menu rows — as does `.board-name`, which the sidebar rendered at 400. Same
+  // call as `.property-item.active` below: matching the theme's own menu
+  // typography is not worth an `!important` war with the core stylesheet.
+  .mat-mdc-menu-content button.board-bulk-action,
+  .mat-mdc-menu-content button.board-bulk-action .mat-mdc-menu-item-text,
+  .mat-mdc-menu-content button.board-create-action,
+  .mat-mdc-menu-content button.board-create-action .mat-mdc-menu-item-text {
+    color: var(--md-primary, #0b57d0);
+    font-weight: 500;
+  }
+
+  .board-list {
+    display: flex;
+    flex-direction: column;
+    max-height: 320px;
+    overflow-y: auto;
+
+    // The row is a mat-menu-item button, so the actions trigger cannot nest
+    // inside it — it is absolutely positioned over the row's right edge, and
+    // the row reserves space for it. Padding needs !important because
+    // theme-workspace sets `padding: 0 var(--spacing-md) !important` on every
+    // menu item.
+    .board-item {
+      position: relative;
+
+      .board-row-toggle {
+        padding-right: 36px !important;
+        align-items: center;
+
+        .mat-mdc-menu-item-text {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-width: 0;
+        }
+      }
+
+      .board-checkbox {
+        width: 18px;
+        height: 18px;
+        border-radius: 3px;
+        border: 2px solid var(--md-outline, #c4c7c5);
+        background: transparent;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        .board-check-icon {
+          font-size: 14px;
+          width: 14px;
+          height: 14px;
+          margin: 0;
+          color: white;
+        }
+      }
+
+      .board-name {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      // A mat-menu-item styled back down to an icon button. Every !important
+      // here answers one in the theme: theme-workspace pins width, min-height,
+      // display, align-items, border-radius and padding on `.mat-mdc-menu-item`
+      // (_workspace-mat-overrides.scss:1183-1196), and Material's own base puts
+      // a 12px right margin on a menu item's leading icon.
+      .board-menu-btn {
+        position: absolute;
+        right: 2px;
+        top: 50%;
+        transform: translateY(-50%);
+        opacity: 0;
+        width: 28px !important;
+        min-width: 0;
+        height: 28px !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        border-radius: 50% !important;
+        justify-content: center !important;
+        color: var(--md-on-surface-variant, #444746);
+
+        mat-icon {
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+          margin: 0 !important;
+        }
+
+        // The item renders an (empty) label span and, because it triggers a
+        // submenu, Material's ► chevron. Neither belongs on an icon button.
+        .mat-mdc-menu-item-text,
+        .mat-mdc-menu-submenu-icon {
+          display: none;
+        }
+      }
+
+      // Focus counts as well as hover: arrow-keying onto the trigger must not
+      // land on something invisible.
+      &:hover .board-menu-btn,
+      &:focus-within .board-menu-btn,
+      .board-menu-btn.cdk-keyboard-focused,
+      .board-menu-btn.mat-mdc-menu-item-highlighted,
+      .board-menu-btn[aria-expanded='true'] {
+        opacity: 1;
+      }
+    }
+  }
+
+  // Ghost-action footer ("Opret kalender") — the retired sidebar's
+  // .sidebar-action-link pattern, now the last row of the calendars panel.
+  .board-create-action {
+    margin-top: 4px;
+    border-top: 1px solid var(--border, #e0e0e0);
+
+    .board-create-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      line-height: 18px;
+    }
+  }
+}
+
+.board-edit-popover {
+  padding: 12px 16px;
+  min-width: 352px;
+
+  .field-label {
+    font-size: 13px;
+    color: #5f6368;
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  .color-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 32px);
+    gap: 8px;
+    margin: 4px 0 8px;
+  }
+
+  .color-swatch {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.15s;
+
+    &:hover {
+      transform: scale(1.15);
+    }
+
+    &.selected {
+      outline: 2px solid var(--text-header, #333);
+      outline-offset: 2px;
+    }
+  }
+}
+
+// The calendar edit popover renders inside a mat-menu panel in the CDK overlay
+// (outside :host), so this override must be global — NOT :host-scoped — to
+// reach the panel and lift Material's default 280px panel cap, fitting all
+// 8 colour swatches (8×32px + 7×8px gaps + padding = 352px) without clipping.
+::ng-deep .board-edit-menu.mat-mdc-menu-panel {
+  max-width: none;
+  min-width: 352px;
 }

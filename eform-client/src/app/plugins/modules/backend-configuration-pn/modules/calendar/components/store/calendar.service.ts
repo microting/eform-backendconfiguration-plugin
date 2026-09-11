@@ -10,7 +10,6 @@ import {
   selectCalendarCurrentDate,
   selectCalendarFilters,
   selectCalendarPropertyId,
-  selectCalendarSidebarOpen,
   selectCalendarViewMode,
 } from '../../../../state';
 
@@ -24,7 +23,6 @@ export class CalendarStateService {
   readonly activeSiteIds$ = this.store.select(selectCalendarActiveSiteIds);
   readonly activeTeamIds$ = this.store.select(selectCalendarActiveTeamIds);
   readonly activeTagNames$ = this.store.select(selectCalendarActiveTagNames);
-  readonly sidebarOpen$ = this.store.select(selectCalendarSidebarOpen);
 
   private currentFilters: CalendarFiltersModel;
 
@@ -56,14 +54,6 @@ export class CalendarStateService {
     this.dispatch({activeBoardIds: ids});
   }
 
-  toggleTag(tagName: string) {
-    const names = this.currentFilters.activeTagNames;
-    const activeTagNames = names.includes(tagName)
-      ? names.filter(n => n !== tagName)
-      : [...names, tagName];
-    this.dispatch({activeTagNames});
-  }
-
   toggleTeam(teamId: number) {
     const ids = this.currentFilters.activeTeamIds;
     const activeTeamIds = ids.includes(teamId)
@@ -78,18 +68,6 @@ export class CalendarStateService {
       ? ids.filter(id => id !== siteId)
       : [...ids, siteId];
     this.dispatch({activeSiteIds});
-  }
-
-  toggleSidebar() {
-    this.dispatch({sidebarOpen: !this.currentFilters.sidebarOpen});
-  }
-
-  toggleSidebarSection(section: keyof CalendarFiltersModel['sidebarSections']) {
-    const sidebarSections = {
-      ...this.currentFilters.sidebarSections,
-      [section]: !this.currentFilters.sidebarSections[section],
-    };
-    this.dispatch({sidebarSections});
   }
 
   private dispatch(partial: Partial<CalendarFiltersModel>) {

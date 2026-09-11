@@ -751,4 +751,10 @@ export const itIT = {
   'Change a filter or click Overview to load the table': 'Modifica un filtro o fai clic su Panoramica per caricare la tabella.',
   'Without report headline': 'Senza intestazione del rapporto',
   'Columns unavailable for template #{{id}}': 'Colonne non disponibili per il modello #{{id}}',
+  // Calendar toolbar (#1209): the calendars multi-select button label, its
+  // bulk actions, and the accessible name of a calendar row's actions menu.
+  '{{count}} calendars': '{{count}} calendari',
+  'Select all': 'Seleziona tutto',
+  Clear: 'Cancella',
+  'Calendar actions': 'Azioni del calendario',
 };

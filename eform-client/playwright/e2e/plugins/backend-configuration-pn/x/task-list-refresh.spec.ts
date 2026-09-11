@@ -130,7 +130,6 @@ test.describe.serial('Task list — refresh button', () => {
 
     const calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
     await calendarPage.selectProperty(property.name);
     await page.waitForTimeout(1000);
 
@@ -230,7 +229,6 @@ test.describe.serial('Task list — refresh button', () => {
       await new LoginPage(other).login();
       const calendarPage = new CalendarUiEnhancementsPage(other);
       await calendarPage.goToCalendar();
-      await calendarPage.ensureSidebarOpen();
       await calendarPage.selectProperty(property.name);
       await other.waitForTimeout(1000);
       // A FREE slot: the seed put taskZ at (0, 9) and taskA at (1, 10) on this

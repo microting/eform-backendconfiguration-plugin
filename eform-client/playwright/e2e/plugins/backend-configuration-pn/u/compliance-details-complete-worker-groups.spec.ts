@@ -289,7 +289,6 @@ async function cancelCompleteModal(page: Page): Promise<void> {
 async function seedOpenComplianceRow(page: Page): Promise<void> {
   const calendarPage = new CalendarUiEnhancementsPage(page);
   await calendarPage.goToCalendar();
-  await calendarPage.ensureSidebarOpen();
   const folderResponse = page.waitForResponse(
     r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos'),
     { timeout: 60000 },

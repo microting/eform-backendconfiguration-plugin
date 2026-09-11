@@ -751,4 +751,10 @@ export const esES = {
   'Change a filter or click Overview to load the table': 'Cambie un filtro o haga clic en Descripción general para cargar la tabla.',
   'Without report headline': 'Sin encabezado de informe',
   'Columns unavailable for template #{{id}}': 'Columnas no disponibles para la plantilla #{{id}}',
+  // Calendar toolbar (#1209): the calendars multi-select button label, its
+  // bulk actions, and the accessible name of a calendar row's actions menu.
+  '{{count}} calendars': '{{count}} calendarios',
+  'Select all': 'Seleccionar todo',
+  Clear: 'Borrar',
+  'Calendar actions': 'Acciones del calendario',
 };

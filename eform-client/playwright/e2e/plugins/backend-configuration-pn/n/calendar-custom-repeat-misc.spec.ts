@@ -103,7 +103,6 @@ test.describe.serial('Calendar custom repeat — dialog mechanics (#901)', () =>
 
     const calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
 
     if (seeded) {
       const folderResp = page.waitForResponse(
@@ -345,7 +344,6 @@ test.describe.serial('Calendar custom repeat — dialog mechanics (#901)', () =>
     title: string,
   ): Promise<void> {
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
     const folderResp = page.waitForResponse(
       r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos'),
       { timeout: 60000 }

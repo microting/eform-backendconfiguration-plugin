@@ -44,8 +44,10 @@ using Microting.eForm.Infrastructure.Constants;
 using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Enums;
 using NSubstitute;
@@ -268,8 +270,20 @@ public class EventsGrpcCompleteEventRaceTests : TestBaseSetup
     ///     per worker, because the service locates them by
     ///     <c>MicrotingSdkCaseId == foundCase.Id</c>.</description></item>
     /// </list>
+    /// <para>
+    /// The seed itself always runs on the fixture's inherited contexts. The four
+    /// optional parameters only decide which contexts the two SERVICES are built
+    /// over: omitted, both services share the inherited pair (sequential tests,
+    /// where shared tracking is harmless); supplied, each caller gets its own
+    /// pair, which is what two independent gRPC requests have in production and
+    /// what any test of the concurrency gate needs.
+    /// </para>
     /// </summary>
-    private async Task<Race> SeedSharedOccurrenceAsync()
+    private async Task<Race> SeedSharedOccurrenceAsync(
+        BackendConfigurationPnDbContext? bcForA = null,
+        ItemsPlanningPnDbContext? ipForA = null,
+        BackendConfigurationPnDbContext? bcForB = null,
+        ItemsPlanningPnDbContext? ipForB = null)
     {
         var suffix = Guid.NewGuid().ToString("N")[..8];
         var core = await GetCore();
@@ -477,7 +491,10 @@ public class EventsGrpcCompleteEventRaceTests : TestBaseSetup
         var coreHelper = Substitute.For<IEFormCoreService>();
         coreHelper.GetCore().Returns(core);
 
-        EventsGrpcService BuildServiceFor(int sdkSiteId)
+        EventsGrpcService BuildServiceFor(
+            int sdkSiteId,
+            BackendConfigurationPnDbContext bc,
+            ItemsPlanningPnDbContext ip)
         {
             var siteResolver = Substitute.For<IGrpcSiteResolver>();
             siteResolver.GetSdkSiteIdAsync().Returns(Task.FromResult(sdkSiteId));
@@ -490,15 +507,21 @@ public class EventsGrpcCompleteEventRaceTests : TestBaseSetup
                 access,
                 siteResolver,
                 coreHelper,
-                BackendConfigurationPnDbContext,
-                ItemsPlanningPnDbContext,
+                bc,
+                ip,
                 Substitute.For<IEventDeployService>(),
                 NullLogger<EventsGrpcService>.Instance);
         }
 
         return new Race(
-            BuildServiceFor(siteA.Id),
-            BuildServiceFor(siteB.Id),
+            BuildServiceFor(
+                siteA.Id,
+                bcForA ?? BackendConfigurationPnDbContext!,
+                ipForA ?? ItemsPlanningPnDbContext!),
+            BuildServiceFor(
+                siteB.Id,
+                bcForB ?? BackendConfigurationPnDbContext!,
+                ipForB ?? ItemsPlanningPnDbContext!),
             arp.Id, compliance.Id, sharedFieldId,
             siteA.Name, caseA.Id, caseB.Id,
             deadline);
@@ -652,5 +675,292 @@ public class EventsGrpcCompleteEventRaceTests : TestBaseSetup
             Assert.That(caseAfterB.DoneAt, Is.EqualTo(winningDoneAt),
                 "the completion stays dated to the winning tap");
         });
+    }
+
+    /// <summary>
+    /// The genuine race: BOTH workers load the same LIVE <c>Compliance</c> row
+    /// before either deletes it, so the loser reaches
+    /// <c>EventsGrpcService.TryClaimOccurrenceAsync</c> — the only concurrency
+    /// control in the file, and the case the sequential test above cannot
+    /// construct (there, A has already committed by the time B's lookup runs, so
+    /// B resolves nothing and is answered from the <c>compliance == null</c>
+    /// branch without the claim ever executing).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// How the overlap is produced, without threads. Worker B's
+    /// <see cref="BackendConfigurationPnDbContext"/> is pinned to a single open
+    /// connection and put inside <c>START TRANSACTION WITH CONSISTENT
+    /// SNAPSHOT</c> BEFORE worker A runs. InnoDB then answers every non-locking
+    /// read on that connection from the pre-A snapshot, so B's compliance lookup
+    /// resolves the row as live and B walks into the claim carrying a tracked
+    /// copy of it. Live at lookup, removed at the re-check: that is exactly the
+    /// pair of answers a genuinely concurrent loser observes, and the service
+    /// sees nothing else of either caller's timing.
+    /// </para>
+    /// <para>
+    /// Which transaction the re-check actually runs in — NOT B's snapshot.
+    /// <c>TryClaimOccurrenceAsync</c> opens a transaction of its own, and the
+    /// <c>START TRANSACTION</c> EF emits for it implicitly commits B's snapshot
+    /// transaction. The locked read therefore executes in a BRAND-NEW
+    /// transaction whose read view is established AFTER A committed — one in
+    /// which a plain, non-locking read would already return <c>removed</c> by
+    /// itself. That is precisely why this test cannot cover <c>FOR UPDATE</c>
+    /// itself (limits list below): the lock is not what makes the re-check see
+    /// A's removal here.
+    /// </para>
+    /// <para>
+    /// The construction holds EITHER WAY, deliberately. Verified on
+    /// mariadb:11.2: inside the still-open snapshot transaction a plain read
+    /// returns <c>created</c> while a <c>FOR UPDATE</c> read returns
+    /// <c>removed</c>. So if MySqlConnector ever stops emitting that implicit
+    /// commit, the locked read still reports A's removal and this test still
+    /// pins the same behaviour.
+    /// </para>
+    /// <para>
+    /// Why not <c>Task.WhenAll</c>. Nothing would guarantee that the loser's
+    /// lookup runs before the winner commits, so a threaded version can silently
+    /// degrade into the already-settled path and stop covering the claim at all.
+    /// It is also non-deterministic in OUTCOME here:
+    /// <c>BuildAlreadyCompletedResponseAsync</c> only speaks when the winning SDK
+    /// case already reads <c>Status == 100</c> with a non-null <c>DoneAt</c>, and
+    /// the winner writes those AFTER committing its claim — so a loser released
+    /// the instant the claim commits can still fall through to the anonymous
+    /// <c>FailedPrecondition</c> (filed as #1249). Running A to completion
+    /// first removes that second, separate race from this test.
+    /// </para>
+    /// <para>
+    /// Mutation cover for the <c>AsNoTracking()</c> on the locked read. Remove
+    /// it and EF's identity resolution hands the <c>FOR UPDATE</c> query the
+    /// instance B's own lookup already tracked — still carrying
+    /// <c>WorkflowState == 'created'</c>, because EF never overwrites a tracked
+    /// entity's values from a later query — instead of the freshly read row. B
+    /// then concludes it won and runs the whole cascade a second time. THREE
+    /// independent assertions below break: the <c>ComplianceVersion</c> audit
+    /// count, the winner's surviving field value / comment / <c>DoneAt</c> on
+    /// case A, and the loser's response — the success path echoes the CALLER's
+    /// own <c>completed_by</c> and never sets <c>updated_at</c> at all.
+    /// </para>
+    /// <para>
+    /// <c>Compliance.Version</c> is NOT one of the three.
+    /// <c>PnBase.UpdateInternal</c> increments the IN-MEMORY value, and under
+    /// the mutation B's stale tracked copy still carries the pre-A snapshot's
+    /// <c>Version = 1</c> — so a second claim writes 2 again and the assertion
+    /// passes either way. <c>Compliance</c> has no concurrency token to reject
+    /// that write. The assertion is kept as a plain invariant, not as mutation
+    /// cover.
+    /// </para>
+    /// <para>
+    /// What this test does NOT cover, so the boundary is explicit.
+    /// (a) <c>FOR UPDATE</c> itself — see above; delete it and this test still
+    /// passes. (b) True lock contention: no caller ever BLOCKS on the row lock
+    /// here. (c) The <c>lockedState == null</c> branch — the row hard-deleted
+    /// rather than soft-deleted. (d) The invariant the claim's own remarks care
+    /// most about: that <c>core.CaseDelete</c>'s multi-hour
+    /// "Parsing in progress" retry loop runs OUTSIDE the held lock. Nothing here
+    /// would notice if that transaction were widened to enclose the cascade.
+    /// (e) The <c>AlreadyCompletedOrThrowAsync</c> fall-through to the anonymous
+    /// <c>FailedPrecondition</c> (#1249, above).
+    /// </para>
+    /// </remarks>
+    [Test]
+    public async Task CompleteEvent_BothWorkersLoadedLiveCompliance_OnlyTheClaimWinnerRunsTheCascade()
+    {
+        // One context pair per caller: neither can see the other's tracked
+        // state, which is what makes two gRPC requests independent in production.
+        await using var bcA = NewBackendContext();
+        await using var ipA = NewItemsPlanningContext();
+        await using var bcB = NewBackendContext();
+        await using var ipB = NewItemsPlanningContext();
+
+        var race = await SeedSharedOccurrenceAsync(bcA, ipA, bcB, ipB);
+        var runSuffix = Guid.NewGuid().ToString("N")[..6];
+        var aFieldValue = $"A-FIELD-{runSuffix}";
+        var aComment = $"A-COMMENT-{runSuffix}";
+        var bFieldValue = $"B-FIELD-{runSuffix}";
+        var bComment = $"B-COMMENT-{runSuffix}";
+        var winningDoneAt = ExpectedDoneAt(race, WinnerTapInstant);
+
+        // ---- B opens the occurrence while it is still live ---------------
+        // OpenConnectionAsync pins one connection for the context's lifetime, so
+        // the transaction started here is the session B's queries — and the
+        // service's — go on to run in.
+        await bcB.Database.OpenConnectionAsync();
+        await bcB.Database.ExecuteSqlRawAsync("START TRANSACTION WITH CONSISTENT SNAPSHOT");
+
+        // The service's own compliance lookup (EventsGrpcService.cs:1252-1257),
+        // run verbatim on the connection the service will use. AsNoTracking, so
+        // the only tracked copy of this row stays the one the service's lookup
+        // creates for itself — the same starting state as a production request.
+        var liveForB = await bcB.Compliances
+            .AsNoTracking()
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
+            .Where(x => x.Id == race.ComplianceId)
+            .FirstOrDefaultAsync();
+        Assert.That(liveForB, Is.Not.Null,
+            "precondition: worker B has the occurrence open and live before anyone claims it");
+
+        // ---- A claims it and runs the cascade to completion ---------------
+        await race.ServiceA.CompleteEvent(
+            MakeRequest(race, race.CaseAId, WinnerTapInstant,
+                completedBy: "phone-of-worker-A", fieldValue: aFieldValue, comment: aComment),
+            new TestServerCallContext());
+
+        // Committed truth: the shared row is gone for anyone reading current data.
+        await using (var currentReader = NewBackendContext())
+        {
+            var current = await currentReader.Compliances
+                .AsNoTracking().FirstAsync(x => x.Id == race.ComplianceId);
+            Assert.That(current.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed),
+                "precondition: A's claim really did soft-delete the shared row");
+        }
+
+        // B still reads it as live. Consistent reads are stable for the life of
+        // the transaction, so the service's identical lookup on this same
+        // connection resolves the same row — B is routed INTO the claim, not
+        // into the compliance == null "arrived late" branch.
+        var stillLiveForB = await bcB.Compliances
+            .AsNoTracking()
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
+            .Where(x => x.Id == race.ComplianceId)
+            .FirstOrDefaultAsync();
+        Assert.That(stillLiveForB, Is.Not.Null,
+            "precondition: B loaded a live row before the winner deleted it, and still sees it "
+            + "that way — this is what makes the claim reachable");
+
+        // This assertion is the ONLY guard on that routing, and the margin is
+        // "nothing in between can break it" rather than "it cannot degrade": if
+        // B's own lookup ever resolved null, the compliance == null branch calls
+        // the SAME BuildAlreadyCompletedResponseAsync with the SAME row, so the
+        // response and every DB assertion below would be byte-identical and the
+        // test would pass while covering nothing. The check is also made one
+        // statement EARLY — on the snapshot, not at the service's lookup — so
+        // any code inserted between here and the CompleteEvent call below is
+        // load-bearing: anything that commits or resets B's session there moves
+        // the test silently off the claim path.
+
+        // ---- B claims, and must lose the claim's re-check -----------------
+        // request.microting_sdk_case_id is decorative on this path: the service
+        // takes caseId from compliance.MicrotingSdkCaseId and never reads the
+        // request field here. The "loser's own case untouched" assertions below
+        // therefore hold trivially, not because the service picked correctly.
+        var response = await race.ServiceB.CompleteEvent(
+            MakeRequest(race, race.CaseBId, LoserTapInstant,
+                completedBy: "phone-of-worker-B", fieldValue: bFieldValue, comment: bComment),
+            new TestServerCallContext());
+
+        Assert.That(response, Is.Not.Null);
+        Assert.That(response.Event, Is.Not.Null, "the loser still gets an Event to reconcile against");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(response.Event.Completed, Is.True,
+                "the occurrence IS completed — just not by B");
+            Assert.That(response.Event.CompletedBy, Is.EqualTo(race.SiteAName),
+                "the loser is told WHO won; a caller that won the claim instead gets its own "
+                + "\"phone-of-worker-B\" echoed back here");
+            Assert.That(response.Event.UpdatedAt, Is.Not.Null,
+                "updated_at is populated on the already-completed answer and nowhere else "
+                + "in the service");
+            Assert.That(response.Event.UpdatedAt.ToDateTime(), Is.EqualTo(winningDoneAt),
+                "and it carries A's completion time, not B's tap 85 minutes later");
+        });
+
+        // ---- exactly ONE claim ran ----------------------------------------
+        await using (var auditReader = NewBackendContext())
+        {
+            var claimed = await auditReader.Compliances
+                .AsNoTracking().FirstAsync(x => x.Id == race.ComplianceId);
+            var auditRows = await auditReader.ComplianceVersions
+                .AsNoTracking()
+                .CountAsync(x => x.ComplianceId == race.ComplianceId);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(claimed.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+                // Invariant only — this does not discriminate the AsNoTracking
+                // mutation, because PnBase increments the in-memory value and a
+                // second claimant's stale copy would write 2 again.
+                Assert.That(claimed.Version, Is.EqualTo(2),
+                    "seeded at 1 and incremented by exactly one PnBase.Delete");
+                Assert.That(auditRows, Is.EqualTo(1),
+                    "PnBase.Delete writes one ComplianceVersion row per claim, and the seed "
+                    + "inserts the Compliance directly without one — so a second row means a "
+                    + "second caller ran the claim");
+            });
+        }
+
+        // ---- the loser's payload landed nowhere ----------------------------
+        var winnerCase = await MicrotingDbContext!.Cases
+            .AsNoTracking().FirstAsync(x => x.Id == race.CaseAId);
+        var loserCase = await MicrotingDbContext.Cases
+            .AsNoTracking().FirstAsync(x => x.Id == race.CaseBId);
+        var winnerFieldValue = await MicrotingDbContext.FieldValues
+            .AsNoTracking()
+            .FirstAsync(fv => fv.CaseId == race.CaseAId && fv.FieldId == race.SharedFieldId);
+        // Scoped by a per-run GUID value, so this is not a whole-table count.
+        var loserFieldValueRows = await MicrotingDbContext.FieldValues
+            .AsNoTracking()
+            .CountAsync(fv => fv.Value == bFieldValue);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(winnerCase.Status, Is.EqualTo(100),
+                "the winner's SDK case is closed");
+            Assert.That(winnerCase.DoneAt, Is.EqualTo(winningDoneAt),
+                "the completion stays dated to the winning tap");
+            Assert.That(winnerFieldValue.Value, Is.EqualTo(aFieldValue),
+                "the winner's field value survives");
+            Assert.That(winnerCase.Custom, Does.Contain(aComment),
+                "the winner's comment survives");
+            Assert.That(winnerCase.Custom, Does.Not.Contain(bComment),
+                "the loser's comment must never overwrite the winner's");
+            Assert.That(loserFieldValueRows, Is.EqualTo(0),
+                "the loser's field value was never written, on any case");
+            Assert.That(loserCase.Status, Is.EqualTo(66),
+                "the loser's own deployed case is untouched — nothing on this path targets it, "
+                + "since the cascade only ever closes the case the shared Compliance points at");
+            Assert.That(loserCase.DoneAt, Is.Null,
+                "and it was never stamped done");
+        });
+    }
+
+    /// <summary>
+    /// Cached so the per-caller context builds below do not each open a
+    /// version-detection connection against the shared testcontainer. Both
+    /// databases live on the same server, so one detection serves both.
+    /// </summary>
+    private ServerVersion? _serverVersion;
+
+    private ServerVersion CachedServerVersion()
+        => _serverVersion ??= ServerVersion.AutoDetect(
+            BackendConfigurationPnDbContext!.Database.GetConnectionString());
+
+    /// <summary>
+    /// A fresh <see cref="BackendConfigurationPnDbContext"/> against the same
+    /// test database as the inherited one, so a caller can run on its own
+    /// context and change tracker the way a separate gRPC request does.
+    /// Copied from <c>EventDeployServiceTest</c>, which needed the same thing
+    /// for its concurrent-deploy test.
+    /// </summary>
+    private BackendConfigurationPnDbContext NewBackendContext()
+    {
+        var cs = BackendConfigurationPnDbContext!.Database.GetConnectionString();
+        var ob = new DbContextOptionsBuilder<BackendConfigurationPnDbContext>();
+        ob.UseMySql(cs, CachedServerVersion(), b => b.EnableRetryOnFailure());
+        var context = new BackendConfigurationPnDbContext(ob.Options);
+        // Same generous timeout TestBaseSetup gives its own contexts.
+        context.Database.SetCommandTimeout(300);
+        return context;
+    }
+
+    private ItemsPlanningPnDbContext NewItemsPlanningContext()
+    {
+        var cs = ItemsPlanningPnDbContext!.Database.GetConnectionString();
+        var ob = new DbContextOptionsBuilder<ItemsPlanningPnDbContext>();
+        ob.UseMySql(cs, CachedServerVersion(), b => b.EnableRetryOnFailure());
+        var context = new ItemsPlanningPnDbContext(ob.Options);
+        context.Database.SetCommandTimeout(300);
+        return context;
     }
 }

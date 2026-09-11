@@ -109,7 +109,6 @@ test.describe.serial('Calendar "Assign to worker tags" field', () => {
     // a FUTURE slot (next week, Monday 09:00).
     // ------------------------------------------------------------------
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
 
     const folderResp = page.waitForResponse(
       r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos'),

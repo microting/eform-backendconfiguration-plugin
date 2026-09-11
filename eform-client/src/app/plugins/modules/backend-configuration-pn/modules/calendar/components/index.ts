@@ -1,6 +1,5 @@
 export * from './calendar-container/calendar-container.component';
 export * from './calendar-header/calendar-header.component';
-export * from './calendar-sidebar/calendar-sidebar.component';
 export * from './calendar-week-grid/calendar-week-grid.component';
 export * from './calendar-day-column/calendar-day-column.component';
 export * from './calendar-task-block/calendar-task-block.component';

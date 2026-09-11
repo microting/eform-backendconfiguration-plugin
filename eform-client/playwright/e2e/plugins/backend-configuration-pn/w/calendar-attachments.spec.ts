@@ -80,7 +80,6 @@ test.describe.serial('Calendar event attachments', () => {
 
     const calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
 
     if (seeded) {
       const folderResp = page.waitForResponse(
@@ -236,7 +235,6 @@ test.describe.serial('Calendar event attachments', () => {
     }
     await page.waitForTimeout(2000);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
     await calendarPage.selectProperty(property.name);
     await page.waitForTimeout(1500);
     // We were on next-week when we created the event; advance one week to
@@ -277,7 +275,6 @@ test.describe.serial('Calendar event attachments', () => {
     }
     await page.waitForTimeout(2000);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
     await calendarPage.selectProperty(property.name);
     await page.waitForTimeout(1500);
     await calendarPage.navigateToNextWeek();
@@ -371,7 +368,6 @@ test.describe.serial('Calendar event attachments', () => {
     }
     await page.waitForTimeout(2000);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
     await calendarPage.selectProperty(property.name);
     await page.waitForTimeout(1500);
     await calendarPage.navigateToNextWeek();
