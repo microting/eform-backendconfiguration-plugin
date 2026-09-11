@@ -129,11 +129,31 @@ jobs:
       run: docker network create --driver bridge --attachable data
     - name: Start MariaDB
       run: |
-        docker pull mariadb:10.8
+        IMAGE=mariadb:10.8
+        for attempt in 1 2 3 4 5; do
+          docker pull "$IMAGE" && break
+          if [ "$attempt" -eq 5 ]; then
+            echo "::error::Failed to pull $IMAGE after 5 attempts - container registry unavailable, this is not a test failure"
+            exit 1
+          fi
+          delay=$((attempt * 10))
+          echo "Pull of $IMAGE failed (attempt $attempt/5); retrying in ${delay}s"
+          sleep "$delay"
+        done
         docker run --name mariadbtest --network data -e MYSQL_ROOT_PASSWORD=secretpassword -p 3306:3306 -d mariadb:10.8
     - name: Start rabbitmq
       run: |
-        docker pull rabbitmq:latest
+        IMAGE=rabbitmq:latest
+        for attempt in 1 2 3 4 5; do
+          docker pull "$IMAGE" && break
+          if [ "$attempt" -eq 5 ]; then
+            echo "::error::Failed to pull $IMAGE after 5 attempts - container registry unavailable, this is not a test failure"
+            exit 1
+          fi
+          delay=$((attempt * 10))
+          echo "Pull of $IMAGE failed (attempt $attempt/5); retrying in ${delay}s"
+          sleep "$delay"
+        done
         docker run -d --hostname my-rabbit --name some-rabbit --network data -e RABBITMQ_DEFAULT_USER=admin -e RABBITMQ_DEFAULT_PASS=password rabbitmq:latest
     - name: Sleep 15
       run: sleep 15
@@ -265,18 +285,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Create docker network
-      run: docker network create --driver bridge --attachable data
-    - name: Start MariaDB
-      run: |
-        docker pull mariadb:10.8
-        docker run --name mariadbtest --network data -e MYSQL_ROOT_PASSWORD=secretpassword -p 3306:3306 -d mariadb:10.8
-    - name: Start rabbitmq
-      run: |
-        docker pull rabbitmq:latest
-        docker run -d --hostname my-rabbit --name some-rabbit --network data -e RABBITMQ_DEFAULT_USER=admin -e RABBITMQ_DEFAULT_PASS=password -p 5672:5672 rabbitmq:latest
-    - name: Sleep 15
-      run: sleep 15        
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v3
       with:
