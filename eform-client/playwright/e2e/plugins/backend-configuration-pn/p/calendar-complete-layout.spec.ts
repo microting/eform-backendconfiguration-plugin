@@ -10,6 +10,7 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
+import { UI_TIMEOUT } from '../wait-helpers';
 
 /**
  * Layout contract of the redesigned eForm fill modal.
@@ -79,11 +80,11 @@ async function closeModal(page: import('@playwright/test').Page): Promise<void> 
   if ((await modal.count()) === 0) return;
   const cancelBtn = page.locator('#completeCancelBtn');
   if ((await cancelBtn.count()) > 0) {
-    await cancelBtn.click();
+    await cancelBtn.click({ timeout: UI_TIMEOUT });
   } else {
     await page.keyboard.press('Escape');
   }
-  await modal.waitFor({ state: 'detached', timeout: 5000 }).catch(() => undefined);
+  await modal.waitFor({ state: 'detached', timeout: UI_TIMEOUT }).catch(() => undefined);
 }
 
 /**
@@ -340,7 +341,12 @@ test.describe.serial('Calendar complete modal — redesigned layout', () => {
       await expect(panel.locator('.ng-option-child')).toHaveCount(0);
     }
 
+    // Escape here does not just dismiss the ng-select panel: the CDK overlay
+    // dispatcher sees the same keydown and closes the dialog too (it is not
+    // disableClose), with an exit animation. Assert what Escape actually did
+    // instead of then racing closeModal()'s Cancel click against that
+    // animation — closeModal() is for the "no worker panel open" cleanup path.
     await page.keyboard.press('Escape');
-    await closeModal(page);
+    await expect(modal).toHaveCount(0, { timeout: UI_TIMEOUT });
   });
 });
