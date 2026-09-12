@@ -48,11 +48,13 @@ const property: PropertyCreateUpdate = {
   cvrNumber: '1111111',
 };
 
+// The create form requires an email (#1242).
 const worker: PropertyWorker = {
   name: `Fu${rand}`,
   surname: 'Nodelete',
   language: 'Dansk',
   properties: [property.name],
+  workerEmail: `fu-worker-${rand}@test.com`,
 };
 const workerFullName = `${worker.name} ${worker.surname}`;
 
@@ -277,7 +279,7 @@ test.describe.serial('Only the first user may delete a property worker', () => {
       if (problems.length > 0) {
         console.log(
           '[property-worker-delete-first-user-only] afterAll cleanup INCOMPLETE (non-fatal) — may have left ' +
-            `worker "${workerFullName}", property "${property.name}" and user ${secondAdminEmail}: ` +
+            `worker "${workerFullName}" (${worker.workerEmail}), property "${property.name}" and user ${secondAdminEmail}: ` +
             problems.join(' | ')
         );
       }
