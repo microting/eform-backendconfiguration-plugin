@@ -10,6 +10,7 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
+import { UI_TIMEOUT } from '../wait-helpers';
 
 /**
  * Standalone Compliance page — OVERSIGT suite (#1164).
@@ -289,11 +290,11 @@ async function cancelCompleteModal(page: Page): Promise<void> {
   if ((await modal.count()) === 0) return;
   const cancelBtn = page.locator('#completeCancelBtn');
   if ((await cancelBtn.count()) > 0) {
-    await cancelBtn.click();
+    await cancelBtn.click({ timeout: UI_TIMEOUT });
   } else {
     await page.keyboard.press('Escape');
   }
-  await modal.waitFor({ state: 'detached', timeout: 5000 }).catch(() => undefined);
+  await modal.waitFor({ state: 'detached', timeout: UI_TIMEOUT }).catch(() => undefined);
 }
 
 /** One next-week task on `propertyName`, materialised into an OPEN Compliance row. */

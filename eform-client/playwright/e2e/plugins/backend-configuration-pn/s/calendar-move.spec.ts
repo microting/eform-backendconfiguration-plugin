@@ -10,6 +10,7 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
+import { UI_TIMEOUT } from '../wait-helpers';
 
 /**
  * Calendar drag-MOVE scope suite for GitHub issue #887.
@@ -614,9 +615,9 @@ test.describe.serial('Calendar drag-move scope (#887)', () => {
           await modal.waitFor({ state: 'visible', timeout: 10000 }).catch(() => undefined);
           const cancelBtn = page.locator('#completeCancelBtn');
           if ((await cancelBtn.count()) > 0) {
-            await cancelBtn.click();
+            await cancelBtn.click({ timeout: UI_TIMEOUT });
             await modal
-              .waitFor({ state: 'detached', timeout: 5000 })
+              .waitFor({ state: 'detached', timeout: UI_TIMEOUT })
               .catch(() => undefined);
           } else {
             await page.keyboard.press('Escape');

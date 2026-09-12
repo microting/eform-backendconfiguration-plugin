@@ -274,11 +274,11 @@ async function cancelCompleteModal(page: Page): Promise<void> {
   if ((await modal.count()) === 0) return;
   const cancelBtn = page.locator('#completeCancelBtn');
   if ((await cancelBtn.count()) > 0) {
-    await cancelBtn.click();
+    await cancelBtn.click({ timeout: UI_TIMEOUT });
   } else {
     await page.keyboard.press('Escape');
   }
-  await modal.waitFor({ state: 'detached', timeout: 5000 }).catch(() => undefined);
+  await modal.waitFor({ state: 'detached', timeout: UI_TIMEOUT }).catch(() => undefined);
 }
 
 // ---------------------------------------------------------------------------
@@ -482,10 +482,13 @@ test.describe.serial('Compliance Detaljer — complete modal groups workers by a
     expect(membership[assignedName]).toBe('Tildelte medarbejdere');
     expect(membership[otherName]).toBe('Øvrige medarbejdere');
 
-    // Close the panel, then the modal — nothing is saved; the row stays open.
+    // Escape does not just close the ng-select panel here: the CDK overlay
+    // dispatcher sees the same keydown and closes the dialog too (it is not
+    // disableClose), with an exit animation. Assert what Escape actually did
+    // instead of then racing cancelCompleteModal()'s Cancel click against
+    // that animation. Nothing is saved; the row stays open.
     await page.keyboard.press('Escape');
-    await cancelCompleteModal(page);
-    await expect(modal).toHaveCount(0);
+    await expect(modal).toHaveCount(0, { timeout: UI_TIMEOUT });
   });
 
   // =========================================================================

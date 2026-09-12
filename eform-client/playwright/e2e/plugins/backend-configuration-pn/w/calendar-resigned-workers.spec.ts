@@ -234,7 +234,7 @@ test.describe.serial('Calendar pickers exclude resigned workers (#1184)', () => 
     // mandatory fields.
     await modal.locator('h2[mat-dialog-title]').click();
     await page.locator('.ng-dropdown-panel').waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
-    await page.locator('#completeCancelBtn').click();
+    await page.locator('#completeCancelBtn').click({ timeout: UI_TIMEOUT });
     await modal.waitFor({ state: 'detached', timeout: UI_TIMEOUT });
   });
 

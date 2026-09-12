@@ -11,6 +11,7 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
+import { UI_TIMEOUT } from '../wait-helpers';
 
 /**
  * Calendar eForm-change propagation regression suite.
@@ -452,12 +453,11 @@ async function closeCompleteModal(page: Page): Promise<void> {
   if ((await modal.count()) === 0) return;
   const cancelBtn = page.locator('#completeCancelBtn');
   if ((await cancelBtn.count()) > 0) {
-    await cancelBtn.click();
+    await cancelBtn.click({ timeout: UI_TIMEOUT });
   } else {
     await page.keyboard.press('Escape');
   }
-  await modal.waitFor({ state: 'detached', timeout: 10000 }).catch(() => undefined);
-  await page.waitForTimeout(500);
+  await modal.waitFor({ state: 'detached', timeout: UI_TIMEOUT }).catch(() => undefined);
 }
 
 test.describe.serial('Calendar eForm-change propagation', () => {

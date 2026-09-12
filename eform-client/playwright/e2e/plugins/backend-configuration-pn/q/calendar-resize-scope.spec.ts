@@ -10,6 +10,7 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
+import { UI_TIMEOUT } from '../wait-helpers';
 
 /**
  * Drag-resize SCOPE suite for GitHub issue #889.
@@ -461,9 +462,9 @@ test.describe.serial('Calendar resize scope (#889)', () => {
           await modal.waitFor({ state: 'visible', timeout: 10000 }).catch(() => undefined);
           const cancelBtn = page.locator('#completeCancelBtn');
           if ((await cancelBtn.count()) > 0) {
-            await cancelBtn.click();
+            await cancelBtn.click({ timeout: UI_TIMEOUT });
             await modal
-              .waitFor({ state: 'detached', timeout: 5000 })
+              .waitFor({ state: 'detached', timeout: UI_TIMEOUT })
               .catch(() => undefined);
           } else {
             await page.keyboard.press('Escape');

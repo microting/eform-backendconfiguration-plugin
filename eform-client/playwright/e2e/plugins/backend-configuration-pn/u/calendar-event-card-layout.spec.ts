@@ -10,6 +10,7 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
+import { UI_TIMEOUT } from '../wait-helpers';
 
 /**
  * Adaptive event-card layout regression suite. Verifies the compact (heightPx
@@ -357,10 +358,10 @@ test.describe.serial('Calendar event card — adaptive layout', () => {
     // Cancel so the modal doesn't leak into the next test.
     const cancelBtn = page.locator('#completeCancelBtn');
     if ((await cancelBtn.count()) > 0) {
-      await cancelBtn.click();
+      await cancelBtn.click({ timeout: UI_TIMEOUT });
       await page
         .locator('app-calendar-complete-event-modal')
-        .waitFor({ state: 'detached', timeout: 5000 })
+        .waitFor({ state: 'detached', timeout: UI_TIMEOUT })
         .catch(() => undefined);
     }
   });
