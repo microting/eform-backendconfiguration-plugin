@@ -6,12 +6,12 @@ import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {DeviceUserModel, PropertyAssignWorkersModel} from '../../../../models';
 import {PropertyWorkersStateService} from '../store';
 import {TranslateService} from '@ngx-translate/core';
-import {Subject, Subscription} from 'rxjs';
+import {combineLatest, Subject, Subscription} from 'rxjs';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {CommonDictionaryModel, SiteNameDto} from 'src/app/common/models';
 import {Sort} from '@angular/material/sort';
-import {debounceTime} from 'rxjs/operators';
+import {debounceTime, map} from 'rxjs/operators';
 import {
   PropertyWorkerCreateEditModalComponent,
   PropertyWorkerDeleteModalComponent,
@@ -25,7 +25,8 @@ import {Store} from '@ngrx/store';
 import {
   selectAuthIsAdmin,
   selectCurrentUserClaimsDeviceUsersDelete,
-  selectCurrentUserClaimsDeviceUsersUpdate
+  selectCurrentUserClaimsDeviceUsersUpdate,
+  selectCurrentUserIsFirstUser
 } from 'src/app/state';
 import {
   selectPropertyWorkersNameFilters,
@@ -74,7 +75,12 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
   searchSubject: Subject<string> = new Subject();
   deviceUsersDelete: boolean = false;
   deviceUsersUpdate: boolean = false;
-  public selectCurrentUserClaimsDeviceUsersDelete$ = this.store.select(selectCurrentUserClaimsDeviceUsersDelete);
+  // Only the first user may delete a worker, and only while also holding the device_users_delete
+  // claim that core's delete endpoint requires.
+  public canDeleteWorker$ = combineLatest([
+    this.store.select(selectCurrentUserIsFirstUser),
+    this.store.select(selectCurrentUserClaimsDeviceUsersDelete),
+  ]).pipe(map(([isFirstUser, deviceUsersDelete]) => isFirstUser && deviceUsersDelete));
   public selectCurrentUserClaimsDeviceUsersUpdate$ = this.store.select(selectCurrentUserClaimsDeviceUsersUpdate);
   public selectPropertyWorkersPaginationSort$ = this.store.select(selectPropertyWorkersPaginationSort);
   public selectPropertyWorkersPaginationIsSortDsc$ = this.store.select(selectPropertyWorkersPaginationIsSortDsc);
@@ -427,7 +433,7 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
     this.searchSubject.pipe(debounceTime(500)).subscribe((val) => {
       this.propertyWorkersStateService.updateNameFilter(val);
     });
-    this.selectCurrentUserClaimsDeviceUsersDelete$.subscribe((data) => {
+    this.canDeleteWorker$.subscribe((data) => {
       this.deviceUsersDelete = data;
     });
     this.selectCurrentUserClaimsDeviceUsersUpdate$.subscribe((data) => {

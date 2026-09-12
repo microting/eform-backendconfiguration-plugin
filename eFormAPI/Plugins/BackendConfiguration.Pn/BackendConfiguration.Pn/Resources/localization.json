@@ -868,6 +868,37 @@
     }
   },
   {
+    "Key": "OnlyTheFirstUserCanDeleteWorkers",
+    "LocalizedValue": {
+      "da": "Kun den første bruger kan slette medarbejdere",
+      "de": "Nur der erste Benutzer kann Mitarbeiter löschen",
+      "en-US": "Only the first user can delete workers",
+      "uk-UA": "Лише перший користувач може видаляти працівників",
+      "pl-PL": "Tylko pierwszy użytkownik może usuwać pracowników",
+      "no-NO": "Bare den første brukeren kan slette medarbeidere",
+      "sv-SE": "Endast den första användaren kan ta bort medarbetare",
+      "es-ES": "Solo el primer usuario puede eliminar trabajadores",
+      "fr-FR": "Seul le premier utilisateur peut supprimer des employés",
+      "it-IT": "Solo il primo utente può eliminare i lavoratori",
+      "nl-NL": "Alleen de eerste gebruiker kan medewerkers verwijderen",
+      "pt-BR": "Somente o primeiro usuário pode excluir funcionários",
+      "pt-PT": "Apenas o primeiro utilizador pode eliminar trabalhadores",
+      "fi-FI": "Vain ensimmäinen käyttäjä voi poistaa työntekijöitä",
+      "et-ET": "Ainult esimene kasutaja saab töötajaid kustutada",
+      "lv-LV": "Tikai pirmais lietotājs var dzēst darbiniekus",
+      "lt-LT": "Tik pirmasis naudotojas gali ištrinti darbuotojus",
+      "ro-RO": "Doar primul utilizator poate șterge angajați",
+      "hr-HR": "Samo prvi korisnik može brisati radnike",
+      "sl-SL": "Samo prvi uporabnik lahko briše delavce",
+      "cs-CZ": "Pouze první uživatel může mazat pracovníky",
+      "sk-SK": "Iba prvý používateľ môže odstraňovať pracovníkov",
+      "hu-HU": "Csak az első felhasználó törölhet dolgozókat",
+      "bg-BG": "Само първият потребител може да изтрива служители",
+      "el-GR": "Μόνο ο πρώτος χρήστης μπορεί να διαγράφει εργαζομένους",
+      "is-IS": "Aðeins fyrsti notandinn getur eytt starfsmönnum"
+    }
+  },
+  {
     "Key": "ErrorWhileObtainingAreaRules",
     "LocalizedValue": {
       "da": "Fejl",
