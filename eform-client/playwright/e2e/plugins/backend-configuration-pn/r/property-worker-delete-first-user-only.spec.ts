@@ -83,10 +83,22 @@ function watchApiResponse(
   return response;
 }
 
-/** Whether `response` is a `method` call to exactly `path` (query string ignored). */
+/**
+ * Whether `response` is a `method` call to `path`, matched on a path-segment
+ * boundary so a route that merely shares a suffix cannot match. The query
+ * string is ignored.
+ */
 function isCall(response: Response, method: string, path: string): boolean {
-  return response.request().method() === method && new URL(response.url()).pathname.endsWith(path);
+  const pathname = new URL(response.url()).pathname;
+  const relativePath = path.replace(/^\//, '');
+  return (
+    response.request().method() === method &&
+    (pathname === path || pathname.endsWith(`/${relativePath}`))
+  );
 }
+
+/** The part of the device-user index this spec reads. */
+type DeviceUserIndexResponse = { model?: Array<{ siteName?: string }> };
 
 /** API headers for the first user, whose credentials core's LoginConstants hold. */
 async function firstUserApiHeaders(page: Page): Promise<Record<string, string>> {
@@ -126,20 +138,20 @@ async function loginThroughForm(page: Page, email: string, password: string): Pr
  * assignments GET. Returns the parsed device-user index, so a caller can tell
  * from the data whether a worker exists; a row count does not wait.
  */
-async function openPropertyWorkers(page: Page): Promise<any> {
-  const dictionary = watchApiResponse(
+async function openPropertyWorkers(page: Page): Promise<DeviceUserIndexResponse> {
+  const dictionaryCall = watchApiResponse(
     page,
     'GET /api/backend-configuration-pn/properties/dictionary (properties dictionary)',
     r => isCall(r, 'GET', '/api/backend-configuration-pn/properties/dictionary'),
     API_TIMEOUT
   );
-  const deviceUsers = watchApiResponse(
+  const deviceUsersCall = watchApiResponse(
     page,
     'POST /api/backend-configuration-pn/properties/assignment/index-device-user (device user list)',
     r => isCall(r, 'POST', '/api/backend-configuration-pn/properties/assignment/index-device-user'),
     API_TIMEOUT
   );
-  const assignments = watchApiResponse(
+  const assignmentsCall = watchApiResponse(
     page,
     'GET /api/backend-configuration-pn/properties/assignment (worker property assignments)',
     r => isCall(r, 'GET', '/api/backend-configuration-pn/properties/assignment'),
@@ -151,7 +163,7 @@ async function openPropertyWorkers(page: Page): Promise<any> {
     await page.locator('#backend-configuration-pn').click({ timeout: UI_TIMEOUT });
   }
   await workersMenuItem.click({ timeout: UI_TIMEOUT });
-  const [, deviceUsersResponse] = await Promise.all([dictionary, deviceUsers, assignments]);
+  const [, deviceUsersResponse] = await Promise.all([dictionaryCall, deviceUsersCall, assignmentsCall]);
   await page.locator('#newDeviceUserBtn').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   return deviceUsersResponse.json();
 }
@@ -182,21 +194,42 @@ test.describe.serial('Only the first user may delete a property worker', () => {
       // once all three grid calls have landed.
       const workersPage = new BackendConfigurationPropertyWorkersPage(cleanupPage);
       const deviceUsers = await openPropertyWorkers(cleanupPage);
-      if ((deviceUsers?.model ?? []).some((u: any) => u.siteName === workerFullName)) {
+      if ((deviceUsers?.model ?? []).some(u => u.siteName === workerFullName)) {
         await workerRow(cleanupPage).waitFor({ state: 'visible', timeout: UI_TIMEOUT });
         await new WorkerRowObject(cleanupPage, workersPage, 1, workerFullName).delete();
       }
 
-      const propertiesPage = new BackendConfigurationPropertiesPage(cleanupPage);
-      const propertiesIndex = watchApiResponse(
-        cleanupPage,
-        'POST /api/backend-configuration-pn/properties/index (property list)',
-        r => isCall(r, 'POST', '/api/backend-configuration-pn/properties/index'),
-        API_TIMEOUT
-      );
-      await propertiesPage.goToProperties();
-      const properties = await (await propertiesIndex).json();
-      if ((properties?.model?.entities ?? []).some((p: any) => p.name === property.name)) {
+      // Decided from one large page of the index: the page's own list is paged
+      // (10 rows, by Id), so a new property may not be on its first page.
+      const headers = await firstUserApiHeaders(cleanupPage);
+      const propertiesRes = await cleanupPage.request.post(`${BASE_URL}/api/backend-configuration-pn/properties/index`, {
+        headers,
+        data: { nameFilter: '', sort: 'Id', isSortDsc: false, pageIndex: 0, pageSize: 1000, offset: 0 },
+        timeout: API_TIMEOUT,
+      });
+      const properties: any[] = (await propertiesRes.json())?.model?.entities || [];
+      if (properties.some(p => p.name === property.name)) {
+        // Filter the page by name so the row is on screen, then delete it
+        // through its row menu like every other spec does.
+        const propertiesPage = new BackendConfigurationPropertiesPage(cleanupPage);
+        const unfilteredIndex = watchApiResponse(
+          cleanupPage,
+          'POST /api/backend-configuration-pn/properties/index (property list)',
+          r => isCall(r, 'POST', '/api/backend-configuration-pn/properties/index'),
+          API_TIMEOUT
+        );
+        await propertiesPage.goToProperties();
+        await unfilteredIndex;
+        const filteredIndex = watchApiResponse(
+          cleanupPage,
+          `POST /api/backend-configuration-pn/properties/index (filtered by "${property.name}")`,
+          r =>
+            isCall(r, 'POST', '/api/backend-configuration-pn/properties/index') &&
+            r.request().postDataJSON()?.nameFilter === property.name,
+          API_TIMEOUT
+        );
+        await cleanupPage.locator('#nameInput').fill(property.name, { timeout: UI_TIMEOUT });
+        await filteredIndex;
         await cleanupPage
           .locator('app-properties-table .mat-mdc-row')
           .filter({ hasText: property.name })
@@ -204,7 +237,6 @@ test.describe.serial('Only the first user may delete a property worker', () => {
         await new PropertyRowObject(cleanupPage, propertiesPage, undefined, property.name).delete();
       }
 
-      const headers = await firstUserApiHeaders(cleanupPage);
       const usersRes = await cleanupPage.request.post(`${BASE_URL}/api/admin/get-users`, {
         headers,
         data: { sort: 'Id', isSortDsc: false, pageIndex: 0, pageSize: 1000, offset: 0 },

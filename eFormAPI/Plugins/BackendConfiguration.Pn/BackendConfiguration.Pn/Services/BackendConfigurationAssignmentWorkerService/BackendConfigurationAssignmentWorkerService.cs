@@ -266,7 +266,7 @@ public class BackendConfigurationAssignmentWorkerService(
                 || userService.UserId != await userService.GetFirstUserIdInDb().ConfigureAwait(false))
             {
                 logger.LogWarning(
-                    "Delete: refused worker delete for deviceUserId {DeviceUserId} by UserId {UserId}, who is not the first user",
+                    "Delete: refused worker delete for deviceUserId {DeviceUserId} by UserId {UserId}",
                     deviceUserId, userService.UserId);
                 return new OperationResult(false,
                     backendConfigurationLocalizationService.GetString("OnlyTheFirstUserCanDeleteWorkers"));
