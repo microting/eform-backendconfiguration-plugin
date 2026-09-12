@@ -1,4 +1,4 @@
-import { expect, Page, test } from '@playwright/test';
+import { expect, Locator, Page, Response, test } from '@playwright/test';
 import { LoginPage } from '../../../Page objects/Login.page';
 import LoginConstants from '../../../Constants/LoginConstants';
 import { generateRandmString } from '../../../helper-functions';
@@ -62,6 +62,32 @@ const secondAdminEmail = `second-admin-${rand}@test.com`;
 // server's Identity policy regardless of generateRandmString's charset.
 const secondAdminPassword = `Aa1${generateRandmString(12)}`;
 
+/** The seeded worker's row, scoped to the worker grid's own host element. */
+function workerRow(page: Page): Locator {
+  return page.locator('app-property-worker-table .mat-mdc-row').filter({ hasText: workerFullName });
+}
+
+/**
+ * Starts a bounded wait for a response, to be awaited after the action that
+ * triggers it. That action can throw first, so the pending wait gets a no-op
+ * rejection handler; the later `await` still observes a timeout.
+ */
+function watchApiResponse(
+  page: Page,
+  description: string,
+  predicate: (response: Response) => boolean,
+  timeout: number
+): Promise<Response> {
+  const response = waitForApiResponse(page, description, predicate, timeout);
+  ignoreUnhandledRejections(response);
+  return response;
+}
+
+/** Whether `response` is a `method` call to exactly `path` (query string ignored). */
+function isCall(response: Response, method: string, path: string): boolean {
+  return response.request().method() === method && new URL(response.url()).pathname.endsWith(path);
+}
+
 /** API headers for the first user, whose credentials core's LoginConstants hold. */
 async function firstUserApiHeaders(page: Page): Promise<Record<string, string>> {
   const res = await page.request.post(`${BASE_URL}/api/auth/token`, {
@@ -75,19 +101,17 @@ async function firstUserApiHeaders(page: Page): Promise<Record<string, string>> 
 
 /** Logs in through the form as an admin, who lands on the eForms list. */
 async function loginThroughForm(page: Page, email: string, password: string): Promise<void> {
-  await page.goto(BASE_URL);
+  await page.goto(BASE_URL, { timeout: APP_LOAD_TIMEOUT });
   const loginBtn = page.locator('#loginBtn');
   await loginBtn.waitFor({ state: 'visible', timeout: APP_LOAD_TIMEOUT });
   await page.locator('#username').fill(email);
   await page.locator('#password').fill(password);
-  const tokenResponse = waitForApiResponse(
+  const tokenResponse = watchApiResponse(
     page,
     `POST /api/auth/token (login as ${email})`,
-    r => r.url().includes('/api/auth/token') && r.request().method() === 'POST',
+    r => isCall(r, 'POST', '/api/auth/token'),
     API_TIMEOUT
   );
-  // Awaited below, after a click that can throw first.
-  ignoreUnhandledRejections(tokenResponse);
   await loginBtn.click({ timeout: UI_TIMEOUT });
   const body = await (await tokenResponse).json().catch(() => null);
   expect(body?.model?.accessToken, `${email} must be able to log in`).toBeTruthy();
@@ -96,34 +120,40 @@ async function loginThroughForm(page: Page, email: string, password: string): Pr
 
 /**
  * Opens the property-workers page from the sidebar and waits for the grid's
- * data, not just the page chrome: the device-user POST and the assignments GET
- * are the calls the rows are built from.
+ * data, not just the page chrome. The page builds its rows from a forkJoin of
+ * three calls (property-workers-page.component.ts `updateTable`): the
+ * properties dictionary GET, the device-user index POST and the worker
+ * assignments GET. Returns the parsed device-user index, so a caller can tell
+ * from the data whether a worker exists; a row count does not wait.
  */
-async function openPropertyWorkers(page: Page): Promise<void> {
-  const deviceUsers = waitForApiResponse(
+async function openPropertyWorkers(page: Page): Promise<any> {
+  const dictionary = watchApiResponse(
+    page,
+    'GET /api/backend-configuration-pn/properties/dictionary (properties dictionary)',
+    r => isCall(r, 'GET', '/api/backend-configuration-pn/properties/dictionary'),
+    API_TIMEOUT
+  );
+  const deviceUsers = watchApiResponse(
     page,
     'POST /api/backend-configuration-pn/properties/assignment/index-device-user (device user list)',
-    r =>
-      r.url().includes('/api/backend-configuration-pn/properties/assignment/index-device-user') &&
-      r.request().method() === 'POST',
+    r => isCall(r, 'POST', '/api/backend-configuration-pn/properties/assignment/index-device-user'),
     API_TIMEOUT
   );
-  const assignments = waitForApiResponse(
+  const assignments = watchApiResponse(
     page,
     'GET /api/backend-configuration-pn/properties/assignment (worker property assignments)',
-    r => r.url().includes('/api/backend-configuration-pn/properties/assignment') && r.request().method() === 'GET',
+    r => isCall(r, 'GET', '/api/backend-configuration-pn/properties/assignment'),
     API_TIMEOUT
   );
-  // Either wait can reject before the `await` below reaches it.
-  ignoreUnhandledRejections(deviceUsers, assignments);
 
   const workersMenuItem = page.locator('#backend-configuration-pn-property-workers');
   if (!(await workersMenuItem.isVisible())) {
     await page.locator('#backend-configuration-pn').click({ timeout: UI_TIMEOUT });
   }
   await workersMenuItem.click({ timeout: UI_TIMEOUT });
-  await Promise.all([deviceUsers, assignments]);
+  const [, deviceUsersResponse] = await Promise.all([dictionary, deviceUsers, assignments]);
   await page.locator('#newDeviceUserBtn').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+  return deviceUsersResponse.json();
 }
 
 test.describe.serial('Only the first user may delete a property worker', () => {
@@ -145,28 +175,32 @@ test.describe.serial('Only the first user may delete a property worker', () => {
       return undefined;
     });
     const cleanup = async (cleanupPage: Page) => {
-      await cleanupPage.goto(BASE_URL);
+      await cleanupPage.goto(BASE_URL, { timeout: APP_LOAD_TIMEOUT });
       await new LoginPage(cleanupPage).login();
 
+      // Decided from the server's list, not a row count: the rows render only
+      // once all three grid calls have landed.
       const workersPage = new BackendConfigurationPropertyWorkersPage(cleanupPage);
-      await openPropertyWorkers(cleanupPage);
-      if (await cleanupPage.locator('.mat-mdc-row').filter({ hasText: workerFullName }).count() > 0) {
+      const deviceUsers = await openPropertyWorkers(cleanupPage);
+      if ((deviceUsers?.model ?? []).some((u: any) => u.siteName === workerFullName)) {
+        await workerRow(cleanupPage).waitFor({ state: 'visible', timeout: UI_TIMEOUT });
         await new WorkerRowObject(cleanupPage, workersPage, 1, workerFullName).delete();
       }
 
       const propertiesPage = new BackendConfigurationPropertiesPage(cleanupPage);
-      const propertiesIndex = waitForApiResponse(
+      const propertiesIndex = watchApiResponse(
         cleanupPage,
         'POST /api/backend-configuration-pn/properties/index (property list)',
-        r => r.url().includes('/api/backend-configuration-pn/properties/index') && r.request().method() === 'POST',
+        r => isCall(r, 'POST', '/api/backend-configuration-pn/properties/index'),
         API_TIMEOUT
       );
-      ignoreUnhandledRejections(propertiesIndex);
       await propertiesPage.goToProperties();
-      await propertiesIndex;
-      await cleanupPage.locator('app-properties-table').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
-      const propertyRow = cleanupPage.locator('app-properties-table .mat-mdc-row').filter({ hasText: property.name });
-      if (await propertyRow.count() > 0) {
+      const properties = await (await propertiesIndex).json();
+      if ((properties?.model?.entities ?? []).some((p: any) => p.name === property.name)) {
+        await cleanupPage
+          .locator('app-properties-table .mat-mdc-row')
+          .filter({ hasText: property.name })
+          .waitFor({ state: 'visible', timeout: UI_TIMEOUT });
         await new PropertyRowObject(cleanupPage, propertiesPage, undefined, property.name).delete();
       }
 
@@ -227,7 +261,7 @@ test.describe.serial('Only the first user may delete a property worker', () => {
     // calls. Every wait inside is individually bounded; this is only their sum.
     test.setTimeout(300000);
 
-    await page.goto(BASE_URL);
+    await page.goto(BASE_URL, { timeout: APP_LOAD_TIMEOUT });
     await new LoginPage(page).login();
 
     const propertiesPage = new BackendConfigurationPropertiesPage(page);
@@ -238,7 +272,7 @@ test.describe.serial('Only the first user may delete a property worker', () => {
     await openPropertyWorkers(page);
     await workersPage.create(worker);
     await expect(
-      page.locator('.mat-mdc-row').filter({ hasText: workerFullName }),
+      workerRow(page),
       'the created worker must show up in the device-user table'
     ).toHaveCount(1, { timeout: UI_TIMEOUT });
 
@@ -274,7 +308,7 @@ test.describe.serial('Only the first user may delete a property worker', () => {
     await loginThroughForm(page, secondAdminEmail, secondAdminPassword);
     await openPropertyWorkers(page);
 
-    const row = page.locator('.mat-mdc-row').filter({ hasText: workerFullName });
+    const row = workerRow(page);
     await expect(row, 'the seeded worker must be listed for the second admin').toHaveCount(1, {
       timeout: UI_TIMEOUT,
     });
@@ -297,12 +331,12 @@ test.describe.serial('Only the first user may delete a property worker', () => {
     // SDK-backed deletes, each individually bounded.
     test.setTimeout(240000);
 
-    await page.goto(BASE_URL);
+    await page.goto(BASE_URL, { timeout: APP_LOAD_TIMEOUT });
     await new LoginPage(page).login();
     await openPropertyWorkers(page);
 
     const workersPage = new BackendConfigurationPropertyWorkersPage(page);
-    const row = page.locator('.mat-mdc-row').filter({ hasText: workerFullName });
+    const row = workerRow(page);
     await expect(row, 'the seeded worker must still be listed').toHaveCount(1, { timeout: UI_TIMEOUT });
 
     const menuItem = await openRowActionMenu(page, row, workerFullName);
@@ -312,15 +346,12 @@ test.describe.serial('Only the first user may delete a property worker', () => {
     // The modal deletes through core first, then calls the plugin; this is the
     // plugin call that refuses everyone but the first user. Registered before the
     // click, so its budget also covers core's delete ahead of it.
-    const pluginDelete = waitForApiResponse(
+    const pluginDelete = watchApiResponse(
       page,
       'DELETE /api/backend-configuration-pn/properties/assignment (plugin worker delete)',
-      r =>
-        new URL(r.url()).pathname.endsWith('/api/backend-configuration-pn/properties/assignment') &&
-        r.request().method() === 'DELETE',
+      r => isCall(r, 'DELETE', '/api/backend-configuration-pn/properties/assignment'),
       SLOW_API_TIMEOUT
     );
-    ignoreUnhandledRejections(pluginDelete);
     await workersPage.saveDeleteBtn().click({ timeout: UI_TIMEOUT });
 
     const response = await pluginDelete;

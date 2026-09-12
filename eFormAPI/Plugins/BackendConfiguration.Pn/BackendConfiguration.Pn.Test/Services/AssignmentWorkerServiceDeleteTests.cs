@@ -11,16 +11,10 @@ using NUnit.Framework;
 namespace BackendConfiguration.Pn.Test.Services;
 
 /// <summary>
-/// Only the first user (lowest AspNetUsers Id) may delete a property worker;
-/// everyone else, admins and callers without an id included, is refused by
-/// <see cref="BackendConfigurationAssignmentWorkerService.Delete"/> before it
-/// reads or writes anything.
-///
-/// Every DbContext and the UserManager are passed as <c>null</c>: touching any
-/// of them throws, and Delete's catch turns that into
-/// <c>ErrorWhilDeleteAssignmentsProperties</c> rather than the refusal, so an
-/// exact refusal message proves nothing was touched first. The localization
-/// substitute echoes the key, so the message names the rule that fired.
+/// <see cref="BackendConfigurationAssignmentWorkerService.Delete"/> refuses everyone
+/// but the first user (lowest AspNetUsers Id). Every dependency except
+/// <see cref="IUserService"/> is null or an inert substitute, so asserting the exact
+/// refusal (the localization substitute echoes the key) proves the check ran first.
 /// </summary>
 [TestFixture]
 public class AssignmentWorkerServiceDeleteTests
@@ -60,7 +54,7 @@ public class AssignmentWorkerServiceDeleteTests
     }
 
     [Test]
-    public async Task Delete_RefusesAnAdminWhoIsNotTheFirstUser_AndTouchesNothing()
+    public async Task Delete_AdminWhoIsNotTheFirstUser_IsRefusedBeforeTheSdk()
     {
         var coreHelper = Substitute.For<IEFormCoreService>();
         var userService = CallerWithId(OtherUserId);

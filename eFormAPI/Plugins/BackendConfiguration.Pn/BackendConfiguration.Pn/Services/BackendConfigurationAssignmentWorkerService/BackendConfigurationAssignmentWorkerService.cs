@@ -261,11 +261,13 @@ public class BackendConfigurationAssignmentWorkerService(
         try
         {
             // Only the first user (lowest AspNetUsers Id) may delete a worker; everyone else,
-            // admins included, is refused before anything is read or written. A caller without
-            // an id (<= 0) is refused outright, so 0 == 0 can never pass on an empty users table.
+            // admins included, is refused before anything is written.
             if (userService.UserId <= 0
                 || userService.UserId != await userService.GetFirstUserIdInDb().ConfigureAwait(false))
             {
+                logger.LogWarning(
+                    "Delete: refused worker delete for deviceUserId {DeviceUserId} by UserId {UserId}, who is not the first user",
+                    deviceUserId, userService.UserId);
                 return new OperationResult(false,
                     backendConfigurationLocalizationService.GetString("OnlyTheFirstUserCanDeleteWorkers"));
             }

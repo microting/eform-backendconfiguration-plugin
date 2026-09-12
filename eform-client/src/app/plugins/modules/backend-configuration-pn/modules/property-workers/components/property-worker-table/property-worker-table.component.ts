@@ -71,9 +71,10 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
   @Output() highlightedRowRendered: EventEmitter<void> = new EventEmitter<void>();
   propertyWorkerOtpModalComponentAfterClosedSub$: Subscription;
   propertyWorkerEditModalComponentAfterClosedSub$: Subscription;
+  canDeleteWorkerSub$: Subscription;
   //availableProperties: CommonDictionaryModel[];
   searchSubject: Subject<string> = new Subject();
-  deviceUsersDelete: boolean = false;
+  canDeleteWorker: boolean = false;
   deviceUsersUpdate: boolean = false;
   // Only the first user may delete a worker, and only while also holding the device_users_delete
   // claim that core's delete endpoint requires.
@@ -229,7 +230,7 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
         field: 'actions',
         width: '160px',
         pinned: 'right',
-        disabled: this.deviceUsersDelete || this.deviceUsersUpdate,
+        disabled: this.canDeleteWorker || this.deviceUsersUpdate,
       },
     ];
 
@@ -433,8 +434,8 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
     this.searchSubject.pipe(debounceTime(500)).subscribe((val) => {
       this.propertyWorkersStateService.updateNameFilter(val);
     });
-    this.canDeleteWorker$.subscribe((data) => {
-      this.deviceUsersDelete = data;
+    this.canDeleteWorkerSub$ = this.canDeleteWorker$.subscribe((data) => {
+      this.canDeleteWorker = data;
     });
     this.selectCurrentUserClaimsDeviceUsersUpdate$.subscribe((data) => {
       this.deviceUsersUpdate = data;
