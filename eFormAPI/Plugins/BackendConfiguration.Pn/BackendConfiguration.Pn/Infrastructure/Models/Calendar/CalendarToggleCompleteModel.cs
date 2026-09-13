@@ -21,9 +21,12 @@ public class CalendarToggleCompleteModel
 
     // SDK site id to attribute the completion to. The calendar frontend
     // ALWAYS shows the "Vælg medarbejder" picker when completing — listing
-    // every worker assigned to the event's property
-    // (GetLinkedSites(propertyId, compliance: false)) — and sends the
-    // picked id here. Null (gRPC / legacy callers) falls back to the
+    // the non-resigned workers assigned to the event's property
+    // (GetLinkedSites(propertyId, compliance: false), which excludes resigned
+    // SDK workers since #1184) — and sends the picked id here. The backend
+    // validation is deliberately wider than the picker and accepts any active
+    // PropertyWorker, resigned or not (#1184, decision 2). Null (gRPC /
+    // legacy callers) falls back to the
     // historical defaults: the task's first PlanningSite when the case is
     // materialised on demand, or the case's deployed site otherwise.
     public int? WorkerId { get; set; }

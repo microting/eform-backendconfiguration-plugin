@@ -74,6 +74,7 @@ using Services.BackendConfigurationAreaRulesService;
 using Services.BackendConfigurationAssignmentWorkerService;
 using Services.BackendConfigurationCalendarService;
 using Services.BackendConfigurationCaseService;
+using Services.BackendConfigurationComplianceReportService;
 using Services.BackendConfigurationCompliancesService;
 using Services.BackendConfigurationDocumentService;
 using Services.BackendConfigurationFilesService;
@@ -95,6 +96,7 @@ using Services.WordService;
 using Services.WorkorderCaseGroupIdBackfillService;
 using Services.CalendarConfigurationBackfillService;
 using Services.AreaRulePlanningTagPurgeService;
+using Services.SecurityGroupBackfillService;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -137,6 +139,15 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         // pooled DbContext (see CalendarChangeNotifier).
         services.AddTransient<Services.CalendarChangeNotification.ICalendarChangeNotifier,
             Services.CalendarChangeNotification.CalendarChangeNotifier>();
+        // The single owner of the live worker-tag membership rule. Three services (the
+        // deploy resolver, the teams dropdown and the calendar's assignee filter) used to
+        // spell that rule out separately — the dropdown and the filter identically, the
+        // resolver one clause short — a gap that was known and deferred, not
+        // undiscovered (the deferral was of the FIX, not a decision to omit). They all
+        // go through this now, so they cannot be edited apart. Transient like the resolver
+        // it feeds — it holds only IEFormCoreService and opens its own SDK context per call.
+        services.AddTransient<Services.WorkerTagMembership.IWorkerTagMembershipService,
+            Services.WorkerTagMembership.WorkerTagMembershipService>();
         services.AddTransient<Services.CalendarAssignmentReconciliation.ICalendarAssignmentResolver,
             Services.CalendarAssignmentReconciliation.CalendarAssignmentResolver>();
         services.AddTransient<Services.CalendarAssignmentReconciliation.ICalendarAssignmentReconciliationService,
@@ -151,6 +162,9 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<IBackendConfigurationPropertyAreasService, BackendConfigurationPropertyAreasService>();
         services.AddSingleton<IBackendConfigurationLocalizationService, BackendConfigurationLocalizationService>();
         services.AddTransient<IBackendConfigurationCompliancesService, BackendConfigurationCompliancesService>();
+        services.AddTransient<IBackendConfigurationComplianceReportService, BackendConfigurationComplianceReportService>();
+        services.AddTransient<Services.BackendConfigurationComplianceExportService.IBackendConfigurationComplianceExportService,
+            Services.BackendConfigurationComplianceExportService.BackendConfigurationComplianceExportService>();
         services.AddTransient<IBackendConfigurationTaskTrackerService, BackendConfigurationTaskTrackerService>();
         services.AddTransient<IBackendConfigurationPropertiesService, BackendConfigurationPropertiesService>();
         services.AddTransient<IBackendConfigurationTaskWizardService, BackendConfigurationTaskWizardService>();
@@ -163,11 +177,14 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<IBackendConfigurationCalendarService, BackendConfigurationCalendarService>();
         services.AddTransient<IBackendConfigurationCaseService, BackendConfigurationCaseService>();
         services.AddTransient<IBackendConfigurationTagsService, BackendConfigurationTagsService>();
+        services.AddTransient<Services.BackendConfigurationWorkerTagsService.IBackendConfigurationWorkerTagsService,
+            Services.BackendConfigurationWorkerTagsService.BackendConfigurationWorkerTagsService>();
         services.AddTransient<IChemicalService, ChemicalService>();
         services.AddSingleton<ITaskUpdateCompletionService, TaskUpdateCompletionService>();
         services.AddTransient<WorkorderCaseGroupIdBackfillService>();
         services.AddTransient<CalendarConfigurationBackfillService>();
         services.AddTransient<AreaRulePlanningTagPurgeService>();
+        services.AddTransient<SecurityGroupBackfillService>();
         services.AddTransient<IExcelService, ExcelService>();
         services.AddTransient<IWordService, WordService>();
         services.AddTransient<IGoogleDriveAuthService, GoogleDriveAuthService>();
@@ -873,6 +890,21 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         catch (Exception e)
         {
             Console.WriteLine($"AreaRulePlanningTagPurge failed at startup: {e}");
+        }
+
+        // One-time sweep bringing existing users up to the "none unless another
+        // group" rule and clearing the retired hardcoded password. Gated on its own
+        // PluginConfigurationValues marker. Wrapped because this hook blocks startup
+        // synchronously: a backfill failure must not stop the plugin from loading.
+        try
+        {
+            var securityGroupBackfill = scope.ServiceProvider
+                .GetRequiredService<SecurityGroupBackfillService>();
+            securityGroupBackfill.RunIfNeededAsync().GetAwaiter().GetResult();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"SecurityGroupBackfill failed at startup: {e}");
         }
 
         appBuilder.UseEndpoints(endpoints =>
@@ -1945,6 +1977,94 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                     {
                         LocaleName = LocaleNames.Ukrainian,
                         Name = "Огляд спеціальних завдань",
+                        Language = LanguageNames.Ukrainian
+                    }
+                ]
+            },
+            new()
+            {
+                // Standalone Compliance page (#1163), Angular route
+                // /plugins/backend-configuration-pn/compliance-report.
+                // Permissions stays empty on purpose: #1160 decision 6 makes the
+                // page available to every authenticated plugin user, so there is
+                // no claim gating here - the parent route's plugin-access check
+                // is the whole boundary.
+                //
+                // KNOWN PLATFORM LIMITATION: the plugin's menu seeding only
+                // inserts MenuItem rows on FIRST install, so this entry does NOT
+                // appear on an already-installed database. It shows up only after
+                // the plugin is disabled and re-enabled (Admin -> Plugins) and the
+                // backend restarted. Pre-existing core bug, not fixed here -
+                // recorded so the next reader is not confused.
+                Name = "Compliance",
+                E2EId = "backend-configuration-pn-compliance-report",
+                Link = "/plugins/backend-configuration-pn/compliance-report",
+                Type = MenuItemTypeEnum.Link,
+                Position = 13,
+                MenuTemplate = new PluginMenuTemplateModel
+                {
+                    Name = "Compliance",
+                    E2EId = "backend-configuration-pn-compliance-report",
+                    DefaultLink = "/plugins/backend-configuration-pn/compliance-report",
+                    Permissions = [],
+                    Translations =
+                    [
+                        new()
+                        {
+                            LocaleName = LocaleNames.English,
+                            Name = "Compliance",
+                            Language = LanguageNames.English
+                        },
+
+                        new()
+                        {
+                            LocaleName = LocaleNames.German,
+                            Name = "Überwachung",
+                            Language = LanguageNames.German
+                        },
+
+                        new()
+                        {
+                            LocaleName = LocaleNames.Danish,
+                            Name = "Compliance",
+                            Language = LanguageNames.Danish
+                        },
+
+                        new()
+                        {
+                            LocaleName = LocaleNames.Ukrainian,
+                            Name = "Відповідність",
+                            Language = LanguageNames.Ukrainian
+                        }
+                    ]
+                },
+                Translations =
+                [
+                    new()
+                    {
+                        LocaleName = LocaleNames.English,
+                        Name = "Compliance",
+                        Language = LanguageNames.English
+                    },
+
+                    new()
+                    {
+                        LocaleName = LocaleNames.German,
+                        Name = "Überwachung",
+                        Language = LanguageNames.German
+                    },
+
+                    new()
+                    {
+                        LocaleName = LocaleNames.Danish,
+                        Name = "Compliance",
+                        Language = LanguageNames.Danish
+                    },
+
+                    new()
+                    {
+                        LocaleName = LocaleNames.Ukrainian,
+                        Name = "Відповідність",
                         Language = LanguageNames.Ukrainian
                     }
                 ]

@@ -10,7 +10,6 @@ import {
   selectCalendarCurrentDate,
   selectCalendarFilters,
   selectCalendarPropertyId,
-  selectCalendarSidebarOpen,
   selectCalendarViewMode,
 } from '../../../../state';
 
@@ -24,7 +23,6 @@ export class CalendarStateService {
   readonly activeSiteIds$ = this.store.select(selectCalendarActiveSiteIds);
   readonly activeTeamIds$ = this.store.select(selectCalendarActiveTeamIds);
   readonly activeTagNames$ = this.store.select(selectCalendarActiveTagNames);
-  readonly sidebarOpen$ = this.store.select(selectCalendarSidebarOpen);
 
   private currentFilters: CalendarFiltersModel;
 
@@ -36,7 +34,7 @@ export class CalendarStateService {
     this.dispatch({propertyId, activeBoardIds: [], activeSiteIds: [], activeTeamIds: [], activeTagNames: []});
   }
 
-  updateViewMode(viewMode: 'week' | 'day' | 'schedule' | 'month' | 'compliance') {
+  updateViewMode(viewMode: 'week' | 'day' | 'schedule' | 'month') {
     this.dispatch({viewMode});
   }
 
@@ -56,14 +54,6 @@ export class CalendarStateService {
     this.dispatch({activeBoardIds: ids});
   }
 
-  toggleTag(tagName: string) {
-    const names = this.currentFilters.activeTagNames;
-    const activeTagNames = names.includes(tagName)
-      ? names.filter(n => n !== tagName)
-      : [...names, tagName];
-    this.dispatch({activeTagNames});
-  }
-
   toggleTeam(teamId: number) {
     const ids = this.currentFilters.activeTeamIds;
     const activeTeamIds = ids.includes(teamId)
@@ -80,16 +70,18 @@ export class CalendarStateService {
     this.dispatch({activeSiteIds});
   }
 
-  toggleSidebar() {
-    this.dispatch({sidebarOpen: !this.currentFilters.sidebarOpen});
-  }
-
-  toggleSidebarSection(section: keyof CalendarFiltersModel['sidebarSections']) {
-    const sidebarSections = {
-      ...this.currentFilters.sidebarSections,
-      [section]: !this.currentFilters.sidebarSections[section],
-    };
-    this.dispatch({sidebarSections});
+  /**
+   * The toolbar's "All employees" reset (#1211). Clears BOTH assignee lists in
+   * ONE dispatch — two calls would emit two filter states, and the caller
+   * reloads the grid after each dispatch, so the first reload would fire for a
+   * half-cleared filter and could still land last.
+   *
+   * Scoped to the assignee filter on purpose: the calendars (`activeBoardIds`)
+   * and the planning tags (`activeTagNames`) are separate controls and must
+   * survive it. `updatePropertyId` remains the only thing that clears everything.
+   */
+  clearAssignees() {
+    this.dispatch({activeSiteIds: [], activeTeamIds: []});
   }
 
   private dispatch(partial: Partial<CalendarFiltersModel>) {

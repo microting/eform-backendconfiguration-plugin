@@ -10,6 +10,7 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
+import { UI_TIMEOUT } from '../wait-helpers';
 
 /**
  * Layout contract of the redesigned eForm fill modal.
@@ -23,7 +24,8 @@ import {
  *   - no control renders a duplicate floating mat-label
  *   - dataItem.color becomes a left accent bar
  *   - a single-section eForm shows neither a nav column nor a section heading
- *     that merely repeats the dialog title
+ *     (the heading is suppressed on density grounds, not because it repeats
+ *     the dialog title — since #1205 the dialog carries the TASK name)
  *   - the worker dropdown groups assigned workers above the rest
  *
  * Same seed shape as calendar-complete.spec.ts (property + one worker), and the
@@ -78,11 +80,11 @@ async function closeModal(page: import('@playwright/test').Page): Promise<void> 
   if ((await modal.count()) === 0) return;
   const cancelBtn = page.locator('#completeCancelBtn');
   if ((await cancelBtn.count()) > 0) {
-    await cancelBtn.click();
+    await cancelBtn.click({ timeout: UI_TIMEOUT });
   } else {
     await page.keyboard.press('Escape');
   }
-  await modal.waitFor({ state: 'detached', timeout: 5000 }).catch(() => undefined);
+  await modal.waitFor({ state: 'detached', timeout: UI_TIMEOUT }).catch(() => undefined);
 }
 
 /**
@@ -131,7 +133,6 @@ test.describe.serial('Calendar complete modal — redesigned layout', () => {
 
     const calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
 
     if (seeded) {
       const folderResp = page.waitForResponse(
@@ -145,7 +146,17 @@ test.describe.serial('Calendar complete modal — redesigned layout', () => {
   });
 
   test.afterAll(async ({ browser }) => {
-    const page = await browser.newPage();
+    // browser.newPage() can itself reject — a browser that crashed or got
+    // disconnected during a long run — and an exception thrown here escapes the
+    // hook and fails the job, which is exactly what this non-fatal teardown
+    // exists to prevent. Record it and give up on cleanup instead.
+    const page = await browser.newPage().catch((err: any) => {
+      console.log(`afterAll cleanup failed (non-fatal): could not open a cleanup page: ${err?.message ?? err}`);
+      return undefined;
+    });
+    if (!page) {
+      return;
+    }
     const cleanup = async () => {
       await page.goto('http://localhost:4200');
       await new LoginPage(page).login();
@@ -220,8 +231,12 @@ test.describe.serial('Calendar complete modal — redesigned layout', () => {
     // The switch no longer wraps each question in a card.
     await expect(modal.locator('app-case-edit-switch > .eform-field > mat-card')).toHaveCount(0);
 
-    // L5 — a single-section eForm must not print a heading that only repeats
-    // the dialog title.
+    // L5 — no section heading may duplicate the dialog title. Since #1205 the
+    // dialog is titled with the TASK name rather than the eForm's, so the two
+    // strings no longer coincide by construction; a single-section eForm still
+    // prints no section heading at all (showSectionTitles suppresses it on
+    // density grounds), which makes this loop vacuous for exactly that case.
+    // Kept as a cheap regression guard for the multi-section forms.
     const dialogTitle = (await modal.locator('[mat-dialog-title]').first().innerText()).trim();
     const sectionTitles = modal.locator('.eform-section__title');
     for (let i = 0; i < (await sectionTitles.count()); i++) {
@@ -326,7 +341,12 @@ test.describe.serial('Calendar complete modal — redesigned layout', () => {
       await expect(panel.locator('.ng-option-child')).toHaveCount(0);
     }
 
+    // Escape here does not just dismiss the ng-select panel: the CDK overlay
+    // dispatcher sees the same keydown and closes the dialog too (it is not
+    // disableClose), with an exit animation. Assert what Escape actually did
+    // instead of then racing closeModal()'s Cancel click against that
+    // animation — closeModal() is for the "no worker panel open" cleanup path.
     await page.keyboard.press('Escape');
-    await closeModal(page);
+    await expect(modal).toHaveCount(0, { timeout: UI_TIMEOUT });
   });
 });

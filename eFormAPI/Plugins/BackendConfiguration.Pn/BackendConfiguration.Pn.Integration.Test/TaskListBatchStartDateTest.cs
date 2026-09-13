@@ -25,6 +25,7 @@ SOFTWARE.
 using BackendConfiguration.Pn.Infrastructure.Models.Calendar;
 using BackendConfiguration.Pn.Infrastructure.Models.TaskList;
 using BackendConfiguration.Pn.Infrastructure.Models.TaskWizard;
+using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.BackendConfigurationTaskListService;
@@ -215,7 +216,7 @@ public class TaskListBatchStartDateTest : TestBaseSetup
 
         _retractionService = new CalendarOccurrenceRetractionService(
             BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, coreHelper,
-            NullLogger<CalendarOccurrenceRetractionService>.Instance);
+            TestContextLogger<CalendarOccurrenceRetractionService>.Instance);
 
         // Only the WRITE half of the backfill touches the deploy service; the
         // preview's PlanPastSeriesBackfillAsync never calls it. Substituted so
@@ -229,8 +230,8 @@ public class TaskListBatchStartDateTest : TestBaseSetup
         _backfillService = new CalendarPastSeriesBackfillService(
             ItemsPlanningPnDbContext!, BackendConfigurationPnDbContext!, coreHelper,
             _deployService,
-            new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, coreHelper),
-            NullLogger<CalendarPastSeriesBackfillService>.Instance);
+            new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, new WorkerTagMembershipService(coreHelper)),
+            TestContextLogger<CalendarPastSeriesBackfillService>.Instance);
 
         _taskListService = new BackendConfigurationTaskListService(
             _localizationService,
@@ -241,7 +242,7 @@ public class TaskListBatchStartDateTest : TestBaseSetup
             _taskWizardService,
             _retractionService,
             _backfillService,
-            NullLogger<BackendConfigurationTaskListService>.Instance
+            TestContextLogger<BackendConfigurationTaskListService>.Instance
         );
     }
 
@@ -466,9 +467,10 @@ public class TaskListBatchStartDateTest : TestBaseSetup
             _taskWizardService,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
             Substitute.For<ICalendarChangeNotifier>(),
-            NullLogger<BackendConfigurationCalendarService>.Instance,
+            TestContextLogger<BackendConfigurationCalendarService>.Instance,
             _retractionService,
-            _backfillService);
+            _backfillService,
+            new WorkerTagMembershipService(_coreHelper));
 
         return new BackendConfigurationTaskListService(
             _localizationService,
@@ -479,7 +481,7 @@ public class TaskListBatchStartDateTest : TestBaseSetup
             _taskWizardService,
             _retractionService,
             _backfillService,
-            NullLogger<BackendConfigurationTaskListService>.Instance);
+            TestContextLogger<BackendConfigurationTaskListService>.Instance);
     }
 
     /// <summary>The deadlines the substituted deploy service was asked for, ascending.</summary>

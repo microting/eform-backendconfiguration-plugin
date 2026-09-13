@@ -51,7 +51,6 @@ test.describe('Task-wizard planning → calendar startup conversion', () => {
 
     const calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
 
     // The container auto-selects the first property, which is normally
     // Farm 1 (Id 1) already — click it anyway so the selection is

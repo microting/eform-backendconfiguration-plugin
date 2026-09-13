@@ -136,7 +136,7 @@ public class TaskListBatchStatusTest : TestBaseSetup
             // keep the constructor satisfied without pulling in an SDK core.
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            NullLogger<BackendConfigurationTaskListService>.Instance
+            TestContextLogger<BackendConfigurationTaskListService>.Instance
         );
     }
 

@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, NgZone, Output} from '@angular/core';
+import {Component, EventEmitter, Input, NgZone, OnChanges, Output, SimpleChanges} from '@angular/core';
 import {TranslateService} from '@ngx-translate/core';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {CommonDictionaryModel, SharedTagModel} from 'src/app/common/models';
@@ -6,18 +6,110 @@ import {CalendarBoardModel, CalendarTaskModel} from '../../../../models/calendar
 import {CalendarRepeatService} from '../../../calendar/services/calendar-repeat.service';
 import {formatRepeatText} from '../../../calendar-task-list/calendar-task-list-repeat.util';
 
+/**
+ * One grid row (#1193). The grid sorts client-side over `data[sortHeaderId]`,
+ * and Property / Report headline / eForm / Repeat / Compliance are lookups or
+ * derivations rather than row keys — so every task is widened with one scalar
+ * sort key per such column before it is handed to `[data]`. Only the *Sort /
+ * *Name / repeatText keys are new; nothing on `CalendarTaskModel` is touched,
+ * and the objects emitted through `editTask` / `rowSelectedChange` simply carry
+ * these extra props along (harmless — do not add a key that collides with a
+ * `CalendarTaskModel` member).
+ */
+export interface TaskListRow extends CalendarTaskModel {
+  /** `SORT_KEY_PREFIX` + lower-cased property name ('' + prefix when unknown). */
+  propertyName: string;
+  /** `SORT_KEY_PREFIX` + lower-cased planning-tag ("Rapportoverskrift") name. */
+  overskriftName: string;
+  /** `SORT_KEY_PREFIX` + lower-cased eForm label. */
+  eformName: string;
+  /** `SORT_KEY_PREFIX` + lower-cased DISPLAYED repeat text (WYSIWYG order). */
+  repeatText: string;
+  /** `SORT_KEY_PREFIX` + lower-cased title, so Task name is case-insensitive too. */
+  titleSort: string;
+  /** 0 = `--` (inactive task, compliance N/A), 1 = Nej, 2 = Ja. */
+  complianceSort: number;
+}
+
+/**
+ * Constant, non-digit, non-whitespace prefix on EVERY derived string sort key.
+ *
+ * `MatTableDataSource.sortingDataAccessor` converts a value to `Number(value)`
+ * whenever `!isNaN(parseFloat(v)) && !isNaN(Number(v))` (cdk `_isNumberValue`),
+ * so a report headline named `2027` would become the number 2027 while `Test`
+ * stays a string; `'Test' > 2027` and `'Test' < 2027` are both false, the
+ * comparator returns 0 for every mixed pair and the order becomes incoherent.
+ * A leading SPACE does not help (`Number(' 2027')` is 2027) and lower-casing
+ * does not help either — only a prefix that makes `parseFloat` fail does.
+ * Relative order is unchanged because every key shares the same prefix.
+ */
+export const SORT_KEY_PREFIX = '~';
+
+/**
+ * Builds the sort key for a displayed string: prefixed (see `SORT_KEY_PREFIX`)
+ * and lower-cased. Lower-casing gives case-insensitive order (`a` next to `A`
+ * instead of `Z < a`); it is NOT Danish collation — the default comparator is
+ * code-point order and `Å/Æ/Ø` stay after `z`. A locale-aware comparator is
+ * unreachable here because mtx-grid replaces its `MatTableDataSource` (and
+ * with it any custom `sortData`/`sortingDataAccessor`) in `ngOnChanges` on
+ * every input change.
+ */
+export function toSortKey(value: string | null | undefined): string {
+  return SORT_KEY_PREFIX + (value ?? '').toLowerCase();
+}
+
+/**
+ * `--` (inactive: compliance is N/A, the cell hides the stored flag) < Nej < Ja,
+ * so inactive rows group at one end instead of being interleaved by a value
+ * the user cannot see.
+ */
+export function complianceSortKey(task: Pick<CalendarTaskModel, 'status' | 'complianceEnabled'>): number {
+  return !task.status ? 0 : (task.complianceEnabled ? 2 : 1);
+}
+
+/**
+ * Pure row builder: `tasks × properties × planningTags × eforms` → `TaskListRow[]`.
+ * Kept free of Angular/services (the repeat text arrives as a callback) so it
+ * can be unit-tested directly — the grid itself is not what needs testing, the
+ * silent-no-op failure mode is a key that does not exist on the row.
+ */
+export function buildTaskListRows(
+  tasks: CalendarTaskModel[] | null | undefined,
+  properties: CommonDictionaryModel[] | null | undefined,
+  planningTags: SharedTagModel[] | null | undefined,
+  eforms: {id: number; label: string}[] | null | undefined,
+  repeatTextOf: (task: CalendarTaskModel) => string,
+): TaskListRow[] {
+  const propertyById = new Map<number, string>((properties ?? []).map(p => [p.id, p.name]));
+  const tagById = new Map<number, string>((planningTags ?? []).map(t => [t.id, t.name]));
+  const eformById = new Map<number, string>((eforms ?? []).map(e => [e.id, e.label]));
+  const lookup = (map: Map<number, string>, id: number | null | undefined) =>
+    id == null ? '' : (map.get(id) ?? '');
+  return (tasks ?? []).map(task => ({
+    ...task,
+    propertyName: toSortKey(lookup(propertyById, task.propertyId)),
+    overskriftName: toSortKey(lookup(tagById, task.itemPlanningTagId)),
+    eformName: toSortKey(lookup(eformById, task.eformId)),
+    repeatText: toSortKey(repeatTextOf(task)),
+    titleSort: toSortKey(task.title),
+    complianceSort: complianceSortKey(task),
+  }));
+}
+
 @Component({
   selector: 'app-task-list-table',
   templateUrl: './task-list-table.component.html',
   styleUrls: ['./task-list-table.component.scss'],
   standalone: false,
 })
-export class TaskListTableComponent {
+export class TaskListTableComponent implements OnChanges {
   @Input() tasks: CalendarTaskModel[] = [];
   @Input() properties: CommonDictionaryModel[] = [];
   @Input() boards: CalendarBoardModel[] = [];
   @Input() eforms: {id: number; label: string}[] = [];
   @Input() planningTags: SharedTagModel[] = [];
+  /** #1194 — true while the page's `tasks/index` request is in flight; drives mtx-grid's own `[loading]` bar. */
+  @Input() loading = false;
   @Output() editTask = new EventEmitter<CalendarTaskModel>();
   @Output() selectionChanged = new EventEmitter<number[]>();
   /**
@@ -27,6 +119,12 @@ export class TaskListTableComponent {
    * emitter, so this stays a plain `{id, title}` payload.
    */
   @Output() renameTask = new EventEmitter<{id: number; title: string}>();
+
+  /**
+   * What the grid is actually bound to (`[data]="rows"`, not `tasks`): the
+   * tasks widened with the per-column sort keys — see `buildTaskListRows`.
+   */
+  rows: TaskListRow[] = [];
 
   showAll = false;
 
@@ -48,6 +146,37 @@ export class TaskListTableComponent {
     private repeatService: CalendarRepeatService,
     private zone: NgZone,
   ) {}
+
+  /**
+   * Rebuilds `rows` whenever the tasks OR any of the three lookups change. The
+   * lookups arrive asynchronously and independently of the tasks (the page
+   * fires its requests in parallel), so without this the first Property sort
+   * would run over empty names.
+   *
+   * A rebuilt `rows` is a new `[data]` reference, and mtx-grid's `ngOnChanges`
+   * then recreates its `SelectionModel` EMPTY without emitting
+   * `rowSelectedChange` — the same desync `toggleShowAll()` guards against. When
+   * the rebuild is caused by `tasks`, the page's `loadTasks()` has already
+   * cleared its `selection` Set (at request start, when it flipped `[loading]`
+   * — itself an input change that emptied the SelectionModel); when it is
+   * caused by a lookup only (e.g. a
+   * `loadTags()` after the tag dialog, or the refresh button's tags reload) it
+   * has not, so emit an empty selection here. Deferred to a microtask: this
+   * hook runs INSIDE the parent's change-detection pass, after the toolbar
+   * bindings that read `selection.size` were already checked, so a synchronous
+   * emit would trip NG0100 (ExpressionChangedAfterItHasBeenChecked) in dev
+   * mode whenever a selection existed.
+   */
+  ngOnChanges(changes: SimpleChanges) {
+    if (!(changes.tasks || changes.properties || changes.planningTags || changes.eforms)) {
+      return;
+    }
+    this.rows = buildTaskListRows(
+      this.tasks, this.properties, this.planningTags, this.eforms, t => this.repeatText(t));
+    if (!changes.tasks) {
+      Promise.resolve().then(() => this.selectionChanged.emit([]));
+    }
+  }
 
   propertyName = (id: number | null | undefined): string =>
     id == null ? '' : (this.properties.find(p => p.id === id)?.name ?? '');
@@ -78,12 +207,17 @@ export class TaskListTableComponent {
 
   // `[sortOnFront]="true"` (see the .html) means mtx-grid sorts client-side
   // via MatTableDataSource's default `data[sortHeaderId]` accessor, where
-  // `sortHeaderId = col.sortProp?.id || col.field` (mtx-grid template). Do
-  // NOT set `sortProp.id` to a PascalCase server-sort key here — there is no
-  // server-side sort for this grid, and a `sortProp.id` that doesn't match
-  // the row's actual (camelCase) property name makes clicking that header a
-  // silent no-op (data[mismatchedKey] is undefined for every row, so the
-  // comparator treats all rows as equal and the array order never changes).
+  // `sortHeaderId = col.sortProp?.id || col.field` (mtx-grid template). The
+  // rule: `sortProp.id` MUST be a real camelCase key on the row object bound
+  // to `[data]` — i.e. a `TaskListRow` member (see `buildTaskListRows`), never
+  // a PascalCase server-sort key (there is no server-side sort for this grid)
+  // and never a column `field` that only exists as a formatter. A `sortProp.id`
+  // that matches nothing on the row makes clicking that header a silent
+  // no-op (data[mismatchedKey] is undefined for every row, so the comparator
+  // treats all rows as equal and the array order never changes).
+  //
+  // The `field` names are also the `.mat-column-<field>` hooks the Playwright
+  // suite locates cells/headers by — never rename them; add a `sortProp`.
   columns: MtxGridColumn[] = [
     {
       field: 'id', header: this.translate.stream('Id'), sortable: true,
@@ -91,17 +225,23 @@ export class TaskListTableComponent {
         `${t.id} <small class="microting-uid">(${t.planningId ?? ''})</small>`,
     },
     {
-      field: 'property', header: this.translate.stream('Property'),
+      field: 'property', header: this.translate.stream('Property'), sortable: true,
+      sortProp: {id: 'propertyName'},
       formatter: (t: CalendarTaskModel) => this.propertyName(t.propertyId),
     },
     {field: 'board', header: this.translate.stream('Calendar')},
     {
-      field: 'overskrift', header: this.translate.stream('Report headline'),
+      field: 'overskrift', header: this.translate.stream('Report headline'), sortable: true,
+      sortProp: {id: 'overskriftName'},
       formatter: (t: CalendarTaskModel) => this.planningTagName(t.itemPlanningTagId),
     },
-    {field: 'title', header: this.translate.stream('Task name'), sortable: true},
     {
-      field: 'eform', header: this.translate.stream('eForm'),
+      field: 'title', header: this.translate.stream('Task name'), sortable: true,
+      sortProp: {id: 'titleSort'},
+    },
+    {
+      field: 'eform', header: this.translate.stream('eForm'), sortable: true,
+      sortProp: {id: 'eformName'},
       formatter: (t: CalendarTaskModel) => this.eformLabel(t.eformId),
     },
     {
@@ -117,11 +257,15 @@ export class TaskListTableComponent {
       formatter: (t: CalendarTaskModel) => this.formatStartDate(t.taskDate),
     },
     {
-      field: 'repeat', header: this.translate.stream('Repeat'),
+      field: 'repeat', header: this.translate.stream('Repeat'), sortable: true,
+      sortProp: {id: 'repeatText'},
       formatter: (t: CalendarTaskModel) => this.repeatText(t),
     },
     {field: 'status', header: this.translate.stream('Active'), sortable: true},
-    {field: 'compliance', header: this.translate.stream('Compliance')},
+    {
+      field: 'compliance', header: this.translate.stream('Compliance'), sortable: true,
+      sortProp: {id: 'complianceSort'},
+    },
   ];
 
   onEdit(task: CalendarTaskModel) {

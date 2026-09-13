@@ -206,6 +206,13 @@ public class BackendConfigurationPropertyAreasService : IBackendConfigurationPro
             foreach (var worker in areaProperties.Property.PropertyWorkers
                          .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).Select(x => x.WorkerId))
             {
+                // #1184: skip resigned workers (flag lives on the SDK Worker, via SiteWorkers).
+                if (await sdkDbContex.SiteWorkers
+                        .AnyAsync(sw => sw.SiteId == worker && sw.Worker.Resigned).ConfigureAwait(false))
+                {
+                    continue;
+                }
+
                 var site = await sdkDbContex.Sites
                     .Where(x => x.Id == worker)
                     .FirstAsync().ConfigureAwait(false);
@@ -321,6 +328,13 @@ public class BackendConfigurationPropertyAreasService : IBackendConfigurationPro
             foreach (var worker in areaRule.Property.PropertyWorkers
                          .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).Select(x => x.WorkerId))
             {
+                // #1184: skip resigned workers (flag lives on the SDK Worker, via SiteWorkers).
+                if (await sdkDbContex.SiteWorkers
+                        .AnyAsync(sw => sw.SiteId == worker && sw.Worker.Resigned).ConfigureAwait(false))
+                {
+                    continue;
+                }
+
                 var site = await sdkDbContex.Sites
                     .Where(x => x.Id == worker)
                     .FirstAsync().ConfigureAwait(false);

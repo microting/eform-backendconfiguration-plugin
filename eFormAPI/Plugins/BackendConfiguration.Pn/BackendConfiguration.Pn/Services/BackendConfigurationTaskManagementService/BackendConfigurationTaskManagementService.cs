@@ -209,7 +209,7 @@ public class BackendConfigurationTaskManagementService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogTrace(e.StackTrace);
             throw;
         }
@@ -284,7 +284,7 @@ public class BackendConfigurationTaskManagementService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogTrace(e.StackTrace);
             return new OperationDataResult<WorkOrderCaseReadModel>(false,
                 $"{localizationService.GetString("ErrorWhileReadTask")}: {e.Message}");
@@ -319,7 +319,7 @@ public class BackendConfigurationTaskManagementService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogTrace(e.StackTrace);
             return new OperationDataResult<List<string>>(false,
                 $"{localizationService.GetString("ErrorWhileReadEntityList")}: {e.Message}");
@@ -352,7 +352,7 @@ public class BackendConfigurationTaskManagementService(
                 catch (Exception e)
                 {
                     SentrySdk.CaptureException(e);
-                    logger.LogError(e.Message);
+                    logger.LogError(e, e.Message);
                     logger.LogTrace(e.StackTrace);
                 }
             }
@@ -397,7 +397,7 @@ public class BackendConfigurationTaskManagementService(
                         catch (Exception e)
                         {
                             SentrySdk.CaptureException(e);
-                            logger.LogError(e.Message);
+                            logger.LogError(e, e.Message);
                             logger.LogTrace(e.StackTrace);
                         }
                     }
@@ -419,7 +419,7 @@ public class BackendConfigurationTaskManagementService(
                             catch (Exception e)
                             {
                                 SentrySdk.CaptureException(e);
-                                logger.LogError(e.Message);
+                                logger.LogError(e, e.Message);
                                 logger.LogTrace(e.StackTrace);
                             }
                         }
@@ -434,7 +434,7 @@ public class BackendConfigurationTaskManagementService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogTrace(e.StackTrace);
             return new OperationResult(false,
                 $"{localizationService.GetString("ErrorWhileDeleteTask")}: {e.Message}");
@@ -689,7 +689,7 @@ public class BackendConfigurationTaskManagementService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogTrace(e.StackTrace);
             return new OperationResult(false,
                 $"{localizationService.GetString("ErrorWhileCreateTask")}: {e.Message}");

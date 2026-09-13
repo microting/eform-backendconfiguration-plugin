@@ -25,6 +25,7 @@ using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
 using BackendConfiguration.Pn.Services.EventDeployService;
 using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
 using BackendConfiguration.Pn.Services.CalendarChangeNotification;
+using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure.Constants;
@@ -536,8 +537,9 @@ public class CalendarCompletedPeriodSuppressionTests : TestBaseSetup
             ItemsPlanningPnDbContext!, taskWizardService,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
             Substitute.For<ICalendarChangeNotifier>(),
-            NullLogger<BackendConfigurationCalendarService>.Instance,
+            TestContextLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
-            Substitute.For<ICalendarPastSeriesBackfillService>());
+            Substitute.For<ICalendarPastSeriesBackfillService>(),
+            new WorkerTagMembershipService(coreHelper));
     }
 }

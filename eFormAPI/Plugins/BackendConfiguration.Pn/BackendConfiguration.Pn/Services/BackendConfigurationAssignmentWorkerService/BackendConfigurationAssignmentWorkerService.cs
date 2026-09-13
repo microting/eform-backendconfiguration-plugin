@@ -260,6 +260,18 @@ public class BackendConfigurationAssignmentWorkerService(
     {
         try
         {
+            // Only the first user (lowest AspNetUsers Id) may delete a worker; everyone else,
+            // admins included, is refused before anything is written.
+            if (userService.UserId <= 0
+                || userService.UserId != await userService.GetFirstUserIdInDb().ConfigureAwait(false))
+            {
+                logger.LogWarning(
+                    "Delete: refused worker delete for deviceUserId {DeviceUserId} by UserId {UserId}",
+                    deviceUserId, userService.UserId);
+                return new OperationResult(false,
+                    backendConfigurationLocalizationService.GetString("OnlyTheFirstUserCanDeleteWorkers"));
+            }
+
             var core = await coreHelper.GetCore().ConfigureAwait(false);
             var sdkDbContext = core.DbContextHelper.GetDbContext();
             var propertyWorkers = await backendConfigurationPnDbContext.PropertyWorkers
@@ -346,7 +358,7 @@ public class BackendConfigurationAssignmentWorkerService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogTrace(e.StackTrace);
             return new OperationResult(false,
                 $"{backendConfigurationLocalizationService.GetString("ErrorWhilDeleteAssignmentsProperties")}: {e.Message}");
@@ -580,7 +592,7 @@ public class BackendConfigurationAssignmentWorkerService(
             catch (Exception e)
             {
                 SentrySdk.CaptureException(e);
-                logger.LogError(e.Message);
+                logger.LogError(e, e.Message);
                 logger.LogTrace(e.StackTrace);
             }
 

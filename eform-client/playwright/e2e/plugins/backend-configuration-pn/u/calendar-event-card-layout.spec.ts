@@ -10,6 +10,7 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
+import { UI_TIMEOUT } from '../wait-helpers';
 
 /**
  * Adaptive event-card layout regression suite. Verifies the compact (heightPx
@@ -84,7 +85,6 @@ test.describe.serial('Calendar event card — adaptive layout', () => {
 
     const calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
 
     if (seeded) {
       const folderResp = page.waitForResponse(
@@ -98,7 +98,17 @@ test.describe.serial('Calendar event card — adaptive layout', () => {
   });
 
   test.afterAll(async ({ browser }) => {
-    const page = await browser.newPage();
+    // browser.newPage() can itself reject — a browser that crashed or got
+    // disconnected during a long run — and an exception thrown here escapes the
+    // hook and fails the job, which is exactly what this non-fatal teardown
+    // exists to prevent. Record it and give up on cleanup instead.
+    const page = await browser.newPage().catch((err: any) => {
+      console.log(`afterAll cleanup failed (non-fatal): could not open a cleanup page: ${err?.message ?? err}`);
+      return undefined;
+    });
+    if (!page) {
+      return;
+    }
     const cleanup = async () => {
       await page.goto('http://localhost:4200');
       await new LoginPage(page).login();
@@ -306,6 +316,10 @@ test.describe.serial('Calendar event card — adaptive layout', () => {
   //     (the seeded task has an associated eForm template), which is out of
   //     scope for the layout suite — what matters here is that the shrunken
   //     hit target still receives the click.
+  //
+  //     It also covers the CALENDAR call site of #1205: the dialog must be
+  //     headed with the task's name, not with the name of the eForm template
+  //     the modal embeds.
   // =======================================================================
   test('L6: completion button is clickable on compact card', async ({ page }) => {
     const calendarPage = new CalendarUiEnhancementsPage(page);
@@ -332,16 +346,22 @@ test.describe.serial('Calendar event card — adaptive layout', () => {
     // task carries an eForm template). The modal's mere appearance proves
     // the click landed and the completion workflow kicked off; we don't
     // need to save it here.
-    await expect(page.locator('app-calendar-complete-event-modal').first())
-      .toBeVisible({ timeout: 10000 });
+    const completeModal = page.locator('app-calendar-complete-event-modal').first();
+    await expect(completeModal).toBeVisible({ timeout: 10000 });
+
+    // #1205 — the header is the TASK name, not the eForm template's name.
+    // Anchored with \s* because toHaveText matches the raw text including
+    // Material's padding.
+    await expect(completeModal.locator('h2[mat-dialog-title]'))
+      .toHaveText(new RegExp(`^\\s*${escapeRegExp(title)}\\s*$`));
 
     // Cancel so the modal doesn't leak into the next test.
     const cancelBtn = page.locator('#completeCancelBtn');
     if ((await cancelBtn.count()) > 0) {
-      await cancelBtn.click();
+      await cancelBtn.click({ timeout: UI_TIMEOUT });
       await page
         .locator('app-calendar-complete-event-modal')
-        .waitFor({ state: 'detached', timeout: 5000 })
+        .waitFor({ state: 'detached', timeout: UI_TIMEOUT })
         .catch(() => undefined);
     }
   });
@@ -392,3 +412,7 @@ test.describe.serial('Calendar event card — adaptive layout', () => {
     expect(narrower).toBeLessThan(dayBox!.width);
   });
 });
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}

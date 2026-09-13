@@ -283,7 +283,7 @@ public async Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogTrace(e.StackTrace);
             return new OperationDataResult<DocumentUpdatedDays>(false,
                 localizationService.GetString("ErrorWhileGetDocumentUpdatedDaysStat"));
@@ -448,7 +448,7 @@ public async Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogTrace(e.StackTrace);
             return new OperationDataResult<AdHocTaskWorkers>(false,
                 localizationService.GetString("ErrorWhileGetAdHocTaskWorkersStat"));

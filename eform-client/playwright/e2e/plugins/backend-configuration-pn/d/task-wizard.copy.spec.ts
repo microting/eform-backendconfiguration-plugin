@@ -164,10 +164,12 @@ test.describe('Area rules type 1', () => {
     await expect(page.locator('.task-actions').first().locator('#actionMenu')).toBeVisible();
     await page.locator('.task-actions').first().locator('#actionMenu').click({ force: true });
 
-    // Wait for menu animation to settle, then click Copy Task
-    await page.waitForTimeout(400);
-    await expect(page.locator('.cdk-overlay-container').locator('[id^=copyTaskBtn]').first()).toBeVisible();
-    await page.locator('.cdk-overlay-container').locator('[id^=copyTaskBtn]').first().click({ force: true });
+    // Plain click, no force and no sleep: Material puts `pointer-events: none`
+    // on `.mat-menu-panel-animating`, so the actionability check IS the
+    // "menu animation has settled" condition a fixed 400ms was guessing at.
+    const copyTaskBtn1 = page.locator('.cdk-overlay-container').locator('[id^=copyTaskBtn]').first();
+    await expect(copyTaskBtn1).toBeVisible();
+    await copyTaskBtn1.click();
 
     // Wait for the copy dialog to render (responses may be cached on re-entry)
     await expect(page.locator('#createTaskBtn')).toBeVisible({ timeout: 60000 });
@@ -214,21 +216,21 @@ test.describe('Area rules type 1', () => {
     await expect(page.locator('.task-actions').first().locator('#actionMenu')).toBeVisible();
     await page.locator('.task-actions').first().locator('#actionMenu').click({ force: true });
 
-    // Now click the Copy Task button inside the opened menu
-    await expect(page.locator('.cdk-overlay-container').locator('[id^=copyTaskBtn]').first()).toBeVisible();
+    // Now click the Copy Task button inside the opened menu.
+    //
+    // NOT force-clicked: `force: true` skips the actionability checks, so the
+    // click fires while the mat-menu is still running its enter animation and
+    // the panel is `pointer-events: none` — it lands on the backdrop, the menu
+    // stays open and no dialog ever appears — which is exactly how this line
+    // failed CI. A plain click waits for the panel to be stable and to actually
+    // receive events, which is the condition a fixed sleep was approximating.
+    const copyTaskBtn = page.locator('.cdk-overlay-container').locator('[id^=copyTaskBtn]').first();
+    await expect(copyTaskBtn).toBeVisible();
+    await copyTaskBtn.click();
 
-    const getFoldersResponseCopy2 = page.waitForResponse(
-      r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos?'),
-      { timeout: 60000 }
-    );
-    const getTemplatesResponseCopy2 = page.waitForResponse(
-      r => r.url().includes('/api/templates/index') && r.request().method() === 'POST',
-      { timeout: 60000 }
-    );
-    await page.locator('.cdk-overlay-container').locator('[id^=copyTaskBtn]').first().click({ force: true });
-    await getFoldersResponseCopy2;
-    await getTemplatesResponseCopy2;
-
+    // Gate on the dialog, not on get-folder-dtos / templates/index: those are
+    // cached on re-entry and may never fire a second time — the exact reason
+    // they were removed from the first copy above (26f61084).
     await expect(page.locator('#createTaskBtn')).toBeVisible({ timeout: 30000 });
     const createTaskResponse3 = page.waitForResponse(
       r => r.url().includes('/api/backend-configuration-pn/task-wizard') && r.request().method() === 'POST',

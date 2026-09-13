@@ -145,7 +145,7 @@ public class TaskListBatchEformTagsTest : TestBaseSetup
             // pulling an SDK core into fixtures that do not need one.
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            NullLogger<BackendConfigurationTaskListService>.Instance
+            TestContextLogger<BackendConfigurationTaskListService>.Instance
         );
     }
 

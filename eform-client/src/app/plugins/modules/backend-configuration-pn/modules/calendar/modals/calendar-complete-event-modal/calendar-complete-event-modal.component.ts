@@ -1,7 +1,9 @@
 import {
   Component, Inject, OnInit, QueryList, ViewChildren, inject,
 } from '@angular/core';
+import {MAT_DATE_FORMATS} from '@angular/material/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {CALENDAR_MAT_DATE_FORMATS} from '../../calendar-date-formats';
 import {EFormService} from 'src/app/common/services';
 import {
   TemplateDto, CaseEditRequest, ReplyElementDto, ReplyRequest,
@@ -22,7 +24,23 @@ export interface CalendarCompleteEventModalData {
   complianceId: number | null;
   occurrenceDate: string;
   propertyId: number;
+  /**
+   * The event's EXPLICIT individual assignees. Grouping uses this together with
+   * `teamAssigneeIds`; the pre-select uses this one ALONE (see `applyPreselect`).
+   */
   assigneeIds: number[];
+  /**
+   * The sites assigned to the event via a worker tag ("team") — the live members of
+   * its worker tags (#1236). Optional: a caller that has no team information omits
+   * it and the modal behaves exactly as it did before the field existed.
+   */
+  teamAssigneeIds?: number[];
+  /**
+   * The TASK's name, used as the dialog title (#1205). Optional so a caller
+   * that omits it degrades to the generic 'Complete task' fallback — never to
+   * the embedded eForm template's name, which is what the header used to show.
+   */
+  taskTitle?: string;
 }
 
 @Component({
@@ -30,6 +48,18 @@ export interface CalendarCompleteEventModalData {
   templateUrl: './calendar-complete-event-modal.component.html',
   styleUrls: ['./calendar-complete-event-modal.component.scss'],
   standalone: false,
+  // "Udført dato" renders the long Danish form. Declared HERE, not only on
+  // CalendarModule, because MatDialog creates this component under the injector
+  // of the module that opened it (`Dialog._createInjector` parents on
+  // `config.injector ?? config.viewContainerRef?.injector ?? MatDialog._injector`,
+  // and MatDialogModule provides MatDialog per-module). A sibling module that
+  // opens this modal — the standalone Compliance page, #1165 — therefore must
+  // NOT be forced to carry CalendarModule's MAT_DATE_FORMATS just to keep this
+  // input's format. A component provider is on the node-injector path of both
+  // the `matInput [matDatepicker]` and the popup calendar (MatDatepicker
+  // attaches MatDatepickerContent through its own ViewContainerRef), so both
+  // resolve it whatever the environment injector says.
+  providers: [{provide: MAT_DATE_FORMATS, useValue: CALENDAR_MAT_DATE_FORMATS}],
 })
 export class CalendarCompleteEventModalComponent implements OnInit {
   private dialogRef = inject(MatDialogRef<CalendarCompleteEventModalComponent>);
@@ -84,6 +114,13 @@ export class CalendarCompleteEventModalComponent implements OnInit {
   // Preselect: the event's single assigned worker when there is exactly one,
   // else the site the case is deployed to — but only when that site is in the
   // property-workers list. Multi-assignee events stay unselected (explicit pick).
+  //
+  // `teamAssigneeIds` is DELIBERATELY absent from this method, and that omission is
+  // the decision recorded in #1236: worker-tag members are grouped as assigned by
+  // buildGroupedSites, but they never pre-select. What this control sets is the site
+  // recorded as having completed the case (`replyElement.siteId` in saveCase), so a
+  // team of one must not have a name chosen on the user's behalf. Do not "make the
+  // two consistent" by counting team members here.
   private applyPreselect() {
     if (this.selectedWorkerId != null || this.sites.length === 0) { return; }
     if (this.data.assigneeIds?.length === 1
@@ -103,9 +140,18 @@ export class CalendarCompleteEventModalComponent implements OnInit {
    * When the split would leave a group empty — no assignees, or every worker
    * assigned — the list stays ungrouped rather than showing a header with
    * nothing under it.
+   *
+   * "Assigned" is the UNION of the explicit individual assignees and the members of
+   * any worker tag ("team") the event is assigned to (#1236). Reconciliation deploys
+   * the case to a team's members, so they are shown where the people who do the work
+   * belong. The Set de-dupes a site that is both. The pre-select in `applyPreselect`
+   * counts `assigneeIds` only and is intentionally NOT the same rule.
    */
   private buildGroupedSites() {
-    const assigned = new Set(this.data.assigneeIds ?? []);
+    const assigned = new Set([
+      ...(this.data.assigneeIds ?? []),
+      ...(this.data.teamAssigneeIds ?? []),
+    ]);
     const inGroup = this.sites.filter(s => assigned.has(s.id));
     const rest = this.sites.filter(s => !assigned.has(s.id));
 
@@ -140,8 +186,12 @@ export class CalendarCompleteEventModalComponent implements OnInit {
   }
 
   /**
-   * A single-section eForm names its one section the same thing the dialog is
-   * already titled, so printing both repeats the name two rows apart.
+   * Section headings only earn their vertical space when there is more than one
+   * section to tell apart. A single-section eForm gets one heading above one
+   * undivided list of fields, which adds a row of chrome and no information, so
+   * it is suppressed. (Until #1205 this was justified by the heading repeating
+   * the dialog title; the dialog is now titled with the TASK name, so the two
+   * strings differ — the suppression stands on density alone.)
    */
   get showSectionTitles(): boolean {
     return this.hasMultipleSections;

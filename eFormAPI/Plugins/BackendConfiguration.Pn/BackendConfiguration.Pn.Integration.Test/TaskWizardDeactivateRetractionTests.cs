@@ -124,7 +124,7 @@ public class TaskWizardDeactivateRetractionTests : TestBaseSetup
         // below vacuous.
         _retraction = new CalendarOccurrenceRetractionService(
             BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, coreHelper,
-            NullLogger<CalendarOccurrenceRetractionService>.Instance);
+            TestContextLogger<CalendarOccurrenceRetractionService>.Instance);
 
         _wizard = new BackendConfigurationTaskWizardService(
             new BackendConfigurationLocalizationService(),
@@ -134,7 +134,7 @@ public class TaskWizardDeactivateRetractionTests : TestBaseSetup
             ItemsPlanningPnDbContext!,
             _deployService,
             _retraction,
-            NullLogger<BackendConfigurationTaskWizardService>.Instance);
+            TestContextLogger<BackendConfigurationTaskWizardService>.Instance);
     }
 
     // ─────────────────────────────────────────────────────────────────────────

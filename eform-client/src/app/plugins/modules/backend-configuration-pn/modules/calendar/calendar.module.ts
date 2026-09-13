@@ -14,7 +14,6 @@ import {MatChipsModule} from '@angular/material/chips';
 import {MatDatepickerModule} from '@angular/material/datepicker';
 import {MAT_DATE_FORMATS} from '@angular/material/core';
 import {MatDialogModule} from '@angular/material/dialog';
-import {MatExpansionModule} from '@angular/material/expansion';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatIconModule} from '@angular/material/icon';
 import {MatInputModule} from '@angular/material/input';
@@ -31,21 +30,15 @@ import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-share
 import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
 import {EformCasesModule} from 'src/app/common/modules/eform-cases/eform-cases.module';
 import {CasesModule} from 'src/app/modules';
-import {TeamCreateDialogComponent} from './components/calendar-sidebar/team-create-dialog.component';
-import {TeamDeleteDialogComponent} from './components/calendar-sidebar/team-delete-dialog.component';
-import {TagCreateDialogComponent} from './components/calendar-sidebar/tag-create-dialog.component';
-import {TagDeleteDialogComponent} from './components/calendar-sidebar/tag-delete-dialog.component';
-
+import {CALENDAR_MAT_DATE_FORMATS} from './calendar-date-formats';
 import {CalendarRouting} from './calendar.routing';
 import {
-  CalendarComplianceViewComponent,
   CalendarContainerComponent,
   CalendarDayColumnComponent,
   CalendarHeaderComponent,
   CalendarMiniCalendarComponent,
   CalendarMonthViewComponent,
   CalendarScheduleViewComponent,
-  CalendarSidebarComponent,
   CalendarTaskBlockComponent,
   CalendarWeekGridComponent,
 } from './components';
@@ -56,9 +49,8 @@ import {
   RepeatScopeModalComponent,
   EformChangeScopeModalComponent,
   CustomRepeatModalComponent,
-  BoardCreateModalComponent,
+  BoardCreateEditModalComponent,
   BoardDeleteModalComponent,
-  ComplianceCaseModalComponent,
   CalendarSelectWorkerModalComponent,
   CalendarCompleteEventModalComponent,
   CalendarImageLightboxComponent,
@@ -72,9 +64,8 @@ export {
   RepeatScopeModalComponent,
   EformChangeScopeModalComponent,
   CustomRepeatModalComponent,
-  BoardCreateModalComponent,
+  BoardCreateEditModalComponent,
   BoardDeleteModalComponent,
-  ComplianceCaseModalComponent,
   CalendarSelectWorkerModalComponent,
   CalendarCompleteEventModalComponent,
   CalendarImageLightboxComponent,
@@ -86,12 +77,10 @@ export {
     CalendarContainerComponent,
     CalendarDayColumnComponent,
     CalendarHeaderComponent,
-    CalendarSidebarComponent,
     CalendarWeekGridComponent,
     CalendarTaskBlockComponent,
     CalendarScheduleViewComponent,
     CalendarMiniCalendarComponent,
-    CalendarComplianceViewComponent,
     CalendarMonthViewComponent,
     // Modals
     TaskCreateEditModalComponent,
@@ -100,16 +89,11 @@ export {
     RepeatScopeModalComponent,
     EformChangeScopeModalComponent,
     CustomRepeatModalComponent,
-    BoardCreateModalComponent,
+    BoardCreateEditModalComponent,
     BoardDeleteModalComponent,
-    ComplianceCaseModalComponent,
     CalendarSelectWorkerModalComponent,
     CalendarCompleteEventModalComponent,
     CalendarImageLightboxComponent,
-    TeamCreateDialogComponent,
-    TeamDeleteDialogComponent,
-    TagCreateDialogComponent,
-    TagDeleteDialogComponent,
   ],
   imports: [
     CommonModule,
@@ -132,7 +116,6 @@ export {
     MatChipsModule,
     MatDatepickerModule,
     MatDialogModule,
-    MatExpansionModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -150,24 +133,24 @@ export {
     // Re-export the create/edit modal so a sibling module (the calendar
     // task-list page) can open it without re-declaring it.
     TaskCreateEditModalComponent,
+    // Re-export the image lightbox for the same reason (#1168). It is opened by
+    // TWO modules now: this one's historical task card and the standalone
+    // Compliance page's Rapport view, which already imports CalendarModule for
+    // the completion modal. It belongs to the TASK CARD, not to the calendar's
+    // compliance view mode — #1170 removes that view and must not delete it.
+    CalendarImageLightboxComponent,
   ],
   providers: [
     // Override MAT_DATE_FORMATS only inside this module so the event-modal
     // date input renders the long Danish form ("Mandag, 21. april") while
     // other plugins' datepickers keep the global short format. Parsing
     // stays on the 'P' token so users can still type a short date.
-    {
-      provide: MAT_DATE_FORMATS,
-      useValue: {
-        parse: {dateInput: 'P'},
-        display: {
-          dateInput: 'EEEE, d. MMMM',
-          monthYearLabel: 'LLLL y',
-          dateA11yLabel: 'PPP',
-          monthYearA11yLabel: 'LLLL y',
-        },
-      },
-    },
+    //
+    // The value lives in `calendar-date-formats.ts` because the completion
+    // modal carries it as a COMPONENT provider as well, so that it keeps this
+    // format when a sibling module opens it (#1165) without that module's own
+    // datepickers inheriting the override.
+    {provide: MAT_DATE_FORMATS, useValue: CALENDAR_MAT_DATE_FORMATS},
   ],
 })
 export class CalendarModule {}

@@ -16,6 +16,7 @@ using CalendarAssignmentReconciliation;
 using CalendarChangeNotification;
 using CalendarOccurrenceRetraction;
 using CalendarPastSeriesBackfill;
+using WorkerTagMembership;
 using EventDeployService;
 using Infrastructure.Models.Calendar;
 using Infrastructure.Models.TaskWizard;
@@ -49,7 +50,13 @@ public class BackendConfigurationCalendarService(
     // of the NEW one. Both are deliberately non-request-shaped services so the
     // batch/background callers of #1122 §4 can reuse them without this class.
     ICalendarOccurrenceRetractionService occurrenceRetractionService,
-    ICalendarPastSeriesBackfillService pastSeriesBackfillService)
+    ICalendarPastSeriesBackfillService pastSeriesBackfillService,
+    // The single owner of the live worker-tag ("team") membership rule, shared with
+    // CalendarAssignmentResolver and BackendConfigurationWorkerTagsService. REQUIRED on
+    // purpose: an optional one would make the assignee filter's tag expansion opt-in, so
+    // a fixture that simply forgot the argument would get a green test asserting nothing.
+    // The compiler catches the omission instead.
+    IWorkerTagMembershipService workerTagMembershipService)
     : IBackendConfigurationCalendarService
 {
     public async Task<OperationDataResult<List<CalendarTaskResponseModel>>> GetTasksForWeek(
@@ -68,6 +75,79 @@ public class BackendConfigurationCalendarService(
             var userLanguageId = requestModel.LanguageId ?? (await userService.GetCurrentUserLanguage()).Id;
             var dateTimeNow = DateTime.UtcNow;
             var result = new List<CalendarTaskResponseModel>();
+
+            // #1212 — worker-tag ("team") awareness for the assignee filter.
+            //
+            // The effective set of worker tags this request filters on, resolved
+            // ONCE per request. It must never be resolved inside
+            // ShouldIncludeTask: that predicate runs per task per week, so a
+            // membership lookup in there would be a query per event.
+            //
+            // It is the union of:
+            //   * the tags the caller asked for explicitly (requestModel.WorkerTagIds), and
+            //   * every tag the caller's requested SiteIds are members of.
+            //
+            // The second half is the actual bug fix. An event assigned to a team
+            // rather than to named individuals has no PlanningSites row for the
+            // team's members, so task.AssigneeIds never contains them and
+            // filtering by a member used to hide the event entirely.
+            //
+            // Membership is read from the SDK SiteTags join — the same live
+            // source CalendarAssignmentResolver.ResolveEffectiveSiteIdsAsync
+            // uses when deciding who an occurrence deploys to. Consequence,
+            // deliberately accepted: the filter follows membership changes over
+            // time (a worker added to a team today starts matching that team's
+            // historical events), exactly as deployment already does.
+            //
+            // This is the inverse direction of the resolver's lookup (site -> tags
+            // instead of tag -> sites) and is bounded by the filter's own site
+            // list, which is what makes it one query rather than one per event.
+            //
+            // Membership is the STRICT rule, by product decision, and it is NOT spelled
+            // out here: IWorkerTagMembershipService owns it, and the teams dropdown this
+            // filter is populated from (BackendConfigurationWorkerTagsService) plus the
+            // deploy resolver use the very same predicate. When this block and the
+            // dropdown each carried their own copy they agreed clause for clause; the
+            // point of sharing one predicate is that they cannot be edited apart later.
+            // The copy that DID differ was the deploy resolver's — it lacked the
+            // Site.WorkflowState clause — and adopting the shared rule closed that.
+            //
+            // Note this reverses the original #1212 reasoning, which left resigned
+            // workers in on the grounds that the explicit-assignee half of the same
+            // OR never dropped them. The product owner overrode that: team
+            // membership ends when the member resigns, so a resigned worker no
+            // longer resolves to their old team here.
+            //
+            // There is deliberately NO `coreHelper != null` guard on the expansion below.
+            // It used to have one. Before the membership rule was extracted, this block
+            // reached the SDK through an OPTIONAL core and, when a fixture had not
+            // supplied one, skipped tag expansion entirely — degrading to the pre-#1212
+            // explicit-assignee match rather than throwing. That guard was removed on
+            // purpose, and this paragraph is the inverse of the one that justified it:
+            // an optional dependency made tag expansion opt-in per fixture, so a fixture
+            // that omitted the core got a GREEN test that asserted nothing about team
+            // matching. A loud failure is preferred over silent degradation.
+            //
+            // Six fixtures still construct `new WorkerTagMembershipService(null)`
+            // (CalendarRepeatPersistenceTests, CalendarUpdateTaskScopeTests,
+            // CalendarOccurrenceExceptionTests, CalendarRecurrenceRulePersistenceFixTests,
+            // CalendarResizeTests, CalendarYearlyMoveTests). They are safe for exactly one
+            // reason: none of them populates requestModel.SiteIds, so the call below is
+            // never reached. Add SiteIds to a request in any of those fixtures and it will
+            // throw on the null core — that is the intended signal, not a regression to be
+            // worked around by restoring a guard here; give the fixture a real core
+            // instead.
+            //
+            // Unrelated: the `if (coreHelper != null)` guard further down this file (the
+            // site-name lookup) is untouched and still guards a different concern.
+            var effectiveWorkerTagIds = new HashSet<int>(requestModel.WorkerTagIds ?? new List<int>());
+            if (requestModel.SiteIds is { Count: > 0 })
+            {
+                effectiveWorkerTagIds.UnionWith(
+                    await workerTagMembershipService
+                        .GetTagIdsForSitesAsync(requestModel.SiteIds)
+                        .ConfigureAwait(false));
+            }
 
             // Get the default board for this property (first created board)
             var defaultBoard = await backendConfigurationPnDbContext.CalendarBoards
@@ -426,6 +506,72 @@ public class BackendConfigurationCalendarService(
                 .GroupBy(x => x.AreaRulePlanningId)
                 .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.TagId).ToList());
 
+            // #1236 — the live members behind each worker tag, so every model can carry
+            // its TeamAssigneeIds. Resolved for the whole response in ONE batched call
+            // per half, never per task: the loops below run once per occurrence per
+            // week, so a lookup in there would be a query per rendered event. Same shape
+            // as BackendConfigurationTaskTrackerHelper.Index and
+            // BackendConfigurationComplianceReportService.ResolveWorkerSiteIdsByArpId.
+            // The membership rule itself belongs to IWorkerTagMembershipService and is
+            // deliberately not restated here.
+            //
+            // The week view reloads on every property selection and every week
+            // navigation (see calendar-container.component.ts), so the tags are handed
+            // over as a SET rather than one at a time: the batched lookup keeps per-tag
+            // attribution and still costs one round trip, where a per-tag loop would
+            // cost one per distinct worker tag in the response.
+            //
+            // Nothing is queried at all when no ARP in the response carries a worker
+            // tag, which is what keeps the fixtures that construct the membership
+            // service over a null core working (see the effectiveWorkerTagIds note
+            // above for the list) — the batched call short-circuits an empty input
+            // exactly as the flat one did.
+            var memberSiteIdsByTagId = new Dictionary<int, HashSet<int>>();
+
+            // Called once per half of the response (recurrence, then compliance), and
+            // asks only for the tags the earlier half did not already resolve. Two
+            // round trips at most, regardless of how many tags are in play.
+            async Task CacheTeamMembersAsync(IEnumerable<int> tagIds)
+            {
+                var missing = tagIds
+                    .Distinct()
+                    .Where(tagId => !memberSiteIdsByTagId.ContainsKey(tagId))
+                    .ToList();
+                if (missing.Count == 0) return;
+
+                foreach (var entry in await workerTagMembershipService
+                             .GetLiveMemberSiteIdsByTagAsync(missing).ConfigureAwait(false))
+                {
+                    memberSiteIdsByTagId[entry.Key] = entry.Value;
+                }
+            }
+
+            // The team assignment of one ARP: the cached members of its tags, in tag
+            // order, de-duplicated. Order WITHIN one tag is the membership set's own
+            // enumeration order and is not specified. Sites that are ALSO explicit
+            // assignees stay in — the two fields are separate halves the client unions,
+            // not a partition.
+            List<int> TeamAssigneesOf(List<int> tagIds)
+            {
+                var siteIds = new List<int>();
+                var seenSiteIds = new HashSet<int>();
+                foreach (var tagId in tagIds)
+                {
+                    if (!memberSiteIdsByTagId.TryGetValue(tagId, out var memberSiteIds)) continue;
+                    foreach (var siteId in memberSiteIds)
+                    {
+                        if (seenSiteIds.Add(siteId))
+                        {
+                            siteIds.Add(siteId);
+                        }
+                    }
+                }
+
+                return siteIds;
+            }
+
+            await CacheTeamMembersAsync(workerTagIdsByArpId.Values.SelectMany(x => x));
+
             // Batch-load occurrence exceptions for this week
             var exceptionsInWeek = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
                 .Where(x => arpIds.Contains(x.AreaRulePlanningId))
@@ -612,7 +758,12 @@ public class BackendConfigurationCalendarService(
                         DescriptionHtml = description,
                         Translations = translations,
                         Attachments = MapAttachments(arp),
-                        WorkerTagIds = workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>())
+                        WorkerTagIds = workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>()),
+                        // #1236 — the team half of the assignment, beside AssigneeIds
+                        // and never merged into it. Read from the per-tag cache built
+                        // above, so this costs no query per occurrence.
+                        TeamAssigneeIds = TeamAssigneesOf(
+                            workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>()))
                     };
 
                     // Per-occurrence field overrides from a "this"-scope edit (#885).
@@ -635,7 +786,7 @@ public class BackendConfigurationCalendarService(
                         model.TaskIsExpired = effectiveDate < dateTimeNow.Date;
                     }
 
-                    if (ShouldIncludeTask(model, requestModel))
+                    if (ShouldIncludeTask(model, requestModel, effectiveWorkerTagIds))
                     {
                         result.Add(model);
                     }
@@ -722,14 +873,16 @@ public class BackendConfigurationCalendarService(
                             DescriptionHtml = description,
                             Translations = translations,
                             Attachments = MapAttachments(arp),
-                            WorkerTagIds = workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>())
+                            WorkerTagIds = workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>()),
+                            TeamAssigneeIds = TeamAssigneesOf(
+                                workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>()))
                         };
 
                         ApplyOccurrenceFieldOverrides(orphanModel, orphan);
 
                         orphanModel.TaskIsExpired = orphan.OriginalDate.Date < dateTimeNow.Date;
 
-                        if (ShouldIncludeTask(orphanModel, requestModel))
+                        if (ShouldIncludeTask(orphanModel, requestModel, effectiveWorkerTagIds))
                         {
                             result.Add(orphanModel);
                         }
@@ -809,14 +962,16 @@ public class BackendConfigurationCalendarService(
                     DescriptionHtml = description,
                     Translations = translations,
                     Attachments = MapAttachments(arp),
-                    WorkerTagIds = workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>())
+                    WorkerTagIds = workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>()),
+                    TeamAssigneeIds = TeamAssigneesOf(
+                        workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>()))
                 };
 
                 ApplyOccurrenceFieldOverrides(movedModel, movedIn);
 
                 movedModel.TaskIsExpired = movedIn.NewDate!.Value.Date < dateTimeNow.Date;
 
-                if (ShouldIncludeTask(movedModel, requestModel))
+                if (ShouldIncludeTask(movedModel, requestModel, effectiveWorkerTagIds))
                 {
                     result.Add(movedModel);
                 }
@@ -852,6 +1007,10 @@ public class BackendConfigurationCalendarService(
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .GroupBy(x => x.AreaRulePlanningId)
                 .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.TagId).ToList());
+
+            // Top up the #1236 member cache with any tag the recurrence half did not
+            // already resolve. Still once per DISTINCT tag across the whole response.
+            await CacheTeamMembersAsync(complianceWorkerTagIdsByArpId.Values.SelectMany(x => x));
 
             // Top up exceptionsByArp with any exceptions for compliance ARPs not
             // already covered. arpIds now contains all non-Removed plannings
@@ -1042,11 +1201,17 @@ public class BackendConfigurationCalendarService(
                     WorkerTagIds = arp != null
                         ? complianceWorkerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>())
                         : new List<int>(),
+                    // #1236. An orphan compliance row has no live ARP and therefore no
+                    // worker tags, so it gets the empty list — same as its AssigneeIds.
+                    TeamAssigneeIds = arp != null
+                        ? TeamAssigneesOf(
+                            complianceWorkerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>()))
+                        : new List<int>(),
                 };
 
                 ApplyOccurrenceFieldOverrides(model, complianceException);
 
-                if (ShouldIncludeTask(model, requestModel))
+                if (ShouldIncludeTask(model, requestModel, effectiveWorkerTagIds))
                 {
                     result.Add(model);
                 }
@@ -1089,9 +1254,33 @@ public class BackendConfigurationCalendarService(
             if (filters.EformIds.Any())
                 query = query.Where(x => x.AreaRule.EformId.HasValue && filters.EformIds.Contains(x.AreaRule.EformId.Value));
             if (filters.AssignToIds.Any())
+            {
+                // #1233 — the same assignee semantics ShouldIncludeTask applies on the
+                // week view: an event assigned to a worker tag ("team") instead of to
+                // named individuals has no PlanningSites row for the team's members, so
+                // the explicit-assignee match alone hid it from the people in it.
+                //
+                // Resolved ONCE, before the predicate: this is composed into an EF query,
+                // so the tag set has to be a plain list of ids the provider can push down
+                // as an IN (...). IWorkerTagMembershipService owns the membership rule —
+                // it is not restated here, and must not be.
+                //
+                // The site match below is unchanged and the tag match is OR'd beside it,
+                // so this can only widen the result. With no live membership the list is
+                // empty, the tag half can never match, and the result is what it was.
+                var effectiveWorkerTagIds = (await workerTagMembershipService
+                        .GetTagIdsForSitesAsync(filters.AssignToIds)
+                        .ConfigureAwait(false))
+                    .ToList();
+
                 query = query.Where(x => x.PlanningSites
-                    .Where(z => z.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Any(y => filters.AssignToIds.Contains(y.SiteId)));
+                        .Where(z => z.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Any(y => filters.AssignToIds.Contains(y.SiteId))
+                    || backendConfigurationPnDbContext.AreaRulePlanningWorkerTags.Any(wt =>
+                        wt.AreaRulePlanningId == x.Id
+                        && wt.WorkflowState != Constants.WorkflowStates.Removed
+                        && effectiveWorkerTagIds.Contains(wt.TagId)));
+            }
             if (filters.TagIds.Any())
             {
                 foreach (var tagId in filters.TagIds)
@@ -1131,6 +1320,15 @@ public class BackendConfigurationCalendarService(
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .GroupBy(x => x.AreaRulePlanningId)
                 .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.TagId).ToList());
+
+            // #1236 — live members per distinct worker tag, resolved BEFORE the
+            // projection below because that projection is a synchronous Select. One
+            // batched round trip for every tag in the result, and none at all when
+            // nothing is team-assigned.
+            var memberSiteIdsByTagId = await workerTagMembershipService
+                .GetLiveMemberSiteIdsByTagAsync(
+                    workerTagIdsByArpId.Values.SelectMany(x => x).Distinct().ToList())
+                .ConfigureAwait(false);
 
             var planningTagIds = areaRulePlannings
                 .SelectMany(x => x.AreaRulePlanningTags
@@ -1178,6 +1376,21 @@ public class BackendConfigurationCalendarService(
                 // real recurrence; otherwise it defaults to 09:00-10:00.
                 var indexIsAllDay = ComputeIsAllDay(arp, calConfig);
 
+                var arpWorkerTagIds = workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>());
+                var teamAssigneeIds = new List<int>();
+                var seenTeamAssigneeIds = new HashSet<int>();
+                foreach (var workerTagId in arpWorkerTagIds)
+                {
+                    if (!memberSiteIdsByTagId.TryGetValue(workerTagId, out var memberSiteIds)) continue;
+                    foreach (var memberSiteId in memberSiteIds)
+                    {
+                        if (seenTeamAssigneeIds.Add(memberSiteId))
+                        {
+                            teamAssigneeIds.Add(memberSiteId);
+                        }
+                    }
+                }
+
                 return new CalendarTaskResponseModel
                 {
                     Id = arp.Id,
@@ -1208,7 +1421,11 @@ public class BackendConfigurationCalendarService(
                     ItemPlanningTagId = arp.ItemPlanningTagId,
                     DescriptionHtml = description,
                     Translations = translations,
-                    WorkerTagIds = workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>()),
+                    WorkerTagIds = arpWorkerTagIds,
+                    // #1236 — the team half of the assignment, beside AssigneeIds. This
+                    // list feeds the complete modal's "assigned to this event" group;
+                    // AssigneeIds alone still drives its pre-select.
+                    TeamAssigneeIds = teamAssigneeIds,
                 };
             }).ToList();
 
@@ -1451,6 +1668,67 @@ public class BackendConfigurationCalendarService(
             {
                 return new OperationResult(false,
                     localizationService.GetString("AtLeastOneWorkerMustBeAssigned"));
+            }
+
+            // #1135 — resolve a missing FolderId to the task's current folder
+            // HERE, before any scope handler runs, not only inside the wizard.
+            //
+            // The wizard has its own "null means unchanged" rule (see
+            // BackendConfigurationTaskWizardService.UpdateTask) and that is the
+            // defence that matters for direct wizard callers. But it only runs
+            // once UpdateTaskThisAndFollowing has already COMMITTED its
+            // past-occurrence backfill anchors and, on a date change, the
+            // series re-anchor — so any wizard-level refusal there lands
+            // half-applied: series moved, task not updated. Deciding the folder
+            // up front means every scope either proceeds with a usable value or
+            // is refused before it has written anything.
+            //
+            // Scope "this" (UpdateTaskThisOccurrence) never reads FolderId at
+            // all; it is included only so a task whose folder cannot be
+            // resolved fails the same way on every scope.
+            //
+            // `0` counts as unset alongside `null`, matching CreateTask's
+            // `resolvedFolderId is null or 0` above — this closes a pre-existing
+            // asymmetry between the two paths rather than a new regression.
+            // Both entity columns are non-nullable `int`, so 0 is the CLR
+            // default a legacy row carries, and a live caller sends it:
+            // BackendConfigurationTaskListService.BuildUpdateModel copies
+            // `FolderId = arp.FolderId` (an `int`), and every task-list batch
+            // action routes that model through here. Treating 0 as a real id
+            // would overwrite AreaRule.FolderId — the only surviving folder on
+            // exactly the legacy row the fallback below exists for — with 0,
+            // after which the row is unhealable: both fallback candidates are
+            // then 0 and every later edit is refused.
+            if (updateModel.FolderId is null or 0)
+            {
+                // The AreaRule projection is an INNER JOIN, so a live ARP whose
+                // AreaRule row is hard-deleted reports TaskNotFound here. That
+                // is broken data only, and the wizard dereferences the same
+                // navigation unconditionally further down, so such a row could
+                // never have been updated anyway.
+                var currentFolder = await backendConfigurationPnDbContext.AreaRulePlannings
+                    .Where(x => x.Id == updateModel.Id)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(x => new { x.FolderId, AreaRuleFolderId = x.AreaRule.FolderId })
+                    .FirstOrDefaultAsync();
+                if (currentFolder == null)
+                {
+                    return new OperationResult(false, localizationService.GetString("TaskNotFound"));
+                }
+
+                // Same precedence as the wizard: the planning row's folder, and
+                // the AreaRule's only when the planning row never got one.
+                //
+                // May resolve to 0, and that is NOT refused: a task that was
+                // never filed under a folder is an ordinary shape (many
+                // fixtures and real rows have none), and the contract this
+                // implements is "null means unchanged", not "must have a
+                // folder". The wizard turns a 0 into a skip of every folder
+                // write rather than a write of 0 — see its own
+                // `hasResolvedFolder`.
+                updateModel.FolderId = currentFolder.FolderId > 0
+                    ? currentFolder.FolderId
+                    : currentFolder.AreaRuleFolderId;
             }
 
             // Scope-aware edit (issue #885). "this"/"thisAndFollowing" must NOT
@@ -2531,8 +2809,96 @@ public class BackendConfigurationCalendarService(
         }
     }
 
-    private async Task<OperationResult> DeleteEntireSeries(int arpId)
+    /// <summary>
+    /// Removes a whole event series: the planning behind it (through the task
+    /// wizard) plus the calendar-side rows that point at it.
+    ///
+    /// Ordering: the wizard delete runs FIRST, the calendar-side rows
+    /// (CalendarConfiguration, CalendarOccurrenceExceptions,
+    /// AreaRulePlanningWorkerTags) afterwards. The wizard delete reads none of
+    /// those three tables, so on the success path the order is immaterial; on
+    /// the failure path it is not. If the wizard fails we return before touching
+    /// any calendar-side row, so the calendar still points at the series and the
+    /// caller can simply retry it. With the calendar rows removed first, a wizard
+    /// failure would instead leave the AreaRulePlanning alive but no longer
+    /// reachable from the calendar (it is looked up through
+    /// CalendarConfiguration).
+    ///
+    /// That guarantee covers the CALENDAR-side rows only. The wizard itself has
+    /// no transaction — PnBase.Delete calls SaveChangesAsync per entity — so a
+    /// wizard failure part-way through (for instance the
+    /// sdkDbContext.CheckListSites.SingleAsync lookup throwing when a
+    /// PlanningCaseSite's MicrotingCheckListSitId has no row) leaves whatever it
+    /// had already soft-deleted soft-deleted. Several of its failure modes ARE
+    /// genuinely no-op — among them a throw from its opening _coreHelper.GetCore()
+    /// call, a throw from the AreaRulePlannings lookup that follows it, the
+    /// TaskNotFound early return, and a throw from its Plannings.First lookup — all
+    /// of which precede its first write.
+    ///
+    /// Already-deleted series: an AreaRulePlanning can be removed by paths that
+    /// do not clear its CalendarConfiguration — the task-list batch delete
+    /// (BackendConfigurationTaskListService.Delete) and
+    /// DELETE /task-wizard/{id} both do exactly that — which leaves a live
+    /// CalendarConfiguration pointing at a Removed AreaRulePlanning. Nothing
+    /// else reaps those rows. So when the AreaRulePlanning is ALREADY gone we
+    /// skip the wizard (it would only answer TaskNotFound) and go straight to
+    /// removing the calendar-side rows: there is no planning left to orphan, and
+    /// without this the stale row is undeletable — it would fail the same way on
+    /// every retry, permanently blocking DeleteBoard.
+    ///
+    /// Such an orphan does NOT render as a phantom event: both GetTasksForWeek row
+    /// producers join through live AreaRulePlannings (the recurrence path and the
+    /// compliance path each filter WorkflowState != Removed), so it is joined out of
+    /// the calendar. It does inflate GetBoardEventCount, which counts
+    /// CalendarConfigurations with no live-ARP join, so the delete-confirmation
+    /// dialog overstates the event count — pre-existing, unrelated to this branch,
+    /// and deliberately not addressed here.
+    ///
+    /// The check is on the specific already-removed condition and is made BEFORE
+    /// the wizard call, so it cannot mask a wizard failure: any wizard call we do
+    /// make is still honoured, and a genuine failure still aborts with everything
+    /// on the calendar side intact. If the planning is removed by someone else in
+    /// the window between the check and the call, the wizard answers TaskNotFound,
+    /// we abort, and the next attempt takes the already-gone branch.
+    ///
+    /// Reachability of that branch is narrower than the call sites suggest: the
+    /// thisAndFollowing / thisAndFollowingIncludingCompleted scopes in DeleteTask do
+    /// their own live-ARP lookup and return AreaRulePlanningNotFound before they can
+    /// reach here, so only scope all/default and the DeleteBoard cascade can arrive
+    /// with an already-removed planning.
+    ///
+    /// <paramref name="deferRetraction"/> picks the wizard variant:
+    /// <c>false</c> uses <see cref="IBackendConfigurationTaskWizardService.DeleteTask"/>,
+    /// which awaits one <c>core.CaseDelete</c> per deployed case inline;
+    /// <c>true</c> uses <see cref="IBackendConfigurationTaskWizardService.DeleteTaskDeferredRetraction"/>,
+    /// which performs the identical DB soft-deletes synchronously and then runs
+    /// the <c>core.CaseDelete</c> calls fire-and-forget.
+    /// </summary>
+    private async Task<OperationResult> DeleteEntireSeries(int arpId, bool deferRetraction = false)
     {
+        var areaRulePlanningStillLive = await backendConfigurationPnDbContext.AreaRulePlannings
+            .AsNoTracking()
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .AnyAsync(x => x.Id == arpId);
+
+        if (areaRulePlanningStillLive)
+        {
+            var wizardResult = deferRetraction
+                ? await taskWizardService.DeleteTaskDeferredRetraction(arpId)
+                : await taskWizardService.DeleteTask(arpId);
+
+            if (!wizardResult.Success)
+            {
+                return wizardResult;
+            }
+        }
+        else
+        {
+            logger.LogInformation(
+                "BackendConfigurationCalendarService.DeleteEntireSeries: AreaRulePlanning {ArpId} is already removed; skipping the task wizard and clearing the calendar-side rows that still point at it",
+                arpId);
+        }
+
         var calConfig = await backendConfigurationPnDbContext.CalendarConfigurations
             .Where(x => x.AreaRulePlanningId == arpId)
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -2554,10 +2920,10 @@ public class BackendConfigurationCalendarService(
         }
 
         // Soft-delete the event's worker-tag links so they don't linger after the
-        // series is gone. The wizard DeleteTask below already retracts every case
-        // (core.CaseDelete) and soft-deletes Planning/PlanningSites/ARP/Compliances,
-        // so reconciliation is not needed here (and would early-return anyway once
-        // the event is removed/inactive).
+        // series is gone. The wizard delete above already retracts every case
+        // (core.CaseDelete, inline or deferred) and soft-deletes
+        // Planning/PlanningSites/ARP/Compliances, so reconciliation is not needed
+        // here (and would early-return anyway once the event is removed/inactive).
         var workerTagLinks = await backendConfigurationPnDbContext.AreaRulePlanningWorkerTags
             .Where(x => x.AreaRulePlanningId == arpId)
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -2567,12 +2933,6 @@ public class BackendConfigurationCalendarService(
         {
             link.UpdatedByUserId = userService.UserId;
             await link.Delete(backendConfigurationPnDbContext);
-        }
-
-        var wizardResult = await taskWizardService.DeleteTask(arpId);
-        if (!wizardResult.Success)
-        {
-            return wizardResult;
         }
 
         return new OperationResult(true,
@@ -2670,6 +3030,31 @@ public class BackendConfigurationCalendarService(
             }
             case 3: // Month
             {
+                // #1207 — ANCHOR-AWARE, and it must be. Since #1207 the two
+                // enumerators emit the series' own StartDate as the START
+                // MONTH's occurrence whenever that month's pattern date sorts
+                // strictly earlier than the anchor (option (b) — see
+                // MonthStartAnchorIsDroppedOccurrence). A relocation that
+                // mapped the start month to the pure pattern date would move a
+                // deployed row onto a day the renderer does NOT paint, while
+                // the renderer still emits the anchor — TWO tiles in one
+                // calendar month, and CompletedPeriodKey buckets both as
+                // "M:yyyy-MM", so completing either would silently suppress
+                // the other. Reuses the SAME helper both enumerators call:
+                // never a second implementation of the rule.
+                //
+                // planning.StartDate is the POST-edit anchor here — the "all"
+                // path calls the task wizard (which writes StartDate and
+                // DayOfMonth) before reloading the Planning and reaching the
+                // relocation, so this reads the pattern the series will
+                // actually render under.
+                if (oldDeadline.Year == planning.StartDate.Year
+                    && oldDeadline.Month == planning.StartDate.Month
+                    && MonthStartAnchorIsDroppedOccurrence(planning, planning.StartDate.Date,
+                        arp.RepeatOrdinalWeek, arp.DayOfWeek))
+                {
+                    return planning.StartDate.Date;
+                }
                 if (arp.RepeatOrdinalWeek.HasValue)
                 {
                     return NthWeekdayOfMonth(oldDeadline.Year, oldDeadline.Month,
@@ -2679,8 +3064,9 @@ public class BackendConfigurationCalendarService(
                 // planning.DayOfMonth is the single source of truth the renderer
                 // uses (the wizard derives it, capped at 28 for Month), then
                 // clamp to the candidate month's length. Reading planning (not
-                // arp) keeps the relocation aligned with where the rule actually
-                // renders, so the two can never diverge (#952 hardening).
+                // arp), plus the start-month anchor case above, keeps the
+                // relocation aligned with where the rule actually renders, so
+                // the two can never diverge (#952 hardening, #1207).
                 var dom = Math.Min(planning.DayOfMonth ?? oldDeadline.Day, 28);
                 var daysInMonth = DateTime.DaysInMonth(oldDeadline.Year, oldDeadline.Month);
                 return new DateTime(oldDeadline.Year, oldDeadline.Month,
@@ -2688,14 +3074,43 @@ public class BackendConfigurationCalendarService(
             }
             case 4: // Year — fixed month + day-of-month from the new pattern, same year.
             {
+                // #1217 — ANCHOR-AWARE for the START YEAR, for exactly the
+                // reason the Month arm above is. Since #1217 both enumerators
+                // emit the series' own StartDate as the START YEAR's occurrence
+                // whenever that year's pattern date sorts strictly earlier than
+                // the anchor. Mapping the start year to the pure pattern date
+                // would move a deployed row onto a day the renderer does NOT
+                // paint, while the renderer still emits the anchor — TWO tiles
+                // in one calendar year, and CompletedPeriodKey buckets both as
+                // "Y:yyyy", so completing either would silently suppress the
+                // other. Reuses the SAME helper both enumerators call.
+                //
+                // planning.StartDate is the POST-edit anchor here, exactly as
+                // in the Month arm above.
+                if (oldDeadline.Year == planning.StartDate.Year
+                    && YearStartAnchorIsDroppedOccurrence(planning, planning.StartDate.Date))
+                {
+                    return planning.StartDate.Date;
+                }
                 // Same single-source-of-truth as the renderer's Year branch:
                 // month + day-of-month come from planning, clamped to the month
-                // length (no 28-cap for yearly, matching GetOccurrencesInWeek).
+                // length by the shared helper (no 28-cap for yearly, matching
+                // GetOccurrencesInWeek — the helper only clamps to the month's
+                // length, it never caps at 28).
+                //
+                // Via DayOfMonthPatternDate so the `dom < 1` defense cannot
+                // drift: legacy rows carry DayOfMonth = 0, which the previous
+                // inline `new DateTime(y, m, Math.Min(0, daysInMonth))` turned
+                // into new DateTime(y, m, 0) — ArgumentOutOfRangeException.
+                // Null is the RIGHT verdict here rather than a fallback day:
+                // a 0 day-of-month has no representable per-period anchor, and
+                // both consumers already handle null non-destructively — the
+                // relocate path with `if (newDate == null) continue;`, and
+                // IsSameRecurrencePeriod by returning its tri-state null
+                // ("don't know"), which never unlocks the retract branch.
                 var month = planning.StartDate.Month;
-                var dom = planning.DayOfMonth ?? oldDeadline.Day;
-                var daysInMonth = DateTime.DaysInMonth(oldDeadline.Year, month);
-                return new DateTime(oldDeadline.Year, month,
-                    Math.Min(dom, daysInMonth), 0, 0, 0, DateTimeKind.Utc);
+                return DayOfMonthPatternDate(oldDeadline.Year, month,
+                    planning.DayOfMonth ?? oldDeadline.Day);
             }
             default:
                 return null; // Day / None — no single per-period anchor to relocate.
@@ -2731,6 +3146,33 @@ public class BackendConfigurationCalendarService(
     // single-task edit modal. Unrepresentable now means "don't know", the caller
     // relocates, and relocate no-ops exactly as it always did.
     //
+    // #1207's anchor-awareness in the Month arm cannot move a verdict in an
+    // unsafe direction — but NOT because the mapper is one-date-per-month.
+    // It is not (see "Known and accepted" below). The argument is:
+    //   * The start-month guard calls MonthStartAnchorIsDroppedOccurrence with
+    //     planning.StartDate, never the probe date, so it is CONSTANT for a
+    //     given (planning, arp). Call it A.
+    //   * A false — the mapper is identical to the pre-#1207 one, so no
+    //     verdict can move at all.
+    //   * A true — the start month's representative becomes
+    //     planning.StartDate.Date, which is itself inside the start month, so
+    //     a probe outside that month still maps into its own month and
+    //     cross-month pairs still compare unequal.
+    //   * null never becomes a definite verdict: A true requires
+    //     MonthPatternDateForStartMonth to be non-null, and in the ordinal arm
+    //     that is the SAME NthWeekdayOfMonth call the old code makes (the
+    //     guard only fires for probes in the start month). A 5th-weekday
+    //     spill, ordinal < 1 or an out-of-range weekday all leave A false and
+    //     fall through to the unchanged old code. That matters because false
+    //     is the ONLY value that unlocks the destructive retract branch.
+    //   * The DayOfMonth == null shape below is the one case where the
+    //     partition itself changes: the fallback is Math.Min(StartDate.Day,
+    //     28), so A is true only when StartDate.Day > 28, and the start month
+    //     goes from "each date maps to its own day" to "every date maps to
+    //     the anchor" — strictly MORE collapsing. That can only turn false
+    //     into true, i.e. LOCK the retract branch and relocate instead. The
+    //     safe direction, never the reverse.
+    //
     // Known and accepted: for a monthly rule whose Planning.DayOfMonth is null
     // the mapper falls back to the probe date's own day, so two dates in the
     // same calendar month can map apart and be reported as different periods.
@@ -2738,6 +3180,23 @@ public class BackendConfigurationCalendarService(
     // anyway: with no stored DayOfMonth the pattern day IS the anchor day, so
     // relocate would leave the row on the old day while the rule renders on the
     // new one.
+    //
+    // #1217 made the Year arm anchor-aware too, and the same argument carries
+    // over unchanged (A is again constant per (planning, arp) — the guard reads
+    // planning.StartDate, never the probe — and when it is true the start
+    // year's representative becomes planning.StartDate.Date, which is inside
+    // the start year, so cross-year pairs still compare unequal). The one
+    // difference worth recording is that the DayOfMonth == null shape is
+    // STRICTLY safer for Year than for Month: YearPatternDateForStartYear
+    // deliberately omits the 28-cap (#922), so with DayOfMonth null the pattern
+    // date is Math.Min(StartDate.Day, DaysInMonth(StartDate)) == StartDate.Date
+    // exactly (both enumerators and this mapper pass planning.StartDate.Date,
+    // so there is no time component to make it sort earlier). The predicate is
+    // `pattern < startDate`, so A is ALWAYS false for that shape and the Year
+    // partition literally cannot change — no Month-style "more collapsing"
+    // case to reason about. DayOfMonth == 0 (legacy) yields a null pattern
+    // date, which also leaves A false and now returns null from the mapper
+    // instead of throwing, i.e. the tri-state "don't know".
     internal static bool? IsSameRecurrencePeriod(
         Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
         AreaRulePlanning arp,
@@ -3395,13 +3854,18 @@ public class BackendConfigurationCalendarService(
             }
 
             // The calendar's worker picker lists GetLinkedSites(propertyId, false):
-            // exactly the active PropertyWorkers of the event's property. Accept
-            // only that set — and reject anything else up front, so a stray id
-            // can never attribute a completion to an unrelated site on either the
-            // on-demand-materialise path or the pre-existing-compliance path
-            // below. (This also matches EventDeployService's leak guard, which
-            // refuses to deploy an on-demand case to a non-property-worker site —
-            // #932/#1377.)
+            // the NON-RESIGNED active PropertyWorkers of the event's property
+            // (#1184 dropped resigned SDK workers from that list). This guard is
+            // deliberately wider: it accepts ANY active PropertyWorker, resigned or
+            // not, so completing on behalf of a since-resigned worker via the API
+            // (e.g. a past occurrence from the compliance page) stays possible.
+            // Picker and guard are asymmetric by decision (#1184, decision 2).
+            // Anything outside the property's workers is still rejected up front,
+            // so a stray id can never attribute a completion to an unrelated site
+            // on either the on-demand-materialise path or the pre-existing-
+            // compliance path below. (This also matches EventDeployService's leak
+            // guard, which refuses to deploy an on-demand case to a
+            // non-property-worker site — #932/#1377.)
             if (workerId.HasValue)
             {
                 var workerAllowed = await backendConfigurationPnDbContext.PropertyWorkers
@@ -3998,6 +4462,53 @@ public class BackendConfigurationCalendarService(
         }
     }
 
+    /// <summary>
+    /// Deletes a calendar board and every event placed on it.
+    ///
+    /// The cascade reuses the per-event series-delete path, but with
+    /// <c>deferRetraction: true</c>, i.e.
+    /// <see cref="IBackendConfigurationTaskWizardService.DeleteTaskDeferredRetraction"/>
+    /// rather than <see cref="IBackendConfigurationTaskWizardService.DeleteTask"/>.
+    /// Both soft-delete the same rows; the deferred variant runs the external
+    /// <c>core.CaseDelete</c> retractions fire-and-forget instead of awaiting one
+    /// per deployed case per assignee inside this request. That is the same trade
+    /// BackendConfigurationTaskListService.Delete makes for its batch delete.
+    /// Every database write the request is responsible for still happens before
+    /// it returns, so the board and its events are gone from the very next read.
+    ///
+    /// Failure handling: events first, board last, and the loop aborts on the
+    /// first failing series before <c>board.Delete</c> — so the board and every
+    /// series not yet processed survive a mid-way failure, and the caller (who is
+    /// still waiting, since this stays synchronous) is told it failed. Re-issuing
+    /// the delete resumes: the series already removed no longer have a live
+    /// CalendarConfiguration and are not collected again, while the failing
+    /// series still has one and is collected and retried.
+    ///
+    /// What "retried" is worth depends on how far the wizard got. DeleteEntireSeries
+    /// leaves the failing series' CALENDAR-side rows (CalendarConfiguration,
+    /// CalendarOccurrenceExceptions, AreaRulePlanningWorkerTags) untouched, which is
+    /// what keeps the series reachable for a second attempt. The wizard's own deletes
+    /// are not transactional (PnBase.Delete saves per entity), so they may be partial —
+    /// several of its failure modes do leave nothing written (see DeleteEntireSeries),
+    /// but not all of them. So the honest guarantee is: the board survives, the
+    /// unprocessed series survive whole, and the failing series stays reachable and
+    /// gets another attempt — not that the failing series is bit-for-bit as it was.
+    /// If the wizard did get as far as removing the AreaRulePlanning itself,
+    /// DeleteEntireSeries takes its already-removed branch on the retry and clears
+    /// the calendar rows without calling the wizard again.
+    ///
+    /// The DB cascade deliberately is NOT moved to a background task. The two
+    /// DbContexts it writes through are registered with AddDbContextPool
+    /// (EformBackendConfigurationPlugin.ConfigureDbContext), so the instances
+    /// this service holds go back to the pool when the request scope ends, and
+    /// the UpdatedByUserId every Delete() stamps comes from IUserService, which
+    /// reads the request's own principal. A background cascade would also have
+    /// to report its partial failures to a user who has already navigated away.
+    /// Keeping the DB work in the request preserves both the intact-board
+    /// guarantee and a synchronous error for the caller; the only work that
+    /// moves off the request is the device retraction, which was already
+    /// best-effort (neither wizard variant consumes its result).
+    /// </summary>
     public async Task<OperationResult> DeleteBoard(int id)
     {
         try
@@ -4013,9 +4524,6 @@ public class BackendConfigurationCalendarService(
                     localizationService.GetString("CalendarBoardNotFound"));
             }
 
-            // Cascade: delete every event placed on this board, reusing the exact
-            // per-event series-delete path used for manual deletes. Events first,
-            // board last, so a mid-way failure leaves the board intact (recoverable).
             var arpIds = await backendConfigurationPnDbContext.CalendarConfigurations
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.BoardId == id)
@@ -4023,16 +4531,21 @@ public class BackendConfigurationCalendarService(
                 .Distinct()
                 .ToListAsync();
 
+            var deletedSeries = 0;
             foreach (var arpId in arpIds)
             {
-                var seriesResult = await DeleteEntireSeries(arpId);
+                var seriesResult = await DeleteEntireSeries(arpId, deferRetraction: true);
                 if (!seriesResult.Success)
                 {
                     logger.LogError(
-                        "BackendConfigurationCalendarService.DeleteBoard: aborting; failed to delete event series {ArpId} for board {BoardId}",
-                        arpId, id);
-                    return seriesResult;
+                        "BackendConfigurationCalendarService.DeleteBoard: aborting; failed to delete event series {ArpId} for board {BoardId}. {DeletedSeries} of {TotalSeries} series were deleted; the board and the remaining {RemainingSeries} series are left in place and the delete can be re-issued. Reason: {Reason}",
+                        arpId, id, deletedSeries, arpIds.Count, arpIds.Count - deletedSeries,
+                        seriesResult.Message);
+                    return new OperationResult(false,
+                        $"{localizationService.GetString("ErrorWhileDeletingCalendarBoard")}: {seriesResult.Message}");
                 }
+
+                deletedSeries++;
             }
 
             await board.Delete(backendConfigurationPnDbContext);
@@ -4131,6 +4644,169 @@ public class BackendConfigurationCalendarService(
         var candidate = firstOfMonth.AddDays(dowOffset + (ordinal - 1) * 7);
         return candidate.Month != month ? null : candidate;
     }
+
+    /// <summary>
+    /// True when a RepeatType.Month series must emit its own StartDate as an
+    /// occurrence in its own right (#1207).
+    ///
+    /// Semantics: <b>the anchor is occurrence #1; the pattern governs #2
+    /// onward.</b> Before #1207 both enumerators treated StartDate purely as a
+    /// lower bound on a pure pattern, so a Month rule whose start date does not
+    /// itself satisfy the rule lost its first occurrence entirely: the start
+    /// month's pattern date sorts BEFORE the anchor and is discarded by the
+    /// <c>&gt;= rangeStart</c> / <c>&gt;= weekStart</c> guard, after which the
+    /// cursor jumps a whole repeatEvery period. The customer's series (start
+    /// Tue 2026-09-08, every 12 months, "first Tuesday" — and 2026-09-01 is
+    /// itself a Tuesday) first fired 2027-09-07 instead of 2026-09-08.
+    ///
+    /// <b>Option (b) of #1207 — emit the anchor ONLY when the start month's
+    /// pattern date is STRICTLY EARLIER than the anchor</b>, i.e. only when an
+    /// occurrence would otherwise be lost. When the pattern date falls AFTER
+    /// the anchor inside the start month (start 2026-09-08 with "third
+    /// Tuesday" -> 2026-09-15) the anchor is NOT added, so September keeps the
+    /// 15th alone. That is deliberate and load-bearing: CompletedPeriodKey
+    /// assumes exactly one Month occurrence per calendar month (it returns
+    /// "M:yyyy-MM"), so two occurrences in one month would mean completing one
+    /// silently suppresses the other — the very anchor the customer asked for
+    /// could vanish once its sibling is completed.
+    ///
+    /// When the anchor already IS the pattern date (start 2026-09-01 with
+    /// "first Tuesday"; DayOfMonth = 8 with a start on the 8th) this returns
+    /// false, so the anchor is emitted exactly once by the normal pattern loop
+    /// — no duplicate. The test is on the COMPUTED pattern date for the start
+    /// month, never on a boolean flag.
+    ///
+    /// <b>SCOPE: RepeatType.Month only, both arms</b> (Nth-weekday and
+    /// day-of-month-number; #1207 CASE 4/4b show the day-number arm has the
+    /// identical defect). Year has its OWN twin of this helper,
+    /// <see cref="YearStartAnchorIsDroppedOccurrence"/> (#1217) — a yearly rule
+    /// anchors on StartDate's month + day only while planning.DayOfMonth agrees
+    /// with StartDate.Day, which the legacy pre-#933 cohort does not.
+    /// Deliberately NOT applied to:
+    ///   * Day   — the anchor is always emitted.
+    ///   * Week  — the anchor is emitted iff its own weekday is in the CSV,
+    ///             and deselecting your own start weekday is a coherent
+    ///             instruction, not a defect.
+    /// Do NOT "complete" this fix by extending it to those types.
+    ///
+    /// Both enumerators (EnumerateOccurrences and GetOccurrencesInWeek) call
+    /// this ONE helper, per the invariant stated on EnumerateOccurrences:
+    /// never a second implementation, or a backfilled occurrence and a
+    /// rendered occurrence could land on different days for the same rule.
+    /// </summary>
+    private static bool MonthStartAnchorIsDroppedOccurrence(
+        Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
+        DateTime startDate,
+        int? repeatOrdinalWeek,
+        int? dayOfWeekOverride)
+    {
+        var patternDate = MonthPatternDateForStartMonth(planning, startDate, repeatOrdinalWeek, dayOfWeekOverride);
+        // No pattern date for the start month (5th-weekday spill, or an
+        // unusable rule shape) means nothing is lost that month — do not
+        // synthesise an anchor there.
+        return patternDate.HasValue && patternDate.Value < startDate;
+    }
+
+    /// <summary>
+    /// The date a RepeatType.Month rule produces for the calendar month that
+    /// contains <paramref name="startDate"/>, or null when the month has no
+    /// such date. Mirrors the two arms of the Month branch in both
+    /// enumerators exactly.
+    /// </summary>
+    private static DateTime? MonthPatternDateForStartMonth(
+        Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
+        DateTime startDate,
+        int? repeatOrdinalWeek,
+        int? dayOfWeekOverride)
+    {
+        if (repeatOrdinalWeek.HasValue)
+        {
+            var ordinal = repeatOrdinalWeek.Value; // 1..5
+            if (ordinal < 1) return null;
+            var targetDow = dayOfWeekOverride ?? (int)startDate.DayOfWeek; // 0=Sun..6=Sat
+            if (targetDow is < 0 or > 6) return null;
+            // NOTE: the day-of-month arm below is NEVER evaluated when
+            // RepeatOrdinalWeek has a value. DayOfMonth = 0 is exactly the
+            // column shape the frontend writes for "monthlyFirstWeekday", and
+            // evaluating it would hit the latent
+            // ArgumentOutOfRangeException described below.
+            return NthWeekdayOfMonth(startDate.Year, startDate.Month, ordinal, targetDow);
+        }
+
+        // Legacy day-of-month path. Defensive: Math.Min(DayOfMonth ?? .., 28)
+        // yields 0 for the DayOfMonth = 0 rows the frontend writes, and
+        // new DateTime(y, m, 0) throws ArgumentOutOfRangeException. Return
+        // null rather than crash — a 0 day-of-month is not a pattern date.
+        return DayOfMonthPatternDate(startDate.Year, startDate.Month,
+            Math.Min(planning.DayOfMonth ?? startDate.Day, 28));
+    }
+
+    /// <summary>
+    /// The date a day-of-month rule produces inside (<paramref name="year"/>,
+    /// <paramref name="month"/>), clamped to that month's length, or null when
+    /// <paramref name="dom"/> is not a usable day number.
+    ///
+    /// Shared by <see cref="MonthPatternDateForStartMonth"/> (which caps
+    /// <paramref name="dom"/> at 28 before calling) and
+    /// <see cref="YearPatternDateForStartYear"/> (which does NOT cap — a yearly
+    /// rule stays in one fixed month, so the real day-of-month survives, #922).
+    /// One implementation so the <c>dom &lt; 1</c> defense cannot drift apart.
+    /// </summary>
+    private static DateTime? DayOfMonthPatternDate(int year, int month, int dom)
+    {
+        if (dom < 1) return null;
+        var daysInMonth = DateTime.DaysInMonth(year, month);
+        return new DateTime(year, month, Math.Min(dom, daysInMonth), 0, 0, 0, DateTimeKind.Utc);
+    }
+
+    /// <summary>
+    /// True when a yearly series (RepeatType cast 4) must emit its own
+    /// StartDate as an occurrence in its own right (#1217).
+    ///
+    /// The Year twin of <see cref="MonthStartAnchorIsDroppedOccurrence"/>, with
+    /// the identical option-(b) rule: emit the anchor ONLY when the start
+    /// YEAR's pattern date sorts STRICTLY EARLIER than it, i.e. only when an
+    /// occurrence would otherwise be lost. Strictness is what makes a duplicate
+    /// impossible — when the anchor already IS the pattern date (the ordinary
+    /// case, since <c>DeriveDayOfMonth</c> returns <c>startDate.Day</c> for
+    /// Year) this returns false and the pattern loop emits it exactly once.
+    /// When the pattern date falls AFTER the anchor inside the start year
+    /// (start 2026-09-08 with <c>planning.DayOfMonth</c> 20) the anchor is NOT
+    /// added, so 2026 keeps the 20th alone: <c>CompletedPeriodKey</c> buckets a
+    /// yearly occurrence as "Y:yyyy", so two occurrences in one year would mean
+    /// completing one silently suppresses the other.
+    ///
+    /// The exposed cohort is legacy data where <c>planning.DayOfMonth</c>
+    /// diverges from <c>StartDate.Day</c> — pre-#933 rows, where the custom
+    /// dialog hard-coded 1 January regardless of the chosen start date.
+    ///
+    /// Both enumerators (EnumerateOccurrences and GetOccurrencesInWeek) and the
+    /// "all"-scope relocation mapper (NewPatternDateForPeriodOf) call this ONE
+    /// helper, per the invariant stated on EnumerateOccurrences: never a second
+    /// implementation, or a backfilled occurrence and a rendered occurrence
+    /// could land on different days for the same rule.
+    /// </summary>
+    private static bool YearStartAnchorIsDroppedOccurrence(
+        Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
+        DateTime startDate)
+    {
+        var patternDate = YearPatternDateForStartYear(planning, startDate);
+        // No usable pattern date (DayOfMonth = 0) means nothing is lost that
+        // year — do not synthesise an anchor there.
+        return patternDate.HasValue && patternDate.Value < startDate;
+    }
+
+    /// <summary>
+    /// The date a yearly rule produces for the year that contains
+    /// <paramref name="startDate"/>. A yearly rule stays in StartDate's month
+    /// and keeps the real day-of-month (no 28-cap, #922), clamped to the
+    /// month's length. Mirrors the Year branch of both enumerators exactly.
+    /// </summary>
+    private static DateTime? YearPatternDateForStartYear(
+        Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
+        DateTime startDate)
+        => DayOfMonthPatternDate(startDate.Year, startDate.Month,
+            planning.DayOfMonth ?? startDate.Day);
 
     private static int[] ParseWeekdaysCsv(string? csv)
     {
@@ -4249,6 +4925,21 @@ public class BackendConfigurationCalendarService(
             }
             case Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Month:
             {
+                // #1207: the anchor is occurrence #1; the pattern governs #2
+                // onward. Emit StartDate itself when the start month's pattern
+                // date sorts before it — otherwise that first occurrence is
+                // silently dropped below and the cursor jumps a whole
+                // repeatEvery period. See MonthStartAnchorIsDroppedOccurrence
+                // for the scope and the "only when an occurrence would
+                // otherwise be lost" rule. Yielded FIRST keeps the sequence
+                // ascending: the start month's own pattern date is < rangeStart
+                // in exactly this case, so the loop's first emitted candidate
+                // is a whole period later.
+                if (startDate >= rangeStart && startDate < rangeEnd
+                    && MonthStartAnchorIsDroppedOccurrence(planning, startDate, repeatOrdinalWeek, dayOfWeekOverride))
+                {
+                    yield return startDate;
+                }
                 var monthsSinceStart = (rangeStart.Year - startDate.Year) * 12 + rangeStart.Month - startDate.Month;
                 var skip = monthsSinceStart > 0 ? (int)Math.Ceiling((double)monthsSinceStart / repeatEvery) : 0;
                 var candidateMonth = startDate.AddMonths(skip * repeatEvery);
@@ -4297,6 +4988,21 @@ public class BackendConfigurationCalendarService(
                 // iterator yielded nothing for yearly tasks, breaking the
                 // "after N occurrences" cap and every thisAndFollowing
                 // past-anchor backfill (MoveTask / ResizeTask / UpdateTask).
+                // #1217: the anchor is occurrence #1; the pattern governs #2
+                // onward — the rule #1207 established for Month, now reached for
+                // Year by the legacy cohort whose planning.DayOfMonth diverges
+                // from StartDate.Day. Emitted FIRST keeps the sequence
+                // ascending: this fires only when the start year's pattern date
+                // sorts strictly before startDate, hence strictly before
+                // rangeStart, so the loop's first emitted candidate is a whole
+                // repeatEvery period later. See
+                // YearStartAnchorIsDroppedOccurrence — the SAME helper
+                // GetOccurrencesInWeek's Year branch calls.
+                if (startDate >= rangeStart && startDate < rangeEnd
+                    && YearStartAnchorIsDroppedOccurrence(planning, startDate))
+                {
+                    yield return startDate;
+                }
                 var yearDom = planning.DayOfMonth ?? startDate.Day;
                 var yearMonth = startDate.Month;
                 var yearsSinceStart = rangeStart.Year - startDate.Year;
@@ -4305,11 +5011,21 @@ public class BackendConfigurationCalendarService(
                 var candidateYear = startDate.Year + yearPeriods * repeatEvery;
                 while (true)
                 {
-                    var daysInMonth = DateTime.DaysInMonth(candidateYear, yearMonth);
-                    var candidate = new DateTime(candidateYear, yearMonth,
-                        Math.Min(yearDom, daysInMonth), 0, 0, 0, DateTimeKind.Utc);
-                    if (candidate >= rangeEnd) break;
-                    if (candidate >= rangeStart) yield return candidate;
+                    // Shared helper (no 28-cap; it clamps to the candidate
+                    // month's length only) so the `dom < 1` guard applies here
+                    // too: legacy DayOfMonth = 0 rows used to reach
+                    // new DateTime(y, m, 0) and throw.
+                    var candidate = DayOfMonthPatternDate(candidateYear, yearMonth, yearDom);
+                    // BREAK, not skip: yearDom is loop-invariant, so a null is
+                    // null for EVERY candidate year — `continue` would spin
+                    // forever in this unbounded loop. The rule simply has no
+                    // representable pattern date, and the anchor arm above
+                    // already declined to synthesise one (its helper returns
+                    // false on a null pattern date), so the iterator yields
+                    // nothing at all for that shape.
+                    if (candidate == null) break;
+                    if (candidate.Value >= rangeEnd) break;
+                    if (candidate.Value >= rangeStart) yield return candidate.Value;
                     candidateYear += repeatEvery;
                 }
                 break;
@@ -4455,6 +5171,16 @@ public class BackendConfigurationCalendarService(
             case Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Month:
             {
                 if (startDate > weekEnd) break;
+                // #1207: mirror of EnumerateOccurrences' Month branch — emit
+                // the series anchor itself when the start month's pattern date
+                // sorts before it. Both enumerators MUST agree (see the
+                // invariant on EnumerateOccurrences), so the test lives in the
+                // single shared helper.
+                if (startDate >= weekStart && startDate <= weekEnd
+                    && MonthStartAnchorIsDroppedOccurrence(planning, startDate, repeatOrdinalWeek, dayOfWeekOverride))
+                {
+                    occurrences.Add(startDate);
+                }
                 // Find starting month
                 var monthsSinceStart = (weekStart.Year - startDate.Year) * 12 + weekStart.Month - startDate.Month;
                 var periods = monthsSinceStart > 0 ? (int)Math.Ceiling((double)monthsSinceStart / repeatEvery) : 0;
@@ -4475,7 +5201,16 @@ public class BackendConfigurationCalendarService(
                             continue;
                         }
                         if (candidate.Value > weekEnd) break;
-                        if (candidate.Value >= weekStart)
+                        // >= startDate (#1207): this branch used to gate on
+                        // weekStart alone, so a pattern date EARLIER than the
+                        // series start painted here while EnumerateOccurrences
+                        // (which floors its range at startDate) yielded nothing
+                        // — a live divergence between the two enumerators IN
+                        // THE MONTH BRANCH. The Year branch below carried the
+                        // identical leak when planning.DayOfMonth precedes
+                        // startDate.Day in the start year; out of scope for
+                        // #1207 (Month-only), closed by #1217.
+                        if (candidate.Value >= weekStart && candidate.Value >= startDate)
                             occurrences.Add(candidate.Value);
                         candidateMonth = candidateMonth.AddMonths(repeatEvery);
                     }
@@ -4490,34 +5225,91 @@ public class BackendConfigurationCalendarService(
                             Math.Min(dom, DateTime.DaysInMonth(candidateMonth.Year, candidateMonth.Month)),
                             0, 0, 0, DateTimeKind.Utc);
                         if (candidate > weekEnd) break;
-                        if (candidate >= weekStart)
+                        // >= startDate (#1207): same pre-start leak as the
+                        // ordinal arm above.
+                        if (candidate >= weekStart && candidate >= startDate)
                             occurrences.Add(candidate);
                         candidateMonth = candidateMonth.AddMonths(repeatEvery);
                     }
                 }
+                // The anchor is prepended above while the pattern loop appends
+                // in ascending order; sort so callers never see a descending
+                // list when both share one week (#1207).
+                occurrences.Sort();
                 break;
             }
             case (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)4: // Year
             {
                 if (startDate > weekEnd) break;
+                // #1217: mirror of EnumerateOccurrences' Year branch — emit the
+                // series anchor itself when the start YEAR's pattern date sorts
+                // before it. Both enumerators MUST agree (see the invariant on
+                // EnumerateOccurrences), so the test lives in the single shared
+                // helper. Placed above the period maths so the skip can never
+                // shadow it.
+                if (startDate >= weekStart && startDate <= weekEnd
+                    && YearStartAnchorIsDroppedOccurrence(planning, startDate))
+                {
+                    occurrences.Add(startDate);
+                }
                 // Yearly stays in a fixed month, so keep the real day-of-month
                 // and clamp it to the candidate month's length below (#922) —
                 // unlike Month, which caps to 28 to dodge short-month overflow.
                 var yearDom = planning.DayOfMonth ?? startDate.Day;
                 var yearMonth = startDate.Month;
                 var yearsSinceStart = weekStart.Year - startDate.Year;
-                if (yearsSinceStart < 0) break;
+                // #1217: no `if (yearsSinceStart < 0) break;` here any more. A
+                // week that STRADDLES New Year has weekStart in the year before
+                // the start year (a series starting Thu 2026-01-01 rendered in
+                // Mon 2025-12-29..Sun 2026-01-04), and bailing out dropped the
+                // series' own first occurrence while EnumerateOccurrences —
+                // which floors its range at startDate — yielded it: a second
+                // divergence inside this very branch. A negative value simply
+                // means period 0, and the `startDate > weekEnd` guard above
+                // already rejects every week that ends before the series begins.
                 var yearPeriods = yearsSinceStart > 0 ? (int)Math.Ceiling((double)yearsSinceStart / repeatEvery) : 0;
                 for (var i = 0; i < 2; i++)
                 {
                     var candidateYear = startDate.Year + (yearPeriods + i) * repeatEvery;
-                    var daysInMonth = DateTime.DaysInMonth(candidateYear, yearMonth);
-                    var candidate = new DateTime(candidateYear, yearMonth,
-                        Math.Min(yearDom, daysInMonth), 0, 0, 0, DateTimeKind.Utc);
-                    if (candidate > weekEnd) break;
-                    if (candidate >= weekStart)
-                        occurrences.Add(candidate);
+                    // Shared helper (no 28-cap; it clamps to the candidate
+                    // month's length only) so the `dom < 1` guard applies here
+                    // too. Legacy DayOfMonth = 0 rows used to reach
+                    // new DateTime(y, m, 0) and throw, and #1217's removal of
+                    // the `yearsSinceStart < 0` bail-out newly ROUTED the
+                    // New-Year-straddling week into this loop — a series
+                    // starting 2026-01-01 rendered in Mon 2025-12-29..Sun
+                    // 2026-01-04 went from returning [] to throwing, which
+                    // GetTasksForWeek's outer try turns into a failure of the
+                    // WHOLE week for that property, not just this series.
+                    var candidate = DayOfMonthPatternDate(candidateYear, yearMonth, yearDom);
+                    // BREAK, not skip: yearDom is loop-invariant, so a null is
+                    // null for both i values — breaking and skipping are
+                    // equivalent, and break matches the `candidate > weekEnd`
+                    // exit right below. The week is still returned (with the
+                    // anchor if one fired), never thrown out.
+                    if (candidate == null) break;
+                    if (candidate.Value > weekEnd) break;
+                    // >= startDate (#1217): this branch used to gate on weekStart
+                    // alone, so a pattern date EARLIER than the series start
+                    // painted here — start 2026-09-08 with planning.DayOfMonth 7
+                    // rendered 2026-09-07, one day before the series exists —
+                    // while EnumerateOccurrences yielded nothing. The Year twin
+                    // of the Month leak #1207 closed.
+                    if (candidate.Value >= weekStart && candidate.Value >= startDate)
+                        occurrences.Add(candidate.Value);
                 }
+                // Defensive symmetry with the Month branch only — NOT a state
+                // this branch can reach. Unlike Month, a yearly rule cannot put
+                // two occurrences in one week: the anchor fires only when the
+                // START YEAR's pattern date sorts strictly before startDate, and
+                // that same date is then rejected by the `candidate >=
+                // startDate` guard in the loop; every other candidate is a
+                // whole repeatEvery (>= 1)
+                // year away, hence far past weekEnd. So this list holds at most
+                // one element and Sort() is a no-op. Kept so the two branches
+                // stay textually parallel and a future second contribution
+                // cannot silently ship a descending list (#1207).
+                occurrences.Sort();
                 break;
             }
             default:
@@ -4548,7 +5340,7 @@ public class BackendConfigurationCalendarService(
     // six sites, and the copy in Index drifted to a midnight default, which put
     // un-configured series in the 00:00 row and let the edit modal persist that
     // back through UpdateTask.
-    private static bool ComputeIsAllDay(AreaRulePlanning? arp, CalendarConfiguration? calConfig)
+    internal static bool ComputeIsAllDay(AreaRulePlanning? arp, CalendarConfiguration? calConfig)
     {
         if (calConfig != null)
         {
@@ -4573,7 +5365,17 @@ public class BackendConfigurationCalendarService(
         return retracted || (effectiveDate.Date < now.Date && sdkCase.Status != 100);
     }
 
-    private static bool ShouldIncludeTask(CalendarTaskResponseModel task, CalendarTaskRequestModel filter)
+    /// <param name="effectiveWorkerTagIds">
+    /// Pre-resolved once per request by <see cref="GetTasksForWeek"/>: the caller's
+    /// explicit <c>WorkerTagIds</c> plus every worker tag the caller's <c>SiteIds</c>
+    /// are members of. Passed in rather than derived here on purpose — this predicate
+    /// runs per task per week, and resolving tag membership inside it would issue a
+    /// query per event.
+    /// </param>
+    private static bool ShouldIncludeTask(
+        CalendarTaskResponseModel task,
+        CalendarTaskRequestModel filter,
+        HashSet<int> effectiveWorkerTagIds)
     {
         if (filter.BoardIds is { Count: > 0 } && task.BoardId.HasValue &&
             !filter.BoardIds.Contains(task.BoardId.Value))
@@ -4587,10 +5389,29 @@ public class BackendConfigurationCalendarService(
             return false;
         }
 
-        if (filter.SiteIds is { Count: > 0 } &&
-            !task.AssigneeIds.Any(id => filter.SiteIds.Contains(id)))
+        // Assignee filter (#1212). SiteIds and WorkerTagIds are two independent
+        // selections that combine with OR, never AND: a task survives when its
+        // explicit assignees intersect the requested sites, OR its assigned
+        // worker tags intersect the effective tag set (the requested tags plus
+        // every tag the requested sites belong to — see GetTasksForWeek).
+        // Neither list given => no assignee filtering at all, i.e. bit-identical
+        // to the pre-#1212 behaviour.
+        var hasSiteFilter = filter.SiteIds is { Count: > 0 };
+        var hasWorkerTagFilter = filter.WorkerTagIds is { Count: > 0 };
+        if (hasSiteFilter || hasWorkerTagFilter)
         {
-            return false;
+            var siteMatch = hasSiteFilter
+                            && task.AssigneeIds != null
+                            && task.AssigneeIds.Any(id => filter.SiteIds.Contains(id));
+
+            var workerTagMatch = effectiveWorkerTagIds is { Count: > 0 }
+                                 && task.WorkerTagIds != null
+                                 && task.WorkerTagIds.Any(effectiveWorkerTagIds.Contains);
+
+            if (!siteMatch && !workerTagMatch)
+            {
+                return false;
+            }
         }
 
         return true;
@@ -5213,6 +6034,13 @@ public class BackendConfigurationCalendarService(
                 .GroupBy(x => x.AreaRulePlanningId)
                 .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.TagId).ToList());
 
+            // #1236 — live members for every distinct worker tag, resolved for the whole
+            // list in one batched round trip rather than inside the row loop below.
+            var memberSiteIdsByTagId = await workerTagMembershipService
+                .GetLiveMemberSiteIdsByTagAsync(
+                    complianceWorkerTagIdsByArpId.Values.SelectMany(x => x).Distinct().ToList())
+                .ConfigureAwait(false);
+
             var complianceArpTags = await backendConfigurationPnDbContext.AreaRulePlanningTags
                 .Where(x => complianceArpIds.Contains(x.AreaRulePlanningId))
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -5229,12 +6057,21 @@ public class BackendConfigurationCalendarService(
                 .ToDictionaryAsync(x => x.Id);
 
             // PlanningSite ↔ Site mapping for the per-row Worker filter.
-            // Parity with BackendConfigurationTaskTrackerHelper.cs:166-184.
+            // Parity with BackendConfigurationTaskTrackerHelper's planningSiteIds read.
             var planningSiteIdsByPlanning = await itemsPlanningPnDbContext.PlanningSites
                 .Where(x => planningIds.Contains(x.PlanningId))
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .GroupBy(x => x.PlanningId)
                 .ToDictionaryAsync(g => g.Key, g => g.Select(p => p.SiteId).Distinct().ToList());
+
+            // #1231 — the worker tags the filtered site is a live member of, resolved
+            // once for the whole list rather than per row. Empty when no site filter is
+            // in play (admin-style callers), which leaves the loop's filter untouched.
+            HashSet<int> effectiveWorkerTagIds = sdkSiteIdForFilter.HasValue
+                ? await workerTagMembershipService
+                    .GetTagIdsForSitesAsync([sdkSiteIdForFilter.Value])
+                    .ConfigureAwait(false)
+                : [];
 
             foreach (var compliance in compliances)
             {
@@ -5264,14 +6101,27 @@ public class BackendConfigurationCalendarService(
                     continue;
                 }
 
-                // Per-row Worker filter (parity with TaskTrackerHelper.cs:178-192,
-                // collapsed to a single sdk-site check because the mobile worker
+                // Per-row Worker filter (parity with TaskTrackerHelper.cs's WorkerIds
+                // filter, collapsed to a single sdk-site check because the mobile worker
                 // call passes exactly one site id; null disables the filter for
                 // admin-style callers).
+                //
+                // #1231 — the explicit site match is unchanged; a worker-tag ("team")
+                // match is OR'd beside it, exactly as ShouldIncludeTask does on the week
+                // view. complianceWorkerTagIdsByArpId is already loaded above for the
+                // response's WorkerTagIds field, so the tag half costs no extra query.
                 if (sdkSiteIdForFilter.HasValue)
                 {
-                    if (!planningSiteIdsByPlanning.TryGetValue(compliance.PlanningId, out var planningSiteIds)
-                        || !planningSiteIds.Contains(sdkSiteIdForFilter.Value))
+                    var siteMatch =
+                        planningSiteIdsByPlanning.TryGetValue(compliance.PlanningId, out var planningSiteIds)
+                        && planningSiteIds.Contains(sdkSiteIdForFilter.Value);
+
+                    var workerTagMatch =
+                        effectiveWorkerTagIds.Count > 0
+                        && complianceWorkerTagIdsByArpId.TryGetValue(arp.Id, out var arpWorkerTagIds)
+                        && arpWorkerTagIds.Any(effectiveWorkerTagIds.Contains);
+
+                    if (!siteMatch && !workerTagMatch)
                     {
                         continue;
                     }
@@ -5318,6 +6168,23 @@ public class BackendConfigurationCalendarService(
                 bool completed = sdkCase?.Status == 100;
                 var taskIsExpired = ComputeTaskIsExpired(sdkCase, effectiveDate, dateTimeNow);
 
+                var rowWorkerTagIds = arp != null
+                    ? complianceWorkerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>())
+                    : new List<int>();
+                var rowTeamAssigneeIds = new List<int>();
+                var seenRowTeamAssigneeIds = new HashSet<int>();
+                foreach (var workerTagId in rowWorkerTagIds)
+                {
+                    if (!memberSiteIdsByTagId.TryGetValue(workerTagId, out var memberSiteIds)) continue;
+                    foreach (var memberSiteId in memberSiteIds)
+                    {
+                        if (seenRowTeamAssigneeIds.Add(memberSiteId))
+                        {
+                            rowTeamAssigneeIds.Add(memberSiteId);
+                        }
+                    }
+                }
+
                 var model = new CalendarTaskResponseModel
                 {
                     Id = arp?.Id ?? 0,
@@ -5357,9 +6224,9 @@ public class BackendConfigurationCalendarService(
                     DescriptionHtml = descriptionHtml,
                     Attachments = MapAttachments(arp),
                     TaskIsExpired = taskIsExpired,
-                    WorkerTagIds = arp != null
-                        ? complianceWorkerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>())
-                        : new List<int>()
+                    WorkerTagIds = rowWorkerTagIds,
+                    // #1236 — the team half of the assignment, beside AssigneeIds.
+                    TeamAssigneeIds = rowTeamAssigneeIds
                 };
 
                 result.Add(model);
@@ -5396,227 +6263,5 @@ public class BackendConfigurationCalendarService(
         if (!string.IsNullOrWhiteSpace(any)) return any!;
         // 3) caller-supplied fallback (e.g. compliance.ItemName), else empty
         return string.IsNullOrWhiteSpace(finalFallback) ? "" : finalFallback!;
-    }
-
-    public async Task<OperationDataResult<List<CalendarComplianceReportRowModel>>> GetComplianceReport(
-        CalendarComplianceReportRequestModel requestModel)
-    {
-        try
-        {
-            var userLanguageId = (await userService.GetCurrentUserLanguage()).Id;
-            var dateFrom = requestModel.DateFrom.Date;
-            var dateTo = requestModel.DateTo.Date.AddDays(1).AddTicks(-1);
-
-            var complianceQuery = backendConfigurationPnDbContext.Compliances
-                .Where(x => x.Deadline >= dateFrom && x.Deadline <= dateTo)
-                // Keep soft-removed rows that ever deployed a case: completed
-                // occurrences are soft-removed but retain MicrotingSdkCaseId
-                // (same shape as GetTasksForWeek's default branch, line ~118).
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
-                            || x.MicrotingSdkCaseId > 0);
-            if (requestModel.PropertyId.HasValue)
-            {
-                complianceQuery = complianceQuery.Where(x => x.PropertyId == requestModel.PropertyId.Value);
-            }
-            var loadedCompliances = await complianceQuery.ToListAsync();
-
-            // Batch-load backing SDK cases to classify done/open and read DoneAt.
-            var caseIds = loadedCompliances
-                .Select(c => c.MicrotingSdkCaseId)
-                .Where(id => id > 0)
-                .Distinct()
-                .ToList();
-            var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
-            await using var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
-            var casesById = caseIds.Count > 0
-                ? await sdkDbContext.Cases
-                    .Where(c => caseIds.Contains(c.Id))
-                    .ToDictionaryAsync(c => c.Id)
-                : new Dictionary<int, Microting.eForm.Infrastructure.Data.Entities.Case>();
-
-            bool IsDone(Compliance c) =>
-                c.MicrotingSdkCaseId > 0
-                && casesById.TryGetValue(c.MicrotingSdkCaseId, out var sdk)
-                && sdk.Status == 100;
-
-            var wantOpen = requestModel.Status is "open" or "all";
-            var wantDone = requestModel.Status is "done" or "all";
-            var compliances = loadedCompliances
-                .Where(c =>
-                {
-                    var done = IsDone(c);
-                    if (done) return wantDone;
-                    // Not done + soft-removed = user-deleted occurrence: never shown.
-                    if (c.WorkflowState == Constants.WorkflowStates.Removed) return false;
-                    return wantOpen;
-                })
-                .ToList();
-
-            // ARP enrichment — same batch pattern as the week view's compliance loop.
-            var planningIds = compliances.Select(x => x.PlanningId).Distinct().ToList();
-            var arps = await backendConfigurationPnDbContext.AreaRulePlannings
-                .Where(x => planningIds.Contains(x.ItemPlanningId))
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Include(x => x.AreaRule)
-                    .ThenInclude(x => x.AreaRuleTranslations)
-                .Include(x => x.PlanningSites)
-                .ToListAsync();
-            var arpByPlanningId = arps.ToDictionary(x => x.ItemPlanningId);
-            var arpIds = arps.Select(x => x.Id).ToList();
-
-            var calConfigs = await backendConfigurationPnDbContext.CalendarConfigurations
-                .Where(x => arpIds.Contains(x.AreaRulePlanningId))
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .ToDictionaryAsync(x => x.AreaRulePlanningId);
-
-            var arpTags = await backendConfigurationPnDbContext.AreaRulePlanningTags
-                .Where(x => arpIds.Contains(x.AreaRulePlanningId))
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .ToListAsync();
-            var tagItemIds = arpTags.Select(x => x.ItemPlanningTagId).Distinct().ToList();
-            var planningTagNames = await itemsPlanningPnDbContext.PlanningTags
-                .Where(x => tagItemIds.Contains(x.Id))
-                .ToDictionaryAsync(x => x.Id, x => x.Name);
-
-            // "this"-scope occurrence exceptions: hide deleted occurrences, apply
-            // date/hour overrides — same consultation the week loop does (~line 962).
-            var exceptions = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
-                .Where(x => arpIds.Contains(x.AreaRulePlanningId))
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .ToListAsync();
-            var exceptionsByArpAndDate = exceptions
-                .GroupBy(x => x.AreaRulePlanningId)
-                .ToDictionary(g => g.Key, g => g
-                    .GroupBy(x => x.OriginalDate.Date)
-                    .ToDictionary(gg => gg.Key, gg => gg.First()));
-
-            // Site names for WorkerNames.
-            var siteIdsNeeded = arps
-                .SelectMany(a => a.PlanningSites ?? new List<PlanningSite>())
-                .Where(ps => ps.WorkflowState != Constants.WorkflowStates.Removed)
-                .Select(ps => ps.SiteId)
-                .Distinct()
-                .ToList();
-            var siteNamesById = siteIdsNeeded.Count > 0
-                ? await sdkDbContext.Sites
-                    .Where(s => siteIdsNeeded.Contains(s.Id))
-                    .ToDictionaryAsync(s => s.Id, s => s.Name)
-                : new Dictionary<int, string>();
-
-            // Property + board names (default board = first-created per property).
-            var propertyIds = compliances.Select(c => c.PropertyId).Distinct().ToList();
-            var propertyNamesById = await backendConfigurationPnDbContext.Properties
-                .Where(p => propertyIds.Contains(p.Id))
-                .ToDictionaryAsync(p => p.Id, p => p.Name);
-            var boardsForProperties = await backendConfigurationPnDbContext.CalendarBoards
-                .Where(b => b.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(b => propertyIds.Contains(b.PropertyId))
-                .ToListAsync();
-            var boardNamesById = boardsForProperties.ToDictionary(b => b.Id, b => b.Name);
-            var defaultBoardIdByProperty = boardsForProperties
-                .GroupBy(b => b.PropertyId)
-                .ToDictionary(g => g.Key, g => g.OrderBy(b => b.Id).First().Id);
-
-            var result = new List<CalendarComplianceReportRowModel>();
-            foreach (var compliance in compliances)
-            {
-                arpByPlanningId.TryGetValue(compliance.PlanningId, out var arp);
-                CalendarConfiguration calConfig = null;
-                if (arp != null) calConfigs.TryGetValue(arp.Id, out calConfig);
-
-                // Tag filter (planning tags on the ARP).
-                var rowTagIds = arp != null
-                    ? arpTags.Where(t => t.AreaRulePlanningId == arp.Id)
-                        .Select(t => t.ItemPlanningTagId).ToList()
-                    : new List<int>();
-                if (requestModel.TagIds.Count > 0 && !rowTagIds.Any(requestModel.TagIds.Contains))
-                {
-                    continue;
-                }
-
-                // Site filter.
-                var rowSiteIds = arp?.PlanningSites?
-                    .Where(ps => ps.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Select(ps => ps.SiteId)
-                    .ToList() ?? new List<int>();
-                if (requestModel.SiteIds.Count > 0 && !rowSiteIds.Any(requestModel.SiteIds.Contains))
-                {
-                    continue;
-                }
-
-                // Exception consultation: hide deleted occurrences, apply overrides.
-                CalendarOccurrenceException exception = null;
-                if (arp != null && exceptionsByArpAndDate.TryGetValue(arp.Id, out var perDate))
-                {
-                    perDate.TryGetValue(compliance.Deadline.Date, out exception);
-                }
-                if (exception?.IsDeleted == true) continue;
-
-                var effectiveTaskDate = exception?.NewDate?.Date ?? compliance.Deadline.Date;
-                if (effectiveTaskDate < dateFrom || effectiveTaskDate > dateTo) continue;
-
-                // Board filter on the effective board.
-                var effectiveBoardId = exception?.BoardId
-                    ?? calConfig?.BoardId
-                    ?? defaultBoardIdByProperty.GetValueOrDefault(compliance.PropertyId, 0);
-                if (requestModel.BoardIds.Count > 0
-                    && (effectiveBoardId == 0 || !requestModel.BoardIds.Contains(effectiveBoardId)))
-                {
-                    continue;
-                }
-
-                var isAllDay = ComputeIsAllDay(arp, calConfig);
-
-                var done = IsDone(compliance);
-                var sdkCase = compliance.MicrotingSdkCaseId > 0
-                    ? casesById.GetValueOrDefault(compliance.MicrotingSdkCaseId)
-                    : null;
-
-                var title = !string.IsNullOrEmpty(exception?.Title)
-                    ? exception.Title
-                    : ResolveTaskTitle(arp?.AreaRule?.AreaRuleTranslations, userLanguageId, compliance.ItemName);
-
-                result.Add(new CalendarComplianceReportRowModel
-                {
-                    ComplianceId = compliance.Id,
-                    TaskDate = effectiveTaskDate.ToString("yyyy-MM-dd"),
-                    StartHour = isAllDay ? 0 : exception?.StartHour ?? calConfig?.StartHour ?? 9.0,
-                    Duration = isAllDay ? 0 : exception?.Duration ?? calConfig?.Duration ?? 1.0,
-                    IsAllDay = isAllDay,
-                    Title = title,
-                    PropertyId = compliance.PropertyId,
-                    PropertyName = propertyNamesById.GetValueOrDefault(compliance.PropertyId, string.Empty),
-                    BoardId = effectiveBoardId == 0 ? null : effectiveBoardId,
-                    BoardName = boardNamesById.GetValueOrDefault(effectiveBoardId, string.Empty),
-                    Tags = rowTagIds
-                        .Select(id => planningTagNames.GetValueOrDefault(id))
-                        .Where(n => n != null)
-                        .ToList(),
-                    WorkerNames = rowSiteIds
-                        .Select(id => siteNamesById.GetValueOrDefault(id, string.Empty))
-                        .Where(n => !string.IsNullOrEmpty(n))
-                        .ToList(),
-                    Completed = done,
-                    DoneAt = done ? sdkCase?.DoneAtUserModifiable ?? sdkCase?.DoneAt : null,
-                    SdkCaseId = compliance.MicrotingSdkCaseId,
-                    EformId = arp?.AreaRule?.EformId,
-                    PlanningId = compliance.PlanningId,
-                    AreaRulePlanningId = arp?.Id
-                });
-            }
-
-            var sorted = result
-                .OrderByDescending(r => r.TaskDate)
-                .ThenBy(r => r.StartHour)
-                .ToList();
-            return new OperationDataResult<List<CalendarComplianceReportRowModel>>(true, sorted);
-        }
-        catch (Exception e)
-        {
-            SentrySdk.CaptureException(e);
-            logger.LogError(e, "BackendConfigurationCalendarService.GetComplianceReport: {Message}", e.Message);
-            return new OperationDataResult<List<CalendarComplianceReportRowModel>>(false,
-                $"{localizationService.GetString("ErrorWhileGettingCalendarTasks")}: {e.Message}");
-        }
     }
 }

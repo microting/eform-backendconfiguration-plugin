@@ -24,6 +24,7 @@ using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
 using BackendConfiguration.Pn.Services.EventDeployService;
 using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
 using BackendConfiguration.Pn.Services.CalendarChangeNotification;
+using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -253,7 +254,7 @@ public class CalendarPrepareCompleteTests : TestBaseSetup
             var sp = services.BuildServiceProvider();
             eventDeployService = new EventDeployService(
                 BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, coreHelper, sp,
-                NullLogger<EventDeployService>.Instance);
+                TestContextLogger<EventDeployService>.Instance);
         }
         else
         {
@@ -266,11 +267,12 @@ public class CalendarPrepareCompleteTests : TestBaseSetup
             ItemsPlanningPnDbContext, taskWizardService,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
             Substitute.For<ICalendarChangeNotifier>(),
-            NullLogger<BackendConfigurationCalendarService>.Instance,
+            TestContextLogger<BackendConfigurationCalendarService>.Instance,
             // #1122 — the calendar service now delegates the retract/backfill
             // halves of a cross-period re-anchor. Neither fires in these fixtures.
             Substitute.For<ICalendarOccurrenceRetractionService>(),
-            Substitute.For<ICalendarPastSeriesBackfillService>());
+            Substitute.For<ICalendarPastSeriesBackfillService>(),
+            new WorkerTagMembershipService(coreHelper));
 
         return new Scenario
         {

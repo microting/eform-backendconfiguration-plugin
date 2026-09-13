@@ -32,9 +32,18 @@ using Infrastructure.Models.AssignmentWorker;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+using Microting.EformAngularFrontendBase.Infrastructure.Const;
+using Microting.EformBackendConfigurationBase.Infrastructure.Const;
 using Services.BackendConfigurationAssignmentWorkerService;
 
-[Authorize]
+/// <summary>
+/// Every action requires plugin access. Each action that creates, changes or
+/// removes a worker or its property assignments also requires the core
+/// device-user policy the client checks before offering it. Reads stay at
+/// plugin access: compliance, calendar and task pages open to every plugin
+/// user load them, and a 403 on a page-load call ends the session.
+/// </summary>
+[Authorize(Policy = BackendConfigurationClaims.AccessBackendConfigurationPlugin)]
 [Route("api/backend-configuration-pn/properties/assignment")]
 public class AssignmentWorkerController : Controller
 {
@@ -59,18 +68,21 @@ public class AssignmentWorkerController : Controller
     }
 
     [HttpPost]
+    [Authorize(Policy = AuthConsts.EformPolicies.DeviceUsers.Create)]
     public Task<OperationResult> Create([FromBody] PropertyAssignWorkersModel createModel)
     {
         return _backendConfigurationAssignmentWorkerService.Create(createModel);
     }
 
     [HttpPut]
+    [Authorize(Policy = AuthConsts.EformPolicies.DeviceUsers.Update)]
     public Task<OperationResult> Update([FromBody] PropertyAssignWorkersModel updateModel)
     {
         return _backendConfigurationAssignmentWorkerService.Update(updateModel);
     }
 
     [HttpDelete]
+    [Authorize(Policy = AuthConsts.EformPolicies.DeviceUsers.Delete)]
     public Task<OperationResult> Delete(int deviceUserId)
     {
         return _backendConfigurationAssignmentWorkerService.Delete(deviceUserId);
@@ -85,6 +97,7 @@ public class AssignmentWorkerController : Controller
 
     [HttpPost]
     [Route("update-device-user")]
+    [Authorize(Policy = AuthConsts.EformPolicies.DeviceUsers.Update)]
     public async Task<OperationResult> UpdateDeviceUser([FromBody] DeviceUserModel deviceUserModel)
     {
         return await _backendConfigurationAssignmentWorkerService.UpdateDeviceUser(deviceUserModel).ConfigureAwait(false);
@@ -92,6 +105,7 @@ public class AssignmentWorkerController : Controller
 
     [HttpPut]
     [Route("create-device-user")]
+    [Authorize(Policy = AuthConsts.EformPolicies.DeviceUsers.Create)]
     public async Task<OperationDataResult<int>> Create([FromBody] DeviceUserModel deviceUserModel)
     {
         // if (!ModelState.IsValid)
@@ -103,6 +117,7 @@ public class AssignmentWorkerController : Controller
 
     [HttpPut]
     [Route("update-simplified-device-user")]
+    [Authorize(Policy = AuthConsts.EformPolicies.DeviceUsers.Update)]
     public async Task<OperationResult> UpdateSimplifiedDeviceUser([FromBody] SimpleDeviceUserModel deviceUserModel, bool isFullyUpdate = false)
     {
         return await _backendConfigurationAssignmentWorkerService.UpdateSimplifiedDeviceUser(deviceUserModel).ConfigureAwait(false);

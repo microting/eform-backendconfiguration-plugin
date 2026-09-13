@@ -2,10 +2,11 @@ import {Component, OnInit} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {TranslateService} from '@ngx-translate/core';
-import {of} from 'rxjs';
+import {Observable, of} from 'rxjs';
+import {defaultIfEmpty, map} from 'rxjs/operators';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {CommonDictionaryModel, SharedTagModel, TemplateRequestModel} from 'src/app/common/models';
-import {EFormService, EformTagService} from 'src/app/common/services';
+import {EFormService} from 'src/app/common/services';
 import {
   CalendarBoardModel,
   CalendarTaskListFiltrationModel,
@@ -14,10 +15,12 @@ import {
 import {
   BackendConfigurationPnCalendarService,
   BackendConfigurationPnPropertiesService,
+  BackendConfigurationPnWorkerTagsService,
 } from '../../../../services';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
 import {CalendarRepeatService} from '../../../calendar/services/calendar-repeat.service';
 import {mapResponseToCalendarTask} from '../../../calendar/services/calendar-task.mapper';
+import {findLogboegerFolderId} from '../../../calendar/services/logboeger-folder.util';
 import {formatRepeatText} from '../../calendar-task-list-repeat.util';
 import {
   TaskCreateEditModalComponent,
@@ -53,7 +56,7 @@ export class CalendarTaskListPageComponent implements OnInit {
     private propertiesService: BackendConfigurationPnPropertiesService,
     private tagsService: ItemsPlanningPnTagsService,
     private eformService: EFormService,
-    private eformTagService: EformTagService,
+    private workerTagsService: BackendConfigurationPnWorkerTagsService,
     private repeatService: CalendarRepeatService,
   ) {}
 
@@ -65,8 +68,14 @@ export class CalendarTaskListPageComponent implements OnInit {
     this.loadTasks();
   }
 
+  // Worker tags come from the PLUGIN endpoint, not the core
+  // `EformTagService.getAvailableTags()`: the SDK keeps worker groups and
+  // eForm/template tags in one `Tags` table, so the core list offered template
+  // tags here and picking one produced an event that reached nobody (#1213).
+  // The plugin endpoint filters server-side to tags that have at least one
+  // live worker member; nothing is discarded client-side.
   loadWorkerTags() {
-    this.eformTagService.getAvailableTags().subscribe(res => {
+    this.workerTagsService.getWorkerTags().subscribe(res => {
       if (res && res.success) {
         this.teams = res.model;
       }
@@ -158,7 +167,59 @@ export class CalendarTaskListPageComponent implements OnInit {
     });
   }
 
+  /**
+   * #1135 — the edit modal puts `folderId` straight into the update payload,
+   * where it decides which SDK folder the task's eForm is filed under. This
+   * page has no folder picker, so it resolves the property's Logbøger folder
+   * the same way `CalendarContainerComponent` does (`getLinkedFolderDtos` +
+   * `findFolderByName`). Hard-coding `null` here is what made every save from
+   * this page fail server-side.
+   *
+   * Resolved per TASK property, not per selected filter: the grid can list
+   * tasks from several properties at once. Successful lookups are cached for
+   * the lifetime of the page (the folder tree does not change while it is
+   * open); failures are NOT cached, so the next edit retries.
+   *
+   * Resolved from the task's property as it stands when the modal OPENS. If the
+   * user then switches property inside the modal, `propertyId` follows the
+   * editable control while `folderId` does not — pre-existing, identical on the
+   * calendar page, and deliberately out of scope for #1135.
+   */
+  private logboegerFolderIdByProperty = new Map<number, number | null>();
+
+  private resolveLogboegerFolderId(propertyId: number): Observable<number | null> {
+    if (!propertyId) {
+      return of(null);
+    }
+    if (this.logboegerFolderIdByProperty.has(propertyId)) {
+      return of(this.logboegerFolderIdByProperty.get(propertyId) ?? null);
+    }
+    return this.propertiesService.getLinkedFolderDtos(propertyId).pipe(
+      map(res => {
+        if (!res || !res.success) {
+          // Never fall back to another property's folder — that would refile
+          // this task under a property it does not belong to (#1239). null is
+          // the supported "no folder supplied" value: the backend keeps the
+          // task's current folder.
+          return null;
+        }
+        const folderId = findLogboegerFolderId(res.model);
+        this.logboegerFolderIdByProperty.set(propertyId, folderId);
+        return folderId;
+      }),
+      // HttpErrorInterceptor swallows a hard 4xx/5xx into EMPTY, which
+      // completes without emitting — without this the modal would silently
+      // never open. The interceptor has already toasted the reason.
+      defaultIfEmpty(null),
+    );
+  }
+
   onEditTask(task: CalendarTaskModel) {
+    this.resolveLogboegerFolderId(task.propertyId)
+      .subscribe(folderId => this.openEditTaskModal(task, folderId));
+  }
+
+  private openEditTaskModal(task: CalendarTaskModel, folderId: number | null) {
     const data: TaskCreateEditModalData = {
       task,
       date: task.taskDate,
@@ -171,7 +232,7 @@ export class CalendarTaskListPageComponent implements OnInit {
       propertyId: task.propertyId,
       properties: this.properties,
       eforms: of(this.eforms),
-      folderId: null,
+      folderId,
       planningTags: this.tags.map(t => ({id: t.id, name: t.name})),
     };
     const ref = this.dialog.open(TaskCreateEditModalComponent, {

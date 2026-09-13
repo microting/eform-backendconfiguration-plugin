@@ -110,6 +110,306 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
         return groupId;
     }
 
+    /// <summary>
+    /// The permissionless group every user falls back to. It exists because a user
+    /// in NO group is unrepresentable through account-management —
+    /// <c>AdminService.Create</c> rejects a non-admin whose GroupId does not
+    /// resolve, and the create-user modal marks the group required. It changes no
+    /// enforcement: <c>ClaimsService.GetUserClaims</c> already returns an empty
+    /// claim list for a user with no groups, so "none" and "no group" grant
+    /// exactly the same access.
+    ///
+    /// Deliberately absent from every switch in
+    /// <see cref="GetOrCreateSecurityGroupId"/>: falling through to the default arm
+    /// is what gives it an empty RedirectLink and no permission rows at all.
+    /// </summary>
+    public const string NoPermissionsSecurityGroupName = "none";
+
+    /// <summary>
+    /// The groups this plugin assigns to workers' logins: its own <c>none</c>,
+    /// <c>Kun arkiv</c> and <c>Kun tid</c>, and core's default <c>eForm users</c>.
+    /// </summary>
+    private static readonly string[] PluginManagedSecurityGroupNames =
+        [NoPermissionsSecurityGroupName, "eForm users", "Kun arkiv", "Kun tid"];
+
+    /// <summary>
+    /// The groups an existing account may hold for CreateDeviceUser to link a new
+    /// worker to it. <c>eForm users</c> is excluded because it is also core's
+    /// default group for office users; UpdateDeviceUser still maintains logins the
+    /// plugin itself placed there.
+    /// </summary>
+    private static readonly string[] LinkableSecurityGroupNames =
+        [NoPermissionsSecurityGroupName, "Kun arkiv", "Kun tid"];
+
+    /// <summary>
+    /// True when this plugin maintains <paramref name="login"/> for the worker
+    /// linked to it: it keeps the account's name, locale, address and plugin
+    /// groups in step with that worker. UpdateDeviceUser applies this rule. See
+    /// <see cref="IsOutsideAdminAndOnlyInGroupsAsync"/> with
+    /// <see cref="PluginManagedSecurityGroupNames"/>.
+    /// </summary>
+    private static Task<bool> IsPluginManagedLoginAsync(
+        UserManager<EformUser> userManager, BaseDbContext baseDbContext, EformUser login)
+        => IsOutsideAdminAndOnlyInGroupsAsync(userManager, baseDbContext, login, PluginManagedSecurityGroupNames);
+
+    /// <summary>
+    /// True when CreateDeviceUser may link a new worker to the existing account
+    /// <paramref name="login"/>. See <see cref="IsOutsideAdminAndOnlyInGroupsAsync"/>
+    /// with <see cref="LinkableSecurityGroupNames"/>.
+    /// </summary>
+    private static Task<bool> MayLinkNewWorkerToLoginAsync(
+        UserManager<EformUser> userManager, BaseDbContext baseDbContext, EformUser login)
+        => IsOutsideAdminAndOnlyInGroupsAsync(userManager, baseDbContext, login, LinkableSecurityGroupNames);
+
+    /// <summary>
+    /// True when all three hold for <paramref name="login"/>:
+    /// <list type="bullet">
+    ///   <item>the account is not user id 1;</item>
+    ///   <item>it does not hold the admin role;</item>
+    ///   <item>every security group it belongs to is one of <paramref name="allowedGroupNames"/>.</item>
+    /// </list>
+    /// An account in no group at all qualifies, because the fallback rule puts it
+    /// in <c>none</c>. Every other account stays exactly as its owner configured it.
+    /// Group names are compared in memory and case-sensitively, so a group that
+    /// merely resembles an allowed group counts as foreign.
+    /// </summary>
+    private static async Task<bool> IsOutsideAdminAndOnlyInGroupsAsync(
+        UserManager<EformUser> userManager, BaseDbContext baseDbContext, EformUser login,
+        IReadOnlyCollection<string> allowedGroupNames)
+    {
+        if (login.Id == 1 || await userManager.IsInRoleAsync(login, EformRole.Admin).ConfigureAwait(false))
+        {
+            return false;
+        }
+
+        var groupNames = await (
+            from sgu in baseDbContext.SecurityGroupUsers
+            join sg in baseDbContext.SecurityGroups on sgu.SecurityGroupId equals sg.Id
+            where sgu.EformUserId == login.Id
+            select sg.Name
+        ).ToListAsync().ConfigureAwait(false);
+
+        return groupNames.All(allowedGroupNames.Contains);
+    }
+
+    /// <summary>
+    /// Enforces "every user is in <c>none</c> unless they have another group".
+    /// Call AFTER the eForm users / Kun arkiv / Kun tid membership sync, so it sees
+    /// the final set: expressing the rule once downstream keeps it true regardless
+    /// of which combination of flags moved.
+    /// </summary>
+    /// <returns>
+    /// <c>true</c> only when this call actually added a fallback membership. The
+    /// method has several silent no-op arms - admins, a user that already has a
+    /// real group, and a user already in <c>none</c> - so a caller that wants to
+    /// report how many users it moved cannot infer it from how many it asked
+    /// about.
+    /// </returns>
+    public static async Task<bool> EnsureFallbackSecurityGroupAsync(BaseDbContext baseDbContext, int eformUserId)
+    {
+        // The primary admin is skipped everywhere else in these paths; keep that.
+        if (eformUserId == 1)
+        {
+            return false;
+        }
+
+        // Matches SecurityGroupBackfillService.AssignFallbackGroupToGrouplessUsersAsync's
+        // own admin exclusion (same nested Any shape, so the rule reads as the
+        // same rule): core strips group memberships from every admin, not just
+        // user id 1. Without this, a groupless SECONDARY admin saved through this
+        // path would be put in "none" - a state the backfill deliberately avoids,
+        // and it would list that admin under /security. The flag-driven group
+        // writes elsewhere in this file (WebAccessEnabled / ArchiveEnabled /
+        // "Kun tid") guard `user != null`, some also `user.Id != 1`; admin logins
+        // do not reach them, because CreateDeviceUser refuses admin accounts
+        // and UpdateDeviceUser clears `user` for them.
+        var isAdmin = await baseDbContext.UserRoles.AnyAsync(ur => ur.UserId == eformUserId
+            && baseDbContext.Roles.Any(r => r.Id == ur.RoleId && r.Name == EformRole.Admin))
+            .ConfigureAwait(false);
+        if (isAdmin)
+        {
+            return false;
+        }
+
+        var noneGroupId = await GetOrCreateSecurityGroupId(baseDbContext, NoPermissionsSecurityGroupName)
+            .ConfigureAwait(false);
+
+        // SecurityGroup.Name carries no unique index (or any index), so
+        // GetOrCreateSecurityGroupId's check-then-act read-then-insert can race and
+        // leave two "none" groups with distinct ids. Matching fallback memberships
+        // against only the single id resolved above would then misread a membership
+        // in the OTHER "none" group as a real group. Match by NAME instead, so every
+        // duplicate "none" group is still recognised as a fallback membership.
+        var membershipsWithGroupNames = await (
+            from sgu in baseDbContext.SecurityGroupUsers
+            join sg in baseDbContext.SecurityGroups on sgu.SecurityGroupId equals sg.Id
+            where sgu.EformUserId == eformUserId
+            select new { Membership = sgu, sg.Name }
+        ).ToListAsync().ConfigureAwait(false);
+
+        var noneMemberships = membershipsWithGroupNames
+            .Where(x => x.Name == NoPermissionsSecurityGroupName)
+            .Select(x => x.Membership)
+            .ToList();
+        var hasRealGroup = membershipsWithGroupNames.Any(x => x.Name != NoPermissionsSecurityGroupName);
+
+        if (hasRealGroup)
+        {
+            if (noneMemberships.Count > 0)
+            {
+                baseDbContext.SecurityGroupUsers.RemoveRange(noneMemberships);
+                await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+            }
+
+            return false;
+        }
+
+        if (noneMemberships.Count > 0)
+        {
+            return false;
+        }
+
+        var membership = new SecurityGroupUser
+        {
+            EformUserId = eformUserId,
+            SecurityGroupId = noneGroupId
+        };
+        baseDbContext.SecurityGroupUsers.Add(membership);
+
+        try
+        {
+            await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+        }
+        catch (DbUpdateException)
+        {
+            // The read above and this insert are not one atomic step, so two saves
+            // for the same worker running concurrently can both decide to add the
+            // fallback. SecurityGroupUsers carries a unique index on
+            // (EformUserId, SecurityGroupId), so the loser's INSERT is rejected -
+            // but the state it wanted is the state the other save produced, which is
+            // success, not failure. Detach first: a failed SaveChanges leaves the
+            // entity tracked as Added, and the next SaveChanges on this context
+            // would replay the same doomed INSERT.
+            baseDbContext.Entry(membership).State = EntityState.Detached;
+
+            var addedByTheRaceWinner = await baseDbContext.SecurityGroupUsers
+                .AnyAsync(x => x.EformUserId == eformUserId && x.SecurityGroupId == noneGroupId)
+                .ConfigureAwait(false);
+            if (!addedByTheRaceWinner)
+            {
+                // Not the duplicate we tolerate - something else went wrong.
+                throw;
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Runs Identity's own user validators (username/email format, and
+    /// uniqueness including <c>RequireUniqueEmail</c>) against a candidate
+    /// address, without writing anything: <paramref name="candidate"/> is a
+    /// throwaway object, never added to a DbContext, so this is a pure read -
+    /// safe to call before any SDK or Identity write. <paramref name="existingUserId"/>
+    /// is the id of the account this save would be updating, if any (0 for a
+    /// brand-new login), so the validators' own "is this the same row" check
+    /// excludes it - exactly what the real CreateAsync/UpdateAsync call would
+    /// decide, with nothing written yet.
+    /// </summary>
+    private static async Task<IdentityResult> ValidateCandidateEmailAsync(
+        UserManager<EformUser> userManager, string candidateEmail, int existingUserId)
+    {
+        var candidate = new EformUser { Id = existingUserId, Email = candidateEmail, UserName = candidateEmail };
+        foreach (var validator in userManager.UserValidators)
+        {
+            var result = await validator.ValidateAsync(userManager, candidate).ConfigureAwait(false);
+            if (!result.Succeeded)
+            {
+                return result;
+            }
+        }
+
+        return IdentityResult.Success;
+    }
+
+    /// <summary>
+    /// Resolves an existing login by username-or-email WITHOUT writing anything.
+    /// Production's own <c>UserService.GetByUsernameAsync</c> falls back to an
+    /// email lookup by renaming and SAVING whatever account it finds there -
+    /// itself a write neither CreateDeviceUser nor UpdateDeviceUser can risk
+    /// before every refusal check below has had a chance to run. It is also
+    /// not null-safe the way this needs: <c>UserManager.FindByNameAsync</c>
+    /// throws <see cref="ArgumentNullException"/> on a null username, and a
+    /// worker's email can genuinely be null (a population core's own
+    /// DeviceUsersService seeded before eform-angular-frontend commit
+    /// 36f3a82c8), so an unguarded call here would make every such worker
+    /// uneditable. Returns null for a null/empty email instead of throwing.
+    /// </summary>
+    private static async Task<EformUser?> FindLoginWithoutSideEffectsAsync(
+        UserManager<EformUser> userManager, string? email)
+    {
+        if (string.IsNullOrEmpty(email))
+        {
+            return null;
+        }
+
+        return await userManager.FindByNameAsync(email).ConfigureAwait(false)
+               ?? await userManager.FindByEmailAsync(email).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// True when an <see cref="IdentityResult"/> failed because another
+    /// account already owns the candidate address, as opposed to a format
+    /// refusal (e.g. non-ASCII characters Identity's default
+    /// AllowedUserNameCharacters excludes).
+    /// </summary>
+    private static bool IsEmailCollision(IdentityResult validation) =>
+        validation.Errors.Any(e => e.Code is "DuplicateUserName" or "DuplicateEmail");
+
+    /// <summary>
+    /// The full set of error codes ValidateCandidateEmailAsync's own
+    /// UserValidators can ever produce - a collision, or a format refusal
+    /// (e.g. non-ASCII characters, or a malformed address). Anything else
+    /// (e.g. <c>ConcurrencyFailure</c> from a real UpdateAsync/CreateAsync
+    /// call, which runs more than just UserValidators) is not an email
+    /// problem at all, and must not be reported to the caller as one.
+    /// </summary>
+    private static bool IsEmailValidationFailure(IdentityResult validation) =>
+        validation.Errors.All(e => e.Code is
+            "DuplicateUserName" or "DuplicateEmail" or "InvalidUserName" or "InvalidEmail");
+
+    /// <summary>Result-message keys that CreateDeviceUser and UpdateDeviceUser return as the result's Message.</summary>
+    private const string EmailIsAlreadyInUseKey = "EmailIsAlreadyInUse";
+    private const string EmailIsNotValidKey = "EmailIsNotValid";
+    private const string DeviceUserCouldNotBeUpdatedKey = "DeviceUserCouldNotBeUpdated";
+    private const string DeviceUserCouldNotBeCreatedKey = "DeviceUserCouldNotBeCreated";
+
+    /// <summary>
+    /// Distinguishes a collision (another account already owns the address)
+    /// from a format refusal, so the caller can return the matching existing
+    /// result key - and returns <paramref name="otherFailureKey"/> for a result
+    /// that is not an email-validation failure at all, e.g. a genuine
+    /// UpdateAsync/CreateAsync race reported as <c>ConcurrencyFailure</c>.
+    /// The caller passes its own generic failure key, so a failed create is
+    /// reported as a create failure and a failed update as an update failure.
+    /// </summary>
+    private static string EmailRefusalErrorKey(IdentityResult validation, string otherFailureKey)
+    {
+        if (IsEmailCollision(validation))
+        {
+            return EmailIsAlreadyInUseKey;
+        }
+
+        if (IsEmailValidationFailure(validation))
+        {
+            return EmailIsNotValidKey;
+        }
+
+        return otherFailureKey;
+    }
+
     private static async Task EnsureCoreGroupPermissions(BaseDbContext baseDbContext, int groupId,
         string[] enabledClaimNames)
     {
@@ -422,51 +722,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         .Select(x => x.TagId!.Value)
                         .ToList();
 
-                    var forRemove = siteTagIds
-                        .Where(x => !deviceUserModel.Tags.Contains(x))
-                        .ToList();
-
-                    foreach (var tagIdForRemove in forRemove)
-                    {
-                        var siteTag = await sdkDbContext.SiteTags
-                            .Where(x => x.TagId == tagIdForRemove)
-                            .Where(x => x.SiteId == site.Id)
-                            .FirstOrDefaultAsync();
-
-                        if (siteTag != null)
-                        {
-                            await siteTag.Delete(sdkDbContext);
-                        }
-                    }
-
-                    var forCreate = deviceUserModel.Tags
-                        .Where(x => !siteTagIds.Contains(x))
-                        .ToList();
-
-                    foreach (var tagIdForCreate in forCreate)
-                    {
-                        var siteTag = new SiteTag
-                        {
-                            TagId = tagIdForCreate,
-                            SiteId = site.Id
-                        };
-
-                        await siteTag.Create(sdkDbContext);
-                    }
-
-                    // Reconcile already-deployed future occurrences of any event referencing a changed worker tag
-                    var changedTagIds = forRemove.Concat(forCreate).Distinct().ToList();
-                    if (changedTagIds.Count > 0 && reconciliationService != null)
-                    {
-                        await reconciliationService.ReconcileEventsForWorkerTagsAsync(changedTagIds);
-                    }
                     {
                         var oldEmail = worker.Email;
-                        if (sdkDbContext.Workers.Any(x => x.Email == deviceUserModel.WorkerEmail && x.MicrotingUid != siteDto.WorkerUid && x.WorkflowState != Constants.WorkflowStates.Removed))
-                        {
-                            // this email is already in use
-                            return new OperationDataResult<int>(false, "EmailIsAlreadyInUse");
-                        }
                         var fullName = deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName;
 
                         if (string.IsNullOrEmpty(deviceUserModel.WorkerEmail) || !deviceUserModel.WorkerEmail.Contains("@") && deviceUserModel.TimeRegistrationEnabled == false)
@@ -475,6 +732,165 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             deviceUserModel.WorkerEmail = $"user_{worker.Id}_{siteDto.SiteId}@microting.invalid".ToLower();
                             // return new OperationResult(false, "EmailIsNotValid");
                         }
+
+                        // Runs AFTER the fake-address substitution above: otherwise a
+                        // genuinely empty/absent WorkerEmail ("") is checked as "" against
+                        // every other live worker's Email, and refuses this save with
+                        // EmailIsAlreadyInUse whenever a SECOND live worker also has Email
+                        // == "" - the exact null/empty-email population this method must
+                        // stay editable for. The substituted, per-worker-unique synthetic
+                        // address can never collide this way.
+                        if (sdkDbContext.Workers.Any(x => x.Email == deviceUserModel.WorkerEmail && x.MicrotingUid != siteDto.WorkerUid && x.WorkflowState != Constants.WorkflowStates.Removed))
+                        {
+                            // this email is already in use
+                            return new OperationDataResult<int>(false, EmailIsAlreadyInUseKey);
+                        }
+
+                        // Resolve the worker's own login with a NON-mutating, null-safe
+                        // lookup - see FindLoginWithoutSideEffectsAsync for why
+                        // GetByUsernameAsync cannot be used here: a null oldEmail is a
+                        // real population (core's own DeviceUsersService seeded it that
+                        // way before eform-angular-frontend commit 36f3a82c8), and
+                        // FindByNameAsync throws ArgumentNullException on null - a tag
+                        // change, a reconciliation deployment or a login rename must
+                        // never happen ahead of the checks below finding a reason to
+                        // refuse the whole save either way.
+                        var user = await FindLoginWithoutSideEffectsAsync(userManager, oldEmail).ConfigureAwait(false);
+
+                        // This plugin writes only to logins it manages - see
+                        // IsPluginManagedLoginAsync. A worker linked to any other
+                        // account still saves its own fields, but the account's
+                        // name, locale, address and groups are never touched.
+                        var skipLoginWork = user != null
+                            && !await IsPluginManagedLoginAsync(userManager, baseDbContext, user).ConfigureAwait(false);
+                        var emailChanged = !string.Equals(oldEmail, deviceUserModel.WorkerEmail,
+                            StringComparison.OrdinalIgnoreCase);
+                        if (skipLoginWork)
+                        {
+                            // That account never follows the worker, so the worker's
+                            // address cannot move away from it either: refuse the
+                            // change before any write.
+                            if (emailChanged)
+                            {
+                                logger.LogWarning(
+                                    "[UpdateDeviceUser] refusing to change the address {Email} of a worker linked to an account this plugin does not manage",
+                                    oldEmail);
+                                return new OperationDataResult<int>(false, EmailIsAlreadyInUseKey);
+                            }
+
+                            logger.LogWarning(
+                                "[UpdateDeviceUser] the login resolved for {Email} is not managed by this plugin - saving the worker's own fields, skipping all login/group work for it",
+                                oldEmail);
+                            user = null;
+                        }
+                        else
+                        {
+                            // Validate the FINAL target address before any SDK or Identity
+                            // write. The SDK-worker check above only sees other SDK
+                            // workers, never AspNetUsers, so an address already owned by
+                            // an admin or a backend user sails through it untouched - and
+                            // once core.SiteUpdate/worker.Update below have run, there is
+                            // no clean way to roll the SDK side back if Identity then
+                            // refuses. Validating first means a refusal leaves the worker,
+                            // its SDK site and its login exactly as they were.
+                            var emailValidation = await ValidateCandidateEmailAsync(
+                                userManager, deviceUserModel.WorkerEmail, user?.Id ?? 0).ConfigureAwait(false);
+                            if (!emailValidation.Succeeded)
+                            {
+                                // A collision is always refused. A FORMAT refusal (e.g.
+                                // non-ASCII) is refused only when the address is actually
+                                // CHANGING: production already holds rows this validation
+                                // would refuse to create - a Danish customer base's
+                                // æøå addresses among them - and an unchanged address must
+                                // not turn every other edit (rename, resign, PIN, tags) into
+                                // a hard failure for a worker whose address was simply never
+                                // validated when it was first saved.
+                                if (IsEmailCollision(emailValidation) || emailChanged)
+                                {
+                                    logger.LogWarning(
+                                        "[UpdateDeviceUser] refusing to save email={Email}: {Errors}",
+                                        deviceUserModel.WorkerEmail,
+                                        string.Join(",", emailValidation.Errors.Select(e => e.Description)));
+                                    return new OperationDataResult<int>(false, EmailRefusalErrorKey(emailValidation, DeviceUserCouldNotBeUpdatedKey));
+                                }
+
+                                // Format failure, address UNCHANGED: leave the login
+                                // alone, but let every other field on the worker save.
+                                // Any WebAccessEnabled/ArchiveEnabled flag change requested
+                                // in this same save is dropped along with it - the group
+                                // sync further down only runs when `user` is non-null.
+                                logger.LogWarning(
+                                    "[UpdateDeviceUser] {Email} is invalid but unchanged - saving the worker's other fields, skipping login work and any requested group/flag changes",
+                                    deviceUserModel.WorkerEmail);
+                                user = null;
+                                skipLoginWork = true;
+                            }
+                        }
+
+                        // Authoritative backend block: a worker still effectively assigned to an
+                        // active event (explicitly or via a worker tag) cannot be resigned.
+                        // Computed from the REQUESTED tag set (deviceUserModel.Tags) and run
+                        // before every write below it - the SiteTag delete/create, the
+                        // reconciliation dispatch, core.SiteUpdate and worker.Update - so a
+                        // refusal here leaves the worker's email, tags and login exactly as
+                        // they were, instead of refusing only after the SDK side has already
+                        // moved to the new state (the email/login split).
+                        if (deviceUserModel.Resigned && !worker.Resigned)
+                        {
+                            var stillAssigned = await backendConfigurationPnDbContext.AreaRulePlannings
+                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed && x.Status)
+                                .Where(x =>
+                                    x.PlanningSites.Any(y => y.WorkflowState != Constants.WorkflowStates.Removed
+                                                             && y.SiteId == site.Id)
+                                    || x.AreaRulePlanningWorkerTags.Any(wt => wt.WorkflowState != Constants.WorkflowStates.Removed
+                                                                              && deviceUserModel.Tags.Contains(wt.TagId)))
+                                .AnyAsync();
+
+                            if (stillAssigned)
+                            {
+                                return new OperationResult(false, "WorkerStillAssignedToEventsCannotResign");
+                            }
+                        }
+
+                        var forRemove = siteTagIds
+                            .Where(x => !deviceUserModel.Tags.Contains(x))
+                            .ToList();
+
+                        foreach (var tagIdForRemove in forRemove)
+                        {
+                            var siteTag = await sdkDbContext.SiteTags
+                                .Where(x => x.TagId == tagIdForRemove)
+                                .Where(x => x.SiteId == site.Id)
+                                .FirstOrDefaultAsync();
+
+                            if (siteTag != null)
+                            {
+                                await siteTag.Delete(sdkDbContext);
+                            }
+                        }
+
+                        var forCreate = deviceUserModel.Tags
+                            .Where(x => !siteTagIds.Contains(x))
+                            .ToList();
+
+                        foreach (var tagIdForCreate in forCreate)
+                        {
+                            var siteTag = new SiteTag
+                            {
+                                TagId = tagIdForCreate,
+                                SiteId = site.Id
+                            };
+
+                            await siteTag.Create(sdkDbContext);
+                        }
+
+                        // Reconcile already-deployed future occurrences of any event referencing a changed worker tag
+                        var changedTagIds = forRemove.Concat(forCreate).Distinct().ToList();
+                        if (changedTagIds.Count > 0 && reconciliationService != null)
+                        {
+                            await reconciliationService.ReconcileEventsForWorkerTagsAsync(changedTagIds);
+                        }
+
                         var isUpdated = await core.SiteUpdate(deviceUserModel.SiteMicrotingUid, fullName, deviceUserModel.UserFirstName,
                             deviceUserModel.UserLastName, deviceUserModel.WorkerEmail, deviceUserModel.LanguageCode).ConfigureAwait(false);
 
@@ -484,38 +900,17 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         worker.EmployeeNo = deviceUserModel.EmployeeNo;
                         worker.Email = deviceUserModel.WorkerEmail;
                         worker.PhoneNumber = deviceUserModel.PhoneNumber;
-
-                        // Authoritative backend block: a worker still effectively assigned to an active
-                        // event (explicitly or via a worker tag) cannot be resigned.
-                        if (deviceUserModel.Resigned && !worker.Resigned)
-                        {
-                            var myTagIds = await sdkDbContext.SiteTags
-                                .Where(st => st.SiteId == site.Id && st.TagId != null
-                                             && st.WorkflowState != Constants.WorkflowStates.Removed)
-                                .Select(st => st.TagId!.Value)
-                                .ToListAsync();
-
-                            var stillAssigned = await backendConfigurationPnDbContext.AreaRulePlannings
-                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed && x.Status)
-                                .Where(x =>
-                                    x.PlanningSites.Any(y => y.WorkflowState != Constants.WorkflowStates.Removed
-                                                             && y.SiteId == site.Id)
-                                    || x.AreaRulePlanningWorkerTags.Any(wt => wt.WorkflowState != Constants.WorkflowStates.Removed
-                                                                              && myTagIds.Contains(wt.TagId)))
-                                .AnyAsync();
-
-                            if (stillAssigned)
-                            {
-                                return new OperationResult(false, "WorkerStillAssignedToEventsCannotResign");
-                            }
-                        }
-
                         worker.Resigned = deviceUserModel.Resigned;
                         worker.ResignedAtDate = deviceUserModel.ResignedAtDate;
                         await worker.Update(sdkDbContext).ConfigureAwait(false);
 
-                        var user = await userService.GetByUsernameAsync(oldEmail).ConfigureAwait(false);
-                        if (user != null)
+                        if (skipLoginWork)
+                        {
+                            // Neither branch below runs: `user` stays null, so every
+                            // group-sync guard further down (`user != null && ...`)
+                            // skips too.
+                        }
+                        else if (user != null)
                         {
                             user.Email = deviceUserModel.WorkerEmail;
                             user.UserName = deviceUserModel.WorkerEmail;
@@ -523,11 +918,36 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             user.LastName = deviceUserModel.UserLastName;
                             user.Locale = language.LanguageCode;
                             var result = await userManager.UpdateAsync(user);
+                            if (!result.Succeeded)
+                            {
+                                // Second line of defence in case ValidateCandidateEmailAsync
+                                // above raced with another request: (1) UpdateAsync validates
+                                // before it saves, so nothing was written for this call, but
+                                // the property assignments above already happened on the
+                                // TRACKED entity, so EF's change tracker keeps them as pending
+                                // Modified values regardless - Reload discards those pending
+                                // values, so a later SaveChangesAsync on this context cannot
+                                // flush them onto this account. Unlike the up-front refusal,
+                                // core.SiteUpdate/worker.Update above have ALREADY run by this
+                                // point, so the SDK side already holds the new address - report
+                                // failure rather than falling through to the success return
+                                // below, so the caller is not told the save succeeded while the
+                                // login side of it did not.
+                                logger.LogError(
+                                    "[UpdateDeviceUser] UpdateAsync failed for email={Email}: {Errors}",
+                                    deviceUserModel.WorkerEmail,
+                                    string.Join(",", result.Errors.Select(e => e.Description)));
+                                await baseDbContext.Entry(user).ReloadAsync().ConfigureAwait(false);
+                                return new OperationDataResult<int>(false, EmailRefusalErrorKey(result, DeviceUserCouldNotBeUpdatedKey));
+                            }
                         }
                         else
                         {
-                            if (deviceUserModel.TimeRegistrationEnabled != null && ((bool)deviceUserModel.TimeRegistrationEnabled || deviceUserModel.ArchiveEnabled ||
-                                    deviceUserModel.WebAccessEnabled))
+                            // Any worker carrying an email gets a login, so an admin can set a
+                            // password for them from property-workers. Synthetic
+                            // user_{id}_{site}@microting.invalid addresses count: the address is
+                            // a credential, not a mailbox.
+                            if (!string.IsNullOrEmpty(deviceUserModel.WorkerEmail))
                             {
                                 user = new EformUser
                                 {
@@ -543,10 +963,30 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                     Formats = "de-DE"
                                 };
 
-                                var result = await userManager.CreateAsync(user, "Replace_me_with_a_proper_password_2024!").ConfigureAwait(false);
+                                // No password on purpose: the single-argument overload leaves
+                                // PasswordHash null, so CheckPasswordAsync fails and the account
+                                // cannot be signed into until an admin sets one. A password literal
+                                // here would be the same on every deployment, so none is ever set.
+                                var result = await userManager.CreateAsync(user).ConfigureAwait(false);
                                 if (result.Succeeded)
                                 {
                                     await userManager.AddToRoleAsync(user, EformRole.User);
+                                }
+                                else
+                                {
+                                    // Identity validates BEFORE it hits the store, so a rejected
+                                    // create leaves `user` non-null with Id still 0. Every guard
+                                    // downstream keys off `user != null`, including the
+                                    // unconditional EnsureFallbackSecurityGroupAsync, and a
+                                    // SecurityGroupUser with EformUserId 0 violates the FK to
+                                    // EformUser. Dropping the reference means "no login, worker
+                                    // still saved" for the inputs Identity refuses: a non-ASCII
+                                    // local part (the default AllowedUserNameCharacters is
+                                    // untouched by this app) and a duplicate address under
+                                    // RequireUniqueEmail.
+                                    Console.WriteLine(
+                                        $"[UpdateDeviceUser] CreateAsync failed for email={deviceUserModel.WorkerEmail} errors={string.Join(",", result.Errors.Select(e => e.Description))}");
+                                    user = null;
                                 }
                             }
                         }
@@ -736,35 +1176,42 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         }
                         else
                         {
-                            if (deviceUserModel.TimeRegistrationEnabled == true && user != null && user.Id != 1)
+                            // Time-registration settings belong to the worker and save
+                            // whether or not this plugin manages its login - only the
+                            // "Kun tid" membership below needs a managed login, since
+                            // that is a login-side grant, not a worker field.
+                            if (deviceUserModel.TimeRegistrationEnabled == true)
                             {
-                                var securityGroupUserTime = await baseDbContext.SecurityGroupUsers
-                                    .Include(x => x.SecurityGroup)
-                                    .Where(x => x.EformUserId == user!.Id)
-                                    .Where(x => x.SecurityGroup.Name == "Kun tid")
-                                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                                    .FirstOrDefaultAsync().ConfigureAwait(false);
-                                if (deviceUserModel.EnableMobileAccess)
+                                if (user != null && user.Id != 1)
                                 {
-                                    if (securityGroupUserTime == null)
+                                    var securityGroupUserTime = await baseDbContext.SecurityGroupUsers
+                                        .Include(x => x.SecurityGroup)
+                                        .Where(x => x.EformUserId == user!.Id)
+                                        .Where(x => x.SecurityGroup.Name == "Kun tid")
+                                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                        .FirstOrDefaultAsync().ConfigureAwait(false);
+                                    if (deviceUserModel.EnableMobileAccess)
                                     {
-                                        var newSecurityGroupUser = new SecurityGroupUser
+                                        if (securityGroupUserTime == null)
                                         {
-                                            EformUserId = user!.Id,
-                                            SecurityGroupId = await GetOrCreateSecurityGroupId(baseDbContext, "Kun tid",
-                                                timePlanningDbContext, backendConfigurationPnDbContext)
-                                        };
-                                        baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
-                                        await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+                                            var newSecurityGroupUser = new SecurityGroupUser
+                                            {
+                                                EformUserId = user!.Id,
+                                                SecurityGroupId = await GetOrCreateSecurityGroupId(baseDbContext, "Kun tid",
+                                                    timePlanningDbContext, backendConfigurationPnDbContext)
+                                            };
+                                            baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
+                                            await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+                                        }
                                     }
-                                }
-                                else
-                                {
-                                    if (securityGroupUserTime != null)
+                                    else
                                     {
-                                        var forDelete = await baseDbContext.SecurityGroupUsers.FirstAsync(x => x.Id == securityGroupUserTime.Id);
-                                        baseDbContext.SecurityGroupUsers.RemoveRange(forDelete);
-                                        await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+                                        if (securityGroupUserTime != null)
+                                        {
+                                            var forDelete = await baseDbContext.SecurityGroupUsers.FirstAsync(x => x.Id == securityGroupUserTime.Id);
+                                            baseDbContext.SecurityGroupUsers.RemoveRange(forDelete);
+                                            await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+                                        }
                                     }
                                 }
                                 var assignments = await timePlanningDbContext.AssignedSites.Where(x =>
@@ -816,11 +1263,92 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                     // (UseOneMinuteIntervals is one-way there and must never be reset from this path)
                                     // assignments.First().// ManagingTagIds = deviceUserModel.ManagingTagIds ?? [] // TODO: Handle ManagingTagIds separately; // TODO: Handle ManagingTagIds separately
                                     await assignments.First().Update(timePlanningDbContext).ConfigureAwait(false);
+                                    // Runs after every flag-driven group sync above, so it sees the
+                                    // final membership set and can apply "none unless another group".
+                                    if (user != null)
+                                    {
+                                        await EnsureFallbackSecurityGroupAsync(baseDbContext, user.Id).ConfigureAwait(false);
+                                    }
                                     return new OperationDataResult<int>(true, siteDto.SiteId);
                                 }
 
                                 try
                                 {
+                                    // Disabling time registration soft-deletes the AssignedSite, so re-enabling it
+                                    // lands here and mints a NEW row for a site that may already have years of
+                                    // PlanRegistrations (they hang off SdkSitId, not AssignedSiteId, so they survive
+                                    // the delete). A new row has no AssignedSiteVersions, so OneMinuteModeTimeline
+                                    // would derive one-minute mode from the beginning of time and silently
+                                    // reinterpret every pre-existing tick row. Carry the effective date across.
+                                    var previousAssignment = await timePlanningDbContext.AssignedSites
+                                        .AsNoTracking()
+                                        .Where(x => x.SiteId == siteDto.SiteId)
+                                        .OrderByDescending(x => x.Id)
+                                        .FirstOrDefaultAsync().ConfigureAwait(false);
+
+                                    DateTime? useOneMinuteIntervalsFrom;
+                                    if (previousAssignment == null)
+                                    {
+                                        // Genuinely first setup: no earlier history to protect, so one-minute mode
+                                        // holds all the way back.
+                                        useOneMinuteIntervalsFrom = null;
+                                    }
+                                    else if (!previousAssignment.UseOneMinuteIntervals)
+                                    {
+                                        // The site was in 5-minute mode until now — the switch happens right here, so
+                                        // everything registered before this instant keeps reading as 5-minute mode.
+                                        useOneMinuteIntervalsFrom = DateTime.UtcNow;
+                                    }
+                                    else if (previousAssignment.UseOneMinuteIntervalsFrom != null)
+                                    {
+                                        // Already one-minute WITH a recorded effective date: carry it through unchanged.
+                                        useOneMinuteIntervalsFrom = previousAssignment.UseOneMinuteIntervalsFrom;
+                                    }
+                                    else
+                                    {
+                                        // Legacy un-backfilled shape: one-minute mode with no stamp. Such a site's mode
+                                        // history lives ONLY in the OLD row's AssignedSiteVersions, and those are keyed
+                                        // to the old AssignedSiteId — they do NOT follow the site to the new row, so the
+                                        // new row's timeline cannot see them. Recovering the transition date here is
+                                        // what keeps the pre-switch history in 5-minute mode; carrying the NULL forward
+                                        // would make the new timeline's _initialValue true and reinterpret all of it.
+                                        var previousVersions = await timePlanningDbContext.AssignedSiteVersions
+                                            .AsNoTracking()
+                                            .Where(x => x.AssignedSiteId == previousAssignment.Id)
+                                            // Only the trail as it stood while the site was LIVE. Disabling time
+                                            // registration soft-deletes the row through PnBase.Delete, which writes a
+                                            // version row (WorkflowState = removed) copying the CURRENT flag. For a
+                                            // site flipped to true outside the audited path, that removal row would be
+                                            // the first to record true and pass the DISABLE date off as the switch —
+                                            // turning everything registered between the last live save and the disable
+                                            // into 5-minute mode, where the old row's own timeline had read one-minute.
+                                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                            .OrderBy(x => x.Id)
+                                            // UpdatedAt is the version row's save time; CreatedAt (a copy of the base
+                                            // entity's creation time) is the stand-in for legacy rows without one.
+                                            .Select(x => new { x.UseOneMinuteIntervals, x.UpdatedAt, x.CreatedAt })
+                                            .ToListAsync().ConfigureAwait(false);
+
+                                        if (previousVersions.Count == 0 || previousVersions[0].UseOneMinuteIntervals)
+                                        {
+                                            // No live version rows at all: OneMinuteModeTimeline falls back to the current
+                                            // flag, which was true. Earliest version row already true: its
+                                            // _initialValue rule makes one-minute hold from the beginning of time.
+                                            // Either way there is no transition to record.
+                                            useOneMinuteIntervalsFrom = null;
+                                        }
+                                        else
+                                        {
+                                            // The false→true transition is the first version row carrying true. When
+                                            // the trail never records it, the flag was flipped outside the audited
+                                            // path, and the last audited save is the earliest possible flip point —
+                                            // the same divergence correction OneMinuteModeTimeline applies.
+                                            var transition = previousVersions.FirstOrDefault(x => x.UseOneMinuteIntervals)
+                                                             ?? previousVersions[^1];
+                                            useOneMinuteIntervalsFrom = transition.UpdatedAt ?? transition.CreatedAt;
+                                        }
+                                    }
+
                                     var assignmentSite = new AssignedSite
                                     {
                                         SiteId = siteDto.SiteId,
@@ -864,12 +1392,22 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                         FourthShiftActive = deviceUserModel.FourthShiftActive ?? false,
                                         FifthShiftActive = deviceUserModel.FifthShiftActive ?? false,
                                         IsManager = deviceUserModel.IsManager ?? false,
-                                        UseOneMinuteIntervals = deviceUserModel.UseOneMinuteIntervals ?? false,
+                                        // Hardcoded: one-minute intervals are the standard for every new time registration
+                                        // setup and the client's value is ignored (see DeviceUserModel.UseOneMinuteIntervals).
+                                        // The effective date is the one carried across above.
+                                        UseOneMinuteIntervals = true,
+                                        UseOneMinuteIntervalsFrom = useOneMinuteIntervalsFrom,
                                         PayRuleSetId = deviceUserModel.PayRuleSetId
                                         // ManagingTagIds = deviceUserModel.ManagingTagIds ?? [] // TODO: Handle ManagingTagIds separately
                                     };
                                     await assignmentSite.Create(timePlanningDbContext).ConfigureAwait(false);
                                     await GoogleSheetHelper.PushToGoogleSheet(core, timePlanningDbContext, logger, oldSiteName, fullName).ConfigureAwait(false);
+                                    // Runs after every flag-driven group sync above, so it sees the
+                                    // final membership set and can apply "none unless another group".
+                                    if (user != null)
+                                    {
+                                        await EnsureFallbackSecurityGroupAsync(baseDbContext, user.Id).ConfigureAwait(false);
+                                    }
                                     return new OperationDataResult<int>(true, siteDto.SiteId);
                                 }
                                 catch (Exception e)
@@ -879,6 +1417,13 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                     return new OperationDataResult<int>(false, "");
                                 }
                             }
+                        }
+
+                        // Runs after every flag-driven group sync above, so it sees the
+                        // final membership set and can apply "none unless another group".
+                        if (user != null)
+                        {
+                            await EnsureFallbackSecurityGroupAsync(baseDbContext, user.Id).ConfigureAwait(false);
                         }
 
                         return isUpdated
@@ -894,7 +1439,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             {
                 SentrySdk.CaptureException(ex);
                 Console.WriteLine(ex.Message);
-                return new OperationResult(false, "DeviceUserCouldNotBeUpdated");
+                return new OperationResult(false, DeviceUserCouldNotBeUpdatedKey);
             }
         }
 
@@ -905,6 +1450,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
         {
             var sdkDbContext = core.DbContextHelper.GetDbContext();
             string siteName = null;
+            // Null-safe so a missing request body reaches the try below and is reported as DeviceUserCouldNotBeCreated.
+            var hasWorkerEmail = !string.IsNullOrEmpty(deviceUserModel?.WorkerEmail);
 
             async Task CleanupOrphanSiteAsync()
             {
@@ -935,7 +1482,15 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
                     // Also remove a dangling Worker created for this site (no active SiteWorker link).
                     // The pre-SiteCreate email check guarantees no pre-existing active worker had this email,
-                    // so a match here is the one just created.
+                    // so a match here is the one just created. An empty address is exempt from that check,
+                    // so it identifies no single worker - never delete by it. If core.SiteCreate threw
+                    // partway for an empty address, a live Worker row with no SiteWorker link therefore
+                    // remains. It blocks no later create: an empty address is never checked against
+                    // other workers.
+                    if (!hasWorkerEmail)
+                    {
+                        return;
+                    }
                     var orphanWorker = await sdkDbContext.Workers
                         .FirstOrDefaultAsync(x => x.Email == deviceUserModel.WorkerEmail
                             && x.WorkflowState != Constants.WorkflowStates.Removed);
@@ -959,11 +1514,61 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
             try
             {
-                if (sdkDbContext.Workers.AsNoTracking().Any(x =>
+                // An empty address cannot collide, so only a real one is checked against other live workers.
+                if (hasWorkerEmail
+                    && sdkDbContext.Workers.AsNoTracking().Any(x =>
                         x.Email == deviceUserModel.WorkerEmail && x.WorkflowState != Constants.WorkflowStates.Removed))
                 {
                     // this email is already in use
-                    return new OperationDataResult<int>(false, "EmailIsAlreadyInUse");
+                    return new OperationDataResult<int>(false, EmailIsAlreadyInUseKey);
+                }
+
+                // Link a new worker only to an existing account outside admin whose
+                // groups are all among none, Kun arkiv and Kun tid (or that has no
+                // group) - see MayLinkNewWorkerToLoginAsync. An account in core's
+                // default eForm users group is never linked. The lookup writes
+                // nothing, and it runs before any SDK or Identity write, so a refusal
+                // leaves nothing behind. The account it finds is the one linked
+                // further down.
+                var existingAccountForEmail =
+                    await FindLoginWithoutSideEffectsAsync(userManager, deviceUserModel.WorkerEmail).ConfigureAwait(false);
+                if (existingAccountForEmail != null
+                    && !await MayLinkNewWorkerToLoginAsync(userManager, baseDbContext, existingAccountForEmail).ConfigureAwait(false))
+                {
+                    Console.WriteLine(
+                        $"[CreateDeviceUser] refusing to link a new worker to an account outside the linkable groups (none, Kun arkiv, Kun tid), email={deviceUserModel.WorkerEmail}");
+                    return new OperationDataResult<int>(false, EmailIsAlreadyInUseKey);
+                }
+
+                // A non-race collision - account A's UserName is the target address while
+                // account B's Email is - would otherwise only surface via
+                // RefuseAdoptionAndCleanUpAsync AFTER core.SiteCreate, its SiteTags, the
+                // reconciliation dispatch and worker.Update have all already run, leaving
+                // cleanup to unwind every one of them. Catching it here, before any of
+                // that, means a refusal leaves nothing to clean up. existingUserId is the
+                // resolved account's own id (0 if none), so validation does not flag the
+                // account against itself when the address is simply unchanged. (The
+                // guard above already ruled out an account CreateDeviceUser may not
+                // link to.) A worker created with no email at all (e.g.
+                // TimeRegistrationEnabled with no login) gets no candidate check here -
+                // there is no login for it to collide with, and Identity's own
+                // UserValidator would otherwise refuse the empty username outright.
+                //
+                // Only a COLLISION refuses the whole create here - a FORMAT failure (e.g.
+                // non-ASCII) must not, since CreateDeviceUser's own established behaviour
+                // for one (see CreateDeviceUser_IdentityRejectsEmail_KeepsWorkerAndCreatesNoUser)
+                // is to still save the worker and simply skip creating a login for it,
+                // further down where CreateAsync itself refuses and clears `user`.
+                if (hasWorkerEmail)
+                {
+                    var createValidation = await ValidateCandidateEmailAsync(
+                        userManager, deviceUserModel.WorkerEmail, existingAccountForEmail?.Id ?? 0).ConfigureAwait(false);
+                    if (!createValidation.Succeeded && IsEmailCollision(createValidation))
+                    {
+                        Console.WriteLine(
+                            $"[CreateDeviceUser] refusing email={deviceUserModel.WorkerEmail}: {string.Join(",", createValidation.Errors.Select(e => e.Description))}");
+                        return new OperationDataResult<int>(false, EmailRefusalErrorKey(createValidation, DeviceUserCouldNotBeCreatedKey));
+                    }
                 }
 
                 deviceUserModel.UserFirstName = deviceUserModel.UserFirstName.Trim();
@@ -1017,8 +1622,41 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 worker.PhoneNumber = deviceUserModel.PhoneNumber;
                 await worker.Update(sdkDbContext).ConfigureAwait(false);
 
-                var user = await userService.GetByUsernameAsync(deviceUserModel.WorkerEmail).ConfigureAwait(false);
+                // Link the same account the checks above accepted - one
+                // CreateDeviceUser may link to, with no collision - not a fresh
+                // GetByUsernameAsync lookup (whose email fallback renames and saves
+                // what it finds), so the linked account is always the one those
+                // checks ran against.
+                var user = existingAccountForEmail;
                 Console.WriteLine($"[CreateDeviceUser] email={deviceUserModel.WorkerEmail} TimeRegEnabled={deviceUserModel.TimeRegistrationEnabled} MobileAccess={deviceUserModel.EnableMobileAccess} userExists={user != null}");
+                // CleanupOrphanSiteAsync leaves a FULLY-FORMED site/worker (an active
+                // SiteWorker link) alone by design, so it can tell a genuinely successful
+                // create apart from a mid-create failure - core.SiteCreate above has
+                // already created that link by the time the refusal below can be reached.
+                // Removing it first is what makes this site/worker recognised as an
+                // orphan, so the shared cleanup actually removes them instead of a no-op.
+                // An account CreateDeviceUser may not link to, and any non-race
+                // collision, are both refused further up, before core.SiteCreate ever
+                // runs, so by the time this UpdateAsync can fail it is either a genuine
+                // race (another request created or renamed a colliding account after
+                // this call's own pre-check passed) or a refusal that is not about the
+                // address at all. The failing result decides the key, so a
+                // non-validation failure (e.g. ConcurrencyFailure) is reported as
+                // DeviceUserCouldNotBeCreated, not as a collision.
+                async Task<OperationDataResult<int>> RefuseAdoptionAndCleanUpAsync(IdentityResult failedUpdate)
+                {
+                    var siteWorkerLink = await sdkDbContext.SiteWorkers
+                        .FirstOrDefaultAsync(sw => sw.SiteId == site.Id && sw.WorkerId == worker.Id
+                            && sw.WorkflowState != Constants.WorkflowStates.Removed)
+                        .ConfigureAwait(false);
+                    if (siteWorkerLink != null)
+                    {
+                        await siteWorkerLink.Delete(sdkDbContext).ConfigureAwait(false);
+                    }
+                    await CleanupOrphanSiteAsync().ConfigureAwait(false);
+                    return new OperationDataResult<int>(false, EmailRefusalErrorKey(failedUpdate, DeviceUserCouldNotBeCreatedKey));
+                }
+
                 if (user != null)
                 {
                     user.Email = deviceUserModel.WorkerEmail;
@@ -1027,12 +1665,28 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     user.LastName = deviceUserModel.UserLastName;
                     user.Locale = deviceUserModel.LanguageCode;
                     var result = await userManager.UpdateAsync(user);
+                    if (!result.Succeeded)
+                    {
+                        // Same shape as UpdateDeviceUser's check-and-Reload guard: UpdateAsync
+                        // validates before it saves, but the assignments above already
+                        // happened on the TRACKED entity, so EF's change tracker keeps them
+                        // pending regardless. Reload discards them. Unlike UpdateDeviceUser,
+                        // this worker/site were created FOR this call, so there is nothing to
+                        // preserve by continuing - fail the whole create and clean up, rather
+                        // than leaving an adopted-but-not-actually-linked account behind.
+                        Console.WriteLine(
+                            $"[CreateDeviceUser] UpdateAsync failed adopting {deviceUserModel.WorkerEmail}: {string.Join(",", result.Errors.Select(e => e.Description))}");
+                        await baseDbContext.Entry(user).ReloadAsync().ConfigureAwait(false);
+                        return await RefuseAdoptionAndCleanUpAsync(result).ConfigureAwait(false);
+                    }
                 }
                 else
                 {
-                    if (deviceUserModel.TimeRegistrationEnabled != null &&
-                        ((bool)deviceUserModel.TimeRegistrationEnabled || deviceUserModel.ArchiveEnabled ||
-                         deviceUserModel.WebAccessEnabled))
+                    // Any worker carrying an email gets a login, so an admin can set a
+                    // password for them from property-workers. Synthetic
+                    // user_{id}_{site}@microting.invalid addresses count: the address is
+                    // a credential, not a mailbox.
+                    if (hasWorkerEmail)
                     {
                         user = new EformUser
                         {
@@ -1048,12 +1702,27 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             Formats = "de-DE"
                         };
 
-                        var result = await userManager.CreateAsync(user, "Replace_me_with_a_proper_password_2024!")
-                            .ConfigureAwait(false);
+                        // No password on purpose - same reasoning as the matching comment
+                        // in UpdateDeviceUser.
+                        var result = await userManager.CreateAsync(user).ConfigureAwait(false);
                         Console.WriteLine($"[CreateDeviceUser] CreateAsync result={result.Succeeded} errors={string.Join(",", result.Errors.Select(e => e.Description))}");
                         if (result.Succeeded)
                         {
                             await userManager.AddToRoleAsync(user, EformRole.User);
+                        }
+                        else
+                        {
+                            // Identity validates BEFORE it hits the store, so a rejected
+                            // create leaves `user` non-null with Id still 0. Left set, the
+                            // unconditional EnsureFallbackSecurityGroupAsync below would
+                            // insert a SecurityGroupUser with EformUserId 0, whose FK to
+                            // EformUser throws, and that exception reaches the outer catch,
+                            // which runs CleanupOrphanSiteAsync and deletes the Site and
+                            // Worker just created. Dropping the reference means "no login,
+                            // worker still saved" for the inputs Identity refuses: a non-ASCII
+                            // local part (the default AllowedUserNameCharacters is untouched
+                            // by this app) and a duplicate address under RequireUniqueEmail.
+                            user = null;
                         }
                     }
                 }
@@ -1161,7 +1830,12 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             FourthShiftActive = deviceUserModel.FourthShiftActive ?? false,
                             FifthShiftActive = deviceUserModel.FifthShiftActive ?? false,
                             IsManager = deviceUserModel.IsManager ?? false,
-                            UseOneMinuteIntervals = deviceUserModel.UseOneMinuteIntervals ?? false,
+                            // Hardcoded: one-minute intervals are the standard for every new time registration
+                            // setup and the client's value is ignored (see DeviceUserModel.UseOneMinuteIntervals).
+                            // UseOneMinuteIntervalsFrom is left NULL on purpose: OneMinuteModeTimeline then derives
+                            // one-minute mode for the site's whole history, whereas stamping today would push
+                            // back-dated rows into 5-minute mode.
+                            UseOneMinuteIntervals = true,
                             PayRuleSetId = deviceUserModel.PayRuleSetId,
                             // ManagingTagIds = deviceUserModel.ManagingTagIds ?? [] // TODO: Handle ManagingTagIds separately
                         };
@@ -1184,17 +1858,33 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             Console.WriteLine($"[CreateDeviceUser] Saved {deviceUserModel.ManagingTagIds.Count} managing tags for AssignedSite {assignmentSite.Id}");
                         }
 
+                        // "Kun tid" is looked up/created unconditionally so the group is
+                        // still seeded even for a no-email time-registration worker; only
+                        // the membership row below requires an actual EformUser to attach to.
                         var secGroupId = await GetOrCreateSecurityGroupId(baseDbContext, "Kun tid",
                             timePlanningDbContext);
                         Console.WriteLine($"[CreateDeviceUser] SecurityGroupId for 'Kun tid'={secGroupId}, userId={user?.Id}");
-                        var newSecurityGroupUser = new SecurityGroupUser
+                        // Guard verbatim from UpdateDeviceUser: a worker can have
+                        // TimeRegistrationEnabled == true with no WorkerEmail, in which case
+                        // no EformUser was created above and user is null here.
+                        if (user != null && user.Id != 1)
                         {
-                            EformUserId = user!.Id,
-                            SecurityGroupId = secGroupId
-                        };
-                        baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
-                        await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
-                        Console.WriteLine($"[CreateDeviceUser] SecurityGroupUser saved, id={newSecurityGroupUser.Id}");
+                            var newSecurityGroupUser = new SecurityGroupUser
+                            {
+                                EformUserId = user!.Id,
+                                SecurityGroupId = secGroupId
+                            };
+                            baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
+                            await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+                            Console.WriteLine($"[CreateDeviceUser] SecurityGroupUser saved, id={newSecurityGroupUser.Id}");
+                        }
+
+                        // Runs after every flag-driven group sync above, so it sees the
+                        // final membership set and can apply "none unless another group".
+                        if (user != null)
+                        {
+                            await EnsureFallbackSecurityGroupAsync(baseDbContext, user.Id).ConfigureAwait(false);
+                        }
 
                         return new OperationDataResult<int>(true, site.Id);
                     }
@@ -1202,8 +1892,15 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     {
                         Console.WriteLine($"[CreateDeviceUser] EXCEPTION: {e}");
                         // _logger.LogError(e.Message);
-                        return new OperationDataResult<int>(false, "DeviceUserCouldNotBeCreated");
+                        return new OperationDataResult<int>(false, DeviceUserCouldNotBeCreatedKey);
                     }
+                }
+
+                // Runs after every flag-driven group sync above, so it sees the
+                // final membership set and can apply "none unless another group".
+                if (user != null)
+                {
+                    await EnsureFallbackSecurityGroupAsync(baseDbContext, user.Id).ConfigureAwait(false);
                 }
 
                 return new OperationDataResult<int>(true, site.Id);
@@ -1212,7 +1909,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 SentrySdk.CaptureException(ex);
                 Console.WriteLine(ex.Message);
                 await CleanupOrphanSiteAsync().ConfigureAwait(false);
-                return new OperationDataResult<int>(false, "DeviceUserCouldNotBeCreated");
+                return new OperationDataResult<int>(false, DeviceUserCouldNotBeCreatedKey);
             }
         }
 

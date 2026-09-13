@@ -1,42 +1,140 @@
-<div class="lightbox" id="calendarLightbox">
+<!--
+  IDS ARE A CONTRACT. calendarLightbox / calendarLightboxClose /
+  calendarLightboxPrev / calendarLightboxNext / calendarLightboxImage are
+  referenced by specs outside this module and must not be renamed. The CLASS
+  names are `calendar-lightbox`-prefixed because the component runs with
+  ViewEncapsulation.None (it has to reach the overlay pane for the below-720px
+  full-bleed layout), so every rule in its stylesheet is global.
+-->
+<div
+  class="calendar-lightbox"
+  id="calendarLightbox"
+  [class.calendar-lightbox--with-header]="showHeader"
+>
+  <!--
+    Absolutely positioned top-right rather than placed in the header row, so it
+    is in the same place whether or not the header renders — the calendar's task
+    card opens this lightbox with no header at all.
+  -->
   <button
-    class="lightbox-btn lightbox-close"
+    type="button"
+    class="calendar-lightbox__btn calendar-lightbox__close"
     id="calendarLightboxClose"
     (click)="close()"
-    [attr.aria-label]="'Close' | translate"
-    [title]="'Close' | translate"
+    [attr.aria-label]="'Close gallery' | translate"
+    [title]="'Close gallery' | translate"
   >
     <mat-icon>close</mat-icon>
   </button>
 
-  <button
-    *ngIf="data.images.length > 1"
-    class="lightbox-btn lightbox-nav lightbox-nav--prev"
-    id="calendarLightboxPrev"
-    (click)="prev()"
-    [attr.aria-label]="'Previous' | translate"
-    [title]="'Previous' | translate"
+  <!--
+    Rendered ONLY when the opener supplied a case id (#1168). The calendar's
+    historical task card does not, and keeps the header-less lightbox it had.
+  -->
+  <header *ngIf="showHeader" class="calendar-lightbox__header">
+    <h2 class="calendar-lightbox__title" id="calendarLightboxTitle">
+      {{ titleKey | translate: titleParams }}
+    </h2>
+    <p
+      *ngIf="metaLine"
+      class="calendar-lightbox__meta"
+      id="calendarLightboxMeta"
+    >
+      {{ metaLine }}
+    </p>
+  </header>
+
+  <div class="calendar-lightbox__stage">
+    <button
+      *ngIf="hasMultiple"
+      type="button"
+      class="calendar-lightbox__btn calendar-lightbox__nav calendar-lightbox__nav--prev"
+      id="calendarLightboxPrev"
+      (click)="prev()"
+      [attr.aria-label]="'Previous' | translate"
+      [title]="'Previous' | translate"
+    >
+      <mat-icon>chevron_left</mat-icon>
+    </button>
+
+    <figure *ngIf="count > 0" class="calendar-lightbox__figure">
+      <!--
+        NO loading="lazy". Chrome defers a lazily-loaded image and never paints
+        it when the source is a `data:` URI — which is exactly what the
+        authImage pipe resolves to. Applies to the thumbnails below too.
+      -->
+      <img
+        class="calendar-lightbox__image"
+        id="calendarLightboxImage"
+        [src]="currentSrc | authImage | async"
+        [alt]="altKey | translate: altParams"
+      />
+      <figcaption class="calendar-lightbox__caption" id="calendarLightboxCaption">
+        {{ captionKey | translate: captionParams }}
+      </figcaption>
+    </figure>
+
+    <button
+      *ngIf="hasMultiple"
+      type="button"
+      class="calendar-lightbox__btn calendar-lightbox__nav calendar-lightbox__nav--next"
+      id="calendarLightboxNext"
+      (click)="next()"
+      [attr.aria-label]="'Next' | translate"
+      [title]="'Next' | translate"
+    >
+      <mat-icon>chevron_right</mat-icon>
+    </button>
+  </div>
+
+  <!--
+    ABSENT, not hidden, with a single image — as are the two nav buttons above
+    and the thumbnail strip below. `aria-live="polite"` so a keyboard user who
+    arrows through the strip hears which image they landed on. Gated on
+    `hasMultiple` ALONE, like the nav buttons: it costs no downloads, so the
+    header-less calendar caller still gets it for a two-image case.
+  -->
+  <div
+    *ngIf="hasMultiple"
+    class="calendar-lightbox__counter"
+    id="calendarLightboxCounter"
+    aria-live="polite"
   >
-    <mat-icon>chevron_left</mat-icon>
-  </button>
+    {{ currentIndex + 1 }} / {{ count }}
+  </div>
 
-  <img
-    class="lightbox-image"
-    id="calendarLightboxImage"
-    [src]="currentSrc | authImage | async"
-    alt=""
-  />
-
-  <button
-    *ngIf="data.images.length > 1"
-    class="lightbox-btn lightbox-nav lightbox-nav--next"
-    id="calendarLightboxNext"
-    (click)="next()"
-    [attr.aria-label]="'Next' | translate"
-    [title]="'Next' | translate"
+  <!--
+    `showThumbs`, NOT `hasMultiple`: the strip renders only when the opener
+    supplied real `_300_` names. An opener that passes none (the calendar's
+    task card) would otherwise get 64x64 boxes filled with FULL-SIZE images —
+    n extra authenticated downloads to display them at a sixteenth of their
+    size. See the class comment.
+  -->
+  <div
+    *ngIf="showThumbs"
+    class="calendar-lightbox__thumbs"
+    id="calendarLightboxThumbs"
+    role="tablist"
+    [attr.aria-label]="'Pictures' | translate"
   >
-    <mat-icon>chevron_right</mat-icon>
-  </button>
-
-  <div class="lightbox-counter">{{ currentIndex + 1 }} / {{ data.images.length }}</div>
+    <button
+      *ngFor="let thumbSrc of thumbSrcs; let i = index; trackBy: trackByIndex"
+      type="button"
+      role="tab"
+      class="calendar-lightbox__thumb"
+      [class.calendar-lightbox__thumb--active]="i === currentIndex"
+      [attr.aria-selected]="i === currentIndex"
+      [attr.aria-label]="thumbKey | translate: thumbParams(i)"
+      [attr.id]="'calendarLightboxThumb-' + i"
+      (click)="select(i)"
+    >
+      <!--
+        The `_300_` derivative when the opener supplied one, the full-size name
+        otherwise — precomputed in `thumbSrcs`, never formatted in the binding
+        (authImage has no cache). Still NO loading="lazy", same reason as the
+        stage image above.
+      -->
+      <img class="calendar-lightbox__thumb-image" [src]="thumbSrc | authImage | async" alt="" />
+    </button>
+  </div>
 </div>

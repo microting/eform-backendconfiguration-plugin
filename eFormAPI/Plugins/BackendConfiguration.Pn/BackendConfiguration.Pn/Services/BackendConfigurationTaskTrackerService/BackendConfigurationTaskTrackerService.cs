@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using BackendConfigurationLocalizationService;
+using WorkerTagMembership;
 using Infrastructure.Models.TaskTracker;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Helpers;
@@ -49,14 +50,18 @@ public class BackendConfigurationTaskTrackerService(
 	BackendConfigurationPnDbContext backendConfigurationPnDbContext,
 	IEFormCoreService coreHelper,
 	ItemsPlanningPnDbContext itemsPlanningPnDbContext,
-	IExcelService excelService)
+	IExcelService excelService,
+	// #1231 — the Workers filter matches worker-tag ("team") assignment as well as
+	// explicit PlanningSites rows; this is the single owner of the membership rule,
+	// shared with the calendar week view and the compliance report.
+	IWorkerTagMembershipService workerTagMembershipService)
 	: IBackendConfigurationTaskTrackerService
 {
 	public async Task<OperationDataResult<List<TaskTrackerModel>>> Index(TaskTrackerFiltrationModel filtersModel)
 	{
 		var userLanguageId = (await userService.GetCurrentUserLanguage()).Id;
 		var result = await BackendConfigurationTaskTrackerHelper.Index(filtersModel, backendConfigurationPnDbContext,
-			await coreHelper.GetCore(), userLanguageId, itemsPlanningPnDbContext);
+			await coreHelper.GetCore(), userLanguageId, itemsPlanningPnDbContext, workerTagMembershipService);
 		return new OperationDataResult<List<TaskTrackerModel>>(result.Success,
 			localizationService.GetString(result.Message), result.Model ??
 			                                               []);
@@ -142,7 +147,8 @@ public class BackendConfigurationTaskTrackerService(
 		{
 			var userLanguageId = (await userService.GetCurrentUserLanguage()).Id;
 			var result = await BackendConfigurationTaskTrackerHelper.Index(filtersModel,
-				backendConfigurationPnDbContext, await coreHelper.GetCore(), userLanguageId, itemsPlanningPnDbContext);
+				backendConfigurationPnDbContext, await coreHelper.GetCore(), userLanguageId, itemsPlanningPnDbContext,
+				workerTagMembershipService);
 			if (!result.Success)
 			{
 				return new OperationDataResult<Stream>(false, localizationService.GetString(result.Message));

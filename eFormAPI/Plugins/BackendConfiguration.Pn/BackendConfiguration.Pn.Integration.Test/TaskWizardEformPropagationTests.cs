@@ -205,8 +205,8 @@ public class TaskWizardEformPropagationTests : TestBaseSetup
             // actually does to deployed occurrences.
             new CalendarOccurrenceRetractionService(
                 BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, coreHelper,
-                NullLogger<CalendarOccurrenceRetractionService>.Instance),
-            NullLogger<BackendConfigurationTaskWizardService>.Instance);
+                TestContextLogger<CalendarOccurrenceRetractionService>.Instance),
+            TestContextLogger<BackendConfigurationTaskWizardService>.Instance);
 
         // Reactivate AND change the eForm in the same save — the combination
         // that produced a Planning disagreeing with its own AreaRule.
@@ -394,8 +394,8 @@ public class TaskWizardEformPropagationTests : TestBaseSetup
             // actually does to deployed occurrences.
             new CalendarOccurrenceRetractionService(
                 BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, coreHelper,
-                NullLogger<CalendarOccurrenceRetractionService>.Instance),
-            NullLogger<BackendConfigurationTaskWizardService>.Instance);
+                TestContextLogger<CalendarOccurrenceRetractionService>.Instance),
+            TestContextLogger<BackendConfigurationTaskWizardService>.Instance);
     }
 
     // ------------------------------------------------------------------
@@ -556,7 +556,7 @@ public class TaskWizardEformPropagationTests : TestBaseSetup
         coreHelperForDeploy.GetCore().Returns(Task.FromResult(core));
         var eventDeployService = new EventDeployService(
             BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, coreHelperForDeploy, sp,
-            NullLogger<EventDeployService>.Instance);
+            TestContextLogger<EventDeployService>.Instance);
 
         var wizardService = BuildWizardService(core, language, eventDeployService);
 

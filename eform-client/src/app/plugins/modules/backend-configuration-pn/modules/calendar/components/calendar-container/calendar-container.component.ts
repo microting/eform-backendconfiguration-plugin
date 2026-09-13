@@ -5,18 +5,18 @@ import {Router} from '@angular/router';
 import {BehaviorSubject, firstValueFrom, forkJoin, Observable, of, Subject} from 'rxjs';
 import {catchError, takeUntil} from 'rxjs/operators';
 import {Store} from '@ngrx/store';
+import {TranslateService} from '@ngx-translate/core';
 import {selectCurrentUserIsAdmin} from 'src/app/state/auth/auth.selector';
 import {
   BackendConfigurationPnCalendarService,
   BackendConfigurationPnPropertiesService,
+  BackendConfigurationPnWorkerTagsService,
 } from '../../../../services';
 import {
   CalendarBoardModel,
   CalendarTaskLayoutModel,
   CalendarTaskModel,
-  CalendarToggleCompleteResult,
 } from '../../../../models/calendar';
-import {CalendarComplianceReportRowModel} from '../../../../models';
 import {CommonDictionaryModel, SharedTagModel, TemplateRequestModel} from 'src/app/common/models';
 import {EFormService} from 'src/app/common/services';
 import {CalendarLayoutService} from '../../services/calendar-layout.service';
@@ -27,15 +27,13 @@ import {TaskCreateEditModalComponent, TaskCreateEditModalData} from '../../modal
 import {CalendarWeekGridComponent} from '../calendar-week-grid/calendar-week-grid.component';
 import {TaskPreviewModalComponent, TaskPreviewModalData} from '../../modals/task-preview-modal/task-preview-modal.component';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
-import {EformTagService} from 'src/app/common/services';
-import {BoardCreateModalComponent, BoardCreateModalData} from '../../modals/board-create-modal/board-create-modal.component';
+import {BoardCreateEditModalComponent, BoardCreateEditModalData} from '../../modals/board-create-edit-modal/board-create-edit-modal.component';
+import {buildDuplicateBoardName} from '../../services/calendar-board-name.helper';
 import {BoardDeleteModalComponent, BoardDeleteModalData} from '../../modals/board-delete-modal/board-delete-modal.component';
 import {RepeatScopeModalComponent} from '../../modals/repeat-scope-modal/repeat-scope-modal.component';
-import {ComplianceCaseModalComponent} from '../../modals/compliance-case-modal/compliance-case-modal.component';
 import {CalendarSelectWorkerModalComponent} from '../../modals';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {RepeatEditScope} from '../../../../models/calendar';
-import {CalendarComplianceViewComponent} from '../calendar-compliance-view/calendar-compliance-view.component';
 import {CalendarCompleteEventModalComponent, CalendarCompleteEventModalData} from '../../modals/calendar-complete-event-modal/calendar-complete-event-modal.component';
 
 @Component({
@@ -46,13 +44,14 @@ import {CalendarCompleteEventModalComponent, CalendarCompleteEventModalData} fro
 })
 export class CalendarContainerComponent implements OnInit, OnDestroy {
   @ViewChild(CalendarWeekGridComponent) weekGrid?: CalendarWeekGridComponent;
-  @ViewChild('complianceView') complianceView?: CalendarComplianceViewComponent;
   private destroy$ = new Subject<void>();
   private createOverlayRef: OverlayRef | null = null;
   private previewOverlayRef: OverlayRef | null = null;
 
   properties: CommonDictionaryModel[] = [];
   boards: CalendarBoardModel[] = [];
+  /** In-flight latch for onDuplicateBoard — see the doc comment there. */
+  duplicatingBoard = false;
   teams: CommonDictionaryModel[] = [];
   employees: CommonDictionaryModel[] = [];
   tags: SharedTagModel[] = [];
@@ -71,11 +70,43 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   // Transient: 'month' only after the month view's Tidsplan link; any
   // dropdown-driven view change resets it (see onViewModeChange).
   scheduleScope: 'week' | 'month' = 'week';
-  // Guards loadMonthTasks against out-of-order responses: rapid month
-  // stepping launches overlapping 6-call batches, and forkJoin resolves at
-  // the SLOWEST call — without this, an older batch finishing last would
-  // overwrite the newer month's data and stick.
-  private monthLoadSeq = 0;
+  // The single sequence guarding BOTH task-load paths against out-of-order
+  // responses. Every load — the week path's one call and the month path's
+  // 6-call forkJoin batch — takes a ticket from it and applies its result only
+  // while that ticket is still the newest. Without it a response for the
+  // property or week the user has already left can land last and stick: the
+  // month batch resolves at its SLOWEST call, and the week call is a plain
+  // HTTP race. clearTasks() bumps it too, so a clear cannot be undone by a
+  // load that was already in flight.
+  //
+  // Deliberately ONE counter for both paths, not one each: the week path
+  // originally had no guard at all (#1246) precisely because the month guard
+  // was a private detail of loadMonthTasks that nobody had to keep in step.
+  // A single counter cannot drift out of step with itself.
+  private loadSeq = 0;
+
+  // The scope the buffers currently on screen were filled for: property +
+  // render path (see `renderPath`). Null means "nothing on screen", which is
+  // what clearTasks() leaves behind. loadTasks() compares it against the scope
+  // now in effect and drops the buffers when they no longer match, so a view
+  // can never paint another property's — or the other path's — events while
+  // its own load is in flight. Date is deliberately NOT part of the key: a
+  // week step or a month step keeps the previous range rendered until the new
+  // one lands, which is the existing (wanted) behaviour, not a defect.
+  private loadedScopeKey: string | null = null;
+
+  // Which of the two task buffers the template reads right now. The week path
+  // ('week' | 'day' | week-scoped 'schedule') renders tasksByDay /
+  // allDayTasksByDay; the month path ('month' | month-scoped 'schedule')
+  // renders monthTasksByDate / monthScheduleTasksByDay. Each path only ever
+  // writes its own buffers, so switching between them puts whatever the other
+  // path last loaded — possibly for a property the user has since left — on
+  // screen instantly, the ngSwitch being synchronous.
+  private get renderPath(): 'week' | 'month' {
+    return this.viewMode === 'month' || (this.viewMode === 'schedule' && this.scheduleScope === 'month')
+      ? 'month'
+      : 'week';
+  }
 
   get scheduleRangeStart(): string {
     if (this.scheduleScope === 'month') {
@@ -99,16 +130,21 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
   currentPropertyId: number | null = null;
   currentDate: string = (() => { const d = new Date(); return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`; })();
-  viewMode: 'week' | 'day' | 'schedule' | 'month' | 'compliance' = 'week';
+  viewMode: 'week' | 'day' | 'schedule' | 'month' = 'week';
   activeBoardIds: number[] = [];
-  // The calendar (board) the user most recently turned ON in the sidebar.
+  // The calendar (board) the user most recently turned ON in the toolbar's
+  // calendars dropdown.
   // Transient (in-memory only) — used to default the create-task modal to
   // that calendar even when several stay checked. Re-seeded on board load.
   lastActivatedBoardId: number | null = null;
   activeSiteIds: number[] = [];
   activeTeamIds: number[] = [];
+  // Always empty: the planning-tag filter has no UI. Its sidebar panel was
+  // commented out long before #1209 retired the sidebar, and #1209 (epic #1208,
+  // Q5) removed the remaining dead client code while deliberately keeping the
+  // server-side TagNames parameter this feeds, so the request shape is
+  // unchanged and an empty list excludes nothing.
   activeTagNames: string[] = [];
-  sidebarOpen = true;
   isAdmin = false;
 
   constructor(
@@ -119,23 +155,16 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     private layoutService: CalendarLayoutService,
     private stateService: CalendarStateService,
     private tagsService: ItemsPlanningPnTagsService,
-    private eformTagService: EformTagService,
+    private workerTagsService: BackendConfigurationPnWorkerTagsService,
     private eformService: EFormService,
     private dialog: MatDialog,
     private store: Store,
     private router: Router,
+    private translateService: TranslateService,
   ) {
     this.store.select(selectCurrentUserIsAdmin).pipe(takeUntil(this.destroy$))
       .subscribe(isAdmin => {
         this.isAdmin = isAdmin;
-        // isAdmin resolves async from the store after init — if it turns out
-        // the user is not an admin while compliance view is still active
-        // (e.g. deep link, or a stale admin session), force back to week
-        // view so a non-admin can never remain in the admin-only mode.
-        if (!isAdmin && this.viewMode === 'compliance') {
-          this.stateService.updateViewMode('week');
-          this.loadTasks();
-        }
       });
   }
 
@@ -148,20 +177,6 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       this.activeSiteIds = filters.activeSiteIds;
       this.activeTeamIds = filters.activeTeamIds;
       this.activeTagNames = filters.activeTagNames;
-      this.sidebarOpen = filters.sidebarOpen;
-
-      // Defense in depth (mirrors the constructor's isAdmin-subscription
-      // guard): NgRx calendar state persists across in-app navigations, so
-      // a non-admin can land on this component with a stale 'compliance'
-      // viewMode inherited from a previous admin session, with no admin
-      // check ever having run. Force back to week — the updateViewMode
-      // dispatch re-emits filters$ with 'week', which this same
-      // subscription then processes normally, so no extra loadTasks() call
-      // is needed here.
-      if (this.viewMode === 'compliance' && !this.isAdmin) {
-        this.stateService.updateViewMode('week');
-        return;
-      }
     });
 
     this.loadProperties();
@@ -213,31 +228,116 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   onPropertySelected(propertyId: number | null) {
     this.stateService.updatePropertyId(propertyId);
     if (propertyId) {
+      // Drop the previous property's events NOW, not when the new ones arrive.
+      // updatePropertyId() above dispatched synchronously, so the header pill
+      // already names the new property, while the grid still holds the old
+      // one's events — and keeps rendering them under the new name for the
+      // whole boards -> folder -> tasks round-trip chain that starts below.
+      // Placed before loadBoards() on purpose: clearTasks() bumps loadSeq, and
+      // no ticket has been taken yet (loadTasks() runs later, from the boards
+      // callback, and takes a fresh one); loadBoards()/loadEmployees() guard on
+      // property identity rather than on loadSeq, so the bump cannot cancel
+      // them either.
+      this.clearTasks();
       this.loadBoards(propertyId, true);
       this.loadEmployees();
     } else {
+      // No property selected. Not reachable from the toolbar today (the header
+      // only ever emits a real id), but the invariant must hold for every
+      // property change, not just the ones the current UI can produce: a task
+      // load started for the property being left has to be invalidated, or it
+      // lands afterwards and paints that property's events with no property
+      // selected. clearTasks() does that bump as its first statement, and also
+      // removes what is already drawn — loadTasks() returns early without a
+      // property, so nothing else will ever clear it.
+      this.clearTasks();
       this.employees = [];
     }
   }
 
-  loadBoards(propertyId: number, autoSelectDefault = false) {
+  /**
+   * `onSettled` runs on EVERY exit path — superseded and failed included — so a
+   * caller can hold a latch across the reload without ever stranding it.
+   */
+  loadBoards(propertyId: number, autoSelectDefault = false, onSettled?: () => void) {
     this.calendarService.getBoards(propertyId).subscribe(res => {
-      if (res && res.success) {
-        this.boards = res.model;
-        if (autoSelectDefault && this.boards.length > 0) {
-          const defaultBoard = this.boards.reduce((min, b) => b.id < min.id ? b : min);
-          this.stateService.setActiveBoardIds([defaultBoard.id]);
-          this.lastActivatedBoardId = defaultBoard.id;
-        }
-        this.propertiesService.getLinkedFolderDtos(propertyId).subscribe(folderRes => {
-          if (folderRes && folderRes.success) {
-            const logFolder = this.findFolderByName(folderRes.model, 'Logbøger');
-            this.logboegerFolderId = logFolder ? logFolder.id : null;
-          }
-        });
-        this.loadTasks();
+      // Superseded: the user picked another property while this was in flight.
+      // Everything below is scoped to `propertyId` — the calendars themselves,
+      // the Logbøger folder lookup, the auto-selected default board and the
+      // loadTasks() it kicks off — so applying it now would put one property's
+      // calendars under another's name, and its failure branch would clear the
+      // newly selected property's data. Guarded on the argument rather than a
+      // loadSeq ticket because boards are not week-scoped: a loadSeq bump from
+      // an ordinary week step would wrongly discard a legitimate board reload.
+      if (propertyId !== this.currentPropertyId) {
+        onSettled?.();
+        return;
       }
+      if (!res || !res.success) {
+        // The error itself is already surfaced: BackendConfigurationPnCalendarService
+        // .getBoards pipes through notifyError(), which toasts on !success.
+        // What is left to do here is stop the screen from contradicting itself.
+        // onPropertySelected() dispatched the new property id BEFORE this call, so
+        // the header pill (propertyName -> selectedPropertyName) already names the
+        // new property; keeping the previous property's calendars and events would
+        // present them as belonging to it.
+        // Clearing rather than reverting the selection: updatePropertyId() also
+        // wipes activeBoardIds/activeSiteIds/activeTeamIds/activeTagNames, so the
+        // filter set the visible tasks were fetched under no longer exists - putting
+        // the old id back would restore the label but not the state behind it.
+        this.clearPropertyScopedData();
+        onSettled?.();
+        return;
+      }
+      this.boards = res.model;
+      if (autoSelectDefault && this.boards.length > 0) {
+        const defaultBoard = this.boards.reduce((min, b) => b.id < min.id ? b : min);
+        this.stateService.setActiveBoardIds([defaultBoard.id]);
+        this.lastActivatedBoardId = defaultBoard.id;
+      }
+      this.propertiesService.getLinkedFolderDtos(propertyId).subscribe(folderRes => {
+        // Same race, one level deeper: this call outlives its loadBoards()
+        // callback, so re-check before writing a property-scoped folder id.
+        if (propertyId !== this.currentPropertyId) return;
+        if (folderRes && folderRes.success) {
+          const logFolder = this.findFolderByName(folderRes.model, 'Logbøger');
+          this.logboegerFolderId = logFolder ? logFolder.id : null;
+        } else {
+          // Passed to the task create/edit modals as `folderId`; a stale value
+          // would file a new task's eForm under the PREVIOUS property's Logbøger
+          // folder. null is already the supported "no Logbøger folder" value.
+          this.logboegerFolderId = null;
+        }
+      });
+      this.loadTasks();
+      onSettled?.();
     });
+  }
+
+  // Resets everything on screen that belongs to one specific property, so a
+  // failed load cannot leave one property's data under another's name.
+  // `employees` is deliberately NOT reset here: loadEmployees() runs as its own
+  // request for the newly selected property and handles its own failure.
+  private clearPropertyScopedData() {
+    this.boards = [];
+    this.logboegerFolderId = null;
+    this.clearTasks();
+  }
+
+  private clearTasks() {
+    // Invalidates any task load still in flight, week or month. Both paths
+    // apply their result only while `seq === loadSeq`, so without this bump a
+    // slower request launched for the PREVIOUS property/week/month would
+    // resolve after the clear and repopulate the grid with data the clear
+    // removed.
+    this.loadSeq++;
+    this.tasks = [];
+    this.tasksByDay = Array.from({length: 7}, () => []);
+    this.allDayTasksByDay = Array.from({length: 7}, () => []);
+    this.monthTasksByDate = new Map();
+    this.rebuildMonthSchedule();
+    // Nothing is on screen any more, so no scope describes it.
+    this.loadedScopeKey = null;
   }
 
   loadTags() {
@@ -246,74 +346,91 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     });
   }
 
-  onCreateTag(name: string) {
-    if (!name.trim()) return;
-    this.tagsService.createPlanningTag({name: name.trim()}).subscribe(res => {
-      if (res && res.success) this.loadTags();
-    });
-  }
-
-  onUpdateTag(tag: SharedTagModel) {
-    this.tagsService.updatePlanningTag(tag).subscribe(res => {
-      if (res && res.success) this.loadTags();
-    });
-  }
-
-  onDeleteTag(id: number) {
-    this.tagsService.deletePlanningTag(id).subscribe(res => {
-      if (res && res.success) this.loadTags();
-    });
-  }
-
+  // Teams (worker groups) come from the PLUGIN endpoint, not the core
+  // `EformTagService.getAvailableTags()`: the SDK keeps worker groups and
+  // eForm/template tags in one `Tags` table, so the core list offered template
+  // tags as teams and picking one produced an event that reached nobody
+  // (#1213). The plugin endpoint filters server-side to tags that have at
+  // least one live worker member. Trade-off: a worker group with no members at
+  // all is not listed until someone is added to it.
   loadTeams() {
-    this.eformTagService.getAvailableTags().subscribe(res => {
+    this.workerTagsService.getWorkerTags().subscribe(res => {
       if (res && res.success) this.teams = res.model;
     });
   }
 
-  onCreateTeam(name: string) {
-    this.eformTagService.createTag({name} as any).subscribe(res => {
-      if (res && res.success) this.loadTeams();
-    });
-  }
-
-  onUpdateTeam(event: {id: number; name: string}) {
-    this.eformTagService.updateTag({id: event.id, name: event.name, description: null} as any).subscribe(res => {
-      if (res && res.success) this.loadTeams();
-    });
-  }
-
-  onDeleteTeam(teamId: number) {
-    this.eformTagService.deleteTag(teamId).subscribe(res => {
-      if (res && res.success) this.loadTeams();
-    });
-  }
-
   loadEmployees() {
+    // Captured, not re-read in the callback: this list is property-scoped and
+    // the request is a plain HTTP race, so a slow load for the property the
+    // user has already left must not repaint (or, on its failure branch,
+    // clear) the employee list belonging to the current one. Property identity
+    // is the whole staleness axis here — loadEmployees() is only ever called
+    // from onPropertySelected() — so it is the guard, rather than a ticket
+    // from loadSeq, which is the TASK sequence and is bumped by every week
+    // step and every clearTasks().
+    const propertyId = this.currentPropertyId;
     this.propertiesService.getDeviceUsersFiltered({
-      propertyIds: this.currentPropertyId ? [this.currentPropertyId] : [],
+      propertyIds: propertyId ? [propertyId] : [],
       nameFilter: '',
       sort: 'Name',
       isSortDsc: false,
       showResigned: false,
-      tagIds: this.activeTeamIds,
+      // Deliberately empty (#1211, Q3): the toolbar's employee list is EVERY
+      // worker linked to the property, not the ones carrying the currently
+      // selected teams. Passing `activeTeamIds` here made Teams a
+      // list-NARROWER rather than a filter — picking a team shrank the
+      // Employees section under the user's own selection, and a worker with no
+      // team could never be reached. Teams are now a task filter in their own
+      // right (`workerTagIds` on the week request), so nothing about this list
+      // depends on them; it is also why nothing reloads it on a team toggle.
+      tagIds: [],
     }).subscribe(res => {
+      if (propertyId !== this.currentPropertyId) return;
       if (res && res.success) {
         this.employees = res.model.map(u => ({
           id: u.siteId,
           name: u.fullName || `${u.userFirstName} ${u.userLastName}`.trim() || u.siteName,
           description: '',
         } as CommonDictionaryModel));
+      } else {
+        // Same failure mode as loadBoards: the list is property-scoped, and the
+        // create-modal would otherwise offer the previous property's
+        // employees under the newly selected property.
+        this.employees = [];
       }
     });
   }
 
   loadTasks() {
-    if (this.viewMode === 'compliance') { return; }
     if (!this.currentPropertyId) return;
 
-    if (this.viewMode === 'month' || (this.viewMode === 'schedule' && this.scheduleScope === 'month')) {
-      this.loadMonthTasks();
+    // Scope change: the buffers on screen were filled for another property or
+    // by the OTHER render path, and the template is already reading them —
+    // onViewModeChange() dispatches synchronously, so the ngSwitch has swapped
+    // views before this call and would paint the stale buffer for the whole
+    // load (six round-trips on the month path). Drop them first.
+    //
+    // Only on a scope change, never on an ordinary refetch: a week step, a
+    // board toggle or a reload after saving a task keeps the same key, so the
+    // grid does not blink on every navigation.
+    //
+    // MUST stay above the ticket below: clearTasks() bumps loadSeq, so clearing
+    // after `++this.loadSeq` would make this load supersede itself and nothing
+    // would ever render.
+    const scopeKey = `${this.currentPropertyId}|${this.renderPath}`;
+    if (this.loadedScopeKey !== scopeKey) {
+      this.clearTasks();
+    }
+    this.loadedScopeKey = scopeKey;
+
+    // One ticket per user-visible load, shared by both paths below.
+    const seq = ++this.loadSeq;
+
+    // Same expression as the scope key above — via `renderPath`, so the two
+    // cannot drift apart and leave the month path loading while the week
+    // buffers are the ones being kept.
+    if (this.renderPath === 'month') {
+      this.loadMonthTasks(seq);
       return;
     }
 
@@ -324,28 +441,38 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     const weekEnd = this.toLocalDateString(sunday);
 
     this.calendarService
-      .getTasksForWeek(
-        this.currentPropertyId,
+      .getTasksForWeek({
+        propertyId: this.currentPropertyId,
         weekStart,
         weekEnd,
-        this.activeBoardIds,
-        this.activeTagNames,
-        this.activeSiteIds,
-      )
+        boardIds: this.activeBoardIds,
+        tagNames: this.activeTagNames,
+        siteIds: this.activeSiteIds,
+        workerTagIds: this.activeTeamIds,
+      })
       .subscribe(res => {
-        if (res && res.success) {
-          const teamNameById = new Map(this.teams.map(t => [t.id, t.name]));
-          this.tasks = (res.model || []).map((t: any) => {
-            const task = mapResponseToCalendarTask(t);
-            // Resolve worker-tag ids to display names here (the container owns
-            // `teams`); child views render the names without needing the list.
-            task.workerTagNames = (task.workerTagIds ?? [])
-              .map(id => teamNameById.get(id))
-              .filter((name): name is string => !!name);
-            return task;
-          });
-          this.rebuildLayout(monday);
+        // Superseded while in flight — by another property, another week, or a
+        // clearTasks(). Dropping it here also keeps the failure branch below
+        // from clearing a grid that now belongs to a newer load.
+        if (seq !== this.loadSeq) return;
+        if (!res || !res.success) {
+          // getTasksForWeek toasts through notifyError(); drop what is on the
+          // grid so the previous property/week's events are not left rendered
+          // under the header the failed request was made for.
+          this.clearTasks();
+          return;
         }
+        const teamNameById = new Map(this.teams.map(t => [t.id, t.name]));
+        this.tasks = (res.model || []).map((t: any) => {
+          const task = mapResponseToCalendarTask(t);
+          // Resolve worker-tag ids to display names here (the container owns
+          // `teams`); child views render the names without needing the list.
+          task.workerTagNames = (task.workerTagIds ?? [])
+            .map(id => teamNameById.get(id))
+            .filter((name): name is string => !!name);
+          return task;
+        });
+        this.rebuildLayout(monday);
       });
   }
 
@@ -354,8 +481,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   // per weekday per call), so the month is fetched as six proper week
   // windows and merged client-side — bit-identical semantics with the week
   // view. A failed week degrades to an empty row instead of a blank month.
-  private loadMonthTasks() {
-    const seq = ++this.monthLoadSeq;
+  private loadMonthTasks(seq: number) {
     const anchor = new Date(this.currentDate);
     const gridStart = this.getMondayOfWeek(new Date(anchor.getFullYear(), anchor.getMonth(), 1));
     const calls = Array.from({length: 6}, (_, i) => {
@@ -364,19 +490,20 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       const sunday = new Date(monday);
       sunday.setDate(monday.getDate() + 6);
       return this.calendarService
-        .getTasksForWeek(
-          this.currentPropertyId!,
-          this.toLocalDateString(monday),
-          this.toLocalDateString(sunday),
-          this.activeBoardIds,
-          this.activeTagNames,
-          this.activeSiteIds,
-        )
+        .getTasksForWeek({
+          propertyId: this.currentPropertyId!,
+          weekStart: this.toLocalDateString(monday),
+          weekEnd: this.toLocalDateString(sunday),
+          boardIds: this.activeBoardIds,
+          tagNames: this.activeTagNames,
+          siteIds: this.activeSiteIds,
+          workerTagIds: this.activeTeamIds,
+        })
         .pipe(catchError(() => of(null)));
     });
 
     forkJoin(calls).subscribe(results => {
-      if (seq !== this.monthLoadSeq) return;
+      if (seq !== this.loadSeq) return;
       const teamNameById = new Map(this.teams.map(t => [t.id, t.name]));
       const boardColorMap = new Map(this.boards.map(b => [b.id, b.color]));
       const byDate = new Map<string, CalendarTaskLayoutModel[]>();
@@ -529,8 +656,33 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
   onCreateBoard() {
     if (!this.currentPropertyId) return;
-    const dialogRef = this.dialog.open(BoardCreateModalComponent, {
-      data: {propertyId: this.currentPropertyId} as BoardCreateModalData,
+    this.openBoardModal();
+  }
+
+  onEditBoard(board: CalendarBoardModel) {
+    if (!this.currentPropertyId) return;
+    this.openBoardModal(board);
+  }
+
+  /**
+   * Create / edit share one dialog; `board` absent means create.
+   *
+   * `this.boards` is handed over for the duplicate-name guard rather than being
+   * re-fetched inside the dialog, because `GET boards/{propertyId}` auto-creates
+   * a Default calendar for an empty property — a load there would be a write.
+   *
+   * A successful save reloads the tasks as well as the calendar list — the
+   * colour is part of the edit, and every task block on the grid is painted
+   * from its calendar's colour (see the boardColorMap in rebuildLayout). That
+   * refetch is loadBoards()' own: its success path ends in loadTasks(). An
+   * extra loadTasks() here would not just be a wasted round-trip (six of them
+   * on the month path); running BEFORE the reloaded calendars land, it would
+   * build boardColorMap from the pre-edit `this.boards` and paint one frame in
+   * the old colour.
+   */
+  private openBoardModal(board?: CalendarBoardModel) {
+    const dialogRef = this.dialog.open(BoardCreateEditModalComponent, {
+      data: {propertyId: this.currentPropertyId, board, boards: this.boards} as BoardCreateEditModalData,
       width: '400px',
     });
     dialogRef.afterClosed().subscribe(result => {
@@ -540,22 +692,74 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     });
   }
 
-  onUpdateBoard(event: {id: number; name: string; color: string}) {
-    this.calendarService.updateBoard(event).subscribe(res => {
-      if (res && res.success && this.currentPropertyId) {
-        this.loadBoards(this.currentPropertyId);
-        this.loadTasks();
-      }
-    });
+  /**
+   * "Duplicate" has no endpoint (#1210): it is a plain `POST boards` with the
+   * source's colour and a "(copy)" name, and it copies NO events. If copying
+   * the events is what is wanted, that is a separate ticket — a client-side
+   * cascade over a series would be inventing behaviour the server does not have.
+   *
+   * Latched for the whole POST + reload, for the same reason the create/edit
+   * dialog latches `saving` (board-create-edit-modal.component.ts:119-125): the
+   * copy name is derived from `this.boards` as of the last COMPLETED load, so a
+   * second Duplicate fired before the reload lands recomputes the identical
+   * name and mints a second "X (kopi)". Closing the dropdown on click is not
+   * the guard — the user only has to reopen it.
+   */
+  onDuplicateBoard(board: CalendarBoardModel) {
+    if (!this.currentPropertyId || this.duplicatingBoard) return;
+    const name = buildDuplicateBoardName(
+      board.name,
+      this.boards,
+      (base, index) => index === 1
+        ? this.translateService.instant('{{name}} (copy)', {name: base})
+        : this.translateService.instant('{{name}} (copy {{index}})', {name: base, index}),
+    );
+    this.duplicatingBoard = true;
+    this.calendarService.createBoard({name, color: board.color, propertyId: this.currentPropertyId})
+      .subscribe({
+        next: res => {
+          if (res && res.success && this.currentPropertyId) {
+            // Released by loadBoards' onSettled rather than here: `name` above
+            // is computed from `this.boards`, so re-arming at POST-success
+            // would still let a second click read the PRE-copy list and derive
+            // the very same name again. onSettled fires on every exit path
+            // loadBoards has, so the latch cannot strand.
+            this.loadBoards(this.currentPropertyId, false, () => this.duplicatingBoard = false);
+            return;
+          }
+          // createBoard pipes through notifyError(), so the failure is already
+          // toasted; re-arm so the user can retry instead of being stuck.
+          this.duplicatingBoard = false;
+        },
+        error: () => {
+          this.duplicatingBoard = false;
+        },
+      });
   }
 
   onDeleteBoard(board: CalendarBoardModel) {
     const dialogRef = this.dialog.open(BoardDeleteModalComponent, {
-      data: {board} as BoardDeleteModalData,
+      // The dialog only closes truthy once the server confirms: DeleteBoard
+      // cascades DeleteEntireSeries and aborts with the board intact if any one
+      // series fails, so the row must never be removed optimistically.
+      data: {board, boardCount: this.boards.length} as BoardDeleteModalData,
       width: '400px',
     });
     dialogRef.afterClosed().subscribe(result => {
       if (result && this.currentPropertyId) {
+        // Drop the deleted calendar from the filter FIRST. Leaving its id in
+        // activeBoardIds would narrow GetTasksForWeek to a calendar that no
+        // longer exists and draw an empty grid; dropping it can empty the set,
+        // which is the documented "no filter" state (every calendar shown), not
+        // an empty one. setActiveBoardIds writes through synchronously, so the
+        // refetch below already reads the corrected filter.
+        if (this.activeBoardIds.includes(board.id)) {
+          this.stateService.setActiveBoardIds(this.activeBoardIds.filter(id => id !== board.id));
+        }
+        // The deleted calendar took its events with it, so the grid has to be
+        // refetched too — that is loadBoards' own loadTasks(), at the end of
+        // its success path. A second one here would just be a duplicate round
+        // trip (six of them in month view) reading the pre-delete calendar list.
         this.loadBoards(this.currentPropertyId);
       }
     });
@@ -583,7 +787,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     this.loadTasks();
   }
 
-  onViewModeChange(viewMode: 'week' | 'day' | 'schedule' | 'month' | 'compliance') {
+  onViewModeChange(viewMode: 'week' | 'day' | 'schedule' | 'month') {
     // Any dropdown-driven change leaves month-scoped Tidsplan; the scope is
     // only reachable again via the month view's Tidsplan link.
     this.scheduleScope = 'week';
@@ -626,20 +830,16 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     this.loadTasks();
   }
 
-  onToggleSidebar() {
-    this.stateService.toggleSidebar();
-  }
-
-  onPropertyPillClicked() {
-    if (!this.sidebarOpen) {
-      this.onToggleSidebar();
-    }
-  }
-
   onBoardToggled(boardId: number) {
-    // The store update is async, so activeBoardIds here still reflects the
-    // pre-toggle state: if the calendar is not currently active, this click is
-    // turning it ON — remember it as the default for new tasks.
+    // activeBoardIds still reflects the pre-toggle state because this line runs
+    // BEFORE toggleBoard() below — not because the store is async. ngrx
+    // Store.select emits synchronously on dispatch, so the filters$
+    // subscription in ngOnInit has already rewritten activeBoardIds by the time
+    // toggleBoard() returns. (That synchrony is load-bearing elsewhere in this
+    // file: loadTasks()' scope check and the property/board guards all read
+    // state a dispatch has just written.)
+    // So: if the calendar is not currently active, this click is turning it ON
+    // — remember it as the default for new tasks.
     if (!this.activeBoardIds.includes(boardId)) {
       this.lastActivatedBoardId = boardId;
     }
@@ -647,18 +847,64 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     this.loadTasks();
   }
 
-  onTagToggled(tagName: string) {
-    this.stateService.toggleTag(tagName);
+  onSelectAllBoards() {
+    this.stateService.setActiveBoardIds(this.boards.map(b => b.id));
+    this.loadTasks();
+  }
+
+  onClearBoards() {
+    // lastActivatedBoardId is deliberately left alone: openCreateModal only
+    // honours it while it is still in activeBoardIds, so clearing the filter
+    // already neutralises it, and re-checking that calendar restores it.
+    //
+    // Known consequence, unchanged on purpose: with nothing active,
+    // openCreateModal's `selectedBoardId` falls through to `undefined`, so the
+    // create-task modal opens with no calendar preselected. That state was
+    // already reachable by unchecking every row one at a time; this makes it
+    // one click. Left as-is pending the product call on Ryd (an empty filter
+    // is "no filter" server-side, so Ryd and "Vælg alle" render the same grid).
+    this.stateService.setActiveBoardIds([]);
+    this.loadTasks();
+  }
+
+  // --- Assignee filter (#1211): employees and teams -------------------------
+  // Three handlers, one shape: mutate the filter in the store, then re-read the
+  // grid through loadTasks(). loadTasks() takes its own loadSeq ticket, so a
+  // rapid series of toggles cannot paint an earlier selection's result.
+  //
+  // Nothing here is post-filtered in the browser: `activeSiteIds` and
+  // `activeTeamIds` both travel on the week request model and the SERVER ORs
+  // them (#1212). Filtering client-side would be wrong twice over — the payload
+  // has already been narrowed by siteIds, so a mixed selection would come out
+  // as an intersection, and it would miss events assigned to an individual
+  // member of a selected team.
+  //
+  // The two lists are also deliberately INDEPENDENT (settled 2026-09-09):
+  // toggling a team never ticks or unticks its members, and vice versa. Syncing
+  // them would make the checked boxes and the actual request diverge the moment
+  // team membership changed, and unticking one member would silently freeze a
+  // team filter into an enumeration of today's members.
+  //
+  // Note the store is synchronous (see onBoardToggled): by the time these
+  // dispatches return, the filters$ subscription has already rewritten
+  // activeSiteIds/activeTeamIds, so loadTasks() reads the post-toggle state.
+
+  onEmployeeToggled(siteId: number) {
+    this.stateService.toggleSite(siteId);
     this.loadTasks();
   }
 
   onTeamToggled(teamId: number) {
+    // Reloads the TASKS, not the employee list — that inversion was the bug
+    // #1211 fixes. See loadEmployees() for why the list no longer moves.
     this.stateService.toggleTeam(teamId);
-    this.loadEmployees();
+    this.loadTasks();
   }
 
-  onEmployeeToggled(siteId: number) {
-    this.stateService.toggleSite(siteId);
+  // The "All employees" reset row. Clears BOTH lists in one dispatch, so the
+  // grid reloads once rather than once per cleared entry.
+  onClearAssignees() {
+    this.stateService.clearAssignees();
     this.loadTasks();
   }
 
@@ -678,9 +924,11 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         isRepeating ? scope ?? 'this' : 'all',
         event.originalDate,
       );
-      obs.subscribe(res => {
-        if (res && res.success) this.loadTasks();
-      });
+      // Refetch on failure too: calendar-week-grid moves the block locally
+      // before emitting (so the drag does not flash), so skipping the reload
+      // would leave it drawn at a position the server rejected. Same shape as
+      // doResize() below, which always reloads.
+      obs.subscribe(() => this.loadTasks());
     };
 
     if (isRepeating) {
@@ -733,67 +981,6 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Compliance-backed events can't be completed via the calendar indicator
-  // alone — the underlying SDK case still needs the form submitted. The
-  // backend signals this with `requiresForm: true` on the toggle response
-  // and includes the routing payload; we navigate to the same compliance/
-  // case route used by the task-tracker (see
-  // task-tracker-table.component.ts:179 for the canonical shape).
-  onCompleteRequiresForm(p: CalendarToggleCompleteResult) {
-    // Guard against the backend returning requiresForm=true without all
-    // route params populated. Angular's Router serialises undefined segments
-    // literally ("…/undefined/…") and the form would 404; better to bail
-    // and let the user retry than to ship a broken URL.
-    if (p.sdkCaseId == null || p.templateId == null || p.propertyId == null
-        || p.complianceId == null || p.workerId == null || !p.deadline) {
-      return;
-    }
-    const ref = this.dialog.open(ComplianceCaseModalComponent, {
-      data: {
-        sdkCaseId: p.sdkCaseId,
-        templateId: p.templateId,
-        propertyId: p.propertyId,
-        deadline: p.deadline,
-        complianceId: p.complianceId,
-        workerId: p.workerId,
-        // Optional — backend supplies Compliance.Deadline day + the calendar's
-        // configured StartHour so the modal can default the doneAt picker to
-        // the scheduled event-start moment rather than the deadline's
-        // midnight or "now".
-        eventStart: p.eventStart,
-      },
-      width: 'min(90vw, 1080px)',
-      maxWidth: '95vw',
-      autoFocus: false,
-      restoreFocus: false,
-    });
-    ref.afterClosed().subscribe((result) => {
-      // Always reload — even on cancel — so any partial state (the
-      // freshly-materialised Compliance row, route timing, etc.) re-renders
-      // from the canonical server view.
-      this.reloadAfterCompletion();
-    });
-  }
-
-  onComplianceRowCompleteRequested(row: CalendarComplianceReportRowModel) {
-    this.onToggleCompleteRequested({
-      id: row.areaRulePlanningId ?? 0,
-      completed: false,
-      complianceId: row.complianceId,
-      taskDate: row.taskDate,
-      propertyId: row.propertyId,
-      assigneeIds: [],
-    } as CalendarTaskLayoutModel);
-  }
-
-  private reloadAfterCompletion() {
-    if (this.viewMode === 'compliance') {
-      this.complianceView?.refresh();
-      return;
-    }
-    this.loadTasks();
-  }
-
   async onToggleCompleteRequested(task: CalendarTaskLayoutModel) {
     if (task.completed) { return; }
     const ref = this.dialog.open(CalendarCompleteEventModalComponent, {
@@ -803,6 +990,14 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         occurrenceDate: task.taskDate,
         propertyId: task.propertyId,
         assigneeIds: task.assigneeIds ?? [],
+        // The team half of the assignment (#1236): the modal groups these under
+        // "assigned to this event" but never pre-selects from them. The compliance
+        // report's row click passes the same pair, so the two views agree about who
+        // is assigned.
+        teamAssigneeIds: task.teamAssigneeIds ?? [],
+        // Title the dialog with the task, not with the eForm template it
+        // embeds (#1205).
+        taskTitle: task.title,
       } as CalendarCompleteEventModalData,
       // Sized for a single-section eForm, which is the common case: one column
       // of fields with a uniform gutter, matching the design reference. The
@@ -815,7 +1010,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     });
     const result = await firstValueFrom(ref.afterClosed());
     if (result?.saved) {
-      this.reloadAfterCompletion();
+      this.loadTasks();
     }
   }
 

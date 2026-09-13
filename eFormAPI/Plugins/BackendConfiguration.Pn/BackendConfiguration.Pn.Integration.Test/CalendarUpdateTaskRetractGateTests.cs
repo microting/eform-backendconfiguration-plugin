@@ -23,6 +23,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Calendar;
 using BackendConfiguration.Pn.Infrastructure.Models.TaskWizard;
+using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
@@ -132,13 +133,13 @@ public class CalendarUpdateTaskRetractGateTests : TestBaseSetup
 
         _retractionService = new CalendarOccurrenceRetractionService(
             BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, _coreHelper,
-            NullLogger<CalendarOccurrenceRetractionService>.Instance);
+            TestContextLogger<CalendarOccurrenceRetractionService>.Instance);
 
         _backfillService = new CalendarPastSeriesBackfillService(
             ItemsPlanningPnDbContext!, BackendConfigurationPnDbContext!, _coreHelper,
             _deployService,
-            new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, _coreHelper),
-            NullLogger<CalendarPastSeriesBackfillService>.Instance);
+            new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, new WorkerTagMembershipService(_coreHelper)),
+            TestContextLogger<CalendarPastSeriesBackfillService>.Instance);
 
         _service = new BackendConfigurationCalendarService(
             new BackendConfigurationLocalizationService(),
@@ -150,9 +151,10 @@ public class CalendarUpdateTaskRetractGateTests : TestBaseSetup
             _taskWizardService,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
             Substitute.For<ICalendarChangeNotifier>(),
-            NullLogger<BackendConfigurationCalendarService>.Instance,
+            TestContextLogger<BackendConfigurationCalendarService>.Instance,
             _retractionService,
-            _backfillService);
+            _backfillService,
+            new WorkerTagMembershipService(_coreHelper));
     }
 
     /// <summary>

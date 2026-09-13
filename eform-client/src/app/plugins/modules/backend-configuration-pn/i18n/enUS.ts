@@ -571,13 +571,10 @@ export const enUS= {
   '12 months': '12 months',
   'Year to date': 'Year to date',
   'Set period': 'Set period',
-  'Show report': 'Show report',
   'Download as': 'Download as',
   Download: 'Download',
   'Show all': 'Show all',
   Showing: 'Showing',
-  'Select filters and click Show report': 'Select filters and click Show report',
-  'No tasks in the selected period': 'No tasks in the selected period',
   'Delete log': 'Delete log',
   'This action cannot be undone': 'This action cannot be undone',
   Employees: 'Employees',
@@ -753,4 +750,147 @@ export const enUS= {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Activate / deactivate',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.',
+  // Standalone Compliance page (#1160/#1163). The nine filter-bar strings the
+  // page reuses already exist above ('All properties' .. 'Showing'); only the
+  // wording the prototype changed, and the shell's own chrome, are new.
+  // 'Show report', 'Select filters and click Show report' and 'No tasks in the
+  // selected period' were the calendar view mode's wording and were removed
+  // from all 26 locales when #1170 deleted that view; nothing reads them now.
+  // #1185: filter changes re-query by themselves; the only button left is the
+  // custom-period commit, and the placeholder is reachable only before it.
+  'Update period': 'Update period',
+  'Select a period and click Update period': 'Select a period and click Update period.',
+  'Change a filter or click Overview to load the table': 'Change a filter or click Overview to load the table.',
+  // Mode-toggle labels. Deliberately NOT the existing 'Overview' key: its
+  // Danish is 'Overblik' and it is used on unrelated screens, so retranslating
+  // it to 'Oversigt' would silently change them.
+  'Compliance overview': 'Overview',
+  'Compliance details': 'Details',
+  'Compliance report': 'Report',
+  'Overview shows both completed and not completed tasks': 'Overview shows both completed and not completed tasks',
+  'Select a property to filter by calendar': 'Select a property to filter by calendar',
+  'Select both a start and an end date': 'Select both a start and an end date',
+  'The end date must be on or after the start date': 'The end date must be on or after the start date',
+  'Showing all': 'Showing all',
+  'No results': 'No results',
+  Filtering: 'Filtering',
+  'View mode': 'View mode',
+  Pagination: 'Pagination',
+  // Detaljer view (#1165). The week header, the time prefix and the delete
+  // popover reuse existing keys ('Week' = Uge, 'At' = Kl., 'Delete log' =
+  // Slet log, 'This action cannot be undone'); 'Previous'/'Next'/'of' come
+  // from the CORE frontend and are deliberately NOT shadowed here.
+  'No tasks match the selected filters.': 'No tasks match the selected filters.',
+  // Accessible name of the row's completion circle. Not the existing 'Done'
+  // key: its Danish is 'Færdig' and it is used on unrelated screens.
+  'Task done': 'Task done',
+  'Task not done': 'Task not done',
+  // Shown in the result card when the FIRST fetch of a visit fails. Kept
+  // distinct from 'No tasks match the selected filters.' on purpose: a
+  // transport or server error is not the filters' fault.
+  'Could not load the data': 'Could not load the data',
+  // Oversigt view (#1164). The property and overdue COLUMN HEADERS reuse the
+  // existing 'Property' (Ejendom) and 'Overdue' (Overskredet) keys rather than
+  // adding near-duplicates: #1169's export already renders the property column
+  // as Ejendom, and a user must not see one Danish word on screen and another
+  // in the file they download from that screen (decision recorded on #1164).
+  // The prototype's 'Virksomhed' is deliberately not used.
+  'Compliance %': 'Compliance %',
+  // The <tfoot> label. NOT the core frontend's 'Total' key, whose Danish is
+  // 'Total' and which is used on unrelated screens; same pattern as
+  // 'Compliance overview' above.
+  'Compliance total': 'Total',
+  'No properties match the selected filters.': 'No properties match the selected filters.',
+  // Accessible name of a sortable column header, prefixed to the visible label
+  // ('Sortér efter Overskredet'), so the visible text stays part of the
+  // accessible name.
+  'Sort by': 'Sort by',
+  // Rapport view (#1167). Everything the sub-report tables need beyond the keys
+  // that already exist above: the metadata headers reuse 'Id' (Id),
+  // 'Property' (Ejendom), 'Completed by' (Udført af), 'Area' (Område),
+  // 'Pictures' (Billeder) and 'Actions' (Handlinger); the meta line reuses
+  // 'Property', 'Calendar' (Kalender), 'Period' (Periode) and 'All' (Alle);
+  // the empty state reuses 'No tasks match the selected filters.'; the delete
+  // confirm reuses 'Delete log' / 'This action cannot be undone' / 'Cancel' /
+  // 'Delete'; the per-sub-report reveal reuses 'Showing' and 'Show all' plus
+  // the CORE frontend's 'of'.
+  //
+  // NOT the existing 'Completed date' key for the Udført dato column: its
+  // Danish is 'Udført', while #1169's export renders the same column from the
+  // backend's own CompletedDate entry as 'Udført dato'. A user must not see one
+  // Danish word on screen and another in the file downloaded from that screen,
+  // and retranslating 'Completed date' would silently move its one other
+  // consumer (adhoc-history).
+  'Completion date': 'Completion date',
+  // The heading of the Rapport section for tasks that carry NO report headline
+  // (#1188). A headline whose tag id could not be resolved to a name is
+  // rendered as #{id} instead — it is a named group, and filing it here would
+  // merge two different sub-reports. Matches the backend's
+  // WithoutReportHeadline entry, which the export uses.
+  'Without report headline': 'Without report headline',
+  // A template whose column schema could not be derived: zero answer columns
+  // for a reason that is neither "no answerable fields" nor "nobody answered".
+  // Matches the backend's ColumnsUnavailable entry. Rendered for a section
+  // whose EVERY template lacks a schema.
+  'Columns unavailable': 'Columns unavailable',
+  // The per-template form of the notice above (#1188): a headline section
+  // spans templates, and when only some lack a schema the others' columns are
+  // still shown, so the notice names the affected template by id.
+  'Columns unavailable for template #{{id}}': 'Columns unavailable for template #{{id}}',
+  // Accessible name of the Billeder cell. Two keys rather than one plural
+  // string so each language can word the singular its own way.
+  '1 image': '1 image',
+  '{{count}} images': '{{count}} images',
+  // Tooltip on the disabled Rediger button (compliance.js:1648).
+  'Only completed tasks can be edited': 'Only completed tasks can be edited',
+  // Image gallery for case attachments (#1168). Opened from the Rapport
+  // Billeder cell and from the calendar's historical task card; the header keys
+  // render only for the former, which is the one that supplies a case id.
+  //
+  // 'Previous', 'Next' and 'of' are NOT here: they live in the CORE frontend's
+  // i18n (assets/i18n/enUS.ts) and are already what the lightbox template uses.
+  // 'Pictures' above is reused as the thumbnail strip's tablist label.
+  //
+  // Two title keys rather than one plural string, so each language words its
+  // own singular. The Danish separator is the middle dot the prototype uses
+  // (Compliance.html:108, compliance.js:741-744).
+  'Images for case {{caseId}}': 'Images · case {{caseId}}',
+  '1 image for case {{caseId}}': '1 image · case {{caseId}}',
+  // The close button's accessible name (Compliance.html:110). NOT the core
+  // frontend's 'Close', whose Danish is the bare 'Luk' and which is used on
+  // every other dialog in the app.
+  'Close gallery': 'Close gallery',
+  // The caption under the stage image, and the same string as the counter's
+  // long form (compliance.js:754-755).
+  'Image {{index}} of {{count}}': 'Image {{index}} of {{count}}',
+  // The stage image's alt text (compliance.js:739). Falls back to the caption
+  // key above when the opener supplied no case id.
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Image {{index}} of {{count}} for case {{caseId}}',
+  // Accessible name of one thumbnail in the strip (compliance.js:704-724).
+  'Image {{index}}': 'Image {{index}}',
+  // Title of the export preview dialog (#1189); the file name is its subtitle.
+  'PDF preview': 'PDF preview',
+  // Generic toast for a failed export call. The interceptor cannot surface a
+  // blob 400, so the plugin service toasts this itself (#1189 decision 8a).
+  'Export failed': 'Export failed',
+  // Calendar toolbar (#1209): the calendars multi-select button label, its
+  // bulk actions, and the accessible name of a calendar row's actions menu.
+  '{{count}} calendars': '{{count}} calendars',
+  'Select all': 'Select all',
+  Clear: 'Clear',
+  'Calendar actions': 'Calendar actions',
+  // Calendar CRUD from the calendars dropdown (#1210): the edit dialog's
+  // title, the row menu's Duplicate action, the client-side duplicate-name
+  // guard, the name a duplicate gets, and the two notes the delete dialog
+  // shows (a new default calendar replaces the last one; the cascade aborted).
+  'Edit calendar': 'Edit calendar',
+  Duplicate: 'Duplicate',
+  'A calendar with this name already exists': 'A calendar with this name already exists',
+  '{{name}} (copy)': '{{name}} (copy)',
+  '{{name}} (copy {{index}})': '{{name}} (copy {{index}})',
+  'This is the last calendar, so a new default calendar is created in its place.': 'This is the last calendar, so a new default calendar is created in its place.',
+  'The calendar could not be deleted. It still has events that could not be removed.': 'The calendar could not be deleted. It still has events that could not be removed.',
+  Teams: 'Teams',
+  '{{count}} selected': '{{count}} selected',
+  'Teams and employees': 'Teams and employees',
 };

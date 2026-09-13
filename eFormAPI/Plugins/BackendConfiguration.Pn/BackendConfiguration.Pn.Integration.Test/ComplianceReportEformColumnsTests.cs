@@ -1,0 +1,1975 @@
+/*
+The MIT License (MIT)
+
+Copyright (c) 2007 - 2026 Microting A/S
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+*/
+
+namespace BackendConfiguration.Pn.Integration.Test;
+
+using System.Globalization;
+using eFormCore;
+using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
+using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
+using BackendConfiguration.Pn.Services.WorkerTagMembership;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microting.eForm.Infrastructure.Constants;
+using Microting.eForm.Infrastructure.Data.Entities;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+using Microting.eFormApi.BasePn.Abstractions;
+using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
+using Microting.ItemsPlanningBase.Infrastructure.Enums;
+using NSubstitute;
+
+/// <summary>
+/// DB-backed integration coverage for
+/// <c>POST api/backend-configuration-pn/compliance-report/eform-columns</c>
+/// (<see cref="BackendConfigurationComplianceReportService.EformColumns"/>) — issue #1166 §11,
+/// regrouped by report headline in #1188.
+///
+/// <para>
+/// The fixture seeds SDK templates by hand — a top <c>CheckList</c> with ZERO direct
+/// fields plus a child <c>CheckList</c> the fields hang off — because that is both the
+/// shape the SDK itself produces and the shape #1166 §4 identifies as the one a
+/// non-recursive column derivation silently returns nothing for. Seeding the rows
+/// directly (rather than through <c>TemplateFromXml</c>/<c>TemplateCreate</c>) is what
+/// makes per-language label gaps, dirty stored values and individual field types
+/// addressable one at a time.
+/// </para>
+///
+/// <para>
+/// Two SDK behaviours the seeding has to respect, learned the hard way:
+/// <c>SqlController.GetElement</c> filters fields on <c>(Dummy == 1) != true</c> and on
+/// <c>WorkflowState != removed</c>, and in SQL a NULL in either column makes the
+/// predicate NULL — so both are always set explicitly. And there is no <c>Movie</c>
+/// case in <c>SqlController.GetDataItem</c>: a <c>Movie</c> field makes the SDK's own
+/// reader throw, so the excluded-types test seeds the other seven. <c>Movie</c> is
+/// still in the service's exclusion list.
+/// </para>
+///
+/// <para>
+/// <c>Compliances</c> carries a UNIQUE index on <c>(PlanningId, Deadline)</c>, so every
+/// row seeded against one planning gets its own deadline.
+/// </para>
+/// </summary>
+[Parallelizable(ParallelScope.Fixtures)]
+[TestFixture]
+public class ComplianceReportEformColumnsTests : TestBaseSetup
+{
+    private int _uidCounter = 960_000;
+    private string _sdkConnectionString = null!;
+
+    [SetUp]
+    public async Task CleanTables()
+    {
+        // FK-safe cleanup, children before parents, so each test starts from an
+        // empty compliance/template world and group counts can be asserted as
+        // absolute numbers.
+        //
+        // AreaRulePlanningWorkerTags FIRST. Its FK to AreaRulePlannings is
+        // DeleteBehavior.Restrict, which is why the ORDER matters: leaving a link
+        // behind would fail the AreaRulePlannings RemoveRange further down — in the
+        // NEXT test, not in the one that wrote it. Restrict says nothing about the
+        // MECHANISM: the sibling AreaRulePlanningTags has the same FK shape and is
+        // cleared with RemoveRange a few lines below. Raw SQL here is just the
+        // cheaper equivalent — one statement, with no load-then-track round trip —
+        // and it is the form the other worker-tag fixtures already use.
+        await BackendConfigurationPnDbContext!.Database
+            .ExecuteSqlRawAsync("DELETE FROM `AreaRulePlanningWorkerTags`;");
+
+        BackendConfigurationPnDbContext.CalendarOccurrenceExceptionSites.RemoveRange(
+            BackendConfigurationPnDbContext.CalendarOccurrenceExceptionSites);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        BackendConfigurationPnDbContext.CalendarOccurrenceExceptions.RemoveRange(
+            BackendConfigurationPnDbContext.CalendarOccurrenceExceptions);
+        BackendConfigurationPnDbContext.PlanningSites.RemoveRange(
+            BackendConfigurationPnDbContext.PlanningSites);
+        BackendConfigurationPnDbContext.AreaRulePlanningTags.RemoveRange(
+            BackendConfigurationPnDbContext.AreaRulePlanningTags);
+        BackendConfigurationPnDbContext.Compliances.RemoveRange(
+            BackendConfigurationPnDbContext.Compliances);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        BackendConfigurationPnDbContext.CalendarConfigurations.RemoveRange(
+            BackendConfigurationPnDbContext.CalendarConfigurations);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        BackendConfigurationPnDbContext.CalendarBoards.RemoveRange(
+            BackendConfigurationPnDbContext.CalendarBoards);
+        BackendConfigurationPnDbContext.AreaRulePlannings.RemoveRange(
+            BackendConfigurationPnDbContext.AreaRulePlannings);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        BackendConfigurationPnDbContext.AreaRuleTranslations.RemoveRange(
+            BackendConfigurationPnDbContext.AreaRuleTranslations);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        BackendConfigurationPnDbContext.AreaRules.RemoveRange(BackendConfigurationPnDbContext.AreaRules);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        BackendConfigurationPnDbContext.Areas.RemoveRange(BackendConfigurationPnDbContext.Areas);
+        BackendConfigurationPnDbContext.Properties.RemoveRange(BackendConfigurationPnDbContext.Properties);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        ItemsPlanningPnDbContext!.Plannings.RemoveRange(ItemsPlanningPnDbContext.Plannings);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        ItemsPlanningPnDbContext.PlanningTags.RemoveRange(ItemsPlanningPnDbContext.PlanningTags);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        _sdkConnectionString = MicrotingDbContext!.Database.GetConnectionString()!;
+
+        // Pre-warm the SDK Core so its EF migrations apply (this brings the
+        // UploadedDatas table up to the column shape the entity expects, in
+        // particular OriginalFileLocation which the bootstrap SQL lacks).
+        // It has to happen before ANY read of the SDK tables below, because
+        // RemoveRange(DbSet) enumerates the set and therefore SELECTs every
+        // mapped column.
+        await GetCore();
+
+        // Refresh the test's MicrotingDbContext so it sees the post-migration
+        // schema. EF caches the model on first query, so a context that ran
+        // before the migration would still error on UploadedDatas reads.
+        await MicrotingDbContext.DisposeAsync();
+        MicrotingDbContext = new Microting.eForm.Infrastructure.MicrotingDbContext(
+            new DbContextOptionsBuilder<Microting.eForm.Infrastructure.MicrotingDbContext>()
+                .UseMySql(_sdkConnectionString,
+                    new MariaDbServerVersion(ServerVersion.AutoDetect(_sdkConnectionString)),
+                    o => o.EnableRetryOnFailure())
+                .Options);
+
+        // SDK side: the answers and the cases they hang off, children first.
+        // FieldValues stays FIRST: it carries the FK to UploadedData.
+        //
+        // The TEMPLATE graph (CheckLists / Fields / their translations and options)
+        // is deliberately LEFT IN PLACE. Groups are produced only from Compliance
+        // rows, and those are all gone by this point, so a leftover template can
+        // never leak into a result — while dropping the whole graph would have to
+        // fight the SDK dump's own seeded checklists and everything referencing
+        // them. Each test seeds its own template and asserts against its own ids.
+        MicrotingDbContext.FieldValues.RemoveRange(MicrotingDbContext.FieldValues);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        MicrotingDbContext.UploadedDatas.RemoveRange(MicrotingDbContext.UploadedDatas);
+        MicrotingDbContext.Cases.RemoveRange(MicrotingDbContext.Cases);
+        await MicrotingDbContext.SaveChangesAsync();
+    }
+
+    // ==================================================================
+    // Service construction
+    // ==================================================================
+
+    private BackendConfigurationComplianceReportService BuildService(Core core, Language language)
+    {
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        userService.GetCurrentUserLanguage().Returns(Task.FromResult(language));
+        userService.GetCurrentUserLocale().Returns(Task.FromResult(language.LanguageCode));
+
+        var coreHelper = Substitute.For<IEFormCoreService>();
+        coreHelper.GetCore().Returns(Task.FromResult(core));
+
+        return new BackendConfigurationComplianceReportService(
+            new BackendConfigurationLocalizationService(), userService,
+            BackendConfigurationPnDbContext!, coreHelper, ItemsPlanningPnDbContext!,
+            TestContextLogger<BackendConfigurationComplianceReportService>.Instance,
+            // The real membership service: #1232 made the employee filter and the
+            // worker column depend on it, and a substitute would silently answer
+            // "no team membership" for every site.
+            new WorkerTagMembershipService(coreHelper));
+    }
+
+    private Task<Language> Danish() =>
+        MicrotingDbContext!.Languages.FirstAsync(x => x.LanguageCode == "da");
+
+    private Task<Language> German() =>
+        MicrotingDbContext!.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
+
+    private static ComplianceReportRequestModel Request(DateTime from, DateTime to, string status = "all")
+        => new()
+        {
+            DateFrom = from,
+            DateTo = to,
+            Status = status,
+            BoardIds = [],
+            TagIds = [],
+            SiteIds = [],
+            PageSize = 0
+        };
+
+    private async Task<List<ComplianceReportHeadlineGroupModel>> Run(
+        Core core, Language language, DateTime from, DateTime to, string status = "all")
+    {
+        var result = await BuildService(core, language).EformColumns(Request(from, to, status));
+        Assert.That(result.Success, Is.True, result.Message);
+        return result.Model;
+    }
+
+    /// <summary>The single headline group of a one-template arrangement (#1188): one
+    /// group, answered on exactly one template, so its <c>Columns</c> ARE that
+    /// template's schema.</summary>
+    private static ComplianceReportHeadlineGroupModel OnlyGroup(List<ComplianceReportHeadlineGroupModel> groups)
+    {
+        Assert.That(groups, Has.Count.EqualTo(1), "expected exactly one headline group");
+        Assert.That(groups[0].CheckListIds, Has.Count.EqualTo(1), "expected exactly one answered template");
+        return groups[0];
+    }
+
+    // ==================================================================
+    // SDK template seeding
+    // ==================================================================
+
+    /// <summary>
+    /// Seeds one <c>CheckList</c> plus a translation per supplied language.
+    /// <paramref name="parentId"/> null makes it a top-level template.
+    /// </summary>
+    private async Task<int> SeedCheckList(
+        string label, int? parentId, params (int LanguageId, string Text)[] translations)
+    {
+        var checkList = new CheckList
+        {
+            Label = $"{label}-{Guid.NewGuid()}",
+            ParentId = parentId,
+            DisplayIndex = 0,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext!.CheckLists.AddAsync(checkList);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        foreach (var (languageId, text) in translations)
+        {
+            await MicrotingDbContext.CheckListTranslations.AddAsync(new CheckListTranslation
+            {
+                CheckListId = checkList.Id,
+                LanguageId = languageId,
+                Text = text,
+                Description = string.Empty,
+                WorkflowState = Constants.WorkflowStates.Created
+            });
+        }
+
+        await MicrotingDbContext.SaveChangesAsync();
+        return checkList.Id;
+    }
+
+    /// <summary>
+    /// The two-level template every test uses: a top-level template with ZERO direct
+    /// fields and one child checklist that carries them. Returns
+    /// (templateCheckListId, childCheckListId).
+    /// </summary>
+    private async Task<(int TemplateId, int ChildId)> SeedTwoLevelTemplate(
+        string name, params (int LanguageId, string Text)[] translations)
+    {
+        var templateId = await SeedCheckList($"{name}-top", null, translations);
+        var childId = await SeedCheckList($"{name}-child", templateId, translations);
+        return (templateId, childId);
+    }
+
+    /// <summary>
+    /// Seeds one field on a checklist.
+    ///
+    /// <para>
+    /// <c>Dummy</c> and <c>WorkflowState</c> are ALWAYS set: the SDK's reader filters
+    /// on both, and a NULL makes those SQL predicates NULL, which silently drops the
+    /// field from the derived column set. <c>Date</c> needs parseable
+    /// Min/MaxValue and <c>NumberStepper</c> a parseable translation
+    /// <c>DefaultValue</c>, or <c>SqlController.GetDataItem</c> throws.
+    /// </para>
+    /// </summary>
+    private async Task<int> SeedField(
+        int checkListId, string fieldType, int displayIndex,
+        (int LanguageId, string Text)[] labels, int? parentFieldId = null)
+    {
+        var fieldTypeRow = await MicrotingDbContext!.FieldTypes.FirstAsync(x => x.Type == fieldType);
+
+        var field = new Field
+        {
+            CheckListId = checkListId,
+            FieldTypeId = fieldTypeRow.Id,
+            ParentFieldId = parentFieldId,
+            Label = labels.Length > 0 ? labels[0].Text : fieldType,
+            Description = string.Empty,
+            Color = "e8eaf6",
+            DisplayIndex = displayIndex,
+            Dummy = 0,
+            Mandatory = 0,
+            ReadOnly = 0,
+            Multi = 0,
+            Selected = 0,
+            Split = 0,
+            GeolocationEnabled = 0,
+            GeolocationForced = 0,
+            GeolocationHidden = 0,
+            StopOnSave = 0,
+            IsNum = 0,
+            BarcodeEnabled = 0,
+            BarcodeType = string.Empty,
+            QueryType = string.Empty,
+            MaxLength = 0,
+            DecimalCount = 0,
+            EntityGroupId = 0,
+            DefaultValue = "0",
+            MinValue = fieldType == Constants.FieldTypes.Date ? "2000-01-01" : null,
+            MaxValue = fieldType == Constants.FieldTypes.Date ? "2100-01-01" : null,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext.Fields.AddAsync(field);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        foreach (var (languageId, text) in labels)
+        {
+            await MicrotingDbContext.FieldTranslations.AddAsync(new FieldTranslation
+            {
+                FieldId = field.Id,
+                LanguageId = languageId,
+                Text = text,
+                Description = string.Empty,
+                // "0" satisfies every DefaultValue consumer in GetDataItem —
+                // int.Parse for NumberStepper, Tools.Bool for CheckBox, a plain
+                // string everywhere else.
+                DefaultValue = "0",
+                WorkflowState = Constants.WorkflowStates.Created
+            });
+        }
+
+        await MicrotingDbContext.SaveChangesAsync();
+        return field.Id;
+    }
+
+    /// <summary>Seeds a select option and its translation. Returns the option id.</summary>
+    private async Task<int> SeedFieldOption(
+        int fieldId, string key, params (int LanguageId, string Text)[] translations)
+    {
+        var option = new FieldOption
+        {
+            FieldId = fieldId,
+            Key = key,
+            Selected = false,
+            DisplayOrder = "0",
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext!.FieldOptions.AddAsync(option);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        foreach (var (languageId, text) in translations)
+        {
+            await MicrotingDbContext.FieldOptionTranslations.AddAsync(new FieldOptionTranslation
+            {
+                FieldOptionId = option.Id,
+                LanguageId = languageId,
+                Text = text,
+                WorkflowState = Constants.WorkflowStates.Created
+            });
+        }
+
+        await MicrotingDbContext.SaveChangesAsync();
+        return option.Id;
+    }
+
+    private async Task<int> SeedFieldValue(
+        int caseId, int fieldId, int checkListId, string value,
+        int? uploadedDataId = null, string latitude = null, string longitude = null)
+    {
+        var fieldValue = new FieldValue
+        {
+            CaseId = caseId,
+            FieldId = fieldId,
+            CheckListId = checkListId,
+            UploadedDataId = uploadedDataId,
+            Value = value,
+            Latitude = latitude,
+            Longitude = longitude,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext!.FieldValues.AddAsync(fieldValue);
+        await MicrotingDbContext.SaveChangesAsync();
+        return fieldValue.Id;
+    }
+
+    private async Task<int> SeedUploadedData(
+        string fileName = "photo.jpg", string checksum = "abc123", string extension = ".jpg",
+        bool removed = false)
+    {
+        var uploadedData = new Microting.eForm.Infrastructure.Data.Entities.UploadedData
+        {
+            FileName = fileName,
+            Checksum = checksum,
+            Extension = extension,
+            FileLocation = "/tmp/",
+            WorkflowState = removed ? Constants.WorkflowStates.Removed : Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext!.UploadedDatas.AddAsync(uploadedData);
+        await MicrotingDbContext.SaveChangesAsync();
+        return uploadedData.Id;
+    }
+
+    private async Task<int> SeedEntityItem(string name)
+    {
+        var entityItem = new EntityItem
+        {
+            EntityGroupId = 1,
+            EntityItemUid = Guid.NewGuid().ToString()[..8],
+            MicrotingUid = Guid.NewGuid().ToString()[..8],
+            Name = name,
+            Description = string.Empty,
+            DisplayIndex = 0,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext!.EntityItems.AddAsync(entityItem);
+        await MicrotingDbContext.SaveChangesAsync();
+        return entityItem.Id;
+    }
+
+    // ==================================================================
+    // Compliance-side seeding (same shape as ComplianceReportIndexTests)
+    // ==================================================================
+
+    private async Task<int> SeedSdkSite(string name)
+    {
+        var uid = ++_uidCounter;
+        var language = await MicrotingDbContext!.Languages.FirstAsync();
+
+        var sdkSite = new Site
+        {
+            Name = $"{name}-{uid}",
+            MicrotingUid = uid,
+            LanguageId = language.Id,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext.Sites.AddAsync(sdkSite);
+        await MicrotingDbContext.SaveChangesAsync();
+        return sdkSite.Id;
+    }
+
+    /// <summary>An SDK <c>Tag</c> is what the product calls a worker tag / team.</summary>
+    private async Task<int> SeedSdkWorkerTag()
+    {
+        var tag = new Tag
+        {
+            Name = $"team-{Guid.NewGuid()}",
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext!.Tags.AddAsync(tag);
+        await MicrotingDbContext.SaveChangesAsync();
+        return tag.Id;
+    }
+
+    private async Task LinkSiteToTag(int tagId, int siteId)
+    {
+        await MicrotingDbContext!.SiteTags.AddAsync(new SiteTag
+        {
+            TagId = tagId,
+            SiteId = siteId,
+            WorkflowState = Constants.WorkflowStates.Created
+        });
+        await MicrotingDbContext.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Team assignment: an <c>AreaRulePlanningWorkerTag</c> link and deliberately NO
+    /// <c>PlanningSites</c> row for anyone. That absence is the whole of #1232 — the
+    /// worker column had nothing to project from.
+    /// </summary>
+    private async Task AssignWorkerTag(int arpId, int tagId)
+    {
+        await BackendConfigurationPnDbContext!.AreaRulePlanningWorkerTags.AddAsync(
+            new AreaRulePlanningWorkerTag
+            {
+                AreaRulePlanningId = arpId,
+                TagId = tagId,
+                WorkflowState = Constants.WorkflowStates.Created,
+                CreatedByUserId = 1,
+                UpdatedByUserId = 1
+            });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+    }
+
+    private async Task<int> SeedSdkCase(int? checkListId, int status = 100, DateTime? doneAt = null)
+    {
+        var siteId = await SeedSdkSite("eform-columns-site");
+        var sdkCase = new Case
+        {
+            SiteId = siteId,
+            Status = status,
+            DoneAt = doneAt,
+            CheckListId = checkListId,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext!.Cases.AddAsync(sdkCase);
+        await MicrotingDbContext.SaveChangesAsync();
+        return sdkCase.Id;
+    }
+
+    private async Task<(int AreaId, int PropertyId)> SeedAreaAndProperty(string propertyName)
+    {
+        var area = new Area
+        {
+            Type = AreaTypesEnum.Type1, ItemPlanningTagId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext!.Areas.AddAsync(area);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var property = new Property
+        {
+            Name = $"{propertyName}-{Guid.NewGuid()}", ItemPlanningTagId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.Properties.AddAsync(property);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        return (area.Id, property.Id);
+    }
+
+    private async Task<(int ArpId, int PropertyId, int PlanningId, int AreaId, int AreaRuleId)> SeedSeries(
+        string propertyName, string title, DateTime startDate, int? eformId = 0)
+    {
+        var (areaId, propertyId) = await SeedAreaAndProperty(propertyName);
+
+        var areaRule = new AreaRule
+        {
+            AreaId = areaId, PropertyId = propertyId, EformId = eformId,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext!.AreaRules.AddAsync(areaRule);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        await BackendConfigurationPnDbContext.AreaRuleTranslations.AddAsync(new AreaRuleTranslation
+        {
+            AreaRuleId = areaRule.Id, LanguageId = 1, Name = title,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var planning = new Planning
+        {
+            Enabled = true, RepeatEvery = 1, RepeatType = RepeatType.Week,
+            StartDate = DateTime.SpecifyKind(startDate, DateTimeKind.Utc),
+            DayOfWeek = DayOfWeek.Monday, RelatedEFormId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        var arp = new AreaRulePlanning
+        {
+            AreaRuleId = areaRule.Id, PropertyId = propertyId, AreaId = areaId,
+            ItemPlanningId = planning.Id,
+            StartDate = DateTime.SpecifyKind(startDate, DateTimeKind.Utc), Status = true,
+            RepeatType = 2, RepeatEvery = 1, RepeatWeekdaysCsv = "1", DayOfWeek = 1,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(arp);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        return (arp.Id, propertyId, planning.Id, areaId, areaRule.Id);
+    }
+
+    private async Task<int> SeedCompliance(
+        int planningId, int propertyId, int areaId, DateTime deadline, int sdkCaseId,
+        string itemName = "Fallback Item Name")
+    {
+        var compliance = new Compliance
+        {
+            ItemName = itemName,
+            PlanningId = planningId,
+            PropertyId = propertyId,
+            AreaId = areaId,
+            Deadline = DateTime.SpecifyKind(deadline, DateTimeKind.Utc),
+            StartDate = DateTime.SpecifyKind(deadline.AddDays(-7), DateTimeKind.Utc),
+            MicrotingSdkCaseId = sdkCaseId,
+            MicrotingSdkeFormId = 0,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext!.Compliances.AddAsync(compliance);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+        return compliance.Id;
+    }
+
+    private async Task<int> SeedTag(string name)
+    {
+        var tag = new PlanningTag
+        {
+            Name = name,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await ItemsPlanningPnDbContext!.PlanningTags.AddAsync(tag);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+        return tag.Id;
+    }
+
+    private async Task SeedArpTag(int arpId, int tagId)
+    {
+        await BackendConfigurationPnDbContext!.AreaRulePlanningTags.AddAsync(new AreaRulePlanningTag
+        {
+            AreaRulePlanningId = arpId, ItemPlanningTagId = tagId,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Sets the series' REPORT HEADLINE — <c>AreaRulePlanning.ItemPlanningTagId</c>,
+    /// the calendar modal's "Rapportoverskrift" (#1188). A headline is an ordinary
+    /// <c>PlanningTag</c>; only the column referencing it makes it one. Not an
+    /// <c>AreaRulePlanningTag</c> — that is what <see cref="SeedArpTag"/> is for, and
+    /// the two are deliberately independent here so the legacy "headline also
+    /// paired as a tag" shape can be seeded explicitly.
+    /// </summary>
+    private async Task SeedHeadline(int arpId, int tagId)
+    {
+        var arp = await BackendConfigurationPnDbContext!.AreaRulePlannings.SingleAsync(x => x.Id == arpId);
+        arp.ItemPlanningTagId = tagId;
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// The whole default arrangement in one call: a two-level template with the given
+    /// answerable fields, one done SDK case against it, and a compliance row.
+    /// </summary>
+    private async Task<Fixture> SeedOneCase(
+        string name, int languageId, params (string FieldType, string Label)[] fields)
+    {
+        var today = DateTime.UtcNow.Date;
+        var (templateId, childId) = await SeedTwoLevelTemplate(name, (languageId, name));
+
+        var fieldIds = new List<int>();
+        for (var i = 0; i < fields.Length; i++)
+        {
+            fieldIds.Add(await SeedField(
+                childId, fields[i].FieldType, i, [(languageId, fields[i].Label)]));
+        }
+
+        var caseId = await SeedSdkCase(templateId, doneAt: today.AddDays(-1));
+        var (arpId, propertyId, planningId, areaId, _) = await SeedSeries(
+            $"{name}Prop", $"{name} Title", today.AddDays(-30));
+        var complianceId = await SeedCompliance(planningId, propertyId, areaId, today.AddDays(-1), caseId);
+
+        return new Fixture
+        {
+            TemplateId = templateId,
+            ChildId = childId,
+            FieldIds = fieldIds,
+            CaseId = caseId,
+            ArpId = arpId,
+            PropertyId = propertyId,
+            PlanningId = planningId,
+            AreaId = areaId,
+            ComplianceId = complianceId
+        };
+    }
+
+    private sealed class Fixture
+    {
+        public int TemplateId { get; init; }
+        public int ChildId { get; init; }
+        public List<int> FieldIds { get; init; }
+        public int CaseId { get; init; }
+        public int ArpId { get; init; }
+        public int PropertyId { get; init; }
+        public int PlanningId { get; init; }
+        public int AreaId { get; init; }
+        public int ComplianceId { get; init; }
+    }
+
+    private static (DateTime From, DateTime To) Window()
+    {
+        var today = DateTime.UtcNow.Date;
+        return (today.AddDays(-60), today.AddDays(60));
+    }
+
+    // ==================================================================
+    // COLUMN DERIVATION
+    // ==================================================================
+
+    /// <summary>
+    /// The single most important test in #1166: a template with ZERO directly-attached
+    /// fields whose three fields hang off a child checklist still yields THREE columns.
+    /// A derivation that read <c>Fields WHERE CheckListId = @templateId</c> would return
+    /// an empty column set here and render the report as empty tables rather than as an
+    /// error — which is the shape of the templates holding most live compliance cases.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_NestedTemplate_ZeroDirectFields_YieldsChildChecklistColumns()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("Nested", da.Id,
+            (Constants.FieldTypes.Comment, "Kommentar"),
+            (Constants.FieldTypes.Number, "Antal"),
+            (Constants.FieldTypes.Text, "Fritekst"));
+
+        // The template itself really has no direct fields.
+        Assert.That(
+            await MicrotingDbContext!.Fields.CountAsync(x => x.CheckListId == fixture.TemplateId),
+            Is.EqualTo(0));
+
+        var (from, to) = Window();
+        var template = OnlyGroup(await Run(core, da, from, to));
+
+        Assert.That(template.CheckListIds, Is.EqualTo(new List<int> { fixture.TemplateId }));
+        Assert.That(template.Cases.Single().CheckListId, Is.EqualTo(fixture.TemplateId));
+        Assert.That(template.Columns, Has.Count.EqualTo(3));
+        Assert.That(template.Columns.Select(c => c.FieldId), Is.EquivalentTo(fixture.FieldIds));
+        Assert.That(template.Columns.Select(c => c.Key),
+            Is.EqualTo(fixture.FieldIds.Select(id => $"f{id}")).AsCollection);
+    }
+
+    /// <summary>
+    /// A field under a <c>FieldGroup</c> (non-null <c>ParentFieldId</c>) is a column;
+    /// the group itself is not. Groups nest one level of fields that a flat
+    /// <c>Fields WHERE ParentFieldId IS NULL</c> read would miss entirely.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_FieldGroupChild_AppearsAsColumn()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var today = DateTime.UtcNow.Date;
+
+        var (templateId, childId) = await SeedTwoLevelTemplate("Grouped", (da.Id, "Grouped"));
+        var groupId = await SeedField(childId, Constants.FieldTypes.FieldGroup, 0, [(da.Id, "Gruppe")]);
+        var insideGroupId = await SeedField(
+            childId, Constants.FieldTypes.Comment, 1, [(da.Id, "I gruppen")], parentFieldId: groupId);
+
+        var caseId = await SeedSdkCase(templateId, doneAt: today.AddDays(-1));
+        var (_, propertyId, planningId, areaId, _) = await SeedSeries("GroupProp", "Group", today.AddDays(-30));
+        await SeedCompliance(planningId, propertyId, areaId, today.AddDays(-1), caseId);
+        await SeedFieldValue(caseId, insideGroupId, childId, "svar i gruppen");
+
+        var (from, to) = Window();
+        var template = OnlyGroup(await Run(core, da, from, to));
+
+        Assert.That(template.Columns.Select(c => c.FieldId), Is.EqualTo(new[] { insideGroupId }).AsCollection);
+        Assert.That(template.Cases[0].Cells[$"f{insideGroupId}"], Is.EqualTo("svar i gruppen"));
+    }
+
+    /// <summary>
+    /// Seven excluded field types plus two answerable ones yield exactly TWO columns.
+    /// <c>Movie</c> is the eighth in the exclusion list but cannot be seeded: the SDK's
+    /// own <c>GetDataItem</c> has no <c>Movie</c> case and throws
+    /// <c>IndexOutOfRangeException</c> for one, so no live template can reach this path
+    /// carrying a Movie field either.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_ExcludedTypes_YieldOnlyTheAnswerableColumns()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        await SeedOneCase("Excluded", da.Id,
+            (Constants.FieldTypes.None, "Overskrift"),
+            (Constants.FieldTypes.Picture, "Billede"),
+            (Constants.FieldTypes.Audio, "Lyd"),
+            (Constants.FieldTypes.Signature, "Underskrift"),
+            (Constants.FieldTypes.ShowPdf, "PDF"),
+            (Constants.FieldTypes.FieldGroup, "Gruppe"),
+            (Constants.FieldTypes.SaveButton, "Gem"),
+            (Constants.FieldTypes.Comment, "Kommentar"),
+            (Constants.FieldTypes.Number, "Antal"));
+
+        var (from, to) = Window();
+        var template = OnlyGroup(await Run(core, da, from, to));
+
+        Assert.That(template.Columns, Has.Count.EqualTo(2));
+        Assert.That(template.Columns.Select(c => c.Label), Is.EqualTo(new[] { "Kommentar", "Antal" }).AsCollection);
+    }
+
+    /// <summary>
+    /// <c>ShowPicture</c> is the deliberate deviation from the shipped exclusion list
+    /// (#1166 §5): it is display-only and carries no answer, so this path gives it no
+    /// column — unlike <c>BackendConfigurationReportService</c>, where it falls through
+    /// to <c>default:</c> and renders its raw value.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_ShowPicture_IsExcludedFromColumns()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        await SeedOneCase("ShowPic", da.Id,
+            (Constants.FieldTypes.ShowPicture, "Vis billede"),
+            (Constants.FieldTypes.Comment, "Kommentar"));
+
+        var (from, to) = Window();
+        var template = OnlyGroup(await Run(core, da, from, to));
+
+        Assert.That(template.Columns, Has.Count.EqualTo(1));
+        Assert.That(template.Columns[0].Label, Is.EqualTo("Kommentar"));
+    }
+
+    /// <summary>
+    /// THE direct regression test for #1160 finding 3. <c>Audio</c> and <c>ShowPdf</c>
+    /// are excluded from headers by the shipped code but still emit a cell through its
+    /// <c>default:</c> arm, shifting every later column by one in a positional cell
+    /// list. Here they carry real answers and the cell bag still holds exactly the two
+    /// answered ANSWERABLE keys — a shift is not expressible.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_ExcludedTypeAnswers_NeverReachTheCellBag()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("Desync", da.Id,
+            (Constants.FieldTypes.Audio, "Lyd"),
+            (Constants.FieldTypes.Comment, "Kommentar"),
+            (Constants.FieldTypes.ShowPdf, "PDF"),
+            (Constants.FieldTypes.Number, "Antal"));
+
+        // Answers for BOTH excluded fields and both answerable ones.
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, "lydfil.mp3");
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[1], fixture.ChildId, "en kommentar");
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[2], fixture.ChildId, "dokument.pdf");
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[3], fixture.ChildId, "42");
+
+        var (from, to) = Window();
+        var template = OnlyGroup(await Run(core, da, from, to));
+
+        Assert.That(template.Columns, Has.Count.EqualTo(2));
+        var cells = template.Cases.Single().Cells;
+        Assert.That(cells.Keys, Is.EquivalentTo(new[] { $"f{fixture.FieldIds[1]}", $"f{fixture.FieldIds[3]}" }));
+        Assert.That(cells[$"f{fixture.FieldIds[1]}"], Is.EqualTo("en kommentar"));
+        Assert.That(cells[$"f{fixture.FieldIds[3]}"], Is.EqualTo("42"));
+    }
+
+    /// <summary>
+    /// Keyed addressing: a case answering only the SECOND of three columns produces a
+    /// one-entry dictionary under that column's key, and the other two keys are ABSENT
+    /// — never present with an empty string. That absence is the whole contract: #1167
+    /// renders its empty glyph from a missing key.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_UnansweredFields_HaveNoKeyRatherThanAnEmptyCell()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("Sparse", da.Id,
+            (Constants.FieldTypes.Comment, "Et"),
+            (Constants.FieldTypes.Comment, "To"),
+            (Constants.FieldTypes.Comment, "Tre"));
+
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[1], fixture.ChildId, "kun midterste");
+
+        var (from, to) = Window();
+        var template = OnlyGroup(await Run(core, da, from, to));
+
+        Assert.That(template.Columns, Has.Count.EqualTo(3));
+        var cells = template.Cases.Single().Cells;
+        Assert.That(cells, Has.Count.EqualTo(1));
+        Assert.That(cells.ContainsKey($"f{fixture.FieldIds[0]}"), Is.False);
+        Assert.That(cells[$"f{fixture.FieldIds[1]}"], Is.EqualTo("kun midterste"));
+        Assert.That(cells.ContainsKey($"f{fixture.FieldIds[2]}"), Is.False);
+    }
+
+    // ==================================================================
+    // PER-TYPE RENDERING
+    // ==================================================================
+
+    /// <summary><c>SingleSelect</c> stores an option KEY; the cell shows the option's
+    /// translated label.</summary>
+    [Test]
+    public async Task EformColumns_SingleSelect_RendersTheOptionLabel()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("Single", da.Id, (Constants.FieldTypes.SingleSelect, "Valg"));
+
+        await SeedFieldOption(fixture.FieldIds[0], "1", (da.Id, "Ja"));
+        await SeedFieldOption(fixture.FieldIds[0], "2", (da.Id, "Nej"));
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, "2");
+
+        var (from, to) = Window();
+        var template = OnlyGroup(await Run(core, da, from, to));
+
+        Assert.That(template.Cases.Single().Cells[$"f{fixture.FieldIds[0]}"], Is.EqualTo("Nej"));
+    }
+
+    /// <summary><c>MultiSelect</c> stores pipe-joined option keys; both labels come back,
+    /// joined with a comma.</summary>
+    [Test]
+    public async Task EformColumns_MultiSelect_PipeJoinedKeys_RenderBothLabels()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("Multi", da.Id, (Constants.FieldTypes.MultiSelect, "Valg"));
+
+        await SeedFieldOption(fixture.FieldIds[0], "1", (da.Id, "Alfa"));
+        await SeedFieldOption(fixture.FieldIds[0], "2", (da.Id, "Beta"));
+        await SeedFieldOption(fixture.FieldIds[0], "3", (da.Id, "Gamma"));
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, "1|3");
+
+        var (from, to) = Window();
+        var template = OnlyGroup(await Run(core, da, from, to));
+
+        Assert.That(template.Cases.Single().Cells[$"f{fixture.FieldIds[0]}"], Is.EqualTo("Alfa, Gamma"));
+    }
+
+    /// <summary>
+    /// The dirty legacy <c>MultiSelect</c> shape — comma-joined "0,1" — resolves to no
+    /// option and therefore to NO CELL. Echoing "0,1" at the user would be worse than
+    /// an empty cell.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_MultiSelect_LegacyCommaValue_YieldsNoCell()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("MultiDirty", da.Id, (Constants.FieldTypes.MultiSelect, "Valg"));
+
+        await SeedFieldOption(fixture.FieldIds[0], "1", (da.Id, "Alfa"));
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, "0,1");
+
+        var (from, to) = Window();
+        var template = OnlyGroup(await Run(core, da, from, to));
+
+        // The column count is asserted too: a degraded schema (derivation threw and
+        // the group came back with ZERO columns) also produces an empty cell bag,
+        // and without this the test would pass on that for the wrong reason.
+        Assert.That(template.Columns, Has.Count.EqualTo(1));
+        Assert.That(template.Cases.Single().Cells, Is.Empty);
+    }
+
+    /// <summary>
+    /// Over a thousand live entity rows hold the LITERAL string <c>"null"</c>. Parsing
+    /// it is the shipped code's guarded case; the point here is that the guard survives
+    /// into the batched path — no cell, no exception.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_EntitySearch_LiteralNullValue_YieldsNoCellAndDoesNotThrow()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("EntityNull", da.Id, (Constants.FieldTypes.EntitySearch, "Enhed"));
+
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, "null");
+
+        var (from, to) = Window();
+        var template = OnlyGroup(await Run(core, da, from, to));
+
+        Assert.That(template.Columns, Has.Count.EqualTo(1));
+        Assert.That(template.Cases.Single().Cells, Is.Empty);
+    }
+
+    /// <summary>
+    /// An entity answer pointing at an <c>EntityItem</c> that no longer exists yields no
+    /// cell. The shipped code dereferences <c>match.Name</c> with no null check and
+    /// raises a <c>NullReferenceException</c> here
+    /// (<c>BackendConfigurationReportService.cs:907-911</c>).
+    /// </summary>
+    [Test]
+    public async Task EformColumns_EntitySearch_MissingEntityItem_YieldsNoCellAndDoesNotThrow()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("EntityGone", da.Id, (Constants.FieldTypes.EntitySearch, "Enhed"));
+
+        var entityItemId = await SeedEntityItem("Slettet enhed");
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, entityItemId.ToString());
+
+        MicrotingDbContext!.EntityItems.RemoveRange(
+            MicrotingDbContext.EntityItems.Where(x => x.Id == entityItemId));
+        await MicrotingDbContext.SaveChangesAsync();
+
+        var (from, to) = Window();
+        var template = OnlyGroup(await Run(core, da, from, to));
+
+        // Column count asserted for the same reason as the sibling
+        // LiteralNullValue test: an empty cell bag alone would also be produced by a
+        // degraded, zero-column schema.
+        Assert.That(template.Columns, Has.Count.EqualTo(1));
+        Assert.That(template.Cases.Single().Cells, Is.Empty);
+    }
+
+    /// <summary>An entity answer that DOES resolve renders the entity's name.</summary>
+    [Test]
+    public async Task EformColumns_EntitySelect_ResolvesTheEntityName()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("EntityOk", da.Id, (Constants.FieldTypes.EntitySelect, "Enhed"));
+
+        var entityItemId = await SeedEntityItem("Stald 3");
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, entityItemId.ToString());
+
+        var (from, to) = Window();
+        var template = OnlyGroup(await Run(core, da, from, to));
+
+        Assert.That(template.Cases.Single().Cells[$"f{fixture.FieldIds[0]}"], Is.EqualTo("Stald 3"));
+    }
+
+    /// <summary>
+    /// Dirty <c>CheckBox</c> values — the live data holds one <c>true</c> and one
+    /// <c>false</c> alongside 591 <c>checked</c>/<c>unchecked</c> rows — normalise to
+    /// the canonical tokens, which #1167 localises.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_CheckBox_DirtyTrueFalse_NormaliseToCheckedAndUnchecked()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("CheckDirty", da.Id,
+            (Constants.FieldTypes.CheckBox, "Sandt"),
+            (Constants.FieldTypes.CheckBox, "Falsk"));
+
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, "true");
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[1], fixture.ChildId, "false");
+
+        var (from, to) = Window();
+        var cells = OnlyGroup(await Run(core, da, from, to)).Cases.Single().Cells;
+
+        Assert.That(cells[$"f{fixture.FieldIds[0]}"], Is.EqualTo("checked"));
+        Assert.That(cells[$"f{fixture.FieldIds[1]}"], Is.EqualTo("unchecked"));
+    }
+
+    /// <summary>The canonical <c>checked</c> token passes through unchanged.</summary>
+    [Test]
+    public async Task EformColumns_CheckBox_CheckedPassesThrough()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("CheckClean", da.Id, (Constants.FieldTypes.CheckBox, "Afkrydset"));
+
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, "checked");
+
+        var (from, to) = Window();
+        var cells = OnlyGroup(await Run(core, da, from, to)).Cases.Single().Cells;
+
+        Assert.That(cells[$"f{fixture.FieldIds[0]}"], Is.EqualTo("checked"));
+    }
+
+    /// <summary>Comma decimals are emitted invariant, so #1167 never has to guess a locale.</summary>
+    [Test]
+    public async Task EformColumns_Number_CommaDecimal_RendersInvariant()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("Num", da.Id, (Constants.FieldTypes.Number, "Antal"));
+
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, "3,5");
+
+        var (from, to) = Window();
+        var cells = OnlyGroup(await Run(core, da, from, to)).Cases.Single().Cells;
+
+        Assert.That(cells[$"f{fixture.FieldIds[0]}"], Is.EqualTo("3.5"));
+    }
+
+    /// <summary><c>Date</c> answers pass through as stored — never reformatted server-side.</summary>
+    [Test]
+    public async Task EformColumns_Date_PassesThrough()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("Dato", da.Id, (Constants.FieldTypes.Date, "Dato"));
+
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, "2021-11-29");
+
+        var (from, to) = Window();
+        var cells = OnlyGroup(await Run(core, da, from, to)).Cases.Single().Cells;
+
+        Assert.That(cells[$"f{fixture.FieldIds[0]}"], Is.EqualTo("2021-11-29"));
+    }
+
+    /// <summary>
+    /// <c>Timer</c> stores FOUR pipe-separated parts —
+    /// <c>start|stop|state|elapsed_ms</c>, not two. #1166 §5 leaves the rendering to be
+    /// decided and pinned: the cell is the ELAPSED duration as <c>H:mm:ss</c>, and the
+    /// raw value is dropped. 38000 ms is the live example.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_Timer_FourPartValue_RendersElapsedDuration()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("Tid", da.Id, (Constants.FieldTypes.Timer, "Varighed"));
+
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId,
+            "2021-12-12 11:15:50 UTC|2021-12-12 11:16:27 UTC|paused|38000");
+
+        var (from, to) = Window();
+        var cells = OnlyGroup(await Run(core, da, from, to)).Cases.Single().Cells;
+
+        Assert.That(cells[$"f{fixture.FieldIds[0]}"], Is.EqualTo("0:00:38"));
+    }
+
+    /// <summary>A <c>Timer</c> value that is not in the four-part shape gets no cell
+    /// rather than leaking the raw pipe-separated string into the table.</summary>
+    [Test]
+    public async Task EformColumns_Timer_MalformedValue_YieldsNoCell()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("TidDirty", da.Id, (Constants.FieldTypes.Timer, "Varighed"));
+
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, "start|stop");
+
+        var (from, to) = Window();
+        var template = OnlyGroup(await Run(core, da, from, to));
+
+        // Column count asserted so the empty cell bag is attributable to the
+        // malformed value and not to a degraded, zero-column schema.
+        Assert.That(template.Columns, Has.Count.EqualTo(1));
+        Assert.That(template.Cases.Single().Cells, Is.Empty);
+    }
+
+    /// <summary>
+    /// A <c>Timer</c> whose elapsed part is a well-formed number too large for
+    /// <c>TimeSpan</c> gets no cell — and, critically, does not fail the REPORT.
+    ///
+    /// <para>
+    /// Any 16-to-19 digit value parses as a <c>long</c> and only blows up inside
+    /// <c>TimeSpan.FromMilliseconds</c>. That throw would escape <c>Render</c>,
+    /// <c>LoadAnswers</c> and <c>ProjectAsync</c> into <c>EformColumns</c>' outer
+    /// catch, so ONE dirty cell would return <c>Success = false</c> for every tag and
+    /// every template. The second, ordinary field on the same case is what proves the
+    /// rest of the report still renders rather than merely that the call returned.
+    /// </para>
+    /// </summary>
+    [Test]
+    public async Task EformColumns_Timer_ElapsedMillisecondsOverflowsTimeSpan_YieldsNoCellAndDoesNotFailTheReport()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("TidOverflow", da.Id,
+            (Constants.FieldTypes.Timer, "Varighed"),
+            (Constants.FieldTypes.Comment, "Kommentar"));
+
+        // Four well-formed parts; the elapsed part is 16 digits, which is a valid
+        // long and roughly ten times TimeSpan's ceiling in milliseconds.
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId,
+            "0|0|stopped|9999999999999999");
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[1], fixture.ChildId, "Alt vel");
+
+        var (from, to) = Window();
+        var result = await BuildService(core, da).EformColumns(Request(from, to));
+
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var template = OnlyGroup(result.Model);
+        var cells = template.Cases.Single().Cells;
+
+        Assert.That(template.Columns, Has.Count.EqualTo(2));
+        Assert.That(cells.ContainsKey($"f{fixture.FieldIds[0]}"), Is.False,
+            "the out-of-range Timer must get no cell");
+        Assert.That(cells[$"f{fixture.FieldIds[1]}"], Is.EqualTo("Alt vel"),
+            "the rest of the report must still render");
+    }
+
+    // ==================================================================
+    // TRANSLATION FALLBACK
+    // ==================================================================
+
+    /// <summary>
+    /// A field with NO translation in the user's language but one in another language
+    /// yields that other label, and does not throw. Run for <c>de-DE</c> specifically:
+    /// that is the language most live fields lack, and the SDK's other flattener
+    /// (<c>GenerateDataSetFromCasesSubSet</c>) uses a bare <c>FirstAsync</c> that throws
+    /// on exactly this data.
+    ///
+    /// <para>
+    /// The CHECKLISTS deliberately do carry a German translation. The SDK's
+    /// <c>TemplateFieldReadAll</c> still resolves a field's parent name with a bare
+    /// <c>CheckListTranslations.FirstAsync</c> (<c>SqlController.cs:668-670</c>), so a
+    /// German-less checklist would throw inside the SDK rather than exercise the field
+    /// fallback this test is about.
+    /// </para>
+    ///
+    /// <para>
+    /// Asserting the LABEL, not merely "did not throw": the service degrades an
+    /// unreadable template to an empty column set, so a swallowed exception would
+    /// otherwise pass silently.
+    /// </para>
+    /// </summary>
+    [Test]
+    public async Task EformColumns_TranslationFallback_MissingGermanFieldLabel_UsesAnotherLanguage()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var de = await German();
+        var today = DateTime.UtcNow.Date;
+
+        var (templateId, childId) = await SeedTwoLevelTemplate(
+            "Uebersetzung", (da.Id, "Skema"), (de.Id, "Formular"));
+
+        // Danish only — no German translation for this field.
+        var fieldId = await SeedField(childId, Constants.FieldTypes.Comment, 0, [(da.Id, "Kun dansk")]);
+
+        var caseId = await SeedSdkCase(templateId, doneAt: today.AddDays(-1));
+        var (_, propertyId, planningId, areaId, _) = await SeedSeries("DeProp", "De", today.AddDays(-30));
+        await SeedCompliance(planningId, propertyId, areaId, today.AddDays(-1), caseId);
+        await SeedFieldValue(caseId, fieldId, childId, "et svar");
+
+        var (from, to) = Window();
+        var template = OnlyGroup(await Run(core, de, from, to));
+
+        Assert.That(template.Columns, Has.Count.EqualTo(1));
+        Assert.That(template.Columns[0].Label, Is.EqualTo("Kun dansk"));
+        Assert.That(template.Cases.Single().Cells[$"f{fieldId}"], Is.EqualTo("et svar"));
+    }
+
+    /// <summary>
+    /// The same fallback for option labels, which the service resolves itself rather
+    /// than inheriting from the SDK. The shipped code's
+    /// <c>FieldOptionTranslations.FirstAsync</c> throws here.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_TranslationFallback_MissingGermanOptionLabel_UsesAnotherLanguage()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var de = await German();
+        var today = DateTime.UtcNow.Date;
+
+        var (templateId, childId) = await SeedTwoLevelTemplate(
+            "OptUebersetzung", (da.Id, "Skema"), (de.Id, "Formular"));
+        var fieldId = await SeedField(
+            childId, Constants.FieldTypes.SingleSelect, 0, [(da.Id, "Valg"), (de.Id, "Auswahl")]);
+
+        // Option translated in Danish only.
+        await SeedFieldOption(fieldId, "1", (da.Id, "Kun dansk valg"));
+
+        var caseId = await SeedSdkCase(templateId, doneAt: today.AddDays(-1));
+        var (_, propertyId, planningId, areaId, _) = await SeedSeries("DeOptProp", "DeOpt", today.AddDays(-30));
+        await SeedCompliance(planningId, propertyId, areaId, today.AddDays(-1), caseId);
+        await SeedFieldValue(caseId, fieldId, childId, "1");
+
+        var (from, to) = Window();
+        var template = OnlyGroup(await Run(core, de, from, to));
+
+        Assert.That(template.Cases.Single().Cells[$"f{fieldId}"], Is.EqualTo("Kun dansk valg"));
+    }
+
+    // ==================================================================
+    // IMAGES
+    // ==================================================================
+
+    /// <summary>
+    /// Two picture answers on one case: <c>ImagesCount == 2</c>, two entries, and the
+    /// display name DERIVED as <c>{UploadedDataId}_700_{Checksum}{Extension}</c>. The
+    /// stored <c>FileName</c> is only an existence check, never the name itself.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_Images_TwoPictureAnswers_CountedWithDerivedFileName()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("Billeder", da.Id,
+            (Constants.FieldTypes.Picture, "Billede"),
+            (Constants.FieldTypes.Comment, "Kommentar"));
+
+        var firstUpload = await SeedUploadedData("first.jpg", "sum1", ".jpg");
+        var secondUpload = await SeedUploadedData("second.jpg", "sum2", ".png");
+
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, null,
+            uploadedDataId: firstUpload, latitude: "56.1", longitude: "10.2");
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, null,
+            uploadedDataId: secondUpload);
+
+        var (from, to) = Window();
+        var caseModel = OnlyGroup(await Run(core, da, from, to)).Cases.Single();
+
+        Assert.That(caseModel.ImagesCount, Is.EqualTo(2));
+        Assert.That(caseModel.Images, Has.Count.EqualTo(2));
+        Assert.That(caseModel.Images.Select(i => i.FileName),
+            Is.EquivalentTo(new[] { $"{firstUpload}_700_sum1.jpg", $"{secondUpload}_700_sum2.png" }));
+        Assert.That(caseModel.Images.Single(i => i.UploadedDataId == firstUpload).GeoLink,
+            Is.EqualTo("https://www.google.com/maps/place/56.1,10.2"));
+        Assert.That(caseModel.Images.Single(i => i.UploadedDataId == secondUpload).GeoLink, Is.Null);
+
+        // A Picture field is excluded from the CELLS, not from the images.
+        Assert.That(caseModel.Cells, Is.Empty);
+    }
+
+    /// <summary>An empty stored <c>FileName</c> means no derived name — the guard the
+    /// shipped code applies at <c>BackendConfigurationReportService.cs:741-744</c>.</summary>
+    [Test]
+    public async Task EformColumns_Images_EmptyStoredFileName_YieldsNoDerivedName()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("BilledeTomt", da.Id, (Constants.FieldTypes.Picture, "Billede"));
+
+        var uploadId = await SeedUploadedData(fileName: "", checksum: "sum9", extension: ".jpg");
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, null, uploadedDataId: uploadId);
+
+        var (from, to) = Window();
+        var caseModel = OnlyGroup(await Run(core, da, from, to)).Cases.Single();
+
+        Assert.That(caseModel.ImagesCount, Is.EqualTo(1));
+        Assert.That(caseModel.Images.Single().FileName, Is.Null);
+    }
+
+    /// <summary>A soft-removed <c>UploadedData</c> is not an image any more.</summary>
+    [Test]
+    public async Task EformColumns_Images_RemovedUploadedData_IsExcluded()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("BilledeFjernet", da.Id, (Constants.FieldTypes.Picture, "Billede"));
+
+        var liveUpload = await SeedUploadedData("live.jpg", "live", ".jpg");
+        var removedUpload = await SeedUploadedData("gone.jpg", "gone", ".jpg", removed: true);
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, null, uploadedDataId: liveUpload);
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, null,
+            uploadedDataId: removedUpload);
+
+        var (from, to) = Window();
+        var caseModel = OnlyGroup(await Run(core, da, from, to)).Cases.Single();
+
+        Assert.That(caseModel.ImagesCount, Is.EqualTo(1));
+        Assert.That(caseModel.Images.Single().UploadedDataId, Is.EqualTo(liveUpload));
+    }
+
+    /// <summary>A template with no picture field produces no images (and issues no image
+    /// query at all — the empty <c>pictureFieldIds</c> short circuit).</summary>
+    [Test]
+    public async Task EformColumns_NoPictureField_YieldsZeroImages()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("IngenBilleder", da.Id, (Constants.FieldTypes.Comment, "Kommentar"));
+        await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, "tekst");
+
+        var (from, to) = Window();
+        var caseModel = OnlyGroup(await Run(core, da, from, to)).Cases.Single();
+
+        Assert.That(caseModel.ImagesCount, Is.EqualTo(0));
+        Assert.That(caseModel.Images, Is.Empty);
+    }
+
+    // ==================================================================
+    // TEMPLATE KEY (#1160 finding 1)
+    // ==================================================================
+
+    /// <summary>
+    /// A case whose <c>AreaRule.EformId</c> points at a DIFFERENT template still lands
+    /// in the group of the template it actually answered. <c>EformId</c> tracks current
+    /// configuration; the case records what was answered.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_TemplateKey_UsesCaseCheckListId_NotAreaRuleEformId()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var today = DateTime.UtcNow.Date;
+
+        var (answeredTemplateId, childId) = await SeedTwoLevelTemplate("Besvaret", (da.Id, "Besvaret"));
+        await SeedField(childId, Constants.FieldTypes.Comment, 0, [(da.Id, "Kommentar")]);
+
+        var (configuredTemplateId, otherChildId) = await SeedTwoLevelTemplate("Konfigureret", (da.Id, "Konfigureret"));
+        await SeedField(otherChildId, Constants.FieldTypes.Number, 0, [(da.Id, "Andet felt")]);
+
+        var caseId = await SeedSdkCase(answeredTemplateId, doneAt: today.AddDays(-1));
+        var (_, propertyId, planningId, areaId, _) = await SeedSeries(
+            "KeyProp", "Key", today.AddDays(-30), eformId: configuredTemplateId);
+        await SeedCompliance(planningId, propertyId, areaId, today.AddDays(-1), caseId);
+
+        var (from, to) = Window();
+        var template = OnlyGroup(await Run(core, da, from, to));
+
+        Assert.That(template.CheckListIds, Is.EqualTo(new List<int> { answeredTemplateId }));
+        Assert.That(template.Cases.Single().CheckListId, Is.EqualTo(answeredTemplateId));
+        Assert.That(template.Columns.Single().Label, Is.EqualTo("Kommentar"));
+    }
+
+    /// <summary>A NULL <c>AreaRule.EformId</c> — 16 % of live rows — still groups, because
+    /// the key never comes from there.</summary>
+    [Test]
+    public async Task EformColumns_TemplateKey_NullAreaRuleEformId_StillGroups()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var today = DateTime.UtcNow.Date;
+
+        var (templateId, childId) = await SeedTwoLevelTemplate("NulEform", (da.Id, "NulEform"));
+        await SeedField(childId, Constants.FieldTypes.Comment, 0, [(da.Id, "Kommentar")]);
+
+        var caseId = await SeedSdkCase(templateId, doneAt: today.AddDays(-1));
+        var (_, propertyId, planningId, areaId, _) = await SeedSeries(
+            "NullProp", "Null", today.AddDays(-30), eformId: null);
+        await SeedCompliance(planningId, propertyId, areaId, today.AddDays(-1), caseId);
+
+        var (from, to) = Window();
+        var template = OnlyGroup(await Run(core, da, from, to));
+
+        Assert.That(template.CheckListIds, Is.EqualTo(new List<int> { templateId }));
+        Assert.That(template.Cases, Has.Count.EqualTo(1));
+    }
+
+    /// <summary>
+    /// A compliance row with no backing SDK case has no answers, so it forms no group.
+    /// Rapport is a report of answers; Detaljer (#1165) still shows the row.
+    ///
+    /// <para>
+    /// Seeded WITH a positive control — a second, properly answered row in the same
+    /// window. Asserting only that the response is empty would pass identically on a
+    /// seeding or date-window mistake that matched nothing at all; asserting that
+    /// exactly the ANSWERED row survives makes the omission attributable to the
+    /// missing SDK case.
+    /// </para>
+    /// </summary>
+    [Test]
+    public async Task EformColumns_RowWithoutSdkCase_FormsNoGroup()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var today = DateTime.UtcNow.Date;
+
+        var (_, propertyId, planningId, areaId, _) = await SeedSeries(
+            "NoCaseProp", "NoCase", today.AddDays(-30));
+        await SeedCompliance(planningId, propertyId, areaId, today.AddDays(-1), sdkCaseId: 0);
+
+        // The control: same window, same filters, but backed by a real SDK case.
+        var answeredFixture = await SeedOneCase(
+            "WithCase", da.Id, (Constants.FieldTypes.Text, "Bemærkning"));
+        await SeedFieldValue(
+            answeredFixture.CaseId, answeredFixture.FieldIds[0], answeredFixture.ChildId, "Udført");
+
+        var (from, to) = Window();
+        var groups = await Run(core, da, from, to);
+
+        var template = OnlyGroup(groups);
+        var onlyCase = template.Cases.Single();
+        Assert.That(onlyCase.SdkCaseId, Is.EqualTo(answeredFixture.CaseId));
+        Assert.That(onlyCase.ComplianceId, Is.EqualTo(answeredFixture.ComplianceId));
+    }
+
+    // ==================================================================
+    // GROUPING (#1188): one section per REPORT HEADLINE, tags as a caption
+    // ==================================================================
+
+    /// <summary>Two series with two different headlines: two groups, each carrying its
+    /// own headline id and name, each case in exactly one of them. With no tags the
+    /// captions are empty, so the order falls through to the headline NAME.</summary>
+    [Test]
+    public async Task EformColumns_TwoHeadlines_YieldTwoGroups()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var today = DateTime.UtcNow.Date;
+
+        var headlineB = await SeedTag("Bb overskrift");
+        var headlineA = await SeedTag("Aa overskrift");
+
+        var (templateId, childId) = await SeedTwoLevelTemplate("Skema", (da.Id, "Skema"));
+        await SeedField(childId, Constants.FieldTypes.Comment, 0, [(da.Id, "Felt")]);
+
+        var caseA = await SeedSdkCase(templateId, doneAt: today.AddDays(-1));
+        var caseB = await SeedSdkCase(templateId, doneAt: today.AddDays(-2));
+
+        var (arpA, propertyA, planningA, areaA, _) = await SeedSeries("HeadPropA", "A", today.AddDays(-30));
+        var (arpB, propertyB, planningB, areaB, _) = await SeedSeries("HeadPropB", "B", today.AddDays(-30));
+        await SeedHeadline(arpA, headlineA);
+        await SeedHeadline(arpB, headlineB);
+        var complianceA = await SeedCompliance(planningA, propertyA, areaA, today.AddDays(-1), caseA);
+        var complianceB = await SeedCompliance(planningB, propertyB, areaB, today.AddDays(-2), caseB);
+
+        var (from, to) = Window();
+        var groups = await Run(core, da, from, to);
+
+        Assert.That(groups, Has.Count.EqualTo(2));
+        Assert.That(groups.Select(g => g.HeadlineTagId), Is.EqualTo(new int?[] { headlineA, headlineB }).AsCollection);
+        Assert.That(groups.Select(g => g.HeadlineName), Is.EqualTo(new[] { "Aa overskrift", "Bb overskrift" }).AsCollection);
+        Assert.That(groups.Select(g => g.TagsCaption), Is.All.EqualTo(string.Empty));
+        Assert.That(groups[0].Cases.Single().ComplianceId, Is.EqualTo(complianceA));
+        Assert.That(groups[1].Cases.Single().ComplianceId, Is.EqualTo(complianceB));
+        Assert.That(groups.SelectMany(g => g.Cases).Select(c => c.CheckListId), Is.All.EqualTo(templateId));
+    }
+
+    /// <summary>
+    /// ONE headline over TWO templates: one group, one flat table. Its columns are the
+    /// UNION of both schemas — templates by name, fields in template order — and a
+    /// case answered on template A simply has no key for template B's field (the
+    /// consumer renders the en dash there, in place). Each case carries its OWN
+    /// <c>CheckListId</c>, which the section can no longer identify.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_OneHeadlineOverTwoTemplates_YieldsOneGroupWithUnionColumns()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var today = DateTime.UtcNow.Date;
+
+        var headline = await SeedTag("Fælles overskrift");
+
+        var (templateA, childA) = await SeedTwoLevelTemplate("AaSkema", (da.Id, "AaSkema"));
+        var fieldA = await SeedField(childA, Constants.FieldTypes.Comment, 0, [(da.Id, "A felt")]);
+        var (templateB, childB) = await SeedTwoLevelTemplate("BbSkema", (da.Id, "BbSkema"));
+        var fieldB = await SeedField(childB, Constants.FieldTypes.Number, 0, [(da.Id, "B felt")]);
+
+        var caseA = await SeedSdkCase(templateA, doneAt: today.AddDays(-1));
+        var caseB = await SeedSdkCase(templateB, doneAt: today.AddDays(-2));
+        await SeedFieldValue(caseA, fieldA, childA, "Alt vel");
+        await SeedFieldValue(caseB, fieldB, childB, "42");
+
+        var (arpA, propertyA, planningA, areaA, _) = await SeedSeries("UnionPropA", "A", today.AddDays(-30));
+        var (arpB, propertyB, planningB, areaB, _) = await SeedSeries("UnionPropB", "B", today.AddDays(-30));
+        await SeedHeadline(arpA, headline);
+        await SeedHeadline(arpB, headline);
+        await SeedCompliance(planningA, propertyA, areaA, today.AddDays(-1), caseA);
+        await SeedCompliance(planningB, propertyB, areaB, today.AddDays(-2), caseB);
+
+        var (from, to) = Window();
+        var groups = await Run(core, da, from, to);
+
+        Assert.That(groups, Has.Count.EqualTo(1));
+        var group = groups[0];
+        Assert.That(group.HeadlineTagId, Is.EqualTo(headline));
+        Assert.That(group.HeadlineName, Is.EqualTo("Fælles overskrift"));
+        Assert.That(group.CheckListIds, Is.EqualTo(new[] { templateA, templateB }).AsCollection);
+        Assert.That(group.SchemaUnavailableCheckListIds, Is.Empty);
+        Assert.That(group.Columns.Select(c => c.Key), Is.EqualTo(new[] { $"f{fieldA}", $"f{fieldB}" }).AsCollection);
+        Assert.That(group.Columns.Select(c => c.Label), Is.EqualTo(new[] { "A felt", "B felt" }).AsCollection);
+        Assert.That(group.Cases, Has.Count.EqualTo(2));
+
+        var rowA = group.Cases.Single(c => c.SdkCaseId == caseA);
+        var rowB = group.Cases.Single(c => c.SdkCaseId == caseB);
+        Assert.That(rowA.CheckListId, Is.EqualTo(templateA));
+        Assert.That(rowB.CheckListId, Is.EqualTo(templateB));
+        Assert.That(rowA.Cells[$"f{fieldA}"], Is.EqualTo("Alt vel"));
+        Assert.That(rowA.Cells.ContainsKey($"f{fieldB}"), Is.False, "the foreign template's column has no key — the dash");
+        Assert.That(rowB.Cells[$"f{fieldB}"], Is.EqualTo("42"));
+        Assert.That(rowB.Cells.ContainsKey($"f{fieldA}"), Is.False);
+    }
+
+    /// <summary>
+    /// The projector caches ONE column list per template and every group answered on
+    /// that template reads it. Building a union by appending to that list would leak
+    /// template B's field into every OTHER section that shares template A. Template A
+    /// is therefore placed both alone under one headline and beside template B under
+    /// another: the lone section must keep exactly A's own column.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_UnionColumns_DoNotLeakIntoAnotherGroupSharingTheTemplate()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var today = DateTime.UtcNow.Date;
+
+        var loneHeadline = await SeedTag("Alene");
+        var mixedHeadline = await SeedTag("Blandet");
+
+        var (templateA, childA) = await SeedTwoLevelTemplate("AaSkema", (da.Id, "AaSkema"));
+        var fieldA = await SeedField(childA, Constants.FieldTypes.Comment, 0, [(da.Id, "A felt")]);
+        var (templateB, childB) = await SeedTwoLevelTemplate("BbSkema", (da.Id, "BbSkema"));
+        var fieldB = await SeedField(childB, Constants.FieldTypes.Number, 0, [(da.Id, "B felt")]);
+
+        var caseLone = await SeedSdkCase(templateA, doneAt: today.AddDays(-1));
+        var caseMixedA = await SeedSdkCase(templateA, doneAt: today.AddDays(-2));
+        var caseMixedB = await SeedSdkCase(templateB, doneAt: today.AddDays(-3));
+
+        var (arpLone, propLone, planLone, areaLone, _) = await SeedSeries("LoneProp", "Lone", today.AddDays(-30));
+        var (arpMixedA, propMixedA, planMixedA, areaMixedA, _) = await SeedSeries("MixedPropA", "MixedA", today.AddDays(-30));
+        var (arpMixedB, propMixedB, planMixedB, areaMixedB, _) = await SeedSeries("MixedPropB", "MixedB", today.AddDays(-30));
+        await SeedHeadline(arpLone, loneHeadline);
+        await SeedHeadline(arpMixedA, mixedHeadline);
+        await SeedHeadline(arpMixedB, mixedHeadline);
+        await SeedCompliance(planLone, propLone, areaLone, today.AddDays(-1), caseLone);
+        await SeedCompliance(planMixedA, propMixedA, areaMixedA, today.AddDays(-2), caseMixedA);
+        await SeedCompliance(planMixedB, propMixedB, areaMixedB, today.AddDays(-3), caseMixedB);
+
+        var (from, to) = Window();
+        var groups = await Run(core, da, from, to);
+
+        Assert.That(groups, Has.Count.EqualTo(2));
+        var lone = groups.Single(g => g.HeadlineTagId == loneHeadline);
+        var mixed = groups.Single(g => g.HeadlineTagId == mixedHeadline);
+
+        Assert.That(lone.Columns.Select(c => c.Key), Is.EqualTo(new[] { $"f{fieldA}" }).AsCollection,
+            "template A's cached schema must not have been extended by the union next door");
+        Assert.That(mixed.Columns.Select(c => c.Key), Is.EqualTo(new[] { $"f{fieldA}", $"f{fieldB}" }).AsCollection);
+        Assert.That(ReferenceEquals(lone.Columns, mixed.Columns), Is.False, "a fresh list per group");
+
+        // Σ cases across groups == the answered rows; each case exactly once.
+        Assert.That(groups.Sum(g => g.Cases.Count), Is.EqualTo(3));
+        Assert.That(groups.SelectMany(g => g.Cases).Select(c => c.SdkCaseId),
+            Is.EquivalentTo(new[] { caseLone, caseMixedA, caseMixedB }));
+    }
+
+    /// <summary>Two tags on one case: ONE row (not one per tag, as before #1188), the
+    /// row's own tags sorted, and the group caption <c>A - B</c> — hyphen-minus with
+    /// a space either side.</summary>
+    [Test]
+    public async Task EformColumns_TwoTagsOnOneCase_YieldOneRowWithCaptionAB()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var today = DateTime.UtcNow.Date;
+
+        var headline = await SeedTag("Overskrift");
+        var secondTag = await SeedTag("Bb tag");
+        var firstTag = await SeedTag("Aa tag");
+
+        var (templateId, childId) = await SeedTwoLevelTemplate("ToTags", (da.Id, "ToTags"));
+        await SeedField(childId, Constants.FieldTypes.Comment, 0, [(da.Id, "Felt")]);
+
+        var caseId = await SeedSdkCase(templateId, doneAt: today.AddDays(-1));
+        var (arpId, propertyId, planningId, areaId, _) = await SeedSeries("TwoTagProp", "T", today.AddDays(-30));
+        await SeedHeadline(arpId, headline);
+        await SeedArpTag(arpId, secondTag);
+        await SeedArpTag(arpId, firstTag);
+        var complianceId = await SeedCompliance(planningId, propertyId, areaId, today.AddDays(-1), caseId);
+
+        var (from, to) = Window();
+        var groups = await Run(core, da, from, to);
+
+        Assert.That(groups, Has.Count.EqualTo(1));
+        Assert.That(groups[0].TagsCaption, Is.EqualTo("Aa tag - Bb tag"));
+        var onlyCase = groups[0].Cases.Single();
+        Assert.That(onlyCase.ComplianceId, Is.EqualTo(complianceId));
+        Assert.That(onlyCase.Tags, Is.EqualTo(new[] { "Aa tag", "Bb tag" }).AsCollection);
+    }
+
+    /// <summary>
+    /// The legacy area-rule path pairs the headline into <c>AreaRulePlanningTags</c>
+    /// as well (<c>BackendConfigurationTaskWizardService.UpdateTags</c>). The caption
+    /// and the row's tags must EXCLUDE it — otherwise "Flydelag - Flydelag".
+    /// </summary>
+    [Test]
+    public async Task EformColumns_HeadlineAlsoPresentAsArpTag_IsExcludedFromTheCaption()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var today = DateTime.UtcNow.Date;
+
+        var headline = await SeedTag("Flydelag");
+        var tag = await SeedTag("Miljøtilsyn");
+
+        var (templateId, childId) = await SeedTwoLevelTemplate("Legacy", (da.Id, "Legacy"));
+        await SeedField(childId, Constants.FieldTypes.Comment, 0, [(da.Id, "Felt")]);
+
+        var caseId = await SeedSdkCase(templateId, doneAt: today.AddDays(-1));
+        var (arpId, propertyId, planningId, areaId, _) = await SeedSeries("LegacyProp", "L", today.AddDays(-30));
+        await SeedHeadline(arpId, headline);
+        await SeedArpTag(arpId, headline); // the legacy pairing
+        await SeedArpTag(arpId, tag);
+        await SeedCompliance(planningId, propertyId, areaId, today.AddDays(-1), caseId);
+
+        var (from, to) = Window();
+        var groups = await Run(core, da, from, to);
+
+        Assert.That(groups, Has.Count.EqualTo(1));
+        Assert.That(groups[0].HeadlineName, Is.EqualTo("Flydelag"));
+        Assert.That(groups[0].TagsCaption, Is.EqualTo("Miljøtilsyn"));
+        Assert.That(groups[0].Cases.Single().Tags, Is.EqualTo(new[] { "Miljøtilsyn" }).AsCollection);
+    }
+
+    /// <summary>
+    /// With a TAG FILTER set, the caption still shows the row's FULL tag membership —
+    /// the pre-#1188 "selected tags only" predicate is gone, because tags no longer
+    /// key anything. The filter itself is unchanged: the row is found through the
+    /// selected tag, and it is not duplicated.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_TagFilter_CaptionShowsFullMembership()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var today = DateTime.UtcNow.Date;
+
+        var selectedTag = await SeedTag("Valgt tag");
+        var otherTag = await SeedTag("Andet tag");
+
+        var (templateId, childId) = await SeedTwoLevelTemplate("Filtreret", (da.Id, "Filtreret"));
+        await SeedField(childId, Constants.FieldTypes.Comment, 0, [(da.Id, "Felt")]);
+
+        var caseId = await SeedSdkCase(templateId, doneAt: today.AddDays(-1));
+        var (arpId, propertyId, planningId, areaId, _) = await SeedSeries("FilterProp", "F", today.AddDays(-30));
+        await SeedArpTag(arpId, selectedTag);
+        await SeedArpTag(arpId, otherTag);
+        await SeedCompliance(planningId, propertyId, areaId, today.AddDays(-1), caseId);
+
+        var (from, to) = Window();
+        var request = Request(from, to);
+        request.TagIds = [selectedTag];
+
+        var result = await BuildService(core, da).EformColumns(request);
+        Assert.That(result.Success, Is.True, result.Message);
+
+        Assert.That(result.Model, Has.Count.EqualTo(1));
+        Assert.That(result.Model[0].TagsCaption, Is.EqualTo("Andet tag - Valgt tag"));
+        Assert.That(result.Model[0].Cases, Has.Count.EqualTo(1));
+    }
+
+    /// <summary>
+    /// Rows whose planning has NO headline land in the single fallback group
+    /// (<c>HeadlineTagId == null</c>, no name — the "Uden rapportoverskrift" label is
+    /// the consumer's), which sorts LAST even when its caption would sort first
+    /// (#1188 decision 3a / 5). Nothing silently disappears from a compliance report.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_RowsWithoutHeadline_LandInTheFallbackGroupLast()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var today = DateTime.UtcNow.Date;
+
+        var headline = await SeedTag("Overskrift");
+        var lateTag = await SeedTag("Zz tag");
+        var earlyTag = await SeedTag("Aa tag");
+
+        var (templateId, childId) = await SeedTwoLevelTemplate("Skema", (da.Id, "Skema"));
+        await SeedField(childId, Constants.FieldTypes.Comment, 0, [(da.Id, "Felt")]);
+
+        var caseWith = await SeedSdkCase(templateId, doneAt: today.AddDays(-1));
+        var caseWithout = await SeedSdkCase(templateId, doneAt: today.AddDays(-2));
+
+        var (arpWith, propWith, planWith, areaWith, _) = await SeedSeries("WithProp", "With", today.AddDays(-30));
+        var (arpWithout, propWithout, planWithout, areaWithout, _) = await SeedSeries("WithoutProp", "Without", today.AddDays(-30));
+        await SeedHeadline(arpWith, headline);
+        await SeedArpTag(arpWith, lateTag);
+        await SeedArpTag(arpWithout, earlyTag);
+        await SeedCompliance(planWith, propWith, areaWith, today.AddDays(-1), caseWith);
+        var complianceWithout = await SeedCompliance(planWithout, propWithout, areaWithout, today.AddDays(-2), caseWithout);
+
+        var (from, to) = Window();
+        var groups = await Run(core, da, from, to);
+
+        Assert.That(groups, Has.Count.EqualTo(2));
+        Assert.That(groups[0].HeadlineTagId, Is.EqualTo(headline));
+        Assert.That(groups[0].TagsCaption, Is.EqualTo("Zz tag"));
+
+        var fallback = groups[1];
+        Assert.That(fallback.HeadlineTagId, Is.Null);
+        Assert.That(fallback.HeadlineName, Is.Null);
+        Assert.That(fallback.TagsCaption, Is.EqualTo("Aa tag"), "the fallback is last DESPITE its caption sorting first");
+        Assert.That(fallback.Cases.Single().ComplianceId, Is.EqualTo(complianceWithout));
+        Assert.That(groups.Sum(g => g.Cases.Count), Is.EqualTo(2));
+    }
+
+    /// <summary>
+    /// A headline id with NO <c>PlanningTags</c> row (the two databases share no
+    /// foreign key) keeps its OWN group with a null name — the consumer renders
+    /// <c>#{id}</c> — and is never merged into the fallback group.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_HeadlineIdWithoutPlanningTagsRow_KeepsItsOwnGroupWithNullName()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var today = DateTime.UtcNow.Date;
+        const int orphanHeadlineId = 987_654_321;
+
+        var (templateId, childId) = await SeedTwoLevelTemplate("Skema", (da.Id, "Skema"));
+        await SeedField(childId, Constants.FieldTypes.Comment, 0, [(da.Id, "Felt")]);
+
+        var caseOrphan = await SeedSdkCase(templateId, doneAt: today.AddDays(-1));
+        var caseNone = await SeedSdkCase(templateId, doneAt: today.AddDays(-2));
+
+        var (arpOrphan, propOrphan, planOrphan, areaOrphan, _) = await SeedSeries("OrphanProp", "Orphan", today.AddDays(-30));
+        var (_, propNone, planNone, areaNone, _) = await SeedSeries("NoneProp", "None", today.AddDays(-30));
+        await SeedHeadline(arpOrphan, orphanHeadlineId);
+        await SeedCompliance(planOrphan, propOrphan, areaOrphan, today.AddDays(-1), caseOrphan);
+        await SeedCompliance(planNone, propNone, areaNone, today.AddDays(-2), caseNone);
+
+        var (from, to) = Window();
+        var groups = await Run(core, da, from, to);
+
+        Assert.That(groups, Has.Count.EqualTo(2));
+        Assert.That(groups[0].HeadlineTagId, Is.EqualTo(orphanHeadlineId));
+        Assert.That(groups[0].HeadlineName, Is.Null);
+        Assert.That(groups[0].Cases.Single().SdkCaseId, Is.EqualTo(caseOrphan));
+        Assert.That(groups[1].HeadlineTagId, Is.Null);
+        Assert.That(groups[1].Cases.Single().SdkCaseId, Is.EqualTo(caseNone));
+    }
+
+    /// <summary>
+    /// Section order (#1188 decision 5): by CAPTION, then headline name, then id —
+    /// the PDF's sections run "Miljøtilsyn - Brand", "… - Dokumentation", … by the
+    /// tag line, not by the headline. A headline with no tags (empty caption) sorts
+    /// ahead of the captioned ones; the fallback group is last regardless.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_Groups_OrderByCaptionThenHeadlineName()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var today = DateTime.UtcNow.Date;
+
+        var zzHeadline = await SeedTag("Zz overskrift");
+        var aaHeadline = await SeedTag("Aa overskrift");
+        var mmHeadline = await SeedTag("Mm overskrift");
+        var aaTag = await SeedTag("Aa tag");
+        var bbTag = await SeedTag("Bb tag");
+
+        var (templateId, childId) = await SeedTwoLevelTemplate("Skema", (da.Id, "Skema"));
+        await SeedField(childId, Constants.FieldTypes.Comment, 0, [(da.Id, "Felt")]);
+
+        // Zz headline + "Aa tag"; Aa headline + "Bb tag"; Mm headline, no tag.
+        var seeds = new (int Headline, int? Tag, int Day)[]
+        {
+            (zzHeadline, aaTag, 1), (aaHeadline, bbTag, 2), (mmHeadline, null, 3)
+        };
+        foreach (var (headline, tag, day) in seeds)
+        {
+            var caseId = await SeedSdkCase(templateId, doneAt: today.AddDays(-day));
+            var (arpId, propertyId, planningId, areaId, _) = await SeedSeries($"OrderProp{day}", $"O{day}", today.AddDays(-30));
+            await SeedHeadline(arpId, headline);
+            if (tag.HasValue) await SeedArpTag(arpId, tag.Value);
+            await SeedCompliance(planningId, propertyId, areaId, today.AddDays(-day), caseId);
+        }
+
+        var (from, to) = Window();
+        var groups = await Run(core, da, from, to);
+
+        Assert.That(groups.Select(g => g.HeadlineTagId),
+            Is.EqualTo(new int?[] { mmHeadline, zzHeadline, aaHeadline }).AsCollection);
+        Assert.That(groups.Select(g => g.TagsCaption),
+            Is.EqualTo(new[] { string.Empty, "Aa tag", "Bb tag" }).AsCollection);
+    }
+
+    /// <summary>
+    /// Structurally-identical CLONED templates (same name, same field sequence,
+    /// different ids — the 509/511 shape) under one headline form ONE group whose
+    /// union carries BOTH same-labelled columns under different keys. #1166 §8 filed
+    /// merging clones as a follow-up; the union makes them adjacent columns rather
+    /// than adjacent tables, and this pins that so a merge changes it deliberately.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_ClonedTemplates_UnionKeepsBothSameLabelledColumns()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var today = DateTime.UtcNow.Date;
+
+        var (firstTemplate, firstChild) = await SeedTwoLevelTemplate("Kvittering", (da.Id, "Kvittering"));
+        var firstField = await SeedField(firstChild, Constants.FieldTypes.Comment, 0, [(da.Id, "Kommentar")]);
+        var (secondTemplate, secondChild) = await SeedTwoLevelTemplate("Kvittering", (da.Id, "Kvittering"));
+        var secondField = await SeedField(secondChild, Constants.FieldTypes.Comment, 0, [(da.Id, "Kommentar")]);
+
+        var firstCase = await SeedSdkCase(firstTemplate, doneAt: today.AddDays(-1));
+        var secondCase = await SeedSdkCase(secondTemplate, doneAt: today.AddDays(-2));
+
+        var (_, propertyId, planningId, areaId, _) = await SeedSeries("CloneProp", "Clone", today.AddDays(-30));
+        await SeedCompliance(planningId, propertyId, areaId, today.AddDays(-1), firstCase);
+        await SeedCompliance(planningId, propertyId, areaId, today.AddDays(-2), secondCase);
+
+        var (from, to) = Window();
+        var groups = await Run(core, da, from, to);
+
+        Assert.That(groups, Has.Count.EqualTo(1));
+        var lower = Math.Min(firstTemplate, secondTemplate);
+        var higher = Math.Max(firstTemplate, secondTemplate);
+        Assert.That(groups[0].CheckListIds, Is.EqualTo(new[] { lower, higher }).AsCollection,
+            "same name, so the tiebreak is the id");
+        var lowerField = lower == firstTemplate ? firstField : secondField;
+        var higherField = lower == firstTemplate ? secondField : firstField;
+        Assert.That(groups[0].Columns.Select(c => c.Key),
+            Is.EqualTo(new[] { $"f{lowerField}", $"f{higherField}" }).AsCollection);
+        Assert.That(groups[0].Columns.Select(c => c.Label), Is.All.EqualTo("Kommentar"));
+        Assert.That(groups[0].Cases.Select(c => c.CheckListId), Is.EquivalentTo(new[] { firstTemplate, secondTemplate }));
+    }
+
+    // ==================================================================
+    // CASE METADATA
+    // ==================================================================
+
+    /// <summary>
+    /// "Udført dato" is CASE metadata — <c>DoneAtUserModifiable ?? DoneAt</c> off the SDK
+    /// case — and never an answer field (#1160 finding 7).
+    /// </summary>
+    [Test]
+    public async Task EformColumns_DoneAt_ComesFromTheCaseAndNotFromAnAnswer()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var today = DateTime.UtcNow.Date;
+        var doneAt = today.AddDays(-1).AddHours(13);
+
+        var (templateId, childId) = await SeedTwoLevelTemplate("Udfoert", (da.Id, "Udfoert"));
+        var fieldId = await SeedField(childId, Constants.FieldTypes.Date, 0, [(da.Id, "En dato")]);
+
+        var caseId = await SeedSdkCase(templateId, doneAt: doneAt);
+        var (_, propertyId, planningId, areaId, _) = await SeedSeries("DoneProp", "Done", today.AddDays(-30));
+        await SeedCompliance(planningId, propertyId, areaId, today.AddDays(-1), caseId);
+        // A worker-entered Date answer that is NOT the completion timestamp.
+        await SeedFieldValue(caseId, fieldId, childId, "2019-01-01");
+
+        var (from, to) = Window();
+        var caseModel = OnlyGroup(await Run(core, da, from, to)).Cases.Single();
+
+        Assert.That(caseModel.Completed, Is.True);
+        Assert.That(caseModel.DoneAt, Is.EqualTo(doneAt));
+        Assert.That(caseModel.Cells[$"f{fieldId}"], Is.EqualTo("2019-01-01"));
+        Assert.That(caseModel.TaskDate, Is.EqualTo(today.AddDays(-1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
+        Assert.That(caseModel.SdkCaseId, Is.EqualTo(caseId));
+    }
+
+    // ==================================================================
+    // WORKER COLUMN
+    // ==================================================================
+
+    /// <summary>
+    /// #1232's worker column, on THIS surface. <c>ResolveWorkerSiteIdsByArpId</c> is
+    /// called from both <see cref="BackendConfigurationComplianceReportService.Index"/>
+    /// and <see cref="BackendConfigurationComplianceReportService.EformColumns"/>, and
+    /// its remarks claim the column "cannot come out different on the two surfaces".
+    /// Sharing one method makes that structurally true; this drives it, so the claim is
+    /// tested rather than asserted.
+    ///
+    /// <para>
+    /// The event is assigned to a TEAM and to nobody by name, so there is no
+    /// <c>PlanningSites</c> row at all: pre-#1232 both surfaces projected the column
+    /// from <c>detail.PlanningSites</c> alone and rendered this row EMPTY. Both halves
+    /// are checked in one test because the point is the agreement, not either value on
+    /// its own.
+    /// </para>
+    ///
+    /// <para>
+    /// It lives here rather than in <c>WorkerTagCrossViewFilterTests</c> because
+    /// <c>EformColumns</c> renders only ANSWERED rows — it needs a real SDK
+    /// <c>CheckList</c>/<c>Case</c> graph behind the compliance, which is exactly what
+    /// this fixture's <c>SeedOneCase</c> builds and what that fixture (which seeds
+    /// <c>MicrotingSdkCaseId = 0</c> on purpose) does not.
+    /// </para>
+    /// </summary>
+    [Test]
+    public async Task EformColumns_WorkerColumn_PopulatesFromTeamMembership_AndAgreesWithIndex()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("Hold", da.Id, (Constants.FieldTypes.Comment, "Kommentar"));
+
+        var teamTagId = await SeedSdkWorkerTag();
+        var memberSiteId = await SeedSdkSite("team-member");
+        await LinkSiteToTag(teamTagId, memberSiteId);
+        await AssignWorkerTag(fixture.ArpId, teamTagId);
+
+        var memberName = await MicrotingDbContext!.Sites
+            .Where(s => s.Id == memberSiteId)
+            .Select(s => s.Name)
+            .FirstAsync();
+
+        var (from, to) = Window();
+
+        var caseModel = OnlyGroup(await Run(core, da, from, to)).Cases.Single();
+        Assert.That(caseModel.WorkerNames, Is.EqualTo(new List<string> { memberName }),
+            "EformColumns: a tag-assigned row's worker column must be filled from live "
+            + "team membership, not left empty because there is no PlanningSites row");
+
+        var index = await BuildService(core, da).Index(Request(from, to));
+        Assert.That(index.Success, Is.True, index.Message);
+        var row = index.Model!.Entities.Single(e => e.AreaRulePlanningId == fixture.ArpId);
+
+        Assert.That(row.WorkerNames, Is.EqualTo(new List<string> { memberName }),
+            "Index: the same ARP resolves to the same member");
+        Assert.That(row.WorkerSiteIds, Is.Empty,
+            "Index's WorkerSiteIds is the row's PlanningSites ASSIGNMENT, not its worker "
+            + "column: it feeds the complete-event modal's assigneeIds and stays narrow "
+            + "even when the column is filled from team membership");
+        Assert.That(caseModel.WorkerNames, Is.EqualTo(row.WorkerNames),
+            "the two surfaces share ResolveWorkerSiteIdsByArpId and must therefore "
+            + "render the same worker column for the same ARP");
+    }
+}

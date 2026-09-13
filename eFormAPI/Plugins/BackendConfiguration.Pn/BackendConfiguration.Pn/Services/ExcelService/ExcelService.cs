@@ -264,7 +264,7 @@ public class ExcelService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogTrace(e.StackTrace);
             return Task.FromResult(new OperationDataResult<Stream>(false,
                 localizationService.GetString("ErrorWhileCreatingWordFile")));
@@ -494,7 +494,7 @@ public class ExcelService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogTrace(e.StackTrace);
             return Task.FromResult(new OperationDataResult<Stream>(false,
                 localizationService.GetString("ErrorWhileCreatingExcelFile")));

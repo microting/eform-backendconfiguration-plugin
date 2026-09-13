@@ -112,7 +112,6 @@ test.describe.serial('Calendar edit-event field combinations (#891)', () => {
 
     const calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
 
     if (seeded) {
       const folderResp = page.waitForResponse(
@@ -126,7 +125,17 @@ test.describe.serial('Calendar edit-event field combinations (#891)', () => {
   });
 
   test.afterAll(async ({ browser }) => {
-    const page = await browser.newPage();
+    // browser.newPage() can itself reject — a browser that crashed or got
+    // disconnected during a long run — and an exception thrown here escapes the
+    // hook and fails the job, which is exactly what this non-fatal teardown
+    // exists to prevent. Record it and give up on cleanup instead.
+    const page = await browser.newPage().catch((err: any) => {
+      console.log(`afterAll cleanup failed (non-fatal): could not open a cleanup page: ${err?.message ?? err}`);
+      return undefined;
+    });
+    if (!page) {
+      return;
+    }
     const cleanup = async () => {
       await page.goto('http://localhost:4200');
       await new LoginPage(page).login();
@@ -174,7 +183,6 @@ test.describe.serial('Calendar edit-event field combinations (#891)', () => {
     // in the assignee panel.
     const calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
     const folderResp = page.waitForResponse(
       r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos'),
       { timeout: 60000 }

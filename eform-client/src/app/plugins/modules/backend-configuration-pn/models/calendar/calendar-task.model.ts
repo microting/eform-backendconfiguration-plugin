@@ -17,7 +17,22 @@ export interface CalendarTaskModel {
   startText: string;         // "09:30"
   endText: string;           // "10:00"
   tags: string[];
+  /**
+   * The EXPLICIT individual assignees (backend
+   * `CalendarTaskResponseModel.AssigneeIds` — the ARP's own PlanningSites, or an
+   * occurrence exception's sites). Worker-tag members are NOT in here; they are in
+   * `teamAssigneeIds`.
+   */
   assigneeIds: number[];
+  /**
+   * The sites assigned via a worker tag ("team") — the live members of
+   * `workerTagIds`, from `CalendarTaskResponseModel.TeamAssigneeIds` (#1236).
+   * Optional so a response from an older backend simply reads as "no team half".
+   *
+   * The complete-event modal groups its worker dropdown on
+   * `assigneeIds ∪ teamAssigneeIds` but pre-selects only from `assigneeIds`.
+   */
+  teamAssigneeIds?: number[];
   workerNames: string[];
   // Worker-tag assignment (distinct from the item-planning `tags` above).
   // Backend CalendarTaskResponseModel.WorkerTagIds — ids only; the container
@@ -166,18 +181,23 @@ export interface CalendarTaskLayoutModel extends CalendarTaskModel {
   _inGroup?: boolean;
 }
 
-// Result returned by `PUT /calendar/tasks/{id}/complete`. Three shapes the
-// frontend has to handle:
-//  1) success && requiresForm === true — the linked eForm has mandatory
-//     fields; the rest of the fields carry the route params for the
-//     compliance/case form. Frontend navigates.
-//  2) success && requiresForm === false — the eForm has no mandatory
-//     fields; the backend already set Case.Status = 100 in place.
-//     Frontend reloads the calendar so the event re-renders as completed.
-//  3) success === false (carried on the wrapping OperationDataResult, not
-//     this model) — covers non-compliance taps (TaskHasNoComplianceCase),
-//     missing planning, uncomplete attempt, etc. Frontend silently no-ops
-//     today; existing failure-path UX.
+// NO CLIENT CALLER. This type models the response payload of
+// `PUT /calendar/tasks/{id}/complete`, which the web client no longer calls:
+// the caller (`ComplianceCaseModalComponent`) and the service's
+// `toggleComplete()` were deleted in #1205.
+//
+// Do NOT take the absence of a web-client caller as grounds for deleting the
+// backend endpoint — it is still live, and consumers outside this repo (e.g.
+// mobile / gRPC paths) are not covered by a grep here.
+//
+// Payload shape:
+//  - requiresForm === true — the linked eForm has mandatory fields; the
+//    remaining fields carry the route params for the compliance/case form.
+//  - requiresForm === false — the eForm has no mandatory fields; the backend
+//    already set Case.Status = 100 in place.
+//  - A failure is carried on the wrapping OperationDataResult, not on this
+//    model — non-compliance taps (TaskHasNoComplianceCase), missing planning,
+//    uncomplete attempt, etc.
 export interface CalendarToggleCompleteResult {
   requiresForm: boolean;
   sdkCaseId?: number;
@@ -188,9 +208,8 @@ export interface CalendarToggleCompleteResult {
   deadline?: string;
   /**
    * Calendar event start (Compliance.Deadline day + CalendarConfiguration.StartHour),
-   * ISO 8601 UTC with millisecond precision. The compliance modal defaults its
-   * doneAt picker to this value so Case.DoneAt records the scheduled moment
-   * rather than when the user happened to click Save.
+   * ISO 8601 UTC with millisecond precision — the scheduled moment of the
+   * occurrence, not the time of the completion request.
    */
   eventStart?: string;
 }

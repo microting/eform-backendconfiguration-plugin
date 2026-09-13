@@ -82,7 +82,7 @@ public class BackendConfigurationTagsService : IBackendConfigurationTagsService
 		catch (Exception e)
 		{
 			Console.WriteLine(e);
-			_logger.LogError(e.Message);
+			_logger.LogError(e, e.Message);
 			return new OperationDataResult<List<CommonTagModel>>(false,
 				_localizationService.GetString("ErrorWhileObtainingFileTags"));
 		}
@@ -111,7 +111,7 @@ public class BackendConfigurationTagsService : IBackendConfigurationTagsService
 		catch (Exception e)
 		{
 			Console.WriteLine(e);
-			_logger.LogError(e.Message);
+			_logger.LogError(e, e.Message);
 			return new OperationResult(false, _localizationService.GetString("ErrorWhileUpdatingFileTag"));
 		}
 	}
@@ -148,7 +148,7 @@ public class BackendConfigurationTagsService : IBackendConfigurationTagsService
 		catch (Exception e)
 		{
 			Console.WriteLine(e);
-			_logger.LogError(e.Message);
+			_logger.LogError(e, e.Message);
 			return new OperationResult(false, _localizationService.GetString("ErrorWhileRemovingFileTag"));
 		}
 	}
@@ -185,7 +185,7 @@ public class BackendConfigurationTagsService : IBackendConfigurationTagsService
 		catch (Exception e)
 		{
 			Console.WriteLine(e);
-			_logger.LogError(e.Message);
+			_logger.LogError(e, e.Message);
 			return new OperationResult(false, _localizationService.GetString("ErrorWhileCreatingFileTag"));
 		}
 	}
@@ -217,7 +217,7 @@ public class BackendConfigurationTagsService : IBackendConfigurationTagsService
 		catch (Exception e)
 		{
 			Console.WriteLine(e);
-			_logger.LogError(e.Message);
+			_logger.LogError(e, e.Message);
 			return new OperationDataResult<CommonTagModel>(false,
 				_localizationService.GetString("ErrorWhileObtainingFileTag"));
 		}
@@ -252,7 +252,7 @@ public class BackendConfigurationTagsService : IBackendConfigurationTagsService
 		catch (Exception e)
 		{
 			Console.WriteLine(e);
-			_logger.LogError(e.Message);
+			_logger.LogError(e, e.Message);
 			return new OperationResult(
 				false,
 				_localizationService.GetString("ErrorWhileCreatingFileTags"));

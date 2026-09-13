@@ -10,6 +10,7 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
+import { UI_TIMEOUT } from '../wait-helpers';
 
 /**
  * Drag-resize SCOPE suite for GitHub issue #889.
@@ -77,7 +78,6 @@ test.describe.serial('Calendar resize scope (#889)', () => {
 
     const calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
 
     if (seeded) {
       const folderResp = page.waitForResponse(
@@ -91,7 +91,17 @@ test.describe.serial('Calendar resize scope (#889)', () => {
   });
 
   test.afterAll(async ({ browser }) => {
-    const page = await browser.newPage();
+    // browser.newPage() can itself reject — a browser that crashed or got
+    // disconnected during a long run — and an exception thrown here escapes the
+    // hook and fails the job, which is exactly what this non-fatal teardown
+    // exists to prevent. Record it and give up on cleanup instead.
+    const page = await browser.newPage().catch((err: any) => {
+      console.log(`afterAll cleanup failed (non-fatal): could not open a cleanup page: ${err?.message ?? err}`);
+      return undefined;
+    });
+    if (!page) {
+      return;
+    }
     const cleanup = async () => {
       await page.goto('http://localhost:4200');
       await new LoginPage(page).login();
@@ -452,9 +462,9 @@ test.describe.serial('Calendar resize scope (#889)', () => {
           await modal.waitFor({ state: 'visible', timeout: 10000 }).catch(() => undefined);
           const cancelBtn = page.locator('#completeCancelBtn');
           if ((await cancelBtn.count()) > 0) {
-            await cancelBtn.click();
+            await cancelBtn.click({ timeout: UI_TIMEOUT });
             await modal
-              .waitFor({ state: 'detached', timeout: 5000 })
+              .waitFor({ state: 'detached', timeout: UI_TIMEOUT })
               .catch(() => undefined);
           } else {
             await page.keyboard.press('Escape');

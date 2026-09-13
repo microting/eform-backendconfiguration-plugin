@@ -1,0 +1,178 @@
+<main class="compliance-page" [attr.aria-label]="'Compliance' | translate">
+  <app-compliance-report-filters
+    [exporting]="exporting"
+    (downloadRequested)="onDownloadRequested($event)"
+  ></app-compliance-report-filters>
+
+  <!--
+    Mode toggle. Hand-rolled rather than mat-button-toggle-group so the three
+    buttons can carry aria-pressed (a non-multiple mat-button-toggle-group
+    renders radiogroup/aria-checked instead). Same segmented-toggle pattern the
+    ad-hoc dashboard's tag-logic switch already uses, so the styling is the
+    existing .btn-primary/.btn-secondary pair and needs no new colours.
+  -->
+  <div
+    class="compliance-mode-toggle btn-group d-flex gap-8"
+    role="group"
+    [attr.aria-label]="'View mode' | translate"
+  >
+    <button
+      *ngFor="let m of modes"
+      type="button"
+      id="complianceMode-{{ m.mode }}"
+      [attr.aria-pressed]="isActive(m.mode)"
+      [ngClass]="isActive(m.mode) ? 'btn-primary active' : 'btn-secondary'"
+      (click)="onModeChange(m.mode)"
+    >
+      <span>{{ m.label | translate }}</span>
+    </button>
+  </div>
+
+  <mat-card
+    id="complianceCasesRoot"
+    class="compliance-cases-root"
+    [attr.aria-label]="'Compliance' | translate"
+    [attr.aria-busy]="state.loading"
+  >
+    <!--
+      Reachable in two states only (#1185), and the wording follows which:
+        - "Sæt periode" selected with no range committed yet — the Opdater
+          periode button exists, so the text points at it.
+        - a re-entry in Detaljer/Rapport (enterPage()) with a FIXED preset —
+          there is no button at all; the ways out are a filter change (which
+          re-queries) or the Oversigt reset, so the text names those instead.
+      Every other filter change re-queries without blanking.
+    -->
+    <div
+      *ngIf="!state.reportVisible"
+      id="complianceEmptyState"
+      class="compliance-cases-root__placeholder"
+    >
+      {{
+        (state.filters.periodPreset === 'custom'
+          ? 'Select a period and click Update period'
+          : 'Change a filter or click Overview to load the table'
+        ) | translate
+      }}
+    </div>
+
+    <div
+      *ngIf="state.reportVisible && state.loading"
+      class="compliance-cases-root__loading"
+    >
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+
+    <!--
+      Deliberately gated on `reportVisible` ALONE, not on `!state.loading`.
+      `fetchRequested$` replays its last trigger to a late subscriber (see
+      ComplianceReportStateService.fetchRequestedSubject — that replay is what
+      makes a mode switch, which destroys and recreates the child, actually
+      query). Unmounting the child while it loads would therefore recreate it
+      the moment `loading` went false, replay the trigger, and fetch again in a
+      loop. A load overlays the spinner above the still-mounted view instead.
+    -->
+    <ng-container *ngIf="state.reportVisible" [ngSwitch]="state.mode">
+      <!--
+        One branch per view mode. Each child reads requestModel, subscribes to
+        fetchRequested$ and reports its total back through setTotalCount().
+      -->
+      <ng-container *ngSwitchCase="'overview'">
+        <app-compliance-overview-view></app-compliance-overview-view>
+      </ng-container>
+      <ng-container *ngSwitchCase="'details'">
+        <app-compliance-details-view></app-compliance-details-view>
+      </ng-container>
+      <ng-container *ngSwitchCase="'report'">
+        <app-compliance-report-view></app-compliance-report-view>
+      </ng-container>
+    </ng-container>
+  </mat-card>
+
+  <!--
+    Pagination chrome. The buttons and the info line live here; which page is
+    requested, and the row count behind it, belong to the active view.
+    `Previous`/`Next`/`of` resolve from the CORE frontend i18n, not the
+    plugin's — the core Danish `Previous` is `Tidligere`, not the prototype's
+    `Forrige`. #1165's decision: KEEP the core keys. `Forrige` is the better
+    Danish for pagination, but the only ways to get it are to retranslate the
+    core key (which moves every other consumer in the app) or to shadow it from
+    the plugin bundle (same blast radius, since plugin translations merge into
+    the one dictionary). Neither is worth one word; the difference is recorded
+    here so the next reader does not re-open it.
+
+    Rendered in Detaljer ONLY (#1164). The prototype has exactly one renderer
+    that fills this container, `renderCasesPage` (compliance.js:1841); the other
+    two empty it:
+
+      - `renderOverviewPage` (compliance.js:1448) at :1460 — Oversigt is one row
+        per property, it never pages, and the aggregation endpoint has no paging
+        parameters to honour. `Vis alle` is meaningless there too: everything is
+        already shown.
+      - `renderReportPage` (compliance.js:1815) at :1820-1821, with the reason
+        written out — "Rapport paginerer ikke - hver delrapport vises hel."
+
+    So the guard is an allow-list on `details` rather than a deny-list on
+    `overview`: a deny-list would leave a full Forrige / 1 / Næste / Vis alle /
+    Ingen resultater bar sitting over Rapport, which renders whole sub-reports
+    and pages no more than Oversigt does.
+  -->
+  <nav
+    *ngIf="state.reportVisible && state.mode === 'details'"
+    id="compliancePagination"
+    class="compliance-pagination"
+    [attr.aria-label]="'Pagination' | translate"
+  >
+    <button
+      mat-stroked-button
+      id="compliancePagePrev"
+      [disabled]="state.showAll || state.page === 0"
+      (click)="onPrevPage()"
+    >
+      {{ 'Previous' | translate }}
+    </button>
+
+    <ng-container *ngFor="let p of state.pageNumbers">
+      <span *ngIf="p === 'gap'" class="compliance-pagination__gap">&hellip;</span>
+      <button
+        *ngIf="p !== 'gap'"
+        mat-stroked-button
+        class="compliance-pagination__page"
+        [class.is-active]="!state.showAll && p === state.page"
+        [color]="!state.showAll && p === state.page ? 'primary' : undefined"
+        (click)="onGoToPage(p)"
+      >
+        {{ +p + 1 }}
+      </button>
+    </ng-container>
+
+    <button
+      mat-stroked-button
+      id="compliancePageNext"
+      [disabled]="state.showAll || state.page >= state.totalPages - 1"
+      (click)="onNextPage()"
+    >
+      {{ 'Next' | translate }}
+    </button>
+    <button
+      mat-stroked-button
+      id="compliancePageShowAll"
+      [class.is-active]="state.showAll"
+      [disabled]="state.showAll"
+      (click)="onShowAll()"
+    >
+      {{ 'Show all' | translate }}
+    </button>
+
+    <span id="compliancePageInfo" class="compliance-pagination__info">
+      <ng-container *ngIf="state.total === 0">{{ 'No results' | translate }}</ng-container>
+      <ng-container *ngIf="state.total > 0 && state.showAll"
+        >{{ 'Showing all' | translate }} {{ state.total }}</ng-container
+      >
+      <ng-container *ngIf="state.total > 0 && !state.showAll"
+        >{{ 'Showing' | translate }} {{ state.showingFrom }}&#8211;{{ state.showingTo }}
+        {{ 'of' | translate }} {{ state.total }}</ng-container
+      >
+    </span>
+  </nav>
+</main>

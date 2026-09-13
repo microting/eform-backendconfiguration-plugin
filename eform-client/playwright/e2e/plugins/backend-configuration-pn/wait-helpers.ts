@@ -7,7 +7,7 @@
  * selector or a request that never fires into a 10-15 minute hang that reports
  * nothing useful. See CLAUDE.md ("Playwright tests fail fast").
  */
-import { errors, Page, Response } from '@playwright/test';
+import { errors, Page, Request, Response, Route } from '@playwright/test';
 
 /** A local UI transition settles: dialog opens/closes, menu panel appears. */
 export const UI_TIMEOUT = 15000;
@@ -61,4 +61,95 @@ export function ignoreUnhandledRejections(...pending: Promise<unknown>[]): void 
   for (const wait of pending) {
     wait.catch(() => undefined);
   }
+}
+
+/**
+ * `page.waitForRequest` with a mandatory timeout and a failure message that
+ * names the request we were waiting for — the request-side twin of
+ * {@link waitForApiResponse}.
+ */
+export async function waitForApiRequest(
+  page: Page,
+  description: string,
+  predicate: (request: Request) => boolean,
+  timeout: number
+): Promise<Request> {
+  try {
+    return await page.waitForRequest(predicate, { timeout });
+  } catch (error) {
+    if (!(error instanceof errors.TimeoutError)) {
+      throw error;
+    }
+    throw new Error(
+      `Timed out after ${timeout}ms waiting for ${description} — the request was never issued. ` +
+        `(${String(error)})`
+    );
+  }
+}
+
+/** A GET held at the network layer by {@link holdApiGetRequests}. */
+export interface HeldApiRequest {
+  /** Resolves once the first matching request has been issued — and is therefore being held. */
+  held: Promise<Request>;
+  /**
+   * Lets every held matching request through; later matching requests pass
+   * straight through too. Safe to call more than once.
+   */
+  release: () => Promise<void>;
+}
+
+/**
+ * Holds every GET whose URL path ends with `pathSuffix` until `release()` is
+ * called, so a test can assert what the page shows WHILE that request is in
+ * flight — deterministically, instead of racing it. This is not a sleep: nothing
+ * waits on the clock; the response is simply not delivered until the test says so.
+ *
+ * Install it immediately before the action that fires the request: `held` is a
+ * bounded wait whose `timeout` runs from here. Always call `release()` in a
+ * `finally`, so a failing assertion cannot leave the page stuck on a request
+ * that is never answered.
+ *
+ * `release()` deliberately does NOT unroute. Removing a route handler while one
+ * of its routes is still in flight makes Playwright continue that route itself,
+ * racing the handler's own `route.continue()`: in CI the handler lost with
+ * "route.continue: Route is already handled!" and the released request was never
+ * delivered to the page. Once released, the handler is a pass-through that lives
+ * as long as the page — one test — so exactly one party ever handles each route.
+ */
+export async function holdApiGetRequests(
+  page: Page,
+  description: string,
+  pathSuffix: string,
+  timeout: number
+): Promise<HeldApiRequest> {
+  const matchesPath = (url: URL) => url.pathname.endsWith(pathSuffix);
+  let releaseHeld!: () => void;
+  const released = new Promise<void>(resolve => {
+    releaseHeld = resolve;
+  });
+  const handler = async (route: Route) => {
+    if (route.request().method() !== 'GET') {
+      await route.fallback();
+      return;
+    }
+    await released;
+    await route.continue();
+  };
+
+  const held = waitForApiRequest(
+    page,
+    description,
+    request => request.method() === 'GET' && matchesPath(new URL(request.url())),
+    timeout
+  );
+  // Awaited by the caller after its triggering action, which can throw first.
+  ignoreUnhandledRejections(held);
+  await page.route(matchesPath, handler);
+
+  return {
+    held,
+    release: async () => {
+      releaseHeld();
+    },
+  };
 }

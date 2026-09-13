@@ -1,0 +1,779 @@
+import {Overlay} from '@angular/cdk/overlay';
+import {Component, OnDestroy, OnInit, TemplateRef, ViewChild} from '@angular/core';
+import {MatDialog, MatDialogRef} from '@angular/material/dialog';
+import {Router} from '@angular/router';
+import {TranslateService} from '@ngx-translate/core';
+import {MtxGridColumn} from '@ng-matero/extensions/grid';
+import {Subject, merge, of} from 'rxjs';
+import {catchError, filter as rxFilter, finalize, switchMap, takeUntil, tap} from 'rxjs/operators';
+import {dialogConfigHelper} from 'src/app/common/helpers';
+import {CommonDictionaryModel} from 'src/app/common/models';
+import {
+  CalendarImageLightboxComponent,
+  CalendarImageLightboxData,
+} from '../../../calendar/modals';
+import {
+  CalendarBoardModel,
+  ComplianceReportCaseModel,
+  ComplianceReportImageModel,
+  ComplianceReportHeadlineGroupModel,
+} from '../../../../models';
+import {
+  BackendConfigurationPnCalendarService,
+  BackendConfigurationPnComplianceReportService,
+  BackendConfigurationPnCompliancesService,
+  BackendConfigurationPnPropertiesService,
+} from '../../../../services';
+import {
+  COMPLIANCE_EMPTY_CELL,
+  COMPLIANCE_REPORT_PAGE_ROW_BUDGET,
+  COMPLIANCE_REPORT_SECTION_ROW_CAP,
+  ComplianceReportSection,
+  buildComplianceReportSections,
+  complianceAnswerText,
+  complianceWorkerNames,
+  formatComplianceReportDate,
+} from '../../helpers';
+import {ComplianceReportStateService} from '../../store';
+
+/**
+ * The Billeder cell's two i18n keys, held as constants because the plural one
+ * carries a `{{count}}` placeholder — see `imagesLabelKey`.
+ */
+const KEY_IMAGES_ONE = '1 image';
+const KEY_IMAGES_MANY = '{{count}} images';
+
+/**
+ * The PER-TEMPLATE schema notice (#1188). A section spans templates, and when
+ * only some of them lack a schema the others' columns are still there, so the
+ * notice names the affected template rather than disowning the whole table.
+ * Held here for the same `{{ }}`-in-a-template reason as the two keys above.
+ *
+ * The DTO carries template IDS, not names (`schemaUnavailableCheckListIds`),
+ * so the notice reads `#{id}` — the same neutral form the headline uses for an
+ * unresolvable tag.
+ */
+const KEY_COLUMNS_UNAVAILABLE_FOR_TEMPLATE = 'Columns unavailable for template #{{id}}';
+
+/**
+ * One column of a sub-report's grid. `answerKey` is the ONLY way an answer cell
+ * is addressed — `MtxGridColumn.field` is used for the fixed metadata columns
+ * and, for the answer columns, is a unique identity mtx-grid requires but that
+ * nothing reads.
+ */
+interface ComplianceReportGridColumn extends MtxGridColumn {
+  /** `ComplianceReportColumnModel.key`, present on answer columns only. */
+  answerKey?: string;
+}
+
+/** A sub-report as the template renders it: the model plus its own grid state. */
+interface ComplianceReportRenderedSection extends ComplianceReportSection {
+  /**
+   * Built ONCE per section. mtx-grid MUTATES its column objects
+   * (`_countPinnedPosition` writes `left`/`right` onto them), so two sections
+   * must never share an array or the pin offsets of the wider one leak into the
+   * narrower one.
+   */
+  gridColumns: ComplianceReportGridColumn[];
+  /** The rows currently in the DOM — the first N until the section is expanded. */
+  rows: ComplianceReportRowVm[];
+  /** Every row of the sub-report. */
+  allRows: ComplianceReportRowVm[];
+  expanded: boolean;
+}
+
+/**
+ * The flat shape mtx-grid renders. Built once per case so that no `formatter`
+ * is needed for the metadata columns: mtx-grid pipes a `formatter`'s return
+ * value through `[innerHTML]`, which sanitises — and therefore mangles — worker
+ * names and answers that legitimately contain `<`, `&` or quotes. Plain fields
+ * and cell templates are interpolated instead.
+ */
+interface ComplianceReportRowVm {
+  complianceId: number;
+  sdkCaseId: number;
+  /**
+   * The template THIS row was answered against — the `Rediger` route needs
+   * it, and since #1188 a section spans templates, so it comes off the CASE
+   * (`ComplianceReportCaseModel.checkListId`), never off the section. `0` for
+   * a case the server sent without one, which `canEdit` rejects.
+   */
+  checkListId: number;
+  propertyName: string;
+  doneBy: string;
+  /** `DoneAtUserModifiable ?? DoneAt`. Case metadata (#1160 finding 7). */
+  doneAt: string | Date | null;
+  /** The task title — the prototype's `Område`. */
+  title: string;
+  imagesCount: number;
+  /**
+   * The RENDERABLE subset of the case's images: the server-emitted file names,
+   * with the nulls dropped.
+   *
+   * Deliberately NOT the same number as `imagesCount`, which counts every
+   * attachment including the ones whose `_700_` name could not be derived and
+   * which therefore cannot be fetched at all. The cell shows the honest
+   * attachment count; the gallery can only open what is fetchable.
+   *
+   * NEVER rebuilt on the client — `ComplianceReportImageModel.fileName` is
+   * composed server-side and is carried through verbatim.
+   */
+  imageNames: string[];
+  /**
+   * The `_300_` thumbnail names, INDEX-ALIGNED with `imageNames` (built from
+   * the same filtered pass, so the two arrays always have the same length).
+   * An entry is `null` when the server emitted no thumbnail name for that
+   * image; the lightbox then falls back to the full-size name.
+   *
+   * NEVER rebuilt on the client, exactly as `imageNames`.
+   */
+  imageThumbnailNames: (string | null)[];
+  completed: boolean;
+  /** The KEYED answer bag, read only through `complianceAnswerText`. */
+  cells: {[key: string]: string};
+}
+
+/**
+ * The Rapport view of the standalone Compliance page (#1167, regrouped by
+ * #1188): one sub-report per REPORT HEADLINE (`Rapportoverskrift`), captioned
+ * with the tasks' tags, whose columns are the union of the answer fields of
+ * every template answered under that headline.
+ *
+ * Its contract with the shell (#1163) is the same as Oversigt's and Detaljer's:
+ *
+ *  - subscribe to `fetchRequested$`, the ONLY fetch trigger. It replays its last
+ *    emission to a late subscriber on purpose, which is what makes a mode switch
+ *    (an `ngSwitch` that destroys and recreates this component) actually query;
+ *  - read `requestModel` AT FETCH TIME, never cached;
+ *  - report `setTotalCount()` back — it is load-bearing here, the filter bar's
+ *    `canDownload` gates the Download button on `state.total > 0` — and
+ *    `setLoading()` so the shell can show the spinner and disable `Opdater periode`.
+ *
+ * THE RULE OF THIS VIEW: a cell is looked up by its column's KEY
+ * (`complianceAnswerText`), never by position and never by zipping headers
+ * against values. A missing key renders the en dash IN PLACE, so no later column
+ * shifts — the #1160-finding-3 desync is not merely fixed here, it is
+ * inexpressible. See `compliance-report-sections.spec.ts`.
+ *
+ * NOT PAGINATED, by design ("Rapport paginerer ikke - hver delrapport vises
+ * hel", compliance.js:1820) — the shell already hides the pagination `<nav>`
+ * outside Detaljer, so nothing there needed changing. The unbounded-DOM problem
+ * that creates is answered by two ceilings instead, both of them reversible by
+ * one click on the sub-report the user wants: a per-section cap
+ * (`COMPLIANCE_REPORT_SECTION_ROW_CAP`) and, because a page can hold dozens
+ * of small headline sections, a cumulative page budget
+ * (`COMPLIANCE_REPORT_PAGE_ROW_BUDGET`).
+ */
+@Component({
+  standalone: false,
+  selector: 'app-compliance-report-view',
+  templateUrl: './compliance-report-view.component.html',
+  styleUrls: ['./compliance-report-view.component.scss'],
+})
+export class ComplianceReportViewComponent implements OnInit, OnDestroy {
+  // `static: true` — all four sit at the root of the template, outside every
+  // structural directive, so they resolve before `ngOnInit` runs and a response
+  // can never land on an undefined TemplateRef.
+  @ViewChild('answerTpl', {static: true}) answerTpl!: TemplateRef<unknown>;
+  @ViewChild('imagesTpl', {static: true}) imagesTpl!: TemplateRef<unknown>;
+  @ViewChild('actionsTpl', {static: true}) actionsTpl!: TemplateRef<unknown>;
+  @ViewChild('deleteConfirmTpl', {static: true}) deleteConfirmTpl!: TemplateRef<unknown>;
+
+  readonly emptyCell = COMPLIANCE_EMPTY_CELL;
+  /** See `KEY_COLUMNS_UNAVAILABLE_FOR_TEMPLATE`. */
+  readonly columnsUnavailableForTemplateKey = KEY_COLUMNS_UNAVAILABLE_FOR_TEMPLATE;
+
+  sections: ComplianceReportRenderedSection[] = [];
+  hasFetched = false;
+  /**
+   * A fetch failed while there was NOTHING on screen to keep — the first fetch
+   * of this visit. Same reasoning as both siblings': without it that case
+   * renders an entirely blank card, because the shell's placeholder, the
+   * spinner and the empty-result line are each gated off.
+   */
+  loadFailed = false;
+
+  private properties: CommonDictionaryModel[] = [];
+  private boards: CalendarBoardModel[] = [];
+  private destroy$ = new Subject<void>();
+  /** Refreshes that are NOT a user gesture: after a delete. */
+  private refresh$ = new Subject<void>();
+  private deleteDialogRef: MatDialogRef<unknown> | null = null;
+  private pendingDeleteId: number | null = null;
+
+  constructor(
+    public state: ComplianceReportStateService,
+    private complianceReportService: BackendConfigurationPnComplianceReportService,
+    private compliancesService: BackendConfigurationPnCompliancesService,
+    private propertiesService: BackendConfigurationPnPropertiesService,
+    private calendarService: BackendConfigurationPnCalendarService,
+    private translate: TranslateService,
+    private dialog: MatDialog,
+    private overlay: Overlay,
+    private router: Router,
+  ) {}
+
+  ngOnInit(): void {
+    this.loadMetaReferenceData();
+
+    merge(this.state.fetchRequested$, this.refresh$)
+      .pipe(
+        // Drop triggers meant for another view (#1185). `resetToOverview()`
+        // emits while THIS child is still subscribed — the ngSwitch only swaps
+        // it out on the next change-detection pass — so without this guard the
+        // outgoing child would issue a request that is cancelled on destroy.
+        rxFilter(() => this.state.mode === 'report'),
+        tap(() => {
+          // A re-render detaches the row the confirm dialog was opened from.
+          this.closeDeleteDialog();
+          // Cleared on every attempt: while the spinner is up the previous
+          // failure is no longer the current state of the view.
+          this.loadFailed = false;
+          this.state.setLoading(true);
+        }),
+        // switchMap, so a trigger landing while an earlier request is in flight
+        // cancels it rather than racing it into the view.
+        switchMap(() =>
+          this.complianceReportService.eformColumns(this.state.requestModel).pipe(
+            // The service already toasts a failed OperationResult; swallow the
+            // transport error here so the trigger stream survives it.
+            catchError(() => of(null)),
+          ),
+        ),
+        // Runs on unsubscribe too — i.e. when takeUntil completes the stream on
+        // destroy — so a request still in flight when the ngSwitch tears this
+        // component down cannot leave `loading` stuck true and `Opdater periode`
+        // permanently disabled.
+        finalize(() => this.state.setLoading(false)),
+        takeUntil(this.destroy$),
+      )
+      .subscribe((res) => {
+        this.state.setLoading(false);
+        if (!res || !res.success) {
+          // For a RE-fetch, leave the previous rendering standing rather than
+          // replacing it with "no tasks match the selected filters", which
+          // would blame the filters for a transport or server error.
+          this.loadFailed = !this.hasFetched;
+          return;
+        }
+        this.applyResponse(res.model ?? []);
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.closeDeleteDialog();
+    // No `setLoading(false)` here on purpose. `loading` is the SHELL's flag: it
+    // resets it in `setMode()`, `enterPage()` and `blankUntilCommit()` (the one
+    // filter branch that unmounts — `setFilter()` itself never does), which
+    // covers every transition that unmounts this component, and for the ordinary
+    // teardown the `finalize` above already clears it (it sits UPSTREAM of
+    // `takeUntil`, so completing the stream here unsubscribes through it and
+    // fires the callback). Both siblings omit it for the same reason.
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  // -------------------------------------------------------------------
+  // Response → sections
+  // -------------------------------------------------------------------
+
+  private applyResponse(groups: ComplianceReportHeadlineGroupModel[]): void {
+    const withoutHeadline = this.translate.instant('Without report headline');
+    // The PAGE budget, spent in server order. A section is one report
+    // headline, and a result can hold dozens of small ones that each stay
+    // under the per-section cap while the whole 5000-row server allowance
+    // reaches the DOM. Once this is spent the remaining sections render
+    // collapsed — heading, true row count, `Vis alle` — rather than not at all.
+    let revealed = 0;
+    this.sections = buildComplianceReportSections(groups, withoutHeadline).map((section) => {
+      const rendered = this.renderSection(section, revealed);
+      revealed += rendered.rows.length;
+      return rendered;
+    });
+    this.hasFetched = true;
+
+    // The row count of THIS view. Every case is in exactly ONE headline
+    // section (#1188), so the sum over sections is the number of answered
+    // cases — the same number the Rapport export writes.
+    //
+    // The call is load-bearing rather than contract parity:
+    // `ComplianceReportFiltersComponent.canDownload` is
+    // `!!exportFormat && state.reportVisible && state.total > 0` and drives
+    // `[disabled]` on `#complianceDownloadBtn`. Drop it and Download stays dead
+    // after a Rapport fetch. The pagination chrome is NOT a reader — the shell
+    // hides the whole <nav> outside Detaljer.
+    this.state.setTotalCount(
+      this.sections.reduce((sum, section) => sum + section.allRows.length, 0),
+    );
+  }
+
+  /**
+   * `revealedBefore` is how many rows the sections ABOVE this one already put in
+   * the DOM. A section renders the smaller of its own cap and what is left of
+   * the page budget — which is 0 once the budget is spent, and then it renders
+   * as a heading with a row count and a `Vis alle` button.
+   *
+   * `expanded` is derived from what was actually rendered, not from which of the
+   * two limits bit, so the reveal control and its "Viser X af Y" line are the
+   * same for both reasons and `expandSection` needs no branch.
+   */
+  private renderSection(
+    section: ComplianceReportSection,
+    revealedBefore: number,
+  ): ComplianceReportRenderedSection {
+    const allRows = section.cases.map((c) => this.toRowVm(c));
+    const budgetLeft = Math.max(0, COMPLIANCE_REPORT_PAGE_ROW_BUDGET - revealedBefore);
+    const visible = Math.min(allRows.length, COMPLIANCE_REPORT_SECTION_ROW_CAP, budgetLeft);
+    return {
+      ...section,
+      gridColumns: this.buildGridColumns(section),
+      allRows,
+      rows: allRows.slice(0, visible),
+      expanded: visible === allRows.length,
+    };
+  }
+
+  private toRowVm(caseModel: ComplianceReportCaseModel): ComplianceReportRowVm {
+    const renderableImages = (caseModel.images ?? []).filter(
+      (image): image is ComplianceReportImageModel & {fileName: string} =>
+        !!image?.fileName,
+    );
+    return {
+      complianceId: caseModel.complianceId,
+      sdkCaseId: caseModel.sdkCaseId,
+      // The CASE's own template — a section spans templates (#1188), so the
+      // section has no single one to hand down.
+      checkListId: caseModel.checkListId ?? 0,
+      propertyName: caseModel.propertyName,
+      doneBy: complianceWorkerNames(caseModel.workerNames),
+      doneAt: caseModel.doneAt,
+      title: caseModel.title,
+      imagesCount: caseModel.imagesCount ?? 0,
+      // ONE filtered pass, so `imageNames` and `imageThumbnailNames` cannot
+      // drift out of alignment: an image without a usable full-size name is
+      // dropped from both.
+      imageNames: renderableImages.map((image) => image.fileName),
+      imageThumbnailNames: renderableImages.map(
+        (image) => image.thumbnailFileName || null,
+      ),
+      completed: !!caseModel.completed,
+      // Carried through untouched. It is read ONLY through
+      // `complianceAnswerText(row, column.answerKey)`.
+      cells: caseModel.cells ?? {},
+    };
+  }
+
+  /**
+   * Fixed metadata → the template's answer fields → actions.
+   *
+   * Order is the PROTOTYPE's (`renderReportTableHead`, compliance.js:1708-1721):
+   * `ID, Ejendom, Udført af, Udført dato, Område, Billeder`, i.e. Udført af
+   * BEFORE Udført dato — which is not the order `report-table.component.ts:71-86`
+   * uses. The prototype is the signed-off design (#1167 §3).
+   *
+   * Pinning is mtx-grid's `pinned`, NOT the prototype's `applyFrozenColumnOffsets`
+   * measure-and-write loop over every `<tr>` (#1167 §5). One constraint comes
+   * with it: `MtxGrid._countPinnedPosition` computes each pinned column's offset
+   * as the sum of `parseFloat(col.width || '80px')` of the pinned columns before
+   * it, so EVERY pinned column must carry an explicit `width` or the offsets are
+   * computed against a fictitious 80 px and the frozen block overlaps itself.
+   *
+   * Six frozen columns is ~730 px of the viewport. That is the prototype's own
+   * boundary minus its seventh column, which was an artefact of its fabricated
+   * `Note` column; the widths below are the tightest that still fit the content.
+   */
+  private buildGridColumns(section: ComplianceReportSection): ComplianceReportGridColumn[] {
+    const columns: ComplianceReportGridColumn[] = [
+      {
+        field: 'sdkCaseId',
+        header: this.translate.stream('Id'),
+        width: '80px',
+        pinned: 'left',
+        class: 'is-num',
+      },
+      {
+        field: 'propertyName',
+        header: this.translate.stream('Property'),
+        width: '150px',
+        pinned: 'left',
+      },
+      {
+        field: 'doneBy',
+        header: this.translate.stream('Completed by'),
+        width: '140px',
+        pinned: 'left',
+      },
+      {
+        field: 'doneAt',
+        // NOT the existing 'Completed date' key: its Danish is `Udført`, and
+        // #1169's export renders this same column as `Udført dato`. A user must
+        // not see one Danish word on screen and another in the file they
+        // download from that screen.
+        header: this.translate.stream('Completion date'),
+        // `type: 'date'` renders through `_getText`, so a case with no
+        // completion timestamp lands on `emptyValuePlaceholder`, i.e. the same
+        // en dash every other empty cell uses. `timezone: 'utc'` matches
+        // `report-table.component.ts:73`, which renders the same field.
+        type: 'date',
+        typeParameter: {format: 'dd.MM.y', timezone: 'utc'},
+        width: '110px',
+        pinned: 'left',
+      },
+      {
+        field: 'title',
+        header: this.translate.stream('Area'),
+        width: '170px',
+        pinned: 'left',
+      },
+      {
+        field: 'imagesCount',
+        header: this.translate.stream('Pictures'),
+        width: '80px',
+        pinned: 'left',
+        cellTemplate: this.imagesTpl,
+      },
+    ];
+
+    // De-duplicated by KEY. MatTable throws `Duplicate column definition name`
+    // and renders NOTHING for the whole grid if two entries of
+    // `displayedColumns` match, so a projection that ever emitted one field
+    // twice would take the entire sub-report down rather than showing one
+    // column twice. The server builds each section's columns as a
+    // de-duplicated union of its templates' distinct fields (#1188), so this
+    // should not fire; it costs one Set and removes a whole failure mode.
+    const seenKeys = new Set<string>();
+    for (const column of section.columns) {
+      if (!column?.key || seenKeys.has(column.key)) {
+        continue;
+      }
+      seenKeys.add(column.key);
+      columns.push({
+        // mtx-grid requires a unique `field`, and it is what the sticky/pin
+        // bookkeeping keys off. It deliberately does NOT resolve the value:
+        // the cell template reads `answerKey` out of the KEYED bag instead, so
+        // a missing key is a dash in place rather than an empty string (which
+        // is what `field: 'cells.' + key` would render — MtxGridCell._getText
+        // maps `undefined` to '' and only `null`/''/[] to the placeholder).
+        // `answer_` prefixed rather than the bare key: mtx-grid feeds
+        // `field` straight into MatTable's `displayedColumns`, which turns it
+        // into a `mat-column-{field}` class, and the prefix also guarantees no
+        // answer column can ever collide with one of the six fixed fields
+        // above. Underscore, not a colon — a colon in a generated class name
+        // needs escaping in every selector that would ever touch it.
+        field: `answer_${column.key}`,
+        answerKey: column.key,
+        header: column.label || column.key,
+        cellTemplate: this.answerTpl,
+      });
+    }
+
+    columns.push({
+      field: 'actions',
+      header: this.translate.stream('Actions'),
+      width: '110px',
+      pinned: 'right',
+      cellTemplate: this.actionsTpl,
+    });
+
+    return columns;
+  }
+
+  // -------------------------------------------------------------------
+  // Cell rendering
+  // -------------------------------------------------------------------
+
+  /**
+   * KEYED, never positional. Exposed to the template so the lookup that makes
+   * this view correct is the one line the template calls.
+   */
+  answerText(row: ComplianceReportRowVm, column: ComplianceReportGridColumn): string {
+    return complianceAnswerText(row, column?.answerKey);
+  }
+
+  /**
+   * The i18n KEY for `1 billede` / `{n} billeder` (compliance.js:1621). The
+   * count is interpolated by the `translate` PIPE in the template, not resolved
+   * here.
+   *
+   * Deliberately not `translate.instant`. The Billeder cell's label is read by
+   * a screen reader and shown as a tooltip, and `instant` resolves against
+   * whatever language happened to be loaded at that change-detection pass; the
+   * pipe subscribes to `onLangChange` and re-renders itself, exactly like the
+   * four `| translate` bindings in the Handlinger cell next door and like the
+   * `translate.stream` this component uses for the column HEADERS. A cell whose
+   * header follows a live language switch while its own tooltip does not is the
+   * divergence this avoids.
+   *
+   * The key returned here carries a `{{count}}` placeholder, which is why it is
+   * produced in TypeScript rather than written inline: Angular terminates a
+   * `{{ … }}` interpolation at the first `}}`, so the literal is a template
+   * parse error anywhere an interpolation could see it.
+   */
+  imagesLabelKey(count: number): string {
+    return count === 1 ? KEY_IMAGES_ONE : KEY_IMAGES_MANY;
+  }
+
+  /**
+   * `{count}` for the key above. A FRESH object every call is fine and does not
+   * re-translate: `TranslatePipe.transform` short-circuits on a DEEP `equals`
+   * of both the key and the params, so an equal object hits the cached value.
+   */
+  imagesLabelParams(count: number): {count: number} {
+    return {count};
+  }
+
+  /**
+   * `{id}` for `KEY_COLUMNS_UNAVAILABLE_FOR_TEMPLATE`. Same caching argument as
+   * `imagesLabelParams`, and a method rather than an inline object literal
+   * because `{id: x} }}` puts a `}}` inside an interpolation.
+   */
+  templateNoticeParams(checkListId: number): {id: number} {
+    return {id: checkListId};
+  }
+
+  /**
+   * A case whose attachment count is > 0 but whose file names could not be
+   * derived has nothing to show, so the cell stays the plain non-interactive
+   * count it was before #1168. A button that opens an empty gallery is worse
+   * than a number.
+   */
+  canOpenGallery(row: ComplianceReportRowVm): boolean {
+    return row.imageNames.length > 0;
+  }
+
+  /**
+   * The Billeder cell's one job (#1168): open the shared lightbox on THIS
+   * case's images, at index 0.
+   *
+   * `CalendarImageLightboxComponent` is declared in CalendarModule and exported
+   * from it; this module already imports CalendarModule for the completion
+   * modal, so nothing had to be moved. The header fields it renders — case id,
+   * task title, property name — all come off the row that was clicked.
+   *
+   * `thumbnails` is what turns the 64x64 strip on: the lightbox renders it only
+   * for an opener that hands it real server-emitted `_300_` names, so that a
+   * caller without them (the calendar's task card) is not made to re-download
+   * full-resolution images to fill it. `imageThumbnailNames` is index-aligned
+   * with `imageNames` by construction — one filtered pass builds both.
+   *
+   * SECURITY, pre-existing and NOT widened here: the images are fetched from
+   * `GET api/template-files/get-image/{fileName}.{ext}`, which carries a bare
+   * [Authorize] and performs NO per-case authorization, so any authenticated
+   * user who holds a derived file name can fetch that image. Filed as
+   * microting/eform-angular-frontend#8035; it is a breaking change to that
+   * endpoint's signature across ~21 call sites plus the gRPC/mobile paths and
+   * does not belong to this issue.
+   */
+  openGallery(row: ComplianceReportRowVm): void {
+    if (!this.canOpenGallery(row)) {
+      return;
+    }
+    this.dialog.open(CalendarImageLightboxComponent, {
+      ...dialogConfigHelper(this.overlay, {
+        images: row.imageNames,
+        thumbnails: row.imageThumbnailNames,
+        startIndex: 0,
+        caseId: row.sdkCaseId,
+        caseTitle: row.title,
+        propertyName: row.propertyName,
+      } as CalendarImageLightboxData),
+      // Esc + backdrop click must close it (dialogConfigHelper defaults to
+      // disableClose: true).
+      disableClose: false,
+      maxWidth: '95vw',
+      // Reaches the CDK overlay pane so the lightbox can go full-bleed below
+      // 720px; styled by the lightbox's own stylesheet.
+      panelClass: 'calendar-lightbox-panel',
+    });
+  }
+
+  trackBySection(_: number, section: ComplianceReportRenderedSection): string {
+    return section.key;
+  }
+
+  trackByRow = (_: number, row: ComplianceReportRowVm): number => row.complianceId;
+
+  // -------------------------------------------------------------------
+  // Large results: reveal per sub-report
+  // -------------------------------------------------------------------
+
+  expandSection(section: ComplianceReportRenderedSection): void {
+    // A NEW array identity, not a push: mtx-grid's `[data]` is an input and a
+    // mutated-in-place array would not re-render.
+    section.rows = section.allRows;
+    section.expanded = true;
+  }
+
+  // -------------------------------------------------------------------
+  // Meta line
+  // -------------------------------------------------------------------
+
+  /**
+   * Property and calendar NAMES for the meta line.
+   *
+   * Loaded here rather than read off the filter bar: the two components are
+   * siblings with no shared reference-data surface, and threading labels
+   * through `ComplianceReportStateService` would mean the filter bar
+   * re-publishing them from four call sites, any one of which can be missed.
+   * The cost is one dictionary GET per mount of this view, plus one boards GET
+   * only when a calendar filter is actually set. Neither touches
+   * `setLoading()` — reference data is not a fetch (#1163).
+   */
+  private loadMetaReferenceData(): void {
+    if (this.state.filters.propertyId != null) {
+      this.propertiesService
+        .getAllPropertiesDictionary()
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((res) => {
+          if (res && res.success) {
+            this.properties = res.model ?? [];
+          }
+        });
+    }
+    const propertyId = this.state.filters.propertyId;
+    if (propertyId != null && this.state.filters.boardIds.length > 0) {
+      this.calendarService
+        .getBoards(propertyId)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((res) => {
+          if (res && res.success) {
+            this.boards = res.model ?? [];
+          }
+        });
+    }
+  }
+
+  /**
+   * `Alle` — the prototype's word for an unfiltered dimension (`Ejendom: Alle`),
+   * not `Alle ejendomme`, which would read as `Ejendom: Alle ejendomme`.
+   */
+  get propertyLabel(): string {
+    const propertyId = this.state.filters.propertyId;
+    if (propertyId == null) {
+      return this.translate.instant('All');
+    }
+    const match = this.properties.find((p) => p.id === propertyId);
+    // Until the dictionary lands the id is the honest answer — an empty label
+    // would read as "no property filter", which is the opposite of the truth.
+    return match ? match.name : `#${propertyId}`;
+  }
+
+  get boardLabel(): string {
+    const boardIds = this.state.filters.boardIds;
+    if (boardIds.length === 0) {
+      return this.translate.instant('All');
+    }
+    const names = boardIds.map((id) => this.boards.find((b) => b.id === id)?.name ?? `#${id}`);
+    return names.join(', ');
+  }
+
+  /** `01.01.2026 – 03.09.2026`, or empty for an incomplete `Sæt periode` range. */
+  get periodLabel(): string {
+    const bounds = this.state.periodBounds;
+    if (!bounds) {
+      return '';
+    }
+    return `${formatComplianceReportDate(bounds.from)} – ${formatComplianceReportDate(bounds.to)}`;
+  }
+
+  // -------------------------------------------------------------------
+  // Actions
+  // -------------------------------------------------------------------
+
+  /**
+   * `Rediger`. Only completed cases have anything to edit (compliance.js:1645),
+   * and only a row that knows its OWN template can be routed to the editor —
+   * `checkListId` is per case since #1188, not per section.
+   */
+  canEdit(row: ComplianceReportRowVm): boolean {
+    return row.completed && row.sdkCaseId > 0 && row.checkListId > 0;
+  }
+
+  /**
+   * Opens the real eForm editor for THAT case, by navigating to the case route
+   * the sibling reports page already uses for exactly this job
+   * (`report-container.component.ts:205-207`).
+   *
+   * DELIBERATELY NOT `ComplianceCaseModalComponent`, which #1167 §7 recommends.
+   * (That component no longer exists — #1205 deleted it as dead code; the
+   * reasoning below is why it was never wired up here in the first place.)
+   * That modal wrote `replyRequest.siteId = data.workerId` on save and PUT it
+   * through the client's `updateCase()` to `compliances/cases`, whose C# handler
+   * `BackendConfigurationCompliancesService.Update(ReplyRequest)` assigns it
+   * straight to `foundCase.SiteId` — so opening it without a real worker id
+   * RE-HOMES the SDK case to site 0. #1166's `ComplianceReportCaseModel` carries worker NAMES and
+   * no site ids (the same gap #1165 hit on `assigneeIds`), and the only producer
+   * of that id is the calendar's `prepare-complete`, which needs an
+   * `areaRulePlanningId` this DTO does not carry either. The case route takes
+   * `sdkCaseId / templateId / planningId`, writes no site id, and its third
+   * segment is read into a field the page never uses — so the compliance id is
+   * passed there, giving the URL a meaningful value rather than a filler. The
+   * template segment is the ROW's own `checkListId`: a headline section mixes
+   * templates, so the section cannot supply it.
+   *
+   * The cost, accepted: a full navigation discards the fetched result. The
+   * filters survive (the state service lives on the cached lazy module ref),
+   * but `enterPage()` forces Rapport back to its un-fetched state, so the
+   * return lands on the placeholder until a filter change re-queries it (or
+   * `Oversigt` resets). Going back to a modal is no longer a flag flip: #1205
+   * deleted the component, so it would have to be re-created — and only once
+   * the row DTO carries a real site id.
+   */
+  onEdit(row: ComplianceReportRowVm): void {
+    if (!this.canEdit(row)) {
+      return;
+    }
+    this.router
+      .navigate(
+        ['/plugins/backend-configuration-pn/case', row.sdkCaseId, row.checkListId, row.complianceId],
+        {queryParams: {reverseRoute: this.router.url}},
+      )
+      .then();
+  }
+
+  /**
+   * `Slet`, on EVERY row — the divergence from Detaljer, which renders it for
+   * not-completed rows only (compliance.js:1246 vs :1652).
+   */
+  openDeleteConfirm(row: ComplianceReportRowVm): void {
+    this.pendingDeleteId = row.complianceId;
+    this.deleteDialogRef = this.dialog.open(this.deleteConfirmTpl, {autoFocus: false});
+    this.deleteDialogRef.afterClosed().pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.deleteDialogRef = null;
+      this.pendingDeleteId = null;
+    });
+  }
+
+  cancelDelete(): void {
+    this.closeDeleteDialog();
+  }
+
+  /**
+   * Deletes the COMPLIANCE LOG ROW through the existing endpoint
+   * (`DELETE api/backend-configuration-pn/compliances/delete/{id}`) and nothing
+   * else. That endpoint is shared with the standalone `/compliances` table and
+   * with task-tracker, so neither it nor `deleteCompliance()` is touched here —
+   * this is a new caller of an unchanged method.
+   */
+  confirmDelete(): void {
+    const id = this.pendingDeleteId;
+    this.closeDeleteDialog();
+    if (id == null) {
+      return;
+    }
+    this.compliancesService
+      .deleteCompliance(id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((res) => {
+        if (res?.success) {
+          this.refresh$.next();
+        }
+      });
+  }
+
+  private closeDeleteDialog(): void {
+    this.deleteDialogRef?.close();
+    this.deleteDialogRef = null;
+    this.pendingDeleteId = null;
+  }
+}

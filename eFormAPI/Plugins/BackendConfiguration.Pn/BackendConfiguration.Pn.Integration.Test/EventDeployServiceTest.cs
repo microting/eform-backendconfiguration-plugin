@@ -92,7 +92,7 @@ public class EventDeployServiceTest : TestBaseSetup
     /// Build the SUT against the contexts inherited from <see cref="TestBaseSetup"/>.
     /// Pass a custom <paramref name="logger"/> when the test needs to inspect log
     /// output (idempotence-guard test); otherwise defaults to
-    /// <see cref="NullLogger{T}.Instance"/>.
+    /// <see cref="TestContextLogger{T}.Instance"/>.
     /// </summary>
     private EventDeployService MakeService(
         IBackendConfigurationCalendarService calendar,
@@ -107,7 +107,7 @@ public class EventDeployServiceTest : TestBaseSetup
             ItemsPlanningPnDbContext!,
             coreHelper,
             sp,
-            logger ?? NullLogger<EventDeployService>.Instance);
+            logger ?? TestContextLogger<EventDeployService>.Instance);
     }
 
     /// <summary>
@@ -920,8 +920,11 @@ public class EventDeployServiceTest : TestBaseSetup
     // Positive counterpart to the pin test above, locking in the #932/#1377
     // guard RELAXATION. The on-demand calendar materialisation now lets a user
     // complete a future/on-demand occurrence on behalf of ANY active worker of
-    // the event's PROPERTY (the worker pickers list every property worker, same
-    // source as GetLinkedSites). Such a worker is legitimately tied to the event
+    // the event's PROPERTY. Note the picker (GetLinkedSites) lists only the
+    // NON-RESIGNED property workers since #1184, while this guard deliberately
+    // still accepts any active PropertyWorker, resigned or not, so completing on
+    // behalf of a since-resigned worker via the API stays possible (asymmetric
+    // by decision — #1184, decision 2). Such a worker is legitimately tied to the event
     // even though it is NOT in the planning's PlanningSites, so the guard's
     // second branch (PropertyWorkers probe) must accept it and DEPLOY rather
     // than throw. Setup mirrors the pin test (target site absent from
@@ -1200,7 +1203,7 @@ public class EventDeployServiceTest : TestBaseSetup
             try
             {
                 var service = new EventDeployService(
-                    bc, ip, coreHelper, sp, NullLogger<EventDeployService>.Instance);
+                    bc, ip, coreHelper, sp, TestContextLogger<EventDeployService>.Instance);
                 // Release all passes simultaneously (timeout guards against a hang
                 // if a sibling task faulted before reaching the gate).
                 startGate.SignalAndWait(TimeSpan.FromSeconds(60));

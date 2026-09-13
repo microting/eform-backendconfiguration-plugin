@@ -33,6 +33,7 @@ using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
 using BackendConfiguration.Pn.Services.CalendarChangeNotification;
 using BackendConfiguration.Pn.Services.CalendarConfigurationBackfillService;
 using BackendConfiguration.Pn.Services.EventDeployService;
+using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
@@ -101,7 +102,7 @@ public class CalendarConversionRenderTests : TestBaseSetup
         _sut = new CalendarConfigurationBackfillService(
             BackendConfigurationPnDbContext!,
             ItemsPlanningPnDbContext!,
-            NullLogger<CalendarConfigurationBackfillService>.Instance);
+            TestContextLogger<CalendarConfigurationBackfillService>.Instance);
     }
 
     private async Task<Property> SeedProperty()
@@ -207,9 +208,10 @@ public class CalendarConversionRenderTests : TestBaseSetup
             ItemsPlanningPnDbContext!, taskWizardService,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
             Substitute.For<ICalendarChangeNotifier>(),
-            NullLogger<BackendConfigurationCalendarService>.Instance,
+            TestContextLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
-            Substitute.For<ICalendarPastSeriesBackfillService>());
+            Substitute.For<ICalendarPastSeriesBackfillService>(),
+            new WorkerTagMembershipService(coreHelper));
     }
 
     /// <summary>
@@ -359,6 +361,20 @@ public class CalendarConversionRenderTests : TestBaseSetup
         Assert.That(febMine, Has.Count.EqualTo(1), "one occurrence in the first-Saturday week of February");
         Assert.That(febMine[0].TaskDate, Is.EqualTo("2026-02-07"), "on February's 1st Saturday");
         AssertNineToTen(febMine[0]);
+
+        // #1207 — the upgrade-path guarantee. The conversion rewrites this
+        // series to "1st Saturday" unconditionally, so its own anchor
+        // (Sat 2026-01-31, the 5th Saturday) violates the rule it was given:
+        // January's pattern date is 2026-01-03, which precedes the start date
+        // and used to be discarded, taking January's occurrence with it. Since
+        // #1207 the anchor is occurrence #1, so the start week renders it.
+        // Every legacy task-wizard monthly series whose start date is not in
+        // the first seven days of its month is in this cohort.
+        var startWeek = await QueryWeek(property.Id, new DateTime(2026, 1, 26, 0, 0, 0, DateTimeKind.Utc));
+        var startWeekMine = startWeek.Where(t => t.Id == arp.Id).ToList();
+        Assert.That(startWeekMine.Select(t => t.TaskDate), Is.EquivalentTo(new[] { "2026-01-31" }),
+            "the converted series renders on its own start date (#1207) — and only there in that week");
+        AssertNineToTen(startWeekMine[0]);
 
         // Day-of-month semantics are gone: the week containing the next
         // 31st (Tue 2026-03-31; week Mon 2026-03-30 .. Sun 2026-04-05) has NO

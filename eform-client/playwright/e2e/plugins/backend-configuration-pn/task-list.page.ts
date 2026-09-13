@@ -1,5 +1,6 @@
 import { Page, Locator } from '@playwright/test';
 import { readFileSync } from 'fs';
+import { API_TIMEOUT, ignoreUnhandledRejections, waitForApiResponse } from './wait-helpers';
 
 /**
  * Page object for the admin-only Task list page
@@ -206,8 +207,62 @@ export class TaskListPage {
     return this.row(taskName).locator(`.mat-column-${field}`);
   }
 
+  /**
+   * The `<th>` of a column — click THIS to sort. Since #1193 the Property /
+   * Report headline / eForm / Repeat / Compliance headers are sortable too
+   * (Id, Task name, Start date, Active already were). Note that mtx-grid does
+   * not put `mat-sort-header` on the `<th>` itself: it renders an inner
+   * `<div mat-sort-header>` inside the cell, so Material's `aria-sort`
+   * attribute lives on that inner element, not on the `<th>` — assert it via
+   * `sortHeader(field)`. Sorting is client-side over per-row keys, never a
+   * server round-trip, so a click is followed by a short settle, not a
+   * `waitForResponse`.
+   */
   columnHeader(field: string): Locator {
     return this.getGrid().locator(`.mat-column-${field}`).first();
+  }
+
+  /**
+   * The inner `.mat-sort-header` element of a column's `<th>` — the element
+   * Material stamps `aria-sort` on: `"none"` while the header is not the
+   * active sort, `"ascending"` / `"descending"` when it is (first click
+   * ascending, second descending, third clears — mtx-grid default).
+   */
+  sortHeader(field: string): Locator {
+    return this.columnHeader(field).locator('.mat-sort-header');
+  }
+
+  // ----- Refresh button (#1194) ------------------------------------------------------
+
+  /**
+   * `#taskListRefreshBtn` — the `mat-icon-button` that is the FIRST element of
+   * the toolbar's right-aligned group (left of `#taskListManageTagsBtn`). It
+   * is `[disabled]` while a `tasks/index` request is in flight.
+   */
+  refreshButton(): Locator {
+    return this.page.locator('#taskListRefreshBtn');
+  }
+
+  /**
+   * Clicks the refresh button and waits for the `calendar/tasks/index` POST it
+   * fires — the same reload-await rationale as `selectProperty()`: until that
+   * response lands the PREVIOUS render is still on screen, and an assertion
+   * made against it is the flake that helper's comment describes. The button
+   * also re-fetches `items-planning-pn/tags` (GET); that one is not awaited
+   * here because nothing the specs assert depends on it.
+   */
+  async clickRefresh(): Promise<void> {
+    const reload = waitForApiResponse(
+      this.page,
+      'POST /api/backend-configuration-pn/calendar/tasks/index (refresh button reload)',
+      (r) => r.url().includes('/api/backend-configuration-pn/calendar/tasks/index')
+        && r.request().method() === 'POST',
+      API_TIMEOUT,
+    );
+    ignoreUnhandledRejections(reload);
+    await this.refreshButton().click();
+    await reload;
+    await this.page.waitForTimeout(800);
   }
 
   getPaginator(): Locator {

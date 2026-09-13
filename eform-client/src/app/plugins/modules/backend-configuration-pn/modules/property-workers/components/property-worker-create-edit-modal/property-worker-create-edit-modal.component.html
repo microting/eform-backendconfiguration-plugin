@@ -450,9 +450,11 @@
                 <h3 class="section-header" *ngIf="!selectedDeviceUser.resigned && (selectAuthIsAdmin$ | async)">{{ 'Advanced settings' | translate }}</h3>
 
                 <div class="d-flex flex-row" *ngIf="!selectedDeviceUser.resigned && (selectAuthIsAdmin$ | async)">
+                  <!-- Indeterminate while the saved state is unknown: see savedAssignedSiteUnknown. -->
                   <mat-checkbox class="p-1"
                                 id="useOneMinuteIntervals"
-                                formControlName="useOneMinuteIntervals">
+                                formControlName="useOneMinuteIntervals"
+                                [indeterminate]="savedAssignedSiteUnknown">
                     <div>
                       <div>{{ 'Use 1-minute intervals' | translate }}</div>
                       <small class="checkbox-description">{{ 'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.' | translate }}</small>

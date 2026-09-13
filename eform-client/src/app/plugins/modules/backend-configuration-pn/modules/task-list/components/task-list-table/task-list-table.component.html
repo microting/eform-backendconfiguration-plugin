@@ -1,6 +1,11 @@
+<!-- [data] is `rows`, NOT `tasks`: each task widened with one scalar sort key
+     per lookup/derived column (#1193, see TaskListRow / buildTaskListRows in
+     the .ts). `[loading]` is the page's in-flight flag for tasks/index (#1194);
+     mtx-grid renders its own progress bar from it. -->
 <mtx-grid
   id="taskListGrid"
-  [data]="tasks"
+  [data]="rows"
+  [loading]="loading"
   [columns]="columns"
   [cellTemplate]="{board: boardTpl, title: titleTpl, status: statusTpl, compliance: complianceTpl}"
   [rowSelectable]="true"

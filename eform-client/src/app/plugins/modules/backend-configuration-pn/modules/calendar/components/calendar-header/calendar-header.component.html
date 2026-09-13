@@ -1,58 +1,276 @@
 <div class="calendar-header">
-  <ng-container *ngIf="viewMode !== 'compliance'">
+  <!-- What am I looking at: property (single-select) + calendars (multi-select) -->
+  <button
+    type="button"
+    id="calendarPropertyButton"
+    class="toolbar-pill property-pill"
+    [matMenuTriggerFor]="propertyMenu"
+    [matTooltip]="'Change property' | translate"
+  >
+    <span class="pill-label">{{ propertyName || ('Select property' | translate) }}</span>
+    <mat-icon class="pill-caret">expand_more</mat-icon>
+  </button>
+  <mat-menu #propertyMenu="matMenu" class="calendar-toolbar-menu calendar-property-menu">
     <button
-      class="btn-secondary btn-secondary--icon-rounded-border"
-      (click)="toggleSidebar.emit()"
-      [matTooltip]="sidebarOpen ? ('Close sidebar' | translate) : ('Open sidebar' | translate)"
+      mat-menu-item
+      type="button"
+      class="property-item"
+      *ngFor="let prop of properties"
+      [class.active]="prop.id === selectedPropertyId"
+      (click)="propertySelected.emit(prop.id)"
     >
-      <mat-icon>menu</mat-icon>
+      {{ prop.name }}
     </button>
-  </ng-container>
+  </mat-menu>
 
   <button
     type="button"
-    class="property-pill"
-    *ngIf="propertyName"
-    (click)="propertyPillClicked.emit()"
-    [matTooltip]="'Change property' | translate"
+    id="calendarBoardsButton"
+    class="toolbar-pill board-pill"
+    #boardsMenuTrigger="matMenuTrigger"
+    [matMenuTriggerFor]="boardsMenu"
+    [matTooltip]="'My calendars' | translate"
   >
-    {{ propertyName }}
+    <span class="pill-label">{{ boardsLabel }}</span>
+    <mat-icon class="pill-caret">expand_more</mat-icon>
+  </button>
+  <mat-menu #boardsMenu="matMenu" class="calendar-toolbar-menu calendar-boards-menu">
+    <!-- stopPropagation on CLICK only: the menu panel closes on any click that
+         reaches it (MatMenu's panel carries `(click)="closed.emit('click')"`),
+         which would shut a multi-select after every checkbox. Keydown is
+         deliberately NOT stopped — MatMenu reads Escape and the arrow keys off
+         the overlay's keydown events, and every row below is a real
+         `mat-menu-item`, so the panel's FocusKeyManager can drive them. -->
+    <div class="boards-panel" (click)="$event.stopPropagation()">
+      <div class="boards-bulk-actions">
+        <button
+          mat-menu-item
+          type="button"
+          id="calendarBoardsSelectAll"
+          class="board-bulk-action"
+          (click)="selectAllBoards.emit()"
+        >
+          {{ 'Select all' | translate }}
+        </button>
+        <button
+          mat-menu-item
+          type="button"
+          id="calendarBoardsClear"
+          class="board-bulk-action"
+          (click)="clearBoards.emit()"
+        >
+          {{ 'Clear' | translate }}
+        </button>
+      </div>
+
+      <div class="board-list">
+        <div class="board-item" *ngFor="let board of boards">
+          <button
+            mat-menu-item
+            type="button"
+            role="menuitemcheckbox"
+            class="board-row-toggle"
+            [attr.aria-checked]="isBoardActive(board.id)"
+            (click)="boardToggled.emit(board.id)"
+          >
+            <span
+              class="board-checkbox"
+              [class.active]="isBoardActive(board.id)"
+              [style.background]="isBoardActive(board.id) ? board.color : 'transparent'"
+              [style.border-color]="isBoardActive(board.id) ? board.color : '#9e9e9e'"
+            >
+              <mat-icon *ngIf="isBoardActive(board.id)" class="board-check-icon" [style.color]="boardTextColor(board.color)">check</mat-icon>
+            </span>
+            <span class="board-name">{{ board.name }}</span>
+          </button>
+          <!-- Outside the row button, because a button cannot nest inside a
+               button — but still a `mat-menu-item`, which is what makes this a
+               real MatMenu SUBMENU trigger. As a plain icon-button inside a
+               menu it had `_parentMaterialMenu` set but `_menuItemInstance`
+               null, so MatMenuTrigger's hover guard
+               (`filter(active => active !== this._menuItemInstance)`) was
+               always true and any row hover closed the open submenu. Being a
+               menu item also puts it in the panel's FocusKeyManager, so arrow
+               keys reach it and Right-Arrow/Enter opens it. -->
+          <button
+            mat-menu-item
+            type="button"
+            class="board-menu-btn"
+            [matMenuTriggerFor]="boardMenu"
+            [attr.aria-label]="'Calendar actions' | translate"
+          >
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <!-- #1210: the row actions are three plain menu items, and every one
+               of them closes the calendars dropdown before handing over to a
+               dialog. The inline rename input that used to live here is gone —
+               with no text field in the panel there is no FocusKeyManager
+               typeahead to fight, so no keydown guard is needed either. -->
+          <mat-menu #boardMenu="matMenu" class="board-actions-menu">
+            <button
+              mat-menu-item
+              type="button"
+              class="board-action board-action-edit"
+              (click)="boardsMenuTrigger.closeMenu(); editBoard.emit(board)"
+            >
+              <mat-icon fontSet="material-symbols-outlined">edit_square</mat-icon>
+              <span>{{ 'Edit' | translate }}</span>
+            </button>
+            <button
+              mat-menu-item
+              type="button"
+              class="board-action board-action-duplicate"
+              (click)="boardsMenuTrigger.closeMenu(); duplicateBoard.emit(board)"
+            >
+              <mat-icon fontSet="material-symbols-outlined">content_copy</mat-icon>
+              <span>{{ 'Duplicate' | translate }}</span>
+            </button>
+            <button
+              mat-menu-item
+              type="button"
+              class="board-action board-action-delete btn-delete-menu"
+              (click)="boardsMenuTrigger.closeMenu(); deleteBoard.emit(board)"
+            >
+              <mat-icon fontSet="material-symbols-outlined">delete</mat-icon>
+              <span>{{ 'Delete' | translate }}</span>
+            </button>
+          </mat-menu>
+        </div>
+      </div>
+
+      <button
+        mat-menu-item
+        type="button"
+        id="calendarCreateBoardBtn"
+        class="board-create-action"
+        (click)="boardsMenuTrigger.closeMenu(); createBoard.emit()"
+      >
+        <mat-icon class="board-create-icon">add</mat-icon>
+        <span>{{ 'Create calendar' | translate }}</span>
+      </button>
+    </div>
+  </mat-menu>
+
+  <!-- Who (#1211): ONE dropdown over two peer filters — worker tags ("teams")
+       and the property's workers. Multi-select, applied on change: there is no
+       confirmation step and no Apply button, matching the task-list filter row.
+
+       Built as a mat-menu pill rather than an mtx-select because the acceptance
+       criterion is a BUTTON whose label names the current filter — an
+       mtx-select renders chips, and its `mat-form-field` is capped at 320px by
+       a global theme rule. This also makes it the same control as the calendars
+       picker beside it, which is what "mirror the three-form pattern" asks for.
+
+       Teams are shipped ENABLED: #1212 landed, so `CalendarTaskRequestModel`
+       carries `WorkerTagIds` and `ShouldIncludeTask` ORs it beside `SiteIds`
+       (and unions in team membership). -->
+  <button
+    type="button"
+    id="calendarAssigneesButton"
+    class="toolbar-pill"
+    [matMenuTriggerFor]="assigneesMenu"
+    [matTooltip]="'Teams and employees' | translate"
+  >
+    <span class="pill-label">{{ assigneesLabel }}</span>
+    <mat-icon class="pill-caret">expand_more</mat-icon>
+  </button>
+  <mat-menu #assigneesMenu="matMenu" class="calendar-toolbar-menu calendar-assignees-menu">
+    <!-- stopPropagation on CLICK only, for the same reason as the calendars
+         panel: MatMenu's panel closes on any click that reaches it, which
+         would shut a multi-select after every row. Keydown is left alone so
+         Escape and the arrow keys still reach the overlay, and every row below
+         is a real `mat-menu-item` the panel's FocusKeyManager can drive. -->
+    <div class="assignees-panel" (click)="$event.stopPropagation()">
+      <!-- The reset entry. Clearing BOTH lists is one dispatch and one grid
+           reload; it is not a "select all", which would mean something else
+           entirely here (see `assigneesLabel`). -->
+      <button
+        mat-menu-item
+        type="button"
+        id="calendarAssigneesClear"
+        class="assignee-reset-action"
+        [class.active]="activeTeamIds.length === 0 && activeSiteIds.length === 0"
+        (click)="clearAssignees.emit()"
+      >
+        {{ 'All employees' | translate }}
+      </button>
+
+      <div class="assignee-scroll">
+        <!-- Teams first, matching the mock-up's ordering. Hidden when the
+             property's installation has no worker groups with members at all
+             — an empty heading over nothing is noise, and #1213 already
+             guarantees every listed tag has a member to filter by. -->
+        <div class="assignee-section" *ngIf="teams.length > 0">
+          <div class="assignee-section-heading" id="calendarTeamsHeading">{{ 'Teams' | translate }}</div>
+          <button
+            mat-menu-item
+            type="button"
+            role="menuitemcheckbox"
+            class="assignee-row team-row"
+            *ngFor="let team of teams"
+            [attr.aria-checked]="isTeamActive(team.id)"
+            (click)="teamToggled.emit(team.id)"
+          >
+            <span class="assignee-checkbox" [class.active]="isTeamActive(team.id)">
+              <mat-icon *ngIf="isTeamActive(team.id)" class="assignee-check-icon">check</mat-icon>
+            </span>
+            <span class="assignee-name">{{ team.name }}</span>
+          </button>
+        </div>
+
+        <div class="assignee-section" *ngIf="employees.length > 0">
+          <div class="assignee-section-heading" id="calendarEmployeesHeading">{{ 'Employees' | translate }}</div>
+          <button
+            mat-menu-item
+            type="button"
+            role="menuitemcheckbox"
+            class="assignee-row employee-row"
+            *ngFor="let employee of employees"
+            [attr.aria-checked]="isEmployeeActive(employee.id)"
+            (click)="employeeToggled.emit(employee.id)"
+          >
+            <span class="assignee-checkbox" [class.active]="isEmployeeActive(employee.id)">
+              <mat-icon *ngIf="isEmployeeActive(employee.id)" class="assignee-check-icon">check</mat-icon>
+            </span>
+            <span class="assignee-name">{{ employee.name }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </mat-menu>
+
+  <span class="toolbar-divider" role="separator"></span>
+
+  <!-- When -->
+  <button
+    class="btn-secondary btn-secondary--icon-rounded-border"
+    (click)="goToToday.emit()"
+    [matTooltip]="'Today' | translate"
+  >
+    {{ 'Today' | translate }}
   </button>
 
-  <ng-container *ngIf="viewMode !== 'compliance'">
-    <button
-      class="btn-secondary btn-secondary--icon-rounded-border"
-      (click)="goToToday.emit()"
-      [matTooltip]="'Today' | translate"
-    >
-      {{ 'Today' | translate }}
-    </button>
-  </ng-container>
+  <button
+    class="btn-secondary btn-secondary--icon-rounded-border"
+    (click)="navigate.emit(-1)"
+    [matTooltip]="prevTooltipKey | translate"
+  >
+    <mat-icon color="primary">chevron_left</mat-icon>
+  </button>
+  <button
+    class="btn-secondary btn-secondary--icon-rounded-border"
+    (click)="navigate.emit(1)"
+    [matTooltip]="nextTooltipKey | translate"
+  >
+    <mat-icon color="primary">chevron_right</mat-icon>
+  </button>
 
-  <ng-container *ngIf="viewMode !== 'compliance'">
-    <button
-      class="btn-secondary btn-secondary--icon-rounded-border"
-      (click)="navigate.emit(-1)"
-      [matTooltip]="prevTooltipKey | translate"
-    >
-      <mat-icon color="primary">chevron_left</mat-icon>
-    </button>
-    <button
-      class="btn-secondary btn-secondary--icon-rounded-border"
-      (click)="navigate.emit(1)"
-      [matTooltip]="nextTooltipKey | translate"
-    >
-      <mat-icon color="primary">chevron_right</mat-icon>
-    </button>
-  </ng-container>
-
-  <ng-container *ngIf="viewMode !== 'compliance'">
-    <span class="date-range">{{ displayDate }}</span>
-    <span class="week-badge" *ngIf="viewMode === 'week' && weekBadge">{{ weekBadge }}</span>
-  </ng-container>
+  <span class="date-range">{{ displayDate }}</span>
+  <span class="week-badge" *ngIf="viewMode === 'week' && weekBadge">{{ weekBadge }}</span>
 
   <span class="spacer"></span>
 
+  <!-- How -->
   <div class="text-field--rounded">
     <mat-form-field>
       <mtx-select id="calendarViewModeSelect" [ngModel]="viewMode" (ngModelChange)="viewModeChange.emit($event)" [items]="viewModeOptions" bindValue="value" bindLabel="label" [clearable]="false"></mtx-select>

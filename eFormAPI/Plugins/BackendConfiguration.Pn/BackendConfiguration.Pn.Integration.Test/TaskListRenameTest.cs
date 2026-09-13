@@ -33,6 +33,7 @@ using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
 using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
 using BackendConfiguration.Pn.Services.CalendarChangeNotification;
 using BackendConfiguration.Pn.Services.EventDeployService;
+using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure.Constants;
@@ -232,7 +233,7 @@ public class TaskListRenameTest : TestBaseSetup
         // exactly what would make the dual-write assertion vacuous.
         var retraction = new CalendarOccurrenceRetractionService(
             BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, coreHelper,
-            NullLogger<CalendarOccurrenceRetractionService>.Instance);
+            TestContextLogger<CalendarOccurrenceRetractionService>.Instance);
 
         var wizard = new BackendConfigurationTaskWizardService(
             new BackendConfigurationLocalizationService(),
@@ -242,7 +243,7 @@ public class TaskListRenameTest : TestBaseSetup
             ItemsPlanningPnDbContext!,
             Substitute.For<IEventDeployService>(),
             retraction,
-            NullLogger<BackendConfigurationTaskWizardService>.Instance);
+            TestContextLogger<BackendConfigurationTaskWizardService>.Instance);
 
         var calendarService = new BackendConfigurationCalendarService(
             new BackendConfigurationLocalizationService(),
@@ -254,9 +255,10 @@ public class TaskListRenameTest : TestBaseSetup
             wizard,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
             Substitute.For<ICalendarChangeNotifier>(),
-            NullLogger<BackendConfigurationCalendarService>.Instance,
+            TestContextLogger<BackendConfigurationCalendarService>.Instance,
             retraction,
-            Substitute.For<ICalendarPastSeriesBackfillService>());
+            Substitute.For<ICalendarPastSeriesBackfillService>(),
+            new WorkerTagMembershipService(coreHelper));
 
         // Echoes the key back, matching the plugin's convention where
         // GetString("SomeKey") is itself the message under test — so the
@@ -274,7 +276,7 @@ public class TaskListRenameTest : TestBaseSetup
             wizard,
             retraction,
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            NullLogger<BackendConfigurationTaskListService>.Instance);
+            TestContextLogger<BackendConfigurationTaskListService>.Instance);
     }
 
     // ─────────────────────────────────────────────────────────────────────────

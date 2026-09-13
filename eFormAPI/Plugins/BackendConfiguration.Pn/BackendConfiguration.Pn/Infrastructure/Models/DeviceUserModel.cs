@@ -135,6 +135,11 @@ public class DeviceUserModel
     public bool? IsManager { get; set; }
     public List<int> ManagingTagIds { get; set; } = [];
     public int? PayRuleSetId { get; set; }
+    /// <summary>
+    /// Accepted for wire compatibility but NOT read by any server path: create hardcodes
+    /// UseOneMinuteIntervals to true, and for an existing AssignedSite the flag is owned by
+    /// TimePlanning's updateAssignedSite PUT. Do not wire this back up.
+    /// </summary>
     public bool? UseOneMinuteIntervals { get; set; }
 
     public static implicit operator DeviceUserModel(Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel model)

@@ -1,4 +1,5 @@
 import { Page, Locator } from '@playwright/test';
+import { API_TIMEOUT, UI_TIMEOUT } from '../wait-helpers';
 
 export class CalendarPage {
   constructor(private page: Page) {}
@@ -11,10 +12,33 @@ export class CalendarPage {
     await this.page.locator('app-calendar-container').waitFor({ state: 'visible', timeout: 30000 });
   }
 
-  // Sidebar - select property by name
+  // Toolbar - select property by name. Since #1209 the property list lives in
+  // a mat-menu behind `#calendarPropertyButton` (the sidebar was retired), so
+  // the panel has to be opened before the `.property-item` option exists. It
+  // renders into `.cdk-overlay-container`.
+  //
+  // The pick fires loadBoards -> loadTasks; both responses are awaited rather
+  // than slept on, each `.catch(() => null)`-guarded so a call that does not
+  // fire cannot hang the helper (same shape as `task-list.page.ts`).
   async selectProperty(name: string): Promise<void> {
-    await this.page.locator('.property-item').filter({ hasText: name }).click();
-    await this.page.waitForTimeout(1000);
+    const panel = this.page.locator('.cdk-overlay-container .calendar-property-menu');
+    // Gate on the trigger's aria-expanded, not on the panel's existence: a
+    // panel mid-exit-animation is still in the DOM but takes no pointer events.
+    const trigger = this.page.locator('#calendarPropertyButton');
+    if ((await trigger.getAttribute('aria-expanded')) !== 'true') {
+      await trigger.click();
+    }
+    await panel.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    const boardsLoaded = this.page
+      .waitForResponse(r => r.url().includes('/api/backend-configuration-pn/calendar/boards/'), { timeout: API_TIMEOUT })
+      .catch(() => null);
+    const tasksLoaded = this.page
+      .waitForResponse(r => r.url().includes('/api/backend-configuration-pn/calendar/tasks/week'), { timeout: API_TIMEOUT })
+      .catch(() => null);
+    await panel.locator('.property-item').filter({ hasText: name }).click();
+    // Single-select: the menu closes itself on pick.
+    await panel.waitFor({ state: 'detached', timeout: UI_TIMEOUT });
+    await Promise.all([boardsLoaded, tasksLoaded]);
   }
 
   // Click a time slot on the calendar grid.

@@ -7,14 +7,12 @@ import {ApiBaseService} from 'src/app/common/services';
 import {OperationDataResult, OperationResult} from 'src/app/common/models';
 import {
   CalendarBoardModel,
-  CalendarComplianceReportRequestModel,
-  CalendarComplianceReportRowModel,
   CalendarPrepareCompleteResult,
   CalendarTaskCreateModel,
   CalendarTaskIndexRequestModel,
   CalendarTaskModel,
   CalendarTaskUpdateModel,
-  CalendarToggleCompleteResult,
+  CalendarTaskWeekRequestModel,
   RepeatDeleteScope,
   RepeatEditScope,
 } from '../models';
@@ -26,7 +24,6 @@ export let BackendConfigurationPnCalendarMethods = {
   MoveTask: 'api/backend-configuration-pn/calendar/tasks/move',
   ResizeTask: 'api/backend-configuration-pn/calendar/tasks/resize',
   Boards: 'api/backend-configuration-pn/calendar/boards',
-  ComplianceReport: 'api/backend-configuration-pn/calendar/compliance-report',
 };
 
 @Injectable({providedIn: 'root'})
@@ -51,33 +48,24 @@ export class BackendConfigurationPnCalendarService {
     }
   }
 
+  /**
+   * The grid's read path. Takes the whole request as one model rather than a
+   * positional argument list — see `CalendarTaskWeekRequestModel`, which also
+   * documents why `siteIds` and `workerTagIds` are ORed server-side.
+   *
+   * The model is posted as-is: no field is defaulted or dropped here, so a
+   * filter the caller forgot shows up as a compile error rather than as a
+   * silently unfiltered grid.
+   */
   getTasksForWeek(
-    propertyId: number,
-    weekStart: string,
-    weekEnd: string,
-    boardIds: number[],
-    tagNames: string[],
-    siteIds: number[] = []
+    model: CalendarTaskWeekRequestModel
   ): Observable<OperationDataResult<CalendarTaskModel[]>> {
-    return this.apiBaseService.postNoToast(BackendConfigurationPnCalendarMethods.TasksWeek, {
-      propertyId,
-      weekStart,
-      weekEnd,
-      boardIds,
-      tagNames,
-      siteIds,
-    }).pipe(tap((res) => this.notifyError(res)));
+    return this.apiBaseService.postNoToast(BackendConfigurationPnCalendarMethods.TasksWeek, model)
+      .pipe(tap((res) => this.notifyError(res)));
   }
 
   getTasksIndex(model: CalendarTaskIndexRequestModel): Observable<OperationDataResult<CalendarTaskModel[]>> {
     return this.apiBaseService.postNoToast(BackendConfigurationPnCalendarMethods.Index, model)
-      .pipe(tap((res) => this.notifyError(res)));
-  }
-
-  getComplianceReport(
-    model: CalendarComplianceReportRequestModel
-  ): Observable<OperationDataResult<CalendarComplianceReportRowModel[]>> {
-    return this.apiBaseService.postNoToast(BackendConfigurationPnCalendarMethods.ComplianceReport, model)
       .pipe(tap((res) => this.notifyError(res)));
   }
 
@@ -121,19 +109,6 @@ export class BackendConfigurationPnCalendarService {
   ): Observable<OperationResult> {
     return this.apiBaseService.putNoToast(BackendConfigurationPnCalendarMethods.ResizeTask, {id, newStartHour, newDuration, scope, originalDate})
       .pipe(tap((res) => this.notify(res)));
-  }
-
-  toggleComplete(
-    taskId: number,
-    completed: boolean,
-    complianceId: number | null | undefined,
-    occurrenceDate: string | null | undefined,
-    workerId?: number,
-  ): Observable<OperationDataResult<CalendarToggleCompleteResult>> {
-    return this.apiBaseService.putNoToast(
-      `${BackendConfigurationPnCalendarMethods.Tasks}/${taskId}/complete`,
-      {completed, complianceId: complianceId ?? null, occurrenceDate: occurrenceDate ?? null, workerId}
-    ).pipe(tap((res) => this.notify(res)));
   }
 
   prepareComplete(

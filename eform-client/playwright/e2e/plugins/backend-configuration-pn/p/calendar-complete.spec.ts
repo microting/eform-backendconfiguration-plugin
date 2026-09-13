@@ -10,6 +10,7 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
+import { UI_TIMEOUT } from '../wait-helpers';
 
 /**
  * Calendar task-completion paths suite for GitHub issue #894.
@@ -45,8 +46,9 @@ import {
  *     else completes silently in place" branch in the UI (that used to gate
  *     on the old ToggleComplete's RequiresForm flag). Every modal opened in
  *     e2e embeds the seeded task's eForm (`app-case-edit-element`), which
- *     carries mandatory fields (see calendar-compliance-view.spec.ts's seed
- *     comment). `#completeSaveBtn` is gated only on
+ *     carries mandatory fields (see `s/compliance-overview.spec.ts`'s seed
+ *     comment — inherited from `r/calendar-compliance-view.spec.ts`, deleted
+ *     by #1170). `#completeSaveBtn` is gated only on
  *     `selectedWorkerId != null && !!replyElement.doneAt` (both auto-filled
  *     for a single-worker seed), so it is *clickable* — but `saveCase()`
  *     submits the nested eForm reply via `updateCaseFromCalendar`, and
@@ -132,11 +134,11 @@ async function closeComplianceDialog(page: import('@playwright/test').Page): Pro
   if ((await modal.count()) === 0) return;
   const cancelBtn = page.locator('#completeCancelBtn');
   if ((await cancelBtn.count()) > 0) {
-    await cancelBtn.click();
+    await cancelBtn.click({ timeout: UI_TIMEOUT });
   } else {
     await page.keyboard.press('Escape');
   }
-  await modal.waitFor({ state: 'detached', timeout: 5000 }).catch(() => undefined);
+  await modal.waitFor({ state: 'detached', timeout: UI_TIMEOUT }).catch(() => undefined);
 }
 
 // Ensure the combined complete-event modal that ALWAYS appears when
@@ -185,7 +187,6 @@ test.describe.serial('Calendar task completion (#894)', () => {
 
     const calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
 
     if (seeded) {
       const folderResp = page.waitForResponse(
@@ -199,7 +200,17 @@ test.describe.serial('Calendar task completion (#894)', () => {
   });
 
   test.afterAll(async ({ browser }) => {
-    const page = await browser.newPage();
+    // browser.newPage() can itself reject — a browser that crashed or got
+    // disconnected during a long run — and an exception thrown here escapes the
+    // hook and fails the job, which is exactly what this non-fatal teardown
+    // exists to prevent. Record it and give up on cleanup instead.
+    const page = await browser.newPage().catch((err: any) => {
+      console.log(`afterAll cleanup failed (non-fatal): could not open a cleanup page: ${err?.message ?? err}`);
+      return undefined;
+    });
+    if (!page) {
+      return;
+    }
     const cleanup = async () => {
       await page.goto('http://localhost:4200');
       await new LoginPage(page).login();
@@ -563,8 +574,9 @@ test.describe.serial('Calendar task completion (#894)', () => {
   //   fixme rationale: materialization now actually happens as soon as the
   //   combined modal opens — `PrepareComplete` calls
   //   `EnsureComplianceForOccurrenceAsync` synchronously inside the
-  //   prepare-complete POST (see calendar-compliance-view.spec.ts's seed,
-  //   which already exercises this on-demand-materialize-then-cancel path).
+  //   prepare-complete POST (see `s/compliance-overview.spec.ts`'s seed, which
+  //   already exercises this on-demand-materialize-then-cancel path; it was
+  //   `r/calendar-compliance-view.spec.ts`'s until #1170 deleted that file).
   //   What remains unautomatable here is asserting the row PERSISTS through
   //   a full completion (block flips to `.completed`), which needs saving
   //   the modal — not automatable (see X03). Covered server-side (the

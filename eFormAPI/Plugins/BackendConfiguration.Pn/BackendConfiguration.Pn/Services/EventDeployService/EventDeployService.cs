@@ -495,12 +495,15 @@ public class EventDeployService(
         //    an active worker of the event's PROPERTY (PropertyWorkers).
         //
         //    The on-demand calendar materialisation now lets a user complete a
-        //    future/on-demand occurrence on behalf of ANY active property worker
-        //    (the worker pickers list every property worker, same source as
-        //    GetLinkedSites). Such a worker may not be in PlanningSites, so the
-        //    guard accepts the property-worker case too — while still refusing a
-        //    site that is neither, so a stray id can never leak a case to an
-        //    unrelated worker.
+        //    future/on-demand occurrence on behalf of ANY active property worker.
+        //    The worker pickers (GetLinkedSites) list only the NON-RESIGNED
+        //    property workers since #1184, but this guard deliberately stays
+        //    wider and accepts any active PropertyWorker, resigned or not, so
+        //    completing on behalf of a since-resigned worker via the API stays
+        //    possible (asymmetric by decision — #1184, decision 2). Such a
+        //    worker may not be in PlanningSites, so the guard accepts the
+        //    property-worker case too — while still refusing a site that is
+        //    neither, so a stray id can never leak a case to an unrelated worker.
         //
         //    The two callers uphold this: EnsureDeployedAsync site-narrows its
         //    candidates to PlanningSites (#935 defect A) and the on-demand

@@ -1,0 +1,60 @@
+// Every colour here is a theme custom property emitted by
+// scss/themes/_theme-mixin.scss, so the page follows theme-eform and
+// theme-workspace (light and dark) without a single literal. The component
+// this page replaces hardcoded ten hexes and rendered wrong under
+// theme-workspace; do not reintroduce any of them.
+.compliance-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+  padding: var(--spacing-2xl);
+  // NO `overflow-x` here. Per CSS overflow, a non-`visible` value on one axis
+  // computes the other to `auto`, which would make this a clipping/scroll
+  // container — and `mtx-select` sets no `appendTo`, so ng-select renders
+  // `.ng-dropdown-panel` INLINE: a panel taller than the padding box would be
+  // clipped or trapped in an internal scroller instead of overlaying the page.
+  // (The Material date-range picker is unaffected — it uses a CDK overlay.)
+  // Horizontal containment is already provided by `flex-wrap: wrap` on
+  // `.compliance-filters`, so the rule bought nothing.
+}
+
+.compliance-mode-toggle {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+// mat-card already carries the theme's surface, radius and border (see the
+// body.theme-eform .mat-mdc-card rule in scss/styles.scss and the workspace
+// equivalent), so the card needs no colours of its own.
+.compliance-cases-root {
+  overflow: hidden;
+
+  &__placeholder,
+  &__loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-2xl);
+    color: var(--text-secondary);
+    text-align: center;
+  }
+}
+
+.compliance-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+
+  &__gap {
+    padding: 0 var(--spacing-xs);
+    color: var(--text-secondary);
+  }
+
+  &__info {
+    color: var(--text-secondary);
+    margin-left: var(--spacing-md);
+    white-space: nowrap;
+  }
+}

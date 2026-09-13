@@ -1,0 +1,300 @@
+// Theme custom properties only — no colour literal anywhere in this file.
+// Every token used here is defined in BOTH scss/themes/_eform.scss and
+// scss/themes/_workspace.scss, in both their light and dark colour maps. The
+// calendar Compliance view this replaces hardcoded #fff / #e0e0e0 / #2e7d32 /
+// #1a73e8 and rendered wrong under theme-workspace and in dark mode.
+//
+// The pairings that carry the "done" state were picked for contrast; the
+// worker chip pairing follows the design reference (#1186):
+//   --status-aktiv-bg / --status-aktiv-fg  is #1b5e20-on-white (light) and
+//     #2e7d32-on-white (dark) in BOTH themes — 7.9:1 and 5.1:1 (computed from
+//     the token values; both clear WCAG AA).
+//   --md-primary / --md-on-primary  is the Material primary pairing. Measured
+//     ratios: white on #289694 (eform light) ≈ 3.6:1 — the platform's own
+//     primary-button pairing, but below AA for 12 px text; eform dark ≈ 9.4:1;
+//     workspace light ≈ 6.4:1; workspace dark ≈ 7.5:1. #1165 originally
+//     used the pale --md-primary-container / --md-on-surface pair for the
+//     worker chip; #1186 reverses that per the design reference (a saturated
+//     primary pill with on-primary text, exactly like the row highlight ring
+//     at .is-highlighted). Tag chips on the green done row switch to a
+//     translucent white fill/border so they read against --status-aktiv-bg:
+//     white on the 16%-white-over-green blend is ≈ 5.3:1 (light) / ≈ 3.8:1
+//     (dark) — values taken from the prototype, documented rather than changed.
+// Using --status-success for the fill instead would put white on #66BB6A in
+// eform dark (2.4:1) — a filled success surface nobody could read.
+
+.compliance-details {
+  display: flex;
+  flex-direction: column;
+
+  &__empty {
+    padding: var(--spacing-2xl);
+    text-align: center;
+    color: var(--text-secondary);
+  }
+
+  // The table scrolls inside its own box on a narrow viewport rather than
+  // making the page scroll sideways (same as Oversigt).
+  &__scroll {
+    overflow-x: auto;
+  }
+
+  // The frame, header-less body cells (12px 16px, 14px, vertically centred),
+  // the separators and the row hover all come from the theme's native
+  // data-table rules — `table.table` in _workspace-utilities.scss §8, under
+  // body.theme-workspace. Classic does not style `table.table`. Each theme's
+  // own additions (the week heading among them) are at the bottom of this file.
+  &__table {
+    width: 100%;
+  }
+
+  // The user agent centres a <th>; the week heading reads left in both themes.
+  &__week-title {
+    text-align: left;
+  }
+
+  // Cells are anchored on the row (0,4,0 with encapsulation) so they
+  // out-specify the theme's `table.table td` (0,2,3), which sets colour and
+  // weight on every body cell.
+  &__row {
+    &.is-clickable {
+      cursor: pointer;
+    }
+
+    // The keyboard focus ring and the post-completion ring look the same: an
+    // inset outline, so it does not shift the row, and it sits over the cells'
+    // own backgrounds.
+    &:focus-visible,
+    &.is-highlighted {
+      outline: 2px solid var(--md-primary);
+      outline-offset: -2px;
+    }
+
+    > .compliance-details__date,
+    > .compliance-details__property,
+    > .compliance-details__time {
+      white-space: nowrap;
+    }
+
+    > .compliance-details__property {
+      color: var(--text-secondary);
+    }
+
+    > .compliance-details__board {
+      font-weight: var(--font-weight-medium);
+    }
+
+    // Shrink-to-fit: these two columns are only as wide as the circle and
+    // the icon button; the free width goes to the title column.
+    > .compliance-details__status,
+    > .compliance-details__actions {
+      width: 1%;
+    }
+
+    > .compliance-details__actions {
+      text-align: right;
+    }
+
+    &.is-done {
+      // Not clickable: a completed row has nothing left to complete.
+      cursor: default;
+
+      // Painted on the CELLS, like the theme's hover, so it out-specifies
+      // `tbody tr:hover > td` and a done row keeps its green under the
+      // pointer. Every cell's text inherits the colour from here.
+      > td {
+        background: var(--status-aktiv-bg);
+        color: var(--status-aktiv-fg);
+      }
+
+      .compliance-details__circle {
+        border-color: var(--status-aktiv-fg);
+      }
+
+      .compliance-details__check.is-visible {
+        color: var(--status-aktiv-fg);
+      }
+
+      // Tag chips on the green row: translucent white fill and border, white
+      // text. --status-aktiv-fg is white in every theme map, so the color-mix
+      // is white at 16% / 35% alpha over the green row — theme-independent by
+      // construction (prototype compliance.css:471-481). The :not() keeps the
+      // worker chip out of this rule regardless of rule order.
+      .compliance-details__chip:not(.compliance-details__chip--worker) {
+        background: color-mix(in srgb, var(--status-aktiv-fg) 16%, transparent);
+        border-color: color-mix(in srgb, var(--status-aktiv-fg) 35%, transparent);
+        color: var(--status-aktiv-fg);
+      }
+
+      // The worker chip keeps its primary fill on the done row too (excluded
+      // from the translucent rule above by the :not(), so this does not depend
+      // on ordering).
+      .compliance-details__chip--worker {
+        background: var(--md-primary);
+        border-color: transparent;
+        color: var(--md-on-primary);
+      }
+
+      // A blue ring would disappear into the green; the prototype switches to a
+      // light ring for the same reason (compliance.css:270-272).
+      &.is-highlighted {
+        outline-color: var(--status-aktiv-fg);
+      }
+    }
+  }
+
+  &__circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--md-outline);
+    border-radius: var(--radius-full);
+  }
+
+  &__check {
+    // The check is always in the DOM (the circle keeps one accessible name for
+    // both states); only its opacity changes.
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    line-height: 14px;
+    opacity: 0;
+
+    &.is-visible {
+      opacity: 1;
+    }
+  }
+
+  &__body {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+  }
+
+  &__title {
+    font-weight: var(--font-weight-semibold);
+  }
+
+  &__chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px var(--spacing-sm);
+    // --radius-rounded-full (9999px in both themes) gives a true pill;
+    // --radius-full is 50% and belongs to the circle above.
+    border-radius: var(--radius-rounded-full);
+    background: var(--md-surface-variant);
+    color: var(--md-on-surface);
+    border: 1px solid var(--border-primary);
+    font-size: 12px;
+    line-height: 16px;
+    white-space: nowrap;
+
+    // The employee chip is the filled accent pill (#1186: saturated primary
+    // with on-primary text). It keeps its own fill on a completed row, which
+    // is what keeps it readable against the green.
+    &--worker {
+      background: var(--md-primary);
+      color: var(--md-on-primary);
+      border-color: transparent;
+    }
+  }
+
+  &__delete {
+    color: var(--icon-secondary);
+
+    &:hover {
+      color: var(--error);
+    }
+  }
+}
+
+// Workspace: `table.table` (_workspace-utilities.scss §8) draws everything else;
+// these are the log's own additions on top. `:host-context()` adds (0,2,1), so
+// every rule here out-specifies the theme's `table.table th` (0,2,3) and
+// `tbody tr:hover > td` (0,3,5).
+:host-context(body.theme-workspace) {
+  // The week band: a group header inside the body, so NOT the uppercase
+  // column-header look of `thead th` — normal case, on the header's --bg tint.
+  // The theme's `th` rule already draws its bottom separator.
+  .compliance-details__week-title {
+    padding: 8px 16px;
+    background: var(--bg);
+    font-weight: var(--font-weight-semibold);
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  // The theme drops the separator under the LAST row of every <tbody>, and
+  // each week is its own <tbody> — so a later week's band draws the line
+  // between itself and the week above.
+  .compliance-details__week + .compliance-details__week .compliance-details__week-title {
+    border-top: 1px solid var(--md-surface-variant);
+  }
+
+  // The theme lights EVERY body row on hover. An open row that cannot be
+  // completed (no area-rule planning) has no click action, so it must not look
+  // like it has one. Done rows are excluded: they keep their green.
+  .compliance-details__row:not(.is-clickable):not(.is-done):hover > td {
+    background-color: transparent;
+  }
+}
+
+// eForm Classic does not style `table.table` (Bootstrap is not loaded), so
+// without these the log would render with the user-agent table defaults: 2px
+// gaps between cells, 1px padding and no row hover.
+:host-context(body.theme-eform) {
+  .compliance-details__table {
+    border-collapse: collapse;
+    color: var(--text-primary);
+  }
+
+  // The week heading keeps its pre-table Classic look: a bold line of text
+  // over a rule, with no band behind it. The left inset keeps the old
+  // --spacing-xs offset from the row text, now that cells pad --spacing-md.
+  .compliance-details__week-title {
+    padding: var(--spacing-lg) calc(var(--spacing-md) - var(--spacing-xs)) var(--spacing-xs);
+    font-weight: var(--font-weight-bold);
+    border-bottom: 1px solid var(--border-primary);
+  }
+
+  .compliance-details__row > td {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .compliance-details__row.is-clickable:hover > td {
+    background: var(--table-row-hover);
+  }
+}
+
+// Rendered into the CDK overlay container, so it is NOT scoped by the
+// component's :host — hence a plain class rather than a nested one. Width and
+// placement are set by the overlay config and the position strategy.
+.compliance-delete-popover {
+  background: var(--md-surface-container);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elevation-panel);
+  padding: var(--spacing-lg);
+
+  &__title {
+    margin: 0 0 var(--spacing-sm);
+    font-size: var(--font-size-body);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  &__text {
+    margin: 0 0 var(--spacing-lg);
+    color: var(--text-secondary);
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
+  }
+}

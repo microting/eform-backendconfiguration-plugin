@@ -121,7 +121,17 @@ test.describe('Calendar: save event on fresh property with newly-assigned worker
     // Cleanup is best-effort. Each matrix slot runs against an ephemeral
     // DB, so leftover rows don't contaminate other jobs. Race the cleanup
     // against a 60s cap so a hung action-menu never fails the suite.
-    const page = await browser.newPage();
+    // browser.newPage() can itself reject — a browser that crashed or got
+    // disconnected during a long run — and an exception thrown here escapes the
+    // hook and fails the job, which is exactly what this non-fatal teardown
+    // exists to prevent. Record it and give up on cleanup instead.
+    const page = await browser.newPage().catch((err: any) => {
+      console.log(`afterAll cleanup failed (non-fatal): could not open a cleanup page: ${err?.message ?? err}`);
+      return undefined;
+    });
+    if (!page) {
+      return;
+    }
     const cleanup = async () => {
       await page.goto('http://localhost:4200');
       await new LoginPage(page).login();

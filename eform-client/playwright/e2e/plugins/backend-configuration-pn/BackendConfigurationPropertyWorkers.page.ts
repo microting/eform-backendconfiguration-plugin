@@ -286,6 +286,123 @@ export class BackendConfigurationPropertyWorkersPage {
     await this.newDeviceUserBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   }
 
+  // ----- Resign / un-resign (#1184) ------------------------------------------
+
+  /** The device-user table row for `workerFullName` ("First Last"). */
+  workerRow(workerFullName: string): Locator {
+    return this.page.locator('.mat-mdc-row').filter({ hasText: workerFullName }).first();
+  }
+
+  showResignedToggle(): Locator {
+    // The page's "Show resigned" filter toggle carries this (historical) id.
+    // On, the table lists resigned workers ONLY (not "also"); off, active only.
+    return this.page.locator('#showCalculationsAsNumberToggle');
+  }
+
+  /**
+   * Flip the page's "Show resigned" filter. It is a resigned-ONLY filter:
+   * index-device-user returns rows where Resigned == showResigned, so with it
+   * off (the default) the table holds active workers only, and with it on it
+   * holds resigned workers only. Un-resigning needs the filter on; deleting
+   * (the row action is hidden for resigned rows) needs it off again afterwards.
+   */
+  async setShowResignedFilter(show: boolean): Promise<void> {
+    const toggle = this.showResignedToggle();
+    await toggle.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    const switchBtn = toggle.locator('button[role="switch"]');
+    const current = (await switchBtn.getAttribute('aria-checked')) === 'true';
+    if (current === show) {
+      return;
+    }
+    const indexPromise = waitForApiResponse(
+      this.page,
+      'POST /api/backend-configuration-pn/properties/assignment/index-device-user (show-resigned filter refresh)',
+      r =>
+        r.url().includes('/api/backend-configuration-pn/properties/assignment/index-device-user') &&
+        r.request().method() === 'POST',
+      API_TIMEOUT
+    );
+    await toggle.locator('button').click();
+    await expect(switchBtn).toHaveAttribute('aria-checked', String(show), { timeout: UI_TIMEOUT });
+    await indexPromise;
+  }
+
+  /** Opens the edit modal for `workerFullName` and waits for its form to settle. */
+  async openEditModalFor(workerFullName: string): Promise<void> {
+    const menuItem = await openRowActionMenu(this.page, this.workerRow(workerFullName), `Device-user row "${workerFullName}"`);
+    await menuItem('editDeviceUserBtn').click({ timeout: UI_TIMEOUT });
+    await this.saveEditBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    await expect(this.page.locator('form[data-form-ready]')).toHaveAttribute('data-form-ready', 'true', {
+      timeout: 30000,
+    });
+  }
+
+  /**
+   * Resign (`resigned = true`) or un-resign (`false`) a worker through the edit
+   * modal's `#resignedToggle` and save.
+   *
+   * The "Resigned at date" input only renders once the worker is already
+   * saved as resigned (it is gated on the loaded model, not the form control),
+   * so the toggle-on flow never shows it; the form seeds `resignedAtDate` with
+   * today and the save carries it. The helper asserts that on the request body
+   * rather than driving a datepicker.
+   *
+   * Pitfalls the caller owns: the backend REFUSES to resign a worker who is
+   * assigned to an active calendar event ("WorkerStillAssignedToEventsCannotResign"),
+   * and a resigned worker is hidden from the table unless the "Show resigned"
+   * filter is on — call `setShowResignedFilter(true)` before un-resigning.
+   */
+  async setResigned(workerFullName: string, resigned: boolean): Promise<void> {
+    await this.openEditModalFor(workerFullName);
+
+    const toggle = this.page.locator('#resignedToggle');
+    await toggle.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    const switchBtn = toggle.locator('button[role="switch"]');
+    await expect(switchBtn).toBeEnabled({ timeout: UI_TIMEOUT });
+    const current = (await switchBtn.getAttribute('aria-checked')) === 'true';
+    if (current !== resigned) {
+      await toggle.locator('button').click();
+      await expect(switchBtn).toHaveAttribute('aria-checked', String(resigned), { timeout: UI_TIMEOUT });
+    }
+
+    const updatePromise = waitForApiResponse(
+      this.page,
+      'POST /api/backend-configuration-pn/properties/assignment/update-device-user (resign toggle save)',
+      r =>
+        r.url().includes('/api/backend-configuration-pn/properties/assignment/update-device-user') &&
+        r.request().method() === 'POST',
+      SLOW_API_TIMEOUT
+    );
+    const indexPromise = waitForApiResponse(
+      this.page,
+      'POST /api/backend-configuration-pn/properties/assignment/index-device-user (list refresh after resign toggle save)',
+      r =>
+        r.url().includes('/api/backend-configuration-pn/properties/assignment/index-device-user') &&
+        r.request().method() === 'POST',
+      API_TIMEOUT
+    );
+    // Awaited one after the other below; the second can reject while the
+    // first is still pending.
+    ignoreUnhandledRejections(updatePromise, indexPromise);
+
+    await expect(this.saveEditBtn()).toBeEnabled({ timeout: UI_TIMEOUT });
+    await this.saveEditBtn().click();
+
+    const updateResponse = await updatePromise;
+    const updateBody = JSON.parse(updateResponse.request().postData() || '{}');
+    const updateResult = await updateResponse.json().catch(() => null);
+    expect(updateResponse.status(), `update-device-user status (${JSON.stringify(updateResult)})`).toBe(200);
+    expect(updateResult?.success, `update-device-user success (${updateResult?.message ?? ''})`).toBe(true);
+    expect(updateBody.resigned).toBe(resigned);
+    if (resigned) {
+      expect(updateBody.resignedAtDate, 'resignedAtDate must accompany resigned=true').toBeTruthy();
+    }
+
+    await indexPromise;
+    await this.saveEditBtn().waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
+    await this.newDeviceUserBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+  }
+
   async createTag(tagName: string): Promise<void> {
     await this.sitesManageTagsBtn().click();
     await this.page.locator('#newTagBtn').waitFor({ state: 'visible', timeout: UI_TIMEOUT });

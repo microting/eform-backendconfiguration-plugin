@@ -11,6 +11,7 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
+import { UI_TIMEOUT } from '../wait-helpers';
 
 /**
  * Calendar eForm-change propagation regression suite.
@@ -43,7 +44,9 @@ import {
  *   calls `EnsureComplianceForOccurrenceAsync` synchronously inside the
  *   POST `/tasks/{id}/prepare-complete`, and cancelling leaves the freshly
  *   materialised Compliance row + SDK case OPEN. This is the same
- *   materialise-then-cancel fixture `r/calendar-compliance-view.spec.ts` uses.
+ *   materialise-then-cancel fixture that `r/calendar-compliance-view.spec.ts`
+ *   used before #1170 deleted it; `u/compliance-details-complete-worker-groups
+ *   .spec.ts` and `s/compliance-overview.spec.ts` carry it now.
  *   Only after that does the spec swap the eForm — so the assertions run
  *   against an occurrence that WAS deployed with A, which is exactly the case
  *   the old code got wrong.
@@ -450,12 +453,11 @@ async function closeCompleteModal(page: Page): Promise<void> {
   if ((await modal.count()) === 0) return;
   const cancelBtn = page.locator('#completeCancelBtn');
   if ((await cancelBtn.count()) > 0) {
-    await cancelBtn.click();
+    await cancelBtn.click({ timeout: UI_TIMEOUT });
   } else {
     await page.keyboard.press('Escape');
   }
-  await modal.waitFor({ state: 'detached', timeout: 10000 }).catch(() => undefined);
-  await page.waitForTimeout(500);
+  await modal.waitFor({ state: 'detached', timeout: UI_TIMEOUT }).catch(() => undefined);
 }
 
 test.describe.serial('Calendar eForm-change propagation', () => {
@@ -466,7 +468,6 @@ test.describe.serial('Calendar eForm-change propagation', () => {
 
     const calendarPage = new CalendarUiEnhancementsPage(page);
     await calendarPage.goToCalendar();
-    await calendarPage.ensureSidebarOpen();
 
     if (seeded) {
       const folderResp = page.waitForResponse(
@@ -480,7 +481,17 @@ test.describe.serial('Calendar eForm-change propagation', () => {
   });
 
   test.afterAll(async ({ browser }) => {
-    const page = await browser.newPage();
+    // browser.newPage() can itself reject — a browser that crashed or got
+    // disconnected during a long run — and an exception thrown here escapes the
+    // hook and fails the job, which is exactly what this non-fatal teardown
+    // exists to prevent. Record it and give up on cleanup instead.
+    const page = await browser.newPage().catch((err: any) => {
+      console.log(`afterAll cleanup failed (non-fatal): could not open a cleanup page: ${err?.message ?? err}`);
+      return undefined;
+    });
+    if (!page) {
+      return;
+    }
     const cleanup = async () => {
       await page.goto('http://localhost:4200');
       await new LoginPage(page).login();

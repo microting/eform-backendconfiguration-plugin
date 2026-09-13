@@ -181,6 +181,31 @@ export const routes: Routes = [
           ),
       },
       {
+        // Standalone Compliance page (#1160/#1163).
+        //
+        // Deliberately a sibling of 'compliances', not a child: that module's
+        // routing table (modules/compliance/compliance.routing.ts) declares
+        // ':propertyId' FIRST, and Angular matches in declaration order, so any
+        // new single-segment literal under 'compliances' would be swallowed and
+        // rendered as CompliancesContainerComponent with a garbage propertyId.
+        // 'compliances/case/...' only survives because it is always seven
+        // segments deep in practice. Reordering that table would be the clean
+        // fix, but it is load-bearing for task-tracker and is out of scope here.
+        //
+        // Deliberately AuthGuard, not PermissionGuard/IsAdminGuard: decision 6
+        // in #1160 makes this page available to every authenticated user of the
+        // plugin. The parent route already enforces
+        // backend_configuration_plugin_access, which is the whole boundary.
+        // Same explicit "open to any logged-in plugin user" marker as
+        // adhoc-tasks above. Do not add a requiredPermission here.
+        path: 'compliance-report',
+        canActivate: [AuthGuard],
+        loadChildren: () =>
+          import('./modules/compliance-report/compliance-report.module').then(
+            (m) => m.ComplianceReportModule
+          ),
+      },
+      {
         path: 'task-list',
         canActivate: [IsAdminGuard],
         loadChildren: () =>

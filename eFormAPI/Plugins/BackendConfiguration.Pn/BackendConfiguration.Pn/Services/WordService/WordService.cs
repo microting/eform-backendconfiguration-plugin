@@ -112,7 +112,7 @@ public class WordService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogTrace(e.StackTrace);
             return new OperationDataResult<Stream>(
                 false,
@@ -728,7 +728,7 @@ public class WordService(
                         itemsHtml.Append(
                             $@"<p style='font-size: 7pt; page-break-before:always'>{localizationService.GetString("Id")}: {imagesName.Key[1]}</p>"); // TODO change to ID: {id}; imagesName.Key[1]
 
-                        itemsHtml = await InsertImage(imagesName.Value[0], itemsHtml, 600, 650, core,
+                        itemsHtml = await InsertImage(imagesName.Value[0], itemsHtml, 600, 600, core,
                             basePicturePath);
 
                         if (!string.IsNullOrEmpty(imagesName.Value[1]))
@@ -741,7 +741,7 @@ public class WordService(
                     {
                         SentrySdk.CaptureException(e);
                         Trace.TraceError(e.Message);
-                        logger.LogError(e.Message);
+                        logger.LogError(e, e.Message);
                     }
                 }
             }
@@ -760,7 +760,7 @@ public class WordService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogTrace(e.StackTrace);
             return new OperationDataResult<Stream>(
                 false,
@@ -920,7 +920,7 @@ public class WordService(
                         itemsHtml.Append(
                             $@"<p style='font-size: 7pt; page-break-before:always'>{localizationService.GetString("Id")}: {imagesName.CaseId}</p>"); // TODO change to ID: {id}; imagesName.Key[1]
 
-                        itemsHtml = await InsertImage(imagesName.ImageName, itemsHtml, 600, 650, core, basePicturePath);
+                        itemsHtml = await InsertImage(imagesName.ImageName, itemsHtml, 600, 600, core, basePicturePath);
 
                         if (!string.IsNullOrEmpty(imagesName.ImageName))
                         {
@@ -945,7 +945,7 @@ public class WordService(
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             logger.LogTrace(e.StackTrace);
             return new OperationDataResult<Stream>(
                 false,
@@ -988,10 +988,23 @@ public class WordService(
                 image.Crop((uint)newWidth, (uint)newHeight);
 
                 Console.WriteLine("converting to base64 " + imageName);
-                var base64String = image.ToBase64();
+                // #1219. The declared mime decides the OOXML part type, and the
+                // encoder must be told the same format — see WordImageEmbedding.
+                // Before this, JPEG bytes shipped declared as image/png.
+                var (embedFormat, embedMimeType) = WordImageEmbedding.ResolveEmbedFormat(image.Format);
+                var base64String = image.ToBase64(embedFormat);
                 Console.WriteLine("Appending to itemsHtml file from stream " + imageName);
+                // The width ATTRIBUTE must be a bare integer: AngleSharp's
+                // DisplayWidth (what HtmlToOpenXml reads) parses it with
+                // Int32.TryParse, so the old "{imageWidth}px" never applied and
+                // every image was laid out at its decoded width instead. The two
+                // call sites now pass imageWidth == imageSize == 600 for exactly
+                // that reason, so honouring the attribute preserves the rendering
+                // these two long-shipped generators have always had; the 650 they
+                // used to declare was never in effect and, at 6.77in, would not
+                // even fit the portrait text width anyway.
                 itemsHtml.Append(
-                    $@"<p><img src=""data:image/png;base64,{base64String}"" width=""{imageWidth}px"" alt="""" /></p>");
+                    $@"<p><img src=""data:{embedMimeType};base64,{base64String}"" width=""{imageWidth}"" alt="""" /></p>");
             }
 
             await stream.DisposeAsync();
@@ -1002,7 +1015,7 @@ public class WordService(
         {
             SentrySdk.CaptureException(e);
             logger.LogError(e.StackTrace);
-            logger.LogError(e.Message);
+            logger.LogError(e, e.Message);
             return itemsHtml;
         }
     }

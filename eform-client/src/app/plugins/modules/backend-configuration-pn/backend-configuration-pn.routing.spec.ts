@@ -87,6 +87,70 @@ describe('BackendConfigurationPnRouting', () => {
     });
   });
 
+  describe('compliance-report route', () => {
+    // The standalone Compliance page (#1160/#1163). Two things this spec
+    // pins, both of which are one word away from regressing:
+    //
+    //  1. It is a sibling of 'compliances', not a child. compliance.routing.ts
+    //     declares ':propertyId' first, so a literal segment moved under that
+    //     subtree would silently render CompliancesContainerComponent with a
+    //     garbage propertyId instead of 404-ing.
+    //  2. AuthGuard only. Decision 6 in #1160 opens the page to every
+    //     authenticated plugin user; the calendar view mode it replaces is
+    //     hidden behind four client-side admin guards, and re-adding
+    //     IsAdminGuard/PermissionGuard here would quietly restore that.
+    // `findRoute` is a depth-first search over the WHOLE tree, so it proves
+    // only that a route with this path exists SOMEWHERE. Placement is the
+    // thing under test here, so these two assertions inspect the plugin root's
+    // own `children` array directly instead.
+    it('is a DIRECT child of the plugin root route', () => {
+      const rootRoute = findRoute(routes, '');
+      const directChildren = rootRoute.children ?? [];
+
+      const route = directChildren.filter((r) => r.path === 'compliance-report');
+
+      // Exactly one, and at depth 1 — not three levels down, which the
+      // recursive lookup would also have accepted.
+      expect(route.length).toBe(1);
+      expect(route[0].loadChildren).toBeDefined();
+    });
+
+    it('is a SIBLING of the compliances route, not nested under it', () => {
+      const rootRoute = findRoute(routes, '');
+      const directChildren = rootRoute.children ?? [];
+      const compliances = directChildren.find((r) => r.path === 'compliances');
+
+      expect(compliances).toBeDefined();
+      // The old form of this test searched `compliances.children ?? []`.
+      // `compliances` is a `loadChildren` route, so `.children` is ALWAYS
+      // undefined and the search ran over an empty array — it could not fail.
+      // Assert the two facts that can: `compliances` declares no eager child
+      // table at all, and `compliance-report` sits beside it at the same level.
+      expect(compliances.children).toBeUndefined();
+      expect(directChildren.some((r) => r.path === 'compliance-report')).toBe(true);
+    });
+
+    it('is guarded by AuthGuard only — open to any logged-in plugin user', () => {
+      const route = findRoute(routes, 'compliance-report');
+
+      // Exact array, not `toContain`: `[AuthGuard, IsAdminGuard]` contains
+      // AuthGuard too.
+      expect(route.canActivate).toEqual([AuthGuard]);
+    });
+
+    it('does not use PermissionGuard', () => {
+      const route = findRoute(routes, 'compliance-report');
+
+      expect(route.canActivate).not.toContain(PermissionGuard);
+    });
+
+    it('declares no requiredPermission', () => {
+      const route = findRoute(routes, 'compliance-report');
+
+      expect(route.data?.['requiredPermission']).toBeUndefined();
+    });
+  });
+
   it('keeps the plugin-wide access gate on the root route', () => {
     // Out of scope for 2026-08-24: opening the parent would change access to
     // every page in the plugin, not just ad-hoc tasks.

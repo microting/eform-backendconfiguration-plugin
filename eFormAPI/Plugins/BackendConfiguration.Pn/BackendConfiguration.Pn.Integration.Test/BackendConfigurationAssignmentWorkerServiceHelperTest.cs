@@ -3,16 +3,24 @@ using BackendConfiguration.Pn.Infrastructure.Models;
 using BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker;
 using BackendConfiguration.Pn.Infrastructure.Models.Properties;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
+using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
 using eFormCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure.Constants;
+using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.EformAngularFrontendBase.Infrastructure.Data.Entities.Permissions;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
+using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+using Microting.ItemsPlanningBase.Infrastructure.Enums;
 using Microting.TimePlanningBase.Infrastructure.Data.Entities;
+using Microting.TimePlanningBase.Infrastructure.Helpers;
 using NSubstitute;
+using BcPlanning = Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
@@ -23,6 +31,9 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
     // Opted out of the fixture-scoped schema replay:
     // ~90 whole-table counts and positional indexes (sites[2], properties[0], entityItems[7]).
     protected override bool ResetDatabasePerTest => true;
+
+    [SetUp]
+    public Task ReserveEformUserId1() => IdentityTestUtils.ReserveEformUserId1Async(BaseDbContext!);
 
     // Should test the CreateDeviceUser method and return success
     [Test]
@@ -80,6 +91,2176 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         Assert.That(units[2].SiteId, Is.EqualTo(sites[2].Id));
     }
 
+    // A worker with only an email — no time registration, no archive, no web
+    // access — must still get a login, so "Set password" in property-workers has
+    // something to act on. It is created WITHOUT a password: the account exists
+    // but cannot be signed into until an admin sets one.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_CreateDeviceUser_EmailOnly_CreatesUserWithNoPassword()
+    {
+        // Arrange
+        var core = await GetCore();
+        var workerEmail = $"{Guid.NewGuid()}@test.com";
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = workerEmail
+        };
+
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var createdUser = await BaseDbContext!.Users.SingleAsync(x => x.Email == workerEmail);
+        Assert.That(createdUser.PasswordHash, Is.Null,
+            "a new device user must have no usable password until an admin sets one");
+        Assert.That(await userManager.CheckPasswordAsync(createdUser, "Replace_me_with_a_proper_password_2024!"),
+            Is.False, "the retired hardcoded literal must not be accepted");
+        Assert.That(await userManager.CheckPasswordAsync(createdUser, ""), Is.False,
+            "an account with no password set must not accept a blank password");
+    }
+
+    // The synthetic address UpdateDeviceUser generates is a credential, not a
+    // mailbox, so it counts as an email and still yields a login.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_CreateDeviceUser_SyntheticInvalidEmail_CreatesUserWithNoPassword()
+    {
+        // Arrange
+        var core = await GetCore();
+        var workerEmail = $"user_{Guid.NewGuid():N}@microting.invalid";
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = workerEmail
+        };
+
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+        var createdUser = await BaseDbContext!.Users.SingleAsync(x => x.Email == workerEmail);
+        Assert.That(createdUser.PasswordHash, Is.Null);
+
+        // "Treated identically" is the whole decision about synthetic addresses, and
+        // the group is half of what a real address gets: a login with no password set,
+        // which is legal through account-management because it belongs to "none".
+        var groupNames = await GetSecurityGroupNamesAsync(createdUser.Id);
+        Assert.That(groupNames, Is.EqualTo(new List<string>
+                { BackendConfigurationAssignmentWorkerServiceHelper.NoPermissionsSecurityGroupName }),
+            "a synthetic address must land in the fallback group exactly like a real one");
+    }
+
+    // Identity validates BEFORE it touches the store, so a rejected CreateAsync
+    // leaves `user` non-null with Id still 0. Every guard downstream keys off
+    // `user != null`, so an unreset reference sends EformUserId 0 into the
+    // unconditional EnsureFallbackSecurityGroupAsync, whose FK to EformUser
+    // throws — and that exception reaches the outer catch, which runs
+    // CleanupOrphanSiteAsync and DELETES the Site and Worker just created. The admin
+    // would get DeviceUserCouldNotBeCreated and no worker, for an input whose worker
+    // must still be saved. A non-ASCII local part triggers it: the default
+    // AllowedUserNameCharacters is untouched by this app's Identity configuration.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_CreateDeviceUser_IdentityRejectsEmail_KeepsWorkerAndCreatesNoUser()
+    {
+        // Arrange
+        var core = await GetCore();
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        var workerEmail = $"s\u00f8ren-{Guid.NewGuid():N}@firma.dk";
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = workerEmail
+        };
+
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        // Assert — no login, but the worker the admin asked for still exists.
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(await BaseDbContext!.Users.AnyAsync(x => x.Email == workerEmail), Is.False,
+            "Identity refused the address, so there must be no account");
+        Assert.That(await sdkDbContext.Workers.AnyAsync(x => x.Email == workerEmail), Is.True,
+            "the worker must survive a login Identity refused to create");
+        Assert.That(await BaseDbContext.SecurityGroupUsers.CountAsync(x => x.EformUserId == 0), Is.EqualTo(0),
+            "no SecurityGroupUser row should ever be written against a non-existent user");
+    }
+
+    // Update-side twin of CreateDeviceUser_IdentityRejectsEmail_
+    // KeepsWorkerAndCreatesNoUser. UpdateDeviceUser resolves the worker's
+    // existing login and validates the target address with Identity's own
+    // validators BEFORE core.SiteUpdate/worker.Update ever run, so a refused
+    // address (here: non-ASCII, outside Identity's default
+    // AllowedUserNameCharacters) fails the WHOLE update up front - the worker
+    // keeps its prior field values, not just "no login created".
+    //
+    // Uses IdentityTestUtils.CreateRealUserService for userService.UserId; the
+    // login itself is resolved via FindLoginWithoutSideEffectsAsync, not
+    // through the IUserService.
+    // The worker is created with an EMPTY WorkerEmail ("", not null -
+    // SQL/420_SDK.sql's seeded Worker id 2 already has a NULL email, so only ""
+    // singles this worker out when the Assert step looks it up by address), so
+    // it starts with no login at all -
+    // this pins the refusal for a worker with NO prior login; the sibling test
+    // TargetEmailOwnedByAnotherAccount_RefusesBeforeAnyWrite below pins it for a
+    // worker that already HAS one.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_IdentityRejectsEmail_KeepsWorkerAndCreatesNoUser()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+
+        var originalFirstName = Guid.NewGuid().ToString();
+        var originalLastName = Guid.NewGuid().ToString();
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = originalFirstName,
+            UserLastName = originalLastName,
+            WorkerEmail = ""
+        };
+
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var usersBefore = await BaseDbContext!.Users.CountAsync();
+
+        var refusedEmail = $"s\u00f8ren-{Guid.NewGuid():N}@firma.dk";
+
+        var newDeviceUserModel = new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            PhoneNumber = Guid.NewGuid().ToString("N")[..8],
+            WorkerEmail = refusedEmail
+        };
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core, 1,
+            userService, userManager,
+            BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert — the whole update is refused before any write: the worker
+        // keeps its ORIGINAL field values, not the ones from this refused call.
+        Assert.That(result.Success, Is.False, result.Message);
+        var untouchedWorker = await MicrotingDbContext.Workers.SingleAsync(x => x.Email == "");
+        Assert.That(untouchedWorker.FirstName, Is.EqualTo(originalFirstName));
+        Assert.That(untouchedWorker.LastName, Is.EqualTo(originalLastName));
+        Assert.That(untouchedWorker.PhoneNumber, Is.Null.Or.Empty);
+
+        Assert.That(await BaseDbContext.Users.AnyAsync(x => x.Email == refusedEmail), Is.False,
+            "Identity refused the address, so there must be no account");
+        Assert.That(await BaseDbContext.Users.CountAsync(), Is.EqualTo(usersBefore),
+            "no login must have been created for the refused address");
+        Assert.That(await BaseDbContext.SecurityGroupUsers.CountAsync(x => x.EformUserId == 0), Is.EqualTo(0),
+            "no SecurityGroupUser row should ever be written against a non-existent user");
+    }
+
+    // CreateDeviceUser links a new worker to an existing account it may link to -
+    // one in no group, or only in none, Kun arkiv or Kun tid - instead of
+    // creating a second login for the same address.
+    [TestCase("")]
+    [TestCase("none")]
+    [TestCase("Kun arkiv")]
+    [TestCase("Kun tid")]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_CreateDeviceUser_EmailOwnedByLinkableAccount_LinksIt(
+        string pluginGroup)
+    {
+        // Arrange
+        var core = await GetCore();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        var sharedEmail = $"{Guid.NewGuid()}@already-owned.test";
+        var existingAccount = new EformUser
+        {
+            Email = sharedEmail,
+            UserName = $"existing-{Guid.NewGuid()}",
+            FirstName = "Existing",
+            LastName = "Owner",
+            Locale = "da",
+            EmailConfirmed = true,
+            TimeZone = "Europe/Copenhagen",
+            Formats = "de-DE"
+        };
+        Assert.That((await userManager.CreateAsync(existingAccount)).Succeeded, Is.True);
+        if (pluginGroup != "") await AddToSecurityGroupAsync(existingAccount.Id, pluginGroup);
+        var existingAccountId = existingAccount.Id;
+
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = sharedEmail
+        };
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        // Assert — pinning the linking behaviour: no second row, the pre-existing
+        // account is the one linked to the new worker.
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(await BaseDbContext!.Users.CountAsync(x => x.Email == sharedEmail), Is.EqualTo(1),
+            "no second AspNetUsers row must be created for an address that is already owned");
+        var linkedUser = await BaseDbContext.Users.SingleAsync(x => x.Email == sharedEmail);
+        Assert.That(linkedUser.Id, Is.EqualTo(existingAccountId),
+            "the pre-existing account is the one linked, not a fresh row");
+        Assert.That(linkedUser.UserName, Is.EqualTo(sharedEmail),
+            "linking overwrites the pre-existing account's UserName to match the lookup address");
+    }
+
+    // CreateDeviceUser links a new worker only to an account it may link to
+    // (MayLinkNewWorkerToLoginAsync). An account in any other security group -
+    // alone, or alongside a linkable group such as Kun arkiv - is refused
+    // before any SDK or Identity write.
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_CreateDeviceUser_EmailOwnedByAccountInNonPluginGroup_RefusesWithNoWrite(
+        bool alsoInPluginGroup)
+    {
+        // Arrange
+        var core = await GetCore();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+        var reconciliationService = Substitute.For<ICalendarAssignmentReconciliationService>();
+        var tagId = await SeedSdkTag();
+
+        var ownedEmail = $"{Guid.NewGuid()}@non-plugin-group.test";
+        var account = NewAccount(ownedEmail, "Manager");
+        Assert.That((await userManager.CreateAsync(account)).Succeeded, Is.True);
+        await AddToSecurityGroupAsync(account.Id, $"Managers {Guid.NewGuid()}");
+        if (alsoInPluginGroup)
+        {
+            await AddToSecurityGroupAsync(account.Id, "Kun arkiv");
+        }
+        var groupsBefore = await GetSecurityGroupNamesAsync(account.Id);
+        var userNameBefore = account.UserName;
+
+        var workerFirstName = Guid.NewGuid().ToString();
+        var workerLastName = Guid.NewGuid().ToString();
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = workerFirstName,
+            UserLastName = workerLastName,
+            Tags = [tagId],
+            WorkerEmail = ownedEmail
+        };
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager, reconciliationService);
+
+        // Assert
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Message, Is.EqualTo("EmailIsAlreadyInUse"));
+
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        Assert.That(await sdkDbContext.Sites.AnyAsync(x => x.Name == $"{workerFirstName} {workerLastName}"), Is.False);
+        Assert.That(await sdkDbContext.Workers.AnyAsync(x => x.Email == ownedEmail), Is.False);
+        Assert.That(await sdkDbContext.SiteTags.AnyAsync(x => x.TagId == tagId), Is.False);
+        await reconciliationService.DidNotReceive()
+            .ReconcileEventsForWorkerTagsAsync(Arg.Any<IReadOnlyCollection<int>>(), Arg.Any<CancellationToken>());
+
+        var reloaded = await BaseDbContext!.Users.AsNoTracking().SingleAsync(x => x.Id == account.Id);
+        Assert.That(reloaded.UserName, Is.EqualTo(userNameBefore));
+        Assert.That(reloaded.Email, Is.EqualTo(ownedEmail));
+        Assert.That(reloaded.FirstName, Is.EqualTo("Manager"));
+        Assert.That(reloaded.Locale, Is.EqualTo("en-US"));
+        Assert.That(await GetSecurityGroupNamesAsync(account.Id), Is.EquivalentTo(groupsBefore));
+    }
+
+    // CreateDeviceUser never links a new worker to an account in eForm users,
+    // core's default group for office users. The refusal comes before any SDK
+    // or Identity write.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_CreateDeviceUser_EmailOwnedByEformUsersAccount_RefusesWithNoWrite()
+    {
+        // Arrange
+        var core = await GetCore();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+        var reconciliationService = Substitute.For<ICalendarAssignmentReconciliationService>();
+        var tagId = await SeedSdkTag();
+
+        var ownedEmail = $"{Guid.NewGuid()}@eform-users.test";
+        var account = NewAccount(ownedEmail, "Office");
+        Assert.That((await userManager.CreateAsync(account)).Succeeded, Is.True);
+        await AddToSecurityGroupAsync(account.Id, "eForm users");
+        var groupsBefore = await GetSecurityGroupNamesAsync(account.Id);
+        Assert.That(groupsBefore, Is.EqualTo(new List<string> { "eForm users" }));
+        var userNameBefore = account.UserName;
+
+        var workerFirstName = Guid.NewGuid().ToString();
+        var workerLastName = Guid.NewGuid().ToString();
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = workerFirstName,
+            UserLastName = workerLastName,
+            Tags = [tagId],
+            WorkerEmail = ownedEmail
+        };
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager, reconciliationService);
+
+        // Assert
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Message, Is.EqualTo("EmailIsAlreadyInUse"));
+
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        Assert.That(await sdkDbContext.Sites.AnyAsync(x => x.Name == $"{workerFirstName} {workerLastName}"), Is.False);
+        Assert.That(await sdkDbContext.Workers.AnyAsync(x => x.Email == ownedEmail), Is.False);
+        Assert.That(await sdkDbContext.SiteTags.AnyAsync(x => x.TagId == tagId), Is.False);
+        await reconciliationService.DidNotReceive()
+            .ReconcileEventsForWorkerTagsAsync(Arg.Any<IReadOnlyCollection<int>>(), Arg.Any<CancellationToken>());
+
+        var reloaded = await BaseDbContext!.Users.AsNoTracking().SingleAsync(x => x.Id == account.Id);
+        Assert.That(reloaded.UserName, Is.EqualTo(userNameBefore));
+        Assert.That(reloaded.Email, Is.EqualTo(ownedEmail));
+        Assert.That(reloaded.FirstName, Is.EqualTo("Office"));
+        Assert.That(reloaded.Locale, Is.EqualTo("en-US"));
+        Assert.That(await GetSecurityGroupNamesAsync(account.Id), Is.EquivalentTo(groupsBefore));
+    }
+
+    // A worker linked to an account this plugin does not manage still saves
+    // its own fields. The account itself - name, locale, username and groups -
+    // is left exactly as its owner configured it.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_ResolvedLoginInNonPluginGroup_SkipsLoginWorkButSavesWorker()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        var workerEmail = $"{Guid.NewGuid()}@test.com";
+        var originalFirstName = Guid.NewGuid().ToString();
+        var created = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = originalFirstName,
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = workerEmail
+        }, core, 1, TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+        Assert.That(created.Success, Is.True, created.Message);
+
+        var login = await BaseDbContext!.Users.AsNoTracking().SingleAsync(x => x.Email == workerEmail);
+        await AddToSecurityGroupAsync(login.Id, $"Managers {Guid.NewGuid()}");
+        var groupsBefore = await GetSecurityGroupNamesAsync(login.Id);
+
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var newFirstName = Guid.NewGuid().ToString();
+        var newLastName = Guid.NewGuid().ToString();
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            WebAccessEnabled = true, // would add "eForm users" to a plugin-managed login
+            UserFirstName = newFirstName,
+            UserLastName = newLastName,
+            WorkerEmail = workerEmail // unchanged
+        }, core, 1, userService, userManager, BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+        var worker = await MicrotingDbContext!.Workers.AsNoTracking().SingleAsync(x => x.Email == workerEmail);
+        Assert.That(worker.FirstName, Is.EqualTo(newFirstName));
+        Assert.That(worker.LastName, Is.EqualTo(newLastName));
+
+        var reloaded = await BaseDbContext.Users.AsNoTracking().SingleAsync(x => x.Id == login.Id);
+        Assert.That(reloaded.FirstName, Is.EqualTo(originalFirstName));
+        Assert.That(reloaded.UserName, Is.EqualTo(login.UserName));
+        Assert.That(await GetSecurityGroupNamesAsync(login.Id), Is.EquivalentTo(groupsBefore));
+    }
+
+    // Time-registration settings belong to the worker and save whether or not
+    // this plugin manages its login. This pins both halves: the settings
+    // themselves still save, and no "Kun tid" security-group membership is
+    // written for a login this plugin does not manage.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_ResolvedLoginInNonPluginGroup_SavesTimeRegistrationButSkipsKunTid()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        var workerEmail = $"{Guid.NewGuid()}@test.com";
+        var created = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = true,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = workerEmail
+        }, core, 1, TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+        Assert.That(created.Success, Is.True, created.Message);
+
+        var login = await BaseDbContext!.Users.AsNoTracking().SingleAsync(x => x.Email == workerEmail);
+        await AddToSecurityGroupAsync(login.Id, $"Managers {Guid.NewGuid()}");
+
+        // CreateDeviceUser above already added "Kun tid" unconditionally for
+        // this TimeRegistrationEnabled worker, since its login was still
+        // plugin-managed at that point. Strip that membership directly so the
+        // login starts in a non-plugin group with NO "Kun tid" at all -
+        // otherwise the assertions below would trivially pass regardless of
+        // whether the update's own inner guard runs.
+        var kunTidRows = await BaseDbContext.SecurityGroupUsers
+            .Include(x => x.SecurityGroup)
+            .Where(x => x.EformUserId == login.Id)
+            .Where(x => x.SecurityGroup.Name == "Kun tid")
+            .ToListAsync();
+        BaseDbContext.SecurityGroupUsers.RemoveRange(kunTidRows);
+        await BaseDbContext.SaveChangesAsync();
+
+        var groupsBefore = await GetSecurityGroupNamesAsync(login.Id);
+        Assert.That(groupsBefore, Does.Not.Contain("Kun tid"),
+            "precondition: the login must start without \"Kun tid\" membership");
+
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = true,
+            EnableMobileAccess = true, // would add "Kun tid" to a plugin-managed login
+            OverMidnight = true, // the AssignedSite field this update must still write
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = workerEmail // unchanged
+        }, core, 1, userService, userManager, BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+        var assignedSite = await TimePlanningPnDbContext!.AssignedSites.AsNoTracking()
+            .SingleAsync(x => x.SiteId == (int)currentSite.MicrotingUid!
+                && x.WorkflowState != Constants.WorkflowStates.Removed);
+        Assert.That(assignedSite.OverMidnight, Is.True,
+            "time-registration settings belong to the worker and must save even though its login is not plugin-managed");
+        Assert.That(assignedSite.EnableMobileAccess, Is.True);
+
+        var groupNamesAfter = await GetSecurityGroupNamesAsync(login.Id);
+        Assert.That(groupNamesAfter, Does.Not.Contain("Kun tid"),
+            "EnableMobileAccess must not grant \"Kun tid\" to a login this plugin does not manage");
+        Assert.That(groupNamesAfter, Is.EquivalentTo(groupsBefore),
+            "the login's group membership must otherwise be completely unchanged by this save");
+    }
+
+    // The address of a worker linked to an account this plugin does not manage
+    // cannot change: the account never follows the worker, so the change is
+    // refused before any write. Holds for a non-plugin group and for the admin role.
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_ResolvedLoginNotPluginManaged_ChangingEmail_Refuses(
+        bool viaAdminRole)
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        var workerEmail = $"{Guid.NewGuid()}@test.com";
+        var created = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = workerEmail
+        }, core, 1, TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+        Assert.That(created.Success, Is.True, created.Message);
+
+        var login = await BaseDbContext!.Users.SingleAsync(x => x.Email == workerEmail);
+        if (viaAdminRole)
+        {
+            var addToRole = await userManager.AddToRoleAsync(login, EformRole.Admin);
+            Assert.That(addToRole.Succeeded, Is.True, string.Join(",", addToRole.Errors.Select(e => e.Description)));
+        }
+        else
+        {
+            await AddToSecurityGroupAsync(login.Id, $"Managers {Guid.NewGuid()}");
+        }
+        var userNameBefore = login.UserName;
+
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var freeEmail = $"{Guid.NewGuid()}@free.test";
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = freeEmail
+        }, core, 1, userService, userManager, BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Message, Is.EqualTo("EmailIsAlreadyInUse"));
+        Assert.That(await MicrotingDbContext.Workers.AnyAsync(x => x.Email == workerEmail), Is.True);
+        Assert.That(await MicrotingDbContext.Workers.AnyAsync(x => x.Email == freeEmail), Is.False);
+
+        var reloaded = await BaseDbContext.Users.AsNoTracking().SingleAsync(x => x.Id == login.Id);
+        Assert.That(reloaded.Email, Is.EqualTo(workerEmail));
+        Assert.That(reloaded.UserName, Is.EqualTo(userNameBefore));
+        Assert.That(await BaseDbContext.Users.AnyAsync(x => x.Email == freeEmail), Is.False);
+    }
+
+    // A login that belongs only to plugin groups still follows its worker's
+    // address - the rule above must not refuse plugin-managed logins.
+    [TestCase("eForm users")]
+    [TestCase("Kun arkiv")]
+    [TestCase("Kun tid")]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_ResolvedLoginInPluginGroup_ChangingEmail_MovesLogin(
+        string pluginGroup)
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        var workerEmail = $"{Guid.NewGuid()}@test.com";
+        var created = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = workerEmail
+        }, core, 1, TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+        Assert.That(created.Success, Is.True, created.Message);
+
+        var login = await BaseDbContext!.Users.AsNoTracking().SingleAsync(x => x.Email == workerEmail);
+        await AddToSecurityGroupAsync(login.Id, pluginGroup);
+
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var newEmail = $"{Guid.NewGuid()}@moved.test";
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = newEmail
+        }, core, 1, userService, userManager, BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+        var reloaded = await BaseDbContext.Users.AsNoTracking().SingleAsync(x => x.Id == login.Id);
+        Assert.That(reloaded.Email, Is.EqualTo(newEmail));
+        Assert.That(reloaded.UserName, Is.EqualTo(newEmail));
+    }
+
+    // Refuse to adopt an ADMIN account, with NO write at all - not even the SDK
+    // site/worker. Production's GetByUsernameAsync is not a pure read: its
+    // email fallback renames and SAVES whatever account it finds, so the
+    // admin's UserName would be overwritten before any refusal could run.
+    // FindLoginWithoutSideEffectsAsync is a NON-mutating lookup
+    // (FindByNameAsync ?? FindByEmailAsync) done BEFORE core.SiteCreate, so a
+    // refused create leaves everything untouched: no SDK site, no SDK worker,
+    // no SiteTags, no ReconcileEventsForWorkerTagsAsync deployment, and the
+    // admin account exactly as it was - there is nothing to orphan or clean up.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_CreateDeviceUser_EmailOwnedByAdmin_RefusesWithNoWrite()
+    {
+        // Arrange
+        var core = await GetCore();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+        var reconciliationService = Substitute.For<ICalendarAssignmentReconciliationService>();
+        var tagId = await SeedSdkTag();
+
+        // ReserveEformUserId1 keeps adminAccount off id 1, so only the admin-role
+        // half of MayLinkNewWorkerToLoginAsync can explain the refusal below.
+        var adminEmail = $"{Guid.NewGuid()}@already-owned-admin.test";
+        var adminAccount = new EformUser
+        {
+            Email = adminEmail,
+            UserName = $"admin-{Guid.NewGuid()}",
+            FirstName = "Admin",
+            LastName = "Owner",
+            Locale = "da",
+            EmailConfirmed = true,
+            TimeZone = "Europe/Copenhagen",
+            Formats = "de-DE"
+        };
+        Assert.That((await userManager.CreateAsync(adminAccount)).Succeeded, Is.True);
+        var addToRole = await userManager.AddToRoleAsync(adminAccount, EformRole.Admin);
+        Assert.That(addToRole.Succeeded, Is.True, string.Join(",", addToRole.Errors.Select(e => e.Description)));
+        var adminAccountId = adminAccount.Id;
+        var adminAccountUserName = adminAccount.UserName;
+        var adminAccountFirstName = adminAccount.FirstName;
+        var adminAccountLocale = adminAccount.Locale;
+
+        var workerFirstName = Guid.NewGuid().ToString();
+        var workerLastName = Guid.NewGuid().ToString();
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = workerFirstName,
+            UserLastName = workerLastName,
+            Tags = [tagId],
+            WorkerEmail = adminEmail
+        };
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager, reconciliationService);
+
+        // Assert
+        Assert.That(result.Success, Is.False, result.Message);
+
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        var siteName = $"{workerFirstName} {workerLastName}";
+        // No WorkflowState filter: a site created then cleaned up by
+        // CleanupOrphanSiteAsync would still pass a "!= Removed" check as long
+        // as its WorkflowState ends up Removed - this must pin that NO row
+        // (of either state) exists at all, not merely that none is active.
+        Assert.That(await sdkDbContext.Sites.AnyAsync(x => x.Name == siteName), Is.False,
+            "no SDK site may ever be created for a refused admin-adoption attempt");
+        Assert.That(await sdkDbContext.Workers.AnyAsync(x => x.Email == adminEmail), Is.False,
+            "no SDK worker may ever be created for a refused admin-adoption attempt");
+        Assert.That(await sdkDbContext.SiteTags.AnyAsync(x => x.TagId == tagId), Is.False,
+            "no SiteTag may ever be written for a refused admin-adoption attempt");
+        await reconciliationService.DidNotReceive()
+            .ReconcileEventsForWorkerTagsAsync(Arg.Any<IReadOnlyCollection<int>>(), Arg.Any<CancellationToken>());
+
+        Assert.That(await BaseDbContext!.Users.CountAsync(x => x.Email == adminEmail), Is.EqualTo(1),
+            "no second AspNetUsers row must be created for the admin's address");
+        var reloadedAdmin = await BaseDbContext.Users.SingleAsync(x => x.Email == adminEmail);
+        Assert.That(reloadedAdmin.Id, Is.EqualTo(adminAccountId));
+        Assert.That(reloadedAdmin.UserName, Is.EqualTo(adminAccountUserName),
+            "the admin account's UserName must be untouched - the lookup that finds it must not be the mutating one");
+        Assert.That(reloadedAdmin.FirstName, Is.EqualTo(adminAccountFirstName),
+            "the admin account's FirstName must be untouched");
+        Assert.That(reloadedAdmin.Locale, Is.EqualTo(adminAccountLocale),
+            "the admin account's Locale must be untouched");
+    }
+
+    // Pins the OTHER half of MayLinkNewWorkerToLoginAsync's account check
+    // (`login.Id == 1 || IsInRoleAsync(Admin)`): an account that IS EformUser
+    // id 1 but carries no admin ROLE membership at all must still be refused.
+    // The subject is put on id 1 with
+    // IdentityTestUtils.ForceCreateAsEformUserId1Async (see its docs).
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_CreateDeviceUser_EmailOwnedByAccountId1_RefusesWithNoWrite()
+    {
+        // Arrange
+        var core = await GetCore();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+        var reconciliationService = Substitute.For<ICalendarAssignmentReconciliationService>();
+        var tagId = await SeedSdkTag();
+
+        var ownerEmail = $"{Guid.NewGuid()}@id1-owned.test";
+        var id1Account = await IdentityTestUtils.ForceCreateAsEformUserId1Async(BaseDbContext!, userManager,
+            new EformUser
+            {
+                Email = ownerEmail,
+                UserName = ownerEmail,
+                FirstName = "Id1",
+                LastName = "Owner",
+                Locale = "da",
+                EmailConfirmed = true,
+                TimeZone = "Europe/Copenhagen",
+                Formats = "de-DE"
+            });
+        Assert.That(id1Account.Id, Is.EqualTo(1), "sanity: the subject must genuinely be id 1");
+        Assert.That(await userManager.IsInRoleAsync(id1Account, EformRole.Admin), Is.False,
+            "this test pins the Id==1 half specifically - the admin-role half must play no part");
+        var id1UserName = id1Account.UserName;
+
+        var workerFirstName = Guid.NewGuid().ToString();
+        var workerLastName = Guid.NewGuid().ToString();
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = workerFirstName,
+            UserLastName = workerLastName,
+            Tags = [tagId],
+            WorkerEmail = ownerEmail
+        };
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager, reconciliationService);
+
+        // Assert
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Message, Is.EqualTo("EmailIsAlreadyInUse"));
+
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        var siteName = $"{workerFirstName} {workerLastName}";
+        Assert.That(await sdkDbContext.Sites.AnyAsync(x => x.Name == siteName), Is.False,
+            "no SDK site may ever be created for a refused id-1-owned create");
+        Assert.That(await sdkDbContext.SiteTags.AnyAsync(x => x.TagId == tagId), Is.False,
+            "no SiteTag may ever be written for a refused id-1-owned create");
+        await reconciliationService.DidNotReceive()
+            .ReconcileEventsForWorkerTagsAsync(Arg.Any<IReadOnlyCollection<int>>(), Arg.Any<CancellationToken>());
+
+        var reloaded = await BaseDbContext!.Users.SingleAsync(x => x.Id == 1);
+        Assert.That(reloaded.UserName, Is.EqualTo(id1UserName),
+            "the id-1 account's UserName must be untouched");
+    }
+
+    // Pins the upfront collision pre-check (before core.SiteCreate): deleting it
+    // still returns EmailIsAlreadyInUse via RefuseAdoptionAndCleanUpAsync, but only
+    // AFTER SiteCreate/SiteTags/reconcile/worker.Update have all run - so what pins
+    // it is that nothing was written, not the final Message. Account A's UserName is
+    // the target address and account B's EMAIL is. A resolves by UserName and becomes
+    // existingUserId, so the unique-USERNAME check excludes it; only the
+    // RequireUniqueEmail check against B fires - hence CreateProductionLikeUserManager.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_CreateDeviceUser_SplitEmailCollision_RefusesBeforeAnyWrite()
+    {
+        // Arrange
+        var core = await GetCore();
+        var userManager = IdentityTestUtils.CreateProductionLikeUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+        var reconciliationService = Substitute.For<ICalendarAssignmentReconciliationService>();
+        var tagId = await SeedSdkTag();
+
+        var sharedAddress = $"{Guid.NewGuid()}@split-collision.test";
+
+        // Account A's USERNAME is the target address...
+        var accountA = new EformUser
+        {
+            Email = $"{Guid.NewGuid()}@account-a.test",
+            UserName = sharedAddress,
+            FirstName = "A",
+            LastName = "Owner",
+            Locale = "da",
+            EmailConfirmed = true,
+            TimeZone = "Europe/Copenhagen",
+            Formats = "de-DE"
+        };
+        Assert.That((await userManager.CreateAsync(accountA)).Succeeded, Is.True);
+
+        // ...while account B's EMAIL is the same address, under a DIFFERENT
+        // username.
+        var accountB = new EformUser
+        {
+            Email = sharedAddress,
+            UserName = $"account-b-{Guid.NewGuid()}",
+            FirstName = "B",
+            LastName = "Owner",
+            Locale = "da",
+            EmailConfirmed = true,
+            TimeZone = "Europe/Copenhagen",
+            Formats = "de-DE"
+        };
+        Assert.That((await userManager.CreateAsync(accountB)).Succeeded, Is.True);
+
+        var workerFirstName = Guid.NewGuid().ToString();
+        var workerLastName = Guid.NewGuid().ToString();
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = workerFirstName,
+            UserLastName = workerLastName,
+            Tags = [tagId],
+            WorkerEmail = sharedAddress
+        };
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager, reconciliationService);
+
+        // Assert
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Message, Is.EqualTo("EmailIsAlreadyInUse"));
+
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        var siteName = $"{workerFirstName} {workerLastName}";
+        // No WorkflowState filter: a site created then cleaned up still has a
+        // row (just Removed) - this must pin that NO row exists at all.
+        Assert.That(await sdkDbContext.Sites.AnyAsync(x => x.Name == siteName), Is.False,
+            "no SDK site row - of any WorkflowState - may exist for a refused split-collision create");
+        Assert.That(await sdkDbContext.SiteTags.AnyAsync(x => x.TagId == tagId), Is.False,
+            "no SiteTag may ever be written for a refused split-collision create");
+        await reconciliationService.DidNotReceive()
+            .ReconcileEventsForWorkerTagsAsync(Arg.Any<IReadOnlyCollection<int>>(), Arg.Any<CancellationToken>());
+        Assert.That(await BaseDbContext!.Users.CountAsync(x => x.UserName == sharedAddress || x.Email == sharedAddress),
+            Is.EqualTo(2), "only the two pre-existing accounts may exist under this address - the refused create must not add a third");
+    }
+
+    // UpdateDeviceUser's own SDK-worker uniqueness pre-check only scans
+    // non-removed SDK WORKERS for the email, never AspNetUsers, so an address
+    // already owned by an account with no live worker behind it (an admin, or
+    // one left behind by a removed worker) sails through THAT check untouched -
+    // ValidateCandidateEmailAsync, run before any SDK or Identity write, is
+    // what actually catches it via RequireUniqueEmail.
+    //
+    // The worker is created with an EMPTY WorkerEmail ("", not null - see the
+    // comment on the non-ASCII Update test above) so
+    // FindLoginWithoutSideEffectsAsync(oldEmail) resolves to NO account - this
+    // pins the refusal for a worker with NO prior login; the sibling test
+    // TargetEmailOwnedByAnotherAccount_RefusesBeforeAnyWrite below pins it for a
+    // worker that already HAS one.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_DuplicateEmailIdentityRefuses_KeepsWorkerAndCreatesNoUser()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        var userManager = IdentityTestUtils.CreateProductionLikeUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        var originalFirstName = Guid.NewGuid().ToString();
+        var originalLastName = Guid.NewGuid().ToString();
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = originalFirstName,
+            UserLastName = originalLastName,
+            WorkerEmail = ""
+        };
+        await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var usersBeforeCollision = await BaseDbContext!.Users.CountAsync();
+
+        var sharedEmail = $"{Guid.NewGuid()}@already-taken.test";
+        var existingAccount = new EformUser
+        {
+            Email = sharedEmail,
+            UserName = $"existing-{Guid.NewGuid()}",
+            FirstName = Guid.NewGuid().ToString(),
+            LastName = Guid.NewGuid().ToString(),
+            Locale = "da",
+            EmailConfirmed = true,
+            TimeZone = "Europe/Copenhagen",
+            Formats = "de-DE"
+        };
+        Assert.That((await userManager.CreateAsync(existingAccount)).Succeeded, Is.True);
+
+        // A REAL tag, not a fake id: the SDK's FK_SiteTags_tags_TagId means a
+        // fake id would throw on SiteTag.Create regardless of write order, so
+        // the tag-untouched assertion below would pass even if the tag block
+        // ran BEFORE validation - it would just fail via the outer catch's
+        // generic "DeviceUserCouldNotBeUpdated" instead. A real id makes the
+        // assertion fail loudly (a written SiteTag row) if that order regresses.
+        var tagId = await SeedSdkTag();
+
+        var newDeviceUserModel = new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            PhoneNumber = Guid.NewGuid().ToString("N")[..8],
+            Tags = [tagId],
+            WorkerEmail = sharedEmail
+        };
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core, 1,
+            userService, userManager,
+            BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert — the whole update is refused before any write. The exact
+        // message pins this as the collision refusal specifically - the
+        // generic catch's "DeviceUserCouldNotBeUpdated" would also satisfy a
+        // bare `Success is False` check, so that alone cannot distinguish "the
+        // collision check refused it" from "the tag write blew up".
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Message, Is.EqualTo("EmailIsAlreadyInUse"));
+        var untouchedWorker = await MicrotingDbContext.Workers.SingleAsync(x => x.Email == "");
+        Assert.That(untouchedWorker.FirstName, Is.EqualTo(originalFirstName));
+        Assert.That(untouchedWorker.LastName, Is.EqualTo(originalLastName));
+
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        await AssertNoActiveSiteTagsAsync(sdkDbContext, currentSite.Id);
+
+        Assert.That(await BaseDbContext.Users.CountAsync(x => x.Email == sharedEmail), Is.EqualTo(1),
+            "RequireUniqueEmail must have blocked a second account for the same address");
+        var reloadedExisting = await BaseDbContext.Users.SingleAsync(x => x.Email == sharedEmail);
+        Assert.That(reloadedExisting.Id, Is.EqualTo(existingAccount.Id));
+        Assert.That(await BaseDbContext.Users.CountAsync(), Is.EqualTo(usersBeforeCollision + 1),
+            "only the pre-existing account for the shared address may exist; the refused update must not add a row");
+        Assert.That(await BaseDbContext.SecurityGroupUsers.CountAsync(x => x.EformUserId == 0), Is.EqualTo(0),
+            "no SecurityGroupUser row should ever be written against a non-existent user");
+    }
+
+    // UpdateDeviceUser's own pre-check only looks at SDK workers, never
+    // AspNetUsers, so an address B owned by another account (an admin's, say)
+    // passes it. UpdateDeviceUser therefore resolves the worker's login and
+    // validates the FINAL target address with Identity's own validators
+    // BEFORE core.SiteUpdate or worker.Update runs. A collision refuses the
+    // WHOLE update and leaves the worker, its SDK site and its login
+    // unchanged, so the worker's address and its login's address never
+    // diverge. They must match because later saves and Set password look the
+    // login up by the worker's address. The check-and-Reload guard on
+    // UpdateAsync covers a race between the up-front check and the write.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_TargetEmailOwnedByAnotherAccount_RefusesBeforeAnyWrite()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        var userManager = IdentityTestUtils.CreateProductionLikeUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        var emailA = $"{Guid.NewGuid()}@test.com";
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = emailA
+        };
+        await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+
+        // A different account owns email B under a DIFFERENT username, so this
+        // can only be caught by RequireUniqueEmail - never by Identity's
+        // unconditional unique-USERNAME check.
+        var emailB = $"{Guid.NewGuid()}@already-taken.test";
+        var otherAccount = new EformUser
+        {
+            Email = emailB,
+            UserName = $"other-{Guid.NewGuid()}",
+            FirstName = "Other",
+            LastName = "Owner",
+            Locale = "da",
+            EmailConfirmed = true,
+            TimeZone = "Europe/Copenhagen",
+            Formats = "de-DE"
+        };
+        Assert.That((await userManager.CreateAsync(otherAccount)).Succeeded, Is.True);
+        var otherAccountId = otherAccount.Id;
+        var otherAccountUserName = otherAccount.UserName;
+        var otherAccountFirstName = otherAccount.FirstName;
+
+        // A REAL tag - see SeedSdkTag's doc comment for why a fake id like
+        // 999999 cannot distinguish "refused before the tag write" from
+        // "the tag write itself threw".
+        var tagId = await SeedSdkTag();
+
+        var firstUpdateModel = new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            WebAccessEnabled = true,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            Tags = [tagId],
+            WorkerEmail = emailB
+        };
+
+        // Act
+        var firstResult = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(firstUpdateModel, core, 1,
+            userService, userManager,
+            BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert — the whole update is refused, BEFORE any SDK or Identity
+        // write. The exact message pins this as the collision refusal, not
+        // merely "something threw".
+        Assert.That(firstResult.Success, Is.False);
+        Assert.That(firstResult.Message, Is.EqualTo("EmailIsAlreadyInUse"));
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        var workerAfterFirstCall = await sdkDbContext.Workers.SingleAsync(x => x.Email == emailA);
+        Assert.That(workerAfterFirstCall.Email, Is.EqualTo(emailA),
+            "the SDK worker must still show its OLD email - nothing may be written once the target is known to be taken");
+        await AssertNoActiveSiteTagsAsync(sdkDbContext, currentSite.Id);
+        var ownAccountBeforeSecondCall = await BaseDbContext!.Users.SingleAsync(x => x.Email == emailA);
+        Assert.That(ownAccountBeforeSecondCall.UserName, Is.EqualTo(emailA),
+            "the worker's own login must be untouched by the refused first call");
+
+        // Second call: a benign update on the SAME worker (WorkerEmail back to
+        // A, WebAccessEnabled toggled so a group-sync SaveChanges runs). It
+        // resolves the worker's own login from the unchanged address A and
+        // applies the group change there; the other account is untouched.
+        var secondUpdateModel = new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            WebAccessEnabled = true,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = emailA
+        };
+        var secondResult = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(secondUpdateModel, core, 1,
+            userService, userManager,
+            BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+        Assert.That(secondResult.Success, Is.True, secondResult.Message);
+
+        var ownAccountAfterSecondCall = await BaseDbContext.Users.SingleAsync(x => x.Email == emailA);
+        var ownGroupNames = await GetSecurityGroupNamesAsync(ownAccountAfterSecondCall.Id);
+        Assert.That(ownGroupNames, Does.Contain("eForm users"),
+            "the second call must reach the worker's own login");
+
+        var reloadedOther = await BaseDbContext.Users.SingleAsync(x => x.Id == otherAccountId);
+        Assert.That(reloadedOther.UserName, Is.EqualTo(otherAccountUserName),
+            "the other account's UserName must be untouched by either call");
+        Assert.That(reloadedOther.FirstName, Is.EqualTo(otherAccountFirstName),
+            "the other account's FirstName must be untouched by either call");
+        Assert.That(await BaseDbContext.SecurityGroupUsers.CountAsync(x => x.EformUserId == otherAccountId), Is.Zero,
+            "the other account's group membership must be unchanged by either call");
+    }
+
+    // The format-refusal counterpart of
+    // TargetEmailOwnedByAnotherAccount_RefusesBeforeAnyWrite. The worker has
+    // login A and the request changes its address to B, which Identity
+    // refuses for its format (non-ASCII). Because the address is changing,
+    // the whole update is refused before core.SiteUpdate or worker.Update
+    // runs, so the worker and its login both keep A.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_InvalidAddress_WithExistingLogin_DoesNotDivergeFromWorker()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        var emailA = $"{Guid.NewGuid()}@test.com";
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = emailA
+        };
+        await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var refusedEmail = $"s\u00f8ren-{Guid.NewGuid():N}@firma.dk";
+        var tagId = await SeedSdkTag();
+
+        // Capture the login's group membership BEFORE the refused update.
+        // CreateDeviceUser above already ran EnsureFallbackSecurityGroupAsync,
+        // which lands a groupless login in "none" - so a raw
+        // SecurityGroupUsers.CountAsync == 0 check is not meaningful here: the
+        // account already carries exactly one row before the update runs.
+        // The refusal must leave that set of group NAMES unchanged, in
+        // particular never adding "eForm users" for WebAccessEnabled=true.
+        var ownAccount = await BaseDbContext!.Users.SingleAsync(x => x.Email == emailA);
+        var groupNamesBefore = await GetSecurityGroupNamesAsync(ownAccount.Id);
+
+        var newDeviceUserModel = new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            WebAccessEnabled = true,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            Tags = [tagId],
+            WorkerEmail = refusedEmail
+        };
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core, 1,
+            userService, userManager,
+            BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert — refused before any write: worker and login both stay at A.
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Message, Is.EqualTo("EmailIsNotValid"));
+        var untouchedWorker = await MicrotingDbContext!.Workers.SingleAsync(x => x.Email == emailA);
+        Assert.That(untouchedWorker.Email, Is.EqualTo(emailA));
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        await AssertNoActiveSiteTagsAsync(sdkDbContext, currentSite.Id);
+        var reloadedOwnAccount = await BaseDbContext.Users.SingleAsync(x => x.Email == emailA);
+        Assert.That(reloadedOwnAccount.UserName, Is.EqualTo(emailA));
+        Assert.That(await BaseDbContext.Users.AnyAsync(x => x.Email == refusedEmail), Is.False,
+            "Identity refused the address, so there must be no account under it");
+        var groupNamesAfter = await GetSecurityGroupNamesAsync(ownAccount.Id);
+        Assert.That(groupNamesAfter, Is.EquivalentTo(groupNamesBefore),
+            "the refused update must not change the login's group membership at all");
+        Assert.That(groupNamesAfter, Does.Not.Contain("eForm users"),
+            "WebAccessEnabled must not have been applied to the login when the whole update was refused");
+    }
+
+    // A refusal that is neither a collision nor a format failure (here a
+    // UserValidator outside Identity's own email codes) is reported as the
+    // generic DeviceUserCouldNotBeUpdated - not as EmailIsNotValid or
+    // EmailIsAlreadyInUse, which would send the operator hunting for a problem
+    // with the address. ValidateCandidateEmailAsync runs every UserValidator,
+    // so the save is refused before any write. UpdateDeviceUser's outer catch
+    // returns the same key for any exception, so the refusal must also show up
+    // as the warning the validation step logs.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_NonEmailValidationFailure_ReportsCouldNotBeUpdated()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        var emailA = $"{Guid.NewGuid()}@test.com";
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = emailA
+        };
+        var createResult = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel,
+            core, 1, TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+        Assert.That(createResult.Success, Is.True, createResult.Message);
+        Assert.That(await BaseDbContext!.Users.AnyAsync(x => x.UserName == emailA), Is.True,
+            "sanity: the worker must have a login for the refused update to leave untouched");
+
+        var (refusingUserManager, refusingUserService) = CreateRefusingUserManagerAndService();
+
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var emailB = $"{Guid.NewGuid()}@test.com";
+        var newDeviceUserModel = new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = deviceUserModel.UserFirstName,
+            UserLastName = deviceUserModel.UserLastName,
+            WorkerEmail = emailB
+        };
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core, 1,
+            refusingUserService, refusingUserManager,
+            BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext, logger, ItemsPlanningPnDbContext!);
+
+        // Assert
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Message, Is.EqualTo("DeviceUserCouldNotBeUpdated"),
+            "a non-email validation failure must not be reported as an email problem");
+        Assert.That(logger.ReceivedCalls().Any(call => call.GetMethodInfo().Name == nameof(ILogger.Log)
+                && call.GetArguments()[0] is LogLevel.Warning
+                && call.GetArguments()[2]?.ToString()?.Contains("refusing to save email") == true), Is.True,
+            "the refusal must come from the email validation step, not from UpdateDeviceUser's outer catch");
+        Assert.That(await MicrotingDbContext.Workers.AsNoTracking().CountAsync(x => x.Email == emailA), Is.EqualTo(1),
+            "the worker must keep its address");
+        Assert.That(await MicrotingDbContext.Workers.AsNoTracking().AnyAsync(x => x.Email == emailB), Is.False,
+            "the refused address must not have reached the worker");
+        var untouchedLogin = await BaseDbContext.Users.AsNoTracking().SingleAsync(x => x.Email == emailA);
+        Assert.That(untouchedLogin.UserName, Is.EqualTo(emailA));
+        Assert.That(await BaseDbContext.Users.AnyAsync(x => x.Email == emailB || x.UserName == emailB), Is.False,
+            "the refused address must not have reached any account");
+    }
+
+    // A create that adopts an existing non-admin account and then has that
+    // account's UpdateAsync refused for a reason that is neither a collision nor
+    // a format failure reports DeviceUserCouldNotBeCreated, removes the site and
+    // worker it created, and leaves the account as it was. The up-front
+    // collision check lets a non-collision refusal through, so it is the
+    // adoption UpdateAsync that fails here.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_CreateDeviceUser_NonEmailValidationFailureOnAdoption_ReportsCouldNotBeCreated()
+    {
+        // Arrange
+        var core = await GetCore();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+
+        var ownedEmail = $"{Guid.NewGuid()}@adoption-refused.test";
+        var existingAccount = new EformUser
+        {
+            Email = ownedEmail,
+            UserName = $"owner-{Guid.NewGuid()}",
+            FirstName = "Existing",
+            LastName = "Owner",
+            Locale = "da",
+            EmailConfirmed = true,
+            TimeZone = "Europe/Copenhagen",
+            Formats = "de-DE"
+        };
+        Assert.That((await userManager.CreateAsync(existingAccount)).Succeeded, Is.True);
+        var existingAccountId = existingAccount.Id;
+        var originalUserName = existingAccount.UserName;
+        var originalFirstName = existingAccount.FirstName;
+
+        var (refusingUserManager, refusingUserService) = CreateRefusingUserManagerAndService();
+
+        var workerFirstName = Guid.NewGuid().ToString();
+        var workerLastName = Guid.NewGuid().ToString();
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = workerFirstName,
+            UserLastName = workerLastName,
+            WorkerEmail = ownedEmail
+        };
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, refusingUserService, refusingUserManager);
+
+        // Assert
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Message, Is.EqualTo("DeviceUserCouldNotBeCreated"),
+            "a failed create must be reported as a create failure, not as an update failure or an email problem");
+
+        var siteName = $"{workerFirstName} {workerLastName}";
+        Assert.That(await MicrotingDbContext!.Sites.AsNoTracking().AnyAsync(x => x.Name == siteName
+                && x.WorkflowState != Constants.WorkflowStates.Removed), Is.False,
+            "the site created for the refused adoption must not stay live");
+        Assert.That(await MicrotingDbContext.Sites.AsNoTracking().AnyAsync(x => x.Name == siteName
+                && x.WorkflowState == Constants.WorkflowStates.Removed), Is.True,
+            "the site must have been created and then removed, so the adoption UpdateAsync is the step that failed");
+        Assert.That(await MicrotingDbContext.Workers.AsNoTracking().AnyAsync(x => x.Email == ownedEmail
+                && x.WorkflowState != Constants.WorkflowStates.Removed), Is.False,
+            "the worker created for the refused adoption must not stay live");
+
+        var untouchedAccount = await BaseDbContext!.Users.AsNoTracking().SingleAsync(x => x.Id == existingAccountId);
+        Assert.That(untouchedAccount.UserName, Is.EqualTo(originalUserName),
+            "the refused adoption must not rename the account");
+        Assert.That(untouchedAccount.FirstName, Is.EqualTo(originalFirstName),
+            "the refused adoption must not overwrite the account's name");
+    }
+
+    // An UNCHANGED, previously-saved address Identity would refuse (format
+    // failure) must not block every OTHER edit forever - real population for a
+    // Danish customer base, where rows with æøå addresses were saved without
+    // this validation. CreateDeviceUser refuses to create a LOGIN for a
+    // non-ASCII address while still saving the worker
+    // (CreateDeviceUser_IdentityRejectsEmail_KeepsWorkerAndCreatesNoUser), so
+    // that same call reproduces exactly the "pre-existing, never-validated"
+    // row that must stay editable.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_UnchangedInvalidAddress_StillAllowsOtherEdits()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        var invalidEmail = $"s\u00f8ren-{Guid.NewGuid():N}@firma.dk";
+        var originalPhone = Guid.NewGuid().ToString("N")[..8];
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            PhoneNumber = originalPhone,
+            WorkerEmail = invalidEmail
+        };
+        var createResult = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+        Assert.That(createResult.Success, Is.True, createResult.Message);
+        Assert.That(await BaseDbContext!.Users.AnyAsync(x => x.Email == invalidEmail), Is.False,
+            "precondition: this worker must start with no login - Identity already refused this address once");
+
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var usersBefore = await BaseDbContext.Users.CountAsync();
+
+        var newFirstName = Guid.NewGuid().ToString();
+        var newLastName = Guid.NewGuid().ToString();
+        var newPhone = Guid.NewGuid().ToString("N")[..8];
+        var newDeviceUserModel = new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = newFirstName,
+            UserLastName = newLastName,
+            PhoneNumber = newPhone,
+            WorkerEmail = invalidEmail // UNCHANGED
+        };
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core, 1,
+            userService, userManager,
+            BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert - the save succeeds: an unchanged, already-invalid address
+        // must not block every other edit forever.
+        Assert.That(result.Success, Is.True, result.Message);
+        var updatedWorker = await MicrotingDbContext.Workers.SingleAsync(x => x.Email == invalidEmail);
+        Assert.That(updatedWorker.FirstName, Is.EqualTo(newFirstName));
+        Assert.That(updatedWorker.LastName, Is.EqualTo(newLastName));
+        Assert.That(updatedWorker.PhoneNumber, Is.EqualTo(newPhone));
+        Assert.That(await BaseDbContext.Users.AnyAsync(x => x.Email == invalidEmail), Is.False,
+            "no login must be created on the Identity side for an address Identity refuses, even on a successful save");
+        Assert.That(await BaseDbContext.Users.CountAsync(), Is.EqualTo(usersBefore));
+    }
+
+    // A worker's resolved login is not always one this plugin manages. When
+    // it is an admin account or user id 1, UpdateDeviceUser saves the
+    // worker's own fields and never writes to or re-groups that login. Such
+    // rows exist in production, because core can promote a worker's login to
+    // admin independently of this plugin. The rule holds even though
+    // ValidateCandidateEmailAsync's "is this the worker's own account"
+    // exclusion would accept the update.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_ResolvedLoginIsAdmin_SkipsLoginWorkButSavesWorker()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        // ReserveEformUserId1 keeps loginAccount off id 1, so only the admin-role
+        // half of IsPluginManagedLoginAsync can explain the assertions below.
+        var workerEmail = $"{Guid.NewGuid()}@test.com";
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = workerEmail
+        };
+        await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        var loginAccount = await BaseDbContext!.Users.SingleAsync(x => x.Email == workerEmail);
+        var originalUserName = loginAccount.UserName;
+        var originalFirstName = loginAccount.FirstName;
+        var originalLocale = loginAccount.Locale;
+
+        // Capture group membership BEFORE promoting to admin / updating.
+        // CreateDeviceUser above already ran EnsureFallbackSecurityGroupAsync,
+        // landing this groupless login in "none" - so a raw
+        // SecurityGroupUsers.CountAsync == 0 check on loginAccount.Id is NOT
+        // meaningful: it fails even when the guard works, because the
+        // account already carries that one "none" row from setup, unrelated
+        // to the WebAccessEnabled flag this test means to prove was ignored.
+        var groupNamesBefore = await GetSecurityGroupNamesAsync(loginAccount.Id);
+
+        // core promotes this worker's login to admin, independently of this
+        // save path - exactly the scenario this test exists for.
+        var addToRole = await userManager.AddToRoleAsync(loginAccount, EformRole.Admin);
+        Assert.That(addToRole.Succeeded, Is.True, string.Join(",", addToRole.Errors.Select(e => e.Description)));
+
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var newFirstName = Guid.NewGuid().ToString();
+        var newLastName = Guid.NewGuid().ToString();
+        var newDeviceUserModel = new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            WebAccessEnabled = true, // would normally add real group membership
+            UserFirstName = newFirstName,
+            UserLastName = newLastName,
+            WorkerEmail = workerEmail // unchanged
+        };
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core, 1,
+            userService, userManager,
+            BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert - the worker's own SDK fields still save...
+        Assert.That(result.Success, Is.True, result.Message);
+        var updatedWorker = await MicrotingDbContext!.Workers.SingleAsync(x => x.Email == workerEmail);
+        Assert.That(updatedWorker.FirstName, Is.EqualTo(newFirstName));
+        Assert.That(updatedWorker.LastName, Is.EqualTo(newLastName));
+
+        // ...but the promoted-to-admin login is completely untouched, and
+        // gains no group membership from this save - in particular not
+        // "eForm users", even though WebAccessEnabled=true was requested.
+        var reloadedLogin = await BaseDbContext.Users.SingleAsync(x => x.Id == loginAccount.Id);
+        Assert.That(reloadedLogin.UserName, Is.EqualTo(originalUserName));
+        Assert.That(reloadedLogin.FirstName, Is.EqualTo(originalFirstName));
+        Assert.That(reloadedLogin.Locale, Is.EqualTo(originalLocale));
+        var groupNamesAfter = await GetSecurityGroupNamesAsync(loginAccount.Id);
+        Assert.That(groupNamesAfter, Is.EquivalentTo(groupNamesBefore),
+            "the admin login's group membership must be completely unchanged by this save");
+        Assert.That(groupNamesAfter, Does.Not.Contain("eForm users"),
+            "WebAccessEnabled must not have added group membership to an admin login");
+    }
+
+    // Pins the OTHER half of the same rule as the test above: a resolved
+    // login that IS EformUser id 1 but carries no admin ROLE membership must
+    // still skip login/group work. The login is put on id 1 with
+    // IdentityTestUtils.ForceCreateAsEformUserId1Async (see its docs) - the
+    // worker is attached to it by mutating the SDK worker's Email directly
+    // rather than through CreateDeviceUser, since CreateDeviceUser's own
+    // MayLinkNewWorkerToLoginAsync check (already pinned separately) would
+    // otherwise refuse to link an id-1 account.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_ResolvedLoginIsId1_SkipsLoginWorkButSavesWorker()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        var workerEmail = $"{Guid.NewGuid()}@test.com";
+        var loginAccount = await IdentityTestUtils.ForceCreateAsEformUserId1Async(BaseDbContext!, userManager,
+            new EformUser
+            {
+                Email = workerEmail,
+                UserName = workerEmail,
+                FirstName = "Id1",
+                LastName = "Login",
+                Locale = "da",
+                EmailConfirmed = true,
+                TimeZone = "Europe/Copenhagen",
+                Formats = "de-DE"
+            });
+        Assert.That(loginAccount.Id, Is.EqualTo(1), "sanity: the subject must genuinely be id 1");
+        Assert.That(await userManager.IsInRoleAsync(loginAccount, EformRole.Admin), Is.False,
+            "this test pins the Id==1 half specifically - the admin-role half must play no part");
+        var originalUserName = loginAccount.UserName;
+        var originalFirstName = loginAccount.FirstName;
+        var originalLocale = loginAccount.Locale;
+
+        // Create the worker with NO email at all, so CreateDeviceUser's own
+        // MayLinkNewWorkerToLoginAsync check never runs against the id-1 account -
+        // then attach the worker to it directly on the SDK side, exactly like
+        // the NullEmail test's "simulate a real population directly" approach.
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = ""
+        };
+        await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        var worker = await sdkDbContext.Workers.SingleAsync(x => x.Email == "");
+        worker.Email = workerEmail;
+        await worker.Update(sdkDbContext).ConfigureAwait(false);
+        var workerId = worker.Id;
+
+        var groupNamesBefore = await GetSecurityGroupNamesAsync(loginAccount.Id);
+
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var newFirstName = Guid.NewGuid().ToString();
+        var newLastName = Guid.NewGuid().ToString();
+        var newDeviceUserModel = new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            WebAccessEnabled = true, // would normally add real group membership
+            UserFirstName = newFirstName,
+            UserLastName = newLastName,
+            WorkerEmail = workerEmail // unchanged
+        };
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core, 1,
+            userService, userManager,
+            BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert - the worker's own SDK fields still save...
+        Assert.That(result.Success, Is.True, result.Message);
+        var updatedWorker = await MicrotingDbContext.Workers.SingleAsync(x => x.Id == workerId);
+        Assert.That(updatedWorker.FirstName, Is.EqualTo(newFirstName));
+        Assert.That(updatedWorker.LastName, Is.EqualTo(newLastName));
+
+        // ...but the id-1 login is completely untouched, and gains no group
+        // membership from this save.
+        var reloadedLogin = await BaseDbContext!.Users.SingleAsync(x => x.Id == loginAccount.Id);
+        Assert.That(reloadedLogin.UserName, Is.EqualTo(originalUserName));
+        Assert.That(reloadedLogin.FirstName, Is.EqualTo(originalFirstName));
+        Assert.That(reloadedLogin.Locale, Is.EqualTo(originalLocale));
+        var groupNamesAfter = await GetSecurityGroupNamesAsync(loginAccount.Id);
+        Assert.That(groupNamesAfter, Is.EquivalentTo(groupNamesBefore),
+            "the id-1 login's group membership must be completely unchanged by this save");
+        Assert.That(groupNamesAfter, Does.Not.Contain("eForm users"),
+            "WebAccessEnabled must not have added group membership to the id-1 login");
+    }
+
+    // The address of a worker linked to an account this plugin does not
+    // manage cannot change - skipLoginWork refuses a changing address before
+    // any write. Here the target address also happens to collide with a
+    // second, unrelated account, but the refusal does not depend on that.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_ResolvedLoginIsAdmin_ChangingToOwnedEmail_Refuses()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        // CreateProductionLikeUserManager so otherAccount's address is also a
+        // collision under production's RequireUniqueEmail; the refusal does not
+        // depend on it.
+        var userManager = IdentityTestUtils.CreateProductionLikeUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        var workerEmail = $"{Guid.NewGuid()}@test.com";
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = workerEmail
+        };
+        await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        var loginAccount = await BaseDbContext!.Users.SingleAsync(x => x.Email == workerEmail);
+        var addToRole = await userManager.AddToRoleAsync(loginAccount, EformRole.Admin);
+        Assert.That(addToRole.Succeeded, Is.True, string.Join(",", addToRole.Errors.Select(e => e.Description)));
+
+        // A second, unrelated account already owns the address this update
+        // requests for the admin-owned row's worker.
+        var ownedEmail = $"{Guid.NewGuid()}@already-owned.test";
+        var otherAccount = new EformUser
+        {
+            Email = ownedEmail,
+            UserName = $"other-{Guid.NewGuid()}",
+            FirstName = "Other",
+            LastName = "Owner",
+            Locale = "da",
+            EmailConfirmed = true,
+            TimeZone = "Europe/Copenhagen",
+            Formats = "de-DE"
+        };
+        Assert.That((await userManager.CreateAsync(otherAccount)).Succeeded, Is.True);
+        var otherAccountUserName = otherAccount.UserName;
+
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var newDeviceUserModel = new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = ownedEmail // CHANGING, and already owned by otherAccount
+        };
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core, 1,
+            userService, userManager,
+            BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert - refused before any write: the SDK worker keeps its old
+        // address and otherAccount is unchanged.
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Message, Is.EqualTo("EmailIsAlreadyInUse"));
+        var untouchedWorker = await MicrotingDbContext!.Workers.SingleAsync(x => x.Email == workerEmail);
+        Assert.That(untouchedWorker.Email, Is.EqualTo(workerEmail),
+            "the address of a worker linked to an account this plugin does not manage cannot change");
+        var reloadedOther = await BaseDbContext.Users.SingleAsync(x => x.Id == otherAccount.Id);
+        Assert.That(reloadedOther.UserName, Is.EqualTo(otherAccountUserName),
+            "the other account must be completely untouched by a refused save");
+    }
+
+    // Resigning a worker that is still assigned is refused before any write.
+    // If this check ran after the SiteTag delete/create, the reconciliation
+    // dispatch and core.SiteUpdate/worker.Update, "change email A->B and tick
+    // Resigned while still assigned" would be refused only after the SDK
+    // worker already held B while the login stayed at A. So the check runs
+    // above every write and is computed from the REQUESTED tag set
+    // (deviceUserModel.Tags), not the post-write SiteTags, and a refusal
+    // leaves the worker's email, tags and login all unchanged.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_ResignWhileStillAssigned_RefusesBeforeAnyWrite()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        var emailA = $"{Guid.NewGuid()}@test.com";
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = emailA
+        };
+        await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var loginAccount = await BaseDbContext!.Users.SingleAsync(x => x.Email == emailA);
+        var originalUserName = loginAccount.UserName;
+
+        // A real, active AreaRulePlanning whose AreaRulePlanningWorkerTag
+        // references a tag this worker is about to REQUEST (not one it
+        // already carries as a SiteTag) - "still assigned" must be computed
+        // from the requested set, so seeding it this way (rather
+        // than as a pre-existing SiteTag) is what proves that half of it.
+        var tagId = await SeedSdkTag();
+        var arpId = await SeedActiveAreaRulePlanning();
+        await new AreaRulePlanningWorkerTag { AreaRulePlanningId = arpId, TagId = tagId }
+            .Create(BackendConfigurationPnDbContext!);
+
+        var emailB = $"{Guid.NewGuid()}@test.com";
+        var newDeviceUserModel = new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            Tags = [tagId],
+            WorkerEmail = emailB, // CHANGING
+            Resigned = true // and resigning, while still effectively assigned via the requested tag
+        };
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core, 1,
+            userService, userManager,
+            BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert - refused, and NOTHING moved: not the worker's email, not its
+        // tags, not its login.
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Message, Is.EqualTo("WorkerStillAssignedToEventsCannotResign"));
+        var untouchedWorker = await MicrotingDbContext!.Workers.SingleAsync(x => x.Email == emailA);
+        Assert.That(untouchedWorker.Email, Is.EqualTo(emailA),
+            "a refused resign must not have written the new email to the SDK worker");
+        Assert.That(untouchedWorker.Resigned, Is.False);
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        await AssertNoActiveSiteTagsAsync(sdkDbContext, currentSite.Id);
+        var reloadedLogin = await BaseDbContext.Users.SingleAsync(x => x.Id == loginAccount.Id);
+        Assert.That(reloadedLogin.UserName, Is.EqualTo(originalUserName),
+            "the worker's own login must be untouched - it must still resolve via the OLD email on the next save");
+        Assert.That(await BaseDbContext.Users.AnyAsync(x => x.Email == emailB), Is.False,
+            "no login may exist under the address the refused save tried to move to");
+    }
+
+    // No login means no "Kun tid" membership write. A worker can have
+    // TimeRegistrationEnabled == true with no WorkerEmail — no ModelState
+    // validation stops it, DeviceUserModel.WorkerEmail is nullable — in which
+    // case no EformUser is created and `user` stays null, so the "Kun tid"
+    // SecurityGroupUser write for time registration must be skipped rather
+    // than dereference it.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_CreateDeviceUser_TimeRegistrationEnabledNoEmail_DoesNotThrowAndCreatesNoUser()
+    {
+        // Arrange
+        var core = await GetCore();
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = true,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = ""
+        };
+
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        var usersBefore = await BaseDbContext!.Users.CountAsync();
+
+        // Act — must not throw an NRE while writing the "Kun tid" membership for a
+        // worker that never got an EformUser.
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        // Assert — once guarded, CreateDeviceUser still completes the AssignedSite
+        // creation and reports success; it just skips the login and its membership.
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var usersAfter = await BaseDbContext.Users.CountAsync();
+        Assert.That(usersAfter, Is.EqualTo(usersBefore),
+            "a worker with no email must not get an EformUser, even with time registration enabled");
+
+        var zeroIdMemberships = await BaseDbContext.SecurityGroupUsers
+            .CountAsync(x => x.EformUserId == 0);
+        Assert.That(zeroIdMemberships, Is.EqualTo(0),
+            "no SecurityGroupUser row should ever be written against a non-existent user");
+    }
+
+    // A worker whose Email is NULL (not "") must remain editable. Real
+    // population, not hypothetical: core's own DeviceUsersService passed a
+    // null email to core.SiteCreate until eform-angular-frontend commit
+    // 36f3a82c8 (Jan 2026), and SQL/420_SDK.sql seeds one too (Worker id 2).
+    // userManager.FindByNameAsync throws ArgumentNullException on a null
+    // username, which the outer catch would turn into
+    // "DeviceUserCouldNotBeUpdated", leaving the worker permanently uneditable.
+    // FindLoginWithoutSideEffectsAsync returns null for a null/empty email
+    // instead of calling FindByNameAsync at all.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_NullEmail_IsStillEditable()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = "" // forced to NULL below, once the worker is found by this "" address
+        };
+        await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        // Simulate the real population directly: force the SDK worker's Email
+        // to NULL, exactly like SQL/420_SDK.sql's seeded Worker id 2.
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        var worker = await sdkDbContext.Workers.SingleAsync(x => x.Email == "");
+        worker.Email = null;
+        await worker.Update(sdkDbContext).ConfigureAwait(false);
+
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var newFirstName = Guid.NewGuid().ToString();
+        var newDeviceUserModel = new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = newFirstName,
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = "" // still no real address - not the point under test
+        };
+
+        // Act - must not throw, and must not report the generic
+        // "DeviceUserCouldNotBeUpdated" an unguarded ArgumentNullException
+        // would produce via the outer catch.
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core, 1,
+            userService, userManager,
+            BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+        // Read back through MicrotingDbContext, NOT the sdkDbContext instance
+        // through which the Arrange step fetched and mutated `worker` - that
+        // instance's change tracker still holds the ORIGINAL FirstName on the
+        // exact same tracked entity, so re-querying it (identity map hit)
+        // would return that stale in-memory value rather than what the
+        // Act call actually persisted, regardless of whether the save worked.
+        var updatedWorker = await MicrotingDbContext!.Workers.SingleAsync(x => x.Id == worker.Id);
+        Assert.That(updatedWorker.FirstName, Is.EqualTo(newFirstName),
+            "a worker whose Email was NULL must still be editable");
+    }
+
+    // UpdateDeviceUser's SDK duplicate-email check compares against the
+    // substituted synthetic address, never the raw "": a request with
+    // WorkerEmail == "" must not be refused EmailIsAlreadyInUse just because
+    // ANOTHER live worker's Email is ALSO "". SQL/420_SDK.sql's seeded
+    // null-email Worker id 2 cannot exercise this ("" != NULL at the SQL
+    // level), so this needs a SECOND worker whose Email is the literal empty
+    // string.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_SecondLiveWorkerWithEmptyEmail_StillEditable()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        // First worker: left at WorkerEmail == "" and never touched again -
+        // its ROLE here is purely to be the "another live worker with Email
+        // == ''" that a duplicate check on the raw "" would collide against.
+        var otherDeviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = ""
+        };
+        var otherCreateResult = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(
+            otherDeviceUserModel, core, 1, TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+        Assert.That(otherCreateResult.Success, Is.True, otherCreateResult.Message);
+
+        // Second worker: this is the one under test. It is created with a
+        // real address, then forced to "" directly on the SDK side afterwards,
+        // exactly like the NullEmail test's "simulate a real population
+        // directly" approach - so this test depends only on UpdateDeviceUser.
+        var subjectDeviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
+        };
+        var subjectCreateResult = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(
+            subjectDeviceUserModel, core, 1, TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+        Assert.That(subjectCreateResult.Success, Is.True, subjectCreateResult.Message);
+
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        var subjectWorker = await sdkDbContext.Workers
+            .SingleAsync(x => x.Email == subjectDeviceUserModel.WorkerEmail);
+        subjectWorker.Email = "";
+        await subjectWorker.Update(sdkDbContext).ConfigureAwait(false);
+        var subjectWorkerId = subjectWorker.Id;
+        // The subject was created SECOND, so it is the most recently created
+        // site - the same pattern every other test in this file uses to find
+        // "the site just created".
+        var subjectSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+
+        var newFirstName = Guid.NewGuid().ToString();
+        var newDeviceUserModel = new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)subjectSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = newFirstName,
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = "" // still empty - the OTHER worker's Email is ALSO ""
+        };
+
+        // Act - a second live worker sharing the raw, pre-substitution ""
+        // address must not block this save.
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core, 1,
+            userService, userManager,
+            BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+        var updatedWorker = await MicrotingDbContext.Workers.SingleAsync(x => x.Id == subjectWorkerId);
+        Assert.That(updatedWorker.FirstName, Is.EqualTo(newFirstName),
+            "a worker with an empty Email must stay editable even when another live worker also has Email == \"\"");
+    }
+
+    // An empty address cannot collide, so CreateDeviceUser's SDK duplicate-email
+    // check must not refuse a second worker just because another live worker's
+    // Email is also "".
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_CreateDeviceUser_SecondWorkerWithEmptyEmail_IsCreated()
+    {
+        // Arrange
+        var core = await GetCore();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        DeviceUserModel EmptyEmailWorker() => new()
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = ""
+        };
+        var firstResult = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(
+            EmptyEmailWorker(), core, 1, TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+        Assert.That(firstResult.Success, Is.True, firstResult.Message);
+
+        // Act
+        var secondResult = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(
+            EmptyEmailWorker(), core, 1, TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        // Assert
+        Assert.That(secondResult.Success, Is.True, secondResult.Message);
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        Assert.That(await sdkDbContext.Workers.CountAsync(x => x.Email == ""
+                && x.WorkflowState != Constants.WorkflowStates.Removed), Is.EqualTo(2),
+            "both workers with an empty Email must be live");
+    }
+
+    // The same rule for a NULL address. SQL/420_SDK.sql seeds a live Worker (id 2)
+    // whose Email is NULL, so a single create with a null WorkerEmail already has
+    // another live worker sharing its address.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_CreateDeviceUser_SecondWorkerWithNullEmail_IsCreated()
+    {
+        // Arrange
+        var core = await GetCore();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+        Assert.That(await MicrotingDbContext!.Workers.AsNoTracking().AnyAsync(x => x.Email == null
+                && x.WorkflowState != Constants.WorkflowStates.Removed), Is.True,
+            "sanity: a live worker with a NULL Email must already exist");
+
+        var workerFirstName = Guid.NewGuid().ToString();
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = workerFirstName,
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = null
+        };
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(
+            deviceUserModel, core, 1, TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(await MicrotingDbContext.Workers.AsNoTracking().AnyAsync(x => x.FirstName == workerFirstName
+                && x.WorkflowState != Constants.WorkflowStates.Removed), Is.True,
+            "a worker with a null Email must be created even though another live worker's Email is also NULL");
+    }
 
     // Should test the CreateDeviceUser method with TimeRegistrationEnabled set to true and return success
     [Test]
@@ -142,16 +2323,18 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(31));
         Assert.That(timeregistrationSiteAssignments[30].SiteId, Is.EqualTo(sites[2].MicrotingUid));
 
-        // Newly-created AssignedSite no longer hardcodes UseOneMinuteIntervals to true; it defaults to
-        // false when the DeviceUserModel does not specify it (CreateDeviceUser path)
-        Assert.That(timeregistrationSiteAssignments[30].UseOneMinuteIntervals, Is.False);
+        // Create hardcodes UseOneMinuteIntervals to true even when the DeviceUserModel leaves it unset,
+        // and leaves UseOneMinuteIntervalsFrom NULL so OneMinuteModeTimeline reports one-minute mode for
+        // the site's whole history.
+        Assert.That(timeregistrationSiteAssignments[30].UseOneMinuteIntervals, Is.True);
+        Assert.That(timeregistrationSiteAssignments[30].UseOneMinuteIntervalsFrom, Is.Null);
     }
 
-    // Should test the CreateDeviceUser method with TimeRegistrationEnabled, UseOneMinuteIntervals and
-    // PayRuleSetId set, verifying both new fields pass through onto the created AssignedSite
+    // Should test the CreateDeviceUser method with TimeRegistrationEnabled and PayRuleSetId set,
+    // verifying PayRuleSetId passes through while a client-sent UseOneMinuteIntervals=false is IGNORED
     [Test]
     public async Task
-        BackendConfigurationAssignmentWorkerServiceHelper_CreateDeviceUser_TimeRegistrationEnabled_UseOneMinuteIntervalsAndPayRuleSetId_ReturnsSuccess()
+        BackendConfigurationAssignmentWorkerServiceHelper_CreateDeviceUser_TimeRegistrationEnabled_ClientSentUseOneMinuteIntervalsIgnoredAndPayRuleSetId_ReturnsSuccess()
     {
         // Arrange
         var core = await GetCore();
@@ -170,7 +2353,8 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             IsLocked = false,
             LanguageCode = "da",
             TimeRegistrationEnabled = true,
-            UseOneMinuteIntervals = true,
+            // Deliberately false: the create path must ignore it and still persist true.
+            UseOneMinuteIntervals = false,
             PayRuleSetId = payRuleSetId,
             UserFirstName = Guid.NewGuid().ToString(),
             UserLastName = Guid.NewGuid().ToString(),
@@ -199,7 +2383,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(31));
         Assert.That(timeregistrationSiteAssignments[30].SiteId, Is.EqualTo(sites[2].MicrotingUid));
 
-        // Newly-created AssignedSite must pass through UseOneMinuteIntervals and PayRuleSetId from the DeviceUserModel
+        // True even though the client explicitly sent false — create hardcodes the flag.
         Assert.That(timeregistrationSiteAssignments[30].UseOneMinuteIntervals, Is.True);
         Assert.That(timeregistrationSiteAssignments[30].PayRuleSetId, Is.EqualTo(payRuleSetId));
     }
@@ -405,9 +2589,12 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(31));
         Assert.That(timeregistrationSiteAssignments[30].SiteId, Is.EqualTo(sites[2].MicrotingUid));
 
-        // Newly-created AssignedSite no longer hardcodes UseOneMinuteIntervals to true; it defaults to
-        // false when the DeviceUserModel does not specify it (UpdateDeviceUser create path)
-        Assert.That(timeregistrationSiteAssignments[30].UseOneMinuteIntervals, Is.False);
+        // The UpdateDeviceUser create path hardcodes UseOneMinuteIntervals to true. This site has no
+        // earlier assignment, so no effective date is stamped and the derived timeline covers its whole
+        // history. The re-enable case, where a stamp IS required, is covered by
+        // ..._TimeRegistrationReEnabledOnFiveMinuteSite_StampsEffectiveDate below.
+        Assert.That(timeregistrationSiteAssignments[30].UseOneMinuteIntervals, Is.True);
+        Assert.That(timeregistrationSiteAssignments[30].UseOneMinuteIntervalsFrom, Is.Null);
     }
 
     // Should test the UpdateDeviceUser method with timeRegistration set to false and return success
@@ -522,6 +2709,708 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // Assert propertyWorkers
         Assert.That(propertyWorkers.Count, Is.EqualTo(0));
     }
+
+    // Disabling time registration soft-deletes the AssignedSite, so re-enabling it creates a NEW row
+    // for a site that keeps its old PlanRegistrations (they hang off SdkSitId). The new row is
+    // hardcoded to one-minute mode, but for a site that was previously in 5-minute mode the effective
+    // date must be stamped, otherwise OneMinuteModeTimeline — which sees no version rows on the new
+    // row — would derive one-minute mode all the way back and reinterpret every historical tick row.
+    [Test]
+    public async Task
+        BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_TimeRegistrationReEnabledOnFiveMinuteSite_StampsEffectiveDate()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+
+        var propertyCreateModel = new PropertyCreateModel
+        {
+            Address = Guid.NewGuid().ToString(),
+            Chr = Guid.NewGuid().ToString(),
+            IndustryCode = Guid.NewGuid().ToString(),
+            Cvr = Guid.NewGuid().ToString(),
+            IsFarm = true,
+            LanguagesIds = [1],
+            MainMailAddress = Guid.NewGuid().ToString(),
+            Name = Guid.NewGuid().ToString(),
+            WorkorderEnable = false
+        };
+
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
+
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = true,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
+        };
+
+        await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var siteMicrotingUid = (int)currentSite.MicrotingUid!;
+
+        // Backdate the assignment to 5-minute mode, standing in for a site that was set up before
+        // one-minute intervals became the default for every new time registration setup.
+        var legacyAssignment = await TimePlanningPnDbContext!.AssignedSites
+            .OrderByDescending(x => x.Id)
+            .FirstAsync(x => x.SiteId == siteMicrotingUid);
+        legacyAssignment.UseOneMinuteIntervals = false;
+        legacyAssignment.UseOneMinuteIntervalsFrom = null;
+        await legacyAssignment.Update(TimePlanningPnDbContext!);
+
+        var userFirstName = Guid.NewGuid().ToString();
+        var userLastName = Guid.NewGuid().ToString();
+        var workerEmail = $"{Guid.NewGuid()}@test.com";
+
+        DeviceUserModel UpdateModel(bool timeRegistrationEnabled) => new()
+        {
+            SiteMicrotingUid = siteMicrotingUid,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = timeRegistrationEnabled,
+            UserFirstName = userFirstName,
+            UserLastName = userLastName,
+            WorkerEmail = workerEmail
+        };
+
+        // Act — disable, then re-enable
+        await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(UpdateModel(false), core, 1,
+            userService, userManager, BackendConfigurationPnDbContext!, TimePlanningPnDbContext!, BaseDbContext!,
+            logger, ItemsPlanningPnDbContext!);
+
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(UpdateModel(true), core, 1,
+            userService, userManager, BackendConfigurationPnDbContext!, TimePlanningPnDbContext!, BaseDbContext!,
+            logger, ItemsPlanningPnDbContext!);
+
+        // Assert
+        // The create branch swallows exceptions into a failure result, so Is.Not.Null would pass on a
+        // broken run; assert the operation actually succeeded.
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var assignmentsForSite = await TimePlanningPnDbContext!.AssignedSites.AsNoTracking()
+            .Where(x => x.SiteId == siteMicrotingUid)
+            .OrderBy(x => x.Id)
+            .ToListAsync();
+
+        // The old row was soft-deleted and a brand new one minted alongside it.
+        Assert.That(assignmentsForSite.Count, Is.EqualTo(2));
+        Assert.That(assignmentsForSite[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(assignmentsForSite[0].UseOneMinuteIntervals, Is.False);
+
+        var reEnabled = assignmentsForSite[1];
+        Assert.That(reEnabled.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(reEnabled.UseOneMinuteIntervals, Is.True);
+        // Stamped, so the site's pre-existing registrations keep reading as 5-minute mode.
+        Assert.That(reEnabled.UseOneMinuteIntervalsFrom, Is.Not.Null);
+        // Not-null alone is too weak: DateTime.MinValue is non-null and would reinterpret every
+        // historical row exactly as before the fix. Assert the behaviour the stamp exists for.
+        var timeline = await OneMinuteModeTimeline.BuildAsync(TimePlanningPnDbContext!, reEnabled);
+        Assert.That(timeline.WasOneMinuteAt(DateTime.UtcNow.AddDays(-1)), Is.False,
+            "Registrations from before the re-enable must still resolve as 5-minute mode.");
+        Assert.That(timeline.WasOneMinuteAt(DateTime.UtcNow), Is.True,
+            "From the re-enable onwards the site is in one-minute mode.");
+    }
+
+    // The legacy un-backfilled shape: an AssignedSite switched from 5-minute to one-minute mode BEFORE
+    // UseOneMinuteIntervalsFrom existed, so the flag is true but the stamp is NULL and the transition
+    // survives ONLY as an AssignedSiteVersions row. Those version rows are keyed to the OLD
+    // AssignedSiteId and therefore do not follow the site into the new row that re-enabling time
+    // registration mints, so carrying the NULL across would make the new row's timeline read one-minute
+    // mode all the way back. The create path must recover the transition date from the old row's
+    // version rows instead.
+    [Test]
+    public async Task
+        BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_TimeRegistrationReEnabledOnUnstampedOneMinuteSite_RecoversEffectiveDateFromVersions()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+
+        var propertyCreateModel = new PropertyCreateModel
+        {
+            Address = Guid.NewGuid().ToString(),
+            Chr = Guid.NewGuid().ToString(),
+            IndustryCode = Guid.NewGuid().ToString(),
+            Cvr = Guid.NewGuid().ToString(),
+            IsFarm = true,
+            LanguagesIds = [1],
+            MainMailAddress = Guid.NewGuid().ToString(),
+            Name = Guid.NewGuid().ToString(),
+            WorkorderEnable = false
+        };
+
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
+
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+
+        // Time registration deliberately OFF at creation: the legacy AssignedSite is built by hand
+        // below so its FIRST version row carries UseOneMinuteIntervals = false, the way a site set up
+        // before one-minute intervals became the default looks. (CreateDeviceUser would hardcode true,
+        // which is a different history entirely.)
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
+        };
+
+        await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var siteMicrotingUid = (int)currentSite.MicrotingUid!;
+
+        var legacyAssignment = new AssignedSite
+        {
+            SiteId = siteMicrotingUid,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1,
+            UseOneMinuteIntervals = false
+        };
+        await legacyAssignment.Create(TimePlanningPnDbContext!);
+
+        // The legacy switch: the flag flips to true and NO stamp is written, so the false→true
+        // transition exists only in the version row this Update writes.
+        legacyAssignment.UseOneMinuteIntervals = true;
+        legacyAssignment.UseOneMinuteIntervalsFrom = null;
+        await legacyAssignment.Update(TimePlanningPnDbContext!);
+
+        // Backdate that version row so the recovered date is provably the transition's own and not
+        // simply "now" — a stamp of today would be indistinguishable from the 5-minute-site case.
+        var transitionVersion = await TimePlanningPnDbContext!.AssignedSiteVersions
+            .Where(x => x.AssignedSiteId == legacyAssignment.Id && x.UseOneMinuteIntervals)
+            .OrderBy(x => x.Id)
+            .FirstAsync();
+        var transitionDate = DateTime.UtcNow.AddDays(-30);
+        transitionVersion.UpdatedAt = transitionDate;
+        await TimePlanningPnDbContext!.SaveChangesAsync();
+
+        var userFirstName = Guid.NewGuid().ToString();
+        var userLastName = Guid.NewGuid().ToString();
+        var workerEmail = $"{Guid.NewGuid()}@test.com";
+
+        DeviceUserModel UpdateModel(bool timeRegistrationEnabled) => new()
+        {
+            SiteMicrotingUid = siteMicrotingUid,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = timeRegistrationEnabled,
+            UserFirstName = userFirstName,
+            UserLastName = userLastName,
+            WorkerEmail = workerEmail
+        };
+
+        // Act — disable, then re-enable
+        await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(UpdateModel(false), core, 1,
+            userService, userManager, BackendConfigurationPnDbContext!, TimePlanningPnDbContext!, BaseDbContext!,
+            logger, ItemsPlanningPnDbContext!);
+
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(UpdateModel(true), core, 1,
+            userService, userManager, BackendConfigurationPnDbContext!, TimePlanningPnDbContext!, BaseDbContext!,
+            logger, ItemsPlanningPnDbContext!);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var assignmentsForSite = await TimePlanningPnDbContext!.AssignedSites.AsNoTracking()
+            .Where(x => x.SiteId == siteMicrotingUid)
+            .OrderBy(x => x.Id)
+            .ToListAsync();
+
+        // The old row was soft-deleted and a brand new one minted alongside it.
+        Assert.That(assignmentsForSite.Count, Is.EqualTo(2));
+        Assert.That(assignmentsForSite[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+
+        var reEnabled = assignmentsForSite[1];
+        Assert.That(reEnabled.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(reEnabled.UseOneMinuteIntervals, Is.True);
+        // Recovered from the OLD row's version rows — the new row has none of its own.
+        Assert.That(reEnabled.UseOneMinuteIntervalsFrom, Is.Not.Null);
+        Assert.That(reEnabled.UseOneMinuteIntervalsFrom!.Value.Date, Is.EqualTo(transitionDate.Date),
+            "The stamp must be the legacy false→true transition date, not the re-enable date.");
+
+        var timeline = await OneMinuteModeTimeline.BuildAsync(TimePlanningPnDbContext!, reEnabled);
+        Assert.That(timeline.WasOneMinuteAt(transitionDate.AddDays(-1)), Is.False,
+            "Registrations from before the legacy switch must still resolve as 5-minute mode.");
+        Assert.That(timeline.WasOneMinuteAt(transitionDate.AddDays(1)), Is.True,
+            "Registrations from after the legacy switch resolve as one-minute mode.");
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // The effective-date carry-over in UpdateDeviceUser's create branch, one test per outcome.
+    //
+    // Re-enabling time registration mints a NEW AssignedSite hardcoded to one-minute mode. Its own
+    // version trail starts at true, so OneMinuteModeTimeline reads one-minute mode all the way back
+    // UNLESS UseOneMinuteIntervalsFrom says otherwise. Every branch therefore decides how the site's
+    // pre-existing registrations are paid, and each test below asserts both the stored value and the
+    // timeline verdict on dates either side of the expected boundary — the timeline is what payroll
+    // reads. The 5-minute and the recovered-transition outcomes are the two tests above.
+    // ---------------------------------------------------------------------------------------------
+
+    // Branch: no earlier AssignedSite at all — genuinely the site's first time registration setup.
+    [Test]
+    public async Task
+        BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_TimeRegistrationEnabledOnSiteWithNoEarlierAssignment_LeavesEffectiveDateNull()
+    {
+        // Arrange
+        var worker = await ArrangeWorkerWithoutTimeRegistration();
+        Assert.That(await TimePlanningPnDbContext!.AssignedSites.AnyAsync(x => x.SiteId == worker.SiteMicrotingUid),
+            Is.False, "Precondition: the site must never have had an AssignedSite, removed or not.");
+
+        // Act
+        var result = await SetTimeRegistration(worker, true);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var assignmentsForSite = await AssignmentsForSite(worker.SiteMicrotingUid);
+        Assert.That(assignmentsForSite.Count, Is.EqualTo(1));
+        var created = assignmentsForSite[0];
+        Assert.That(created.UseOneMinuteIntervals, Is.True);
+        Assert.That(created.UseOneMinuteIntervalsFrom, Is.Null,
+            "No earlier history exists to protect, so nothing may be stamped.");
+
+        // WRONG outcomes this pins: deleting the null-check branch dereferences the missing row, the
+        // create branch swallows the exception and the enable silently fails; treating "no earlier row"
+        // like a 5-minute site stamps now, which would push everything registered before today into
+        // 5-minute mode on a site that never had any 5-minute history.
+        var timeline = await OneMinuteModeTimeline.BuildAsync(TimePlanningPnDbContext!, created);
+        Assert.That(timeline.WasOneMinuteAt(DateTime.UtcNow.AddYears(-5)), Is.True,
+            "A first setup is one-minute mode from the beginning of time.");
+        Assert.That(timeline.WasOneMinuteAt(DateTime.UtcNow.AddDays(-1)), Is.True,
+            "Yesterday must not read as 5-minute mode — nothing was ever registered under it.");
+        Assert.That(timeline.WasOneMinuteAt(DateTime.UtcNow), Is.True);
+    }
+
+    // Branch: the earlier row was already one-minute WITH a recorded effective date — carried unchanged.
+    [Test]
+    public async Task
+        BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_TimeRegistrationReEnabledOnStampedOneMinuteSite_CarriesStampUnchanged()
+    {
+        // Arrange
+        var worker = await ArrangeWorkerWithoutTimeRegistration();
+
+        // Backdated 30 days so a carried stamp is distinguishable from a fresh "now" stamp.
+        var recordedFrom = DateTime.UtcNow.AddDays(-30);
+        // Created true, so version row #0 is already true: were the stamp branch deleted, the
+        // version-trail branch would see "earliest row already true" and carry NULL instead.
+        var legacyAssignment = await CreateLegacyAssignment(worker, useOneMinuteIntervals: true,
+            useOneMinuteIntervalsFrom: recordedFrom);
+        // Read back what the database actually holds (column precision), which is what gets carried.
+        var storedFrom = (await TimePlanningPnDbContext!.AssignedSites.AsNoTracking()
+            .FirstAsync(x => x.Id == legacyAssignment.Id)).UseOneMinuteIntervalsFrom;
+        Assert.That(storedFrom, Is.Not.Null, "Precondition: the earlier row must carry a stamp.");
+
+        // Act — disable, then re-enable
+        var disableResult = await SetTimeRegistration(worker, false);
+        Assert.That(disableResult.Success, Is.True, disableResult.Message);
+        var result = await SetTimeRegistration(worker, true);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var assignmentsForSite = await AssignmentsForSite(worker.SiteMicrotingUid);
+        Assert.That(assignmentsForSite.Count, Is.EqualTo(2));
+        Assert.That(assignmentsForSite[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+
+        var reEnabled = assignmentsForSite[1];
+        Assert.That(reEnabled.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(reEnabled.UseOneMinuteIntervals, Is.True);
+        Assert.That(reEnabled.UseOneMinuteIntervalsFrom, Is.EqualTo(storedFrom),
+            "The recorded effective date must be carried across exactly, not re-derived or re-stamped.");
+
+        // WRONG outcomes this pins: carrying NULL (stamp branch deleted, or the version trail consulted
+        // first) makes one-minute mode hold from the beginning of time and reinterprets the 5-minute
+        // history before the recorded date; re-stamping now pushes the 30 one-minute days since the
+        // recorded date back into 5-minute mode.
+        var timeline = await OneMinuteModeTimeline.BuildAsync(TimePlanningPnDbContext!, reEnabled);
+        Assert.That(timeline.WasOneMinuteAt(recordedFrom.AddDays(-1)), Is.False,
+            "Registrations from before the recorded date must still resolve as 5-minute mode.");
+        Assert.That(timeline.WasOneMinuteAt(recordedFrom), Is.True,
+            "The recorded date itself is the first one-minute day.");
+        Assert.That(timeline.WasOneMinuteAt(recordedFrom.AddDays(1)), Is.True,
+            "Registrations after the recorded date — but before the re-enable — stay one-minute mode.");
+    }
+
+    // Branch: one-minute, no stamp, and NO version rows — nothing to recover, so NULL is carried.
+    [Test]
+    public async Task
+        BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_TimeRegistrationReEnabledOnUnstampedOneMinuteSiteWithoutVersions_LeavesEffectiveDateNull()
+    {
+        // Arrange
+        var worker = await ArrangeWorkerWithoutTimeRegistration();
+
+        var legacyAssignment = await CreateLegacyAssignment(worker, useOneMinuteIntervals: true);
+
+        // A row older than AssignedSiteVersions itself: no audit trail at all. Drop the version row
+        // Create just wrote, and soft-delete the row outside PnBase so no removal row exists either.
+        // (Through the app's disable path the removal row is written but filtered out of the trail,
+        // which lands on this same branch.)
+        TimePlanningPnDbContext!.AssignedSiteVersions.RemoveRange(
+            await TimePlanningPnDbContext.AssignedSiteVersions
+                .Where(x => x.AssignedSiteId == legacyAssignment.Id)
+                .ToListAsync());
+        legacyAssignment.WorkflowState = Constants.WorkflowStates.Removed;
+        await TimePlanningPnDbContext.SaveChangesAsync();
+        Assert.That(await TimePlanningPnDbContext.AssignedSiteVersions
+                .AnyAsync(x => x.AssignedSiteId == legacyAssignment.Id),
+            Is.False, "Precondition: the earlier row must have no version rows.");
+
+        // Act
+        var result = await SetTimeRegistration(worker, true);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var assignmentsForSite = await AssignmentsForSite(worker.SiteMicrotingUid);
+        Assert.That(assignmentsForSite.Count, Is.EqualTo(2));
+        Assert.That(assignmentsForSite[0].Id, Is.EqualTo(legacyAssignment.Id));
+
+        var reEnabled = assignmentsForSite[1];
+        Assert.That(reEnabled.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(reEnabled.UseOneMinuteIntervals, Is.True);
+        Assert.That(reEnabled.UseOneMinuteIntervalsFrom, Is.Null,
+            "An empty trail records no transition, so there is no date to carry.");
+
+        // WRONG outcomes this pins: without the Count == 0 guard the branch indexes an empty list, the
+        // create branch swallows the exception and the enable silently fails; stamping now instead
+        // would move the site's whole one-minute history — which the old row's timeline read as
+        // one-minute throughout (no version rows means "current flag for all dates") — into 5-minute.
+        var timeline = await OneMinuteModeTimeline.BuildAsync(TimePlanningPnDbContext!, reEnabled);
+        Assert.That(timeline.WasOneMinuteAt(DateTime.UtcNow.AddYears(-5)), Is.True,
+            "The site read as one-minute mode for all dates before the re-enable, and must still.");
+        Assert.That(timeline.WasOneMinuteAt(DateTime.UtcNow.AddDays(-1)), Is.True);
+        Assert.That(timeline.WasOneMinuteAt(DateTime.UtcNow), Is.True);
+    }
+
+    // Branch: one-minute, no stamp, and the EARLIEST version row is already true — the site was
+    // one-minute from its creation, so there is no transition and NULL is carried.
+    [Test]
+    public async Task
+        BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_TimeRegistrationReEnabledOnSiteOneMinuteSinceCreation_LeavesEffectiveDateNull()
+    {
+        // Arrange
+        var worker = await ArrangeWorkerWithoutTimeRegistration();
+
+        // Created true on purpose: PnBase.Create writes version row #0, so the trail starts at true.
+        var legacyAssignment = await CreateLegacyAssignment(worker, useOneMinuteIntervals: true);
+
+        // Backdate version row #0 so that mistaking it for a false→true transition produces a date
+        // 30 days back — visible on the timeline — rather than one indistinguishable from "now".
+        var firstVersion = await TimePlanningPnDbContext!.AssignedSiteVersions
+            .Where(x => x.AssignedSiteId == legacyAssignment.Id)
+            .OrderBy(x => x.Id)
+            .FirstAsync();
+        Assert.That(firstVersion.UseOneMinuteIntervals, Is.True, "Precondition: version row #0 must be true.");
+        var createdAt = DateTime.UtcNow.AddDays(-30);
+        firstVersion.UpdatedAt = createdAt;
+        await TimePlanningPnDbContext.SaveChangesAsync();
+
+        // Act — disable, then re-enable
+        var disableResult = await SetTimeRegistration(worker, false);
+        Assert.That(disableResult.Success, Is.True, disableResult.Message);
+        var result = await SetTimeRegistration(worker, true);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var assignmentsForSite = await AssignmentsForSite(worker.SiteMicrotingUid);
+        Assert.That(assignmentsForSite.Count, Is.EqualTo(2));
+        Assert.That(assignmentsForSite[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+
+        var reEnabled = assignmentsForSite[1];
+        Assert.That(reEnabled.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(reEnabled.UseOneMinuteIntervals, Is.True);
+        Assert.That(reEnabled.UseOneMinuteIntervalsFrom, Is.Null,
+            "A trail that starts at true records no transition, so there is no date to carry.");
+
+        // WRONG outcome this pins: without the "earliest row already true" clause the branch takes the
+        // first true row as the transition and stamps its date — 30 days back — which would push the
+        // site's one-minute history before that day into 5-minute mode. The old row's timeline read it
+        // as one-minute from the beginning of time (its _initialValue was true).
+        var timeline = await OneMinuteModeTimeline.BuildAsync(TimePlanningPnDbContext!, reEnabled);
+        Assert.That(timeline.WasOneMinuteAt(createdAt.AddDays(-1)), Is.True,
+            "The day before version row #0 must still resolve as one-minute mode.");
+        Assert.That(timeline.WasOneMinuteAt(DateTime.UtcNow.AddYears(-5)), Is.True,
+            "One-minute mode holds from the beginning of time.");
+        Assert.That(timeline.WasOneMinuteAt(DateTime.UtcNow), Is.True);
+    }
+
+    // Branch: one-minute, no stamp, and the trail NEVER records true — the flag was flipped outside the
+    // audited path, so the LAST audited save is the earliest possible flip point and is carried.
+    [Test]
+    public async Task
+        BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_TimeRegistrationReEnabledOnSiteFlippedOutsideAudit_CarriesLastAuditedSave()
+    {
+        // Arrange
+        var worker = await ArrangeWorkerWithoutTimeRegistration();
+
+        var legacyAssignment = await CreateLegacyAssignment(worker, useOneMinuteIntervals: false);
+        // A second audited save, still in 5-minute mode, so the trail has a FIRST and a LAST row with
+        // different dates — carrying the first one instead of the last must show on the timeline.
+        legacyAssignment.UseOnlyPlanHours = true;
+        await legacyAssignment.Update(TimePlanningPnDbContext!);
+
+        var versions = await TimePlanningPnDbContext!.AssignedSiteVersions
+            .Where(x => x.AssignedSiteId == legacyAssignment.Id)
+            .OrderBy(x => x.Id)
+            .ToListAsync();
+        Assert.That(versions.Count, Is.EqualTo(2), "Precondition: exactly two audited saves.");
+        Assert.That(versions.All(x => !x.UseOneMinuteIntervals), Is.True,
+            "Precondition: no audited save may record one-minute mode.");
+        var firstAuditedSave = DateTime.UtcNow.AddDays(-60);
+        var lastAuditedSave = DateTime.UtcNow.AddDays(-30);
+        versions[0].UpdatedAt = firstAuditedSave;
+        versions[1].UpdatedAt = lastAuditedSave;
+        await TimePlanningPnDbContext.SaveChangesAsync();
+
+        // The un-audited flip, and an un-audited removal: plain SaveChanges writes no version row,
+        // standing in for a raw-SQL ops change. The same history disabled through the app — whose
+        // removal row DOES record true — is ..._DisabledThroughApp_CarriesLastLiveSave below.
+        legacyAssignment.UseOneMinuteIntervals = true;
+        legacyAssignment.WorkflowState = Constants.WorkflowStates.Removed;
+        await TimePlanningPnDbContext.SaveChangesAsync();
+        Assert.That(await TimePlanningPnDbContext.AssignedSiteVersions
+                .CountAsync(x => x.AssignedSiteId == legacyAssignment.Id),
+            Is.EqualTo(2), "Precondition: the flip and the removal must not have been audited.");
+
+        // Act
+        var result = await SetTimeRegistration(worker, true);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var assignmentsForSite = await AssignmentsForSite(worker.SiteMicrotingUid);
+        Assert.That(assignmentsForSite.Count, Is.EqualTo(2));
+        Assert.That(assignmentsForSite[0].Id, Is.EqualTo(legacyAssignment.Id));
+
+        var reEnabled = assignmentsForSite[1];
+        Assert.That(reEnabled.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(reEnabled.UseOneMinuteIntervals, Is.True);
+        Assert.That(reEnabled.UseOneMinuteIntervalsFrom, Is.Not.Null);
+        Assert.That(reEnabled.UseOneMinuteIntervalsFrom!.Value.Date, Is.EqualTo(lastAuditedSave.Date),
+            "The stamp must be the LAST audited save — the earliest possible un-audited flip point.");
+
+        // WRONG outcomes this pins: dropping the "?? previousVersions[^1]" fallback dereferences a null
+        // transition and the enable silently fails; taking the FIRST row instead stamps 60 days back
+        // and turns 30 audited 5-minute days into one-minute mode; carrying NULL makes one-minute hold
+        // from the beginning of time; stamping now turns the 30 days since the last audited save —
+        // which OneMinuteModeTimeline's divergence correction read as one-minute — into 5-minute.
+        var timeline = await OneMinuteModeTimeline.BuildAsync(TimePlanningPnDbContext!, reEnabled);
+        Assert.That(timeline.WasOneMinuteAt(firstAuditedSave.AddDays(-1)), Is.False,
+            "Before the first audited save the site was in 5-minute mode.");
+        Assert.That(timeline.WasOneMinuteAt(lastAuditedSave.AddDays(-1)), Is.False,
+            "Between the two audited saves the site was provably still in 5-minute mode.");
+        Assert.That(timeline.WasOneMinuteAt(lastAuditedSave), Is.True,
+            "From the last audited save onwards the un-audited flip may already have happened.");
+        Assert.That(timeline.WasOneMinuteAt(lastAuditedSave.AddDays(1)), Is.True);
+    }
+
+    // The divergence case again, but disabled through the REAL path: UpdateDeviceUser with
+    // TimeRegistrationEnabled = false soft-deletes the row via PnBase.Delete, which writes a version row
+    // (WorkflowState = removed) copying the CURRENT flag — true. That removal row is the first row in the
+    // trail to record true, so unless the carry-over ignores it, the DISABLE date passes for the switch.
+    [Test]
+    public async Task
+        BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_TimeRegistrationReEnabledOnSiteFlippedOutsideAudit_DisabledThroughApp_CarriesLastLiveSave()
+    {
+        // Arrange
+        var worker = await ArrangeWorkerWithoutTimeRegistration();
+
+        var legacyAssignment = await CreateLegacyAssignment(worker, useOneMinuteIntervals: false);
+        legacyAssignment.UseOnlyPlanHours = true;
+        await legacyAssignment.Update(TimePlanningPnDbContext!);
+
+        var liveVersions = await TimePlanningPnDbContext!.AssignedSiteVersions
+            .Where(x => x.AssignedSiteId == legacyAssignment.Id)
+            .OrderBy(x => x.Id)
+            .ToListAsync();
+        Assert.That(liveVersions.Count, Is.EqualTo(2), "Precondition: exactly two live audited saves.");
+        Assert.That(liveVersions.All(x => !x.UseOneMinuteIntervals), Is.True,
+            "Precondition: no live audited save may record one-minute mode.");
+        var lastLiveSave = DateTime.UtcNow.AddDays(-30);
+        liveVersions[0].UpdatedAt = DateTime.UtcNow.AddDays(-60);
+        liveVersions[1].UpdatedAt = lastLiveSave;
+        await TimePlanningPnDbContext.SaveChangesAsync();
+
+        // The un-audited flip (raw-SQL ops change stand-in): the row is live and true, its trail says false.
+        legacyAssignment.UseOneMinuteIntervals = true;
+        await TimePlanningPnDbContext.SaveChangesAsync();
+
+        // Act — disable through the app, then re-enable
+        var disableResult = await SetTimeRegistration(worker, false);
+        Assert.That(disableResult.Success, Is.True, disableResult.Message);
+
+        // Precondition, asserted: the disable wrote the removal row this test is about, and it records true.
+        var removalVersions = await TimePlanningPnDbContext.AssignedSiteVersions.AsNoTracking()
+            .Where(x => x.AssignedSiteId == legacyAssignment.Id
+                        && x.WorkflowState == Constants.WorkflowStates.Removed)
+            .ToListAsync();
+        Assert.That(removalVersions.Count, Is.EqualTo(1), "The app's disable must write exactly one removal row.");
+        Assert.That(removalVersions[0].UseOneMinuteIntervals, Is.True,
+            "The removal row copies the current flag — the true the live trail never recorded.");
+
+        var result = await SetTimeRegistration(worker, true);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var assignmentsForSite = await AssignmentsForSite(worker.SiteMicrotingUid);
+        Assert.That(assignmentsForSite.Count, Is.EqualTo(2));
+        Assert.That(assignmentsForSite[0].Id, Is.EqualTo(legacyAssignment.Id));
+        Assert.That(assignmentsForSite[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+
+        var reEnabled = assignmentsForSite[1];
+        Assert.That(reEnabled.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(reEnabled.UseOneMinuteIntervals, Is.True);
+        Assert.That(reEnabled.UseOneMinuteIntervalsFrom, Is.Not.Null);
+        Assert.That(reEnabled.UseOneMinuteIntervalsFrom!.Value.Date, Is.EqualTo(lastLiveSave.Date),
+            "The stamp must be the last LIVE audited save, not the disable date the removal row carries.");
+
+        // WRONG outcome this pins: counting the removal row as the transition stamps the disable date
+        // (today), which turns the 30 days between the last live save and the disable — one-minute
+        // mode by the old row's own divergence correction before it was disabled — into 5-minute.
+        var timeline = await OneMinuteModeTimeline.BuildAsync(TimePlanningPnDbContext!, reEnabled);
+        Assert.That(timeline.WasOneMinuteAt(lastLiveSave.AddDays(-1)), Is.False,
+            "Before the last live save the site was provably in 5-minute mode.");
+        Assert.That(timeline.WasOneMinuteAt(lastLiveSave.AddDays(15)), Is.True,
+            "A registration between the last live save and the disable resolves as one-minute mode.");
+        Assert.That(timeline.WasOneMinuteAt(DateTime.UtcNow), Is.True);
+    }
+
+    /// <summary>
+    /// A worker created WITHOUT time registration — so CreateDeviceUser mints no AssignedSite — plus
+    /// everything <see cref="SetTimeRegistration"/> needs to drive UpdateDeviceUser for it. The tests
+    /// above then hand-build whatever earlier AssignedSite history their branch needs.
+    /// </summary>
+    private async Task<ArrangedWorker> ArrangeWorkerWithoutTimeRegistration()
+    {
+        var core = await GetCore();
+
+        var propertyCreateModel = new PropertyCreateModel
+        {
+            Address = Guid.NewGuid().ToString(),
+            Chr = Guid.NewGuid().ToString(),
+            IndustryCode = Guid.NewGuid().ToString(),
+            Cvr = Guid.NewGuid().ToString(),
+            IsFarm = true,
+            LanguagesIds = [1],
+            MainMailAddress = Guid.NewGuid().ToString(),
+            Name = Guid.NewGuid().ToString(),
+            WorkorderEnable = false
+        };
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
+
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+
+        var createResult = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
+        }, core, 1, TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+        Assert.That(createResult.Success, Is.True, createResult.Message);
+
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+
+        return new ArrangedWorker(core, userService, userManager, Substitute.For<ILogger>(),
+            (int)currentSite.MicrotingUid!, Guid.NewGuid().ToString(), Guid.NewGuid().ToString(),
+            $"{Guid.NewGuid()}@test.com");
+    }
+
+    /// <summary>
+    /// Hand-builds an earlier AssignedSite for <paramref name="worker"/>'s site. PnBase.Create writes its
+    /// version row #0, so the trail starts at <paramref name="useOneMinuteIntervals"/>.
+    /// </summary>
+    private async Task<AssignedSite> CreateLegacyAssignment(ArrangedWorker worker, bool useOneMinuteIntervals,
+        DateTime? useOneMinuteIntervalsFrom = null)
+    {
+        var legacyAssignment = new AssignedSite
+        {
+            SiteId = worker.SiteMicrotingUid,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1,
+            UseOneMinuteIntervals = useOneMinuteIntervals,
+            UseOneMinuteIntervalsFrom = useOneMinuteIntervalsFrom
+        };
+        await legacyAssignment.Create(TimePlanningPnDbContext!);
+        return legacyAssignment;
+    }
+
+    /// <summary>Switches time registration on or off for <paramref name="worker"/> through UpdateDeviceUser.</summary>
+    private async Task<OperationResult> SetTimeRegistration(ArrangedWorker worker, bool timeRegistrationEnabled)
+    {
+        return await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(new DeviceUserModel
+            {
+                SiteMicrotingUid = worker.SiteMicrotingUid,
+                CustomerNo = 0,
+                HasWorkOrdersAssigned = false,
+                IsBackendUser = false,
+                IsLocked = false,
+                LanguageCode = "da",
+                TimeRegistrationEnabled = timeRegistrationEnabled,
+                UserFirstName = worker.FirstName,
+                UserLastName = worker.LastName,
+                WorkerEmail = worker.WorkerEmail
+            }, worker.Core, 1, worker.UserService, worker.UserManager, BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, worker.Logger, ItemsPlanningPnDbContext!);
+    }
+
+    /// <summary>Every AssignedSite ever minted for the site, removed ones included, oldest first.</summary>
+    private async Task<List<AssignedSite>> AssignmentsForSite(int siteMicrotingUid)
+    {
+        return await TimePlanningPnDbContext!.AssignedSites.AsNoTracking()
+            .Where(x => x.SiteId == siteMicrotingUid)
+            .OrderBy(x => x.Id)
+            .ToListAsync();
+    }
+
+    private sealed record ArrangedWorker(
+        Core Core,
+        IUserService UserService,
+        UserManager<EformUser> UserManager,
+        ILogger Logger,
+        int SiteMicrotingUid,
+        string FirstName,
+        string LastName,
+        string WorkerEmail);
 
     // Should test the CreateDeviceUser method with TimeRegistrationEnabled and OverMidnight set,
     // verifying the flag passes through onto the created AssignedSite
@@ -1231,6 +4120,946 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         Assert.That(entityItems.Count, Is.EqualTo(8));
         Assert.That(entityItems[7].Name, Is.EqualTo(sites[2].Name));
         Assert.That(entityItems[7].EntityGroupId, Is.EqualTo(properties[1].EntitySelectListDeviceUsers));
+    }
+
+    // "none" exists so a worker with no other group is still a legal
+    // account-management user (AdminService.Create rejects a non-admin whose
+    // GroupId does not resolve). It must carry no permissions of its own.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_EnsureFallbackSecurityGroup_AddsNoneWhenGroupless()
+    {
+        // Arrange
+        var user = new EformUser
+        {
+            Email = $"{Guid.NewGuid()}@test.com",
+            UserName = $"{Guid.NewGuid()}@test.com",
+            FirstName = Guid.NewGuid().ToString(),
+            LastName = Guid.NewGuid().ToString(),
+            Locale = "da",
+            EmailConfirmed = true,
+            TimeZone = "Europe/Copenhagen",
+            Formats = "de-DE"
+        };
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        Assert.That((await userManager.CreateAsync(user)).Succeeded, Is.True);
+
+        // Act
+        await BackendConfigurationAssignmentWorkerServiceHelper
+            .EnsureFallbackSecurityGroupAsync(BaseDbContext!, user.Id);
+
+        // Assert
+        var groupNames = await GetSecurityGroupNamesAsync(user.Id);
+        Assert.That(groupNames, Is.EqualTo(new List<string>
+            { BackendConfigurationAssignmentWorkerServiceHelper.NoPermissionsSecurityGroupName }));
+
+        // The group grants nothing: no core GroupPermission rows.
+        var noneGroupId = await BaseDbContext.SecurityGroups
+            .Where(x => x.Name == BackendConfigurationAssignmentWorkerServiceHelper.NoPermissionsSecurityGroupName)
+            .Select(x => x.Id).FirstAsync();
+        Assert.That(await BaseDbContext.GroupPermissions.CountAsync(x => x.SecurityGroupId == noneGroupId),
+            Is.Zero);
+    }
+
+    // Core strips group memberships from admins, so a groupless admin is
+    // expected, ordinary state - not "no permissions granted yet". The primary
+    // admin (id 1) was already skipped; this pins that the SAME rule applies to
+    // any OTHER admin, matching SecurityGroupBackfillService.
+    // AssignFallbackGroupToGrouplessUsersAsync's own admin exclusion. Without
+    // the role check this call added, a groupless secondary admin saved through
+    // CreateDeviceUser/UpdateDeviceUser would be put in "none" - a state the
+    // backfill deliberately avoids and would list that admin under /security.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_EnsureFallbackSecurityGroup_LeavesOtherAdminsGroupless()
+    {
+        // Arrange
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+
+        // ReserveEformUserId1 keeps admin off id 1, which EnsureFallbackSecurityGroupAsync
+        // skips by id alone - so only the admin-ROLE check can leave it groupless.
+        var admin = new EformUser
+        {
+            Email = $"{Guid.NewGuid()}@test.com",
+            UserName = $"{Guid.NewGuid()}@test.com",
+            FirstName = Guid.NewGuid().ToString(),
+            LastName = Guid.NewGuid().ToString(),
+            Locale = "da",
+            EmailConfirmed = true,
+            TimeZone = "Europe/Copenhagen",
+            Formats = "de-DE"
+        };
+        Assert.That((await userManager.CreateAsync(admin)).Succeeded, Is.True);
+        var addToRole = await userManager.AddToRoleAsync(admin, EformRole.Admin);
+        Assert.That(addToRole.Succeeded, Is.True,
+            string.Join(",", addToRole.Errors.Select(e => e.Description)));
+        Assert.That(admin.Id, Is.Not.EqualTo(1),
+            "precondition: this must be a SECONDARY admin, not the one already skipped by id");
+
+        // Act
+        var added = await BackendConfigurationAssignmentWorkerServiceHelper
+            .EnsureFallbackSecurityGroupAsync(BaseDbContext!, admin.Id);
+
+        // Assert
+        Assert.That(added, Is.False, "an admin must never be reported as moved into the fallback group");
+        var groupNames = await GetSecurityGroupNamesAsync(admin.Id);
+        Assert.That(groupNames, Is.Empty, "an admin must not be dragged into \"none\"");
+    }
+
+    // The rule is "none UNLESS another group": a user who has a real group must
+    // not also sit in none, and must have it taken away if they had it.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_EnsureFallbackSecurityGroup_RemovesNoneWhenOtherGroupPresent()
+    {
+        // Arrange
+        var user = new EformUser
+        {
+            Email = $"{Guid.NewGuid()}@test.com",
+            UserName = $"{Guid.NewGuid()}@test.com",
+            FirstName = Guid.NewGuid().ToString(),
+            LastName = Guid.NewGuid().ToString(),
+            Locale = "da",
+            EmailConfirmed = true,
+            TimeZone = "Europe/Copenhagen",
+            Formats = "de-DE"
+        };
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        Assert.That((await userManager.CreateAsync(user)).Succeeded, Is.True);
+
+        // Starts groupless, so gains "none".
+        await BackendConfigurationAssignmentWorkerServiceHelper
+            .EnsureFallbackSecurityGroupAsync(BaseDbContext!, user.Id);
+
+        // Then gains a real group, the way the WebAccessEnabled sync does.
+        var realGroupId = await BaseDbContext!.SecurityGroups
+            .Where(x => x.Name == "eForm users").Select(x => x.Id).FirstAsync();
+        BaseDbContext.SecurityGroupUsers.Add(new SecurityGroupUser
+            { EformUserId = user.Id, SecurityGroupId = realGroupId });
+        await BaseDbContext.SaveChangesAsync();
+
+        // Act
+        await BackendConfigurationAssignmentWorkerServiceHelper
+            .EnsureFallbackSecurityGroupAsync(BaseDbContext, user.Id);
+
+        // Assert
+        var groupNames = await GetSecurityGroupNamesAsync(user.Id);
+        Assert.That(groupNames, Is.EqualTo(new List<string> { "eForm users" }));
+    }
+
+    // Calling twice must not create a second membership row: both device-user
+    // paths call this on every save.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_EnsureFallbackSecurityGroup_IsIdempotent()
+    {
+        // Arrange
+        var user = new EformUser
+        {
+            Email = $"{Guid.NewGuid()}@test.com",
+            UserName = $"{Guid.NewGuid()}@test.com",
+            FirstName = Guid.NewGuid().ToString(),
+            LastName = Guid.NewGuid().ToString(),
+            Locale = "da",
+            EmailConfirmed = true,
+            TimeZone = "Europe/Copenhagen",
+            Formats = "de-DE"
+        };
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        Assert.That((await userManager.CreateAsync(user)).Succeeded, Is.True);
+
+        // Act
+        await BackendConfigurationAssignmentWorkerServiceHelper
+            .EnsureFallbackSecurityGroupAsync(BaseDbContext!, user.Id);
+        await BackendConfigurationAssignmentWorkerServiceHelper
+            .EnsureFallbackSecurityGroupAsync(BaseDbContext!, user.Id);
+
+        // Assert
+        Assert.That(await BaseDbContext!.SecurityGroupUsers.CountAsync(x => x.EformUserId == user.Id),
+            Is.EqualTo(1));
+    }
+
+    // SecurityGroup.Name carries no index at all, so two "none" rows with distinct
+    // ids can coexist (GetOrCreateSecurityGroupId's check-then-act is not the only
+    // way to get there — a stray row is enough). EnsureFallbackSecurityGroupAsync
+    // must remove EVERY "none" membership once a real group is present, not just
+    // the one whose id happens to match what GetOrCreateSecurityGroupId resolves
+    // this call. This test deliberately attaches the user's "none" membership to
+    // the row the lookup does NOT return, so a naive id-based comparison
+    // (SecurityGroupId == resolvedNoneGroupId) would find no "none" memberships to
+    // remove and leave the user in both "eForm users" and the stale "none" group.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_EnsureFallbackSecurityGroup_RemovesNoneMembershipPointingAtDuplicateGroup()
+    {
+        // Arrange
+        var user = new EformUser
+        {
+            Email = $"{Guid.NewGuid()}@test.com",
+            UserName = $"{Guid.NewGuid()}@test.com",
+            FirstName = Guid.NewGuid().ToString(),
+            LastName = Guid.NewGuid().ToString(),
+            Locale = "da",
+            EmailConfirmed = true,
+            TimeZone = "Europe/Copenhagen",
+            Formats = "de-DE"
+        };
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        Assert.That((await userManager.CreateAsync(user)).Succeeded, Is.True);
+
+        // Two "none" rows coexist before the helper ever runs.
+        var noneGroupA = new SecurityGroup { Name = BackendConfigurationAssignmentWorkerServiceHelper.NoPermissionsSecurityGroupName };
+        var noneGroupB = new SecurityGroup { Name = BackendConfigurationAssignmentWorkerServiceHelper.NoPermissionsSecurityGroupName };
+        BaseDbContext!.SecurityGroups.Add(noneGroupA);
+        BaseDbContext.SecurityGroups.Add(noneGroupB);
+        await BaseDbContext.SaveChangesAsync();
+
+        // Replicate GetOrCreateSecurityGroupId's own lookup (FirstOrDefaultAsync,
+        // no OrderBy) so the test does not assume which of the two rows it returns.
+        var resolvedNoneGroupId = await BaseDbContext.SecurityGroups
+            .Where(x => x.Name == BackendConfigurationAssignmentWorkerServiceHelper.NoPermissionsSecurityGroupName)
+            .Select(x => x.Id)
+            .FirstOrDefaultAsync();
+        Assert.That(noneGroupA.Id, Is.Not.EqualTo(noneGroupB.Id));
+
+        // Attach the user's "none" membership to whichever row the lookup will NOT
+        // return, plus a real group — a combination that matching "none" by a single
+        // resolved group id would miss.
+        var unresolvedNoneGroupId = resolvedNoneGroupId == noneGroupA.Id ? noneGroupB.Id : noneGroupA.Id;
+        Assert.That(unresolvedNoneGroupId, Is.Not.EqualTo(resolvedNoneGroupId));
+
+        var realGroupId = await BaseDbContext.SecurityGroups
+            .Where(x => x.Name == "eForm users").Select(x => x.Id).FirstAsync();
+
+        BaseDbContext.SecurityGroupUsers.Add(new SecurityGroupUser
+            { EformUserId = user.Id, SecurityGroupId = unresolvedNoneGroupId });
+        BaseDbContext.SecurityGroupUsers.Add(new SecurityGroupUser
+            { EformUserId = user.Id, SecurityGroupId = realGroupId });
+        await BaseDbContext.SaveChangesAsync();
+
+        // Act
+        await BackendConfigurationAssignmentWorkerServiceHelper
+            .EnsureFallbackSecurityGroupAsync(BaseDbContext, user.Id);
+
+        // Assert: the stale "none" membership is gone; only the real group remains.
+        var groupNamesAfterCall = await GetSecurityGroupNamesAsync(user.Id);
+        Assert.That(groupNamesAfterCall, Is.EqualTo(new List<string> { "eForm users" }));
+        Assert.That(groupNamesAfterCall, Has.None.EqualTo(BackendConfigurationAssignmentWorkerServiceHelper.NoPermissionsSecurityGroupName));
+    }
+
+    // The end state of an email-only worker: a login that belongs to "none" and
+    // nothing else.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_CreateDeviceUser_EmailOnly_LandsInNoneGroup()
+    {
+        // Arrange
+        var core = await GetCore();
+        var workerEmail = $"{Guid.NewGuid()}@test.com";
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = workerEmail
+        };
+
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+        var createdUser = await BaseDbContext!.Users.SingleAsync(x => x.Email == workerEmail);
+        var groupNames = await GetSecurityGroupNamesAsync(createdUser.Id);
+        Assert.That(groupNames, Is.EqualTo(new List<string>
+            { BackendConfigurationAssignmentWorkerServiceHelper.NoPermissionsSecurityGroupName }));
+    }
+
+    // Granting web access must move the user out of "none" into the real group,
+    // which is what makes "none UNLESS another group" true over time and not just
+    // at creation.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_CreateDeviceUser_WebAccessEnabled_DoesNotLandInNoneGroup()
+    {
+        // Arrange
+        var core = await GetCore();
+        var workerEmail = $"{Guid.NewGuid()}@test.com";
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            WebAccessEnabled = true,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = workerEmail
+        };
+
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+        var createdUser = await BaseDbContext!.Users.SingleAsync(x => x.Email == workerEmail);
+        var groupNames = await GetSecurityGroupNamesAsync(createdUser.Id);
+        Assert.That(groupNames, Does.Contain("eForm users"));
+        Assert.That(groupNames, Does.Not.Contain(
+            BackendConfigurationAssignmentWorkerServiceHelper.NoPermissionsSecurityGroupName));
+    }
+
+    // Pins the fallback call at UpdateDeviceUser's TAIL return (the final
+    // `return isUpdated ? ... : ...`). Reached here via the path where
+    // TimeRegistrationEnabled stays false and no AssignedSite exists yet, so
+    // the `TimeRegistrationEnabled == false && AssignedSites.Any(...)` branch
+    // is false and the else-branch's inner "TimeRegistrationEnabled == true"
+    // check is also false — control falls straight through to the tail
+    // return.
+    //
+    // Deliberately does NOT create with an empty flag set: that would seed
+    // "none" at creation time (CreateDeviceUser's own fallback call), so the
+    // update call's own fallback call would be redundant and deleting it
+    // would leave the assertion passing unchanged, making the test vacuous.
+    // Instead the worker is created holding a
+    // real group ("eForm users", via WebAccessEnabled), which keeps "none"
+    // OFF (guard-asserted below), then the update strips that real group via
+    // WebAccessEnabled = false — a mechanism the shared eForm-users sync
+    // block provides, not the tail-return fallback under test — leaving the
+    // user in NO group at all when the tail return is reached. Only the
+    // fallback call under test can turn that into ["none"]; without it the
+    // user would be left with an empty group list.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_TailReturn_NothingChanged_LandsInNoneGroup()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        var workerEmail = $"{Guid.NewGuid()}@test.com";
+
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            WebAccessEnabled = true,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = workerEmail
+        };
+
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        var createdUser = await BaseDbContext!.Users.SingleAsync(x => x.Email == workerEmail);
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+
+        // Guard: the worker must hold the real "eForm users" group and NOT
+        // "none" before the call under test — otherwise this test cannot
+        // distinguish "the fallback ran" from "none was already sitting
+        // there from creation".
+        var groupNamesBeforeUpdate = await GetSecurityGroupNamesAsync(createdUser.Id);
+        Assert.That(groupNamesBeforeUpdate, Is.EqualTo(new List<string> { "eForm users" }),
+            "precondition: the worker must hold a real group and not \"none\" before UpdateDeviceUser runs");
+
+        var newDeviceUserModel = new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            WebAccessEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
+        };
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core, 1,
+            userService, userManager,
+            BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+        var groupNames = await GetSecurityGroupNamesAsync(createdUser.Id);
+        Assert.That(groupNames, Is.EqualTo(new List<string>
+            { BackendConfigurationAssignmentWorkerServiceHelper.NoPermissionsSecurityGroupName }));
+    }
+
+    // Pins the fallback call at UpdateDeviceUser's TAIL return in the
+    // opposite direction from the test above: granting WebAccessEnabled
+    // must remove "none" once the "eForm users" sync (which runs upstream of
+    // the same tail return) adds a real group. This is the one that would
+    // catch a fallback call placed above the eForm users/archive sync block
+    // instead of below it.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_WebAccessEnabled_DoesNotLandInNoneGroup()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        var workerEmail = $"{Guid.NewGuid()}@test.com";
+
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = workerEmail
+        };
+
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        var createdUser = await BaseDbContext!.Users.SingleAsync(x => x.Email == workerEmail);
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+
+        // Guard: the worker must hold "none" and NOT a real group before the
+        // call under test - otherwise this test cannot distinguish "the
+        // fallback removed none" from "none was never there to begin with".
+        var groupNamesBeforeUpdate = await GetSecurityGroupNamesAsync(createdUser.Id);
+        Assert.That(groupNamesBeforeUpdate, Is.EqualTo(new List<string>
+                { BackendConfigurationAssignmentWorkerServiceHelper.NoPermissionsSecurityGroupName }),
+            "precondition: the worker must start in \"none\" before UpdateDeviceUser runs");
+
+        var newDeviceUserModel = new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            WebAccessEnabled = true,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
+        };
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core, 1,
+            userService, userManager,
+            BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+        var groupNames = await GetSecurityGroupNamesAsync(createdUser.Id);
+        Assert.That(groupNames, Does.Contain("eForm users"));
+        Assert.That(groupNames, Does.Not.Contain(
+            BackendConfigurationAssignmentWorkerServiceHelper.NoPermissionsSecurityGroupName));
+    }
+
+    // Pins the fallback call at UpdateDeviceUser's "assignments.Count != 0"
+    // early return (the EnableMobileAccess update-in-place branch inside
+    // `TimeRegistrationEnabled == true`). Reached by two successive
+    // TimeRegistrationEnabled == true updates on the same site: the first
+    // creates the AssignedSite (takes the sibling create-a-new-AssignedSite
+    // return, not the one under test); the second finds that AssignedSite
+    // (assignments.Count != 0) and takes THIS return.
+    //
+    // Deliberately does NOT create with an empty flag set: that would seed
+    // "none" at creation time (CreateDeviceUser's own fallback call), so
+    // "none" would already be present when this branch is entered and
+    // deleting the fallback call under test would leave the assertion
+    // passing unchanged, making the test vacuous. Instead the worker is
+    // created holding a real group ("Kun arkiv",
+    // via ArchiveEnabled), kept through the first update (guard-asserted
+    // below), then stripped by the SECOND update via ArchiveEnabled = false
+    // — a mechanism the shared eForm-users/archive sync block provides, not
+    // the assignments.Count != 0 fallback under test — leaving the user in
+    // NO group at all by the time that return is reached (EnableMobileAccess
+    // stays false throughout, so "Kun tid" is never added either). Only the
+    // fallback call under test can turn that into ["none"]; without it the
+    // user would be left with an empty group list.
+    //
+    // CreateDeviceUser cannot reach the assignments.Count != 0 branch at all
+    // (it always creates the AssignedSite from nothing), so this is
+    // exclusive to UpdateDeviceUser.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_AssignmentsCountNotZero_NoRealGroup_LandsInNoneGroup()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        var workerEmail = $"{Guid.NewGuid()}@test.com";
+
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            ArchiveEnabled = true,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = workerEmail
+        };
+
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        var createdUser = await BaseDbContext!.Users.SingleAsync(x => x.Email == workerEmail);
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+
+        // First update: TimeRegistrationEnabled true, no AssignedSite exists yet for
+        // this site — takes the "create a new AssignedSite" return, not the one
+        // under test. ArchiveEnabled stays true so the real group survives this call.
+        var firstUpdateModel = new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = true,
+            EnableMobileAccess = false,
+            ArchiveEnabled = true,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
+        };
+
+        var firstResult = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(firstUpdateModel, core, 1,
+            userService, userManager,
+            BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+        Assert.That(firstResult.Success, Is.True, firstResult.Message);
+
+        // Guard: the worker must hold the real "Kun arkiv" group and NOT
+        // "none" right before the call under test — otherwise this test
+        // cannot distinguish "the fallback ran" from "none was already
+        // sitting there from creation".
+        var groupNamesBeforeSecondUpdate = await GetSecurityGroupNamesAsync(createdUser.Id);
+        Assert.That(groupNamesBeforeSecondUpdate, Is.EqualTo(new List<string> { "Kun arkiv" }),
+            "precondition: the worker must hold a real group and not \"none\" before the assignments.Count != 0 return is reached");
+
+        // Second update: TimeRegistrationEnabled true again, and the AssignedSite
+        // the first update created exists for this site — takes the
+        // "assignments.Count != 0" return under test. ArchiveEnabled flips to false
+        // here, stripping the real group via the shared eForm-users/archive sync
+        // (not the fallback under test) ahead of that branch. EnableMobileAccess
+        // stays false, so no replacement real group ("Kun tid") is added.
+        var secondUpdateModel = new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = true,
+            EnableMobileAccess = false,
+            ArchiveEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
+        };
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(secondUpdateModel, core, 1,
+            userService, userManager,
+            BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+        var timeregistrationSiteAssignments = await TimePlanningPnDbContext!.AssignedSites
+            .Where(x => x.SiteId == (int)currentSite.MicrotingUid! && x.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync();
+        Assert.That(timeregistrationSiteAssignments, Has.Count.EqualTo(1),
+            "the second update must have hit the assignments.Count != 0 branch, not created a second AssignedSite");
+        var groupNames = await GetSecurityGroupNamesAsync(createdUser.Id);
+        Assert.That(groupNames, Is.EqualTo(new List<string>
+            { BackendConfigurationAssignmentWorkerServiceHelper.NoPermissionsSecurityGroupName }));
+    }
+
+    // Pins the same "assignments.Count != 0" early return as the test above,
+    // in the opposite direction: the second update turns EnableMobileAccess
+    // on, which adds "Kun tid" membership INSIDE this branch, immediately
+    // before the return under test. The fallback must see that add and keep
+    // the user out of "none". This is the case that would catch the fallback
+    // call being placed above the "Kun tid" sync in this branch instead of
+    // below it.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_AssignmentsCountNotZero_EnableMobileAccess_DoesNotLandInNoneGroup()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        var workerEmail = $"{Guid.NewGuid()}@test.com";
+
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = workerEmail
+        };
+
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        var createdUser = await BaseDbContext!.Users.SingleAsync(x => x.Email == workerEmail);
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+
+        // First update: TimeRegistrationEnabled true, no AssignedSite exists yet for
+        // this site — takes the "create a new AssignedSite" return, not the one
+        // under test. EnableMobileAccess stays false here on purpose, so the
+        // "Kun tid" add below happens only on the second call.
+        var firstUpdateModel = new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = true,
+            EnableMobileAccess = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
+        };
+
+        var firstResult = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(firstUpdateModel, core, 1,
+            userService, userManager,
+            BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+        Assert.That(firstResult.Success, Is.True, firstResult.Message);
+
+        // Guard: the worker must still be in "none" right before the call
+        // under test - otherwise this test cannot distinguish "the fallback
+        // saw the new Kun tid membership and removed none" from "none was
+        // never there to begin with".
+        var groupNamesBeforeSecondUpdate = await GetSecurityGroupNamesAsync(createdUser.Id);
+        Assert.That(groupNamesBeforeSecondUpdate, Is.EqualTo(new List<string>
+                { BackendConfigurationAssignmentWorkerServiceHelper.NoPermissionsSecurityGroupName }),
+            "precondition: the worker must still be in \"none\" before the assignments.Count != 0 return is reached");
+
+        // Second update: TimeRegistrationEnabled true again, and the AssignedSite
+        // the first update created exists for this site — takes the
+        // "assignments.Count != 0" return under test. EnableMobileAccess flips to
+        // true, so "Kun tid" membership is added inside this branch.
+        var secondUpdateModel = new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = true,
+            EnableMobileAccess = true,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
+        };
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(secondUpdateModel, core, 1,
+            userService, userManager,
+            BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+        var timeregistrationSiteAssignments = await TimePlanningPnDbContext!.AssignedSites
+            .Where(x => x.SiteId == (int)currentSite.MicrotingUid! && x.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync();
+        Assert.That(timeregistrationSiteAssignments, Has.Count.EqualTo(1),
+            "the second update must have hit the assignments.Count != 0 branch, not created a second AssignedSite");
+        var groupNames = await GetSecurityGroupNamesAsync(createdUser.Id);
+        Assert.That(groupNames, Does.Contain("Kun tid"));
+        Assert.That(groupNames, Does.Not.Contain(
+            BackendConfigurationAssignmentWorkerServiceHelper.NoPermissionsSecurityGroupName));
+    }
+
+    // Pins the THIRD UpdateDeviceUser fallback call site: the return reached
+    // after creating a brand-new AssignedSite (TimeRegistrationEnabled flips to
+    // true for the first time on this site, so assignments.Count == 0 and control
+    // takes the "create one" branch, not the "update it in place" branch the two
+    // *_AssignmentsCountNotZero_* tests above already cover). Without this test
+    // that create-new-AssignedSite branch only runs as incidental SETUP inside
+    // those two tests - the first of their two UpdateDeviceUser calls always
+    // passes through it before the SECOND call reaches the branch actually under
+    // test there - so nothing would fail if this particular
+    // EnsureFallbackSecurityGroupAsync call were deleted.
+    //
+    // FindLoginWithoutSideEffectsAsync(oldEmail) finds and adopts createdUser's
+    // own account across the update, exactly like production - the same
+    // account is the one the fallback call under test runs against.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_CreateNewAssignedSite_NoRealGroup_LandsInNoneGroup()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        var workerEmail = $"{Guid.NewGuid()}@test.com";
+
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            ArchiveEnabled = true,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = workerEmail
+        };
+
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        var createdUser = await BaseDbContext!.Users.SingleAsync(x => x.Email == workerEmail);
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+
+        // Guard: the worker's own account holds the real "Kun arkiv" group and
+        // NOT "none" immediately before the call under test - the "started in a
+        // real group" precondition the task requires, proven on the entity that
+        // actually exists at this point.
+        var groupNamesBeforeUpdate = await GetSecurityGroupNamesAsync(createdUser.Id);
+        Assert.That(groupNamesBeforeUpdate, Is.EqualTo(new List<string> { "Kun arkiv" }),
+            "precondition: the worker must hold a real group and not \"none\" before the create-new-AssignedSite return is reached");
+        Assert.That(await TimePlanningPnDbContext!.AssignedSites
+                .CountAsync(x => x.SiteId == (int)currentSite.MicrotingUid! && x.WorkflowState != Constants.WorkflowStates.Removed),
+            Is.Zero,
+            "precondition: no AssignedSite may exist yet, or the update would take the assignments.Count != 0 branch instead");
+
+        var updatedEmail = $"{Guid.NewGuid()}@test.com";
+        var newDeviceUserModel = new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = true,
+            EnableMobileAccess = false,
+            ArchiveEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = updatedEmail
+        };
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core, 1,
+            userService, userManager,
+            BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+        var timeregistrationSiteAssignments = await TimePlanningPnDbContext!.AssignedSites
+            .Where(x => x.SiteId == (int)currentSite.MicrotingUid! && x.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync();
+        Assert.That(timeregistrationSiteAssignments, Has.Count.EqualTo(1),
+            "the update must have taken the create-new-AssignedSite branch, proving control passed through the return under test");
+
+        // ArchiveEnabled = false removed "Kun arkiv" earlier in this same call,
+        // and EnableMobileAccess = false never added "Kun tid" - createdUser
+        // reaches the fallback with NO real group left at all. Only the call
+        // under test can turn that into ["none"]; deleting it would leave the
+        // list empty.
+        var groupNames = await GetSecurityGroupNamesAsync(createdUser.Id);
+        Assert.That(groupNames, Is.EqualTo(new List<string>
+            { BackendConfigurationAssignmentWorkerServiceHelper.NoPermissionsSecurityGroupName }));
+    }
+
+    /// <summary>
+    /// Refuses every user with an error code outside Identity's own email codes,
+    /// standing in for any non-email validation failure.
+    /// </summary>
+    private sealed class PolicyRefusalUserValidator : IUserValidator<EformUser>
+    {
+        public Task<IdentityResult> ValidateAsync(UserManager<EformUser> manager, EformUser user) =>
+            Task.FromResult(IdentityResult.Failed(
+                new IdentityError { Code = "PolicyRefusal", Description = "Refused by policy" }));
+    }
+
+    /// <summary>
+    /// A real UserManager with <see cref="PolicyRefusalUserValidator"/> added,
+    /// and a UserService over it, so every UpdateAsync/CreateAsync is refused
+    /// with a non-email error code.
+    /// </summary>
+    private (UserManager<EformUser> Manager, IUserService Service) CreateRefusingUserManagerAndService()
+    {
+        var manager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        manager.UserValidators.Add(new PolicyRefusalUserValidator());
+        var service = IdentityTestUtils.CreateRealUserService(BaseDbContext!, manager);
+        return (manager, service);
+    }
+
+    private async Task<List<string>> GetSecurityGroupNamesAsync(int eformUserId) =>
+        await (from sgu in BaseDbContext!.SecurityGroupUsers
+            join sg in BaseDbContext.SecurityGroups on sgu.SecurityGroupId equals sg.Id
+            where sgu.EformUserId == eformUserId
+            select sg.Name).ToListAsync();
+
+    // Resolves a group by name the same way the helper's GetOrCreateSecurityGroupId
+    // does, so a plugin group seeded here is the one production code would reuse.
+    private async Task AddToSecurityGroupAsync(int eformUserId, string groupName)
+    {
+        var group = await BaseDbContext!.SecurityGroups.FirstOrDefaultAsync(x => x.Name == groupName);
+        if (group == null)
+        {
+            group = new SecurityGroup { Name = groupName };
+            BaseDbContext.SecurityGroups.Add(group);
+            await BaseDbContext.SaveChangesAsync();
+        }
+
+        BaseDbContext.SecurityGroupUsers.Add(new SecurityGroupUser
+        {
+            EformUserId = eformUserId,
+            SecurityGroupId = group.Id
+        });
+        await BaseDbContext.SaveChangesAsync();
+    }
+
+    private static EformUser NewAccount(string email, string firstName) => new()
+    {
+        Email = email,
+        UserName = $"account-{Guid.NewGuid()}",
+        FirstName = firstName,
+        LastName = "Owner",
+        Locale = "en-US",
+        EmailConfirmed = true,
+        TimeZone = "Europe/Copenhagen",
+        Formats = "de-DE"
+    };
+
+    /// <summary>
+    /// Creates a real SDK Tag (auto id) so a "refused save writes no tag"
+    /// assertion is meaningful. A fake id like 999999 proves nothing: the SDK's
+    /// FK_SiteTags_tags_TagId means SiteTag.Create would throw on a fake id
+    /// regardless of whether the code under test refused the save BEFORE or
+    /// AFTER attempting the tag write, so the assertion would pass either way.
+    /// </summary>
+    private async Task<int> SeedSdkTag()
+    {
+        var tag = new Tag
+        {
+            Name = $"assignment-worker-tag-{Guid.NewGuid()}",
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext!.Tags.AddAsync(tag);
+        await MicrotingDbContext.SaveChangesAsync();
+        return tag.Id;
+    }
+
+    /// <summary>
+    /// Shared shape for "a refused save must not have written the requested
+    /// tag either". Only meaningful once the tag id passed through
+    /// deviceUserModel.Tags is a REAL row from <see cref="SeedSdkTag"/> - a
+    /// fake id would make this pass regardless of write order, since
+    /// SiteTag.Create would throw on the FK before ever reaching here.
+    /// </summary>
+    private static async Task AssertNoActiveSiteTagsAsync(
+        Microting.eForm.Infrastructure.MicrotingDbContext sdkDbContext, int siteId)
+    {
+        Assert.That(await sdkDbContext.SiteTags.CountAsync(x => x.SiteId == siteId
+                && x.WorkflowState != Constants.WorkflowStates.Removed), Is.Zero,
+            "a refused save must not write the requested tag either - the tag block must run AFTER validation");
+    }
+
+    /// <summary>
+    /// Seeds Area → Property → AreaRule → Planning → AreaRulePlanning
+    /// (Status = true, live WorkflowState) and returns the AreaRulePlanning
+    /// id - the minimal chain UpdateDeviceUser's resign-refusal query walks
+    /// via AreaRulePlanningWorkerTag. Mirrors
+    /// AreaRulePlanningTagPurgeTest.SeedAreaRulePlanning.
+    /// </summary>
+    private async Task<int> SeedActiveAreaRulePlanning()
+    {
+        var area = new Area
+        {
+            Type = AreaTypesEnum.Type1, ItemPlanningTagId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await area.Create(BackendConfigurationPnDbContext!);
+
+        var property = new Property
+        {
+            Name = $"ResignRefusalProp-{Guid.NewGuid()}", ItemPlanningTagId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await property.Create(BackendConfigurationPnDbContext!);
+
+        var areaRule = new AreaRule
+        {
+            AreaId = area.Id, PropertyId = property.Id, EformId = 7, CreatedInGuide = true,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await areaRule.Create(BackendConfigurationPnDbContext!);
+
+        var planning = new BcPlanning
+        {
+            Enabled = true, RepeatEvery = 1, RepeatType = RepeatType.Week,
+            StartDate = DateTime.UtcNow.Date, RelatedEFormId = 7, Description = "Task",
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await planning.Create(ItemsPlanningPnDbContext!);
+
+        var arp = new AreaRulePlanning
+        {
+            AreaRuleId = areaRule.Id, PropertyId = property.Id, AreaId = area.Id,
+            ItemPlanningId = planning.Id, StartDate = DateTime.UtcNow.Date, Status = true,
+            RepeatType = 2, RepeatEvery = 1,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await arp.Create(BackendConfigurationPnDbContext!);
+
+        return arp.Id;
     }
 }
 

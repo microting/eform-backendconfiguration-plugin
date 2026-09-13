@@ -104,7 +104,7 @@ public class AreaRulePlanningTagPurgeTest : TestBaseSetup
         _sut = new AreaRulePlanningTagPurgeService(
             BackendConfigurationPnDbContext!,
             ItemsPlanningPnDbContext!,
-            NullLogger<AreaRulePlanningTagPurgeService>.Instance);
+            TestContextLogger<AreaRulePlanningTagPurgeService>.Instance);
     }
 
     // ------------------------------------------------------------------

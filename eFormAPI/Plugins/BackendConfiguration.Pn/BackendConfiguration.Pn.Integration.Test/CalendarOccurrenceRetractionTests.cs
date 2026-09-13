@@ -247,7 +247,7 @@ public class CalendarOccurrenceRetractionTests : TestBaseSetup
 
         return new CalendarOccurrenceRetractionService(
             BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, coreHelper,
-            NullLogger<CalendarOccurrenceRetractionService>.Instance);
+            TestContextLogger<CalendarOccurrenceRetractionService>.Instance);
     }
 
     private async Task<string> ComplianceWorkflowState(int complianceId) =>

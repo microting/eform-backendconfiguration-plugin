@@ -2,10 +2,11 @@ import {Component, OnInit, ViewChild} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {TranslateService} from '@ngx-translate/core';
-import {of} from 'rxjs';
+import {Observable, of} from 'rxjs';
+import {defaultIfEmpty, finalize, map} from 'rxjs/operators';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {CommonDictionaryModel, SharedTagModel, TemplateRequestModel} from 'src/app/common/models';
-import {EFormService, EformTagService} from 'src/app/common/services';
+import {EFormService} from 'src/app/common/services';
 import {
   CalendarBoardModel,
   CalendarTaskListFiltrationModel,
@@ -15,11 +16,13 @@ import {
   BackendConfigurationPnCalendarService,
   BackendConfigurationPnPropertiesService,
   BackendConfigurationPnTaskListService,
+  BackendConfigurationPnWorkerTagsService,
 } from '../../../../services';
 import {TaskListRenameRequest} from '../../../../services/backend-configuration-pn-task-list.service';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
 import {CalendarRepeatService} from '../../../calendar/services/calendar-repeat.service';
 import {mapResponseToCalendarTask} from '../../../calendar/services/calendar-task.mapper';
+import {findLogboegerFolderId} from '../../../calendar/services/logboeger-folder.util';
 import {formatRepeatText} from '../../../calendar-task-list/calendar-task-list-repeat.util';
 import {
   TaskCreateEditModalComponent,
@@ -113,7 +116,7 @@ export class TaskListPageComponent implements OnInit {
     private propertiesService: BackendConfigurationPnPropertiesService,
     private tagsService: ItemsPlanningPnTagsService,
     private eformService: EFormService,
-    private eformTagService: EformTagService,
+    private workerTagsService: BackendConfigurationPnWorkerTagsService,
     private repeatService: CalendarRepeatService,
     private taskListService: BackendConfigurationPnTaskListService,
   ) {}
@@ -126,8 +129,14 @@ export class TaskListPageComponent implements OnInit {
     this.loadTasks();
   }
 
+  // Worker tags come from the PLUGIN endpoint, not the core
+  // `EformTagService.getAvailableTags()`: the SDK keeps worker groups and
+  // eForm/template tags in one `Tags` table, so the core list offered template
+  // tags here and picking one produced an event that reached nobody (#1213).
+  // The plugin endpoint filters server-side to tags that have at least one
+  // live worker member; nothing is discarded client-side.
   loadWorkerTags() {
-    this.eformTagService.getAvailableTags().subscribe(res => {
+    this.workerTagsService.getWorkerTags().subscribe(res => {
       if (res && res.success) {
         this.teams = res.model;
       }
@@ -205,23 +214,137 @@ export class TaskListPageComponent implements OnInit {
     }
   }
 
+  /**
+   * #1194 — true while a `tasks/index` request is in flight. Bound to the
+   * grid's `[loading]` (progress bar) and to `[disabled]` on
+   * `#taskListRefreshBtn`, so the button cannot start a second refresh while
+   * one is in flight. Other reload paths are unguarded by design — this is
+   * deliberately NOT a guard inside `loadTasks()` itself: a filter change
+   * while a load is in flight must still fire its own request, or the grid
+   * would show stale-filter rows.
+   */
+  loading = false;
+
   loadTasks() {
+    this.loading = true;
+    // Clear the selection at REQUEST start, not on response: flipping
+    // `[loading]` above is an input change on mtx-grid, whose `ngOnChanges`
+    // recreates its SelectionModel EMPTY (without emitting) on any input
+    // change — so the grid's checkboxes are already gone here. Clearing the
+    // Set alongside keeps the batch dropdown/counter in sync with them, and
+    // covers the HTTP-error path too (previously the Set was only emptied in
+    // `next`). The rows referenced by the old ids are being re-fetched anyway.
+    this.selection = new Set<number>();
     this.calendarService.getTasksIndex({
       filters: this.currentFilters,
       pagination: {sort: 'Id', isSortDsc: false},
-    }).subscribe(res => {
-      if (res && res.success) {
-        // The index endpoint returns the raw AreaRulePlanning projection (repeat
-        // integers, no `repeatRule`). Map each row exactly as the calendar week
-        // grid does so the humanized Gentagelse + modal `data.task` are identical.
-        this.tasks = (res.model ?? []).map(mapResponseToCalendarTask);
-        // Selection references rows from the previous load; clear it on refresh.
-        this.selection = new Set<number>();
-      }
+    }).pipe(
+      // Release the flag on EVERY terminal path. `postNoToast` does not surface
+      // errors: the core `HttpErrorInterceptor` re-issues a failed request and
+      // finally returns `EMPTY`, so an HTTP failure makes the observable
+      // COMPLETE without a value — `next` never runs and `error` never fires.
+      // Only `finalize` covers that shape; without it the refresh button stayed
+      // disabled for good after a 500.
+      finalize(() => (this.loading = false)),
+    ).subscribe({
+      next: res => {
+        if (res && res.success) {
+          // The index endpoint returns the raw AreaRulePlanning projection (repeat
+          // integers, no `repeatRule`). Map each row exactly as the calendar week
+          // grid does so the humanized Gentagelse + modal `data.task` are identical.
+          this.tasks = (res.model ?? []).map(mapResponseToCalendarTask);
+        }
+      },
+      // Kept for the rare error that bypasses the interceptor's `EMPTY` (e.g. a
+      // thrown mapping error). `finalize` above releases the flag; the previous
+      // rows stay on screen.
+      error: () => {},
     });
   }
 
+  /**
+   * #1194 — the toolbar refresh button. Re-fetches from the database while
+   * keeping the UI state exactly as it is:
+   *  - filters: `currentFilters` and the filter component's own state are not
+   *    touched by `loadTasks()`, so the same filters go into the request;
+   *  - sort + page: the grid sorts client-side and mtx-grid re-attaches the
+   *    SAME `MatSort`/`MatPaginator` instances when it rebuilds its data source,
+   *    so the active column/direction and the page index survive by
+   *    construction (page index clamps if the row count shrinks). This holds
+   *    only while sorting stays client-side — do not move it to the server.
+   *  - selection: CLEARED, like every other reload path (`loadTasks()` empties
+   *    the Set at request start, in step with mtx-grid rebuilding its
+   *    SelectionModel empty when `[loading]` flips). Preserving it would keep
+   *    ids of rows another user may just have deleted — the very situation a
+   *    refresh exists for.
+   * Tags are reloaded too (cheap; `onUpdateTags` already pairs them) because
+   * the Report headline cells resolve client-side from `tags`, so a tag renamed
+   * elsewhere would otherwise stay stale. `eforms` (a 1000-row template
+   * request) and `properties` are deliberately NOT reloaded.
+   * Never implement this by re-emitting from the filters component or by
+   * navigating to self — both re-instantiate the grid and lose sort/page.
+   */
+  refresh() {
+    if (this.loading) {
+      return;
+    }
+    this.loadTasks();
+    this.loadTags();
+  }
+
+  /**
+   * #1135 — the edit modal puts `folderId` straight into the update payload,
+   * where it decides which SDK folder the task's eForm is filed under. This
+   * page has no folder picker, so it resolves the property's Logbøger folder
+   * the same way `CalendarContainerComponent` does (`getLinkedFolderDtos` +
+   * `findFolderByName`). Hard-coding `null` here is what made every save from
+   * this page fail server-side.
+   *
+   * Resolved per TASK property, not per selected filter: the grid can list
+   * tasks from several properties at once. Successful lookups are cached for
+   * the lifetime of the page (the folder tree does not change while it is
+   * open); failures are NOT cached, so the next edit retries.
+   *
+   * Resolved from the task's property as it stands when the modal OPENS. If the
+   * user then switches property inside the modal, `propertyId` follows the
+   * editable control while `folderId` does not — pre-existing, identical on the
+   * calendar page, and deliberately out of scope for #1135.
+   */
+  private logboegerFolderIdByProperty = new Map<number, number | null>();
+
+  private resolveLogboegerFolderId(propertyId: number): Observable<number | null> {
+    if (!propertyId) {
+      return of(null);
+    }
+    if (this.logboegerFolderIdByProperty.has(propertyId)) {
+      return of(this.logboegerFolderIdByProperty.get(propertyId) ?? null);
+    }
+    return this.propertiesService.getLinkedFolderDtos(propertyId).pipe(
+      map(res => {
+        if (!res || !res.success) {
+          // Never fall back to another property's folder — that would refile
+          // this task under a property it does not belong to (#1239). null is
+          // the supported "no folder supplied" value: the backend keeps the
+          // task's current folder.
+          return null;
+        }
+        const folderId = findLogboegerFolderId(res.model);
+        this.logboegerFolderIdByProperty.set(propertyId, folderId);
+        return folderId;
+      }),
+      // HttpErrorInterceptor swallows a hard 4xx/5xx into EMPTY, which
+      // completes without emitting — without this the modal would silently
+      // never open. The interceptor has already toasted the reason.
+      defaultIfEmpty(null),
+    );
+  }
+
   onEditTask(task: CalendarTaskModel) {
+    this.resolveLogboegerFolderId(task.propertyId)
+      .subscribe(folderId => this.openEditTaskModal(task, folderId));
+  }
+
+  private openEditTaskModal(task: CalendarTaskModel, folderId: number | null) {
     const data: TaskCreateEditModalData = {
       task,
       date: task.taskDate,
@@ -234,7 +357,7 @@ export class TaskListPageComponent implements OnInit {
       propertyId: task.propertyId,
       properties: this.properties,
       eforms: of(this.eforms),
-      folderId: null,
+      folderId,
       planningTags: this.tags.map(t => ({id: t.id, name: t.name})),
     };
     const ref = this.dialog.open(TaskCreateEditModalComponent, {

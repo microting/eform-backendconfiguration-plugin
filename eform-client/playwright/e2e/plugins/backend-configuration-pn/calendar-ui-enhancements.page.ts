@@ -1,4 +1,5 @@
 import { Page, Locator, expect } from '@playwright/test';
+import { API_TIMEOUT, UI_TIMEOUT } from './wait-helpers';
 
 /**
  * Self-contained page object for the calendar UI-enhancements suite under
@@ -20,10 +21,171 @@ export class CalendarUiEnhancementsPage {
       .waitFor({ state: 'visible', timeout: 30000 });
   }
 
+  /**
+   * Pick a property from the toolbar's property dropdown (#1209 — the property
+   * list moved out of the retired sidebar into a mat-menu, so it has to be
+   * opened before an option exists). The panel renders into
+   * `.cdk-overlay-container`; the option keeps the `.property-item` class it
+   * had in the sidebar.
+   *
+   * The pick fires `loadBoards` -> `loadTasks`, and callers act on the grid
+   * immediately afterwards. Both responses are awaited instead of sleeping
+   * (this helper is on ~60 call sites, so a 1s guess is a minute of pure sleep
+   * per run — and the repo forbids a sleep standing in for a condition). Each
+   * wait is `.catch(() => null)`-guarded, mirroring `task-list.page.ts`, so a
+   * call that legitimately does not fire cannot hang the helper.
+   */
   async selectProperty(name: string): Promise<void> {
-    await this.page.locator('.property-item').filter({ hasText: name }).click();
-    await this.page.waitForTimeout(1000);
+    await this.openPropertyMenu();
+    const boardsLoaded = this.page
+      .waitForResponse(r => r.url().includes('/api/backend-configuration-pn/calendar/boards/'), { timeout: API_TIMEOUT })
+      .catch(() => null);
+    const tasksLoaded = this.page
+      .waitForResponse(r => r.url().includes('/api/backend-configuration-pn/calendar/tasks/week'), { timeout: API_TIMEOUT })
+      .catch(() => null);
+    await this.propertyMenuPanel()
+      .locator('.property-item')
+      .filter({ hasText: name })
+      .click();
+    // Single-select: the menu closes itself on pick.
+    await this.propertyMenuPanel().waitFor({ state: 'detached', timeout: UI_TIMEOUT });
+    await Promise.all([boardsLoaded, tasksLoaded]);
   }
+
+  // ----- Toolbar dropdowns (#1209) -----------------------------------------
+
+  propertyMenuPanel(): Locator {
+    return this.page.locator('.cdk-overlay-container .calendar-property-menu');
+  }
+
+  boardMenuPanel(): Locator {
+    return this.page.locator('.cdk-overlay-container .calendar-boards-menu');
+  }
+
+  /**
+   * Gate on the TRIGGER's `aria-expanded`, not on whether a panel element
+   * exists: a panel that is mid-exit-animation is still in the DOM, so a
+   * count-based check would read "already open", skip the click, and then pass
+   * a `waitFor visible` on a panel that is about to detach — and Material sets
+   * `pointer-events: none` on `.mat-mdc-menu-panel-animating`, so the next
+   * click would silently stall. MatMenuTrigger binds `aria-expanded` to
+   * `menuOpen`, which is already false while the exit animation runs.
+   */
+  private async openMenuVia(triggerId: string, panel: Locator): Promise<void> {
+    const trigger = this.page.locator(triggerId);
+    if ((await trigger.getAttribute('aria-expanded')) !== 'true') {
+      await trigger.click();
+    }
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true', { timeout: UI_TIMEOUT });
+    await panel.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+  }
+
+  async openPropertyMenu(): Promise<void> {
+    await this.openMenuVia('#calendarPropertyButton', this.propertyMenuPanel());
+  }
+
+  /**
+   * Open the "Kalendere" multi-select. The panel deliberately stays open while
+   * calendars are checked (the component stops click propagation so MatMenu's
+   * close-on-click does not fire), so this is a no-op when it is already open.
+   */
+  async openBoardMenu(): Promise<void> {
+    await this.openMenuVia('#calendarBoardsButton', this.boardMenuPanel());
+  }
+
+  /**
+   * NB: a row's `⋮` actions menu is a nested overlay, and the CDK keyboard
+   * dispatcher hands Escape to the TOP-MOST overlay only. So with that menu
+   * open the first Escape closes it and the calendars panel stays put — a spec
+   * that opened one must close it (and wait for it to detach) before calling
+   * this, or the trigger is still `aria-expanded="true"` when we look.
+   *
+   * #1210 replaced the inline rename popover that used to live in that submenu
+   * with modals, so nothing inside it swallows Escape any more.
+   */
+  async closeBoardMenu(): Promise<void> {
+    const trigger = this.page.locator('#calendarBoardsButton');
+    if ((await trigger.getAttribute('aria-expanded')) !== 'true') return;
+    await this.page.keyboard.press('Escape');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false', { timeout: UI_TIMEOUT });
+    await this.boardMenuPanel().waitFor({ state: 'detached', timeout: UI_TIMEOUT });
+  }
+
+  /**
+   * One row of the calendars dropdown, located by its calendar name.
+   *
+   * Anchored, not substring: a plain `hasText` makes "Drift" match "Drift 2"
+   * as well, which surfaces as an opaque strict-mode violation rather than a
+   * clear failure. `\s*` on both sides because a regex `hasText` matches the
+   * element's RAW text, and the name sits inside Material's label span.
+   */
+  boardItem(name: string): Locator {
+    const exact = new RegExp(`^\\s*${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`);
+    return this.boardMenuPanel()
+      .locator('.board-item')
+      .filter({ has: this.page.locator('.board-name', { hasText: exact }) });
+  }
+
+  // ----- Calendar CRUD (#1210) ---------------------------------------------
+
+  /** The row `⋮` submenu: Rediger / Dupliker / Slet. */
+  boardActionsPanel(): Locator {
+    return this.page.locator('.cdk-overlay-container .board-actions-menu');
+  }
+
+  /** The create/edit and delete dialogs both render as a single mat-dialog. */
+  boardDialog(): Locator {
+    return this.page.locator('.cdk-overlay-container mat-dialog-container');
+  }
+
+  /**
+   * Open one calendar row's `⋮` menu, leaving the calendars panel open behind
+   * it. The trigger is `opacity: 0` until the row is hovered or focused — that
+   * is a paint-level hide, so Playwright would click it regardless, but hovering
+   * first is what a user does and keeps the screenshot on a failure readable.
+   */
+  async openBoardActions(name: string): Promise<void> {
+    await this.openBoardMenu();
+    const row = this.boardItem(name);
+    await row.hover();
+    const trigger = row.locator('.board-menu-btn');
+    if ((await trigger.getAttribute('aria-expanded')) !== 'true') {
+      await trigger.click();
+    }
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true', { timeout: UI_TIMEOUT });
+    await this.boardActionsPanel().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+  }
+
+  /**
+   * Pick one action from a row's `⋮` menu. Every action closes both overlays
+   * on its way to a dialog, so this waits for the calendars panel to detach —
+   * without that a following `openBoardMenu()` would read the panel that is
+   * still mid-exit-animation as open.
+   */
+  async runBoardAction(name: string, action: 'edit' | 'duplicate' | 'delete'): Promise<void> {
+    await this.openBoardActions(name);
+    await this.boardActionsPanel().locator(`.board-action-${action}`).click();
+    await this.boardMenuPanel().waitFor({ state: 'detached', timeout: UI_TIMEOUT });
+  }
+
+  /**
+   * Create a calendar through the dropdown's "Opret kalender" footer.
+   *
+   * Buttons and fields are matched by id, never by their localized text: the
+   * e2e run is in Danish and the dialog's primary button is labelled "Opret"
+   * here and "Gem" in edit mode.
+   */
+  async createBoard(name: string): Promise<void> {
+    await this.openBoardMenu();
+    await this.boardMenuPanel().locator('#calendarCreateBoardBtn').click();
+    await this.boardDialog().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    await this.boardDialog().locator('#calendarBoardName').fill(name);
+    await this.boardDialog().locator('#calendarBoardSaveBtn').click();
+    await this.boardDialog().waitFor({ state: 'detached', timeout: API_TIMEOUT });
+    await this.openBoardMenu();
+    await expect(this.boardItem(name)).toBeVisible({ timeout: API_TIMEOUT });
+  }
+
 
   // ----- Calendar slot click ----------------------------------------------
 
@@ -275,41 +437,16 @@ export class CalendarUiEnhancementsPage {
     return out;
   }
 
-  // ----- Header / sidebar --------------------------------------------------
-
-  async clickPropertyPill(): Promise<void> {
-    await this.page.locator('.property-pill').click();
-    // Brief settle so the sidebar transition can flip the class.
-    await this.page.waitForTimeout(150);
-  }
+  // ----- Header ------------------------------------------------------------
 
   /**
-   * The menu-toggle button — the leading button in `.calendar-header`
-   * containing a `<mat-icon>menu</mat-icon>`. Filtering by the icon text
-   * keeps this stable even if more icon-buttons are added to the header
-   * later.
+   * Click the toolbar's property pill. Since #1209 it is the property
+   * dropdown's trigger, so this opens the panel (it used to only toggle the
+   * sidebar, which was hidden in some view modes — the dead-pill bug).
    */
-  getMenuToggleButton(): Locator {
-    return this.page
-      .locator('.calendar-header button')
-      .filter({ has: this.page.locator('mat-icon', { hasText: 'menu' }) })
-      .first();
-  }
-
-  async clickMenuToggleButton(): Promise<void> {
-    await this.getMenuToggleButton().click();
-    await this.page.waitForTimeout(150);
-  }
-
-  async isSidebarClosed(): Promise<boolean> {
-    return (await this.page.locator('.calendar-shell.sidebar-closed').count()) > 0;
-  }
-
-  async ensureSidebarOpen(): Promise<void> {
-    if (await this.isSidebarClosed()) {
-      await this.clickMenuToggleButton();
-      await this.page.waitForTimeout(150);
-    }
+  async clickPropertyPill(): Promise<void> {
+    await this.page.locator('.property-pill').click();
+    await this.propertyMenuPanel().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   }
 
   /**
@@ -1099,4 +1236,210 @@ export class CalendarUiEnhancementsPage {
     await this.getMiniPickerOverlay().waitFor({ state: 'hidden', timeout: 5000 });
     await this.page.waitForTimeout(300);
   }
+
+  // ---------------------------------------------------------------------
+  // Assignee filter (#1211) — the toolbar's Teams + Employees dropdown.
+  //
+  // A mat-menu, like the calendars picker, so the panel is projected into the
+  // CDK overlay and must be located there rather than inside the toolbar.
+  // ---------------------------------------------------------------------
+
+  assigneeFilterPanel(): Locator {
+    return this.page.locator('.cdk-overlay-container .calendar-assignees-menu');
+  }
+
+  /**
+   * The panel deliberately stays open across toggles (the component stops
+   * click propagation so MatMenu's close-on-click does not fire), so this is a
+   * no-op when it is already open — same contract as `openBoardMenu`.
+   */
+  async openAssigneeFilter(): Promise<void> {
+    await this.openMenuVia('#calendarAssigneesButton', this.assigneeFilterPanel());
+  }
+
+  async closeAssigneeFilter(): Promise<void> {
+    const trigger = this.page.locator('#calendarAssigneesButton');
+    if ((await trigger.getAttribute('aria-expanded')) !== 'true') return;
+    await this.page.keyboard.press('Escape');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false', { timeout: UI_TIMEOUT });
+    await this.assigneeFilterPanel().waitFor({ state: 'detached', timeout: UI_TIMEOUT });
+  }
+
+  /**
+   * One row of the filter, located by the displayed name within its section.
+   *
+   * Matched on the row's `.assignee-name` CHILD, not on the row itself. A
+   * regex `hasText` tests the element's RAW text, and a ticked row's raw text
+   * begins with the tick's own ligature — `"check\nAnna Alpha"` — so an
+   * anchored regex on the row would match while unticked and stop matching the
+   * instant it is ticked. That is a locator that resolves to zero elements
+   * halfway through a test and burns the whole timeout saying nothing.
+   * `.assignee-name` holds the name and nothing else.
+   *
+   * Anchored rather than substring so "Anna" cannot also resolve "Anna B" and
+   * fail as an opaque strict-mode violation. Never addressed by index: the two
+   * sections render in one panel, so `nth()` drifts the moment a team is added.
+   */
+  filterTeamRow(name: string): Locator {
+    return this.assigneeFilterPanel()
+      .locator('.team-row')
+      .filter({ has: this.page.locator('.assignee-name', { hasText: new RegExp(`^\\s*${name}\\s*$`) }) });
+  }
+
+  filterEmployeeRow(name: string): Locator {
+    return this.assigneeFilterPanel()
+      .locator('.employee-row')
+      .filter({ has: this.page.locator('.assignee-name', { hasText: new RegExp(`^\\s*${name}\\s*$`) }) });
+  }
+
+  /** The filter button's own label — "All employees", one name, or "N selected". */
+  async assigneeFilterLabel(): Promise<string> {
+    return (
+      (await this.page.locator('#calendarAssigneesButton .pill-label').textContent()) ?? ''
+    ).trim();
+  }
+
+  /** The reset row's label, so a spec can compare it to the button without hardcoding a locale. */
+  async assigneeResetLabel(): Promise<string> {
+    return ((await this.assigneeFilterPanel().locator('#calendarAssigneesClear').textContent()) ?? '').trim();
+  }
+
+  /** Every employee currently offered by the filter, in render order. */
+  async filterEmployeeNames(): Promise<string[]> {
+    return (
+      await this.assigneeFilterPanel().locator('.employee-row .assignee-name').allTextContents()
+    ).map(t => t.trim());
+  }
+
+  /** How many rows — teams and employees together — are currently ticked. */
+  async checkedFilterCount(): Promise<number> {
+    return await this.assigneeFilterPanel()
+      .locator('[role="menuitemcheckbox"][aria-checked="true"]')
+      .count();
+  }
+
+  /**
+   * Click a filter row and wait for the grid reload it triggers.
+   *
+   * The response is awaited rather than slept on, and the wait is armed BEFORE
+   * the click so a fast reply cannot land first. Month and month-scoped
+   * schedule views fire six of these (one per grid week); only the first is
+   * awaited here, which is enough to prove the request left with the new
+   * filter — a spec asserting on the rendered grid should assert on the grid.
+   */
+  private async clickFilterRow(row: Locator): Promise<void> {
+    const reload = this.page.waitForResponse(
+      r => r.url().includes('/api/backend-configuration-pn/calendar/tasks/week'),
+      { timeout: API_TIMEOUT }
+    );
+    reload.catch(() => undefined);
+    await row.click();
+    await reload;
+  }
+
+  async toggleFilterTeam(name: string): Promise<void> {
+    await this.clickFilterRow(this.filterTeamRow(name));
+  }
+
+  async toggleFilterEmployee(name: string): Promise<void> {
+    await this.clickFilterRow(this.filterEmployeeRow(name));
+  }
+
+  /** The "All employees" reset row — clears teams AND employees in one reload. */
+  async resetAssigneeFilter(): Promise<void> {
+    await this.clickFilterRow(this.assigneeFilterPanel().locator('#calendarAssigneesClear'));
+  }
+
+  /**
+   * The body of the next `tasks/week` POST the page makes, captured around
+   * `action`. Proves a filter reached the SERVER rather than being applied in
+   * the browser — the whole point of #1211's "no client-side post-filtering".
+   */
+  async captureNextWeekRequest(action: () => Promise<void>): Promise<any> {
+    const req = this.page.waitForRequest(
+      r =>
+        r.url().includes('/api/backend-configuration-pn/calendar/tasks/week') &&
+        r.method() === 'POST',
+      { timeout: API_TIMEOUT }
+    );
+    req.catch(() => undefined);
+    await action();
+    return (await req).postDataJSON();
+  }
+
+  /**
+   * Create an event assigned to ONE NAMED worker (rather than
+   * `fillAndSaveEvent`'s "first option", which cannot say which worker it
+   * picked). Assumes the create modal is already open.
+   */
+  async fillAndSaveEventForWorker(title: string, workerName: string): Promise<void> {
+    await this.page.locator('#calendarEventTitle').fill(title);
+    await this.pickFirstOption('#calendarEventEform');
+    await this.pickFirstOption('#calendarEventPlanningTag');
+    await this.pickOptionByLabel('#calendarEventAssignee', workerName);
+    await this.saveEventModal(title);
+  }
+
+  /**
+   * Create an event assigned to a WORKER TAG only — no individual assignee.
+   * This is the one shape a team filter can match: `ShouldIncludeTask` tests
+   * the tags assigned to the TASK, so an event assigned to a person who
+   * happens to carry the tag is not a team event.
+   */
+  async fillAndSaveEventForTeam(title: string, teamName: string): Promise<void> {
+    await this.page.locator('#calendarEventTitle').fill(title);
+    await this.pickFirstOption('#calendarEventEform');
+    await this.pickFirstOption('#calendarEventPlanningTag');
+    await this.pickOptionByLabel('#calendarEventWorkerTags', teamName);
+    await this.saveEventModal(title);
+  }
+
+  private async pickFirstOption(selectId: string): Promise<void> {
+    await this.page.locator(selectId).click();
+    const panel = this.page.locator('.ng-dropdown-panel');
+    await panel.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    await panel.locator('.ng-option').first().click();
+    // Multi-selects keep the panel open; close it by focusing the title field
+    // so the next control's own panel is the only one on screen.
+    await this.page.locator('#calendarEventTitle').click();
+  }
+
+  /**
+   * Pick an ng-select option BY LABEL, never by index — option order is not a
+   * contract, and an `nth()` pick silently selects the wrong worker when the
+   * list grows.
+   */
+  private async pickOptionByLabel(selectId: string, label: string): Promise<void> {
+    await this.page.locator(selectId).click();
+    const panel = this.page.locator('.ng-dropdown-panel');
+    await panel.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    // Substring, deliberately: an ng-option's raw text can carry more than the
+    // label, and the callers pass random-suffixed seeded names that cannot
+    // collide. What matters is that the pick is BY LABEL and not by index.
+    await panel.locator('.ng-option').filter({ hasText: label }).click();
+    await this.page.locator('#calendarEventTitle').click();
+    // `.ng-value-label` rather than `.ng-value`: the latter's text includes the
+    // clear-icon glyph, so an equality assertion on it can never match.
+    await expect(
+      this.page.locator(`${selectId} .ng-value-label`).filter({ hasText: label })
+    ).toBeVisible({ timeout: UI_TIMEOUT });
+  }
+
+  private async saveEventModal(title: string): Promise<void> {
+    const createResp = this.page.waitForResponse(
+      r =>
+        r.url().includes('/api/backend-configuration-pn/calendar/tasks') &&
+        !r.url().includes('/tasks/week') &&
+        !r.url().includes('/tasks/move') &&
+        !r.url().includes('/tasks/resize') &&
+        r.request().method() === 'POST',
+      { timeout: API_TIMEOUT }
+    );
+    createResp.catch(() => undefined);
+    await this.page.locator('#calendarEventSaveBtn').click();
+    const resp = await createResp;
+    expect(resp.status(), `creating "${title}" should return 200`).toBe(200);
+    await this.findEventBlock(title).waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+  }
+
 }

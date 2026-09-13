@@ -12,7 +12,26 @@ public class CalendarTaskResponseModel
     public double Duration { get; set; }
     public string TaskDate { get; set; }
     public List<string> Tags { get; set; } = [];
+    /// <summary>The EXPLICIT individual assignees: the ARP's own non-removed
+    /// PlanningSites site ids (or an occurrence exception's ExceptionSites when the
+    /// occurrence carries one). Does NOT include worker-tag members — those are in
+    /// <see cref="TeamAssigneeIds"/>.</summary>
     public List<int> AssigneeIds { get; set; } = [];
+
+    /// <summary>#1236: the site ids assigned to this event VIA A WORKER TAG ("team") —
+    /// the live members of every tag in <see cref="WorkerTagIds"/>, resolved through
+    /// <c>IWorkerTagMembershipService</c>. Empty (never null) when the event has no
+    /// worker tag, and empty on any producer that does not load worker tags.
+    ///
+    /// <para>Kept BESIDE <see cref="AssigneeIds"/> rather than merged into it. The
+    /// complete-event modal groups its worker dropdown on the union of the two, so a
+    /// team's members show under "assigned to this event"; it pre-selects a lone
+    /// completer from <see cref="AssigneeIds"/> ALONE, so nobody is recorded as having
+    /// completed a case on the strength of team membership. A site that is both an
+    /// explicit assignee and a team member appears in both lists; the modal de-dupes
+    /// when it unions them.</para></summary>
+    public List<int> TeamAssigneeIds { get; set; } = [];
+
     // Worker tags assigned to this event (SDK Tag ids).
     public List<int> WorkerTagIds { get; set; } = [];
     public List<string> WorkerNames { get; set; } = [];
