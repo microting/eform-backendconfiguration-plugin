@@ -80,12 +80,13 @@
 //   --text-secondary  #7F868D on #F7F9FA = 3.49 [3.33]  fails
 //   --text-tertiary   #6b7280 on #F7F9FA = 4.58 [4.37]  fails the bracket
 //
-// 4.5:1 is the floor that applies: the header cells are 12.8px/600 under eform
-// and 14px/500 under workspace, i.e. normal text, not large text. The other
-// three combinations pass for both tokens, which is exactly why the eform-light
-// failure hides. `--text-child-muted` clears 4.5:1 in all four combinations
-// under BOTH surfaces, so the empty state, the calm counter and the unsorted
-// column headers all use it.
+// 4.5:1 is the floor that applies: the eform header cells are 12.8px/600, i.e.
+// normal text, not large text. The other three combinations pass for both
+// tokens, which is exactly why the eform-light failure hides.
+// `--text-child-muted` clears 4.5:1 in all four combinations under BOTH
+// surfaces, so the empty state, the calm counter and (under eform) the column
+// headers all use it. Under workspace the header cells take the theme's
+// default table header instead (--text-quaternary on the --bg band).
 
 .compliance-overview {
   display: flex;
@@ -106,57 +107,60 @@
     overflow-x: auto;
   }
 
+  // The frame, header band, cell padding and typography, separators and row
+  // hover all come from the theme's native data-table rules — `table.table`
+  // in _workspace-utilities.scss §8, under body.theme-workspace. eForm Classic
+  // does not style `table.table`, so its look is kept at the bottom of this
+  // file under :host-context(body.theme-eform).
   &__table {
     width: 100%;
     // compliance.css:683-688. Below this the three columns collapse into each
     // other; the scroller above takes over instead.
     min-width: 640px;
-    border-collapse: collapse;
-    color: var(--text-primary);
   }
 
   &__th {
     text-align: left;
-    padding: 0;
-    border-bottom: 1px solid var(--border-primary);
-    font-size: var(--font-size-table-header);
-    font-weight: var(--font-weight-semibold);
-    // Header cells are normal text (12.8px/600 eform, 14px/500 workspace), so
-    // the 4.5:1 floor applies to all three of them, not just the sorted one.
-    // --text-secondary is 3.49:1 here in eform light. See the header comment.
-    color: var(--text-child-muted);
     white-space: nowrap;
 
     &.is-num {
       text-align: right;
     }
-
-    &.is-sorted {
-      color: var(--text-primary);
-    }
   }
 
-  // A real <button> filling the header cell: keyboard-operable for free, and
-  // the whole header reads as the click target it is.
+  // A real <button> spanning the header cell's width, so it is keyboard-operable
+  // for free. Under Workspace the theme pads the cell and the unpadded button
+  // fills its content box; under Classic the cell is unpadded and the button
+  // carries the padding, so the whole cell is the click target (see the bottom
+  // of this file). It inherits the cell's header typography — a <button>'s
+  // user-agent styles reset font, case and tracking, so without the `inherit`s
+  // the label would not be uppercase.
   &__sort-btn {
     display: inline-flex;
     align-items: center;
     gap: var(--spacing-xs);
     width: 100%;
-    padding: var(--spacing-md) var(--spacing-sm);
+    padding: 0;
     background: none;
     border: 0;
     font: inherit;
+    text-transform: inherit;
+    letter-spacing: inherit;
     color: inherit;
     cursor: pointer;
 
+    // As the theme's own `.table-sort-btn`: a colour cue, no fill — a fill
+    // would paint only the button's box inside the cell's padding.
     &:hover {
-      background: var(--table-row-hover);
+      color: var(--md-primary);
     }
 
+    // Outset: with `padding: 0` an inset ring would sit on the label itself.
+    // The ring lands in the cell's own padding. Classic, where the button is
+    // padded, keeps an inset ring (bottom of this file).
     &:focus-visible {
       outline: 2px solid var(--md-primary);
-      outline-offset: -2px;
+      outline-offset: 2px;
     }
   }
 
@@ -177,29 +181,29 @@
     }
   }
 
+  // Cell rules are anchored on the row (0,4,1 with encapsulation) so they
+  // out-specify the theme's `table.table td` (0,2,3), which sets alignment,
+  // colour and weight on every body cell.
   &__row,
   &__totals {
-    td {
-      padding: var(--spacing-md) var(--spacing-sm);
-      border-bottom: 1px solid var(--border-primary);
+    td.is-num {
+      text-align: right;
+      // Without this the two numeric columns jitter between rows, because the
+      // theme's body font is proportional (compliance.css:764).
+      font-variant-numeric: tabular-nums lining-nums;
+    }
 
-      &.is-num {
-        text-align: right;
-        // Without this the two numeric columns jitter between rows, because the
-        // theme's body font is proportional (compliance.css:764).
-        font-variant-numeric: tabular-nums lining-nums;
-      }
+    .compliance-overview__property {
+      font-weight: var(--font-weight-bold);
+      white-space: nowrap;
     }
   }
 
   // Every body row drills into Detaljer, so it needs a visible affordance and a
-  // focus ring — a clickable <tr> with no cue is not discoverable.
+  // focus ring — a clickable <tr> with no cue is not discoverable. The hover
+  // background is the theme's.
   &__row {
     cursor: pointer;
-
-    &:hover {
-      background: var(--table-row-hover);
-    }
 
     &:focus-visible {
       outline: 2px solid var(--md-primary);
@@ -207,19 +211,14 @@
     }
   }
 
-  // The totals row is NOT drillable: no pointer, no hover, no focus ring.
-  &__totals {
+  // The totals row is NOT drillable: no pointer, no hover, no focus ring. It
+  // sits in <tfoot>, which the theme's "no separator under the last row" rule
+  // does not reach — so it draws its own single rule above instead. The
+  // weight goes on the cells: the theme sets `font-weight: 400` on every td.
+  &__totals td {
     font-weight: var(--font-weight-bold);
-
-    td {
-      border-bottom: 0;
-      border-top: 2px solid var(--border-primary);
-    }
-  }
-
-  &__property {
-    font-weight: var(--font-weight-bold);
-    white-space: nowrap;
+    border-bottom: 0;
+    border-top: 1px solid var(--md-surface-variant);
   }
 
   &__pill {
@@ -293,5 +292,61 @@
       color: var(--text-error);
       font-weight: var(--font-weight-bold);
     }
+  }
+}
+
+// eForm Classic does not style `table.table` (Bootstrap is not loaded), so the
+// table keeps its own look there: collapsed borders, header typography, the
+// sorted header in full-strength text, cell padding and separators, the row
+// and header hovers, and the heavier rule above the totals.
+:host-context(body.theme-eform) {
+  .compliance-overview__table {
+    border-collapse: collapse;
+    color: var(--text-primary);
+  }
+
+  .compliance-overview__th {
+    padding: 0;
+    border-bottom: 1px solid var(--border-primary);
+    font-size: var(--font-size-table-header);
+    font-weight: var(--font-weight-semibold);
+    // Header cells are normal text (12.8px/600), so the 4.5:1 floor applies to
+    // all three of them, not just the sorted one. --text-secondary is 3.49:1
+    // here in eform light. See the header comment.
+    color: var(--text-child-muted);
+
+    &.is-sorted {
+      color: var(--text-primary);
+    }
+  }
+
+  .compliance-overview__sort-btn {
+    padding: var(--spacing-md) var(--spacing-sm);
+
+    &:hover {
+      background: var(--table-row-hover);
+      color: inherit;
+    }
+
+    &:focus-visible {
+      outline-offset: -2px;
+    }
+  }
+
+  .compliance-overview__row,
+  .compliance-overview__totals {
+    td {
+      padding: var(--spacing-md) var(--spacing-sm);
+      border-bottom: 1px solid var(--border-primary);
+    }
+  }
+
+  .compliance-overview__row:hover {
+    background: var(--table-row-hover);
+  }
+
+  .compliance-overview__totals td {
+    border-bottom: 0;
+    border-top: 2px solid var(--border-primary);
   }
 }

@@ -31,10 +31,11 @@
   <!--
     Its own horizontal scroller: on a narrow viewport the TABLE scrolls inside
     this box rather than the page scrolling sideways (the table carries a
-    min-width in the stylesheet).
+    min-width in the stylesheet). `table` opts into the theme's default
+    data-table look (scss/components/_workspace-utilities.scss §8).
   -->
   <div class="compliance-overview__scroll" *ngIf="rows.length > 0">
-    <table class="compliance-overview__table">
+    <table class="table compliance-overview__table">
       <thead>
         <tr>
           <!--

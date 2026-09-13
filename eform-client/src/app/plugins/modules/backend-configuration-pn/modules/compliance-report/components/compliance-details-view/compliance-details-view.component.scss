@@ -33,50 +33,77 @@
     color: var(--text-secondary);
   }
 
-  &__week {
-    display: flex;
-    flex-direction: column;
+  // The table scrolls inside its own box on a narrow viewport rather than
+  // making the page scroll sideways (same as Oversigt).
+  &__scroll {
+    overflow-x: auto;
   }
 
+  // The frame, header-less body cells (12px 16px, 14px, vertically centred),
+  // the separators and the row hover all come from the theme's native
+  // data-table rules — `table.table` in _workspace-utilities.scss §8, under
+  // body.theme-workspace. Classic does not style `table.table`. Each theme's
+  // own additions (the week heading among them) are at the bottom of this file.
+  &__table {
+    width: 100%;
+  }
+
+  // The user agent centres a <th>; the week heading reads left in both themes.
   &__week-title {
-    font-weight: var(--font-weight-bold);
-    padding: var(--spacing-lg) 0 var(--spacing-xs);
-    border-bottom: 1px solid var(--border-primary);
+    text-align: left;
   }
 
+  // Cells are anchored on the row (0,4,0 with encapsulation) so they
+  // out-specify the theme's `table.table td` (0,2,3), which sets colour and
+  // weight on every body cell.
   &__row {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    padding: var(--spacing-sm) var(--spacing-xs);
-    border-radius: var(--radius-md);
-    color: var(--text-primary);
-
     &.is-clickable {
       cursor: pointer;
     }
 
-    &.is-clickable:hover {
-      background: var(--table-row-hover);
+    // The keyboard focus ring and the post-completion ring look the same: an
+    // inset outline, so it does not shift the row, and it sits over the cells'
+    // own backgrounds.
+    &:focus-visible,
+    &.is-highlighted {
+      outline: 2px solid var(--md-primary);
+      outline-offset: -2px;
     }
 
-    // The post-completion ring. Inset, so it does not shift the row.
-    &.is-highlighted {
-      box-shadow: inset 0 0 0 2px var(--md-primary);
+    > .compliance-details__date,
+    > .compliance-details__property,
+    > .compliance-details__time {
+      white-space: nowrap;
+    }
+
+    > .compliance-details__property {
+      color: var(--text-secondary);
+    }
+
+    > .compliance-details__board {
+      font-weight: var(--font-weight-medium);
+    }
+
+    // Shrink-to-fit: these two columns are only as wide as the circle and
+    // the icon button; the free width goes to the title column.
+    > .compliance-details__status,
+    > .compliance-details__actions {
+      width: 1%;
+    }
+
+    > .compliance-details__actions {
+      text-align: right;
     }
 
     &.is-done {
-      background: var(--status-aktiv-bg);
-      color: var(--status-aktiv-fg);
-      margin: var(--spacing-xs) 0;
       // Not clickable: a completed row has nothing left to complete.
       cursor: default;
 
-      .compliance-details__property,
-      .compliance-details__board,
-      .compliance-details__time,
-      .compliance-details__date,
-      .compliance-details__title {
+      // Painted on the CELLS, like the theme's hover, so it out-specifies
+      // `tbody tr:hover > td` and a done row keeps its green under the
+      // pointer. Every cell's text inherits the colour from here.
+      > td {
+        background: var(--status-aktiv-bg);
         color: var(--status-aktiv-fg);
       }
 
@@ -111,34 +138,16 @@
       // A blue ring would disappear into the green; the prototype switches to a
       // light ring for the same reason (compliance.css:270-272).
       &.is-highlighted {
-        box-shadow: inset 0 0 0 2px var(--status-aktiv-fg);
+        outline-color: var(--status-aktiv-fg);
       }
     }
-  }
-
-  &__date {
-    min-width: 150px;
-    flex-shrink: 0;
-  }
-
-  &__property {
-    min-width: 96px;
-    flex-shrink: 0;
-    white-space: nowrap;
-    color: var(--text-secondary);
-  }
-
-  &__board {
-    min-width: 90px;
-    flex-shrink: 0;
-    font-weight: var(--font-weight-medium);
   }
 
   &__circle {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
+    vertical-align: middle;
     width: 20px;
     height: 20px;
     border: 2px solid var(--md-outline);
@@ -159,15 +168,7 @@
     }
   }
 
-  &__time {
-    min-width: 120px;
-    flex-shrink: 0;
-    white-space: nowrap;
-  }
-
   &__body {
-    flex: 1;
-    min-width: 0;
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -202,19 +203,70 @@
     }
   }
 
-  &__actions {
-    margin-left: auto;
-    flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
-  }
-
   &__delete {
     color: var(--icon-secondary);
 
     &:hover {
       color: var(--error);
     }
+  }
+}
+
+// Workspace: `table.table` (_workspace-utilities.scss §8) draws everything else;
+// these are the log's own additions on top. `:host-context()` adds (0,2,1), so
+// every rule here out-specifies the theme's `table.table th` (0,2,3) and
+// `tbody tr:hover > td` (0,3,5).
+:host-context(body.theme-workspace) {
+  // The week band: a group header inside the body, so NOT the uppercase
+  // column-header look of `thead th` — normal case, on the header's --bg tint.
+  // The theme's `th` rule already draws its bottom separator.
+  .compliance-details__week-title {
+    padding: 8px 16px;
+    background: var(--bg);
+    font-weight: var(--font-weight-semibold);
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  // The theme drops the separator under the LAST row of every <tbody>, and
+  // each week is its own <tbody> — so a later week's band draws the line
+  // between itself and the week above.
+  .compliance-details__week + .compliance-details__week .compliance-details__week-title {
+    border-top: 1px solid var(--md-surface-variant);
+  }
+
+  // The theme lights EVERY body row on hover. An open row that cannot be
+  // completed (no area-rule planning) has no click action, so it must not look
+  // like it has one. Done rows are excluded: they keep their green.
+  .compliance-details__row:not(.is-clickable):not(.is-done):hover > td {
+    background-color: transparent;
+  }
+}
+
+// eForm Classic does not style `table.table` (Bootstrap is not loaded), so
+// without these the log would render with the user-agent table defaults: 2px
+// gaps between cells, 1px padding and no row hover.
+:host-context(body.theme-eform) {
+  .compliance-details__table {
+    border-collapse: collapse;
+    color: var(--text-primary);
+  }
+
+  // The week heading keeps its pre-table Classic look: a bold line of text
+  // over a rule, with no band behind it. The left inset keeps the old
+  // --spacing-xs offset from the row text, now that cells pad --spacing-md.
+  .compliance-details__week-title {
+    padding: var(--spacing-lg) calc(var(--spacing-md) - var(--spacing-xs)) var(--spacing-xs);
+    font-weight: var(--font-weight-bold);
+    border-bottom: 1px solid var(--border-primary);
+  }
+
+  .compliance-details__row > td {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .compliance-details__row.is-clickable:hover > td {
+    background: var(--table-row-hover);
   }
 }
 

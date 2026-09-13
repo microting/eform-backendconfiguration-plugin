@@ -55,14 +55,9 @@ const HIGHLIGHT_MS = 2200;
  * Rows arrive already ordered `taskDate` DESC, `startHour` ASC (#1161 owns
  * that); nothing here re-sorts.
  *
- * KNOWN STRUCTURAL LIMITATION: the row element is `role="button"`
- * `tabindex="0"` and contains the delete `<button>`, i.e. interactive content
- * nested inside a `role="button"` — invalid ARIA. Splitting the activation
- * target from the actions cell means re-cutting the row's CSS grid plus the
- * hover/highlight rules keyed off `.compliance-details__row`, which is beyond
- * #1165; the concrete defect it caused (Enter/Space on the delete button also
- * opening the eForm) is fixed by the guards in `onRowClicked` and on the
- * actions cell.
+ * The log is a `table.table` (one `<tbody>` per week), so it takes the theme's
+ * default data-table look.
+ * Completable rows are focusable but have no `role="button"` — see the template.
  */
 @Component({
   standalone: false,
@@ -340,7 +335,7 @@ export class ComplianceDetailsViewComponent implements OnInit, OnDestroy {
     if (!this.isRowCompletable(row)) {
       return;
     }
-    // The actions cell holds a real <button> nested inside this role="button"
+    // The actions cell holds a real <button> inside this keyboard-activated
     // row (see the note on `openDeleteConfirm`), so a KEYBOARD activation of
     // the delete button bubbles here as well: Enter fires keydown on the row
     // and then the browser's default activation clicks the button, opening the

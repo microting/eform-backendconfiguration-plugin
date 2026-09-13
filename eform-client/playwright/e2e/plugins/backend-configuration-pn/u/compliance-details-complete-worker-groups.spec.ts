@@ -405,7 +405,10 @@ test.describe.serial('Compliance Detaljer — complete modal groups workers by a
     await expect(row).toHaveCount(1);
     // A not-completed row with a task behind it is the clickable kind.
     await expect(row).toHaveClass(/is-clickable/);
-    await expect(row).toHaveAttribute('role', 'button');
+    // A focusable table row with Enter/Space handlers — no role="button", which
+    // would strip its row semantics and nest the delete button inside a button.
+    await expect(row).toHaveAttribute('tabindex', '0');
+    await expect(row).not.toHaveAttribute('role');
 
     // Which of the two seeded workers is the assignee, read from the row itself
     // (`workerNames[0]`; exactly one assignee, so the chip is the whole name).
@@ -613,7 +616,7 @@ test.describe.serial('Compliance Detaljer — complete modal groups workers by a
   //
   // Two gaps this file does NOT close, recorded rather than covered (no test
   // is added for either in this round):
-  //   - `[class.is-done]` on a Detaljer row (compliance-details-view.component.html:41)
+  //   - `[class.is-done]` on a Detaljer row (compliance-details-view.component.html:77)
   //     is asserted by no spec, in either direction — completing a row is out
   //     of reach here, and the open row's lack of the modifier goes unchecked;
   //   - the `Alle opgaver` status value has no e2e ROW-SET coverage; only
@@ -637,7 +640,8 @@ test.describe.serial('Compliance Detaljer — complete modal groups workers by a
     await expect(page.locator('#complianceDetailsEmpty')).toHaveCount(0);
     await expect(row).toHaveCount(1);
 
-    // The actions cell renders only for rows that are NOT completed, and the
+    // The actions cell is always there (it keeps the columns aligned), but the
+    // delete button renders only for rows that are NOT completed, and the
     // seeded row is open — so the button must be there.
     const deleteBtn = row.locator('.compliance-details__delete');
     await expect(deleteBtn).toBeVisible();

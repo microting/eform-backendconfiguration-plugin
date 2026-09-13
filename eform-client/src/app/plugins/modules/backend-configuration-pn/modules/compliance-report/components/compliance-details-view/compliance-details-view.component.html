@@ -28,103 +28,140 @@
     {{ 'Could not load the data' | translate }}
   </div>
 
-  <div
-    *ngFor="let group of groups; trackBy: trackByGroup"
-    class="compliance-details__week"
-  >
-    <div class="compliance-details__week-title">{{ group.label }}</div>
+  <!--
+    ONE framed `table.table`, so the theme's default data-table look applies
+    (scss/components/_workspace-utilities.scss §8 under theme-workspace). One
+    table rather than one per week keeps every column aligned down the whole
+    page.
 
-    <div
-      *ngFor="let row of group.rows; trackBy: trackByRow"
-      class="compliance-details__row"
-      [attr.data-compliance-id]="row.complianceId"
-      [class.is-done]="row.completed"
-      [class.is-clickable]="isRowCompletable(row)"
-      [class.is-highlighted]="highlightedId === row.complianceId"
-      [attr.role]="isRowCompletable(row) ? 'button' : null"
-      [attr.tabindex]="isRowCompletable(row) ? 0 : null"
-      (click)="onRowClicked(row, $event)"
-      (keydown.enter)="onRowClicked(row, $event)"
-      (keydown.space)="$event.preventDefault(); onRowClicked(row, $event)"
-    >
-      <span class="compliance-details__date">{{ formatDayLabel(row.taskDate) }}</span>
-      <span class="compliance-details__property">{{ row.propertyName || emptyCell }}</span>
-      <span class="compliance-details__board">{{ row.boardName || emptyCell }}</span>
+    Each week is its own <tbody> — several are valid in one table — opened by a
+    `scope="rowgroup"` header cell: `rowgroup` means "this <tbody>", so the
+    week label labels exactly that week's rows, and `.compliance-details__week`
+    stays the per-week container. No <thead>: the week band is the only
+    heading this log has ever had, and every cell is self-describing (a date,
+    a property, a board, a labelled status circle, a time, a title).
 
-      <!--
-        A circle that fills with a check when done. `role="img"` plus the
-        aria-label is the accessible name the component being replaced never
-        had (it used two different mat-icons and no label at all).
-      -->
-      <span
-        class="compliance-details__circle"
-        role="img"
-        [attr.aria-label]="(row.completed ? 'Task done' : 'Task not done') | translate"
+    Its own horizontal scroller, as in Oversigt: on a narrow viewport the
+    table scrolls inside this box rather than the page scrolling sideways.
+  -->
+  <div class="compliance-details__scroll" *ngIf="groups.length > 0">
+    <table class="table compliance-details__table">
+      <tbody
+        *ngFor="let group of groups; trackBy: trackByGroup"
+        class="compliance-details__week"
       >
-        <mat-icon class="compliance-details__check" [class.is-visible]="row.completed"
-          >check</mat-icon
+        <!-- colspan = the seven cells of a task row below. -->
+        <tr class="compliance-details__week-row">
+          <th colspan="7" scope="rowgroup" class="compliance-details__week-title">
+            {{ group.label }}
+          </th>
+        </tr>
+
+        <!--
+          A completable row is the click target for the eForm: focusable and
+          activated by Enter or Space (preventDefault on Space, so it does not
+          scroll the page instead).
+
+          `tabindex="0"` WITHOUT `role="button"`, deliberately — the same shape
+          as the Oversigt rows. A table's rows are its required owned elements,
+          so re-roling a <tr> takes it out of the table structure and orphans
+          its cells; and a role="button" row would contain the delete <button>,
+          i.e. interactive content inside a button, which is invalid ARIA.
+          Discoverability comes from the pointer cursor, the hover background
+          and the focus ring instead.
+        -->
+        <tr
+          *ngFor="let row of group.rows; trackBy: trackByRow"
+          class="compliance-details__row"
+          [attr.data-compliance-id]="row.complianceId"
+          [class.is-done]="row.completed"
+          [class.is-clickable]="isRowCompletable(row)"
+          [class.is-highlighted]="highlightedId === row.complianceId"
+          [attr.tabindex]="isRowCompletable(row) ? 0 : null"
+          (click)="onRowClicked(row, $event)"
+          (keydown.enter)="onRowClicked(row, $event)"
+          (keydown.space)="$event.preventDefault(); onRowClicked(row, $event)"
         >
-      </span>
+          <td class="compliance-details__date">{{ formatDayLabel(row.taskDate) }}</td>
+          <td class="compliance-details__property">{{ row.propertyName || emptyCell }}</td>
+          <td class="compliance-details__board">{{ row.boardName || emptyCell }}</td>
 
-      <span class="compliance-details__time" *ngIf="!row.isAllDay">
-        {{ 'At' | translate }} {{ formatTimeRange(row) }}
-      </span>
+          <!--
+            A circle that fills with a check when done. `role="img"` plus the
+            aria-label is the accessible name the component being replaced never
+            had (it used two different mat-icons and no label at all).
+          -->
+          <td class="compliance-details__status">
+            <span
+              class="compliance-details__circle"
+              role="img"
+              [attr.aria-label]="(row.completed ? 'Task done' : 'Task not done') | translate"
+            >
+              <mat-icon class="compliance-details__check" [class.is-visible]="row.completed"
+                >check</mat-icon
+              >
+            </span>
+          </td>
 
-      <span class="compliance-details__body">
-        <span class="compliance-details__title">{{ row.title }}</span>
-        <span
-          class="compliance-details__chip compliance-details__chip--worker"
-          *ngIf="row.workerNames && row.workerNames.length > 0"
-          >{{ row.workerNames[0]
-          }}<ng-container *ngIf="row.workerNames.length > 1">
-            +{{ row.workerNames.length - 1 }}</ng-container
-          ></span
-        >
-        <span class="compliance-details__chip" *ngFor="let tag of row.tags">{{ tag }}</span>
-      </span>
+          <!-- The cell is always rendered so the columns stay aligned; only its text is conditional. -->
+          <td class="compliance-details__time">
+            <ng-container *ngIf="!row.isAllDay"
+              >{{ 'At' | translate }} {{ formatTimeRange(row) }}</ng-container
+            >
+          </td>
 
-      <!--
-        Completed rows carry no delete action at all. The container stops the
-        click AND the keyboard activation, so neither a miss between the icon
-        button and the edge of the actions cell nor an Enter/Space on the
-        button itself can open the eForm (compliance.js:1436-1446 guards the
-        same two targets; the third, the popover, cannot bubble here because
-        CDK attaches it to the overlay container, not inside this row).
+          <td>
+            <span class="compliance-details__body">
+              <span class="compliance-details__title">{{ row.title }}</span>
+              <span
+                class="compliance-details__chip compliance-details__chip--worker"
+                *ngIf="row.workerNames && row.workerNames.length > 0"
+                >{{ row.workerNames[0]
+                }}<ng-container *ngIf="row.workerNames.length > 1">
+                  +{{ row.workerNames.length - 1 }}</ng-container
+                ></span
+              >
+              <span class="compliance-details__chip" *ngFor="let tag of row.tags">{{ tag }}</span>
+            </span>
+          </td>
 
-        The keydown guards are what make the button usable from the keyboard:
-        without them Enter on the delete button fires the row's keydown handler
-        (eForm modal) and then the browser's default activation of the button
-        (delete popover, anchored behind that modal). `onRowClicked` carries the
-        same guard on the event target, so the behaviour does not depend on
-        this element alone.
+          <!--
+            Completed rows carry no delete action at all (the cell stays, empty,
+            so the columns line up). The CELL stops the click AND the keyboard
+            activation, so neither a miss between the icon button and the edge
+            of the cell nor an Enter/Space on the button itself can open the
+            eForm (compliance.js:1436-1446 guards the same two targets; the
+            third, the popover, cannot bubble here because CDK attaches it to
+            the overlay container, not inside this row).
 
-        KNOWN, deliberately not fixed here: the row is role="button"
-        tabindex="0" and CONTAINS this <button>, which is invalid ARIA
-        (interactive content inside a role="button"). Making the activation
-        target and the actions siblings means re-cutting the row's CSS grid and
-        the highlight/hover rules that key off `.compliance-details__row`, which
-        is a bigger change than #1165's scope; the Enter/Space defect it caused
-        is fixed above. See the follow-up note in the component.
-      -->
-      <span
-        class="compliance-details__actions"
-        *ngIf="!row.completed"
-        (click)="$event.stopPropagation()"
-        (keydown.enter)="$event.stopPropagation()"
-        (keydown.space)="$event.stopPropagation()"
-      >
-        <button
-          mat-icon-button
-          type="button"
-          class="compliance-details__delete"
-          [attr.aria-label]="'Delete log' | translate"
-          [matTooltip]="'Delete log' | translate"
-          (click)="openDeleteConfirm(row, $event)"
-        >
-          <mat-icon>delete_outline</mat-icon>
-        </button>
-      </span>
-    </div>
+            The keydown guards are what make the button usable from the keyboard:
+            without them Enter on the delete button fires the row's keydown
+            handler (eForm modal) and then the browser's default activation of
+            the button (delete popover, anchored behind that modal).
+            `onRowClicked` carries the same guard on the event target, so the
+            behaviour does not depend on this element alone.
+          -->
+          <td
+            class="compliance-details__actions"
+            (click)="$event.stopPropagation()"
+            (keydown.enter)="$event.stopPropagation()"
+            (keydown.space)="$event.stopPropagation()"
+          >
+            <button
+              *ngIf="!row.completed"
+              mat-icon-button
+              type="button"
+              class="compliance-details__delete"
+              [attr.aria-label]="'Delete log' | translate"
+              [matTooltip]="'Delete log' | translate"
+              (click)="openDeleteConfirm(row, $event)"
+            >
+              <mat-icon>delete_outline</mat-icon>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </div>
 
