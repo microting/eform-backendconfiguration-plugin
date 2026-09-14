@@ -28,27 +28,26 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAdhocService;
 
 using System.IO;
 using System.Threading.Tasks;
+using Microting.eFormApi.BasePn.Abstractions;
 
 /// <summary>
-/// Thin seam around adhoc photo byte storage - S3 through the SDK Core
-/// (<c>Core.PutFileToS3Storage</c>/<c>Core.GetFileFromS3Storage</c>, the
-/// same calls <c>EventsGrpcService.UploadPhoto</c> makes), or local disk when
-/// <c>s3Enabled</c> is false. <c>Core</c> is a
-/// concrete SDK type with no public S3 test double and non-virtual members,
-/// so it cannot be substituted directly; this interface is the mockable
-/// boundary that lets <c>BackendConfigurationAdhocService</c>'s photo methods
-/// be unit-tested without a real S3 bucket (there is neither S3 nor a MinIO
-/// container in this repo's local or CI test environment - confirmed via the
-/// dotnet-core-pr.yml workflow and the Testcontainers-seeded 420_SDK.sql
-/// fixture, which ships <c>s3Enabled=false</c> with placeholder credentials),
-/// while <see cref="S3AdhocPhotoStorage"/> still calls the exact same Core
-/// methods in production. <see cref="AdhocPhotoStorage"/> (the registered
-/// implementation) picks it or <see cref="LocalAdhocPhotoStorage"/> per call
-/// by <c>s3Enabled</c>.
+/// S3-backed <see cref="IAdhocPhotoStorage"/> - delegates straight to the
+/// SDK Core, the same <c>PutFileToS3Storage</c>/<c>GetFileFromS3Storage</c>
+/// path <c>EventsGrpcService.UploadPhoto</c> uses. Picked by
+/// <see cref="AdhocPhotoStorage"/> when <c>s3Enabled</c> is true.
 /// </summary>
-public interface IAdhocPhotoStorage
+public class S3AdhocPhotoStorage(IEFormCoreService coreHelper) : IAdhocPhotoStorage
 {
-    Task PutAsync(string fileName, Stream content);
+    public async Task PutAsync(string fileName, Stream content)
+    {
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        await core.PutFileToS3Storage(content, fileName).ConfigureAwait(false);
+    }
 
-    Task<Stream> GetAsync(string fileName);
+    public async Task<Stream> GetAsync(string fileName)
+    {
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        var response = await core.GetFileFromS3Storage(fileName).ConfigureAwait(false);
+        return response.ResponseStream;
+    }
 }

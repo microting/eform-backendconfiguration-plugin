@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Adhoc;
@@ -21,7 +22,8 @@ namespace BackendConfiguration.Pn.Integration.Test;
 /// a photo actually created via <c>SavePhoto</c> rather than a bare row).
 /// Storage is faked via <see cref="FakeAdhocPhotoStorage"/> - see that class's
 /// doc comment for why (no S3/MinIO is available in this repo's local or CI
-/// test environment).
+/// test environment) - except where a test passes its own storage (the
+/// production selector over local disk, or one whose upload fails).
 /// </summary>
 [Parallelizable(ParallelScope.Fixtures)]
 [TestFixture]
@@ -39,16 +41,21 @@ public class AdhocServicePhotoTests : TestBaseSetup
     /// An unstubbed <c>Substitute.For&lt;IEFormCoreService&gt;()</c> returns a
     /// null Core, which NREs the moment SavePhoto dereferences it.
     /// </summary>
-    private BackendConfigurationAdhocService CreateSut(eFormCore.Core core)
+    private BackendConfigurationAdhocService CreateSut(eFormCore.Core core, IAdhocPhotoStorage? photoStorage = null)
     {
         _photoStorage = new FakeAdhocPhotoStorage();
-        var coreHelper = Substitute.For<IEFormCoreService>();
-        coreHelper.GetCore().Returns(Task.FromResult(core));
         return new BackendConfigurationAdhocService(
             BackendConfigurationPnDbContext!,
             new BackendConfigurationUserPropertyAccess(BackendConfigurationPnDbContext!),
-            coreHelper,
-            _photoStorage);
+            CoreHelperFor(core),
+            photoStorage ?? _photoStorage);
+    }
+
+    private static IEFormCoreService CoreHelperFor(eFormCore.Core core)
+    {
+        var coreHelper = Substitute.For<IEFormCoreService>();
+        coreHelper.GetCore().Returns(Task.FromResult(core));
+        return coreHelper;
     }
 
     private async Task<Property> CreatePropertyAsync()
@@ -215,6 +222,144 @@ public class AdhocServicePhotoTests : TestBaseSetup
 
         Assert.ThrowsAsync<ArgumentException>(async () =>
             await sut.SavePhoto(1, created.Id, [], "image/png"));
+    }
+
+    [Test]
+    public async Task SavePhoto_WhenStoragePutFails_RemovesUploadedDataRow_AndRethrows()
+    {
+        var property = await CreatePropertyAsync();
+        await GrantPropertyAccessAsync(property.Id, 1);
+        var core = await GetCore();
+        var failure = new IOException("storage unavailable");
+        var failingStorage = Substitute.For<IAdhocPhotoStorage>();
+        failingStorage.PutAsync(Arg.Any<string>(), Arg.Any<Stream>()).Returns(Task.FromException(failure));
+        var sut = CreateSut(core, failingStorage);
+        var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
+        // Unique bytes so the checksum below finds only this attempt's row.
+        var bytes = SomeBytes(Guid.NewGuid().ToString());
+
+        var thrown = Assert.ThrowsAsync<IOException>(async () =>
+            await sut.SavePhoto(1, created.Id, bytes, "image/png"));
+        Assert.That(thrown, Is.SameAs(failure));
+
+        var photoRowExists = await BackendConfigurationPnDbContext!.AdhocTaskPhotos
+            .IgnoreQueryFilters()
+            .AnyAsync(p => p.AdhocTaskId == created.Id);
+        Assert.That(photoRowExists, Is.False);
+
+        var checksum = Convert.ToHexStringLower(MD5.HashData(bytes));
+        var uploadedData = await MicrotingDbContext!.UploadedDatas
+            .AsNoTracking()
+            .SingleAsync(u => u.Checksum == checksum);
+        Assert.That(uploadedData.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+    }
+
+    /// <summary>
+    /// With <c>s3Enabled=true</c> the production selector routes to S3; this
+    /// Core started without S3, so the SDK has no client and the upload fails
+    /// cleanly: the SDK's exception reaches the caller and the orphan row goes.
+    /// </summary>
+    [Test]
+    public async Task SavePhoto_WithProductionStorage_WhenS3EnabledButNoClient_FailsAndRemovesUploadedDataRow()
+    {
+        var property = await CreatePropertyAsync();
+        await GrantPropertyAccessAsync(property.Id, 1);
+        // GetCore() runs before the flip: a Core started with s3Enabled=true
+        // would create the SDK's static S3 client for the rest of the run.
+        var core = await GetCore();
+        await core.SetSdkSetting(Microting.eForm.Dto.Settings.s3Enabled, "true");
+        try
+        {
+            var sut = CreateSut(core, new AdhocPhotoStorage(CoreHelperFor(core)));
+            var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
+            var bytes = SomeBytes(Guid.NewGuid().ToString());
+
+            var thrown = Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                await sut.SavePhoto(1, created.Id, bytes, "image/png"));
+            Assert.That(thrown!.Message, Does.Contain("no S3 client"));
+
+            var checksum = Convert.ToHexStringLower(MD5.HashData(bytes));
+            var uploadedData = await MicrotingDbContext!.UploadedDatas
+                .AsNoTracking()
+                .SingleAsync(u => u.Checksum == checksum);
+            Assert.That(uploadedData.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+        }
+        finally
+        {
+            // The SDK database outlives this test; restore 420_SDK.sql's value.
+            await core.SetSdkSetting(Microting.eForm.Dto.Settings.s3Enabled, "false");
+        }
+    }
+
+    /// <summary>
+    /// An s3Enabled value that is neither true nor false (the SDK answers
+    /// "N/A" when it can't read the setting) must not silently pick local disk.
+    /// </summary>
+    [Test]
+    public async Task SavePhoto_WithProductionStorage_WhenS3SettingUnreadable_RefusesToChooseStorage()
+    {
+        var property = await CreatePropertyAsync();
+        await GrantPropertyAccessAsync(property.Id, 1);
+        var core = await GetCore();
+        await core.SetSdkSetting(Microting.eForm.Dto.Settings.s3Enabled, "N/A");
+        try
+        {
+            var sut = CreateSut(core, new AdhocPhotoStorage(CoreHelperFor(core)));
+            var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
+
+            var thrown = Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                await sut.SavePhoto(1, created.Id, SomeBytes(Guid.NewGuid().ToString()), "image/png"));
+            Assert.That(thrown!.Message, Does.Contain("Cannot choose adhoc photo storage"));
+        }
+        finally
+        {
+            await core.SetSdkSetting(Microting.eForm.Dto.Settings.s3Enabled, "false");
+        }
+    }
+
+    /// <summary>
+    /// Wires the production <see cref="AdhocPhotoStorage"/> selector instead
+    /// of the fake: with <c>s3Enabled=false</c> it must route to
+    /// <see cref="LocalAdhocPhotoStorage"/>, so the bytes land in (and come
+    /// back from) the temp-dir file rather than failing on the SDK's missing
+    /// S3 client.
+    /// </summary>
+    [Test]
+    public async Task SavePhoto_WithProductionStorage_RoundTripsThroughLocalDisk_WhenS3Disabled()
+    {
+        var property = await CreatePropertyAsync();
+        await GrantPropertyAccessAsync(property.Id, 1);
+        var core = await GetCore();
+        // 420_SDK.sql already seeds false; pinned so the test states its premise.
+        await core.SetSdkSetting(Microting.eForm.Dto.Settings.s3Enabled, "false");
+        var sut = CreateSut(core, new AdhocPhotoStorage(CoreHelperFor(core)));
+        var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
+        var bytes = SomeBytes(Guid.NewGuid().ToString());
+
+        var photoId = await sut.SavePhoto(1, created.Id, bytes, "image/png");
+
+        var photoRow = await BackendConfigurationPnDbContext!.AdhocTaskPhotos
+            .FirstAsync(p => p.Id == photoId);
+        var uploadedData = await MicrotingDbContext!.UploadedDatas
+            .AsNoTracking()
+            .FirstAsync(u => u.Id == photoRow.UploadedDataId);
+        var localPath = Path.Combine(LocalAdhocPhotoStorage.DefaultRootDirectory, uploadedData.FileName);
+        try
+        {
+            Assert.That(System.IO.File.Exists(localPath), Is.True);
+
+            var (content, _) = await sut.GetPhoto(1, photoId);
+            await using (content)
+            {
+                using var ms = new MemoryStream();
+                await content.CopyToAsync(ms);
+                Assert.That(ms.ToArray(), Is.EqualTo(bytes));
+            }
+        }
+        finally
+        {
+            System.IO.File.Delete(localPath);
+        }
     }
 
     // --- GetPhoto ---

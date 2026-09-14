@@ -26,27 +26,56 @@ SOFTWARE.
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationAdhocService;
 
+using System;
 using System.IO;
 using System.Threading.Tasks;
+using Microting.eForm.Dto;
 using Microting.eFormApi.BasePn.Abstractions;
 
 /// <summary>
-/// Production <see cref="IAdhocPhotoStorage"/> - delegates straight to the
-/// SDK Core, the same <c>PutFileToS3Storage</c>/<c>GetFileFromS3Storage</c>
-/// path <c>EventsGrpcService.UploadPhoto</c> uses.
+/// Production <see cref="IAdhocPhotoStorage"/> - forwards each call to
+/// <see cref="S3AdhocPhotoStorage"/> or <see cref="LocalAdhocPhotoStorage"/>
+/// by the SDK's <c>s3Enabled</c> setting, the same signal
+/// <c>BackendConfigurationCalendarService.DownloadFile</c> and the host's
+/// <c>ImagesController</c> branch on. Decided per call rather than at DI time
+/// because the Core (and its settings) does not exist in ConfigureServices.
 /// </summary>
 public class AdhocPhotoStorage(IEFormCoreService coreHelper) : IAdhocPhotoStorage
 {
+    private readonly S3AdhocPhotoStorage _s3 = new(coreHelper);
+    private readonly LocalAdhocPhotoStorage _local = new();
+
     public async Task PutAsync(string fileName, Stream content)
     {
-        var core = await coreHelper.GetCore().ConfigureAwait(false);
-        await core.PutFileToS3Storage(content, fileName).ConfigureAwait(false);
+        var storage = await SelectAsync().ConfigureAwait(false);
+        await storage.PutAsync(fileName, content).ConfigureAwait(false);
     }
 
     public async Task<Stream> GetAsync(string fileName)
     {
+        var storage = await SelectAsync().ConfigureAwait(false);
+        return await storage.GetAsync(fileName).ConfigureAwait(false);
+    }
+
+    private async Task<IAdhocPhotoStorage> SelectAsync()
+    {
         var core = await coreHelper.GetCore().ConfigureAwait(false);
-        var response = await core.GetFileFromS3Storage(fileName).ConfigureAwait(false);
-        return response.ResponseStream;
+        var s3Setting = await core.GetSdkSetting(Settings.s3Enabled).ConfigureAwait(false);
+        if (string.Equals(s3Setting, "true", StringComparison.OrdinalIgnoreCase))
+        {
+            return _s3;
+        }
+
+        if (string.IsNullOrEmpty(s3Setting)
+            || string.Equals(s3Setting, "false", StringComparison.OrdinalIgnoreCase))
+        {
+            return _local;
+        }
+
+        // GetSdkSetting answers "N/A" when the setting can't be read. Guessing
+        // local there would put an S3 install's photo in this pod's temp dir,
+        // lost on restart and unreadable from other replicas.
+        throw new InvalidOperationException(
+            $"Cannot choose adhoc photo storage: s3Enabled is '{s3Setting}'.");
     }
 }

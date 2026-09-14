@@ -326,6 +326,9 @@ test.describe.serial('Adhoc overblik — non-admin unrestricted access', () => {
     await adhocPage.photoUploadInput().setInputFiles(PHOTO_FIXTURE);
     const uploadResponse = await uploadResponsePromise;
     expect(uploadResponse.status()).toBe(200);
+    // The API reports failures as HTTP 200 with success: false; without this a
+    // failed upload only surfaced later as a missing thumbnail.
+    expect((await uploadResponse.json()).success).toBe(true);
 
     await expect(adhocPage.photoThumbs()).toHaveCount(1, { timeout: 20000 });
     await adhocPage.saveDrawer();
@@ -446,30 +449,20 @@ test.describe.serial('Adhoc overblik — non-admin unrestricted access', () => {
     await adhocPage.photoThumbs().first().click();
     const photoResponse = await photoResponsePromise;
 
-    // Assert NOT-403 rather than ==200, deliberately.
-    //
     // What this test exists to prove (spec §4.2 step 5) is that opening a photo
     // does not end the session: `GET .../adhoc/photos/{id}` is the plugin's only
-    // `Forbid()`, and the global HttpErrorInterceptor escalates any 403 into
-    // `logout()`. Only 401/403 do that; every other status is inert for session
-    // survival.
-    //
-    // ==200 additionally required the blob to come back, which CI cannot do:
-    // `AdhocPhotoStorage.GetAsync` reads through `core.GetFileFromS3Storage`
-    // and the workflow starts no object-storage service, so retrieval answers
-    // 500 there. That is NOT caused by this change — `(workerId 0, isAdmin
-    // true)` is exactly the path admins already took, so an admin gets the same
-    // 500; no spec had ever fetched a photo, so nothing surfaced it before.
-    // Asserting ==200 here would pin CI infrastructure, not this permission
-    // change.
-    expect([401, 403]).not.toContain(photoResponse.status());
+    // `Forbid()`, and the global HttpErrorInterceptor escalates any 401/403 into
+    // `logout()`. The read must also succeed: with S3 off, as in CI, photos are
+    // stored locally (`LocalAdhocPhotoStorage`), so the blob comes back.
+    expect(photoResponse.status()).toBe(200);
 
     // Give the interceptor's 403 path (refresh token → retry → logout →
     // router.navigate(['/auth'])) more than enough time to fire if the
     // endpoint had forbidden the read.
     await page.waitForTimeout(5000);
 
-    expect(photoStatuses).not.toContain(403);
+    // Every photo fetch, the thumbnail's own included, answered without error.
+    expect(photoStatuses.filter((s) => s >= 400)).toEqual([]);
     expect(page.url()).not.toContain('/auth');
     await expect(page.locator('#sign-out-dropdown')).toBeVisible();
 

@@ -40,6 +40,7 @@ using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+using Sentry;
 using UserPropertyAccess;
 using SdkUploadedData = Microting.eForm.Infrastructure.Data.Entities.UploadedData;
 
@@ -972,7 +973,7 @@ public class BackendConfigurationAdhocService(
         return tag;
     }
 
-    // --- Photos (S3 + SDK UploadedData) ---
+    // --- Photos (IAdhocPhotoStorage + SDK UploadedData) ---
 
     public async Task<int> SavePhoto(int workerId, int taskId, byte[] bytes, string contentType, bool isAdmin = false)
     {
@@ -1006,11 +1007,11 @@ public class BackendConfigurationAdhocService(
 
         // Two-phase FileName write mirrors EventsGrpcService.UploadPhoto /
         // BackendConfigurationTaskManagementService.CreateTask: create first
-        // to get the row's Id, then fold it into the final S3 key so rows
-        // sharing a checksum (re-uploads) don't collide in the shared bucket.
-        // FileLocation is left blank - mobile photos are S3/IAdhocPhotoStorage
-        // only, no local file is materialised (same contract EventsGrpcService.
-        // UploadPhoto documents for its own UploadedData rows).
+        // to get the row's Id, then fold it into the final storage key so rows
+        // sharing a checksum (re-uploads) don't collide.
+        // FileLocation is left blank - the bytes are reached only through
+        // IAdhocPhotoStorage by FileName (S3, or LocalAdhocPhotoStorage's temp
+        // dir when s3Enabled is false), never by a recorded path.
         var uploadedData = new SdkUploadedData
         {
             Checksum = checksum,
@@ -1021,12 +1022,29 @@ public class BackendConfigurationAdhocService(
         await uploadedData.Create(sdkDbContext).ConfigureAwait(false);
 
         var fileName = $"{uploadedData.Id}_{uploadedData.FileName}";
-        uploadedData.FileName = fileName;
-        await uploadedData.Update(sdkDbContext).ConfigureAwait(false);
-
-        using (var stream = new MemoryStream(bytes))
+        try
         {
+            uploadedData.FileName = fileName;
+            await uploadedData.Update(sdkDbContext).ConfigureAwait(false);
+
+            using var stream = new MemoryStream(bytes);
             await photoStorage.PutAsync(fileName, stream).ConfigureAwait(false);
+        }
+        catch
+        {
+            // The row above exists only to key the upload; with no bytes
+            // behind it, it would be an orphan nothing ever references. A
+            // failed cleanup must not replace the error the caller needs.
+            try
+            {
+                await uploadedData.Delete(sdkDbContext).ConfigureAwait(false);
+            }
+            catch (Exception cleanupException)
+            {
+                SentrySdk.CaptureException(cleanupException);
+            }
+
+            throw;
         }
 
         var photo = new AdhocTaskPhoto
