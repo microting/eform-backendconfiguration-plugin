@@ -16,7 +16,7 @@ namespace BackendConfiguration.Pn.Integration.Test;
 /// deployment. <see cref="IAdhocPhotoStorage"/> is the seam that lets these
 /// tests verify the actual round-trip (bytes in, same bytes back out) plus
 /// the authorization/row-reconciliation logic around it, without a real
-/// bucket. <see cref="AdhocPhotoStorage"/> (production) still calls the exact
+/// bucket. <see cref="S3AdhocPhotoStorage"/> (production) still calls the exact
 /// same <c>Core.PutFileToS3Storage</c>/<c>GetFileFromS3Storage</c> methods
 /// <c>EventsGrpcService.UploadPhoto</c> uses.
 /// </summary>
