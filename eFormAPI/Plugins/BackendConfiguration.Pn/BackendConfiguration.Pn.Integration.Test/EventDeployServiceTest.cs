@@ -1073,6 +1073,284 @@ public class EventDeployServiceTest : TestBaseSetup
     }
 
     // ------------------------------------------------------------------
+    // #1274 — a soft-removed Compliance row still holds IX_PlanningId_Deadline.
+    //
+    // Re-anchoring a series into the past twice retracts the first backfill's
+    // open occurrences (Compliance soft-removed) and then redeploys every past
+    // occurrence. The redeploy's Compliance INSERT hit the unique
+    // (PlanningId, Deadline) index held by the soft-removed row, the
+    // duplicate-key catch looked only for a LIVE row, found none and returned
+    // null: a live SDK case on the worker's device with no Compliance row, which
+    // the compliance report can never see (tenant 1132: 213 such cases).
+    // ------------------------------------------------------------------
+
+    private sealed record DeployableOccurrence(
+        eFormCore.Core Core, AreaRulePlanning Arp, int SiteId, DateTime Deadline);
+
+    /// <summary>
+    /// The minimal graph the full deploy path needs, trimmed from
+    /// <see cref="EnsureComplianceForOccurrence_SiteIsActivePropertyWorkerNotInPlanningSites_Deploys"/>
+    /// (no second, assigned site and no PlanningSites row): a real eForm template,
+    /// Area → Property → AreaRule, a planning, and the target site as an active
+    /// PropertyWorker so the site-linkage guard admits it.
+    /// The deadline is in the past, like every backfilled occurrence.
+    /// </summary>
+    private async Task<DeployableOccurrence> SeedDeployableOccurrence(int siteMicrotingUid)
+    {
+        var core = await GetCore();
+        var language = await MicrotingDbContext!.Languages.FirstAsync();
+
+        var site = new Site
+        {
+            Name = $"reanchor-site-{Guid.NewGuid()}",
+            MicrotingUid = siteMicrotingUid,
+            LanguageId = language.Id,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext.Sites.AddAsync(site);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        var template = await core.TemplateFromXml(CommentTemplateXml);
+        var templateId = await core.TemplateCreate(template);
+
+        var area = new Area
+        {
+            Type = AreaTypesEnum.Type1, ItemPlanningTagId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext!.Areas.AddAsync(area);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var property = new Property
+        {
+            Name = $"ReanchorProp-{Guid.NewGuid()}", ItemPlanningTagId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.Properties.AddAsync(property);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var areaRule = new AreaRule
+        {
+            AreaId = area.Id, PropertyId = property.Id, EformId = templateId,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.AreaRules.AddAsync(areaRule);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        await BackendConfigurationPnDbContext.PropertyWorkers.AddAsync(new PropertyWorker
+        {
+            PropertyId = property.Id,
+            WorkerId = site.Id,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var deadline = DateTime.UtcNow.Date.AddDays(-14);
+
+        var planning = new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning
+        {
+            WorkflowState = Constants.WorkflowStates.Created,
+            StartDate = deadline.AddMonths(-1),
+            Enabled = true,
+            RepeatEvery = 1,
+            RepeatType = Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Month,
+            DayOfMonth = deadline.Day,
+            RelatedEFormId = templateId,
+        };
+        await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        var arp = new AreaRulePlanning
+        {
+            AreaRuleId = areaRule.Id,
+            ItemPlanningId = planning.Id,
+            PropertyId = property.Id,
+            AreaId = area.Id,
+        };
+
+        return new DeployableOccurrence(core, arp, site.Id, deadline);
+    }
+
+    /// <summary>
+    /// A previously deployed occurrence: an SDK case plus a live Compliance row for
+    /// the SAME (PlanningId, Deadline) the deploy path writes (midnight), created
+    /// through the shared context so it stays tracked there. Only the SDK case and
+    /// the row are seeded; the old PlanningCase(Site) is not, since nothing on the
+    /// revive path reads it. A retracted case is removed (CaseDelete); a completed
+    /// one stays created and carries Status 100 and/or DoneAt, hence
+    /// caseWorkflowState and caseDoneAt.
+    /// </summary>
+    private async Task<Compliance> SeedLiveCompliance(
+        DeployableOccurrence occurrence,
+        int caseStatus,
+        DateTime? caseDoneAt = null,
+        string caseWorkflowState = Constants.WorkflowStates.Removed)
+    {
+        var sdkCase = new Case
+        {
+            SiteId = occurrence.SiteId, Status = caseStatus, DoneAt = caseDoneAt,
+            WorkflowState = caseWorkflowState
+        };
+        await MicrotingDbContext!.Cases.AddAsync(sdkCase);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        var compliance = new Compliance
+        {
+            PlanningId = occurrence.Arp.ItemPlanningId,
+            PropertyId = occurrence.Arp.PropertyId,
+            AreaId = occurrence.Arp.AreaId,
+            Deadline = occurrence.Deadline,
+            StartDate = occurrence.Deadline.AddDays(-7),
+            MicrotingSdkCaseId = sdkCase.Id,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await compliance.Create(BackendConfigurationPnDbContext!);
+        return compliance;
+    }
+
+    /// <summary>
+    /// <see cref="SeedLiveCompliance"/>, then soft-removed through PnBase.Delete —
+    /// as retraction and the completion paths both leave it.
+    /// </summary>
+    private async Task<Compliance> SeedSoftRemovedCompliance(
+        DeployableOccurrence occurrence,
+        int caseStatus,
+        DateTime? caseDoneAt = null,
+        string caseWorkflowState = Constants.WorkflowStates.Removed)
+    {
+        var compliance = await SeedLiveCompliance(occurrence, caseStatus, caseDoneAt, caseWorkflowState);
+        await compliance.Delete(BackendConfigurationPnDbContext!);
+        return compliance;
+    }
+
+    [Test]
+    public async Task EnsureComplianceForOccurrence_DeadlineHeldBySoftRemovedOpenRow_RevivesTheRowOntoTheNewCase()
+    {
+        var occurrence = await SeedDeployableOccurrence(siteMicrotingUid: 1274);
+        var retracted = await SeedSoftRemovedCompliance(occurrence, caseStatus: 66);
+        // Captured before the call: the service shares this DbContext and
+        // revives the tracked entity in place.
+        var retractedCaseId = retracted.MicrotingSdkCaseId;
+
+        var (calendar, coreHelper) = MakeMocks([], occurrence.Core);
+        var service = MakeService(calendar, coreHelper);
+
+        var result = await service.EnsureComplianceForOccurrenceAsync(
+            occurrence.Arp, occurrence.Deadline, occurrence.SiteId, CancellationToken.None);
+
+        var rows = await BackendConfigurationPnDbContext!.Compliances
+            .AsNoTracking()
+            .Where(c => c.PlanningId == occurrence.Arp.ItemPlanningId)
+            .ToListAsync();
+        var liveCaseIds = await ItemsPlanningPnDbContext!.PlanningCaseSites
+            .AsNoTracking()
+            .Where(pcs => pcs.PlanningId == occurrence.Arp.ItemPlanningId
+                          && pcs.WorkflowState != Constants.WorkflowStates.Removed)
+            .Select(pcs => pcs.MicrotingSdkCaseId)
+            .ToListAsync();
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(rows, Has.Count.EqualTo(1));
+        var row = rows[0];
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result!.ComplianceId, Is.EqualTo(retracted.Id),
+                "the soft-removed row holding (PlanningId, Deadline) must be reused — a new row cannot be inserted past the unique index");
+            Assert.That(row.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created),
+                "the occurrence is open again, so the report and the calendar must see a live row");
+            Assert.That(row.MicrotingSdkCaseId, Is.EqualTo(result.SdkCaseId));
+            Assert.That(row.MicrotingSdkCaseId, Is.Not.EqualTo(retractedCaseId),
+                "the row must point at the case just deployed, not the retracted one");
+            Assert.That(liveCaseIds, Is.EqualTo(new[] { result.SdkCaseId }),
+                "every case live on the device must be backed by the Compliance row — none orphaned");
+            Assert.That(row.Version, Is.EqualTo(3),
+                "create (1), retract (2), revive (3) — the revive goes through PnBase.Update");
+        });
+        Assert.That(await BackendConfigurationPnDbContext.ComplianceVersions
+                .CountAsync(v => v.ComplianceId == retracted.Id
+                                 && v.WorkflowState == Constants.WorkflowStates.Created
+                                 && v.MicrotingSdkCaseId == result!.SdkCaseId),
+            Is.EqualTo(1), "the revive must leave a ComplianceVersion audit row");
+    }
+
+    // The guard on the revive: a soft-removed row whose case was COMPLETED is the
+    // record of a completed occurrence (completion soft-removes the row but keeps
+    // MicrotingSdkCaseId, and the report and calendar both render it as done).
+    // Pointing it at a fresh open case would silently un-complete the occurrence.
+    // Completed is Status == 100 OR DoneAt set — both halves are pinned.
+    [TestCase(100, false, 1275, TestName = "EnsureComplianceForOccurrence_DeadlineHeldBySoftRemovedCompletedRow_Status100_LeavesTheCompletionIntact")]
+    [TestCase(66, true, 1276, TestName = "EnsureComplianceForOccurrence_DeadlineHeldBySoftRemovedCompletedRow_DoneAtOnly_LeavesTheCompletionIntact")]
+    public async Task EnsureComplianceForOccurrence_DeadlineHeldBySoftRemovedCompletedRow_LeavesTheCompletionIntact(
+        int caseStatus, bool hasDoneAt, int siteMicrotingUid)
+    {
+        var occurrence = await SeedDeployableOccurrence(siteMicrotingUid);
+        var completed = await SeedSoftRemovedCompliance(occurrence, caseStatus,
+            caseDoneAt: hasDoneAt ? occurrence.Deadline.AddHours(10) : null,
+            caseWorkflowState: Constants.WorkflowStates.Created);
+        // Captured before the call: the service shares this DbContext and would
+        // revive the tracked entity in place if the guard regressed.
+        var completedCaseId = completed.MicrotingSdkCaseId;
+
+        var (calendar, coreHelper) = MakeMocks([], occurrence.Core);
+        var service = MakeService(calendar, coreHelper);
+
+        var result = await service.EnsureComplianceForOccurrenceAsync(
+            occurrence.Arp, occurrence.Deadline, occurrence.SiteId, CancellationToken.None);
+
+        var row = await BackendConfigurationPnDbContext!.Compliances
+            .AsNoTracking()
+            .SingleAsync(c => c.Id == completed.Id);
+
+        Assert.That(result, Is.Not.Null);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result!.ComplianceId, Is.EqualTo(0),
+                "no row can back the new case: the key is held by the completed occurrence's row");
+            Assert.That(row.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+            Assert.That(row.MicrotingSdkCaseId, Is.EqualTo(completedCaseId),
+                "the completed occurrence must keep pointing at the case that answered it");
+        });
+    }
+
+    // The row may already be tracked by the request's DbContext while another
+    // request soft-removes it behind the tracker. EF writes only properties that
+    // differ from the tracked ORIGINAL values, so reviving that stale instance
+    // without reloading it drops the WorkflowState write: the row stays removed
+    // while pointing at the fresh case — the #1274 orphan again.
+    [Test]
+    public async Task EnsureComplianceForOccurrence_DeadlineHeldByRowSoftRemovedBehindTheTracker_RevivesTheRow()
+    {
+        var occurrence = await SeedDeployableOccurrence(siteMicrotingUid: 1277);
+        // Tracked as live by the shared context, then soft-removed behind it.
+        var stale = await SeedLiveCompliance(occurrence, caseStatus: 66);
+        await BackendConfigurationPnDbContext!.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE `Compliances` SET `WorkflowState` = 'removed' WHERE `Id` = {stale.Id}");
+
+        var (calendar, coreHelper) = MakeMocks([], occurrence.Core);
+        var service = MakeService(calendar, coreHelper);
+
+        var result = await service.EnsureComplianceForOccurrenceAsync(
+            occurrence.Arp, occurrence.Deadline, occurrence.SiteId, CancellationToken.None);
+
+        Assert.That(result, Is.Not.Null);
+        var row = await BackendConfigurationPnDbContext.Compliances
+            .AsNoTracking()
+            .SingleAsync(c => c.Id == stale.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result!.ComplianceId, Is.EqualTo(stale.Id));
+            Assert.That(row.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created),
+                "the stale tracked 'created' must not swallow the WorkflowState write");
+            Assert.That(row.MicrotingSdkCaseId, Is.EqualTo(result.SdkCaseId));
+        });
+    }
+
+    // ------------------------------------------------------------------
     // 13. EnsureDeployedAsync_ConcurrentPassesSameRotation_CreatesExactlyOnePlanningCaseSite
     //
     // Regression for #934. The forensic snapshot showed four identical

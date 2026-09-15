@@ -583,6 +583,7 @@ public class EventDeployService(
                     rotationDate,
                     planningCaseSite,
                     eformId,
+                    sdkDbContext,
                     ct)
                 .ConfigureAwait(false);
             return (
@@ -618,6 +619,7 @@ public class EventDeployService(
                 rotationDate,
                 planningCaseSite,
                 eformId,
+                sdkDbContext,
                 ct)
             .ConfigureAwait(false);
 
@@ -1896,6 +1898,7 @@ public class EventDeployService(
         DateTime rotationDate,
         PlanningCaseSite planningCaseSite,
         int eformId,
+        SdkDbContext sdkDbContext,
         CancellationToken cancellationToken)
     {
         // Defect B in #935 — refuse to write a Compliance row when the
@@ -1952,27 +1955,28 @@ public class EventDeployService(
         }
         catch (Exception ex)
         {
-            // Duplicate-key races are tolerated — mirrors
-            // EformParsedByServerHandler.cs:185-196.
+            // Duplicate keys are tolerated — mirrors
+            // EformParsedByServerHandler.cs:185-196. The key is held either by
+            // a concurrent deploy's live row (race) or by a soft-removed row,
+            // retracted or completed (#1274).
             if (ex.InnerException is { HResult: -2147467259 })
             {
                 logger.LogInformation(
-                    "EventDeployService: compliance for planning {PlanningId} deadline {Deadline} already exists (race) — fetching winning row",
+                    "EventDeployService: compliance for planning {PlanningId} deadline {Deadline} already exists — fetching the row that holds it",
                     planning.Id, rotationDate);
 
-                // Detach the failed-INSERT entity so the SaveChanges that
-                // happens inside the revive's existing.Update(...) below
-                // does not retry the same INSERT and re-hit the duplicate
-                // key. EF Core leaves a failed Add tracked as Added until
-                // explicitly detached.
+                // Detach the failed-INSERT entity so the next SaveChanges (the
+                // half-deployed adopt below, or ReviveSoftRemovedComplianceAsync)
+                // does not retry the same INSERT and re-hit the duplicate key. EF
+                // Core leaves a failed Add tracked as Added until explicitly detached.
                 var addedEntry = dbContext.Entry(compliance);
                 if (addedEntry.State == EntityState.Added)
                 {
                     addedEntry.State = EntityState.Detached;
                 }
 
-                // Tracked (NOT AsNoTracking) so we can revive a half-deployed
-                // row in place when this call has just produced a fresh SDK case.
+                // Tracked (NOT AsNoTracking) so a half-deployed row can adopt
+                // the fresh SDK case this call has just produced.
                 var existing = await dbContext.Compliances
                     .FirstOrDefaultAsync(c =>
                             c.PlanningId == planning.Id
@@ -1981,8 +1985,14 @@ public class EventDeployService(
                         cancellationToken)
                     .ConfigureAwait(false);
 
-                if (existing != null
-                    && existing.MicrotingSdkCaseId <= 0
+                if (existing == null)
+                {
+                    return await ReviveSoftRemovedComplianceAsync(
+                            compliance, sdkDbContext, cancellationToken)
+                        .ConfigureAwait(false);
+                }
+
+                if (existing.MicrotingSdkCaseId <= 0
                     && planningCaseSite.MicrotingSdkCaseId > 0)
                 {
                     // Half-deployed row found AND we have a fresh SDK case from this
@@ -1996,6 +2006,156 @@ public class EventDeployService(
 
                 return existing;
             }
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// #1274 — the duplicate key is held by a soft-removed row, not a live one.
+    /// Revives that row onto the case this call just deployed, so the case is not
+    /// left live on the device with no Compliance row (invisible to the
+    /// compliance report). Returns null when no row holds the key or when the one
+    /// that does belongs to a completed case.
+    /// </summary>
+    /// <remarks>
+    /// IX_PlanningId_Deadline is unique over every row, soft-removed ones included,
+    /// so once retraction has soft-removed an open occurrence's row no redeploy of
+    /// that deadline can insert a new one. Re-anchoring a series into the past
+    /// twice does exactly that: the second backfill redeploys the first one's
+    /// retracted occurrences. The revived row gets the fields
+    /// EnsureComplianceRowAsync sets on a fresh row, and CheckListSiteId /
+    /// MovedToExpiredFolder go back to a fresh row's defaults.
+    /// <para>
+    /// A row whose case was COMPLETED (Status 100 or DoneAt) is left alone:
+    /// completion also soft-removes the row, and it is the only record that the
+    /// occurrence was done. Known window: every completion path soft-removes the
+    /// row BEFORE it sets the case to Status 100, so a redeploy landing between
+    /// the two revives a row whose completion is still in flight.
+    /// </para>
+    /// <para>
+    /// The deploy lock is per (planning, site), so two sites — or two pods — can
+    /// reach the same row together. It is claimed the way
+    /// EventsGrpcService.TryClaimOccurrenceAsync claims an occurrence: locked with
+    /// SELECT ... FOR UPDATE and re-checked under the lock. The loser, finding the
+    /// row live, gets the winner's row back, exactly as the loser of an INSERT
+    /// race does.
+    /// </para>
+    /// </remarks>
+    private async Task<Compliance?> ReviveSoftRemovedComplianceAsync(
+        Compliance rejectedInsert,
+        SdkDbContext sdkDbContext,
+        CancellationToken cancellationToken)
+    {
+        // No WorkflowState filter: a concurrent deploy may have revived the row
+        // since the live lookup missed it, and the re-check under the lock is what
+        // tells winner from loser. Only one row can hold the key.
+        var holderId = await dbContext.Compliances
+            .AsNoTracking()
+            .Where(c => c.PlanningId == rejectedInsert.PlanningId
+                        && c.Deadline == rejectedInsert.Deadline)
+            .Select(c => (int?)c.Id)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+        if (holderId == null)
+        {
+            return null;
+        }
+
+        Compliance? tracked = null;
+
+        // PnBase.Update saves twice — the row, then its ComplianceVersion — so a
+        // failure on the second leaves that audit row tracked as Added. Dropped
+        // before every attempt, or a retry would save it alongside its own.
+        void DetachPendingVersions()
+        {
+            foreach (var version in dbContext.ChangeTracker.Entries<ComplianceVersion>()
+                         .Where(e => e.State == EntityState.Added && e.Entity.ComplianceId == holderId)
+                         .ToList())
+            {
+                version.State = EntityState.Detached;
+            }
+        }
+
+        var claimStrategy = dbContext.Database.CreateExecutionStrategy();
+        try
+        {
+            return await claimStrategy.ExecuteAsync(async ct =>
+            {
+                DetachPendingVersions();
+                await using var claimTx = await dbContext.Database
+                    .BeginTransactionAsync(ct).ConfigureAwait(false);
+
+                // A plain statement rather than a FromSql query: EF composes the
+                // latter into a derived table, and the lock must not depend on how
+                // the server treats FOR UPDATE inside one.
+                await dbContext.Database
+                    .ExecuteSqlInterpolatedAsync(
+                        $"SELECT `Id` FROM `Compliances` WHERE `Id` = {holderId} FOR UPDATE", ct)
+                    .ConfigureAwait(false);
+
+                // Reloaded under the lock, and load-bearing. This context may
+                // already track the row (the retraction earlier in the request, or
+                // an earlier attempt of this lambda); identity resolution hands that
+                // instance back unrefreshed, and EF writes only properties that
+                // differ from its ORIGINAL values, so a stale "created" original
+                // would silently drop the WorkflowState write. The revive mutates
+                // this tracked instance so PnBase writes Version and the
+                // ComplianceVersion audit row.
+                tracked = await dbContext.Compliances
+                    .FirstAsync(c => c.Id == holderId, ct)
+                    .ConfigureAwait(false);
+                await dbContext.Entry(tracked).ReloadAsync(ct).ConfigureAwait(false);
+
+                if (tracked.WorkflowState != Constants.WorkflowStates.Removed)
+                {
+                    // Lost the claim: another deploy revived the row first.
+                    await claimTx.CommitAsync(ct).ConfigureAwait(false);
+                    return tracked;
+                }
+
+                var completed = tracked.MicrotingSdkCaseId > 0
+                               && await sdkDbContext.Cases
+                                   .AnyAsync(c => c.Id == tracked.MicrotingSdkCaseId
+                                                  && (c.Status == CompletedStatus || c.DoneAt.HasValue),
+                                       ct)
+                                   .ConfigureAwait(false);
+                if (completed)
+                {
+                    await claimTx.CommitAsync(ct).ConfigureAwait(false);
+                    logger.LogWarning(
+                        "EventDeployService: planning {PlanningId} deadline {Deadline} is held by completed compliance {ComplianceId}; SDK case {SdkCaseId} is left without a Compliance row",
+                        rejectedInsert.PlanningId, rejectedInsert.Deadline, tracked.Id, rejectedInsert.MicrotingSdkCaseId);
+                    return null;
+                }
+
+                tracked.WorkflowState = Constants.WorkflowStates.Created;
+                tracked.PropertyId = rejectedInsert.PropertyId;
+                tracked.AreaId = rejectedInsert.AreaId;
+                tracked.StartDate = rejectedInsert.StartDate;
+                tracked.MicrotingSdkeFormId = rejectedInsert.MicrotingSdkeFormId;
+                tracked.MicrotingSdkCaseId = rejectedInsert.MicrotingSdkCaseId;
+                tracked.PlanningCaseSiteId = rejectedInsert.PlanningCaseSiteId;
+                tracked.CheckListSiteId = 0;
+                tracked.MovedToExpiredFolder = false;
+                await tracked.Update(dbContext).ConfigureAwait(false);
+                await claimTx.CommitAsync(ct).ConfigureAwait(false);
+
+                logger.LogInformation(
+                    "EventDeployService: revived retracted compliance {ComplianceId} (planning {PlanningId}, deadline {Deadline}) onto SDK case {SdkCaseId}",
+                    tracked.Id, tracked.PlanningId, tracked.Deadline, tracked.MicrotingSdkCaseId);
+                return tracked;
+            }, cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            // Never leave a half-revived row tracked: the caller's context lives
+            // on (reconciliation moves to the next site on it), and its next
+            // SaveChanges would flush the revive without the lock or the re-check.
+            if (tracked != null)
+            {
+                dbContext.Entry(tracked).State = EntityState.Detached;
+            }
+            DetachPendingVersions();
             throw;
         }
     }
