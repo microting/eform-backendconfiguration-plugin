@@ -64,9 +64,9 @@ import {ComplianceReportStateService} from './store';
     MatInputModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
-    // Rapport (#1167) renders one grid per sub-report. mtx-grid is used for its
-    // `pinned` columns — the metadata block sticky-left, Handlinger
-    // sticky-right — which is what replaces the prototype's hand-rolled
+    // Rapport (#1167) renders one grid per eForm table (#1276). mtx-grid is
+    // used for its `pinned` columns — the metadata block sticky-left,
+    // Handlinger sticky-right — which is what replaces the prototype's hand-rolled
     // `applyFrozenColumnOffsets` measure-and-write loop (#1167 §5).
     MtxGridModule,
     MtxSelectModule,

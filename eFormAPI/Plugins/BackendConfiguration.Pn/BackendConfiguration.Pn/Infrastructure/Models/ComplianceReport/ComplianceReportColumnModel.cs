@@ -1,6 +1,7 @@
 namespace BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 
-/// <summary>One answer column of a template group.</summary>
+/// <summary>One answer column of a template table (#1276: always the table's own
+/// template's field, never another template's).</summary>
 public class ComplianceReportColumnModel
 {
     /// <summary>
@@ -23,7 +24,11 @@ public class ComplianceReportColumnModel
 
     /// <summary>
     /// The SDK <c>Constants.FieldTypes</c> value, so #1167 can right-align
-    /// numbers, render dates and so on without re-deriving the type.
+    /// numbers, render dates and so on without re-deriving the type. The cells
+    /// stay canonical (<c>checked</c>/<c>unchecked</c>, ISO <c>yyyy-MM-dd</c>);
+    /// every renderer branches on this to present them (#1276: a
+    /// <c>CheckBox</c> ticked is a check mark and unticked is blank, a
+    /// <c>Date</c> reads like the report's other dates).
     /// </summary>
     public string FieldType { get; set; }
 }

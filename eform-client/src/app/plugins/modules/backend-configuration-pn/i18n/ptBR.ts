@@ -750,7 +750,6 @@ export const ptBR = {
   'Select a period and click Update period': 'Selecione um período e clique em Atualizar período.',
   'Change a filter or click Overview to load the table': 'Altere um filtro ou clique em Visão geral para carregar a tabela.',
   'Without report headline': 'Sem título de relatório',
-  'Columns unavailable for template #{{id}}': 'Colunas indisponíveis para o modelo #{{id}}',
   // Calendar toolbar (#1209): the calendars multi-select button label, its
   // bulk actions, and the accessible name of a calendar row's actions menu.
   '{{count}} calendars': '{{count}} calendários',

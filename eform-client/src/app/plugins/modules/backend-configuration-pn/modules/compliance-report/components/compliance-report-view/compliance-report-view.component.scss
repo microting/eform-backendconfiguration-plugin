@@ -6,7 +6,8 @@
 // views do not: its chrome and its cells sit on DIFFERENT backgrounds.
 //
 //  1. THE CARD, for everything outside a grid — the meta line, the tag line,
-//     the heading, the schema notice, the empty state, the "Vis alle" footer.
+//     the heading, the eForm sub-heading (#1276), the schema notice, the empty
+//     state, the "Vis alle" footer.
 //     They live in `<mat-card id="complianceCasesRoot">`
 //     (compliance-report-page.component.html:30), whose `.mat-mdc-card` paints
 //     `--mat-card-elevated-container-color`, which
@@ -37,7 +38,7 @@
 //
 //   on the CARD (--md-surface-container)
 //   ----------------------------------------------------------------------
-//   --text-primary        heading, meta values
+//   --text-primary        heading, eForm sub-heading, meta values
 //                         eform  L #0F1316 on #F7F9FA = 17.68
 //                         eform  D #F3F5F7 on #2D2F31 = 12.30
 //                         works. L #1f1f1f on #ffffff = 16.48
@@ -58,7 +59,8 @@
 //                         eform  D #F3F5F7 on #424242 =  9.20
 //                         works. L #1f1f1f on #ffffff = 16.48
 //                         works. D #e3e3e3 on #1e1f20 = 12.86
-//   --icon-secondary      the photo_library icon (non-text, 3:1 floor)
+//   --icon-secondary      the photo_library icon and the CheckBox tick (#1276)
+//                         (non-text, 3:1 floor)
 //                         eform  L #0F1316 on #ffffff = 18.67
 //                         eform  D #FFFFFF on #424242 = 10.05
 //                         works. L #444746 on #ffffff =  9.39
@@ -152,6 +154,18 @@
     color: var(--text-primary);
   }
 
+  // The eForm name above each of a section's tables (#1276). One step below
+  // the headline — the base size rather than the body size, semibold rather
+  // than bold — so the headline still reads as the one heading of the section.
+  // The top margin separates a table from the grid above it, which the
+  // section's 4px gap alone would butt the sub-heading against.
+  &__subheading {
+    margin: var(--spacing-md) 0 0;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+  }
+
   &__notice {
     margin: 0 0 var(--spacing-xs);
     color: var(--text-child-muted);
@@ -166,8 +180,8 @@
     max-width: 100%;
   }
 
-  // The per-sub-report reveal. Right-aligned under the grid so it reads as a
-  // footer of that table rather than as a heading of the next section.
+  // The per-table reveal. Right-aligned under the grid so it reads as a
+  // footer of that table rather than as a heading of the next one.
   &__more {
     display: flex;
     align-items: center;
@@ -188,14 +202,17 @@
     color: var(--text-primary);
   }
 
-  &__images {
+  // A cell that draws an icon — the Billeder icon + count, and the CheckBox
+  // tick (#1276) — centres it on the row rather than the text baseline.
+  &__images,
+  &__tick {
     display: inline-flex;
     align-items: center;
     gap: var(--spacing-xs);
     color: var(--text-primary);
   }
 
-  &__images-icon {
+  &__cell-icon {
     font-size: 18px;
     width: 18px;
     height: 18px;

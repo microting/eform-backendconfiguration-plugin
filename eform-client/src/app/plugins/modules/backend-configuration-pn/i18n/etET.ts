@@ -750,7 +750,6 @@ export const etET = {
   'Select a period and click Update period': 'Valige periood ja klõpsake nuppu „Uuenda perioodi”.',
   'Change a filter or click Overview to load the table': 'Muutke filtrit või klõpsake nuppu „Ülevaade”, et tabel laadida.',
   'Without report headline': 'Ilma aruande pealkirjata',
-  'Columns unavailable for template #{{id}}': 'Veerud pole malli #{{id}} jaoks saadaval',
   // Calendar toolbar (#1209): the calendars multi-select button label, its
   // bulk actions, and the accessible name of a calendar row's actions menu.
   '{{count}} calendars': '{{count}} kalendrit',

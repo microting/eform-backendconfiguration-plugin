@@ -756,7 +756,6 @@ export const da = {
   'Completion date': 'Udført dato',
   'Without report headline': 'Uden rapportoverskrift',
   'Columns unavailable': 'Kolonner utilgængelige',
-  'Columns unavailable for template #{{id}}': 'Kolonner utilgængelige for eForm #{{id}}',
   '1 image': '1 billede',
   '{{count}} images': '{{count}} billeder',
   'Only completed tasks can be edited': 'Kun udførte opgaver kan redigeres',

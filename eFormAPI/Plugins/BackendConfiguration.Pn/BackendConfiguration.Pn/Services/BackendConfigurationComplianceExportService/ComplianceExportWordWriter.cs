@@ -138,6 +138,14 @@ public class ComplianceExportWordWriter(
     public const string SectionTitleStyle = "font-size:14px;font-weight:700;text-align:left;";
 
     /// <summary>
+    /// A table's own heading — Rapport's eForm name (#1276) — directly above the
+    /// table and under the section headline: bold like the headline, one step
+    /// smaller, so a headline with three eForms reads as one heading over three
+    /// titled tables rather than four equal headings.
+    /// </summary>
+    public const string TableSubtitleStyle = "font-size:12px;font-weight:700;text-align:left;";
+
+    /// <summary>
     /// The appendix page heading, <c>Bilag – {section}</c>: the section title's
     /// weight, on a new page. <c>page-break-before</c> is a paragraph-level break
     /// HtmlToOpenXml honours on a <c>&lt;p&gt;</c>; the #1189 page shell repeats
@@ -227,12 +235,22 @@ public class ComplianceExportWordWriter(
                 $@"<p style='font-size:16px;text-align:left;font-weight:700;'>{Esc(document.Title)}</p>");
         }
 
+        // The exact texts of the paragraphs the post-pass pins to what follows
+        // them (see KeepCaptionsWithTheirGrid): every table's headings (#1276)
+        // and, further down, the appendix case captions.
+        var keepWithNext = new HashSet<string>(StringComparer.Ordinal);
+
         foreach (var table in document.Tables)
         {
+            keepWithNext.UnionWith(new[] { table.Caption, table.Title, table.Subtitle }
+                .Where(heading => !string.IsNullOrEmpty(heading)));
+
             // Rapport's tags caption sits ABOVE the bold headline (#1188, PDF page
             // 5): a small grey line, 9 pt #666666 (#1192). Only emitted when there
             // is one — Oversigt and Detaljer carry none, and a Rapport group whose
-            // cases have no tags gets no empty line ahead of its heading.
+            // cases have no tags gets no empty line ahead of its heading. Both
+            // sit on a headline's FIRST table only (#1276), so a section with
+            // several eForm tables prints them once.
             if (!string.IsNullOrEmpty(table.Caption))
             {
                 body.Append(
@@ -243,6 +261,14 @@ public class ComplianceExportWordWriter(
             {
                 body.Append(
                     $@"<p style='{SectionTitleStyle}'>{Esc(table.Title)}</p>");
+            }
+
+            // The eForm's name over its own table (#1276) — on EVERY Rapport
+            // table, the first included.
+            if (!string.IsNullOrEmpty(table.Subtitle))
+            {
+                body.Append(
+                    $@"<p style='{TableSubtitleStyle}'>{Esc(table.Subtitle)}</p>");
             }
 
             // A CsvOnly column (Rapport's Delrapport, #1192) is skipped by INDEX
@@ -272,7 +298,11 @@ public class ComplianceExportWordWriter(
                     var column = i < table.Columns.Count ? table.Columns[i] : null;
                     if (column is { CsvOnly: true }) continue;
                     var type = column?.Type ?? ComplianceExportCellType.Text;
-                    body.Append($@"<td>{Esc(Render(row.Cells[i], type))}</td>");
+                    var text = Render(row.Cells[i], type);
+                    // An empty cell (an unticked checkbox, #1276) gets a no-break
+                    // space: a paragraph with no run takes the document's default
+                    // font size, not the row's 7pt, and would make the row taller.
+                    body.Append(string.IsNullOrEmpty(text) ? "<td>&nbsp;</td>" : $"<td>{Esc(text)}</td>");
                 }
 
                 body.Append(@"</tr>");
@@ -287,10 +317,6 @@ public class ComplianceExportWordWriter(
         // then per case its "Sag … · … · …" caption and the images in a
         // two-column grid. The page header and footer repeat on these pages by
         // themselves: they are section properties (#1189), not body content.
-        // The exact caption texts written below, for the post-pass that pins each
-        // of them to its grid (see KeepCaptionsWithTheirGrid).
-        var appendixCaptions = new HashSet<string>(StringComparer.Ordinal);
-
         foreach (var table in document.Tables)
         {
             if (table.ImageBlocks.Count == 0) continue;
@@ -303,7 +329,7 @@ public class ComplianceExportWordWriter(
                     ? $"{block.Caption} ({block.ImageNames.Count}/{block.TotalImages})"
                     : block.Caption;
 
-                appendixCaptions.Add(caption);
+                keepWithNext.Add(caption);
                 body.Append($@"<p style='{AppendixCaseStyle}'>{Esc(caption)}</p>");
 
                 // Two images per row (~300 px each, side by side on the landscape
@@ -386,7 +412,7 @@ public class ComplianceExportWordWriter(
 
         // AFTER the conversion, because the thing being fixed is what the
         // converter produced.
-        KeepCaptionsWithTheirGrid(docxStream, appendixCaptions);
+        KeepCaptionsWithTheirGrid(docxStream, keepWithNext);
 
         docxStream.Position = 0;
         return docxStream;
@@ -418,6 +444,12 @@ public class ComplianceExportWordWriter(
     /// what follows it, table included; both Word and LibreOffice honour it,
     /// and the appendix grid's first row is what it binds to.
     /// </para>
+    ///
+    /// <para>
+    /// The same holds for a table's headings (#1276): the eForm sub-heading is
+    /// pinned to its table, and the caption and headline above it to the next
+    /// pinned heading, so no heading is stranded at the foot of a page.
+    /// </para>
     /// </summary>
     private static void KeepCaptionsWithTheirGrid(MemoryStream docxStream, ICollection<string> captions)
     {
@@ -431,8 +463,13 @@ public class ComplianceExportWordWriter(
 
             foreach (var paragraph in docBody.Elements<W.Paragraph>())
             {
-                if (paragraph.NextSibling() is not W.Table) continue;
                 if (!captions.Contains(paragraph.InnerText.Trim())) continue;
+                var next = paragraph.NextSibling();
+                if (next is not W.Table
+                    && !(next is W.Paragraph nextHeading && captions.Contains(nextHeading.InnerText.Trim())))
+                {
+                    continue;
+                }
 
                 var properties = paragraph.ParagraphProperties;
                 if (properties == null)
@@ -725,9 +762,12 @@ public class ComplianceExportWordWriter(
     /// <summary>
     /// The cell's Word/PDF text: an explicit
     /// <see cref="ComplianceExportCell.DisplayText"/> wins (Detaljer's weekday
-    /// date, #1191), then a typed date renders <c>dd.MM.yyyy</c>, otherwise the
-    /// display text — which is the en dash for an empty cell. Word/PDF keep the
-    /// glyph; only CSV blanks it.
+    /// date, #1191), then a typed date renders <c>dd.MM.yyyy</c> — Rapport's eForm
+    /// <c>Date</c> answers included (#1276) — and a checkbox answer (#1276) the
+    /// check mark when ticked and NOTHING when unticked (the legacy
+    /// <c>WordService</c>'s <c>&lt;td&gt;&lt;/td&gt;</c>), otherwise the display
+    /// text — which is the en dash for an empty cell, an unanswered checkbox
+    /// included. Word/PDF keep the glyph; only CSV blanks it.
     /// </summary>
     private static string Render(ComplianceExportCell cell, ComplianceExportCellType type)
     {
@@ -738,6 +778,8 @@ public class ComplianceExportWordWriter(
         {
             ComplianceExportCellType.Date when cell.Date.HasValue =>
                 cell.Date.Value.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture),
+            ComplianceExportCellType.CheckBox when cell.Checked.HasValue =>
+                cell.Checked.Value ? ComplianceExportCell.CheckMarkGlyph : string.Empty,
             _ => cell.Text ?? ComplianceExportCell.EmptyGlyph
         };
     }
