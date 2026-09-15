@@ -68,16 +68,17 @@ public interface IBackendConfigurationComplianceReportService
     /// The Rapport view's read model (#1166, regrouped by #1188): the filtered
     /// compliance set grouped by REPORT HEADLINE
     /// (<c>AreaRulePlanning.ItemPlanningTagId</c> — the calendar modal's
-    /// "Rapportoverskrift"), one flat table per headline whose columns are the
-    /// UNION of every answered template's schema, one KEYED cell bag per case,
-    /// and the group's tag names as a caption. Rows without a headline form one
-    /// fallback group (<c>HeadlineTagId == null</c>), always last.
+    /// "Rapportoverskrift"), the group's tag names as a caption, and under each
+    /// headline one table per eForm template answered in it, with that template's
+    /// columns only and one KEYED cell bag per case
+    /// (#1276, see ComplianceReportTemplateTableModel). Rows without a headline
+    /// form one fallback group (<c>HeadlineTagId == null</c>), always last.
     ///
     /// <para>
     /// The template of a case is the SDK <c>Case.CheckListId</c> — never
     /// <c>AreaRule.EformId</c>, which tracks current configuration rather than what
-    /// was answered (#1160 finding 1). It is carried on each case, because a
-    /// section spans templates.
+    /// was answered (#1160 finding 1). It keys the table the case sits in and is
+    /// also carried on each case, where the consumer's row actions read it.
     /// </para>
     ///
     /// <para>

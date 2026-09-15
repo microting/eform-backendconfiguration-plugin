@@ -3,7 +3,8 @@ using System.Collections.Generic;
 
 namespace BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 
-/// <summary>One answered occurrence inside a headline group (#1188).</summary>
+/// <summary>One answered occurrence inside one template table of a headline group
+/// (#1188, split per template by #1276).</summary>
 public class ComplianceReportCaseModel
 {
     public int ComplianceId { get; set; }
@@ -16,8 +17,12 @@ public class ComplianceReportCaseModel
     /// The template THIS row was answered on — the SDK <c>Case.CheckListId</c>.
     /// Required since #1188 because a section spans templates: the consumer's
     /// <c>Rediger</c> route and its <c>canEdit</c> gate need the row's OWN
-    /// template, which the section no longer identifies. Always set (a row
-    /// without one forms no group); nullable only so the JSON shape states it.
+    /// template. Since #1276 the table holding the row names the template as
+    /// well, and this ALWAYS equals that table's
+    /// <see cref="ComplianceReportTemplateTableModel.CheckListId"/>; it is kept on
+    /// the row because the consumer's row actions read the row, not the table.
+    /// Always set (a row without one forms no group); nullable only so the JSON
+    /// shape states it.
     /// </summary>
     public int? CheckListId { get; set; }
 

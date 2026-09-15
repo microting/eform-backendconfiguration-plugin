@@ -27,9 +27,11 @@ import {
 import {
   COMPLIANCE_EMPTY_CELL,
   COMPLIANCE_REPORT_PAGE_ROW_BUDGET,
-  COMPLIANCE_REPORT_SECTION_ROW_CAP,
+  COMPLIANCE_REPORT_TABLE_ROW_CAP,
   ComplianceReportSection,
+  ComplianceReportTable,
   buildComplianceReportSections,
+  complianceAnswerIsChecked,
   complianceAnswerText,
   complianceWorkerNames,
   formatComplianceReportDate,
@@ -44,42 +46,41 @@ const KEY_IMAGES_ONE = '1 image';
 const KEY_IMAGES_MANY = '{{count}} images';
 
 /**
- * The PER-TEMPLATE schema notice (#1188). A section spans templates, and when
- * only some of them lack a schema the others' columns are still there, so the
- * notice names the affected template rather than disowning the whole table.
- * Held here for the same `{{ }}`-in-a-template reason as the two keys above.
- *
- * The DTO carries template IDS, not names (`schemaUnavailableCheckListIds`),
- * so the notice reads `#{id}` — the same neutral form the headline uses for an
- * unresolvable tag.
- */
-const KEY_COLUMNS_UNAVAILABLE_FOR_TEMPLATE = 'Columns unavailable for template #{{id}}';
-
-/**
- * One column of a sub-report's grid. `answerKey` is the ONLY way an answer cell
- * is addressed — `MtxGridColumn.field` is used for the fixed metadata columns
- * and, for the answer columns, is a unique identity mtx-grid requires but that
- * nothing reads.
+ * One column of an eForm table's grid. `answerKey` is the ONLY way an answer
+ * cell is addressed — `MtxGridColumn.field` is used for the fixed metadata
+ * columns and, for the answer columns, is a unique identity mtx-grid requires
+ * but that nothing reads.
  */
 interface ComplianceReportGridColumn extends MtxGridColumn {
   /** `ComplianceReportColumnModel.key`, present on answer columns only. */
   answerKey?: string;
+  /**
+   * `ComplianceReportColumnModel.fieldType`, present on answer columns only —
+   * how the cell FORMATS its answer (#1276: a tick for a `CheckBox`,
+   * `dd.MM.yyyy` for a `Date`). Never how it is addressed; that is `answerKey`.
+   */
+  answerFieldType?: string;
 }
 
-/** A sub-report as the template renders it: the model plus its own grid state. */
-interface ComplianceReportRenderedSection extends ComplianceReportSection {
+/** An eForm table as the template renders it: the model plus its own grid state. */
+interface ComplianceReportRenderedTable extends ComplianceReportTable {
   /**
-   * Built ONCE per section. mtx-grid MUTATES its column objects
-   * (`_countPinnedPosition` writes `left`/`right` onto them), so two sections
+   * Built ONCE per table. mtx-grid MUTATES its column objects
+   * (`_countPinnedPosition` writes `left`/`right` onto them), so two tables
    * must never share an array or the pin offsets of the wider one leak into the
    * narrower one.
    */
   gridColumns: ComplianceReportGridColumn[];
-  /** The rows currently in the DOM — the first N until the section is expanded. */
+  /** The rows currently in the DOM — the first N until the table is expanded. */
   rows: ComplianceReportRowVm[];
-  /** Every row of the sub-report. */
+  /** Every row of the table. */
   allRows: ComplianceReportRowVm[];
   expanded: boolean;
+}
+
+/** A headline section as the template renders it: its tables carry grid state. */
+interface ComplianceReportRenderedSection extends ComplianceReportSection {
+  tables: ComplianceReportRenderedTable[];
 }
 
 /**
@@ -94,8 +95,9 @@ interface ComplianceReportRowVm {
   sdkCaseId: number;
   /**
    * The template THIS row was answered against — the `Rediger` route needs
-   * it, and since #1188 a section spans templates, so it comes off the CASE
-   * (`ComplianceReportCaseModel.checkListId`), never off the section. `0` for
+   * it. It comes off the CASE (`ComplianceReportCaseModel.checkListId`), the
+   * case's own fact; since #1276 it equals its table's `checkListId`, but the
+   * table's id is a grouping key and the route is built from the case. `0` for
    * a case the server sent without one, which `canEdit` rejects.
    */
   checkListId: number;
@@ -129,15 +131,19 @@ interface ComplianceReportRowVm {
    */
   imageThumbnailNames: (string | null)[];
   completed: boolean;
-  /** The KEYED answer bag, read only through `complianceAnswerText`. */
+  /**
+   * The KEYED answer bag, read only through `complianceAnswerText` and
+   * `complianceAnswerIsChecked`.
+   */
   cells: {[key: string]: string};
 }
 
 /**
  * The Rapport view of the standalone Compliance page (#1167, regrouped by
- * #1188): one sub-report per REPORT HEADLINE (`Rapportoverskrift`), captioned
- * with the tasks' tags, whose columns are the union of the answer fields of
- * every template answered under that headline.
+ * #1188, split per eForm by #1276): one section per REPORT HEADLINE
+ * (`Rapportoverskrift`), captioned with the tasks' tags and headed ONCE, and
+ * under it one table per eForm answered under that headline — titled with the
+ * eForm name and carrying only that eForm's answer fields.
  *
  * Its contract with the shell (#1163) is the same as Oversigt's and Detaljer's:
  *
@@ -159,9 +165,9 @@ interface ComplianceReportRowVm {
  * hel", compliance.js:1820) — the shell already hides the pagination `<nav>`
  * outside Detaljer, so nothing there needed changing. The unbounded-DOM problem
  * that creates is answered by two ceilings instead, both of them reversible by
- * one click on the sub-report the user wants: a per-section cap
- * (`COMPLIANCE_REPORT_SECTION_ROW_CAP`) and, because a page can hold dozens
- * of small headline sections, a cumulative page budget
+ * one click on the table the user wants: a per-table cap
+ * (`COMPLIANCE_REPORT_TABLE_ROW_CAP`) and, because a page can hold dozens
+ * of small tables, a cumulative page budget
  * (`COMPLIANCE_REPORT_PAGE_ROW_BUDGET`).
  */
 @Component({
@@ -180,8 +186,6 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
   @ViewChild('deleteConfirmTpl', {static: true}) deleteConfirmTpl!: TemplateRef<unknown>;
 
   readonly emptyCell = COMPLIANCE_EMPTY_CELL;
-  /** See `KEY_COLUMNS_UNAVAILABLE_FOR_TEMPLATE`. */
-  readonly columnsUnavailableForTemplateKey = KEY_COLUMNS_UNAVAILABLE_FOR_TEMPLATE;
 
   sections: ComplianceReportRenderedSection[] = [];
   hasFetched = false;
@@ -279,22 +283,29 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
 
   private applyResponse(groups: ComplianceReportHeadlineGroupModel[]): void {
     const withoutHeadline = this.translate.instant('Without report headline');
-    // The PAGE budget, spent in server order. A section is one report
-    // headline, and a result can hold dozens of small ones that each stay
-    // under the per-section cap while the whole 5000-row server allowance
-    // reaches the DOM. Once this is spent the remaining sections render
-    // collapsed — heading, true row count, `Vis alle` — rather than not at all.
+    // The PAGE budget, spent in server order — sections in order, and the
+    // tables of each section in order. A result can hold dozens of small
+    // tables that each stay under the per-table cap while the whole 5000-row
+    // server allowance reaches the DOM. Once this is spent the remaining tables
+    // render collapsed — headings, true row count, `Vis alle` — rather than
+    // not at all.
     let revealed = 0;
-    this.sections = buildComplianceReportSections(groups, withoutHeadline).map((section) => {
-      const rendered = this.renderSection(section, revealed);
-      revealed += rendered.rows.length;
-      return rendered;
-    });
+    let total = 0;
+    this.sections = buildComplianceReportSections(groups, withoutHeadline).map((section) => ({
+      ...section,
+      tables: section.tables.map((table) => {
+        const rendered = this.renderTable(table, revealed);
+        revealed += rendered.rows.length;
+        total += rendered.allRows.length;
+        return rendered;
+      }),
+    }));
     this.hasFetched = true;
 
-    // The row count of THIS view. Every case is in exactly ONE headline
-    // section (#1188), so the sum over sections is the number of answered
-    // cases — the same number the Rapport export writes.
+    // The row count of THIS view. Every case is in exactly ONE table of
+    // exactly ONE headline section (#1188, #1276), so the sum over every table
+    // is the number of answered cases — the same number the Rapport export
+    // writes.
     //
     // The call is load-bearing rather than contract parity:
     // `ComplianceReportFiltersComponent.canDownload` is
@@ -302,31 +313,30 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
     // `[disabled]` on `#complianceDownloadBtn`. Drop it and Download stays dead
     // after a Rapport fetch. The pagination chrome is NOT a reader — the shell
     // hides the whole <nav> outside Detaljer.
-    this.state.setTotalCount(
-      this.sections.reduce((sum, section) => sum + section.allRows.length, 0),
-    );
+    this.state.setTotalCount(total);
   }
 
   /**
-   * `revealedBefore` is how many rows the sections ABOVE this one already put in
-   * the DOM. A section renders the smaller of its own cap and what is left of
-   * the page budget — which is 0 once the budget is spent, and then it renders
-   * as a heading with a row count and a `Vis alle` button.
+   * `revealedBefore` is how many rows the tables ABOVE this one — earlier in
+   * its own section and in every section before it — already put in the DOM.
+   * A table renders the smaller of its own cap and what is left of the page
+   * budget — which is 0 once the budget is spent, and then it renders as a
+   * sub-heading with a row count and a `Vis alle` button.
    *
    * `expanded` is derived from what was actually rendered, not from which of the
    * two limits bit, so the reveal control and its "Viser X af Y" line are the
-   * same for both reasons and `expandSection` needs no branch.
+   * same for both reasons and `expandTable` needs no branch.
    */
-  private renderSection(
-    section: ComplianceReportSection,
+  private renderTable(
+    table: ComplianceReportTable,
     revealedBefore: number,
-  ): ComplianceReportRenderedSection {
-    const allRows = section.cases.map((c) => this.toRowVm(c));
+  ): ComplianceReportRenderedTable {
+    const allRows = table.cases.map((c) => this.toRowVm(c));
     const budgetLeft = Math.max(0, COMPLIANCE_REPORT_PAGE_ROW_BUDGET - revealedBefore);
-    const visible = Math.min(allRows.length, COMPLIANCE_REPORT_SECTION_ROW_CAP, budgetLeft);
+    const visible = Math.min(allRows.length, COMPLIANCE_REPORT_TABLE_ROW_CAP, budgetLeft);
     return {
-      ...section,
-      gridColumns: this.buildGridColumns(section),
+      ...table,
+      gridColumns: this.buildGridColumns(table),
       allRows,
       rows: allRows.slice(0, visible),
       expanded: visible === allRows.length,
@@ -341,8 +351,8 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
     return {
       complianceId: caseModel.complianceId,
       sdkCaseId: caseModel.sdkCaseId,
-      // The CASE's own template — a section spans templates (#1188), so the
-      // section has no single one to hand down.
+      // The CASE's own template. Since #1276 it equals the table's, but the
+      // route is built from the case, not from how the case was grouped.
       checkListId: caseModel.checkListId ?? 0,
       propertyName: caseModel.propertyName,
       doneBy: complianceWorkerNames(caseModel.workerNames),
@@ -364,7 +374,8 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Fixed metadata → the template's answer fields → actions.
+   * Fixed metadata → the table's answer fields → actions. The answer fields
+   * are ONE eForm's (#1276), never a union across eForms.
    *
    * Order is the PROTOTYPE's (`renderReportTableHead`, compliance.js:1708-1721):
    * `ID, Ejendom, Udført af, Udført dato, Område, Billeder`, i.e. Udført af
@@ -382,7 +393,7 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
    * boundary minus its seventh column, which was an artefact of its fabricated
    * `Note` column; the widths below are the tightest that still fit the content.
    */
-  private buildGridColumns(section: ComplianceReportSection): ComplianceReportGridColumn[] {
+  private buildGridColumns(table: ComplianceReportTable): ComplianceReportGridColumn[] {
     const columns: ComplianceReportGridColumn[] = [
       {
         field: 'sdkCaseId',
@@ -437,12 +448,12 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
     // De-duplicated by KEY. MatTable throws `Duplicate column definition name`
     // and renders NOTHING for the whole grid if two entries of
     // `displayedColumns` match, so a projection that ever emitted one field
-    // twice would take the entire sub-report down rather than showing one
-    // column twice. The server builds each section's columns as a
-    // de-duplicated union of its templates' distinct fields (#1188), so this
-    // should not fire; it costs one Set and removes a whole failure mode.
+    // twice would take the entire table down rather than showing one column
+    // twice. The server builds each table's columns from ONE eForm's distinct
+    // fields (#1276), so this should not fire; it costs one Set and removes a
+    // whole failure mode.
     const seenKeys = new Set<string>();
-    for (const column of section.columns) {
+    for (const column of table.columns) {
       if (!column?.key || seenKeys.has(column.key)) {
         continue;
       }
@@ -462,6 +473,7 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
         // needs escaping in every selector that would ever touch it.
         field: `answer_${column.key}`,
         answerKey: column.key,
+        answerFieldType: column.fieldType,
         header: column.label || column.key,
         cellTemplate: this.answerTpl,
       });
@@ -484,10 +496,20 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
 
   /**
    * KEYED, never positional. Exposed to the template so the lookup that makes
-   * this view correct is the one line the template calls.
+   * this view correct is the one line the template calls. The column's field
+   * type only FORMATS the text (#1276): empty for a `CheckBox`, `dd.MM.yyyy`
+   * for a `Date`.
    */
   answerText(row: ComplianceReportRowVm, column: ComplianceReportGridColumn): string {
-    return complianceAnswerText(row, column?.answerKey);
+    return complianceAnswerText(row, column?.answerKey, column?.answerFieldType);
+  }
+
+  /**
+   * A `CheckBox` column's ticked answer — the one checkbox state the cell
+   * draws, as a check icon (#1276). Keyed exactly like `answerText`.
+   */
+  answerIsChecked(row: ComplianceReportRowVm, column: ComplianceReportGridColumn): boolean {
+    return complianceAnswerIsChecked(row, column?.answerKey, column?.answerFieldType);
   }
 
   /**
@@ -520,15 +542,6 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
    */
   imagesLabelParams(count: number): {count: number} {
     return {count};
-  }
-
-  /**
-   * `{id}` for `KEY_COLUMNS_UNAVAILABLE_FOR_TEMPLATE`. Same caching argument as
-   * `imagesLabelParams`, and a method rather than an inline object literal
-   * because `{id: x} }}` puts a `}}` inside an interpolation.
-   */
-  templateNoticeParams(checkListId: number): {id: number} {
-    return {id: checkListId};
   }
 
   /**
@@ -591,17 +604,21 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
     return section.key;
   }
 
+  trackByTable(_: number, table: ComplianceReportRenderedTable): string {
+    return table.key;
+  }
+
   trackByRow = (_: number, row: ComplianceReportRowVm): number => row.complianceId;
 
   // -------------------------------------------------------------------
-  // Large results: reveal per sub-report
+  // Large results: reveal per eForm table
   // -------------------------------------------------------------------
 
-  expandSection(section: ComplianceReportRenderedSection): void {
+  expandTable(table: ComplianceReportRenderedTable): void {
     // A NEW array identity, not a push: mtx-grid's `[data]` is an input and a
     // mutated-in-place array would not re-render.
-    section.rows = section.allRows;
-    section.expanded = true;
+    table.rows = table.allRows;
+    table.expanded = true;
   }
 
   // -------------------------------------------------------------------
@@ -683,7 +700,7 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
   /**
    * `Rediger`. Only completed cases have anything to edit (compliance.js:1645),
    * and only a row that knows its OWN template can be routed to the editor —
-   * `checkListId` is per case since #1188, not per section.
+   * `checkListId` is read off the case (#1188), not off its table.
    */
   canEdit(row: ComplianceReportRowVm): boolean {
     return row.completed && row.sdkCaseId > 0 && row.checkListId > 0;
@@ -708,8 +725,8 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
    * `sdkCaseId / templateId / planningId`, writes no site id, and its third
    * segment is read into a field the page never uses — so the compliance id is
    * passed there, giving the URL a meaningful value rather than a filler. The
-   * template segment is the ROW's own `checkListId`: a headline section mixes
-   * templates, so the section cannot supply it.
+   * template segment is the ROW's own `checkListId` — the case's fact, which
+   * since #1276 also equals its table's.
    *
    * The cost, accepted: a full navigation discards the fetched result. The
    * filters survive (the state service lives on the cached lazy module ref),

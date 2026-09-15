@@ -750,7 +750,6 @@ export const noNO = {
   'Select a period and click Update period': 'Velg en periode og klikk på Oppdater periode.',
   'Change a filter or click Overview to load the table': 'Endre et filter, eller klikk på Oversikt for å hente tabellen.',
   'Without report headline': 'Uten rapportoverskrift',
-  'Columns unavailable for template #{{id}}': 'Kolonner er ikke tilgjengelige for mal #{{id}}',
   // Calendar toolbar (#1209): the calendars multi-select button label, its
   // bulk actions, and the accessible name of a calendar row's actions menu.
   '{{count}} calendars': '{{count}} kalendere',

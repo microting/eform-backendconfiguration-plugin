@@ -750,7 +750,6 @@ export const bgBG = {
   'Select a period and click Update period': 'Изберете период и щракнете върху „Актуализиране на периода“.',
   'Change a filter or click Overview to load the table': 'Променете филтър или щракнете върху „Общ преглед“, за да заредите таблицата.',
   'Without report headline': 'Без заглавие на отчета',
-  'Columns unavailable for template #{{id}}': 'Колоните не са налични за шаблон #{{id}}',
   // Calendar toolbar (#1209): the calendars multi-select button label, its
   // bulk actions, and the accessible name of a calendar row's actions menu.
   '{{count}} calendars': '{{count}} календара',

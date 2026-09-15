@@ -36,7 +36,8 @@ using NSubstitute;
 /// DB-backed integration coverage for
 /// <c>POST api/backend-configuration-pn/compliance-report/eform-columns</c>
 /// (<see cref="BackendConfigurationComplianceReportService.EformColumns"/>) — issue #1166 §11,
-/// regrouped by report headline in #1188.
+/// regrouped by report headline in #1188 and split into one table per eForm template
+/// under each headline in #1276.
 ///
 /// <para>
 /// The fixture seeds SDK templates by hand — a top <c>CheckList</c> with ZERO direct
@@ -217,15 +218,20 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         return result.Model;
     }
 
-    /// <summary>The single headline group of a one-template arrangement (#1188): one
-    /// group, answered on exactly one template, so its <c>Columns</c> ARE that
-    /// template's schema.</summary>
-    private static ComplianceReportHeadlineGroupModel OnlyGroup(List<ComplianceReportHeadlineGroupModel> groups)
+    /// <summary>The single template table of a one-template arrangement (#1188,
+    /// #1276): one headline group holding exactly one table, whose <c>Columns</c>
+    /// are that template's schema and whose <c>Cases</c> are every answered row.</summary>
+    private static ComplianceReportTemplateTableModel OnlyTemplateTable(
+        List<ComplianceReportHeadlineGroupModel> groups)
     {
         Assert.That(groups, Has.Count.EqualTo(1), "expected exactly one headline group");
-        Assert.That(groups[0].CheckListIds, Has.Count.EqualTo(1), "expected exactly one answered template");
-        return groups[0];
+        Assert.That(groups[0].Templates, Has.Count.EqualTo(1), "expected exactly one answered template");
+        return groups[0].Templates[0];
     }
+
+    /// <summary>Every case of a headline group, table by table (#1276).</summary>
+    private static List<ComplianceReportCaseModel> CasesOf(ComplianceReportHeadlineGroupModel group) =>
+        group.Templates.SelectMany(t => t.Cases).ToList();
 
     // ==================================================================
     // SDK template seeding
@@ -719,9 +725,9 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
             Is.EqualTo(0));
 
         var (from, to) = Window();
-        var template = OnlyGroup(await Run(core, da, from, to));
+        var template = OnlyTemplateTable(await Run(core, da, from, to));
 
-        Assert.That(template.CheckListIds, Is.EqualTo(new List<int> { fixture.TemplateId }));
+        Assert.That(template.CheckListId, Is.EqualTo(fixture.TemplateId));
         Assert.That(template.Cases.Single().CheckListId, Is.EqualTo(fixture.TemplateId));
         Assert.That(template.Columns, Has.Count.EqualTo(3));
         Assert.That(template.Columns.Select(c => c.FieldId), Is.EquivalentTo(fixture.FieldIds));
@@ -752,7 +758,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         await SeedFieldValue(caseId, insideGroupId, childId, "svar i gruppen");
 
         var (from, to) = Window();
-        var template = OnlyGroup(await Run(core, da, from, to));
+        var template = OnlyTemplateTable(await Run(core, da, from, to));
 
         Assert.That(template.Columns.Select(c => c.FieldId), Is.EqualTo(new[] { insideGroupId }).AsCollection);
         Assert.That(template.Cases[0].Cells[$"f{insideGroupId}"], Is.EqualTo("svar i gruppen"));
@@ -782,7 +788,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
             (Constants.FieldTypes.Number, "Antal"));
 
         var (from, to) = Window();
-        var template = OnlyGroup(await Run(core, da, from, to));
+        var template = OnlyTemplateTable(await Run(core, da, from, to));
 
         Assert.That(template.Columns, Has.Count.EqualTo(2));
         Assert.That(template.Columns.Select(c => c.Label), Is.EqualTo(new[] { "Kommentar", "Antal" }).AsCollection);
@@ -804,7 +810,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
             (Constants.FieldTypes.Comment, "Kommentar"));
 
         var (from, to) = Window();
-        var template = OnlyGroup(await Run(core, da, from, to));
+        var template = OnlyTemplateTable(await Run(core, da, from, to));
 
         Assert.That(template.Columns, Has.Count.EqualTo(1));
         Assert.That(template.Columns[0].Label, Is.EqualTo("Kommentar"));
@@ -835,7 +841,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         await SeedFieldValue(fixture.CaseId, fixture.FieldIds[3], fixture.ChildId, "42");
 
         var (from, to) = Window();
-        var template = OnlyGroup(await Run(core, da, from, to));
+        var template = OnlyTemplateTable(await Run(core, da, from, to));
 
         Assert.That(template.Columns, Has.Count.EqualTo(2));
         var cells = template.Cases.Single().Cells;
@@ -863,7 +869,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         await SeedFieldValue(fixture.CaseId, fixture.FieldIds[1], fixture.ChildId, "kun midterste");
 
         var (from, to) = Window();
-        var template = OnlyGroup(await Run(core, da, from, to));
+        var template = OnlyTemplateTable(await Run(core, da, from, to));
 
         Assert.That(template.Columns, Has.Count.EqualTo(3));
         var cells = template.Cases.Single().Cells;
@@ -891,7 +897,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, "2");
 
         var (from, to) = Window();
-        var template = OnlyGroup(await Run(core, da, from, to));
+        var template = OnlyTemplateTable(await Run(core, da, from, to));
 
         Assert.That(template.Cases.Single().Cells[$"f{fixture.FieldIds[0]}"], Is.EqualTo("Nej"));
     }
@@ -911,7 +917,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, "1|3");
 
         var (from, to) = Window();
-        var template = OnlyGroup(await Run(core, da, from, to));
+        var template = OnlyTemplateTable(await Run(core, da, from, to));
 
         Assert.That(template.Cases.Single().Cells[$"f{fixture.FieldIds[0]}"], Is.EqualTo("Alfa, Gamma"));
     }
@@ -932,7 +938,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, "0,1");
 
         var (from, to) = Window();
-        var template = OnlyGroup(await Run(core, da, from, to));
+        var template = OnlyTemplateTable(await Run(core, da, from, to));
 
         // The column count is asserted too: a degraded schema (derivation threw and
         // the group came back with ZERO columns) also produces an empty cell bag,
@@ -956,7 +962,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, "null");
 
         var (from, to) = Window();
-        var template = OnlyGroup(await Run(core, da, from, to));
+        var template = OnlyTemplateTable(await Run(core, da, from, to));
 
         Assert.That(template.Columns, Has.Count.EqualTo(1));
         Assert.That(template.Cases.Single().Cells, Is.Empty);
@@ -983,7 +989,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         await MicrotingDbContext.SaveChangesAsync();
 
         var (from, to) = Window();
-        var template = OnlyGroup(await Run(core, da, from, to));
+        var template = OnlyTemplateTable(await Run(core, da, from, to));
 
         // Column count asserted for the same reason as the sibling
         // LiteralNullValue test: an empty cell bag alone would also be produced by a
@@ -1004,7 +1010,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, entityItemId.ToString());
 
         var (from, to) = Window();
-        var template = OnlyGroup(await Run(core, da, from, to));
+        var template = OnlyTemplateTable(await Run(core, da, from, to));
 
         Assert.That(template.Cases.Single().Cells[$"f{fixture.FieldIds[0]}"], Is.EqualTo("Stald 3"));
     }
@@ -1012,7 +1018,8 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
     /// <summary>
     /// Dirty <c>CheckBox</c> values — the live data holds one <c>true</c> and one
     /// <c>false</c> alongside 591 <c>checked</c>/<c>unchecked</c> rows — normalise to
-    /// the canonical tokens, which #1167 localises.
+    /// the canonical tokens. The JSON keeps them; every renderer presents them by
+    /// the column's FieldType (#1276: ticked is a check mark, unticked is blank).
     /// </summary>
     [Test]
     public async Task EformColumns_CheckBox_DirtyTrueFalse_NormaliseToCheckedAndUnchecked()
@@ -1027,7 +1034,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         await SeedFieldValue(fixture.CaseId, fixture.FieldIds[1], fixture.ChildId, "false");
 
         var (from, to) = Window();
-        var cells = OnlyGroup(await Run(core, da, from, to)).Cases.Single().Cells;
+        var cells = OnlyTemplateTable(await Run(core, da, from, to)).Cases.Single().Cells;
 
         Assert.That(cells[$"f{fixture.FieldIds[0]}"], Is.EqualTo("checked"));
         Assert.That(cells[$"f{fixture.FieldIds[1]}"], Is.EqualTo("unchecked"));
@@ -1044,7 +1051,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, "checked");
 
         var (from, to) = Window();
-        var cells = OnlyGroup(await Run(core, da, from, to)).Cases.Single().Cells;
+        var cells = OnlyTemplateTable(await Run(core, da, from, to)).Cases.Single().Cells;
 
         Assert.That(cells[$"f{fixture.FieldIds[0]}"], Is.EqualTo("checked"));
     }
@@ -1060,7 +1067,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, "3,5");
 
         var (from, to) = Window();
-        var cells = OnlyGroup(await Run(core, da, from, to)).Cases.Single().Cells;
+        var cells = OnlyTemplateTable(await Run(core, da, from, to)).Cases.Single().Cells;
 
         Assert.That(cells[$"f{fixture.FieldIds[0]}"], Is.EqualTo("3.5"));
     }
@@ -1076,7 +1083,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, "2021-11-29");
 
         var (from, to) = Window();
-        var cells = OnlyGroup(await Run(core, da, from, to)).Cases.Single().Cells;
+        var cells = OnlyTemplateTable(await Run(core, da, from, to)).Cases.Single().Cells;
 
         Assert.That(cells[$"f{fixture.FieldIds[0]}"], Is.EqualTo("2021-11-29"));
     }
@@ -1098,7 +1105,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
             "2021-12-12 11:15:50 UTC|2021-12-12 11:16:27 UTC|paused|38000");
 
         var (from, to) = Window();
-        var cells = OnlyGroup(await Run(core, da, from, to)).Cases.Single().Cells;
+        var cells = OnlyTemplateTable(await Run(core, da, from, to)).Cases.Single().Cells;
 
         Assert.That(cells[$"f{fixture.FieldIds[0]}"], Is.EqualTo("0:00:38"));
     }
@@ -1115,7 +1122,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, "start|stop");
 
         var (from, to) = Window();
-        var template = OnlyGroup(await Run(core, da, from, to));
+        var template = OnlyTemplateTable(await Run(core, da, from, to));
 
         // Column count asserted so the empty cell bag is attributable to the
         // malformed value and not to a degraded, zero-column schema.
@@ -1156,7 +1163,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
 
         Assert.That(result.Success, Is.True, result.Message);
 
-        var template = OnlyGroup(result.Model);
+        var template = OnlyTemplateTable(result.Model);
         var cells = template.Cases.Single().Cells;
 
         Assert.That(template.Columns, Has.Count.EqualTo(2));
@@ -1211,7 +1218,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         await SeedFieldValue(caseId, fieldId, childId, "et svar");
 
         var (from, to) = Window();
-        var template = OnlyGroup(await Run(core, de, from, to));
+        var template = OnlyTemplateTable(await Run(core, de, from, to));
 
         Assert.That(template.Columns, Has.Count.EqualTo(1));
         Assert.That(template.Columns[0].Label, Is.EqualTo("Kun dansk"));
@@ -1245,7 +1252,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         await SeedFieldValue(caseId, fieldId, childId, "1");
 
         var (from, to) = Window();
-        var template = OnlyGroup(await Run(core, de, from, to));
+        var template = OnlyTemplateTable(await Run(core, de, from, to));
 
         Assert.That(template.Cases.Single().Cells[$"f{fieldId}"], Is.EqualTo("Kun dansk valg"));
     }
@@ -1277,7 +1284,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
             uploadedDataId: secondUpload);
 
         var (from, to) = Window();
-        var caseModel = OnlyGroup(await Run(core, da, from, to)).Cases.Single();
+        var caseModel = OnlyTemplateTable(await Run(core, da, from, to)).Cases.Single();
 
         Assert.That(caseModel.ImagesCount, Is.EqualTo(2));
         Assert.That(caseModel.Images, Has.Count.EqualTo(2));
@@ -1304,7 +1311,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, null, uploadedDataId: uploadId);
 
         var (from, to) = Window();
-        var caseModel = OnlyGroup(await Run(core, da, from, to)).Cases.Single();
+        var caseModel = OnlyTemplateTable(await Run(core, da, from, to)).Cases.Single();
 
         Assert.That(caseModel.ImagesCount, Is.EqualTo(1));
         Assert.That(caseModel.Images.Single().FileName, Is.Null);
@@ -1325,7 +1332,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
             uploadedDataId: removedUpload);
 
         var (from, to) = Window();
-        var caseModel = OnlyGroup(await Run(core, da, from, to)).Cases.Single();
+        var caseModel = OnlyTemplateTable(await Run(core, da, from, to)).Cases.Single();
 
         Assert.That(caseModel.ImagesCount, Is.EqualTo(1));
         Assert.That(caseModel.Images.Single().UploadedDataId, Is.EqualTo(liveUpload));
@@ -1342,7 +1349,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, "tekst");
 
         var (from, to) = Window();
-        var caseModel = OnlyGroup(await Run(core, da, from, to)).Cases.Single();
+        var caseModel = OnlyTemplateTable(await Run(core, da, from, to)).Cases.Single();
 
         Assert.That(caseModel.ImagesCount, Is.EqualTo(0));
         Assert.That(caseModel.Images, Is.Empty);
@@ -1376,9 +1383,9 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         await SeedCompliance(planningId, propertyId, areaId, today.AddDays(-1), caseId);
 
         var (from, to) = Window();
-        var template = OnlyGroup(await Run(core, da, from, to));
+        var template = OnlyTemplateTable(await Run(core, da, from, to));
 
-        Assert.That(template.CheckListIds, Is.EqualTo(new List<int> { answeredTemplateId }));
+        Assert.That(template.CheckListId, Is.EqualTo(answeredTemplateId));
         Assert.That(template.Cases.Single().CheckListId, Is.EqualTo(answeredTemplateId));
         Assert.That(template.Columns.Single().Label, Is.EqualTo("Kommentar"));
     }
@@ -1401,9 +1408,9 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         await SeedCompliance(planningId, propertyId, areaId, today.AddDays(-1), caseId);
 
         var (from, to) = Window();
-        var template = OnlyGroup(await Run(core, da, from, to));
+        var template = OnlyTemplateTable(await Run(core, da, from, to));
 
-        Assert.That(template.CheckListIds, Is.EqualTo(new List<int> { templateId }));
+        Assert.That(template.CheckListId, Is.EqualTo(templateId));
         Assert.That(template.Cases, Has.Count.EqualTo(1));
     }
 
@@ -1439,14 +1446,15 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         var (from, to) = Window();
         var groups = await Run(core, da, from, to);
 
-        var template = OnlyGroup(groups);
+        var template = OnlyTemplateTable(groups);
         var onlyCase = template.Cases.Single();
         Assert.That(onlyCase.SdkCaseId, Is.EqualTo(answeredFixture.CaseId));
         Assert.That(onlyCase.ComplianceId, Is.EqualTo(answeredFixture.ComplianceId));
     }
 
     // ==================================================================
-    // GROUPING (#1188): one section per REPORT HEADLINE, tags as a caption
+    // GROUPING (#1188): one section per REPORT HEADLINE, tags as a caption;
+    // under it one table per eForm template (#1276)
     // ==================================================================
 
     /// <summary>Two series with two different headlines: two groups, each carrying its
@@ -1482,20 +1490,24 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         Assert.That(groups.Select(g => g.HeadlineTagId), Is.EqualTo(new int?[] { headlineA, headlineB }).AsCollection);
         Assert.That(groups.Select(g => g.HeadlineName), Is.EqualTo(new[] { "Aa overskrift", "Bb overskrift" }).AsCollection);
         Assert.That(groups.Select(g => g.TagsCaption), Is.All.EqualTo(string.Empty));
-        Assert.That(groups[0].Cases.Single().ComplianceId, Is.EqualTo(complianceA));
-        Assert.That(groups[1].Cases.Single().ComplianceId, Is.EqualTo(complianceB));
-        Assert.That(groups.SelectMany(g => g.Cases).Select(c => c.CheckListId), Is.All.EqualTo(templateId));
+        Assert.That(CasesOf(groups[0]).Single().ComplianceId, Is.EqualTo(complianceA));
+        Assert.That(CasesOf(groups[1]).Single().ComplianceId, Is.EqualTo(complianceB));
+        Assert.That(groups.SelectMany(CasesOf).Select(c => c.CheckListId), Is.All.EqualTo(templateId));
     }
 
     /// <summary>
-    /// ONE headline over TWO templates: one group, one flat table. Its columns are the
-    /// UNION of both schemas — templates by name, fields in template order — and a
-    /// case answered on template A simply has no key for template B's field (the
-    /// consumer renders the en dash there, in place). Each case carries its OWN
-    /// <c>CheckListId</c>, which the section can no longer identify.
+    /// ONE headline over TWO templates (#1276): one group — the headline and its
+    /// caption once — holding TWO tables, one per template, ordered by the
+    /// template's NAME (seeded so that name order is the reverse of id order).
+    /// Each table carries its template's id and name, ONLY its own columns and
+    /// ONLY its own cases, every case's <c>CheckListId</c> equal to the table's.
+    /// This replaces #1188's single table over the union of both schemas, where a
+    /// case answered on template A sat in one grid with template B's columns and
+    /// no key for them. A second template-A case, older than the first, pins that
+    /// cases keep the response's occurrence-date order inside their table.
     /// </summary>
     [Test]
-    public async Task EformColumns_OneHeadlineOverTwoTemplates_YieldsOneGroupWithUnionColumns()
+    public async Task EformColumns_OneHeadlineOverTwoTemplates_YieldsOneTablePerTemplateInNameOrder()
     {
         var core = await GetCore();
         var da = await Danish();
@@ -1503,55 +1515,128 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
 
         var headline = await SeedTag("Fælles overskrift");
 
-        var (templateA, childA) = await SeedTwoLevelTemplate("AaSkema", (da.Id, "AaSkema"));
-        var fieldA = await SeedField(childA, Constants.FieldTypes.Comment, 0, [(da.Id, "A felt")]);
+        // B is seeded FIRST and so has the LOWER id: name order (A, B) is then the
+        // reverse of id order, and the order assertion below tells the two apart.
         var (templateB, childB) = await SeedTwoLevelTemplate("BbSkema", (da.Id, "BbSkema"));
         var fieldB = await SeedField(childB, Constants.FieldTypes.Number, 0, [(da.Id, "B felt")]);
+        var (templateA, childA) = await SeedTwoLevelTemplate("AaSkema", (da.Id, "AaSkema"));
+        var fieldA = await SeedField(childA, Constants.FieldTypes.Comment, 0, [(da.Id, "A felt")]);
+        Assert.That(templateB, Is.LessThan(templateA), "premise: name order is the reverse of id order");
 
         var caseA = await SeedSdkCase(templateA, doneAt: today.AddDays(-1));
+        var caseAOlder = await SeedSdkCase(templateA, doneAt: today.AddDays(-3));
         var caseB = await SeedSdkCase(templateB, doneAt: today.AddDays(-2));
         await SeedFieldValue(caseA, fieldA, childA, "Alt vel");
+        await SeedFieldValue(caseAOlder, fieldA, childA, "Tidligere");
         await SeedFieldValue(caseB, fieldB, childB, "42");
 
-        var (arpA, propertyA, planningA, areaA, _) = await SeedSeries("UnionPropA", "A", today.AddDays(-30));
-        var (arpB, propertyB, planningB, areaB, _) = await SeedSeries("UnionPropB", "B", today.AddDays(-30));
+        var (arpA, propertyA, planningA, areaA, _) = await SeedSeries("SplitPropA", "A", today.AddDays(-30));
+        var (arpB, propertyB, planningB, areaB, _) = await SeedSeries("SplitPropB", "B", today.AddDays(-30));
         await SeedHeadline(arpA, headline);
         await SeedHeadline(arpB, headline);
         await SeedCompliance(planningA, propertyA, areaA, today.AddDays(-1), caseA);
+        // Same planning, its own deadline: Compliances is UNIQUE on (PlanningId, Deadline).
+        await SeedCompliance(planningA, propertyA, areaA, today.AddDays(-3), caseAOlder);
         await SeedCompliance(planningB, propertyB, areaB, today.AddDays(-2), caseB);
 
         var (from, to) = Window();
         var groups = await Run(core, da, from, to);
 
-        Assert.That(groups, Has.Count.EqualTo(1));
+        Assert.That(groups, Has.Count.EqualTo(1), "one headline, one section");
         var group = groups[0];
         Assert.That(group.HeadlineTagId, Is.EqualTo(headline));
         Assert.That(group.HeadlineName, Is.EqualTo("Fælles overskrift"));
-        Assert.That(group.CheckListIds, Is.EqualTo(new[] { templateA, templateB }).AsCollection);
-        Assert.That(group.SchemaUnavailableCheckListIds, Is.Empty);
-        Assert.That(group.Columns.Select(c => c.Key), Is.EqualTo(new[] { $"f{fieldA}", $"f{fieldB}" }).AsCollection);
-        Assert.That(group.Columns.Select(c => c.Label), Is.EqualTo(new[] { "A felt", "B felt" }).AsCollection);
-        Assert.That(group.Cases, Has.Count.EqualTo(2));
 
-        var rowA = group.Cases.Single(c => c.SdkCaseId == caseA);
-        var rowB = group.Cases.Single(c => c.SdkCaseId == caseB);
-        Assert.That(rowA.CheckListId, Is.EqualTo(templateA));
-        Assert.That(rowB.CheckListId, Is.EqualTo(templateB));
-        Assert.That(rowA.Cells[$"f{fieldA}"], Is.EqualTo("Alt vel"));
-        Assert.That(rowA.Cells.ContainsKey($"f{fieldB}"), Is.False, "the foreign template's column has no key — the dash");
-        Assert.That(rowB.Cells[$"f{fieldB}"], Is.EqualTo("42"));
-        Assert.That(rowB.Cells.ContainsKey($"f{fieldA}"), Is.False);
+        Assert.That(group.Templates.Select(t => t.CheckListId),
+            Is.EqualTo(new[] { templateA, templateB }).AsCollection, "tables by template NAME, not by id");
+        Assert.That(group.Templates.Select(t => t.CheckListName),
+            Is.EqualTo(new[] { "AaSkema", "BbSkema" }).AsCollection);
+        Assert.That(group.Templates.Select(t => t.SchemaUnavailable), Is.All.False);
+
+        var tableA = group.Templates[0];
+        var tableB = group.Templates[1];
+        Assert.That(tableA.Columns.Select(c => c.Key), Is.EqualTo(new[] { $"f{fieldA}" }).AsCollection,
+            "template A's table carries ONLY A's column");
+        Assert.That(tableA.Columns.Single().Label, Is.EqualTo("A felt"));
+        Assert.That(tableB.Columns.Select(c => c.Key), Is.EqualTo(new[] { $"f{fieldB}" }).AsCollection,
+            "template B's table carries ONLY B's column");
+        Assert.That(tableB.Columns.Single().Label, Is.EqualTo("B felt"));
+
+        // Each case in exactly one table — its own template's — in date order.
+        Assert.That(tableA.Cases.Select(c => c.SdkCaseId), Is.EqualTo(new[] { caseAOlder, caseA }).AsCollection,
+            "cases keep occurrence-date order inside their table");
+        Assert.That(tableB.Cases.Select(c => c.SdkCaseId), Is.EqualTo(new[] { caseB }).AsCollection);
+        Assert.That(tableA.Cases.Select(c => c.CheckListId), Is.All.EqualTo(templateA));
+        Assert.That(tableB.Cases.Select(c => c.CheckListId), Is.All.EqualTo(templateB));
+        Assert.That(tableA.Cases.Single(c => c.SdkCaseId == caseA).Cells[$"f{fieldA}"], Is.EqualTo("Alt vel"));
+        Assert.That(tableB.Cases.Single().Cells[$"f{fieldB}"], Is.EqualTo("42"));
     }
 
     /// <summary>
-    /// The projector caches ONE column list per template and every group answered on
-    /// that template reads it. Building a union by appending to that list would leak
-    /// template B's field into every OTHER section that shares template A. Template A
-    /// is therefore placed both alone under one headline and beside template B under
-    /// another: the lone section must keep exactly A's own column.
+    /// A template whose schema cannot be derived is flagged
+    /// <c>SchemaUnavailable</c> on ITS OWN table (#1276), with no columns but its
+    /// cases kept, while the other template under the same headline is untouched.
+    /// The trigger is the one described on
+    /// <see cref="EformColumns_TranslationFallback_MissingGermanFieldLabel_UsesAnotherLanguage"/>:
+    /// run in <c>de-DE</c>, a child checklist with no German translation makes the
+    /// SDK's <c>TemplateFieldReadAll</c> throw.
     /// </summary>
     [Test]
-    public async Task EformColumns_UnionColumns_DoNotLeakIntoAnotherGroupSharingTheTemplate()
+    public async Task EformColumns_UnderivableSchema_IsFlaggedOnThatTemplatesTableOnly()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var de = await German();
+        var today = DateTime.UtcNow.Date;
+
+        var headline = await SeedTag("Fælles overskrift");
+
+        var (readable, readableChild) = await SeedTwoLevelTemplate(
+            "Laesbar", (da.Id, "Laesbar"), (de.Id, "Lesbar"));
+        var readableField = await SeedField(readableChild, Constants.FieldTypes.Comment, 0, [(da.Id, "Felt")]);
+        // Danish only: no German checklist translation for the SDK to find.
+        var (unreadable, unreadableChild) = await SeedTwoLevelTemplate("Kun dansk", (da.Id, "Kun dansk"));
+        var unreadableField = await SeedField(unreadableChild, Constants.FieldTypes.Comment, 0, [(da.Id, "Felt")]);
+
+        var readableCase = await SeedSdkCase(readable, doneAt: today.AddDays(-1));
+        var unreadableCase = await SeedSdkCase(unreadable, doneAt: today.AddDays(-2));
+        await SeedFieldValue(readableCase, readableField, readableChild, "et svar");
+        await SeedFieldValue(unreadableCase, unreadableField, unreadableChild, "et andet svar");
+
+        var (arpA, propertyA, planningA, areaA, _) = await SeedSeries("SchemaPropA", "A", today.AddDays(-30));
+        var (arpB, propertyB, planningB, areaB, _) = await SeedSeries("SchemaPropB", "B", today.AddDays(-30));
+        await SeedHeadline(arpA, headline);
+        await SeedHeadline(arpB, headline);
+        await SeedCompliance(planningA, propertyA, areaA, today.AddDays(-1), readableCase);
+        await SeedCompliance(planningB, propertyB, areaB, today.AddDays(-2), unreadableCase);
+
+        var (from, to) = Window();
+        var groups = await Run(core, de, from, to);
+
+        Assert.That(groups, Has.Count.EqualTo(1), "one headline, one section");
+        var readableTable = groups[0].Templates.Single(t => t.CheckListId == readable);
+        var unreadableTable = groups[0].Templates.Single(t => t.CheckListId == unreadable);
+
+        Assert.That(unreadableTable.SchemaUnavailable, Is.True);
+        Assert.That(unreadableTable.Columns, Is.Empty);
+        Assert.That(unreadableTable.Cases.Select(c => c.SdkCaseId), Is.EqualTo(new[] { unreadableCase }).AsCollection,
+            "the cases of a schema-less template are kept");
+
+        Assert.That(readableTable.SchemaUnavailable, Is.False);
+        Assert.That(readableTable.Columns.Select(c => c.Key), Is.EqualTo(new[] { $"f{readableField}" }).AsCollection);
+    }
+
+    /// <summary>
+    /// The projector caches ONE column list per template, and every table answered
+    /// on that template reads it — under every headline. Template A is therefore
+    /// placed both alone under one headline and beside template B under another:
+    /// each of the three tables must carry exactly its own template's column, and
+    /// no two tables may share a column list or a column object, so nothing done to
+    /// one table can reach another (#1276; #1188 guarded the same cache against its
+    /// union).
+    /// </summary>
+    [Test]
+    public async Task EformColumns_TemplateTables_ShareNoColumnListAcrossTablesOrGroups()
     {
         var core = await GetCore();
         var da = await Danish();
@@ -1586,15 +1671,32 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         var lone = groups.Single(g => g.HeadlineTagId == loneHeadline);
         var mixed = groups.Single(g => g.HeadlineTagId == mixedHeadline);
 
-        Assert.That(lone.Columns.Select(c => c.Key), Is.EqualTo(new[] { $"f{fieldA}" }).AsCollection,
-            "template A's cached schema must not have been extended by the union next door");
-        Assert.That(mixed.Columns.Select(c => c.Key), Is.EqualTo(new[] { $"f{fieldA}", $"f{fieldB}" }).AsCollection);
-        Assert.That(ReferenceEquals(lone.Columns, mixed.Columns), Is.False, "a fresh list per group");
+        Assert.That(lone.Templates.Select(t => t.CheckListId), Is.EqualTo(new[] { templateA }).AsCollection);
+        Assert.That(mixed.Templates.Select(t => t.CheckListId), Is.EqualTo(new[] { templateA, templateB }).AsCollection);
 
-        // Σ cases across groups == the answered rows; each case exactly once.
-        Assert.That(groups.Sum(g => g.Cases.Count), Is.EqualTo(3));
-        Assert.That(groups.SelectMany(g => g.Cases).Select(c => c.SdkCaseId),
+        var loneA = lone.Templates[0];
+        var mixedA = mixed.Templates[0];
+        var mixedB = mixed.Templates[1];
+        Assert.That(loneA.Columns.Select(c => c.Key), Is.EqualTo(new[] { $"f{fieldA}" }).AsCollection);
+        Assert.That(mixedA.Columns.Select(c => c.Key), Is.EqualTo(new[] { $"f{fieldA}" }).AsCollection,
+            "template B's field must not leak into template A's table beside it");
+        Assert.That(mixedB.Columns.Select(c => c.Key), Is.EqualTo(new[] { $"f{fieldB}" }).AsCollection);
+
+        // Fresh per table: neither the list nor a column object is shared — not even
+        // between the two tables of the SAME template under different headlines,
+        // which both read the projector's one cached schema.
+        Assert.That(ReferenceEquals(loneA.Columns, mixedA.Columns), Is.False, "a fresh column list per table");
+        Assert.That(ReferenceEquals(loneA.Columns[0], mixedA.Columns[0]), Is.False, "a fresh column object per table");
+        Assert.That(ReferenceEquals(loneA.Cases, mixedA.Cases), Is.False, "a case list per table");
+
+        // Σ cases across tables == the answered rows; each case exactly once, in the
+        // table of the template it was answered on.
+        var allTables = groups.SelectMany(g => g.Templates).ToList();
+        Assert.That(allTables.Sum(t => t.Cases.Count), Is.EqualTo(3));
+        Assert.That(allTables.SelectMany(t => t.Cases).Select(c => c.SdkCaseId),
             Is.EquivalentTo(new[] { caseLone, caseMixedA, caseMixedB }));
+        Assert.That(allTables.All(t => t.Cases.All(c => c.CheckListId == t.CheckListId)), Is.True,
+            "every case sits in its own template's table");
     }
 
     /// <summary>Two tags on one case: ONE row (not one per tag, as before #1188), the
@@ -1626,7 +1728,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
 
         Assert.That(groups, Has.Count.EqualTo(1));
         Assert.That(groups[0].TagsCaption, Is.EqualTo("Aa tag - Bb tag"));
-        var onlyCase = groups[0].Cases.Single();
+        var onlyCase = CasesOf(groups[0]).Single();
         Assert.That(onlyCase.ComplianceId, Is.EqualTo(complianceId));
         Assert.That(onlyCase.Tags, Is.EqualTo(new[] { "Aa tag", "Bb tag" }).AsCollection);
     }
@@ -1662,7 +1764,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         Assert.That(groups, Has.Count.EqualTo(1));
         Assert.That(groups[0].HeadlineName, Is.EqualTo("Flydelag"));
         Assert.That(groups[0].TagsCaption, Is.EqualTo("Miljøtilsyn"));
-        Assert.That(groups[0].Cases.Single().Tags, Is.EqualTo(new[] { "Miljøtilsyn" }).AsCollection);
+        Assert.That(CasesOf(groups[0]).Single().Tags, Is.EqualTo(new[] { "Miljøtilsyn" }).AsCollection);
     }
 
     /// <summary>
@@ -1699,7 +1801,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
 
         Assert.That(result.Model, Has.Count.EqualTo(1));
         Assert.That(result.Model[0].TagsCaption, Is.EqualTo("Andet tag - Valgt tag"));
-        Assert.That(result.Model[0].Cases, Has.Count.EqualTo(1));
+        Assert.That(CasesOf(result.Model[0]), Has.Count.EqualTo(1));
     }
 
     /// <summary>
@@ -1744,8 +1846,8 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         Assert.That(fallback.HeadlineTagId, Is.Null);
         Assert.That(fallback.HeadlineName, Is.Null);
         Assert.That(fallback.TagsCaption, Is.EqualTo("Aa tag"), "the fallback is last DESPITE its caption sorting first");
-        Assert.That(fallback.Cases.Single().ComplianceId, Is.EqualTo(complianceWithout));
-        Assert.That(groups.Sum(g => g.Cases.Count), Is.EqualTo(2));
+        Assert.That(CasesOf(fallback).Single().ComplianceId, Is.EqualTo(complianceWithout));
+        Assert.That(groups.Sum(g => CasesOf(g).Count), Is.EqualTo(2));
     }
 
     /// <summary>
@@ -1779,9 +1881,9 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         Assert.That(groups, Has.Count.EqualTo(2));
         Assert.That(groups[0].HeadlineTagId, Is.EqualTo(orphanHeadlineId));
         Assert.That(groups[0].HeadlineName, Is.Null);
-        Assert.That(groups[0].Cases.Single().SdkCaseId, Is.EqualTo(caseOrphan));
+        Assert.That(CasesOf(groups[0]).Single().SdkCaseId, Is.EqualTo(caseOrphan));
         Assert.That(groups[1].HeadlineTagId, Is.Null);
-        Assert.That(groups[1].Cases.Single().SdkCaseId, Is.EqualTo(caseNone));
+        Assert.That(CasesOf(groups[1]).Single().SdkCaseId, Is.EqualTo(caseNone));
     }
 
     /// <summary>
@@ -1831,13 +1933,15 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
 
     /// <summary>
     /// Structurally-identical CLONED templates (same name, same field sequence,
-    /// different ids — the 509/511 shape) under one headline form ONE group whose
-    /// union carries BOTH same-labelled columns under different keys. #1166 §8 filed
-    /// merging clones as a follow-up; the union makes them adjacent columns rather
-    /// than adjacent tables, and this pins that so a merge changes it deliberately.
+    /// different ids — the 509/511 shape) under one headline form ONE group with
+    /// TWO same-named tables, lower id first (the id is the tiebreak of the name
+    /// order), each carrying only its own same-labelled column under its own key
+    /// and only its own case. #1166 §8 filed merging clones as a follow-up; #1188's
+    /// union made them adjacent columns, #1276 makes them adjacent tables, and this
+    /// pins that so a merge changes it deliberately.
     /// </summary>
     [Test]
-    public async Task EformColumns_ClonedTemplates_UnionKeepsBothSameLabelledColumns()
+    public async Task EformColumns_ClonedTemplates_YieldTwoSameNamedTablesLowerIdFirst()
     {
         var core = await GetCore();
         var da = await Danish();
@@ -1859,16 +1963,22 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         var groups = await Run(core, da, from, to);
 
         Assert.That(groups, Has.Count.EqualTo(1));
+        var tables = groups[0].Templates;
         var lower = Math.Min(firstTemplate, secondTemplate);
         var higher = Math.Max(firstTemplate, secondTemplate);
-        Assert.That(groups[0].CheckListIds, Is.EqualTo(new[] { lower, higher }).AsCollection,
+        Assert.That(tables.Select(t => t.CheckListId), Is.EqualTo(new[] { lower, higher }).AsCollection,
             "same name, so the tiebreak is the id");
+        Assert.That(tables.Select(t => t.CheckListName), Is.All.EqualTo("Kvittering"));
+
         var lowerField = lower == firstTemplate ? firstField : secondField;
         var higherField = lower == firstTemplate ? secondField : firstField;
-        Assert.That(groups[0].Columns.Select(c => c.Key),
-            Is.EqualTo(new[] { $"f{lowerField}", $"f{higherField}" }).AsCollection);
-        Assert.That(groups[0].Columns.Select(c => c.Label), Is.All.EqualTo("Kommentar"));
-        Assert.That(groups[0].Cases.Select(c => c.CheckListId), Is.EquivalentTo(new[] { firstTemplate, secondTemplate }));
+        var lowerCase = lower == firstTemplate ? firstCase : secondCase;
+        var higherCase = lower == firstTemplate ? secondCase : firstCase;
+        Assert.That(tables[0].Columns.Select(c => c.Key), Is.EqualTo(new[] { $"f{lowerField}" }).AsCollection);
+        Assert.That(tables[1].Columns.Select(c => c.Key), Is.EqualTo(new[] { $"f{higherField}" }).AsCollection);
+        Assert.That(tables.SelectMany(t => t.Columns).Select(c => c.Label), Is.All.EqualTo("Kommentar"));
+        Assert.That(tables[0].Cases.Select(c => c.SdkCaseId), Is.EqualTo(new[] { lowerCase }).AsCollection);
+        Assert.That(tables[1].Cases.Select(c => c.SdkCaseId), Is.EqualTo(new[] { higherCase }).AsCollection);
     }
 
     // ==================================================================
@@ -1897,7 +2007,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         await SeedFieldValue(caseId, fieldId, childId, "2019-01-01");
 
         var (from, to) = Window();
-        var caseModel = OnlyGroup(await Run(core, da, from, to)).Cases.Single();
+        var caseModel = OnlyTemplateTable(await Run(core, da, from, to)).Cases.Single();
 
         Assert.That(caseModel.Completed, Is.True);
         Assert.That(caseModel.DoneAt, Is.EqualTo(doneAt));
@@ -1953,7 +2063,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
 
         var (from, to) = Window();
 
-        var caseModel = OnlyGroup(await Run(core, da, from, to)).Cases.Single();
+        var caseModel = OnlyTemplateTable(await Run(core, da, from, to)).Cases.Single();
         Assert.That(caseModel.WorkerNames, Is.EqualTo(new List<string> { memberName }),
             "EformColumns: a tag-assigned row's worker column must be filled from live "
             + "team membership, not left empty because there is no PlanningSites row");

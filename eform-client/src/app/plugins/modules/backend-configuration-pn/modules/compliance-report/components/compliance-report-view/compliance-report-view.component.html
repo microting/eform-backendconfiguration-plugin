@@ -53,14 +53,7 @@
   </div>
 
   <!--
-    One section per REPORT HEADLINE (#1188, "Tabel_Rapport": one table per
-    Rapportoverskrift, NOT one per tag). The headline is the calendar modal's
-    `Rapportoverskrift` select (`AreaRulePlanning.ItemPlanningTagId`); the
-    task's other tags are the small caption above it, joined ` - `. A headline
-    whose tasks were answered on two templates is still ONE table — its columns
-    are the server-built union of both schemas, and a case answered on one
-    template renders the en dash under the other's fields, in place. Every case
-    is in exactly one section. The headline-less fallback section renders LAST.
+    One section per REPORT HEADLINE (#1188), one table per eForm under it (#1276).
   -->
   <section
     *ngFor="let section of sections; trackBy: trackBySection"
@@ -72,83 +65,81 @@
       The heading is the REPORT HEADLINE — the prototype's `Rapportoverskrift`
       was a real field all along, not a placeholder (#1188 reverses #1167's
       "use the template name"). `Uden rapportoverskrift` for tasks without one,
-      `#{id}` for a headline whose tag name could not be resolved.
+      `#{id}` for a headline whose tag name could not be resolved. The eForm
+      name is NOT the heading: it titles each table below (#1276).
     -->
     <h3 class="compliance-report__heading">{{ section.headlineLabel }}</h3>
 
-    <!--
-      Schema notices (#1166: the SDK's TemplateFieldReadAll throws for a
-      language with a translation gap). A template without a schema has ZERO
-      answer columns for a reason that is neither "it has no answerable fields"
-      nor "nobody answered". Since a section spans templates (#1188) there are
-      two shapes: EVERY template in the section lacks a schema — say so once for
-      the whole table rather than rendering a metadata-only table that looks
-      complete — or only SOME do, in which case the other templates' columns are
-      still there and the notice names each affected template instead.
-    -->
-    <p
-      *ngIf="section.schemaUnavailable"
-      class="compliance-report__notice"
-      role="note"
+    <!-- `d-flex flex-column gap-4`: the section's 4px rhythm; `data-table-key` is page-unique. -->
+    <div
+      *ngFor="let table of section.tables; trackBy: trackByTable"
+      class="compliance-report__table d-flex flex-column gap-4"
+      [attr.data-table-key]="table.key"
     >
-      {{ 'Columns unavailable' | translate }}
-    </p>
-    <ng-container *ngIf="!section.schemaUnavailable">
+      <h4 class="compliance-report__subheading">{{ table.templateLabel }}</h4>
+
+      <!--
+        Schema notice (#1166: the SDK's TemplateFieldReadAll throws for a
+        language with a translation gap). An eForm without a schema has ZERO
+        answer columns for a reason that is neither "it has no answerable
+        fields" nor "nobody answered", so say so under its name rather than
+        rendering a metadata-only table that looks complete.
+      -->
       <p
-        *ngFor="let checkListId of section.schemaUnavailableCheckListIds"
+        *ngIf="table.schemaUnavailable"
         class="compliance-report__notice"
         role="note"
       >
-        {{ columnsUnavailableForTemplateKey | translate: templateNoticeParams(checkListId) }}
+        {{ 'Columns unavailable' | translate }}
       </p>
-    </ng-container>
 
-    <!--
-      Omitted entirely for a sub-report the page budget collapsed to zero rows:
-      an empty mtx-grid draws its own "no records" body, which would read as
-      "this template has no answers" directly under a heading whose footer says
-      "Viser 0 af 37". The footer's `Vis alle` builds the grid.
-    -->
-    <mtx-grid
-      *ngIf="section.rows.length > 0"
-      class="compliance-report__grid"
-      [data]="section.rows"
-      [columns]="section.gridColumns"
-      [trackBy]="trackByRow"
-      [emptyValuePlaceholder]="emptyCell"
-      [showPaginator]="false"
-      [pageOnFront]="false"
-      [sortOnFront]="false"
-      [rowStriped]="false"
-      [columnResizable]="false"
-      [showToolbar]="false"
-      [showColumnMenuButton]="false"
-    ></mtx-grid>
+      <!--
+        Omitted entirely for a table the page budget collapsed to zero rows:
+        an empty mtx-grid draws its own "no records" body, which would read as
+        "this eForm has no answers" directly under a sub-heading whose footer
+        says "Viser 0 af 37". The footer's `Vis alle` builds the grid.
+      -->
+      <mtx-grid
+        *ngIf="table.rows.length > 0"
+        class="compliance-report__grid"
+        [data]="table.rows"
+        [columns]="table.gridColumns"
+        [trackBy]="trackByRow"
+        [emptyValuePlaceholder]="emptyCell"
+        [showPaginator]="false"
+        [pageOnFront]="false"
+        [sortOnFront]="false"
+        [rowStriped]="false"
+        [columnResizable]="false"
+        [showToolbar]="false"
+        [showColumnMenuButton]="false"
+      ></mtx-grid>
 
-    <!--
-      The large-result answer. Rapport does not paginate, and the endpoint is
-      unpaged behind a 5000-row server cap, so a sub-report renders at most its
-      first COMPLIANCE_REPORT_SECTION_ROW_CAP rows AND at most what is left of
-      the page-wide COMPLIANCE_REPORT_PAGE_ROW_BUDGET, then states its TRUE row
-      count next to the control that reveals the rest. A section past the budget
-      renders "Viser 0 af N" and the same button — collapsed, never dropped.
-      Nothing is hidden — the export covers the whole filtered set regardless —
-      and the common sub-report never shows this footer at all, so it still
-      reads as one whole document.
-    -->
-    <div *ngIf="!section.expanded" class="compliance-report__more">
-      <span class="compliance-report__more-count">
-        {{ 'Showing' | translate }} {{ section.rows.length }} {{ 'of' | translate }}
-        {{ section.allRows.length }}
-      </span>
-      <button
-        type="button"
-        class="btn-quiet"
-        id="complianceReportShowAll-{{ section.key }}"
-        (click)="expandSection(section)"
-      >
-        {{ 'Show all' | translate }}
-      </button>
+      <!--
+        The large-result answer. Rapport does not paginate, and the endpoint is
+        unpaged behind a 5000-row server cap, so a table renders at most its
+        first COMPLIANCE_REPORT_TABLE_ROW_CAP rows AND at most what is left of
+        the page-wide COMPLIANCE_REPORT_PAGE_ROW_BUDGET, then states its TRUE
+        row count next to the control that reveals the rest. A table past the
+        budget renders "Viser 0 af N" and the same button — collapsed, never
+        dropped. Nothing is hidden — the export covers the whole filtered set
+        regardless — and the common table never shows this footer at all, so
+        it still reads as one whole document.
+      -->
+      <div *ngIf="!table.expanded" class="compliance-report__more">
+        <span class="compliance-report__more-count">
+          {{ 'Showing' | translate }} {{ table.rows.length }} {{ 'of' | translate }}
+          {{ table.allRows.length }}
+        </span>
+        <button
+          type="button"
+          class="btn-quiet"
+          id="complianceReportShowAll-{{ table.key }}"
+          (click)="expandTable(table)"
+        >
+          {{ 'Show all' | translate }}
+        </button>
+      </div>
     </div>
   </section>
 </div>
@@ -159,9 +150,26 @@
   column shifts — see complianceAnswerText and its spec. Interpolated, never
   bound through [innerHTML]: an answer containing `<` is worker-entered text,
   not markup.
+
+  A ticked CheckBox is a check icon, never the word `checked`; `unchecked` is
+  an empty cell and an unanswered box the en dash (#1276: "Checked skal
+  udskiftes med et flueben. Og unchecked skal ikke vises"). The icon is the Detaljer view's
+  `check` glyph at the Billeder icon's metrics, and `role="img"` + the
+  translated `Yes` (`Ja`) is its accessible name — the glyph itself is
+  aria-hidden, or a screen reader would announce the ligature text "check".
 -->
 <ng-template #answerTpl let-row let-col="colDef">
-  <span class="compliance-report__answer">{{ answerText(row, col) }}</span>
+  <span
+    *ngIf="answerIsChecked(row, col); else answerTextTpl"
+    class="compliance-report__tick"
+    role="img"
+    [attr.aria-label]="'Yes' | translate"
+  >
+    <mat-icon class="compliance-report__cell-icon" aria-hidden="true">check</mat-icon>
+  </span>
+  <ng-template #answerTextTpl>
+    <span class="compliance-report__answer">{{ answerText(row, col) }}</span>
+  </ng-template>
 </ng-template>
 
 <!--
@@ -196,7 +204,7 @@
       imagesLabelKey(row.imagesCount) | translate: imagesLabelParams(row.imagesCount)
     "
   >
-    <mat-icon class="compliance-report__images-icon" aria-hidden="true">photo_library</mat-icon>
+    <mat-icon class="compliance-report__cell-icon" aria-hidden="true">photo_library</mat-icon>
     <span class="compliance-report__images-count" aria-hidden="true">{{ row.imagesCount }}</span>
   </span>
   <button
@@ -212,7 +220,7 @@
     "
     (click)="openGallery(row)"
   >
-    <mat-icon class="compliance-report__images-icon" aria-hidden="true">photo_library</mat-icon>
+    <mat-icon class="compliance-report__cell-icon" aria-hidden="true">photo_library</mat-icon>
     <span class="compliance-report__images-count" aria-hidden="true">{{ row.imagesCount }}</span>
   </button>
 </ng-template>
@@ -260,7 +268,7 @@
 <!--
   Delete confirm. A modal rather than Detaljer's anchored popover: that popover
   exists so a click on ANOTHER row's delete button can move it, which is a
-  property of a flat row list, not of six independently scrolling grids whose
+  property of a flat row list, not of many independently scrolling grids whose
   buttons sit in a sticky-right column.
 
   Cancel leads the row, the destructive action follows — the order the repo's

@@ -16,19 +16,20 @@ import {
   BackendConfigurationPnCompliancesService,
   BackendConfigurationPnPropertiesService,
 } from '../../../../services';
-import {ComplianceReportSection} from '../../helpers';
+import {COMPLIANCE_EMPTY_CELL, ComplianceReportTable} from '../../helpers';
 import {ComplianceReportStateService} from '../../store';
 import {ComplianceReportViewComponent} from './compliance-report-view.component';
 
 /**
- * The three grid rules of the Rapport view, none of which the helper spec can
+ * The grid rules of the Rapport view, none of which the helper spec can
  * reach: `buildGridColumns` lives on the component because it needs the
- * translate stream and the cell TemplateRefs. (The section is one REPORT
- * HEADLINE since #1188 and its columns are a server-built union across
- * templates; the rules below did not change, the fixtures did.)
+ * translate stream and the cell TemplateRefs. (A grid is one eForm's TABLE
+ * since #1276 — under a section that is one REPORT HEADLINE since #1188 — and
+ * its columns are that eForm's only; the rules below did not change, the
+ * fixtures did.)
  *
- * Each of them blanks a whole sub-report when it regresses, and none of them
- * fails loudly in a way a reviewer would spot:
+ * Each of the first three blanks a whole table when it regresses, and none of
+ * them fails loudly in a way a reviewer would spot:
  *
  *  1. **the `answer_` prefix** — `field` goes straight into MatTable's
  *     `displayedColumns` and becomes a `mat-column-{field}` class. A bare key
@@ -36,11 +37,14 @@ import {ComplianceReportViewComponent} from './compliance-report-view.component'
  *  2. **the duplicate-key dedupe** — two identical `displayedColumns` entries
  *     make MatTable throw `getTableDuplicateColumnNameError`, which takes the
  *     ENTIRE grid down, not the one column;
- *  3. **per-section column-array IDENTITY** — mtx-grid's `_countPinnedPosition`
+ *  3. **per-table column-array IDENTITY** — mtx-grid's `_countPinnedPosition`
  *     MUTATES `left`/`right` onto the column objects it is given, so two
- *     sections sharing one array (or one column object) would have the wider
+ *     tables sharing one array (or one column object) would have the wider
  *     one's pin offsets leak into the narrower one and its frozen block overlap
- *     itself.
+ *     itself — now also two tables under ONE headline.
+ *
+ * The fourth is #1276's: the column's `fieldType` must reach the grid column,
+ * or the answer cell cannot draw a CheckBox tick or format a Date.
  *
  * TestBed rather than `new`, unlike the Oversigt spec next door: this component
  * takes eight injectables and `buildGridColumns` reads three `@ViewChild`
@@ -86,12 +90,10 @@ describe('ComplianceReportViewComponent — buildGridColumns', () => {
     images: [],
   });
 
-  const section = (columns: ComplianceReportColumnModel[]): ComplianceReportSection => ({
-    key: 'h7',
-    captionLabel: 'Miljøtilsyn - Brand',
-    headlineLabel: 'Brandsikkerhed og beredskab',
-    checkListIds: [509],
-    schemaUnavailableCheckListIds: [],
+  const table = (columns: ComplianceReportColumnModel[]): ComplianceReportTable => ({
+    key: 'h7-c509',
+    checkListId: 509,
+    templateLabel: 'Tilsyn',
     schemaUnavailable: false,
     columns,
     cases: [caseModel(1)],
@@ -99,9 +101,10 @@ describe('ComplianceReportViewComponent — buildGridColumns', () => {
 
   /** `buildGridColumns` is private; the guarantees it owns are not. */
   const build = (columns: ComplianceReportColumnModel[]) =>
-    (component as any).buildGridColumns(section(columns)) as {
+    (component as any).buildGridColumns(table(columns)) as {
       field: string;
       answerKey?: string;
+      answerFieldType?: string;
     }[];
 
   beforeEach(async () => {
@@ -192,56 +195,80 @@ describe('ComplianceReportViewComponent — buildGridColumns', () => {
     expect(columns.map((c) => c.field)).toEqual([...FIXED_FIELDS, 'answer_f1', 'actions']);
   });
 
-  it('gives every section its OWN column array and its OWN column objects', () => {
+  it('carries each answer column\'s fieldType onto its grid column (#1276)', () => {
+    const columns = build([
+      {key: 'f1', fieldId: 1, label: 'Udført', fieldType: 'CheckBox'},
+      {key: 'f2', fieldId: 2, label: 'Dato', fieldType: 'Date'},
+      column('f3'),
+    ]);
+
+    expect(
+      columns.filter((c) => c.answerKey !== undefined).map((c) => [c.answerKey, c.answerFieldType])
+    ).toEqual([
+      ['f1', 'CheckBox'],
+      ['f2', 'Date'],
+      ['f3', 'Text'],
+    ]);
+    // The fixed metadata columns are not answers and carry no field type.
+    expect(columns.filter((c) => c.answerFieldType !== undefined).length).toBe(3);
+  });
+
+  it('gives every table its OWN column array and its OWN column objects', () => {
     // Through the real response path, because that is where the sharing bug
-    // would be introduced.
+    // would be introduced — across sections AND between two tables of one.
     const groups: ComplianceReportHeadlineGroupModel[] = [
       {
         headlineTagId: 7,
         headlineName: 'Brandsikkerhed og beredskab',
         tagsCaption: 'Miljøtilsyn - Brand',
-        checkListIds: [509],
-        schemaUnavailableCheckListIds: [],
-        columns: [column('f1')],
-        cases: [caseModel(1)],
+        templates: [
+          {checkListId: 509, checkListName: 'Tilsyn', schemaUnavailable: false, columns: [column('f1')], cases: [caseModel(1)]},
+          {checkListId: 511, checkListName: 'Kontrol', schemaUnavailable: false, columns: [column('f2')], cases: [caseModel(2)]},
+        ],
       },
       {
         headlineTagId: 8,
         headlineName: 'Elinstallationer og eftersyn',
         tagsCaption: 'Miljøtilsyn - EL',
-        checkListIds: [511],
-        schemaUnavailableCheckListIds: [],
-        columns: [column('f1')],
-        cases: [caseModel(2)],
+        templates: [
+          {checkListId: 509, checkListName: 'Tilsyn', schemaUnavailable: false, columns: [column('f1')], cases: [caseModel(3)]},
+        ],
       },
     ];
 
     (component as any).applyResponse(groups);
-    const [first, second] = component.sections;
+    const tables = component.sections.flatMap((s) => s.tables);
 
-    expect(component.sections.length).toBe(2);
-    expect(first.gridColumns).not.toBe(second.gridColumns);
-    // Object identity too, not just the array: mtx-grid writes `left`/`right`
-    // onto the COLUMN, so one shared object is enough to leak an offset.
-    for (const col of first.gridColumns) {
-      expect(second.gridColumns).not.toContain(col);
+    expect(tables.length).toBe(3);
+    for (let i = 0; i < tables.length; i++) {
+      for (let j = i + 1; j < tables.length; j++) {
+        expect(tables[i].gridColumns).not.toBe(tables[j].gridColumns);
+        // Object identity too, not just the array: mtx-grid writes
+        // `left`/`right` onto the COLUMN, so one shared object is enough to
+        // leak an offset.
+        for (const col of tables[i].gridColumns) {
+          expect(tables[j].gridColumns).not.toContain(col);
+        }
+      }
     }
 
     // The mutation mtx-grid performs, simulated: it must not be visible from
-    // the other section.
-    (first.gridColumns[0] as any).left = '999px';
-    expect((second.gridColumns[0] as any).left).toBeUndefined();
+    // any other table.
+    (tables[0].gridColumns[0] as any).left = '999px';
+    expect((tables[1].gridColumns[0] as any).left).toBeUndefined();
+    expect((tables[2].gridColumns[0] as any).left).toBeUndefined();
   });
 });
 
 /**
- * The two ceilings on the initial DOM. The per-section cap alone bounds
- * nothing: a section is one REPORT HEADLINE, so a realistic filter set can
- * yield dozens of small sections, none of which reaches the cap, and the
- * server's whole 5000-row allowance lands on the page at once.
+ * The two ceilings on the initial DOM. The per-table cap alone bounds
+ * nothing: a section is one REPORT HEADLINE with one table per eForm under it
+ * (#1276), so a realistic filter set can yield dozens of small tables, none of
+ * which reaches the cap, and the server's whole 5000-row allowance lands on
+ * the page at once.
  *
- * Both ceilings must leave the section REVEALABLE — heading, true row count and
- * the `Vis alle` control — or a user cannot reach the sub-report they came for.
+ * Both ceilings must leave the table REVEALABLE — headings, true row count and
+ * the `Vis alle` control — or a user cannot reach the table they came for.
  */
 describe('ComplianceReportViewComponent — the row ceilings', () => {
   let component: ComplianceReportViewComponent;
@@ -263,19 +290,28 @@ describe('ComplianceReportViewComponent — the row ceilings', () => {
     images: [],
   });
 
-  /** `n` headline groups of `rows` cases each. */
-  const groups = (n: number, rows: number): ComplianceReportHeadlineGroupModel[] => {
+  /**
+   * `n` headline groups of `eForms` tables of `rows` cases each — one table
+   * per group unless asked otherwise.
+   */
+  const groups = (n: number, rows: number, eForms = 1): ComplianceReportHeadlineGroupModel[] => {
     let complianceId = 0;
     return Array.from({length: n}, (_, i) => ({
       headlineTagId: 100 + i,
       headlineName: `Overskrift ${i}`,
       tagsCaption: 'Miljøtilsyn',
-      checkListIds: [509],
-      schemaUnavailableCheckListIds: [],
-      columns: [],
-      cases: Array.from({length: rows}, () => caseModel(++complianceId)),
+      templates: Array.from({length: eForms}, (__, t) => ({
+        checkListId: 509 + t,
+        checkListName: `eForm ${t}`,
+        schemaUnavailable: false,
+        columns: [],
+        cases: Array.from({length: rows}, () => caseModel(++complianceId)),
+      })),
     }));
   };
+
+  /** Every rendered table on the page, in page order. */
+  const tables = () => component.sections.flatMap((s) => s.tables);
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -298,58 +334,70 @@ describe('ComplianceReportViewComponent — the row ceilings', () => {
     fixture.detectChanges();
   });
 
-  it('caps ONE big sub-report at the per-section cap', () => {
+  it('caps ONE big table at the per-table cap', () => {
     (component as any).applyResponse(groups(1, 250));
-    const [only] = component.sections;
+    const [only] = tables();
 
     expect(only.rows.length).toBe(100);
     expect(only.allRows.length).toBe(250);
     expect(only.expanded).toBe(false);
   });
 
-  it('bounds the whole page when many small sections each stay under that cap', () => {
-    // 40 sections × 20 rows = 800 rows, and no single section ever caps — the
-    // shape the per-section cap does not bound at all.
+  it('bounds the whole page when many small tables each stay under that cap', () => {
+    // 40 tables × 20 rows = 800 rows, and no single table ever caps — the
+    // shape the per-table cap does not bound at all.
     (component as any).applyResponse(groups(40, 20));
 
-    const revealed = component.sections.reduce((sum, s) => sum + s.rows.length, 0);
+    const revealed = tables().reduce((sum, t) => sum + t.rows.length, 0);
     expect(revealed).toBe(500);
-    // Nothing is dropped: every section is still on the page, and the count it
+    // Nothing is dropped: every table is still on the page, and the count it
     // reports back is the TRUE one (the filter bar's Download gate reads it).
-    expect(component.sections.length).toBe(40);
-    expect(component.sections.reduce((sum, s) => sum + s.allRows.length, 0)).toBe(800);
+    expect(tables().length).toBe(40);
+    expect(tables().reduce((sum, t) => sum + t.allRows.length, 0)).toBe(800);
   });
 
-  it('leaves a budget-collapsed section revealable, with its true row count', () => {
+  it('leaves a budget-collapsed table revealable, with its true row count', () => {
     (component as any).applyResponse(groups(40, 20));
-    const collapsed = component.sections[39];
+    const collapsed = tables()[39];
 
     expect(collapsed.rows.length).toBe(0);
     expect(collapsed.allRows.length).toBe(20);
     // `expanded` false is what renders the "Viser 0 af 20" footer AND its
-    // `Vis alle` button — the same control the per-section cap uses.
+    // `Vis alle` button — the same control the per-table cap uses.
     expect(collapsed.expanded).toBe(false);
 
-    component.expandSection(collapsed);
+    component.expandTable(collapsed);
 
     expect(collapsed.rows.length).toBe(20);
     expect(collapsed.expanded).toBe(true);
   });
 
-  it('spends the budget in server order, so the first sections render whole', () => {
+  it('spends the budget in server order, so the first tables render whole', () => {
     (component as any).applyResponse(groups(40, 20));
 
-    // 25 sections × 20 = the 500-row budget exactly; the 26th gets nothing.
-    expect(component.sections.slice(0, 25).every((s) => s.rows.length === 20)).toBe(true);
-    expect(component.sections.slice(0, 25).every((s) => s.expanded)).toBe(true);
-    expect(component.sections.slice(25).every((s) => s.rows.length === 0)).toBe(true);
+    // 25 tables × 20 = the 500-row budget exactly; the 26th gets nothing.
+    expect(tables().slice(0, 25).every((t) => t.rows.length === 20)).toBe(true);
+    expect(tables().slice(0, 25).every((t) => t.expanded)).toBe(true);
+    expect(tables().slice(25).every((t) => t.rows.length === 0)).toBe(true);
+  });
+
+  it('spends the budget across the tables of ONE section too, not per section', () => {
+    // 10 headlines × 3 eForms × 20 rows = 600 rows in 30 tables: a budget
+    // spent per SECTION would reveal all 600.
+    (component as any).applyResponse(groups(10, 20, 3));
+
+    expect(component.sections.length).toBe(10);
+    expect(tables().length).toBe(30);
+    expect(tables().reduce((sum, t) => sum + t.rows.length, 0)).toBe(500);
+    // 25 whole tables = 8 whole sections plus the first table of the 9th.
+    expect(component.sections[8].tables.map((t) => t.rows.length)).toEqual([20, 0, 0]);
   });
 
   it('leaves a result that fits under both ceilings fully expanded', () => {
-    (component as any).applyResponse(groups(3, 20));
+    (component as any).applyResponse(groups(3, 20, 2));
 
-    expect(component.sections.every((s) => s.expanded)).toBe(true);
-    expect(component.sections.every((s) => s.rows.length === s.allRows.length)).toBe(true);
+    expect(tables().every((t) => t.expanded)).toBe(true);
+    expect(tables().every((t) => t.rows.length === t.allRows.length)).toBe(true);
   });
 });
 
@@ -600,13 +648,23 @@ describe('ComplianceReportViewComponent — the Billeder cell', () => {
 });
 
 /**
- * The row's OWN template (#1188). A headline section spans templates — its
- * columns are a union — so `Rediger` can no longer take `checkListId` from
- * the section: it comes off the CASE, and the case route is built from it.
- * Also the total the filter bar's Download gate reads: every case is in
- * exactly one section, so it is the plain sum of cases.
+ * One headline answered on two eForms (#1276): ONE section — the headline and
+ * its tags caption shown once — holding one table per eForm, each with only
+ * its own columns and a page-unique key. That reverses #1188's one merged
+ * table with the union of both schemas, which is also why the old premise
+ * "two rows of one table can carry different templates" no longer holds.
+ *
+ * `Rediger` still reads `checkListId` off the CASE — the case's fact — and
+ * the total the filter bar's Download gate reads is still the plain sum of
+ * cases: every case is in exactly one table of exactly one section.
+ *
+ * The layout half renders the component's own template; mtx-grid stays out of
+ * it under `NO_ERRORS_SCHEMA`, so what is asserted is the section/table
+ * structure AROUND the grids — the headings, the table keys and the `Vis alle`
+ * ids — never a cell.
  */
-describe('ComplianceReportViewComponent — the row\'s own checkListId', () => {
+describe('ComplianceReportViewComponent — one table per eForm under a headline', () => {
+  let fixture: ComponentFixture<ComplianceReportViewComponent>;
   let component: ComplianceReportViewComponent;
   let router: {navigate: jest.Mock; url: string};
   let state: ComplianceReportStateService;
@@ -632,16 +690,38 @@ describe('ComplianceReportViewComponent — the row\'s own checkListId', () => {
     images: [],
   });
 
-  /** ONE headline section holding cases answered on TWO templates. */
+  const column = (key: string, label: string, fieldType = 'Text'): ComplianceReportColumnModel => ({
+    key,
+    fieldId: Number(key.replace(/\D/g, '')) || 0,
+    label,
+    fieldType,
+  });
+
+  /**
+   * ONE headline answered on TWO eForms, in the server's (name) order. Both
+   * have a `KOMMENTAR`, which #1188's union put into one grid twice.
+   */
   const mixedGroup = (): ComplianceReportHeadlineGroupModel[] => [
     {
       headlineTagId: 8,
       headlineName: 'Lovpligtig dokumentation',
       tagsCaption: 'Miljøtilsyn - Dokumentation',
-      checkListIds: [509, 511],
-      schemaUnavailableCheckListIds: [],
-      columns: [],
-      cases: [caseModel(1, 509), caseModel(2, 511), caseModel(3, null), caseModel(4, 511, false)],
+      templates: [
+        {
+          checkListId: 511,
+          checkListName: 'Kontrol',
+          schemaUnavailable: false,
+          columns: [column('f20', 'Temperatur', 'Number'), column('f21', 'KOMMENTAR', 'Comment')],
+          cases: [caseModel(2, 511), caseModel(4, 511, false)],
+        },
+        {
+          checkListId: 509,
+          checkListName: 'Tilsyn',
+          schemaUnavailable: false,
+          columns: [column('f1', 'Udført', 'CheckBox'), column('f2', 'KOMMENTAR', 'Comment')],
+          cases: [caseModel(1, 509), caseModel(3, null)],
+        },
+      ],
     },
   ];
 
@@ -662,31 +742,103 @@ describe('ComplianceReportViewComponent — the row\'s own checkListId', () => {
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
 
-    const fixture = TestBed.createComponent(ComplianceReportViewComponent);
+    fixture = TestBed.createComponent(ComplianceReportViewComponent);
     component = fixture.componentInstance;
     state = TestBed.inject(ComplianceReportStateService);
     fixture.detectChanges();
   });
 
-  it('takes checkListId from the CASE, so two rows of one section can differ', () => {
+  it('renders ONE section with TWO tables, in server order, each with only its own columns', () => {
     (component as any).applyResponse(mixedGroup());
     const [only] = component.sections;
 
     expect(component.sections.length).toBe(1);
-    expect(only.allRows.map((r) => r.checkListId)).toEqual([509, 511, 0, 511]);
+    expect(only.tables.map((t) => [t.key, t.templateLabel])).toEqual([
+      ['h8-c511', 'Kontrol'],
+      ['h8-c509', 'Tilsyn'],
+    ]);
+    // Each grid: the six fixed columns, THIS eForm's answers, the actions —
+    // one `KOMMENTAR` per grid, never two.
+    const answerHeaders = only.tables.map((t) =>
+      t.gridColumns.filter((c) => c.answerKey !== undefined).map((c) => c.header),
+    );
+    expect(answerHeaders).toEqual([
+      ['Temperatur', 'KOMMENTAR'],
+      ['Udført', 'KOMMENTAR'],
+    ]);
+    expect(only.tables.map((t) => t.allRows.map((r) => r.complianceId))).toEqual([
+      [2, 4],
+      [1, 3],
+    ]);
   });
 
-  it('routes Rediger to the ROW\'s own template, not a section-wide one', () => {
+  it('shows the headline and caption ONCE, and an eForm sub-heading per table', () => {
     (component as any).applyResponse(mixedGroup());
-    const [first, second] = component.sections[0].allRows;
+    fixture.detectChanges();
+    const root: HTMLElement = fixture.nativeElement;
 
-    component.onEdit(second as any);
+    const sections = root.querySelectorAll('section.compliance-report__section');
+    expect(sections.length).toBe(1);
+    const section = sections[0];
+    expect(section.getAttribute('data-section-key')).toBe('h8');
+    expect(section.querySelectorAll('.compliance-report__heading').length).toBe(1);
+    expect(section.querySelector('.compliance-report__heading')!.textContent!.trim()).toBe(
+      'Lovpligtig dokumentation',
+    );
+    expect(section.querySelectorAll('.compliance-report__tag').length).toBe(1);
+    expect(section.querySelector('.compliance-report__tag')!.textContent!.trim()).toBe(
+      'Miljøtilsyn - Dokumentation',
+    );
+
+    const tableEls = Array.from(section.querySelectorAll('[data-table-key]'));
+    expect(tableEls.map((el) => el.getAttribute('data-table-key'))).toEqual(['h8-c511', 'h8-c509']);
+    expect(
+      tableEls.map((el) => el.querySelector('.compliance-report__subheading')!.textContent!.trim()),
+    ).toEqual(['Kontrol', 'Tilsyn']);
+  });
+
+  it('gives each collapsed table its OWN Vis alle id — unique on the page', () => {
+    // Force both tables collapsed, the one state that renders the footer.
+    (component as any).applyResponse(mixedGroup());
+    for (const table of component.sections[0].tables) {
+      table.rows = [];
+      table.expanded = false;
+    }
+    fixture.detectChanges();
+    const root: HTMLElement = fixture.nativeElement;
+
+    const ids = Array.from(root.querySelectorAll('[id^="complianceReportShowAll-"]')).map((el) => el.id);
+    expect(ids).toEqual(['complianceReportShowAll-h8-c511', 'complianceReportShowAll-h8-c509']);
+  });
+
+  it('states a missing schema on the ONE table whose eForm lacks it', () => {
+    const groups = mixedGroup();
+    groups[0].templates[1] = {...groups[0].templates[1], schemaUnavailable: true, columns: []};
+
+    (component as any).applyResponse(groups);
+    fixture.detectChanges();
+    const tableEls = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('[data-table-key]'),
+    );
+
+    expect(tableEls.map((el) => el.querySelectorAll('.compliance-report__notice').length)).toEqual([0, 1]);
+  });
+
+  it('still takes checkListId from the CASE, and routes Rediger with it', () => {
+    (component as any).applyResponse(mixedGroup());
+    const [kontrol, tilsyn] = component.sections[0].tables;
+
+    expect(kontrol.allRows.map((r) => r.checkListId)).toEqual([511, 511]);
+    // A case the server sent without a template stays `0` — `canEdit` rejects it.
+    expect(tilsyn.allRows.map((r) => r.checkListId)).toEqual([509, 0]);
+
+    component.onEdit(kontrol.allRows[0] as any);
     expect(router.navigate).toHaveBeenCalledWith(
       ['/plugins/backend-configuration-pn/case', 102, 511, 2],
       {queryParams: {reverseRoute: router.url}},
     );
 
-    component.onEdit(first as any);
+    component.onEdit(tilsyn.allRows[0] as any);
     expect(router.navigate).toHaveBeenLastCalledWith(
       ['/plugins/backend-configuration-pn/case', 101, 509, 1],
       {queryParams: {reverseRoute: router.url}},
@@ -695,7 +847,9 @@ describe('ComplianceReportViewComponent — the row\'s own checkListId', () => {
 
   it('gates Rediger on completed AND a real checkListId, per row', () => {
     (component as any).applyResponse(mixedGroup());
-    const [answered509, answered511, noTemplate, notCompleted] = component.sections[0].allRows;
+    const [kontrol, tilsyn] = component.sections[0].tables;
+    const [answered511, notCompleted] = kontrol.allRows;
+    const [answered509, noTemplate] = tilsyn.allRows;
 
     expect(component.canEdit(answered509 as any)).toBe(true);
     expect(component.canEdit(answered511 as any)).toBe(true);
@@ -707,17 +861,16 @@ describe('ComplianceReportViewComponent — the row\'s own checkListId', () => {
     expect(router.navigate).not.toHaveBeenCalled();
   });
 
-  it('reports the plain sum of cases as the total — each case is in exactly one section', () => {
-    const groups = [
+  it('reports the plain sum of cases over EVERY table as the total', () => {
+    const groups: ComplianceReportHeadlineGroupModel[] = [
       ...mixedGroup(),
       {
         headlineTagId: null,
         headlineName: null,
         tagsCaption: '',
-        checkListIds: [509],
-        schemaUnavailableCheckListIds: [],
-        columns: [],
-        cases: [caseModel(5, 509)],
+        templates: [
+          {checkListId: 509, checkListName: 'Tilsyn', schemaUnavailable: false, columns: [], cases: [caseModel(5, 509)]},
+        ],
       },
     ];
 
@@ -725,6 +878,141 @@ describe('ComplianceReportViewComponent — the row\'s own checkListId', () => {
 
     expect(state.total).toBe(5);
     expect(component.sections.map((s) => s.headlineLabel)[1]).toBe('Without report headline');
+    // The same eForm under the fallback headline is its own, distinctly keyed table.
+    expect(component.sections[1].tables.map((t) => t.key)).toEqual(['hnone-c509']);
+  });
+});
+
+/**
+ * The answer cell's field types (#1276): a ticked `CheckBox` is a check icon,
+ * an unticked one an empty cell and an unanswered one the en dash — never the
+ * literal `checked` / `unchecked` — and a `Date` answer reads `dd.MM.yyyy`
+ * like the `Udført dato` column beside it.
+ *
+ * The first two go through the grid column `buildGridColumns` really emits, so
+ * a regression that stops `fieldType` reaching the cell fails here. The last
+ * renders the component's own `answerTpl` — the one place an answer is drawn —
+ * as a detached embedded view, since mtx-grid (which normally stamps it) is
+ * kept out of this TestBed.
+ */
+describe('ComplianceReportViewComponent — the answer cell', () => {
+  let component: ComplianceReportViewComponent;
+
+  const caseModel = (cells: {[key: string]: string}): ComplianceReportCaseModel => ({
+    complianceId: 1,
+    sdkCaseId: 101,
+    propertyId: 5,
+    propertyName: 'Ejendom A',
+    title: 'Område 1',
+    taskDate: '2026-08-11',
+    completed: true,
+    doneAt: '2026-08-11T09:00:00Z',
+    workerNames: ['Anna'],
+    checkListId: 509,
+    tags: [],
+    cells,
+    imagesCount: 0,
+    images: [],
+  });
+
+  /** The answer grid columns for a CheckBox `f1`, a Date `f2` and a Text `f3`. */
+  const answerColumns = () =>
+    ((component as any).buildGridColumns({
+      key: 'h7-c509',
+      checkListId: 509,
+      templateLabel: 'Tilsyn',
+      schemaUnavailable: false,
+      columns: [
+        {key: 'f1', fieldId: 1, label: 'Udført', fieldType: 'CheckBox'},
+        {key: 'f2', fieldId: 2, label: 'Dato', fieldType: 'Date'},
+        {key: 'f3', fieldId: 3, label: 'Note', fieldType: 'Text'},
+      ],
+      cases: [],
+    } as ComplianceReportTable) as any[]).filter((c) => c.answerKey !== undefined);
+
+  const rowVm = (cells: {[key: string]: string}) => (component as any).toRowVm(caseModel(cells));
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      declarations: [ComplianceReportViewComponent],
+      imports: [TranslateModule.forRoot()],
+      providers: [
+        ComplianceReportStateService,
+        {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns: jest.fn()}},
+        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: jest.fn()}},
+        {provide: BackendConfigurationPnPropertiesService, useValue: {getAllPropertiesDictionary: jest.fn()}},
+        {provide: BackendConfigurationPnCalendarService, useValue: {getBoards: jest.fn()}},
+        {provide: MatDialog, useValue: {open: jest.fn()}},
+        {provide: Router, useValue: {navigate: jest.fn(), url: '/x'}},
+      ],
+      schemas: [NO_ERRORS_SCHEMA],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(ComplianceReportViewComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('ticks a checked CheckBox and gives it no text; unchecked is empty, unanswered the en dash', () => {
+    const [checkBox] = answerColumns();
+    const checked = rowVm({f1: 'checked'});
+    const unchecked = rowVm({f1: 'unchecked'});
+    const unanswered = rowVm({});
+
+    expect(component.answerIsChecked(checked, checkBox)).toBe(true);
+    expect(component.answerText(checked, checkBox)).toBe('');
+
+    expect(component.answerIsChecked(unchecked, checkBox)).toBe(false);
+    expect(component.answerText(unchecked, checkBox)).toBe('');
+    expect(component.answerIsChecked(unanswered, checkBox)).toBe(false);
+    expect(component.answerText(unanswered, checkBox)).toBe(COMPLIANCE_EMPTY_CELL);
+
+    // A token that is neither state draws nothing and reads as unanswered.
+    const unknown = rowVm({f1: 'maybe'});
+    expect(component.answerIsChecked(unknown, checkBox)).toBe(false);
+    expect(component.answerText(unknown, checkBox)).toBe(COMPLIANCE_EMPTY_CELL);
+  });
+
+  it('formats a Date answer as dd.MM.yyyy and leaves every other type alone', () => {
+    const [checkBox, date, text] = answerColumns();
+    const row = rowVm({f2: '2025-12-01', f3: 'checked'});
+
+    expect(component.answerText(row, date)).toBe('01.12.2025');
+    // A Text answer reading `checked` is text, and draws no tick.
+    expect(component.answerText(row, text)).toBe('checked');
+    expect(component.answerIsChecked(row, text)).toBe(false);
+    expect(component.answerIsChecked(rowVm({f1: 'checked'}), date)).toBe(false);
+    expect(checkBox.answerFieldType).toBe('CheckBox');
+  });
+
+  it('draws the check icon — with an accessible name — for checked, and no token text at all', () => {
+    const [checkBox, date] = answerColumns();
+    /** The answer cell for one row and column, as mtx-grid would stamp it. */
+    const render = (row: unknown, col: unknown): HTMLElement => {
+      const view = component.answerTpl.createEmbeddedView({$implicit: row, colDef: col});
+      view.detectChanges();
+      const host = document.createElement('div');
+      view.rootNodes.forEach((node: Node) => host.appendChild(node));
+      return host;
+    };
+
+    const checkedCell = render(rowVm({f1: 'checked'}), checkBox);
+    const tick = checkedCell.querySelector('[role="img"]');
+    expect(tick).not.toBeNull();
+    // `Yes` is the i18n key (`Ja`); TranslateModule without a loader echoes it.
+    expect(tick!.getAttribute('aria-label')).toBe('Yes');
+    expect(tick!.querySelector('mat-icon')!.textContent!.trim()).toBe('check');
+    // Centred like the Billeder icon, at the same shared icon metrics.
+    expect(tick!.classList).toContain('compliance-report__tick');
+    expect(tick!.querySelector('mat-icon')!.classList).toContain('compliance-report__cell-icon');
+    expect(checkedCell.textContent).not.toContain('checked');
+
+    const uncheckedCell = render(rowVm({f1: 'unchecked'}), checkBox);
+    expect(uncheckedCell.querySelector('mat-icon')).toBeNull();
+    expect(uncheckedCell.textContent!.trim()).toBe('');
+
+    const dateCell = render(rowVm({f2: '2025-12-01'}), date);
+    expect(dateCell.textContent!.trim()).toBe('01.12.2025');
   });
 });
 

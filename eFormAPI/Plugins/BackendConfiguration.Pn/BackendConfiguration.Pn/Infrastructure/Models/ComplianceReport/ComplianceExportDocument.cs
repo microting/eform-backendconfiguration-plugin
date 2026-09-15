@@ -39,13 +39,13 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 /// </para>
 ///
 /// <para>
-/// The GROUPING is <c>ReportEformModel</c>'s original one, restored by #1188:
-/// Rapport produces one table per REPORT HEADLINE
+/// The GROUPING is <c>ReportEformModel</c>'s original one — headline, then eForm:
+/// #1188 made Rapport one section per REPORT HEADLINE
 /// (<c>Planning.ReportGroupPlanningTagId</c> there,
-/// <c>AreaRulePlanning.ItemPlanningTagId</c> here), not the tag-per-template
-/// split of #1160 decision 5 that sat in between. What is NOT carried forward is
-/// positional cell addressing —
-/// <c>ReportEformItemModel.CaseFields</c> is a
+/// <c>AreaRulePlanning.ItemPlanningTagId</c> here) instead of the tag-per-template
+/// split of #1160 decision 5, and each section holds one table per eForm template
+/// (#1276, see ComplianceReportTemplateTableModel). What is NOT carried forward is
+/// positional cell addressing — <c>ReportEformItemModel.CaseFields</c> is a
 /// <c>List&lt;KeyValuePair&lt;string,string&gt;&gt;</c> keyed on the field TYPE
 /// tag, which is the root of the column-desync of #1160 finding 3. Cells here are
 /// built by walking the template's own ordered column schema and looking each
@@ -84,8 +84,9 @@ public class ComplianceExportDocument
     public string BoardLabel { get; set; }
 
     /// <summary>
-    /// One table per rendered section. Oversigt and Detaljer produce exactly one;
-    /// Rapport produces one per report headline (#1188).
+    /// The rendered tables, in order. Oversigt and Detaljer produce exactly one;
+    /// Rapport produces one per eForm template per report headline (#1276, see
+    /// <see cref="ComplianceExportTable"/> for how a section spans them).
     /// </summary>
     public List<ComplianceExportTable> Tables { get; set; } = [];
 
@@ -111,13 +112,27 @@ public class ComplianceExportDocument
     public int AppendixImagesRequested { get; set; }
 }
 
-/// <summary>One titled table of typed cells.</summary>
+/// <summary>
+/// One table of typed cells, with the headings printed above it.
+///
+/// <para>
+/// <b>Rapport's section = several consecutive tables (#1276).</b> Rather than a
+/// section type wrapping tables — which every writer, the single-table views and
+/// the CSV flattening would have to learn — the FIRST table of a section carries
+/// its <see cref="Caption"/>, <see cref="Title"/>, <see cref="AppendixLabel"/>
+/// and <see cref="ImageBlocks"/>, later tables leave them empty, and every table
+/// carries its own <see cref="Subtitle"/>. The Word writer prints each heading
+/// only when non-empty, so a section reads caption → headline → eForm A → table
+/// → eForm B → table.
+/// </para>
+/// </summary>
 public class ComplianceExportTable
 {
     /// <summary>
     /// Small caption line rendered ABOVE <see cref="Title"/> when non-empty
     /// (#1188): for Rapport it is the group's tag names joined <c>" - "</c>
-    /// (<c>ComplianceReportHeadlineGroupModel.TagsCaption</c>). Word/PDF print it
+    /// (<c>ComplianceReportHeadlineGroupModel.TagsCaption</c>; first table of a
+    /// section only, #1276). Word/PDF print it
     /// as a small grey paragraph (9 pt, <c>#666666</c> — #1192's restyle of
     /// #1188's plain line); CSV ignores it. Empty for Oversigt and Detaljer.
     /// </summary>
@@ -128,11 +143,11 @@ public class ComplianceExportTable
     /// <c>Bilag – {AppendixLabel}</c> once, on a new page, ahead of the section's
     /// <see cref="ImageBlocks"/>. For Rapport it is <see cref="Caption"/>, falling
     /// back to the bare headline label when the group carries no tags (#1188's
-    /// rule) — the HEADLINE label, not <see cref="Title"/>, so the
-    /// "(Kolonner utilgængelige)" suffix never reaches the appendix. Empty on
-    /// Oversigt and Detaljer, which have no appendix; a renderer falls back to
-    /// <see cref="Caption"/>, then <see cref="Title"/>, should it be empty on a
-    /// table that does carry blocks.
+    /// rule; first table of a section only, #1276). It never carries a template
+    /// name or the "(Kolonner utilgængelige)" notice — those are
+    /// <see cref="Subtitle"/>'s. Empty on Oversigt and Detaljer, which
+    /// have no appendix; a renderer falls back to <see cref="Caption"/>, then
+    /// <see cref="Title"/>, should it be empty on a table that does carry blocks.
     /// </summary>
     public string AppendixLabel { get; set; } = string.Empty;
 
@@ -140,10 +155,21 @@ public class ComplianceExportTable
     /// Section heading. Empty for the single-table view modes (the document title
     /// already names them); for Rapport it is the REPORT HEADLINE's name (#1188)
     /// — or <c>#{id}</c> for a headline with no <c>PlanningTags</c> row, or the
-    /// localised "Uden rapportoverskrift" for the fallback group — suffixed with
-    /// "(Kolonner utilgængelige)" when a template's schema could not be derived.
+    /// localised "Uden rapportoverskrift" for the fallback group (first table of a
+    /// section only, #1276).
     /// </summary>
     public string Title { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The table's own heading, printed directly above it and below any
+    /// <see cref="Title"/> (#1276): for Rapport the eForm template's name
+    /// (<c>ComplianceReportTemplateTableModel.CheckListName</c>, or <c>#{id}</c>
+    /// when it has none), suffixed with "(Kolonner utilgængelige)" when that
+    /// template's schema could not be derived. Word/PDF print it as a bold
+    /// sub-heading; CSV ignores it, like the other headings. Empty for Oversigt
+    /// and Detaljer.
+    /// </summary>
+    public string Subtitle { get; set; } = string.Empty;
 
     public List<ComplianceExportColumn> Columns { get; set; } = [];
 
@@ -151,8 +177,9 @@ public class ComplianceExportTable
 
     /// <summary>
     /// Per-case image blocks, populated ONLY for Rapport when the request opted
-    /// into the appendix. CSV ignores it; Word/PDF render it after ALL the tables,
-    /// one page per section that has any (#1192), headed by
+    /// into the appendix, holding the blocks of every table of the section (first
+    /// table of a section only, #1276). CSV ignores it; Word/PDF render it after
+    /// ALL the tables, one page per section that has any (#1192), headed by
     /// <see cref="AppendixLabel"/>.
     /// </summary>
     public List<ComplianceExportImageBlock> ImageBlocks { get; set; } = [];
@@ -174,8 +201,24 @@ public enum ComplianceExportCellType
     /// unambiguous), Word/PDF write <c>dd.MM.yyyy</c> — unless the cell carries a
     /// <see cref="ComplianceExportCell.DisplayText"/>, which Word/PDF then print
     /// instead (Detaljer's <c>Tirsdag 21. juli</c>, #1191). CSV never reads it.
+    /// Rapport's eForm <c>Date</c> answers use it too since #1276, so they read
+    /// like the <c>Udført dato</c> column beside them instead of raw ISO.
     /// </summary>
-    Date = 2
+    Date = 2,
+
+    /// <summary>
+    /// An eForm <c>CheckBox</c> answer (#1276), carried as
+    /// <see cref="ComplianceExportCell.Checked"/>. Ticked: Word/PDF print
+    /// <see cref="ComplianceExportCell.CheckMarkGlyph"/> (✔ U+2714 — what the
+    /// legacy report's <c>WordService</c> emits as <c>&amp;#10004;</c> through the
+    /// same HtmlToOpenXml pipeline) and CSV writes <c>x</c>
+    /// (<c>ComplianceExportCsvWriter.CheckMark</c>). Unticked: a BLANK cell in
+    /// every format — not the en dash, which means "unanswered" — as the legacy
+    /// <c>&lt;td&gt;&lt;/td&gt;</c> and the customer ("unchecked skal ikke vises")
+    /// have it. The canonical <c>checked</c>/<c>unchecked</c> token never reaches
+    /// a page.
+    /// </summary>
+    CheckBox = 3
 }
 
 public class ComplianceExportColumn
@@ -227,8 +270,9 @@ public class ComplianceExportRow
 }
 
 /// <summary>
-/// One cell. At most one of <see cref="Number"/> / <see cref="Date"/> is set;
-/// <see cref="Text"/> is ALWAYS set and is what a renderer without types writes.
+/// One cell. At most one of <see cref="Number"/> / <see cref="Date"/> /
+/// <see cref="Checked"/> is set; <see cref="Text"/> is ALWAYS set and is what a
+/// renderer without types writes.
 ///
 /// <para>
 /// <b>Emptiness is a FLAG, not a value of <see cref="Text"/>.</b> The factories
@@ -265,6 +309,15 @@ public class ComplianceExportCell
     public DateTime? Date { get; set; }
 
     /// <summary>
+    /// A <c>CheckBox</c> answer (#1276): <c>true</c> ticked, <c>false</c> unticked,
+    /// <c>null</c> for every other cell, including an UNANSWERED checkbox (which
+    /// is the ordinary empty cell). Read by the writers for a
+    /// <see cref="ComplianceExportCellType.CheckBox"/> column; see that member for
+    /// what each format prints. Set only by <see cref="FromCheckBox"/>.
+    /// </summary>
+    public bool? Checked { get; init; }
+
+    /// <summary>
     /// True when the cell carries NO value. The parameterless constructor is the
     /// empty cell (so <c>new ComplianceExportCell()</c> is empty by construction,
     /// which is how the builders spell an absent value), and every factory clears
@@ -273,7 +326,8 @@ public class ComplianceExportCell
     /// </summary>
     /// <remarks>
     /// Init-only: only the factories (<see cref="FromText"/> / <see cref="FromNumber"/>
-    /// / <see cref="FromDate"/>) and the parameterless constructor may build cells, so
+    /// / <see cref="FromDate"/> / <see cref="FromCheckBox"/>) and the parameterless
+    /// constructor may build cells, so
     /// a caller cannot later flip the flag and produce a cell that is blank in CSV
     /// but printed in Word.
     /// </remarks>
@@ -281,6 +335,13 @@ public class ComplianceExportCell
 
     /// <summary>The en dash U+2013 — the empty-cell glyph for Word/PDF in all three views.</summary>
     public const string EmptyGlyph = "–";
+
+    /// <summary>
+    /// HEAVY CHECK MARK U+2714 — a ticked <c>CheckBox</c> answer in Word/PDF
+    /// (#1276), the character the legacy report's <c>WordService</c> writes as
+    /// <c>&amp;#10004;</c>.
+    /// </summary>
+    public const string CheckMarkGlyph = "✔";
 
     public static ComplianceExportCell FromText(string value) =>
         string.IsNullOrWhiteSpace(value)
@@ -327,6 +388,24 @@ public class ComplianceExportCell
                 IsEmpty = false
             }
             : new ComplianceExportCell();
+
+    /// <summary>
+    /// A <c>CheckBox</c> answer (#1276). <c>null</c> — unanswered, or a value that
+    /// is not a checkbox state — is the ordinary empty cell (en dash in Word/PDF,
+    /// blank in CSV). An unticked box IS an answer, so it is not
+    /// <see cref="IsEmpty"/>; it is simply rendered blank everywhere, which its
+    /// empty <see cref="Text"/> already says to a renderer without types. A ticked
+    /// box's <see cref="Text"/> is the Word/PDF glyph, like
+    /// <see cref="FromDate"/>'s <c>dd.MM.yyyy</c>; the CSV writes its own mark
+    /// from <see cref="Checked"/>.
+    /// </summary>
+    public static ComplianceExportCell FromCheckBox(bool? isChecked) =>
+        isChecked switch
+        {
+            true => new ComplianceExportCell { Checked = true, Text = CheckMarkGlyph, IsEmpty = false },
+            false => new ComplianceExportCell { Checked = false, Text = string.Empty, IsEmpty = false },
+            null => new ComplianceExportCell()
+        };
 }
 
 /// <summary>

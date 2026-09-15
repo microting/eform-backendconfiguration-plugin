@@ -19,6 +19,7 @@ namespace BackendConfiguration.Pn.Integration.Test;
 using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 using BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportService;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
+using Microting.eForm.Infrastructure.Constants;
 
 /// <summary>
 /// Coverage for <see cref="ComplianceExportDocumentBuilder"/> — the mapping from
@@ -569,38 +570,49 @@ public class ComplianceExportDocumentBuilderTests
     }
 
     // ==================================================================
-    // Rapport (#1188: one table per REPORT HEADLINE, tags as a caption)
+    // Rapport (#1188: one section per REPORT HEADLINE, tags as a caption;
+    // #1276: one table per eForm template under it)
     // ==================================================================
 
     /// <summary>
-    /// One table per HEADLINE GROUP — the PDF's "Tabel_Rapport" rule — carrying the
-    /// group's tags caption and the headline as its title. Two templates under one
-    /// headline are ONE table (the service already unioned their columns), not two.
-    /// This reverses #1160 decision 5 / #1167 / PR #1178's composite label.
+    /// One table per eForm TEMPLATE (#1276), the headline's caption and heading on
+    /// the headline's FIRST table only — so Word/PDF print them once per headline —
+    /// and EVERY table titled with its template's name. Two templates under one
+    /// headline are two tables, reversing #1188's single union table. The
+    /// headline grouping itself — the PDF's "Tabel_Rapport" rule — is #1188's and
+    /// unchanged, as is its reversal of #1160 decision 5 / #1167 / PR #1178's
+    /// composite label. The builder keeps the service's template order.
     /// </summary>
     [Test]
-    public void Report_ProducesOneTablePerHeadlineGroupWithCaptionAndHeadlineTitle()
+    public void Report_ProducesOneTablePerTemplateWithTheHeadlineHeadingOnlyOnTheFirst()
     {
         var groups = new List<ComplianceReportHeadlineGroupModel>
         {
-            Group(7, "Brandsikkerhed og beredskab", "Miljøtilsyn - Brand", 509, 511),
-            Group(8, "Elinstallationer og eftersyn", "Miljøtilsyn - EL", 509)
+            Group(7, "Headline 1", "Miljøtilsyn - Brand",
+                Template(511, "Gennemgang"), Template(512, "Kontrol")),
+            Group(8, "Elinstallationer og eftersyn", "Miljøtilsyn - EL", Template(509, "Eltjek"))
         };
 
         var document = ComplianceExportDocumentBuilder.BuildReport(groups, "p", false, _localization);
 
-        Assert.That(document.Tables, Has.Count.EqualTo(2));
+        Assert.That(document.Tables, Has.Count.EqualTo(3), "one table per template, not one per headline");
         Assert.That(document.Tables.Select(t => t.Caption),
-            Is.EqualTo(new[] { "Miljøtilsyn - Brand", "Miljøtilsyn - EL" }));
+            Is.EqualTo(new[] { "Miljøtilsyn - Brand", "", "Miljøtilsyn - EL" }));
         Assert.That(document.Tables.Select(t => t.Title),
-            Is.EqualTo(new[] { "Brandsikkerhed og beredskab", "Elinstallationer og eftersyn" }));
-        // No template name anywhere in a title.
-        Assert.That(document.Tables.Select(t => t.Title), Has.None.Contains("–"));
+            Is.EqualTo(new[] { "Headline 1", "", "Elinstallationer og eftersyn" }));
+        Assert.That(document.Tables.Select(t => t.Subtitle),
+            Is.EqualTo(new[] { "Gennemgang", "Kontrol", "Eltjek" }));
+        // The appendix label belongs to the section, so it too is on the first
+        // table only.
+        Assert.That(document.Tables.Select(t => t.AppendixLabel),
+            Is.EqualTo(new[] { "Miljøtilsyn - Brand", "", "Miljøtilsyn - EL" }));
+        // No template name in a headline heading.
+        Assert.That(document.Tables.Select(t => t.Title), Has.None.Contains("Kontrol"));
     }
 
     /// <summary>
-    /// The fixed Rapport columns, then the group's REAL answer columns (the
-    /// service's union). The prototype's fabricated placeholders <c>Note</c>,
+    /// The fixed Rapport columns, then the table's REAL answer columns — its own
+    /// template's schema. The prototype's fabricated placeholders <c>Note</c>,
     /// <c>Option 1</c> and <c>Option 2</c> must not appear as hard-coded headers
     /// anywhere — an explicit acceptance criterion — and neither must
     /// <c>Handlinger</c>. Nor is there a <c>Rapportoverskrift</c> column: #1188
@@ -610,7 +622,7 @@ public class ComplianceExportDocumentBuilderTests
     public void Report_FixedColumnsThenRealAnswerColumnsAndNoPlaceholderOrHeadlineHeaders()
     {
         var group = Group(1, "Overskrift", "T", 509);
-        group.Columns =
+        group.Templates[0].Columns =
         [
             new ComplianceReportColumnModel { Key = "f10", Label = "Målerstand", FieldType = "Number" },
             new ComplianceReportColumnModel { Key = "f11", Label = "Bemærkning", FieldType = "Text" }
@@ -633,27 +645,79 @@ public class ComplianceExportDocumentBuilderTests
     }
 
     /// <summary>
+    /// Each template's table carries the fixed columns plus ITS OWN answer columns
+    /// and no other template's (#1276) — the union of #1188 put both templates'
+    /// fields in one header row — and its own rows only, each exactly as wide as
+    /// its header. The fixed columns are fresh objects per table, so appending one
+    /// table's answer columns can never reach another's.
+    /// </summary>
+    [Test]
+    public void Report_EachTemplateTableCarriesOnlyItsOwnAnswerColumnsAndRows()
+    {
+        var group = Group(1, "Overskrift", "T", 511, 512);
+        group.Templates[0].Columns = [new ComplianceReportColumnModel { Key = "f10", Label = "Målerstand" }];
+        group.Templates[0].Cases =
+        [
+            new ComplianceReportCaseModel
+            {
+                SdkCaseId = 42, CheckListId = 511, Cells = new Dictionary<string, string> { ["f10"] = "12" }
+            }
+        ];
+        group.Templates[1].Columns =
+        [
+            new ComplianceReportColumnModel { Key = "f20", Label = "KOMMENTAR" },
+            new ComplianceReportColumnModel { Key = "f21", Label = "Udført" }
+        ];
+        group.Templates[1].Cases =
+        [
+            new ComplianceReportCaseModel
+            {
+                SdkCaseId = 43, CheckListId = 512, Cells = new Dictionary<string, string> { ["f20"] = "Fint" }
+            }
+        ];
+
+        var document = ComplianceExportDocumentBuilder.BuildReport([group], "p", false, _localization);
+
+        Assert.That(document.Tables, Has.Count.EqualTo(2));
+        var first = document.Tables[0];
+        var second = document.Tables[1];
+        Assert.That(first.Columns.Skip(7).Select(c => c.Key), Is.EqualTo(new[] { "f10" }));
+        Assert.That(second.Columns.Skip(7).Select(c => c.Key), Is.EqualTo(new[] { "f20", "f21" }));
+
+        Assert.That(first.Rows.Select(r => r.Cells[1].Number), Is.EqualTo(new double?[] { 42 }));
+        Assert.That(second.Rows.Select(r => r.Cells[1].Number), Is.EqualTo(new double?[] { 43 }));
+        Assert.That(first.Rows[0].Cells, Has.Count.EqualTo(first.Columns.Count));
+        Assert.That(second.Rows[0].Cells, Has.Count.EqualTo(second.Columns.Count));
+        Assert.That(first.Rows[0].Cells[7].Text, Is.EqualTo("12"));
+        Assert.That(second.Rows[0].Cells[7].Text, Is.EqualTo("Fint"));
+        Assert.That(second.Rows[0].Cells[8].Text, Is.EqualTo(Dash));
+
+        Assert.That(ReferenceEquals(first.Columns, second.Columns), Is.False);
+        Assert.That(ReferenceEquals(first.Columns[0], second.Columns[0]), Is.False,
+            "the fixed columns are fresh per table");
+    }
+
+    /// <summary>
     /// Cells are addressed BY KEY. A case that answered only the second of two
     /// columns must leave the first as the en dash and keep the second in its own
     /// column — the exact failure mode of #1160 finding 3, where a header list is
     /// zipped positionally against a value list and one excluded field shifts every
-    /// later column by one. With #1188's union columns this is also how a case
-    /// answered on template A renders under template B's columns: dash, in place.
+    /// later column by one.
     /// </summary>
     [Test]
-    public void Report_UnansweredOrForeignTemplateColumnGetsTheGlyphAndDoesNotShiftLaterColumns()
+    public void Report_UnansweredColumnGetsTheGlyphAndDoesNotShiftLaterColumns()
     {
-        var group = Group(1, "Overskrift", "T", 509, 511);
-        group.Columns =
+        var group = Group(1, "Overskrift", "T", 509);
+        group.Templates[0].Columns =
         [
-            new ComplianceReportColumnModel { Key = "f10", Label = "Målerstand" }, // template 509
-            new ComplianceReportColumnModel { Key = "f11", Label = "Bemærkning" }  // template 511
+            new ComplianceReportColumnModel { Key = "f10", Label = "Målerstand" },
+            new ComplianceReportColumnModel { Key = "f11", Label = "Bemærkning" }
         ];
-        group.Cases =
+        group.Templates[0].Cases =
         [
             new ComplianceReportCaseModel
             {
-                SdkCaseId = 42, CheckListId = 511, PropertyName = "Gården", Title = "Vand",
+                SdkCaseId = 42, CheckListId = 509, PropertyName = "Gården", Title = "Vand",
                 Cells = new Dictionary<string, string> { ["f11"] = "Alt ok" }
             }
         ];
@@ -661,16 +725,132 @@ public class ComplianceExportDocumentBuilderTests
         var document = ComplianceExportDocumentBuilder.BuildReport([group], "p", false, _localization);
 
         var cells = document.Tables[0].Rows[0].Cells;
-        Assert.That(cells[7].Text, Is.EqualTo(Dash));   // f10, the other template's column
+        Assert.That(cells[7].Text, Is.EqualTo(Dash));   // f10, unanswered
         Assert.That(cells[7].IsEmpty, Is.True);
         Assert.That(cells[8].Text, Is.EqualTo("Alt ok")); // f11, still in ITS column
+    }
+
+    /// <summary>
+    /// A <c>CheckBox</c> answer (#1276) becomes a TYPED cell, never the service's
+    /// canonical token: the column is <see cref="ComplianceExportCellType.CheckBox"/>,
+    /// a <c>checked</c> cell carries <c>Checked = true</c> (✔ as its untyped text),
+    /// an <c>unchecked</c> one <c>Checked = false</c> and no text — an ANSWER, so
+    /// not the empty cell, but blank — and an unanswered one is the ordinary empty
+    /// cell (en dash / blank CSV). What each format prints — ✔, x, nothing — is
+    /// the writers' and is pinned in <c>ComplianceExportWriterTests</c>.
+    /// </summary>
+    [Test]
+    public void Report_CheckBoxAnswerIsATypedTickAndNeverTheCanonicalToken()
+    {
+        var group = Group(1, "Overskrift", "T", 509);
+        group.Templates[0].Columns =
+        [
+            new ComplianceReportColumnModel { Key = "f10", Label = "OK", FieldType = Constants.FieldTypes.CheckBox }
+        ];
+        group.Templates[0].Cases =
+        [
+            new ComplianceReportCaseModel { SdkCaseId = 1, Cells = new Dictionary<string, string> { ["f10"] = "checked" } },
+            new ComplianceReportCaseModel { SdkCaseId = 2, Cells = new Dictionary<string, string> { ["f10"] = "unchecked" } },
+            new ComplianceReportCaseModel { SdkCaseId = 3, Cells = new Dictionary<string, string>() }
+        ];
+
+        var document = ComplianceExportDocumentBuilder.BuildReport([group], "p", false, _localization);
+
+        var table = document.Tables[0];
+        Assert.That(table.Columns[7].Type, Is.EqualTo(ComplianceExportCellType.CheckBox));
+
+        var ticked = table.Rows[0].Cells[7];
+        Assert.That(ticked.Checked, Is.True);
+        Assert.That(ticked.IsEmpty, Is.False);
+        Assert.That(ticked.Text, Is.EqualTo(ComplianceExportCell.CheckMarkGlyph));
+        Assert.That(ComplianceExportCell.CheckMarkGlyph, Is.EqualTo("✔"));
+
+        var unticked = table.Rows[1].Cells[7];
+        Assert.That(unticked.Checked, Is.False);
+        Assert.That(unticked.IsEmpty, Is.False, "an unticked box is an answer, not an absent value");
+        Assert.That(unticked.Text, Is.Empty, "unticked is blank — not the token, not the en dash");
+
+        var unanswered = table.Rows[2].Cells[7];
+        Assert.That(unanswered.Checked, Is.Null);
+        Assert.That(unanswered.IsEmpty, Is.True);
+        Assert.That(unanswered.Text, Is.EqualTo(Dash));
+
+        Assert.That(table.Rows.Select(r => r.Cells[7].Text), Has.None.EqualTo("checked"));
+        Assert.That(table.Rows.Select(r => r.Cells[7].Text), Has.None.EqualTo("unchecked"));
+    }
+
+    /// <summary>
+    /// A <c>Date</c> answer (#1276) becomes a TYPED date cell — Word/PDF then print
+    /// <c>dd.MM.yyyy</c> like <c>Udført dato</c> beside it, CSV keeps ISO — parsed
+    /// from the service's stored <c>yyyy-MM-dd</c> with the invariant culture. A
+    /// value that will not parse stays a text cell carrying the stored string,
+    /// never dropped or guessed at. Every other field type stays an untyped text
+    /// cell, exactly as before.
+    /// </summary>
+    [Test]
+    public void Report_DateAnswerIsATypedDateAndAnUnparseableOneStaysItsText()
+    {
+        var group = Group(1, "Overskrift", "T", 509);
+        group.Templates[0].Columns =
+        [
+            new ComplianceReportColumnModel { Key = "f10", Label = "Dato", FieldType = Constants.FieldTypes.Date },
+            new ComplianceReportColumnModel { Key = "f11", Label = "Antal", FieldType = Constants.FieldTypes.Number }
+        ];
+        group.Templates[0].Cases =
+        [
+            new ComplianceReportCaseModel
+            {
+                SdkCaseId = 1, Cells = new Dictionary<string, string> { ["f10"] = "2025-12-01", ["f11"] = "3.5" }
+            },
+            new ComplianceReportCaseModel
+            {
+                SdkCaseId = 2, Cells = new Dictionary<string, string> { ["f10"] = "01/12/2025" }
+            },
+            new ComplianceReportCaseModel
+            {
+                SdkCaseId = 3, Cells = new Dictionary<string, string> { ["f10"] = " 2025-12-01 " }
+            }
+        ];
+
+        var document = ComplianceExportDocumentBuilder.BuildReport([group], "p", false, _localization);
+
+        var table = document.Tables[0];
+        Assert.That(table.Columns[7].Type, Is.EqualTo(ComplianceExportCellType.Date));
+        Assert.That(table.Columns[8].Type, Is.EqualTo(ComplianceExportCellType.Text), "only CheckBox and Date are typed");
+
+        var parsed = table.Rows[0].Cells[7];
+        Assert.That(parsed.Date, Is.EqualTo(new DateTime(2025, 12, 1)));
+        Assert.That(parsed.Text, Is.EqualTo("01.12.2025"));
+        Assert.That(table.Rows[0].Cells[8].Text, Is.EqualTo("3.5"));
+
+        var unparseable = table.Rows[1].Cells[7];
+        Assert.That(unparseable.Date, Is.Null);
+        Assert.That(unparseable.Text, Is.EqualTo("01/12/2025"));
+        Assert.That(unparseable.IsEmpty, Is.False);
+
+        // Trimmed before the parse, as the client does.
+        Assert.That(table.Rows[2].Cells[7].Date, Is.EqualTo(new DateTime(2025, 12, 1)));
+    }
+
+    /// <summary>
+    /// A table's subtitle is its template's name TRIMMED, as the client trims it
+    /// (#1276), and the neutral <c>#{id}</c> when nothing is left.
+    /// </summary>
+    [Test]
+    public void Report_TemplateSubtitleIsTheTrimmedNameOrTheIdWhenBlank()
+    {
+        var group = Group(1, "Overskrift", "T", Template(509, "  Tilsyn  "), Template(511, "   "));
+
+        var document = ComplianceExportDocumentBuilder.BuildReport([group], "p", false, _localization);
+
+        Assert.That(document.Tables.Select(t => t.Subtitle), Is.EqualTo(new[] { "Tilsyn", "#511" }));
     }
 
     /// <summary>
     /// The Word/PDF table starts at <c>ID</c> (PDF page 9) while the CSV keeps
     /// <c>Delrapport</c> (page 10): the column is marked <c>CsvOnly</c> — and it
     /// is the ONLY one, so the writers' column sets differ by exactly it. Every
-    /// column also carries the key the CSV writer unions sections on: the fixed
+    /// column also carries the key the CSV writer unions tables on: the fixed
     /// ones their localisation key, the answer ones the service's
     /// <c>f{fieldId}</c> (#1192).
     /// </summary>
@@ -678,7 +858,7 @@ public class ComplianceExportDocumentBuilderTests
     public void Report_SubReportIsTheOnlyCsvOnlyColumnAndEveryColumnCarriesAKey()
     {
         var group = Group(1, "Overskrift", "T", 509);
-        group.Columns =
+        group.Templates[0].Columns =
         [
             new ComplianceReportColumnModel { Key = "f10", Label = "Målerstand" },
             new ComplianceReportColumnModel { Key = "f11", Label = "Bemærkning" }
@@ -705,7 +885,7 @@ public class ComplianceExportDocumentBuilderTests
     public void Report_SubReportCellIsTheRowsOwnTagsAndImagesIsACount()
     {
         var group = Group(1, "Flydelag", "Brand - Miljøtilsyn", 509);
-        group.Cases =
+        group.Templates[0].Cases =
         [
             new ComplianceReportCaseModel
             {
@@ -755,7 +935,7 @@ public class ComplianceExportDocumentBuilderTests
     public void Report_ImagesCellIsTheLocalisedCountForWordAndTheNumberForCsvAndEmptyForZero()
     {
         var group = Group(1, "Overskrift", "T", 509);
-        group.Cases =
+        group.Templates[0].Cases =
         [
             new ComplianceReportCaseModel { SdkCaseId = 42, Title = "Vand", ImagesCount = 3 },
             new ComplianceReportCaseModel { SdkCaseId = 43, Title = "Vand", ImagesCount = 0 },
@@ -792,7 +972,7 @@ public class ComplianceExportDocumentBuilderTests
     public void Report_ImageAppendixIsOptInAndCappedPerCase()
     {
         var group = Group(1, "Overskrift", "Miljø", 509);
-        group.Cases =
+        group.Templates[0].Cases =
         [
             new ComplianceReportCaseModel
             {
@@ -813,13 +993,15 @@ public class ComplianceExportDocumentBuilderTests
     }
 
     /// <summary>
-    /// The appendix is grouped PER SECTION (#1192, PDF page 9): each table carries
-    /// the label its <c>Bilag – …</c> page is headed with — the section's TAGS
-    /// CAPTION, or the headline label when the group has no tags, so the page is
-    /// still attributable to its section — and its own blocks. The section is
-    /// therefore NOT repeated in the block captions any more: a block reads
-    /// <c>Sag {SdkCaseId} · {Område} · {dd.MM.yyyy}</c>, the mock-up's line, with
-    /// the localised <c>Case</c> key leading.
+    /// The appendix is grouped PER SECTION (#1192, PDF page 9): each headline's
+    /// first table carries the label its <c>Bilag – …</c> page is headed with —
+    /// the section's TAGS CAPTION, or the headline label when the group has no
+    /// tags, so the page is still attributable to its section — and the section's
+    /// blocks. The section is therefore NOT repeated in the block captions: a
+    /// block reads <c>Sag {SdkCaseId} · {Område} · {dd.MM.yyyy}</c>, the mock-up's
+    /// line, with the localised <c>Case</c> key leading. A template whose schema
+    /// is unavailable says so on its own subtitle (#1276), never on the appendix
+    /// page.
     /// </summary>
     [Test]
     public void Report_AppendixIsGroupedPerSectionWithTheTagsCaptionOrTheHeadlineAsItsLabel()
@@ -831,21 +1013,22 @@ public class ComplianceExportDocumentBuilderTests
         };
 
         var tagged = Group(1, "Brandsikkerhed", "Miljøtilsyn - Brand", 509);
-        tagged.Cases = [CaseWithImage(42)];
+        tagged.Templates[0].Cases = [CaseWithImage(42)];
         var untagged = Group(2, "Egenkontrol", "", 509);
-        untagged.SchemaUnavailableCheckListIds = [509];
-        untagged.Cases = [CaseWithImage(43)];
+        untagged.Templates[0].SchemaUnavailable = true;
+        untagged.Templates[0].Cases = [CaseWithImage(43)];
         var withoutImages = Group(3, "Rundering", "Miljø", 509);
-        withoutImages.Cases = [new ComplianceReportCaseModel { SdkCaseId = 44, Title = "Gang" }];
+        withoutImages.Templates[0].Cases = [new ComplianceReportCaseModel { SdkCaseId = 44, Title = "Gang" }];
 
         var document = ComplianceExportDocumentBuilder.BuildReport(
             [tagged, untagged, withoutImages], "p", true, _danish);
 
         Assert.That(document.Tables.Select(t => t.AppendixLabel),
             Is.EqualTo(new[] { "Miljøtilsyn - Brand", "Egenkontrol", "Miljø" }));
-        // The headline label, NOT the title: the schema suffix stays off the
-        // appendix page.
-        Assert.That(document.Tables[1].Title, Does.Contain("("));
+        // The schema notice is the TEMPLATE's (its subtitle), not the section's:
+        // neither the headline nor the appendix page carries it.
+        Assert.That(document.Tables[1].Subtitle, Does.Contain("("));
+        Assert.That(document.Tables[1].Title, Does.Not.Contain("("));
         Assert.That(document.Tables[1].AppendixLabel, Does.Not.Contain("("));
 
         Assert.That(document.Tables[0].ImageBlocks.Select(b => b.Caption),
@@ -855,6 +1038,41 @@ public class ComplianceExportDocumentBuilderTests
         Assert.That(document.Tables[2].ImageBlocks, Is.Empty, "a section without images has no blocks");
         Assert.That(document.Tables.SelectMany(t => t.ImageBlocks).Select(b => b.Caption),
             Has.None.Contains("Miljøtilsyn"), "the section is on the page heading, not in the block");
+    }
+
+    /// <summary>
+    /// A headline with SEVERAL eForm tables still gets ONE appendix section
+    /// (#1276): every block of the section — whichever template's table its case
+    /// sits in — goes on the headline's FIRST table, the one carrying the
+    /// <c>AppendixLabel</c>, in table order. Word/PDF therefore still print one
+    /// <c>Bilag – …</c> page per headline rather than one per table.
+    /// </summary>
+    [Test]
+    public void Report_AppendixOfAMultiTemplateHeadlineIsOneSectionOnItsFirstTable()
+    {
+        ComplianceReportCaseModel CaseWithImage(int id) => new()
+        {
+            SdkCaseId = id, Title = "Vand", TaskDate = "2026-03-09", ImagesCount = 1,
+            Images = [new ComplianceReportImageModel { FileName = $"{id}_700_a.jpg" }]
+        };
+
+        var group = Group(1, "Headline 1", "Miljøtilsyn - Brand", 511, 512);
+        group.Templates[0].Cases = [CaseWithImage(42)];
+        group.Templates[1].Cases = [CaseWithImage(43), CaseWithImage(44)];
+
+        var document = ComplianceExportDocumentBuilder.BuildReport([group], "p", true, _danish);
+
+        Assert.That(document.Tables, Has.Count.EqualTo(2));
+        Assert.That(document.Tables[0].AppendixLabel, Is.EqualTo("Miljøtilsyn - Brand"));
+        Assert.That(document.Tables[0].ImageBlocks.Select(b => b.Caption), Is.EqualTo(new[]
+        {
+            "Sag 42 · Vand · 09.03.2026", "Sag 43 · Vand · 09.03.2026", "Sag 44 · Vand · 09.03.2026"
+        }));
+        Assert.That(document.Tables[1].ImageBlocks, Is.Empty, "the second table's blocks are the section's");
+        Assert.That(document.Tables[1].AppendixLabel, Is.Empty);
+        // The rows stay in their own tables; only the photographs are gathered.
+        Assert.That(document.Tables.Select(t => t.Rows.Count), Is.EqualTo(new[] { 1, 2 }));
+        Assert.That(document.AppendixImagesEmbedded, Is.EqualTo(3));
     }
 
     /// <summary>
@@ -874,7 +1092,7 @@ public class ComplianceExportDocumentBuilderTests
         };
 
         var group = Group(1, "Overskrift", "Miljø", 509);
-        group.Cases =
+        group.Templates[0].Cases =
         [
             Case(1, new DateTime(2026, 5, 13, 9, 15, 0), "2026-05-12"),
             Case(2, null, "2026-05-12"),
@@ -910,7 +1128,7 @@ public class ComplianceExportDocumentBuilderTests
     public void Report_ImagesWithoutADerivedNameAreDropped()
     {
         var group = Group(1, "Overskrift", "M", 509);
-        group.Cases =
+        group.Templates[0].Cases =
         [
             new ComplianceReportCaseModel
             {
@@ -930,11 +1148,11 @@ public class ComplianceExportDocumentBuilderTests
     }
 
     /// <summary>
-    /// Since #1188 a case is in exactly one group, so the per-<c>SdkCaseId</c>
-    /// de-duplication of appendix blocks is redundant — but it is the invariant the
-    /// document-wide ceiling was reasoned about with, and it is kept. Should the
-    /// same case instance ever reach two groups again, it still gets ONE block,
-    /// under the first section.
+    /// Since #1188 a case is in exactly one group (and since #1276 in exactly one
+    /// table of it), so the per-<c>SdkCaseId</c> de-duplication of appendix blocks
+    /// is redundant — but it is the invariant the document-wide ceiling was
+    /// reasoned about with, and it is kept. Should the same case instance ever
+    /// reach two groups again, it still gets ONE block, under the first section.
     /// </summary>
     [Test]
     public void Report_ImageAppendixIsEmittedOncePerCaseAcrossGroups()
@@ -949,10 +1167,10 @@ public class ComplianceExportDocumentBuilderTests
             ]
         };
 
-        ComplianceReportHeadlineGroupModel WithSharedCase(int? headlineId, string name)
+        ComplianceReportHeadlineGroupModel WithSharedCase(int? headlineId, string? name)
         {
             var group = Group(headlineId, name, "Miljø", 509);
-            group.Cases = [sharedCase];
+            group.Templates[0].Cases = [sharedCase];
             return group;
         }
 
@@ -983,7 +1201,7 @@ public class ComplianceExportDocumentBuilderTests
         var group = Group(1, "Overskrift", "Miljø", 509);
         // Four images each, so the per-case cap never bites: 100 cases want 400
         // images and the document ceiling is 200.
-        group.Cases = Enumerable.Range(1, 100)
+        group.Templates[0].Cases = Enumerable.Range(1, 100)
             .Select(c => new ComplianceReportCaseModel
             {
                 SdkCaseId = c, Title = "Vand", TaskDate = "2026-03-09", ImagesCount = 4,
@@ -1030,26 +1248,41 @@ public class ComplianceExportDocumentBuilderTests
     }
 
     /// <summary>
-    /// A template whose schema could not be derived says so in the heading. Zero
-    /// columns because derivation FAILED and zero columns because the template has
-    /// no answerable fields are different facts, and the export must not render
-    /// them identically. With union columns the notice is per template: the bare
-    /// label when EVERY template in the group is affected, the affected ids when
-    /// only some are — the rest of the table still carries real columns.
+    /// A template whose schema could not be derived says so on ITS OWN table's
+    /// subtitle (#1276). Zero columns because derivation FAILED and zero columns
+    /// because the template has no answerable fields are different facts, and the
+    /// export must not render them identically. Under #1188's union the notice sat
+    /// on the headline and had to name the affected ids; a table is one template
+    /// now, so the notice names nothing and the headline carries none.
     /// </summary>
     [Test]
-    public void Report_SchemaUnavailableIsStatedInTheSectionHeadingPerTemplate()
+    public void Report_SchemaUnavailableIsStatedOnThatTemplatesSubtitleOnly()
     {
-        var all = Group(1, "Overskrift", "Miljø", 509);
-        all.SchemaUnavailableCheckListIds = [509];
+        var group = Group(1, "Overskrift", "Miljø", 509, 511);
+        group.Templates[0].SchemaUnavailable = true;
 
-        var some = Group(2, "Anden overskrift", "Miljø", 509, 511);
-        some.SchemaUnavailableCheckListIds = [511];
+        var document = ComplianceExportDocumentBuilder.BuildReport([group], "p", false, _localization);
 
-        var document = ComplianceExportDocumentBuilder.BuildReport([all, some], "p", false, _localization);
+        Assert.That(document.Tables.Select(t => t.Subtitle),
+            Is.EqualTo(new[] { "Skema 509 (ColumnsUnavailable)", "Skema 511" }));
+        Assert.That(document.Tables[0].Title, Is.EqualTo("Overskrift"), "the headline carries no notice");
+    }
 
-        Assert.That(document.Tables[0].Title, Is.EqualTo("Overskrift (ColumnsUnavailable)"));
-        Assert.That(document.Tables[1].Title, Is.EqualTo("Anden overskrift (ColumnsUnavailable: #511)"));
+    /// <summary>
+    /// A template with no resolvable name (the service's <c>CheckListName</c> is
+    /// empty when no translation carries one) is subtitled with the neutral
+    /// <c>#{CheckListId}</c> — the same form a nameless headline gets — never an
+    /// empty heading over a table (#1276).
+    /// </summary>
+    [Test]
+    public void Report_TemplateWithoutANameIsSubtitledWithItsId()
+    {
+        var group = Group(1, "Overskrift", "Miljø", 509);
+        group.Templates[0].CheckListName = string.Empty;
+
+        var document = ComplianceExportDocumentBuilder.BuildReport([group], "p", false, _localization);
+
+        Assert.That(document.Tables[0].Subtitle, Is.EqualTo("#509"));
     }
 
     /// <summary>
@@ -1089,13 +1322,30 @@ public class ComplianceExportDocumentBuilderTests
         Assert.That(ComplianceExportDocumentBuilder.FormatStartHour(input), Is.EqualTo(expected));
     }
 
+    /// <summary>
+    /// A headline group with one template table per id, each named
+    /// <c>Skema {id}</c> and empty until a test fills its columns and cases
+    /// (#1276).
+    /// </summary>
     private static ComplianceReportHeadlineGroupModel Group(
-        int? headlineTagId, string? headlineName, string tagsCaption, params int[] checkListIds) => new()
+        int? headlineTagId, string? headlineName, string tagsCaption, params int[] checkListIds) =>
+        Group(headlineTagId, headlineName, tagsCaption,
+            checkListIds.Select(id => Template(id, $"Skema {id}")).ToArray());
+
+    private static ComplianceReportHeadlineGroupModel Group(
+        int? headlineTagId, string? headlineName, string tagsCaption,
+        params ComplianceReportTemplateTableModel[] templates) => new()
     {
         HeadlineTagId = headlineTagId,
         HeadlineName = headlineName,
         TagsCaption = tagsCaption,
-        CheckListIds = checkListIds.ToList()
+        Templates = templates.ToList()
+    };
+
+    private static ComplianceReportTemplateTableModel Template(int checkListId, string checkListName) => new()
+    {
+        CheckListId = checkListId,
+        CheckListName = checkListName
     };
 
     /// <summary>
