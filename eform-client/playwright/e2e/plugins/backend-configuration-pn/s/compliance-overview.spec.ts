@@ -19,7 +19,8 @@ import { UI_TIMEOUT } from '../wait-helpers';
  * this one owns the Oversigt view itself: the three columns and their order, the
  * `–` for a percentage that is not due yet, the header sort cycle and its
  * `aria-sort`, the row drill-down by mouse AND by keyboard, the un-drillable
- * totals row, and the empty state.
+ * totals row, a property with nothing due in the period (#1278), and the empty
+ * state.
  *
  * SELF-SEEDED, because shard `s` seeds no SQL. The fixture is the one proved by
  * `r/calendar-compliance-view.spec.ts` (deleted by #1170): create properties +
@@ -93,9 +94,8 @@ const propertyB: PropertyCreateUpdate = {
   address: generateRandmString(5),
   cvrNumber: '1111111',
 };
-// A third property with NO tasks at all. The aggregation emits one row per
-// property that has at least one matching compliance row, so filtering to this
-// one is how the empty state is reached without touching the period.
+// A third property with NO tasks at all — since #1278 it is LISTED, zeroed and
+// with a dash for the percentage, rather than dropped from the page.
 const propertyEmpty: PropertyCreateUpdate = {
   name: `MMM-ovw-empty-${rand}`,
   chrNumber: generateRandmString(5),
@@ -108,6 +108,18 @@ const worker: PropertyWorker = {
   surname: generateRandmString(5),
   language: 'Dansk',
   properties: [propertyA.name!, propertyB.name!],
+  workerEmail: `${generateRandmString(5)}@test.com`,
+};
+// Assigned to `propertyEmpty` ALONE. The employee filter is scoped to the
+// selected property (`getDeviceUsersFiltered({propertyIds:[propertyId]})`), so
+// this is the only worker it can offer once that property is picked — and the
+// one whose filtered page has nothing to show, which is how the empty state is
+// still reachable now that a property alone is always listed (#1278).
+const workerEmpty: PropertyWorker = {
+  name: generateRandmString(5),
+  surname: generateRandmString(5),
+  language: 'Dansk',
+  properties: [propertyEmpty.name!],
   workerEmail: `${generateRandmString(5)}@test.com`,
 };
 
@@ -388,6 +400,7 @@ test.describe.serial('Compliance Oversigt (#1164)', () => {
 
     await workersPage.goToPropertyWorkers();
     await workersPage.create(worker);
+    await workersPage.create(workerEmpty);
 
     propertiesSeeded = true;
   });
@@ -612,9 +625,9 @@ test.describe.serial('Compliance Oversigt (#1164)', () => {
   });
 
   // =========================================================================
-  // Empty state — the table is REPLACED, not rendered empty.
+  // A property with nothing in the period is LISTED (#1278).
   // =========================================================================
-  test('a property with no compliance rows shows the empty state instead of an empty table', async ({ page }) => {
+  test('a property with no compliance rows is listed with a dash; an employee filter matching nothing shows the empty state', async ({ page }) => {
     test.setTimeout(180000);
     expect(complianceSeeded).toBe(true);
 
@@ -639,6 +652,31 @@ test.describe.serial('Compliance Oversigt (#1164)', () => {
     await expect(page.locator('#complianceFilterPeriod .ng-value-label'))
       .toHaveText(/^\s*Sæt periode\s*$/);
     await expect(page.locator('#complianceShowReportBtn')).toBeVisible();
+
+    // Oversigt is a per-property SUMMARY, so a property whose tasks are not due
+    // in the period is listed rather than dropped from a page whose own filter
+    // still offers it (#1278). It is the whole answer here: the table is
+    // rendered, not replaced by the empty state.
+    const emptyRow = overviewRow(page, propertyEmpty.name!);
+    await expect(emptyRow).toHaveCount(1);
+    await expect(emptyRow.locator('.compliance-overview__overdue')).toHaveText(/^\s*0\s*$/);
+    // The en dash (U+2013), never 0 % — "nothing has fallen due yet".
+    await expect(emptyRow.locator('.compliance-overview__pill')).toHaveText(/^\s*–\s*$/);
+    await expect(page.locator('.compliance-overview__table')).toBeVisible();
+    await expect(page.locator('#complianceOverviewEmpty')).toHaveCount(0);
+
+    // The empty state still owns "nothing matches", and an EMPLOYEE filter is
+    // what reaches it: a filter is the user narrowing the page, so no row is
+    // seeded back for the property (#1278). `workerEmpty` is the only option the
+    // scoped employee list can offer here, and this property has nothing of his.
+    const filtered = overviewRefetch(page);
+    await page.locator('#complianceFilterEmployee').click({ timeout: UI_TIMEOUT });
+    const option = page
+      .locator('.ng-dropdown-panel .ng-option')
+      .filter({ hasText: workerEmpty.name! });
+    await option.first().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    await option.first().click({ timeout: UI_TIMEOUT });
+    expect((await filtered).ok()).toBeTruthy();
 
     await expect(page.locator('#complianceOverviewEmpty')).toBeVisible();
     await expect(page.locator('#complianceOverviewEmpty'))

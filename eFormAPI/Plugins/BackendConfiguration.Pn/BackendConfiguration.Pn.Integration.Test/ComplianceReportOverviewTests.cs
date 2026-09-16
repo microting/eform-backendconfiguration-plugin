@@ -40,17 +40,20 @@ using NSubstitute;
 /// The ten maths cases of the prototype suite
 /// (<c>lorem-ipsum/kalender/tests/compliance-overview.test.js</c>, the
 /// <c>buildCompanySummaries</c> group: <c>:12 :21 :35 :43 :54 :68 :80 :88 :92 :101</c>)
-/// are ported here. The other fourteen of its twenty-four cases are sorting,
+/// are ported here — all but <c>:35</c> ("a company with no cases produces no row"),
+/// which #1278 deliberately reverses for a page no filter has narrowed. The other fourteen of its twenty-four cases are sorting,
 /// formatting, banding and rendering — client-side presentation, and #1164's, not this
 /// fixture's.
 /// </para>
 ///
 /// <para>
-/// Eight cases have no prototype counterpart and are added here: the rounding MIDPOINT
+/// Eleven cases have no prototype counterpart and are added here: the rounding MIDPOINT
 /// (which the prototype cannot express, because JS has only one rounding mode), the
 /// unparseable-date branch, "status is genuinely ignored", the two soft-removed
 /// asymmetries, occurrence-exception flow-through, filter parity with
-/// <c>Index</c>, and the board/tag/site filters.
+/// <c>Index</c>, the board/tag/site filters, and #1278's three: a filter suppresses
+/// the listed-anyway rows, the property filter keeps its own property, and a
+/// soft-removed property is never listed.
 /// </para>
 ///
 /// <para>
@@ -495,12 +498,23 @@ public class ComplianceReportOverviewTests : TestBaseSetup
     }
 
     /// <summary>
-    /// Prototype <c>:35</c> — "a company with no cases produces no row". A property that
-    /// exists, has a series and a board, but no compliance row in the window, is ABSENT —
-    /// not a zeroed row.
+    /// #1278 REVERSES the prototype's <c>:35</c> ("a company with no cases produces no
+    /// row") for the unfiltered page: Oversigt is a per-property SUMMARY, and a property
+    /// whose tasks are simply not due this period must read "0 overdue, no percentage"
+    /// rather than vanish from the page while staying selectable in its own property
+    /// filter. The prototype's rule survives everywhere it still applies — under a
+    /// calendar/tag/employee filter (see
+    /// <see cref="ComplianceReportOverview_EmployeeFilter_ListsOnlyPropertiesWithMatchingRows"/>)
+    /// and for a soft-removed property.
+    ///
+    /// <para>
+    /// The zeroed row must not disturb the arithmetic: it contributes nothing to Totals,
+    /// and its own percentage is null (<c>Percent(0, 0)</c>) — never 0 %, which would read
+    /// as "nothing was done".
+    /// </para>
     /// </summary>
     [Test]
-    public async Task ComplianceReportOverview_PropertyWithNoMatchingRows_ProducesNoRow()
+    public async Task ComplianceReportOverview_PropertyWithNoMatchingRows_IsListedWithNoPercentage()
     {
         var core = await GetCore();
         var today = DateTime.UtcNow.Date;
@@ -521,22 +535,158 @@ public class ComplianceReportOverviewTests : TestBaseSetup
         var result = await service.Overview(Request(today.AddDays(-30), today.AddDays(30)));
 
         Assert.That(result.Success, Is.True, result.Message);
-        Assert.That(result.Model!.Rows, Has.Count.EqualTo(1));
-        Assert.That(result.Model.Rows[0].PropertyId, Is.EqualTo(withRows.PropertyId));
-        Assert.That(result.Model.Rows.Any(r => r.PropertyId == empty.PropertyId), Is.False,
-            "a property with no matching rows must be absent, not a zeroed row");
+        Assert.That(result.Model!.Rows, Has.Count.EqualTo(2), "both properties are listed");
+
+        var emptyRow = result.Model.Rows.Single(r => r.PropertyId == empty.PropertyId);
+        Assert.Multiple(() =>
+        {
+            Assert.That(emptyRow.PropertyName, Is.EqualTo("Ejendom Tom"));
+            Assert.That(emptyRow.Total, Is.Zero);
+            Assert.That(emptyRow.Done, Is.Zero);
+            Assert.That(emptyRow.Overdue, Is.Zero, "nothing due is not an overdue task");
+            Assert.That(emptyRow.DueTotal, Is.Zero);
+            Assert.That(emptyRow.DueDone, Is.Zero);
+            Assert.That(emptyRow.CompliancePct, Is.Null,
+                "null renders as the en dash; 0 would read as 'nothing was done'");
+        });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Model.Totals.Total, Is.EqualTo(1), "Totals count the other property only");
+            Assert.That(result.Model.Totals.DueTotal, Is.EqualTo(1));
+            Assert.That(result.Model.Totals.DueDone, Is.EqualTo(1));
+            Assert.That(result.Model.Totals.CompliancePct, Is.EqualTo(100),
+                "a property with nothing due cannot move the weighted total");
+        });
     }
 
     /// <summary>
-    /// The other half of "no row for a property with nothing to show", and the one the
-    /// date-window test above cannot reach: a property whose rows ALL survive phase A —
-    /// they are inside the window, on a property with no filter excluding it — and are
-    /// dropped later, in phase C. It must produce NO row at all, not an all-zero one.
+    /// The listed-anyway rule is for the UNFILTERED page only (#1278). A
+    /// calendar/tag/employee filter is the user narrowing the page to what matches them,
+    /// and answering an employee filter with properties that worker has nothing to do
+    /// with would be noise — so under such a filter the prototype's "no cases, no row"
+    /// still holds.
+    /// </summary>
+    [Test]
+    public async Task ComplianceReportOverview_EmployeeFilter_ListsOnlyPropertiesWithMatchingRows()
+    {
+        var core = await GetCore();
+        var today = DateTime.UtcNow.Date;
+
+        var worked = await SeedSeries("Ejendom A", "T", today.AddDays(-60));
+        await SeedCalendarConfig(worked.ArpId);
+        var siteId = await SeedSdkSite("Site A");
+        await SeedPlanningSite(worked.ArpId, siteId, worked.AreaId, worked.AreaRuleId);
+        await SeedCompliance(worked.PlanningId, worked.PropertyId, worked.AreaId,
+            today.AddDays(-1), await SeedSdkCase(100, siteId));
+
+        // Not this worker's, and with no compliance row at all — so the filtered page
+        // has nothing to show for it either way.
+        var untouched = await SeedSeries("Ejendom B", "T", today.AddDays(-60));
+        await SeedCalendarConfig(untouched.ArpId);
+
+        var service = BuildService(core);
+        var from = today.AddDays(-60);
+        var to = today.AddDays(30);
+
+        var unfiltered = await service.Overview(Request(from, to));
+        Assert.That(unfiltered.Success, Is.True, unfiltered.Message);
+        Assert.That(unfiltered.Model!.Rows, Has.Count.EqualTo(2), "unfiltered: both are listed");
+
+        var byEmployee = await service.Overview(Request(from, to, siteIds: [siteId]));
+        Assert.That(byEmployee.Success, Is.True, byEmployee.Message);
+        Assert.Multiple(() =>
+        {
+            Assert.That(byEmployee.Model!.Rows, Has.Count.EqualTo(1),
+                "the filter narrows the page; no zeroed rows are added back");
+            Assert.That(byEmployee.Model.Rows[0].PropertyId, Is.EqualTo(worked.PropertyId));
+        });
+    }
+
+    /// <summary>
+    /// Picking a property in the property filter asks "how is THIS property doing", and
+    /// that deserves an answer even when the answer is "nothing due" (#1278) — the one
+    /// filter that still lists a property with no matching rows.
+    /// </summary>
+    [Test]
+    public async Task ComplianceReportOverview_PropertyFilter_ListsThePropertyWithNothingInTheWindow()
+    {
+        var core = await GetCore();
+        var today = DateTime.UtcNow.Date;
+
+        var other = await SeedSeries("Ejendom A", "T", today.AddDays(-60));
+        await SeedCalendarConfig(other.ArpId);
+        await SeedCompliance(other.PlanningId, other.PropertyId, other.AreaId,
+            today.AddDays(-1), await SeedSdkCase(100));
+
+        var empty = await SeedSeries("Ejendom Tom", "T", today.AddDays(-400));
+        await SeedCalendarConfig(empty.ArpId);
+
+        var service = BuildService(core);
+        var result = await service.Overview(
+            Request(today.AddDays(-60), today.AddDays(30), propertyId: empty.PropertyId));
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Model!.Rows, Has.Count.EqualTo(1), "the selected property only");
+            Assert.That(result.Model.Rows[0].PropertyId, Is.EqualTo(empty.PropertyId));
+            Assert.That(result.Model.Rows[0].Total, Is.Zero);
+            Assert.That(result.Model.Rows[0].CompliancePct, Is.Null);
+        });
+    }
+
+    /// <summary>
+    /// A soft-removed property is not listed (#1278): the seed uses
+    /// <c>GetCommonDictionary</c>'s predicate verbatim, so the page lists at least what
+    /// its own property filter offers.
     ///
     /// <para>
-    /// This is what pins the LAZY row creation in <c>Aggregate</c>. A regression that
-    /// created the row eagerly, from the phase-A candidate list, would still count
-    /// correctly for every other case in this fixture and would pass the whole suite.
+    /// It is the SEED side this pins. The property has no candidate rows either, so phase
+    /// A would keep it out regardless — which is why the assertion is that no row exists
+    /// for it at all, rather than anything about its counters.
+    /// </para>
+    /// </summary>
+    [Test]
+    public async Task ComplianceReportOverview_SoftRemovedPropertyWithNothingInTheWindow_IsNotListed()
+    {
+        var core = await GetCore();
+        var today = DateTime.UtcNow.Date;
+
+        var kept = await SeedSeries("Ejendom A", "T", today.AddDays(-60));
+        await SeedCalendarConfig(kept.ArpId);
+        await SeedCompliance(kept.PlanningId, kept.PropertyId, kept.AreaId,
+            today.AddDays(-1), await SeedSdkCase(100));
+
+        var gone = await SeedSeries("Ejendom Slettet", "T", today.AddDays(-60));
+        await SeedCalendarConfig(gone.ArpId);
+        var goneProperty = await BackendConfigurationPnDbContext!.Properties
+            .FirstAsync(p => p.Id == gone.PropertyId);
+        goneProperty.WorkflowState = Constants.WorkflowStates.Removed;
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var service = BuildService(core);
+        var result = await service.Overview(Request(today.AddDays(-60), today.AddDays(30)));
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Model!.Rows, Has.Count.EqualTo(1));
+            Assert.That(result.Model.Rows[0].PropertyId, Is.EqualTo(kept.PropertyId));
+        });
+    }
+
+    /// <summary>
+    /// The other half of the date-window test above: a property whose rows ALL survive
+    /// phase A — inside the window, no filter excluding them — and are dropped later, in
+    /// phase C. Since #1278 it is LISTED (unfiltered page), but every one of its counters
+    /// must read zero: a dropped occurrence reaches no counter, and the zeroed row must
+    /// not smuggle one back in.
+    ///
+    /// <para>
+    /// That is what still pins the phase-C drops. A regression that counted the phase-A
+    /// candidates instead would give this property Total 2 and an overdue — it cannot
+    /// hide behind the row now existing.
     /// </para>
     ///
     /// <para>
@@ -546,7 +696,7 @@ public class ComplianceReportOverviewTests : TestBaseSetup
     /// </para>
     /// </summary>
     [Test]
-    public async Task ComplianceReportOverview_PropertyWhoseRowsAreAllDroppedInPhaseC_ProducesNoRow()
+    public async Task ComplianceReportOverview_PropertyWhoseRowsAreAllDroppedInPhaseC_IsListedWithZeroes()
     {
         var core = await GetCore();
         var today = DateTime.UtcNow.Date;
@@ -581,11 +731,22 @@ public class ComplianceReportOverviewTests : TestBaseSetup
         var result = await service.Overview(Request(today.AddDays(-60), today.AddDays(30)));
 
         Assert.That(result.Success, Is.True, result.Message);
-        Assert.That(result.Model!.Rows, Has.Count.EqualTo(1));
-        Assert.That(result.Model.Rows[0].PropertyId, Is.EqualTo(kept.PropertyId));
-        Assert.That(result.Model.Rows.Any(r => r.PropertyId == dropped.PropertyId), Is.False,
-            "a property whose every row is dropped in phase C must be ABSENT — rows are "
-            + "created lazily on the first SURVIVING candidate, never from the phase-A list");
+        Assert.That(result.Model!.Rows, Has.Count.EqualTo(2));
+
+        // The zeroed shape itself is spelled out in
+        // ComplianceReportOverview_PropertyWithNoMatchingRows_IsListedWithNoPercentage;
+        // here it is the phase-C drops that must reach no counter.
+        var droppedRow = result.Model.Rows.Single(r => r.PropertyId == dropped.PropertyId);
+        Assert.Multiple(() =>
+        {
+            Assert.That(droppedRow.Total, Is.Zero,
+                "a phase-C drop reaches NO counter — the row is listed (#1278), never counted");
+            Assert.That(droppedRow.Done, Is.Zero);
+            Assert.That(droppedRow.Overdue, Is.Zero);
+            Assert.That(droppedRow.DueTotal, Is.Zero);
+            Assert.That(droppedRow.DueDone, Is.Zero);
+            Assert.That(droppedRow.CompliancePct, Is.Null);
+        });
 
         Assert.Multiple(() =>
         {
