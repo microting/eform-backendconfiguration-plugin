@@ -5061,6 +5061,249 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
 
         return arp.Id;
     }
+
+    // Resigning a worker must disable their web login: Resigned is a visibility flag that
+    // no authentication code reads, so without this the person keeps a working account.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_Resigned_DisablesLogin()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        var workerEmail = $"{Guid.NewGuid()}@test.com";
+        var created = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = workerEmail
+        }, core, 1, TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+        Assert.That(created.Success, Is.True, created.Message);
+
+        var login = await BaseDbContext!.Users.AsNoTracking().SingleAsync(x => x.Email == workerEmail);
+        Assert.That(login.IsActive, Is.True, "a newly created login should start enabled");
+
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = workerEmail,
+            Resigned = true,
+            ResignedAtDate = new DateTime(2026, 3, 12, 0, 0, 0, DateTimeKind.Utc)
+        }, core, 1, userService, userManager, BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+        var worker = await MicrotingDbContext!.Workers.AsNoTracking().SingleAsync(x => x.Email == workerEmail);
+        Assert.That(worker.Resigned, Is.True);
+
+        var reloaded = await BaseDbContext.Users.AsNoTracking().SingleAsync(x => x.Id == login.Id);
+        Assert.That(reloaded.IsActive, Is.False,
+            "a resigned worker must not keep a login that can sign in");
+    }
+
+    // Reinstating has to give the account back through the same path, or the only way out
+    // of a mistaken resignation is a support ticket.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_Reinstated_ReEnablesLogin()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        var workerEmail = $"{Guid.NewGuid()}@test.com";
+        var created = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = workerEmail
+        }, core, 1, TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+        Assert.That(created.Success, Is.True, created.Message);
+
+        var login = await BaseDbContext!.Users.AsNoTracking().SingleAsync(x => x.Email == workerEmail);
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+
+        DeviceUserModel UpdateModel(bool resigned) => new()
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = workerEmail,
+            Resigned = resigned,
+            ResignedAtDate = new DateTime(2026, 3, 12, 0, 0, 0, DateTimeKind.Utc)
+        };
+
+        var resign = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(UpdateModel(true),
+            core, 1, userService, userManager, BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+        Assert.That(resign.Success, Is.True, resign.Message);
+        Assert.That((await BaseDbContext.Users.AsNoTracking().SingleAsync(x => x.Id == login.Id)).IsActive,
+            Is.False, "precondition: resigning should have disabled the login");
+
+        // Act - reinstate
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(UpdateModel(false),
+            core, 1, userService, userManager, BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+        var reloaded = await BaseDbContext.Users.AsNoTracking().SingleAsync(x => x.Id == login.Id);
+        Assert.That(reloaded.IsActive, Is.True,
+            "reinstating a worker must give the account back, or the only way out is a support ticket");
+    }
+
+    // A worker can be resigned in the same save that first gives them a login - the account
+    // is created here rather than found. It must not arrive enabled.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_ResignedWithNoExistingLogin_CreatesDisabledLogin()
+    {
+        // Arrange - a worker with no login: created without an email, so no account exists.
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        var created = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = ""
+        }, core, 1, TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+        Assert.That(created.Success, Is.True, created.Message);
+
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var newEmail = $"{Guid.NewGuid()}@test.com";
+        Assert.That(await BaseDbContext!.Users.AnyAsync(x => x.Email == newEmail), Is.False,
+            "precondition: this address must not already have a login");
+
+        // Act - give them an address and resign them in the same save.
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = newEmail,
+            Resigned = true,
+            ResignedAtDate = new DateTime(2026, 3, 12, 0, 0, 0, DateTimeKind.Utc)
+        }, core, 1, userService, userManager, BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+        var login = await BaseDbContext.Users.AsNoTracking().SingleOrDefaultAsync(x => x.Email == newEmail);
+        Assert.That(login, Is.Not.Null, "the save should still create the login");
+        Assert.That(login!.IsActive, Is.False,
+            "a login created for an already-resigned worker must not be able to sign in");
+    }
+
+    // skipLoginWork protects an unmanaged account's name, locale and groups. Account STATE
+    // is a different concern: a resigned admin is the account you least want left able to
+    // sign in, so IsActive is written even here - and logged, because it is a deliberate
+    // exception to the rule the rest of this method follows.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_ResolvedLoginNotPluginManaged_Resigned_DisablesLogin()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        var workerEmail = $"{Guid.NewGuid()}@test.com";
+        var originalFirstName = Guid.NewGuid().ToString();
+        var created = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = originalFirstName,
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = workerEmail
+        }, core, 1, TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+        Assert.That(created.Success, Is.True, created.Message);
+
+        var login = await BaseDbContext!.Users.AsNoTracking().SingleAsync(x => x.Email == workerEmail);
+        await AddToSecurityGroupAsync(login.Id, $"Managers {Guid.NewGuid()}");
+        var groupsBefore = await GetSecurityGroupNamesAsync(login.Id);
+
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = workerEmail, // unchanged - changing it is refused for such a login
+            Resigned = true,
+            ResignedAtDate = new DateTime(2026, 3, 12, 0, 0, 0, DateTimeKind.Utc)
+        }, core, 1, userService, userManager, BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+        var reloaded = await BaseDbContext.Users.AsNoTracking().SingleAsync(x => x.Id == login.Id);
+        Assert.That(reloaded.IsActive, Is.False,
+            "a resigned worker must be refused even when the plugin does not manage their login");
+        // ...and everything skipLoginWork protects is still untouched.
+        Assert.That(reloaded.FirstName, Is.EqualTo(originalFirstName));
+        Assert.That(reloaded.UserName, Is.EqualTo(login.UserName));
+        Assert.That(await GetSecurityGroupNamesAsync(login.Id), Is.EquivalentTo(groupsBefore));
+    }
 }
 
 public class EFormCoreService : IEFormCoreService

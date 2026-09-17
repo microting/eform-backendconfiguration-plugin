@@ -758,6 +758,12 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         // refuse the whole save either way.
                         var user = await FindLoginWithoutSideEffectsAsync(userManager, oldEmail).ConfigureAwait(false);
 
+                        // `user` is nulled below whenever login work is skipped - for a
+                        // login this plugin does not manage, and for one whose address is
+                        // invalid but unchanged. Account state still has to follow the
+                        // resignation onto it, so keep the pre-existing account here.
+                        var existingLogin = user;
+
                         // This plugin writes only to logins it manages - see
                         // IsPluginManagedLoginAsync. A worker linked to any other
                         // account still saves its own fields, but the account's
@@ -905,6 +911,28 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         worker.ResignedAtDate = deviceUserModel.ResignedAtDate;
                         await worker.Update(sdkDbContext).ConfigureAwait(false);
 
+                        // Account state follows the resignation. Resigned itself is only
+                        // a visibility flag - no authentication code reads it - so without
+                        // this a resigned worker keeps a login that still signs in.
+                        if (existingLogin != null && skipLoginWork)
+                        {
+                            // skipLoginWork protects the account's name, locale and groups,
+                            // either because this plugin does not manage it or because its
+                            // address is invalid but unchanged. Whether it can sign in at all
+                            // is a different question, and a resigned admin is the account you
+                            // least want left open. ExecuteUpdate writes exactly this one
+                            // column: UpdateAsync would re-run the address validation that
+                            // caused the skip in the invalid-address case, and fail.
+                            var isActive = !deviceUserModel.Resigned;
+                            await baseDbContext.Users
+                                .Where(x => x.Id == existingLogin.Id)
+                                .ExecuteUpdateAsync(x => x.SetProperty(u => u.IsActive, isActive))
+                                .ConfigureAwait(false);
+                            logger.LogWarning(
+                                "[UpdateDeviceUser] wrote IsActive={IsActive} on {Email} while skipping the rest of its login work",
+                                isActive, oldEmail);
+                        }
+
                         if (skipLoginWork)
                         {
                             // Neither branch below runs: `user` stays null, so every
@@ -918,6 +946,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             user.FirstName = deviceUserModel.UserFirstName;
                             user.LastName = deviceUserModel.UserLastName;
                             user.Locale = language.LanguageCode;
+                            user.IsActive = !deviceUserModel.Resigned;
                             var result = await userManager.UpdateAsync(user);
                             if (!result.Succeeded)
                             {
@@ -958,6 +987,9 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                     LastName = deviceUserModel.UserLastName.Trim(),
                                     Locale = deviceUserModel.LanguageCode,
                                     EmailConfirmed = true,
+                                    // A worker can be resigned in the same save that first
+                                    // gives them a login; it must not arrive enabled.
+                                    IsActive = !deviceUserModel.Resigned,
                                     TwoFactorEnabled = false,
                                     IsGoogleAuthenticatorEnabled = false,
                                     TimeZone = "Europe/Copenhagen",

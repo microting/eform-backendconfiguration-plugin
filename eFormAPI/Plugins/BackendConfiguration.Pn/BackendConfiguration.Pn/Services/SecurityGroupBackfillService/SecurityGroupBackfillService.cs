@@ -195,6 +195,7 @@ public class SecurityGroupBackfillService(
                     x.Email,
                     x.FirstName,
                     x.LastName,
+                    x.Resigned,
                     // The save paths take the locale from the model's LanguageCode,
                     // which is the site's language. A Worker carries no language of
                     // its own, so read it off the site it is assigned to and fall
@@ -245,6 +246,10 @@ public class SecurityGroupBackfillService(
                         ? DefaultLanguageCode
                         : worker.LanguageCode,
                     EmailConfirmed = true,
+                    // A resigned worker still needs the row - this sweep exists so that
+                    // "Set password" cannot hit RemovePasswordAsync(null) and 500 - but it
+                    // must not arrive able to sign in.
+                    IsActive = !worker.Resigned,
                     TwoFactorEnabled = false,
                     IsGoogleAuthenticatorEnabled = false,
                     TimeZone = "Europe/Copenhagen",

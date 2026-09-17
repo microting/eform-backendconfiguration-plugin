@@ -156,6 +156,7 @@ public class SecurityGroupBackfillServiceTest : TestBaseSetup
         var liveEmail = $"{Guid.NewGuid()}@example.test";
         var syntheticEmail = $"user_{Guid.NewGuid():N}_1@microting.invalid";
         var removedEmail = $"{Guid.NewGuid()}@removed.test";
+        var resignedEmail = $"{Guid.NewGuid()}@resigned.test";
         var existingAccountEmail = $"{Guid.NewGuid()}@already-has-account.test";
         // Non-ASCII local part: outside the default AllowedUserNameCharacters, so
         // Identity's CreateAsync refuses it - same shape as
@@ -198,6 +199,7 @@ public class SecurityGroupBackfillServiceTest : TestBaseSetup
         await SeedSdkWorkerAsync(sdkDbContext, liveEmail);
         await SeedSdkWorkerAsync(sdkDbContext, existingAccountEmail);
         await SeedSdkWorkerAsync(sdkDbContext, removedEmail, Constants.WorkflowStates.Removed);
+        await SeedSdkWorkerAsync(sdkDbContext, resignedEmail, resigned: true);
         await SeedSdkWorkerAsync(sdkDbContext, refusedEmail);
         await SeedSdkWorkerAsync(sdkDbContext, lateValidEmail);
         await SeedSdkWorkerAsync(sdkDbContext, syntheticEmail);
@@ -222,6 +224,14 @@ public class SecurityGroupBackfillServiceTest : TestBaseSetup
         // Assert - removed worker: must not be resurrected with a login.
         Assert.That(await BaseDbContext.Users.AnyAsync(x => x.Email == removedEmail), Is.False,
             "a removed worker must never get a login from the backfill");
+
+        // Assert - resigned worker: this sweep exists so "Set password" cannot hit
+        // RemovePasswordAsync(null) and 500, so the row still has to be created - but it
+        // must not be able to sign in.
+        var resignedUser = await BaseDbContext.Users.AsNoTracking()
+            .SingleAsync(x => x.Email == resignedEmail);
+        Assert.That(resignedUser.IsActive, Is.False,
+            "a login created for a resigned worker must not be able to sign in");
 
         // Assert - email that already had an AspNetUsers row: no duplicate is
         // created, and the pre-existing account is left exactly as it was.
@@ -249,7 +259,8 @@ public class SecurityGroupBackfillServiceTest : TestBaseSetup
         // documented, structural exception. Queried generically
         // across the whole seeded set rather than per worker, so a case added
         // to this test later is covered automatically without a new assert.
-        var expectedLoginEmails = new[] { liveEmail, syntheticEmail, existingAccountEmail, lateValidEmail };
+        var expectedLoginEmails = new[]
+            { liveEmail, syntheticEmail, existingAccountEmail, lateValidEmail, resignedEmail };
         var actualLoginEmails = await BaseDbContext.Users
             .Where(x => expectedLoginEmails.Contains(x.Email))
             .Select(x => x.Email)
@@ -433,14 +444,16 @@ public class SecurityGroupBackfillServiceTest : TestBaseSetup
     private static async Task<Worker> SeedSdkWorkerAsync(
         MicrotingDbContext sdkDbContext,
         string email,
-        string workflowState = Constants.WorkflowStates.Created)
+        string workflowState = Constants.WorkflowStates.Created,
+        bool resigned = false)
     {
         var worker = new Worker
         {
             FirstName = $"backfill-{Guid.NewGuid():N}",
             LastName = "Worker",
             Email = email,
-            WorkflowState = workflowState
+            WorkflowState = workflowState,
+            Resigned = resigned
         };
         await sdkDbContext.Workers.AddAsync(worker);
         await sdkDbContext.SaveChangesAsync();
