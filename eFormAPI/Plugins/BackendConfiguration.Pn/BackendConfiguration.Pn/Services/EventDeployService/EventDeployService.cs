@@ -1187,6 +1187,24 @@ public class EventDeployService(
                 .ConfigureAwait(false))
             .ToDictionary(x => x.Id);
 
+        // #1287 — OVERDUE entries the items-planning rotation already retired.
+        // Must run BEFORE the Compliance-driven loop below: the candidates are
+        // "Compliance rows whose case is not in sdkCasesById", and that loop
+        // re-points rows onto brand-new live case ids that are not in the
+        // dictionary either, so identifying the candidates afterwards would
+        // sweep freshly swapped occurrences in. The two sets are disjoint
+        // (retired vs live cases), so nothing here changes what the loop sees.
+        var repointedCount = await RepointRetiredOccurrencesInPlaceAsync(
+                planningId,
+                complianceRows,
+                sdkCasesById,
+                planningCasesById,
+                oldEformId,
+                newEformId,
+                sdkDbContext,
+                cancellationToken)
+            .ConfigureAwait(false);
+
         // #1378 — make the size of the synchronous pass observable before it runs.
         var pendingSwapCount = sdkCasesById.Values
             .Count(c => c.CheckListId != newEformId
@@ -1521,8 +1539,230 @@ public class EventDeployService(
         }
 
         logger.LogInformation(
-            "EventDeployService.RepairEformForOpenOccurrencesAsync: planning {PlanningId} finished {OldEformId} -> {NewEformId}: {SwappedCount} swapped, {RetractedCount} retracted without replacement, {FailedCount} failed",
-            planningId, oldEformId, newEformId, swappedCount, retractedCount, failedCount);
+            "EventDeployService.RepairEformForOpenOccurrencesAsync: planning {PlanningId} finished {OldEformId} -> {NewEformId}: {SwappedCount} swapped, {RetractedCount} retracted without replacement, {FailedCount} failed, {RepointedCount} overdue re-pointed in place",
+            planningId, oldEformId, newEformId, swappedCount, retractedCount, failedCount, repointedCount);
+    }
+
+    /// <summary>
+    /// #1287 — moves OVERDUE occurrences onto <paramref name="newEformId"/>
+    /// without redeploying them. When a rotation passes, items-planning retires
+    /// the unanswered case (<c>Cases.WorkflowState = removed</c>, its
+    /// PlanningCase/PlanningCaseSite <c>retracted</c>) while the Compliance row
+    /// stays live as the overdue entry — and the compliance report reads the
+    /// eForm off <c>SdkCase.CheckListId</c>. The swap sweeps only reach LIVE
+    /// cases, so without this step every overdue entry keeps showing and
+    /// opening the old eForm.
+    ///
+    /// The case is re-pointed IN PLACE: nothing is created, revived, retracted
+    /// or cloud-deleted, because these cases are on no device and handing
+    /// overdue tasks back to workers is explicitly forbidden. A completed case,
+    /// or one holding any real answer, keeps its eForm — the answers belong to
+    /// that template. The only FieldValues an unanswered case can hold are the
+    /// empty rows the old template produced when someone opened the entry;
+    /// they are soft-removed so the new template starts clean.
+    /// </summary>
+    /// <returns>The number of SDK cases re-pointed.</returns>
+    private async Task<int> RepointRetiredOccurrencesInPlaceAsync(
+        int planningId,
+        List<Compliance> complianceRows,
+        Dictionary<int, SdkCase> sdkCasesById,
+        Dictionary<int, PlanningCase> planningCasesById,
+        int oldEformId,
+        int newEformId,
+        SdkDbContext sdkDbContext,
+        CancellationToken cancellationToken)
+    {
+        var candidates = complianceRows
+            .Where(c => !sdkCasesById.ContainsKey(c.MicrotingSdkCaseId))
+            .ToList();
+        if (candidates.Count == 0)
+        {
+            return 0;
+        }
+
+        var candidatePlanningCaseIds = candidates
+            .Where(c => c.PlanningCaseSiteId > 0)
+            .Select(c => c.PlanningCaseSiteId)
+            .Distinct()
+            .ToList();
+        var candidateCaseIds = candidates
+            .Select(c => c.MicrotingSdkCaseId)
+            .Distinct()
+            .ToList();
+
+        // Retracted rows INCLUDED — retracting them is exactly what the rotation
+        // does. Compliance.PlanningCaseSiteId holds the PlanningCase id (see
+        // EnsureComplianceRowAsync).
+        var occurrenceCaseSites = await itemsPlanningPnDbContext.PlanningCaseSites
+            .Where(x => x.PlanningId == planningId
+                        && x.WorkflowState != Constants.WorkflowStates.Removed
+                        && (candidatePlanningCaseIds.Contains(x.PlanningCaseId)
+                            || candidateCaseIds.Contains(x.MicrotingSdkCaseId)))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var caseIdsByCompliance = candidates.ToDictionary(
+            c => c.Id,
+            c => occurrenceCaseSites
+                .Where(x => x.MicrotingSdkCaseId > 0
+                            && (x.MicrotingSdkCaseId == c.MicrotingSdkCaseId
+                                || (c.PlanningCaseSiteId > 0 && x.PlanningCaseId == c.PlanningCaseSiteId)))
+                .Select(x => x.MicrotingSdkCaseId)
+                .Append(c.MicrotingSdkCaseId)
+                .Distinct()
+                .ToList());
+        var occurrenceCaseIds = caseIdsByCompliance.Values
+            .SelectMany(ids => ids)
+            .Distinct()
+            .ToList();
+
+        // Only retired, uncompleted cases not yet on the new eForm. Live cases
+        // belong to the swap sweeps; the completion rule is SwapCaseEformAsync's.
+        var retiredCases = await sdkDbContext.Cases
+            .Where(c => occurrenceCaseIds.Contains(c.Id)
+                        && (c.WorkflowState == Constants.WorkflowStates.Removed
+                            || c.WorkflowState == Constants.WorkflowStates.Retracted)
+                        && c.Status != CompletedStatus
+                        && c.DoneAt == null
+                        && c.CheckListId != newEformId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        if (retiredCases.Count == 0)
+        {
+            return 0;
+        }
+
+        var retiredCaseIds = retiredCases.Select(c => c.Id).ToList();
+        var liveFieldValuesByCase = (await sdkDbContext.FieldValues
+                .Where(fv => fv.CaseId.HasValue
+                             && retiredCaseIds.Contains(fv.CaseId.Value)
+                             && fv.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false))
+            .ToLookup(fv => fv.CaseId!.Value);
+
+        // A partial answer is still an answer: re-pointing would orphan it
+        // against a template it was never entered in.
+        var repointableCasesById = retiredCases
+            .Where(c => !liveFieldValuesByCase[c.Id].Any(fv =>
+                !string.IsNullOrEmpty(fv.Value) || fv.UploadedDataId != null))
+            .ToDictionary(c => c.Id);
+        if (repointableCasesById.Count == 0)
+        {
+            return 0;
+        }
+
+        // Every PlanningCaseSite pointing at a re-pointable case, not only the
+        // ones the occurrence lookup found (#934 can leave several).
+        var repointableCaseIds = repointableCasesById.Keys.ToList();
+        var caseSitesByCase = (await itemsPlanningPnDbContext.PlanningCaseSites
+                .Where(x => x.PlanningId == planningId
+                            && x.WorkflowState != Constants.WorkflowStates.Removed
+                            && repointableCaseIds.Contains(x.MicrotingSdkCaseId))
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false))
+            .ToLookup(x => x.MicrotingSdkCaseId);
+
+        var repointedCaseIds = new HashSet<int>();
+        var touchedPlanningCaseIds = new HashSet<int>();
+
+        foreach (var compliance in candidates)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            try
+            {
+                foreach (var caseId in caseIdsByCompliance[compliance.Id])
+                {
+                    // A case shared by two Compliance rows is re-pointed once.
+                    if (!repointableCasesById.TryGetValue(caseId, out var sdkCase)
+                        || repointedCaseIds.Contains(caseId))
+                    {
+                        continue;
+                    }
+
+                    // Empty rows first, so a failure between the two saves never
+                    // leaves the new template holding the old template's rows.
+                    foreach (var fieldValue in liveFieldValuesByCase[caseId])
+                    {
+                        await fieldValue.Delete(sdkDbContext).ConfigureAwait(false);
+                    }
+
+                    sdkCase.CheckListId = newEformId;
+                    await sdkCase.Update(sdkDbContext).ConfigureAwait(false);
+
+                    foreach (var caseSite in caseSitesByCase[caseId])
+                    {
+                        caseSite.MicrotingSdkeFormId = newEformId;
+                        await caseSite.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
+                        touchedPlanningCaseIds.Add(caseSite.PlanningCaseId);
+                    }
+
+                    repointedCaseIds.Add(caseId);
+
+                    logger.LogInformation(
+                        "EventDeployService.RepairEformForOpenOccurrencesAsync: planning {PlanningId} overdue case {SdkCaseId} re-pointed in place {OldEformId} -> {NewEformId} (compliance {ComplianceId}); not redeployed",
+                        planningId, caseId, oldEformId, newEformId, compliance.Id);
+                }
+
+                // Keep MicrotingSdkCaseId: the row still points at the same,
+                // now re-pointed, retired case.
+                if (repointedCaseIds.Contains(compliance.MicrotingSdkCaseId)
+                    && compliance.MicrotingSdkeFormId != newEformId)
+                {
+                    compliance.MicrotingSdkeFormId = newEformId;
+                    await compliance.Update(dbContext).ConfigureAwait(false);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex,
+                    "EventDeployService.RepairEformForOpenOccurrencesAsync: re-pointing overdue occurrence threw {ExceptionType} for planning {PlanningId} (compliance {ComplianceId}) — continuing with the remaining occurrences.",
+                    ex.GetType().Name, planningId, compliance.Id);
+            }
+        }
+
+        if (touchedPlanningCaseIds.Count > 0)
+        {
+            // Same idea as the completed-sibling guard in SwapCaseEformAsync: a
+            // shared PlanningCase follows only when EVERY one of its sites now
+            // carries the new eForm. A completed or answered sibling keeps it on
+            // the eForm that sibling was actually filled in on. Loaded fresh
+            // (tracked, so the rows re-pointed above resolve to the same
+            // instances) because a parent may have siblings no lookup above saw.
+            // A site that never got a case (MicrotingSdkCaseId 0) carries no
+            // eForm fact and nothing would ever re-point it, so it must not pin
+            // the parent to the old eForm forever.
+            var parentIds = touchedPlanningCaseIds.ToList();
+            var parentsWithSiteOffNewEform = (await itemsPlanningPnDbContext.PlanningCaseSites
+                    .Where(x => parentIds.Contains(x.PlanningCaseId)
+                                && x.WorkflowState != Constants.WorkflowStates.Removed
+                                && x.MicrotingSdkCaseId > 0)
+                    .ToListAsync(cancellationToken)
+                    .ConfigureAwait(false))
+                .Where(x => x.MicrotingSdkeFormId != newEformId)
+                .Select(x => x.PlanningCaseId)
+                .ToHashSet();
+
+            foreach (var parentId in parentIds)
+            {
+                if (!planningCasesById.TryGetValue(parentId, out var planningCase)
+                    || planningCase.MicrotingSdkeFormId == newEformId
+                    || parentsWithSiteOffNewEform.Contains(parentId))
+                {
+                    continue;
+                }
+
+                planningCase.MicrotingSdkeFormId = newEformId;
+                await planningCase.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
+            }
+        }
+
+        return repointedCaseIds.Count;
     }
 
     /// <summary>

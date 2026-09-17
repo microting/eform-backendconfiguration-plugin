@@ -366,6 +366,47 @@ public class EventDeployServiceEformRepairTests : TestBaseSetup
     private async Task<PlanningCase> ReadPlanningCaseAsync(int id) =>
         await ItemsPlanningPnDbContext!.PlanningCases.AsNoTracking().FirstAsync(x => x.Id == id);
 
+    /// <summary>
+    /// One SDK FieldValue on <paramref name="sdkCase"/>'s own template. A
+    /// null/empty <paramref name="value"/> is the empty row the SDK writes when
+    /// an entry is merely opened; anything else is a (partial) answer.
+    /// </summary>
+    private async Task<FieldValue> SeedFieldValueAsync(Case sdkCase, string? value)
+    {
+        var fieldValue = new FieldValue
+        {
+            CaseId = sdkCase.Id, CheckListId = sdkCase.CheckListId, Value = value,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext!.FieldValues.AddAsync(fieldValue);
+        await MicrotingDbContext.SaveChangesAsync();
+        return fieldValue;
+    }
+
+    private async Task<FieldValue> ReadFieldValueAsync(int id) =>
+        await MicrotingDbContext!.FieldValues.AsNoTracking().FirstAsync(x => x.Id == id);
+
+    /// <summary>
+    /// Retires an occurrence the way the items-planning rotation does once its
+    /// deadline passes: every SDK case is Removed (Status 77, DoneAt untouched),
+    /// the PlanningCase and its PlanningCaseSites are Retracted, and the
+    /// Compliance row is left alone — it stays created as the overdue entry.
+    /// </summary>
+    private async Task RetireOccurrenceAsync(
+        PlanningCase planningCase, params (Case SdkCase, PlanningCaseSite CaseSite)[] sites)
+    {
+        foreach (var (sdkCase, caseSite) in sites)
+        {
+            sdkCase.WorkflowState = Constants.WorkflowStates.Removed;
+            sdkCase.Status = 77;
+            caseSite.WorkflowState = Constants.WorkflowStates.Retracted;
+        }
+
+        planningCase.WorkflowState = Constants.WorkflowStates.Retracted;
+        await MicrotingDbContext!.SaveChangesAsync();
+        await ItemsPlanningPnDbContext!.SaveChangesAsync();
+    }
+
     private static bool IsLive(string workflowState) =>
         workflowState != Constants.WorkflowStates.Removed
         && workflowState != Constants.WorkflowStates.Retracted;
@@ -1182,6 +1223,275 @@ public class EventDeployServiceEformRepairTests : TestBaseSetup
                 "leaving the row pointing at the removed case would make the occurrence dead forever");
             Assert.That(reloadedCompliance.MicrotingSdkeFormId, Is.EqualTo(s.OldTemplateId),
                 "the eForm id is only claimed once a case actually carries it");
+        });
+    }
+
+    // ------------------------------------------------------------------
+    // 16-21. #1287 — OVERDUE occurrences the rotation already retired. The
+    //     SDK case is Removed and its PlanningCase/PlanningCaseSite Retracted,
+    //     but the Compliance row stays live as the overdue entry and the
+    //     compliance report reads the case's CheckListId. The swap sweeps only
+    //     reach live cases, so these are re-pointed IN PLACE instead — never
+    //     redeployed to a worker.
+    // ------------------------------------------------------------------
+    [Test]
+    public async Task Repair_RetiredOverdueUnansweredOccurrence_IsRepointedInPlace_AndTheLiveOneIsStillSwapped()
+    {
+        var overdueDeadline = DateTime.UtcNow.Date.AddDays(-9);
+        var currentDeadline = DateTime.UtcNow.Date.AddDays(4);
+        var s = await SeedScenarioAsync("retired-overdue", overdueDeadline.AddDays(-14));
+        var site = await SeedSiteAsync(s, "repair-retired-overdue", 6201);
+
+        var retiredCase = await SeedSdkCaseAsync(site, s.OldTemplateId, OpenCaseStatus);
+        var retiredPlanningCase = await SeedPlanningCaseAsync(s, s.OldTemplateId);
+        var retiredPcs = await SeedPlanningCaseSiteAsync(s, retiredPlanningCase, site, retiredCase, s.OldTemplateId);
+        var overdueCompliance = await SeedComplianceAsync(
+            s, overdueDeadline, retiredPlanningCase, retiredCase, s.OldTemplateId);
+        await RetireOccurrenceAsync(retiredPlanningCase, (retiredCase, retiredPcs));
+
+        var liveCase = await SeedSdkCaseAsync(site, s.OldTemplateId, OpenCaseStatus);
+        var livePlanningCase = await SeedPlanningCaseAsync(s, s.OldTemplateId);
+        var livePcs = await SeedPlanningCaseSiteAsync(s, livePlanningCase, site, liveCase, s.OldTemplateId);
+        var liveCompliance = await SeedComplianceAsync(
+            s, currentDeadline, livePlanningCase, liveCase, s.OldTemplateId);
+
+        await s.Service.RepairEformForOpenOccurrencesAsync(s.Arp, s.OldTemplateId, s.NewTemplateId);
+
+        var reloadedOverdueCompliance = await ReadComplianceAsync(overdueCompliance.Id);
+        var reloadedRetiredCase = await ReadCaseAsync(retiredCase.Id);
+        var reloadedRetiredPcs = await ReadPlanningCaseSiteAsync(retiredPcs.Id);
+        var reloadedRetiredPlanningCase = await ReadPlanningCaseAsync(retiredPlanningCase.Id);
+        var reloadedLiveCompliance = await ReadComplianceAsync(liveCompliance.Id);
+        var reloadedLiveCase = await ReadCaseAsync(liveCase.Id);
+        var reloadedLivePcs = await ReadPlanningCaseSiteAsync(livePcs.Id);
+        var replacementCase = await ReadCaseAsync(reloadedLiveCompliance.MicrotingSdkCaseId);
+        var casesForSite = await MicrotingDbContext!.Cases.AsNoTracking().CountAsync(x => x.SiteId == site.Id);
+        var liveCasesForSite = (await MicrotingDbContext.Cases.AsNoTracking()
+                .Where(x => x.SiteId == site.Id)
+                .Select(x => x.WorkflowState)
+                .ToListAsync())
+            .Count(IsLive);
+
+        Assert.Multiple(() =>
+        {
+            // The overdue entry keeps its case and now reports the new eForm.
+            Assert.That(reloadedOverdueCompliance.MicrotingSdkCaseId, Is.EqualTo(retiredCase.Id),
+                "the overdue entry is re-pointed in place, never redeployed onto a new case");
+            Assert.That(reloadedOverdueCompliance.MicrotingSdkeFormId, Is.EqualTo(s.NewTemplateId));
+            Assert.That(IsLive(reloadedOverdueCompliance.WorkflowState), Is.True);
+            Assert.That(reloadedRetiredCase.CheckListId, Is.EqualTo(s.NewTemplateId),
+                "the compliance report reads the eForm off the SDK case");
+            Assert.That(IsLive(reloadedRetiredCase.WorkflowState), Is.False,
+                "a retired overdue case must not be revived onto a device");
+            Assert.That(reloadedRetiredPcs.MicrotingSdkeFormId, Is.EqualTo(s.NewTemplateId));
+            Assert.That(IsLive(reloadedRetiredPcs.WorkflowState), Is.False);
+            Assert.That(reloadedRetiredPlanningCase.MicrotingSdkeFormId, Is.EqualTo(s.NewTemplateId));
+            Assert.That(IsLive(reloadedRetiredPlanningCase.WorkflowState), Is.False);
+
+            // The current occurrence is swapped exactly as before.
+            Assert.That(IsLive(reloadedLiveCase.WorkflowState), Is.False);
+            Assert.That(reloadedLiveCompliance.MicrotingSdkCaseId, Is.Not.EqualTo(liveCase.Id));
+            Assert.That(reloadedLiveCompliance.MicrotingSdkeFormId, Is.EqualTo(s.NewTemplateId));
+            Assert.That(replacementCase.CheckListId, Is.EqualTo(s.NewTemplateId));
+            Assert.That(replacementCase.SiteId, Is.EqualTo(site.Id));
+            Assert.That(reloadedLivePcs.MicrotingSdkCaseId, Is.EqualTo(replacementCase.Id));
+
+            // Exactly one new case: the replacement for the live occurrence.
+            Assert.That(casesForSite, Is.EqualTo(3),
+                "retired + swapped-out live + one replacement; the overdue entry gets no case");
+            Assert.That(liveCasesForSite, Is.EqualTo(1));
+        });
+    }
+
+    [Test]
+    public async Task Repair_RetiredOverdueOpenedButUnanswered_IsRepointed_AndItsEmptyFieldValuesAreRemoved()
+    {
+        var deadline = DateTime.UtcNow.Date.AddDays(-8);
+        var s = await SeedScenarioAsync("retired-opened", deadline.AddDays(-14));
+        var site = await SeedSiteAsync(s, "repair-retired-opened", 6202);
+
+        var retiredCase = await SeedSdkCaseAsync(site, s.OldTemplateId, OpenCaseStatus);
+        var planningCase = await SeedPlanningCaseAsync(s, s.OldTemplateId);
+        var pcs = await SeedPlanningCaseSiteAsync(s, planningCase, site, retiredCase, s.OldTemplateId);
+        var compliance = await SeedComplianceAsync(s, deadline, planningCase, retiredCase, s.OldTemplateId);
+        var nullValue = await SeedFieldValueAsync(retiredCase, null);
+        var emptyValue = await SeedFieldValueAsync(retiredCase, "");
+        await RetireOccurrenceAsync(planningCase, (retiredCase, pcs));
+
+        await s.Service.RepairEformForOpenOccurrencesAsync(s.Arp, s.OldTemplateId, s.NewTemplateId);
+
+        var reloadedCase = await ReadCaseAsync(retiredCase.Id);
+        var reloadedCompliance = await ReadComplianceAsync(compliance.Id);
+        var reloadedNullValue = await ReadFieldValueAsync(nullValue.Id);
+        var reloadedEmptyValue = await ReadFieldValueAsync(emptyValue.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(reloadedCase.CheckListId, Is.EqualTo(s.NewTemplateId));
+            Assert.That(reloadedCompliance.MicrotingSdkCaseId, Is.EqualTo(retiredCase.Id));
+            Assert.That(reloadedCompliance.MicrotingSdkeFormId, Is.EqualTo(s.NewTemplateId));
+            Assert.That(reloadedNullValue.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed),
+                "the old template's empty rows must not linger on a case now on the new template");
+            Assert.That(reloadedEmptyValue.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+        });
+    }
+
+    [Test]
+    public async Task Repair_RetiredOverduePartiallyAnswered_KeepsTheOldEform()
+    {
+        var deadline = DateTime.UtcNow.Date.AddDays(-7);
+        var s = await SeedScenarioAsync("retired-partial", deadline.AddDays(-14));
+        var site = await SeedSiteAsync(s, "repair-retired-partial", 6203);
+
+        var retiredCase = await SeedSdkCaseAsync(site, s.OldTemplateId, OpenCaseStatus);
+        var planningCase = await SeedPlanningCaseAsync(s, s.OldTemplateId);
+        var pcs = await SeedPlanningCaseSiteAsync(s, planningCase, site, retiredCase, s.OldTemplateId);
+        var compliance = await SeedComplianceAsync(s, deadline, planningCase, retiredCase, s.OldTemplateId);
+        var emptyValue = await SeedFieldValueAsync(retiredCase, null);
+        var answer = await SeedFieldValueAsync(retiredCase, "partial answer");
+        await RetireOccurrenceAsync(planningCase, (retiredCase, pcs));
+
+        await s.Service.RepairEformForOpenOccurrencesAsync(s.Arp, s.OldTemplateId, s.NewTemplateId);
+
+        var reloadedCase = await ReadCaseAsync(retiredCase.Id);
+        var reloadedCompliance = await ReadComplianceAsync(compliance.Id);
+        var reloadedPcs = await ReadPlanningCaseSiteAsync(pcs.Id);
+        var reloadedPlanningCase = await ReadPlanningCaseAsync(planningCase.Id);
+        var reloadedEmptyValue = await ReadFieldValueAsync(emptyValue.Id);
+        var reloadedAnswer = await ReadFieldValueAsync(answer.Id);
+
+        Assert.Multiple(() =>
+        {
+            // A partial answer was entered in the OLD template — it stays there.
+            Assert.That(reloadedCase.CheckListId, Is.EqualTo(s.OldTemplateId));
+            Assert.That(reloadedCompliance.MicrotingSdkeFormId, Is.EqualTo(s.OldTemplateId));
+            Assert.That(reloadedPcs.MicrotingSdkeFormId, Is.EqualTo(s.OldTemplateId));
+            Assert.That(reloadedPlanningCase.MicrotingSdkeFormId, Is.EqualTo(s.OldTemplateId));
+            Assert.That(IsLive(reloadedEmptyValue.WorkflowState), Is.True);
+            Assert.That(IsLive(reloadedAnswer.WorkflowState), Is.True);
+            Assert.That(reloadedAnswer.Value, Is.EqualTo("partial answer"));
+        });
+    }
+
+    [Test]
+    public async Task Repair_RetiredOverdueCompletedCase_KeepsTheOldEform()
+    {
+        var deadline = DateTime.UtcNow.Date.AddDays(-6);
+        var s = await SeedScenarioAsync("retired-completed", deadline.AddDays(-14));
+        var site = await SeedSiteAsync(s, "repair-retired-completed", 6204);
+
+        var completedCase = await SeedSdkCaseAsync(
+            site, s.OldTemplateId, CompletedStatus, DateTime.UtcNow.AddDays(-7));
+        var planningCase = await SeedPlanningCaseAsync(s, s.OldTemplateId);
+        var pcs = await SeedPlanningCaseSiteAsync(s, planningCase, site, completedCase, s.OldTemplateId);
+        var compliance = await SeedComplianceAsync(s, deadline, planningCase, completedCase, s.OldTemplateId);
+
+        // Retired like RetireOccurrenceAsync, but Status/DoneAt stay those of a
+        // completed case.
+        completedCase.WorkflowState = Constants.WorkflowStates.Removed;
+        pcs.WorkflowState = Constants.WorkflowStates.Retracted;
+        planningCase.WorkflowState = Constants.WorkflowStates.Retracted;
+        await MicrotingDbContext!.SaveChangesAsync();
+        await ItemsPlanningPnDbContext!.SaveChangesAsync();
+
+        await s.Service.RepairEformForOpenOccurrencesAsync(s.Arp, s.OldTemplateId, s.NewTemplateId);
+
+        var reloadedCase = await ReadCaseAsync(completedCase.Id);
+        var reloadedCompliance = await ReadComplianceAsync(compliance.Id);
+        var reloadedPcs = await ReadPlanningCaseSiteAsync(pcs.Id);
+        var reloadedPlanningCase = await ReadPlanningCaseAsync(planningCase.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(reloadedCase.CheckListId, Is.EqualTo(s.OldTemplateId),
+                "a completed case is the record of what was filled in");
+            Assert.That(reloadedCompliance.MicrotingSdkCaseId, Is.EqualTo(completedCase.Id));
+            Assert.That(reloadedCompliance.MicrotingSdkeFormId, Is.EqualTo(s.OldTemplateId));
+            Assert.That(reloadedPcs.MicrotingSdkeFormId, Is.EqualTo(s.OldTemplateId));
+            Assert.That(reloadedPlanningCase.MicrotingSdkeFormId, Is.EqualTo(s.OldTemplateId));
+        });
+    }
+
+    [Test]
+    public async Task Repair_RetiredOverdueMultiSiteOccurrence_RepointsEverySite_AndTheSharedPlanningCase()
+    {
+        var deadline = DateTime.UtcNow.Date.AddDays(-5);
+        var s = await SeedScenarioAsync("retired-multisite", deadline.AddDays(-14));
+        var ownerSite = await SeedSiteAsync(s, "repair-retired-multi-owner", 6205);
+        var siblingSite = await SeedSiteAsync(s, "repair-retired-multi-sibling", 6206);
+
+        // One shared PlanningCase; only the first site owns the Compliance row.
+        var planningCase = await SeedPlanningCaseAsync(s, s.OldTemplateId);
+        var ownerCase = await SeedSdkCaseAsync(ownerSite, s.OldTemplateId, OpenCaseStatus);
+        var siblingCase = await SeedSdkCaseAsync(siblingSite, s.OldTemplateId, OpenCaseStatus);
+        var ownerPcs = await SeedPlanningCaseSiteAsync(s, planningCase, ownerSite, ownerCase, s.OldTemplateId);
+        var siblingPcs = await SeedPlanningCaseSiteAsync(s, planningCase, siblingSite, siblingCase, s.OldTemplateId);
+        var compliance = await SeedComplianceAsync(s, deadline, planningCase, ownerCase, s.OldTemplateId);
+        await RetireOccurrenceAsync(planningCase, (ownerCase, ownerPcs), (siblingCase, siblingPcs));
+
+        await s.Service.RepairEformForOpenOccurrencesAsync(s.Arp, s.OldTemplateId, s.NewTemplateId);
+
+        var reloadedOwnerCase = await ReadCaseAsync(ownerCase.Id);
+        var reloadedSiblingCase = await ReadCaseAsync(siblingCase.Id);
+        var reloadedOwnerPcs = await ReadPlanningCaseSiteAsync(ownerPcs.Id);
+        var reloadedSiblingPcs = await ReadPlanningCaseSiteAsync(siblingPcs.Id);
+        var reloadedPlanningCase = await ReadPlanningCaseAsync(planningCase.Id);
+        var reloadedCompliance = await ReadComplianceAsync(compliance.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(reloadedOwnerCase.CheckListId, Is.EqualTo(s.NewTemplateId));
+            Assert.That(reloadedSiblingCase.CheckListId, Is.EqualTo(s.NewTemplateId),
+                "a sibling site with no Compliance row of its own must follow too");
+            Assert.That(reloadedOwnerPcs.MicrotingSdkeFormId, Is.EqualTo(s.NewTemplateId));
+            Assert.That(reloadedSiblingPcs.MicrotingSdkeFormId, Is.EqualTo(s.NewTemplateId));
+            Assert.That(reloadedPlanningCase.MicrotingSdkeFormId, Is.EqualTo(s.NewTemplateId));
+            Assert.That(reloadedCompliance.MicrotingSdkCaseId, Is.EqualTo(ownerCase.Id));
+            Assert.That(reloadedCompliance.MicrotingSdkeFormId, Is.EqualTo(s.NewTemplateId));
+            Assert.That(IsLive(reloadedOwnerCase.WorkflowState), Is.False);
+            Assert.That(IsLive(reloadedSiblingCase.WorkflowState), Is.False);
+        });
+    }
+
+    [Test]
+    public async Task Repair_RetiredOverdueMultiSiteWithAnsweredSibling_KeepsTheSiblingAndTheSharedPlanningCaseOnTheOldEform()
+    {
+        var deadline = DateTime.UtcNow.Date.AddDays(-4);
+        var s = await SeedScenarioAsync("retired-multisite-answered", deadline.AddDays(-14));
+        var ownerSite = await SeedSiteAsync(s, "repair-retired-answered-owner", 6207);
+        var siblingSite = await SeedSiteAsync(s, "repair-retired-answered-sibling", 6208);
+
+        var planningCase = await SeedPlanningCaseAsync(s, s.OldTemplateId);
+        var ownerCase = await SeedSdkCaseAsync(ownerSite, s.OldTemplateId, OpenCaseStatus);
+        var siblingCase = await SeedSdkCaseAsync(siblingSite, s.OldTemplateId, OpenCaseStatus);
+        var ownerPcs = await SeedPlanningCaseSiteAsync(s, planningCase, ownerSite, ownerCase, s.OldTemplateId);
+        var siblingPcs = await SeedPlanningCaseSiteAsync(s, planningCase, siblingSite, siblingCase, s.OldTemplateId);
+        var compliance = await SeedComplianceAsync(s, deadline, planningCase, ownerCase, s.OldTemplateId);
+        await SeedFieldValueAsync(siblingCase, "partial answer");
+        await RetireOccurrenceAsync(planningCase, (ownerCase, ownerPcs), (siblingCase, siblingPcs));
+
+        await s.Service.RepairEformForOpenOccurrencesAsync(s.Arp, s.OldTemplateId, s.NewTemplateId);
+
+        var reloadedOwnerCase = await ReadCaseAsync(ownerCase.Id);
+        var reloadedSiblingCase = await ReadCaseAsync(siblingCase.Id);
+        var reloadedOwnerPcs = await ReadPlanningCaseSiteAsync(ownerPcs.Id);
+        var reloadedSiblingPcs = await ReadPlanningCaseSiteAsync(siblingPcs.Id);
+        var reloadedPlanningCase = await ReadPlanningCaseAsync(planningCase.Id);
+        var reloadedCompliance = await ReadComplianceAsync(compliance.Id);
+
+        Assert.Multiple(() =>
+        {
+            // The Compliance row's own, unanswered case moves.
+            Assert.That(reloadedOwnerCase.CheckListId, Is.EqualTo(s.NewTemplateId));
+            Assert.That(reloadedOwnerPcs.MicrotingSdkeFormId, Is.EqualTo(s.NewTemplateId));
+            Assert.That(reloadedCompliance.MicrotingSdkeFormId, Is.EqualTo(s.NewTemplateId));
+
+            // The answered sibling keeps the template its answer was entered in,
+            // and so does the parent they share.
+            Assert.That(reloadedSiblingCase.CheckListId, Is.EqualTo(s.OldTemplateId));
+            Assert.That(reloadedSiblingPcs.MicrotingSdkeFormId, Is.EqualTo(s.OldTemplateId));
+            Assert.That(reloadedPlanningCase.MicrotingSdkeFormId, Is.EqualTo(s.OldTemplateId),
+                "a shared PlanningCase follows only when every one of its sites is on the new eForm");
         });
     }
 }
