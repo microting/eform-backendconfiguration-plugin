@@ -750,7 +750,6 @@ export const roRO = {
   'Select a period and click Update period': 'Selectați o perioadă și faceți clic pe Actualizați perioada.',
   'Change a filter or click Overview to load the table': 'Modificați un filtru sau faceți clic pe Prezentare generală pentru a încărca tabelul.',
   'Without report headline': 'Fără titlu de raport',
-  'Columns unavailable for template #{{id}}': 'Coloane indisponibile pentru șablonul #{{id}}',
   // Calendar toolbar (#1209): the calendars multi-select button label, its
   // bulk actions, and the accessible name of a calendar row's actions menu.
   '{{count}} calendars': '{{count}} calendare',

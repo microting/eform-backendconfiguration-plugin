@@ -33,7 +33,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportS
 /// cell, which is a blank field (<c>;;</c>), not the en dash Word/PDF print
 /// (#1191, the mock-ups' CSVs; the rule holds for all three views). A cell's
 /// Word/PDF-only <c>DisplayText</c> is never read here: the CSV date stays ISO
-/// while the page shows <c>Tirsdag 21. juli</c>.
+/// while the page shows <c>Tirsdag 21. juli</c>. Rapport's eForm answers follow
+/// the same rules by their typed column (#1276): a <c>Date</c> answer is ISO
+/// here while Word/PDF print <c>dd.MM.yyyy</c>, and a ticked <c>CheckBox</c> is
+/// <see cref="CheckMark"/> — a plain <c>x</c>, the spreadsheet convention, not
+/// Word's ✔ — while an unticked one is a blank field.
 /// </para>
 ///
 /// <para>
@@ -47,13 +51,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportS
 ///
 /// <para>
 /// <b>ONE FLAT TABLE, whatever the document's shape (#1192, Rapport CSV mock-up
-/// p10).</b> Rapport produces several tables and CSV is one flat stream, so the
-/// file is the UNION of every table's columns — in first-seen order, keyed on
+/// p10).</b> Rapport produces several tables — since #1276 one per eForm per
+/// headline — and CSV is one flat stream, so the file is the UNION of every
+/// table's columns — in first-seen order, keyed on
 /// <see cref="ComplianceExportColumn.Key"/> (falling back to the header) — as the
-/// single header on line 1, then every table's rows in document order, each row
-/// blank under the columns its own table lacks. No blank separator lines, no
-/// per-table title lines, no repeated headers: a section is identified by its
-/// <c>Delrapport</c> cell alone. The flattening is unconditional rather than
+/// single header on line 1, then every table's rows in document order (so a
+/// headline's rows come eForm by eForm, as on the page), each row blank under the
+/// columns its own table lacks. No blank separator lines, no per-table title
+/// lines, no repeated headers: a section is identified by its <c>Delrapport</c>
+/// cell alone. The flattening is unconditional rather than
 /// keyed on the view or on the table count because for a single-table document
 /// (Oversigt, Detaljer, a one-headline Rapport) the union IS that table's column
 /// list and the output is byte-identical to the per-table shape it replaces —
@@ -62,14 +68,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportS
 /// Key would map to the same union position and collapse into one field, the
 /// later cell overwriting the earlier — unreachable today, since the fixed keys
 /// are distinct localisation keys and the answer keys are the unique
-/// <c>f{fieldId}</c> per group, but a new column must keep it that way.
+/// <c>f{fieldId}</c> per table, but a new column must keep it that way.
 /// </para>
 ///
 /// <para>
-/// <b>What the flat Rapport CSV does NOT carry.</b> The section captions and
-/// headline titles (Word/PDF's two-line headings) are not in the file at all:
-/// #1188 decision 4 follows the mock-up, which has no <c>Rapportoverskrift</c>
-/// column, and #1192 keeps that. Columns marked
+/// <b>What the flat Rapport CSV does NOT carry.</b> The section captions,
+/// headline titles and eForm subtitles (Word/PDF's headings) are not in the file
+/// at all: #1188 decision 4 follows the mock-up, which has no
+/// <c>Rapportoverskrift</c> column, #1192 keeps that, and #1276 adds no eForm
+/// column either (an eForm's rows are still recognisable by the answer columns
+/// they fill). Columns marked
 /// <see cref="ComplianceExportColumn.CsvOnly"/> ARE here — that flag is the Word
 /// writer's to honour. Same-KEYED answer columns merge across sections (the same
 /// eForm field answered under two headlines is one spreadsheet column); two
@@ -89,6 +97,9 @@ public static class ComplianceExportCsvWriter
 {
     public const string Separator = ";";
     public const string LineEnding = "\r\n";
+
+    /// <summary>A ticked <c>CheckBox</c> answer in the CSV (#1276); an unticked one is blank.</summary>
+    public const string CheckMark = "x";
 
     /// <summary>
     /// Renders to a rewound <see cref="MemoryStream"/>. In memory rather than a
@@ -181,7 +192,8 @@ public static class ComplianceExportCsvWriter
 
     /// <summary>
     /// A blank field for an empty cell (#1191), ISO for dates, invariant decimal
-    /// for numbers, the cell's display text otherwise.
+    /// for numbers, <see cref="CheckMark"/> or a blank field for a ticked or
+    /// unticked checkbox (#1276), the cell's display text otherwise.
     ///
     /// <para>
     /// Emptiness is read from <see cref="ComplianceExportCell.IsEmpty"/>, never
@@ -200,6 +212,8 @@ public static class ComplianceExportCsvWriter
                 cell.Date.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             ComplianceExportCellType.Number when cell.Number.HasValue =>
                 cell.Number.Value.ToString(CultureInfo.InvariantCulture),
+            ComplianceExportCellType.CheckBox when cell.Checked.HasValue =>
+                cell.Checked.Value ? CheckMark : string.Empty,
             _ => cell.Text ?? string.Empty
         };
     }

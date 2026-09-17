@@ -231,21 +231,27 @@ public class ComplianceExportImageEmbeddingTests : TestBaseSetup
             HeadlineTagId = 8,
             HeadlineName = "Elinstallationer og eftersyn",
             TagsCaption = "Miljøtilsyn - EL",
-            CheckListIds = [511],
-            Columns =
+            Templates =
             [
-                new ComplianceReportColumnModel { Key = "f11", Label = "Bemærkning" }
-            ],
-            Cases =
-            [
-                new ComplianceReportCaseModel
+                new ComplianceReportTemplateTableModel
                 {
-                    SdkCaseId = 2185, PropertyName = "Ejendom 9", Title = "El-tavle",
-                    Tags = ["Miljøtilsyn", "EL"], WorkerNames = ["Bo"],
-                    DoneAt = new DateTime(2026, 5, 20, 8, 0, 0), TaskDate = "2026-05-20",
-                    ImagesCount = 1,
-                    Images = [new ComplianceReportImageModel { FileName = imageFileName }],
-                    Cells = new Dictionary<string, string> { ["f11"] = "Fint" }
+                    CheckListId = 511, CheckListName = "Eltjek",
+                    Columns =
+                    [
+                        new ComplianceReportColumnModel { Key = "f11", Label = "Bemærkning" }
+                    ],
+                    Cases =
+                    [
+                        new ComplianceReportCaseModel
+                        {
+                            SdkCaseId = 2185, PropertyName = "Ejendom 9", Title = "El-tavle",
+                            Tags = ["Miljøtilsyn", "EL"], WorkerNames = ["Bo"],
+                            DoneAt = new DateTime(2026, 5, 20, 8, 0, 0), TaskDate = "2026-05-20",
+                            ImagesCount = 1,
+                            Images = [new ComplianceReportImageModel { FileName = imageFileName }],
+                            Cells = new Dictionary<string, string> { ["f11"] = "Fint" }
+                        }
+                    ]
                 }
             ]
         };

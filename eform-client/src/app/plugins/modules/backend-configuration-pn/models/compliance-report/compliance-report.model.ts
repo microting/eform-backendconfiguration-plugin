@@ -173,8 +173,10 @@ export interface ComplianceReportOverviewRowModel {
 
 export interface ComplianceReportOverviewModel {
   /**
-   * One row per property that has at least one matching compliance row, ordered
-   * by `propertyName` ascending. That order is a stable server default, not a
+   * One row per property with a matching compliance row, plus — unless a
+   * calendar/tag/employee filter narrows the page — one per property with none,
+   * zeroed and with a null `compliancePct` (#1278). Ordered by `propertyName`
+   * ascending. That order is a stable server default, not a
    * contract — #1164 re-sorts client-side (default `compliancePct` ascending,
    * worst first).
    */
@@ -188,12 +190,12 @@ export interface ComplianceReportOverviewModel {
 }
 
 // ---------------------------------------------------------------------------
-// Rapport — one table per REPORT HEADLINE (#1166 endpoint, #1167 view,
-// regrouped by #1188)
+// Rapport — one section per REPORT HEADLINE, one table per eForm under it
+// (#1166 endpoint, #1167 view, regrouped by #1188, split per eForm by #1276)
 // ---------------------------------------------------------------------------
 
 /**
- * One answer column of a headline group. Mirrors the C#
+ * One answer column of an eForm table. Mirrors the C#
  * `ComplianceReportColumnModel`.
  *
  * `key` — NOT `label`, NOT an array position — is how a cell is addressed. It
@@ -205,7 +207,12 @@ export interface ComplianceReportColumnModel {
   fieldId: number;
   /** Translated field label, prefixed with the child checklist's name where they differ. */
   label: string;
-  /** The SDK `Constants.FieldTypes` value. */
+  /**
+   * The SDK `Constants.FieldTypes` value. Since #1276 the view branches on it:
+   * `CheckBox` renders a tick for `checked` and nothing for `unchecked`, `Date`
+   * renders `dd.MM.yyyy` like the `Udført dato` column — see
+   * `complianceAnswerText` / `complianceAnswerIsChecked`.
+   */
   fieldType: string;
 }
 
@@ -229,17 +236,21 @@ export interface ComplianceReportImageModel {
   geoLink: string | null;
 }
 
-/** One answered occurrence inside a headline group. Appears in EXACTLY ONE group (#1188). */
+/**
+ * One answered occurrence inside an eForm table. Appears in EXACTLY ONE table
+ * of EXACTLY ONE headline group (#1188, #1276).
+ */
 export interface ComplianceReportCaseModel {
   complianceId: number;
   /** The backing SDK case. Always > 0. */
   sdkCaseId: number;
   /**
-   * SDK `Case.CheckListId` — the template THIS row was answered against. A
-   * headline group spans templates (its `columns` are a union), so the row is
-   * the only place `Rediger` can read the template for the case route from.
-   * `null` never reaches the view in practice — rows without an answered
-   * template are dropped server-side — but the wire type is nullable.
+   * SDK `Case.CheckListId` — the template THIS row was answered against, and
+   * what the `Rediger` case route is built from. Since #1276 it equals the
+   * enclosing table's `ComplianceReportTemplateTableModel.checkListId`, but the
+   * row keeps reading its own: it is the case's fact, the table's id is a
+   * grouping key. `null` never reaches the view in practice — rows without an
+   * answered template are dropped server-side — but the wire type is nullable.
    */
   checkListId: number | null;
   /**
@@ -281,7 +292,8 @@ export interface ComplianceReportCaseModel {
    * tell an opaque bag from a DTO, so it descends in here too, and an answer
    * stored as a full timestamp arrives as a `Date` (same reality as e.g.
    * `AdhocTaskHistoryRowModel.completedAt`). Read a cell ONLY through
-   * `complianceAnswerText`, which narrows both shapes to display text.
+   * `complianceAnswerText` (which narrows both shapes to display text) and,
+   * for a `CheckBox` column, `complianceAnswerIsChecked` (#1276).
    */
   cells: {[key: string]: string};
   /**
@@ -294,9 +306,37 @@ export interface ComplianceReportCaseModel {
 }
 
 /**
- * One section of the Rapport view — one table per REPORT HEADLINE (#1188,
+ * One eForm's table inside a headline group (#1276). Mirrors the C#
+ * `ComplianceReportTemplateTableModel`, which records why a headline is no
+ * longer one table over the union of its eForms' columns (#1188).
+ */
+export interface ComplianceReportTemplateTableModel {
+  /** SDK `Case.CheckListId` — every case in `cases` was answered against it. */
+  checkListId: number;
+  /** The eForm's translated name — the table's sub-heading. */
+  checkListName: string;
+  /**
+   * The eForm's schema could NOT be derived (#1166: the SDK's
+   * `TemplateFieldReadAll` throws for a language with a translation gap), so
+   * `columns` is empty for a reason that is neither "no answerable fields" nor
+   * "nobody answered". The view says so instead of rendering a metadata-only
+   * table that looks complete.
+   */
+  schemaUnavailable: boolean;
+  /**
+   * THIS eForm's answer columns only, in template order, keyed `f{fieldId}`.
+   * Already de-duplicated server-side.
+   */
+  columns: ComplianceReportColumnModel[];
+  /** The table's cases, each exactly once. */
+  cases: ComplianceReportCaseModel[];
+}
+
+/**
+ * One section of the Rapport view — one REPORT HEADLINE (#1188,
  * "Tabel_Rapport": *der skal være en tabel for hver Rapportoverskrift og ikke
- * for hvert tag*). Mirrors the C# `ComplianceReportHeadlineGroupModel`.
+ * for hvert tag*), holding one table per eForm answered under it (#1276).
+ * Mirrors the C# `ComplianceReportHeadlineGroupModel`.
  *
  * The headline is `AreaRulePlanning.ItemPlanningTagId` — the calendar modal's
  * `Rapportoverskrift` select — and it is an ordinary `PlanningTag`
@@ -327,26 +367,11 @@ export interface ComplianceReportHeadlineGroupModel {
    * group whose tasks carry no tags besides the headline.
    */
   tagsCaption: string;
-  /** Every template (SDK `Case.CheckListId`) answered inside the group, distinct. */
-  checkListIds: number[];
   /**
-   * The subset of `checkListIds` whose schema could NOT be derived, so their
-   * fields are missing from `columns` for a reason that is neither "no
-   * answerable fields" nor "nobody answered". The view renders a per-template
-   * notice when only some templates are listed here and a whole-section notice
-   * when all of them are.
+   * One table per eForm answered inside the group, distinct by `checkListId`
+   * and ordered by name server-side (#1276). Nothing client-side re-orders.
    */
-  schemaUnavailableCheckListIds: number[];
-  /**
-   * The ordered UNION of the per-template schemas of every template in
-   * `checkListIds` — templates by name then id, fields in template order — keyed
-   * `f{fieldId}`, which is collision-free across templates by construction.
-   * Already de-duplicated server-side. A case answered on template A renders
-   * the en dash under template B's columns, in place.
-   */
-  columns: ComplianceReportColumnModel[];
-  /** The group's cases, each exactly once. */
-  cases: ComplianceReportCaseModel[];
+  templates: ComplianceReportTemplateTableModel[];
 }
 
 // ---------------------------------------------------------------------------

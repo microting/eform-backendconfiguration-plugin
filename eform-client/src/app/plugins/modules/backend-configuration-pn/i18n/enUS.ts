@@ -836,7 +836,6 @@ export const enUS= {
   // The per-template form of the notice above (#1188): a headline section
   // spans templates, and when only some lack a schema the others' columns are
   // still shown, so the notice names the affected template by id.
-  'Columns unavailable for template #{{id}}': 'Columns unavailable for template #{{id}}',
   // Accessible name of the Billeder cell. Two keys rather than one plural
   // string so each language can word the singular its own way.
   '1 image': '1 image',

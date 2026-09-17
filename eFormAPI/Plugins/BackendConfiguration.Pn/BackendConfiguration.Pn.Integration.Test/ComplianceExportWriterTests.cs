@@ -24,6 +24,7 @@ using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microting.eForm.Infrastructure.Constants;
 
 /// <summary>
 /// Coverage for the two compliance-export renderers (CSV and Word/PDF — Excel was
@@ -180,11 +181,14 @@ public class ComplianceExportWriterTests
     /// <summary>
     /// The #1192 Rapport mock-up (p9 PDF, p10 CSV), built through the REAL
     /// <see cref="ComplianceExportDocumentBuilder.BuildReport"/> with the Danish
-    /// localizer: two headline sections. "Brandsikkerhed og beredskab" (tags
-    /// <c>Miljøtilsyn - Brand</c>) answers <c>f10 Målerstand</c> and
+    /// localizer: two headline sections of ONE eForm each (so one table each —
+    /// #1276's multi-eForm shape is <see cref="MultiEformReportDocument"/>).
+    /// "Brandsikkerhed og beredskab" (tags <c>Miljøtilsyn - Brand</c>, eForm
+    /// "Brandtjek") answers <c>f10 Målerstand</c> and
     /// <c>f11 Bemærkning</c> and holds the mock-up's case 2183 (three images,
     /// completed 13.05.2026) plus an open, workerless, imageless case 2184.
-    /// "Elinstallationer og eftersyn" (tags <c>Miljøtilsyn - EL</c>) answers the
+    /// "Elinstallationer og eftersyn" (tags <c>Miljøtilsyn - EL</c>, eForm
+    /// "Eltjek") answers the
     /// SAME <c>f11</c> and a DIFFERENT field <c>f20</c> that merely shares the
     /// label "Bemærkning", and holds case 2185 with one image — so the flat CSV
     /// has to merge one column and keep the other apart.
@@ -196,28 +200,34 @@ public class ComplianceExportWriterTests
         var brand = new ComplianceReportHeadlineGroupModel
         {
             HeadlineTagId = 7, HeadlineName = "Brandsikkerhed og beredskab", TagsCaption = "Miljøtilsyn - Brand",
-            CheckListIds = [509],
-            Columns =
+            Templates =
             [
-                new ComplianceReportColumnModel { Key = "f10", Label = "Målerstand" },
-                new ComplianceReportColumnModel { Key = "f11", Label = "Bemærkning" }
-            ],
-            Cases =
-            [
-                new ComplianceReportCaseModel
+                new ComplianceReportTemplateTableModel
                 {
-                    SdkCaseId = 2183, PropertyName = "Ejendom 9", Title = "Kontrol af arbejdsmiljø",
-                    Tags = ["Miljøtilsyn", "Brand"], WorkerNames = ["Ann Andersen"],
-                    DoneAt = new DateTime(2026, 5, 13, 10, 0, 0), TaskDate = "2026-05-13",
-                    ImagesCount = 3, Images = [Image(1), Image(2), Image(3)],
-                    Cells = new Dictionary<string, string> { ["f10"] = "12", ["f11"] = "Alt ok" }
-                },
-                new ComplianceReportCaseModel
-                {
-                    SdkCaseId = 2184, PropertyName = "Ejendom 9", Title = "Rundering",
-                    Tags = ["Miljøtilsyn", "Brand"], WorkerNames = [], TaskDate = "2026-05-14",
-                    ImagesCount = 0, Images = [],
-                    Cells = new Dictionary<string, string> { ["f11"] = "Ok" }
+                    CheckListId = 509, CheckListName = "Brandtjek",
+                    Columns =
+                    [
+                        new ComplianceReportColumnModel { Key = "f10", Label = "Målerstand" },
+                        new ComplianceReportColumnModel { Key = "f11", Label = "Bemærkning" }
+                    ],
+                    Cases =
+                    [
+                        new ComplianceReportCaseModel
+                        {
+                            SdkCaseId = 2183, PropertyName = "Ejendom 9", Title = "Kontrol af arbejdsmiljø",
+                            Tags = ["Miljøtilsyn", "Brand"], WorkerNames = ["Ann Andersen"],
+                            DoneAt = new DateTime(2026, 5, 13, 10, 0, 0), TaskDate = "2026-05-13",
+                            ImagesCount = 3, Images = [Image(1), Image(2), Image(3)],
+                            Cells = new Dictionary<string, string> { ["f10"] = "12", ["f11"] = "Alt ok" }
+                        },
+                        new ComplianceReportCaseModel
+                        {
+                            SdkCaseId = 2184, PropertyName = "Ejendom 9", Title = "Rundering",
+                            Tags = ["Miljøtilsyn", "Brand"], WorkerNames = [], TaskDate = "2026-05-14",
+                            ImagesCount = 0, Images = [],
+                            Cells = new Dictionary<string, string> { ["f11"] = "Ok" }
+                        }
+                    ]
                 }
             ]
         };
@@ -225,27 +235,119 @@ public class ComplianceExportWriterTests
         var el = new ComplianceReportHeadlineGroupModel
         {
             HeadlineTagId = 8, HeadlineName = "Elinstallationer og eftersyn", TagsCaption = "Miljøtilsyn - EL",
-            CheckListIds = [511],
-            Columns =
+            Templates =
             [
-                new ComplianceReportColumnModel { Key = "f11", Label = "Bemærkning" },
-                new ComplianceReportColumnModel { Key = "f20", Label = "Bemærkning" }
-            ],
-            Cases =
-            [
-                new ComplianceReportCaseModel
+                new ComplianceReportTemplateTableModel
                 {
-                    SdkCaseId = 2185, PropertyName = "Ejendom 9", Title = "El-tavle",
-                    Tags = ["Miljøtilsyn", "EL"], WorkerNames = ["Bo"],
-                    DoneAt = new DateTime(2026, 5, 20, 8, 0, 0), TaskDate = "2026-05-20",
-                    ImagesCount = 1, Images = [Image(4)],
-                    Cells = new Dictionary<string, string> { ["f11"] = "Fint", ["f20"] = "Tavle ok" }
+                    CheckListId = 511, CheckListName = "Eltjek",
+                    Columns =
+                    [
+                        new ComplianceReportColumnModel { Key = "f11", Label = "Bemærkning" },
+                        new ComplianceReportColumnModel { Key = "f20", Label = "Bemærkning" }
+                    ],
+                    Cases =
+                    [
+                        new ComplianceReportCaseModel
+                        {
+                            SdkCaseId = 2185, PropertyName = "Ejendom 9", Title = "El-tavle",
+                            Tags = ["Miljøtilsyn", "EL"], WorkerNames = ["Bo"],
+                            DoneAt = new DateTime(2026, 5, 20, 8, 0, 0), TaskDate = "2026-05-20",
+                            ImagesCount = 1, Images = [Image(4)],
+                            Cells = new Dictionary<string, string> { ["f11"] = "Fint", ["f20"] = "Tavle ok" }
+                        }
+                    ]
                 }
             ]
         };
 
         return ComplianceExportDocumentBuilder.BuildReport(
             [brand, el], SamplePeriod, includeImageAppendix, new DanishShellLocalizer());
+    }
+
+    /// <summary>
+    /// #1276's shape, through the REAL
+    /// <see cref="ComplianceExportDocumentBuilder.BuildReport"/> with the Danish
+    /// localizer: one headline over TWO eForms, in the service's name order —
+    /// "Gennemgang" (id 511: a <c>Date</c> answer <c>f30 Dato</c> and a
+    /// <c>CheckBox</c> <c>f31 Godkendt</c>) and "Kontrol" (id 512:
+    /// <c>f40 KOMMENTAR</c> and a <c>CheckBox</c> <c>f41 Flydelag ok</c>). Case 3001 is ticked with a parseable date and one
+    /// image; 3002 is unticked with a date that will not parse and no image; 3003,
+    /// on the other eForm, is ticked with one image.
+    /// </summary>
+    private static ComplianceExportDocument MultiEformReportDocument(bool includeImageAppendix)
+    {
+        static ComplianceReportImageModel Image(int id) => new() { FileName = $"{id}_700_a.jpg" };
+
+        var headline = new ComplianceReportHeadlineGroupModel
+        {
+            HeadlineTagId = 7, HeadlineName = "Headline 1", TagsCaption = "Miljøtilsyn - Brand",
+            Templates =
+            [
+                new ComplianceReportTemplateTableModel
+                {
+                    CheckListId = 511, CheckListName = "Gennemgang",
+                    Columns =
+                    [
+                        new ComplianceReportColumnModel
+                        {
+                            Key = "f30", Label = "Dato", FieldType = Constants.FieldTypes.Date
+                        },
+                        new ComplianceReportColumnModel
+                        {
+                            Key = "f31", Label = "Godkendt", FieldType = Constants.FieldTypes.CheckBox
+                        }
+                    ],
+                    Cases =
+                    [
+                        new ComplianceReportCaseModel
+                        {
+                            SdkCaseId = 3001, CheckListId = 511, PropertyName = "Ejendom A", Title = "Tank 1",
+                            Tags = ["Miljøtilsyn", "Brand"], WorkerNames = ["Ann"],
+                            DoneAt = new DateTime(2025, 12, 2, 9, 0, 0), TaskDate = "2025-12-02",
+                            ImagesCount = 1, Images = [Image(1)],
+                            Cells = new Dictionary<string, string> { ["f30"] = "2025-12-01", ["f31"] = "checked" }
+                        },
+                        new ComplianceReportCaseModel
+                        {
+                            SdkCaseId = 3002, CheckListId = 511, PropertyName = "Ejendom A", Title = "Tank 1",
+                            Tags = ["Miljøtilsyn", "Brand"], WorkerNames = ["Ann"],
+                            DoneAt = new DateTime(2025, 12, 9, 9, 0, 0), TaskDate = "2025-12-09",
+                            ImagesCount = 0, Images = [],
+                            Cells = new Dictionary<string, string> { ["f30"] = "01/12/2025", ["f31"] = "unchecked" }
+                        }
+                    ]
+                },
+                new ComplianceReportTemplateTableModel
+                {
+                    CheckListId = 512, CheckListName = "Kontrol",
+                    Columns =
+                    [
+                        new ComplianceReportColumnModel
+                        {
+                            Key = "f40", Label = "KOMMENTAR", FieldType = Constants.FieldTypes.Comment
+                        },
+                        new ComplianceReportColumnModel
+                        {
+                            Key = "f41", Label = "Flydelag ok", FieldType = Constants.FieldTypes.CheckBox
+                        }
+                    ],
+                    Cases =
+                    [
+                        new ComplianceReportCaseModel
+                        {
+                            SdkCaseId = 3003, CheckListId = 512, PropertyName = "Ejendom A", Title = "Tank 1",
+                            Tags = ["Miljøtilsyn", "Brand"], WorkerNames = ["Bo"],
+                            DoneAt = new DateTime(2025, 12, 3, 9, 0, 0), TaskDate = "2025-12-03",
+                            ImagesCount = 1, Images = [Image(2)],
+                            Cells = new Dictionary<string, string> { ["f40"] = "Fint", ["f41"] = "checked" }
+                        }
+                    ]
+                }
+            ]
+        };
+
+        return ComplianceExportDocumentBuilder.BuildReport(
+            [headline], SamplePeriod, includeImageAppendix, new DanishShellLocalizer());
     }
 
     // ==================================================================
@@ -639,6 +741,39 @@ public class ComplianceExportWriterTests
         var text = Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3);
 
         Assert.That(text, Does.Not.Contain("Miljøtilsyn - Brand"));
+    }
+
+    /// <summary>
+    /// #1276 in the flat CSV: a headline over two eForms is still ONE header line
+    /// — the fixed columns, then each eForm's answer columns in first-seen order —
+    /// and its rows come eForm by eForm, each blank under the other eForm's
+    /// columns. A ticked checkbox is <c>x</c> (not ✔, not <c>checked</c>), an
+    /// unticked one a BLANK field (not <c>unchecked</c>); a <c>Date</c> answer
+    /// stays ISO (<c>2025-12-01</c>, never the page's <c>01.12.2025</c>) and one
+    /// that will not parse is written as stored. No eForm name, headline or
+    /// caption reaches the file — those are Word/PDF headings.
+    /// </summary>
+    [Test]
+    public void Csv_RapportMultiEformSnapshot_CheckBoxIsXOrBlankAndDateStaysIso()
+    {
+        using var stream = ComplianceExportCsvWriter.Write(MultiEformReportDocument(includeImageAppendix: false));
+        var bytes = ReadAll(stream);
+        var text = Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3);
+
+        Assert.That(text, Is.EqualTo(
+            "Delrapport;ID;Ejendom;Udført af;Udført dato;Område;Billeder;Dato;Godkendt;KOMMENTAR;Flydelag ok\r\n" +
+            "Miljøtilsyn - Brand;3001;Ejendom A;Ann;2025-12-02;Tank 1;1;2025-12-01;x;;\r\n" +
+            "Miljøtilsyn - Brand;3002;Ejendom A;Ann;2025-12-09;Tank 1;;01/12/2025;;;\r\n" +
+            "Miljøtilsyn - Brand;3003;Ejendom A;Bo;2025-12-03;Tank 1;1;;;Fint;x\r\n"));
+
+        Assert.That(text, Does.Not.Contain("checked"), "neither canonical token reaches the file");
+        Assert.That(text, Does.Not.Contain(ComplianceExportCell.CheckMarkGlyph), "the CSV mark is x, not Word's glyph");
+        Assert.That(ComplianceExportCsvWriter.CheckMark, Is.EqualTo("x"));
+        Assert.That(text, Does.Not.Contain("01.12.2025"), "a CSV date stays ISO");
+        Assert.That(text, Does.Not.Contain("Gennemgang"));
+        Assert.That(text, Does.Not.Contain("Kontrol"));
+        Assert.That(text, Does.Not.Contain("Headline 1"));
+        Assert.That(text, Does.Not.Contain(Dash));
     }
 
     // ==================================================================
@@ -1207,6 +1342,142 @@ public class ComplianceExportWriterTests
         var text = word.MainDocumentPart!.Document!.Body!.InnerText;
         Assert.That(text, Does.Contain("Sag 2183 · Kontrol af arbejdsmiljø · 13.05.2026 (3/9)"));
         Assert.That(text, Does.Contain($"Bilag: ImageAppendixDocumentLimit ({document.AppendixImagesEmbedded}/{document.AppendixImagesRequested})"));
+    }
+
+    /// <summary>
+    /// #1276 in the docx: a headline over two eForms prints its grey caption and
+    /// bold headline ONCE, then per eForm a bold sub-heading carrying the eForm's
+    /// name directly above that eForm's own table — caption → headline → eForm A
+    /// → table → eForm B → table — rather than #1188's single union table. Each
+    /// table's header row is the fixed columns plus ONLY its own eForm's answer
+    /// columns, and every heading carries <c>w:keepNext</c>.
+    /// </summary>
+    [Test]
+    public async Task Word_RapportHeadlineWithTwoEformsIsOneHeadingThenATitledTablePerEform()
+    {
+        await using var stream = await NewWordWriter().WriteAsync(
+            MultiEformReportDocument(includeImageAppendix: false), null);
+        using var word = WordprocessingDocument.Open(stream, false);
+
+        var body = word.MainDocumentPart!.Document!.Body!;
+        var elements = body.Descendants().ToList();
+        var tables = body.Descendants<Table>().ToList();
+        Assert.That(tables, Has.Count.EqualTo(2), "one table per eForm, no appendix grid");
+
+        var headings = body.Descendants<Paragraph>()
+            .Where(p => !p.Ancestors<Table>().Any() && !string.IsNullOrWhiteSpace(p.InnerText))
+            .ToList();
+        Assert.That(headings.Select(p => p.InnerText.Trim()), Is.EqualTo(new[]
+        {
+            "Rapport", "Miljøtilsyn - Brand", "Headline 1", "Gennemgang", "Kontrol"
+        }), "the caption and the headline once, then one sub-heading per eForm");
+
+        var firstEform = headings.Single(p => p.InnerText.Trim() == "Gennemgang");
+        var secondEform = headings.Single(p => p.InnerText.Trim() == "Kontrol");
+        Assert.That(elements.IndexOf(firstEform), Is.LessThan(elements.IndexOf(tables[0])));
+        Assert.That(elements.IndexOf(tables[0]), Is.LessThan(elements.IndexOf(secondEform)));
+        Assert.That(elements.IndexOf(secondEform), Is.LessThan(elements.IndexOf(tables[1])));
+        Assert.That(firstEform.Descendants<Bold>().Any(), Is.True, "the eForm name is a bold sub-heading");
+        Assert.That(firstEform.Descendants<Color>().Select(c => c.Val?.Value?.ToUpperInvariant()),
+            Does.Not.Contain("666666"), "the eForm name is not the grey caption style");
+
+        // No heading is stranded at the foot of a page: the sub-headings are kept
+        // with their tables, the caption and headline with the heading under them.
+        foreach (var heading in headings.Skip(1))
+        {
+            Assert.That(heading.ParagraphProperties?.KeepNext, Is.Not.Null,
+                $"'{heading.InnerText.Trim()}' must carry w:keepNext");
+        }
+
+        static string[] CellTexts(TableRow row) =>
+            row.Elements<TableCell>().Select(c => c.InnerText.Trim()).ToArray();
+
+        Assert.That(CellTexts(tables[0].Elements<TableRow>().First()), Is.EqualTo(new[]
+        {
+            "ID", "Ejendom", "Udført af", "Udført dato", "Område", "Billeder", "Dato", "Godkendt"
+        }));
+        Assert.That(CellTexts(tables[1].Elements<TableRow>().First()), Is.EqualTo(new[]
+        {
+            "ID", "Ejendom", "Udført af", "Udført dato", "Område", "Billeder", "KOMMENTAR", "Flydelag ok"
+        }));
+    }
+
+    /// <summary>
+    /// #1276's answer formatting in the docx: a ticked checkbox is ✔ (U+2714, the
+    /// legacy report's <c>&amp;#10004;</c>), an unticked one an EMPTY cell — not
+    /// the token, not the en dash, the cell still present so the row stays aligned
+    /// — and a <c>Date</c> answer reads <c>dd.MM.yyyy</c> like the
+    /// <c>Udført dato</c> cell beside it, while one that will not parse is printed
+    /// as stored. A case without images keeps the en dash under <c>Billeder</c>:
+    /// only an unticked box is blank.
+    /// </summary>
+    [Test]
+    public async Task Word_RapportCheckBoxIsTheCheckMarkOrBlankAndDateAnswerIsDanish()
+    {
+        await using var stream = await NewWordWriter().WriteAsync(
+            MultiEformReportDocument(includeImageAppendix: false), null);
+        using var word = WordprocessingDocument.Open(stream, false);
+
+        var body = word.MainDocumentPart!.Document!.Body!;
+        var tables = body.Descendants<Table>().ToList();
+
+        static string[] CellTexts(TableRow row) =>
+            row.Elements<TableCell>().Select(c => c.InnerText.Trim()).ToArray();
+
+        var construction = tables[0].Elements<TableRow>().ToList();
+        Assert.That(CellTexts(construction[1]), Is.EqualTo(new[]
+        {
+            "3001", "Ejendom A", "Ann", "02.12.2025", "Tank 1", "1 billede", "01.12.2025", "\u2714"
+        }));
+        Assert.That(CellTexts(construction[2]), Is.EqualTo(new[]
+        {
+            "3002", "Ejendom A", "Ann", "09.12.2025", "Tank 1", Dash, "01/12/2025", ""
+        }), "unticked is an empty cell; an unparseable date stays as stored");
+        Assert.That(construction[2].Elements<TableCell>().Count(), Is.EqualTo(construction[0].Elements<TableCell>().Count()),
+            "the empty checkbox cell is still a cell, so the row stays aligned with its header");
+
+        var floatingLayer = tables[1].Elements<TableRow>().ToList();
+        Assert.That(CellTexts(floatingLayer[1]), Is.EqualTo(new[]
+        {
+            "3003", "Ejendom A", "Bo", "03.12.2025", "Tank 1", "1 billede", "Fint", "\u2714"
+        }));
+
+        Assert.That(body.InnerText, Does.Not.Contain("checked"), "neither canonical token reaches the page");
+        Assert.That(body.InnerText, Does.Not.Contain("2025-12-01"), "the date answer is not raw ISO");
+    }
+
+    /// <summary>
+    /// A headline over several eForms still gets ONE appendix page (#1276 keeps
+    /// #1192's one-page-per-section rule): a single <c>Bilag – {caption}</c> break,
+    /// under it the blocks of BOTH eForms' cases in table order, after every
+    /// section table.
+    /// </summary>
+    [Test]
+    public async Task Word_AppendixOfAMultiEformHeadlineIsOnePage()
+    {
+        var document = MultiEformReportDocument(includeImageAppendix: true);
+        await using var stream = await NewWordWriter().WriteAsync(document, null);
+        using var word = WordprocessingDocument.Open(stream, false);
+
+        var body = word.MainDocumentPart!.Document!.Body!;
+        var paragraphs = body.Descendants<Paragraph>().ToList();
+
+        static bool IsPageBreak(Paragraph p) =>
+            p.ParagraphProperties?.PageBreakBefore != null
+            || p.Descendants<Break>().Any(b => b.Type != null && b.Type.Value == BreakValues.Page);
+
+        var breaks = paragraphs.Where(IsPageBreak).ToList();
+        Assert.That(breaks, Has.Count.EqualTo(1), "one appendix page for the one headline");
+        Assert.That(paragraphs.Skip(paragraphs.IndexOf(breaks[0])).Select(p => p.InnerText.Trim()).First(t => t.Length > 0),
+            Is.EqualTo("Bilag – Miljøtilsyn - Brand"));
+
+        Assert.That(paragraphs.Select(p => p.InnerText.Trim()).Where(t => t.StartsWith("Sag ")), Is.EqualTo(new[]
+        {
+            "Sag 3001 · Tank 1 · 02.12.2025",
+            "Sag 3003 · Tank 1 · 03.12.2025"
+        }));
+        Assert.That(body.Descendants<Table>().ToList(), Has.Count.EqualTo(4),
+            "two eForm tables, then one image grid per case");
     }
 
     /// <summary>

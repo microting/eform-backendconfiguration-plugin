@@ -302,20 +302,29 @@ async function routeOverviewWithOneRow(page: Page): Promise<void> {
  * there is nothing to click.
  */
 async function routeReportWithOneCase(page: Page): Promise<void> {
+  // The #1276 shape: a headline group holds one table per eForm (`templates`),
+  // each with its own columns and cases. The pre-#1276 flat shape
+  // (`checkListIds` / `columns` / `cases` on the group) renders NO table, so
+  // `setTotalCount` would report 0 and Download would never enable.
   const group = {
     headlineTagId: 7,
     headlineName: 'Brandsikkerhed og beredskab',
     tagsCaption: 'Miljøtilsyn - Brand',
-    checkListIds: [509],
-    schemaUnavailableCheckListIds: [],
-    columns: [{key: 'f10', fieldId: 10, label: 'Målerstand', fieldType: 'Number'}],
-    cases: [
+    templates: [
       {
-        complianceId: 1, sdkCaseId: 2183, checkListId: 509,
-        tags: ['Brand'], propertyId: 9, propertyName: 'Ejendom 9',
-        title: 'Kontrol af arbejdsmiljø', taskDate: '2026-05-13', completed: true,
-        doneAt: '2026-05-13T10:00:00', workerNames: ['Ann Andersen'],
-        cells: {f10: '12'}, imagesCount: 0, images: [],
+        checkListId: 509,
+        checkListName: 'Kontrol af arbejdsmiljø',
+        schemaUnavailable: false,
+        columns: [{key: 'f10', fieldId: 10, label: 'Målerstand', fieldType: 'Number'}],
+        cases: [
+          {
+            complianceId: 1, sdkCaseId: 2183, checkListId: 509,
+            tags: ['Brand'], propertyId: 9, propertyName: 'Ejendom 9',
+            title: 'Kontrol af arbejdsmiljø', taskDate: '2026-05-13', completed: true,
+            doneAt: '2026-05-13T10:00:00', workerNames: ['Ann Andersen'],
+            cells: {f10: '12'}, imagesCount: 0, images: [],
+          },
+        ],
       },
     ],
   };

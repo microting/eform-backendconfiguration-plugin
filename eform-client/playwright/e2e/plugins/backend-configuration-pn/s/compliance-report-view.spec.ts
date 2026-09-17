@@ -1,11 +1,17 @@
 import { test, expect, Page } from '@playwright/test';
 import { LoginPage } from '../../../Page objects/Login.page';
+import {
+  ignoreUnhandledRejections,
+  SLOW_API_TIMEOUT,
+  UI_TIMEOUT,
+  waitForApiResponse,
+} from '../wait-helpers';
 
 /**
  * Standalone Compliance page — RAPPORT view (#1167, grouped by report
- * headline since #1188).
+ * headline since #1188, one table per eForm under the headline since #1276).
  *
- * SCOPE, stated plainly. Rapport's sub-report tables need COMPLETED cases whose
+ * SCOPE, stated plainly. Rapport's eForm tables need COMPLETED cases whose
  * eForm answers have been submitted: the endpoint projects
  * `Case.CheckListId` → column schema → keyed cell bag, and a compliance row
  * that was never answered never reaches a headline group. Seeding that from a
@@ -21,8 +27,19 @@ import { LoginPage } from '../../../Page objects/Login.page';
  * What is asserted HERE is exactly what needs a browser and holds on an EMPTY
  * installation: the meta line, its `dd.MM.yyyy` period format, the empty-result
  * wording, and — for whatever sections the installation happens to render —
- * the caption-above-heading section structure with the headline-less
- * fallback section last.
+ * the caption-above-heading section structure, an eForm sub-heading over every
+ * table, and the headline-less fallback section last.
+ *
+ * The #1276 layout — a headline answered on TWO eForms is one heading over two
+ * tables, and a CheckBox / Date answer is a tick / `dd.MM.yyyy` — is asserted
+ * against a MOCKED `eform-columns` response, the same technique
+ * `compliance-page-shell.spec.ts` uses for its Rapport export test. Producing
+ * that shape for real needs two eForms submitted against one headline, with a
+ * ticked checkbox, over the SDK's device channel — no browser path exists. The
+ * grouping itself is the SERVER's and is pinned by the backend's integration
+ * tests; what only a browser can prove is how the view renders it: the
+ * sub-headings, the separate grids with their own columns, and the tick in a
+ * real mtx-grid cell with no `checked` / `unchecked` text left in it.
  *
  * Structural notes, each a trap this repo has already paid for:
  *
@@ -48,24 +65,96 @@ const PAGE_URL = `${BASE_URL}/plugins/backend-configuration-pn/compliance-report
  */
 async function goToRapport(page: Page): Promise<void> {
   await page.goto(BASE_URL);
+  // `login()` returns once `#newEFormBtn` is visible: no fixed sleep needed.
   await new LoginPage(page).login();
-  await page.waitForTimeout(2000);
   await page.goto(PAGE_URL);
-  await page.locator('#complianceFilterProperty').waitFor({ state: 'visible', timeout: 60000 });
-  const response = page.waitForResponse(
+  await page.locator('#complianceFilterProperty').waitFor({ state: 'visible', timeout: SLOW_API_TIMEOUT });
+  const response = waitForApiResponse(
+    page,
+    'the Rapport eform-columns query',
     (r) => r.url().includes('/compliance-report/eform-columns'),
-    { timeout: 60000 },
+    SLOW_API_TIMEOUT,
   );
+  // Awaited after the click, which can throw first.
+  ignoreUnhandledRejections(response);
   await page.locator('#complianceMode-report').click();
-  await expect(page.locator('#complianceMode-report')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#complianceMode-report')).toHaveAttribute('aria-pressed', 'true', {
+    timeout: UI_TIMEOUT,
+  });
   await response;
 }
 
 /** The report has rendered: the shell's spinner replaces the view while `loading` is true. */
 async function awaitRapportRendered(page: Page): Promise<void> {
   await expect(page.locator('#complianceCasesRoot')).toHaveAttribute('aria-busy', 'false', {
-    timeout: 60000,
+    timeout: SLOW_API_TIMEOUT,
   });
+}
+
+const EFORM_COLUMNS_ROUTE = '**/api/backend-configuration-pn/compliance-report/eform-columns';
+
+/**
+ * ONE report headline answered on TWO eForms — the #1276 shape, which #1188
+ * rendered as one merged table with `KOMMENTAR` twice. Both eForms here have a
+ * `KOMMENTAR` too, so a regression back to one merged grid shows up as two
+ * such headers in one table.
+ *
+ * `Flydelag` carries the two field types #1276 formats: a CheckBox (`f10`,
+ * ticked on Tank A, `unchecked` on Tank B) and a Date (`f11`, stored
+ * `yyyy-MM-dd`, answered on Tank A only). The eForms are in the server's name
+ * order, which the view must keep.
+ */
+async function routeHeadlineOnTwoEforms(page: Page): Promise<void> {
+  const caseRow = (
+    complianceId: number,
+    checkListId: number,
+    title: string,
+    cells: Record<string, string>,
+  ) => ({
+    complianceId, sdkCaseId: 3000 + complianceId, checkListId,
+    tags: ['Miljøtilsyn'], propertyId: 9, propertyName: 'Ejendom 9',
+    title, taskDate: '2026-05-13', completed: true,
+    doneAt: '2026-05-13T10:00:00', workerNames: ['Ann Andersen'],
+    cells, imagesCount: 0, images: [],
+  });
+  const group = {
+    headlineTagId: 7,
+    headlineName: 'Headline 1',
+    tagsCaption: 'Miljøtilsyn',
+    templates: [
+      {
+        checkListId: 509,
+        checkListName: 'Flydelag',
+        schemaUnavailable: false,
+        columns: [
+          { key: 'f10', fieldId: 10, label: 'Flydelag OK', fieldType: 'CheckBox' },
+          { key: 'f11', fieldId: 11, label: 'Kontroldato', fieldType: 'Date' },
+          { key: 'f12', fieldId: 12, label: 'KOMMENTAR', fieldType: 'Comment' },
+        ],
+        cases: [
+          caseRow(1, 509, 'Tank A', { f10: 'checked', f11: '2025-12-01', f12: 'Fin' }),
+          caseRow(2, 509, 'Tank B', { f10: 'unchecked', f12: 'Revne' }),
+        ],
+      },
+      {
+        checkListId: 511,
+        checkListName: 'Omrøring',
+        schemaUnavailable: false,
+        columns: [
+          { key: 'f20', fieldId: 20, label: 'Minutter', fieldType: 'Number' },
+          { key: 'f21', fieldId: 21, label: 'KOMMENTAR', fieldType: 'Comment' },
+        ],
+        cases: [caseRow(3, 511, 'Tank C', { f20: '15', f21: 'Ok' })],
+      },
+    ],
+  };
+  await page.route(EFORM_COLUMNS_ROUTE, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ success: true, message: '', model: [group] }),
+    }),
+  );
 }
 
 test.describe.configure({ mode: 'serial' });
@@ -151,7 +240,20 @@ test.describe('Compliance — Rapport view', () => {
       await expect(section.locator('.compliance-report__tag')).toHaveCount(1);
       // The heading is the report headline, `#{id}` or the fallback — never
       // blank, and never the eForm template name (which is what #1167 rendered).
+      // ONE per section, however many eForms were answered under it (#1276).
+      await expect(section.locator('.compliance-report__heading')).toHaveCount(1);
       await expect(section.locator('.compliance-report__heading')).not.toBeEmpty();
+
+      // Under it, one table per eForm, each titled with the eForm name (#1276).
+      // A section is only rendered when it has at least one table.
+      const tables = section.locator('.compliance-report__table');
+      const tableCount = await tables.count();
+      expect(tableCount).toBeGreaterThan(0);
+      for (let t = 0; t < tableCount; t++) {
+        const subheading = tables.nth(t).locator('.compliance-report__subheading');
+        await expect(subheading).toHaveCount(1);
+        await expect(subheading).not.toBeEmpty();
+      }
     }
 
     // The fallback section — tasks without a report headline — is keyed
@@ -166,5 +268,62 @@ test.describe('Compliance — Rapport view', () => {
       );
       await expect(sections.last()).toHaveAttribute('data-section-key', 'hnone');
     }
+  });
+
+  test('a headline answered on two eForms is ONE heading over one table per eForm, with ticks and formatted dates (#1276)', async ({
+    page,
+  }) => {
+    await routeHeadlineOnTwoEforms(page);
+    await goToRapport(page);
+    await awaitRapportRendered(page);
+
+    // ONE section for the headline: the caption and the bold headline once.
+    const section = page.locator('.compliance-report__section[data-section-key="h7"]');
+    await expect(section).toHaveCount(1, { timeout: UI_TIMEOUT });
+    await expect(section.locator('.compliance-report__tag')).toHaveText(/^\s*Miljøtilsyn\s*$/);
+    await expect(section.locator('.compliance-report__heading')).toHaveCount(1);
+    await expect(section.locator('.compliance-report__heading')).toHaveText(
+      /^\s*Headline 1\s*$/,
+    );
+
+    // Under it, TWO tables in the server's order, each under its own eForm
+    // name and keyed `h{headline}-c{checkListId}`.
+    await expect(section.locator('.compliance-report__subheading')).toHaveText([
+      /^\s*Flydelag\s*$/,
+      /^\s*Omrøring\s*$/,
+    ]);
+    const flydelag = section.locator('.compliance-report__table[data-table-key="h7-c509"]');
+    const omroering = section.locator('.compliance-report__table[data-table-key="h7-c511"]');
+    await expect(flydelag.locator('mtx-grid')).toHaveCount(1);
+    await expect(omroering.locator('mtx-grid')).toHaveCount(1);
+
+    // Each grid has ONLY its own eForm's answer columns: one KOMMENTAR per
+    // grid (the merged #1188 grid had two), and no column of the other eForm.
+    await expect(flydelag.locator('th', { hasText: 'KOMMENTAR' })).toHaveCount(1);
+    await expect(omroering.locator('th', { hasText: 'KOMMENTAR' })).toHaveCount(1);
+    await expect(flydelag.locator('th', { hasText: 'Minutter' })).toHaveCount(0);
+    await expect(omroering.locator('th', { hasText: 'Flydelag OK' })).toHaveCount(0);
+    await expect(omroering.locator('tbody tr', { hasText: 'Tank C' })).toHaveCount(1);
+
+    // CheckBox: `checked` is a tick whose accessible name is the translated
+    // `Yes`; the answer column's cells are addressed by mtx-grid's
+    // `mat-column-answer_{key}` class, inside the row found by its Område.
+    const tankA = flydelag.locator('tbody tr', { hasText: 'Tank A' });
+    const tankB = flydelag.locator('tbody tr', { hasText: 'Tank B' });
+    const tickedCell = tankA.locator('td.mat-column-answer_f10');
+    await expect(tickedCell.getByRole('img', { name: 'Ja' })).toBeVisible();
+    await expect(tickedCell).not.toContainText('checked');
+    // `unchecked` is not shown at all: no tick, no text.
+    const uncheckedCell = tankB.locator('td.mat-column-answer_f10');
+    await expect(uncheckedCell.getByRole('img')).toHaveCount(0);
+    await expect(uncheckedCell).toHaveText(/^\s*$/);
+    // And neither token survives anywhere in the table.
+    await expect(flydelag.locator('tbody')).not.toContainText(/\b(un)?checked\b/);
+
+    // Date: `yyyy-MM-dd` reads `dd.MM.yyyy`, the fixed `Udført dato`
+    // column's format; an unanswered one is still the en dash in place.
+    await expect(tankA.locator('td.mat-column-answer_f11')).toHaveText(/^\s*01\.12\.2025\s*$/);
+    await expect(tankA.locator('td.mat-column-doneAt')).toHaveText(/^\s*13\.05\.2026\s*$/);
+    await expect(tankB.locator('td.mat-column-answer_f11')).toHaveText(/^\s*–\s*$/);
   });
 });

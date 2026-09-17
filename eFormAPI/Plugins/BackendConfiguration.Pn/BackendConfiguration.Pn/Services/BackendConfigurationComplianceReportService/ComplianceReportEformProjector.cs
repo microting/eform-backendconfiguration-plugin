@@ -63,6 +63,15 @@ internal sealed class ComplianceReportEformProjector(
     ILogger logger)
 {
     /// <summary>
+    /// The canonical <c>CheckBox</c> cell tokens <see cref="Render"/> emits, and
+    /// the only spellings the export builder parses back (#1276).
+    /// </summary>
+    public const string CheckBoxChecked = "checked";
+
+    /// <inheritdoc cref="CheckBoxChecked"/>
+    public const string CheckBoxUnchecked = "unchecked";
+
+    /// <summary>
     /// Field types that get NEITHER a column NOR a cell.
     ///
     /// <para>
@@ -117,7 +126,7 @@ internal sealed class ComplianceReportEformProjector(
     ///
     /// <para>
     /// Derivation goes through <c>Core.Advanced_TemplateFieldReadAll</c>
-    /// (<c>Core.cs:4615</c>; implemented as <c>SqlController.TemplateFieldReadAll</c>,
+    /// (<c>Core.cs:4639</c>; implemented as <c>SqlController.TemplateFieldReadAll</c>,
     /// <c>SqlController.cs:639</c>) because it walks NESTED checklists and
     /// <c>FieldGroup</c> children. A derivation that read
     /// <c>Fields WHERE CheckListId = @templateId</c> would return an EMPTY column
@@ -128,7 +137,7 @@ internal sealed class ComplianceReportEformProjector(
     /// </para>
     ///
     /// <para>
-    /// A template whose derivation THROWS yields an empty column set rather than
+    /// A template whose derivation FAILS yields an empty column set rather than
     /// failing the whole report: the SDK path still contains a bare
     /// <c>FirstAsync</c> on <c>CheckListTranslations</c>
     /// (<c>SqlController.cs:668-670</c>) that throws when a child checklist has no
@@ -137,11 +146,19 @@ internal sealed class ComplianceReportEformProjector(
     /// </para>
     ///
     /// <para>
+    /// FAILS includes returning <c>null</c>: <c>Core.Advanced_TemplateFieldReadAll</c>
+    /// catches every exception itself, logs it and returns <c>null</c>
+    /// (<c>Core.cs:4650-4654</c>), whereas <c>SqlController.TemplateFieldReadAll</c>
+    /// never returns <c>null</c>. So <c>null</c> is treated exactly like a throw; the
+    /// catch stays for a Core that does rethrow.
+    /// </para>
+    ///
+    /// <para>
     /// The swallow is NOT silent to the caller: <see cref="TemplateSchema.SchemaUnavailable"/>
     /// is set, and travels on to
-    /// <c>ComplianceReportHeadlineGroupModel.SchemaUnavailableCheckListIds</c>, so
+    /// <c>ComplianceReportTemplateTableModel.SchemaUnavailable</c> (#1276), so
     /// the consumer can distinguish "derivation failed" from "nobody answered
-    /// anything" — both of which otherwise render as a template block with zero
+    /// anything" — both of which otherwise render as a template table with zero
     /// columns and no cells.
     /// Logged at WARNING, not Error: a translation gap is an expected data
     /// condition, not a bug in this code.
@@ -153,20 +170,27 @@ internal sealed class ComplianceReportEformProjector(
 
         var schema = new TemplateSchema { CheckListId = checkListId };
 
-        List<FieldDto> fields;
+        List<FieldDto> fields = null;
+        Exception error = null;
         try
         {
-            fields = await core.Advanced_TemplateFieldReadAll(checkListId, language) ?? [];
+            fields = await core.Advanced_TemplateFieldReadAll(checkListId, language);
         }
         catch (Exception e)
         {
-            logger.LogWarning(e,
+            error = e;
+        }
+
+        if (fields == null)
+        {
+            logger.LogWarning(error,
                 "ComplianceReportEformProjector: could not derive the column schema for CheckListId {CheckListId} "
                 + "in language {LanguageId}; the template is rendered with no answer columns and is flagged "
                 + "SchemaUnavailable. The usual cause is the SDK's bare FirstAsync on CheckListTranslations "
                 + "(SqlController.cs:668-670) for a child checklist with no translation in this language. "
-                + "{Message}",
-                checkListId, language.Id, e.Message);
+                + "{Failure}",
+                checkListId, language.Id,
+                error?.Message ?? "Core.Advanced_TemplateFieldReadAll returned null (it logged the cause)");
             fields = [];
             schema.SchemaUnavailable = true;
         }
@@ -605,13 +629,15 @@ internal sealed class ComplianceReportEformProjector(
             }
 
             // "checked" / "unchecked", plus dirty "true" / "false". The CANONICAL
-            // token is emitted and #1167 localises it; anything else is not a
-            // checkbox state and gets no cell.
+            // token is emitted and the renderers present it by the column's
+            // FieldType (#1276: ticked is a check mark — the screen's icon, ✔ in
+            // Word/PDF, "x" in CSV — and unticked is blank); anything else is not
+            // a checkbox state and gets no cell.
             case Constants.FieldTypes.CheckBox:
                 return value.ToLowerInvariant() switch
                 {
-                    "true" or "checked" => "checked",
-                    "false" or "unchecked" => "unchecked",
+                    "true" or CheckBoxChecked => CheckBoxChecked,
+                    "false" or CheckBoxUnchecked => CheckBoxUnchecked,
                     _ => null
                 };
 
@@ -621,7 +647,9 @@ internal sealed class ComplianceReportEformProjector(
             case Constants.FieldTypes.NumberStepper:
                 return value.Replace(",", ".");
 
-            // Already yyyy-MM-dd. Not reformatted server-side.
+            // Already yyyy-MM-dd. Not reformatted HERE: the cell stays ISO and
+            // each renderer formats it by the column's FieldType (#1276 — the
+            // screen and Word/PDF as dd.MM.yyyy, the CSV keeps ISO).
             case Constants.FieldTypes.Date:
                 return value;
 
@@ -676,10 +704,11 @@ internal sealed class ComplianceReportEformProjector(
         public List<ComplianceReportColumnModel> Columns { get; } = [];
 
         /// <summary>
-        /// True when <c>Advanced_TemplateFieldReadAll</c> THREW and the column set is
+        /// True when <c>Advanced_TemplateFieldReadAll</c> FAILED (threw, or returned
+        /// <c>null</c> after swallowing the exception itself) and the column set is
         /// empty because derivation failed — not because the template has no
         /// answerable fields. Surfaced on
-        /// <c>ComplianceReportHeadlineGroupModel.SchemaUnavailableCheckListIds</c>.
+        /// <c>ComplianceReportTemplateTableModel.SchemaUnavailable</c>.
         /// </summary>
         public bool SchemaUnavailable { get; set; }
 

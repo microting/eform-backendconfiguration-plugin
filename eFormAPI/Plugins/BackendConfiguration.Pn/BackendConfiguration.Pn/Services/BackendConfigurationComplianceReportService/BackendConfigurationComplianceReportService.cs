@@ -626,11 +626,12 @@ public class BackendConfigurationComplianceReportService(
     /// Per-property compliance aggregation for the Oversigt view (#1162).
     ///
     /// <para>
-    /// A direct port of the prototype's <c>buildCompanySummaries</c>
-    /// (<c>lorem-ipsum/kalender/compliance-overview.js:27-82</c>). One row per
-    /// property that has at least one matching compliance row, plus a WEIGHTED
-    /// totals row — the summed numerators over the summed denominators, never an
-    /// average of the per-property percentages.
+    /// The MATHS are a direct port of the prototype's <c>buildCompanySummaries</c>
+    /// (<c>lorem-ipsum/kalender/compliance-overview.js:27-82</c>): each row counts
+    /// its own occurrences, plus a WEIGHTED totals row — the summed numerators over
+    /// the summed denominators, never an average of the per-property percentages.
+    /// WHICH rows exist is no longer the prototype's rule; see
+    /// <see cref="LoadAlwaysListedProperties"/> (#1278).
     /// </para>
     ///
     /// <para>
@@ -707,8 +708,12 @@ public class BackendConfigurationComplianceReportService(
                 Completed = r.Completed
             });
 
+            // #1278 — the properties Oversigt lists whatever the window holds; see
+            // LoadAlwaysListedProperties.
+            var alwaysListed = await LoadAlwaysListedProperties(requestModel);
+
             return new OperationDataResult<ComplianceReportOverviewModel>(
-                true, Aggregate(overviewCandidates, today));
+                true, Aggregate(overviewCandidates, today, alwaysListed));
         }
         catch (Exception e)
         {
@@ -732,17 +737,38 @@ public class BackendConfigurationComplianceReportService(
     /// classified against one value.
     /// </para>
     /// </summary>
+    /// <param name="alwaysListedProperties">
+    /// The properties that get a row whatever the window holds (#1278) — which ones,
+    /// and why, is <see cref="LoadAlwaysListedProperties"/>. Seeded FIRST, so a
+    /// property that does have occurrences keeps this name and never reaches the
+    /// lazy branch below. With no seed — what the ported maths suite passes — rows
+    /// exist only for candidates.
+    /// </param>
     internal static ComplianceReportOverviewModel Aggregate(
-        IEnumerable<OverviewCandidate> candidates, DateTime today)
+        IEnumerable<OverviewCandidate> candidates, DateTime today,
+        IReadOnlyDictionary<int, string> alwaysListedProperties = null)
     {
         var byProperty = new Dictionary<int, ComplianceReportOverviewRowModel>();
+
+        if (alwaysListedProperties != null)
+        {
+            foreach (var (propertyId, propertyName) in alwaysListedProperties)
+            {
+                byProperty[propertyId] = new ComplianceReportOverviewRowModel
+                {
+                    PropertyId = propertyId,
+                    PropertyName = propertyName ?? string.Empty
+                };
+            }
+        }
 
         foreach (var candidate in candidates ?? [])
         {
             if (!byProperty.TryGetValue(candidate.PropertyId, out var row))
             {
-                // Rows are created LAZILY, on first case — which is what makes
-                // "a property with no cases produces no row" true by construction.
+                // Rows are created lazily for anything NOT seeded above: a
+                // property excluded from the seed by a calendar/tag/employee
+                // filter, or one soft-removed since its occurrences were written.
                 row = new ComplianceReportOverviewRowModel
                 {
                     PropertyId = candidate.PropertyId,
@@ -843,10 +869,10 @@ public class BackendConfigurationComplianceReportService(
     /// <summary>
     /// The Rapport view's read model (#1166, regrouped by #1188): the filtered
     /// compliance set grouped by REPORT HEADLINE
-    /// (<c>AreaRulePlanning.ItemPlanningTagId</c>), each group carrying the UNION
-    /// of the column schemas of every eForm template answered in it, one keyed
-    /// cell bag per case, and the group's tag names as a caption. Rows whose
-    /// planning has no headline form one fallback group, sorted last.
+    /// (<c>AreaRulePlanning.ItemPlanningTagId</c>), each group carrying the
+    /// group's tag names as a caption and one table per eForm template answered
+    /// in it (#1276, see ComplianceReportTemplateTableModel). Rows whose planning
+    /// has no headline form one fallback group, sorted last.
     ///
     /// <para>
     /// Runs the SAME <see cref="BuildCandidateSet"/> as <see cref="Index"/> and
@@ -1054,6 +1080,9 @@ public class BackendConfigurationComplianceReportService(
             // ComplianceReportHeadlineGroupModel for the four reversed decisions
             // and the PDF evidence behind them.
             //
+            // Under each headline, one table per template (#1276, see
+            // ComplianceReportTemplateTableModel).
+            //
             // NEVER key a Dictionary on a NULLABLE VALUE TYPE here. Dictionary<TKey,
             // TValue> null-checks its key in both FindValue and TryInsert, and
             // boxing an EMPTY Nullable<int> produces a null reference — so
@@ -1107,9 +1136,10 @@ public class BackendConfigurationComplianceReportService(
                     .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
                     .ToList();
 
-                // ONE model per compliance row, in exactly ONE group. It carries its
-                // own CheckListId because the section now spans templates and the
-                // consumer's edit route needs the row's own.
+                // ONE model per compliance row, in exactly ONE group and, inside
+                // it, exactly ONE template table (#1276). It carries its own
+                // CheckListId — always the table's — because the consumer's edit
+                // route reads it off the row.
                 var caseModel = new ComplianceReportCaseModel
                 {
                     ComplianceId = row.Candidate.ComplianceId,
@@ -1204,56 +1234,70 @@ public class BackendConfigurationComplianceReportService(
     }
 
     /// <summary>
-    /// Accumulates one headline group's rows, templates and tag names while
+    /// Accumulates one headline group's rows — per template — and tag names while
     /// <see cref="EformColumns"/> walks the answered rows, and materialises the
-    /// DTO — union columns included — once every row is in.
+    /// DTO once every row is in (#1276, see ComplianceReportTemplateTableModel).
     /// </summary>
     private sealed class HeadlineGroupBuilder(int? headlineTagId, string headlineName)
     {
-        private readonly List<ComplianceReportCaseModel> _cases = [];
-        private readonly HashSet<int> _checkListIds = [];
+        // Rows are appended in the response's one deterministic order (date, then
+        // compliance id), so each template's list is already in that order.
+        private readonly Dictionary<int, List<ComplianceReportCaseModel>> _casesByCheckListId = new();
         private readonly HashSet<string> _tagNames = new(StringComparer.OrdinalIgnoreCase);
 
         public void Add(ComplianceReportCaseModel caseModel, int checkListId, List<string> tagNames)
         {
-            _cases.Add(caseModel);
-            _checkListIds.Add(checkListId);
+            if (!_casesByCheckListId.TryGetValue(checkListId, out var cases))
+            {
+                cases = [];
+                _casesByCheckListId[checkListId] = cases;
+            }
+
+            cases.Add(caseModel);
             _tagNames.UnionWith(tagNames);
         }
 
         public ComplianceReportHeadlineGroupModel Build(
             Dictionary<int, ComplianceReportEformProjector.TemplateProjection> projections)
         {
-            // Templates by translated name, then id — the order their column
-            // blocks take inside the union.
-            var checkListIds = _checkListIds
-                .OrderBy(id => projections[id].Schema.CheckListName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
-                .ThenBy(id => id)
-                .ToList();
-
-            // The UNION of the per-template schemas, as a FRESH list of FRESH
-            // column objects. projections[id].Schema.Columns is the projector's
-            // cached list, shared by every group answered on that template —
-            // appending another template's fields to it would corrupt every other
-            // section. Keys are f{fieldId} and a field belongs to one template, so
-            // they cannot collide; the guard is there so a duplicate can never
-            // reach the consumer's table, where a repeated column key throws.
-            var columns = new List<ComplianceReportColumnModel>();
-            var seenKeys = new HashSet<string>(StringComparer.Ordinal);
-            foreach (var id in checkListIds)
-            {
-                foreach (var column in projections[id].Schema.Columns)
+            // Tables by translated name, then id — so structurally identical
+            // clones (same name, different ids) stay two adjacent tables, lower id
+            // first.
+            var templates = _casesByCheckListId
+                .OrderBy(entry => projections[entry.Key].Schema.CheckListName ?? string.Empty,
+                    StringComparer.OrdinalIgnoreCase)
+                .ThenBy(entry => entry.Key)
+                .Select(entry =>
                 {
-                    if (!seenKeys.Add(column.Key)) continue;
-                    columns.Add(new ComplianceReportColumnModel
+                    var schema = projections[entry.Key].Schema;
+                    return new ComplianceReportTemplateTableModel
                     {
-                        Key = column.Key,
-                        FieldId = column.FieldId,
-                        Label = column.Label,
-                        FieldType = column.FieldType
-                    });
-                }
-            }
+                        CheckListId = entry.Key,
+                        CheckListName = schema.CheckListName ?? string.Empty,
+                        SchemaUnavailable = schema.SchemaUnavailable,
+                        // A FRESH list of FRESH column objects per table.
+                        // schema.Columns is the projector's cached list, shared by
+                        // every table answered on that template in every headline;
+                        // handing out that reference would let one table's consumer
+                        // (or a later change here) reach every other table's. Keys
+                        // are f{fieldId}, one per field, so DistinctBy never drops a
+                        // real column; it is there so a field the SDK flattener
+                        // returned twice can never reach the consumer's table, where
+                        // a repeated column key throws (the guard #1188's union had).
+                        Columns = schema.Columns
+                            .DistinctBy(column => column.Key, StringComparer.Ordinal)
+                            .Select(column => new ComplianceReportColumnModel
+                            {
+                                Key = column.Key,
+                                FieldId = column.FieldId,
+                                Label = column.Label,
+                                FieldType = column.FieldType
+                            })
+                            .ToList(),
+                        Cases = entry.Value
+                    };
+                })
+                .ToList();
 
             return new ComplianceReportHeadlineGroupModel
             {
@@ -1263,15 +1307,7 @@ public class BackendConfigurationComplianceReportService(
                 // " - " (hyphen-minus with spaces — the PDF's separator, NOT the
                 // en dash the export uses for empty cells).
                 TagsCaption = string.Join(" - ", _tagNames.OrderBy(n => n, StringComparer.OrdinalIgnoreCase)),
-                CheckListIds = checkListIds,
-                // Zero columns from a template because DERIVATION FAILED, not
-                // because it has no answerable fields — the consumer renders
-                // "columns unavailable" per template rather than an empty block.
-                SchemaUnavailableCheckListIds = checkListIds
-                    .Where(id => projections[id].Schema.SchemaUnavailable)
-                    .ToList(),
-                Columns = columns,
-                Cases = _cases
+                Templates = templates
             };
         }
     }
@@ -1484,6 +1520,62 @@ public class BackendConfigurationComplianceReportService(
         }
 
         return siteIdsByArpId;
+    }
+
+    /// <summary>
+    /// The properties Oversigt lists even when they have nothing in the window
+    /// (#1278) — the one place this rule is argued; every other mention points here.
+    ///
+    /// <para>
+    /// Oversigt is a per-property SUMMARY, not a list of occurrences: a property
+    /// whose tasks simply are not due this period must read "0 overdue, no
+    /// percentage" rather than vanish. A customer reported exactly that — a
+    /// property whose yearly tasks fall just outside the default year-to-date
+    /// window was absent from the page while still being selectable in its own
+    /// property filter. Detaljer and Rapport ARE occurrence lists and keep their
+    /// empty result; <see cref="BuildCandidateSet"/> is untouched.
+    /// </para>
+    ///
+    /// <para>
+    /// Only when NO calendar/tag/employee filter is set. Those filters are the
+    /// user narrowing the page to what matches them, and seeding every property
+    /// would answer an employee filter with properties that worker has nothing to
+    /// do with. A property picked in the PROPERTY filter is still listed: "how is
+    /// this property doing" deserves a row even when the answer is "nothing due".
+    /// </para>
+    ///
+    /// <para>
+    /// The predicate is the one <c>GetCommonDictionary</c> uses verbatim
+    /// (non-removed, nothing else), because that endpoint fills the very property
+    /// filter on this page — a property selectable there and missing here is the
+    /// reported bug. AT LEAST what that filter offers, not exactly: a soft-removed
+    /// property whose occurrences survive phase A still gets a row through
+    /// <see cref="Aggregate"/>'s lazy branch, exactly as it did before.
+    /// </para>
+    /// </summary>
+    private async Task<Dictionary<int, string>> LoadAlwaysListedProperties(
+        ComplianceReportOverviewRequestModel requestModel)
+    {
+        var narrowedByFilter = requestModel.BoardIds is { Count: > 0 }
+                               || requestModel.TagIds is { Count: > 0 }
+                               || requestModel.SiteIds is { Count: > 0 };
+        if (narrowedByFilter)
+        {
+            return new Dictionary<int, string>();
+        }
+
+        var query = backendConfigurationPnDbContext.Properties
+            .AsNoTracking()
+            .Where(p => p.WorkflowState != Constants.WorkflowStates.Removed);
+
+        if (requestModel.PropertyId.HasValue)
+        {
+            query = query.Where(p => p.Id == requestModel.PropertyId.Value);
+        }
+
+        return await query
+            .Select(p => new { p.Id, p.Name })
+            .ToDictionaryAsync(p => p.Id, p => p.Name);
     }
 
     private async Task<Dictionary<int, string>> LoadPropertyNames(List<MatchedRow> rows)

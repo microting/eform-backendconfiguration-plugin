@@ -58,9 +58,10 @@ public class ComplianceReportController : Controller
     }
 
     /// <summary>
-    /// The Rapport view's answer columns (#1166, regrouped by #1188): one group
-    /// per REPORT HEADLINE, each with the union column schema of every template
-    /// answered in it, a tags caption, and one keyed cell bag per case.
+    /// The Rapport view's answer columns (#1166, regrouped by #1188, split per
+    /// template by #1276): one group per REPORT HEADLINE with a tags caption, and
+    /// under it one table per eForm template answered in it — the template's name,
+    /// its own column schema, and one keyed cell bag per case.
     ///
     /// Unpaged — Rapport groups the whole filtered set, so the request's paging and
     /// sorting fields are ignored and the service's row cap applies instead.

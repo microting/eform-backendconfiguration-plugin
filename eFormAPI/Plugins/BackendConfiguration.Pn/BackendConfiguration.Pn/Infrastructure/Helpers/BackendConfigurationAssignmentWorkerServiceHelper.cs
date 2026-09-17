@@ -22,6 +22,7 @@ using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.TimePlanningBase.Infrastructure.Data;
 using Microting.TimePlanningBase.Infrastructure.Data.Entities;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microting.EformAngularFrontendBase.Infrastructure.Data;
 using Microting.EformAngularFrontendBase.Infrastructure.Data.Entities.Permissions;
 using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
@@ -1446,8 +1447,12 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
         public static async Task<OperationDataResult<int>> CreateDeviceUser(DeviceUserModel deviceUserModel, Core core,
             int userId, TimePlanningPnDbContext timePlanningDbContext, BaseDbContext baseDbContext,
             IUserService userService, UserManager<EformUser> userManager,
-            Services.CalendarAssignmentReconciliation.ICalendarAssignmentReconciliationService? reconciliationService = null)
+            Services.CalendarAssignmentReconciliation.ICalendarAssignmentReconciliationService? reconciliationService = null,
+            ILogger? logger = null)
         {
+            // Optional so the existing callers keep compiling; the Google Sheet
+            // push below is the only thing here that logs through it.
+            logger ??= NullLogger.Instance;
             var sdkDbContext = core.DbContextHelper.GetDbContext();
             string siteName = null;
             // Null-safe so a missing request body reaches the try below and is reported as DeviceUserCouldNotBeCreated.
@@ -1842,6 +1847,24 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         Console.WriteLine($"[CreateDeviceUser] Creating AssignedSite for siteId={site.MicrotingUid} user={user?.Id}");
                         await assignmentSite.Create(timePlanningDbContext).ConfigureAwait(false);
                         Console.WriteLine($"[CreateDeviceUser] AssignedSite created, id={assignmentSite.Id}");
+
+                        // Without this the worker has time registration but no columns in the
+                        // Google Sheet, and the import matches columns by name, so nothing is
+                        // ever imported for them -- UpdateDeviceUser has always pushed here.
+                        // Guarded because the push reaches a third-party API and reads a plugin
+                        // setting that a tenant may not have: neither may cost us the worker.
+                        try
+                        {
+                            await GoogleSheetHelper.PushToGoogleSheet(core, timePlanningDbContext, logger)
+                                .ConfigureAwait(false);
+                        }
+                        catch (Exception e)
+                        {
+                            logger.LogError(e,
+                                "[CreateDeviceUser] Could not push the Google Sheet headers for siteId={SiteId}; the worker was created without sheet columns",
+                                site.MicrotingUid);
+                            SentrySdk.CaptureException(e);
+                        }
 
                         // Save managing tags for manager
                         if (deviceUserModel.ManagingTagIds != null && deviceUserModel.ManagingTagIds.Any())

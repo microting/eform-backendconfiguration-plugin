@@ -749,7 +749,6 @@ export const frFR = {
   'Select a period and click Update period': 'Sélectionnez une période et cliquez sur Mettre à jour la période.',
   'Change a filter or click Overview to load the table': 'Modifiez un filtre ou cliquez sur Aperçu pour charger le tableau.',
   'Without report headline': 'Sans en-tête de rapport',
-  'Columns unavailable for template #{{id}}': 'Colonnes indisponibles pour le modèle #{{id}}',
   // Calendar toolbar (#1209): the calendars multi-select button label, its
   // bulk actions, and the accessible name of a calendar row's actions menu.
   '{{count}} calendars': '{{count}} calendriers',
