@@ -1,7 +1,4 @@
 import { expect, Page, Response, test } from '@playwright/test';
-import { execFile } from 'child_process';
-import { promisify } from 'util';
-import DatabaseConfigurationConstants from '../../../Constants/DatabaseConfigurationConstants';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
 import {
@@ -12,6 +9,7 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
+import { customerDatabase, runMariadbSql } from '../db-helpers';
 import { ActionMenuItem, openRowActionMenu } from '../row-action-menu';
 import {
   API_TIMEOUT,
@@ -158,22 +156,6 @@ function isAssignedSiteGet(r: Response): boolean {
   return new URL(r.url()).pathname.endsWith(ASSIGNED_SITES_PATH) && r.request().method() === 'GET';
 }
 
-const execFileAsync = promisify(execFile);
-
-/**
- * The MariaDB root password, taken from the connection credentials the
- * database-configuration step (DatabaseConfigurationConstants.authenticationType)
- * sets the app up with — the same root account the workflow starts the container
- * with — rather than repeated here.
- */
-function mariadbRootPassword(): string {
-  const match = /password\s*=\s*([^;]+);/.exec(DatabaseConfigurationConstants.authenticationType);
-  if (!match) {
-    throw new Error('DatabaseConfigurationConstants.authenticationType carries no "password = ...;" part');
-  }
-  return match[1].trim();
-}
-
 /**
  * Puts a saved AssignedSite back into 5-minute mode, straight in the CI database.
  *
@@ -183,39 +165,24 @@ function mariadbRootPassword(): string {
  * before one-minute intervals became the default still looks exactly like this in
  * production, and the edit dialog has to handle it.
  *
- * Depends on .github/workflows/dotnet-core-pr.yml, job pn-playwright-test: its
- * "Start MariaDB" step (`docker run --name mariadbtest ...`, line 137 at the time
- * of writing) starts the database on the same runner host this spec runs on, with
- * the root password it passes as MYSQL_ROOT_PASSWORD; the job's own "Change
- * rabbitmq hostname" step already runs `docker exec -i mariadbtest mariadb -u root
- * ...` the same way. The schema is the time-planning plugin's, under the customer
- * number the database-configuration step sets up. Tests run in CI only (CLAUDE.md).
- *
- * The password travels as MYSQL_PWD — `docker exec -e MYSQL_PWD` forwards it from
- * this process's environment into the container — never on a command line, so it
- * stays out of the process list and mariadb's "password on the command line" warning.
+ * Runs through runMariadbSql (../db-helpers.ts), which documents how the spec
+ * reaches CI's MariaDB container. The schema is the time-planning plugin's, under
+ * the customer number the database-configuration step sets up. Tests run in CI
+ * only (CLAUDE.md).
  */
 async function setSavedOneMinuteIntervalsToFalse(assignedSiteId: number): Promise<void> {
   if (!Number.isInteger(assignedSiteId) || assignedSiteId <= 0) {
     throw new Error(`Refusing to build SQL for AssignedSite id ${String(assignedSiteId)}`);
   }
-  const database = `${DatabaseConfigurationConstants.customerNo}_eform-angular-time-planning-plugin`;
+  const database = customerDatabase('eform-angular-time-planning-plugin');
   const sql =
     `UPDATE AssignedSites SET UseOneMinuteIntervals = 0 ` +
     `WHERE Id = ${assignedSiteId} AND WorkflowState <> 'removed'; SELECT ROW_COUNT();`;
-  let stdout: string;
-  try {
-    ({ stdout } = await execFileAsync(
-      'docker',
-      ['exec', '-e', 'MYSQL_PWD', 'mariadbtest', 'mariadb', '-u', 'root', '-N', '-B',
-        `--database=${database}`, '-e', sql],
-      { timeout: API_TIMEOUT, env: { ...process.env, MYSQL_PWD: mariadbRootPassword() } }
-    ));
-  } catch (error) {
-    throw new Error(
-      `Could not put AssignedSite ${assignedSiteId} back into 5-minute mode via docker exec: ${String(error)}`
-    );
-  }
+  const stdout = await runMariadbSql(
+    sql,
+    `put AssignedSite ${assignedSiteId} back into 5-minute mode`,
+    database
+  );
   expect(
     stdout.trim(),
     `exactly one active AssignedSite row (id ${assignedSiteId}) must have been switched to 5-minute mode`
