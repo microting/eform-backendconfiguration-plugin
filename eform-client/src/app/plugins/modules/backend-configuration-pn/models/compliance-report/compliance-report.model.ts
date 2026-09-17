@@ -173,8 +173,10 @@ export interface ComplianceReportOverviewRowModel {
 
 export interface ComplianceReportOverviewModel {
   /**
-   * One row per property that has at least one matching compliance row, ordered
-   * by `propertyName` ascending. That order is a stable server default, not a
+   * One row per property with a matching compliance row, plus — unless a
+   * calendar/tag/employee filter narrows the page — one per property with none,
+   * zeroed and with a null `compliancePct` (#1278). Ordered by `propertyName`
+   * ascending. That order is a stable server default, not a
    * contract — #1164 re-sorts client-side (default `compliancePct` ascending,
    * worst first).
    */

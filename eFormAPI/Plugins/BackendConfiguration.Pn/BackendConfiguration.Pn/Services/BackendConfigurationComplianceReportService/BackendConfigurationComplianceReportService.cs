@@ -626,11 +626,12 @@ public class BackendConfigurationComplianceReportService(
     /// Per-property compliance aggregation for the Oversigt view (#1162).
     ///
     /// <para>
-    /// A direct port of the prototype's <c>buildCompanySummaries</c>
-    /// (<c>lorem-ipsum/kalender/compliance-overview.js:27-82</c>). One row per
-    /// property that has at least one matching compliance row, plus a WEIGHTED
-    /// totals row — the summed numerators over the summed denominators, never an
-    /// average of the per-property percentages.
+    /// The MATHS are a direct port of the prototype's <c>buildCompanySummaries</c>
+    /// (<c>lorem-ipsum/kalender/compliance-overview.js:27-82</c>): each row counts
+    /// its own occurrences, plus a WEIGHTED totals row — the summed numerators over
+    /// the summed denominators, never an average of the per-property percentages.
+    /// WHICH rows exist is no longer the prototype's rule; see
+    /// <see cref="LoadAlwaysListedProperties"/> (#1278).
     /// </para>
     ///
     /// <para>
@@ -707,8 +708,12 @@ public class BackendConfigurationComplianceReportService(
                 Completed = r.Completed
             });
 
+            // #1278 — the properties Oversigt lists whatever the window holds; see
+            // LoadAlwaysListedProperties.
+            var alwaysListed = await LoadAlwaysListedProperties(requestModel);
+
             return new OperationDataResult<ComplianceReportOverviewModel>(
-                true, Aggregate(overviewCandidates, today));
+                true, Aggregate(overviewCandidates, today, alwaysListed));
         }
         catch (Exception e)
         {
@@ -732,17 +737,38 @@ public class BackendConfigurationComplianceReportService(
     /// classified against one value.
     /// </para>
     /// </summary>
+    /// <param name="alwaysListedProperties">
+    /// The properties that get a row whatever the window holds (#1278) — which ones,
+    /// and why, is <see cref="LoadAlwaysListedProperties"/>. Seeded FIRST, so a
+    /// property that does have occurrences keeps this name and never reaches the
+    /// lazy branch below. With no seed — what the ported maths suite passes — rows
+    /// exist only for candidates.
+    /// </param>
     internal static ComplianceReportOverviewModel Aggregate(
-        IEnumerable<OverviewCandidate> candidates, DateTime today)
+        IEnumerable<OverviewCandidate> candidates, DateTime today,
+        IReadOnlyDictionary<int, string> alwaysListedProperties = null)
     {
         var byProperty = new Dictionary<int, ComplianceReportOverviewRowModel>();
+
+        if (alwaysListedProperties != null)
+        {
+            foreach (var (propertyId, propertyName) in alwaysListedProperties)
+            {
+                byProperty[propertyId] = new ComplianceReportOverviewRowModel
+                {
+                    PropertyId = propertyId,
+                    PropertyName = propertyName ?? string.Empty
+                };
+            }
+        }
 
         foreach (var candidate in candidates ?? [])
         {
             if (!byProperty.TryGetValue(candidate.PropertyId, out var row))
             {
-                // Rows are created LAZILY, on first case — which is what makes
-                // "a property with no cases produces no row" true by construction.
+                // Rows are created lazily for anything NOT seeded above: a
+                // property excluded from the seed by a calendar/tag/employee
+                // filter, or one soft-removed since its occurrences were written.
                 row = new ComplianceReportOverviewRowModel
                 {
                     PropertyId = candidate.PropertyId,
@@ -1494,6 +1520,62 @@ public class BackendConfigurationComplianceReportService(
         }
 
         return siteIdsByArpId;
+    }
+
+    /// <summary>
+    /// The properties Oversigt lists even when they have nothing in the window
+    /// (#1278) — the one place this rule is argued; every other mention points here.
+    ///
+    /// <para>
+    /// Oversigt is a per-property SUMMARY, not a list of occurrences: a property
+    /// whose tasks simply are not due this period must read "0 overdue, no
+    /// percentage" rather than vanish. A customer reported exactly that — a
+    /// property whose yearly tasks fall just outside the default year-to-date
+    /// window was absent from the page while still being selectable in its own
+    /// property filter. Detaljer and Rapport ARE occurrence lists and keep their
+    /// empty result; <see cref="BuildCandidateSet"/> is untouched.
+    /// </para>
+    ///
+    /// <para>
+    /// Only when NO calendar/tag/employee filter is set. Those filters are the
+    /// user narrowing the page to what matches them, and seeding every property
+    /// would answer an employee filter with properties that worker has nothing to
+    /// do with. A property picked in the PROPERTY filter is still listed: "how is
+    /// this property doing" deserves a row even when the answer is "nothing due".
+    /// </para>
+    ///
+    /// <para>
+    /// The predicate is the one <c>GetCommonDictionary</c> uses verbatim
+    /// (non-removed, nothing else), because that endpoint fills the very property
+    /// filter on this page — a property selectable there and missing here is the
+    /// reported bug. AT LEAST what that filter offers, not exactly: a soft-removed
+    /// property whose occurrences survive phase A still gets a row through
+    /// <see cref="Aggregate"/>'s lazy branch, exactly as it did before.
+    /// </para>
+    /// </summary>
+    private async Task<Dictionary<int, string>> LoadAlwaysListedProperties(
+        ComplianceReportOverviewRequestModel requestModel)
+    {
+        var narrowedByFilter = requestModel.BoardIds is { Count: > 0 }
+                               || requestModel.TagIds is { Count: > 0 }
+                               || requestModel.SiteIds is { Count: > 0 };
+        if (narrowedByFilter)
+        {
+            return new Dictionary<int, string>();
+        }
+
+        var query = backendConfigurationPnDbContext.Properties
+            .AsNoTracking()
+            .Where(p => p.WorkflowState != Constants.WorkflowStates.Removed);
+
+        if (requestModel.PropertyId.HasValue)
+        {
+            query = query.Where(p => p.Id == requestModel.PropertyId.Value);
+        }
+
+        return await query
+            .Select(p => new { p.Id, p.Name })
+            .ToDictionaryAsync(p => p.Id, p => p.Name);
     }
 
     private async Task<Dictionary<int, string>> LoadPropertyNames(List<MatchedRow> rows)

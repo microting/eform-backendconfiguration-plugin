@@ -4,15 +4,17 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 
 /// <summary>
 /// Response for <c>POST api/backend-configuration-pn/compliance-report/overview</c>.
-/// Unpaged by decision (#1162 §4): one row per property, and the largest installs
-/// are nowhere near a page's worth. Client-side sorting in #1164 depends on having
+/// Unpaged by decision (#1162 §4): one row per property — since #1278 potentially
+/// every non-removed one — and the largest installs are nowhere near a page's worth. Client-side sorting in #1164 depends on having
 /// the whole set.
 /// </summary>
 public class ComplianceReportOverviewModel
 {
     /// <summary>
-    /// One row per property that has at least one matching compliance row.
-    /// A property with none produces NO row.
+    /// One row per property with a matching compliance row, plus — on a page not
+    /// narrowed by a calendar/tag/employee filter — one per property with none, all
+    /// counters zero and a null percentage (#1278:
+    /// <c>BackendConfigurationComplianceReportService.LoadAlwaysListedProperties</c>).
     ///
     /// Ordered by <c>PropertyName</c> ascending, ordinal, as a stable default —
     /// a reproducible order for tests, not a contract the client relies on
