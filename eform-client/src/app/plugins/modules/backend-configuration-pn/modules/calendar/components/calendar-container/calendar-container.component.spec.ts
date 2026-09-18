@@ -100,6 +100,10 @@ describe('CalendarContainerComponent', () => {
         })),
       setActiveBoardIds: jest.fn((activeBoardIds: number[]) =>
         filters$.next({...filters$.value, activeBoardIds})),
+      // The restore path: writes only what it is given and clears nothing,
+      // unlike updatePropertyId above (CalendarStateService.restoreFilters).
+      restoreFilters: jest.fn((partial: any) =>
+        filters$.next({...filters$.value, ...partial})),
       // Emit, do not just record: ngrx Store.select is synchronous on dispatch,
       // so the component's `currentDate` / `viewMode` (and therefore the
       // ngSwitch that picks the week or the month child) are already updated
@@ -919,6 +923,150 @@ describe('CalendarContainerComponent', () => {
       component.onDeleteBoard(row);
 
       expect(stateServiceStub.setActiveBoardIds).not.toHaveBeenCalled();
+    });
+  });
+
+  // #1292: the filters live in a module-level store that outlives the
+  // component, so leaving Kalender and coming back inside the SPA creates a
+  // NEW component that finds a property already selected. The old
+  // loadProperties() only loaded anything when no property was set, so the
+  // re-entered calendar showed the property name over an empty calendar list,
+  // an empty employee list and an empty week.
+  describe('re-entering the calendar without a page reload', () => {
+    const PROPERTY_GONE = 99;
+
+    /**
+     * Simulates navigating away and back: the first component is destroyed,
+     * the store keeps `stored`, and a brand-new component is initialised.
+     */
+    function reEnter(stored: any) {
+      fixture.destroy();
+      filters$.next({...filters$.value, ...stored});
+      calendarServiceStub.getBoards.mockClear();
+      calendarServiceStub.getTasksForWeek.mockClear();
+      propertiesServiceStub.getDeviceUsersFiltered.mockClear();
+      propertiesServiceStub.getLinkedFolderDtos.mockClear();
+      stateServiceStub.updatePropertyId.mockClear();
+      stateServiceStub.setActiveBoardIds.mockClear();
+      stateServiceStub.restoreFilters.mockClear();
+      fixture = TestBed.createComponent(CalendarContainerComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+    }
+
+    beforeEach(() => {
+      boardsByProperty.set(PROPERTY_A, {success: true, model: [
+        {id: 10, name: 'Default', color: '#123456'},
+        {id: 11, name: 'Second', color: '#654321'},
+      ]});
+      boardsByProperty.set(PROPERTY_B, {success: true, model: [{id: 20, name: 'B default', color: '#abcdef'}]});
+    });
+
+    it('loads the stored property\'s calendars, employees and tasks', () => {
+      reEnter({propertyId: PROPERTY_A, activeBoardIds: [11], activeSiteIds: [5]});
+
+      expect(component.currentPropertyId).toBe(PROPERTY_A);
+      expect(calendarServiceStub.getBoards).toHaveBeenCalledWith(PROPERTY_A);
+      expect(component.boards.map(b => b.id)).toEqual([10, 11]);
+      expect(propertiesServiceStub.getDeviceUsersFiltered).toHaveBeenCalledWith(
+        expect.objectContaining({propertyIds: [PROPERTY_A]}));
+      expect(component.employees.map(e => e.id)).toEqual([5]);
+      expect(component.logboegerFolderId).toBe(77);
+      expect(calendarServiceStub.getTasksForWeek).toHaveBeenCalledWith(
+        expect.objectContaining({propertyId: PROPERTY_A, boardIds: [11], siteIds: [5]}));
+      expect(renderedTaskIds()).toEqual([propertyATask.id]);
+    });
+
+    it('keeps the stored calendar and worker selections instead of resetting them', () => {
+      reEnter({propertyId: PROPERTY_A, activeBoardIds: [11], activeSiteIds: [5]});
+
+      // Neither the clearing property switch nor the default-calendar
+      // auto-select may run over the stored choice (11 is not the lowest id).
+      expect(stateServiceStub.updatePropertyId).not.toHaveBeenCalled();
+      expect(stateServiceStub.setActiveBoardIds).not.toHaveBeenCalled();
+      expect(component.activeBoardIds).toEqual([11]);
+      expect(component.activeSiteIds).toEqual([5]);
+    });
+
+    it('keeps a stored empty calendar selection ("all calendars") as is', () => {
+      reEnter({propertyId: PROPERTY_A, activeBoardIds: []});
+
+      expect(component.activeBoardIds).toEqual([]);
+      expect(calendarServiceStub.getTasksForWeek).toHaveBeenCalledWith(
+        expect.objectContaining({propertyId: PROPERTY_A, boardIds: []}));
+    });
+
+    it('restores a property other than the first one', () => {
+      reEnter({propertyId: PROPERTY_B, activeBoardIds: [20]});
+
+      expect(component.currentPropertyId).toBe(PROPERTY_B);
+      expect(component.selectedPropertyName).toBe('Property B');
+      expect(calendarServiceStub.getBoards).toHaveBeenCalledWith(PROPERTY_B);
+      expect(calendarServiceStub.getBoards).not.toHaveBeenCalledWith(PROPERTY_A);
+      expect(calendarServiceStub.getTasksForWeek).toHaveBeenCalledWith(
+        expect.objectContaining({propertyId: PROPERTY_B, boardIds: [20]}));
+    });
+
+    it('falls back to the first property and its default calendar when the stored property is gone', () => {
+      reEnter({propertyId: PROPERTY_GONE, activeBoardIds: [900], activeSiteIds: [901]});
+
+      expect(stateServiceStub.updatePropertyId).toHaveBeenCalledWith(PROPERTY_A);
+      expect(component.currentPropertyId).toBe(PROPERTY_A);
+      expect(component.selectedPropertyName).toBe('Property A');
+      // First-visit behaviour: the lowest-id calendar, and no stale workers.
+      expect(component.activeBoardIds).toEqual([10]);
+      expect(component.activeSiteIds).toEqual([]);
+      expect(calendarServiceStub.getBoards).not.toHaveBeenCalledWith(PROPERTY_GONE);
+      expect(calendarServiceStub.getTasksForWeek).toHaveBeenCalledWith(
+        expect.objectContaining({propertyId: PROPERTY_A, boardIds: [10], siteIds: []}));
+    });
+
+    it('drops stored calendar ids that no longer exist before loading tasks', () => {
+      reEnter({propertyId: PROPERTY_A, activeBoardIds: [11, 12]});
+
+      expect(component.activeBoardIds).toEqual([11]);
+      // The FIRST (and only) task request already carries the narrowed list.
+      expect(calendarServiceStub.getTasksForWeek).toHaveBeenCalledTimes(1);
+      expect(calendarServiceStub.getTasksForWeek).toHaveBeenCalledWith(
+        expect.objectContaining({boardIds: [11]}));
+    });
+
+    it('selects the default calendar when every stored calendar is gone', () => {
+      reEnter({propertyId: PROPERTY_A, activeBoardIds: [12, 13]});
+
+      expect(component.activeBoardIds).toEqual([10]);
+      expect(calendarServiceStub.getTasksForWeek).toHaveBeenCalledWith(
+        expect.objectContaining({boardIds: [10]}));
+    });
+
+    it('drops stored worker ids that are no longer on the property and reloads the tasks', () => {
+      reEnter({propertyId: PROPERTY_A, activeBoardIds: [10], activeSiteIds: [5, 6]});
+
+      expect(component.activeSiteIds).toEqual([5]);
+      const calls = calendarServiceStub.getTasksForWeek.mock.calls;
+      const lastCall = calls[calls.length - 1][0];
+      expect(lastCall).toEqual(expect.objectContaining({propertyId: PROPERTY_A, siteIds: [5]}));
+    });
+
+    it('drops stored team ids that no longer exist', () => {
+      const workerTags = TestBed.inject(BackendConfigurationPnWorkerTagsService) as any;
+      workerTags.getWorkerTags.mockReturnValue(of({success: true, model: [{id: 7, name: 'Team 7'}]}));
+
+      reEnter({propertyId: PROPERTY_A, activeBoardIds: [10], activeTeamIds: [7, 8]});
+
+      expect(component.activeTeamIds).toEqual([7]);
+      const calls = calendarServiceStub.getTasksForWeek.mock.calls;
+      const lastCall = calls[calls.length - 1][0];
+      expect(lastCall).toEqual(expect.objectContaining({workerTagIds: [7]}));
+    });
+
+    it('keeps the stored selections when the employee load fails', () => {
+      propertiesServiceStub.getDeviceUsersFiltered.mockReturnValue(of({success: false}));
+
+      reEnter({propertyId: PROPERTY_A, activeBoardIds: [10], activeSiteIds: [5]});
+
+      // A failed load is not evidence the worker is gone.
+      expect(component.activeSiteIds).toEqual([5]);
     });
   });
 });
