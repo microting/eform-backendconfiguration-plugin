@@ -4,29 +4,20 @@
     (downloadRequested)="onDownloadRequested($event)"
   ></app-compliance-report-filters>
 
-  <!--
-    Mode toggle. Hand-rolled rather than mat-button-toggle-group so the three
-    buttons can carry aria-pressed (a non-multiple mat-button-toggle-group
-    renders radiogroup/aria-checked instead). Same segmented-toggle pattern the
-    ad-hoc dashboard's tag-logic switch already uses, so the styling is the
-    existing .btn-primary/.btn-secondary pair and needs no new colours.
-  -->
-  <div
-    class="compliance-mode-toggle btn-group d-flex gap-8"
-    role="group"
+  <mat-button-toggle-group
+    class="compliance-mode-toggle"
+    [value]="state.mode"
     [attr.aria-label]="'View mode' | translate"
   >
-    <button
+    <mat-button-toggle
       *ngFor="let m of modes"
-      type="button"
       id="complianceMode-{{ m.mode }}"
-      [attr.aria-pressed]="isActive(m.mode)"
-      [ngClass]="isActive(m.mode) ? 'btn-primary active' : 'btn-secondary'"
+      [value]="m.mode"
       (click)="onModeChange(m.mode)"
     >
-      <span>{{ m.label | translate }}</span>
-    </button>
-  </div>
+      {{ m.label | translate }}
+    </mat-button-toggle>
+  </mat-button-toggle-group>
 
   <mat-card
     id="complianceCasesRoot"

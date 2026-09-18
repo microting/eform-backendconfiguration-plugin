@@ -6,6 +6,7 @@ import {TranslateModule} from '@ngx-translate/core';
 import {OverlayModule} from '@angular/cdk/overlay';
 import {PortalModule} from '@angular/cdk/portal';
 import {MatButtonModule} from '@angular/material/button';
+import {MatButtonToggleModule} from '@angular/material/button-toggle';
 import {MatCardModule} from '@angular/material/card';
 import {MAT_DATE_FORMATS} from '@angular/material/core';
 import {MatDatepickerModule} from '@angular/material/datepicker';
@@ -56,6 +57,8 @@ import {ComplianceReportStateService} from './store';
     OverlayModule,
     PortalModule,
     MatButtonModule,
+    // The Oversigt/Detaljer/Rapport mode switcher (#1296).
+    MatButtonToggleModule,
     MatCardModule,
     MatDatepickerModule,
     MatDialogModule,

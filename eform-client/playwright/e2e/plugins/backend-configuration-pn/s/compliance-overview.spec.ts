@@ -562,8 +562,8 @@ test.describe.serial('Compliance Oversigt (#1164)', () => {
 
     await row.click();
 
-    await expect(page.locator('#complianceMode-details')).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('#complianceMode-overview')).toHaveAttribute('aria-pressed', 'false');
+    await expect(page.locator('#complianceMode-details-button')).toHaveAttribute('aria-checked', 'true');
+    await expect(page.locator('#complianceMode-overview-button')).toHaveAttribute('aria-checked', 'false');
     // `.ng-value-label`, never `.ng-value` — the latter's innerText carries the
     // × clear-icon glyph.
     await expect(page.locator('#complianceFilterProperty .ng-value-label'))
@@ -593,7 +593,7 @@ test.describe.serial('Compliance Oversigt (#1164)', () => {
     await row.focus();
     await page.keyboard.press('Enter');
 
-    await expect(page.locator('#complianceMode-details')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#complianceMode-details-button')).toHaveAttribute('aria-checked', 'true');
     await expect(page.locator('#complianceFilterProperty .ng-value-label'))
       .toHaveText(propertyB.name!);
   });
@@ -621,7 +621,7 @@ test.describe.serial('Compliance Oversigt (#1164)', () => {
       .toHaveCount(0);
 
     await totals.click();
-    await expect(page.locator('#complianceMode-overview')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#complianceMode-overview-button')).toHaveAttribute('aria-checked', 'true');
   });
 
   // =========================================================================

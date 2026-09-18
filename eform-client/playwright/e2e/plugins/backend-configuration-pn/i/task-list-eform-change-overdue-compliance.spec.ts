@@ -228,7 +228,7 @@ async function loadDetailsRows(page: Page): Promise<ComplianceRow[]> {
   await pickFilterOption(page, '#complianceFilterProperty', exactText(property.name));
   await pickFilterOption(page, '#complianceFilterPeriod', LABEL_PERIOD_12_MONTHS);
   await page.locator('#complianceMode-details').click({ timeout: UI_TIMEOUT });
-  await expect(page.locator('#complianceMode-details')).toHaveAttribute('aria-pressed', 'true', { timeout: UI_TIMEOUT });
+  await expect(page.locator('#complianceMode-details-button')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
   await expect(page.locator('#complianceFilterStatus .ng-value-label')).toHaveText(LABEL_STATUS_NOT_DONE, {
     timeout: UI_TIMEOUT,
   });
