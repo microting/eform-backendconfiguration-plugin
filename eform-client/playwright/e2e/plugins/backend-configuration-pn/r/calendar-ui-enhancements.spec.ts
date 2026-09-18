@@ -981,9 +981,10 @@ test.describe.serial('Calendar UI enhancements', () => {
       await calendarPage.selectProperty(property.name);
       await folderResponsePromise.catch(() => undefined);
       await page.waitForTimeout(1500);
-      // The event was created on next-week's Monday; advance the view so
-      // the seeded event is visible.
-      await calendarPage.navigateToNextWeek();
+      // The event was created on next-week's Monday. Since #1303 the reload
+      // reopens the remembered week (and re-picking the same property keeps
+      // it), so the view is already on that week — navigating again would
+      // land on the rule's NEXT occurrence two weeks out instead.
 
       // ----- Step 7: open the seeded event in edit mode ----------------
       const block = page.locator('.task-block').filter({ hasText: eventTitle }).first();

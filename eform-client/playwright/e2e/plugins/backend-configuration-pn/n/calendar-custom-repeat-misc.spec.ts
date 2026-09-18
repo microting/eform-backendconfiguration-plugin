@@ -68,8 +68,8 @@ import {
  * `openCreateModalAtSlot(0, hour)` advances the calendar one week and clicks
  * Monday@hour, so every event anchors on the Monday of the displayed (next)
  * week. Reconstruction tests mirror I1's reload → selectProperty →
- * navigateToNextWeek → click .task-block → preview Edit → reopen Tilpasset…
- * flow exactly.
+ * click .task-block → preview Edit → reopen Tilpasset… flow exactly (since
+ * #1303 the reload reopens the remembered next week by itself).
  *
  * DISTINCT HOURS / TITLES
  * -----------------------
@@ -344,10 +344,12 @@ test.describe.serial('Calendar custom repeat — dialog mechanics (#901)', () =>
     await page.waitForTimeout(2000);
   }
 
-  /** Reload the calendar route, reselect the property, advance to next week
-   *  (where the Monday-anchored series lives), click the titled .task-block,
-   *  open the preview Edit button, and wait for the edit modal title input.
-   *  Mirrors I1 Steps 6–7 exactly. */
+  /** Reload the calendar route, reselect the property, click the titled
+   *  .task-block, open the preview Edit button, and wait for the edit modal
+   *  title input. Mirrors I1 Steps 6–7 exactly. The Monday-anchored series
+   *  lives on next week, which the reload reopens by itself since #1303 (the
+   *  calendar remembers the last week per user; re-picking the same property
+   *  keeps it). */
   async function reloadAndOpenForEdit(
     page: Page,
     calendarPage: CalendarUiEnhancementsPage,
@@ -361,8 +363,6 @@ test.describe.serial('Calendar custom repeat — dialog mechanics (#901)', () =>
     await calendarPage.selectProperty(property.name);
     await folderResp.catch(() => undefined);
     await page.waitForTimeout(1500);
-    // The series anchors on next-week's Monday; advance the view so it shows.
-    await calendarPage.navigateToNextWeek();
 
     const block = page.locator('.task-block').filter({ hasText: title }).first();
     await block.waitFor({ state: 'visible', timeout: 10000 });
