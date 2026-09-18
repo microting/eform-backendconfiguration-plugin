@@ -239,12 +239,30 @@ async function openSeededDetails(page: Page): Promise<void> {
   await showDetails(page);
 }
 
+/**
+ * A Detaljer row located by its TITLE CELL, matched EXACTLY — never by a bare
+ * `hasText` on the whole row. A string `hasText` is a case-insensitive
+ * SUBSTRING match over every cell, and the row's `.compliance-details__property`
+ * cell prints `property.name` (`DET-grp-<rand>`), which case-insensitively
+ * contains `TASK_TITLE` (`DET-GRP-<rand>`). With one seeded row that went
+ * unnoticed; since #1300 seeded a second task on the same property, a whole-row
+ * `hasText: TASK_TITLE` matched BOTH rows. The anchored regex is case-sensitive
+ * and scoped to the title span, so neither task's row can match the other's.
+ */
+function rowByTitle(page: Page, title: string): Locator {
+  return page.locator('.compliance-details__row').filter({
+    has: page
+      .locator('.compliance-details__title')
+      .filter({ hasText: new RegExp(`^\\s*${escapeRegExp(title)}\\s*$`) }),
+  });
+}
+
 function seededRow(page: Page): Locator {
-  return page.locator('.compliance-details__row').filter({ hasText: TASK_TITLE });
+  return rowByTitle(page, TASK_TITLE);
 }
 
 function futureRow(page: Page): Locator {
-  return page.locator('.compliance-details__row').filter({ hasText: FUTURE_TASK_TITLE });
+  return rowByTitle(page, FUTURE_TASK_TITLE);
 }
 
 /**
@@ -584,7 +602,9 @@ test.describe.serial('Compliance Detaljer — complete modal groups workers by a
     // appears in this file and nowhere else in `playwright/`.
     const weekTitle = page
       .locator('.compliance-details__week')
-      .filter({ hasText: TASK_TITLE })
+      // Via the exact-title row, not `hasText: TASK_TITLE`: next week's group
+      // also contains the property name, which matches it case-insensitively.
+      .filter({ has: seededRow(page) })
       .locator('.compliance-details__week-title');
     await expect(weekTitle).toHaveCount(1);
     await expect(weekTitle).toBeVisible();
