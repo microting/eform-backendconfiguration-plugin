@@ -771,6 +771,7 @@ export const nlNL = {
   'Teams and employees': 'Teams en medewerkers',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Het logboek wordt permanent verwijderd, inclusief de antwoorden en foto\'s. Deze actie kan niet ongedaan worden gemaakt.',
   'Move to calendar': 'Verplaatsen naar kalender',
+  'Change report headline': 'Rapportkop wijzigen',
   // Custom repeat end condition appended to the Gentag label (#1293).
   '{{rule}}, until and including {{date}}': '{{rule}}, tot en met {{date}}',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} keer',

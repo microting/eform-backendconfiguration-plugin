@@ -657,6 +657,48 @@ public class BackendConfigurationTaskListService(
         });
     }
 
+    // ------------------------------------------------------------------
+    // #1298 — change report headline ("Skift rapportoverskrift")
+    // ------------------------------------------------------------------
+
+    // Sets the report headline of every selected task. The headline is
+    // AreaRulePlanning.ItemPlanningTagId, mirrored by the task wizard to
+    // Planning.ReportGroupPlanningTagId and to an items-planning PlanningsTags
+    // row; the Compliance Rapport groups by the former, the old report
+    // (GenerateReportV2) by the latter. Both resolve at READ time, so history
+    // regroups under the new headline — accepted, as for move-to-calendar.
+    //
+    // Same RunPerTask/BuildUpdateModel/UpdateTask rail as ChangeEform: the
+    // wizard is the one place that keeps all three writes together. Since
+    // #1298 it writes ReportGroupPlanningTagId in EVERY status branch, so an
+    // inactive task that stays inactive is re-headlined consistently too.
+    // BuildUpdateModel round-trips Status, so the action never (de)activates.
+    //
+    // Pre-loop: the tag must exist and be live — PlanningTags are global (not
+    // property-scoped), so one check covers the whole batch, and an unknown id
+    // must never re-headline half the selection. A headline is required
+    // (product decision), which the non-nullable model field already enforces.
+    public async Task<OperationResult> ChangeReportHeadline(TaskListBatchReportHeadlineModel model)
+    {
+        var tagExists = await itemsPlanningPnDbContext.PlanningTags
+            .AsNoTracking()
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .AnyAsync(x => x.Id == model.ItemPlanningTagId);
+        if (!tagExists)
+        {
+            return new OperationResult(false, localizationService.GetString("SelectedReportHeadlineNotFound"));
+        }
+
+        return await RunPerTask(model.TaskIds, async id =>
+        {
+            var update = await BuildUpdateModel(id);
+            if (update == null) return (false, "Task not found");
+            update.ItemPlanningTagId = model.ItemPlanningTagId;
+            var result = await calendarService.UpdateTask(update);
+            return (result.Success, result.Message);
+        }, "Tasks updated");
+    }
+
     // Copy creates a brand-new AreaRulePlanning on the target property/board
     // via calendarService.CreateTask, seeded from the source task's full
     // current state (BuildUpdateModel). Two fields are deliberately NOT a

@@ -39,6 +39,7 @@ import {
   BatchStatusModalComponent,
   BatchDeleteModalComponent,
   BatchBoardModalComponent,
+  BatchReportHeadlineModalComponent,
 } from './components';
 
 @NgModule({
@@ -78,6 +79,7 @@ import {
     BatchStatusModalComponent,
     BatchDeleteModalComponent,
     BatchBoardModalComponent,
+  BatchReportHeadlineModalComponent,
   ],
 })
 export class TaskListModule {}

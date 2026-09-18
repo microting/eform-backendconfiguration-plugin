@@ -771,6 +771,7 @@ export const plPL = {
   'Teams and employees': 'Zespoły i pracownicy',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Dziennik zostanie trwale usunięty, łącznie z odpowiedziami i zdjęciami. Tej czynności nie można cofnąć.',
   'Move to calendar': 'Przenieś do kalendarza',
+  'Change report headline': 'Zmień nagłówek raportu',
   // Custom repeat end condition appended to the Gentag label (#1293).
   '{{rule}}, until and including {{date}}': '{{rule}}, do {{date}} włącznie',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} razy',

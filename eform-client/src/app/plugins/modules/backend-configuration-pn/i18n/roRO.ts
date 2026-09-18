@@ -771,6 +771,7 @@ export const roRO = {
   'Teams and employees': 'Echipe și angajați',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Jurnalul este șters definitiv, inclusiv răspunsurile și fotografiile sale. Această acțiune nu poate fi anulată.',
   'Move to calendar': 'Mută în calendar',
+  'Change report headline': 'Schimbați titlul raportului',
   // Custom repeat end condition appended to the Gentag label (#1293).
   '{{rule}}, until and including {{date}}': '{{rule}}, până la {{date}} inclusiv',
   '{{rule}}, {{count}} times': '{{rule}}, de {{count}} ori',

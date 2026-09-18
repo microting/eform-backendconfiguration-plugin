@@ -771,6 +771,7 @@ export const ukUA = {
   'Teams and employees': 'Команди та співробітники',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Журнал видаляється назавжди, включаючи відповіді та фотографії. Цю дію не можна скасувати.',
   'Move to calendar': 'Перемістити до календаря',
+  'Change report headline': 'Змінити заголовок звіту',
   // Custom repeat end condition appended to the Gentag label (#1293).
   '{{rule}}, until and including {{date}}': '{{rule}}, до {{date}} включно',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} разів',

@@ -771,6 +771,7 @@ export const csCZ = {
   'Teams and employees': 'Týmy a zaměstnanci',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Záznam bude trvale smazán, včetně odpovědí a fotografií. Tuto akci nelze vrátit zpět.',
   'Move to calendar': 'Přesunout do kalendáře',
+  'Change report headline': 'Změnit nadpis zprávy',
   // Custom repeat end condition appended to the Gentag label (#1293).
   '{{rule}}, until and including {{date}}': '{{rule}}, do {{date}} včetně',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}}krát',

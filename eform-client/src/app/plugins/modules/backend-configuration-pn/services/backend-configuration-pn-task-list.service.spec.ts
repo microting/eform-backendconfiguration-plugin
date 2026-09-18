@@ -27,4 +27,14 @@ describe('BackendConfigurationPnTaskListService', () => {
     );
     expect(apiBaseServiceSpy.postNoToast).not.toHaveBeenCalled();
   });
+
+  it('changeReportHeadline posts task ids and headline id to task-list/change-report-headline', () => {
+    service.changeReportHeadline({taskIds: [1, 2], itemPlanningTagId: 5}).subscribe();
+
+    expect(apiBaseServiceSpy.post).toHaveBeenCalledWith(
+      'api/backend-configuration-pn/task-list/change-report-headline',
+      {taskIds: [1, 2], itemPlanningTagId: 5},
+    );
+    expect(apiBaseServiceSpy.postNoToast).not.toHaveBeenCalled();
+  });
 });

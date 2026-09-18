@@ -771,6 +771,7 @@ export const itIT = {
   'Teams and employees': 'Squadre e dipendenti',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Il registro viene eliminato definitivamente, comprese le risposte e le foto. Questa azione non può essere annullata.',
   'Move to calendar': 'Sposta nel calendario',
+  'Change report headline': 'Modifica intestazione del rapporto',
   // Custom repeat end condition appended to the Gentag label (#1293).
   '{{rule}}, until and including {{date}}': '{{rule}}, fino al {{date}} incluso',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} volte',

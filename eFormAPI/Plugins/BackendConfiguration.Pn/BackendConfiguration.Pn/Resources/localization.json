@@ -7066,5 +7066,36 @@
       "el-GR": "Το επιλεγμένο ημερολόγιο δεν ανήκει στο ακίνητο της εργασίας",
       "is-IS": "Valið dagatal tilheyrir ekki fasteign verkefnisins"
     }
+  },
+  {
+    "Key": "SelectedReportHeadlineNotFound",
+    "LocalizedValue": {
+      "en-US": "The selected report headline was not found",
+      "da": "Den valgte rapportoverskrift blev ikke fundet",
+      "de": "Die ausgewählte Berichtsüberschrift wurde nicht gefunden",
+      "uk-UA": "Вибраний заголовок звіту не знайдено",
+      "pl-PL": "Nie znaleziono wybranego nagłówka raportu",
+      "no-NO": "Den valgte rapportoverskriften ble ikke funnet",
+      "sv-SE": "Den valda rapportrubriken hittades inte",
+      "es-ES": "No se encontró el encabezado de informe seleccionado",
+      "fr-FR": "L'en-tête de rapport sélectionné est introuvable",
+      "it-IT": "L'intestazione del rapporto selezionata non è stata trovata",
+      "nl-NL": "De geselecteerde rapportkop is niet gevonden",
+      "pt-BR": "O título do relatório selecionado não foi encontrado",
+      "pt-PT": "O título do relatório selecionado não foi encontrado",
+      "fi-FI": "Valittua raportin otsikkoa ei löytynyt",
+      "et-ET": "Valitud aruande pealkirja ei leitud",
+      "lv-LV": "Atlasītais pārskata virsraksts netika atrasts",
+      "lt-LT": "Pasirinkta ataskaitos antraštė nerasta",
+      "ro-RO": "Titlul de raport selectat nu a fost găsit",
+      "hr-HR": "Odabrani naslov izvješća nije pronađen",
+      "sl-SL": "Izbranega naslova poročila ni bilo mogoče najti",
+      "cs-CZ": "Vybraný nadpis sestavy nebyl nalezen",
+      "sk-SK": "Vybraný nadpis zostavy sa nenašiel",
+      "hu-HU": "A kiválasztott jelentésfejléc nem található",
+      "bg-BG": "Избраното заглавие на отчета не е намерено",
+      "el-GR": "Η επιλεγμένη επικεφαλίδα αναφοράς δεν βρέθηκε",
+      "is-IS": "Valin skýrslufyrirsögn fannst ekki"
+    }
   }
 ]
