@@ -62,12 +62,27 @@ const ADMIN_PASSWORD = 'secretpassword';
 const USER_PASSWORD = 'Secret_password_2026!';
 const rand = generateRandmString(8).toLowerCase();
 
+/**
+ * Logs in, opens the page, and returns only once the ENTRY Oversigt fetch has
+ * been answered. The page auto-fetches Oversigt on entry (every test starts in
+ * a fresh context, so in Oversigt with a queryable "År til dato"), and that
+ * response can land well after the filter bar is visible. Any
+ * `complianceResponse(page, 'overview')` waiter a test arms after this call
+ * would otherwise be satisfied by that entry response still in flight — a
+ * body carrying the OLD period (the #1299 "År til dato + 1 år" test read
+ * `dateTo` = today that way). Armed BEFORE navigation so the entry response
+ * cannot slip past it, and awaited here so the caller's next waiter can only
+ * be met by the request its own gesture causes.
+ */
 async function goToCompliancePage(page: Page): Promise<void> {
   await page.goto(BASE_URL);
   await new LoginPage(page).login();
   await page.waitForTimeout(2000);
+  const entry = complianceResponse(page, 'overview');
+  ignoreUnhandledRejections(entry);
   await page.goto(PAGE_URL);
   await page.locator('#complianceFilterProperty').waitFor({ state: 'visible', timeout: 60000 });
+  expect((await entry).ok()).toBeTruthy();
 }
 
 /**
@@ -457,17 +472,10 @@ test.describe('Compliance page shell (#1163)', () => {
   });
 
   test('a filter change auto-fetches the active mode and never blanks the result (#1185)', async ({ page }) => {
-    // The entry auto-fetch is armed BEFORE navigation and awaited first:
-    // `goToCompliancePage` only waits for a filter control, so a waiter armed
-    // after it could be satisfied by the entry response still in flight and
-    // the preset change below would then go unobserved.
-    await page.goto(BASE_URL);
-    await new LoginPage(page).login();
-    await page.waitForTimeout(2000);
-    const entry = complianceResponse(page, 'overview');
-    await page.goto(PAGE_URL);
-    await page.locator('#complianceFilterProperty').waitFor({ state: 'visible', timeout: 60000 });
-    expect((await entry).ok()).toBeTruthy();
+    // `goToCompliancePage` awaits the entry auto-fetch, so the waiter armed
+    // below cannot be satisfied by the entry response and the preset change
+    // cannot go unobserved.
+    await goToCompliancePage(page);
 
     // The page auto-fetches Oversigt once on load, so `reportVisible` is true
     // and the placeholder is gone to begin with. The pagination chrome is NOT:
@@ -546,16 +554,9 @@ test.describe('Compliance page shell (#1163)', () => {
   });
 
   test('"Sæt periode" stages the range behind Opdater periode: placeholder, disabled-with-reason, then one fetch (#1185)', async ({ page }) => {
-    // The entry auto-fetch is armed BEFORE navigation and awaited, so the
-    // request counter attached afterwards can never see it — attaching the
-    // counter after `goToCompliancePage` alone leaves that to event timing.
-    await page.goto(BASE_URL);
-    await new LoginPage(page).login();
-    await page.waitForTimeout(2000);
-    const entry = complianceResponse(page, 'overview');
-    await page.goto(PAGE_URL);
-    await page.locator('#complianceFilterProperty').waitFor({ state: 'visible', timeout: 60000 });
-    expect((await entry).ok()).toBeTruthy();
+    // `goToCompliancePage` awaits the entry auto-fetch, so the request counter
+    // attached afterwards can never see it.
+    await goToCompliancePage(page);
     await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
 
     // Custom mode is the ONE filter change that does not auto-fetch, and the
@@ -728,9 +729,13 @@ test.describe('Compliance page shell (#1163)', () => {
   });
 
   test('"År til dato + 1 år" is offered and queries 1 January → today + 1 year (#1299)', async ({ page }) => {
+    // The entry fetch (plain "År til dato", dateTo = today) is awaited inside
+    // `goToCompliancePage`, so this waiter can only be met by the debounced
+    // fetch the preset change causes.
     await goToCompliancePage(page);
 
     const refetch = complianceResponse(page, 'overview');
+    ignoreUnhandledRejections(refetch);
     await selectOptionByLabel(page, 'complianceFilterPeriod', 'År til dato + 1 år');
     const response = await refetch;
     expect(response.ok()).toBeTruthy();
@@ -752,11 +757,15 @@ test.describe('Compliance page shell (#1163)', () => {
     await goToCompliancePage(page);
 
     const refetch = complianceResponse(page, 'overview');
+    ignoreUnhandledRejections(refetch);
     await selectOptionByLabel(page, 'complianceFilterPeriod', 'År til dato + 1 år');
     expect((await refetch).ok()).toBeTruthy();
 
-    // The reload's entry fetch already carries the remembered period.
+    // The reload's entry fetch already carries the remembered period. Armed
+    // only after the preset's own fetch was answered, so nothing but the
+    // reload's entry fetch can meet it.
     const entry = complianceResponse(page, 'overview');
+    ignoreUnhandledRejections(entry);
     await page.reload();
     await page.locator('#complianceFilterProperty').waitFor({ state: 'visible', timeout: 60000 });
     const response = await entry;
@@ -784,10 +793,12 @@ test.describe('Compliance page shell (#1163)', () => {
       to.getFullYear(), to.getMonth() + 1, to.getDate(),
     );
     const committed = complianceResponse(page, 'overview');
+    ignoreUnhandledRejections(committed);
     await page.locator('#complianceShowReportBtn').click({ timeout: UI_TIMEOUT });
     expect((await committed).ok()).toBeTruthy();
 
     const entry = complianceResponse(page, 'overview');
+    ignoreUnhandledRejections(entry);
     await page.reload();
     await page.locator('#complianceFilterProperty').waitFor({ state: 'visible', timeout: 60000 });
     const response = await entry;
@@ -875,20 +886,11 @@ test.describe('Compliance page shell (#1163)', () => {
       expect(res.ok()).toBeTruthy();
     }
 
-    // The entry auto-fetch is armed BEFORE navigation and awaited FIRST, so
-    // the `refetch` waiter registered further down cannot be satisfied by the
-    // page-load Oversigt fetch still in flight — that would make the #1185
-    // auto-fetch assertion vacuous rather than wrong. Same shape as the two
-    // tests above; inlined rather than using `goToCompliancePage`, which has
-    // no hook between the login and the navigation.
-    await page.goto(BASE_URL);
-    await new LoginPage(page).login();
-    await page.waitForTimeout(2000);
-    const entry = complianceResponse(page, 'overview');
-    ignoreUnhandledRejections(entry);
-    await page.goto(PAGE_URL);
-    await page.locator('#complianceFilterProperty').waitFor({ state: 'visible', timeout: 60000 });
-    expect((await entry).ok()).toBeTruthy();
+    // `goToCompliancePage` awaits the entry auto-fetch, so the `refetch`
+    // waiter registered further down cannot be satisfied by the page-load
+    // Oversigt fetch still in flight — that would make the #1185 auto-fetch
+    // assertion vacuous rather than wrong.
+    await goToCompliancePage(page);
 
     const input = page.locator('#complianceTagFilter input[type=text]');
     const options = page.locator('.ng-dropdown-panel .ng-option');
