@@ -538,6 +538,7 @@ export const svSE = {
   '6 months': '6 månader',
   '12 months': '12 månader',
   'Year to date': 'Hittills i år',
+  'Year to date + 1 year': 'Hittills i år + 1 år',
   'Set period': 'Ställ in period',
   'Download as': 'Ladda ner som',
   Download: 'Ladda ner',

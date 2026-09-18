@@ -538,6 +538,7 @@ export const ptPT = {
   '6 months': '6 meses',
   '12 months': '12 meses',
   'Year to date': 'No acumulado do ano',
+  'Year to date + 1 year': 'No acumulado do ano + 1 ano',
   'Set period': 'Definir período',
   'Download as': 'Baixar como',
   Download: 'Download',

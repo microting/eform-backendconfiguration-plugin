@@ -538,6 +538,7 @@ export const itIT = {
   '6 months': '6 mesi',
   '12 months': '12 mesi',
   'Year to date': 'Da inizio anno',
+  'Year to date + 1 year': 'Da inizio anno + 1 anno',
   'Set period': 'Periodo stabilito',
   'Download as': 'Scarica come',
   Download: 'Scaricamento',

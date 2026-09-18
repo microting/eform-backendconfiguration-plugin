@@ -538,6 +538,7 @@ export const isIS = {
   '6 months': '6 mánuðir',
   '12 months': '12 mánuðir',
   'Year to date': 'Árið til þessa',
+  'Year to date + 1 year': 'Árið til þessa + 1 ár',
   'Set period': 'Setja tímabil',
   'Download as': 'Sækja sem',
   Download: 'Sækja',

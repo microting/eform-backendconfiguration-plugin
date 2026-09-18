@@ -538,6 +538,7 @@ export const etET = {
   '6 months': '6 kuud',
   '12 months': '12 kuud',
   'Year to date': 'Aasta algusest',
+  'Year to date + 1 year': 'Aasta algusest + 1 aasta',
   'Set period': 'Määra periood',
   'Download as': 'Laadi alla kui',
   Download: 'Laadi alla',

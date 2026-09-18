@@ -153,9 +153,9 @@ async function selectSeededProperty(page: Page): Promise<void> {
 }
 
 /**
- * Every built-in preset is bounded ABOVE by today (a compliance report is
- * retrospective) and the seeded task is next week, so reaching it needs
- * "Sæt periode" with an explicit range.
+ * The built-in presets except "År til dato + 1 år" (#1299) are bounded ABOVE
+ * by today and the seeded task is next week; an explicit "Sæt periode" range
+ * keeps this suite independent of that one preset and of the year boundary.
  */
 async function selectPeriodCoveringSeed(page: Page): Promise<void> {
   await page.locator('#complianceFilterPeriod').click();
@@ -209,7 +209,7 @@ async function openSeededDetails(page: Page): Promise<void> {
   // the button commits it.
   await selectSeededProperty(page);
   await selectPeriodCoveringSeed(page);
-  // Switch mode BEFORE committing: the status control is disabled in Oversigt,
+  // Switch mode BEFORE committing: the status control is not shown in Oversigt (#1299),
   // and the commit fetches whichever mode is active. `showDetails` waits for
   // its own `/index` response, then the row assertions retry until it rendered.
   await page.locator('#complianceMode-details').click();

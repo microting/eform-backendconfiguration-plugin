@@ -538,6 +538,7 @@ export const bgBG = {
   '6 months': '6 месеца',
   '12 months': '12 месеца',
   'Year to date': 'Годината до момента',
+  'Year to date + 1 year': 'Годината до момента + 1 година',
   'Set period': 'Задаване на период',
   'Download as': 'Изтегляне като',
   Download: 'Изтегляне',

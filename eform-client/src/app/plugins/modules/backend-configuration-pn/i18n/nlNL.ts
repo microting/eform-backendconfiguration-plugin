@@ -538,6 +538,7 @@ export const nlNL = {
   '6 months': '6 maanden',
   '12 months': '12 maanden',
   'Year to date': 'Tot nu toe dit jaar',
+  'Year to date + 1 year': 'Tot nu toe dit jaar + 1 jaar',
   'Set period': 'Vastgestelde periode',
   'Download as': 'Downloaden als',
   Download: 'Download',

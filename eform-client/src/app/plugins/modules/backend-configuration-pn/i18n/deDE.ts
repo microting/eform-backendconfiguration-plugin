@@ -588,6 +588,7 @@ export const deDE = {
   '6 months': '6 Monate',
   '12 months': '12 Monate',
   'Year to date': 'Der bisherige Jahresverlauf',
+  'Year to date + 1 year': 'Der bisherige Jahresverlauf + 1 Jahr',
   'Set period': 'Zeitraum festlegen',
   'Download as': 'Herunterladen als',
   'Show all': 'Alle anzeigen',

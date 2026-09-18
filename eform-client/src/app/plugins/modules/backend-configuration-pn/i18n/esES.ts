@@ -538,6 +538,7 @@ export const esES = {
   '6 months': '6 meses',
   '12 months': '12 meses',
   'Year to date': 'El año hasta la fecha',
+  'Year to date + 1 year': 'El año hasta la fecha + 1 año',
   'Set period': 'Período establecido',
   'Download as': 'Descargar como',
   Download: 'Descargar',

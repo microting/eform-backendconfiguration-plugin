@@ -538,6 +538,7 @@ export const csCZ = {
   '6 months': '6 měsíců',
   '12 months': '12 měsíců',
   'Year to date': 'Rok od začátku roku',
+  'Year to date + 1 year': 'Rok od začátku roku + 1 rok',
   'Set period': 'Nastavit období',
   'Download as': 'Stáhnout jako',
   Download: 'Stáhnout',

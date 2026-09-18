@@ -2,8 +2,10 @@ import {Component, OnDestroy, OnInit} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
 import {ActivatedRoute, Router} from '@angular/router';
 import {TranslateService} from '@ngx-translate/core';
+import {Store} from '@ngrx/store';
 import {Subject} from 'rxjs';
-import {finalize, takeUntil} from 'rxjs/operators';
+import {finalize, take, takeUntil} from 'rxjs/operators';
+import {selectAuthUser} from 'src/app/state/auth/auth.selector';
 import {saveAs} from 'file-saver';
 import {ComplianceReportExportRequestModel} from '../../../../models';
 import {BackendConfigurationPnComplianceReportService} from '../../../../services';
@@ -61,6 +63,7 @@ export class ComplianceReportPageComponent implements OnInit, OnDestroy {
     private translate: TranslateService,
     private route: ActivatedRoute,
     private router: Router,
+    private store: Store,
   ) {}
 
   ngOnInit(): void {
@@ -78,8 +81,13 @@ export class ComplianceReportPageComponent implements OnInit, OnDestroy {
     // over a true `reportVisible` and let the replay fire an unbounded row
     // query with no user gesture, which #1163 §6 forbids. `enterPage()` owns
     // both branches; see its comment. Entering the page is deliberately NOT
-    // the `Oversigt` reset (#1185 decision B1) — the previous visit's filters
+    // pressing `Oversigt` (#1185 decision B1) — the previous visit's filters
     // and mode survive re-entry.
+    //
+    // #1299: the signed-in user's saved period is applied FIRST, so the entry
+    // fetch below already queries it. The store emits synchronously on
+    // subscribe; `take(1)` because a later auth change must not rewrite the
+    // filters mid-visit (the next visit's call handles a user switch).
     //
     // `?highlightId=` is what the shared case page appends after SAVING an
     // edit (#1291). It only means something together with the return context
@@ -89,6 +97,12 @@ export class ComplianceReportPageComponent implements OnInit, OnDestroy {
     // and a reload or a copied link must not carry a stale highlight.
     const highlightParam = this.route.snapshot.queryParamMap.get('highlightId');
     const highlightId = highlightParam !== null && /^\d+$/.test(highlightParam) ? +highlightParam : null;
+    this.store
+      .select(selectAuthUser)
+      .pipe(take(1), takeUntil(this.destroy$))
+      .subscribe((user) => {
+        this.state.restoreSavedPeriod((user as {id?: number} | null | undefined)?.id);
+      });
     this.state.enterPage(highlightId);
     if (highlightParam !== null) {
       // Deferred a macrotask, as task-tracker's own cleanup is: navigating
@@ -119,14 +133,15 @@ export class ComplianceReportPageComponent implements OnInit, OnDestroy {
 
   onModeChange(mode: ComplianceMode): void {
     // Pressing `Oversigt` — from Detaljer, from Rapport, or while already in
-    // Oversigt — is a RESET (#1185): every filter back to its default and one
-    // Oversigt fetch. The other two buttons are plain mode switches that keep
-    // the filters and `reportVisible`, so the child the ngSwitch creates
-    // re-queries the same filters through the replay.
+    // Oversigt — switches to Oversigt and fetches it once, KEEPING the filters
+    // (#1299 reversed #1185's reset; only a drill-down's property is undone —
+    // see `resetToOverview`). The other two buttons are plain mode switches
+    // that keep the filters and `reportVisible`, so the child the ngSwitch
+    // creates re-queries the same filters through the replay.
     //
     // Bound with `(click)` on each `mat-button-toggle`, NOT the group's
     // `(change)` (#1296): `change` does not fire when the already-selected
-    // toggle is clicked again, which would silently drop the Oversigt reset.
+    // toggle is clicked again, which would silently drop the Oversigt refetch.
     if (mode === 'overview') {
       this.state.resetToOverview();
       return;

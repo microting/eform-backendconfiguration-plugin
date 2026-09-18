@@ -538,6 +538,7 @@ export const skSK = {
   '6 months': '6 mesiacov',
   '12 months': '12 mesiacov',
   'Year to date': 'Rok od začiatku',
+  'Year to date + 1 year': 'Rok od začiatku + 1 rok',
   'Set period': 'Nastaviť obdobie',
   'Download as': 'Stiahnuť ako',
   Download: 'Stiahnuť',

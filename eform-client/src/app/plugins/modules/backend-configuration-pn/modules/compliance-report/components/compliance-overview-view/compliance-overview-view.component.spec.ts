@@ -13,7 +13,8 @@ import {ComplianceOverviewViewComponent} from './compliance-overview-view.compon
  * that Detaljer and Rapport use — so this view has to reduce it, and it does so
  * field by field rather than by spreading and deleting. A future field added to
  * the paged model must not leak through, and `status` must stay off the wire even
- * though the (disabled) status control still holds a value. Nothing on screen
+ * though the status filter still holds a value while its control is hidden in
+ * Oversigt (#1299). Nothing on screen
  * would show it if either broke: the server would silently ignore the extra keys
  * and the numbers would look right.
  *

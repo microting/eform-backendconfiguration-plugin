@@ -538,6 +538,7 @@ export const noNO = {
   '6 months': '6 måneder',
   '12 months': '12 måneder',
   'Year to date': 'Hittil i år',
+  'Year to date + 1 year': 'Hittil i år + 1 år',
   'Set period': 'Angi periode',
   'Download as': 'Last ned som',
   Download: 'Last ned',

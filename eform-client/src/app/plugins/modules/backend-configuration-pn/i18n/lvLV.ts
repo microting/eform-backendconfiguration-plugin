@@ -538,6 +538,7 @@ export const lvLV = {
   '6 months': '6 mēneši',
   '12 months': '12 mēneši',
   'Year to date': 'Gads līdz šim brīdim',
+  'Year to date + 1 year': 'Gads līdz šim brīdim + 1 gads',
   'Set period': 'Iestatīt periodu',
   'Download as': 'Lejupielādēt kā',
   Download: 'Lejupielādēt',

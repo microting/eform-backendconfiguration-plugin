@@ -164,9 +164,10 @@ async function goToCompliancePage(page: Page): Promise<void> {
 }
 
 /**
- * Every built-in preset is bounded ABOVE by today (`periodBounds` — a compliance
- * report is retrospective), and the seeded tasks are next week, so reaching them
- * needs "Sæt periode" with an explicit range.
+ * The built-in presets except "År til dato + 1 år" (#1299) are bounded ABOVE by
+ * today (`periodBounds`), and the seeded tasks are next week. An explicit
+ * "Sæt periode" range keeps this suite independent of that one preset (and of
+ * the year boundary it would cross in late December).
  */
 async function selectPeriodCoveringSeed(page: Page): Promise<void> {
   await page.locator('#complianceFilterPeriod').click();
@@ -596,6 +597,44 @@ test.describe.serial('Compliance Oversigt (#1164)', () => {
     await expect(page.locator('#complianceMode-details-button')).toHaveAttribute('aria-checked', 'true');
     await expect(page.locator('#complianceFilterProperty .ng-value-label'))
       .toHaveText(propertyB.name!);
+  });
+
+  // =========================================================================
+  // Back from a drill-down (#1299): pressing Oversigt no longer resets the
+  // filters. Only the property the DRILL wrote is undone, so the user lands on
+  // the Oversigt they drilled from, with their period kept.
+  // =========================================================================
+  test('Oversigt after a drill-down returns to every property and keeps the period and the other filters', async ({ page }) => {
+    test.setTimeout(180000);
+    expect(complianceSeeded).toBe(true);
+
+    await openSeededOverview(page);
+    // Status is not a control in Oversigt at all (#1299).
+    await expect(page.locator('#complianceFilterStatus')).toHaveCount(0, { timeout: UI_TIMEOUT });
+
+    await overviewRow(page, propertyA.name!).click({ timeout: UI_TIMEOUT });
+    await expect(page.locator('#complianceMode-details-button')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
+    await expect(page.locator('#complianceFilterProperty .ng-value-label'))
+      .toHaveText(propertyA.name!, { timeout: UI_TIMEOUT });
+    await expect(page.locator('#complianceFilterStatus')).toBeVisible({ timeout: UI_TIMEOUT });
+
+    const back = overviewRefetch(page);
+    await page.locator('#complianceMode-overview').click({ timeout: UI_TIMEOUT });
+    const response = await back;
+    expect(response.ok()).toBeTruthy();
+    // The drill's property is undone — the request is for every property again...
+    expect(response.request().postDataJSON().propertyId ?? null).toBeNull();
+    await expect(page.locator('#complianceFilterProperty .ng-value-label')).toHaveCount(0, { timeout: UI_TIMEOUT });
+    await expect(page.locator('#complianceFilterProperty .ng-placeholder'))
+      .toHaveText(/^\s*Alle ejendomme\s*$/, { timeout: UI_TIMEOUT });
+    // ...but the committed custom range was NOT reset to "År til dato", which
+    // is exactly what #1185's reset did.
+    await expect(page.locator('#complianceFilterPeriod .ng-value-label'))
+      .toHaveText(/^\s*Sæt periode\s*$/, { timeout: UI_TIMEOUT });
+    await expect(page.locator('#complianceShowReportBtn')).toBeVisible({ timeout: UI_TIMEOUT });
+    await expect(overviewRow(page, propertyA.name!)).toHaveCount(1, { timeout: UI_TIMEOUT });
+    await expect(overviewRow(page, propertyB.name!)).toHaveCount(1, { timeout: UI_TIMEOUT });
+    await expect(page.locator('#complianceFilterStatus')).toHaveCount(0, { timeout: UI_TIMEOUT });
   });
 
   // =========================================================================

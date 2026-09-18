@@ -570,6 +570,7 @@ export const enUS= {
   '6 months': '6 months',
   '12 months': '12 months',
   'Year to date': 'Year to date',
+  'Year to date + 1 year': 'Year to date + 1 year',
   'Set period': 'Set period',
   'Download as': 'Download as',
   Download: 'Download',
