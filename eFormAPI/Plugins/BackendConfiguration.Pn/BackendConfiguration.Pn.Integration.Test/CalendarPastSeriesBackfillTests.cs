@@ -315,6 +315,67 @@ public class CalendarPastSeriesBackfillTests : TestBaseSetup
         });
     }
 
+    /// <summary>
+    /// #1293: the same ended series, but with the until date stored the way the
+    /// calendar wrote it before #1293 — the browser's local midnight serialised
+    /// as UTC. A UTC+1 user's "day −3" is stored as 23:00 on day −4, a UTC+2
+    /// (DST) user's as 22:00. The until day is still inclusive: day −3 is
+    /// backfilled. The old instant comparison lost it (7 occurrences).
+    /// </summary>
+    [TestCase(1, TestName = "Backfill_EndedSeries_LegacyUtcPlus1UntilDate_BackfillsTheUntilDay")]
+    [TestCase(2, TestName = "Backfill_EndedSeries_LegacyUtcPlus2DstUntilDate_BackfillsTheUntilDay")]
+    public async Task Backfill_EndedSeries_LegacyTzShiftedUntilDate_BackfillsTheUntilDay(int browserUtcOffsetHours)
+    {
+        var seeded = await SeedEvent(
+            Today.AddDays(-10), repeatType: (int)RepeatType.Day,
+            repeatEndMode: 2, repeatUntilDate: Today.AddDays(-3).AddHours(-browserUtcOffsetHours));
+        await AddSite(seeded.Arp.Id, 90250 + browserUtcOffsetHours);
+
+        var (service, deploy) = await BuildService();
+        var result = await service.BackfillPastSeriesAsync(seeded.Arp);
+
+        var deployed = DeployedDeadlines(deploy);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.PastOccurrences, Is.EqualTo(8),
+                "day -10 through day -3 inclusive — the legacy tz-shifted until date still means day -3");
+            Assert.That(deployed.Last(), Is.EqualTo(Today.AddDays(-3)));
+        });
+    }
+
+    /// <summary>
+    /// #1293: the scheduler bound (FirstFutureOccurrence) is inclusive too. A
+    /// daily series anchored 5 days back "until and including TODAY" still has
+    /// today's occurrence ahead of it, so NextExecutionTime is today — not the
+    /// ended-series sentinel. Date-only and legacy UTC+1 / UTC+2 forms; the old
+    /// bound (RepeatUntilDate.Date + 1 on 23:00 yesterday = today, "&lt;= today")
+    /// parked the legacy forms 50 years out and today's occurrence was never
+    /// deployed.
+    /// </summary>
+    [TestCase(0, TestName = "Backfill_UntilToday_DateOnly_NextExecutionIsToday")]
+    [TestCase(1, TestName = "Backfill_UntilToday_LegacyUtcPlus1_NextExecutionIsToday")]
+    [TestCase(2, TestName = "Backfill_UntilToday_LegacyUtcPlus2Dst_NextExecutionIsToday")]
+    public async Task Backfill_UntilToday_SchedulerBoundIsInclusive(int browserUtcOffsetHours)
+    {
+        var seeded = await SeedEvent(
+            Today.AddDays(-5), repeatType: (int)RepeatType.Day,
+            repeatEndMode: 2, repeatUntilDate: Today.AddHours(-browserUtcOffsetHours));
+        await AddSite(seeded.Arp.Id, 90260 + browserUtcOffsetHours);
+
+        var (service, _) = await BuildService();
+        var result = await service.BackfillPastSeriesAsync(seeded.Arp);
+
+        var planning = await ReloadPlanning(seeded.Planning.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.PastOccurrences, Is.EqualTo(5), "day -5 through day -1");
+            Assert.That(planning.NextExecutionTime!.Value.Date, Is.EqualTo(Today),
+                "today is the until day, so today's occurrence is still due — not the ended-series sentinel");
+        });
+    }
+
     [Test]
     public async Task Backfill_NonRecurringPastTask_BackfillsItsSingleOccurrenceAndParksTheSentinel()
     {

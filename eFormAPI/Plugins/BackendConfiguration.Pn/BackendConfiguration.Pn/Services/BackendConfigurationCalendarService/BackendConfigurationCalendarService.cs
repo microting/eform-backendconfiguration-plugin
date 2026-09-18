@@ -739,7 +739,7 @@ public class BackendConfigurationCalendarService(
                         RepeatEvery = arp.RepeatEvery ?? 1,
                         RepeatEndMode = arp.RepeatEndMode,
                         RepeatOccurrences = arp.RepeatOccurrences,
-                        RepeatUntilDate = arp.RepeatUntilDate,
+                        RepeatUntilDate = NormalizeRepeatUntilDate(arp.RepeatUntilDate),
                         DayOfWeek = arp.DayOfWeek,
                         DayOfMonth = arp.DayOfMonth,
                         RepeatOrdinalWeek = arp.RepeatOrdinalWeek,
@@ -854,7 +854,7 @@ public class BackendConfigurationCalendarService(
                             RepeatEvery = arp.RepeatEvery ?? 1,
                             RepeatEndMode = arp.RepeatEndMode,
                             RepeatOccurrences = arp.RepeatOccurrences,
-                            RepeatUntilDate = arp.RepeatUntilDate,
+                            RepeatUntilDate = NormalizeRepeatUntilDate(arp.RepeatUntilDate),
                             DayOfWeek = arp.DayOfWeek,
                             DayOfMonth = arp.DayOfMonth,
                             RepeatOrdinalWeek = arp.RepeatOrdinalWeek,
@@ -943,7 +943,7 @@ public class BackendConfigurationCalendarService(
                     RepeatEvery = arp.RepeatEvery ?? 1,
                     RepeatEndMode = arp.RepeatEndMode,
                     RepeatOccurrences = arp.RepeatOccurrences,
-                    RepeatUntilDate = arp.RepeatUntilDate,
+                    RepeatUntilDate = NormalizeRepeatUntilDate(arp.RepeatUntilDate),
                     DayOfWeek = arp.DayOfWeek,
                     DayOfMonth = arp.DayOfMonth,
                     RepeatOrdinalWeek = arp.RepeatOrdinalWeek,
@@ -1163,7 +1163,7 @@ public class BackendConfigurationCalendarService(
                     RepeatEvery = arp?.RepeatEvery ?? 1,
                     RepeatEndMode = arp?.RepeatEndMode,
                     RepeatOccurrences = arp?.RepeatOccurrences,
-                    RepeatUntilDate = arp?.RepeatUntilDate,
+                    RepeatUntilDate = NormalizeRepeatUntilDate(arp?.RepeatUntilDate),
                     DayOfWeek = arp?.DayOfWeek,
                     DayOfMonth = arp?.DayOfMonth,
                     RepeatOrdinalWeek = arp?.RepeatOrdinalWeek,
@@ -1408,7 +1408,7 @@ public class BackendConfigurationCalendarService(
                     RepeatEvery = arp.RepeatEvery ?? 1,
                     RepeatEndMode = arp.RepeatEndMode,
                     RepeatOccurrences = arp.RepeatOccurrences,
-                    RepeatUntilDate = arp.RepeatUntilDate,
+                    RepeatUntilDate = NormalizeRepeatUntilDate(arp.RepeatUntilDate),
                     DayOfWeek = arp.DayOfWeek,
                     DayOfMonth = arp.DayOfMonth,
                     RepeatOrdinalWeek = arp.RepeatOrdinalWeek,
@@ -1458,6 +1458,10 @@ public class BackendConfigurationCalendarService(
             // series anchor below, so a tz-shifted value would re-anchor the
             // recurrence to the wrong weekday.
             createModel.StartDate = NormalizeStartDateToLocalDay(createModel.StartDate);
+            // Same recovery for the repeat-until DAY (#1293): the FE used to send
+            // it as toISOString() (UTC+1 "10 Dec" → 2026-12-09T23:00Z). Persist
+            // the intended calendar day at midnight.
+            createModel.RepeatUntilDate = NormalizeRepeatUntilDate(createModel.RepeatUntilDate);
 
             // NOTE (#1122): there is deliberately NO "cannot create in the past"
             // guard here any more. Back-dating a series is a first-class action —
@@ -1643,6 +1647,29 @@ public class BackendConfigurationCalendarService(
         return new DateTime(shifted.Year, shifted.Month, shifted.Day, 0, 0, 0, DateTimeKind.Utc);
     }
 
+    // #1293 — RepeatUntilDate is a calendar DAY ("til og med 10. december" =
+    // the series appears for the last time ON 10 Dec), never an instant. Rows
+    // written before #1293 hold the browser's local midnight serialised as UTC
+    // (UTC+1 → 2026-12-09T23:00, UTC+2 → 22:00), so reading .Date off them
+    // yields the day BEFORE the one the user picked. The same nearest-midnight
+    // rounding as NormalizeStartDateToLocalDay recovers the intended day for
+    // every inhabited offset, and is a no-op on a value already at midnight
+    // (the date-only "yyyy-MM-dd" the FE sends now). Applied on write AND on
+    // every read (end bound, backfill, response DTOs), so legacy rows are
+    // corrected without a data migration. Returned as a Kind=Unspecified
+    // midnight so it serialises as "yyyy-MM-ddT00:00:00" — a day, not an
+    // instant the browser would shift by its offset.
+    internal static DateTime? NormalizeRepeatUntilDate(DateTime? repeatUntilDate)
+    {
+        if (!repeatUntilDate.HasValue)
+        {
+            return null;
+        }
+
+        var day = NormalizeStartDateToLocalDay(repeatUntilDate.Value);
+        return DateTime.SpecifyKind(day, DateTimeKind.Unspecified);
+    }
+
     public async Task<OperationResult> UpdateTask(CalendarTaskUpdateRequestModel updateModel)
     {
         try
@@ -1651,6 +1678,7 @@ public class BackendConfigurationCalendarService(
             // read (#966). Covers all scopes (this/thisAndFollowing/all) and the
             // wizard StartDate handed off below.
             updateModel.StartDate = NormalizeStartDateToLocalDay(updateModel.StartDate);
+            updateModel.RepeatUntilDate = NormalizeRepeatUntilDate(updateModel.RepeatUntilDate); // #1293
 
             // NOTE (#1122): no past-date guard here either — see CreateTask.
             // Re-anchoring an existing series backwards is exactly what the
@@ -5281,7 +5309,14 @@ public class BackendConfigurationCalendarService(
         DateTime rangeEndInclusive)
     {
         if (arp.RepeatEndMode == 2 && arp.RepeatUntilDate.HasValue)
-            occurrences.RemoveAll(d => d > arp.RepeatUntilDate.Value);
+        {
+            // Inclusive, by DAY (#1293): the until date is the last day the
+            // series appears. Compare calendar days, and normalise the stored
+            // value first so a legacy tz-shifted row (10 Dec stored as
+            // 2026-12-09T23:00) still keeps its 10 Dec occurrence.
+            var lastDay = NormalizeRepeatUntilDate(arp.RepeatUntilDate)!.Value.Date;
+            occurrences.RemoveAll(d => d.Date > lastDay);
+        }
         else if (arp.RepeatEndMode == 1 && arp.RepeatOccurrences.HasValue)
         {
             // Use EnumerateOccurrences (week-loop iterator) instead of
@@ -6421,7 +6456,7 @@ public class BackendConfigurationCalendarService(
                     RepeatEvery = arp?.RepeatEvery ?? 1,
                     RepeatEndMode = arp?.RepeatEndMode,
                     RepeatOccurrences = arp?.RepeatOccurrences,
-                    RepeatUntilDate = arp?.RepeatUntilDate,
+                    RepeatUntilDate = NormalizeRepeatUntilDate(arp?.RepeatUntilDate),
                     DayOfWeek = arp?.DayOfWeek,
                     DayOfMonth = arp?.DayOfMonth,
                     RepeatOrdinalWeek = arp?.RepeatOrdinalWeek,

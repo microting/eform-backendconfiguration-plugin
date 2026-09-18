@@ -829,15 +829,16 @@ describe('CalendarRepeatService', () => {
       expect(r?.afterCount).toBe(7);
     });
 
-    it('end-mode "until" with untilTs read from repeatUntilDate', () => {
-      const ts = 12345;
+    it('end-mode "until" with untilTs read from repeatUntilDate as a LOCAL day (#1293)', () => {
+      // The until date is a calendar day: the backend echoes
+      // "yyyy-MM-ddT00:00:00" and the Y-M-D is read as local midnight.
       const t = builtInTask({
         repeatRule: 'daily', repeatEndMode: 2,
-        repeatUntilDate: new Date(ts).toISOString(),
+        repeatUntilDate: '2026-12-10T00:00:00',
       });
       const r = service.reconstructMetaFromTask(t);
       expect(r?.endMode).toBe('until');
-      expect(r?.untilTs).toBe(ts);
+      expect(r?.untilTs).toBe(new Date(2026, 11, 10).getTime());
     });
   });
 

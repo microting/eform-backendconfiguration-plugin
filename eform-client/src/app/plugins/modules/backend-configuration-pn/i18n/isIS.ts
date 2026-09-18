@@ -772,4 +772,8 @@ export const isIS = {
   'Teams and employees': 'Teymi og starfsmenn',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Skráin er eytt varanlega, þar á meðal svörum og myndum. Ekki er hægt að afturkalla þessa aðgerð.',
   'Move to calendar': 'Færa í dagatal',
+  // Custom repeat end condition appended to the Gentag label (#1293).
+  '{{rule}}, until and including {{date}}': '{{rule}}, til og með {{date}}',
+  '{{rule}}, {{count}} times': '{{rule}}, {{count}} sinnum',
+  '{{rule}}, 1 time': '{{rule}}, 1 sinni',
 };

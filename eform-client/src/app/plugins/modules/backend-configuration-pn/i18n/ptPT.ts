@@ -772,4 +772,8 @@ export const ptPT = {
   'Teams and employees': 'Equipas e funcionários',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'O registro será excluído permanentemente, incluindo suas respostas e fotos. Esta ação não pode ser desfeita.',
   'Move to calendar': 'Mover para o calendário',
+  // Custom repeat end condition appended to the Gentag label (#1293).
+  '{{rule}}, until and including {{date}}': '{{rule}}, até {{date}}, inclusive',
+  '{{rule}}, {{count}} times': '{{rule}}, {{count}} vezes',
+  '{{rule}}, 1 time': '{{rule}}, 1 vez',
 };

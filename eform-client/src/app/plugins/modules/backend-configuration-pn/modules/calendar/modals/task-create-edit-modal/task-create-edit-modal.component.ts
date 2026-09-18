@@ -33,7 +33,7 @@ import {
   CalendarTaskUpdateModel,
   RepeatEditScope,
 } from '../../../../models/calendar';
-import {CalendarRepeatService, RepeatSelectOption} from '../../services/calendar-repeat.service';
+import {CalendarRepeatService, RepeatSelectOption, toDateOnlyString} from '../../services/calendar-repeat.service';
 import {computeCopyDate} from '../../services/calendar-copy-date.helper';
 import {getCurrentLocale} from '../../services/calendar-locale.helper';
 import {CustomRepeatModalComponent} from '../custom-repeat-modal/custom-repeat-modal.component';
@@ -1268,7 +1268,10 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
         repeatOccurrences = meta.afterCount;
       } else if (meta.endMode === 'until' && meta.untilTs) {
         repeatEndMode = 2;
-        repeatUntilDate = new Date(meta.untilTs).toISOString();
+        // Date-only local Y-M-D (#1293, the #966 pattern): toISOString() sent
+        // UTC+1 "10 Dec" as 2026-12-09T23:00Z, which dropped the last
+        // occurrence and read back as "9. december".
+        repeatUntilDate = toDateOnlyString(meta.untilTs);
       }
     }
 

@@ -972,7 +972,7 @@ public class BackendConfigurationTaskListService(
             Color = configuration?.Color,
             RepeatEndMode = arp.RepeatEndMode,
             RepeatOccurrences = arp.RepeatOccurrences,
-            RepeatUntilDate = arp.RepeatUntilDate,
+            RepeatUntilDate = CalendarService.NormalizeRepeatUntilDate(arp.RepeatUntilDate),
             RepeatWeekdaysCsv = arp.RepeatWeekdaysCsv,
             DayOfMonth = arp.DayOfMonth,
             RepeatOrdinalWeek = arp.RepeatOrdinalWeek,

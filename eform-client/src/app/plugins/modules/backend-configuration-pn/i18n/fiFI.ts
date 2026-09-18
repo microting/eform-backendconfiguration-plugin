@@ -772,4 +772,8 @@ export const fiFI = {
   'Teams and employees': 'Tiimit ja työntekijät',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Loki poistetaan pysyvästi, vastaukset ja kuvat mukaan lukien. Tätä toimintoa ei voi perua.',
   'Move to calendar': 'Siirrä kalenteriin',
+  // Custom repeat end condition appended to the Gentag label (#1293).
+  '{{rule}}, until and including {{date}}': '{{rule}}, {{date}} asti',
+  '{{rule}}, {{count}} times': '{{rule}}, {{count}} kertaa',
+  '{{rule}}, 1 time': '{{rule}}, 1 kerran',
 };

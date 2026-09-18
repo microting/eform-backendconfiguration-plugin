@@ -771,4 +771,8 @@ export const frFR = {
   'Teams and employees': 'Équipes et employés',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Le journal est définitivement supprimé, y compris les réponses et les photos. Cette action est irréversible.',
   'Move to calendar': 'Déplacer vers le calendrier',
+  // Custom repeat end condition appended to the Gentag label (#1293).
+  '{{rule}}, until and including {{date}}': '{{rule}}, jusqu’au {{date}} inclus',
+  '{{rule}}, {{count}} times': '{{rule}}, {{count}} fois',
+  '{{rule}}, 1 time': '{{rule}}, 1 fois',
 };
