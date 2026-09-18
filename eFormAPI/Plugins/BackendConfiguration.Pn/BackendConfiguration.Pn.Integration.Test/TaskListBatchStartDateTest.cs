@@ -103,7 +103,7 @@ namespace BackendConfiguration.Pn.Integration.Test;
 /// </summary>
 [Parallelizable(ParallelScope.Fixtures)]
 [TestFixture]
-public class TaskListBatchStartDateTest : TestBaseSetup
+public partial class TaskListBatchStartDateTest : TestBaseSetup
 {
     /// <summary>
     /// Snapshotted ONCE per test in [SetUp], never re-derived. As a computed
@@ -264,7 +264,9 @@ public class TaskListBatchStartDateTest : TestBaseSetup
         int repeatType,
         IEnumerable<int> siteIds,
         bool complianceEnabled = false,
-        int? dayOfMonth = null)
+        int? dayOfMonth = null,
+        int? repeatOrdinalWeek = null,
+        int repeatEvery = 1)
     {
         var area = new Area
         {
@@ -298,8 +300,9 @@ public class TaskListBatchStartDateTest : TestBaseSetup
 
         var planning = new Planning
         {
-            Enabled = true, RepeatEvery = 1, RepeatType = (RepeatType)repeatType,
+            Enabled = true, RepeatEvery = repeatEvery, RepeatType = (RepeatType)repeatType,
             StartDate = anchor, DayOfWeek = anchor.DayOfWeek, DayOfMonth = dayOfMonth,
+            RepeatOrdinalWeek = repeatOrdinalWeek,
             RelatedEFormId = 7, Description = "Original description",
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         };
@@ -309,8 +312,9 @@ public class TaskListBatchStartDateTest : TestBaseSetup
         {
             AreaRuleId = areaRule.Id, PropertyId = property.Id, AreaId = area.Id,
             ItemPlanningId = planning.Id, StartDate = anchor, Status = true,
-            RepeatType = repeatType, RepeatEvery = 1,
+            RepeatType = repeatType, RepeatEvery = repeatEvery,
             DayOfWeek = (int)anchor.DayOfWeek, DayOfMonth = dayOfMonth ?? 0,
+            RepeatOrdinalWeek = repeatOrdinalWeek,
             ComplianceEnabled = complianceEnabled,
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         };
