@@ -1290,6 +1290,36 @@ describe('ComplianceReportViewComponent — delete returns to the next row', () 
     expect(component.highlightedRowKey).toBeNull();
   });
 
+  /**
+   * CI regression (#1290, e2e s/compliance-report-view.spec.ts): mtx-grid applies
+   * the formatter through `row | rowClass: index: dataIndex: rowClassFormatter`,
+   * a PURE pipe in an OnPush component. When the highlight drops, the rows and
+   * indexes are unchanged, so the pipe re-runs only if the BOUND formatter is a
+   * new reference — a formatter that merely read `highlightedRowKey` left
+   * `row-highlight-flash` on the row in a real browser forever.
+   */
+  it('hands mtx-grid a NEW formatter when the highlight drops (its rowClass pipe is pure)', () => {
+    const boundFormatter = () => {
+      fixture.detectChanges();
+      const grid = fixture.nativeElement.querySelector('mtx-grid') as
+        | (HTMLElement & {rowClassFormatter?: Record<string, (row: unknown, index: number) => boolean>})
+        | null;
+      expect(grid).not.toBeNull();
+      return grid!.rowClassFormatter!;
+    };
+
+    deleteAndRefresh(response([caseModel(1), caseModel(2)]), 1, response([caseModel(2)]));
+    const landed = boundFormatter();
+    expect(landed['row-highlight-flash'](rowById(2), 0)).toBe(true);
+
+    jest.advanceTimersByTime(3000);
+    const dropped = boundFormatter();
+
+    // Same reference = the pure pipe returns its memoised "highlighted" string.
+    expect(dropped).not.toBe(landed);
+    expect(dropped['row-highlight-flash'](rowById(2), 0)).toBe(false);
+  });
+
   it('scrolls the highlighted row into view one frame after the render', () => {
     const tr = document.createElement('tr');
     tr.className = 'row-highlight-flash';

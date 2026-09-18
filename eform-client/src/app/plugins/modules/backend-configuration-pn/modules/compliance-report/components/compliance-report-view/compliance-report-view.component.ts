@@ -213,22 +213,27 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
   private pendingDeleteRow: ComplianceReportRowVm | null = null;
 
   /**
-   * The row currently carrying `row-highlight-flash` (#1290/#1291), or null. Read by
-   * `rowClassFormatter` on every change-detection pass, so clearing it is all
-   * it takes to drop the class.
+   * The row currently carrying `row-highlight-flash` (#1290/#1291), or null.
+   * Only ever changed through `setHighlightedRow`, which also swaps
+   * `rowClassFormatter` — changing this field alone does NOT reach the DOM.
    */
   highlightedRowKey: ComplianceReportRowKey | null = null;
   private highlightTimer: ReturnType<typeof setTimeout> | null = null;
   private scrollTimer: ReturnType<typeof setTimeout> | null = null;
 
   /**
-   * ONE formatter object shared by every table's grid: mtx-grid calls it per row
-   * on each pass, and the row VM's key is the identity that survives a re-fetch.
+   * The formatter every table's grid is bound to; the row VM's key is the
+   * identity that survives a re-fetch.
+   *
+   * REPLACED (never mutated) whenever the highlight changes: mtx-grid applies it
+   * through `row | rowClass: index: dataIndex: rowClassFormatter`, a PURE pipe
+   * inside an OnPush component, so it is re-run only when one of those
+   * arguments changes by reference. Dropping the highlight 3 s after a
+   * re-fetch changes neither the row objects nor the indexes — a formatter
+   * that merely read a component field would leave `row-highlight-flash` on
+   * the row for good.
    */
-  readonly rowClassFormatter: MtxGridRowClassFormatter = {
-    [COMPLIANCE_REPORT_HIGHLIGHT_CLASS]: (row: ComplianceReportRowVm) =>
-      this.highlightedRowKey !== null && complianceReportRowKey(row) === this.highlightedRowKey,
-  };
+  rowClassFormatter: MtxGridRowClassFormatter = this.buildRowClassFormatter(null);
 
   constructor(
     public state: ComplianceReportStateService,
@@ -684,7 +689,7 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
     if (!table.rows.some((row) => complianceReportRowKey(row) === key)) {
       this.expandTable(table);
     }
-    this.highlightedRowKey = key;
+    this.setHighlightedRow(key);
 
     // One frame later: the row is only rendered — and only carries the class —
     // after the next change-detection pass.
@@ -701,12 +706,32 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
     // application tick while it waits.
     this.zone.runOutsideAngular(() => {
       this.highlightTimer = setTimeout(() => {
+        // Back inside the zone so the drop is picked up by a change-detection
+        // pass — and via a NEW formatter, or mtx-grid's pure pipe keeps the class.
         this.zone.run(() => {
-          this.highlightedRowKey = null;
+          this.setHighlightedRow(null);
           this.highlightTimer = null;
         });
       }, COMPLIANCE_REPORT_HIGHLIGHT_MS);
     });
+  }
+
+  /**
+   * The only writer of `highlightedRowKey`: pairs it with a fresh
+   * `rowClassFormatter` so mtx-grid's pure `rowClass` pipe re-evaluates every
+   * row — on the way in as well as on the way out, rather than relying on the
+   * re-fetch happening to hand the grid new row objects.
+   */
+  private setHighlightedRow(key: ComplianceReportRowKey | null): void {
+    this.highlightedRowKey = key;
+    this.rowClassFormatter = this.buildRowClassFormatter(key);
+  }
+
+  private buildRowClassFormatter(key: ComplianceReportRowKey | null): MtxGridRowClassFormatter {
+    return {
+      [COMPLIANCE_REPORT_HIGHLIGHT_CLASS]: (row: ComplianceReportRowVm) =>
+        key !== null && complianceReportRowKey(row) === key,
+    };
   }
 
   private clearTimer(which: 'highlight' | 'scroll'): void {
