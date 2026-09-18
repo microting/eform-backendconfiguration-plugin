@@ -890,4 +890,8 @@ export const enUS= {
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'The log is deleted permanently, including its answers and photos. This action cannot be undone.',
   // Task list batch action "Flyt til kalender" (#1297).
   'Move to calendar': 'Move to calendar',
+  // Custom repeat end condition appended to the Gentag label (#1293).
+  '{{rule}}, until and including {{date}}': '{{rule}}, until and including {{date}}',
+  '{{rule}}, {{count}} times': '{{rule}}, {{count}} times',
+  '{{rule}}, 1 time': '{{rule}}, 1 time',
 };

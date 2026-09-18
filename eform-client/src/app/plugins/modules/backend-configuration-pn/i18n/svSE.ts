@@ -771,4 +771,8 @@ export const svSE = {
   'Teams and employees': 'Team och anställda',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Loggen raderas permanent, inklusive svar och foton. Åtgärden kan inte ångras.',
   'Move to calendar': 'Flytta till kalender',
+  // Custom repeat end condition appended to the Gentag label (#1293).
+  '{{rule}}, until and including {{date}}': '{{rule}}, till och med {{date}}',
+  '{{rule}}, {{count}} times': '{{rule}}, {{count}} gånger',
+  '{{rule}}, 1 time': '{{rule}}, 1 gång',
 };

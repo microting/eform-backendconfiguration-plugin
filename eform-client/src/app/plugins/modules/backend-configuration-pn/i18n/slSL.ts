@@ -771,4 +771,8 @@ export const slSL = {
   'Teams and employees': 'Ekipe in zaposleni',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Dnevnik je trajno izbrisan, vključno z odgovori in fotografijami. Tega dejanja ni mogoče razveljaviti.',
   'Move to calendar': 'Premakni v koledar',
+  // Custom repeat end condition appended to the Gentag label (#1293).
+  '{{rule}}, until and including {{date}}': '{{rule}}, do vključno {{date}}',
+  '{{rule}}, {{count}} times': '{{rule}}, {{count}}-krat',
+  '{{rule}}, 1 time': '{{rule}}, 1-krat',
 };

@@ -18,7 +18,7 @@ import { assigneeWorkerOptions } from '../calendar-assignee.helper';
  *
  *   never                 → repeatEndMode 0 (covered indirectly by #898/#899)
  *   after N occurrences   → repeatEndMode 1 + repeatOccurrences N
- *   until <date>          → repeatEndMode 2 + repeatUntilDate <ISO>
+ *   until <date>          → repeatEndMode 2 + repeatUntilDate 'yyyy-MM-dd'
  *
  * SCOPE & METHOD
  * --------------
@@ -42,7 +42,14 @@ import { assigneeWorkerOptions } from '../calendar-assignee.helper';
  * WIRE FIELDS (verified in task-create-edit-modal.component.ts buildPayload):
  *   repeatEndMode     — 0 never / 1 after / 2 until
  *   repeatOccurrences — meta.afterCount when endMode 'after', else null
- *   repeatUntilDate   — new Date(meta.untilTs).toISOString() when 'until', else null
+ *   repeatUntilDate   — date-only 'yyyy-MM-dd' of the picked local day when
+ *                       'until' (#1293; was toISOString(), which shifted the
+ *                       day east of UTC), else null
+ *
+ * GENTAG LABEL (#1293): after Done, the collapsed repeat select shows the rule
+ * PLUS its end condition — "Ugentligt hver mandag, 6 gange" / ", 1 gang" /
+ * ", til og med <d>. <måned> <åååå>" — and the preview popover of the saved
+ * event shows the same text (reconstructed from the server's echo).
  *
  * END-MODE DIALOG SELECTORS (verified in custom-repeat-modal.component.html):
  *   .end-option order is never(0) / until(1) / after(2).
@@ -87,7 +94,7 @@ import { assigneeWorkerOptions } from '../calendar-assignee.helper';
  * Each test clicks a DIFFERENT next-week Monday hour so the create modal always
  * opens on an empty slot (it only opens on an empty slot, and earlier rows
  * leave a Monday block behind):
- *   CR14=9, CR15=10, CR16=11, CR17=12, CR18=13.
+ *   CR14=9, CR15=10, CR16=11, CR17=12, CR18=13, CR19=14, CR20=15.
  */
 
 const property: PropertyCreateUpdate = {
@@ -372,22 +379,50 @@ test.describe.serial('Calendar custom repeat — end modes (#900)', () => {
     return dayText;
   }
 
-  /** Assert a 'until' wire payload: endMode=2, non-empty ISO repeatUntilDate
-   *  whose calendar day-of-month equals the picked cell's day number. */
+  /** Assert a 'until' wire payload: endMode=2, a DATE-ONLY 'yyyy-MM-dd'
+   *  repeatUntilDate whose day-of-month equals the picked cell's day number. */
   function assertUntilWire(body: any, pickedDay: string): void {
     expect(body.repeatEndMode, "end mode 'until' → repeatEndMode 2").toBe(2);
+    // #1293: a calendar day, never an instant — toISOString() used to send
+    // UTC+1 "10 Dec" as 2026-12-09T23:00Z and the backend dropped 10 Dec.
     expect(
-      typeof body.repeatUntilDate === 'string' && body.repeatUntilDate.length > 0,
-      `repeatUntilDate must be a non-empty ISO string, got ${JSON.stringify(body.repeatUntilDate)}`
-    ).toBe(true);
-    // repeatUntilDate = new Date(untilTs).toISOString(); untilTs is the picked
-    // local-midnight date. Assert the wire date-part day matches the clicked
-    // cell (don't over-constrain month/year — the picker resists exact dates).
+      body.repeatUntilDate,
+      `repeatUntilDate must be a date-only yyyy-MM-dd string, got ${JSON.stringify(body.repeatUntilDate)}`
+    ).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    // Assert the wire day matches the clicked cell (don't over-constrain
+    // month/year — the picker resists exact dates).
     const wireDay = parseInt(body.repeatUntilDate.slice(8, 10), 10);
     expect(
       wireDay,
       `repeatUntilDate day-of-month (${wireDay}) should match the clicked cell day (${pickedDay})`
     ).toBe(parseInt(pickedDay, 10));
+  }
+
+  /** The collapsed Gentag (repeat) select label — the customCurrent summary. */
+  function repeatRowLabel(page: Page) {
+    return page.locator('#calendarEventRepeat .ng-value-label').first();
+  }
+
+  /** The Gentag line of the saved event's preview popover. */
+  async function previewRepeatText(
+    calendarPage: CalendarUiEnhancementsPage,
+    page: Page,
+    title: string,
+  ): Promise<string> {
+    await calendarPage.openEventPreview(title);
+    const row = page
+      .locator('app-task-preview-modal .preview-row')
+      .filter({ has: page.locator('mat-icon.preview-icon:has-text("repeat")') })
+      .locator('span')
+      .first();
+    return ((await row.textContent()) ?? '').trim();
+  }
+
+  /** "10. december 2026" — the Danish long date the label uses for a wire
+   *  'yyyy-MM-dd' (built from the Y-M-D, so no time-zone shift). */
+  function danishLongDate(wireDate: string): string {
+    const [y, m, d] = wireDate.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('da-DK', {day: 'numeric', month: 'long', year: 'numeric'});
   }
 
   // =======================================================================
@@ -410,6 +445,9 @@ test.describe.serial('Calendar custom repeat — end modes (#900)', () => {
     await setEndMode(page, 'after');
     await setAfterCount(page, 1);
     await clickDone(page);
+
+    // #1293: singular — "1 gang", not "1 gange".
+    await expect(repeatRowLabel(page)).toHaveText('Ugentligt hver mandag, 1 gang');
 
     const body = await saveAndCaptureCreateBody(page);
 
@@ -437,6 +475,8 @@ test.describe.serial('Calendar custom repeat — end modes (#900)', () => {
     await setEndMode(page, 'after');
     await setAfterCount(page, 6);
     await clickDone(page);
+
+    await expect(repeatRowLabel(page)).toHaveText('Ugentligt hver mandag, 6 gange');
 
     const body = await saveAndCaptureCreateBody(page);
 
@@ -470,10 +510,14 @@ test.describe.serial('Calendar custom repeat — end modes (#900)', () => {
     const pickedDay = await pickUntilDate(calendarPage, page, 'mid');
     await clickDone(page);
 
+    const labelBeforeSave = ((await repeatRowLabel(page).textContent()) ?? '').trim();
+
     const body = await saveAndCaptureCreateBody(page);
 
     expect(body.repeatType, 'weekly custom rule (Monday only) → repeatType 2').toBe(2);
     assertUntilWire(body, pickedDay);
+    // #1293: the Gentag label carries ", til og med <the picked day>".
+    expect(labelBeforeSave).toBe(`Ugentligt hver mandag, til og med ${danishLongDate(body.repeatUntilDate)}`);
     // 'until' carries a date, not an occurrence count.
     expect(body.repeatOccurrences ?? null, "'until' end mode ships no occurrence count").toBeNull();
   });
@@ -560,8 +604,8 @@ test.describe.serial('Calendar custom repeat — end modes (#900)', () => {
   //   The weekly-on-Monday rule's FIRST occurrence is the start date itself
   //   (the anchored next-week Monday), which is exactly the picker's minDate.
   //   Picking the earliest selectable day therefore sets until == the first
-  //   occurrence date. The BACKEND bumps the until bound to 23:59:59.999 of
-  //   that day so the same-day occurrence is INCLUDED (not truncated). That
+  //   occurrence date. The BACKEND compares the until bound by DAY (#1293) so
+  //   the same-day occurrence is INCLUDED (not truncated). That
   //   inclusive behaviour is server-side and verified there; from this black-
   //   box angle we assert the WIRE payload (repeatEndMode=2 + repeatUntilDate
   //   == the occurrence/start date) and successful creation. The "inclusive
@@ -612,14 +656,78 @@ test.describe.serial('Calendar custom repeat — end modes (#900)', () => {
     expect(body.repeatOccurrences ?? null, "'until' end mode ships no occurrence count").toBeNull();
   });
 
-  // CR18b — INCLUSIVE last-occurrence rendering. test.fixme: the backend bumps
-  // the until bound to 23:59:59.999 so an occurrence ON the until date is
-  // included; that inclusivity is verified server-side. Asserting it from the
+  // CR18b — INCLUSIVE last-occurrence rendering. test.fixme: the backend
+  // compares the until bound by day (#1293) so an occurrence ON the until date
+  // is included; that inclusivity is verified server-side
+  // (CalendarRepeatUntilInclusiveTests / CalendarRepeatPersistenceTests). Asserting it from the
   // week grid requires aligning the anchored Monday to a navigable week AND
   // distinguishing "1 inclusive occurrence" from "0", which is brittle. When a
   // server-confirmed occurrence count is available, assert exactly one block on
   // the until/occurrence day and none after it.
   test.fixme('CR18b — until-equals-occurrence renders the inclusive last occurrence', async () => {
-    // Documented, not asserted: see CR18 wire assertion + backend 23:59:59.999 note.
+    // Documented, not asserted: see CR18 wire assertion + the backend day-comparison note.
+  });
+  // =======================================================================
+  // CR19 — #1293: the Gentag field shows the END condition, before save and
+  //   after the round trip through the server.
+  //   Customer: "Hvis der vælges Efter 10 forekomster, skal der i Gentag
+  //   vises: Ugentlig hver torsdag, 10 gange". Product decision keeps the
+  //   existing "Ugentligt hver …" wording and appends ", 10 gange".
+  //   The saved event's preview popover reconstructs the label from the
+  //   server's repeat fields, so it must show the same text.
+  // =======================================================================
+  test('CR19 — after 10: Gentag shows ", 10 gange" in the modal and in the saved event preview', async ({ page }) => {
+    expect(seeded, 'seed property + worker must have completed').toBe(true);
+    const calendarPage = new CalendarUiEnhancementsPage(page);
+    const title = `CR19-${generateRandmString(8)}`;
+
+    await calendarPage.openCreateModalAtSlot(0, 14);
+    await fillRequiredFields(page, title);
+
+    await openCustomRepeatDialog(page);
+    await configureWeeklyMonday(page);
+    await setEndMode(page, 'after');
+    await setAfterCount(page, 10);
+    await clickDone(page);
+
+    await expect(repeatRowLabel(page)).toHaveText('Ugentligt hver mandag, 10 gange');
+
+    const body = await saveAndCaptureCreateBody(page);
+    expect(body.repeatEndMode).toBe(1);
+    expect(body.repeatOccurrences).toBe(10);
+
+    await calendarPage.findEventBlock(title).waitFor({ state: 'visible', timeout: 10000 });
+    expect(await previewRepeatText(calendarPage, page, title)).toBe('Ugentligt hver mandag, 10 gange');
+  });
+
+  // =======================================================================
+  // CR20 — #1293: until — Gentag shows ", til og med <d>. <måned> <åååå>"
+  //   in the modal AND in the saved event's preview (server round trip: the
+  //   echoed until date must read back as the SAME day, not the day before).
+  // =======================================================================
+  test('CR20 — until: Gentag shows ", til og med …" in the modal and in the saved event preview', async ({ page }) => {
+    expect(seeded, 'seed property + worker must have completed').toBe(true);
+    const calendarPage = new CalendarUiEnhancementsPage(page);
+    const title = `CR20-${generateRandmString(8)}`;
+
+    await calendarPage.openCreateModalAtSlot(0, 15);
+    await fillRequiredFields(page, title);
+
+    await openCustomRepeatDialog(page);
+    await configureWeeklyMonday(page);
+    await setEndMode(page, 'until');
+    const pickedDay = await pickUntilDate(calendarPage, page, 'mid');
+    await clickDone(page);
+
+    const labelBeforeSave = ((await repeatRowLabel(page).textContent()) ?? '').trim();
+    expect(labelBeforeSave).toMatch(/^Ugentligt hver mandag, til og med \d{1,2}\. \S+ \d{4}$/);
+
+    const body = await saveAndCaptureCreateBody(page);
+    assertUntilWire(body, pickedDay);
+    const expected = `Ugentligt hver mandag, til og med ${danishLongDate(body.repeatUntilDate)}`;
+    expect(labelBeforeSave).toBe(expected);
+
+    await calendarPage.findEventBlock(title).waitFor({ state: 'visible', timeout: 10000 });
+    expect(await previewRepeatText(calendarPage, page, title)).toBe(expected);
   });
 });

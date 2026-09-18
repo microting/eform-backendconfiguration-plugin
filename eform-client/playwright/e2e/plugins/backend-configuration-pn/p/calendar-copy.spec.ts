@@ -275,7 +275,8 @@ test.describe.serial('Calendar copy flows (#886)', () => {
     test.setTimeout(180000);
     const calendarPage = new CalendarUiEnhancementsPage(page);
     const title = `P03-${generateRandmString(5)}`;
-    const expectedSummary = 'Hver 2. uge: mandag, onsdag og fredag';
+    // The rule ends "after 6", so the label carries the end condition (#1293).
+    const expectedSummary = 'Hver 2. uge: mandag, onsdag og fredag, 6 gange';
     const expectedActive = [true, false, true, false, true, false, false];
 
     // Source: Tuesday next week at 09:00 (distinct slot from the other tests).

@@ -771,4 +771,8 @@ export const ltLT = {
   'Teams and employees': 'Komandos ir darbuotojai',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Žurnalas ištrinamas visam laikui, įskaitant jame esančius atsakymus ir nuotraukas. Šio veiksmo atšaukti negalima.',
   'Move to calendar': 'Perkelti į kalendorių',
+  // Custom repeat end condition appended to the Gentag label (#1293).
+  '{{rule}}, until and including {{date}}': '{{rule}}, iki {{date}} imtinai',
+  '{{rule}}, {{count}} times': '{{rule}}, {{count}} kartų',
+  '{{rule}}, 1 time': '{{rule}}, 1 kartą',
 };

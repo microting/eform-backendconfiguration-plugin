@@ -3,6 +3,32 @@ import {TranslateService} from '@ngx-translate/core';
 import {CalendarRepeatMeta, CalendarTaskModel} from '../../../models/calendar';
 import {getCurrentLocale} from './calendar-locale.helper';
 
+/**
+ * #1293 — a repeat-until date is a calendar day. The wire carries it as a
+ * date-only "yyyy-MM-dd" (see `toDateOnlyString`); the backend echoes it back
+ * as "yyyy-MM-ddT00:00:00" (legacy tz-shifted rows are normalised to their
+ * intended day server-side). Read the leading Y-M-D as a LOCAL midnight so the
+ * day is the same in every browser time zone. Anything that does not start
+ * with a Y-M-D falls back to plain Date parsing.
+ */
+export function parseDateOnlyToLocalMidnight(value: string): number {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  if (m) {
+    return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).getTime();
+  }
+  return new Date(value).getTime();
+}
+
+/**
+ * Date-only "yyyy-MM-dd" from LOCAL getters (not `toISOString()`, which shifts
+ * a local midnight by the browser's UTC offset: UTC+1 "10 Dec" →
+ * 2026-12-09T23:00Z) — the #966 pattern, used for the repeat-until date (#1293).
+ */
+export function toDateOnlyString(ts: number | Date): string {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+}
+
 export interface RepeatSelectOption {
   value: string;
   label: string;
@@ -354,8 +380,41 @@ export class CalendarRepeatService {
    *
    * Weekdays are output Monday-first regardless of input order (input
    * uses JS `getDay()` indices: 0=Sunday..6=Saturday).
+   *
+   * #1293: the rule's END condition is appended — ", til og med 10. december
+   * 2026" for endMode 'until' and ", 10 gange" / ", 1 gang" for endMode
+   * 'after' — so every place this label feeds (the Gentag dropdown's
+   * customCurrent option, the preview modal, the task-list Gentag column)
+   * shows where the series stops. endMode 'never' keeps the bare rule.
    */
   formatCustomRepeatLabel(meta: CalendarRepeatMeta, locale: string): string {
+    const rule = this.formatRuleLabel(meta, locale);
+    return this.appendEndCondition(rule, meta, locale);
+  }
+
+  /**
+   * #1293 — wrap the rule label with its end condition. ngx-translate has no
+   * plural support here, so "after 1" uses its own singular key rather than
+   * rendering ", 1 gange". The until date is formatted in the user's locale
+   * ("10. december 2026" / "10 December 2026" / "10. Dezember 2026") from the
+   * LOCAL date of `untilTs`, which is a local midnight (see
+   * `parseDateOnlyToLocalMidnight`).
+   */
+  private appendEndCondition(rule: string, meta: CalendarRepeatMeta, locale: string): string {
+    if (meta.endMode === 'after' && meta.afterCount != null && meta.afterCount > 0) {
+      return meta.afterCount === 1
+        ? this.translate.instant('{{rule}}, 1 time', {rule})
+        : this.translate.instant('{{rule}}, {{count}} times', {rule, count: meta.afterCount});
+    }
+    if (meta.endMode === 'until' && meta.untilTs != null) {
+      const date = new Date(meta.untilTs).toLocaleDateString(locale,
+        {day: 'numeric', month: 'long', year: 'numeric'});
+      return this.translate.instant('{{rule}}, until and including {{date}}', {rule, date});
+    }
+    return rule;
+  }
+
+  private formatRuleLabel(meta: CalendarRepeatMeta, locale: string): string {
     const n = meta.n ?? 1;
 
     switch (meta.kind) {
@@ -613,8 +672,12 @@ export class CalendarRepeatService {
     const endModes = ['never', 'after', 'until'] as const;
     const endMode = endModes[task.repeatEndMode ?? 0] ?? 'never';
     const afterCount = endMode === 'after' ? task.repeatOccurrences ?? undefined : undefined;
+    // #1293: the until date is a calendar DAY, not an instant — read its
+    // yyyy-MM-dd prefix as LOCAL midnight. `new Date(iso)` would shift it by
+    // the browser offset (a "…T00:00:00Z" value is 9 Dec 19:00 in UTC−5) and
+    // the label / hydrated custom-repeat modal would show the previous day.
     const untilTs = endMode === 'until' && task.repeatUntilDate
-      ? new Date(task.repeatUntilDate).getTime() : undefined;
+      ? parseDateOnlyToLocalMidnight(task.repeatUntilDate) : undefined;
 
     if (!r || r === 'none') return null;
 

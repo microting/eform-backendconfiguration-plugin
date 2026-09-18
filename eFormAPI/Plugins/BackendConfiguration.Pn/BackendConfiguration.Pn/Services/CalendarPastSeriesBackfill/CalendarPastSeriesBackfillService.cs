@@ -444,7 +444,9 @@ public class CalendarPastSeriesBackfillService(
         }
 
         var end = arp.RepeatEndMode == 2 && arp.RepeatUntilDate.HasValue
-            ? arp.RepeatUntilDate.Value.Date.AddDays(1) // exclusive upper bound
+            // exclusive upper bound = the day AFTER the (inclusive) until day;
+            // normalised first so a legacy tz-shifted row (#1293) is not a day short.
+            ? CalendarService.NormalizeRepeatUntilDate(arp.RepeatUntilDate)!.Value.Date.AddDays(1)
             : farHorizon;
         if (end <= today)
         {

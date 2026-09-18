@@ -406,4 +406,79 @@ public class CalendarRepeatPersistenceTests : TestBaseSetup
         Assert.That(week8, Is.Empty,
             "after cap is reached at occ 10, no further occurrences emit");
     }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // #1293 — "til og med" is inclusive, and legacy tz-shifted rows still are
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// #1293: weekly Monday series, "until and including" the Monday two weeks
+    /// after the anchor. That Monday MUST render, and the response echoes the
+    /// until date as that day at midnight. Covers the date-only value the FE
+    /// sends now and the legacy values rows written before #1293 carry: local
+    /// midnight serialised as UTC by a UTC+1 (23:00 the day before) and a UTC+2
+    /// DST (22:00 the day before) browser. The old instant comparison dropped
+    /// the last Monday for both legacy forms, and the response read back as the
+    /// previous day — the "9. december" the issue describes.
+    /// Relative to the clock (next Monday), never an absolute date.
+    /// </summary>
+    [TestCase(0, TestName = "UntilDate_DateOnly_LastOccurrenceRendersAndReadsBackAsThatDay")]
+    [TestCase(1, TestName = "UntilDate_LegacyUtcPlus1_LastOccurrenceRendersAndReadsBackAsThatDay")]
+    [TestCase(2, TestName = "UntilDate_LegacyUtcPlus2Dst_LastOccurrenceRendersAndReadsBackAsThatDay")]
+    public async Task UntilDate_IsInclusive_AndReadsBackAsTheIntendedDay(int browserUtcOffsetHours)
+    {
+        var monday = GetNextMonday();
+        var lastMonday = monday.AddDays(14);
+        var stored = DateTime.SpecifyKind(lastMonday.AddHours(-browserUtcOffsetHours), DateTimeKind.Unspecified);
+
+        var seeded = await SeedTask(
+            startDate: monday,
+            arpRepeatType: 2,
+            arpRepeatEvery: 1,
+            repeatWeekdaysCsv: null,
+            repeatEndMode: 2,
+            repeatUntilDate: stored,
+            dayOfWeek: (int)monday.DayOfWeek);
+
+        var lastWeek = await FetchWeek(seeded.PropertyId, lastMonday);
+        var afterWeek = await FetchWeek(seeded.PropertyId, lastMonday.AddDays(7));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(lastWeek.Select(t => t.TaskDate), Is.EqualTo(new[] { lastMonday.ToString("yyyy-MM-dd") }),
+                "til og med: the until day itself is the last occurrence and must render");
+            Assert.That(lastWeek.Single().RepeatUntilDate, Is.EqualTo(lastMonday.Date),
+                "the response carries the intended DAY at midnight, not the tz-shifted instant");
+            Assert.That(lastWeek.Single().RepeatUntilDate!.Value.Kind, Is.EqualTo(DateTimeKind.Unspecified),
+                "no Z suffix on the wire, so the browser does not shift the day");
+            Assert.That(afterWeek, Is.Empty, "nothing after the until day renders");
+        });
+    }
+
+    /// <summary>
+    /// #1293: until date on a NON-occurrence day (the Wednesday after the second
+    /// Monday). The second Monday is the last occurrence; the third is not.
+    /// </summary>
+    [Test]
+    public async Task UntilDate_OnANonOccurrenceDay_EndsAtThePrecedingOccurrence()
+    {
+        var monday = GetNextMonday();
+        var seeded = await SeedTask(
+            startDate: monday,
+            arpRepeatType: 2,
+            arpRepeatEvery: 1,
+            repeatWeekdaysCsv: null,
+            repeatEndMode: 2,
+            repeatUntilDate: monday.AddDays(9).AddHours(-1), // legacy UTC+1 "Wednesday"
+            dayOfWeek: (int)monday.DayOfWeek);
+
+        var week1 = await FetchWeek(seeded.PropertyId, monday.AddDays(7));
+        var week2 = await FetchWeek(seeded.PropertyId, monday.AddDays(14));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(week1.Select(t => t.TaskDate), Is.EqualTo(new[] { monday.AddDays(7).ToString("yyyy-MM-dd") }));
+            Assert.That(week2, Is.Empty);
+        });
+    }
 }

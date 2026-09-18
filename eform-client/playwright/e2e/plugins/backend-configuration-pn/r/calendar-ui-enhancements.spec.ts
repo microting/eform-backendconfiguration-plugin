@@ -950,13 +950,14 @@ test.describe.serial('Calendar UI enhancements', () => {
 
       // ----- Step 4: verify dropdown collapsed value -------------------
       // The `customCurrent` option should now render the formatted Danish
-      // label "Hver 2. uge: mandag, onsdag og fredag".
+      // label "Hver 2. uge: mandag, onsdag og fredag", followed by the
+      // "after 6" end condition ", 6 gange" (#1293).
       const dropdownValue = page
         .locator('.gcal-row')
         .filter({ has: page.locator('mat-icon.gcal-icon:has-text("sync")') })
         .locator('.ng-value-label')
         .first();
-      await expect(dropdownValue).toHaveText('Hver 2. uge: mandag, onsdag og fredag');
+      await expect(dropdownValue).toHaveText('Hver 2. uge: mandag, onsdag og fredag, 6 gange');
 
       // ----- Step 5: save -----------------------------------------------
       const createWait = page.waitForResponse(
@@ -1002,7 +1003,7 @@ test.describe.serial('Calendar UI enhancements', () => {
         .locator('.ng-value-label')
         .first();
       await expect(reopenedDropdownValue)
-        .toHaveText('Hver 2. uge: mandag, onsdag og fredag');
+        .toHaveText('Hver 2. uge: mandag, onsdag og fredag, 6 gange');
 
       // ----- Step 9: open Tilpasset… and verify modal pre-population ---
       const repeatRow2 = page
