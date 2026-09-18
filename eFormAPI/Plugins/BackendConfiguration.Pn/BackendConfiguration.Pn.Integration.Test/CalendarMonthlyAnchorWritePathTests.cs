@@ -378,9 +378,12 @@ public class CalendarMonthlyAnchorWritePathTests : TestBaseSetup
             "pre-condition: the un-edited series renders its (matching) anchor exactly once");
 
         // The edit: scope "all", drag the 1st-Tuesday occurrence to the 2nd
-        // Tuesday. The rule itself is untouched (still RepeatOrdinalWeek = 1,
-        // Tuesday) — only the anchor moves, which is precisely how a mismatched
-        // anchor is created in production.
+        // Tuesday. The REQUEST still says RepeatOrdinalWeek = 1 (Tuesday) — only
+        // the anchor moves. Before #1289 that is precisely how a mismatched
+        // anchor was created in production; since #1289 UpdateTask re-derives
+        // the ordinal from the moved date on the server, so the rule becomes
+        // "2nd Tuesday" and the anchor satisfies it. Either way the deployed
+        // row must end on the anchor and the month must carry one tile.
         var service = BuildCalendarService(core, BuildPersistingWizardStub());
         var result = await service.UpdateTask(new CalendarTaskUpdateRequestModel
         {
@@ -403,6 +406,19 @@ public class CalendarMonthlyAnchorWritePathTests : TestBaseSetup
             Translates = []
         });
         Assert.That(result.Success, Is.True, result.Message);
+
+        // 0. #1289 — the stale request ordinal (1) was re-derived from the new
+        //    anchor on the server, on the arp AND on the planning mirror the
+        //    items-planning scheduler reads.
+        var arpAfter = await BackendConfigurationPnDbContext.AreaRulePlannings.AsNoTracking()
+            .FirstAsync(a => a.Id == seeded.ArpId);
+        var planningAfter = await ItemsPlanningPnDbContext!.Plannings.AsNoTracking()
+            .FirstAsync(p => p.Id == seeded.PlanningId);
+        Assert.Multiple(() =>
+        {
+            Assert.That(arpAfter.RepeatOrdinalWeek, Is.EqualTo(2), "the 2nd Tuesday is ordinal 2 (#1289)");
+            Assert.That(planningAfter.RepeatOrdinalWeek, Is.EqualTo(2), "mirrored for SearchListJob");
+        });
 
         // 1. The deployed row moved onto the ANCHOR, not onto the pure pattern
         //    date. Pre-#1207 the mapper returned firstTuesday, the relocation

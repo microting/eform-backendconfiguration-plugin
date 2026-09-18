@@ -863,8 +863,29 @@ export class CalendarRepeatService {
         return {...meta, month: date.getMonth(), dom: date.getDate()};
 
       case 'monthlyFirstWeekday':
-      case 'everyNMonthFirstWeekday':
-        return {...meta, weekday: date.getDay()};
+      case 'everyNMonthFirstWeekday': {
+        // #1289 — ALWAYS re-derive the ordinal from the new date, for the
+        // "first weekday" kinds too: moving "1st Thursday" onto the 10th must
+        // become "2nd <weekday>", not stay "1st". While the ordinal is still 1
+        // the kind is kept; otherwise it is CONVERTED to the matching
+        // monthlyByDay / everyNMonthByDay kind. Converting (rather than keeping
+        // a FirstWeekday kind carrying ordinal ≠ 1) keeps the saved data and
+        // the label consistent: reconstructMetaFromTask maps a stored ordinal
+        // ≠ 1 back to *ByDay, and metaToCustomConfig/buildMetaFromCustomConfig
+        // would silently reset a FirstWeekday kind to ordinal 1 on the next
+        // custom-dialog round-trip. Same formula as buildRepeatSelectOptions
+        // and the server's OrdinalWeekOf.
+        const ordinalWeek = Math.ceil(date.getDate() / 7);
+        if (ordinalWeek === 1) {
+          return {...meta, weekday: date.getDay(), ordinalWeek: 1};
+        }
+        return {
+          ...meta,
+          kind: meta.kind === 'monthlyFirstWeekday' ? 'monthlyByDay' : 'everyNMonthByDay',
+          weekday: date.getDay(),
+          ordinalWeek,
+        };
+      }
 
       default:
         // daily / everyNd / weeklyMulti / weeklyAll / everyNWeek{Multi,All}:

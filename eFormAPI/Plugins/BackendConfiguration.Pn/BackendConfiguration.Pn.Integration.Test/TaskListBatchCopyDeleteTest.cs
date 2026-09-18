@@ -435,6 +435,114 @@ public class TaskListBatchCopyDeleteTest : TestBaseSetup
         });
     }
 
+    // ---- Copy re-derives the Nth-weekday ordinal (#1289) ----
+
+    /// <summary>
+    /// The first 31-day month at least two months ahead — every weekday of days
+    /// 1..3 then occurs five times, so every day 1..31 is a legal target.
+    /// Relative to UtcNow so the copy is always future-dated.
+    /// </summary>
+    private static DateTime ThirtyOneDayMonthAhead()
+    {
+        var m = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc)
+            .AddMonths(2);
+        while (DateTime.DaysInMonth(m.Year, m.Month) != 31) m = m.AddMonths(1);
+        return m;
+    }
+
+    /// <summary>Brute force: same-weekday days of d's month up to and including d.</summary>
+    private static int CountOfWeekdayUpTo(DateTime d) =>
+        Enumerable.Range(1, d.Day).Count(day =>
+            new DateTime(d.Year, d.Month, day, 0, 0, 0, DateTimeKind.Utc).DayOfWeek == d.DayOfWeek);
+
+    private async Task<(int ArpId, int TargetPropertyId, int TargetBoardId)> SeedOrdinalCopySource(
+        int repeatType, int? repeatOrdinalWeek)
+    {
+        var arpId = await SeedTask([100], workerTagIds: [42]);
+        var arp = await BackendConfigurationPnDbContext!.AreaRulePlannings.FirstAsync(x => x.Id == arpId);
+        arp.RepeatType = repeatType;
+        arp.RepeatOrdinalWeek = repeatOrdinalWeek;
+        await arp.Update(BackendConfigurationPnDbContext);
+        var targetPropertyId = await SeedTargetProperty();
+        await SeedPropertyWorker(targetPropertyId, 900);
+        var targetBoardId = await SeedTargetBoard(targetPropertyId);
+        return (arpId, targetPropertyId, targetBoardId);
+    }
+
+    /// <summary>
+    /// #1289 — a "2nd &lt;weekday&gt;" task copied onto a date carries the
+    /// ordinal of THAT date. Before the fix the copy was created with the
+    /// source's ordinal (2) next to the new StartDate, so a copy onto a 1st
+    /// Monday became "2nd Monday". One cell per week boundary.
+    /// </summary>
+    [TestCase(1, 1)]
+    [TestCase(7, 1)]
+    [TestCase(8, 2)]
+    [TestCase(14, 2)]
+    [TestCase(15, 3)]
+    [TestCase(21, 3)]
+    [TestCase(22, 4)]
+    [TestCase(28, 4)]
+    [TestCase(29, 5)]
+    [TestCase(31, 5)]
+    public async Task Copy_NthWeekdayRule_ReDerivesOrdinalForTheTargetDate(int day, int expectedOrdinal)
+    {
+        var month = ThirtyOneDayMonthAhead();
+        var target = new DateTime(month.Year, month.Month, day, 0, 0, 0, DateTimeKind.Utc);
+        Assume.That(CountOfWeekdayUpTo(target), Is.EqualTo(expectedOrdinal), "premise: brute-force ordinal");
+        var (arpId, targetPropertyId, targetBoardId) = await SeedOrdinalCopySource(3, repeatOrdinalWeek: 2);
+
+        var result = await _taskListService.Copy(new TaskListBatchCopyModel
+        {
+            TaskIds = [arpId], TargetPropertyId = targetPropertyId, TargetBoardId = targetBoardId,
+            StartDate = target, SiteId = 900
+        });
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(_createCalls, Has.Count.EqualTo(1));
+        Assert.That(_createCalls[0].RepeatOrdinalWeek, Is.EqualTo(expectedOrdinal));
+    }
+
+    /// <summary>
+    /// The copy dialog's picked date goes through the same #966 rounding
+    /// CreateTask applies, so a UTC+2 browser sending "local midnight of the
+    /// 8th" as 7th T22:00Z still gets the 8th's ordinal.
+    /// </summary>
+    [Test]
+    public async Task Copy_NthWeekdayRule_TzShiftedPick_UsesTheIntendedLocalDay()
+    {
+        var month = ThirtyOneDayMonthAhead();
+        var intended = new DateTime(month.Year, month.Month, 8, 0, 0, 0, DateTimeKind.Utc);
+        var (arpId, targetPropertyId, targetBoardId) = await SeedOrdinalCopySource(3, repeatOrdinalWeek: 1);
+
+        var result = await _taskListService.Copy(new TaskListBatchCopyModel
+        {
+            TaskIds = [arpId], TargetPropertyId = targetPropertyId, TargetBoardId = targetBoardId,
+            StartDate = intended.AddHours(-2), SiteId = 900
+        });
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(_createCalls[0].RepeatOrdinalWeek, Is.EqualTo(2));
+    }
+
+    /// <summary>Rules without an ordinal (Week, day-of-month Month) copy with a null ordinal.</summary>
+    [TestCase(2)]
+    [TestCase(3)]
+    public async Task Copy_RuleWithoutOrdinal_KeepsItNull(int repeatType)
+    {
+        var month = ThirtyOneDayMonthAhead();
+        var (arpId, targetPropertyId, targetBoardId) = await SeedOrdinalCopySource(repeatType, repeatOrdinalWeek: null);
+
+        var result = await _taskListService.Copy(new TaskListBatchCopyModel
+        {
+            TaskIds = [arpId], TargetPropertyId = targetPropertyId, TargetBoardId = targetBoardId,
+            StartDate = new DateTime(month.Year, month.Month, 7, 0, 0, 0, DateTimeKind.Utc), SiteId = 900
+        });
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(_createCalls[0].RepeatOrdinalWeek, Is.Null);
+    }
+
     [Test]
     public async Task Copy_DoesNotModifySourcePlanning()
     {

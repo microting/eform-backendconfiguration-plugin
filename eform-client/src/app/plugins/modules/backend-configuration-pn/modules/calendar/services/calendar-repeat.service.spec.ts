@@ -1209,6 +1209,88 @@ describe('CalendarRepeatService', () => {
       expect(current?.meta?.weekday).toBe(4);
       expect(current?.meta?.ordinalWeek).toBe(1);
     });
+
+    // ── #1289: the ordinal is ALWAYS re-derived, "first weekday" kinds too ──
+    // July 2026 has 31 days, so every day 1..31 exists; the expected ordinal
+    // is (day-1)/7+1 by definition of "Nth occurrence of its weekday".
+    const JULY = (day: number) => new Date(2026, 6, day);
+    const boundaries: [number, number][] = [
+      [1, 1], [7, 1], [8, 2], [14, 2], [15, 3], [21, 3], [22, 4], [28, 4], [29, 5], [30, 5], [31, 5],
+    ];
+
+    it.each(boundaries)('monthlyByDay: day %i → ordinal %i', (day, ordinal) => {
+      const meta: CalendarRepeatMeta = {kind: 'monthlyByDay', ordinalWeek: 2, weekday: 4, endMode: 'never'};
+      const out = service.reanchorMetaToDate(meta, JULY(day));
+      expect(out.kind).toBe('monthlyByDay');
+      expect(out.ordinalWeek).toBe(ordinal);
+      expect(out.weekday).toBe(JULY(day).getDay());
+    });
+
+    it.each(boundaries)('monthlyFirstWeekday: day %i → ordinal %i (converted to monthlyByDay when ≠ 1)', (day, ordinal) => {
+      const meta: CalendarRepeatMeta = {kind: 'monthlyFirstWeekday', ordinalWeek: 1, weekday: 4, endMode: 'never'};
+      const out = service.reanchorMetaToDate(meta, JULY(day));
+      expect(out.ordinalWeek).toBe(ordinal);
+      expect(out.weekday).toBe(JULY(day).getDay());
+      expect(out.kind).toBe(ordinal === 1 ? 'monthlyFirstWeekday' : 'monthlyByDay');
+      // The wire value the save sends is the re-derived ordinal, never a stale 1.
+      expect(service.metaToRepeatOrdinalWeek(out)).toBe(ordinal);
+    });
+
+    it.each(boundaries)('everyNMonthFirstWeekday: day %i → ordinal %i, interval kept', (day, ordinal) => {
+      const meta: CalendarRepeatMeta = {kind: 'everyNMonthFirstWeekday', n: 3, ordinalWeek: 1, weekday: 4, endMode: 'after', afterCount: 4};
+      const out = service.reanchorMetaToDate(meta, JULY(day));
+      expect(out.ordinalWeek).toBe(ordinal);
+      expect(out.kind).toBe(ordinal === 1 ? 'everyNMonthFirstWeekday' : 'everyNMonthByDay');
+      expect(out.n).toBe(3);
+      expect(out.endMode).toBe('after');
+      expect(out.afterCount).toBe(4);
+    });
+
+    it('the customer case: "2nd Thursday" (Thu 10 Sept 2026) moved to Mon 7 Sept becomes "1st Monday"', () => {
+      const meta: CalendarRepeatMeta = {kind: 'monthlyByDay', ordinalWeek: 2, weekday: 4, endMode: 'never'};
+      const out = service.reanchorMetaToDate(meta, new Date(2026, 8, 7));
+      expect(out.weekday).toBe(1);
+      expect(out.ordinalWeek).toBe(1);
+    });
+
+    it('a converted FirstWeekday meta round-trips through the saved shape to the same kind + label', () => {
+      const meta: CalendarRepeatMeta = {kind: 'monthlyFirstWeekday', ordinalWeek: 1, weekday: 4, endMode: 'never'};
+      const out = service.reanchorMetaToDate(meta, JULY(15));  // 3rd Wednesday
+      // What the edit modal POSTs, reloaded the way the calendar reads it back.
+      const reloaded = service.reconstructMetaFromTask({
+        repeatRule: 'monthlyDom', repeatType: 3, repeatEvery: 1,
+        repeatOrdinalWeek: service.metaToRepeatOrdinalWeek(out),
+        dayOfWeek: out.weekday, dayOfMonth: service.metaToDayOfMonth(out),
+        taskDate: '2026-07-15',
+      } as CalendarTaskModel);
+      expect(reloaded?.kind).toBe(out.kind);
+      expect(reloaded?.ordinalWeek).toBe(3);
+      expect(service.formatCustomRepeatLabel(reloaded!, 'en-GB'))
+        .toBe(service.formatCustomRepeatLabel(out, 'en-GB'));
+    });
+
+    // Every kind in one table: what moves with the date, and what does not.
+    it.each<[string, CalendarRepeatMeta, Partial<CalendarRepeatMeta>]>([
+      ['daily', {kind: 'daily', endMode: 'never'}, {kind: 'daily'}],
+      ['everyNd', {kind: 'everyNd', n: 3, endMode: 'never'}, {kind: 'everyNd', n: 3}],
+      ['weeklyOne', {kind: 'weeklyOne', weekday: 5, endMode: 'never'}, {kind: 'weeklyOne', weekday: 3}],
+      ['everyNWeekOne', {kind: 'everyNWeekOne', n: 2, weekday: 5, endMode: 'never'}, {kind: 'everyNWeekOne', n: 2, weekday: 3}],
+      ['weeklyMulti', {kind: 'weeklyMulti', weekdays: [1, 5], endMode: 'never'}, {kind: 'weeklyMulti', weekdays: [1, 5]}],
+      ['everyNWeekMulti', {kind: 'everyNWeekMulti', n: 2, weekdays: [1, 5], endMode: 'never'}, {kind: 'everyNWeekMulti', weekdays: [1, 5]}],
+      ['weeklyAll', {kind: 'weeklyAll', endMode: 'never'}, {kind: 'weeklyAll'}],
+      ['everyNWeekAll', {kind: 'everyNWeekAll', n: 2, endMode: 'never'}, {kind: 'everyNWeekAll', n: 2}],
+      ['monthlyDom', {kind: 'monthlyDom', dom: 1, endMode: 'never'}, {kind: 'monthlyDom', dom: 15}],
+      ['everyNMonthDom', {kind: 'everyNMonthDom', n: 2, dom: 1, endMode: 'never'}, {kind: 'everyNMonthDom', n: 2, dom: 15}],
+      ['monthlyByDay', {kind: 'monthlyByDay', ordinalWeek: 1, weekday: 5, endMode: 'never'}, {kind: 'monthlyByDay', ordinalWeek: 3, weekday: 3}],
+      ['everyNMonthByDay', {kind: 'everyNMonthByDay', n: 2, ordinalWeek: 1, weekday: 5, endMode: 'never'}, {kind: 'everyNMonthByDay', n: 2, ordinalWeek: 3, weekday: 3}],
+      ['monthlyFirstWeekday', {kind: 'monthlyFirstWeekday', ordinalWeek: 1, weekday: 5, endMode: 'never'}, {kind: 'monthlyByDay', ordinalWeek: 3, weekday: 3}],
+      ['everyNMonthFirstWeekday', {kind: 'everyNMonthFirstWeekday', n: 2, ordinalWeek: 1, weekday: 5, endMode: 'never'}, {kind: 'everyNMonthByDay', n: 2, ordinalWeek: 3, weekday: 3}],
+      ['yearlyOne', {kind: 'yearlyOne', month: 0, dom: 1, endMode: 'never'}, {kind: 'yearlyOne', month: 6, dom: 15}],
+      ['everyNYear', {kind: 'everyNYear', n: 2, month: 0, dom: 1, endMode: 'never'}, {kind: 'everyNYear', n: 2, month: 6, dom: 15}],
+    ])('every kind — %s re-anchored to Wed 15 July 2026', (_name, meta, expected) => {
+      const out = service.reanchorMetaToDate(meta, JULY(15));  // Wednesday (getDay 3), 3rd occurrence
+      expect(out).toMatchObject(expected);
+    });
   });
 });
 

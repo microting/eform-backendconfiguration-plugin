@@ -475,8 +475,13 @@ public class CalendarPastSeriesBackfillService(
     ///   * AreaRulePlanning.DayOfWeek &lt;- BackendConfigurationCalendarService.UpdateTask,
     ///     for Week rules and Nth-weekday-of-month rules ONLY; it leaves DayOfWeek
     ///     alone otherwise.
-    /// Everything else (RepeatType/Every/WeekdaysCsv/OrdinalWeek/end bound) is
-    /// unchanged by a start-date-only edit.
+    ///   * AreaRulePlanning.RepeatOrdinalWeek &lt;- BackendConfigurationCalendarService
+    ///     .OrdinalWeekOf(anchor), for Nth-weekday-of-month rules ONLY (#1289) —
+    ///     the same re-derivation ChangeStartDate and UpdateTask apply, so the
+    ///     preview's relocate-vs-retract gate and overdue count read the ordinal
+    ///     the apply will persist. A null ordinal stays null.
+    /// Everything else (RepeatType/Every/WeekdaysCsv/end bound) is unchanged by a
+    /// start-date-only edit.
     ///
     /// internal so #1122 §4's change-start-date PREVIEW can derive the same
     /// post-save pattern before calling
@@ -499,13 +504,17 @@ public class CalendarPastSeriesBackfillService(
         {
             effectiveArp.DayOfWeek = (int)anchor.DayOfWeek;
         }
+        if (effectiveArp.RepeatOrdinalWeek.HasValue)
+        {
+            effectiveArp.RepeatOrdinalWeek = CalendarService.OrdinalWeekOf(anchor);
+        }
 
         return effectiveArp;
     }
 
     /// <summary>
     /// A detached copy carrying only the fields the enumerators read, so a
-    /// PREVIEW can apply the prospective DayOfWeek without mutating the caller's
+    /// PREVIEW can apply the prospective DayOfWeek / RepeatOrdinalWeek without mutating the caller's
     /// (possibly EF-tracked) entity.
     /// </summary>
     private static AreaRulePlanning CloneArpForPlanning(AreaRulePlanning source) => new()

@@ -249,12 +249,24 @@ public class BackendConfigurationTaskListService(
     // PREVIOUS anchor — which is precisely the right question for a batch
     // re-anchor ("did the series move to another period?").
     //
-    // Weekday re-anchoring is INTENDED here. For RepeatType == Week or
-    // RepeatOrdinalWeek.HasValue, UpdateTask writes
+    // Weekday AND ordinal re-anchoring is INTENDED here. For RepeatType == Week
+    // or RepeatOrdinalWeek.HasValue, UpdateTask writes
     // `arp.DayOfWeek = updateModel.StartDate.DayOfWeek` verbatim. That is why
     // BuildUpdateModel goes to the trouble of picking a same-weekday synthetic
     // anchor for the other batch actions. Moving a weekly task's start date to a
     // Thursday SHOULD make it recur on Thursdays.
+    //
+    // An Nth-weekday-of-month rule must ALSO take its ordinal from the new date
+    // (#1289): BuildUpdateModel copies the STORED ordinal verbatim, so a "2nd
+    // Thursday" task moved to Mon 7 Sept used to become "2nd Monday" although 7
+    // Sept is the 1st Monday — and the overdue backfill then enumerated the
+    // wrong week (14 Sept, or nothing). We re-derive it here from the SAME
+    // normalised anchor UpdateTask persists (NormalizeStartDateToLocalDay) via
+    // the canonical CalendarService.OrdinalWeekOf; UpdateTask re-derives it
+    // again server-side on its own date-changed path (idempotent), and the
+    // preview mirrors it in CalendarPastSeriesBackfillService
+    // .ApplyProspectiveAnchor so preview and apply stay in lock-step. Rules
+    // without an ordinal (day-of-month, Week, Day, Year) keep it null.
     public async Task<OperationResult> ChangeStartDate(TaskListBatchStartDateModel model)
     {
         var invalidStartDate = ValidateStartDate(model);
@@ -270,6 +282,11 @@ public class BackendConfigurationTaskListService(
             update.StartDate = model.StartDate;
             update.OriginalDate = null;
             update.Scope = "all";
+            if (update.RepeatOrdinalWeek.HasValue)
+            {
+                update.RepeatOrdinalWeek = CalendarService.OrdinalWeekOf(
+                    CalendarService.NormalizeStartDateToLocalDay(model.StartDate));
+            }
             var result = await calendarService.UpdateTask(update);
             return (result.Success, result.Message);
         }, "Tasks updated");
@@ -600,7 +617,16 @@ public class BackendConfigurationTaskListService(
                 RepeatUntilDate = source.RepeatUntilDate,
                 RepeatWeekdaysCsv = source.RepeatWeekdaysCsv,
                 DayOfMonth = source.DayOfMonth,
-                RepeatOrdinalWeek = source.RepeatOrdinalWeek,
+                // #1289 — the copy lands on the user's picked date, so an
+                // Nth-weekday rule takes its ordinal from THAT date (a "2nd
+                // Thursday" copied onto Mon 7 Sept is "1st Monday", not "2nd
+                // Monday"). CreateTask derives DayOfWeek from StartDate but
+                // writes the ordinal verbatim, so it must be right here.
+                // Normalised exactly as CreateTask normalises StartDate.
+                RepeatOrdinalWeek = source.RepeatOrdinalWeek.HasValue
+                    ? CalendarService.OrdinalWeekOf(
+                        CalendarService.NormalizeStartDateToLocalDay(model.StartDate))
+                    : null,
                 DescriptionHtml = source.DescriptionHtml
             };
             var result = await calendarService.CreateTask(create);

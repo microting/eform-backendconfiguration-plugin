@@ -1808,6 +1808,24 @@ public class BackendConfigurationCalendarService(
                 }
             }
 
+            // #1289 — an Nth-weekday-of-month rule whose anchor moves must take
+            // its ordinal FROM THE NEW DATE, exactly like MoveTask (#926) and
+            // the edit modal's reanchorMetaToDate (#960). The request's ordinal
+            // cannot be trusted here: the task-list batch actions build this
+            // model from the STORED rule (BuildUpdateModel copies
+            // arp.RepeatOrdinalWeek verbatim), so "2nd Thursday" moved to Mon 7
+            // Sept arrived as ordinal 2 and became "2nd Monday" while 7 Sept is
+            // the 1st Monday. Re-deriving on the server also covers direct API
+            // callers. Done BEFORE any write so the arp, the mirrored
+            // planning.RepeatOrdinalWeek (read by the scheduler), the #1122
+            // relocate/retract gate and the past-series backfill all see the
+            // same corrected ordinal. Rules without an ordinal (plain
+            // day-of-month, Week, Day, Year) keep it null.
+            if (dateChanged && updateModel.RepeatOrdinalWeek.HasValue)
+            {
+                updateModel.RepeatOrdinalWeek = OrdinalWeekOf(updateModel.StartDate);
+            }
+
             // Delegate to TaskWizard service for full task field updates
             var wizardModel = new TaskWizardCreateModel
             {
@@ -2394,6 +2412,12 @@ public class BackendConfigurationCalendarService(
         // the moved occurrence snaps to a stale weekday (#927).
         var newAnchor = DateTime.SpecifyKind(updateModel.StartDate, DateTimeKind.Utc).Date;
         var dateChanged = newAnchor != originalDate;
+        // #1289 — same rule as the "all" branch: a moved Nth-weekday anchor
+        // re-derives its ordinal from the new date on the server.
+        if (dateChanged && updateModel.RepeatOrdinalWeek.HasValue)
+        {
+            updateModel.RepeatOrdinalWeek = OrdinalWeekOf(newAnchor);
+        }
         if (dateChanged)
         {
             arp.StartDate = newAnchor;
@@ -3009,9 +3033,13 @@ public class BackendConfigurationCalendarService(
 
     // The new-pattern occurrence date in the SAME recurrence period as
     // `oldDeadline`, using the rule's CURRENT (post-edit) pattern. Returns null
-    // for kinds with no single per-period anchor (daily / multi-day weekly) or
-    // when an Nth-weekday ordinal spills past the month. Reuses
-    // NthWeekdayOfMonth so it can never drift from the recurrence enumerators.
+    // for kinds with no single per-period anchor (daily / multi-day weekly).
+    // An Nth-weekday ordinal that spills past the month (5th weekday in a
+    // four-weekday month) no longer returns null: since #1289 it maps to the
+    // month's LAST occurrence, exactly as both enumerators and the scheduler
+    // do — every month still maps to a date inside itself, so the partition
+    // stays "one period per calendar month". Reuses NthWeekdayOfMonth so it
+    // can never drift from the recurrence enumerators.
     private static DateTime? NewPatternDateForPeriodOf(
         Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
         AreaRulePlanning arp,
@@ -3137,8 +3165,11 @@ public class BackendConfigurationCalendarService(
     //
     // A null from the mapper means "this kind has no single per-period anchor"
     // (RepeatType.Day, a weekly rule whose RepeatWeekdaysCsv names more than one
-    // day, a non-recurring task, or an Nth-weekday ordinal that spills past the
-    // month). That is a statement about REPRESENTABILITY, not about the dates.
+    // day, or a non-recurring task). Since #1289 an Nth-weekday ordinal that
+    // spills past the month is NOT null any more: it maps to that month's last
+    // occurrence, which is still inside the month, so the Month partition is
+    // unchanged and such a pair now gets the definite (and correct) same- /
+    // different-month verdict instead of "don't know". That is a statement about REPRESENTABILITY, not about the dates.
     // Collapsing it to false was a live defect: on `stable` the relocate path
     // handled the same null with `if (newDate == null) continue;` — a complete
     // no-op — so folding it into "different period" turned a no-op into a
@@ -3161,8 +3192,8 @@ public class BackendConfigurationCalendarService(
     //   * null never becomes a definite verdict: A true requires
     //     MonthPatternDateForStartMonth to be non-null, and in the ordinal arm
     //     that is the SAME NthWeekdayOfMonth call the old code makes (the
-    //     guard only fires for probes in the start month). A 5th-weekday
-    //     spill, ordinal < 1 or an out-of-range weekday all leave A false and
+    //     guard only fires for probes in the start month). Ordinal < 1 or an
+    //     out-of-range weekday leave A false and
     //     fall through to the unchanged old code. That matters because false
     //     is the ONLY value that unlocks the destructive retract branch.
     //   * The DayOfMonth == null shape below is the one case where the
@@ -3405,7 +3436,7 @@ public class BackendConfigurationCalendarService(
                 if (arp.RepeatOrdinalWeek.HasValue)
                 {
                     arp.DayOfWeek = (int)newDate.DayOfWeek;
-                    arp.RepeatOrdinalWeek = (newDate.Day - 1) / 7 + 1;
+                    arp.RepeatOrdinalWeek = OrdinalWeekOf(newDate);
                 }
                 else if (!string.IsNullOrEmpty(arp.RepeatWeekdaysCsv)
                          && !arp.RepeatWeekdaysCsv.Contains(','))
@@ -3486,7 +3517,7 @@ public class BackendConfigurationCalendarService(
                 if (arp.RepeatOrdinalWeek.HasValue)
                 {
                     arp.DayOfWeek = (int)newDate.DayOfWeek;
-                    arp.RepeatOrdinalWeek = (newDate.Day - 1) / 7 + 1;
+                    arp.RepeatOrdinalWeek = OrdinalWeekOf(newDate);
                 }
                 else if (!string.IsNullOrEmpty(arp.RepeatWeekdaysCsv)
                          && !arp.RepeatWeekdaysCsv.Contains(','))
@@ -4629,15 +4660,52 @@ public class BackendConfigurationCalendarService(
     }
 
     /// <summary>
-    /// The Nth-weekday-of-month date (e.g. "2nd Tuesday of March 2026"), or
-    /// null when the ordinal spills past the month (e.g. a 5th occurrence in a
-    /// month with only four). Single source of truth shared by the recurrence
-    /// enumerators (GetOccurrencesInWeek / EnumerateOccurrences) and the "all"
-    /// re-pattern relocation (#960) so the two never drift.
+    /// The canonical "which occurrence of its weekday is this date" ordinal
+    /// (1..5): days 1–7 are the 1st, 8–14 the 2nd, 15–21 the 3rd, 22–28 the
+    /// 4th and 29–31 the 5th. Every path that moves the anchor of an
+    /// Nth-weekday-of-month rule must re-derive RepeatOrdinalWeek through this
+    /// ONE helper (#1289) — MoveTask (#926), the "all" / "thisAndFollowing"
+    /// edits, the task-list batch "Skift startdato" + Copy, and the
+    /// change-start-date preview (CalendarPastSeriesBackfillService
+    /// .ApplyProspectiveAnchor). The frontend twins are
+    /// CalendarRepeatService.buildRepeatSelectOptions / reanchorMetaToDate
+    /// (<c>Math.ceil(dom / 7)</c>, the same function).
+    /// </summary>
+    internal static int OrdinalWeekOf(DateTime d) => (d.Day - 1) / 7 + 1;
+
+    /// <summary>
+    /// The Nth-weekday-of-month date (e.g. "2nd Tuesday of March 2026").
+    /// When the ordinal spills past the month (a 5th occurrence in a month
+    /// with only four) it FALLS BACK TO THE LAST occurrence of that weekday in
+    /// the month (#1289) — exactly the items-planning scheduler's rule
+    /// (eform-service-items-planning-plugin SearchListJob:
+    /// <c>NthWeekdayOfMonth(..., ordinal, ...) ?? NthWeekdayOfMonth(..., 4, ...)
+    /// ?? NthWeekdayOfMonth(..., 3, ...)</c>). Before #1289 this returned null
+    /// and the calendar skipped the month while the scheduler deployed on the
+    /// 4th occurrence, so the calendar and the deployed case disagreed.
+    /// Every month has at least four of every weekday, so the result is
+    /// non-null for any ordinal &gt;= 1; the nullable return type is kept
+    /// only for the ordinal &lt; 1 guard.
+    ///
+    /// Single source of truth shared by ALL THREE Month-date producers — the
+    /// recurrence enumerators (GetOccurrencesInWeek / EnumerateOccurrences)
+    /// and NewPatternDateForPeriodOf (the "all" re-pattern relocation #960 and
+    /// the #1122 relocate-vs-retract gate) — plus
+    /// MonthPatternDateForStartMonth (#1207), so none of them can drift.
     /// </summary>
     /// <param name="ordinal">1..5 (1 = first).</param>
     /// <param name="targetDow">Target day-of-week, 0=Sun..6=Sat.</param>
-    private static DateTime? NthWeekdayOfMonth(int year, int month, int ordinal, int targetDow)
+    internal static DateTime? NthWeekdayOfMonth(int year, int month, int ordinal, int targetDow)
+    {
+        if (ordinal < 1) return null;
+        return RawNthWeekdayOfMonth(year, month, ordinal, targetDow)
+               ?? RawNthWeekdayOfMonth(year, month, 4, targetDow)
+               ?? RawNthWeekdayOfMonth(year, month, 3, targetDow);
+    }
+
+    // The literal Nth occurrence, or null when it spills into the next month.
+    // Byte-for-byte the scheduler's DateTimeExtensions.NthWeekdayOfMonth.
+    private static DateTime? RawNthWeekdayOfMonth(int year, int month, int ordinal, int targetDow)
     {
         var firstOfMonth = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
         int dowOffset = (targetDow - (int)firstOfMonth.DayOfWeek + 7) % 7;
@@ -4701,9 +4769,9 @@ public class BackendConfigurationCalendarService(
         int? dayOfWeekOverride)
     {
         var patternDate = MonthPatternDateForStartMonth(planning, startDate, repeatOrdinalWeek, dayOfWeekOverride);
-        // No pattern date for the start month (5th-weekday spill, or an
-        // unusable rule shape) means nothing is lost that month — do not
-        // synthesise an anchor there.
+        // No pattern date for the start month (an unusable rule shape; a
+        // 5th-weekday spill falls back to the last occurrence since #1289)
+        // means nothing is lost that month — do not synthesise an anchor there.
         return patternDate.HasValue && patternDate.Value < startDate;
     }
 
@@ -4950,14 +5018,12 @@ public class BackendConfigurationCalendarService(
                     int targetDow = dayOfWeekOverride ?? (int)startDate.DayOfWeek; // 0=Sun..6=Sat
                     while (true)
                     {
+                        // A 5th-weekday ordinal in a month with only four falls
+                        // back to the LAST occurrence (#1289, the scheduler's
+                        // rule) inside NthWeekdayOfMonth, so null now means only
+                        // an unusable ordinal (< 1) — no month can ever match it.
                         var candidate = NthWeekdayOfMonth(candidateMonth.Year, candidateMonth.Month, ordinal, targetDow);
-                        // If ordinal spills into the next month (e.g. 5th occurrence
-                        // in a month that only has 4), skip this month.
-                        if (candidate == null)
-                        {
-                            candidateMonth = candidateMonth.AddMonths(repeatEvery);
-                            continue;
-                        }
+                        if (candidate == null) break;
                         if (candidate.Value >= rangeEnd) break;
                         if (candidate.Value >= rangeStart) yield return candidate.Value;
                         candidateMonth = candidateMonth.AddMonths(repeatEvery);
@@ -5193,13 +5259,11 @@ public class BackendConfigurationCalendarService(
                     int targetDow = dayOfWeekOverride ?? (int)startDate.DayOfWeek; // 0=Sun..6=Sat
                     for (var i = 0; i < 3; i++)
                     {
+                        // 5th-weekday spill falls back to the LAST occurrence
+                        // (#1289) — mirror of EnumerateOccurrences; null means
+                        // only an unusable ordinal (< 1).
                         var candidate = NthWeekdayOfMonth(candidateMonth.Year, candidateMonth.Month, ordinal, targetDow);
-                        // Skip months where the ordinal spills into the next month.
-                        if (candidate == null)
-                        {
-                            candidateMonth = candidateMonth.AddMonths(repeatEvery);
-                            continue;
-                        }
+                        if (candidate == null) break;
                         if (candidate.Value > weekEnd) break;
                         // >= startDate (#1207): this branch used to gate on
                         // weekStart alone, so a pattern date EARLIER than the
