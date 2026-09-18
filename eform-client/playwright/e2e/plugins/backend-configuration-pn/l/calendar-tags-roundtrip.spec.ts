@@ -10,6 +10,7 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
+import { assigneeWorkerOptions } from '../calendar-assignee.helper';
 
 // Exercises the calendar event modal's tags + report tag (Rapportoverskrift)
 // round-trip with edit. Covers:
@@ -169,7 +170,7 @@ test.describe('Calendar tags + report tag round-trip', () => {
     await page
       .locator('.ng-dropdown-panel')
       .waitFor({ state: 'visible', timeout: 10000 });
-    await page.locator('.ng-dropdown-panel .ng-option').first().click();
+    await assigneeWorkerOptions(page).first().click();
     await page.locator('#calendarEventTitle').click(); // close dropdown
     await page.waitForTimeout(300);
 

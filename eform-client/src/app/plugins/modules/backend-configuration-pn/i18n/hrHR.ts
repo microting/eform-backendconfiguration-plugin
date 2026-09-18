@@ -502,7 +502,7 @@ export const hrHR = {
   'Edit repeat': 'Uredi ponavljanje',
   'Move repeat': 'Ponavljanje poteza',
   'Delete repeat': 'Izbriši ponavljanje',
-  'At least one worker or worker tag must be assigned': 'Mora biti dodijeljen barem jedan radnik ili oznaka radnika',
+  'At least one worker or worker tag must be assigned': 'Mora biti dodijeljen barem jedan radnik ili tim',
   'Assign to worker tags': 'Dodijeli oznakama radnika',
   'This and following (incl. completed)': 'Ovo i sljedeće (uklj. dovršeno)',
   'Payroll rules': 'Pravila o obračunu plaća',

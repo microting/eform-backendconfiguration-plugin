@@ -502,7 +502,7 @@ export const noNO = {
   'Edit repeat': 'Rediger gjentakelse',
   'Move repeat': 'Flytt gjenta',
   'Delete repeat': 'Slett gjentakelse',
-  'At least one worker or worker tag must be assigned': 'Minst én arbeider eller arbeidermerke må tilordnes',
+  'At least one worker or worker tag must be assigned': 'Minst én arbeider eller ett team må tilordnes',
   'Assign to worker tags': 'Tildel til arbeider-tagger',
   'This and following (incl. completed)': 'Dette og følgende (inkl. fullført)',
   'Payroll rules': 'Lønnsregler',

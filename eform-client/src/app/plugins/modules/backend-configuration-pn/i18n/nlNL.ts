@@ -502,7 +502,7 @@ export const nlNL = {
   'Edit repeat': 'Herhalen bewerken',
   'Move repeat': 'Verplaats herhalen',
   'Delete repeat': 'Verwijder herhaling',
-  'At least one worker or worker tag must be assigned': 'Er moet ten minste één medewerker of medewerkerslabel worden toegewezen.',
+  'At least one worker or worker tag must be assigned': 'Er moet ten minste één medewerker of team worden toegewezen.',
   'Assign to worker tags': 'Wijs toe aan werknemerslabels',
   'This and following (incl. completed)': 'Dit en het volgende (inclusief voltooid)',
   'Payroll rules': 'Regels voor de loonadministratie',

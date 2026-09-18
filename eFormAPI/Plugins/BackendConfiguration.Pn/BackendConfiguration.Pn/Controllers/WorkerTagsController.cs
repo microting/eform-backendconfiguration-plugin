@@ -29,7 +29,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
-using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+using Infrastructure.Models.WorkerTags;
 using Services.BackendConfigurationWorkerTagsService;
 
 /// <summary>
@@ -42,9 +42,14 @@ using Services.BackendConfigurationWorkerTagsService;
 [Route("api/backend-configuration-pn/worker-tags")]
 public class WorkerTagsController(IBackendConfigurationWorkerTagsService workerTagsService) : Controller
 {
+    /// <param name="propertyId">
+    /// Optional (#1295): narrow to teams with at least one live member linked to this
+    /// property and return those members' site ids per team. Omitted, the
+    /// installation-wide list is returned unchanged.
+    /// </param>
     [HttpGet]
-    public async Task<OperationDataResult<List<CommonDictionaryModel>>> Index()
+    public async Task<OperationDataResult<List<WorkerTagModel>>> Index([FromQuery] int? propertyId)
     {
-        return await workerTagsService.GetWorkerTags();
+        return await workerTagsService.GetWorkerTags(propertyId);
     }
 }

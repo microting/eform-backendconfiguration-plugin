@@ -502,7 +502,7 @@ export const ptBR = {
   'Edit repeat': 'Editar repetição',
   'Move repeat': 'Repita o movimento',
   'Delete repeat': 'Excluir repetição',
-  'At least one worker or worker tag must be assigned': 'Pelo menos um trabalhador ou uma etiqueta de trabalhador deve ser atribuída.',
+  'At least one worker or worker tag must be assigned': 'Pelo menos um trabalhador ou uma equipe deve ser atribuído.',
   'Assign to worker tags': 'Atribuir às etiquetas do trabalhador',
   'This and following (incl. completed)': 'Isto e o seguinte (incluindo o já concluído)',
   'Payroll rules': 'Regras de folha de pagamento',

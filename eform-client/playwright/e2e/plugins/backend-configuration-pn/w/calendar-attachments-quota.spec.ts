@@ -11,6 +11,7 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
+import { assigneeWorkerOptions } from '../calendar-assignee.helper';
 
 /**
  * Calendar attachment-quota suite (A-series) — GitHub issue #896.
@@ -213,7 +214,7 @@ test.describe.serial('Calendar attachment quota', () => {
     // Assignee.
     await page.locator('#calendarEventAssignee').click();
     await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
-    await page.locator('.ng-dropdown-panel .ng-option').first().click();
+    await assigneeWorkerOptions(page).first().click();
     await page.locator('#calendarEventTitle').click();
     await page.waitForTimeout(300);
 

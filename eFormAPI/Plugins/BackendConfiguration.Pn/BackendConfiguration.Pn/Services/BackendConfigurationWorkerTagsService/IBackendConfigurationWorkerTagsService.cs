@@ -27,7 +27,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationWorkerTagsService
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
-using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+using Infrastructure.Models.WorkerTags;
 
 public interface IBackendConfigurationWorkerTagsService
 {
@@ -35,6 +35,12 @@ public interface IBackendConfigurationWorkerTagsService
     /// The SDK tags that are actually in use as WORKER GROUPS ("teams"), i.e. the
     /// subset of the core tag list that has at least one live worker member.
     /// eForm/template tags — the same <c>Tags</c> table, no member rows — are excluded.
+    /// <para>
+    /// With <paramref name="propertyId"/> (#1295) the list is narrowed to teams with at
+    /// least one live member linked to that property, and each entry carries those
+    /// property-linked member site ids in <see cref="WorkerTagModel.MemberSiteIds"/>.
+    /// Without it the installation-wide list is returned unchanged (MemberSiteIds null).
+    /// </para>
     /// </summary>
-    Task<OperationDataResult<List<CommonDictionaryModel>>> GetWorkerTags();
+    Task<OperationDataResult<List<WorkerTagModel>>> GetWorkerTags(int? propertyId = null);
 }

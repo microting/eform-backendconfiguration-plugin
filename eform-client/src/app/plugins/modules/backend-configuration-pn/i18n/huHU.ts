@@ -502,7 +502,7 @@ export const huHU = {
   'Edit repeat': 'Szerkesztés ismétlése',
   'Move repeat': 'Mozgás ismétlése',
   'Delete repeat': 'Ismétlés törlése',
-  'At least one worker or worker tag must be assigned': 'Legalább egy munkavállalót vagy munkavállalói címkét hozzá kell rendelni',
+  'At least one worker or worker tag must be assigned': 'Legalább egy munkavállalót vagy csapatot hozzá kell rendelni',
   'Assign to worker tags': 'Munkavállalói címkék hozzárendelése',
   'This and following (incl. completed)': 'Ez és a következő (beleértve a befejezetteket is)',
   'Payroll rules': 'Bérszámfejtési szabályok',

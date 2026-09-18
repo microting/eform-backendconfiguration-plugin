@@ -1,5 +1,6 @@
 import { Page, Locator, expect } from '@playwright/test';
 import { API_TIMEOUT, UI_TIMEOUT } from './wait-helpers';
+import { assigneeTeamOptions, assigneeWorkerOptions } from './calendar-assignee.helper';
 
 /**
  * Self-contained page object for the calendar UI-enhancements suite under
@@ -681,7 +682,7 @@ export class CalendarUiEnhancementsPage {
     const assignee = this.page.locator('#calendarEventAssignee');
     await assignee.click();
     await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
-    await this.page.locator('.ng-dropdown-panel .ng-option').first().click();
+    await assigneeWorkerOptions(this.page).first().click();
     await this.page.locator('#calendarEventTitle').click();
     await this.page.waitForTimeout(300);
 
@@ -1381,7 +1382,8 @@ export class CalendarUiEnhancementsPage {
   }
 
   /**
-   * Create an event assigned to a WORKER TAG only — no individual assignee.
+   * Create an event assigned to a WORKER TAG ("team") only — no individual
+   * assignee. Since #1295 the team is picked in the merged assignee picker.
    * This is the one shape a team filter can match: `ShouldIncludeTask` tests
    * the tags assigned to the TASK, so an event assigned to a person who
    * happens to carry the tag is not a team event.
@@ -1390,8 +1392,21 @@ export class CalendarUiEnhancementsPage {
     await this.page.locator('#calendarEventTitle').fill(title);
     await this.pickFirstOption('#calendarEventEform');
     await this.pickFirstOption('#calendarEventPlanningTag');
-    await this.pickOptionByLabel('#calendarEventWorkerTags', teamName);
+    await this.pickAssigneeTeamByLabel(teamName);
     await this.saveEventModal(title);
+  }
+
+  /**
+   * Pick a TEAM by label in the merged `#calendarEventAssignee` picker (#1295 —
+   * the separate worker-tags select is gone). Scoped to the Teams group so a
+   * worker whose name happened to contain the label can never be picked instead.
+   */
+  private async pickAssigneeTeamByLabel(teamName: string): Promise<void> {
+    await this.page.locator('#calendarEventAssignee').click();
+    const panel = this.page.locator('.ng-dropdown-panel');
+    await panel.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    await assigneeTeamOptions(this.page).filter({ hasText: teamName }).click();
+    await this.page.locator('#calendarEventTitle').click();
   }
 
   private async pickFirstOption(selectId: string): Promise<void> {

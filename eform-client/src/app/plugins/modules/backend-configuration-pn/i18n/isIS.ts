@@ -502,7 +502,7 @@ export const isIS = {
   'Edit repeat': 'Breyta endurtekningu',
   'Move repeat': 'Færa endurtekið',
   'Delete repeat': 'Eyða endurtekningu',
-  'At least one worker or worker tag must be assigned': 'Að minnsta kosti einn starfsmaður eða starfsmannamerki verður að vera úthlutað',
+  'At least one worker or worker tag must be assigned': 'Að minnsta kosti einum starfsmanni eða teymi verður að úthluta',
   'Assign to worker tags': 'Úthluta til starfsmannamerkja',
   'This and following (incl. completed)': 'Þetta og eftirfarandi (þar með talið lokið)',
   'Payroll rules': 'Launareglur',

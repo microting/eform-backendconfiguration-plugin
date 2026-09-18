@@ -552,7 +552,7 @@ export const deDE = {
   'Edit repeat': 'Bearbeiten wiederholen',
   'Move repeat': 'Bewegung wiederholen',
   'Delete repeat': 'Löschen Sie die Wiederholung',
-  'At least one worker or worker tag must be assigned': 'Mindestens ein Arbeiter oder ein Arbeiterausweis muss zugewiesen werden.',
+  'At least one worker or worker tag must be assigned': 'Mindestens ein Mitarbeiter oder ein Team muss zugewiesen werden.',
   'Assign to worker tags': 'Mitarbeiter-Tags zuweisen',
   'This and following (incl. completed)': 'Dies und Folgendes (einschließlich abgeschlossener)',
   'Payroll rules': 'Lohnabrechnungsregeln',

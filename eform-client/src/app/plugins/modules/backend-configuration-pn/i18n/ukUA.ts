@@ -502,7 +502,7 @@ export const ukUA = {
   'Edit repeat': 'Редагувати повторення',
   'Move repeat': 'Повторення руху',
   'Delete repeat': 'Видалити повторення',
-  'At least one worker or worker tag must be assigned': 'Повинен бути призначений принаймні один працівник або тег працівника',
+  'At least one worker or worker tag must be assigned': 'Повинен бути призначений принаймні один працівник або команда',
   'Assign to worker tags': 'Призначити тегам працівника',
   'This and following (incl. completed)': 'Це та наступні (включно з завершеними)',
   'Payroll rules': 'Правила нарахування заробітної плати',

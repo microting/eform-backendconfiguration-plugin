@@ -17,6 +17,8 @@ import {
   BackendConfigurationPnCalendarService,
   BackendConfigurationPnGoogleDriveService,
   BackendConfigurationPnPropertiesService,
+  BackendConfigurationPnWorkerTagsService,
+  WorkerTagModel,
 } from '../../../../services';
 import {LinkedSiteModel} from '../../../../services/backend-configuration-pn-properties.service';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services/items-planning-pn-tags.service';
@@ -51,6 +53,9 @@ export interface TaskCreateEditModalData {
   selectedBoardId?: number;
   employees: CommonDictionaryModel[];
   tags: string[];
+  // Installation-wide teams list from the container. Since #1295 the picker loads its
+  // OWN property-scoped teams (`loadTeamsForProperty`); this list only supplies names
+  // for a seeded team the property no longer offers (`withRetainedTeams`).
   workerTags: CommonDictionaryModel[];
   propertyId: number;
   properties: CommonDictionaryModel[];
@@ -58,6 +63,43 @@ export interface TaskCreateEditModalData {
   folderId: number | null;
   planningTags: {id: number; name: string}[];
   sourceTask?: CalendarTaskModel | null;  // present in copy mode
+}
+
+/**
+ * One entry of the merged "Vælg medarbejder / team" picker (#1295). Teams (SDK worker
+ * tags) and workers (SDK sites) live in SEPARATE id spaces, so the control value is a
+ * string key — `'t:'+tagId` or `'s:'+siteId` — and `onSave` splits it back into
+ * `workerTagIds` / `sites`. `group` drives `groupBy`: Teams are listed FIRST and workers
+ * LAST (the shared e2e page object picks the first option after the last optgroup
+ * header as "a worker"), and the Teams group is simply absent when the property has no
+ * teams.
+ */
+export interface AssigneeOption {
+  key: string;
+  id: number;
+  name: string;
+  group: 'teams' | 'workers';
+  /** Synthetic entry kept only so a still-selected id renders a chip (see withRetained*). */
+  retained?: boolean;
+}
+
+export const TEAM_KEY_PREFIX = 't:';
+export const SITE_KEY_PREFIX = 's:';
+export const teamKey = (id: number): string => `${TEAM_KEY_PREFIX}${id}`;
+export const siteKey = (id: number): string => `${SITE_KEY_PREFIX}${id}`;
+
+/** Split merged picker keys back into site ids and worker-tag (team) ids. */
+export function splitAssigneeKeys(keys: string[] | null | undefined): {siteIds: number[]; workerTagIds: number[]} {
+  const siteIds: number[] = [];
+  const workerTagIds: number[] = [];
+  for (const key of keys ?? []) {
+    if (key.startsWith(TEAM_KEY_PREFIX)) {
+      workerTagIds.push(Number(key.slice(TEAM_KEY_PREFIX.length)));
+    } else if (key.startsWith(SITE_KEY_PREFIX)) {
+      siteIds.push(Number(key.slice(SITE_KEY_PREFIX.length)));
+    }
+  }
+  return {siteIds, workerTagIds};
 }
 
 /**
@@ -125,6 +167,14 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   // disabled items (`clearSelected(true)`), so a disabled entry could never be
   // un-assigned from the modal.
   filteredEmployees: Array<LinkedSiteModel & {resigned?: boolean}> = [];
+  // Teams (worker tags) with at least one live member linked to the selected property,
+  // each carrying those members' site ids (#1295). Reloaded on property change.
+  // Plus synthetic `retained` entries for selected teams missing from that list — see
+  // `withRetainedTeams`.
+  filteredTeams: Array<WorkerTagModel & {retained?: boolean}> = [];
+  // The merged picker's items: Teams first, then workers. Rebuilt by
+  // `rebuildAssigneeItems` whenever either source list changes.
+  assigneeItems: AssigneeOption[] = [];
 
   // ---- Per-language Title & Description state ----
   // Active languages from the app-settings store (filtered to isActive).
@@ -181,8 +231,8 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   startTimeControl = new FormControl('09:00');
   endTimeControl = new FormControl('10:00');
   repeatControl = new FormControl('none');
-  assigneeControl = new FormControl<number[]>([]);
-  workerTagsControl = new FormControl<number[]>([]);
+  // Merged teams + workers picker (#1295): keys `'t:'+tagId` / `'s:'+siteId`.
+  assigneeControl = new FormControl<string[]>([]);
   tagsControl = new FormControl<string[]>([]);
   descriptionControl = new FormControl('');
   driveLinkControl = new FormControl('');
@@ -215,6 +265,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     private googleDriveService: BackendConfigurationPnGoogleDriveService,
     private translationService: TranslationService,
     private appSettingsStateService: AppSettingsStateService,
+    private workerTagsService: BackendConfigurationPnWorkerTagsService,
   ) {}
 
   onReportHeadlineToggled(checked: boolean) {
@@ -363,8 +414,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
         this.repeatValueBeforeCustom = task.repeatRule ?? 'none';
         this.repeatControl.setValue(task.repeatRule ?? 'none');
       }
-      this.assigneeControl.setValue(task.assigneeIds ?? []);
-      this.workerTagsControl.setValue(task.workerTagIds ?? []);
+      this.assigneeControl.setValue(this.toAssigneeKeys(task));
       this.tagsControl.setValue(task.tags ?? []);
       this.descriptionControl.setValue(task.descriptionHtml ?? '');
       // Prefill the per-language Title/Description fields from the saved
@@ -408,8 +458,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
         this.repeatValueBeforeCustom = sourceTask.repeatRule ?? 'none';
         this.repeatControl.setValue(sourceTask.repeatRule ?? 'none');
       }
-      this.assigneeControl.setValue(sourceTask.assigneeIds ?? []);
-      this.workerTagsControl.setValue(sourceTask.workerTagIds ?? []);
+      this.assigneeControl.setValue(this.toAssigneeKeys(sourceTask));
       this.tagsControl.setValue(sourceTask.tags ?? []);
       this.descriptionControl.setValue(sourceTask.descriptionHtml ?? '');
       this.driveLinkControl.setValue(sourceTask.driveLink ?? '');
@@ -461,7 +510,6 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
         this.endTimeControl.disable();
         this.repeatControl.disable();
         this.assigneeControl.disable();
-        this.workerTagsControl.disable();
         this.tagsControl.disable();
         this.descriptionControl.disable();
         this.driveLinkControl.disable();
@@ -502,7 +550,9 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       }
     });
 
-    // When property changes, reload calendars (boards), reload filtered employees, clear stale assignee selections
+    // When property changes, reload calendars (boards), reload filtered employees and
+    // teams, and clear stale assignee selections — workers AND teams (#1295): both
+    // lists are property-scoped, and they share the one control.
     this.propertyControl.valueChanges.subscribe(propertyId => {
       if (propertyId) {
         this.calendarService.getBoards(propertyId).subscribe(res => {
@@ -514,22 +564,34 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
           }
         });
       }
-      this.loadEmployeesForProperty(propertyId);
       this.assigneeControl.setValue([]);
+      this.loadEmployeesForProperty(propertyId);
+      this.loadTeamsForProperty(propertyId);
     });
 
     // Recompute the per-language target set whenever the assignee selection
     // changes — adding/removing a worker can add/remove a language field.
     this.assigneeControl.valueChanges.subscribe(() => this.recomputeTargetLanguages());
 
-    // Once a synthetic resigned entry (see `withResignedAssignees`) is removed
-    // from the selection — chip × or clear-all — drop it from the item list so
-    // it cannot be re-selected from the dropdown. Reassign (not mutate) the
-    // array so ng-select re-reads `[items]`.
-    this.assigneeControl.valueChanges.subscribe(selectedIds => {
-      const selected = new Set(selectedIds ?? []);
-      if (this.filteredEmployees.some(e => e.resigned && !selected.has(e.id))) {
-        this.filteredEmployees = this.filteredEmployees.filter(e => !e.resigned || selected.has(e.id));
+    // Once a synthetic resigned worker (see `withResignedAssignees`) or retained
+    // team (see `withRetainedTeams`) is removed from the selection — chip × or
+    // clear-all — drop it from the item list so it cannot be re-selected from the
+    // dropdown. Reassign (not mutate) the arrays so ng-select re-reads `[items]`.
+    this.assigneeControl.valueChanges.subscribe(() => {
+      const {siteIds, workerTagIds} = splitAssigneeKeys(this.assigneeControl.value);
+      const selectedSites = new Set(siteIds);
+      const selectedTeams = new Set(workerTagIds);
+      let changed = false;
+      if (this.filteredEmployees.some(e => e.resigned && !selectedSites.has(e.id))) {
+        this.filteredEmployees = this.filteredEmployees.filter(e => !e.resigned || selectedSites.has(e.id));
+        changed = true;
+      }
+      if (this.filteredTeams.some(t => t.retained && !selectedTeams.has(t.id))) {
+        this.filteredTeams = this.filteredTeams.filter(t => !t.retained || selectedTeams.has(t.id));
+        changed = true;
+      }
+      if (changed) {
+        this.rebuildAssigneeItems();
       }
     });
 
@@ -572,6 +634,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
 
     // Initial data loads
     this.loadEmployeesForProperty(this.propertyControl.value);
+    this.loadTeamsForProperty(this.propertyControl.value);
     this.loadTemplate(this.eformControl.value);
   }
 
@@ -598,16 +661,101 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   loadEmployeesForProperty(propertyId: number | null) {
     if (!propertyId) {
       this.filteredEmployees = [];
+      this.rebuildAssigneeItems();
       return;
     }
     this.propertiesService.getLinkedSites(propertyId, false).subscribe(res => {
       if (res && res.success && res.model) {
         this.filteredEmployees = this.withResignedAssignees(res.model);
+        this.rebuildAssigneeItems();
         // Sites (and their languages) are now known — re-resolve the target set
         // so a pre-seeded (edit/copy mode) assignee selection lights up.
         this.recomputeTargetLanguages();
       }
     });
+  }
+
+  /**
+   * Teams offered for the property (#1295): only teams with at least one live member
+   * linked to it — the same rule the deploy resolver applies, so a team picked here
+   * always deploys to someone on this property. A response for a property that is no
+   * longer selected is dropped.
+   */
+  loadTeamsForProperty(propertyId: number | null) {
+    if (!propertyId) {
+      this.filteredTeams = [];
+      this.rebuildAssigneeItems();
+      return;
+    }
+    this.workerTagsService.getWorkerTags(propertyId).subscribe(res => {
+      if (this.propertyControl.value !== propertyId) {
+        return;
+      }
+      if (res && res.success && res.model) {
+        this.filteredTeams = this.withRetainedTeams(res.model);
+        this.rebuildAssigneeItems();
+        // Team member ids are now known — include their languages.
+        this.recomputeTargetLanguages();
+      }
+    });
+  }
+
+  /**
+   * Save gate (#1295): at least one worker OR team picked in the merged picker. A
+   * team-only selection is enough — the backend accepts `workerTagIds` without `sites`.
+   */
+  get hasAssignee(): boolean {
+    return (this.assigneeControl.value?.length ?? 0) > 0;
+  }
+
+  /** Edit/copy seeding: teams first, then workers — the picker's group order. */
+  private toAssigneeKeys(task: CalendarTaskModel): string[] {
+    return [
+      ...(task.workerTagIds ?? []).map(teamKey),
+      ...(task.assigneeIds ?? []).map(siteKey),
+    ];
+  }
+
+  /** Rebuild the merged picker items: the Teams group first, workers last. */
+  rebuildAssigneeItems(): void {
+    this.assigneeItems = [
+      ...this.filteredTeams.map(t => ({
+        key: teamKey(t.id), id: t.id, name: t.name, group: 'teams' as const, retained: t.retained,
+      })),
+      ...this.filteredEmployees.map(e => ({
+        key: siteKey(e.id), id: e.id, name: e.name, group: 'workers' as const, retained: e.resigned,
+      })),
+    ];
+  }
+
+  /**
+   * Edit and copy mode, the team twin of `withResignedAssignees`: a task can carry a
+   * team that the property-scoped list no longer offers (its members all left the
+   * property, or it was assigned on another property before #1295). Without an item for
+   * that id the chip would render EMPTY while the id is still posted back on save.
+   * Append every still-selected team missing from the list, named from the task's
+   * `workerTagNames` (parallel to `workerTagIds`), else the installation-wide
+   * `data.workerTags`, else the raw id. Removable like any chip; once removed it is
+   * dropped from the list (see the `assigneeControl.valueChanges` hook). No member ids,
+   * so it contributes no languages — it deploys to nobody on this property anyway.
+   */
+  private withRetainedTeams(teams: WorkerTagModel[]): Array<WorkerTagModel & {retained?: boolean}> {
+    const task = this.data.task ?? this.data.sourceTask;
+    if (!task) {
+      return teams;
+    }
+    const known = new Set(teams.map(t => t.id));
+    const selected = new Set(splitAssigneeKeys(this.assigneeControl.value).workerTagIds);
+    const missing = (task.workerTagIds ?? [])
+      .map((id, index) => ({
+        id,
+        name: task.workerTagNames?.[index]
+          || (this.data.workerTags ?? []).find(t => t.id === id)?.name
+          || `${id}`,
+      }))
+      .filter(t => selected.has(t.id) && !known.has(t.id))
+      .map(t => ({id: t.id, name: t.name, description: '', memberSiteIds: [], retained: true}));
+    return missing.length > 0 ? [...teams, ...missing] : teams;
   }
 
   /**
@@ -646,7 +794,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       return sites;
     }
     const known = new Set(sites.map(s => s.id));
-    const selected = new Set(this.assigneeControl.value ?? []);
+    const selected = new Set(splitAssigneeKeys(this.assigneeControl.value).siteIds);
     const resignedLabel = this.translate.instant('Resigned');
     const missing = (task.assigneeIds ?? [])
       .map((id, index) => ({id, name: task.workerNames?.[index]}))
@@ -690,9 +838,19 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   }
 
   private recomputeTargetLanguages(): void {
-    const selectedIds = this.assigneeControl.value ?? [];
+    // Workers picked directly PLUS the members of every picked team (#1295): a team's
+    // `memberSiteIds` are its live members linked to this property — exactly the sites
+    // it deploys to here, and all of them are in `filteredEmployees` with a languageId.
+    const {siteIds, workerTagIds} = splitAssigneeKeys(this.assigneeControl.value);
+    const selectedIds = new Set<number>(siteIds);
+    for (const tagId of workerTagIds) {
+      const team = this.filteredTeams.find(t => t.id === tagId);
+      for (const memberId of team?.memberSiteIds ?? []) {
+        selectedIds.add(memberId);
+      }
+    }
     const langIds = new Set<number>();
-    for (const id of selectedIds) {
+    for (const id of Array.from(selectedIds)) {
       const site = this.filteredEmployees.find(e => e.id === id);
       if (site && site.languageId && site.languageId !== 1) {
         langIds.add(site.languageId);
@@ -1131,6 +1289,9 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       }
     }
 
+    // One merged control (#1295), split back into the two unchanged wire fields.
+    const assignees = splitAssigneeKeys(this.assigneeControl.value);
+
     const payload: CalendarTaskSavePayload = {
       // Backend CalendarTaskCreateRequestModel fields
       translates,
@@ -1142,8 +1303,8 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       startDate: dateStr,
       startHour,
       duration,
-      sites: this.assigneeControl.value ?? [],
-      workerTagIds: this.workerTagsControl.value ?? [],
+      sites: assignees.siteIds,
+      workerTagIds: assignees.workerTagIds,
       tagIds: (this.tagsControl.value ?? []).map((t: any) => {
         if (typeof t === 'number') return t;
         const match = this.data.planningTags.find(pt => pt.name === t);
@@ -1211,7 +1372,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       taskDate: dateStr,
       startText: this.startTimeControl.value,
       endText: this.endTimeControl.value,
-      assigneeIds: this.assigneeControl.value ?? [],
+      assigneeIds: assignees.siteIds,
       tags: this.tagsControl.value ?? [],
       repeatRule: repeatRuleValue === 'customCurrent' ? 'custom' : repeatRuleValue,
       id: this.data.task?.id,

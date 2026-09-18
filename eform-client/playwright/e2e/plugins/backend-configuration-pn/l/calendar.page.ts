@@ -1,5 +1,6 @@
 import { Page, Locator } from '@playwright/test';
 import { API_TIMEOUT, UI_TIMEOUT } from '../wait-helpers';
+import { assigneeWorkerOptions } from '../calendar-assignee.helper';
 
 export class CalendarPage {
   constructor(private page: Page) {}
@@ -84,7 +85,7 @@ export class CalendarPage {
     const assigneeSelect = this.page.locator('#calendarEventAssignee');
     await assigneeSelect.click();
     await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 10000 });
-    await this.page.locator('.ng-dropdown-panel .ng-option').first().click();
+    await assigneeWorkerOptions(this.page).first().click();
     // Close the multi-select dropdown by clicking outside it.
     await this.page.locator('#calendarEventTitle').click();
     await this.page.waitForTimeout(300);

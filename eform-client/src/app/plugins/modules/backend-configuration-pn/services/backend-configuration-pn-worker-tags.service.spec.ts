@@ -48,4 +48,19 @@ describe('BackendConfigurationPnWorkerTagsService', () => {
       done();
     });
   });
+
+  // #1295: the task modal asks for the property-scoped list.
+  it('sends propertyId as a query param when given', () => {
+    service.getWorkerTags(42).subscribe();
+
+    const [url, params] = apiBaseServiceSpy.get.mock.lastCall;
+    expect(url).toBe(BackendConfigurationWorkerTagsMethods.WorkerTags);
+    expect(params).toEqual({propertyId: 42});
+  });
+
+  it('sends no params without a propertyId (installation-wide list unchanged)', () => {
+    service.getWorkerTags(null).subscribe();
+
+    expect(apiBaseServiceSpy.get.mock.lastCall).toEqual([BackendConfigurationWorkerTagsMethods.WorkerTags]);
+  });
 });

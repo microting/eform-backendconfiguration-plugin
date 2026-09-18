@@ -502,7 +502,7 @@ export const itIT = {
   'Edit repeat': 'Modifica ripeti',
   'Move repeat': 'Muoviti ripeti',
   'Delete repeat': 'Elimina ripeti',
-  'At least one worker or worker tag must be assigned': 'Deve essere assegnato almeno un lavoratore o un tag lavoratore',
+  'At least one worker or worker tag must be assigned': 'Deve essere assegnato almeno un lavoratore o una squadra',
   'Assign to worker tags': 'Assegnare ai tag dei lavoratori',
   'This and following (incl. completed)': 'Questo e i seguenti (compresi quelli completati)',
   'Payroll rules': 'Regole di gestione delle retribuzioni',

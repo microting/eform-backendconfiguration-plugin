@@ -502,7 +502,7 @@ export const elGR = {
   'Edit repeat': 'Επεξεργασία επανάληψης',
   'Move repeat': 'Επανάληψη κίνησης',
   'Delete repeat': 'Διαγραφή επανάληψης',
-  'At least one worker or worker tag must be assigned': 'Πρέπει να αντιστοιχιστεί τουλάχιστον ένας εργαζόμενος ή ετικέτα εργαζομένου',
+  'At least one worker or worker tag must be assigned': 'Πρέπει να αντιστοιχιστεί τουλάχιστον ένας εργαζόμενος ή μία ομάδα',
   'Assign to worker tags': 'Ανάθεση σε ετικέτες εργαζομένων',
   'This and following (incl. completed)': 'Αυτό και τα επόμενα (συμπεριλαμβανομένων των ολοκληρωμένων)',
   'Payroll rules': 'Κανόνες μισθοδοσίας',
