@@ -12,6 +12,10 @@ export let BackendConfigurationPnCompliancesMethods = {
   DeleteCompliance: 'api/backend-configuration-pn/compliances/delete',
 };
 
+function withSource(url: string, source?: string): string {
+  return source ? `${url}?source=${encodeURIComponent(source)}` : url;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -45,22 +49,33 @@ export class BackendConfigurationPnCompliancesService {
     });
   }
 
+  /**
+   * `source: 'compliance'` (#1300) is sent by the compliance pages; the server
+   * then refuses to complete a task dated after today. Omitted, the request is
+   * byte-identical to before.
+   */
   updateCase(
     model: ReplyRequest,
-    templateId: number
+    templateId: number,
+    source?: 'compliance'
   ): Observable<OperationResult> {
     return this.apiBaseService.put<ReplyRequest>(
-      BackendConfigurationPnCompliancesMethods.GetCases,
+      withSource(BackendConfigurationPnCompliancesMethods.GetCases, source),
       model
     );
   }
 
+  /**
+   * Shared by the calendar (no `source` — it completes future occurrences
+   * early on purpose) and Detaljer (`source: 'compliance'`, #1300).
+   */
   updateCaseFromCalendar(
     model: ReplyRequest,
-    templateId: number
+    templateId: number,
+    source?: 'compliance'
   ): Observable<OperationResult> {
     return this.apiBaseService.put<ReplyRequest>(
-      BackendConfigurationPnCompliancesMethods.UpdateCaseFromCalendar,
+      withSource(BackendConfigurationPnCompliancesMethods.UpdateCaseFromCalendar, source),
       model
     );
   }

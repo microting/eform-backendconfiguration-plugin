@@ -59,6 +59,13 @@ public class BackendConfigurationCalendarService(
     IWorkerTagMembershipService workerTagMembershipService)
     : IBackendConfigurationCalendarService
 {
+    /// <summary>
+    /// #1300 clock seam for <see cref="PrepareComplete"/>'s compliance-page future-task
+    /// block. Instance-level on purpose so a test can pin "now" around Copenhagen midnight
+    /// without affecting fixtures that run in parallel.
+    /// </summary>
+    internal Func<DateTime> UtcNow { get; set; } = () => DateTime.UtcNow;
+
     public async Task<OperationDataResult<List<CalendarTaskResponseModel>>> GetTasksForWeek(
         CalendarTaskRequestModel requestModel)
     {
@@ -4372,7 +4379,7 @@ public class BackendConfigurationCalendarService(
     /// byte-identical.
     /// </summary>
     public async Task<OperationDataResult<CalendarPrepareCompleteResult>> PrepareComplete(
-        int id, int? complianceId, string occurrenceDate)
+        int id, int? complianceId, string occurrenceDate, string source = null)
     {
         try
         {
@@ -4387,6 +4394,24 @@ public class BackendConfigurationCalendarService(
             {
                 return new OperationDataResult<CalendarPrepareCompleteResult>(false,
                     localizationService.GetString("AreaRulePlanningNotFound"));
+            }
+
+            // #1300: the compliance pages may not complete a task dated after today
+            // (Copenhagen date). The calendar shares this endpoint and completes future
+            // occurrences EARLY on purpose, so the block only runs for the explicit
+            // compliance-page source. Checked twice: here, on the requested occurrence
+            // date, BEFORE the on-demand branch below can materialise anything; and again
+            // on the resolved compliance's own effective date, so a mismatched
+            // occurrenceDate cannot talk its way past the second check.
+            var fromCompliancePage = ComplianceFutureTaskGuard.IsCompliancePageSource(source);
+            if (fromCompliancePage
+                && !string.IsNullOrWhiteSpace(occurrenceDate)
+                && DateTime.TryParseExact(occurrenceDate, "yyyy-MM-dd",
+                    CultureInfo.InvariantCulture, DateTimeStyles.None, out var requestedDate)
+                && ComplianceFutureTaskGuard.IsFutureTask(requestedDate, UtcNow()))
+            {
+                return new OperationDataResult<CalendarPrepareCompleteResult>(false,
+                    localizationService.GetString("FutureTaskCannotBeCompleted"));
             }
 
             Compliance? compliance = null;
@@ -4481,6 +4506,17 @@ public class BackendConfigurationCalendarService(
             var startMinuteWhole = (int)Math.Round((effectiveStartHour - startHourWhole) * 60);
             var deadlineDayUtc = DateTime.SpecifyKind(compliance.Deadline.Date, DateTimeKind.Utc);
             var eventStart = deadlineDayUtc.AddHours(startHourWhole).AddMinutes(startMinuteWhole);
+
+            // #1300, second check: the resolved occurrence's own date as the compliance
+            // pages show it (a "this"-scope move applies its NewDate). Nothing above has
+            // mutated on the existing-compliance path.
+            if (fromCompliancePage
+                && ComplianceFutureTaskGuard.IsFutureTask(
+                    complianceException?.NewDate?.Date ?? compliance.Deadline.Date, UtcNow()))
+            {
+                return new OperationDataResult<CalendarPrepareCompleteResult>(false,
+                    localizationService.GetString("FutureTaskCannotBeCompleted"));
+            }
 
             return new OperationDataResult<CalendarPrepareCompleteResult>(true,
                 new CalendarPrepareCompleteResult

@@ -41,6 +41,13 @@ export interface CalendarCompleteEventModalData {
    * the embedded eForm template's name, which is what the header used to show.
    */
   taskTitle?: string;
+  /**
+   * `'compliance'` when a compliance page (Detaljer) opens the modal (#1300):
+   * forwarded to `prepare-complete` and `cases/calendar` so the server refuses
+   * to complete a task dated after today. The calendar omits it and keeps its
+   * intended early completion.
+   */
+  source?: 'compliance';
 }
 
 @Component({
@@ -99,7 +106,7 @@ export class CalendarCompleteEventModalComponent implements OnInit {
       this.applyPreselect();
     });
     this.calendarService
-      .prepareComplete(this.data.taskId, this.data.complianceId, this.data.occurrenceDate)
+      .prepareComplete(this.data.taskId, this.data.complianceId, this.data.occurrenceDate, this.data.source)
       .subscribe({
         next: res => {
           if (!res?.success || !res.model) { this.dialogRef.close({saved: false}); return; }
@@ -256,7 +263,7 @@ export class CalendarCompleteEventModalComponent implements OnInit {
     replyRequest.extraId = this.prepared.complianceId;
     replyRequest.siteId = this.selectedWorkerId;
     this.isSaving = true;
-    this.compliancesService.updateCaseFromCalendar(replyRequest, this.currenteForm.id).subscribe({
+    this.compliancesService.updateCaseFromCalendar(replyRequest, this.currenteForm.id, this.data.source).subscribe({
       next: op => {
         this.isSaving = false;
         if (op && op.success) { this.dialogRef.close({saved: true}); }

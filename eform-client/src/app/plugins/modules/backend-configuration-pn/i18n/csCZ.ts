@@ -777,4 +777,5 @@ export const csCZ = {
   '{{rule}}, until and including {{date}}': '{{rule}}, do {{date}} včetně',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}}krát',
   '{{rule}}, 1 time': '{{rule}}, 1krát',
+  'Future tasks cannot be completed or deleted yet': 'Budoucí úkoly zatím nelze vyplnit ani smazat',
 };

@@ -7,6 +7,7 @@ import {MtxGridColumn, MtxGridRowClassFormatter} from '@ng-matero/extensions/gri
 import {Subject, merge, of} from 'rxjs';
 import {catchError, filter as rxFilter, finalize, switchMap, takeUntil, tap} from 'rxjs/operators';
 import {dialogConfigHelper} from 'src/app/common/helpers';
+import {isFutureTask} from '../../../../helpers';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {
   CalendarImageLightboxComponent,
@@ -136,6 +137,8 @@ interface ComplianceReportRowVm {
    */
   imageThumbnailNames: (string | null)[];
   completed: boolean;
+  /** yyyy-MM-dd — the occurrence's date; gates `Slet` for future tasks (#1300). */
+  taskDate: string;
   /**
    * The KEYED answer bag, read only through `complianceAnswerText` and
    * `complianceAnswerIsChecked`.
@@ -404,6 +407,7 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
         (image) => image.thumbnailFileName || null,
       ),
       completed: !!caseModel.completed,
+      taskDate: caseModel.taskDate,
       // Carried through untouched. It is read ONLY through
       // `complianceAnswerText(row, column.answerKey)`.
       cells: caseModel.cells ?? {},
@@ -883,6 +887,9 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
    * not-completed rows only (compliance.js:1246 vs :1652).
    */
   openDeleteConfirm(row: ComplianceReportRowVm): void {
+    if (!this.canDelete(row)) {
+      return;
+    }
     this.pendingDeleteId = row.complianceId;
     this.pendingDeleteRow = row;
     this.deleteDialogRef = this.dialog.open(this.deleteConfirmTpl, {autoFocus: false});
@@ -891,6 +898,15 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
       this.pendingDeleteId = null;
       this.pendingDeleteRow = null;
     });
+  }
+
+  /**
+   * #1300: an UNCOMPLETED task dated after today (Copenhagen date) cannot be
+   * deleted — the button stays, disabled, with a tooltip saying why. A
+   * COMPLETED future row (completed early from the calendar) stays deletable.
+   */
+  canDelete(row: ComplianceReportRowVm): boolean {
+    return row.completed || !isFutureTask(row.taskDate);
   }
 
   /** Drives the confirm dialog's wording: a completed log loses its answers and photos. */

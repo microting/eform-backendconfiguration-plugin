@@ -777,4 +777,5 @@ export const nlNL = {
   '{{rule}}, until and including {{date}}': '{{rule}}, tot en met {{date}}',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} keer',
   '{{rule}}, 1 time': '{{rule}}, 1 keer',
+  'Future tasks cannot be completed or deleted yet': 'Toekomstige taken kunnen nog niet worden ingevuld of verwijderd',
 };

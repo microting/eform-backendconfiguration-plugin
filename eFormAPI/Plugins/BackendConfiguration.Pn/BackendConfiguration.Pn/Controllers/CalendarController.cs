@@ -109,7 +109,7 @@ public class CalendarController : Controller
         int id, [FromBody] CalendarPrepareCompleteModel model)
     {
         return await _backendConfigurationCalendarService.PrepareComplete(
-            id, model.ComplianceId, model.OccurrenceDate);
+            id, model.ComplianceId, model.OccurrenceDate, model.Source);
     }
 
     [HttpPost("tasks/{id:int}/files")]

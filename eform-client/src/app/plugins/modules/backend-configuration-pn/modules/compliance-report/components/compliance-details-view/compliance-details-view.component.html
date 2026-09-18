@@ -76,6 +76,8 @@
           [attr.data-compliance-id]="row.complianceId"
           [class.is-done]="row.completed"
           [class.is-clickable]="isRowCompletable(row)"
+          [class.is-future]="isFutureUncompleted(row)"
+          [attr.title]="isFutureUncompleted(row) ? ('Future tasks cannot be completed or deleted yet' | translate) : null"
           [class.is-highlighted]="highlightedId === row.complianceId"
           [attr.tabindex]="isRowCompletable(row) ? 0 : null"
           (click)="onRowClicked(row, $event)"
@@ -126,8 +128,9 @@
           </td>
 
           <!--
-            Completed rows carry no delete action at all (the cell stays, empty,
-            so the columns line up). The CELL stops the click AND the keyboard
+            Completed rows carry no delete action at all, and neither do
+            uncompleted FUTURE rows (#1300, `canDeleteRow`) — the cell stays,
+            empty, so the columns line up. The CELL stops the click AND the keyboard
             activation, so neither a miss between the icon button and the edge
             of the cell nor an Enter/Space on the button itself can open the
             eForm (compliance.js:1436-1446 guards the same two targets; the
@@ -148,7 +151,7 @@
             (keydown.space)="$event.stopPropagation()"
           >
             <button
-              *ngIf="!row.completed"
+              *ngIf="canDeleteRow(row)"
               mat-icon-button
               type="button"
               class="compliance-details__delete"

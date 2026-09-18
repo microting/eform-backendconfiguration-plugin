@@ -38,8 +38,12 @@ public interface IBackendConfigurationCompliancesService
     Task<OperationDataResult<Paged<CompliancesModel>>> Index(CompliancesRequestModel request);
     Task<OperationDataResult<int>> ComplianceStatus(int propertyId);
     Task<OperationDataResult<ReplyElement>> Read(int id);
-    Task<OperationResult> Update(ReplyRequest model);
-    Task<OperationResult> UpdateFromCalendar(ReplyRequest model);
+    /// <param name="source">#1300: <c>"compliance"</c> when a compliance page calls; it adds
+    /// the future-task block. Any other value (or none) leaves behaviour unchanged.</param>
+    Task<OperationResult> Update(ReplyRequest model, string source = null);
+    /// <param name="source">#1300: <c>"compliance"</c> when Detaljer calls; it adds the
+    /// future-task block. The calendar sends none and keeps its early completion.</param>
+    Task<OperationResult> UpdateFromCalendar(ReplyRequest model, string source = null);
     Task<OperationResult> Delete(int id);
     Task<OperationDataResult<CompliancesStatsModel>> Stats();
 }

@@ -31,6 +31,7 @@ import {dialogConfigHelper} from 'src/app/common/helpers';
 import {Subscription} from 'rxjs';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
+import {isFutureLegacyDeadline} from '../../../../helpers';
 
 @Component({
     selector: 'app-task-tracker-table',
@@ -98,7 +99,21 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges, AfterViewCh
   ];
   complianceDeleteComponentAfterClosedSub$: Subscription;
 
+  /**
+   * The "Delete Case" menu item. Wizard-created rows that are not in the
+   * expired folder, as before — and (#1300) not an uncompleted task dated
+   * after today. Every task-tracker row is an uncompleted occurrence.
+   * `deadlineTask` is the DISPLAYED deadline (`Compliance.Deadline − 1 day`);
+   * `isFutureLegacyDeadline` adds the day back so this matches the server.
+   */
+  canDeleteTask(row: TaskModel): boolean {
+    return !!row.createdInWizard && !row.movedToExpiredFolder && !isFutureLegacyDeadline(row.deadlineTask);
+  }
+
   onShowDeleteComplianceModal(item: TaskModel) {
+    if (isFutureLegacyDeadline(item?.deadlineTask)) {
+      return;
+    }
     let complianceModel = new ComplianceModel();
     complianceModel.id = item.complianceId;
     this.complianceDeleteComponentAfterClosedSub$ = this.dialog.open(ComplianceDeleteComponent,

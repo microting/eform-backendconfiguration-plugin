@@ -41,11 +41,22 @@ import {
  *
  * SELF-SEEDED, because shard `u` seeds no SQL (only shard `a` does). The
  * fixture is the one `s/compliance-overview.spec.ts` uses: property + workers through the
- * page objects, a one-off task NEXT WEEK on the property's calendar, then an
- * OPEN Compliance row materialised by clicking the task's `.completion-btn`
+ * page objects, one-off tasks on the property's calendar, then an OPEN
+ * Compliance row per task materialised by clicking the task's `.completion-btn`
  * (POST `/tasks/{id}/prepare-complete` runs `EnsureComplianceForOccurrenceAsync`
  * server-side) and CANCELLING the modal. One task → one Compliance row, which
  * respects the UNIQUE (PlanningId, Deadline) constraint on `Compliances`.
+ *
+ * #1300 — TWO tasks since the compliance pages stopped offering completion and
+ * deletion for UNCOMPLETED FUTURE tasks: the main one (`TASK_TITLE`) is dated
+ * TODAY, at a still-future hour so the grid accepts the slot click, because
+ * every test below completes or deletes through it; the second
+ * (`FUTURE_TASK_TITLE`) is dated next week and is the row the #1300 test
+ * asserts is locked. Materialising the future one through the CALENDAR's
+ * `.completion-btn` also proves the calendar still opens its early-completion
+ * modal for a future occurrence. The suite is skipped when the run starts in
+ * the last hour of the local day: there is no future slot left on today's
+ * column (the grid silently rejects past-slot clicks).
  *
  * A SECOND worker is required, not incidental: the modal deliberately renders
  * an ungrouped list when either group would be empty, so with one worker who
@@ -70,6 +81,7 @@ const BASE_URL = 'http://localhost:4200';
 const PAGE_URL = `${BASE_URL}/plugins/backend-configuration-pn/compliance-report`;
 const rand = generateRandmString(6).toLowerCase();
 const TASK_TITLE = `DET-GRP-${rand}`;
+const FUTURE_TASK_TITLE = `DET-FUT-${rand}`;
 
 const property: PropertyCreateUpdate = {
   name: `DET-grp-${rand}`,
@@ -117,9 +129,19 @@ function addDays(d: Date, n: number): Date {
   return out;
 }
 
-// `openCreateModalAtSlot(0, 9)` advances the calendar one week, then clicks the
-// first visible day — i.e. Monday of NEXT week, at 09:00.
-const TASK_DATE = addDays(mondayOfThisWeekLocal(), 7);
+// #1300: the completable/deletable row is dated TODAY, on today's column of the
+// CURRENT week, one hour after the run started (computed once, at load, so the
+// slot is still in the future when the seed test reaches it).
+const NOW_AT_LOAD = new Date();
+const TODAY_COLUMN = (NOW_AT_LOAD.getDay() + 6) % 7; // Mon..Sun → 0..6
+const TODAY_SEED_HOUR = NOW_AT_LOAD.getHours() + 1;
+const NO_FUTURE_SLOT_TODAY = TODAY_SEED_HOUR > 23;
+
+// `openCreateModalAtSlot(1, 9)` advances the calendar one week, then clicks the
+// second visible day — i.e. TUESDAY of NEXT week, at 09:00. Tuesday, not
+// Monday: from a Sunday evening that is still two days ahead, so it is a
+// future date in Copenhagen too even when the browser runs on UTC.
+const FUTURE_TASK_DATE = addDays(mondayOfThisWeekLocal(), 8);
 
 // ---------------------------------------------------------------------------
 // Page helpers
@@ -154,7 +176,7 @@ async function selectSeededProperty(page: Page): Promise<void> {
 
 /**
  * The built-in presets except "År til dato + 1 år" (#1299) are bounded ABOVE
- * by today and the seeded task is next week; an explicit "Sæt periode" range
+ * by today and the future seed is next week; an explicit "Sæt periode" range
  * keeps this suite independent of that one preset and of the year boundary.
  */
 async function selectPeriodCoveringSeed(page: Page): Promise<void> {
@@ -168,7 +190,7 @@ async function selectPeriodCoveringSeed(page: Page): Promise<void> {
     .waitFor({ state: 'visible', timeout: 10000 });
 
   const from = addDays(new Date(), -2);
-  const to = addDays(TASK_DATE, 8);
+  const to = addDays(FUTURE_TASK_DATE, 8);
   await page.locator('.compliance-filters__custom-range mat-datepicker-toggle button').click();
   await selectDateRangeOnNewDatePicker(
     page,
@@ -217,8 +239,30 @@ async function openSeededDetails(page: Page): Promise<void> {
   await showDetails(page);
 }
 
+/**
+ * A Detaljer row located by its TITLE CELL, matched EXACTLY — never by a bare
+ * `hasText` on the whole row. A string `hasText` is a case-insensitive
+ * SUBSTRING match over every cell, and the row's `.compliance-details__property`
+ * cell prints `property.name` (`DET-grp-<rand>`), which case-insensitively
+ * contains `TASK_TITLE` (`DET-GRP-<rand>`). With one seeded row that went
+ * unnoticed; since #1300 seeded a second task on the same property, a whole-row
+ * `hasText: TASK_TITLE` matched BOTH rows. The anchored regex is case-sensitive
+ * and scoped to the title span, so neither task's row can match the other's.
+ */
+function rowByTitle(page: Page, title: string): Locator {
+  return page.locator('.compliance-details__row').filter({
+    has: page
+      .locator('.compliance-details__title')
+      .filter({ hasText: new RegExp(`^\\s*${escapeRegExp(title)}\\s*$`) }),
+  });
+}
+
 function seededRow(page: Page): Locator {
-  return page.locator('.compliance-details__row').filter({ hasText: TASK_TITLE });
+  return rowByTitle(page, TASK_TITLE);
+}
+
+function futureRow(page: Page): Locator {
+  return rowByTitle(page, FUTURE_TASK_TITLE);
 }
 
 /**
@@ -285,8 +329,32 @@ async function cancelCompleteModal(page: Page): Promise<void> {
 // Seed helper — lifted from `s/compliance-overview.spec.ts`.
 // ---------------------------------------------------------------------------
 
-/** One next-week task on the property, materialised into an OPEN Compliance row. */
-async function seedOpenComplianceRow(page: Page): Promise<void> {
+/**
+ * Clicks the calendar block's `.completion-btn` and cancels the modal WITHOUT
+ * saving, so the Compliance row `prepare-complete` has just materialised stays
+ * OPEN — an occurrence that exists and is not done.
+ */
+async function materialiseOpenRow(page: Page, calendarPage: CalendarUiEnhancementsPage, title: string): Promise<void> {
+  const block = calendarPage.findEventBlock(title);
+  await expect(block).toBeVisible({ timeout: UI_TIMEOUT });
+
+  const prepareComplete = page.waitForResponse(isPrepareComplete, { timeout: 60000 });
+  await block.locator('.completion-btn').click({ timeout: UI_TIMEOUT });
+  const response = await prepareComplete;
+  // The calendar sends no compliance-page source, so even a FUTURE occurrence
+  // resolves (its intended early completion, #1300).
+  expect((await response.json())?.success, `prepare-complete for ${title}`).toBe(true);
+  const modal = page.locator('app-calendar-complete-event-modal');
+  await modal.waitFor({ state: 'visible', timeout: 10000 });
+  await page.locator('#completeWorkerSelect').waitFor({ state: 'visible', timeout: 10000 });
+  await cancelCompleteModal(page);
+}
+
+/**
+ * Two tasks on the property, each materialised into an OPEN Compliance row:
+ * `TASK_TITLE` today (current week), `FUTURE_TASK_TITLE` next week.
+ */
+async function seedOpenComplianceRows(page: Page): Promise<void> {
   const calendarPage = new CalendarUiEnhancementsPage(page);
   await calendarPage.goToCalendar();
   const folderResponse = page.waitForResponse(
@@ -297,28 +365,28 @@ async function seedOpenComplianceRow(page: Page): Promise<void> {
   await folderResponse.catch(() => undefined);
   await page.waitForTimeout(1000);
 
-  await calendarPage.openCreateModalAtSlot(0, 9);
+  // TODAY — on the current week, no week advance.
+  await calendarPage.openCreateModalOnCurrentWeek(TODAY_COLUMN, TODAY_SEED_HOUR);
   // Assigns the FIRST worker in the assignee dropdown — see the file header
   // for why the test does not need to know which of the two that is.
   await calendarPage.fillAndSaveEvent(TASK_TITLE);
+  await materialiseOpenRow(page, calendarPage, TASK_TITLE);
 
-  const block = calendarPage.findEventBlock(TASK_TITLE);
-  await expect(block).toBeVisible();
-
-  const prepareComplete = page.waitForResponse(isPrepareComplete, { timeout: 60000 });
-  await block.locator('.completion-btn').click();
-  await prepareComplete;
-  const modal = page.locator('app-calendar-complete-event-modal');
-  await modal.waitFor({ state: 'visible', timeout: 10000 });
-  await page.locator('#completeWorkerSelect').waitFor({ state: 'visible', timeout: 10000 });
-  // Cancel WITHOUT saving, so the Compliance row `prepare-complete` has just
-  // materialised stays OPEN — an occurrence that exists and is not done.
-  await cancelCompleteModal(page);
+  // NEXT WEEK — `openCreateModalAtSlot` advances one week first.
+  await calendarPage.openCreateModalAtSlot(1, 9);
+  await calendarPage.fillAndSaveEvent(FUTURE_TASK_TITLE);
+  await materialiseOpenRow(page, calendarPage, FUTURE_TASK_TITLE);
 }
 
 // ---------------------------------------------------------------------------
 
 test.describe.serial('Compliance Detaljer — complete modal groups workers by assignment (#1187)', () => {
+  test.skip(
+    NO_FUTURE_SLOT_TODAY,
+    `no future slot left on today's column (run started at ${NOW_AT_LOAD.getHours()}:xx) — ` +
+    'the fixture needs a task dated today (#1300)',
+  );
+
   test.beforeEach(async ({ page }) => {
     await page.goto(BASE_URL);
     await new LoginPage(page).login();
@@ -379,13 +447,14 @@ test.describe.serial('Compliance Detaljer — complete modal groups workers by a
   });
 
   // =========================================================================
-  // Seed 2 — one task assigned to one worker, materialised into one open row.
+  // Seed 2 — two tasks (today + next week), each assigned to one worker and
+  // materialised into one open row.
   // =========================================================================
-  test('seed: materialise one open compliance row assigned to one worker', async ({ page }) => {
+  test('seed: materialise open compliance rows for today and next week', async ({ page }) => {
     test.setTimeout(600000);
     expect(propertiesSeeded).toBe(true);
 
-    await seedOpenComplianceRow(page);
+    await seedOpenComplianceRows(page);
 
     complianceSeeded = true;
   });
@@ -533,7 +602,9 @@ test.describe.serial('Compliance Detaljer — complete modal groups workers by a
     // appears in this file and nowhere else in `playwright/`.
     const weekTitle = page
       .locator('.compliance-details__week')
-      .filter({ hasText: TASK_TITLE })
+      // Via the exact-title row, not `hasText: TASK_TITLE`: next week's group
+      // also contains the property name, which matches it case-insensitively.
+      .filter({ has: seededRow(page) })
       .locator('.compliance-details__week-title');
     await expect(weekTitle).toHaveCount(1);
     await expect(weekTitle).toBeVisible();
@@ -611,7 +682,8 @@ test.describe.serial('Compliance Detaljer — complete modal groups workers by a
   //     one: every period it uses is bounded ABOVE by today (`periodBounds` in
   //     `compliance-report-state.service.ts`; the default is `ytd`), and the
   //     single custom range it commits lies entirely in the past, while this
-  //     seed is dated NEXT WEEK. The status test above is the only end-to-end
+  //     seed is dated today (and, since #1300, next week too). The status test
+  //     above is the only end-to-end
   //     coverage of that chain.
   //
   // Two gaps this file does NOT close, recorded rather than covered (no test
@@ -630,6 +702,43 @@ test.describe.serial('Compliance Detaljer — complete modal groups workers by a
   // Runs LAST in the serial block because a stray confirm would destroy the
   // fixture the tests above depend on.
   // =========================================================================
+  test('an uncompleted FUTURE row offers neither completion nor deletion, while today\'s row offers both (#1300)', async ({ page }) => {
+    test.setTimeout(240000);
+    expect(complianceSeeded).toBe(true);
+
+    await openSeededDetails(page);
+
+    const today = seededRow(page);
+    const future = futureRow(page);
+    await expect(today).toHaveCount(1, { timeout: API_TIMEOUT });
+    await expect(future).toHaveCount(1, { timeout: API_TIMEOUT });
+
+    // Today's open row: clickable, focusable, deletable.
+    await expect(today).toHaveClass(/is-clickable/, { timeout: UI_TIMEOUT });
+    await expect(today).toHaveAttribute('tabindex', '0', { timeout: UI_TIMEOUT });
+    await expect(today.locator('.compliance-details__delete')).toBeVisible({ timeout: UI_TIMEOUT });
+
+    // The future open row: locked, with the reason in its title.
+    await expect(future).toHaveClass(/is-future/, { timeout: UI_TIMEOUT });
+    await expect(future).not.toHaveClass(/is-clickable/, { timeout: UI_TIMEOUT });
+    await expect(future).not.toHaveAttribute('tabindex', /.*/, { timeout: UI_TIMEOUT });
+    await expect(future).toHaveAttribute('title', /\S/, { timeout: UI_TIMEOUT });
+    await expect(future.locator('.compliance-details__delete')).toHaveCount(0, { timeout: UI_TIMEOUT });
+
+    // Clicking it starts nothing: no prepare-complete request, no modal.
+    let prepareCompleteCalls = 0;
+    const onRequest = (r: import('@playwright/test').Request) => {
+      if (/\/calendar\/tasks\/\d+\/prepare-complete/.test(r.url()) && r.method() === 'POST') {
+        prepareCompleteCalls++;
+      }
+    };
+    page.on('request', onRequest);
+    await future.locator('.compliance-details__title').click({ timeout: UI_TIMEOUT });
+    await expect(page.locator('app-calendar-complete-event-modal')).toBeHidden({ timeout: 3000 });
+    page.off('request', onRequest);
+    expect(prepareCompleteCalls).toBe(0);
+  });
+
   test('the delete action opens a confirm popover; Annuller closes it and keeps the row', async ({ page }) => {
     test.setTimeout(240000);
     expect(complianceSeeded).toBe(true);

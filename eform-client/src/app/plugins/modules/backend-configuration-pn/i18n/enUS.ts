@@ -897,4 +897,6 @@ export const enUS= {
   '{{rule}}, until and including {{date}}': '{{rule}}, until and including {{date}}',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} times',
   '{{rule}}, 1 time': '{{rule}}, 1 time',
+  // Compliance pages: uncompleted future tasks are locked (#1300).
+  'Future tasks cannot be completed or deleted yet': 'Future tasks cannot be completed or deleted yet',
 };

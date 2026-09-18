@@ -777,4 +777,5 @@ export const fiFI = {
   '{{rule}}, until and including {{date}}': '{{rule}}, {{date}} asti',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} kertaa',
   '{{rule}}, 1 time': '{{rule}}, 1 kerran',
+  'Future tasks cannot be completed or deleted yet': 'Tulevia tehtäviä ei voi vielä suorittaa eikä poistaa',
 };

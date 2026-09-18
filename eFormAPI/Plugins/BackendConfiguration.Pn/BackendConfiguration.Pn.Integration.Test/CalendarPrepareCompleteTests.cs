@@ -17,6 +17,7 @@ copies or substantial portions of the Software.
 namespace BackendConfiguration.Pn.Integration.Test;
 
 using System.Globalization;
+using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models.Calendar;
 using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
@@ -566,5 +567,146 @@ public class CalendarPrepareCompleteTests : TestBaseSetup
         var complianceCount = await BackendConfigurationPnDbContext!.Compliances
             .CountAsync(c => c.PlanningId == s.Planning.Id && c.Deadline.Date == deadline.Date);
         Assert.That(complianceCount, Is.EqualTo(1), "no duplicate Compliance row may be created");
+    }
+
+    // ==================================================================
+    // #1300 — the compliance-page source blocks completing a task dated after
+    // today (Copenhagen date). Without it the calendar keeps its early
+    // completion (tests 1-9 above all resolve FUTURE occurrences with no source).
+    // Each test pins the service clock to one captured instant.
+    // ==================================================================
+
+    private static (DateTime Now, DateTime Today) PinnedNow()
+    {
+        var now = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+        return (now, ComplianceFutureTaskGuard.TodayInCopenhagen(now));
+    }
+
+    private static string Iso(DateTime date) => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+    [TestCase(1)]
+    [TestCase(14)]
+    public async Task PrepareComplete_CompliancePageSource_ExistingFutureCompliance_IsRejected(int daysAhead)
+    {
+        var (now, today) = PinnedNow();
+        var deadline = today.AddDays(daysAhead);
+        var s = await SeedGraphAsync($"cp-future-{daysAhead}", 5100 + daysAhead, deadline.AddDays(-14),
+            useRealEventDeployService: false);
+        s.Service.UtcNow = () => now;
+        var (compliance, sdkCase) = await SeedComplianceAsync(s, deadline);
+
+        var result = await s.Service.PrepareComplete(
+            s.Arp.Id, compliance.Id, Iso(deadline), ComplianceFutureTaskGuard.ComplianceSource);
+
+        var reloadedCase = await MicrotingDbContext!.Cases.AsNoTracking().FirstAsync(x => x.Id == sdkCase.Id);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Is.EqualTo("FutureTaskCannotBeCompleted"));
+            Assert.That(reloadedCase.Status, Is.EqualTo(66));
+        });
+    }
+
+    /// <summary>The on-demand branch must not materialise a future occurrence first.</summary>
+    [Test]
+    public async Task PrepareComplete_CompliancePageSource_NoCompliance_FutureDate_IsRejectedBeforeMaterialising()
+    {
+        var (now, today) = PinnedNow();
+        var deadline = today.AddDays(3);
+        var s = await SeedGraphAsync("cp-ondemand-future", 5120, deadline.AddDays(-14), useRealEventDeployService: true);
+        s.Service.UtcNow = () => now;
+
+        var result = await s.Service.PrepareComplete(
+            s.Arp.Id, null, Iso(deadline), ComplianceFutureTaskGuard.ComplianceSource);
+
+        var complianceCount = await BackendConfigurationPnDbContext!.Compliances
+            .CountAsync(c => c.PlanningId == s.Planning.Id);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Message, Is.EqualTo("FutureTaskCannotBeCompleted"));
+            Assert.That(complianceCount, Is.EqualTo(0), "nothing may be materialised for a refused future task");
+        });
+    }
+
+    /// <summary>The flag on a legitimate (today/past) request changes nothing.</summary>
+    [TestCase(0, TestName = "PrepareComplete_CompliancePageSource_Today_Resolves")]
+    [TestCase(-2, TestName = "PrepareComplete_CompliancePageSource_Past_Resolves")]
+    public async Task PrepareComplete_CompliancePageSource_TodayOrPast_Resolves(int daysAhead)
+    {
+        var (now, today) = PinnedNow();
+        var deadline = today.AddDays(daysAhead);
+        var s = await SeedGraphAsync($"cp-past-{daysAhead}", 5130 - daysAhead, deadline.AddDays(-14),
+            useRealEventDeployService: false);
+        s.Service.UtcNow = () => now;
+        var (compliance, sdkCase) = await SeedComplianceAsync(s, deadline);
+
+        var result = await s.Service.PrepareComplete(
+            s.Arp.Id, compliance.Id, Iso(deadline), ComplianceFutureTaskGuard.ComplianceSource);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(result.Model!.SdkCaseId, Is.EqualTo(sdkCase.Id));
+    }
+
+    /// <summary>The calendar (no source, or any other source) keeps its early completion.</summary>
+    [TestCase(null, TestName = "PrepareComplete_NoSource_FutureCompliance_StillResolves_CalendarEarlyCompletion")]
+    [TestCase("calendar", TestName = "PrepareComplete_OtherSource_FutureCompliance_StillResolves")]
+    public async Task PrepareComplete_WithoutCompliancePageSource_FutureCompliance_Resolves(string? source)
+    {
+        var (now, today) = PinnedNow();
+        var deadline = today.AddDays(5);
+        var s = await SeedGraphAsync($"cp-calendar-{source ?? "none"}", source == null ? 5140 : 5141,
+            deadline.AddDays(-14), useRealEventDeployService: false);
+        s.Service.UtcNow = () => now;
+        var (compliance, _) = await SeedComplianceAsync(s, deadline);
+
+        var result = await s.Service.PrepareComplete(s.Arp.Id, compliance.Id, Iso(deadline), source!);
+
+        Assert.That(result.Success, Is.True, result.Message);
+    }
+
+    /// <summary>
+    /// A client-supplied occurrenceDate of today cannot talk the guard past a compliance
+    /// whose own date is in the future — the second check reads the resolved row.
+    /// </summary>
+    [Test]
+    public async Task PrepareComplete_CompliancePageSource_MismatchedTodayOccurrenceDate_CannotBypass()
+    {
+        var (now, today) = PinnedNow();
+        var deadline = today.AddDays(2);
+        var s = await SeedGraphAsync("cp-mismatch", 5150, deadline.AddDays(-14), useRealEventDeployService: false);
+        s.Service.UtcNow = () => now;
+        var (compliance, _) = await SeedComplianceAsync(s, deadline);
+
+        var result = await s.Service.PrepareComplete(
+            s.Arp.Id, compliance.Id, Iso(today), ComplianceFutureTaskGuard.ComplianceSource);
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Message, Is.EqualTo("FutureTaskCannotBeCompleted"));
+    }
+
+    /// <summary>
+    /// Copenhagen-midnight boundary, CET and CEST: the compliance is dated the day after
+    /// the pinned UTC date; one minute before Danish midnight it is tomorrow (refused), one
+    /// minute after it is today (resolves) — while the UTC date is still the day before.
+    /// </summary>
+    [TestCase("2026-01-15T22:59:00Z", false, 5160, TestName = "PrepareComplete_Boundary_Cet_2359_IsRejected")]
+    [TestCase("2026-01-15T23:01:00Z", true, 5161, TestName = "PrepareComplete_Boundary_Cet_0001_Resolves")]
+    [TestCase("2026-07-15T21:59:00Z", false, 5162, TestName = "PrepareComplete_Boundary_Cest_2359_IsRejected")]
+    [TestCase("2026-07-15T22:01:00Z", true, 5163, TestName = "PrepareComplete_Boundary_Cest_0001_Resolves")]
+    public async Task PrepareComplete_CompliancePageSource_AtCopenhagenMidnight(string utcNow, bool expectResolved, int uid)
+    {
+        var pinned = DateTime.Parse(utcNow, CultureInfo.InvariantCulture,
+            DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal);
+        pinned = DateTime.SpecifyKind(pinned, DateTimeKind.Utc);
+        var deadline = pinned.Date.AddDays(1);
+        var s = await SeedGraphAsync($"cp-boundary-{uid}", uid, deadline.AddDays(-14), useRealEventDeployService: false);
+        s.Service.UtcNow = () => pinned;
+        var (compliance, _) = await SeedComplianceAsync(s, deadline);
+
+        var result = await s.Service.PrepareComplete(
+            s.Arp.Id, compliance.Id, Iso(deadline), ComplianceFutureTaskGuard.ComplianceSource);
+
+        Assert.That(result.Success, Is.EqualTo(expectResolved), result.Message);
     }
 }

@@ -24,6 +24,7 @@ SOFTWARE.
 
 
 using BackendConfiguration.Pn.Controllers;
+using BackendConfiguration.Pn.Infrastructure.Helpers;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.TimePlanningBase.Infrastructure.Data;
 
@@ -74,6 +75,59 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
         _localizationService = localizationService;
         _coreHelper = coreHelper;
         _timePlanningPnDbContext = timePlanningPnDbContext;
+    }
+
+    /// <summary>
+    /// #1300 clock seam: the instant "today in Copenhagen" is derived from. Instance-level
+    /// on purpose (not a static) so a test can pin it around Copenhagen midnight without
+    /// leaking into fixtures that run in parallel.
+    /// </summary>
+    internal Func<DateTime> UtcNow { get; set; } = () => DateTime.UtcNow;
+
+    /// <summary>
+    /// The occurrence's date as the compliance pages show it — the SAME resolution
+    /// <c>BackendConfigurationComplianceReportService.BuildCandidateSet</c> uses for
+    /// <c>taskDate</c>: a live "this"-scope <c>CalendarOccurrenceException</c> of the
+    /// planning's lowest-Id live AreaRulePlanning, keyed on the Deadline date, moves it to
+    /// its <c>NewDate</c>; otherwise it is <c>Deadline.Date</c>. Resolving it here keeps the
+    /// server's #1300 guard in step with what Detaljer/Rapport gate on (a moved occurrence
+    /// is judged by the date the user sees, not by its original slot).
+    /// </summary>
+    private async Task<DateTime> ResolveEffectiveTaskDateAsync(
+        Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.Compliance compliance)
+    {
+        var deadlineDate = compliance.Deadline.Date;
+        var arpId = await _backendConfigurationPnDbContext.AreaRulePlannings
+            .AsNoTracking()
+            .Where(x => x.ItemPlanningId == compliance.PlanningId
+                        && x.WorkflowState != Constants.WorkflowStates.Removed)
+            .OrderBy(x => x.Id)
+            .Select(x => (int?)x.Id)
+            .FirstOrDefaultAsync().ConfigureAwait(false);
+        if (arpId == null)
+        {
+            return deadlineDate;
+        }
+
+        var nextDay = deadlineDate.AddDays(1);
+        var newDate = await _backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+            .AsNoTracking()
+            .Where(x => x.AreaRulePlanningId == arpId.Value
+                        && x.WorkflowState != Constants.WorkflowStates.Removed
+                        && x.OriginalDate >= deadlineDate
+                        && x.OriginalDate < nextDay)
+            .OrderBy(x => x.Id)
+            .Select(x => x.NewDate)
+            .FirstOrDefaultAsync().ConfigureAwait(false);
+        return newDate?.Date ?? deadlineDate;
+    }
+
+    /// <summary>#1300: is this (not completed) occurrence dated after today in Copenhagen?</summary>
+    private async Task<bool> IsFutureTaskAsync(
+        Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.Compliance compliance)
+    {
+        var taskDate = await ResolveEffectiveTaskDateAsync(compliance).ConfigureAwait(false);
+        return ComplianceFutureTaskGuard.IsFutureTask(taskDate, UtcNow());
     }
 
     public async Task<OperationDataResult<Paged<CompliancesModel>>> Index(CompliancesRequestModel request)
@@ -185,7 +239,7 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
         }
     }
 
-    public async Task<OperationResult> Update(ReplyRequest model)
+    public async Task<OperationResult> Update(ReplyRequest model, string source = null)
     {
         var checkListValueList = new List<string>();
         var fieldValueList = new List<string>();
@@ -245,6 +299,17 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
                 Log.LogException(
                     $"[ERROR] BackendConfigurationCompliancesService.Update: no live Compliance {model.ExtraId} (never existed, or already soft-deleted by an earlier completion) - nothing was mutated");
                 return new OperationResult(false, $"{_localizationService.GetString("CaseCouldNotBeUpdated")}");
+            }
+
+            // #1300: a compliance page (the legacy /compliances table and the task tracker
+            // reach this endpoint through the compliance case page) may not complete a task
+            // dated after today. Only an explicit compliance-page source adds this check.
+            if (ComplianceFutureTaskGuard.IsCompliancePageSource(source)
+                && await IsFutureTaskAsync(compliance).ConfigureAwait(false))
+            {
+                Log.LogException(
+                    $"[ERROR] BackendConfigurationCompliancesService.Update: compliance {compliance.Id} (deadline {compliance.Deadline:yyyy-MM-dd}) is a future task and cannot be completed from a compliance page - nothing was mutated");
+                return new OperationResult(false, _localizationService.GetString("FutureTaskCannotBeCompleted"));
             }
 
             var sdkDbContext = core.DbContextHelper.GetDbContext();
@@ -516,7 +581,7 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
     // can block for minutes in dev. Retraction was already best-effort in
     // Update (failures are swallowed), so this changes latency, not
     // guarantees.
-    public async Task<OperationResult> UpdateFromCalendar(ReplyRequest model)
+    public async Task<OperationResult> UpdateFromCalendar(ReplyRequest model, string source = null)
     {
         var checkListValueList = new List<string>();
         var fieldValueList = new List<string>();
@@ -576,6 +641,18 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
                 Log.LogException(
                     $"[ERROR] BackendConfigurationCompliancesService.UpdateFromCalendar: no live Compliance {model.ExtraId} (never existed, or already soft-deleted by an earlier completion) - nothing was mutated");
                 return new OperationResult(false, $"{_localizationService.GetString("CaseCouldNotBeUpdated")}");
+            }
+
+            // #1300: Detaljer shares this endpoint with the calendar, which completes
+            // future occurrences EARLY on purpose. So the future-date block runs only when
+            // the caller says it is a compliance page; without the flag this method behaves
+            // exactly as before. The flag only ever adds this check.
+            if (ComplianceFutureTaskGuard.IsCompliancePageSource(source)
+                && await IsFutureTaskAsync(compliance).ConfigureAwait(false))
+            {
+                Log.LogException(
+                    $"[ERROR] BackendConfigurationCompliancesService.UpdateFromCalendar: compliance {compliance.Id} (deadline {compliance.Deadline:yyyy-MM-dd}) is a future task and cannot be completed from a compliance page - nothing was mutated");
+                return new OperationResult(false, _localizationService.GetString("FutureTaskCannotBeCompleted"));
             }
 
             var sdkDbContext = core.DbContextHelper.GetDbContext();
@@ -805,7 +882,9 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
     /// <para><b>Not-done occurrence</b> (no SDK case, or a case that is not
     /// <c>Status == 100</c>): soft-deletes the Compliance row, exactly as before #1290 —
     /// except that a row which is ALREADY removed is now reported as a failure
-    /// (<c>ComplianceLogAlreadyDeleted</c>) instead of a success that wrote nothing.</para>
+    /// (<c>ComplianceLogAlreadyDeleted</c>) instead of a success that wrote nothing, and
+    /// (#1300) a row whose effective task date is after today's Copenhagen date is refused
+    /// with <c>FutureTaskCannotBeDeleted</c>.</para>
     ///
     /// <para><b>Completed occurrence</b> (#1290 — "Slet log" on a completed log used to be a
     /// silent no-op: completion had already soft-deleted the Compliance, so
@@ -887,6 +966,15 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
                 {
                     return new OperationResult(false,
                         _localizationService.GetString("ComplianceLogAlreadyDeleted"));
+                }
+
+                // #1300: a task dated after today (Copenhagen date) that is not completed
+                // cannot be deleted. Completed future rows (e.g. completed early from the
+                // calendar) fall through to the completed branch below and stay deletable.
+                if (await IsFutureTaskAsync(compliance).ConfigureAwait(false))
+                {
+                    return new OperationResult(false,
+                        _localizationService.GetString("FutureTaskCannotBeDeleted"));
                 }
 
                 await compliance.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);

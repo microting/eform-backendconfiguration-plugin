@@ -776,4 +776,5 @@ export const frFR = {
   '{{rule}}, until and including {{date}}': '{{rule}}, jusqu’au {{date}} inclus',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} fois',
   '{{rule}}, 1 time': '{{rule}}, 1 fois',
+  'Future tasks cannot be completed or deleted yet': 'Les tâches futures ne peuvent pas encore être effectuées ni supprimées',
 };

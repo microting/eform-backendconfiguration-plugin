@@ -111,14 +111,24 @@ export class BackendConfigurationPnCalendarService {
       .pipe(tap((res) => this.notify(res)));
   }
 
+  /**
+   * `source: 'compliance'` (#1300) is sent when a compliance page opens the
+   * complete modal; the server then refuses a task dated after today. The
+   * calendar omits it and keeps its early completion.
+   */
   prepareComplete(
     taskId: number,
     complianceId: number | null | undefined,
     occurrenceDate: string | null | undefined,
+    source?: 'compliance',
   ): Observable<OperationDataResult<CalendarPrepareCompleteResult>> {
     return this.apiBaseService.postNoToast(
       `${BackendConfigurationPnCalendarMethods.Tasks}/${taskId}/prepare-complete`,
-      {complianceId: complianceId ?? null, occurrenceDate: occurrenceDate ?? null}
+      {
+        complianceId: complianceId ?? null,
+        occurrenceDate: occurrenceDate ?? null,
+        ...(source ? {source} : {}),
+      }
     ).pipe(tap((res) => this.notifyError(res)));
   }
 

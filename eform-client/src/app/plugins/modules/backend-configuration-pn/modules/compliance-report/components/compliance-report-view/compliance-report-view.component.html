@@ -253,16 +253,27 @@
         <mat-icon>edit</mat-icon>
       </button>
     </span>
-    <button
-      mat-icon-button
-      type="button"
-      class="compliance-report__delete"
-      [attr.aria-label]="'Delete log' | translate"
-      [matTooltip]="'Delete log' | translate"
-      (click)="openDeleteConfirm(row)"
+    <!--
+      `Slet` is disabled for an uncompleted FUTURE task (#1300); as with
+      `Rediger`, the tooltip sits on the wrapper so it still shows while the
+      button is disabled.
+    -->
+    <span
+      [matTooltip]="
+        (canDelete(row) ? 'Delete log' : 'Future tasks cannot be completed or deleted yet') | translate
+      "
     >
-      <mat-icon>delete_outline</mat-icon>
-    </button>
+      <button
+        mat-icon-button
+        type="button"
+        class="compliance-report__delete"
+        [disabled]="!canDelete(row)"
+        [attr.aria-label]="'Delete log' | translate"
+        (click)="openDeleteConfirm(row)"
+      >
+        <mat-icon>delete_outline</mat-icon>
+      </button>
+    </span>
   </div>
 </ng-template>
 

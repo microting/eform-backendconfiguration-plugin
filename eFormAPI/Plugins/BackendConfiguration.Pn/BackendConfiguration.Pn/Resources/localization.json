@@ -7097,5 +7097,67 @@
       "el-GR": "Η επιλεγμένη επικεφαλίδα αναφοράς δεν βρέθηκε",
       "is-IS": "Valin skýrslufyrirsögn fannst ekki"
     }
+  },
+  {
+    "Key": "FutureTaskCannotBeDeleted",
+    "LocalizedValue": {
+      "da": "Fremtidige opgaver kan ikke slettes, før de er udført",
+      "de": "Zukünftige Aufgaben können erst gelöscht werden, wenn sie erledigt sind",
+      "en-US": "Future tasks cannot be deleted until they have been completed",
+      "uk-UA": "Майбутні завдання не можна видалити, доки їх не виконано",
+      "pl-PL": "Przyszłych zadań nie można usunąć, dopóki nie zostaną wykonane",
+      "no-NO": "Fremtidige oppgaver kan ikke slettes før de er utført",
+      "sv-SE": "Framtida uppgifter kan inte tas bort förrän de har utförts",
+      "es-ES": "Las tareas futuras no se pueden eliminar hasta que se hayan completado",
+      "fr-FR": "Les tâches futures ne peuvent pas être supprimées tant qu’elles ne sont pas terminées",
+      "it-IT": "Le attività future non possono essere eliminate finché non sono state completate",
+      "nl-NL": "Toekomstige taken kunnen pas worden verwijderd als ze zijn uitgevoerd",
+      "pt-BR": "Tarefas futuras não podem ser excluídas até serem concluídas",
+      "pt-PT": "As tarefas futuras não podem ser eliminadas até estarem concluídas",
+      "fi-FI": "Tulevia tehtäviä ei voi poistaa ennen kuin ne on suoritettu",
+      "et-ET": "Tulevasi ülesandeid ei saa kustutada enne, kui need on tehtud",
+      "lv-LV": "Nākotnes uzdevumus nevar dzēst, kamēr tie nav izpildīti",
+      "lt-LT": "Būsimų užduočių negalima ištrinti, kol jos neatliktos",
+      "ro-RO": "Sarcinile viitoare nu pot fi șterse până nu sunt finalizate",
+      "hr-HR": "Buduće zadatke nije moguće izbrisati dok nisu dovršeni",
+      "sl-SL": "Prihodnjih opravil ni mogoče izbrisati, dokler niso opravljena",
+      "cs-CZ": "Budoucí úkoly nelze smazat, dokud nejsou dokončeny",
+      "sk-SK": "Budúce úlohy nie je možné odstrániť, kým nie sú dokončené",
+      "hu-HU": "A jövőbeli feladatok nem törölhetők, amíg nincsenek elvégezve",
+      "bg-BG": "Бъдещите задачи не могат да бъдат изтрити, докато не бъдат изпълнени",
+      "el-GR": "Οι μελλοντικές εργασίες δεν μπορούν να διαγραφούν μέχρι να ολοκληρωθούν",
+      "is-IS": "Ekki er hægt að eyða framtíðarverkefnum fyrr en þeim er lokið"
+    }
+  },
+  {
+    "Key": "FutureTaskCannotBeCompleted",
+    "LocalizedValue": {
+      "da": "Fremtidige opgaver kan ikke udfyldes endnu",
+      "de": "Zukünftige Aufgaben können noch nicht ausgefüllt werden",
+      "en-US": "Future tasks cannot be completed yet",
+      "uk-UA": "Майбутні завдання ще не можна виконати",
+      "pl-PL": "Przyszłych zadań nie można jeszcze wykonać",
+      "no-NO": "Fremtidige oppgaver kan ikke utføres ennå",
+      "sv-SE": "Framtida uppgifter kan inte utföras ännu",
+      "es-ES": "Las tareas futuras aún no se pueden completar",
+      "fr-FR": "Les tâches futures ne peuvent pas encore être effectuées",
+      "it-IT": "Le attività future non possono ancora essere completate",
+      "nl-NL": "Toekomstige taken kunnen nog niet worden uitgevoerd",
+      "pt-BR": "Tarefas futuras ainda não podem ser concluídas",
+      "pt-PT": "As tarefas futuras ainda não podem ser concluídas",
+      "fi-FI": "Tulevia tehtäviä ei voi vielä suorittaa",
+      "et-ET": "Tulevasi ülesandeid ei saa veel täita",
+      "lv-LV": "Nākotnes uzdevumus vēl nevar izpildīt",
+      "lt-LT": "Būsimų užduočių dar negalima atlikti",
+      "ro-RO": "Sarcinile viitoare nu pot fi încă finalizate",
+      "hr-HR": "Buduće zadatke još nije moguće dovršiti",
+      "sl-SL": "Prihodnjih opravil še ni mogoče opraviti",
+      "cs-CZ": "Budoucí úkoly zatím nelze dokončit",
+      "sk-SK": "Budúce úlohy zatiaľ nie je možné dokončiť",
+      "hu-HU": "A jövőbeli feladatok még nem végezhetők el",
+      "bg-BG": "Бъдещите задачи все още не могат да бъдат изпълнени",
+      "el-GR": "Οι μελλοντικές εργασίες δεν μπορούν ακόμη να ολοκληρωθούν",
+      "is-IS": "Ekki er enn hægt að ljúka framtíðarverkefnum"
+    }
   }
 ]

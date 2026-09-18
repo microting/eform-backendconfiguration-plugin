@@ -777,4 +777,5 @@ export const ltLT = {
   '{{rule}}, until and including {{date}}': '{{rule}}, iki {{date}} imtinai',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} kartų',
   '{{rule}}, 1 time': '{{rule}}, 1 kartą',
+  'Future tasks cannot be completed or deleted yet': 'Būsimų užduočių dar negalima atlikti ar ištrinti',
 };

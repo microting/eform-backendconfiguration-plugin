@@ -777,4 +777,5 @@ export const slSL = {
   '{{rule}}, until and including {{date}}': '{{rule}}, do vključno {{date}}',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}}-krat',
   '{{rule}}, 1 time': '{{rule}}, 1-krat',
+  'Future tasks cannot be completed or deleted yet': 'Prihodnjih opravil še ni mogoče izpolniti ali izbrisati',
 };

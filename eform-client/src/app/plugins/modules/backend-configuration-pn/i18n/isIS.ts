@@ -777,4 +777,5 @@ export const isIS = {
   '{{rule}}, until and including {{date}}': '{{rule}}, til og með {{date}}',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} sinnum',
   '{{rule}}, 1 time': '{{rule}}, 1 sinni',
+  'Future tasks cannot be completed or deleted yet': 'Ekki er enn hægt að fylla út eða eyða framtíðarverkefnum',
 };

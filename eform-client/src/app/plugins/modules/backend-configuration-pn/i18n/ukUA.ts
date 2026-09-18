@@ -777,4 +777,5 @@ export const ukUA = {
   '{{rule}}, until and including {{date}}': '{{rule}}, до {{date}} включно',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} разів',
   '{{rule}}, 1 time': '{{rule}}, 1 раз',
+  'Future tasks cannot be completed or deleted yet': 'Майбутні завдання ще не можна виконати або видалити',
 };
