@@ -769,4 +769,5 @@ export const frFR = {
   Teams: 'Équipes',
   '{{count}} selected': '{{count}} sélectionné(s)',
   'Teams and employees': 'Équipes et employés',
+  'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Le journal est définitivement supprimé, y compris les réponses et les photos. Cette action est irréversible.',
 };

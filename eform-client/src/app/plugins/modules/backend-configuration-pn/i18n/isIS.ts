@@ -770,4 +770,5 @@ export const isIS = {
   Teams: 'Teymi',
   '{{count}} selected': '{{count}} valin',
   'Teams and employees': 'Teymi og starfsmenn',
+  'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Skráin er eytt varanlega, þar á meðal svörum og myndum. Ekki er hægt að afturkalla þessa aðgerð.',
 };

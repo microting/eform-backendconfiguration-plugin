@@ -105,6 +105,7 @@
         [data]="table.rows"
         [columns]="table.gridColumns"
         [trackBy]="trackByRow"
+        [rowClassFormatter]="rowClassFormatter"
         [emptyValuePlaceholder]="emptyCell"
         [showPaginator]="false"
         [pageOnFront]="false"
@@ -277,7 +278,19 @@
 <ng-template #deleteConfirmTpl>
   <h3 mat-dialog-title>{{ 'Delete log' | translate }}</h3>
   <div mat-dialog-content>
-    <p>{{ 'This action cannot be undone' | translate }}</p>
+    <!--
+      A COMPLETED log takes its SDK case with it — answers and photos,
+      permanently (#1290) — so the confirm says so. A not-completed row still
+      only removes the occurrence, as before.
+    -->
+    <p id="complianceReportDeleteConfirmText">
+      {{
+        (deleteTargetCompleted
+          ? 'The log is deleted permanently, including its answers and photos. This action cannot be undone.'
+          : 'This action cannot be undone'
+        ) | translate
+      }}
+    </p>
   </div>
   <div
     mat-dialog-actions

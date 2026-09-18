@@ -1120,3 +1120,235 @@ describe('ComplianceReportViewComponent — the view-mode guard', () => {
     expect(state.loading).toBe(false);
   });
 });
+
+/**
+ * #1290 — "Slet log" must return the user to the NEXT log: the key of the row
+ * that followed the deleted one is taken from the page BEFORE the refresh
+ * replaces it, handed to the state service, and applied — scroll + a ~3 s
+ * `row-highlight-flash` — once the refreshed response has rendered. The same
+ * mechanism is what #1291 reuses for the edited row.
+ */
+describe('ComplianceReportViewComponent — delete returns to the next row', () => {
+  let fixture: ComponentFixture<ComplianceReportViewComponent>;
+  let component: ComplianceReportViewComponent;
+  let state: ComplianceReportStateService;
+  let eformColumns: jest.Mock;
+  let deleteCompliance: jest.Mock;
+  let afterClosed$: Subject<unknown>;
+
+  const caseModel = (complianceId: number, sdkCaseId = 100 + complianceId): ComplianceReportCaseModel => ({
+    complianceId,
+    sdkCaseId,
+    propertyId: 5,
+    propertyName: 'Ejendom A',
+    title: 'Område 1',
+    taskDate: '2026-08-11',
+    completed: sdkCaseId > 0,
+    doneAt: null,
+    workerNames: [],
+    checkListId: 509,
+    tags: [],
+    cells: {},
+    imagesCount: 0,
+    images: [],
+  });
+
+  /** One headline, one table per inner array, in that order. */
+  const response = (...tables: ComplianceReportCaseModel[][]): ComplianceReportHeadlineGroupModel[] => [
+    {
+      headlineTagId: 1,
+      headlineName: 'Overskrift',
+      tagsCaption: '',
+      templates: tables.map((cases, t) => ({
+        checkListId: 509 + t,
+        checkListName: `eForm ${t}`,
+        schemaUnavailable: false,
+        columns: [],
+        cases,
+      })),
+    },
+  ];
+
+  const rowById = (complianceId: number) =>
+    component.sections
+      .flatMap((s) => s.tables)
+      .flatMap((t) => t.allRows)
+      .find((r) => r.complianceId === complianceId)!;
+
+  const isHighlighted = (complianceId: number) =>
+    component.rowClassFormatter['row-highlight-flash'](rowById(complianceId), 0);
+
+  /** Render `before`, delete `deletedId`, answer the refresh with `after`. */
+  const deleteAndRefresh = (
+    before: ComplianceReportHeadlineGroupModel[],
+    deletedId: number,
+    after: ComplianceReportHeadlineGroupModel[],
+    deleteSucceeds = true,
+  ) => {
+    eformColumns.mockReturnValue(of({success: true, model: before}));
+    state.requestFetch();
+    eformColumns.mockReturnValue(of({success: true, model: after}));
+    deleteCompliance.mockReturnValue(of({success: deleteSucceeds}));
+
+    component.openDeleteConfirm(rowById(deletedId));
+    component.confirmDelete();
+  };
+
+  beforeEach(async () => {
+    jest.useFakeTimers();
+    eformColumns = jest.fn().mockReturnValue(of({success: true, model: []}));
+    deleteCompliance = jest.fn();
+    afterClosed$ = new Subject<unknown>();
+
+    await TestBed.configureTestingModule({
+      declarations: [ComplianceReportViewComponent],
+      imports: [TranslateModule.forRoot()],
+      providers: [
+        ComplianceReportStateService,
+        {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns}},
+        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance}},
+        {provide: BackendConfigurationPnPropertiesService, useValue: {getAllPropertiesDictionary: jest.fn()}},
+        {provide: BackendConfigurationPnCalendarService, useValue: {getBoards: jest.fn()}},
+        {
+          provide: MatDialog,
+          useValue: {open: jest.fn(() => ({afterClosed: () => afterClosed$, close: jest.fn()}))},
+        },
+        {provide: Router, useValue: {navigate: jest.fn(), url: '/x'}},
+      ],
+      schemas: [NO_ERRORS_SCHEMA],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(ComplianceReportViewComponent);
+    component = fixture.componentInstance;
+    state = TestBed.inject(ComplianceReportStateService);
+    state.setMode('report');
+    fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('deletes by the compliance id of the row the dialog was opened from', () => {
+    deleteAndRefresh(response([caseModel(1), caseModel(2)]), 1, response([caseModel(2)]));
+
+    expect(deleteCompliance).toHaveBeenCalledWith(1);
+  });
+
+  it('highlights the row that FOLLOWED the deleted one after the refresh', () => {
+    deleteAndRefresh(
+      response([caseModel(1), caseModel(2), caseModel(3)]),
+      2,
+      response([caseModel(1), caseModel(3)]),
+    );
+
+    expect(component.highlightedRowKey).toBe('case:103');
+    expect(isHighlighted(3)).toBe(true);
+    expect(isHighlighted(1)).toBe(false);
+  });
+
+  it('crosses into the next table when the deleted row ended its table', () => {
+    deleteAndRefresh(
+      response([caseModel(1), caseModel(2)], [caseModel(3)]),
+      2,
+      response([caseModel(1)], [caseModel(3)]),
+    );
+
+    expect(component.highlightedRowKey).toBe('case:103');
+  });
+
+  it('falls back to the row BEFORE when the last row was deleted', () => {
+    deleteAndRefresh(response([caseModel(1), caseModel(2)]), 2, response([caseModel(1)]));
+
+    expect(component.highlightedRowKey).toBe('case:101');
+  });
+
+  it('keys a row without an SDK case by its compliance id', () => {
+    deleteAndRefresh(
+      response([caseModel(1), caseModel(2, 0)]),
+      1,
+      response([caseModel(2, 0)]),
+    );
+
+    expect(component.highlightedRowKey).toBe('compliance:2');
+  });
+
+  it('highlights nothing when the deleted row was the only one', () => {
+    deleteAndRefresh(response([caseModel(1)]), 1, response());
+
+    expect(component.highlightedRowKey).toBeNull();
+  });
+
+  it('drops the highlight after ~3 s', () => {
+    deleteAndRefresh(response([caseModel(1), caseModel(2)]), 1, response([caseModel(2)]));
+    expect(component.highlightedRowKey).toBe('case:102');
+
+    jest.advanceTimersByTime(2999);
+    expect(component.highlightedRowKey).toBe('case:102');
+
+    jest.advanceTimersByTime(1);
+    expect(component.highlightedRowKey).toBeNull();
+  });
+
+  it('scrolls the highlighted row into view one frame after the render', () => {
+    const tr = document.createElement('tr');
+    tr.className = 'row-highlight-flash';
+    const scrollIntoView = jest.fn();
+    (tr as any).scrollIntoView = scrollIntoView;
+    fixture.nativeElement.appendChild(tr);
+
+    deleteAndRefresh(response([caseModel(1), caseModel(2)]), 1, response([caseModel(2)]));
+    expect(scrollIntoView).not.toHaveBeenCalled();
+
+    jest.advanceTimersByTime(0);
+    expect(scrollIntoView).toHaveBeenCalledWith({behavior: 'smooth', block: 'center'});
+  });
+
+  it('expands a table the row budget left collapsed so the next row is in the DOM', () => {
+    // The refreshed page: five full tables spend the whole 500-row page budget,
+    // so the sixth — the one holding the row to land on — renders 0 rows.
+    let id = 1000;
+    const big = () => Array.from({length: 100}, () => caseModel(++id));
+    const after = response(big(), big(), big(), big(), big(), [caseModel(2), caseModel(3)]);
+
+    deleteAndRefresh(response([caseModel(1), caseModel(2)]), 1, after);
+
+    const sixth = component.sections[0].tables[5];
+    expect(component.highlightedRowKey).toBe('case:102');
+    expect(sixth.expanded).toBe(true);
+    expect(sixth.rows.map((r) => r.complianceId)).toEqual([2, 3]);
+  });
+
+  it('a failed delete refreshes nothing and highlights nothing', () => {
+    deleteAndRefresh(response([caseModel(1), caseModel(2)]), 1, response([caseModel(2)]), false);
+
+    expect(eformColumns).toHaveBeenCalledTimes(1);
+    expect(component.highlightedRowKey).toBeNull();
+    expect(state.takePendingRowHighlight()).toBeNull();
+  });
+
+  it('consumes the highlight even when the refresh fails, so it cannot leak into a later fetch', () => {
+    eformColumns.mockReturnValue(of({success: true, model: response([caseModel(1), caseModel(2)])}));
+    state.requestFetch();
+    deleteCompliance.mockReturnValue(of({success: true}));
+    eformColumns.mockReturnValue(of({success: false}));
+
+    component.openDeleteConfirm(rowById(1));
+    component.confirmDelete();
+
+    expect(component.highlightedRowKey).toBeNull();
+    expect(state.takePendingRowHighlight()).toBeNull();
+  });
+
+  it('the confirm text warns that answers and photos go too — for a completed row only', () => {
+    eformColumns.mockReturnValue(of({success: true, model: response([caseModel(1), caseModel(2, 0)])}));
+    state.requestFetch();
+
+    component.openDeleteConfirm(rowById(1));
+    expect(component.deleteTargetCompleted).toBe(true);
+    component.cancelDelete();
+
+    component.openDeleteConfirm(rowById(2));
+    expect(component.deleteTargetCompleted).toBe(false);
+  });
+});

@@ -770,4 +770,5 @@ export const elGR = {
   Teams: 'Ομάδες',
   '{{count}} selected': '{{count}} επιλεγμένα',
   'Teams and employees': 'Ομάδες και υπάλληλοι',
+  'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Το αρχείο καταγραφής διαγράφεται οριστικά, συμπεριλαμβανομένων των απαντήσεων και των φωτογραφιών του. Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.',
 };

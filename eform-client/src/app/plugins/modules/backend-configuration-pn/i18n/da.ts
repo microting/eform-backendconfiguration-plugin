@@ -791,4 +791,5 @@ export const da = {
   Teams: 'Hold',
   '{{count}} selected': '{{count}} valgt',
   'Teams and employees': 'Hold og medarbejdere',
+  'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Loggen slettes permanent, inklusive svar og billeder. Denne handling kan ikke fortrydes.',
 };

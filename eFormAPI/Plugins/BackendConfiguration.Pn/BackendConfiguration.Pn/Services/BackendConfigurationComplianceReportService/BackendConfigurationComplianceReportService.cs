@@ -540,6 +540,21 @@ public class BackendConfigurationComplianceReportService(
             }
 
             // A deleted occurrence is never returned, for ANY status.
+            //
+            // This is also THE marker for a deleted COMPLETED log (#1290):
+            // BackendConfigurationCompliancesService.Delete upserts an IsDeleted exception
+            // for (lowest-Id live ARP, Deadline date) — the same ARP pinned above — so the
+            // log disappears from Rapport, Detaljer and Oversigt alike. The calendar's
+            // series-level exception purges keep these markers
+            // (ExcludeDeletedCompletedLogMarkers), so a later series edit cannot bring
+            // the log back. Two other signals
+            // were rejected deliberately and must NOT be added as filters here:
+            //  - the SDK case's WorkflowState: every completion path ends with
+            //    core.CaseDelete on the completed case itself (device retraction), so
+            //    "SDK case Removed" describes most legitimately completed logs;
+            //  - the PlanningCaseSite's WorkflowState: property delete and area unassign
+            //    soft-delete every PlanningCaseSite of the planning, completed ones
+            //    included, while the completed history must stay in the report.
             if (exception?.IsDeleted == true) continue;
 
             var effectiveTaskDate = exception?.NewDate?.Date ?? candidate.Deadline.Date;

@@ -770,4 +770,5 @@ export const etET = {
   Teams: 'Meeskonnad',
   '{{count}} selected': '{{count}} valitud',
   'Teams and employees': 'Meeskonnad ja töötajad',
+  'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Logi kustutatakse jäädavalt koos vastuste ja fotodega. Seda toimingut ei saa tagasi võtta.',
 };

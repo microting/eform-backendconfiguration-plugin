@@ -2018,7 +2018,9 @@ public class BackendConfigurationCalendarService(
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .Where(x => x.OriginalDate >= retractionFrom)
                                 .ToListAsync();
-                            foreach (var staleException in staleExceptions)
+                            // #1290: a deleted COMPLETED log's marker survives the purge.
+                            foreach (var staleException in await ExcludeDeletedCompletedLogMarkers(
+                                         updateModel.Id, staleExceptions))
                             {
                                 await staleException.Delete(backendConfigurationPnDbContext);
                             }
@@ -2491,7 +2493,8 @@ public class BackendConfigurationCalendarService(
             .Where(x => x.OriginalDate >= staleCutoff)
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
             .ToListAsync();
-        foreach (var stale in staleExceptions)
+        // #1290: a deleted COMPLETED log's marker survives the purge.
+        foreach (var stale in await ExcludeDeletedCompletedLogMarkers(updateModel.Id, staleExceptions))
         {
             await stale.Delete(backendConfigurationPnDbContext);
         }
@@ -2663,7 +2666,8 @@ public class BackendConfigurationCalendarService(
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .ToListAsync();
 
-                foreach (var stale in staleExceptions)
+                // #1290: a deleted COMPLETED log's marker survives the purge.
+                foreach (var stale in await ExcludeDeletedCompletedLogMarkers(deleteModel.Id, staleExceptions))
                 {
                     await stale.Delete(backendConfigurationPnDbContext);
                 }
@@ -2731,14 +2735,19 @@ public class BackendConfigurationCalendarService(
                     {
                         var occurrenceDate = DateTime.SpecifyKind(
                             compliance.Deadline.Date, DateTimeKind.Utc);
+                        // ANY WorkflowState: the purge above soft-deletes the
+                        // other overrides from originalDate on, and the unique
+                        // (AreaRulePlanningId, OriginalDate) index covers removed
+                        // rows too — inserting beside one throws. Revive instead.
                         var existingException = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
                             .Where(x => x.AreaRulePlanningId == deleteModel.Id)
                             .Where(x => x.OriginalDate == occurrenceDate)
-                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .OrderBy(x => x.WorkflowState == Constants.WorkflowStates.Removed ? 1 : 0)
                             .FirstOrDefaultAsync();
 
                         if (existingException != null)
                         {
+                            existingException.WorkflowState = Constants.WorkflowStates.Created;
                             existingException.IsDeleted = true;
                             existingException.UpdatedByUserId = userService.UserId;
                             await existingException.Update(backendConfigurationPnDbContext);
@@ -2874,6 +2883,79 @@ public class BackendConfigurationCalendarService(
     /// which performs the identical DB soft-deletes synchronously and then runs
     /// the <c>core.CaseDelete</c> calls fire-and-forget.
     /// </summary>
+    /// <summary>
+    /// #1290 — the exceptions a series-level purge must NOT soft-delete: the
+    /// <c>IsDeleted</c> markers of deleted COMPLETED logs. Those are written by
+    /// <c>BackendConfigurationCompliancesService.Delete</c> ("Slet log" in the
+    /// compliance report) and by the <c>thisAndFollowingIncludingCompleted</c> series
+    /// delete, and they are the ONLY thing hiding such a log from the calendar and
+    /// from Rapport/Detaljer/Oversigt (<c>BuildCandidateSet</c>): completion already
+    /// removed the Compliance row and the SDK case, so nothing else distinguishes a
+    /// deleted completed log from a live one. Purging one would resurrect the log.
+    ///
+    /// <para>Kept = <c>IsDeleted</c> AND a completed Compliance (backing SDK case
+    /// <c>Status == 100</c>) of the ARP's planning falls on its <c>OriginalDate</c>.
+    /// Everything else — overrides, moves, anchors, and <c>IsDeleted</c> "only this"
+    /// deletes of NOT-done occurrences — is returned and purged exactly as before.
+    /// A kept row is live, so every insert that follows a purge (which looks up
+    /// non-removed rows for the same date first) finds and reuses it rather than
+    /// colliding with it on the unique (AreaRulePlanningId, OriginalDate) index;
+    /// the past-anchor backfills skip completed-compliance dates altogether.</para>
+    /// </summary>
+    private async Task<List<CalendarOccurrenceException>> ExcludeDeletedCompletedLogMarkers(
+        int arpId, List<CalendarOccurrenceException> exceptions)
+    {
+        var deletedMarkers = exceptions.Where(x => x.IsDeleted).ToList();
+        if (deletedMarkers.Count == 0 || coreHelper == null)
+        {
+            return exceptions;
+        }
+
+        var planningId = await backendConfigurationPnDbContext.AreaRulePlannings
+            .Where(x => x.Id == arpId)
+            .Select(x => (int?)x.ItemPlanningId)
+            .FirstOrDefaultAsync();
+        if (planningId == null)
+        {
+            return exceptions;
+        }
+
+        var markerDates = deletedMarkers.Select(x => x.OriginalDate.Date).ToHashSet();
+        var from = markerDates.Min();
+        var to = markerDates.Max().AddDays(1);
+        // No WorkflowState filter: completion soft-deletes the Compliance row.
+        var deployed = (await backendConfigurationPnDbContext.Compliances
+                .Where(x => x.PlanningId == planningId.Value
+                            && x.MicrotingSdkCaseId > 0
+                            && x.Deadline >= from && x.Deadline < to)
+                .Select(x => new { x.Deadline, x.MicrotingSdkCaseId })
+                .ToListAsync())
+            .Where(x => markerDates.Contains(x.Deadline.Date))
+            .ToList();
+        if (deployed.Count == 0)
+        {
+            return exceptions;
+        }
+
+        var caseIds = deployed.Select(x => x.MicrotingSdkCaseId).Distinct().ToList();
+        var sdkCore = await coreHelper.GetCore();
+        await using var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
+        var completedCaseIds = (await sdkDbContext.Cases
+                .Where(c => caseIds.Contains(c.Id) && c.Status == 100)
+                .Select(c => c.Id)
+                .ToListAsync())
+            .ToHashSet();
+
+        var completedDates = deployed
+            .Where(x => completedCaseIds.Contains(x.MicrotingSdkCaseId))
+            .Select(x => x.Deadline.Date)
+            .ToHashSet();
+
+        return exceptions
+            .Where(x => !(x.IsDeleted && completedDates.Contains(x.OriginalDate.Date)))
+            .ToList();
+    }
+
     private async Task<OperationResult> DeleteEntireSeries(int arpId, bool deferRetraction = false)
     {
         var areaRulePlanningStillLive = await backendConfigurationPnDbContext.AreaRulePlannings
@@ -2914,7 +2996,8 @@ public class BackendConfigurationCalendarService(
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
             .ToListAsync();
 
-        foreach (var ex in exceptions)
+        // #1290: a deleted COMPLETED log's marker survives, like every other purge.
+        foreach (var ex in await ExcludeDeletedCompletedLogMarkers(arpId, exceptions))
         {
             await ex.Delete(backendConfigurationPnDbContext);
         }
@@ -3471,7 +3554,8 @@ public class BackendConfigurationCalendarService(
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .ToListAsync();
 
-                foreach (var stale in staleExceptions)
+                // #1290: a deleted COMPLETED log's marker survives the purge.
+                foreach (var stale in await ExcludeDeletedCompletedLogMarkers(moveModel.Id, staleExceptions))
                 {
                     await stale.Delete(backendConfigurationPnDbContext);
                 }
@@ -3550,7 +3634,8 @@ public class BackendConfigurationCalendarService(
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .ToListAsync();
 
-                foreach (var ex in allExceptions)
+                // #1290: a deleted COMPLETED log's marker survives the purge.
+                foreach (var ex in await ExcludeDeletedCompletedLogMarkers(moveModel.Id, allExceptions))
                 {
                     await ex.Delete(backendConfigurationPnDbContext);
                 }
@@ -3798,7 +3883,8 @@ public class BackendConfigurationCalendarService(
                 }
 
                 var stales = await staleQuery.ToListAsync();
-                foreach (var stale in stales)
+                // #1290: a deleted COMPLETED log's marker survives the purge.
+                foreach (var stale in await ExcludeDeletedCompletedLogMarkers(resizeModel.Id, stales))
                 {
                     await stale.Delete(backendConfigurationPnDbContext);
                 }

@@ -797,16 +797,234 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
         }
     }
 
+    /// <summary>
+    /// <c>DELETE api/backend-configuration-pn/compliances/delete/{id}</c> — shared by the
+    /// compliance report (Rapport/Detaljer), the standalone <c>/compliances</c> table and
+    /// task-tracker.
+    ///
+    /// <para><b>Not-done occurrence</b> (no SDK case, or a case that is not
+    /// <c>Status == 100</c>): soft-deletes the Compliance row, exactly as before #1290 —
+    /// except that a row which is ALREADY removed is now reported as a failure
+    /// (<c>ComplianceLogAlreadyDeleted</c>) instead of a success that wrote nothing.</para>
+    ///
+    /// <para><b>Completed occurrence</b> (#1290 — "Slet log" on a completed log used to be a
+    /// silent no-op: completion had already soft-deleted the Compliance, so
+    /// <c>compliance.Delete</c> found no change to save and success was still returned).
+    /// Deleting a completed log is irreversible and removes it everywhere:</para>
+    /// <list type="number">
+    ///   <item><description>the SDK case (answers and photos) is set Removed —
+    ///     <c>core.CaseDeleteResult</c> locally, plus a best-effort, fire-and-forget
+    ///     <c>core.CaseDelete</c> on the platform when the case was still live;</description></item>
+    ///   <item><description>the matching live <c>PlanningCaseSite</c> is soft-deleted and its
+    ///     <c>PlanningCase</c> is retracted only when no live sibling remains (mirrors
+    ///     <c>CalendarAssignmentReconciliationService.RetractSiteForOccurrenceAsync</c>);</description></item>
+    ///   <item><description>an <c>IsDeleted</c> <c>CalendarOccurrenceException</c> is
+    ///     upserted for (the planning's lowest-Id live AreaRulePlanning, Deadline date) — this
+    ///     is THE marker that hides the log from Rapport, Detaljer and Oversigt (see
+    ///     <c>BackendConfigurationComplianceReportService.BuildCandidateSet</c>) and from the
+    ///     calendar.</description></item>
+    /// </list>
+    ///
+    /// <para><b>Why the exception row is the marker, and neither of the two obvious
+    /// candidates:</b></para>
+    /// <list type="bullet">
+    ///   <item><description>NOT the SDK case's WorkflowState: every web/calendar/gRPC
+    ///     completion ends with <c>core.CaseDelete</c> on the COMPLETED case itself (device
+    ///     retraction), which sets it Removed. "SDK case Removed" therefore describes most
+    ///     legitimately completed logs, and filtering on it would hide them.</description></item>
+    ///   <item><description>NOT the PlanningCaseSite's WorkflowState: deleting a property
+    ///     (<c>BackendConfigurationPropertiesService.Delete</c>) and unassigning an area from a
+    ///     property (<c>BackendConfigurationPropertyAreasServiceHelper</c>) soft-delete every
+    ///     PlanningCaseSite of the planning, completed ones included, while the Compliance
+    ///     rows — and so the completed history in the reports — stay.</description></item>
+    /// </list>
+    /// <para>The exception row is keyed per occurrence (unique (AreaRulePlanningId,
+    /// OriginalDate); Compliances are unique on (PlanningId, Deadline)), is already the
+    /// calendar's own "this occurrence was deleted" mechanism, and none of those paths write
+    /// it. Consequence: a completed log whose planning has NO live AreaRulePlanning cannot
+    /// be marked — the report's exception lookup only consults live ARPs — so it is refused
+    /// with <c>ComplianceLogCannotBeDeleted</c> rather than half-deleted.</para>
+    ///
+    /// <para>The marker is durable: every series-level exception purge in
+    /// <c>BackendConfigurationCalendarService</c> (UpdateTask "all" / thisAndFollowing,
+    /// MoveTask, ResizeTask, DeleteTask thisAndFollowing, DeleteEntireSeries) skips
+    /// <c>IsDeleted</c> exceptions that sit on a completed Compliance's date — see
+    /// <c>ExcludeDeletedCompletedLogMarkers</c> — so an edit of the series never
+    /// resurrects a deleted log.</para>
+    ///
+    /// <para>"Already deleted" (<c>ComplianceLogAlreadyDeleted</c>) for a completed log means
+    /// the live exception row for its occurrence is already <c>IsDeleted</c>.</para>
+    /// </summary>
     public async Task<OperationResult> Delete(int id)
     {
-        var compliance = await _backendConfigurationPnDbContext.Compliances.FirstOrDefaultAsync(x => x.Id == id).ConfigureAwait(false);
-        if (compliance == null)
+        try
         {
-            return new OperationResult(false, _localizationService.GetString("ComplianceNotFound"));
-        }
-        await compliance.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+            var compliance = await _backendConfigurationPnDbContext.Compliances
+                .FirstOrDefaultAsync(x => x.Id == id).ConfigureAwait(false);
+            if (compliance == null)
+            {
+                return new OperationResult(false, _localizationService.GetString("ComplianceNotFound"));
+            }
 
-        return new OperationResult(true, _localizationService.GetString("TaskDeletedSuccessful"));
+            Case sdkCase = null;
+            eFormCore.Core core = null;
+            if (compliance.MicrotingSdkCaseId > 0)
+            {
+                core = await _coreHelper.GetCore().ConfigureAwait(false);
+                await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+                sdkCase = await sdkDbContext.Cases
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.Id == compliance.MicrotingSdkCaseId).ConfigureAwait(false);
+            }
+
+            // The SAME done-ness the compliance report uses (IsDone in BuildCandidateSet).
+            var completed = sdkCase is { Status: 100 };
+
+            if (!completed)
+            {
+                // Status quo for a not-done occurrence, minus the false success.
+                if (compliance.WorkflowState == Constants.WorkflowStates.Removed)
+                {
+                    return new OperationResult(false,
+                        _localizationService.GetString("ComplianceLogAlreadyDeleted"));
+                }
+
+                await compliance.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                return new OperationResult(true, _localizationService.GetString("TaskDeletedSuccessful"));
+            }
+
+            // ---- completed occurrence ----
+
+            // Pinned exactly as BuildCandidateSet pins row.Arp: the LOWEST-Id live ARP of
+            // the planning. An exception keyed to any other ARP (or to a removed one) would
+            // be ignored by the report and the log would come back.
+            var arp = await _backendConfigurationPnDbContext.AreaRulePlannings
+                .Where(x => x.ItemPlanningId == compliance.PlanningId
+                            && x.WorkflowState != Constants.WorkflowStates.Removed)
+                .OrderBy(x => x.Id)
+                .FirstOrDefaultAsync().ConfigureAwait(false);
+            if (arp == null)
+            {
+                Log.LogException(
+                    $"[ERROR] BackendConfigurationCompliancesService.Delete: completed compliance {compliance.Id} (planningId: {compliance.PlanningId}) has no live AreaRulePlanning to carry the deleted-occurrence marker - nothing was mutated");
+                return new OperationResult(false,
+                    _localizationService.GetString("ComplianceLogCannotBeDeleted"));
+            }
+
+            var occurrenceDate = DateTime.SpecifyKind(compliance.Deadline.Date, DateTimeKind.Utc);
+            var nextDay = occurrenceDate.AddDays(1);
+            // ANY WorkflowState: the unique index (AreaRulePlanningId, OriginalDate) covers
+            // soft-removed rows too, so a removed row must be revived, never duplicated.
+            var exception = await _backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                .Where(x => x.AreaRulePlanningId == arp.Id
+                            && x.OriginalDate >= occurrenceDate
+                            && x.OriginalDate < nextDay)
+                .OrderBy(x => x.WorkflowState == Constants.WorkflowStates.Removed ? 1 : 0)
+                .ThenBy(x => x.Id)
+                .FirstOrDefaultAsync().ConfigureAwait(false);
+
+            if (exception is { IsDeleted: true }
+                && exception.WorkflowState != Constants.WorkflowStates.Removed)
+            {
+                return new OperationResult(false,
+                    _localizationService.GetString("ComplianceLogAlreadyDeleted"));
+            }
+
+            // ---- pre-flight complete; everything below this line mutates ----
+
+            if (compliance.WorkflowState != Constants.WorkflowStates.Removed)
+            {
+                await compliance.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+            }
+
+            // 1. The SDK case (answers + photos). Resolved before the local delete so the
+            //    platform retraction still knows which device case to pull.
+            var caseWasLive = sdkCase.WorkflowState != Constants.WorkflowStates.Removed;
+            var microtingUidToRetract = caseWasLive ? sdkCase.MicrotingUid : null;
+            if (caseWasLive)
+            {
+                await core.CaseDeleteResult(sdkCase.Id).ConfigureAwait(false);
+            }
+
+            // 2. The items-planning bookkeeping — mirrors RetractSiteForOccurrenceAsync.
+            var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
+                .Where(x => x.MicrotingSdkCaseId == sdkCase.Id
+                            && x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToListAsync().ConfigureAwait(false);
+            foreach (var planningCaseSite in planningCaseSites)
+            {
+                var planningCase = await _itemsPlanningPnDbContext.PlanningCases
+                    .Where(x => x.Id == planningCaseSite.PlanningCaseId
+                                && x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .FirstOrDefaultAsync().ConfigureAwait(false);
+
+                await planningCaseSite.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
+
+                if (planningCase != null)
+                {
+                    // A shared PlanningCase with other live sites must survive.
+                    var remainingLiveSites = await _itemsPlanningPnDbContext.PlanningCaseSites
+                        .CountAsync(x => x.PlanningCaseId == planningCase.Id
+                                         && x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .ConfigureAwait(false);
+                    if (remainingLiveSites == 0)
+                    {
+                        planningCase.WorkflowState = Constants.WorkflowStates.Retracted;
+                        await planningCase.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                    }
+                }
+            }
+
+            // 3. The marker. Upsert on the unique (AreaRulePlanningId, OriginalDate).
+            var userId = _userService.UserId;
+            if (exception == null)
+            {
+                exception = new Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.CalendarOccurrenceException
+                {
+                    AreaRulePlanningId = arp.Id,
+                    OriginalDate = occurrenceDate,
+                    IsDeleted = true,
+                    CreatedByUserId = userId,
+                    UpdatedByUserId = userId
+                };
+                await exception.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+            }
+            else
+            {
+                exception.IsDeleted = true;
+                exception.WorkflowState = Constants.WorkflowStates.Created;
+                exception.UpdatedByUserId = userId;
+                await exception.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
+            }
+
+            // 4. Best-effort platform retraction, fire-and-forget: CaseDelete is an external
+            //    call that can block for minutes, and the local state above is already final.
+            if (microtingUidToRetract != null)
+            {
+                var uidToRetract = (int)microtingUidToRetract;
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var retractionCore = await _coreHelper.GetCore().ConfigureAwait(false);
+                        await retractionCore.CaseDelete(uidToRetract).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.LogException(ex.Message);
+                        Log.LogException(ex.StackTrace);
+                    }
+                });
+            }
+
+            return new OperationResult(true, _localizationService.GetString("TaskDeletedSuccessful"));
+        }
+        catch (Exception ex)
+        {
+            Log.LogException(ex.Message);
+            Log.LogException(ex.StackTrace);
+            return new OperationResult(false, _localizationService.GetString("ComplianceLogCannotBeDeleted"));
+        }
     }
 
     public async Task<OperationDataResult<CompliancesStatsModel>> Stats()

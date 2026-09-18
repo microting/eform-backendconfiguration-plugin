@@ -770,4 +770,5 @@ export const esES = {
   Teams: 'Equipos',
   '{{count}} selected': '{{count}} seleccionados',
   'Teams and employees': 'Equipos y empleados',
+  'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'El registro se ha eliminado permanentemente, incluyendo las respuestas y las fotos. Esta acción no se puede deshacer.',
 };

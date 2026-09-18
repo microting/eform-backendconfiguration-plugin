@@ -1,9 +1,9 @@
 import {Overlay} from '@angular/cdk/overlay';
-import {Component, OnDestroy, OnInit, TemplateRef, ViewChild} from '@angular/core';
+import {Component, ElementRef, NgZone, OnDestroy, OnInit, TemplateRef, ViewChild} from '@angular/core';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Router} from '@angular/router';
 import {TranslateService} from '@ngx-translate/core';
-import {MtxGridColumn} from '@ng-matero/extensions/grid';
+import {MtxGridColumn, MtxGridRowClassFormatter} from '@ng-matero/extensions/grid';
 import {Subject, merge, of} from 'rxjs';
 import {catchError, filter as rxFilter, finalize, switchMap, takeUntil, tap} from 'rxjs/operators';
 import {dialogConfigHelper} from 'src/app/common/helpers';
@@ -26,15 +26,20 @@ import {
 } from '../../../../services';
 import {
   COMPLIANCE_EMPTY_CELL,
+  COMPLIANCE_REPORT_HIGHLIGHT_CLASS,
+  COMPLIANCE_REPORT_HIGHLIGHT_MS,
   COMPLIANCE_REPORT_PAGE_ROW_BUDGET,
   COMPLIANCE_REPORT_TABLE_ROW_CAP,
   ComplianceReportSection,
   ComplianceReportTable,
+  ComplianceReportRowKey,
   buildComplianceReportSections,
   complianceAnswerIsChecked,
   complianceAnswerText,
+  complianceReportRowKey,
   complianceWorkerNames,
   formatComplianceReportDate,
+  nextComplianceReportRowKey,
 } from '../../helpers';
 import {ComplianceReportStateService} from '../../store';
 
@@ -204,6 +209,26 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
   private refresh$ = new Subject<void>();
   private deleteDialogRef: MatDialogRef<unknown> | null = null;
   private pendingDeleteId: number | null = null;
+  /** The row the open confirm dialog was opened from — its NEXT row is landed on. */
+  private pendingDeleteRow: ComplianceReportRowVm | null = null;
+
+  /**
+   * The row currently carrying `row-highlight-flash` (#1290/#1291), or null. Read by
+   * `rowClassFormatter` on every change-detection pass, so clearing it is all
+   * it takes to drop the class.
+   */
+  highlightedRowKey: ComplianceReportRowKey | null = null;
+  private highlightTimer: ReturnType<typeof setTimeout> | null = null;
+  private scrollTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /**
+   * ONE formatter object shared by every table's grid: mtx-grid calls it per row
+   * on each pass, and the row VM's key is the identity that survives a re-fetch.
+   */
+  readonly rowClassFormatter: MtxGridRowClassFormatter = {
+    [COMPLIANCE_REPORT_HIGHLIGHT_CLASS]: (row: ComplianceReportRowVm) =>
+      this.highlightedRowKey !== null && complianceReportRowKey(row) === this.highlightedRowKey,
+  };
 
   constructor(
     public state: ComplianceReportStateService,
@@ -215,6 +240,8 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
     private dialog: MatDialog,
     private overlay: Overlay,
     private router: Router,
+    private host: ElementRef<HTMLElement>,
+    private zone: NgZone,
   ) {}
 
   ngOnInit(): void {
@@ -253,6 +280,9 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
       )
       .subscribe((res) => {
         this.state.setLoading(false);
+        // Taken on EVERY response, success or not: a highlight meant for this
+        // fetch must never leak into a later, unrelated one.
+        const highlightKey = this.state.takePendingRowHighlight();
         if (!res || !res.success) {
           // For a RE-fetch, leave the previous rendering standing rather than
           // replacing it with "no tasks match the selected filters", which
@@ -261,11 +291,14 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
           return;
         }
         this.applyResponse(res.model ?? []);
+        this.landOnRow(highlightKey);
       });
   }
 
   ngOnDestroy(): void {
     this.closeDeleteDialog();
+    this.clearTimer('highlight');
+    this.clearTimer('scroll');
     // No `setLoading(false)` here on purpose. `loading` is the SHELL's flag: it
     // resets it in `setMode()`, `enterPage()` and `blankUntilCommit()` (the one
     // filter branch that unmounts — `setFilter()` itself never does), which
@@ -622,6 +655,72 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
   }
 
   // -------------------------------------------------------------------
+  // Landing on a row after a re-fetch (#1290 delete, reused by #1291 edit)
+  // -------------------------------------------------------------------
+
+  /** Every row of every table of every section, in the order they render. */
+  private allRowsInDisplayOrder(): ComplianceReportRowVm[] {
+    return this.sections.flatMap((section) => section.tables.flatMap((table) => table.allRows));
+  }
+
+  /**
+   * Scroll the row with `key` to the middle of the viewport and give it the
+   * `row-highlight-flash` class for `COMPLIANCE_REPORT_HIGHLIGHT_MS`.
+   *
+   * A table the row budget left collapsed (or capped) is expanded first — the
+   * row must be in the DOM to be scrolled to. A key that is no longer in the
+   * result (it fell out of the filtered set) is a no-op: nothing is scrolled.
+   */
+  private landOnRow(key: ComplianceReportRowKey | null): void {
+    if (key === null) {
+      return;
+    }
+    const table = this.sections
+      .flatMap((section) => section.tables)
+      .find((t) => t.allRows.some((row) => complianceReportRowKey(row) === key));
+    if (!table) {
+      return;
+    }
+    if (!table.rows.some((row) => complianceReportRowKey(row) === key)) {
+      this.expandTable(table);
+    }
+    this.highlightedRowKey = key;
+
+    // One frame later: the row is only rendered — and only carries the class —
+    // after the next change-detection pass.
+    this.clearTimer('scroll');
+    this.scrollTimer = setTimeout(() => {
+      this.scrollTimer = null;
+      this.host.nativeElement
+        .querySelector<HTMLElement>(`tr.${COMPLIANCE_REPORT_HIGHLIGHT_CLASS}`)
+        ?.scrollIntoView({behavior: 'smooth', block: 'center'});
+    });
+
+    this.clearTimer('highlight');
+    // Outside Angular: a timer that only drops a class need not schedule an
+    // application tick while it waits.
+    this.zone.runOutsideAngular(() => {
+      this.highlightTimer = setTimeout(() => {
+        this.zone.run(() => {
+          this.highlightedRowKey = null;
+          this.highlightTimer = null;
+        });
+      }, COMPLIANCE_REPORT_HIGHLIGHT_MS);
+    });
+  }
+
+  private clearTimer(which: 'highlight' | 'scroll'): void {
+    if (which === 'highlight' && this.highlightTimer !== null) {
+      clearTimeout(this.highlightTimer);
+      this.highlightTimer = null;
+    }
+    if (which === 'scroll' && this.scrollTimer !== null) {
+      clearTimeout(this.scrollTimer);
+      this.scrollTimer = null;
+    }
+  }
+
+  // -------------------------------------------------------------------
   // Meta line
   // -------------------------------------------------------------------
 
@@ -754,11 +853,18 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
    */
   openDeleteConfirm(row: ComplianceReportRowVm): void {
     this.pendingDeleteId = row.complianceId;
+    this.pendingDeleteRow = row;
     this.deleteDialogRef = this.dialog.open(this.deleteConfirmTpl, {autoFocus: false});
     this.deleteDialogRef.afterClosed().pipe(takeUntil(this.destroy$)).subscribe(() => {
       this.deleteDialogRef = null;
       this.pendingDeleteId = null;
+      this.pendingDeleteRow = null;
     });
+  }
+
+  /** Drives the confirm dialog's wording: a completed log loses its answers and photos. */
+  get deleteTargetCompleted(): boolean {
+    return !!this.pendingDeleteRow?.completed;
   }
 
   cancelDelete(): void {
@@ -766,23 +872,32 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Deletes the COMPLIANCE LOG ROW through the existing endpoint
-   * (`DELETE api/backend-configuration-pn/compliances/delete/{id}`) and nothing
-   * else. That endpoint is shared with the standalone `/compliances` table and
-   * with task-tracker, so neither it nor `deleteCompliance()` is touched here —
-   * this is a new caller of an unchanged method.
+   * Deletes the log through the shared endpoint
+   * (`DELETE api/backend-configuration-pn/compliances/delete/{id}`, also used by
+   * the standalone `/compliances` table, Detaljer and task-tracker). For a
+   * COMPLETED log the server now deletes the SDK case too — answers and photos,
+   * permanently (#1290) — which the confirm dialog says.
+   *
+   * On success the report is re-fetched and the user lands on the row that
+   * FOLLOWED the deleted one (the one before it, when it was the last): its key
+   * is worked out HERE, from the rows on screen before the refresh replaces
+   * them. A failed delete (the server toasts its message, e.g. "already
+   * deleted") re-fetches nothing and highlights nothing.
    */
   confirmDelete(): void {
     const id = this.pendingDeleteId;
+    const row = this.pendingDeleteRow;
     this.closeDeleteDialog();
     if (id == null) {
       return;
     }
+    const nextKey = row ? nextComplianceReportRowKey(this.allRowsInDisplayOrder(), row) : null;
     this.compliancesService
       .deleteCompliance(id)
       .pipe(takeUntil(this.destroy$))
       .subscribe((res) => {
         if (res?.success) {
+          this.state.setPendingRowHighlight(nextKey);
           this.refresh$.next();
         }
       });
@@ -792,5 +907,6 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
     this.deleteDialogRef?.close();
     this.deleteDialogRef = null;
     this.pendingDeleteId = null;
+    this.pendingDeleteRow = null;
   }
 }

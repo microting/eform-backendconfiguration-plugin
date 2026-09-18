@@ -770,4 +770,5 @@ export const huHU = {
   Teams: 'Csapatok',
   '{{count}} selected': '{{count}} kiválasztva',
   'Teams and employees': 'Csapatok és alkalmazottak',
+  'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'A napló véglegesen törlődik, beleértve a válaszokat és a fényképeket is. Ez a művelet nem vonható vissza.',
 };

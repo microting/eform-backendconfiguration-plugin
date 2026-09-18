@@ -770,4 +770,5 @@ export const slSL = {
   Teams: 'Ekipe',
   '{{count}} selected': 'Izbranih: {{count}}',
   'Teams and employees': 'Ekipe in zaposleni',
+  'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Dnevnik je trajno izbrisan, vključno z odgovori in fotografijami. Tega dejanja ni mogoče razveljaviti.',
 };
