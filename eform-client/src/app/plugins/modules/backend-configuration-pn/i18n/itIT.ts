@@ -770,4 +770,5 @@ export const itIT = {
   Teams: 'Squadre',
   '{{count}} selected': '{{count}} selezionati',
   'Teams and employees': 'Squadre e dipendenti',
+  'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Il registro viene eliminato definitivamente, comprese le risposte e le foto. Questa azione non può essere annullata.',
 };

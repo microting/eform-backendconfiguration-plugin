@@ -770,4 +770,5 @@ export const csCZ = {
   Teams: 'Týmy',
   '{{count}} selected': 'Vybráno: {{count}}',
   'Teams and employees': 'Týmy a zaměstnanci',
+  'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Záznam bude trvale smazán, včetně odpovědí a fotografií. Tuto akci nelze vrátit zpět.',
 };

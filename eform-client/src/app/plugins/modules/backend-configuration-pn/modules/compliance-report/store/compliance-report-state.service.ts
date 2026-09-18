@@ -6,6 +6,7 @@ import {
   ComplianceReportSortKey,
   ComplianceReportStatus,
 } from '../../../models';
+import {ComplianceReportRowKey} from '../helpers/compliance-report-row-highlight';
 
 export type ComplianceMode = 'overview' | 'details' | 'report';
 
@@ -179,6 +180,11 @@ export class ComplianceReportStateService {
 
   /** The pending debounced filter fetch, if any. See `scheduleFetch()`. */
   private pendingFilterFetch: ReturnType<typeof setTimeout> | null = null;
+  /**
+   * The Rapport row to land on after the NEXT response renders — see
+   * `setPendingRowHighlight`. One-shot: read and cleared by `takePendingRowHighlight`.
+   */
+  private pendingRowHighlight: ComplianceReportRowKey | null = null;
 
   readonly filters$: Observable<ComplianceFilterState> = this.filtersSubject.asObservable();
   readonly mode$: Observable<ComplianceMode> = this.modeSubject.asObservable();
@@ -514,8 +520,37 @@ export class ComplianceReportStateService {
     this.draftCustomTo = null;
     this.sortKey = null;
     this.sortDsc = true;
+    this.pendingRowHighlight = null;
     this.setMode('overview');
     this.requestFetch();
+  }
+
+  // -------------------------------------------------------------------
+  // Landing on a row after a re-fetch (#1290, reused by #1291)
+  // -------------------------------------------------------------------
+
+  /**
+   * Remember which Rapport row to scroll to and highlight once the NEXT
+   * response has rendered — after a delete, the row that followed the deleted
+   * one (#1290); after an edit, the edited row (#1291).
+   *
+   * Held HERE rather than on the view because the view is not guaranteed to
+   * survive until the response lands: #1291's edit navigates away to the case
+   * page and back, which destroys and recreates it, while this service lives on
+   * the cached lazy module. It is a key, not a row object, because the whole
+   * view model is rebuilt from the response.
+   *
+   * Setting it never fetches — the caller triggers the fetch it belongs to.
+   */
+  setPendingRowHighlight(key: ComplianceReportRowKey | null): void {
+    this.pendingRowHighlight = key;
+  }
+
+  /** Read AND clear the pending row highlight, so a later fetch never re-applies it. */
+  takePendingRowHighlight(): ComplianceReportRowKey | null {
+    const key = this.pendingRowHighlight;
+    this.pendingRowHighlight = null;
+    return key;
   }
 
   // -------------------------------------------------------------------

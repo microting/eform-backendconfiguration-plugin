@@ -770,4 +770,5 @@ export const fiFI = {
   Teams: 'Tiimit',
   '{{count}} selected': '{{count}} valittu',
   'Teams and employees': 'Tiimit ja työntekijät',
+  'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Loki poistetaan pysyvästi, vastaukset ja kuvat mukaan lukien. Tätä toimintoa ei voi perua.',
 };

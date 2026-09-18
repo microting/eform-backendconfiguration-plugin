@@ -770,4 +770,5 @@ export const nlNL = {
   Teams: 'Teams',
   '{{count}} selected': '{{count}} geselecteerd',
   'Teams and employees': 'Teams en medewerkers',
+  'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Het logboek wordt permanent verwijderd, inclusief de antwoorden en foto\'s. Deze actie kan niet ongedaan worden gemaakt.',
 };

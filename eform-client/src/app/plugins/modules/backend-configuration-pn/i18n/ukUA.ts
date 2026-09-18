@@ -770,4 +770,5 @@ export const ukUA = {
   Teams: 'Команди',
   '{{count}} selected': 'Вибрано: {{count}}',
   'Teams and employees': 'Команди та співробітники',
+  'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Журнал видаляється назавжди, включаючи відповіді та фотографії. Цю дію не можна скасувати.',
 };

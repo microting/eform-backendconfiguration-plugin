@@ -6973,5 +6973,67 @@
       "el-GR": "Σφάλμα κατά τη διαγραφή του ημερολογίου",
       "is-IS": "Villa við að eyða dagatali"
     }
+  },
+  {
+    "Key": "ComplianceLogAlreadyDeleted",
+    "LocalizedValue": {
+      "da": "Loggen er allerede slettet",
+      "de": "Das Protokoll wurde bereits gelöscht",
+      "en-US": "The log has already been deleted",
+      "uk-UA": "Журнал уже видалено",
+      "pl-PL": "Dziennik został już usunięty",
+      "no-NO": "Loggen er allerede slettet",
+      "sv-SE": "Loggen har redan tagits bort",
+      "es-ES": "El registro ya se ha eliminado",
+      "fr-FR": "Le journal a déjà été supprimé",
+      "it-IT": "Il registro è già stato eliminato",
+      "nl-NL": "Het logboek is al verwijderd",
+      "pt-BR": "O registro já foi excluído",
+      "pt-PT": "O registo já foi eliminado",
+      "fi-FI": "Loki on jo poistettu",
+      "et-ET": "Logi on juba kustutatud",
+      "lv-LV": "Žurnāls jau ir izdzēsts",
+      "lt-LT": "Žurnalas jau ištrintas",
+      "ro-RO": "Jurnalul a fost deja șters",
+      "hr-HR": "Zapisnik je već izbrisan",
+      "sl-SL": "Dnevnik je že izbrisan",
+      "cs-CZ": "Záznam již byl smazán",
+      "sk-SK": "Záznam už bol odstránený",
+      "hu-HU": "A napló már törölve lett",
+      "bg-BG": "Дневникът вече е изтрит",
+      "el-GR": "Το αρχείο καταγραφής έχει ήδη διαγραφεί",
+      "is-IS": "Skránni hefur þegar verið eytt"
+    }
+  },
+  {
+    "Key": "ComplianceLogCannotBeDeleted",
+    "LocalizedValue": {
+      "da": "Loggen kan ikke slettes",
+      "de": "Das Protokoll kann nicht gelöscht werden",
+      "en-US": "The log cannot be deleted",
+      "uk-UA": "Журнал неможливо видалити",
+      "pl-PL": "Nie można usunąć dziennika",
+      "no-NO": "Loggen kan ikke slettes",
+      "sv-SE": "Loggen kan inte tas bort",
+      "es-ES": "El registro no se puede eliminar",
+      "fr-FR": "Le journal ne peut pas être supprimé",
+      "it-IT": "Il registro non può essere eliminato",
+      "nl-NL": "Het logboek kan niet worden verwijderd",
+      "pt-BR": "O registro não pode ser excluído",
+      "pt-PT": "O registo não pode ser eliminado",
+      "fi-FI": "Lokia ei voi poistaa",
+      "et-ET": "Logi ei saa kustutada",
+      "lv-LV": "Žurnālu nevar izdzēst",
+      "lt-LT": "Žurnalo negalima ištrinti",
+      "ro-RO": "Jurnalul nu poate fi șters",
+      "hr-HR": "Zapisnik nije moguće izbrisati",
+      "sl-SL": "Dnevnika ni mogoče izbrisati",
+      "cs-CZ": "Záznam nelze smazat",
+      "sk-SK": "Záznam nie je možné odstrániť",
+      "hu-HU": "A napló nem törölhető",
+      "bg-BG": "Дневникът не може да бъде изтрит",
+      "el-GR": "Το αρχείο καταγραφής δεν μπορεί να διαγραφεί",
+      "is-IS": "Ekki er hægt að eyða skránni"
+    }
   }
 ]

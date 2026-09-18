@@ -816,4 +816,5 @@ export const deDE = {
   Teams: 'Teams',
   '{{count}} selected': '{{count}} ausgewählt',
   'Teams and employees': 'Teams und Mitarbeiter',
+  'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Das Protokoll wird endgültig gelöscht, einschließlich der Antworten und Fotos. Dieser Vorgang kann nicht rückgängig gemacht werden.',
 };

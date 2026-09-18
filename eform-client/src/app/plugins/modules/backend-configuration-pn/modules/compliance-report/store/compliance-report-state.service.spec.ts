@@ -1004,3 +1004,51 @@ describe('ComplianceReportStateService', () => {
     });
   });
 });
+
+/**
+ * #1290 (reused by #1291): the row the Rapport view lands on after its next
+ * response renders. Strictly one-shot — a highlight meant for one re-fetch must
+ * never be re-applied by a later, unrelated one.
+ */
+describe('ComplianceReportStateService — pending row highlight', () => {
+  let service: ComplianceReportStateService;
+
+  beforeEach(() => {
+    service = new ComplianceReportStateService();
+  });
+
+  it('is empty by default', () => {
+    expect(service.takePendingRowHighlight()).toBeNull();
+  });
+
+  it('hands the key back once, then is empty', () => {
+    service.setPendingRowHighlight('case:42');
+
+    expect(service.takePendingRowHighlight()).toBe('case:42');
+    expect(service.takePendingRowHighlight()).toBeNull();
+  });
+
+  it('a later set replaces an unconsumed one', () => {
+    service.setPendingRowHighlight('case:1');
+    service.setPendingRowHighlight('compliance:2');
+
+    expect(service.takePendingRowHighlight()).toBe('compliance:2');
+  });
+
+  it('setting it never triggers a fetch', () => {
+    const fetches: unknown[] = [];
+    service.fetchRequested$.subscribe((x) => fetches.push(x));
+
+    service.setPendingRowHighlight('case:42');
+
+    expect(fetches.length).toBe(0);
+  });
+
+  it('`Oversigt` (resetToOverview) discards it', () => {
+    service.setPendingRowHighlight('case:42');
+
+    service.resetToOverview();
+
+    expect(service.takePendingRowHighlight()).toBeNull();
+  });
+});

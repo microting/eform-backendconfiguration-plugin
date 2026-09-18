@@ -157,6 +157,67 @@ async function routeHeadlineOnTwoEforms(page: Page): Promise<void> {
   );
 }
 
+const DELETE_ROUTE = '**/api/backend-configuration-pn/compliances/delete/*';
+
+/**
+ * #1290 — three COMPLETED logs of one eForm, Tank A / B / C in that order, and
+ * a delete endpoint that removes the deleted one from every LATER
+ * `eform-columns` response, the way the server's IsDeleted occurrence marker
+ * does. Mocked for the same reason as `routeHeadlineOnTwoEforms`: shard `s`
+ * seeds no SQL, and a completed, answered case has no browser path. What the
+ * server does on delete is pinned by `ComplianceDeleteCompletedLogTests`; what
+ * only a browser can prove is the view's side — the permanent-deletion wording,
+ * the row gone after the refresh, and the landing on the NEXT row.
+ *
+ * Returns the compliance ids the delete endpoint was called with.
+ */
+async function routeThreeLogsWithDelete(page: Page): Promise<number[]> {
+  const deleted: number[] = [];
+  const caseRow = (complianceId: number, title: string) => ({
+    complianceId, sdkCaseId: 4000 + complianceId, checkListId: 509,
+    tags: [], propertyId: 9, propertyName: 'Ejendom 9',
+    title, taskDate: '2026-05-13', completed: true,
+    doneAt: '2026-05-13T10:00:00', workerNames: ['Ann Andersen'],
+    cells: { f12: title }, imagesCount: 0, images: [],
+  });
+  const all = [caseRow(1, 'Tank A'), caseRow(2, 'Tank B'), caseRow(3, 'Tank C')];
+  await page.route(EFORM_COLUMNS_ROUTE, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        message: '',
+        model: [
+          {
+            headlineTagId: 8,
+            headlineName: 'Headline 8',
+            tagsCaption: '',
+            templates: [
+              {
+                checkListId: 509,
+                checkListName: 'Flydelag',
+                schemaUnavailable: false,
+                columns: [{ key: 'f12', fieldId: 12, label: 'KOMMENTAR', fieldType: 'Comment' }],
+                cases: all.filter((c) => !deleted.includes(c.complianceId)),
+              },
+            ],
+          },
+        ],
+      }),
+    }),
+  );
+  await page.route(DELETE_ROUTE, (route) => {
+    deleted.push(Number(route.request().url().split('/').pop()));
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ success: true, message: 'Opgaven er blevet slettet' }),
+    });
+  });
+  return deleted;
+}
+
 test.describe.configure({ mode: 'serial' });
 
 test.describe('Compliance — Rapport view', () => {
@@ -325,5 +386,73 @@ test.describe('Compliance — Rapport view', () => {
     await expect(tankA.locator('td.mat-column-answer_f11')).toHaveText(/^\s*01\.12\.2025\s*$/);
     await expect(tankA.locator('td.mat-column-doneAt')).toHaveText(/^\s*13\.05\.2026\s*$/);
     await expect(tankB.locator('td.mat-column-answer_f11')).toHaveText(/^\s*–\s*$/);
+  });
+
+  test('Slet log on a completed log warns it is permanent, deletes it and the row is gone after the refresh (#1290)', async ({
+    page,
+  }) => {
+    const deleted = await routeThreeLogsWithDelete(page);
+    await goToRapport(page);
+    await awaitRapportRendered(page);
+
+    const table = page.locator('.compliance-report__table[data-table-key="h8-c509"]');
+    const tankB = table.locator('tbody tr', { hasText: 'Tank B' });
+    await expect(tankB).toHaveCount(1, { timeout: UI_TIMEOUT });
+
+    await tankB.locator('.compliance-report__delete').click();
+    // A completed log takes its answers and photos with it — the dialog says so.
+    await expect(page.locator('#complianceReportDeleteConfirmText')).toContainText('svar og billeder', {
+      timeout: UI_TIMEOUT,
+    });
+
+    const refresh = waitForApiResponse(
+      page,
+      'the Rapport refresh after the delete',
+      (r) => r.url().includes('/compliance-report/eform-columns'),
+      SLOW_API_TIMEOUT,
+    );
+    ignoreUnhandledRejections(refresh);
+    await page.locator('#complianceReportDeleteConfirmBtn').click();
+    await refresh;
+    await awaitRapportRendered(page);
+
+    expect(deleted).toEqual([2]);
+    await expect(tankB).toHaveCount(0, { timeout: UI_TIMEOUT });
+    await expect(table.locator('tbody tr', { hasText: 'Tank A' })).toHaveCount(1);
+    await expect(table.locator('tbody tr', { hasText: 'Tank C' })).toHaveCount(1);
+  });
+
+  test('after Slet log the NEXT log is highlighted briefly (#1290)', async ({ page }) => {
+    await routeThreeLogsWithDelete(page);
+    await goToRapport(page);
+    await awaitRapportRendered(page);
+
+    const table = page.locator('.compliance-report__table[data-table-key="h8-c509"]');
+    await table.locator('tbody tr', { hasText: 'Tank B' }).locator('.compliance-report__delete').click();
+    await page.locator('#complianceReportDeleteConfirmBtn').click();
+
+    // Tank C followed Tank B, so Tank C is landed on — and ONLY Tank C.
+    const tankC = table.locator('tbody tr', { hasText: 'Tank C' });
+    await expect(tankC).toHaveClass(/\brow-highlight-flash\b/, { timeout: UI_TIMEOUT });
+    await expect(table.locator('tbody tr.row-highlight-flash')).toHaveCount(1);
+    await expect(tankC).toBeInViewport();
+
+    // ~3 s, then the highlight is gone again.
+    await expect(tankC).not.toHaveClass(/\brow-highlight-flash\b/, { timeout: 10_000 });
+  });
+
+  test('cancelling Slet log deletes nothing and highlights nothing (#1290)', async ({ page }) => {
+    const deleted = await routeThreeLogsWithDelete(page);
+    await goToRapport(page);
+    await awaitRapportRendered(page);
+
+    const table = page.locator('.compliance-report__table[data-table-key="h8-c509"]');
+    await table.locator('tbody tr', { hasText: 'Tank B' }).locator('.compliance-report__delete').click();
+    await page.locator('#complianceReportDeleteCancelBtn').click();
+
+    await expect(page.locator('#complianceReportDeleteConfirmBtn')).toHaveCount(0, { timeout: UI_TIMEOUT });
+    expect(deleted).toEqual([]);
+    await expect(table.locator('tbody tr')).toHaveCount(3);
+    await expect(table.locator('tbody tr.row-highlight-flash')).toHaveCount(0);
   });
 });
