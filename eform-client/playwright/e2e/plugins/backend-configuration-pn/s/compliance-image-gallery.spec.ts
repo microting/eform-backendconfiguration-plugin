@@ -73,7 +73,7 @@ async function goToRapport(page: Page): Promise<void> {
     { timeout: 60000 },
   );
   await page.locator('#complianceMode-report').click();
-  await expect(page.locator('#complianceMode-report')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#complianceMode-report-button')).toHaveAttribute('aria-checked', 'true');
   await response;
 }
 

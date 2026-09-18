@@ -213,7 +213,7 @@ async function openSeededDetails(page: Page): Promise<void> {
   // and the commit fetches whichever mode is active. `showDetails` waits for
   // its own `/index` response, then the row assertions retry until it rendered.
   await page.locator('#complianceMode-details').click();
-  await expect(page.locator('#complianceMode-details')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#complianceMode-details-button')).toHaveAttribute('aria-checked', 'true');
   await showDetails(page);
 }
 

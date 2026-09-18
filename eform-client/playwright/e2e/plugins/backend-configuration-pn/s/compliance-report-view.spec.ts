@@ -80,7 +80,7 @@ async function goToRapport(page: Page): Promise<void> {
   // Awaited after the click, which can throw first.
   ignoreUnhandledRejections(response);
   await page.locator('#complianceMode-report').click();
-  await expect(page.locator('#complianceMode-report')).toHaveAttribute('aria-pressed', 'true', {
+  await expect(page.locator('#complianceMode-report-button')).toHaveAttribute('aria-checked', 'true', {
     timeout: UI_TIMEOUT,
   });
   await response;
@@ -589,7 +589,7 @@ test.describe('Compliance — Rapport view', () => {
     await expect(page).toHaveURL(/\/plugins\/backend-configuration-pn\/compliance-report/, {
       timeout: UI_TIMEOUT,
     });
-    await expect(page.locator('#complianceMode-report')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#complianceMode-report-button')).toHaveAttribute('aria-checked', 'true');
     await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
     await awaitRapportRendered(page);
 
@@ -633,7 +633,7 @@ test.describe('Compliance — Rapport view', () => {
 
     // #1163 §6: no row query without a user gesture — leaving the editor
     // without saving is not a request to reload the report.
-    await expect(page.locator('#complianceMode-report')).toHaveAttribute('aria-pressed', 'true', {
+    await expect(page.locator('#complianceMode-report-button')).toHaveAttribute('aria-checked', 'true', {
       timeout: UI_TIMEOUT,
     });
     await expect(page.locator('#complianceEmptyState')).toBeVisible({ timeout: UI_TIMEOUT });

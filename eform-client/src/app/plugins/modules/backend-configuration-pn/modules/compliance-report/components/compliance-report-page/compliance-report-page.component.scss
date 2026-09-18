@@ -18,9 +18,11 @@
   // `.compliance-filters`, so the rule bought nothing.
 }
 
+// The mode switcher is a stock mat-button-toggle-group (#1296); it takes its
+// colours from the Material theme, so it needs only to not stretch across the
+// flex column.
 .compliance-mode-toggle {
-  flex-wrap: wrap;
-  align-items: center;
+  align-self: flex-start;
 }
 
 // mat-card already carries the theme's surface, radius and border (see the

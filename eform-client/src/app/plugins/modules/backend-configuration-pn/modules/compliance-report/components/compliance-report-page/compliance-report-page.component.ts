@@ -117,16 +117,16 @@ export class ComplianceReportPageComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  isActive(mode: ComplianceMode): boolean {
-    return this.state.mode === mode;
-  }
-
   onModeChange(mode: ComplianceMode): void {
     // Pressing `Oversigt` — from Detaljer, from Rapport, or while already in
     // Oversigt — is a RESET (#1185): every filter back to its default and one
     // Oversigt fetch. The other two buttons are plain mode switches that keep
     // the filters and `reportVisible`, so the child the ngSwitch creates
     // re-queries the same filters through the replay.
+    //
+    // Bound with `(click)` on each `mat-button-toggle`, NOT the group's
+    // `(change)` (#1296): `change` does not fire when the already-selected
+    // toggle is clicked again, which would silently drop the Oversigt reset.
     if (mode === 'overview') {
       this.state.resetToOverview();
       return;

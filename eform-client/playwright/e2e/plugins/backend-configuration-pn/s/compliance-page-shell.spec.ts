@@ -387,17 +387,25 @@ test.describe('Compliance page shell (#1163)', () => {
     await expect(page.locator('#complianceShowReportBtn')).toHaveCount(0);
   });
 
-  test('opens in Oversigt with the three mode buttons and their pressed state', async ({ page }) => {
+  test('opens in Oversigt with the three mode buttons and their checked state', async ({ page }) => {
     await goToCompliancePage(page);
 
-    await expect(page.locator('#complianceMode-overview')).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('#complianceMode-details')).toHaveAttribute('aria-pressed', 'false');
-    await expect(page.locator('#complianceMode-report')).toHaveAttribute('aria-pressed', 'false');
+    await expect(page.locator('#complianceMode-overview-button')).toHaveAttribute('aria-checked', 'true');
+    await expect(page.locator('#complianceMode-details-button')).toHaveAttribute('aria-checked', 'false');
+    await expect(page.locator('#complianceMode-report-button')).toHaveAttribute('aria-checked', 'false');
+
+    // #1296: a stock single-selection mat-button-toggle-group (radiogroup,
+    // aria-checked) with the checkmark indicator on the selected toggle.
+    await expect(page.locator('mat-button-toggle-group.compliance-mode-toggle')).toHaveAttribute('role', 'radiogroup');
+    await expect(page.locator('#complianceMode-overview')).toHaveClass(/mat-button-toggle-checked/);
+    await expect(page.locator('#complianceMode-overview .mat-pseudo-checkbox')).toBeVisible();
 
     await page.locator('#complianceMode-details').click();
 
-    await expect(page.locator('#complianceMode-overview')).toHaveAttribute('aria-pressed', 'false');
-    await expect(page.locator('#complianceMode-details')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#complianceMode-overview-button')).toHaveAttribute('aria-checked', 'false');
+    await expect(page.locator('#complianceMode-details-button')).toHaveAttribute('aria-checked', 'true');
+    await expect(page.locator('#complianceMode-details')).toHaveClass(/mat-button-toggle-checked/);
+    await expect(page.locator('#complianceMode-overview')).not.toHaveClass(/mat-button-toggle-checked/);
   });
 
   test('disables the status filter in Oversigt and enables it elsewhere', async ({ page }) => {
@@ -651,8 +659,8 @@ test.describe('Compliance page shell (#1163)', () => {
     await page.locator('#complianceMode-overview').click();
     expect((await reset).ok()).toBeTruthy();
 
-    await expect(page.locator('#complianceMode-overview')).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('#complianceMode-details')).toHaveAttribute('aria-pressed', 'false');
+    await expect(page.locator('#complianceMode-overview-button')).toHaveAttribute('aria-checked', 'true');
+    await expect(page.locator('#complianceMode-details-button')).toHaveAttribute('aria-checked', 'false');
     await expectDefaultFilters(page);
     // The overview rendered automatically — no placeholder, no second gesture.
     await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
@@ -670,7 +678,7 @@ test.describe('Compliance page shell (#1163)', () => {
     const resetAgain = complianceResponse(page, 'overview');
     await page.locator('#complianceMode-overview').click();
     expect((await resetAgain).ok()).toBeTruthy();
-    await expect(page.locator('#complianceMode-overview')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#complianceMode-overview-button')).toHaveAttribute('aria-checked', 'true');
     await expectDefaultFilters(page);
     await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
   });
@@ -1055,7 +1063,7 @@ test.describe('Compliance page shell (#1163)', () => {
     const columns = complianceResponse(page, 'eform-columns');
     await page.locator('#complianceMode-report').click();
     expect((await columns).ok()).toBeTruthy();
-    await expect(page.locator('#complianceMode-report')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#complianceMode-report-button')).toHaveAttribute('aria-checked', 'true');
     // `setTotalCount` runs when the response is APPLIED, not when it lands, so
     // the enabled Download button is what says the row reached the view.
     await expect(page.locator('#complianceCasesRoot')).toHaveAttribute('aria-busy', 'false', { timeout: API_TIMEOUT });
@@ -1176,7 +1184,7 @@ test.describe.serial('Compliance page shell — non-admin access (#1160 decision
     await expect(page.locator('#complianceShowReportBtn')).toHaveCount(0);
 
     // ...and so did the mode toggle, in Oversigt, with no admin-only branch.
-    await expect(page.locator('#complianceMode-overview')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#complianceMode-overview-button')).toHaveAttribute('aria-checked', 'true');
     await expect(page.locator('#complianceMode-details')).toBeVisible();
     await expect(page.locator('#complianceMode-report')).toBeVisible();
 
