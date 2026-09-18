@@ -1,0 +1,28 @@
+<h3 mat-dialog-title>{{ 'Change report headline' | translate }}</h3>
+<div mat-dialog-content>
+  <ul id="batchModalTaskList">
+    <li *ngFor="let t of data.selectedTasks">{{ t.title }}; {{ t.tags?.join(', ') }}</li>
+  </ul>
+
+  <mat-form-field>
+    <mat-label>{{ 'Report headline' | translate }}</mat-label>
+    <mtx-select
+      id="batchReportHeadlineSelect"
+      [items]="tags"
+      bindValue="id" bindLabel="name"
+      [addTag]="addTag"
+      addTagText="{{ 'Create new' | translate }}"
+      [clearable]="false"
+      [searchable]="true"
+      appendTo="body"
+      [(ngModel)]="itemPlanningTagId"
+      [placeholder]="'Select / create report headline' | translate">
+    </mtx-select>
+  </mat-form-field>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button id="batchModalCancel" class="btn-cancel" (click)="hide()">{{ 'Cancel' | translate }}</button>
+  <button id="batchModalSubmit" class="btn-primary" [disabled]="!valid" (click)="submit()">
+    {{ 'Save' | translate }}
+  </button>
+</div>

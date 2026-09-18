@@ -40,6 +40,11 @@ public interface IBackendConfigurationTaskListService
     /// live board on the task's own property.
     /// </summary>
     Task<OperationResult> MoveToBoard(TaskListBatchMoveBoardModel model);
+    /// <summary>
+    /// #1298 — sets <c>model.ItemPlanningTagId</c> (which must be a live
+    /// items-planning PlanningTag) as the report headline of every selected task.
+    /// </summary>
+    Task<OperationResult> ChangeReportHeadline(TaskListBatchReportHeadlineModel model);
     Task<OperationResult> Copy(TaskListBatchCopyModel model);
     Task<OperationResult> Delete(TaskListBatchRequestModel model);
 }

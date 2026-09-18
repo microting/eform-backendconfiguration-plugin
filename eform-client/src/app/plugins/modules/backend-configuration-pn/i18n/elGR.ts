@@ -772,6 +772,7 @@ export const elGR = {
   'Teams and employees': 'Ομάδες και υπάλληλοι',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Το αρχείο καταγραφής διαγράφεται οριστικά, συμπεριλαμβανομένων των απαντήσεων και των φωτογραφιών του. Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.',
   'Move to calendar': 'Μετακίνηση στο ημερολόγιο',
+  'Change report headline': 'Αλλαγή τίτλου αναφοράς',
   // Custom repeat end condition appended to the Gentag label (#1293).
   '{{rule}}, until and including {{date}}': '{{rule}}, έως και {{date}}',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} φορές',

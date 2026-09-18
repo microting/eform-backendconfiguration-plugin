@@ -1155,6 +1155,11 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     await UpdateTags(planning.Id, updateModel, areaRulePlanning.Id, oldItemPlanningTagId)
                         .ConfigureAwait(false);
                     planning.Enabled = false;
+                    // #1298 — the report headline is mirrored in EVERY status
+                    // branch: ARP.ItemPlanningTagId was written unconditionally
+                    // above, and the old report groups by this column, so skipping
+                    // it here left the two reports disagreeing for the task.
+                    planning.ReportGroupPlanningTagId = updateModel.ItemPlanningTagId;
                     // Keep the eForm in sync even while deactivating, so a later
                     // reactivation starts from the edited eForm rather than the
                     // stale one.
@@ -1374,6 +1379,11 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     // then, not this Update.
                     planning.RelatedEFormId = updateModel.EformId;
                     planning.RelatedEFormName = eformName;
+                    // #1298 — keep the report headline mirrored while inactive,
+                    // like the other three branches (see the deactivation branch).
+                    // UpdateTags above already moved the PlanningsTags row; this is
+                    // the column GenerateReportV2 groups by.
+                    planning.ReportGroupPlanningTagId = updateModel.ItemPlanningTagId;
                     await planning.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                 }
                     break;

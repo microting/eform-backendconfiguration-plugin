@@ -16,6 +16,7 @@ import {CalendarRepeatService} from '../../../calendar/services/calendar-repeat.
 import {TaskListPageComponent} from './task-list-page.component';
 import {CalendarBoardModel, CalendarTaskModel} from '../../../../models/calendar';
 import {BatchBoardModalComponent} from '../modals/batch-board-modal/batch-board-modal.component';
+import {BatchReportHeadlineModalComponent} from '../modals/batch-report-headline-modal/batch-report-headline-modal.component';
 
 /**
  * #1135 — the edit modal's `folderId`.
@@ -233,7 +234,8 @@ describe('TaskListPageComponent — move to calendar batch action', () => {
     expect(option).toBeDefined();
     expect(option!.label).toBe('Move to calendar');
     expect(option!.group).toBe('Tasks');
-    expect(component.batchActions).toHaveLength(12);
+    // 12 since #1297, 13 since #1298 (changeReportHeadline).
+    expect(component.batchActions).toHaveLength(13);
   });
 
   it.each([
@@ -266,5 +268,132 @@ describe('TaskListPageComponent — move to calendar batch action', () => {
     expect(config.data.mode).toBe('moveToBoard');
     expect(config.data.boards).toEqual(boards);
     expect(config.data.selectedTasks.map((t: CalendarTaskModel) => t.id)).toEqual([7]);
+  });
+});
+
+/**
+ * #1298 — batch action "Skift rapportoverskrift" ('changeReportHeadline').
+ *
+ * It lives in the Opgaver group and is NEVER disabled: headlines are
+ * items-planning PlanningTags, which are global, so the option list needs no
+ * property filter. The disabled counts pinned by
+ * `y/task-list-dropdown-gating.spec.ts` (5 / 0) are therefore unchanged; only
+ * the total grows to 13.
+ */
+describe('TaskListPageComponent — change report headline batch action', () => {
+  let component: TaskListPageComponent;
+  let dialogStub: any;
+  let tagsService: {getPlanningsTags: jest.Mock};
+
+  const tags = [
+    {id: 3, name: 'BBB headline', description: '', isLocked: false},
+    {id: 4, name: 'YYY headline', description: '', isLocked: false},
+  ];
+
+  const filters = (propertyIds: number[]) => ({
+    propertyIds, boardIds: [], eformIds: [], assignToIds: [],
+    tagIds: [], status: null, complianceEnabled: null, nameFilter: null,
+  });
+
+  const changeHeadline = () => component.batchActions.find(a => a.id === 'changeReportHeadline');
+
+  const openWith = (closeResult: boolean) => {
+    dialogStub.open.mockReturnValue({afterClosed: () => of(closeResult)});
+    component.tasks = [
+      {id: 7, title: 'T7', tags: []} as unknown as CalendarTaskModel,
+      {id: 8, title: 'T8', tags: []} as unknown as CalendarTaskModel,
+    ];
+    component.onSelectionChanged([7, 8]);
+    component.openBatchModal('changeReportHeadline');
+  };
+
+  beforeEach(async () => {
+    dialogStub = {open: jest.fn().mockReturnValue({afterClosed: () => of(false)})};
+    tagsService = {getPlanningsTags: jest.fn().mockReturnValue(of({success: true, model: tags}))};
+
+    await TestBed.configureTestingModule({
+      declarations: [TaskListPageComponent],
+      imports: [TranslateModule.forRoot()],
+      providers: [
+        {provide: MatDialog, useValue: dialogStub},
+        {provide: Overlay, useValue: {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}}},
+        {
+          provide: BackendConfigurationPnCalendarService,
+          useValue: {
+            getTasksIndex: jest.fn().mockReturnValue(of({success: true, model: []})),
+            getBoards: jest.fn().mockReturnValue(of({success: true, model: []})),
+          },
+        },
+        {
+          provide: BackendConfigurationPnPropertiesService,
+          useValue: {
+            getAllPropertiesDictionary: jest.fn().mockReturnValue(of({success: true, model: []})),
+            getDeviceUsersFiltered: jest.fn().mockReturnValue(of({success: true, model: []})),
+          },
+        },
+        {provide: ItemsPlanningPnTagsService, useValue: tagsService},
+        {
+          provide: EFormService,
+          useValue: {getAll: jest.fn().mockReturnValue(of({success: true, model: {templates: []}}))},
+        },
+        {
+          provide: BackendConfigurationPnWorkerTagsService,
+          useValue: {getWorkerTags: jest.fn().mockReturnValue(of({success: true, model: []}))},
+        },
+        {provide: CalendarRepeatService, useValue: {}},
+        {provide: BackendConfigurationPnTaskListService, useValue: {}},
+      ],
+      schemas: [NO_ERRORS_SCHEMA],
+    }).compileComponents();
+
+    component = TestBed.createComponent(TaskListPageComponent).componentInstance;
+    component.ngOnInit();
+  });
+
+  it('is offered in the Opgaver (Tasks) group as "Change report headline"', () => {
+    const option = changeHeadline();
+    expect(option).toBeDefined();
+    expect(option!.label).toBe('Change report headline');
+    expect(option!.group).toBe('Tasks');
+    expect(component.batchActions).toHaveLength(13);
+    // Sits with the other Opgaver actions, before the Slet group.
+    const ids = component.batchActions.map(a => a.id);
+    expect(ids.indexOf('changeReportHeadline')).toBeLessThan(ids.indexOf('delete'));
+  });
+
+  it.each([
+    ['no property', [] as number[]],
+    ['exactly one property', [1]],
+    ['two properties', [1, 2]],
+  ])('with %s filtered: is never disabled (headlines are global)', (_label, propertyIds) => {
+    component.onFiltersChanged(filters(propertyIds));
+    expect(changeHeadline()!.disabled).toBe(false);
+  });
+
+  it('leaves the disabled counts at 5 with no property and 0 with one', () => {
+    component.onFiltersChanged(filters([]));
+    expect(component.batchActions.filter(a => a.disabled)).toHaveLength(5);
+    component.onFiltersChanged(filters([1]));
+    expect(component.batchActions.filter(a => a.disabled)).toHaveLength(0);
+  });
+
+  it('opens BatchReportHeadlineModalComponent with the full, global headline list', () => {
+    openWith(false);
+
+    expect(dialogStub.open).toHaveBeenCalledTimes(1);
+    const [modal, config] = dialogStub.open.mock.calls[0];
+    expect(modal).toBe(BatchReportHeadlineModalComponent);
+    expect(config.data.mode).toBe('changeReportHeadline');
+    expect(config.data.tags).toEqual(tags);
+    expect(config.data.selectedTasks.map((t: CalendarTaskModel) => t.id)).toEqual([7, 8]);
+  });
+
+  it.each([
+    ['cancelled', false],
+    ['saved', true],
+  ])('reloads the headline list when the modal is %s (it may have created one)', (_label, closeResult) => {
+    const before = tagsService.getPlanningsTags.mock.calls.length;
+    openWith(closeResult);
+    expect(tagsService.getPlanningsTags.mock.calls.length).toBe(before + 1);
   });
 });

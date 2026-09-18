@@ -772,6 +772,7 @@ export const lvLV = {
   'Teams and employees': 'Komandas un darbinieki',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Žurnāls tiek neatgriezeniski dzēsts, ieskaitot tā atbildes un fotoattēlus. Šo darbību nevar atsaukt.',
   'Move to calendar': 'Pārvietot uz kalendāru',
+  'Change report headline': 'Mainīt pārskata virsrakstu',
   // Custom repeat end condition appended to the Gentag label (#1293).
   '{{rule}}, until and including {{date}}': '{{rule}}, līdz {{date}} (ieskaitot)',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} reizes',

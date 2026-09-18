@@ -37,6 +37,7 @@ import {BatchStartDateModalComponent} from '../modals/batch-start-date-modal/bat
 import {BatchStatusModalComponent} from '../modals/batch-status-modal/batch-status-modal.component';
 import {BatchDeleteModalComponent} from '../modals/batch-delete-modal/batch-delete-modal.component';
 import {BatchBoardModalComponent} from '../modals/batch-board-modal/batch-board-modal.component';
+import {BatchReportHeadlineModalComponent} from '../modals/batch-report-headline-modal/batch-report-headline-modal.component';
 import {TaskListTagsComponent} from '../task-list-tags/task-list-tags.component';
 import {TaskListTableComponent} from '../task-list-table/task-list-table.component';
 
@@ -54,6 +55,7 @@ export type TaskListBatchAction =
   | 'changeStartDate'
   | 'setStatus'
   | 'moveToBoard'
+  | 'changeReportHeadline'
   | 'delete';
 
 interface TaskListBatchActionOption {
@@ -477,7 +479,7 @@ export class TaskListPageComponent implements OnInit {
     const employees = this.translate.instant('Employees');
     const tasksGroup = this.translate.instant('Tasks');
     const deleteGroup = this.translate.instant('Delete');
-    // Mockup rule: all options (11 in the mockup, 12 since #1297) are always shown, grouped exactly as the mockup's
+    // Mockup rule: all options (11 in the mockup, 12 since #1297, 13 since #1298) are always shown, grouped exactly as the mockup's
     // three optgroups (Medarbejdere / Opgaver / Slet). Property-scoped actions
     // (assign/reassign/addWorker/copy/moveToBoard) are disabled — not removed — when no single
     // property is filtered, since their option-lists (workers, target property) are
@@ -514,6 +516,12 @@ export class TaskListPageComponent implements OnInit {
       // pinned by `y/task-list-dropdown-gating.spec.ts` are 5 (no filter) / 0
       // (single property).
       {id: 'moveToBoard', label: this.translate.instant('Move to calendar'), group: tasksGroup, disabled: propertyScoped},
+      // #1298 — NEVER disabled: a report headline is an items-planning
+      // PlanningTag, and those are GLOBAL (not property-scoped), so the option
+      // list needs no single-property filter. The disabled counts pinned by
+      // `y/task-list-dropdown-gating.spec.ts` therefore stay 5 / 0; only the
+      // total grows.
+      {id: 'changeReportHeadline', label: this.translate.instant('Change report headline'), group: tasksGroup, disabled: false},
       {id: 'delete', label: this.translate.instant('Delete selected'), group: deleteGroup, disabled: false},
     ];
     this._batchActionsCache = all;
@@ -599,6 +607,11 @@ export class TaskListPageComponent implements OnInit {
         data = {...data, boards: this.boards};
         component = BatchBoardModalComponent;
         break;
+      case 'changeReportHeadline':
+        // The full, global headline list; the modal may add to it (addTag).
+        data = {...data, tags: this.tags};
+        component = BatchReportHeadlineModalComponent;
+        break;
       case 'delete':
         component = BatchDeleteModalComponent;
         break;
@@ -613,6 +626,12 @@ export class TaskListPageComponent implements OnInit {
       // pick of the SAME action fire (change) again instead of being a
       // no-op (CI shard-y DG3).
       this.pendingAction = null;
+      if (action === 'changeReportHeadline') {
+        // The modal can CREATE a headline even when it is then cancelled. The
+        // grid's "Report headline" cell, the filters and every later modal
+        // resolve names client-side from `tags`, so reload it either way.
+        this.loadTags();
+      }
       if (result) {
         // The modal itself relies on the underlying service call's built-in
         // toast (see BackendConfigurationPnTaskListService — its methods use

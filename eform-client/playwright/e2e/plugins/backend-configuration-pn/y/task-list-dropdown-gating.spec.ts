@@ -15,7 +15,7 @@ import {
 /**
  * Task list BATCH-DROPDOWN GATING suite (backend-configuration-task-list-page
  * feature, shard y). Complements `x/task-list-page.spec.ts` PP9 (which
- * proves the 12-option/3-group shape, the 5-disabled/0-disabled counts, and
+ * proves the 13-option/3-group shape, the 5-disabled/0-disabled counts, and
  * that clicking a disabled option is a no-op) with three angles PP9 does
  * NOT cover, all read directly off `task-list-page.component.ts`/`.html`
  * while writing this suite:
@@ -186,6 +186,9 @@ test.describe('Task list — batch-action dropdown gating', () => {
     await taskListPage.selectRow(task);
 
     await taskListPage.openBatchActionPanel();
+    // #1298 added the never-disabled "Skift rapportoverskrift": the TOTAL is
+    // 13 while the disabled counts below stay 0 / 5 (it is not property-scoped).
+    await expect(taskListPage.batchActionOptions()).toHaveCount(13);
     expect(await taskListPage.countDisabledBatchActions()).toBe(0);
     await page.keyboard.press('Escape');
 
@@ -204,6 +207,7 @@ test.describe('Task list — batch-action dropdown gating', () => {
     await taskListPage.selectRow(task);
 
     await taskListPage.openBatchActionPanel();
+    await expect(taskListPage.batchActionOptions()).toHaveCount(13);
     expect(await taskListPage.countDisabledBatchActions()).toBe(5);
     await page.keyboard.press('Escape');
   });

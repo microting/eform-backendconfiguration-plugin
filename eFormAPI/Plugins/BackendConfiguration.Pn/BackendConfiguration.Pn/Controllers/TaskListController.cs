@@ -81,6 +81,14 @@ public class TaskListController(
     public async Task<OperationResult> MoveToBoard([FromBody] TaskListBatchMoveBoardModel model)
         => await Validated(model) ?? await taskListService.MoveToBoard(model);
 
+    /// <summary>
+    /// #1298 — "Skift rapportoverskrift". Tag existence is validated pre-loop in
+    /// the service, so an unknown tag never produces a partial batch.
+    /// </summary>
+    [HttpPost("change-report-headline")]
+    public async Task<OperationResult> ChangeReportHeadline([FromBody] TaskListBatchReportHeadlineModel model)
+        => await Validated(model) ?? await taskListService.ChangeReportHeadline(model);
+
     [HttpPost("copy")]
     public async Task<OperationResult> Copy([FromBody] TaskListBatchCopyModel model)
         => await Validated(model) ?? await taskListService.Copy(model);

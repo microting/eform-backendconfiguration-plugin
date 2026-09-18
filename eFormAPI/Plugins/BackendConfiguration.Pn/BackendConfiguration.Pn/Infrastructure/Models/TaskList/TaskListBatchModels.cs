@@ -59,6 +59,18 @@ public class TaskListBatchMoveBoardModel : TaskListBatchRequestModel
 }
 
 /// <summary>
+/// #1298 — "Skift rapportoverskrift": sets the report headline
+/// (AreaRulePlanning.ItemPlanningTagId, mirrored to Planning.ReportGroupPlanningTagId
+/// and an items-planning PlanningsTags row) on every selected task. A headline is
+/// REQUIRED (product decision 2026-09-18): the value is non-nullable, so a batch can
+/// never silently strip tasks out of Rapportering (#1301).
+/// </summary>
+public class TaskListBatchReportHeadlineModel : TaskListBatchRequestModel
+{
+    public int ItemPlanningTagId { get; set; }
+}
+
+/// <summary>
 /// #1123 — "Batch: Aktivere/de-aktivere opgaver." One boolean for the whole
 /// selection; every other field of the affected tasks round-trips through
 /// BuildUpdateModel unchanged.

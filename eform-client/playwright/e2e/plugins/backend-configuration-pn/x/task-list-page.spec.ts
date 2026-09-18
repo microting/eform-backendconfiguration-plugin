@@ -302,14 +302,15 @@ test.describe.serial('Task list page', () => {
   });
 
   // =======================================================================
-  // PP9 — the batch-action dropdown ALWAYS shows all 12 options across 3
-  // groups (the mockup's 11 + #1297's "Flyt til kalender"): the 5
+  // PP9 — the batch-action dropdown ALWAYS shows all 13 options across 3
+  // groups (the mockup's 11 + #1297's "Flyt til kalender" + #1298's
+  // never-disabled "Skift rapportoverskrift"): the 5
   // property-scoped actions (assign/reassign/addWorker/copy/moveToBoard) are DISABLED
   // (`.ng-option-disabled`) — never removed — until exactly one property is
   // filtered, at which point they become selectable. Asserted purely by
   // element/class, never by translated label text (i18n-safe).
   // =======================================================================
-  test('PP9: batch action dropdown shows all 12 grouped options, property-scoped ones disabled until a single property is filtered', async ({ page }) => {
+  test('PP9: batch action dropdown shows all 13 grouped options, property-scoped ones disabled until a single property is filtered', async ({ page }) => {
     const taskListPage = new TaskListPage(page);
     const countDisabled = async (): Promise<number> => {
       const options = taskListPage.batchActionOptions();
@@ -333,7 +334,7 @@ test.describe.serial('Task list page', () => {
     await taskListPage.selectRow(taskZ);
 
     await taskListPage.openBatchActionPanel();
-    await expect(taskListPage.batchActionOptions()).toHaveCount(12);
+    await expect(taskListPage.batchActionOptions()).toHaveCount(13);
     await expect(taskListPage.batchActionGroups()).toHaveCount(3);
     expect(await countDisabled()).toBe(5);
 
@@ -354,12 +355,12 @@ test.describe.serial('Task list page', () => {
     await expect(taskListPage.getModalTaskList()).toHaveCount(0);
     await page.keyboard.press('Escape');
 
-    // Now filter to exactly one property: all 12 options become enabled.
+    // Now filter to exactly one property: all 13 options become enabled.
     await taskListPage.selectProperty(property.name);
     await expect(taskListPage.row(taskZ)).toBeVisible();
     await taskListPage.selectRow(taskZ);
     await taskListPage.openBatchActionPanel();
-    await expect(taskListPage.batchActionOptions()).toHaveCount(12);
+    await expect(taskListPage.batchActionOptions()).toHaveCount(13);
     expect(await countDisabled()).toBe(0);
     await page.keyboard.press('Escape');
   });

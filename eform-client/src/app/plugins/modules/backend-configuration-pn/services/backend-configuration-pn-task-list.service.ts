@@ -31,6 +31,12 @@ export class TaskListBatchStartDateRequest extends TaskListBatchRequest { startD
 export class TaskListBatchMoveBoardRequest extends TaskListBatchRequest { boardId: number; }
 
 /**
+ * #1298 — "Skift rapportoverskrift". `itemPlanningTagId` is REQUIRED (an
+ * items-planning PlanningTag id): the action never clears a headline.
+ */
+export class TaskListBatchReportHeadlineRequest extends TaskListBatchRequest { itemPlanningTagId: number; }
+
+/**
  * #1126 — inline rename from the task-list grid row. `taskIds` always carries
  * exactly ONE id: the action is single-row, but it rides the batch rail so the
  * server reuses `BuildUpdateModel` -> `UpdateTask` and the name lands in BOTH
@@ -99,6 +105,14 @@ export class BackendConfigurationPnTaskListService {
    */
   moveToBoard(model: TaskListBatchMoveBoardRequest): Observable<OperationResult> {
     return this.apiBaseService.post(`${TaskListMethods.Base}/move-to-board`, model);
+  }
+  /**
+   * Sets `model.itemPlanningTagId` as the report headline of every selected
+   * task. Both reports resolve the headline at read time, so the tasks'
+   * history regroups under the new headline too.
+   */
+  changeReportHeadline(model: TaskListBatchReportHeadlineRequest): Observable<OperationResult> {
+    return this.apiBaseService.post(`${TaskListMethods.Base}/change-report-headline`, model);
   }
   /**
    * Re-anchors every selected task's series to `model.startDate`. The date may
