@@ -771,4 +771,5 @@ export const bgBG = {
   '{{count}} selected': '{{count}} избрани',
   'Teams and employees': 'Екипи и служители',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Дневникът се изтрива за постоянно, включително отговорите и снимките в него. Това действие не може да бъде отменено.',
+  'Move to calendar': 'Преместване в календара',
 };

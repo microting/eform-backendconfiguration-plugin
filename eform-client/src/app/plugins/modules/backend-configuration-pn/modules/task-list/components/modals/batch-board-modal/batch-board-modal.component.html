@@ -1,0 +1,26 @@
+<h3 mat-dialog-title>{{ 'Move to calendar' | translate }}</h3>
+<div mat-dialog-content>
+  <ul id="batchModalTaskList">
+    <li *ngFor="let t of data.selectedTasks">{{ t.title }}; {{ t.tags?.join(', ') }}</li>
+  </ul>
+
+  <mat-form-field>
+    <mat-label>{{ 'Calendar' | translate }}</mat-label>
+    <mtx-select
+      id="batchBoardSelect"
+      [items]="boards"
+      bindValue="id" bindLabel="name"
+      [clearable]="true"
+      [searchable]="true"
+      appendTo="body"
+      [(ngModel)]="boardId"
+      [placeholder]="'Calendar' | translate">
+    </mtx-select>
+  </mat-form-field>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button id="batchModalCancel" class="btn-cancel" (click)="hide()">{{ 'Cancel' | translate }}</button>
+  <button id="batchModalSubmit" class="btn-primary" [disabled]="!valid" (click)="submit()">
+    {{ 'Save' | translate }}
+  </button>
+</div>

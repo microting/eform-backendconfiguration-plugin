@@ -17,6 +17,7 @@ using Microting.eForm.Infrastructure.Models;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using CalendarService =
     BackendConfiguration.Pn.Services.BackendConfigurationCalendarService.BackendConfigurationCalendarService;
@@ -509,6 +510,151 @@ public class BackendConfigurationTaskListService(
             var result = await calendarService.UpdateTask(update);
             return (result.Success, result.Message);
         }, "Tasks updated");
+    }
+
+    // ------------------------------------------------------------------
+    // #1297 — move to calendar ("Flyt til kalender")
+    // ------------------------------------------------------------------
+
+    // Moves every selected task to model.BoardId, a calendar on the task's OWN
+    // property. Product decisions (2026-09-18), all implemented here:
+    //  * the task ADOPTS the target calendar's colour
+    //    (CalendarConfiguration.Color := CalendarBoard.Color);
+    //  * EVERY per-occurrence board override is cleared
+    //    (CalendarOccurrenceException.BoardId -> null), past and future alike,
+    //    so no occurrence stays behind on the old calendar;
+    //  * history follows: the compliance report resolves an occurrence's board
+    //    at READ time (exception?.BoardId ?? calConfig?.BoardId ?? default), so
+    //    past rows re-attribute to the new calendar. Accepted; no snapshot.
+    //
+    // A DIRECT write rather than the RunPerTask/BuildUpdateModel/UpdateTask rail
+    // the other actions use. UpdateTask re-runs the whole task wizard and
+    // ReconcileEventAsync for what is a two-column calendar-side change, and it
+    // has no way to clear the per-occurrence overrides at all. Nothing on the
+    // wizard/items-planning side stores the board: it lives only in
+    // CalendarConfiguration and CalendarOccurrenceException.
+    //
+    // No deploy reconcile is needed (verified, #1297): EventDeployService's board
+    // scoping (ParseBoardIds) is a READ-TIME filter — the ids go into
+    // GetTasksForWeek's CalendarTaskRequestModel.BoardIds and are matched by
+    // ShouldIncludeTask against each task's CURRENT effective BoardId. Nothing
+    // deployed is stamped with a board: the deploy idempotence keys are the
+    // Compliance row (PlanningId, Deadline) and PlanningCaseSite, and
+    // CalendarAssignmentReconciliationService has no board dimension. Already
+    // deployed cases therefore stay deployed; future occurrences are deployed
+    // the next time a client asks for the NEW board (or for no board filter);
+    // the gRPC stream's state-hash diff picks the new BoardId up on its next poll.
+    //
+    // Pre-loop: the board must exist and be live — one bad id must never
+    // produce a partial batch. Per task: the board must be on THAT task's
+    // property (the selection may span properties when the endpoint is called
+    // directly; the UI only offers the action with a single property filtered).
+    public async Task<OperationResult> MoveToBoard(TaskListBatchMoveBoardModel model)
+    {
+        var board = await backendConfigurationPnDbContext.CalendarBoards
+            .AsNoTracking()
+            .Where(b => b.WorkflowState != Constants.WorkflowStates.Removed)
+            .FirstOrDefaultAsync(b => b.Id == model.BoardId);
+        if (board == null)
+        {
+            return new OperationResult(false, localizationService.GetString("SelectedBoardNotFound"));
+        }
+
+        return await RunPerTask(model.TaskIds, async id =>
+        {
+            // Same eligibility rule as IsEligibleTaskAsync/BuildUpdateModel, but
+            // the ARP itself is needed for its PropertyId.
+            var arp = await backendConfigurationPnDbContext.AreaRulePlannings
+                .AsNoTracking()
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .FirstOrDefaultAsync(x => x.Id == id);
+            if (arp == null) return (false, "Task not found");
+            var rule = await backendConfigurationPnDbContext.AreaRules
+                .AsNoTracking()
+                .FirstOrDefaultAsync(r => r.Id == arp.AreaRuleId);
+            if (rule is not { CreatedInGuide: true }) return (false, "Task not found");
+
+            if (arp.PropertyId != board.PropertyId)
+            {
+                return (false, localizationService.GetString("SelectedBoardDoesNotBelongToTaskProperty"));
+            }
+
+            await MoveTaskToBoardAsync(arp.Id, board.Id, board.Color);
+            return (true, null);
+        }, "Tasks updated");
+    }
+
+    // One task's board move, all-or-nothing: the configuration upsert and the
+    // override clearing commit together, so a failure can never leave a task on
+    // the new calendar with some occurrences still pinned to the old one. Run
+    // through the execution strategy because the context is configured with
+    // EnableRetryOnFailure, which refuses a user-initiated transaction otherwise.
+    private async Task MoveTaskToBoardAsync(int arpId, int boardId, string boardColor)
+    {
+        var strategy = backendConfigurationPnDbContext.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
+        {
+            await using var tx = await backendConfigurationPnDbContext.Database.BeginTransactionAsync();
+            try
+            {
+                var calConfig = await backendConfigurationPnDbContext.CalendarConfigurations
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .FirstOrDefaultAsync(x => x.AreaRulePlanningId == arpId);
+                if (calConfig != null)
+                {
+                    // StartHour/Duration are deliberately left as they are.
+                    calConfig.BoardId = boardId;
+                    calConfig.Color = boardColor;
+                    calConfig.UpdatedByUserId = userService.UserId;
+                    await calConfig.Update(backendConfigurationPnDbContext);
+                }
+                else
+                {
+                    // No row yet (e.g. a wizard-created task): seed it with the
+                    // same 09:00 / 1h the read path renders such a task at (see
+                    // BuildUpdateModel's StartHour/Duration fallback), so moving
+                    // it does not also move it in time.
+                    await new CalendarConfiguration
+                    {
+                        AreaRulePlanningId = arpId,
+                        StartHour = 9.0,
+                        Duration = 1.0,
+                        BoardId = boardId,
+                        Color = boardColor,
+                        CreatedByUserId = userService.UserId,
+                        UpdatedByUserId = userService.UserId
+                    }.Create(backendConfigurationPnDbContext);
+                }
+
+                // ALL overrides, whatever their workflow state or date: a board
+                // override that survived would pin that occurrence (and, through
+                // the report's read-time resolution, its history) to the old
+                // calendar. Only BoardId is cleared — the override's other fields
+                // (time, title, deletion, move) are the user's per-occurrence
+                // edits and stay.
+                var overrides = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                    .Where(x => x.AreaRulePlanningId == arpId)
+                    .Where(x => x.BoardId != null)
+                    .ToListAsync();
+                foreach (var occurrenceOverride in overrides)
+                {
+                    occurrenceOverride.BoardId = null;
+                    occurrenceOverride.UpdatedByUserId = userService.UserId;
+                    await occurrenceOverride.Update(backendConfigurationPnDbContext);
+                }
+
+                await tx.CommitAsync();
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                // A failed SaveChanges leaves the rejected entity tracked and
+                // re-thrown on every later save of this shared request context,
+                // which would fail every remaining task in the batch.
+                backendConfigurationPnDbContext.ChangeTracker.Clear();
+                throw;
+            }
+        });
     }
 
     // Copy creates a brand-new AreaRulePlanning on the target property/board

@@ -48,6 +48,17 @@ public class TaskListBatchCopyModel : TaskListBatchRequestModel
 }
 
 /// <summary>
+/// #1297 — "Flyt til kalender": moves every selected task to another calendar
+/// (CalendarBoard) on the SAME property. The only caller-supplied value is the
+/// target board; the task adopts its colour and loses every per-occurrence board
+/// override, so the whole series — past and future — follows the move.
+/// </summary>
+public class TaskListBatchMoveBoardModel : TaskListBatchRequestModel
+{
+    public int BoardId { get; set; }
+}
+
+/// <summary>
 /// #1123 — "Batch: Aktivere/de-aktivere opgaver." One boolean for the whole
 /// selection; every other field of the affected tasks round-trips through
 /// BuildUpdateModel unchanged.

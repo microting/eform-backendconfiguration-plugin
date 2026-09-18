@@ -771,4 +771,5 @@ export const lvLV = {
   '{{count}} selected': 'Atlasīti: {{count}}',
   'Teams and employees': 'Komandas un darbinieki',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Žurnāls tiek neatgriezeniski dzēsts, ieskaitot tā atbildes un fotoattēlus. Šo darbību nevar atsaukt.',
+  'Move to calendar': 'Pārvietot uz kalendāru',
 };

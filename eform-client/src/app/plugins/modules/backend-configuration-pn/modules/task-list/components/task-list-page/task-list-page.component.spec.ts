@@ -14,7 +14,8 @@ import {
 } from '../../../../services';
 import {CalendarRepeatService} from '../../../calendar/services/calendar-repeat.service';
 import {TaskListPageComponent} from './task-list-page.component';
-import {CalendarTaskModel} from '../../../../models/calendar';
+import {CalendarBoardModel, CalendarTaskModel} from '../../../../models/calendar';
+import {BatchBoardModalComponent} from '../modals/batch-board-modal/batch-board-modal.component';
 
 /**
  * #1135 — the edit modal's `folderId`.
@@ -152,5 +153,118 @@ describe('TaskListPageComponent — Logbøger folder resolution', () => {
 
     expect(propertiesServiceStub.getLinkedFolderDtos).not.toHaveBeenCalled();
     expect(dialogStub.open.mock.calls[0][1].data.folderId).toBeNull();
+  });
+});
+
+/**
+ * #1297 — batch action "Flyt til kalender" ('moveToBoard').
+ *
+ * It lives in the Opgaver group and is property-scoped (disabled unless exactly
+ * one property is filtered), because its option list is the page's
+ * property-scoped `boards`. `y/task-list-dropdown-gating.spec.ts` pins the same
+ * rule end-to-end as disabled counts 5 (no filter) / 0 (one property).
+ *
+ * TranslateModule.forRoot() has no loader, so `instant()` echoes the key — the
+ * labels and group names asserted below ARE the translation keys.
+ */
+describe('TaskListPageComponent — move to calendar batch action', () => {
+  let component: TaskListPageComponent;
+  let dialogStub: any;
+
+  const boards: CalendarBoardModel[] = [
+    {id: 10, name: 'Kalender A', color: '#111111', propertyId: 1},
+    {id: 11, name: 'Kalender B', color: '#222222', propertyId: 1},
+  ];
+
+  const filters = (propertyIds: number[]) => ({
+    propertyIds, boardIds: [], eformIds: [], assignToIds: [],
+    tagIds: [], status: null, complianceEnabled: null, nameFilter: null,
+  });
+
+  const moveToBoard = () => component.batchActions.find(a => a.id === 'moveToBoard');
+
+  beforeEach(async () => {
+    dialogStub = {open: jest.fn().mockReturnValue({afterClosed: () => of(false)})};
+
+    await TestBed.configureTestingModule({
+      declarations: [TaskListPageComponent],
+      imports: [TranslateModule.forRoot()],
+      providers: [
+        {provide: MatDialog, useValue: dialogStub},
+        {provide: Overlay, useValue: {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}}},
+        {
+          provide: BackendConfigurationPnCalendarService,
+          useValue: {
+            getTasksIndex: jest.fn().mockReturnValue(of({success: true, model: []})),
+            getBoards: jest.fn().mockReturnValue(of({success: true, model: boards})),
+          },
+        },
+        {
+          provide: BackendConfigurationPnPropertiesService,
+          useValue: {
+            getAllPropertiesDictionary: jest.fn().mockReturnValue(of({success: true, model: []})),
+            getDeviceUsersFiltered: jest.fn().mockReturnValue(of({success: true, model: []})),
+          },
+        },
+        {
+          provide: ItemsPlanningPnTagsService,
+          useValue: {getPlanningsTags: jest.fn().mockReturnValue(of({success: true, model: []}))},
+        },
+        {
+          provide: EFormService,
+          useValue: {getAll: jest.fn().mockReturnValue(of({success: true, model: {templates: []}}))},
+        },
+        {
+          provide: BackendConfigurationPnWorkerTagsService,
+          useValue: {getWorkerTags: jest.fn().mockReturnValue(of({success: true, model: []}))},
+        },
+        {provide: CalendarRepeatService, useValue: {}},
+        {provide: BackendConfigurationPnTaskListService, useValue: {}},
+      ],
+      schemas: [NO_ERRORS_SCHEMA],
+    }).compileComponents();
+
+    component = TestBed.createComponent(TaskListPageComponent).componentInstance;
+    component.ngOnInit();
+  });
+
+  it('is offered in the Opgaver (Tasks) group as "Move to calendar"', () => {
+    const option = moveToBoard();
+    expect(option).toBeDefined();
+    expect(option!.label).toBe('Move to calendar');
+    expect(option!.group).toBe('Tasks');
+    expect(component.batchActions).toHaveLength(12);
+  });
+
+  it.each([
+    ['no property', [] as number[], true],
+    ['exactly one property', [1], false],
+    ['two properties', [1, 2], true],
+  ])('with %s filtered: disabled follows the property scope', (_label, propertyIds, disabled) => {
+    component.onFiltersChanged(filters(propertyIds));
+    expect(moveToBoard()!.disabled).toBe(disabled);
+  });
+
+  it('brings the disabled count to 5 with no property and 0 with one', () => {
+    component.onFiltersChanged(filters([]));
+    expect(component.batchActions.filter(a => a.disabled)).toHaveLength(5);
+    component.onFiltersChanged(filters([1]));
+    expect(component.batchActions.filter(a => a.disabled)).toHaveLength(0);
+  });
+
+  it('opens BatchBoardModalComponent with the property-scoped calendars', () => {
+    component.onFiltersChanged(filters([1]));
+    component.onPropertyChanged(1);
+    component.tasks = [{id: 7, boardId: 10, title: 'T', tags: []} as unknown as CalendarTaskModel];
+    component.onSelectionChanged([7]);
+
+    component.openBatchModal('moveToBoard');
+
+    expect(dialogStub.open).toHaveBeenCalledTimes(1);
+    const [modal, config] = dialogStub.open.mock.calls[0];
+    expect(modal).toBe(BatchBoardModalComponent);
+    expect(config.data.mode).toBe('moveToBoard');
+    expect(config.data.boards).toEqual(boards);
+    expect(config.data.selectedTasks.map((t: CalendarTaskModel) => t.id)).toEqual([7]);
   });
 });

@@ -771,4 +771,5 @@ export const roRO = {
   '{{count}} selected': '{{count}} selectate',
   'Teams and employees': 'Echipe și angajați',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Jurnalul este șters definitiv, inclusiv răspunsurile și fotografiile sale. Această acțiune nu poate fi anulată.',
+  'Move to calendar': 'Mută în calendar',
 };

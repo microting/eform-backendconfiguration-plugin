@@ -771,4 +771,5 @@ export const hrHR = {
   '{{count}} selected': 'Odabrano: {{count}}',
   'Teams and employees': 'Timovi i zaposlenici',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Zapisnik se trajno briše, uključujući odgovore i fotografije. Ovu radnju nije moguće poništiti.',
+  'Move to calendar': 'Premjesti u kalendar',
 };
