@@ -1153,6 +1153,8 @@ public class ComplianceExportDocumentBuilderTests
     /// is redundant — but it is the invariant the document-wide ceiling was
     /// reasoned about with, and it is kept. Should the same case instance ever
     /// reach two groups again, it still gets ONE block, under the first section.
+    /// Every group carries a real headline: since #1301 a headline-less group is
+    /// dropped by the builder, so it could no longer be one of the sections.
     /// </summary>
     [Test]
     public void Report_ImageAppendixIsEmittedOncePerCaseAcrossGroups()
@@ -1167,7 +1169,7 @@ public class ComplianceExportDocumentBuilderTests
             ]
         };
 
-        ComplianceReportHeadlineGroupModel WithSharedCase(int? headlineId, string? name)
+        ComplianceReportHeadlineGroupModel WithSharedCase(int headlineId, string name)
         {
             var group = Group(headlineId, name, "Miljø", 509);
             group.Templates[0].Cases = [sharedCase];
@@ -1175,7 +1177,7 @@ public class ComplianceExportDocumentBuilderTests
         }
 
         var document = ComplianceExportDocumentBuilder.BuildReport(
-            [WithSharedCase(1, "A"), WithSharedCase(2, "B"), WithSharedCase(null, null)],
+            [WithSharedCase(1, "A"), WithSharedCase(2, "B"), WithSharedCase(3, "C")],
             "p", true, _localization);
 
         Assert.That(document.Tables, Has.Count.EqualTo(3));
