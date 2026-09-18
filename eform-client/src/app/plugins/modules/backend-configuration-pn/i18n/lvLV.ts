@@ -777,4 +777,5 @@ export const lvLV = {
   '{{rule}}, until and including {{date}}': '{{rule}}, līdz {{date}} (ieskaitot)',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} reizes',
   '{{rule}}, 1 time': '{{rule}}, 1 reizi',
+  'Future tasks cannot be completed or deleted yet': 'Nākotnes uzdevumus vēl nevar izpildīt vai dzēst',
 };

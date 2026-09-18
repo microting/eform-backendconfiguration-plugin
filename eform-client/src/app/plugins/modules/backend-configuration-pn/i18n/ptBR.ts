@@ -777,4 +777,5 @@ export const ptBR = {
   '{{rule}}, until and including {{date}}': '{{rule}}, até {{date}}, inclusive',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} vezes',
   '{{rule}}, 1 time': '{{rule}}, 1 vez',
+  'Future tasks cannot be completed or deleted yet': 'Tarefas futuras ainda não podem ser concluídas nem excluídas',
 };

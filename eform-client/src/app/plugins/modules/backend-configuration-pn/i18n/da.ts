@@ -798,4 +798,5 @@ export const da = {
   '{{rule}}, until and including {{date}}': '{{rule}}, til og med {{date}}',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} gange',
   '{{rule}}, 1 time': '{{rule}}, 1 gang',
+  'Future tasks cannot be completed or deleted yet': 'Fremtidige opgaver kan ikke udfyldes eller slettes endnu',
 };

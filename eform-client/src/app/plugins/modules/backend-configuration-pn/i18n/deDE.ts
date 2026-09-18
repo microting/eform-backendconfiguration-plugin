@@ -823,4 +823,5 @@ export const deDE = {
   '{{rule}}, until and including {{date}}': '{{rule}}, bis einschließlich {{date}}',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} Mal',
   '{{rule}}, 1 time': '{{rule}}, 1 Mal',
+  'Future tasks cannot be completed or deleted yet': 'Zukünftige Aufgaben können noch nicht ausgefüllt oder gelöscht werden',
 };

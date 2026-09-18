@@ -32,6 +32,7 @@ import {
   groupRowsByWeek,
 } from '../../helpers';
 import {ComplianceReportStateService} from '../../store';
+import {COMPLIANCE_PAGE_SOURCE, isFutureTask} from '../../../../helpers';
 
 /** How long the post-completion ring stays on the row (compliance.css:266). */
 const HIGHLIGHT_MS = 2200;
@@ -282,8 +283,27 @@ export class ComplianceDetailsViewComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * #1300: an uncompleted task dated AFTER today (Copenhagen date) cannot be
+   * filled in from the compliance pages — it is neither clickable nor
+   * focusable. The calendar keeps its own early completion.
+   */
   isRowCompletable(row: ComplianceReportRowModel): boolean {
-    return !row.completed && row.areaRulePlanningId != null;
+    return !row.completed && row.areaRulePlanningId != null && !isFutureTask(row.taskDate);
+  }
+
+  /**
+   * The delete action. Completed rows never had one here (status quo), and
+   * #1300 removes it from uncompleted FUTURE rows too — the server refuses
+   * that delete (`FutureTaskCannotBeDeleted`).
+   */
+  canDeleteRow(row: ComplianceReportRowModel): boolean {
+    return !row.completed && !isFutureTask(row.taskDate);
+  }
+
+  /** The rows #1300 locks; they carry an explanatory title instead of actions. */
+  isFutureUncompleted(row: ComplianceReportRowModel): boolean {
+    return !row.completed && isFutureTask(row.taskDate);
   }
 
   formatDayLabel(taskDate: string): string {
@@ -358,6 +378,9 @@ export class ComplianceDetailsViewComponent implements OnInit, OnDestroy {
         // The dialog is titled with the TASK name — the same string this row
         // prints in its "Opgave" column — not the embedded eForm's name (#1205).
         taskTitle: row.title,
+        // #1300: tells the server this completion comes from a compliance
+        // page, so it refuses a future task even if this gate were bypassed.
+        source: COMPLIANCE_PAGE_SOURCE,
       } as CalendarCompleteEventModalData,
       // Sized for a single-section eForm; the modal widens itself when the form
       // turns out to have more than one section.
@@ -405,6 +428,9 @@ export class ComplianceDetailsViewComponent implements OnInit, OnDestroy {
    */
   openDeleteConfirm(row: ComplianceReportRowModel, event: MouseEvent): void {
     event.stopPropagation();
+    if (!this.canDeleteRow(row)) {
+      return;
+    }
     const anchor = event.currentTarget as HTMLElement;
     // Second click on the SAME button closes it and stops there. The close
     // itself has already happened — CDK's outside-click dispatcher listens on

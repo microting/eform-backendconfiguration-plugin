@@ -777,4 +777,5 @@ export const skSK = {
   '{{rule}}, until and including {{date}}': '{{rule}}, do {{date}} vrátane',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}}-krát',
   '{{rule}}, 1 time': '{{rule}}, 1-krát',
+  'Future tasks cannot be completed or deleted yet': 'Budúce úlohy zatiaľ nie je možné vyplniť ani odstrániť',
 };

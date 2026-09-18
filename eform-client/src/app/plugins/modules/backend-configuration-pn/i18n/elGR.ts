@@ -777,4 +777,5 @@ export const elGR = {
   '{{rule}}, until and including {{date}}': '{{rule}}, έως και {{date}}',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} φορές',
   '{{rule}}, 1 time': '{{rule}}, 1 φορά',
+  'Future tasks cannot be completed or deleted yet': 'Οι μελλοντικές εργασίες δεν μπορούν ακόμη να ολοκληρωθούν ή να διαγραφούν',
 };

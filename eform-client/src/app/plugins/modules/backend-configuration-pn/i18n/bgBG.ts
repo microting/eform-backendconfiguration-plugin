@@ -777,4 +777,5 @@ export const bgBG = {
   '{{rule}}, until and including {{date}}': '{{rule}}, до и включително {{date}}',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} пъти',
   '{{rule}}, 1 time': '{{rule}}, 1 път',
+  'Future tasks cannot be completed or deleted yet': 'Бъдещите задачи все още не могат да бъдат изпълнени или изтрити',
 };

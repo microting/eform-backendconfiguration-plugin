@@ -777,4 +777,5 @@ export const itIT = {
   '{{rule}}, until and including {{date}}': '{{rule}}, fino al {{date}} incluso',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} volte',
   '{{rule}}, 1 time': '{{rule}}, 1 volta',
+  'Future tasks cannot be completed or deleted yet': 'Le attività future non possono ancora essere completate né eliminate',
 };

@@ -90,7 +90,7 @@ public class CompliancesController : Controller
     [HttpPut]
     [Route("cases")]
     // [Authorize(Policy = AuthConsts.EformPolicies.Cases.CaseUpdate)]
-    public async Task<IActionResult> Update([FromBody] ReplyRequest model)
+    public async Task<IActionResult> Update([FromBody] ReplyRequest model, [FromQuery] string source = null)
     {
         // if (!await _permissionsService.CheckEform(templateId,
         //         AuthConsts.EformClaims.CasesClaims.CaseUpdate))
@@ -98,13 +98,15 @@ public class CompliancesController : Controller
         //     return Forbid();
         // }
 
-        return Ok(await _backendConfigurationCompliancesService.Update(model).ConfigureAwait(false));
+        return Ok(await _backendConfigurationCompliancesService.Update(model, source).ConfigureAwait(false));
     }
 
     [HttpPut]
     [Route("cases/calendar")]
-    public async Task<OperationResult> UpdateFromCalendar([FromBody] ReplyRequest model)
+    public async Task<OperationResult> UpdateFromCalendar([FromBody] ReplyRequest model, [FromQuery] string source = null)
     {
-        return await _backendConfigurationCompliancesService.UpdateFromCalendar(model);
+        // #1300: `?source=compliance` (Detaljer) adds the future-task block; the calendar
+        // sends no source and keeps its intended early completion.
+        return await _backendConfigurationCompliancesService.UpdateFromCalendar(model, source);
     }
 }

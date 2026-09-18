@@ -777,4 +777,5 @@ export const etET = {
   '{{rule}}, until and including {{date}}': '{{rule}}, kuni {{date}} (kaasa arvatud)',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} korda',
   '{{rule}}, 1 time': '{{rule}}, 1 kord',
+  'Future tasks cannot be completed or deleted yet': 'Tulevasi ülesandeid ei saa veel täita ega kustutada',
 };

@@ -777,4 +777,5 @@ export const roRO = {
   '{{rule}}, until and including {{date}}': '{{rule}}, până la {{date}} inclusiv',
   '{{rule}}, {{count}} times': '{{rule}}, de {{count}} ori',
   '{{rule}}, 1 time': '{{rule}}, o dată',
+  'Future tasks cannot be completed or deleted yet': 'Sarcinile viitoare nu pot fi încă completate sau șterse',
 };

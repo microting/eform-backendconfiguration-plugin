@@ -21,6 +21,7 @@ import {BackendConfigurationPnCompliancesService} from '../../../../../services'
 import {parseISO} from 'date-fns';
 import * as R from 'ramda';
 import {Store} from '@ngrx/store';
+import {COMPLIANCE_PAGE_SOURCE} from '../../../../../helpers';
 
 @Component({
     selector: 'app-installation-case-page',
@@ -109,7 +110,10 @@ export class ComplianceCasePageComponent implements OnInit {
     this.replyRequest.extraId = this.complianceId;
     this.replyRequest.siteId = this.workerId;
     this.backendConfigurationPnCompliancesService
-      .updateCase(this.replyRequest, this.currenteForm.id)
+      // #1300: this page is only reached from the compliance pages (the
+      // /compliances table and the task tracker), so the server refuses to
+      // complete a task dated after today.
+      .updateCase(this.replyRequest, this.currenteForm.id, COMPLIANCE_PAGE_SOURCE)
       .subscribe((operation) => {
         if (operation && operation.success) {
           this.replyElement = new ReplyElementDto();

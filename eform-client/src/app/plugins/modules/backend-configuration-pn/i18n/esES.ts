@@ -777,4 +777,5 @@ export const esES = {
   '{{rule}}, until and including {{date}}': '{{rule}}, hasta el {{date}} inclusive',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} veces',
   '{{rule}}, 1 time': '{{rule}}, 1 vez',
+  'Future tasks cannot be completed or deleted yet': 'Las tareas futuras aún no se pueden completar ni eliminar',
 };

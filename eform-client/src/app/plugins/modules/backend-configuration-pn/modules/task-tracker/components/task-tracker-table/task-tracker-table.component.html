@@ -41,7 +41,7 @@
       </button>
       <button
         mat-menu-item
-        *ngIf="row.createdInWizard && !row.movedToExpiredFolder"
+        *ngIf="canDeleteTask(row)"
         id="deleteTaskBtn-{{i}}"
         class="btn-delete-menu"
         (click)="onShowDeleteComplianceModal(row)"

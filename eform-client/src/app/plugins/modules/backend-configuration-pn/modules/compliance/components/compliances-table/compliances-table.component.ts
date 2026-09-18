@@ -18,6 +18,7 @@ import {
 import {Subscription} from 'rxjs';
 import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
+import {isFutureLegacyDeadline} from '../../../../helpers';
 
 @Component({
     selector: 'app-compliances-table',
@@ -131,6 +132,9 @@ export class CompliancesTableComponent implements OnInit {
           tooltip:  this.translateService.stream('Delete Case'),
           icon: 'delete',
           color: 'warn',
+          // #1300: every row here is an uncompleted occurrence, so a future one
+          // gets no delete action (the server refuses it as well).
+          iif: (record: ComplianceModel) => this.canDelete(record.deadline),
           click: (record: ReportEformItemModel) => this.onShowDeleteComplianceModal(record),
         }
       ]
@@ -187,13 +191,27 @@ export class CompliancesTableComponent implements OnInit {
     this.updateTable.emit();
   }
 
+  /**
+   * #1300: date-level, not a timestamp comparison — a task can be filled in
+   * from its own day onward, never before (Copenhagen date). `date` is the
+   * DISPLAYED deadline, which is `Compliance.Deadline − 1 day`;
+   * `isFutureLegacyDeadline` adds the day back so this matches the server.
+   */
   canEdit(date: Date): boolean {
-    const today = new Date();
-    const deadline = new Date(date);
-    return deadline < today;
+    return !isFutureLegacyDeadline(date);
+  }
+
+  /** #1300: an uncompleted future task cannot be deleted. Same date rule as `canEdit`. */
+  canDelete(date: Date): boolean {
+    return !isFutureLegacyDeadline(date);
   }
 
   onShowDeleteComplianceModal(item: ReportEformItemModel) {
+    // The grid hands over the row, a ComplianceModel, despite the declared type.
+    const deadline = (item as unknown as ComplianceModel)?.deadline;
+    if (deadline && !this.canDelete(deadline)) {
+      return;
+    }
     this.complianceDeleteComponentAfterClosedSub$ = this.dialog.open(ComplianceDeleteComponent,
       {...dialogConfigHelper(this.overlay, item)})
       .afterClosed().subscribe(data => data ? this.onComplianceDeleted() : undefined);

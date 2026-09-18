@@ -1622,3 +1622,117 @@ describe('ComplianceReportViewComponent — edit returns to the edited row', () 
     expect(eformColumns).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * #1300 — Rapport's `Slet` is disabled (with a tooltip) for an UNCOMPLETED task
+ * dated after today (Copenhagen date). A COMPLETED future row — completed early
+ * from the calendar — stays deletable, and so does every past/today row.
+ * Clock pinned at 2026-09-18 12:00 in Copenhagen.
+ */
+describe('ComplianceReportViewComponent — future tasks cannot be deleted (#1300)', () => {
+  let fixture: ComponentFixture<ComplianceReportViewComponent>;
+  let component: ComplianceReportViewComponent;
+  let state: ComplianceReportStateService;
+  let eformColumns: jest.Mock;
+  let dialogOpen: jest.Mock;
+
+  const caseModel = (complianceId: number, taskDate: string, completed: boolean): ComplianceReportCaseModel => ({
+    complianceId,
+    sdkCaseId: completed ? 100 + complianceId : 0,
+    propertyId: 5,
+    propertyName: 'Ejendom A',
+    title: 'Område 1',
+    taskDate,
+    completed,
+    doneAt: null,
+    workerNames: [],
+    checkListId: 509,
+    tags: [],
+    cells: {},
+    imagesCount: 0,
+    images: [],
+  });
+
+  const response = (cases: ComplianceReportCaseModel[]): ComplianceReportHeadlineGroupModel[] => [
+    {
+      headlineTagId: 1,
+      headlineName: 'Overskrift',
+      tagsCaption: '',
+      templates: [
+        {checkListId: 509, checkListName: 'eForm', schemaUnavailable: false, columns: [], cases},
+      ],
+    },
+  ];
+
+  const rowById = (complianceId: number) =>
+    component.sections
+      .flatMap((s) => s.tables)
+      .flatMap((t) => t.allRows)
+      .find((r) => r.complianceId === complianceId)!;
+
+  beforeEach(async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-09-18T10:00:00Z'));
+    eformColumns = jest.fn().mockReturnValue(of({success: true, model: []}));
+    dialogOpen = jest.fn(() => ({afterClosed: () => new Subject<unknown>(), close: jest.fn()}));
+
+    await TestBed.configureTestingModule({
+      declarations: [ComplianceReportViewComponent],
+      imports: [TranslateModule.forRoot()],
+      providers: [
+        ComplianceReportStateService,
+        {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns}},
+        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: jest.fn()}},
+        {provide: BackendConfigurationPnPropertiesService, useValue: {getAllPropertiesDictionary: jest.fn()}},
+        {provide: BackendConfigurationPnCalendarService, useValue: {getBoards: jest.fn()}},
+        {provide: MatDialog, useValue: {open: dialogOpen}},
+        {provide: Router, useValue: {navigate: jest.fn(), url: '/x'}},
+      ],
+      schemas: [NO_ERRORS_SCHEMA],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(ComplianceReportViewComponent);
+    component = fixture.componentInstance;
+    state = TestBed.inject(ComplianceReportStateService);
+    state.setMode('report');
+    fixture.detectChanges();
+
+    eformColumns.mockReturnValue(
+      of({
+        success: true,
+        model: response([
+          caseModel(1, '2026-09-19', false), // uncompleted, tomorrow
+          caseModel(2, '2026-09-18', false), // uncompleted, today
+          caseModel(3, '2026-09-17', false), // uncompleted, yesterday
+          caseModel(4, '2026-09-25', true), // completed early, future
+          caseModel(5, '2026-09-10', true), // completed, past
+        ]),
+      }),
+    );
+    state.requestFetch();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it.each([
+    [1, false, 'uncompleted tomorrow'],
+    [2, true, 'uncompleted today'],
+    [3, true, 'uncompleted yesterday'],
+    [4, true, 'completed future (early from the calendar)'],
+    [5, true, 'completed past'],
+  ])('row %p → deletable %p (%s)', (id, expected) => {
+    expect(component.canDelete(rowById(id as number))).toBe(expected);
+  });
+
+  it('does not open the confirm dialog for an uncompleted future row', () => {
+    component.openDeleteConfirm(rowById(1));
+    expect(dialogOpen).not.toHaveBeenCalled();
+  });
+
+  it('opens the confirm dialog for today\'s row', () => {
+    component.openDeleteConfirm(rowById(2));
+    expect(dialogOpen).toHaveBeenCalledTimes(1);
+  });
+});

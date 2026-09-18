@@ -777,4 +777,5 @@ export const huHU = {
   '{{rule}}, until and including {{date}}': '{{rule}}, {{date}}-ig bezárólag',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} alkalommal',
   '{{rule}}, 1 time': '{{rule}}, 1 alkalommal',
+  'Future tasks cannot be completed or deleted yet': 'A jövőbeli feladatok még nem tölthetők ki és nem törölhetők',
 };

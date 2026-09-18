@@ -777,4 +777,5 @@ export const noNO = {
   '{{rule}}, until and including {{date}}': '{{rule}}, til og med {{date}}',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} ganger',
   '{{rule}}, 1 time': '{{rule}}, 1 gang',
+  'Future tasks cannot be completed or deleted yet': 'Fremtidige oppgaver kan ikke fylles ut eller slettes ennå',
 };
