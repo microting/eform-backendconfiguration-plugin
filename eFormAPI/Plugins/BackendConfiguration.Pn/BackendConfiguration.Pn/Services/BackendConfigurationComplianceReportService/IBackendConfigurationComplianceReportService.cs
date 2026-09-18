@@ -72,7 +72,7 @@ public interface IBackendConfigurationComplianceReportService
     /// headline one table per eForm template answered in it, with that template's
     /// columns only and one KEYED cell bag per case
     /// (#1276, see ComplianceReportTemplateTableModel). Rows without a headline
-    /// form one fallback group (<c>HeadlineTagId == null</c>), always last.
+    /// are excluded from the report (#1301).
     ///
     /// <para>
     /// The template of a case is the SDK <c>Case.CheckListId</c> — never

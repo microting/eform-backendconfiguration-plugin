@@ -886,8 +886,17 @@ public class BackendConfigurationComplianceReportService(
     /// compliance set grouped by REPORT HEADLINE
     /// (<c>AreaRulePlanning.ItemPlanningTagId</c>), each group carrying the
     /// group's tag names as a caption and one table per eForm template answered
-    /// in it (#1276, see ComplianceReportTemplateTableModel). Rows whose planning
-    /// has no headline form one fallback group, sorted last.
+    /// in it (#1276, see ComplianceReportTemplateTableModel).
+    ///
+    /// <para>
+    /// <b>Rows without a report headline are excluded</b> (#1301): a task created
+    /// without a "Rapportoverskrift" is not part of the report — neither this view
+    /// nor the PDF/CSV export (which reuses this method). That includes a row whose
+    /// planning has no live ARP. They are filtered BEFORE the
+    /// <see cref="MaxRowsReturned"/> cap, so they never consume the budget.
+    /// Oversigt (<see cref="Overview"/>) and Detaljer (<see cref="Index"/>) do not
+    /// go through this method and still count and list them.
+    /// </para>
     ///
     /// <para>
     /// Runs the SAME <see cref="BuildCandidateSet"/> as <see cref="Index"/> and
@@ -942,23 +951,40 @@ public class BackendConfigurationComplianceReportService(
                 },
                 sdkDbContext);
 
-            // Rows with no answered template are dropped BEFORE the cap, never
-            // after. Capping first and filtering second makes the cap mean
+            // Rows with no answered template, and rows with no REPORT HEADLINE
+            // (#1301 — AreaRulePlanning.ItemPlanningTagId unset, or no live ARP at
+            // all), are dropped BEFORE the cap, never after. Capping first and filtering second makes the cap mean
             // something unpredictable — 6000 matches of which half never deployed
             // would yield ~2500 groups while the log claimed a 5000-row
             // truncation. Filtering first makes MaxRowsReturned a ceiling on the
             // rows actually RENDERED, which is what the number is for.
-            var answerable = candidateSet.MatchedRows
+            var withTemplate = candidateSet.MatchedRows
                 .Where(r => r.Candidate.MicrotingSdkCaseId > 0 && r.SdkCase?.CheckListId != null)
                 .ToList();
 
-            var withoutTemplate = candidateSet.MatchedRows.Count - answerable.Count;
+            var withoutTemplate = candidateSet.MatchedRows.Count - withTemplate.Count;
             if (withoutTemplate > 0)
             {
                 logger.LogInformation(
                     "BackendConfigurationComplianceReportService.EformColumns: {Dropped} of {Total} matching rows "
                     + "have no answered template (no SDK case, or the case has no CheckListId) and form no group.",
                     withoutTemplate, candidateSet.MatchedRows.Count);
+            }
+
+            // #1301 (product decision 2026-09-18): a task without a report headline
+            // is not shown in Rapport or its export. Detaljer and Oversigt are
+            // unchanged — they do not come through here.
+            var answerable = withTemplate
+                .Where(r => HeadlineTagIdOf(r.Arp).HasValue)
+                .ToList();
+
+            var withoutHeadline = withTemplate.Count - answerable.Count;
+            if (withoutHeadline > 0)
+            {
+                logger.LogInformation(
+                    "BackendConfigurationComplianceReportService.EformColumns: {Dropped} of {Total} answered rows "
+                    + "have no report headline and are excluded from the report.",
+                    withoutHeadline, withTemplate.Count);
             }
 
             // One deterministic order for the whole response: cases appear inside
@@ -1085,8 +1111,8 @@ public class BackendConfigurationComplianceReportService(
             // on. It is read off row.Arp, which BuildCandidateSet pins to the
             // LOWEST-Id live ARP of the planning (a deliberate, documented choice
             // for the two-live-ARPs-on-one-planning data anomaly — do not "fix" it
-            // here); a planning with no live ARP has a null row.Arp and lands in
-            // the fallback group. The ARP column is used rather than the mirrored
+            // here). Rows with no headline (including a planning with no live ARP,
+            // whose row.Arp is null) were already excluded above (#1301). The ARP column is used rather than the mirrored
             // Planning.ReportGroupPlanningTagId because it is already in memory
             // and the wizard writes both from one value.
             //
@@ -1097,25 +1123,15 @@ public class BackendConfigurationComplianceReportService(
             //
             // Under each headline, one table per template (#1276, see
             // ComplianceReportTemplateTableModel).
-            //
-            // NEVER key a Dictionary on a NULLABLE VALUE TYPE here. Dictionary<TKey,
-            // TValue> null-checks its key in both FindValue and TryInsert, and
-            // boxing an EMPTY Nullable<int> produces a null reference — so
-            // Dictionary<int?, …> throws ArgumentNullException the moment the
-            // fallback group is looked up or inserted, which is the NORMAL path,
-            // not an edge case. (The compiler would normally warn CS8714, but this
-            // csproj sets no <Nullable>, so nothing warns.) Hence: a plain int-keyed
-            // dictionary for the named headlines plus a dedicated holder for the
-            // fallback group.
             var groupsByHeadlineId = new Dictionary<int, HeadlineGroupBuilder>();
-            HeadlineGroupBuilder withoutHeadline = null;
 
             foreach (var row in answered)
             {
                 var checkListId = row.SdkCase.CheckListId.Value;
                 var projection = projections[checkListId];
                 var sdkCaseId = row.Candidate.MicrotingSdkCaseId;
-                var headlineTagId = HeadlineTagIdOf(row.Arp);
+                // Never null here: headline-less rows were filtered out above.
+                var headlineTagId = HeadlineTagIdOf(row.Arp).Value;
 
                 var rowSiteIds = row.Arp != null
                     ? siteSetsByArpId.GetValueOrDefault(row.Arp.Id, WorkerSiteSets.Empty).AllSiteIds
@@ -1178,42 +1194,26 @@ public class BackendConfigurationComplianceReportService(
                     Images = images
                 };
 
-                HeadlineGroupBuilder group;
-                if (headlineTagId.HasValue)
+                if (!groupsByHeadlineId.TryGetValue(headlineTagId, out var group))
                 {
-                    if (!groupsByHeadlineId.TryGetValue(headlineTagId.Value, out group))
-                    {
-                        // A headline id with no PlanningTags row keeps its OWN
-                        // group with a null name (the consumer renders "#{id}"); it
-                        // is never merged into the fallback group, which is for
-                        // rows with NO headline at all.
-                        group = new HeadlineGroupBuilder(
-                            headlineTagId, planningTagNames.GetValueOrDefault(headlineTagId.Value));
-                        groupsByHeadlineId[headlineTagId.Value] = group;
-                    }
-                }
-                else
-                {
-                    group = withoutHeadline ??= new HeadlineGroupBuilder(null, null);
+                    // A headline id with no PlanningTags row keeps its OWN group
+                    // with a null name (the consumer renders "#{id}").
+                    group = new HeadlineGroupBuilder(
+                        headlineTagId, planningTagNames.GetValueOrDefault(headlineTagId));
+                    groupsByHeadlineId[headlineTagId] = group;
                 }
 
                 group.Add(caseModel, checkListId, rowTagNames);
             }
 
-            var allGroups = groupsByHeadlineId.Values.ToList();
-            if (withoutHeadline != null) allGroups.Add(withoutHeadline);
-
-            var built = allGroups.Select(g => g.Build(projections)).ToList();
+            var built = groupsByHeadlineId.Values.Select(g => g.Build(projections)).ToList();
 
             // Stable output order (#1188 decision 5): by CAPTION — the PDF's
             // sections are ordered "Miljøtilsyn - Brand", "… - Dokumentation",
             // "… - EL", "… - Kontrol", i.e. by the tag line, not the headline —
-            // then by headline name, then by headline id. The fallback group sorts
-            // LAST in every locale because it is keyed on the null id, not on a
-            // translated label.
+            // then by headline name, then by headline id.
             var result = built
-                .OrderBy(g => g.HeadlineTagId.HasValue ? 0 : 1)
-                .ThenBy(g => g.TagsCaption ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(g => g.TagsCaption ?? string.Empty, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(g => g.HeadlineName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(g => g.HeadlineTagId ?? int.MaxValue)
                 .ToList();

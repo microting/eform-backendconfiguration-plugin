@@ -320,7 +320,6 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
   // -------------------------------------------------------------------
 
   private applyResponse(groups: ComplianceReportHeadlineGroupModel[]): void {
-    const withoutHeadline = this.translate.instant('Without report headline');
     // The PAGE budget, spent in server order — sections in order, and the
     // tables of each section in order. A result can hold dozens of small
     // tables that each stay under the per-table cap while the whole 5000-row
@@ -329,7 +328,7 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
     // not at all.
     let revealed = 0;
     let total = 0;
-    this.sections = buildComplianceReportSections(groups, withoutHeadline).map((section) => ({
+    this.sections = buildComplianceReportSections(groups).map((section) => ({
       ...section,
       tables: section.tables.map((table) => {
         const rendered = this.renderTable(table, revealed);

@@ -749,7 +749,6 @@ export const elGR = {
   'Update period': 'Ενημέρωση περιόδου',
   'Select a period and click Update period': 'Επιλέξτε περίοδο και κάντε κλικ στην επιλογή Ενημέρωση περιόδου.',
   'Change a filter or click Overview to load the table': 'Αλλάξτε ένα φίλτρο ή κάντε κλικ στην Επισκόπηση για να φορτώσετε τον πίνακα.',
-  'Without report headline': 'Χωρίς επικεφαλίδα αναφοράς',
   // Calendar toolbar (#1209): the calendars multi-select button label, its
   // bulk actions, and the accessible name of a calendar row's actions menu.
   '{{count}} calendars': '{{count}} ημερολόγια',

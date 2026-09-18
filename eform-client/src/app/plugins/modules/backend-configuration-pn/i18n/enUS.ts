@@ -822,12 +822,6 @@ export const enUS= {
   // and retranslating 'Completed date' would silently move its one other
   // consumer (adhoc-history).
   'Completion date': 'Completion date',
-  // The heading of the Rapport section for tasks that carry NO report headline
-  // (#1188). A headline whose tag id could not be resolved to a name is
-  // rendered as #{id} instead — it is a named group, and filing it here would
-  // merge two different sub-reports. Matches the backend's
-  // WithoutReportHeadline entry, which the export uses.
-  'Without report headline': 'Without report headline',
   // A template whose column schema could not be derived: zero answer columns
   // for a reason that is neither "no answerable fields" nor "nobody answered".
   // Matches the backend's ColumnsUnavailable entry. Rendered for a section

@@ -749,7 +749,6 @@ export const isIS = {
   'Update period': 'Uppfæra tímabil',
   'Select a period and click Update period': 'Veldu tímabil og smelltu á Uppfæra tímabil.',
   'Change a filter or click Overview to load the table': 'Breyttu síu eða smelltu á Yfirlit til að hlaða töflunni.',
-  'Without report headline': 'Án skýrslufyrirsagnar',
   // Calendar toolbar (#1209): the calendars multi-select button label, its
   // bulk actions, and the accessible name of a calendar row's actions menu.
   '{{count}} calendars': '{{count}} dagatöl',

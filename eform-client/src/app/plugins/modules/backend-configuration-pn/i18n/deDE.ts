@@ -795,7 +795,6 @@ export const deDE = {
   'Update period': 'Zeitraum aktualisieren',
   'Select a period and click Update period': 'Wählen Sie einen Zeitraum aus und klicken Sie auf „Zeitraum aktualisieren“.',
   'Change a filter or click Overview to load the table': 'Ändern Sie einen Filter oder klicken Sie auf „Überblick“, um die Tabelle zu laden.',
-  'Without report headline': 'Ohne Berichtsüberschrift',
   // Calendar toolbar (#1209): the calendars multi-select button label, its
   // bulk actions, and the accessible name of a calendar row's actions menu.
   '{{count}} calendars': '{{count}} Kalender',

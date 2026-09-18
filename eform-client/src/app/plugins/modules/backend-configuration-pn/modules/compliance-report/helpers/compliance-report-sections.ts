@@ -54,8 +54,8 @@ export const COMPLIANCE_REPORT_TABLE_ROW_CAP = 100;
  * The per-table cap alone does not bound the page. A section is one REPORT
  * HEADLINE (#1188) holding one table per eForm answered under it (#1276), and
  * an installation can run many of both — one section per distinct
- * `Rapportoverskrift` in the filtered set, plus the headline-less fallback —
- * most tables far below `COMPLIANCE_REPORT_TABLE_ROW_CAP`. In that shape no
+ * `Rapportoverskrift` in the filtered set (headline-less tasks are excluded,
+ * #1301) — most tables far below `COMPLIANCE_REPORT_TABLE_ROW_CAP`. In that shape no
  * table ever caps and the server's whole 5000-row allowance lands in one DOM:
  * the exact outcome the per-table cap was written to prevent. (The
  * prototype's 315 rows / 6 sections is one point, not the worst case.)
@@ -108,8 +108,7 @@ export interface ComplianceReportTable {
 export interface ComplianceReportSection {
   /**
    * Stable trackBy identity, and the `data-section-key` of the section.
-   * `h{headlineTagId|none}` — `hnone` is the fallback section, which the
-   * server orders last. Also the prefix of every one of its tables' keys.
+   * `h{headlineTagId}`. Also the prefix of every one of its tables' keys.
    */
   key: string;
   /**
@@ -120,8 +119,7 @@ export interface ComplianceReportSection {
   captionLabel: string;
   /**
    * The bold heading — the REPORT HEADLINE (the calendar modal's
-   * `Rapportoverskrift`), `#{id}` for an unresolvable one, the translated
-   * fallback label for the headline-less section. NEVER the template name:
+   * `Rapportoverskrift`), `#{id}` for an unresolvable one. NEVER the template name:
    * a section spans templates, and each of its tables carries its own
    * (`ComplianceReportTable.templateLabel`).
    */
@@ -131,33 +129,26 @@ export interface ComplianceReportSection {
 }
 
 /**
- * The heading of a headline group, discriminating on the tag ID and NEVER on
- * the name — the same rule the export applies to the same group.
+ * The heading of a headline group — the same rule the export applies to the
+ * same group. Only groups WITH a headline id reach it: tasks without a report
+ * headline are excluded from the report (#1301), by the server and again by
+ * `buildComplianceReportSections`.
  *
- * `headlineTagId == null` is the genuinely headline-less fallback group and
- * the ONLY one that gets `fallbackLabel` ("Uden rapportoverskrift").
- *
- * `headlineTagId != null` with `headlineName == null` (or blank) is a NAMED
- * group whose name could not be resolved: headline ids live in the BC database
+ * `headlineName == null` (or blank) is a NAMED group whose name could not be
+ * resolved: headline ids live in the BC database
  * (`AreaRulePlanning.ItemPlanningTagId`) and tag names in the items-planning
- * one, with no foreign key between them. Filing such a group under the
- * fallback label would make it indistinguishable from the genuinely
- * headline-less group — two different sections merged under one label, and
- * the screen disagreeing with the file downloaded from it. It gets
- * `#{headlineTagId}` instead: visibly not a headline, distinct from every
- * other group, and it names the id the tag can be looked up by.
+ * one, with no foreign key between them. It gets `#{headlineTagId}`: visibly
+ * not a headline, distinct from every other group, and it names the id the
+ * tag can be looked up by.
  *
  * The name is returned TRIMMED, which the C# does not do — a name saved with
  * surrounding whitespace reads tight on screen and padded in the file.
  * Cosmetic, and the screen has the better of the two.
  */
-export function complianceHeadlineLabel(
-  group: Pick<ComplianceReportHeadlineGroupModel, 'headlineTagId' | 'headlineName'>,
-  fallbackLabel: string
-): string {
-  if (group.headlineTagId == null) {
-    return fallbackLabel;
-  }
+export function complianceHeadlineLabel(group: {
+  headlineTagId: number;
+  headlineName: string | null;
+}): string {
   const name = (group.headlineName ?? '').trim();
   return name.length > 0 ? name : `#${group.headlineTagId}`;
 }
@@ -177,9 +168,12 @@ export function complianceTemplateLabel(
 
 /**
  * Map the response 1:1 onto sections and their tables, in the order the server
- * sent them (groups by caption, then headline, then id, with the headline-less
- * group last on purpose — #1188 decision 5; tables by eForm name — #1276).
- * Nothing here re-orders.
+ * sent them (groups by caption, then headline, then id — #1188 decision 5;
+ * tables by eForm name — #1276). Nothing here re-orders.
+ *
+ * A group without a headline id is dropped (#1301): tasks without a report
+ * headline are not part of the report. The server already excludes them; the
+ * guard keeps an older/other server from surfacing an unlabelled section.
  *
  * Tables with no cases are dropped — an empty table under a sub-heading says
  * nothing — and a group left with no tables is dropped with them. A table
@@ -187,12 +181,15 @@ export function complianceTemplateLabel(
  * columns are missing, and the view has to say so.
  */
 export function buildComplianceReportSections(
-  groups: ComplianceReportHeadlineGroupModel[] | null | undefined,
-  withoutHeadlineLabel: string
+  groups: ComplianceReportHeadlineGroupModel[] | null | undefined
 ): ComplianceReportSection[] {
   const sections: ComplianceReportSection[] = [];
   for (const group of groups ?? []) {
-    const sectionKey = `h${group.headlineTagId ?? 'none'}`;
+    if (group?.headlineTagId == null) {
+      continue;
+    }
+    const headlineTagId = group.headlineTagId;
+    const sectionKey = `h${headlineTagId}`;
     const tables: ComplianceReportTable[] = [];
     for (const template of group.templates ?? []) {
       const cases = template?.cases ?? [];
@@ -214,7 +211,7 @@ export function buildComplianceReportSections(
     sections.push({
       key: sectionKey,
       captionLabel: (group.tagsCaption ?? '').trim(),
-      headlineLabel: complianceHeadlineLabel(group, withoutHeadlineLabel),
+      headlineLabel: complianceHeadlineLabel({headlineTagId, headlineName: group.headlineName}),
       tables,
     });
   }

@@ -233,36 +233,15 @@ describe('complianceAnswerIsChecked', () => {
 });
 
 describe('complianceHeadlineLabel', () => {
-  it('labels the genuinely headline-less group with the fallback label', () => {
-    expect(
-      complianceHeadlineLabel({headlineTagId: null, headlineName: null}, 'Uden rapportoverskrift')
-    ).toBe('Uden rapportoverskrift');
-  });
-
-  it('labels a NAMED group whose name could not be resolved as #{id}, never as the fallback', () => {
-    expect(
-      complianceHeadlineLabel({headlineTagId: 42, headlineName: null}, 'Uden rapportoverskrift')
-    ).toBe('#42');
-    expect(
-      complianceHeadlineLabel({headlineTagId: 42, headlineName: '   '}, 'Uden rapportoverskrift')
-    ).toBe('#42');
+  it('labels a NAMED group whose name could not be resolved as #{id}', () => {
+    expect(complianceHeadlineLabel({headlineTagId: 42, headlineName: null})).toBe('#42');
+    expect(complianceHeadlineLabel({headlineTagId: 42, headlineName: '   '})).toBe('#42');
   });
 
   it('uses the headline name when there is one, trimmed', () => {
     expect(
-      complianceHeadlineLabel(
-        {headlineTagId: 7, headlineName: ' Brandsikkerhed og beredskab '},
-        'Uden rapportoverskrift'
-      )
+      complianceHeadlineLabel({headlineTagId: 7, headlineName: ' Brandsikkerhed og beredskab '})
     ).toBe('Brandsikkerhed og beredskab');
-  });
-
-  it('ignores the name of the headline-less group — the ID is the discriminator', () => {
-    // A server that ever sent a name on the null group must not turn it into
-    // a named section; the fallback group is the null ID, full stop.
-    expect(
-      complianceHeadlineLabel({headlineTagId: null, headlineName: 'Stray'}, 'Uden rapportoverskrift')
-    ).toBe('Uden rapportoverskrift');
   });
 });
 
@@ -278,8 +257,6 @@ describe('complianceTemplateLabel', () => {
 });
 
 describe('buildComplianceReportSections', () => {
-  const FALLBACK = 'Uden rapportoverskrift';
-
   const template = (
     overrides: Partial<ComplianceReportTemplateTableModel> = {}
   ): ComplianceReportTemplateTableModel => ({
@@ -301,7 +278,11 @@ describe('buildComplianceReportSections', () => {
     ...overrides,
   });
 
-  /** Server order: by caption, then headline, then id; the fallback group LAST. */
+  /**
+   * Server order: by caption, then headline, then id. The last group has NO
+   * headline — the server no longer sends one (#1301), and the mapper must
+   * drop it should one arrive.
+   */
   const groups: ComplianceReportHeadlineGroupModel[] = [
     group(),
     group({
@@ -345,20 +326,44 @@ describe('buildComplianceReportSections', () => {
     }),
   ];
 
-  it('emits ONE section per headline group, in server order, fallback last', () => {
-    const sections = buildComplianceReportSections(groups, FALLBACK);
+  it('emits ONE section per headline group, in server order, and none for a headline-less group', () => {
+    const sections = buildComplianceReportSections(groups);
 
     expect(sections.map((s) => [s.captionLabel, s.headlineLabel])).toEqual([
       ['Miljøtilsyn - Brand', 'Brandsikkerhed og beredskab'],
       ['Miljøtilsyn - Dokumentation', 'Lovpligtig dokumentation'],
-      ['', FALLBACK],
     ]);
+  });
+
+  it('drops a headline-less group (#1301) — no fallback section, and none of its cases anywhere', () => {
+    const sections = buildComplianceReportSections([
+      group({
+        headlineTagId: null,
+        headlineName: 'Stray',
+        tagsCaption: 'Aa tag',
+        templates: [template({cases: [caseModel({complianceId: 99})]})],
+      }),
+      group(),
+    ]);
+
+    expect(sections.map((s) => s.key)).toEqual(['h7']);
+    expect(sections.some((s) => s.headlineLabel === 'Stray')).toBe(false);
+    expect(sections.some((s) => s.captionLabel === 'Aa tag')).toBe(false);
+    expect(
+      sections.flatMap((s) => s.tables.flatMap((t) => t.cases.map((c) => c.complianceId)))
+    ).not.toContain(99);
+  });
+
+  it('yields no sections at all when every group is headline-less', () => {
+    expect(
+      buildComplianceReportSections([group({headlineTagId: null}), group({headlineTagId: undefined as any})])
+    ).toEqual([]);
   });
 
   it('heads a headline answered on two eForms ONCE, with one table per eForm in server order', () => {
     // #1276 reverses #1188's union: not one merged table under the headline,
     // but one table per eForm, titled with its name.
-    const sections = buildComplianceReportSections(groups, FALLBACK);
+    const sections = buildComplianceReportSections(groups);
     const mixed = sections[1];
 
     expect(sections.filter((s) => s.headlineLabel === 'Lovpligtig dokumentation').length).toBe(1);
@@ -371,7 +376,7 @@ describe('buildComplianceReportSections', () => {
 
   it('gives each table ONLY its own eForm\'s columns — a shared label is not a shared column', () => {
     // Both eForms have a `KOMMENTAR`; each table has exactly one of them.
-    const [, mixed] = buildComplianceReportSections(groups, FALLBACK);
+    const [, mixed] = buildComplianceReportSections(groups);
 
     expect(mixed.tables.map((t) => t.columns.map((c) => c.key))).toEqual([
       ['f20', 'f21'],
@@ -382,14 +387,14 @@ describe('buildComplianceReportSections', () => {
     }
   });
 
-  it('keys every table h{headline|none}-c{checkListId}, unique across the whole page', () => {
+  it('keys every table h{headline}-c{checkListId}, unique across the whole page', () => {
     // One eForm (509) answered under three headlines is three tables; the
     // section prefix is what keeps their trackBy and DOM ids apart.
-    const keys = buildComplianceReportSections(groups, FALLBACK).flatMap((s) =>
+    const keys = buildComplianceReportSections(groups).flatMap((s) =>
       s.tables.map((t) => t.key)
     );
 
-    expect(keys).toEqual(['h7-c509', 'h8-c511', 'h8-c509', 'hnone-c509']);
+    expect(keys).toEqual(['h7-c509', 'h8-c511', 'h8-c509']);
     expect(new Set(keys).size).toBe(keys.length);
   });
 
@@ -402,9 +407,7 @@ describe('buildComplianceReportSections', () => {
             template({checkListId: 511, checkListName: 'Kontrol'}),
           ],
         }),
-      ],
-      FALLBACK
-    );
+      ]);
 
     expect(only.tables.map((t) => t.schemaUnavailable)).toEqual([true, false]);
     // The cases of the schema-less eForm are KEPT: only its columns are missing.
@@ -426,9 +429,7 @@ describe('buildComplianceReportSections', () => {
           headlineName: 'Blandet',
           templates: [template({checkListId: 509, cases: []}), template({checkListId: 511})],
         }),
-      ],
-      FALLBACK
-    );
+      ]);
 
     expect(sections.some((s) => s.headlineLabel === 'Tom')).toBe(false);
     expect(sections.some((s) => s.headlineLabel === 'Kun tomme')).toBe(false);
@@ -437,25 +438,24 @@ describe('buildComplianceReportSections', () => {
     ]);
   });
 
-  it('keys sections h{id} and hnone, distinct, and labels an unresolvable headline #{id}', () => {
-    const sections = buildComplianceReportSections(
-      [...groups, group({headlineTagId: 42, headlineName: null, tagsCaption: 'Zzz'})],
-      FALLBACK
-    );
+  it('keys sections h{id}, distinct, and labels an unresolvable headline #{id}', () => {
+    const sections = buildComplianceReportSections([
+      ...groups,
+      group({headlineTagId: 42, headlineName: null, tagsCaption: 'Zzz'}),
+    ]);
     const keys = sections.map((s) => s.key);
 
     expect(new Set(keys).size).toBe(keys.length);
-    expect(keys).toEqual(['h7', 'h8', 'hnone', 'h42']);
-    // `#42`, NOT merged into the fallback section.
-    expect(sections[3].headlineLabel).toBe('#42');
-    expect(sections[3].key).not.toBe('hnone');
+    expect(keys).toEqual(['h7', 'h8', 'h42']);
+    // `#42`: an unresolvable NAME is still a headline, never dropped.
+    expect(sections[2].headlineLabel).toBe('#42');
   });
 
   it('is safe for a null response and for a group or table missing its optional lists', () => {
-    expect(buildComplianceReportSections(null, FALLBACK)).toEqual([]);
-    expect(buildComplianceReportSections(undefined, FALLBACK)).toEqual([]);
+    expect(buildComplianceReportSections(null)).toEqual([]);
+    expect(buildComplianceReportSections(undefined)).toEqual([]);
     expect(
-      buildComplianceReportSections([group({templates: null as any})], FALLBACK)
+      buildComplianceReportSections([group({templates: null as any})])
     ).toEqual([]);
 
     const [bare] = buildComplianceReportSections(
@@ -475,9 +475,7 @@ describe('buildComplianceReportSections', () => {
             },
           ],
         },
-      ],
-      FALLBACK
-    );
+      ]);
     expect(bare.captionLabel).toBe('');
     expect(bare.tables.length).toBe(1);
     expect(bare.tables[0].templateLabel).toBe('#509');

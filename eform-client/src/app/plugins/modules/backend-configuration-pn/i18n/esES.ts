@@ -749,7 +749,6 @@ export const esES = {
   'Update period': 'Actualizar período',
   'Select a period and click Update period': 'Seleccione un período y haga clic en Actualizar período.',
   'Change a filter or click Overview to load the table': 'Cambie un filtro o haga clic en Descripción general para cargar la tabla.',
-  'Without report headline': 'Sin encabezado de informe',
   // Calendar toolbar (#1209): the calendars multi-select button label, its
   // bulk actions, and the accessible name of a calendar row's actions menu.
   '{{count}} calendars': '{{count}} calendarios',

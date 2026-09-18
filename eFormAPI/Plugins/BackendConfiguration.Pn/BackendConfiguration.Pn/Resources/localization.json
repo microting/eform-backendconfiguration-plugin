@@ -6696,37 +6696,6 @@
     }
   },
   {
-    "Key": "WithoutReportHeadline",
-    "LocalizedValue": {
-      "da": "Uden rapportoverskrift",
-      "de": "Ohne Berichtsüberschrift",
-      "en-US": "Without report headline",
-      "uk-UA": "Без заголовка звіту",
-      "pl-PL": "Bez nagłówka raportu",
-      "no-NO": "Uten rapportoverskrift",
-      "sv-SE": "Utan rapportrubrik",
-      "es-ES": "Sin encabezado de informe",
-      "fr-FR": "Sans en-tête de rapport",
-      "it-IT": "Senza intestazione del rapporto",
-      "nl-NL": "Zonder rapportkop",
-      "pt-BR": "Sem título de relatório",
-      "pt-PT": "Sem título de relatório",
-      "fi-FI": "Ilman raportin otsikkoa",
-      "et-ET": "Ilma aruande pealkirjata",
-      "lv-LV": "Bez atskaites virsraksta",
-      "lt-LT": "Be ataskaitos antraštės",
-      "ro-RO": "Fără titlu de raport",
-      "hr-HR": "Bez naslova izvještaja",
-      "sl-SL": "Brez naslova poročila",
-      "cs-CZ": "Bez nadpisu zprávy",
-      "sk-SK": "Bez nadpisu správy",
-      "hu-HU": "Jelentéscím nélkül",
-      "bg-BG": "Без заглавие на отчета",
-      "el-GR": "Χωρίς επικεφαλίδα αναφοράς",
-      "is-IS": "Án skýrslufyrirsagnar"
-    }
-  },
-  {
     "Key": "ReportHeadline",
     "LocalizedValue": {
       "da": "Rapportoverskrift",

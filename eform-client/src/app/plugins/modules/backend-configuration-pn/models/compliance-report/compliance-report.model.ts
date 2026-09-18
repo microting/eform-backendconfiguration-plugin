@@ -344,19 +344,17 @@ export interface ComplianceReportTemplateTableModel {
  * not group anything any more; they become the small caption above the
  * heading.
  *
- * Discriminate on the ID, never on the name:
+ * Tasks with NO headline are not in the report at all (#1301): the server
+ * excludes them, so `headlineTagId` is never `null` in a response (the type
+ * stays nullable for wire compatibility, and the mapper drops such a group).
  *
- *  - `headlineTagId == null` is the fallback group — tasks with NO headline —
- *    and the ONLY one that gets the "Uden rapportoverskrift" label. The
- *    server always orders it LAST;
- *  - `headlineTagId != null` with `headlineName == null` is a NAMED group whose
- *    name could not be resolved (tag ids live in the BC database and tag names
- *    in the items-planning one, with no foreign key between them). It is
- *    labelled `#{headlineTagId}` and is never merged into the fallback group.
+ * `headlineTagId` with `headlineName == null` is a NAMED group whose name could
+ * not be resolved (tag ids live in the BC database and tag names in the
+ * items-planning one, with no foreign key between them). It is labelled
+ * `#{headlineTagId}`. Discriminate on the ID, never on the name.
  *
  * Groups arrive ordered by `tagsCaption`, then `headlineName`, then
- * `headlineTagId`, fallback last (#1188 decision 5). Nothing client-side
- * re-orders.
+ * `headlineTagId` (#1188 decision 5). Nothing client-side re-orders.
  */
 export interface ComplianceReportHeadlineGroupModel {
   headlineTagId: number | null;

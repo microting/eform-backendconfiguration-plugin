@@ -1153,6 +1153,8 @@ public class ComplianceExportDocumentBuilderTests
     /// is redundant — but it is the invariant the document-wide ceiling was
     /// reasoned about with, and it is kept. Should the same case instance ever
     /// reach two groups again, it still gets ONE block, under the first section.
+    /// Every group carries a real headline: since #1301 a headline-less group is
+    /// dropped by the builder, so it could no longer be one of the sections.
     /// </summary>
     [Test]
     public void Report_ImageAppendixIsEmittedOncePerCaseAcrossGroups()
@@ -1167,7 +1169,7 @@ public class ComplianceExportDocumentBuilderTests
             ]
         };
 
-        ComplianceReportHeadlineGroupModel WithSharedCase(int? headlineId, string? name)
+        ComplianceReportHeadlineGroupModel WithSharedCase(int headlineId, string name)
         {
             var group = Group(headlineId, name, "Miljø", 509);
             group.Templates[0].Cases = [sharedCase];
@@ -1175,7 +1177,7 @@ public class ComplianceExportDocumentBuilderTests
         }
 
         var document = ComplianceExportDocumentBuilder.BuildReport(
-            [WithSharedCase(1, "A"), WithSharedCase(2, "B"), WithSharedCase(null, null)],
+            [WithSharedCase(1, "A"), WithSharedCase(2, "B"), WithSharedCase(3, "C")],
             "p", true, _localization);
 
         Assert.That(document.Tables, Has.Count.EqualTo(3));
@@ -1229,22 +1231,18 @@ public class ComplianceExportDocumentBuilderTests
     /// <summary>
     /// A headline whose NAME could not be resolved is still a NAMED group — the
     /// report service deliberately keeps a headline id whose name lives in the
-    /// items-planning database with no foreign key to it. Labelling it "Uden
-    /// rapportoverskrift" would merge it with the genuinely headline-less fallback
-    /// group that the service sorts last precisely to keep the two apart. It gets
-    /// the neutral <c>#{HeadlineTagId}</c> form instead — the same the screen
-    /// renders.
+    /// items-planning database with no foreign key to it. It gets the neutral
+    /// <c>#{HeadlineTagId}</c> form — the same the screen renders — and is never
+    /// dropped like a headline-less group (#1301).
     /// </summary>
     [Test]
-    public void Report_NamedGroupWithAnUnresolvableNameIsNotLabelledWithoutHeadline()
+    public void Report_NamedGroupWithAnUnresolvableNameIsLabelledWithItsId()
     {
         var document = ComplianceExportDocumentBuilder.BuildReport(
-            [Group(77, null, "T", 509), Group(null, null, "T", 509)],
+            [Group(77, null, "T", 509), Group(78, "   ", "T", 509)],
             "p", false, _localization);
 
-        Assert.That(document.Tables[0].Title, Is.EqualTo("#77"));
-        Assert.That(document.Tables[1].Title, Is.EqualTo("WithoutReportHeadline"));
-        Assert.That(document.Tables[0].Title, Is.Not.EqualTo(document.Tables[1].Title));
+        Assert.That(document.Tables.Select(t => t.Title), Is.EqualTo(new[] { "#77", "#78" }));
     }
 
     /// <summary>
@@ -1286,19 +1284,63 @@ public class ComplianceExportDocumentBuilderTests
     }
 
     /// <summary>
-    /// The fallback group carries no name from the API (the label is the
-    /// consumer's), so the export supplies the localised "Uden rapportoverskrift" —
-    /// the <c>WithoutReportHeadline</c> key, not the retired <c>WithoutTag</c>.
-    /// Its caption still renders when its cases carry tags.
+    /// #1301: a task without a report headline is not part of the report. The
+    /// service already excludes such rows, and the builder skips a headline-less
+    /// group handed to it anyway — no table, no rows, no appendix block, and no
+    /// "Uden rapportoverskrift" heading — in the Word/PDF document AND the CSV
+    /// (both are written from this one document). Pre-#1301 this group rendered
+    /// as a titled table last in the document.
     /// </summary>
     [Test]
-    public void Report_FallbackGroupGetsTheLocalisedLabelAndKeepsItsCaption()
+    public void Report_HeadlineLessGroupIsExcludedFromTheDocument()
+    {
+        var named = Group(1, "Overskrift", "Zz tag", 509);
+        named.Templates[0].Cases =
+        [
+            new ComplianceReportCaseModel { SdkCaseId = 1, Title = "Med", TaskDate = "2026-03-09", Tags = ["MedOverskriftTag"] }
+        ];
+        var headlineLess = Group(null, null, "Aa tag", 509);
+        headlineLess.Templates[0].Cases =
+        [
+            new ComplianceReportCaseModel
+            {
+                SdkCaseId = 2, Title = "Uden", TaskDate = "2026-03-10", ImagesCount = 1,
+                Tags = ["UdenOverskriftTag"],
+                Images = [new ComplianceReportImageModel { FileName = "2_1_700_x.jpg" }]
+            }
+        ];
+
+        var document = ComplianceExportDocumentBuilder.BuildReport(
+            [named, headlineLess], "p", true, _localization);
+
+        Assert.That(document.Tables, Has.Count.EqualTo(1));
+        Assert.That(document.Tables[0].Title, Is.EqualTo("Overskrift"));
+        Assert.That(document.Tables[0].Rows, Has.Count.EqualTo(1), "only the headlined case is a row");
+        Assert.That(document.Tables.Select(t => t.Title), Has.None.EqualTo("WithoutReportHeadline"));
+        Assert.That(document.Tables.Select(t => t.Caption), Has.None.EqualTo("Aa tag"));
+        Assert.That(document.Tables.SelectMany(t => t.ImageBlocks), Is.Empty);
+        Assert.That(document.AppendixImagesRequested, Is.EqualTo(0));
+
+        // The CSV is written from the same document: the headline-less case's
+        // Delrapport cell must not appear in it, the headlined one's must.
+        using var csv = ComplianceExportCsvWriter.Write(document);
+        using var reader = new System.IO.StreamReader(csv, System.Text.Encoding.UTF8);
+        var csvText = reader.ReadToEnd();
+        Assert.That(csvText, Does.Contain("MedOverskriftTag"));
+        Assert.That(csvText, Does.Not.Contain("UdenOverskriftTag"));
+    }
+
+    /// <summary>
+    /// #1301: a document built only from headline-less groups is empty — no
+    /// tables at all, never a lone fallback section.
+    /// </summary>
+    [Test]
+    public void Report_OnlyHeadlineLessGroups_YieldNoTables()
     {
         var document = ComplianceExportDocumentBuilder.BuildReport(
-            [Group(null, null, "Aa tag", 509)], "p", false, _localization);
+            [Group(null, null, "Aa tag", 509, 511)], "p", false, _localization);
 
-        Assert.That(document.Tables[0].Title, Is.EqualTo("WithoutReportHeadline"));
-        Assert.That(document.Tables[0].Caption, Is.EqualTo("Aa tag"));
+        Assert.That(document.Tables, Is.Empty);
     }
 
     // ==================================================================

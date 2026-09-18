@@ -749,7 +749,6 @@ export const itIT = {
   'Update period': 'Aggiorna periodo',
   'Select a period and click Update period': 'Seleziona un periodo e fai clic su Aggiorna periodo.',
   'Change a filter or click Overview to load the table': 'Modifica un filtro o fai clic su Panoramica per caricare la tabella.',
-  'Without report headline': 'Senza intestazione del rapporto',
   // Calendar toolbar (#1209): the calendars multi-select button label, its
   // bulk actions, and the accessible name of a calendar row's actions menu.
   '{{count}} calendars': '{{count}} calendari',

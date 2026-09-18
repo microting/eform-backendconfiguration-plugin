@@ -749,7 +749,6 @@ export const svSE = {
   'Update period': 'Uppdatera period',
   'Select a period and click Update period': 'Välj en period och klicka på Uppdatera period.',
   'Change a filter or click Overview to load the table': 'Ändra ett filter eller klicka på Översikt för att hämta tabellen.',
-  'Without report headline': 'Utan rapportrubrik',
   // Calendar toolbar (#1209): the calendars multi-select button label, its
   // bulk actions, and the accessible name of a calendar row's actions menu.
   '{{count}} calendars': '{{count}} kalendrar',

@@ -749,7 +749,6 @@ export const csCZ = {
   'Update period': 'Aktualizovat období',
   'Select a period and click Update period': 'Vyberte období a klikněte na Aktualizovat období.',
   'Change a filter or click Overview to load the table': 'Změňte filtr nebo klikněte na Přehled pro načtení tabulky.',
-  'Without report headline': 'Bez nadpisu zprávy',
   // Calendar toolbar (#1209): the calendars multi-select button label, its
   // bulk actions, and the accessible name of a calendar row's actions menu.
   '{{count}} calendars': '{{count}} kalendářů',

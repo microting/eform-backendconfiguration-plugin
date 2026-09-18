@@ -145,8 +145,8 @@
   }
 
   // The report headline: the name of the tag `AreaRulePlanning.ItemPlanningTagId`
-  // points at (the `Rapportoverskrift`), or `#{id}` / "Uden rapportoverskrift"
-  // when that tag is missing or unset.
+  // points at (the `Rapportoverskrift`), or `#{id}` when that tag is missing.
+  // Tasks with no headline set are not in Rapport (#1301).
   &__heading {
     margin: 0 0 var(--spacing-xs);
     font-size: var(--font-size-body);

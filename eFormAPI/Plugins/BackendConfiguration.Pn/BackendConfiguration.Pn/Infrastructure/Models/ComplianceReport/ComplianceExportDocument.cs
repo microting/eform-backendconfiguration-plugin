@@ -154,9 +154,9 @@ public class ComplianceExportTable
     /// <summary>
     /// Section heading. Empty for the single-table view modes (the document title
     /// already names them); for Rapport it is the REPORT HEADLINE's name (#1188)
-    /// — or <c>#{id}</c> for a headline with no <c>PlanningTags</c> row, or the
-    /// localised "Uden rapportoverskrift" for the fallback group (first table of a
-    /// section only, #1276).
+    /// — or <c>#{id}</c> for a headline with no <c>PlanningTags</c> row (first
+    /// table of a section only, #1276). Tasks without a report headline are not
+    /// part of the report (#1301), so there is no headline-less section.
     /// </summary>
     public string Title { get; set; } = string.Empty;
 

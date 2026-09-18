@@ -749,7 +749,6 @@ export const ukUA = {
   'Update period': 'Оновити період',
   'Select a period and click Update period': 'Виберіть період і натисніть «Оновити період».',
   'Change a filter or click Overview to load the table': 'Змініть фільтр або натисніть «Огляд», щоб завантажити таблицю.',
-  'Without report headline': 'Без заголовка звіту',
   // Calendar toolbar (#1209): the calendars multi-select button label, its
   // bulk actions, and the accessible name of a calendar row's actions menu.
   '{{count}} calendars': '{{count}} календарів',
