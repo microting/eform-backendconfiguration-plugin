@@ -2,11 +2,13 @@ import {Component, OnInit, ViewChild} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {TranslateService} from '@ngx-translate/core';
+import {Store} from '@ngrx/store';
 import {Observable, of} from 'rxjs';
-import {defaultIfEmpty, finalize, map} from 'rxjs/operators';
+import {defaultIfEmpty, finalize, map, take} from 'rxjs/operators';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {CommonDictionaryModel, SharedTagModel, TemplateRequestModel} from 'src/app/common/models';
 import {EFormService} from 'src/app/common/services';
+import {selectAuthIsAdmin} from 'src/app/state/auth/auth.selector';
 import {
   CalendarBoardModel,
   CalendarTaskListFiltrationModel,
@@ -40,6 +42,7 @@ import {BatchBoardModalComponent} from '../modals/batch-board-modal/batch-board-
 import {BatchReportHeadlineModalComponent} from '../modals/batch-report-headline-modal/batch-report-headline-modal.component';
 import {TaskListTagsComponent} from '../task-list-tags/task-list-tags.component';
 import {TaskListTableComponent} from '../task-list-table/task-list-table.component';
+import {resolveEditOccurrenceDate} from './task-list-edit-date.util';
 
 // Task 11 implements the batch action modals; this task only wires up the
 // dropdown + selection plumbing and stubs the modal opener.
@@ -109,6 +112,19 @@ export class TaskListPageComponent implements OnInit {
   selection = new Set<number>();
   pendingAction: TaskListBatchAction | null = null;
 
+  /**
+   * #1302 — the page is open to every logged-in user, but the batch UI (the
+   * batch-action dropdown, the selection counter and the grid's checkbox
+   * column) is admin-only; the batch endpoints are admin-only server-side too.
+   * Everything else — inline rename, Manage tags, CSV export, the edit modal —
+   * stays available to users (status quo).
+   *
+   * Read ONCE in ngOnInit (`take(1)`), before the grid first renders, and never
+   * updated: it feeds mtx-grid's `[rowSelectable]`/`[multiSelectable]`, and any
+   * later input change there rebuilds its SelectionModel empty.
+   */
+  isAdmin = false;
+
   private currentFilters: CalendarTaskListFiltrationModel = {
     propertyIds: [], boardIds: [], eformIds: [], assignToIds: [],
     tagIds: [], status: null, complianceEnabled: null, nameFilter: null,
@@ -125,9 +141,12 @@ export class TaskListPageComponent implements OnInit {
     private workerTagsService: BackendConfigurationPnWorkerTagsService,
     private repeatService: CalendarRepeatService,
     private taskListService: BackendConfigurationPnTaskListService,
+    private store: Store,
   ) {}
 
   ngOnInit() {
+    this.store.select(selectAuthIsAdmin).pipe(take(1))
+      .subscribe(isAdmin => this.isAdmin = !!isAdmin);
     this.loadProperties();
     this.loadTags();
     this.loadWorkerTags();
@@ -350,10 +369,24 @@ export class TaskListPageComponent implements OnInit {
       .subscribe(folderId => this.openEditTaskModal(task, folderId));
   }
 
+  /**
+   * #1302 / #1140 — the row's `taskDate` is the SERIES START; opening the modal
+   * on it made every past-started series read-only. The modal is handed a copy
+   * of the task dated on the next occurrence that has not started yet (see
+   * `resolveEditOccurrenceDate`), which is also what the calendar hands it when
+   * an occurrence is clicked: the modal sends `task.taskDate` as `originalDate`,
+   * so "Only this" / "This and following" target that occurrence, and an "All
+   * in series" save with the date untouched keeps the series anchor (UpdateTask
+   * compares StartDate with OriginalDate). The this / this-and-following / all
+   * dialog itself is the modal's own `RepeatScopeModalComponent`, shown on save
+   * for any task whose `repeatRule` is not 'none' — exactly as in the calendar.
+   */
   private openEditTaskModal(task: CalendarTaskModel, folderId: number | null) {
+    const editDate = resolveEditOccurrenceDate(task);
+    const editTask: CalendarTaskModel = editDate === task.taskDate ? task : {...task, taskDate: editDate};
     const data: TaskCreateEditModalData = {
-      task,
-      date: task.taskDate,
+      task: editTask,
+      date: editDate,
       startHour: task.startHour,
       boards: this.boards,
       selectedBoardId: task.boardId ?? undefined,

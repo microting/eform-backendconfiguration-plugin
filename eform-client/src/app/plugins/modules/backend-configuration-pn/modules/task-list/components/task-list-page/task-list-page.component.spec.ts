@@ -3,6 +3,7 @@ import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {TranslateModule} from '@ngx-translate/core';
+import {Store} from '@ngrx/store';
 import {of} from 'rxjs';
 import {EFormService} from 'src/app/common/services';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
@@ -95,6 +96,8 @@ describe('TaskListPageComponent — Logbøger folder resolution', () => {
         },
         {provide: CalendarRepeatService, useValue: {}},
         {provide: BackendConfigurationPnTaskListService, useValue: {}},
+        // #1302 — the page reads selectAuthIsAdmin once in ngOnInit.
+        {provide: Store, useValue: {select: jest.fn().mockReturnValue(of(true))}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
@@ -221,6 +224,8 @@ describe('TaskListPageComponent — move to calendar batch action', () => {
         },
         {provide: CalendarRepeatService, useValue: {}},
         {provide: BackendConfigurationPnTaskListService, useValue: {}},
+        // #1302 — the page reads selectAuthIsAdmin once in ngOnInit.
+        {provide: Store, useValue: {select: jest.fn().mockReturnValue(of(true))}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
@@ -342,6 +347,8 @@ describe('TaskListPageComponent — change report headline batch action', () => 
         },
         {provide: CalendarRepeatService, useValue: {}},
         {provide: BackendConfigurationPnTaskListService, useValue: {}},
+        // #1302 — the page reads selectAuthIsAdmin once in ngOnInit.
+        {provide: Store, useValue: {select: jest.fn().mockReturnValue(of(true))}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();

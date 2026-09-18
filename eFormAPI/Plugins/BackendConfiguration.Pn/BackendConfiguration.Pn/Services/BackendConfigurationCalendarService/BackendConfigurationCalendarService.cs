@@ -1359,6 +1359,53 @@ public class BackendConfigurationCalendarService(
                 .Where(s => siteIds.Contains((int)s.Id))
                 .ToDictionaryAsync(s => (int)s.Id, s => s.Name ?? string.Empty);
 
+            // #1302 / #1140 — upcoming occurrences per recurring series. TaskDate
+            // below is the SERIES START, so opening the edit modal on it made
+            // every series that started in the past read-only. The dates come
+            // from the calendar's own iterators (GetUpcomingOccurrenceDates);
+            // this block only batch-loads what they need: the items-planning
+            // Planning rows (unfiltered by WorkflowState, like GetTasksForWeek —
+            // an inactive task's Planning is soft-deleted) and the occurrence
+            // exceptions that take a rule date off the calendar.
+            var upcomingFrom = DateTime.UtcNow.Date.AddDays(-1);
+            var recurringArps = areaRulePlannings.Where(x => x.RepeatType is > 0).ToList();
+            var recurringPlanningIds = recurringArps.Select(x => x.ItemPlanningId).Distinct().ToList();
+            var recurringPlanningsById = recurringPlanningIds.Count == 0
+                ? new Dictionary<int, Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning>()
+                : await itemsPlanningPnDbContext.Plannings
+                    .AsNoTracking()
+                    .Where(x => recurringPlanningIds.Contains(x.Id))
+                    .ToDictionaryAsync(x => x.Id);
+            var recurringArpIds = recurringArps.Select(x => x.Id).ToList();
+            var suppressedDatesByArpId = recurringArpIds.Count == 0
+                ? new Dictionary<int, HashSet<DateTime>>()
+                : (await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                        .AsNoTracking()
+                        .Where(x => recurringArpIds.Contains(x.AreaRulePlanningId))
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.OriginalDate >= upcomingFrom)
+                        .Select(x => new { x.AreaRulePlanningId, x.OriginalDate, x.IsDeleted, x.NewDate })
+                        .ToListAsync())
+                    .Where(x => x.IsDeleted
+                                || (x.NewDate.HasValue && x.NewDate.Value.Date != x.OriginalDate.Date))
+                    .GroupBy(x => x.AreaRulePlanningId)
+                    .ToDictionary(g => g.Key, g => g.Select(x => x.OriginalDate.Date).ToHashSet());
+
+            List<string>? UpcomingOccurrencesOf(AreaRulePlanning arp)
+            {
+                if (!(arp.RepeatType is > 0)
+                    || !recurringPlanningsById.TryGetValue(arp.ItemPlanningId, out var planning))
+                {
+                    return null;
+                }
+
+                return GetUpcomingOccurrenceDates(planning, arp, upcomingFrom,
+                        suppressedDatesByArpId.GetValueOrDefault(arp.Id, []),
+                        UpcomingOccurrenceCount)
+                    .Select(d => d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))
+                    .ToList();
+            }
+
             var rows = areaRulePlannings.Select(arp =>
             {
                 calConfigsDict.TryGetValue(arp.Id, out var calConfig);
@@ -1433,6 +1480,7 @@ public class BackendConfigurationCalendarService(
                     // list feeds the complete modal's "assigned to this event" group;
                     // AssigneeIds alone still drives its pre-select.
                     TeamAssigneeIds = teamAssigneeIds,
+                    UpcomingOccurrenceDates = UpcomingOccurrencesOf(arp),
                 };
             }).ToList();
 
@@ -5370,6 +5418,69 @@ public class BackendConfigurationCalendarService(
                 occurrences.RemoveAll(d => d > cutoff);
             }
         }
+    }
+
+    /// <summary>
+    /// How many upcoming occurrences the <c>tasks/index</c> endpoint reports per
+    /// recurring series (see <see cref="GetUpcomingOccurrenceDates"/>). Three is
+    /// enough for the client: the window starts at UTC yesterday, so at most
+    /// "yesterday" and "today" can already have started in the browser's own
+    /// time zone, which leaves at least one that has not.
+    /// </summary>
+    internal const int UpcomingOccurrenceCount = 3;
+
+    /// <summary>
+    /// #1302 / #1140 — the first <paramref name="count"/> occurrences of a
+    /// recurring series on or after <paramref name="fromInclusive"/>, ascending.
+    ///
+    /// Built ONLY from the iterators the calendar itself renders and deploys
+    /// with — <see cref="EnumerateOccurrences"/> for the pattern and
+    /// <see cref="ApplyRepeatEndBound"/> for "until date" / "after N" — so the
+    /// task list opens its edit modal on a date the calendar really shows,
+    /// for every repeat kind, instead of a second, drifting implementation.
+    ///
+    /// Dates in <paramref name="suppressedOriginalDates"/> are skipped: an
+    /// occurrence deleted ("this"-scope delete) or moved away through a
+    /// CalendarOccurrenceException no longer renders on its rule date, so a
+    /// "this"-scope edit keyed on that date would edit something invisible.
+    ///
+    /// Returns an empty list for a non-recurring task (<c>arp.RepeatType</c>
+    /// null or 0 — the same signal UpdateTask's scope logic uses) and for a
+    /// series that has ended.
+    /// </summary>
+    internal static List<DateTime> GetUpcomingOccurrenceDates(
+        Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
+        AreaRulePlanning arp,
+        DateTime fromInclusive,
+        ICollection<DateTime> suppressedOriginalDates,
+        int count)
+    {
+        if (count <= 0 || !(arp.RepeatType is > 0))
+        {
+            return [];
+        }
+
+        // The iterators are lazy (`yield`), so the horizon only has to be FAR
+        // enough — Take(count) stops the walk as soon as the dates are found.
+        // count + 2 periods of the rule's own unit always contain `count`
+        // occurrences of a live series; clamped so a bogus RepeatEvery cannot
+        // push the horizon past DateTime.MaxValue.
+        var from = fromInclusive.Date;
+        var horizonYears = Math.Min(100, Math.Max(planning.RepeatEvery, 1) * (count + 2));
+        var horizon = from.AddYears(horizonYears);
+
+        var occurrences = EnumerateOccurrences(planning, from, horizon,
+                arp.RepeatWeekdaysCsv, arp.RepeatOrdinalWeek, arp.DayOfWeek)
+            .Where(d => !suppressedOriginalDates.Contains(d.Date))
+            .Take(count)
+            .ToList();
+        if (occurrences.Count == 0)
+        {
+            return occurrences;
+        }
+
+        ApplyRepeatEndBound(planning, arp, occurrences, occurrences[^1]);
+        return occurrences;
     }
 
     private static List<DateTime> GetOccurrencesInWeek(

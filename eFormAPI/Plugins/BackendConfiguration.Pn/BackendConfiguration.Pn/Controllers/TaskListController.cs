@@ -1,6 +1,5 @@
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.TaskList;
-using BackendConfiguration.Pn.Services.AreaRulePlanningTagPurgeService;
 using BackendConfiguration.Pn.Services.BackendConfigurationTaskListService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,11 +8,22 @@ using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 
 namespace BackendConfiguration.Pn.Controllers;
 
+/// <summary>
+/// The task list's BATCH rail — admin only, as a whole class.
+///
+/// #1302: the two task-list endpoints a plain `user` may call (inline rename and
+/// the Manage-tags orphan purge) live in <see cref="TaskListUserController"/>
+/// under the SAME route prefix, not here with a method-level [Authorize]: ASP.NET
+/// Core COMBINES authorization attributes (every one must pass), so a
+/// method-level attribute can only narrow the class-level admin role, never
+/// relax it. Keeping the admin role on the class means an endpoint added here
+/// later is admin-only by default. TaskListControllerAuthorizationTests pins both
+/// controllers' action sets.
+/// </summary>
 [Authorize(Roles = EformRole.Admin)]
 [Route("api/backend-configuration-pn/task-list")]
 public class TaskListController(
-    IBackendConfigurationTaskListService taskListService,
-    AreaRulePlanningTagPurgeService tagPurgeService) : Controller
+    IBackendConfigurationTaskListService taskListService) : Controller
 {
     [HttpPost("assign")]
     public async Task<OperationResult> Assign([FromBody] TaskListBatchAssignModel model)
@@ -64,16 +74,6 @@ public class TaskListController(
            ?? await taskListService.ChangeStartDatePreview(model);
 
     /// <summary>
-    /// #1126 — inline rename from the task-list grid row. Single-row action on
-    /// the batch rail (one-element TaskIds), so it inherits <see cref="Validated"/>'s
-    /// empty-TaskIds guard unchanged; the empty/whitespace TITLE guard lives in
-    /// the service, pre-loop, alongside Copy's and ChangeStartDate's.
-    /// </summary>
-    [HttpPost("rename")]
-    public async Task<OperationResult> Rename([FromBody] TaskListRenameModel model)
-        => await Validated(model) ?? await taskListService.Rename(model);
-
-    /// <summary>
     /// #1297 — "Flyt til kalender". Board existence is validated pre-loop in the
     /// service, the board/property match per task.
     /// </summary>
@@ -96,28 +96,6 @@ public class TaskListController(
     [HttpPost("delete")]
     public async Task<OperationResult> Delete([FromBody] TaskListBatchRequestModel model)
         => await Validated(model) ?? await taskListService.Delete(model);
-
-    /// <summary>
-    /// Soft-deletes AreaRulePlanningTag rows whose ItemPlanningTagId names a
-    /// PlanningTag that has been removed (or never existed). Called by the task-list
-    /// page right after the Manage-tags dialog closes, so a tag deleted there stops
-    /// being referenced immediately instead of waiting for the next plugin start.
-    ///
-    /// A dedicated endpoint rather than folding the purge into the task index: the
-    /// index is a read path and must not write.
-    ///
-    /// Takes no body, so <see cref="Validated"/> does not apply — there is no
-    /// caller-supplied input to validate. Authorization is the controller-level
-    /// [Authorize(Roles = EformRole.Admin)] and nothing more: the call is
-    /// parameterless, idempotent, admin-only, and can only remove rows that already
-    /// point at a tag the same admin role was able to delete in the first place, so
-    /// there is no narrower object to scope a permission to.
-    /// </summary>
-    [HttpPost("purge-orphan-tags")]
-    public async Task<OperationDataResult<int>> PurgeOrphanTags()
-        => new OperationDataResult<int>(
-            true,
-            await tagPurgeService.PurgeOrphanedAreaRulePlanningTagsAsync());
 
     private Task<OperationResult> Validated(TaskListBatchRequestModel model)
         => model == null || model.TaskIds == null || model.TaskIds.Count == 0

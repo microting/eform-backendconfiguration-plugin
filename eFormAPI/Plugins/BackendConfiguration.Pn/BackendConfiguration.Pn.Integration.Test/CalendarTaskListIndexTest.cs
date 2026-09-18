@@ -38,6 +38,9 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using NSubstitute;
+using System.Globalization;
+using Planning = Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning;
+using ItemsPlanningRepeatType = Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
@@ -63,7 +66,12 @@ public class CalendarTaskListIndexTest : TestBaseSetup
     {
         // FK-safe clean of the rows this fixture writes, mirroring the
         // pattern in BackendConfigurationCalendarServiceTaskTrackerListTest.
-        BackendConfigurationPnDbContext!.AreaRulePlannings.RemoveRange(
+        // Occurrence exceptions first: they reference the AreaRulePlannings.
+        BackendConfigurationPnDbContext!.CalendarOccurrenceExceptions.RemoveRange(
+            BackendConfigurationPnDbContext.CalendarOccurrenceExceptions);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        BackendConfigurationPnDbContext.AreaRulePlannings.RemoveRange(
             BackendConfigurationPnDbContext.AreaRulePlannings);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
@@ -227,6 +235,155 @@ public class CalendarTaskListIndexTest : TestBaseSetup
         Assert.That(row.IsAllDay, Is.True);
         Assert.That(row.StartHour, Is.EqualTo(0.0));
         Assert.That(row.Duration, Is.EqualTo(0.0));
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // #1302 / #1140 — UpcomingOccurrenceDates. Index's TaskDate is the SERIES
+    // START, so the task list opened every past-started series read-only. The
+    // rule-level cases live in TaskListUpcomingOccurrenceTests (pure, fixed
+    // dates); these pin the wiring through Index against the real database and
+    // the real clock, so expectations are computed relative to UtcNow.
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// A weekly series that started ten weeks ago: TaskDate stays the series
+    /// start (status quo — the grid's Start date column), and the three
+    /// upcoming occurrences are the rule's own weekdays from UTC yesterday on.
+    /// </summary>
+    [Test]
+    public async Task Index_PastStartedWeeklySeries_ReportsUpcomingOccurrencesFromYesterday()
+    {
+        var (property, area) = await SeedPropertyAndArea();
+        var start = DateTime.UtcNow.Date.AddDays(-70);
+        var arpId = await SeedRecurringSeriesWithPlanning(property.Id, area.Id, start,
+            ItemsPlanningRepeatType.Week, arpRepeatType: 2);
+
+        var result = await _calendarService.Index(new CalendarTaskIndexRequestModel
+        {
+            Filters = new CalendarTaskListFiltrationModel { PropertyIds = [property.Id] }
+        });
+
+        Assert.That(result.Success, Is.True, result.Message);
+        var row = result.Model.Single(x => x.Id == arpId);
+        Assert.That(row.TaskDate, Is.EqualTo(start.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)),
+            "TaskDate must stay the series start; only the edit modal moves to the upcoming occurrence.");
+
+        var from = DateTime.UtcNow.Date.AddDays(-1);
+        var first = from.AddDays(((start - from).Days % 7 + 7) % 7);
+        var expected = new[] { first, first.AddDays(7), first.AddDays(14) }
+            .Select(d => d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).ToList();
+        Assert.That(row.UpcomingOccurrenceDates, Is.EqualTo(expected));
+    }
+
+    /// <summary>
+    /// A deleted ("this"-scope delete) occurrence no longer renders, so it must
+    /// not be offered as the date to edit: a daily series with today's
+    /// occurrence deleted reports yesterday, tomorrow, the day after.
+    /// </summary>
+    [Test]
+    public async Task Index_DeletedOccurrence_IsSkipped()
+    {
+        var (property, area) = await SeedPropertyAndArea();
+        var today = DateTime.UtcNow.Date;
+        var arpId = await SeedRecurringSeriesWithPlanning(property.Id, area.Id, today.AddDays(-30),
+            ItemsPlanningRepeatType.Day, arpRepeatType: 1);
+
+        var deleted = new CalendarOccurrenceException
+        {
+            AreaRulePlanningId = arpId,
+            OriginalDate = today,
+            IsDeleted = true,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext!.CalendarOccurrenceExceptions.AddAsync(deleted);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var result = await _calendarService.Index(new CalendarTaskIndexRequestModel
+        {
+            Filters = new CalendarTaskListFiltrationModel { PropertyIds = [property.Id] }
+        });
+
+        Assert.That(result.Success, Is.True, result.Message);
+        var row = result.Model.Single(x => x.Id == arpId);
+        Assert.That(row.UpcomingOccurrenceDates, Is.EqualTo(new[]
+        {
+            today.AddDays(-1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            today.AddDays(1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            today.AddDays(2).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        }));
+    }
+
+    /// <summary>
+    /// A one-off task (RepeatType 0) has no series to advance through: the
+    /// field stays null and the list keeps opening it on its own date.
+    /// </summary>
+    [Test]
+    public async Task Index_OneOffTask_HasNoUpcomingOccurrences()
+    {
+        var (property, area) = await SeedPropertyAndArea();
+        var arpId = await SeedRecurringSeriesWithPlanning(property.Id, area.Id,
+            DateTime.UtcNow.Date.AddDays(-10), ItemsPlanningRepeatType.Day, arpRepeatType: 0);
+
+        var result = await _calendarService.Index(new CalendarTaskIndexRequestModel
+        {
+            Filters = new CalendarTaskListFiltrationModel { PropertyIds = [property.Id] }
+        });
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(result.Model.Single(x => x.Id == arpId).UpcomingOccurrenceDates, Is.Null);
+    }
+
+    /// <summary>
+    /// Seeds AreaRule → items-planning Planning → AreaRulePlanning linked by
+    /// ItemPlanningId (the pair CreateTask persists), for the
+    /// UpcomingOccurrenceDates tests. Returns the AreaRulePlanning's Id.
+    /// </summary>
+    private async Task<int> SeedRecurringSeriesWithPlanning(int propertyId, int areaId, DateTime start,
+        ItemsPlanningRepeatType planningRepeatType, int arpRepeatType)
+    {
+        var areaRule = new AreaRule
+        {
+            AreaId = areaId,
+            PropertyId = propertyId,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await areaRule.Create(BackendConfigurationPnDbContext!);
+
+        var planning = new Planning
+        {
+            Enabled = true,
+            RepeatEvery = 1,
+            RepeatType = planningRepeatType,
+            StartDate = start,
+            RelatedEFormId = 0,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        var areaRulePlanning = new AreaRulePlanning
+        {
+            AreaRuleId = areaRule.Id,
+            PropertyId = propertyId,
+            AreaId = areaId,
+            ItemPlanningId = planning.Id,
+            StartDate = start,
+            Status = true,
+            RepeatType = arpRepeatType,
+            RepeatEvery = 1,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await areaRulePlanning.Create(BackendConfigurationPnDbContext!);
+
+        return areaRulePlanning.Id;
     }
 
     private async Task<(Property Property, Area Area)> SeedPropertyAndArea()
