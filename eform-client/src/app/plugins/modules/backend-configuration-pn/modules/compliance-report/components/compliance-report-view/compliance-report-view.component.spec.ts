@@ -1382,3 +1382,196 @@ describe('ComplianceReportViewComponent — delete returns to the next row', () 
     expect(component.deleteTargetCompleted).toBe(false);
   });
 });
+
+/**
+ * #1291 — `Rediger` → `Gem` must return to the SAME Rapport result with the
+ * edited row landed on, not to the un-fetched placeholder. The round trip is a
+ * full router navigation to the shared case page, so THIS view is destroyed on
+ * the way out and a NEW one is created on the way back; only the state service
+ * (on the cached lazy module) survives. Each test therefore renders one
+ * instance, edits from it, destroys it, runs the page's `enterPage()` the way
+ * `ComplianceReportPageComponent.ngOnInit` does — with the case page's
+ * `?highlightId=` on a save, without it on a plain Back — and then mounts a
+ * second instance, exactly the order the real ngSwitch produces.
+ */
+describe('ComplianceReportViewComponent — edit returns to the edited row', () => {
+  let state: ComplianceReportStateService;
+  let eformColumns: jest.Mock;
+  let router: {navigate: jest.Mock; url: string};
+
+  const caseModel = (complianceId: number): ComplianceReportCaseModel => ({
+    complianceId,
+    sdkCaseId: 100 + complianceId,
+    propertyId: 5,
+    propertyName: 'Ejendom A',
+    title: `Område ${complianceId}`,
+    taskDate: '2026-08-11',
+    completed: true,
+    doneAt: null,
+    workerNames: [],
+    checkListId: 509,
+    tags: [],
+    cells: {},
+    imagesCount: 0,
+    images: [],
+  });
+
+  const response = (...tables: ComplianceReportCaseModel[][]): ComplianceReportHeadlineGroupModel[] => [
+    {
+      headlineTagId: 1,
+      headlineName: 'Overskrift',
+      tagsCaption: '',
+      templates: tables.map((cases, t) => ({
+        checkListId: 509 + t,
+        checkListName: `eForm ${t}`,
+        schemaUnavailable: false,
+        columns: [],
+        cases,
+      })),
+    },
+  ];
+
+  const mount = (): ComponentFixture<ComplianceReportViewComponent> => {
+    const fixture = TestBed.createComponent(ComplianceReportViewComponent);
+    fixture.detectChanges();
+    return fixture;
+  };
+
+  const rowOf = (component: ComplianceReportViewComponent, complianceId: number) =>
+    component.sections
+      .flatMap((s) => s.tables)
+      .flatMap((t) => t.allRows)
+      .find((r) => r.complianceId === complianceId)!;
+
+  /**
+   * Visit 1 in Rapport: fetch, render, optionally move to `page`, press
+   * Rediger on `complianceId`, leave.
+   */
+  const editAndLeave = (model: ComplianceReportHeadlineGroupModel[], complianceId: number, page = 0) => {
+    state.setMode('report');
+    eformColumns.mockReturnValue(of({success: true, model}));
+    state.requestFetch();
+    const first = mount();
+    if (page > 0) {
+      state.setPage(page);
+    }
+    first.componentInstance.onEdit(rowOf(first.componentInstance, complianceId));
+    first.destroy();
+  };
+
+  beforeEach(async () => {
+    jest.useFakeTimers();
+    eformColumns = jest.fn().mockReturnValue(of({success: true, model: []}));
+    router = {navigate: jest.fn().mockResolvedValue(true), url: '/plugins/backend-configuration-pn/compliance-report'};
+
+    await TestBed.configureTestingModule({
+      declarations: [ComplianceReportViewComponent],
+      imports: [TranslateModule.forRoot()],
+      providers: [
+        ComplianceReportStateService,
+        {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns}},
+        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: jest.fn()}},
+        {provide: BackendConfigurationPnPropertiesService, useValue: {getAllPropertiesDictionary: jest.fn()}},
+        {provide: BackendConfigurationPnCalendarService, useValue: {getBoards: jest.fn()}},
+        {provide: MatDialog, useValue: {open: jest.fn()}},
+        {provide: Router, useValue: router},
+      ],
+      schemas: [NO_ERRORS_SCHEMA],
+    }).compileComponents();
+
+    state = TestBed.inject(ComplianceReportStateService);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('still routes Rediger to the shared case page with the unchanged reverseRoute contract', () => {
+    editAndLeave(response([caseModel(1), caseModel(2)]), 2);
+
+    expect(router.navigate).toHaveBeenCalledWith(
+      ['/plugins/backend-configuration-pn/case', 102, 509, 2],
+      {queryParams: {reverseRoute: '/plugins/backend-configuration-pn/compliance-report'}},
+    );
+  });
+
+  it('after Gem: re-fetches on return and lands on the EDITED row', () => {
+    editAndLeave(response([caseModel(1), caseModel(2), caseModel(3)]), 2);
+    eformColumns.mockClear();
+
+    state.enterPage(102);
+    const second = mount().componentInstance;
+
+    expect(state.reportVisible).toBe(true);
+    expect(eformColumns).toHaveBeenCalledTimes(1);
+    expect(second.sections[0].tables[0].allRows.map((r) => r.complianceId)).toEqual([1, 2, 3]);
+    expect(second.highlightedRowKey).toBe('case:102');
+    expect(second.rowClassFormatter['row-highlight-flash'](rowOf(second, 2), 0)).toBe(true);
+    expect(second.rowClassFormatter['row-highlight-flash'](rowOf(second, 1), 0)).toBe(false);
+  });
+
+  it('after Gem: keeps the page the user left from', () => {
+    editAndLeave(response([caseModel(1), caseModel(2)]), 1, 2);
+    eformColumns.mockClear();
+
+    state.enterPage(101);
+    mount();
+
+    expect(eformColumns).toHaveBeenCalledTimes(1);
+    expect(eformColumns.mock.calls[0][0].pageIndex).toBe(2);
+    expect(state.page).toBe(2);
+  });
+
+  it('after Gem: expands the table the row budget collapsed, scrolls, and drops the highlight after ~3 s', () => {
+    let id = 1000;
+    const big = () => Array.from({length: 100}, () => caseModel(++id));
+    const model = response(big(), big(), big(), big(), big(), [caseModel(2), caseModel(3)]);
+    editAndLeave(model, 3);
+
+    state.enterPage(103);
+    const fixture = mount();
+    const second = fixture.componentInstance;
+    const tr = document.createElement('tr');
+    tr.className = 'row-highlight-flash';
+    const scrollIntoView = jest.fn();
+    (tr as any).scrollIntoView = scrollIntoView;
+    fixture.nativeElement.appendChild(tr);
+
+    const sixth = second.sections[0].tables[5];
+    expect(sixth.expanded).toBe(true);
+    expect(second.highlightedRowKey).toBe('case:103');
+
+    jest.advanceTimersByTime(0);
+    expect(scrollIntoView).toHaveBeenCalledWith({behavior: 'smooth', block: 'center'});
+
+    jest.advanceTimersByTime(3000);
+    expect(second.highlightedRowKey).toBeNull();
+  });
+
+  it('Back WITHOUT saving (no highlightId) is the status quo: placeholder, no fetch, no highlight', () => {
+    editAndLeave(response([caseModel(1), caseModel(2)]), 2);
+    eformColumns.mockClear();
+
+    state.enterPage();
+
+    expect(state.reportVisible).toBe(false);
+    // The page does not mount the view while the report is hidden; even a view
+    // that did mount could not be served the buffered trigger.
+    const second = mount().componentInstance;
+    expect(eformColumns).not.toHaveBeenCalled();
+    expect(second.highlightedRowKey).toBeNull();
+  });
+
+  it('is one-shot: a later entry with the same highlightId does not fetch again', () => {
+    editAndLeave(response([caseModel(1), caseModel(2)]), 2);
+    state.enterPage(102);
+    mount().destroy();
+    eformColumns.mockClear();
+
+    state.enterPage(102);
+
+    expect(state.reportVisible).toBe(false);
+    mount();
+    expect(eformColumns).not.toHaveBeenCalled();
+  });
+});

@@ -218,6 +218,64 @@ async function routeThreeLogsWithDelete(page: Page): Promise<number[]> {
   return deleted;
 }
 
+/**
+ * #1291 — the shared case page (`/plugins/backend-configuration-pn/case/...`)
+ * that `Rediger` opens, mocked end to end for the three-log fixture above: the
+ * eForm (`GET /api/templates/get/509`), the case with NO elements
+ * (`GET /api/cases?id=…&templateId=509` — nothing to fill in, so `Gem` is one
+ * click) and the save (`PUT /api/backend-configuration-pn/cases`). Shard `s`
+ * seeds no SQL and the rows are mocked, so the case ids exist nowhere. What
+ * this proves is the round trip the case page drives: on save it navigates to
+ * `reverseRoute?highlightId={sdkCaseId}`, and the Rapport page must come back
+ * re-fetched with that row landed on.
+ *
+ * Returns how many `PUT` saves reached the mock.
+ */
+async function routeCasePage(page: Page): Promise<{ saves: number }> {
+  const counter = { saves: 0 };
+  await page.route('**/api/templates/get/509', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        message: '',
+        model: { id: 509, label: 'Flydelag', isDoneAtEditable: false, tags: [] },
+      }),
+    }),
+  );
+  await page.route(
+    (url) => url.pathname === '/api/cases',
+    (route) => {
+      if (route.request().method() !== 'GET') {
+        return route.fallback();
+      }
+      const id = Number(new URL(route.request().url()).searchParams.get('id'));
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          message: '',
+          model: { id, label: 'Flydelag', doneAt: '2026-05-13T10:00:00', elementList: [] },
+        }),
+      });
+    },
+  );
+  await page.route('**/api/backend-configuration-pn/cases', (route) => {
+    if (route.request().method() !== 'PUT') {
+      return route.fallback();
+    }
+    counter.saves++;
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ success: true, message: '' }),
+    });
+  });
+  return counter;
+}
+
 test.describe.configure({ mode: 'serial' });
 
 test.describe('Compliance — Rapport view', () => {
@@ -454,5 +512,94 @@ test.describe('Compliance — Rapport view', () => {
     expect(deleted).toEqual([]);
     await expect(table.locator('tbody tr')).toHaveCount(3);
     await expect(table.locator('tbody tr.row-highlight-flash')).toHaveCount(0);
+  });
+
+  test('Rediger → Gem returns to the SAME Rapport result with the edited log highlighted (#1291)', async ({
+    page,
+  }) => {
+    await routeThreeLogsWithDelete(page);
+    const casePage = await routeCasePage(page);
+    await goToRapport(page);
+    await awaitRapportRendered(page);
+
+    const section = page.locator('.compliance-report__section[data-section-key="h8"]');
+    const table = section.locator('.compliance-report__table[data-table-key="h8-c509"]');
+    await table.locator('tbody tr', { hasText: 'Tank B' }).locator('.compliance-report__edit').click();
+
+    // The shared case page, for Tank B's case (4002) and its own eForm (509).
+    await expect(page).toHaveURL(/\/plugins\/backend-configuration-pn\/case\/4002\/509\/2\?/, {
+      timeout: UI_TIMEOUT,
+    });
+    const saveBtn = page.locator('#submit_form');
+    await expect(saveBtn).toBeVisible({ timeout: UI_TIMEOUT });
+
+    // The return re-queries Rapport by itself — before #1291 it landed on the
+    // un-fetched placeholder and issued no request at all.
+    const refetch = waitForApiResponse(
+      page,
+      'the Rapport re-fetch on return from the case page',
+      (r) => r.url().includes('/compliance-report/eform-columns'),
+      SLOW_API_TIMEOUT,
+    );
+    ignoreUnhandledRejections(refetch);
+    await saveBtn.click();
+    await refetch;
+    expect(casePage.saves).toBe(1);
+
+    // Back on the Compliance page, in Rapport, with the result on screen.
+    await expect(page).toHaveURL(/\/plugins\/backend-configuration-pn\/compliance-report/, {
+      timeout: UI_TIMEOUT,
+    });
+    await expect(page.locator('#complianceMode-report')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
+    await awaitRapportRendered(page);
+
+    // The same section and table, all three logs.
+    await expect(section).toHaveCount(1, { timeout: UI_TIMEOUT });
+    await expect(table).toBeVisible();
+    await expect(table.locator('tbody tr')).toHaveCount(3);
+
+    // The edited log — and only it — is landed on and highlighted briefly.
+    const tankB = table.locator('tbody tr', { hasText: 'Tank B' });
+    await expect(tankB).toHaveClass(/\brow-highlight-flash\b/, { timeout: UI_TIMEOUT });
+    await expect(table.locator('tbody tr.row-highlight-flash')).toHaveCount(1);
+    await expect(tankB).toBeInViewport();
+
+    // `highlightId` is consumed: dropped from the URL (replaceUrl).
+    await expect(page).not.toHaveURL(/highlightId/, { timeout: UI_TIMEOUT });
+
+    // ~3 s, then the highlight is gone again.
+    await expect(tankB).not.toHaveClass(/\brow-highlight-flash\b/, { timeout: 10_000 });
+  });
+
+  test('Rediger then Back WITHOUT Gem keeps the status quo: the placeholder, no query (#1291)', async ({
+    page,
+  }) => {
+    await routeThreeLogsWithDelete(page);
+    const casePage = await routeCasePage(page);
+    await goToRapport(page);
+    await awaitRapportRendered(page);
+
+    const table = page.locator('.compliance-report__table[data-table-key="h8-c509"]');
+    await table.locator('tbody tr', { hasText: 'Tank B' }).locator('.compliance-report__edit').click();
+    await expect(page.locator('#submit_form')).toBeVisible({ timeout: UI_TIMEOUT });
+
+    let rapportQueries = 0;
+    page.on('request', (r) => {
+      if (r.url().includes('/compliance-report/eform-columns')) {
+        rapportQueries++;
+      }
+    });
+    await page.goBack();
+
+    // #1163 §6: no row query without a user gesture — leaving the editor
+    // without saving is not a request to reload the report.
+    await expect(page.locator('#complianceMode-report')).toHaveAttribute('aria-pressed', 'true', {
+      timeout: UI_TIMEOUT,
+    });
+    await expect(page.locator('#complianceEmptyState')).toBeVisible({ timeout: UI_TIMEOUT });
+    await expect(page.locator('.compliance-report__table')).toHaveCount(0);
+    expect(casePage.saves).toBe(0);
+    expect(rapportQueries).toBe(0);
   });
 });

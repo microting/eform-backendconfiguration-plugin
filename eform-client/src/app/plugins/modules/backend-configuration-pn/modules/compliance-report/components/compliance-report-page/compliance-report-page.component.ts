@@ -1,5 +1,6 @@
 import {Component, OnDestroy, OnInit} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
+import {ActivatedRoute, Router} from '@angular/router';
 import {TranslateService} from '@ngx-translate/core';
 import {Subject} from 'rxjs';
 import {finalize, takeUntil} from 'rxjs/operators';
@@ -50,11 +51,16 @@ export class ComplianceReportPageComponent implements OnInit, OnDestroy {
    */
   exporting = false;
 
+  /** The deferred removal of `?highlightId=` from the URL — see `ngOnInit`. */
+  private clearHighlightTimer: ReturnType<typeof setTimeout> | null = null;
+
   constructor(
     public state: ComplianceReportStateService,
     private complianceReportService: BackendConfigurationPnComplianceReportService,
     private dialog: MatDialog,
     private translate: TranslateService,
+    private route: ActivatedRoute,
+    private router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -74,10 +80,39 @@ export class ComplianceReportPageComponent implements OnInit, OnDestroy {
     // both branches; see its comment. Entering the page is deliberately NOT
     // the `Oversigt` reset (#1185 decision B1) — the previous visit's filters
     // and mode survive re-entry.
-    this.state.enterPage();
+    //
+    // `?highlightId=` is what the shared case page appends after SAVING an
+    // edit (#1291). It only means something together with the return context
+    // the Rapport view stored before it navigated there — `enterPage()` checks
+    // both — and it is dropped from the URL right after entry (replaceUrl, so Back
+    // does not revisit it): the row to land on is already held by the service,
+    // and a reload or a copied link must not carry a stale highlight.
+    const highlightParam = this.route.snapshot.queryParamMap.get('highlightId');
+    const highlightId = highlightParam !== null && /^\d+$/.test(highlightParam) ? +highlightParam : null;
+    this.state.enterPage(highlightId);
+    if (highlightParam !== null) {
+      // Deferred a macrotask, as task-tracker's own cleanup is: navigating
+      // from inside the activation of the navigation that is still landing
+      // here would supersede it mid-flight.
+      this.clearHighlightTimer = setTimeout(() => {
+        this.clearHighlightTimer = null;
+        this.router
+          .navigate([], {
+            relativeTo: this.route,
+            queryParams: {highlightId: null},
+            queryParamsHandling: 'merge',
+            replaceUrl: true,
+          })
+          .then();
+      });
+    }
   }
 
   ngOnDestroy(): void {
+    if (this.clearHighlightTimer !== null) {
+      clearTimeout(this.clearHighlightTimer);
+      this.clearHighlightTimer = null;
+    }
     this.destroy$.next();
     this.destroy$.complete();
   }

@@ -66,6 +66,26 @@ export function complianceInitialFilters(): ComplianceFilterState {
   };
 }
 
+/**
+ * Where to put the user back after the Rapport `Rediger` round trip (#1291):
+ * the view and paging they left, and the row they edited. Captured by
+ * `setReturnContext()` just before the view navigates to the shared case page,
+ * consumed by the NEXT `enterPage()` whatever it decides — see there.
+ */
+export interface ComplianceReturnContext {
+  mode: ComplianceMode;
+  page: number;
+  showAll: boolean;
+  /**
+   * The edited row's SDK case id. The case page appends exactly this as
+   * `?highlightId=` when — and only when — it SAVES, so matching the two is
+   * what tells "came back from Gem" apart from every other way back.
+   */
+  sdkCaseId: number;
+  /** The row to land on once the re-fetch renders. */
+  rowKey: ComplianceReportRowKey;
+}
+
 export interface CompliancePeriodBounds {
   from: Date;
   to: Date;
@@ -185,6 +205,11 @@ export class ComplianceReportStateService {
    * `setPendingRowHighlight`. One-shot: read and cleared by `takePendingRowHighlight`.
    */
   private pendingRowHighlight: ComplianceReportRowKey | null = null;
+  /**
+   * The Rapport `Rediger` round trip's way back (#1291) — see `setReturnContext`.
+   * One-shot: the next `enterPage()` always clears it, used or not.
+   */
+  private returnContext: ComplianceReturnContext | null = null;
 
   readonly filters$: Observable<ComplianceFilterState> = this.filtersSubject.asObservable();
   readonly mode$: Observable<ComplianceMode> = this.modeSubject.asObservable();
@@ -521,6 +546,7 @@ export class ComplianceReportStateService {
     this.sortKey = null;
     this.sortDsc = true;
     this.pendingRowHighlight = null;
+    this.returnContext = null;
     this.setMode('overview');
     this.requestFetch();
   }
@@ -553,6 +579,27 @@ export class ComplianceReportStateService {
     return key;
   }
 
+  /**
+   * Remember how to come back from the shared case page (#1291): the CURRENT
+   * mode, page and `showAll`, plus the row being edited. Called by the Rapport
+   * view's `onEdit` right before it navigates away.
+   *
+   * Held here, not in the URL: the case page strips `reverseRoute`'s query
+   * string and only appends `?highlightId={sdkCaseId}` on save — a contract
+   * shared by every caller of that page, which is deliberately left alone.
+   *
+   * Setting it never fetches; the NEXT `enterPage()` decides, and clears it.
+   */
+  setReturnContext(sdkCaseId: number, rowKey: ComplianceReportRowKey): void {
+    this.returnContext = {
+      mode: this.mode,
+      page: this.page,
+      showAll: this.showAll,
+      sdkCaseId,
+      rowKey,
+    };
+  }
+
   // -------------------------------------------------------------------
   // Fetching, paging, sorting
   // -------------------------------------------------------------------
@@ -560,6 +607,8 @@ export class ComplianceReportStateService {
   /**
    * Called once per VISIT, from the page component's `ngOnInit` (#1163 §6,
    * kept by #1185 decision B1: entering the page is not "pressing Oversigt").
+   * `highlightId` is the page URL's `?highlightId=` query parameter, if any —
+   * what the shared case page appends after a successful save.
    *
    * The service is provided by the lazy `ComplianceReportModule`, and Angular
    * caches a lazy `NgModuleRef` for the lifetime of the app — so navigating
@@ -570,23 +619,59 @@ export class ComplianceReportStateService {
    * buffered trigger replays past the `reportVisible` gate, and an unbounded
    * row query fires with no user gesture at all.
    *
-   * So entry has exactly two shapes:
+   * So entry has three shapes:
+   *  - the return from a SAVED Rapport edit (#1291): a return context is set
+   *    AND `highlightId` names its case. Back to the same mode, page and
+   *    `showAll`, re-fetched at once, and the edited row queued for
+   *    `takePendingRowHighlight()`. This is not a fetch "without a user
+   *    gesture" — it is the tail of the Rediger → Gem gesture, for the very
+   *    query the user had on screen when they pressed Rediger.
    *  - `overview`: auto-fetch once. One cheap server-side aggregation per
    *    property (#1162), and the prototype records the auto-fetch as a design
    *    choice (compliance.js:2371-2372).
-   *  - `details` / `report`: force the page back to its un-fetched state with
-   *    the previous visit's filters and mode preserved. `reportVisible` false
-   *    both shows the placeholder AND closes `fetchRequested$`'s gate, which
-   *    is what actually neutralises the buffered trigger — the buffer itself
-   *    cannot be erased. `total`/`page` are cleared so the pagination chrome
-   *    does not draw the previous visit's `Viser 1-10 af N` before any new
-   *    response lands. From there, any filter change re-queries (it goes
-   *    through `setFilter`, which fetches), and `Oversigt` resets.
+   *  - `details` / `report` otherwise: force the page back to its un-fetched
+   *    state with the previous visit's filters and mode preserved.
+   *    `reportVisible` false both shows the placeholder AND closes
+   *    `fetchRequested$`'s gate, which is what actually neutralises the
+   *    buffered trigger — the buffer itself cannot be erased. `total`/`page`
+   *    are cleared so the pagination chrome does not draw the previous
+   *    visit's `Viser 1-10 af N` before any new response lands. From there,
+   *    any filter change re-queries (it goes through `setFilter`, which
+   *    fetches), and `Oversigt` resets. This includes coming back from the
+   *    case page WITHOUT saving (browser back, or the menu later on): the
+   *    case page adds no `highlightId` then, so the return context is
+   *    dropped unused — the status quo for that path, which #1291 does not
+   *    ask to change.
+   *
+   * The return context is cleared on EVERY entry, used or not, so it is
+   * strictly one-shot: an abandoned edit can never make a later entry from
+   * the menu fetch on its own.
    *
    * This is deliberately NOT wired into `setMode`: a mode switch WITHIN a
    * visit must keep replaying, or the recreated child renders nothing.
    */
-  enterPage(): void {
+  enterPage(highlightId: number | null = null): void {
+    const returnContext = this.returnContext;
+    this.returnContext = null;
+    // Queued for a response that never rendered (e.g. a delete's refresh
+    // still in flight when the user navigated away) — it belongs to the
+    // previous visit and must not land on an unrelated fetch in this one.
+    this.pendingRowHighlight = null;
+
+    if (
+      returnContext !== null &&
+      highlightId !== null &&
+      returnContext.sdkCaseId === highlightId &&
+      this.isCommittedPeriodValid
+    ) {
+      this.modeSubject.next(returnContext.mode);
+      this.totalSubject.next(0);
+      this.loadingSubject.next(false);
+      this.pendingRowHighlight = returnContext.rowKey;
+      this.fetchAt(returnContext.page, returnContext.showAll);
+      return;
+    }
+
     if (this.mode === 'overview') {
       this.requestFetch();
       return;
@@ -605,12 +690,21 @@ export class ComplianceReportStateService {
    * one request. Refuses while the committed period cannot be queried.
    */
   requestFetch(): void {
+    this.fetchAt(0, false);
+  }
+
+  /**
+   * `requestFetch()` without the reset to page 1: the page and `showAll` are
+   * the caller's. Only `enterPage()`'s return from a saved edit needs that
+   * (#1291) — every user-driven fetch starts from page 1.
+   */
+  private fetchAt(page: number, showAll: boolean): void {
     this.cancelScheduledFetch();
     if (!this.isCommittedPeriodValid) {
       return;
     }
-    this.pageSubject.next(0);
-    this.showAllSubject.next(false);
+    this.pageSubject.next(Math.max(0, page));
+    this.showAllSubject.next(showAll);
     this.reportVisibleSubject.next(true);
     this.fetchRequestedSubject.next();
   }
