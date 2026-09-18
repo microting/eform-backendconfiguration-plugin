@@ -538,6 +538,7 @@ export const fiFI = {
   '6 months': '6 kuukautta',
   '12 months': '12 kuukautta',
   'Year to date': 'Vuodesta tähän päivään mennessä',
+  'Year to date + 1 year': 'Vuodesta tähän päivään mennessä + 1 vuosi',
   'Set period': 'Aseta ajanjakso',
   'Download as': 'Lataa nimellä',
   Download: 'Lataa',

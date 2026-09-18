@@ -538,6 +538,7 @@ export const ukUA = {
   '6 months': '6 місяців',
   '12 months': '12 місяців',
   'Year to date': 'З початку року',
+  'Year to date + 1 year': 'З початку року + 1 рік',
   'Set period': 'Встановити період',
   'Download as': 'Завантажити як',
   Download: 'Завантажити',

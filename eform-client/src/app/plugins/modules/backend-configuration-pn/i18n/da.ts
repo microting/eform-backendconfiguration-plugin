@@ -539,6 +539,7 @@ export const da = {
   '6 months': '6 mdr.',
   '12 months': '12 mdr.',
   'Year to date': 'År til dato',
+  'Year to date + 1 year': 'År til dato + 1 år',
   'Set period': 'Sæt periode',
   'Download as': 'Hent som',
   Download: 'Download',

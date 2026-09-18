@@ -538,6 +538,7 @@ export const plPL = {
   '6 months': '6 miesięcy',
   '12 months': '12 miesięcy',
   'Year to date': 'Rok do tej pory',
+  'Year to date + 1 year': 'Rok do tej pory + 1 rok',
   'Set period': 'Ustaw okres',
   'Download as': 'Pobierz jako',
   Download: 'Pobierać',

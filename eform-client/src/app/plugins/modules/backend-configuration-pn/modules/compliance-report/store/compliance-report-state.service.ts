@@ -7,10 +7,19 @@ import {
   ComplianceReportStatus,
 } from '../../../models';
 import {ComplianceReportRowKey} from '../helpers/compliance-report-row-highlight';
+import {
+  isComplianceUserId,
+  readSavedCompliancePeriod,
+  writeSavedCompliancePeriod,
+} from './compliance-period.storage';
 
 export type ComplianceMode = 'overview' | 'details' | 'report';
 
-export type CompliancePeriodPreset = '1' | '3' | '6' | '12' | 'ytd' | 'custom';
+/**
+ * `ytd1y` is "År til dato + 1 år" (#1299): 1 January of this year to today
+ * plus one year.
+ */
+export type CompliancePeriodPreset = '1' | '3' | '6' | '12' | 'ytd' | 'ytd1y' | 'custom';
 
 export const COMPLIANCE_MODES: ComplianceMode[] = ['overview', 'details', 'report'];
 
@@ -51,7 +60,9 @@ export interface ComplianceFilterState {
  * Prototype defaults (Compliance.html:13-54): everything "all", status
  * `Ikke udførte opgaver`, period `År til dato`. Note the calendar view mode
  * being replaced defaults its period to '1' — the prototype wins (#1163 §6).
- * These are also what `resetToOverview()` restores (#1185).
+ * The PERIOD is then overridden by the user's saved choice, if any
+ * (`restoreSavedPeriod`, #1299). Pressing `Oversigt` no longer restores these
+ * (#1299 reversed #1185's reset); only a change of signed-in user does.
  */
 export function complianceInitialFilters(): ComplianceFilterState {
   return {
@@ -145,12 +156,16 @@ function isOrderedRange(from: Date | null, to: Date | null): boolean {
  *     `change`" bypass, used by #1164's drill-down. Getting this wrong makes
  *     the drill-down re-query the page it just navigated to.
  *   - `resetToOverview()` is what pressing `Oversigt` does, from anywhere:
- *     every filter back to its default, then one Oversigt fetch.
+ *     switch to Oversigt with the filters KEPT (#1299 dropped #1185's reset;
+ *     only a drill-down's property is undone), then one Oversigt fetch.
+ *
+ * The chosen period is remembered per user in localStorage (#1299) — see
+ * `restoreSavedPeriod` and `compliance-period.storage.ts`.
  *
  * Known limitation (#1185 decision E): clicking the sidebar entry while
  * already on the page is a router no-op (`onSameUrlNavigation: 'ignore'` in
- * the core `app.routing.ts`), so it neither resets nor re-fetches; only the
- * `Oversigt` mode button does.
+ * the core `app.routing.ts`), so it neither re-fetches nor changes mode; only
+ * the `Oversigt` mode button does.
  *
  * Provided by `ComplianceReportModule`, not in root: the page's state is per
  * lazy-module instance, and nothing outside the module has any business
@@ -210,6 +225,21 @@ export class ComplianceReportStateService {
    * One-shot: the next `enterPage()` always clears it, used or not.
    */
   private returnContext: ComplianceReturnContext | null = null;
+  /**
+   * The user the in-memory filters belong to (#1299, the calendar's #1303
+   * owner pattern). Set by `restoreSavedPeriod()` on every page visit. The
+   * period is saved only under this id, and a different signed-in user finds
+   * the filters reset rather than inheriting the previous user's — the service
+   * lives on the lazy module, which outlives a logout in the same tab.
+   */
+  private periodOwnerUserId: number | null = null;
+  /**
+   * What `drillIntoProperty` replaced (#1299): the property and calendars the
+   * user had in Oversigt, and the property the drill wrote. Pressing `Oversigt`
+   * puts them back — the drill is navigation, not a filter the user chose —
+   * unless the user has since changed the property or calendar themselves.
+   */
+  private drillOrigin: {propertyId: number | null; boardIds: number[]; drilledPropertyId: number} | null = null;
 
   readonly filters$: Observable<ComplianceFilterState> = this.filtersSubject.asObservable();
   readonly mode$: Observable<ComplianceMode> = this.modeSubject.asObservable();
@@ -220,7 +250,7 @@ export class ComplianceReportStateService {
   readonly loading$: Observable<boolean> = this.loadingSubject.asObservable();
   /**
    * Fires whenever the active view must (re-)query: a debounced filter change,
-   * `Opdater periode`, the `Oversigt` reset, page entry, or a page/sort change.
+   * `Opdater periode`, pressing `Oversigt`, page entry, or a page/sort change.
    * It replays the last such trigger to a subscriber that arrives late — see
    * `fetchRequestedSubject`.
    *
@@ -266,10 +296,12 @@ export class ComplianceReportStateService {
    * filter" and renders the period label empty (compliance.js:464-479,
    * :481-490). The draft the pickers are editing never shows here.
    *
-   * Fixed presets and YTD are bounded ABOVE by today. This is a deliberate
-   * change from the calendar view mode, which extends `dateTo` into the future
-   * for open/all — a compliance report is retrospective, and a percentage that
-   * counts not-yet-due tasks is what #1160's `dueTotal` rule already rejects.
+   * The fixed presets and YTD are bounded ABOVE by today — a compliance report
+   * is mostly retrospective. The one exception is `ytd1y` ("År til dato + 1
+   * år", #1299): 1 January to today PLUS one year (`addClampedMonths(today,
+   * 12)`, so 29 February clamps to 28 February), which lets Detaljer and
+   * Rapport list tasks that are not yet due. Oversigt stays honest under it:
+   * its percentage counts only rows already due (#1160's `dueTotal` rule).
    */
   get periodBounds(): CompliancePeriodBounds | null {
     const {periodPreset, customFrom, customTo} = this.filters;
@@ -283,6 +315,9 @@ export class ComplianceReportStateService {
     }
     if (periodPreset === 'ytd') {
       return {from: new Date(today.getFullYear(), 0, 1), to: today};
+    }
+    if (periodPreset === 'ytd1y') {
+      return {from: new Date(today.getFullYear(), 0, 1), to: startOfDay(addClampedMonths(today, 12))};
     }
     const months = parseInt(periodPreset, 10);
     return {from: startOfDay(addClampedMonths(today, -months)), to: today};
@@ -401,6 +436,11 @@ export class ComplianceReportStateService {
    * A patch that carries `customFrom`/`customTo` writes them as COMMITTED (and
    * mirrors them into the draft) — that is the programmatic shape the specs
    * use; the filter bar itself goes through `stageCustomPeriod()`.
+   *
+   * A period change is saved for the signed-in user (#1299); an uncommitted
+   * `Sæt periode` is not a chosen period yet and leaves the saved one alone.
+   * A property or calendar change makes the property the user's own, so a
+   * later `Oversigt` no longer undoes a drill-down's property.
    */
   setFilter(patch: Partial<ComplianceFilterState>): void {
     const prev = this.filters;
@@ -414,7 +454,13 @@ export class ComplianceReportStateService {
       this.draftCustomFrom = next.customFrom;
       this.draftCustomTo = next.customTo;
     }
+    if ('propertyId' in patch || 'boardIds' in patch) {
+      this.drillOrigin = null;
+    }
     this.filtersSubject.next(next);
+    if ('periodPreset' in patch || patchHasDates) {
+      this.persistPeriod();
+    }
     this.pageSubject.next(0);
     this.showAllSubject.next(false);
 
@@ -453,7 +499,8 @@ export class ComplianceReportStateService {
    * `Opdater periode`. Copies the staged range into the committed one and
    * fetches — immediately, no debounce; a button click is one gesture. A no-op
    * outside custom mode or while the draft is invalid (the button is disabled
-   * in both states, this is the belt to that brace).
+   * in both states, this is the belt to that brace). The committed range
+   * becomes the user's saved period (#1299).
    */
   commitCustomPeriod(): void {
     if (this.filters.periodPreset !== 'custom' || !this.isPeriodValid) {
@@ -464,7 +511,78 @@ export class ComplianceReportStateService {
       customFrom: this.draftCustomFrom,
       customTo: this.draftCustomTo,
     });
+    this.persistPeriod();
     this.requestFetch();
+  }
+
+  // -------------------------------------------------------------------
+  // The remembered period (#1299)
+  // -------------------------------------------------------------------
+
+  /**
+   * Called once per page visit, BEFORE `enterPage()`, with the signed-in
+   * user's id (the calendar's #1303 pattern):
+   *  - same owner as the in-memory filters (re-entry within the SPA, or the
+   *    same user signing in again in this tab): nothing changes — the
+   *    in-memory period is the saved one, or a newer uncommitted draft;
+   *  - no owner yet (first visit since the app loaded): the saved period, if
+   *    any, replaces the `År til dato` default;
+   *  - another owner (a different user signed in in this tab — the lazy
+   *    module's service survives the logout): EVERY filter, the drafts, the
+   *    sort, the mode and the one-shot contexts are reset first, so nothing
+   *    of the previous user's leaks; then the new user's period is applied.
+   * A missing/invalid id changes nothing and saves nothing.
+   */
+  restoreSavedPeriod(userId: number | null | undefined): void {
+    if (!isComplianceUserId(userId)) {
+      return;
+    }
+    if (this.periodOwnerUserId === userId) {
+      return;
+    }
+    if (this.periodOwnerUserId !== null) {
+      this.resetForNewOwner();
+    }
+    this.periodOwnerUserId = userId;
+    const saved = readSavedCompliancePeriod(userId);
+    if (!saved) {
+      return;
+    }
+    this.filtersSubject.next({
+      ...this.filters,
+      periodPreset: saved.periodPreset,
+      customFrom: saved.customFrom,
+      customTo: saved.customTo,
+    });
+    // The pickers show the restored range, ready to be re-edited.
+    this.draftCustomFrom = saved.customFrom;
+    this.draftCustomTo = saved.customTo;
+  }
+
+  private persistPeriod(): void {
+    if (this.periodOwnerUserId === null) {
+      return;
+    }
+    const {periodPreset, customFrom, customTo} = this.filters;
+    writeSavedCompliancePeriod(this.periodOwnerUserId, {periodPreset, customFrom, customTo});
+  }
+
+  private resetForNewOwner(): void {
+    this.cancelScheduledFetch();
+    this.filtersSubject.next(complianceInitialFilters());
+    this.draftCustomFrom = null;
+    this.draftCustomTo = null;
+    this.sortKey = null;
+    this.sortDsc = true;
+    this.pendingRowHighlight = null;
+    this.returnContext = null;
+    this.drillOrigin = null;
+    this.modeSubject.next('overview');
+    this.reportVisibleSubject.next(false);
+    this.pageSubject.next(0);
+    this.showAllSubject.next(false);
+    this.totalSubject.next(0);
+    this.loadingSubject.next(false);
   }
 
   /**
@@ -472,7 +590,7 @@ export class ComplianceReportStateService {
    * and `reportVisible` untouched (compliance.js:1516-1545 never calls
    * onFilterChange), so the child the `ngSwitch` creates re-queries the SAME
    * filters through the replay. Pressing the `Oversigt` button is NOT this —
-   * it is `resetToOverview()`.
+   * it is `resetToOverview()`, which also undoes a drill-down's property.
    */
   setMode(mode: ComplianceMode): void {
     // A filter change followed within the debounce by a mode switch is ONE
@@ -517,21 +635,37 @@ export class ComplianceReportStateService {
    * will therefore not add up to the row's `dueTotal` — that is intended, do
    * not re-add `status: 'all'` to make the numbers match.
    *
-   * There is no bookkeeping to unwind on the way back: pressing `Oversigt` is
-   * `resetToOverview()`, which restores every filter regardless of who wrote
-   * it.
+   * The property and calendars it replaces are remembered (`drillOrigin`), so
+   * pressing `Oversigt` returns to the Oversigt the user drilled from rather
+   * than one narrowed to the drilled property (#1299). A second drill before
+   * that keeps the ORIGINAL pre-drill values.
    */
   drillIntoProperty(propertyId: number): void {
+    this.drillOrigin = {
+      propertyId: this.drillOrigin ? this.drillOrigin.propertyId : this.filters.propertyId,
+      boardIds: this.drillOrigin ? this.drillOrigin.boardIds : [...this.filters.boardIds],
+      drilledPropertyId: propertyId,
+    };
     this.setFilterSilently({propertyId});
     this.setMode('details');
   }
 
   /**
    * What pressing `Oversigt` does, from Detaljer, from Rapport, or while
-   * already in Oversigt (#1185): every filter back to `complianceInitialFilters()`
-   * — Alle ejendomme / Alle kalendere / Alle tags / Ikke udførte opgaver /
-   * Alle medarbejdere / År til dato — any staged or committed custom range and
-   * the sort dropped, mode `overview`, then ONE Oversigt fetch.
+   * already in Oversigt. #1299 REVERSED #1185 here: the filters are KEPT —
+   * property, calendar, tags, status, employee, the period (preset, committed
+   * custom range and its draft) — and so is the sort. Mode `overview`, then ONE
+   * Oversigt fetch (none while an uncommitted `Sæt periode` leaves nothing to
+   * query — the placeholder stays up).
+   *
+   * The one thing undone is a drill-down's property: if the property is still
+   * the one `drillIntoProperty` wrote, the property and calendars the user had
+   * before the drill come back. Leaving that in place would narrow Oversigt to
+   * the single property just drilled into. A property the user picked
+   * themselves is never touched.
+   *
+   * The one-shot Rapport contexts (row highlight, edit return) are dropped:
+   * they belong to the view being left.
    *
    * The fetch fires while the outgoing Detaljer/Rapport child is still
    * subscribed (the `ngSwitch` swap happens on the next change-detection
@@ -540,11 +674,15 @@ export class ComplianceReportStateService {
    */
   resetToOverview(): void {
     this.cancelScheduledFetch();
-    this.filtersSubject.next(complianceInitialFilters());
-    this.draftCustomFrom = null;
-    this.draftCustomTo = null;
-    this.sortKey = null;
-    this.sortDsc = true;
+    const origin = this.drillOrigin;
+    this.drillOrigin = null;
+    if (origin && this.filters.propertyId === origin.drilledPropertyId) {
+      this.filtersSubject.next({
+        ...this.filters,
+        propertyId: origin.propertyId,
+        boardIds: [...origin.boardIds],
+      });
+    }
     this.pendingRowHighlight = null;
     this.returnContext = null;
     this.setMode('overview');
@@ -637,7 +775,7 @@ export class ComplianceReportStateService {
    *    are cleared so the pagination chrome does not draw the previous
    *    visit's `Viser 1-10 af N` before any new response lands. From there,
    *    any filter change re-queries (it goes through `setFilter`, which
-   *    fetches), and `Oversigt` resets. This includes coming back from the
+   *    fetches), and `Oversigt` switches back and fetches. This includes coming back from the
    *    case page WITHOUT saving (browser back, or the menu later on): the
    *    case page adds no `highlightId` then, so the return context is
    *    dropped unused — the status quo for that path, which #1291 does not
@@ -684,8 +822,8 @@ export class ComplianceReportStateService {
   }
 
   /**
-   * Fetch NOW for the current filters: `Opdater periode`, the `Oversigt`
-   * reset, page entry, and the tail of a debounced filter change all end here.
+   * Fetch NOW for the current filters: `Opdater periode`, pressing
+   * `Oversigt`, page entry, and the tail of a debounced filter change all end here.
    * Supersedes any filter fetch still waiting on its debounce — one gesture,
    * one request. Refuses while the committed period cannot be queried.
    */
@@ -777,7 +915,7 @@ export class ComplianceReportStateService {
   /**
    * A `setTimeout` rather than `debounceTime` so that it can be CANCELLED by
    * whatever fetches or blanks in the meantime: a tag click followed within
-   * 300 ms by `Oversigt` must produce the reset's one request, not two, and
+   * 300 ms by `Oversigt` must produce Oversigt's one request, not two, and
    * a tag click followed by `Sæt periode` must not un-blank the placeholder
    * 300 ms later.
    */

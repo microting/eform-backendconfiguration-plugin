@@ -538,6 +538,7 @@ export const slSL = {
   '6 months': '6 mesecev',
   '12 months': '12 mesecev',
   'Year to date': 'Od začetka leta',
+  'Year to date + 1 year': 'Od začetka leta + 1 leto',
   'Set period': 'Nastavljeno obdobje',
   'Download as': 'Prenesi kot',
   Download: 'Prenesi',

@@ -537,6 +537,7 @@ export const frFR = {
   '6 months': '6 mois',
   '12 months': '12 mois',
   'Year to date': 'Année à ce jour',
+  'Year to date + 1 year': 'Année à ce jour + 1 an',
   'Set period': 'Période définie',
   'Download as': 'Télécharger',
   Download: 'Télécharger',

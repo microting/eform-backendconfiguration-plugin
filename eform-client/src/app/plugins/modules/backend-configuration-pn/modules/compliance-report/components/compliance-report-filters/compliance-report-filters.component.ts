@@ -92,6 +92,7 @@ export class ComplianceReportFiltersComponent implements OnInit, OnDestroy {
       {value: '6', label: this.translate.instant('6 months')},
       {value: '12', label: this.translate.instant('12 months')},
       {value: 'ytd', label: this.translate.instant('Year to date')},
+      {value: 'ytd1y', label: this.translate.instant('Year to date + 1 year')},
       {value: 'custom', label: this.translate.instant('Set period')},
     ];
     // Format names are product names, not translatable strings.
@@ -275,12 +276,14 @@ export class ComplianceReportFiltersComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Oversigt counts done and not-done together and ignores the status value,
-   * so the control is disabled there — honest rather than cosmetic. It stays
-   * ENABLED in Rapport (compliance.js:1508-1514), so nobody has to detour
-   * through Detaljer to change status.
+   * Oversigt counts done and not-done together and the server ignores the
+   * status value there, so the control is not shown in Oversigt at all (#1299 —
+   * it used to be disabled). It is shown in Detaljer AND Rapport
+   * (compliance.js:1508-1514), so nobody has to detour through Detaljer to
+   * change status. The value itself is kept while hidden: the drill-down into
+   * Detaljer lists `Ikke udførte opgaver` (#1185).
    */
-  get statusDisabled(): boolean {
+  get statusHidden(): boolean {
     return this.state.mode === 'overview';
   }
 

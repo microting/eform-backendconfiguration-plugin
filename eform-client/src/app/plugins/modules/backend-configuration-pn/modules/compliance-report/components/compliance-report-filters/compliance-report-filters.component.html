@@ -7,9 +7,10 @@
   while "Sæt periode" is selected — commits and fetches it.
 
   The mtx-selects bind ONE-WAY ([ngModel] + (ngModelChange)) on purpose: the
-  Oversigt reset writes all six values programmatically, and mtx-select emits
-  on a programmatic write, so two-way binding would turn one reset into six
-  setFilter() calls.
+  state service writes values programmatically (the drill-down and its undo on
+  Oversigt, the restored period, a change of signed-in user), and mtx-select
+  emits on a programmatic write, so two-way binding would turn each of those
+  into setFilter() calls.
 
   ACCESSIBILITY: every `mtx-select` below binds `[aria-label]`, NEVER
   `[attr.aria-label]`. MtxSelect declares `@Input('aria-label') ariaLabel` plus
@@ -112,30 +113,23 @@
   </div>
 
   <!--
-    4. Status. Disabled in Oversigt, which aggregates done and not-done
-    together and ignores the value; enabled in Rapport as well as Detaljer.
+    4. Status. Not shown in Oversigt (#1299), which aggregates done and not-done
+    together and ignores the value; shown in Rapport as well as Detaljer.
   -->
-  <span
-    class="compliance-filters__tooltip-host"
-    [matTooltip]="statusDisabled ? ('Overview shows both completed and not completed tasks' | translate) : ''"
-    [matTooltipDisabled]="!statusDisabled"
-  >
-    <div class="text-field--rounded compliance-filters__field">
-      <mat-form-field>
-        <mtx-select
-          id="complianceFilterStatus"
-          [aria-label]="'Tasks' | translate"
-          [items]="statusOptions"
-          bindValue="value"
-          bindLabel="label"
-          [ngModel]="status"
-          (ngModelChange)="onStatusChange($event)"
-          [disabled]="statusDisabled"
-          [clearable]="false"
-        ></mtx-select>
-      </mat-form-field>
-    </div>
-  </span>
+  <div *ngIf="!statusHidden" class="text-field--rounded compliance-filters__field">
+    <mat-form-field>
+      <mtx-select
+        id="complianceFilterStatus"
+        [aria-label]="'Tasks' | translate"
+        [items]="statusOptions"
+        bindValue="value"
+        bindLabel="label"
+        [ngModel]="status"
+        (ngModelChange)="onStatusChange($event)"
+        [clearable]="false"
+      ></mtx-select>
+    </mat-form-field>
+  </div>
 
   <!-- 5. Employee -->
   <div class="text-field--rounded compliance-filters__field">

@@ -538,6 +538,7 @@ export const hrHR = {
   '6 months': '6 mjeseci',
   '12 months': '12 mjeseci',
   'Year to date': 'Od početka godine',
+  'Year to date + 1 year': 'Od početka godine + 1 godina',
   'Set period': 'Postavi razdoblje',
   'Download as': 'Preuzmi kao',
   Download: 'Preuzmi',

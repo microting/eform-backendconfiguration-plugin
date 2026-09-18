@@ -484,8 +484,14 @@ describe('ComplianceReportStateService', () => {
     });
   });
 
-  describe('the Oversigt reset (resetToOverview)', () => {
-    it('restores every default and fetches Oversigt once, immediately', () => {
+  /**
+   * Pressing `Oversigt` (#1299, reversing #1185's reset): the mode switches
+   * and Oversigt fetches once, but NO filter is reset — the customer's
+   * "Oversigt nulstiller ikke længere filtrene". Every test here fails against
+   * the #1185 implementation, which wrote `complianceInitialFilters()`.
+   */
+  describe('pressing Oversigt (resetToOverview) keeps the filters', () => {
+    it('keeps every filter and the sort, switches to Oversigt and fetches once, immediately', () => {
       const fetches: number[] = [];
       service.fetchRequested$.subscribe(() => fetches.push(1));
       service.setFilter({
@@ -507,12 +513,12 @@ describe('ComplianceReportStateService', () => {
       service.resetToOverview();
 
       expect(service.filters).toEqual({
-        propertyId: null,
-        boardIds: [],
-        tagIds: [],
-        siteIds: [],
-        status: 'open',
-        periodPreset: 'ytd',
+        propertyId: 7,
+        boardIds: [3],
+        tagIds: [1, 2],
+        siteIds: [9],
+        status: 'done',
+        periodPreset: '3',
         customFrom: null,
         customTo: null,
       });
@@ -521,52 +527,61 @@ describe('ComplianceReportStateService', () => {
       expect(service.showAll).toBe(false);
       expect(service.total).toBe(0);
       expect(service.loading).toBe(false);
-      expect(service.sort).toBeNull();
-      expect(service.isSortDsc).toBe(true);
+      expect(service.sort).toBe('title');
+      expect(service.isSortDsc).toBe(false);
       expect(service.reportVisible).toBe(true);
       expect(fetches.length).toBe(before + 1);
       settle();
       expect(fetches.length).toBe(before + 1);
     });
 
-    it('resets while already in Oversigt too', () => {
+    it('while already in Oversigt it re-fetches and changes nothing', () => {
       const fetches: number[] = [];
       service.fetchRequested$.subscribe(() => fetches.push(1));
-      service.setFilter({tagIds: [1]});
+      service.setFilter({tagIds: [1], periodPreset: '6'});
       settle();
       expect(fetches.length).toBe(1);
 
       service.resetToOverview();
 
       expect(service.mode).toBe('overview');
-      expect(service.filters.tagIds).toEqual([]);
+      expect(service.filters.tagIds).toEqual([1]);
+      expect(service.filters.periodPreset).toBe('6');
       expect(fetches.length).toBe(2);
     });
 
-    it('clears a committed custom range and its draft', () => {
+    it('keeps a committed custom range and its draft', () => {
       service.setFilter({periodPreset: 'custom'});
       service.stageCustomPeriod({from: new Date(2026, 0, 2), to: new Date(2026, 2, 4)});
       service.commitCustomPeriod();
+      service.setMode('report');
 
       service.resetToOverview();
 
-      expect(service.filters.periodPreset).toBe('ytd');
-      expect(service.filters.customFrom).toBeNull();
-      expect(service.customDraftFrom).toBeNull();
-      expect(service.customDraftTo).toBeNull();
-      expect(service.isPeriodValid).toBe(true);
+      expect(service.filters.periodPreset).toBe('custom');
+      expect(service.filters.customFrom.getTime()).toBe(new Date(2026, 0, 2).getTime());
+      expect(service.filters.customTo.getTime()).toBe(new Date(2026, 2, 4).getTime());
+      expect(service.customDraftFrom.getTime()).toBe(new Date(2026, 0, 2).getTime());
+      expect(service.customDraftTo.getTime()).toBe(new Date(2026, 2, 4).getTime());
+      expect(service.reportVisible).toBe(true);
     });
 
-    it('recovers from the staged (placeholder) state', () => {
+    it('from the staged (placeholder) state it switches mode but stays on the placeholder, fetching nothing', () => {
+      // An uncommitted "Sæt periode" has no period to query. #1185's reset
+      // escaped this state by throwing the custom range away; now the range is
+      // kept, so Oversigt waits for "Opdater periode" like every other mode.
       const fetches: number[] = [];
       service.fetchRequested$.subscribe(() => fetches.push(1));
+      service.setMode('details');
       service.setFilter({periodPreset: 'custom'});
       expect(service.reportVisible).toBe(false);
 
       service.resetToOverview();
 
-      expect(service.reportVisible).toBe(true);
-      expect(fetches.length).toBe(1);
+      expect(service.mode).toBe('overview');
+      expect(service.filters.periodPreset).toBe('custom');
+      expect(service.reportVisible).toBe(false);
+      expect(fetches.length).toBe(0);
     });
 
     it('supersedes a filter fetch still waiting on its debounce', () => {
@@ -578,6 +593,7 @@ describe('ComplianceReportStateService', () => {
 
       service.resetToOverview();
       expect(fetches.length).toBe(2);
+      expect(service.filters.tagIds).toEqual([1]);
 
       settle();
 
@@ -702,22 +718,62 @@ describe('ComplianceReportStateService', () => {
       expect(fetches.length).toBe(1);
     });
 
-    it('the Oversigt reset restores the defaults after a drill, regardless of user changes', () => {
+    it('Oversigt undoes the drilled property but keeps every other filter the user changed (#1299)', () => {
       service.requestFetch();
       service.drillIntoProperty(12);
-      service.setFilter({propertyId: 34, status: 'done', tagIds: [2]});
+      service.setFilter({status: 'done', tagIds: [2], periodPreset: '6'});
       settle();
 
       service.resetToOverview();
 
+      // Back to the Oversigt the user drilled FROM ("Alle ejendomme")...
       expect(service.filters.propertyId).toBeNull();
-      expect(service.filters.status).toBe('open');
-      expect(service.filters.tagIds).toEqual([]);
+      // ...with nothing else reset.
+      expect(service.filters.status).toBe('done');
+      expect(service.filters.tagIds).toEqual([2]);
+      expect(service.filters.periodPreset).toBe('6');
       expect(service.mode).toBe('overview');
       expect(service.reportVisible).toBe(true);
     });
 
-    it('carries no drill bookkeeping: a second drill is just another drill', () => {
+    it('Oversigt keeps a property the user picked themselves after the drill', () => {
+      service.requestFetch();
+      service.drillIntoProperty(12);
+      service.setFilter({propertyId: 34, boardIds: [5]});
+      settle();
+
+      service.resetToOverview();
+
+      expect(service.filters.propertyId).toBe(34);
+      expect(service.filters.boardIds).toEqual([5]);
+    });
+
+    it('Oversigt keeps the drilled property once the user has picked a calendar in it', () => {
+      service.requestFetch();
+      service.drillIntoProperty(12);
+      service.setFilter({boardIds: [5]});
+      settle();
+
+      service.resetToOverview();
+
+      expect(service.filters.propertyId).toBe(12);
+      expect(service.filters.boardIds).toEqual([5]);
+    });
+
+    it('the undo is one-shot: a second Oversigt press after a manual property change keeps it', () => {
+      service.requestFetch();
+      service.drillIntoProperty(12);
+      service.resetToOverview();
+      expect(service.filters.propertyId).toBeNull();
+
+      service.setFilter({propertyId: 12});
+      settle();
+      service.resetToOverview();
+
+      expect(service.filters.propertyId).toBe(12);
+    });
+
+    it('a second drill keeps the ORIGINAL pre-drill property for the way back', () => {
       service.requestFetch();
 
       service.drillIntoProperty(12);
@@ -726,6 +782,9 @@ describe('ComplianceReportStateService', () => {
       expect(service.filters.propertyId).toBe(13);
       expect(service.filters.status).toBe('open');
       expect(service.mode).toBe('details');
+
+      service.resetToOverview();
+      expect(service.filters.propertyId).toBeNull();
     });
   });
 
@@ -744,6 +803,56 @@ describe('ComplianceReportStateService', () => {
         const bounds = service.periodBounds;
         expect(bounds.from.getTime()).toBe(new Date(2026, 0, 1).getTime());
         expect(bounds.to.getTime()).toBe(new Date(2026, 8, 3).getTime());
+      });
+    });
+
+    /**
+     * "År til dato + 1 år" (#1299): 1 January of today's year → today + 1 year
+     * via `addClampedMonths(today, 12)`. One row per boundary cell.
+     */
+    const ytd1yCells: [string, Date, Date, Date][] = [
+      ['a normal day (the issue\'s example)', new Date(2026, 8, 18), new Date(2026, 0, 1), new Date(2027, 8, 18)],
+      ['29 Feb in a leap year clamps to 28 Feb', new Date(2028, 1, 29), new Date(2028, 0, 1), new Date(2029, 1, 28)],
+      ['28 Feb before a leap year stays 28 Feb', new Date(2027, 1, 28), new Date(2027, 0, 1), new Date(2028, 1, 28)],
+      ['31 December', new Date(2026, 11, 31), new Date(2026, 0, 1), new Date(2027, 11, 31)],
+      ['1 January', new Date(2026, 0, 1), new Date(2026, 0, 1), new Date(2027, 0, 1)],
+      ['late evening (date-level, midnight bounds)', new Date(2026, 8, 18, 23, 30), new Date(2026, 0, 1), new Date(2027, 8, 18)],
+    ];
+
+    it.each(ytd1yCells)('ytd1y on %s', (_label, today, expectedFrom, expectedTo) => {
+      withToday(today, () => {
+        service.setFilter({periodPreset: 'ytd1y'});
+        const bounds = service.periodBounds;
+        expect(bounds.from.getTime()).toBe(expectedFrom.getTime());
+        expect(bounds.to.getTime()).toBe(expectedTo.getTime());
+      });
+    });
+
+    it('ytd1y is sent to the server as plain dates', () => {
+      withToday(new Date(2026, 8, 18), () => {
+        service.setFilter({periodPreset: 'ytd1y'});
+        expect(service.requestModel.dateFrom).toBe('2026-01-01');
+        expect(service.requestModel.dateTo).toBe('2027-09-18');
+        expect(service.isCommittedPeriodValid).toBe(true);
+        expect(service.isPeriodValid).toBe(true);
+      });
+    });
+
+    // The existing presets are untouched by the new one: still bounded by today.
+    const unchangedPresets: [CompliancePeriodPreset, Date][] = [
+      ['ytd', new Date(2026, 0, 1)],
+      ['1', new Date(2026, 7, 18)],
+      ['3', new Date(2026, 5, 18)],
+      ['6', new Date(2026, 2, 18)],
+      ['12', new Date(2025, 8, 18)],
+    ];
+
+    it.each(unchangedPresets)('%s still ends today on 18 Sep 2026', (preset, expectedFrom) => {
+      withToday(new Date(2026, 8, 18), () => {
+        service.setFilter({periodPreset: preset});
+        const bounds = service.periodBounds;
+        expect(bounds.from.getTime()).toBe(expectedFrom.getTime());
+        expect(bounds.to.getTime()).toBe(new Date(2026, 8, 18).getTime());
       });
     });
 
@@ -1259,5 +1368,253 @@ describe('ComplianceReportStateService — return from an edit (#1291)', () => {
     service.enterPage();
 
     expect(service.takePendingRowHighlight()).toBeNull();
+  });
+});
+
+/**
+ * #1299 — the chosen period is remembered per user in localStorage, across
+ * reload and login, until the user changes it. `restoreSavedPeriod(userId)` is
+ * what the page calls on every visit before `enterPage()`; a "reload" is a NEW
+ * service instance (the lazy module is rebuilt), a logout/login in the same tab
+ * is the SAME instance seeing the same or a different user id.
+ */
+describe('ComplianceReportStateService — remembered period (#1299)', () => {
+  const USER = 7;
+  const OTHER = 8;
+  const KEY = 'bcpn.compliance.period.7';
+  const OTHER_KEY = 'bcpn.compliance.period.8';
+  let service: ComplianceReportStateService;
+
+  /** A page reload: a fresh service, the signed-in user restored. */
+  function reload(userId: number): ComplianceReportStateService {
+    const fresh = new ComplianceReportStateService();
+    fresh.restoreSavedPeriod(userId);
+    return fresh;
+  }
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date(2026, 8, 18, 10, 0));
+    window.localStorage.clear();
+    service = new ComplianceReportStateService();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+    jest.useRealTimers();
+    window.localStorage.clear();
+  });
+
+  it('with nothing saved, the first visit keeps the År til dato default', () => {
+    service.restoreSavedPeriod(USER);
+
+    expect(service.filters.periodPreset).toBe('ytd');
+  });
+
+  it.each(['1', '3', '6', '12', 'ytd', 'ytd1y'] as CompliancePeriodPreset[])(
+    'a chosen preset (%s) survives a reload for the same user',
+    (preset) => {
+      service.restoreSavedPeriod(USER);
+      service.setFilter({periodPreset: preset});
+
+      expect(reload(USER).filters.periodPreset).toBe(preset);
+    }
+  );
+
+  it('a committed custom range survives a reload, committed AND in the pickers', () => {
+    service.restoreSavedPeriod(USER);
+    service.setFilter({periodPreset: 'custom'});
+    service.stageCustomPeriod({from: new Date(2026, 1, 3), to: new Date(2026, 4, 20)});
+    service.commitCustomPeriod();
+
+    expect(JSON.parse(window.localStorage.getItem(KEY))).toEqual({
+      periodPreset: 'custom', customFrom: '2026-02-03', customTo: '2026-05-20',
+    });
+
+    const restored = reload(USER);
+    expect(restored.filters.periodPreset).toBe('custom');
+    expect(restored.filters.customFrom.getTime()).toBe(new Date(2026, 1, 3).getTime());
+    expect(restored.filters.customTo.getTime()).toBe(new Date(2026, 4, 20).getTime());
+    expect(restored.customDraftFrom.getTime()).toBe(new Date(2026, 1, 3).getTime());
+    expect(restored.customDraftTo.getTime()).toBe(new Date(2026, 4, 20).getTime());
+    // The restored range is queryable at once: entry fetches Oversigt with it.
+    expect(restored.isCommittedPeriodValid).toBe(true);
+    expect(restored.requestModel.dateFrom).toBe('2026-02-03');
+    expect(restored.requestModel.dateTo).toBe('2026-05-20');
+    const fetches: number[] = [];
+    restored.fetchRequested$.subscribe(() => fetches.push(1));
+    restored.enterPage();
+    expect(fetches.length).toBe(1);
+  });
+
+  it('picking "Sæt periode" without committing does not replace the saved period', () => {
+    service.restoreSavedPeriod(USER);
+    service.setFilter({periodPreset: '6'});
+    service.setFilter({periodPreset: 'custom'});
+    service.stageCustomPeriod({from: new Date(2026, 1, 3), to: new Date(2026, 4, 20)});
+
+    expect(reload(USER).filters.periodPreset).toBe('6');
+  });
+
+  it('a later choice replaces the saved one ("until the period is changed")', () => {
+    service.restoreSavedPeriod(USER);
+    service.setFilter({periodPreset: 'custom'});
+    service.stageCustomPeriod({from: new Date(2026, 1, 3), to: new Date(2026, 4, 20)});
+    service.commitCustomPeriod();
+    service.setFilter({periodPreset: '3'});
+
+    const restored = reload(USER);
+    expect(restored.filters.periodPreset).toBe('3');
+    expect(restored.filters.customFrom).toBeNull();
+  });
+
+  it('only the period is remembered — the other filters come back at their defaults', () => {
+    service.restoreSavedPeriod(USER);
+    service.setFilter({propertyId: 4, tagIds: [2], siteIds: [9], status: 'done', periodPreset: '12'});
+
+    const restored = reload(USER);
+    expect(restored.filters).toEqual({
+      propertyId: null, boardIds: [], tagIds: [], siteIds: [], status: 'open',
+      periodPreset: '12', customFrom: null, customTo: null,
+    });
+  });
+
+  it('pressing Oversigt neither changes nor forgets the saved period', () => {
+    service.restoreSavedPeriod(USER);
+    service.setFilter({periodPreset: 'ytd1y'});
+    service.setMode('details');
+
+    service.resetToOverview();
+
+    expect(service.filters.periodPreset).toBe('ytd1y');
+    expect(reload(USER).filters.periodPreset).toBe('ytd1y');
+  });
+
+  it('nothing is saved before the user is known', () => {
+    service.setFilter({periodPreset: '3'});
+
+    expect(window.localStorage.length).toBe(0);
+  });
+
+  it.each([
+    ['undefined', undefined],
+    ['null', null],
+    ['0', 0],
+    ['negative', -1],
+  ])('an invalid user id (%s) restores nothing and enables no saving', (_label, id) => {
+    window.localStorage.setItem(KEY, JSON.stringify({periodPreset: '3', customFrom: null, customTo: null}));
+
+    service.restoreSavedPeriod(id as number);
+    service.setFilter({periodPreset: '6'});
+
+    expect(service.filters.periodPreset).toBe('6');
+    expect(JSON.parse(window.localStorage.getItem(KEY)).periodPreset).toBe('3');
+    expect(window.localStorage.length).toBe(1);
+  });
+
+  it('one user\'s saved period is never read for another user', () => {
+    service.restoreSavedPeriod(USER);
+    service.setFilter({periodPreset: '3'});
+
+    expect(reload(OTHER).filters.periodPreset).toBe('ytd');
+    expect(window.localStorage.getItem(OTHER_KEY)).toBeNull();
+  });
+
+  it('each user gets their own period back', () => {
+    reload(USER).setFilter({periodPreset: '3'});
+    reload(OTHER).setFilter({periodPreset: 'ytd1y'});
+
+    expect(reload(USER).filters.periodPreset).toBe('3');
+    expect(reload(OTHER).filters.periodPreset).toBe('ytd1y');
+  });
+
+  it('re-entry by the same user keeps the in-memory state (e.g. an uncommitted "Sæt periode")', () => {
+    service.restoreSavedPeriod(USER);
+    service.setFilter({periodPreset: '6'});
+    service.setFilter({periodPreset: 'custom', propertyId: 3});
+
+    service.restoreSavedPeriod(USER);
+
+    expect(service.filters.periodPreset).toBe('custom');
+    expect(service.filters.propertyId).toBe(3);
+  });
+
+  it('a different user signing in in the same tab inherits NOTHING from the previous one', () => {
+    // The service lives on the lazy module, which survives a logout.
+    window.localStorage.setItem(OTHER_KEY, JSON.stringify({periodPreset: '12', customFrom: null, customTo: null}));
+    service.restoreSavedPeriod(USER);
+    service.setFilter({propertyId: 4, boardIds: [2], tagIds: [1], siteIds: [9], status: 'done', periodPreset: '3'});
+    service.setSort('title', false);
+    service.setMode('report');
+    service.setReturnContext(55, 'case:55');
+
+    service.restoreSavedPeriod(OTHER);
+
+    expect(service.filters).toEqual({
+      propertyId: null, boardIds: [], tagIds: [], siteIds: [], status: 'open',
+      periodPreset: '12', customFrom: null, customTo: null,
+    });
+    expect(service.customDraftFrom).toBeNull();
+    expect(service.customDraftTo).toBeNull();
+    expect(service.sort).toBeNull();
+    expect(service.isSortDsc).toBe(true);
+    expect(service.mode).toBe('overview');
+    // The previous user's edit round trip is dropped with the rest.
+    service.setMode('report');
+    service.enterPage(55);
+    expect(service.reportVisible).toBe(false);
+  });
+
+  it('after a user switch, the new user\'s choices are saved under THEIR key only', () => {
+    service.restoreSavedPeriod(USER);
+    service.setFilter({periodPreset: '3'});
+
+    service.restoreSavedPeriod(OTHER);
+    service.setFilter({periodPreset: 'ytd1y'});
+
+    expect(JSON.parse(window.localStorage.getItem(KEY)).periodPreset).toBe('3');
+    expect(JSON.parse(window.localStorage.getItem(OTHER_KEY)).periodPreset).toBe('ytd1y');
+  });
+
+  it('switching user does not write the previous user\'s period under the new key', () => {
+    service.restoreSavedPeriod(USER);
+    service.setFilter({periodPreset: '3'});
+
+    service.restoreSavedPeriod(OTHER);
+
+    expect(window.localStorage.getItem(OTHER_KEY)).toBeNull();
+    expect(service.filters.periodPreset).toBe('ytd');
+  });
+
+  it('a corrupt saved period falls back to the default', () => {
+    window.localStorage.setItem(KEY, '{not json');
+
+    service.restoreSavedPeriod(USER);
+
+    expect(service.filters.periodPreset).toBe('ytd');
+  });
+
+  it('a storage that throws on read falls back to the default without breaking', () => {
+    jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+
+    expect(() => service.restoreSavedPeriod(USER)).not.toThrow();
+    expect(service.filters.periodPreset).toBe('ytd');
+  });
+
+  it('a storage that throws on write still applies the change and fetches', () => {
+    service.restoreSavedPeriod(USER);
+    jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError');
+    });
+    const fetches: number[] = [];
+    service.fetchRequested$.subscribe(() => fetches.push(1));
+
+    expect(() => service.setFilter({periodPreset: '3'})).not.toThrow();
+    jest.advanceTimersByTime(COMPLIANCE_FILTER_DEBOUNCE_MS);
+
+    expect(service.filters.periodPreset).toBe('3');
+    expect(fetches.length).toBe(1);
   });
 });

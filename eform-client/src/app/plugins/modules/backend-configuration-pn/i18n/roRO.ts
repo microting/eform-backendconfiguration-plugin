@@ -538,6 +538,7 @@ export const roRO = {
   '6 months': '6 luni',
   '12 months': '12 luni',
   'Year to date': 'De la începutul anului',
+  'Year to date + 1 year': 'De la începutul anului + 1 an',
   'Set period': 'Setați perioada',
   'Download as': 'Descărcați ca',
   Download: 'Descărcare',

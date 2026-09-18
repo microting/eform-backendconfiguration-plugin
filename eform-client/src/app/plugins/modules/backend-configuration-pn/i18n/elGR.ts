@@ -538,6 +538,7 @@ export const elGR = {
   '6 months': '6 μήνες',
   '12 months': '12 μήνες',
   'Year to date': 'Έτος μέχρι σήμερα',
+  'Year to date + 1 year': 'Έτος μέχρι σήμερα + 1 έτος',
   'Set period': 'Ορισμός περιόδου',
   'Download as': 'Λήψη ως',
   Download: 'Λήψη',

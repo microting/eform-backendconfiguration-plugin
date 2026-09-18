@@ -141,7 +141,7 @@ export class ComplianceOverviewViewComponent implements OnInit, OnDestroy {
    *
    * Built field by field rather than by spreading `requestModel` and deleting
    * keys, so the omissions are visible: `status` genuinely never reaches the
-   * wire even though the (disabled) control still holds a value, and no
+   * wire even though the (hidden, #1299) control still holds a value, and no
    * `pageIndex`/`pageSize`/`sort` can leak in when the paged model grows a
    * field. `dateFrom`/`dateTo` are copied through only when present — an
    * incomplete `Sæt periode` range means "no period filter", and the state
@@ -227,10 +227,13 @@ export class ComplianceOverviewViewComponent implements OnInit, OnDestroy {
    * the property filter through the SILENT path (so the already-fetched result
    * is not re-queried by the auto-fetch path — `mtx-select` emitting on a
    * programmatic write is exactly the trap this avoids) and switches the mode.
-   * The status is left as it is — `Ikke udførte opgaver`, since the control is
-   * disabled in Oversigt — so Detaljer lists the not-completed tasks the
-   * percentage was built on (#1185). Returning to Oversigt is the full reset.
-   * Nothing about it is reimplemented here.
+   * The status is left as it is — `Ikke udførte opgaver` unless the user
+   * changed it in Detaljer/Rapport, since the control is not rendered in
+   * Oversigt (#1299) — so Detaljer lists the not-completed tasks the
+   * percentage was built on (#1185). Pressing `Oversigt` again keeps the
+   * filters and only undoes the drilled property, if it is still the one
+   * written here (`resetToOverview`, #1299). Nothing about it is
+   * reimplemented here.
    *
    * The totals row does not call this: it carries `propertyId: 0` and is not
    * a property.

@@ -538,6 +538,7 @@ export const ltLT = {
   '6 months': '6 mėnesių',
   '12 months': '12 mėnesių',
   'Year to date': 'Nuo metų pradžios iki šiol',
+  'Year to date + 1 year': 'Nuo metų pradžios iki šiol + 1 metai',
   'Set period': 'Nustatyti laikotarpį',
   'Download as': 'Atsisiųsti kaip',
   Download: 'Atsisiųsti',

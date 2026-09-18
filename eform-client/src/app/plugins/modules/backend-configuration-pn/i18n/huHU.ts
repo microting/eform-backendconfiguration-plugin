@@ -538,6 +538,7 @@ export const huHU = {
   '6 months': '6 hónap',
   '12 months': '12 hónap',
   'Year to date': 'Év eleje óta',
+  'Year to date + 1 year': 'Év eleje óta + 1 év',
   'Set period': 'Időszak beállítása',
   'Download as': 'Letöltés másként',
   Download: 'Letöltés',
