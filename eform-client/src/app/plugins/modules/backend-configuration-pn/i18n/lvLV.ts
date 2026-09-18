@@ -749,7 +749,6 @@ export const lvLV = {
   'Update period': 'Atjaunināt periodu',
   'Select a period and click Update period': 'Atlasiet periodu un noklikšķiniet uz Atjaunināt periodu.',
   'Change a filter or click Overview to load the table': 'Mainiet filtru vai noklikšķiniet uz Pārskats, lai ielādētu tabulu.',
-  'Without report headline': 'Bez atskaites virsraksta',
   // Calendar toolbar (#1209): the calendars multi-select button label, its
   // bulk actions, and the accessible name of a calendar row's actions menu.
   '{{count}} calendars': '{{count}} kalendāri',

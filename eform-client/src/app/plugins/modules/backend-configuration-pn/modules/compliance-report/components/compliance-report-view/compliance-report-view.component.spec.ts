@@ -399,6 +399,33 @@ describe('ComplianceReportViewComponent — the row ceilings', () => {
     expect(tables().every((t) => t.expanded)).toBe(true);
     expect(tables().every((t) => t.rows.length === t.allRows.length)).toBe(true);
   });
+
+  it('never spends the page budget on a headline-less group (#1301)', () => {
+    // A headline-less group whose five 100-row tables alone would spend the
+    // whole 500-row budget, placed FIRST: if it were mapped, the headlined
+    // table behind it would render collapsed with 0 rows.
+    const headlineLess: ComplianceReportHeadlineGroupModel = {
+      headlineTagId: null,
+      headlineName: null,
+      tagsCaption: 'Aa tag',
+      templates: Array.from({length: 5}, (_, t) => ({
+        checkListId: 700 + t,
+        checkListName: `Uden ${t}`,
+        schemaUnavailable: false,
+        columns: [],
+        cases: Array.from({length: 100}, (__, i) => caseModel(10_000 + t * 100 + i)),
+      })),
+    };
+
+    (component as any).applyResponse([headlineLess, ...groups(1, 20)]);
+
+    expect(component.sections.map((s) => s.key)).toEqual(['h100']);
+    expect(tables().length).toBe(1);
+    expect(tables()[0].rows.length).toBe(20);
+    expect(tables()[0].expanded).toBe(true);
+    // The Download gate / "n rows" count excludes them too.
+    expect(TestBed.inject(ComplianceReportStateService).total).toBe(20);
+  });
 });
 
 
@@ -865,6 +892,27 @@ describe('ComplianceReportViewComponent — one table per eForm under a headline
     const groups: ComplianceReportHeadlineGroupModel[] = [
       ...mixedGroup(),
       {
+        headlineTagId: 9,
+        headlineName: 'Anden overskrift',
+        tagsCaption: '',
+        templates: [
+          {checkListId: 509, checkListName: 'Tilsyn', schemaUnavailable: false, columns: [], cases: [caseModel(5, 509)]},
+        ],
+      },
+    ];
+
+    (component as any).applyResponse(groups);
+
+    expect(state.total).toBe(5);
+    expect(component.sections.map((s) => s.headlineLabel)[1]).toBe('Anden overskrift');
+    // The same eForm under another headline is its own, distinctly keyed table.
+    expect(component.sections[1].tables.map((t) => t.key)).toEqual(['h9-c509']);
+  });
+
+  it('shows no "Without report headline" section and does not count its cases (#1301)', () => {
+    const groups: ComplianceReportHeadlineGroupModel[] = [
+      ...mixedGroup(),
+      {
         headlineTagId: null,
         headlineName: null,
         tagsCaption: '',
@@ -876,10 +924,9 @@ describe('ComplianceReportViewComponent — one table per eForm under a headline
 
     (component as any).applyResponse(groups);
 
-    expect(state.total).toBe(5);
-    expect(component.sections.map((s) => s.headlineLabel)[1]).toBe('Without report headline');
-    // The same eForm under the fallback headline is its own, distinctly keyed table.
-    expect(component.sections[1].tables.map((t) => t.key)).toEqual(['hnone-c509']);
+    expect(component.sections.length).toBe(1);
+    expect(component.sections.map((s) => s.key)).toEqual(['h8']);
+    expect(state.total).toBe(4);
   });
 });
 

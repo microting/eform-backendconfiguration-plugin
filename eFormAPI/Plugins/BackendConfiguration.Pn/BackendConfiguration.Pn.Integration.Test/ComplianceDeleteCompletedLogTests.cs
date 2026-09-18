@@ -202,10 +202,21 @@ public class ComplianceDeleteCompletedLogTests : TestBaseSetup
         await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
         await ItemsPlanningPnDbContext.SaveChangesAsync();
 
+        // A report headline, because Rapport excludes headline-less tasks (#1301)
+        // and this fixture asserts on what Rapport shows.
+        var headline = new PlanningTag
+        {
+            Name = $"DeleteLog headline {Guid.NewGuid()}",
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await ItemsPlanningPnDbContext.PlanningTags.AddAsync(headline);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
         var arp = new AreaRulePlanning
         {
             AreaRuleId = areaRule.Id, PropertyId = property.Id, AreaId = area.Id,
             ItemPlanningId = planning.Id, StartDate = startDate, Status = true,
+            ItemPlanningTagId = headline.Id,
             RepeatType = 2, RepeatEvery = 1, RepeatWeekdaysCsv = "1", DayOfWeek = 1,
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         };
@@ -395,6 +406,11 @@ public class ComplianceDeleteCompletedLogTests : TestBaseSetup
     /// The completed history must stay in the reports, which is why the marker cannot be
     /// "PlanningCaseSite Removed". Simulated by applying exactly those soft-deletes: the
     /// real property/area delete paths also drive folders, entity groups and the platform.
+    /// <para>
+    /// Since #1301 the row is NOT in Rapport: with its AreaRulePlanning removed it has no
+    /// live ARP and therefore no report headline, and Rapport (and its export) exclude
+    /// headline-less tasks by product decision. Detaljer and Oversigt keep it.
+    /// </para>
     /// </summary>
     [Test]
     public async Task CompletedLog_AfterPropertyOrAreaDeleteRemovedItsPlanningCaseSite_StaysVisible()
@@ -412,7 +428,8 @@ public class ComplianceDeleteCompletedLogTests : TestBaseSetup
         ClearTrackers();
 
         Assert.That(await DetaljerIds(core, occ.PropertyId), Does.Contain(occ.ComplianceId), "Detaljer");
-        Assert.That(await RapportIds(core, occ.PropertyId), Does.Contain(occ.ComplianceId), "Rapport");
+        Assert.That(await RapportIds(core, occ.PropertyId), Does.Not.Contain(occ.ComplianceId),
+            "Rapport: no live ARP means no report headline, which Rapport excludes (#1301)");
         Assert.That(await Oversigt(core, occ.PropertyId), Is.EqualTo((1, 1)), "Oversigt (Total, Done)");
     }
 

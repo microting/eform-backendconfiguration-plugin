@@ -749,7 +749,6 @@ export const plPL = {
   'Update period': 'Aktualizuj okres',
   'Select a period and click Update period': 'Wybierz okres i kliknij Aktualizuj okres.',
   'Change a filter or click Overview to load the table': 'Zmień filtr lub kliknij Przegląd, aby załadować tabelę.',
-  'Without report headline': 'Bez nagłówka raportu',
   // Calendar toolbar (#1209): the calendars multi-select button label, its
   // bulk actions, and the accessible name of a calendar row's actions menu.
   '{{count}} calendars': '{{count}} kalendarzy',

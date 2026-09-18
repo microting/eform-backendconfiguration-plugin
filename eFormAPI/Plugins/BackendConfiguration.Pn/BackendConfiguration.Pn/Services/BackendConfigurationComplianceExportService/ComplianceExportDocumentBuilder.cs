@@ -358,7 +358,6 @@ public static class ComplianceExportDocumentBuilder
             Period = period
         };
 
-        var withoutHeadlineLabel = localizationService.GetString("WithoutReportHeadline");
         var columnsUnavailableLabel = localizationService.GetString("ColumnsUnavailable");
         var caseLabel = localizationService.GetString("Case");
 
@@ -368,7 +367,13 @@ public static class ComplianceExportDocumentBuilder
 
         foreach (var group in groups ?? [])
         {
-            var headlineLabel = HeadlineLabel(group, withoutHeadlineLabel);
+            // #1301: tasks without a report headline are not part of the report.
+            // The service (EformColumns) already excludes them; skipping a
+            // headline-less group here too keeps the export honest should any
+            // other caller hand one in.
+            if (!group.HeadlineTagId.HasValue) continue;
+
+            var headlineLabel = HeadlineLabel(group);
             var caption = group.TagsCaption ?? string.Empty;
 
             // The section's FIRST table carries the caption, the headline and the
@@ -596,25 +601,20 @@ public static class ComplianceExportDocumentBuilder
     /// could not be resolved: tag ids live in the BC database and tag names in the
     /// items-planning one with no foreign key between them, so a row keeps the
     /// headline it actually carries and the group's <c>HeadlineName</c> is simply
-    /// null. Discriminating on the name would file such a group under "Uden
-    /// rapportoverskrift" — indistinguishable from the genuinely headline-less
-    /// fallback group the service sorts last precisely to keep the two apart —
-    /// giving two sections the same title and making the export disagree with the
-    /// screen, which renders <c>#{id}</c>.
+    /// null.
     /// </para>
     ///
     /// <para>
     /// A named group with no resolvable name is therefore labelled
     /// <c>#{HeadlineTagId}</c> — visibly not a NAME, so it cannot be mistaken for
     /// one, distinct from every other group, and naming the id a reader can look
-    /// the tag up by. Only the group with NO headline id at all gets the localised
-    /// "Uden rapportoverskrift".
+    /// the tag up by — the same form the screen renders. Groups with NO headline
+    /// id never reach this method (#1301: they are skipped in
+    /// <see cref="BuildReport"/>).
     /// </para>
     /// </summary>
-    private static string HeadlineLabel(ComplianceReportHeadlineGroupModel group, string withoutHeadlineLabel)
+    private static string HeadlineLabel(ComplianceReportHeadlineGroupModel group)
     {
-        if (!group.HeadlineTagId.HasValue) return withoutHeadlineLabel;
-
         return string.IsNullOrWhiteSpace(group.HeadlineName)
             ? $"#{group.HeadlineTagId.Value}"
             : group.HeadlineName;

@@ -749,7 +749,6 @@ export const huHU = {
   'Update period': 'Időszak frissítése',
   'Select a period and click Update period': 'Válasszon időszakot, majd kattintson az Időszak frissítése gombra.',
   'Change a filter or click Overview to load the table': 'Módosítson egy szűrőt, vagy kattintson az Áttekintés gombra a táblázat betöltéséhez.',
-  'Without report headline': 'Jelentéscím nélkül',
   // Calendar toolbar (#1209): the calendars multi-select button label, its
   // bulk actions, and the accessible name of a calendar row's actions menu.
   '{{count}} calendars': '{{count}} naptár',

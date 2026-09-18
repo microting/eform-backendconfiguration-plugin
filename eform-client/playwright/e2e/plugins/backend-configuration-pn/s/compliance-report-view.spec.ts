@@ -20,7 +20,7 @@ import {
  * `compliance-overview.spec.ts` needs, and it would still assert nothing the
  * unit spec does not already pin harder. `compliance-report-sections.spec.ts`
  * owns the row-level rules (a missing cell key renders the en dash IN PLACE, a
- * named-but-unnamed headline is `#{id}` and not "Uden rapportoverskrift", a
+ * named-but-unnamed headline is `#{id}`, a headline-less group is dropped, a
  * section whose templates all lack a schema keeps its cases) as pure
  * functions, with no database behind them.
  *
@@ -28,7 +28,9 @@ import {
  * installation: the meta line, its `dd.MM.yyyy` period format, the empty-result
  * wording, and — for whatever sections the installation happens to render —
  * the caption-above-heading section structure, an eForm sub-heading over every
- * table, and the headline-less fallback section last.
+ * table, and NO headline-less section (#1301: tasks without a report
+ * headline are excluded from Rapport — pinned server-side by
+ * `ComplianceReportEformColumnsTests`).
  *
  * The #1276 layout — a headline answered on TWO eForms is one heading over two
  * tables, and a CheckBox / Date answer is a tick / `dd.MM.yyyy` — is asserted
@@ -317,7 +319,7 @@ test.describe('Compliance — Rapport view', () => {
     // suites in it create properties and tasks, so this installation MAY hold
     // answered cases. The empty state is asserted only when there are no
     // sections — and when there are, the far stronger assertion is available:
-    // every section is headed by a real report headline (or the fallback).
+    // every section is headed by a real report headline.
     const sections = page.locator('.compliance-report__section');
     if ((await sections.count()) === 0) {
       await expect(page.locator('#complianceReportEmpty')).toBeVisible();
@@ -329,7 +331,7 @@ test.describe('Compliance — Rapport view', () => {
     }
   });
 
-  test('every section is a caption above a headline, with the headline-less section last', async ({
+  test('every section is a caption above a headline, and there is no headline-less section (#1301)', async ({
     page,
   }) => {
     await goToRapport(page);
@@ -342,8 +344,7 @@ test.describe('Compliance — Rapport view', () => {
     //
     // Deliberately NOT `page.locator('text=Rapportoverskrift')` count 0 (the
     // pre-#1188 placeholder assertion): unquoted `text=` is a case-insensitive
-    // substring match, so the fallback heading `Uden rapportoverskrift` — and
-    // any real headline containing the word — would trip it.
+    // substring match, so any real headline containing the word would trip it.
     const sections = page.locator('.compliance-report__section');
     const count = await sections.count();
     if (count === 0) {
@@ -357,7 +358,7 @@ test.describe('Compliance — Rapport view', () => {
       // It is allowed to be empty — a headline whose tasks carry no other tags
       // has nothing to say there — but the element is always rendered.
       await expect(section.locator('.compliance-report__tag')).toHaveCount(1);
-      // The heading is the report headline, `#{id}` or the fallback — never
+      // The heading is the report headline or `#{id}` — never
       // blank, and never the eForm template name (which is what #1167 rendered).
       // ONE per section, however many eForms were answered under it (#1276).
       await expect(section.locator('.compliance-report__heading')).toHaveCount(1);
@@ -375,18 +376,56 @@ test.describe('Compliance — Rapport view', () => {
       }
     }
 
-    // The fallback section — tasks without a report headline — is keyed
-    // `hnone`, headed with the Danish fallback label, and ordered LAST by the
-    // server. Present only when the installation holds a headline-less
-    // answered case, so both assertions are conditional on its existence.
-    const fallback = page.locator('.compliance-report__section[data-section-key="hnone"]');
-    if ((await fallback.count()) > 0) {
-      await expect(fallback).toHaveCount(1);
-      await expect(fallback.locator('.compliance-report__heading')).toHaveText(
-        /^\s*Uden rapportoverskrift\s*$/,
-      );
-      await expect(sections.last()).toHaveAttribute('data-section-key', 'hnone');
-    }
+    // #1301: tasks without a report headline are not in Rapport. Pre-#1301
+    // they formed a fallback section keyed `hnone`, headed "Uden
+    // rapportoverskrift" and ordered last.
+    await expect(page.locator('.compliance-report__section[data-section-key="hnone"]')).toHaveCount(0);
+    await expect(
+      page.locator('.compliance-report__heading', { hasText: /^\s*Uden rapportoverskrift\s*$/ }),
+    ).toHaveCount(0);
+  });
+
+  test('a headline-less group in the response is not rendered and not counted (#1301)', async ({
+    page,
+  }) => {
+    // The server excludes headline-less tasks; the view drops such a group
+    // too, so a stale/other server cannot surface an unlabelled section.
+    // Mocked for the same reason as `routeHeadlineOnTwoEforms`.
+    const caseRow = (complianceId: number, title: string) => ({
+      complianceId, sdkCaseId: 5000 + complianceId, checkListId: 509,
+      tags: [], propertyId: 9, propertyName: 'Ejendom 9',
+      title, taskDate: '2026-05-13', completed: true,
+      doneAt: '2026-05-13T10:00:00', workerNames: [],
+      cells: {}, imagesCount: 0, images: [],
+    });
+    const template = (cases: unknown[]) => ({
+      checkListId: 509, checkListName: 'Flydelag', schemaUnavailable: false,
+      columns: [{ key: 'f12', fieldId: 12, label: 'KOMMENTAR', fieldType: 'Comment' }],
+      cases,
+    });
+    await page.route(EFORM_COLUMNS_ROUTE, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          message: '',
+          model: [
+            { headlineTagId: 8, headlineName: 'Headline 8', tagsCaption: '', templates: [template([caseRow(1, 'Med overskrift')])] },
+            { headlineTagId: null, headlineName: null, tagsCaption: 'Aa tag', templates: [template([caseRow(2, 'Uden overskrift')])] },
+          ],
+        }),
+      }),
+    );
+    await goToRapport(page);
+    await awaitRapportRendered(page);
+
+    const sections = page.locator('.compliance-report__section');
+    await expect(sections).toHaveCount(1, { timeout: UI_TIMEOUT });
+    await expect(sections.first()).toHaveAttribute('data-section-key', 'h8');
+    await expect(page.locator('.compliance-report__section[data-section-key="hnone"]')).toHaveCount(0);
+    await expect(page.locator('tbody tr', { hasText: 'Med overskrift' })).toHaveCount(1);
+    await expect(page.locator('tbody tr', { hasText: 'Uden overskrift' })).toHaveCount(0);
   });
 
   test('a headline answered on two eForms is ONE heading over one table per eForm, with ticks and formatted dates (#1276)', async ({

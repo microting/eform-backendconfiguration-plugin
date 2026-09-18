@@ -71,9 +71,19 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
     private int _uidCounter = 960_000;
     private string _sdkConnectionString = null!;
 
+    /// <summary>
+    /// The per-test DEFAULT report headline <see cref="SeedSeries"/> puts on every
+    /// series unless told otherwise. Since #1301 Rapport excludes headline-less
+    /// tasks, so a series seeded without one would vanish from every result. Created
+    /// lazily and reset per test (<see cref="CleanTables"/> drops all PlanningTags).
+    /// </summary>
+    private int? _defaultHeadlineId;
+
     [SetUp]
     public async Task CleanTables()
     {
+        _defaultHeadlineId = null;
+
         // FK-safe cleanup, children before parents, so each test starts from an
         // empty compliance/template world and group counts can be asserted as
         // absolute numbers.
@@ -539,8 +549,15 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         return (area.Id, property.Id);
     }
 
+    /// <summary>
+    /// Seeds Area → Property → AreaRule(+translation) → Planning → AreaRulePlanning.
+    /// <paramref name="withHeadline"/> (default) gives the ARP the per-test default
+    /// report headline — see <see cref="_defaultHeadlineId"/>; pass <c>false</c> to
+    /// seed a headline-less task, which Rapport excludes (#1301).
+    /// <see cref="SeedHeadline"/> overrides the default.
+    /// </summary>
     private async Task<(int ArpId, int PropertyId, int PlanningId, int AreaId, int AreaRuleId)> SeedSeries(
-        string propertyName, string title, DateTime startDate, int? eformId = 0)
+        string propertyName, string title, DateTime startDate, int? eformId = 0, bool withHeadline = true)
     {
         var (areaId, propertyId) = await SeedAreaAndProperty(propertyName);
 
@@ -575,6 +592,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
             ItemPlanningId = planning.Id,
             StartDate = DateTime.SpecifyKind(startDate, DateTimeKind.Utc), Status = true,
             RepeatType = 2, RepeatEvery = 1, RepeatWeekdaysCsv = "1", DayOfWeek = 1,
+            ItemPlanningTagId = withHeadline ? await DefaultHeadline() : null,
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         };
         await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(arp);
@@ -605,6 +623,9 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         await BackendConfigurationPnDbContext.SaveChangesAsync();
         return compliance.Id;
     }
+
+    private async Task<int> DefaultHeadline() =>
+        _defaultHeadlineId ??= await SeedTag("Standardoverskrift");
 
     private async Task<int> SeedTag(string name)
     {
@@ -1492,7 +1513,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         Assert.That(groups.Select(g => g.TagsCaption), Is.All.EqualTo(string.Empty));
         Assert.That(CasesOf(groups[0]).Single().ComplianceId, Is.EqualTo(complianceA));
         Assert.That(CasesOf(groups[1]).Single().ComplianceId, Is.EqualTo(complianceB));
-        Assert.That(groups.SelectMany(CasesOf).Select(c => c.CheckListId), Is.All.EqualTo(templateId));
+        Assert.That(groups.SelectMany(g => CasesOf(g)).Select(c => c.CheckListId), Is.All.EqualTo(templateId));
     }
 
     /// <summary>
@@ -1805,13 +1826,13 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
     }
 
     /// <summary>
-    /// Rows whose planning has NO headline land in the single fallback group
-    /// (<c>HeadlineTagId == null</c>, no name — the "Uden rapportoverskrift" label is
-    /// the consumer's), which sorts LAST even when its caption would sort first
-    /// (#1188 decision 3a / 5). Nothing silently disappears from a compliance report.
+    /// REGRESSION (#1301). A task created without a report headline is NOT part of
+    /// Rapport: no fallback "Uden rapportoverskrift" group, and its row is in no
+    /// group at all — even when its tags would caption it first. Pre-#1301 the row
+    /// formed a fallback group (<c>HeadlineTagId == null</c>) sorted last.
     /// </summary>
     [Test]
-    public async Task EformColumns_RowsWithoutHeadline_LandInTheFallbackGroupLast()
+    public async Task EformColumns_RowsWithoutHeadline_AreExcluded()
     {
         var core = await GetCore();
         var da = await Danish();
@@ -1828,32 +1849,227 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         var caseWithout = await SeedSdkCase(templateId, doneAt: today.AddDays(-2));
 
         var (arpWith, propWith, planWith, areaWith, _) = await SeedSeries("WithProp", "With", today.AddDays(-30));
-        var (arpWithout, propWithout, planWithout, areaWithout, _) = await SeedSeries("WithoutProp", "Without", today.AddDays(-30));
+        var (arpWithout, propWithout, planWithout, areaWithout, _) = await SeedSeries(
+            "WithoutProp", "Without", today.AddDays(-30), withHeadline: false);
         await SeedHeadline(arpWith, headline);
         await SeedArpTag(arpWith, lateTag);
         await SeedArpTag(arpWithout, earlyTag);
-        await SeedCompliance(planWith, propWith, areaWith, today.AddDays(-1), caseWith);
+        var complianceWith = await SeedCompliance(planWith, propWith, areaWith, today.AddDays(-1), caseWith);
         var complianceWithout = await SeedCompliance(planWithout, propWithout, areaWithout, today.AddDays(-2), caseWithout);
 
         var (from, to) = Window();
         var groups = await Run(core, da, from, to);
 
-        Assert.That(groups, Has.Count.EqualTo(2));
+        Assert.That(groups, Has.Count.EqualTo(1), "no fallback group for the headline-less row");
         Assert.That(groups[0].HeadlineTagId, Is.EqualTo(headline));
-        Assert.That(groups[0].TagsCaption, Is.EqualTo("Zz tag"));
+        Assert.That(groups[0].TagsCaption, Is.EqualTo("Zz tag"),
+            "the headline-less row's tag must not leak into another group's caption");
+        Assert.That(groups.Select(g => g.HeadlineTagId), Has.None.Null);
+        var complianceIds = groups.SelectMany(g => CasesOf(g)).Select(c => c.ComplianceId).ToList();
+        Assert.That(complianceIds, Is.EqualTo(new[] { complianceWith }).AsCollection);
+        Assert.That(complianceIds, Does.Not.Contain(complianceWithout));
+    }
 
-        var fallback = groups[1];
-        Assert.That(fallback.HeadlineTagId, Is.Null);
-        Assert.That(fallback.HeadlineName, Is.Null);
-        Assert.That(fallback.TagsCaption, Is.EqualTo("Aa tag"), "the fallback is last DESPITE its caption sorting first");
-        Assert.That(CasesOf(fallback).Single().ComplianceId, Is.EqualTo(complianceWithout));
-        Assert.That(groups.Sum(g => CasesOf(g).Count), Is.EqualTo(2));
+    /// <summary>
+    /// #1301: every shape of "no headline" is excluded — a null
+    /// <c>ItemPlanningTagId</c>, a cleared select stored as 0, and a planning whose
+    /// only AreaRulePlanning is removed (no live ARP, so <c>row.Arp</c> is null). A
+    /// headlined control row in the same window proves the window matched.
+    /// </summary>
+    [TestCase("null")]
+    [TestCase("zero")]
+    [TestCase("noLiveArp")]
+    public async Task EformColumns_EveryHeadlineLessShape_IsExcluded(string shape)
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var today = DateTime.UtcNow.Date;
+
+        var (templateId, childId) = await SeedTwoLevelTemplate("Skema", (da.Id, "Skema"));
+        await SeedField(childId, Constants.FieldTypes.Comment, 0, [(da.Id, "Felt")]);
+
+        var controlCase = await SeedSdkCase(templateId, doneAt: today.AddDays(-1));
+        var (_, controlProp, controlPlan, controlArea, _) = await SeedSeries("ControlProp", "Control", today.AddDays(-30));
+        var controlCompliance = await SeedCompliance(controlPlan, controlProp, controlArea, today.AddDays(-1), controlCase);
+
+        var excludedCase = await SeedSdkCase(templateId, doneAt: today.AddDays(-2));
+        var (arpId, propertyId, planningId, areaId, _) = await SeedSeries(
+            "ShapeProp", "Shape", today.AddDays(-30), withHeadline: shape != "null");
+        var arp = await BackendConfigurationPnDbContext!.AreaRulePlannings.SingleAsync(x => x.Id == arpId);
+        switch (shape)
+        {
+            case "zero":
+                arp.ItemPlanningTagId = 0;
+                await BackendConfigurationPnDbContext.SaveChangesAsync();
+                break;
+            case "noLiveArp":
+                // Keeps its (default) headline id; it is the ARP that is gone.
+                arp.WorkflowState = Constants.WorkflowStates.Removed;
+                await BackendConfigurationPnDbContext.SaveChangesAsync();
+                break;
+        }
+        var excludedCompliance = await SeedCompliance(planningId, propertyId, areaId, today.AddDays(-2), excludedCase);
+
+        var (from, to) = Window();
+        var groups = await Run(core, da, from, to);
+
+        var complianceIds = groups.SelectMany(g => CasesOf(g)).Select(c => c.ComplianceId).ToList();
+        Assert.That(complianceIds, Is.EqualTo(new[] { controlCompliance }).AsCollection);
+        Assert.That(complianceIds, Does.Not.Contain(excludedCompliance));
+        Assert.That(groups.Select(g => g.HeadlineTagId), Has.None.Null);
+    }
+
+    /// <summary>
+    /// #1301: a result made only of headline-less rows is EMPTY — not one fallback
+    /// section.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_OnlyHeadlineLessRows_YieldsNoGroups()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var today = DateTime.UtcNow.Date;
+
+        var (templateId, childId) = await SeedTwoLevelTemplate("Skema", (da.Id, "Skema"));
+        await SeedField(childId, Constants.FieldTypes.Comment, 0, [(da.Id, "Felt")]);
+
+        var caseId = await SeedSdkCase(templateId, doneAt: today.AddDays(-1));
+        var (_, propertyId, planningId, areaId, _) = await SeedSeries(
+            "LoneProp", "Lone", today.AddDays(-30), withHeadline: false);
+        var complianceId = await SeedCompliance(planningId, propertyId, areaId, today.AddDays(-1), caseId);
+
+        var (from, to) = Window();
+        var service = BuildService(core, da);
+        var groups = await Run(core, da, from, to);
+        Assert.That(groups, Is.Empty);
+
+        // Positive control: the row IS in the filtered set — Detaljer lists it.
+        var index = await service.Index(Request(from, to));
+        Assert.That(index.Success, Is.True, index.Message);
+        Assert.That(index.Model!.Entities.Select(e => e.ComplianceId), Does.Contain(complianceId));
+    }
+
+    /// <summary>
+    /// #1301 product decision: ONLY Rapport and its export exclude headline-less
+    /// tasks. Detaljer (<c>Index</c>) still lists them and Oversigt (<c>Overview</c>)
+    /// still counts them in its totals and percentage — neither goes through
+    /// <c>EformColumns</c>.
+    /// </summary>
+    [Test]
+    public async Task HeadlineLessTask_IsExcludedFromRapport_ButStillInDetaljerAndOversigt()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var today = DateTime.UtcNow.Date;
+
+        var (templateId, childId) = await SeedTwoLevelTemplate("Skema", (da.Id, "Skema"));
+        await SeedField(childId, Constants.FieldTypes.Comment, 0, [(da.Id, "Felt")]);
+
+        // Two series: one headlined, one not, each with one answered occurrence.
+        var withSeries = await SeedSeries("WithProp", "With", today.AddDays(-30));
+        var withoutSeries = await SeedSeries("WithoutProp", "Without", today.AddDays(-30), withHeadline: false);
+        var caseWith = await SeedSdkCase(templateId, doneAt: today.AddDays(-1));
+        var caseWithout = await SeedSdkCase(templateId, doneAt: today.AddDays(-2));
+        var complianceWith = await SeedCompliance(
+            withSeries.PlanningId, withSeries.PropertyId, withSeries.AreaId, today.AddDays(-1), caseWith);
+        var complianceWithout = await SeedCompliance(
+            withoutSeries.PlanningId, withoutSeries.PropertyId, withoutSeries.AreaId, today.AddDays(-2), caseWithout);
+
+        var (from, to) = Window();
+        var service = BuildService(core, da);
+
+        var rapport = await service.EformColumns(Request(from, to));
+        Assert.That(rapport.Success, Is.True, rapport.Message);
+        Assert.That(rapport.Model.SelectMany(g => CasesOf(g)).Select(c => c.ComplianceId),
+            Is.EqualTo(new[] { complianceWith }).AsCollection, "Rapport excludes the headline-less task");
+
+        var index = await service.Index(Request(from, to));
+        Assert.That(index.Success, Is.True, index.Message);
+        Assert.That(index.Model!.Entities.Select(e => e.ComplianceId),
+            Is.EquivalentTo(new[] { complianceWith, complianceWithout }), "Detaljer still lists both");
+
+        var overview = await service.Overview(new ComplianceReportOverviewRequestModel
+        {
+            DateFrom = from, DateTo = to, BoardIds = [], TagIds = [], SiteIds = []
+        });
+        Assert.That(overview.Success, Is.True, overview.Message);
+        Assert.That(overview.Model.Totals.Total, Is.EqualTo(2), "Oversigt still counts both");
+        Assert.That(overview.Model.Rows.Single(r => r.PropertyId == withoutSeries.PropertyId).Total,
+            Is.EqualTo(1), "the headline-less task's property row still counts it");
+    }
+
+    /// <summary>
+    /// REGRESSION (#1301): headline-less rows are dropped BEFORE the
+    /// <see cref="BackendConfigurationComplianceReportService.MaxRowsReturned"/> cap,
+    /// so they never consume it. Seeds <c>MaxRowsReturned</c> headline-less answered
+    /// rows that are all OLDER than one headlined row: the cap truncates the tail of
+    /// the date order, so filtering after the cap (or not at all) would spend the
+    /// whole budget on excluded rows and drop the one row the report must show.
+    /// Bulk-inserted: one SDK site, one template, 50 plannings × 100 deadlines
+    /// (Compliances is UNIQUE on (PlanningId, Deadline)).
+    /// </summary>
+    [Test]
+    public async Task EformColumns_HeadlineLessRows_DoNotConsumeTheRowCap()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var today = DateTime.UtcNow.Date;
+        const int perPlanning = 100;
+        var cap = BackendConfigurationComplianceReportService.MaxRowsReturned;
+        var plannings = (cap + perPlanning - 1) / perPlanning;
+
+        var (templateId, childId) = await SeedTwoLevelTemplate("Skema", (da.Id, "Skema"));
+        await SeedField(childId, Constants.FieldTypes.Comment, 0, [(da.Id, "Felt")]);
+        var siteId = await SeedSdkSite("cap-site");
+
+        // The headlined row: the NEWEST, so it sits at the very end of the order.
+        var headlinedCase = await SeedSdkCase(templateId, doneAt: today.AddDays(-1));
+        var headlined = await SeedSeries("CapHeadlinedProp", "Headlined", today.AddDays(-400));
+        var headlinedCompliance = await SeedCompliance(
+            headlined.PlanningId, headlined.PropertyId, headlined.AreaId, today.AddDays(-1), headlinedCase);
+
+        // `cap` headline-less answered rows, all older (days -2 .. -(perPlanning + 1)).
+        var seeded = 0;
+        for (var p = 0; p < plannings && seeded < cap; p++)
+        {
+            var series = await SeedSeries($"CapProp{p}", $"Cap{p}", today.AddDays(-400), withHeadline: false);
+            var count = Math.Min(perPlanning, cap - seeded);
+
+            var cases = Enumerable.Range(0, count).Select(i => new Case
+            {
+                SiteId = siteId, Status = 100, DoneAt = today.AddDays(-2 - i), CheckListId = templateId,
+                WorkflowState = Constants.WorkflowStates.Created
+            }).ToList();
+            await MicrotingDbContext!.Cases.AddRangeAsync(cases);
+            await MicrotingDbContext.SaveChangesAsync();
+
+            var compliances = cases.Select((c, i) => new Compliance
+            {
+                ItemName = "Cap item",
+                PlanningId = series.PlanningId, PropertyId = series.PropertyId, AreaId = series.AreaId,
+                Deadline = DateTime.SpecifyKind(today.AddDays(-2 - i), DateTimeKind.Utc),
+                StartDate = DateTime.SpecifyKind(today.AddDays(-9 - i), DateTimeKind.Utc),
+                MicrotingSdkCaseId = c.Id, MicrotingSdkeFormId = 0,
+                WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+            }).ToList();
+            await BackendConfigurationPnDbContext!.Compliances.AddRangeAsync(compliances);
+            await BackendConfigurationPnDbContext.SaveChangesAsync();
+            seeded += count;
+        }
+        Assert.That(seeded, Is.EqualTo(cap), "premise: the excluded rows alone fill the cap");
+
+        var groups = await Run(core, da, today.AddDays(-(perPlanning + 10)), today.AddDays(10));
+
+        var complianceIds = groups.SelectMany(g => CasesOf(g)).Select(c => c.ComplianceId).ToList();
+        Assert.That(complianceIds, Is.EqualTo(new[] { headlinedCompliance }).AsCollection,
+            "the headlined row must survive the cap: excluded rows may not consume it");
     }
 
     /// <summary>
     /// A headline id with NO <c>PlanningTags</c> row (the two databases share no
     /// foreign key) keeps its OWN group with a null name — the consumer renders
-    /// <c>#{id}</c> — and is never merged into the fallback group.
+    /// <c>#{id}</c> — and is NOT treated as headline-less: it stays in the report
+    /// (#1301 excludes only rows with no headline id at all).
     /// </summary>
     [Test]
     public async Task EformColumns_HeadlineIdWithoutPlanningTagsRow_KeepsItsOwnGroupWithNullName()
@@ -1870,7 +2086,8 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         var caseNone = await SeedSdkCase(templateId, doneAt: today.AddDays(-2));
 
         var (arpOrphan, propOrphan, planOrphan, areaOrphan, _) = await SeedSeries("OrphanProp", "Orphan", today.AddDays(-30));
-        var (_, propNone, planNone, areaNone, _) = await SeedSeries("NoneProp", "None", today.AddDays(-30));
+        var (_, propNone, planNone, areaNone, _) = await SeedSeries(
+            "NoneProp", "None", today.AddDays(-30), withHeadline: false);
         await SeedHeadline(arpOrphan, orphanHeadlineId);
         await SeedCompliance(planOrphan, propOrphan, areaOrphan, today.AddDays(-1), caseOrphan);
         await SeedCompliance(planNone, propNone, areaNone, today.AddDays(-2), caseNone);
@@ -1878,19 +2095,17 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         var (from, to) = Window();
         var groups = await Run(core, da, from, to);
 
-        Assert.That(groups, Has.Count.EqualTo(2));
+        Assert.That(groups, Has.Count.EqualTo(1));
         Assert.That(groups[0].HeadlineTagId, Is.EqualTo(orphanHeadlineId));
         Assert.That(groups[0].HeadlineName, Is.Null);
         Assert.That(CasesOf(groups[0]).Single().SdkCaseId, Is.EqualTo(caseOrphan));
-        Assert.That(groups[1].HeadlineTagId, Is.Null);
-        Assert.That(CasesOf(groups[1]).Single().SdkCaseId, Is.EqualTo(caseNone));
     }
 
     /// <summary>
     /// Section order (#1188 decision 5): by CAPTION, then headline name, then id —
     /// the PDF's sections run "Miljøtilsyn - Brand", "… - Dokumentation", … by the
     /// tag line, not by the headline. A headline with no tags (empty caption) sorts
-    /// ahead of the captioned ones; the fallback group is last regardless.
+    /// ahead of the captioned ones.
     /// </summary>
     [Test]
     public async Task EformColumns_Groups_OrderByCaptionThenHeadlineName()

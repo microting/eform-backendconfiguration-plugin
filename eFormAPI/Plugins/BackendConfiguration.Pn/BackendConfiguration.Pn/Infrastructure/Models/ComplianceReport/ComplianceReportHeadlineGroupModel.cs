@@ -49,10 +49,9 @@ public class ComplianceReportHeadlineGroupModel
     /// <summary>
     /// The headline's items-planning <c>PlanningTag</c> id
     /// (<c>AreaRulePlanning.ItemPlanningTagId</c> of the row's lowest-Id live
-    /// ARP), or <c>null</c> for the ONE fallback group holding every row whose
-    /// planning carries no headline. The fallback group is always LAST and its
-    /// label ("Uden rapportoverskrift", key <c>WithoutReportHeadline</c>) is the
-    /// consumer's — this API carries no Danish.
+    /// ARP). Never <c>null</c> in a response since #1301: rows whose planning
+    /// carries no headline are excluded from the report (and its export) rather
+    /// than collected in a fallback group. Kept nullable for wire compatibility.
     /// </summary>
     public int? HeadlineTagId { get; set; }
 
@@ -60,7 +59,7 @@ public class ComplianceReportHeadlineGroupModel
     /// The headline's <c>PlanningTag.Name</c>. <c>null</c> when
     /// <see cref="HeadlineTagId"/> has no <c>PlanningTags</c> row (the two live in
     /// different databases with no foreign key; the consumer renders
-    /// <c>#{id}</c>) and <c>null</c> for the fallback group.
+    /// <c>#{id}</c>).
     /// </summary>
     public string HeadlineName { get; set; }
 

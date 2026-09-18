@@ -64,8 +64,8 @@
     <!--
       The heading is the REPORT HEADLINE — the prototype's `Rapportoverskrift`
       was a real field all along, not a placeholder (#1188 reverses #1167's
-      "use the template name"). `Uden rapportoverskrift` for tasks without one,
-      `#{id}` for a headline whose tag name could not be resolved. The eForm
+      "use the template name"). `#{id}` for a headline whose tag name could not
+      be resolved; tasks without a headline are not in Rapport (#1301). The eForm
       name is NOT the heading: it titles each table below (#1276).
     -->
     <h3 class="compliance-report__heading">{{ section.headlineLabel }}</h3>

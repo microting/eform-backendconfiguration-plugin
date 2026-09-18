@@ -161,8 +161,9 @@ public class ExportLocalizationCompletenessTests
         "Done",
         "NotDone",
 
-        // ComplianceExportDocumentBuilder — Rapport (#1188 / #1192)
-        "WithoutReportHeadline",
+        // ComplianceExportDocumentBuilder — Rapport (#1188 / #1192). No
+        // "WithoutReportHeadline": #1301 removed the headline-less fallback group
+        // and its key.
         "ColumnsUnavailable",
         "Case",
         "SubReport",

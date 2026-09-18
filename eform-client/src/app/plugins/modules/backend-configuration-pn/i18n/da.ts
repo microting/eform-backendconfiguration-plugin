@@ -754,7 +754,6 @@ export const da = {
   'Sort by': 'Sortér efter',
   // Rapport view (#1167).
   'Completion date': 'Udført dato',
-  'Without report headline': 'Uden rapportoverskrift',
   'Columns unavailable': 'Kolonner utilgængelige',
   '1 image': '1 billede',
   '{{count}} images': '{{count}} billeder',

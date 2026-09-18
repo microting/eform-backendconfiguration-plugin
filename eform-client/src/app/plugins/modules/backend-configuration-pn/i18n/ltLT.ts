@@ -749,7 +749,6 @@ export const ltLT = {
   'Update period': 'Atnaujinti laikotarpį',
   'Select a period and click Update period': 'Pasirinkite laikotarpį ir spustelėkite „Atnaujinti laikotarpį“.',
   'Change a filter or click Overview to load the table': 'Pakeiskite filtrą arba spustelėkite „Apžvalga“, kad įkeltumėte lentelę.',
-  'Without report headline': 'Be ataskaitos antraštės',
   // Calendar toolbar (#1209): the calendars multi-select button label, its
   // bulk actions, and the accessible name of a calendar row's actions menu.
   '{{count}} calendars': '{{count}} kalendorių',
