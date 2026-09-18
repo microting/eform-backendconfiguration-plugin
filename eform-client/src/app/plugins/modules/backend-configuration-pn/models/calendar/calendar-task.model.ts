@@ -95,6 +95,14 @@ export interface CalendarTaskModel {
   sdkCaseId?: number | null;
   doneByName?: string | null;
   doneAt?: string | null;
+
+  // #1302 / #1140 — `tasks/index` only: the series' next rule occurrences
+  // ("YYYY-MM-DD", ascending, from UTC yesterday), computed server-side with
+  // the calendar's own occurrence iterators. On an index row `taskDate` is the
+  // SERIES START, so the task list opens its edit modal on the first of these
+  // that has not started yet (see resolveEditOccurrenceDate). Null/absent for
+  // one-off tasks and on every other endpoint.
+  upcomingOccurrenceDates?: string[] | null;
 }
 
 export interface CalendarTaskAttachment {

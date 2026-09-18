@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { AuthGuard, IsAdminGuard, PermissionGuard } from 'src/app/common/guards';
+import { AuthGuard, PermissionGuard } from 'src/app/common/guards';
 import {
   GoogleDriveAccountsComponent,
   GoogleDriveOAuthFinishComponent,
@@ -206,8 +206,13 @@ export const routes: Routes = [
           ),
       },
       {
+        // #1302 — open to every logged-in user (was IsAdminGuard). A `user`
+        // role gets the page without the batch UI (the page reads
+        // selectAuthIsAdmin); the batch endpoints stay admin-only server-side
+        // (TaskListController), rename/purge-orphan-tags are open to users
+        // (TaskListUserController), reads/edits go through CalendarController.
         path: 'task-list',
-        canActivate: [IsAdminGuard],
+        canActivate: [AuthGuard],
         loadChildren: () =>
           import('./modules/task-list/task-list.module').then(
             (m) => m.TaskListModule

@@ -1,9 +1,14 @@
+import {TestBed} from '@angular/core/testing';
+import {NO_ERRORS_SCHEMA} from '@angular/core';
+import {TranslateModule} from '@ngx-translate/core';
 import {
   buildTaskListRows,
   complianceSortKey,
   SORT_KEY_PREFIX,
+  TaskListTableComponent,
   toSortKey,
 } from './task-list-table.component';
+import {CalendarRepeatService} from '../../../calendar/services/calendar-repeat.service';
 import {CalendarTaskModel} from '../../../../models/calendar';
 import {CommonDictionaryModel, SharedTagModel} from 'src/app/common/models';
 
@@ -228,5 +233,44 @@ describe('buildTaskListRows', () => {
       const [apv] = build([makeTask({eformId: 101})]);
       expect(apv.eformName).toBe(`${SORT_KEY_PREFIX}apv kontor`);
     });
+  });
+});
+
+/**
+ * #1302 — the grid's checkbox column (mtx-grid row selection) is admin-only.
+ * `mtx-grid` is left unknown under NO_ERRORS_SCHEMA, so its inputs land as DOM
+ * properties on the element: this asserts exactly what the grid is handed.
+ */
+describe('TaskListTableComponent — checkbox column gating (#1302)', () => {
+  const render = async (isAdmin: boolean | undefined) => {
+    await TestBed.configureTestingModule({
+      declarations: [TaskListTableComponent],
+      imports: [TranslateModule.forRoot()],
+      providers: [{provide: CalendarRepeatService, useValue: {}}],
+      schemas: [NO_ERRORS_SCHEMA],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(TaskListTableComponent);
+    if (isAdmin !== undefined) {
+      fixture.componentInstance.isAdmin = isAdmin;
+    }
+    fixture.detectChanges();
+    return fixture.nativeElement.querySelector('#taskListGrid') as any;
+  };
+
+  it('admin: rows are selectable (checkbox column shown)', async () => {
+    const grid = await render(true);
+    expect(grid.rowSelectable).toBe(true);
+    expect(grid.multiSelectable).toBe(true);
+  });
+
+  it('user: no row selection (checkbox column hidden)', async () => {
+    const grid = await render(false);
+    expect(grid.rowSelectable).toBe(false);
+    expect(grid.multiSelectable).toBe(false);
+  });
+
+  it('defaults to NOT selectable when the role is not passed (fail closed)', async () => {
+    const grid = await render(undefined);
+    expect(grid.rowSelectable).toBe(false);
   });
 });

@@ -110,6 +110,13 @@ export class TaskListTableComponent implements OnChanges {
   @Input() planningTags: SharedTagModel[] = [];
   /** #1194 — true while the page's `tasks/index` request is in flight; drives mtx-grid's own `[loading]` bar. */
   @Input() loading = false;
+  /**
+   * #1302 — the checkbox column (mtx-grid row selection) is admin-only: a
+   * `user` has no batch actions to select rows for. The page reads the role
+   * ONCE before the first render and never changes it, so this input never
+   * flips afterwards (a later change would rebuild mtx-grid's SelectionModel).
+   */
+  @Input() isAdmin = false;
   @Output() editTask = new EventEmitter<CalendarTaskModel>();
   @Output() selectionChanged = new EventEmitter<number[]>();
   /**

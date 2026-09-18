@@ -10,7 +10,8 @@
       (propertyChanged)="onPropertyChanged($event)">
     </app-task-list-filters>
     <div class="task-list-toolbar">
-      <mat-form-field>
+      <!-- #1302 — batch UI is admin-only (see `isAdmin` in the .ts). -->
+      <mat-form-field *ngIf="isAdmin">
         <mat-label>{{ 'Batch action' | translate }}</mat-label>
         <mtx-select id="taskListBatchAction"
                     [items]="batchActions"
@@ -34,7 +35,7 @@
           </ng-template>
         </mtx-select>
       </mat-form-field>
-      <span id="taskListSelectionCount" *ngIf="selection.size > 0">
+      <span id="taskListSelectionCount" *ngIf="isAdmin && selection.size > 0">
         {{ selection.size }} {{ 'tasks selected' | translate }}
       </span>
       <!-- #1194 — FIRST element of the right-aligned group (its SCSS carries
@@ -61,6 +62,7 @@
       #taskListTable
       [tasks]="tasks" [properties]="properties" [boards]="boards"
       [eforms]="eforms" [planningTags]="tags" [loading]="loading"
+      [isAdmin]="isAdmin"
       (editTask)="onEditTask($event)"
       (renameTask)="onRenameTask($event)"
       (selectionChanged)="onSelectionChanged($event)">

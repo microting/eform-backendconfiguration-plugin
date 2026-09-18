@@ -87,4 +87,17 @@ public class CalendarTaskResponseModel
     /// </summary>
     public string? DoneByName { get; set; }
     public DateTime? DoneAt { get; set; }
+
+    /// <summary>
+    /// #1302 / #1140 — the series' next rule occurrences ("yyyy-MM-dd",
+    /// ascending, at most
+    /// BackendConfigurationCalendarService.UpcomingOccurrenceCount of them),
+    /// starting the day BEFORE today (UTC) so a browser west of UTC still gets
+    /// its own "today". Populated by the <c>tasks/index</c> endpoint only, and
+    /// only for a recurring series; null everywhere else. <c>TaskDate</c> on an
+    /// index row is the SERIES START, so the task list opens its edit modal on
+    /// the first of these whose start time is still ahead instead — otherwise
+    /// every series that started in the past opens read-only.
+    /// </summary>
+    public List<string>? UpcomingOccurrenceDates { get; set; }
 }
