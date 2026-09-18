@@ -771,4 +771,5 @@ export const ptPT = {
   '{{count}} selected': '{{count}} selecionados',
   'Teams and employees': 'Equipas e funcionários',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'O registro será excluído permanentemente, incluindo suas respostas e fotos. Esta ação não pode ser desfeita.',
+  'Move to calendar': 'Mover para o calendário',
 };

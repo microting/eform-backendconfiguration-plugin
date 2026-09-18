@@ -771,4 +771,5 @@ export const skSK = {
   '{{count}} selected': 'Vybraté: {{count}}',
   'Teams and employees': 'Tímy a zamestnanci',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Denník sa natrvalo odstráni vrátane odpovedí a fotografií. Túto akciu nie je možné vrátiť späť.',
+  'Move to calendar': 'Presunúť do kalendára',
 };

@@ -771,4 +771,5 @@ export const plPL = {
   '{{count}} selected': 'Wybrano: {{count}}',
   'Teams and employees': 'Zespoły i pracownicy',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Dziennik zostanie trwale usunięty, łącznie z odpowiedziami i zdjęciami. Tej czynności nie można cofnąć.',
+  'Move to calendar': 'Przenieś do kalendarza',
 };

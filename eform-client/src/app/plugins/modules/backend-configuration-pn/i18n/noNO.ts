@@ -771,4 +771,5 @@ export const noNO = {
   '{{count}} selected': '{{count}} valgt',
   'Teams and employees': 'Team og ansatte',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Loggen slettes permanent, inkludert svarene og bildene. Denne handlingen kan ikke angres.',
+  'Move to calendar': 'Flytt til kalender',
 };

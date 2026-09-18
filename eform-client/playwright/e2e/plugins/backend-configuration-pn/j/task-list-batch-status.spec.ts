@@ -60,8 +60,8 @@ import {
  * `describe.serial` — ST3-ST6 each mutate the state the next one reads.
  *
  * ST1: `setStatus` sits in the Opgaver/Tasks optgroup and is NOT disabled with
- *      NO property filter applied, while the four property-scoped actions still
- *      are (4 disabled, unchanged by this issue).
+ *      NO property filter applied, while the five property-scoped actions still
+ *      are (5 disabled since #1297, unchanged by this issue).
  * ST2: opening the modal lists BOTH selected tasks in `#batchModalTaskList`.
  * ST3: the modal opens with neither radio checked, Save disabled and NO warning;
  *      picking "dimmed" enables Save and reveals the warning; picking "visible"
@@ -188,7 +188,7 @@ test.describe.serial('Task list — batch activate / deactivate', () => {
 
   // =======================================================================
   // ST1 — the action is offered in the Opgaver group and is selectable with NO
-  // property filter. Asserted alongside the still-disabled count of 4, so this
+  // property filter. Asserted alongside the still-disabled count of 5, so this
   // would fail just as loudly if the gating logic collapsed and everything
   // became enabled for the wrong reason.
   // =======================================================================
@@ -210,9 +210,10 @@ test.describe.serial('Task list — batch activate / deactivate', () => {
     await expect(option).toHaveCount(1);
     expect((await option.getAttribute('class')) ?? '').not.toContain('ng-option-disabled');
 
-    // Only the four property-scoped actions are grayed out here; setStatus is
-    // not one of them, and adding it must not have changed that count.
-    expect(await taskListPage.countDisabledBatchActions()).toBe(4);
+    // Only the five property-scoped actions (assign/reassign/addWorker/copy and
+    // #1297's moveToBoard) are grayed out here; setStatus is not one of them,
+    // and adding it must not have changed that count.
+    expect(await taskListPage.countDisabledBatchActions()).toBe(5);
     await page.keyboard.press('Escape');
   });
 

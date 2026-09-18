@@ -1731,6 +1731,17 @@ public class BackendConfigurationCalendarService(
                     : currentFolder.AreaRuleFolderId;
             }
 
+            // #1297 — defence in depth: every scope below writes updateModel.BoardId
+            // verbatim (CalendarConfiguration.BoardId for "all"/"thisAndFollowing",
+            // CalendarOccurrenceException.BoardId for "this"), so a stale or
+            // crafted id of ANOTHER property's calendar would silently land here.
+            // Checked before any scope handler writes anything.
+            var boardRejection = await ValidateBoardBelongsToPropertyAsync(updateModel);
+            if (boardRejection != null)
+            {
+                return boardRejection;
+            }
+
             // Scope-aware edit (issue #885). "this"/"thisAndFollowing" must NOT
             // relocate the series anchor (which the task wizard's StartDate
             // write does); they record per-occurrence overrides on a
@@ -2579,6 +2590,63 @@ public class BackendConfigurationCalendarService(
 
         return new OperationResult(true,
             localizationService.GetString("CalendarTaskUpdatedSuccessfully"));
+    }
+
+    // #1297 — rejects an UpdateTask whose BoardId is a calendar of a DIFFERENT
+    // property than the one the task is saved on (updateModel.PropertyId — the
+    // wizard moves the task there), or a removed calendar.
+    //
+    // Deliberately narrow, so it can only ever refuse the mismatch it exists for:
+    //  * Only when the edit CHANGES the board or the property. A plain
+    //    round-trip (every task-list batch action sends BuildUpdateModel's
+    //    stored BoardId back unchanged) must never start failing because of
+    //    legacy data this guard did not create.
+    //  * An id with NO CalendarBoards row is let through, as before: a null
+    //    BoardId is legal and several callers pass placeholder ids; what this
+    //    closes is a real board being filed under the wrong property.
+    private async Task<OperationResult> ValidateBoardBelongsToPropertyAsync(
+        CalendarTaskUpdateRequestModel updateModel)
+    {
+        if (!updateModel.BoardId.HasValue)
+        {
+            return null;
+        }
+
+        var current = await backendConfigurationPnDbContext.AreaRulePlannings
+            .Where(x => x.Id == updateModel.Id)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Select(x => new { x.PropertyId })
+            .FirstOrDefaultAsync();
+        var currentBoardId = await backendConfigurationPnDbContext.CalendarConfigurations
+            .Where(x => x.AreaRulePlanningId == updateModel.Id)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Select(x => x.BoardId)
+            .FirstOrDefaultAsync();
+        var boardChanged = currentBoardId != updateModel.BoardId;
+        var propertyChanged = current != null && current.PropertyId != updateModel.PropertyId;
+        if (!boardChanged && !propertyChanged)
+        {
+            return null;
+        }
+
+        var board = await backendConfigurationPnDbContext.CalendarBoards
+            .AsNoTracking()
+            .Where(x => x.Id == updateModel.BoardId.Value)
+            .Select(x => new { x.PropertyId, x.WorkflowState })
+            .FirstOrDefaultAsync();
+        if (board == null)
+        {
+            return null;
+        }
+
+        if (board.WorkflowState == Constants.WorkflowStates.Removed)
+        {
+            return new OperationResult(false, localizationService.GetString("SelectedBoardNotFound"));
+        }
+
+        return board.PropertyId != updateModel.PropertyId
+            ? new OperationResult(false, localizationService.GetString("SelectedBoardDoesNotBelongToTaskProperty"))
+            : null;
     }
 
     // Overlay a per-occurrence exception's field overrides (#885) onto a

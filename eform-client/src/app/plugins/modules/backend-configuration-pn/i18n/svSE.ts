@@ -771,4 +771,5 @@ export const svSE = {
   '{{count}} selected': '{{count}} valda',
   'Teams and employees': 'Team och anställda',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Loggen raderas permanent, inklusive svar och foton. Åtgärden kan inte ångras.',
+  'Move to calendar': 'Flytta till kalender',
 };

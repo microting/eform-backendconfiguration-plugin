@@ -35,6 +35,11 @@ public interface IBackendConfigurationTaskListService
     /// USER's language entry in the round-tripped <c>Translates</c> list.
     /// </summary>
     Task<OperationResult> Rename(TaskListRenameModel model);
+    /// <summary>
+    /// #1297 — moves every selected task to <c>model.BoardId</c>, which must be a
+    /// live board on the task's own property.
+    /// </summary>
+    Task<OperationResult> MoveToBoard(TaskListBatchMoveBoardModel model);
     Task<OperationResult> Copy(TaskListBatchCopyModel model);
     Task<OperationResult> Delete(TaskListBatchRequestModel model);
 }

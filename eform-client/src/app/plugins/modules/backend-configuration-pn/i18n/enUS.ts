@@ -894,4 +894,6 @@ export const enUS= {
   'Teams and employees': 'Teams and employees',
   // Compliance Rapport "Slet log" on a completed log (#1290): the SDK case goes too.
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'The log is deleted permanently, including its answers and photos. This action cannot be undone.',
+  // Task list batch action "Flyt til kalender" (#1297).
+  'Move to calendar': 'Move to calendar',
 };

@@ -25,6 +25,12 @@ export class TaskListBatchCopyRequest extends TaskListBatchRequest {
 export class TaskListBatchStartDateRequest extends TaskListBatchRequest { startDate: string; }
 
 /**
+ * #1297 — "Flyt til kalender". `boardId` is a calendar of the SAME property as
+ * the selected tasks; the server re-checks that per task.
+ */
+export class TaskListBatchMoveBoardRequest extends TaskListBatchRequest { boardId: number; }
+
+/**
  * #1126 — inline rename from the task-list grid row. `taskIds` always carries
  * exactly ONE id: the action is single-row, but it rides the batch rail so the
  * server reuses `BuildUpdateModel` -> `UpdateTask` and the name lands in BOTH
@@ -85,6 +91,14 @@ export class BackendConfigurationPnTaskListService {
   }
   copy(model: TaskListBatchCopyRequest): Observable<OperationResult> {
     return this.apiBaseService.post(`${TaskListMethods.Base}/copy`, model);
+  }
+  /**
+   * Moves every selected task to `model.boardId`. The tasks adopt that
+   * calendar's colour and every per-occurrence calendar override is cleared,
+   * so the whole series — its history included — follows.
+   */
+  moveToBoard(model: TaskListBatchMoveBoardRequest): Observable<OperationResult> {
+    return this.apiBaseService.post(`${TaskListMethods.Base}/move-to-board`, model);
   }
   /**
    * Re-anchors every selected task's series to `model.startDate`. The date may

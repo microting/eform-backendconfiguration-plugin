@@ -73,6 +73,14 @@ public class TaskListController(
     public async Task<OperationResult> Rename([FromBody] TaskListRenameModel model)
         => await Validated(model) ?? await taskListService.Rename(model);
 
+    /// <summary>
+    /// #1297 — "Flyt til kalender". Board existence is validated pre-loop in the
+    /// service, the board/property match per task.
+    /// </summary>
+    [HttpPost("move-to-board")]
+    public async Task<OperationResult> MoveToBoard([FromBody] TaskListBatchMoveBoardModel model)
+        => await Validated(model) ?? await taskListService.MoveToBoard(model);
+
     [HttpPost("copy")]
     public async Task<OperationResult> Copy([FromBody] TaskListBatchCopyModel model)
         => await Validated(model) ?? await taskListService.Copy(model);

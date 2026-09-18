@@ -15,7 +15,7 @@ import {
 /**
  * Task list BATCH-DROPDOWN GATING suite (backend-configuration-task-list-page
  * feature, shard y). Complements `x/task-list-page.spec.ts` PP9 (which
- * proves the 11-option/3-group shape, the 4-disabled/0-disabled counts, and
+ * proves the 12-option/3-group shape, the 5-disabled/0-disabled counts, and
  * that clicking a disabled option is a no-op) with three angles PP9 does
  * NOT cover, all read directly off `task-list-page.component.ts`/`.html`
  * while writing this suite:
@@ -175,7 +175,8 @@ test.describe('Task list — batch-action dropdown gating', () => {
 
   // =======================================================================
   // DG2 — gating recomputes live: single-property filter -> 0 disabled;
-  // clearing the SAME filter (no reload) -> back to 4 disabled.
+  // clearing the SAME filter (no reload) -> back to 5 disabled
+  // (assign/reassign/addWorker/copy + #1297's moveToBoard).
   // =======================================================================
   test('DG2: disabled count recomputes when the property filter is cleared without a reload', async ({ page }) => {
     const taskListPage = new TaskListPage(page);
@@ -203,7 +204,7 @@ test.describe('Task list — batch-action dropdown gating', () => {
     await taskListPage.selectRow(task);
 
     await taskListPage.openBatchActionPanel();
-    expect(await taskListPage.countDisabledBatchActions()).toBe(4);
+    expect(await taskListPage.countDisabledBatchActions()).toBe(5);
     await page.keyboard.press('Escape');
   });
 

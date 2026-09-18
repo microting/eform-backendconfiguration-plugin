@@ -36,6 +36,7 @@ import {BatchCopyModalComponent} from '../modals/batch-copy-modal/batch-copy-mod
 import {BatchStartDateModalComponent} from '../modals/batch-start-date-modal/batch-start-date-modal.component';
 import {BatchStatusModalComponent} from '../modals/batch-status-modal/batch-status-modal.component';
 import {BatchDeleteModalComponent} from '../modals/batch-delete-modal/batch-delete-modal.component';
+import {BatchBoardModalComponent} from '../modals/batch-board-modal/batch-board-modal.component';
 import {TaskListTagsComponent} from '../task-list-tags/task-list-tags.component';
 import {TaskListTableComponent} from '../task-list-table/task-list-table.component';
 
@@ -52,6 +53,7 @@ export type TaskListBatchAction =
   | 'copy'
   | 'changeStartDate'
   | 'setStatus'
+  | 'moveToBoard'
   | 'delete';
 
 interface TaskListBatchActionOption {
@@ -69,6 +71,8 @@ export interface TaskListBatchModalData {
   eforms?: {id: number; label: string}[];
   tags?: SharedTagModel[];
   properties?: CommonDictionaryModel[];
+  // #1297 — the page's property-scoped calendar list, for 'moveToBoard'.
+  boards?: CalendarBoardModel[];
 }
 
 @Component({
@@ -445,7 +449,7 @@ export class TaskListPageComponent implements OnInit {
     this.selection = new Set(ids);
   }
 
-  // Property-scoped actions (assign/reassign/addWorker/copy) require exactly one
+  // Property-scoped actions (assign/reassign/addWorker/copy/moveToBoard) require exactly one
   // selected property in the current filters — the option-lists they rely on
   // (workers, target property) are otherwise ambiguous or unavailable.
   private get singleSelectedPropertyId(): number | null {
@@ -473,9 +477,9 @@ export class TaskListPageComponent implements OnInit {
     const employees = this.translate.instant('Employees');
     const tasksGroup = this.translate.instant('Tasks');
     const deleteGroup = this.translate.instant('Delete');
-    // Mockup rule: all 11 options are always shown, grouped exactly as the mockup's
+    // Mockup rule: all options (11 in the mockup, 12 since #1297) are always shown, grouped exactly as the mockup's
     // three optgroups (Medarbejdere / Opgaver / Slet). Property-scoped actions
-    // (assign/reassign/addWorker/copy) are disabled — not removed — when no single
+    // (assign/reassign/addWorker/copy/moveToBoard) are disabled — not removed — when no single
     // property is filtered, since their option-lists (workers, target property) are
     // otherwise ambiguous or unavailable. ng-select reads `.disabled` directly off
     // each bound item, so disabling in place (rather than filtering) is sufficient
@@ -496,14 +500,20 @@ export class TaskListPageComponent implements OnInit {
       // the way assign/reassign/addWorker/copy do (those need a property-scoped
       // worker roster / target-property list). Do not add `propertyScoped`
       // here — `y/task-list-dropdown-gating.spec.ts` pins the disabled counts
-      // at 4 (no filter) / 0 (single property) precisely to catch that.
+      // at 5 (no filter) / 0 (single property) precisely to catch that.
       {id: 'changeStartDate', label: this.translate.instant('Change start date'), group: tasksGroup, disabled: false},
       // NEVER disabled either: Status is a per-planning flag like
       // setCompliance/changeStartDate, so it needs no single-property filter the
       // way assign/reassign/addWorker/copy do. Same pinning as above —
       // `y/task-list-dropdown-gating.spec.ts` holds the disabled counts at
-      // 4 (no filter) / 0 (single property).
+      // 5 (no filter) / 0 (single property).
       {id: 'setStatus', label: this.translate.instant('Activate / deactivate'), group: tasksGroup, disabled: false},
+      // #1297 — property-scoped like assign/reassign/addWorker/copy: the target
+      // list is `this.boards`, which only exists for a single filtered property,
+      // and a calendar belongs to exactly one property. So the disabled counts
+      // pinned by `y/task-list-dropdown-gating.spec.ts` are 5 (no filter) / 0
+      // (single property).
+      {id: 'moveToBoard', label: this.translate.instant('Move to calendar'), group: tasksGroup, disabled: propertyScoped},
       {id: 'delete', label: this.translate.instant('Delete selected'), group: deleteGroup, disabled: false},
     ];
     this._batchActionsCache = all;
@@ -582,6 +592,12 @@ export class TaskListPageComponent implements OnInit {
         // No extra option-lists either — the modal's whole input is one
         // two-valued radio group.
         component = BatchStatusModalComponent;
+        break;
+      case 'moveToBoard':
+        // `boards` is already scoped to the single filtered property the
+        // action requires (see `onPropertyChanged`).
+        data = {...data, boards: this.boards};
+        component = BatchBoardModalComponent;
         break;
       case 'delete':
         component = BatchDeleteModalComponent;

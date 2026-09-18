@@ -55,7 +55,7 @@ import {
  * `describe.serial` — BC4-BC6 each mutate the flag the next one reads.
  *
  * BC1: `setCompliance` sits in the Opgaver/Tasks optgroup and is NOT disabled
- *      with NO property filter applied, while the four property-scoped
+ *      with NO property filter applied, while the five property-scoped
  *      actions still are.
  * BC2: opening the modal lists BOTH selected tasks in `#batchModalTaskList`.
  * BC3: the modal opens with NEITHER radio checked and Save disabled; picking
@@ -178,7 +178,7 @@ test.describe.serial('Task list — batch set compliance', () => {
 
   // =======================================================================
   // BC1 — the action is offered in the Opgaver group and is selectable with
-  // NO property filter. Asserted alongside the still-disabled count of 4, so
+  // NO property filter. Asserted alongside the still-disabled count of 5, so
   // the test would fail just as loudly if the gating logic collapsed and
   // everything became enabled for the wrong reason.
   // =======================================================================
@@ -200,9 +200,9 @@ test.describe.serial('Task list — batch set compliance', () => {
     await expect(option).toHaveCount(1);
     expect((await option.getAttribute('class')) ?? '').not.toContain('ng-option-disabled');
 
-    // Only the four property-scoped actions are grayed out here; compliance
-    // is not one of them.
-    expect(await taskListPage.countDisabledBatchActions()).toBe(4);
+    // Only the five property-scoped actions (assign/reassign/addWorker/copy and
+    // #1297's moveToBoard) are grayed out here; compliance is not one of them.
+    expect(await taskListPage.countDisabledBatchActions()).toBe(5);
     await page.keyboard.press('Escape');
   });
 

@@ -7035,5 +7035,67 @@
       "el-GR": "Το αρχείο καταγραφής δεν μπορεί να διαγραφεί",
       "is-IS": "Ekki er hægt að eyða skránni"
     }
+  },
+  {
+    "Key": "SelectedBoardNotFound",
+    "LocalizedValue": {
+      "en-US": "The selected calendar was not found",
+      "da": "Den valgte kalender blev ikke fundet",
+      "de": "Der ausgewählte Kalender wurde nicht gefunden",
+      "uk-UA": "Вибраний календар не знайдено",
+      "pl-PL": "Nie znaleziono wybranego kalendarza",
+      "no-NO": "Den valgte kalenderen ble ikke funnet",
+      "sv-SE": "Den valda kalendern hittades inte",
+      "es-ES": "No se encontró el calendario seleccionado",
+      "fr-FR": "Le calendrier sélectionné est introuvable",
+      "it-IT": "Il calendario selezionato non è stato trovato",
+      "nl-NL": "De geselecteerde kalender is niet gevonden",
+      "pt-BR": "O calendário selecionado não foi encontrado",
+      "pt-PT": "O calendário selecionado não foi encontrado",
+      "fi-FI": "Valittua kalenteria ei löytynyt",
+      "et-ET": "Valitud kalendrit ei leitud",
+      "lv-LV": "Atlasītais kalendārs netika atrasts",
+      "lt-LT": "Pasirinktas kalendorius nerastas",
+      "ro-RO": "Calendarul selectat nu a fost găsit",
+      "hr-HR": "Odabrani kalendar nije pronađen",
+      "sl-SL": "Izbranega koledarja ni bilo mogoče najti",
+      "cs-CZ": "Vybraný kalendář nebyl nalezen",
+      "sk-SK": "Vybraný kalendár sa nenašiel",
+      "hu-HU": "A kiválasztott naptár nem található",
+      "bg-BG": "Избраният календар не е намерен",
+      "el-GR": "Το επιλεγμένο ημερολόγιο δεν βρέθηκε",
+      "is-IS": "Valið dagatal fannst ekki"
+    }
+  },
+  {
+    "Key": "SelectedBoardDoesNotBelongToTaskProperty",
+    "LocalizedValue": {
+      "en-US": "The selected calendar does not belong to the task's property",
+      "da": "Den valgte kalender tilhører ikke opgavens ejendom",
+      "de": "Der ausgewählte Kalender gehört nicht zur Immobilie der Aufgabe",
+      "uk-UA": "Вибраний календар не належить до об'єкта завдання",
+      "pl-PL": "Wybrany kalendarz nie należy do nieruchomości zadania",
+      "no-NO": "Den valgte kalenderen tilhører ikke oppgavens eiendom",
+      "sv-SE": "Den valda kalendern tillhör inte uppgiftens fastighet",
+      "es-ES": "El calendario seleccionado no pertenece a la propiedad de la tarea",
+      "fr-FR": "Le calendrier sélectionné n'appartient pas à la propriété de la tâche",
+      "it-IT": "Il calendario selezionato non appartiene alla proprietà dell'attività",
+      "nl-NL": "De geselecteerde kalender hoort niet bij de locatie van de taak",
+      "pt-BR": "O calendário selecionado não pertence à propriedade da tarefa",
+      "pt-PT": "O calendário selecionado não pertence à propriedade da tarefa",
+      "fi-FI": "Valittu kalenteri ei kuulu tehtävän kiinteistöön",
+      "et-ET": "Valitud kalender ei kuulu ülesande kinnistule",
+      "lv-LV": "Atlasītais kalendārs nepieder uzdevuma īpašumam",
+      "lt-LT": "Pasirinktas kalendorius nepriklauso užduoties nuosavybei",
+      "ro-RO": "Calendarul selectat nu aparține proprietății sarcinii",
+      "hr-HR": "Odabrani kalendar ne pripada nekretnini zadatka",
+      "sl-SL": "Izbrani koledar ne pripada nepremičnini naloge",
+      "cs-CZ": "Vybraný kalendář nepatří k nemovitosti úkolu",
+      "sk-SK": "Vybraný kalendár nepatrí k nehnuteľnosti úlohy",
+      "hu-HU": "A kiválasztott naptár nem tartozik a feladat ingatlanához",
+      "bg-BG": "Избраният календар не принадлежи към имота на задачата",
+      "el-GR": "Το επιλεγμένο ημερολόγιο δεν ανήκει στο ακίνητο της εργασίας",
+      "is-IS": "Valið dagatal tilheyrir ekki fasteign verkefnisins"
+    }
   }
 ]

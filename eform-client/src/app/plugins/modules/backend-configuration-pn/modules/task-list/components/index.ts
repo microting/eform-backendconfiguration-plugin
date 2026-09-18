@@ -10,3 +10,4 @@ export * from './modals/batch-copy-modal/batch-copy-modal.component';
 export * from './modals/batch-start-date-modal/batch-start-date-modal.component';
 export * from './modals/batch-status-modal/batch-status-modal.component';
 export * from './modals/batch-delete-modal/batch-delete-modal.component';
+export * from './modals/batch-board-modal/batch-board-modal.component';

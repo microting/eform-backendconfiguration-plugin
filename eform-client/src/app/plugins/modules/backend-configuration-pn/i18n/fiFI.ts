@@ -771,4 +771,5 @@ export const fiFI = {
   '{{count}} selected': '{{count}} valittu',
   'Teams and employees': 'Tiimit ja työntekijät',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Loki poistetaan pysyvästi, vastaukset ja kuvat mukaan lukien. Tätä toimintoa ei voi perua.',
+  'Move to calendar': 'Siirrä kalenteriin',
 };

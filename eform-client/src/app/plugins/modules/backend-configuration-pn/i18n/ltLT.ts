@@ -771,4 +771,5 @@ export const ltLT = {
   '{{count}} selected': 'Pasirinkta: {{count}}',
   'Teams and employees': 'Komandos ir darbuotojai',
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Žurnalas ištrinamas visam laikui, įskaitant jame esančius atsakymus ir nuotraukas. Šio veiksmo atšaukti negalima.',
+  'Move to calendar': 'Perkelti į kalendorių',
 };
