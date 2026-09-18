@@ -218,11 +218,106 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     this.propertiesService.getAllPropertiesDictionary().subscribe(res => {
       if (res && res.success) {
         this.properties = res.model;
-        if (this.properties.length > 0 && !this.currentPropertyId) {
+        if (this.properties.length === 0) return;
+        const storedPropertyId = this.currentPropertyId;
+        if (storedPropertyId && this.properties.some(p => p.id === storedPropertyId)) {
+          // Re-entry (#1292): the calendar filters live in a module-level store
+          // that outlives this component, so coming back to Kalender inside the
+          // SPA finds a property already selected — but this instance is new,
+          // and its boards/employees/tasks are empty. Only reload them; routing
+          // through onPropertySelected() would wipe the stored selections.
+          this.restorePropertySelection(storedPropertyId);
+        } else {
+          // First visit, or the stored property is no longer offered to this
+          // user (deleted, access removed): fall back to the first property and
+          // its default calendar, exactly like a first visit.
           this.onPropertySelected(this.properties[0].id);
         }
       }
     });
+  }
+
+  /**
+   * The restore path (#1292; also the entry point #1303's saved settings go
+   * through): reloads everything scoped to a property that is ALREADY in the
+   * store — calendars, employees, then tasks — keeping the stored
+   * activeBoardIds/activeSiteIds/activeTeamIds instead of clearing them the way
+   * onPropertySelected() -> updatePropertyId() does, and without auto-selecting
+   * the default calendar over the stored choice.
+   *
+   * The stored selections are validated against the fresh lists as they land
+   * (see validateStoredBoardIds / validateStoredSiteIds / validateStoredTeamIds):
+   * ids that no longer exist are dropped, so a deleted calendar or a worker who
+   * left the property cannot silently narrow the grid to nothing.
+   *
+   * Callers that restore a property from elsewhere must first write it with
+   * CalendarStateService.restoreFilters(), so `currentPropertyId` already
+   * equals `propertyId` — the property guards in loadBoards/loadEmployees
+   * discard anything that does not match it.
+   */
+  restorePropertySelection(propertyId: number) {
+    // Not reachable with anything on screen today (the component is fresh on
+    // re-entry), but a restore is a property-scope change like any other: drop
+    // whatever is drawn and invalidate any task load still in flight.
+    this.clearTasks();
+    this.loadBoards(propertyId, false, undefined, true);
+    this.loadEmployees();
+  }
+
+  /**
+   * Keeps only stored calendar ids that exist in the freshly loaded `boards`.
+   * A stored selection that was non-empty and is now empty (every stored
+   * calendar deleted) falls back to the default calendar, as on a first visit,
+   * rather than turning into "all calendars". An empty stored selection is a
+   * deliberate "all calendars" and is kept.
+   */
+  private validateStoredBoardIds() {
+    const stored = this.activeBoardIds;
+    if (stored.length === 0) return;
+    const kept = stored.filter(id => this.boards.some(b => b.id === id));
+    if (kept.length === stored.length) return;
+    if (kept.length === 0 && this.boards.length > 0) {
+      const defaultBoard = this.boards.reduce((min, b) => b.id < min.id ? b : min);
+      this.stateService.restoreFilters({activeBoardIds: [defaultBoard.id]});
+      this.lastActivatedBoardId = defaultBoard.id;
+    } else {
+      this.stateService.restoreFilters({activeBoardIds: kept});
+    }
+  }
+
+  /**
+   * Keeps only stored worker (site) ids that are among the property's fresh
+   * `employees`. Runs whenever the employee list loads successfully — on a
+   * property switch the selection was just cleared, so it is a no-op there.
+   * The employee and calendar loads race, so the task load may already have
+   * gone out with the stale ids; if it has (the scope key is set), reload.
+   */
+  private validateStoredSiteIds() {
+    const stored = this.activeSiteIds;
+    if (stored.length === 0) return;
+    const kept = stored.filter(id => this.employees.some(e => e.id === id));
+    if (kept.length === stored.length) return;
+    this.stateService.restoreFilters({activeSiteIds: kept});
+    if (this.loadedScopeKey !== null) {
+      this.loadTasks();
+    }
+  }
+
+  /**
+   * Same as validateStoredSiteIds, for the worker groups (teams). The team
+   * list is not property-scoped and loads independently of the property, so
+   * it validates on its own arrival and reloads only if a task load already
+   * went out with the stale ids.
+   */
+  private validateStoredTeamIds() {
+    const stored = this.activeTeamIds;
+    if (stored.length === 0) return;
+    const kept = stored.filter(id => this.teams.some(t => t.id === id));
+    if (kept.length === stored.length) return;
+    this.stateService.restoreFilters({activeTeamIds: kept});
+    if (this.loadedScopeKey !== null) {
+      this.loadTasks();
+    }
   }
 
   onPropertySelected(propertyId: number | null) {
@@ -258,8 +353,12 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   /**
    * `onSettled` runs on EVERY exit path — superseded and failed included — so a
    * caller can hold a latch across the reload without ever stranding it.
+   *
+   * `validateSelection` (the restore path, #1292) narrows the stored
+   * activeBoardIds to the freshly loaded calendars BEFORE the task load below,
+   * so the first request already goes out with valid ids.
    */
-  loadBoards(propertyId: number, autoSelectDefault = false, onSettled?: () => void) {
+  loadBoards(propertyId: number, autoSelectDefault = false, onSettled?: () => void, validateSelection = false) {
     this.calendarService.getBoards(propertyId).subscribe(res => {
       // Superseded: the user picked another property while this was in flight.
       // Everything below is scoped to `propertyId` — the calendars themselves,
@@ -294,6 +393,8 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         const defaultBoard = this.boards.reduce((min, b) => b.id < min.id ? b : min);
         this.stateService.setActiveBoardIds([defaultBoard.id]);
         this.lastActivatedBoardId = defaultBoard.id;
+      } else if (validateSelection) {
+        this.validateStoredBoardIds();
       }
       this.propertiesService.getLinkedFolderDtos(propertyId).subscribe(folderRes => {
         // Same race, one level deeper: this call outlives its loadBoards()
@@ -355,7 +456,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   // all is not listed until someone is added to it.
   loadTeams() {
     this.workerTagsService.getWorkerTags().subscribe(res => {
-      if (res && res.success) this.teams = res.model;
+      if (res && res.success) {
+        this.teams = res.model;
+        this.validateStoredTeamIds();
+      }
     });
   }
 
@@ -365,7 +469,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     // user has already left must not repaint (or, on its failure branch,
     // clear) the employee list belonging to the current one. Property identity
     // is the whole staleness axis here — loadEmployees() is only ever called
-    // from onPropertySelected() — so it is the guard, rather than a ticket
+    // from onPropertySelected() and restorePropertySelection() — so it is the guard, rather than a ticket
     // from loadSeq, which is the TASK sequence and is bumped by every week
     // step and every clearTasks().
     const propertyId = this.currentPropertyId;
@@ -392,6 +496,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
           name: u.fullName || `${u.userFirstName} ${u.userLastName}`.trim() || u.siteName,
           description: '',
         } as CommonDictionaryModel));
+        this.validateStoredSiteIds();
       } else {
         // Same failure mode as loadBoards: the list is property-scoped, and the
         // create-modal would otherwise offer the previous property's

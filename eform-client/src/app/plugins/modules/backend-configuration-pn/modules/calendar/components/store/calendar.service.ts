@@ -34,6 +34,21 @@ export class CalendarStateService {
     this.dispatch({propertyId, activeBoardIds: [], activeSiteIds: [], activeTeamIds: [], activeTagNames: []});
   }
 
+  /**
+   * The restore path (#1292): writes a property together with the selections
+   * that belong to it in ONE dispatch, WITHOUT the clearing `updatePropertyId`
+   * does. For re-applying a known-good (or about-to-be-validated) filter set —
+   * re-entering the calendar within the SPA, restoring saved settings, or
+   * narrowing stored selections to what still exists — never for a user
+   * picking a different property, which must go through `updatePropertyId`.
+   *
+   * Only the fields passed are written; anything omitted keeps its value.
+   * `viewMode` is deliberately not part of the restore surface.
+   */
+  restoreFilters(filters: Partial<Omit<CalendarFiltersModel, 'viewMode'>>) {
+    this.dispatch({...filters});
+  }
+
   updateViewMode(viewMode: 'week' | 'day' | 'schedule' | 'month') {
     this.dispatch({viewMode});
   }
@@ -78,7 +93,8 @@ export class CalendarStateService {
    *
    * Scoped to the assignee filter on purpose: the calendars (`activeBoardIds`)
    * and the planning tags (`activeTagNames`) are separate controls and must
-   * survive it. `updatePropertyId` remains the only thing that clears everything.
+   * survive it. `updatePropertyId` remains the only thing that clears everything
+   * (apart from logout, which resets the whole calendar state in the reducer).
    */
   clearAssignees() {
     this.dispatch({activeSiteIds: [], activeTeamIds: []});
