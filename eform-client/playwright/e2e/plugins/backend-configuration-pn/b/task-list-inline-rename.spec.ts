@@ -290,7 +290,18 @@ test.describe.serial('Task list — inline rename of the task name', () => {
 
     await taskListPage.startInlineRename(originalName);
 
-    const state = await page.evaluate((id) => {
+    // POLLED, not sampled once. The editor is focused + text-selected by
+    // `TaskListTableComponent.focusEditor()` in a `setTimeout` macrotask that
+    // runs AFTER the change-detection pass which renders the input, whereas
+    // `startInlineRename()` returns as soon as the input is visible. Chrome
+    // may service the next DevTools `Runtime.evaluate` before that timer, so a
+    // single read could see the input rendered and seeded (ngModel writes its
+    // value in a microtask) but not yet focused — CI shard b failed exactly
+    // like that on stable a0045d830 and on #1298, while the failure snapshot
+    // showed the same input `[active]` moments later. The state must still
+    // converge to focused + fully selected within 5s, so a broken autofocus
+    // still fails here.
+    await expect.poll(() => page.evaluate((id) => {
       const input = document.getElementById(`taskListTitleInput-${id}`) as HTMLInputElement | null;
       return input === null ? null : {
         value: input.value,
@@ -298,13 +309,12 @@ test.describe.serial('Task list — inline rename of the task name', () => {
         selectionStart: input.selectionStart,
         selectionEnd: input.selectionEnd,
       };
-    }, arpId);
-
-    expect(state).not.toBeNull();
-    expect(state!.value).toBe(originalName);
-    expect(state!.focused).toBe(true);
-    expect(state!.selectionStart).toBe(0);
-    expect(state!.selectionEnd).toBe(originalName.length);
+    }, arpId), { timeout: 5000 }).toEqual({
+      value: originalName,
+      focused: true,
+      selectionStart: 0,
+      selectionEnd: originalName.length,
+    });
 
     // The read-only title is replaced, not merely covered.
     await expect(page.locator(`#taskListTitleText-${arpId}`)).toHaveCount(0);
