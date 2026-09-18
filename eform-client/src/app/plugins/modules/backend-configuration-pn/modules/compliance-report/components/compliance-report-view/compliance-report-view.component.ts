@@ -852,18 +852,25 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
    * template segment is the ROW's own `checkListId` — the case's fact, which
    * since #1276 also equals its table's.
    *
-   * The cost, accepted: a full navigation discards the fetched result. The
-   * filters survive (the state service lives on the cached lazy module ref),
-   * but `enterPage()` forces Rapport back to its un-fetched state, so the
-   * return lands on the placeholder until a filter change re-queries it (or
-   * `Oversigt` resets). Going back to a modal is no longer a flag flip: #1205
-   * deleted the component, so it would have to be re-created — and only once
-   * the row DTO carries a real site id.
+   * A full navigation destroys this view and its fetched result; the filters
+   * survive (the state service lives on the cached lazy module ref). What
+   * brings the user back to the SAME result after `Gem` (#1291) is the return
+   * context stored here: the mode, page and `showAll` on screen, and this
+   * row's key. The case page, on a successful save, navigates to
+   * `reverseRoute` with `?highlightId={sdkCaseId}`; `enterPage()` sees both,
+   * re-fetches without resetting the page, and this view — recreated —
+   * lands on the row after the response renders (`landOnRow`: expand its
+   * table if the row budget collapsed it, scroll it into view, highlight it
+   * ~3 s). Back WITHOUT saving carries no `highlightId`, so it lands on the
+   * un-fetched placeholder exactly as before. Going back to a modal is no
+   * longer a flag flip: #1205 deleted the component, so it would have to be
+   * re-created — and only once the row DTO carries a real site id.
    */
   onEdit(row: ComplianceReportRowVm): void {
     if (!this.canEdit(row)) {
       return;
     }
+    this.state.setReturnContext(row.sdkCaseId, complianceReportRowKey(row));
     this.router
       .navigate(
         ['/plugins/backend-configuration-pn/case', row.sdkCaseId, row.checkListId, row.complianceId],

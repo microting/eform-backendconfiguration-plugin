@@ -1052,3 +1052,212 @@ describe('ComplianceReportStateService — pending row highlight', () => {
     expect(service.takePendingRowHighlight()).toBeNull();
   });
 });
+
+/**
+ * #1291 — the return from the shared case page after `Gem`. `enterPage()` is
+ * called with the URL's `?highlightId=`; only when it names the case of the
+ * return context `setReturnContext()` stored before the navigation does entry
+ * re-fetch — page-preserving — and queue the edited row. Every other entry is
+ * the #1163 §6 status quo, and the context is dropped on EVERY entry.
+ */
+describe('ComplianceReportStateService — return from an edit (#1291)', () => {
+  let service: ComplianceReportStateService;
+  let fetches: number;
+
+  /** Visit 1: Rapport fetched (optionally paged), Rediger pressed on case 102. */
+  const leaveForEdit = (opts: {page?: number; showAll?: boolean} = {}) => {
+    service.setMode('report');
+    service.requestFetch();
+    if (opts.page) {
+      service.setPage(opts.page);
+    }
+    if (opts.showAll) {
+      service.setShowAll();
+    }
+    service.setTotalCount(240);
+    service.setLoading(true);
+    service.setReturnContext(102, 'case:102');
+  };
+
+  /** The page's re-mounted child subscribing late, as the ngSwitch does. */
+  const subscribeLikeTheChild = () => {
+    fetches = 0;
+    service.fetchRequested$.subscribe(() => fetches++);
+  };
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    service = new ComplianceReportStateService();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('with a matching highlightId: re-fetches once, in the mode the user left', () => {
+    leaveForEdit();
+
+    service.enterPage(102);
+    subscribeLikeTheChild();
+
+    expect(service.mode).toBe('report');
+    expect(service.reportVisible).toBe(true);
+    expect(fetches).toBe(1);
+  });
+
+  it('with a matching highlightId: preserves the page', () => {
+    leaveForEdit({page: 3});
+
+    service.enterPage(102);
+
+    expect(service.page).toBe(3);
+    expect(service.showAll).toBe(false);
+    expect(service.requestModel.pageIndex).toBe(3);
+  });
+
+  it('with a matching highlightId: preserves "Vis alle"', () => {
+    leaveForEdit({showAll: true});
+
+    service.enterPage(102);
+
+    expect(service.showAll).toBe(true);
+    expect(service.requestModel.pageSize).toBe(0);
+  });
+
+  it('with a matching highlightId: queues the edited row for the next response, once', () => {
+    leaveForEdit();
+
+    service.enterPage(102);
+
+    expect(service.takePendingRowHighlight()).toBe('case:102');
+    expect(service.takePendingRowHighlight()).toBeNull();
+  });
+
+  it('with a matching highlightId: clears the previous visit\'s total and loading', () => {
+    leaveForEdit();
+
+    service.enterPage(102);
+
+    expect(service.total).toBe(0);
+    expect(service.loading).toBe(false);
+  });
+
+  it('keeps the filters of the visit the user left', () => {
+    service.setFilter({propertyId: 7, tagIds: [1], status: 'done'});
+    jest.advanceTimersByTime(COMPLIANCE_FILTER_DEBOUNCE_MS);
+    leaveForEdit();
+
+    service.enterPage(102);
+
+    expect(service.filters.propertyId).toBe(7);
+    expect(service.filters.tagIds).toEqual([1]);
+    expect(service.filters.status).toBe('done');
+  });
+
+  it('without a highlightId (Back without saving): the placeholder, no fetch, no highlight', () => {
+    leaveForEdit({page: 3});
+
+    service.enterPage();
+    subscribeLikeTheChild();
+
+    expect(service.mode).toBe('report');
+    expect(service.reportVisible).toBe(false);
+    expect(service.page).toBe(0);
+    expect(fetches).toBe(0);
+    expect(service.takePendingRowHighlight()).toBeNull();
+  });
+
+  it('with a highlightId for ANOTHER case: the placeholder, no fetch', () => {
+    leaveForEdit();
+
+    service.enterPage(999);
+    subscribeLikeTheChild();
+
+    expect(service.reportVisible).toBe(false);
+    expect(fetches).toBe(0);
+  });
+
+  it('with a highlightId but no return context (another caller\'s return URL): the placeholder', () => {
+    service.setMode('report');
+    service.requestFetch();
+
+    service.enterPage(102);
+    subscribeLikeTheChild();
+
+    expect(service.reportVisible).toBe(false);
+    expect(fetches).toBe(0);
+  });
+
+  it('is strictly one-shot: the next entry from the menu is the placeholder again', () => {
+    leaveForEdit();
+    service.enterPage(102);
+    // Navigate away and come back from the menu (no highlightId) ...
+    service.enterPage();
+    subscribeLikeTheChild();
+    expect(service.reportVisible).toBe(false);
+    expect(fetches).toBe(0);
+
+    // ... and even a repeated highlightId finds nothing to return to.
+    service.enterPage(102);
+    subscribeLikeTheChild();
+    expect(service.reportVisible).toBe(false);
+    expect(fetches).toBe(0);
+  });
+
+  it('an ABANDONED edit (Back without saving) cannot make a later entry fetch', () => {
+    leaveForEdit();
+    service.enterPage(); // Back, no save: the context is dropped here.
+
+    service.enterPage(102);
+    subscribeLikeTheChild();
+
+    expect(service.reportVisible).toBe(false);
+    expect(fetches).toBe(0);
+  });
+
+  it('refuses while the committed period cannot be queried, falling back to the placeholder', () => {
+    service.setMode('report');
+    service.requestFetch();
+    service.setFilter({periodPreset: 'custom'});
+    service.setReturnContext(102, 'case:102');
+
+    service.enterPage(102);
+    subscribeLikeTheChild();
+
+    expect(service.reportVisible).toBe(false);
+    expect(fetches).toBe(0);
+    expect(service.takePendingRowHighlight()).toBeNull();
+  });
+
+  it('`Oversigt` (resetToOverview) discards a stored return context', () => {
+    leaveForEdit();
+    service.resetToOverview();
+    service.setMode('report');
+
+    service.enterPage(102);
+
+    expect(service.reportVisible).toBe(false);
+  });
+
+  it('storing a return context never fetches on its own', () => {
+    service.setMode('report');
+    service.requestFetch();
+    subscribeLikeTheChild();
+    // The late subscriber is served the buffered trigger once.
+    expect(fetches).toBe(1);
+
+    service.setReturnContext(102, 'case:102');
+
+    expect(fetches).toBe(1);
+  });
+
+  it('entry drops a row highlight still queued from the previous visit', () => {
+    service.setMode('report');
+    service.requestFetch();
+    service.setPendingRowHighlight('case:5');
+
+    service.enterPage();
+
+    expect(service.takePendingRowHighlight()).toBeNull();
+  });
+});
