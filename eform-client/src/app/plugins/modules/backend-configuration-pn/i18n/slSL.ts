@@ -502,7 +502,7 @@ export const slSL = {
   'Edit repeat': 'Uredi ponovitev',
   'Move repeat': 'Ponavljanje premikanja',
   'Delete repeat': 'Izbriši ponovitev',
-  'At least one worker or worker tag must be assigned': 'Dodeljen mora biti vsaj en delavec ali oznaka delavca',
+  'At least one worker or worker tag must be assigned': 'Dodeljen mora biti vsaj en delavec ali ekipa',
   'Assign to worker tags': 'Dodeli oznakam delavcev',
   'This and following (incl. completed)': 'To in naslednje (vključno z dokončanim)',
   'Payroll rules': 'Pravila za obračun plač',

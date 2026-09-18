@@ -143,8 +143,13 @@
       </div>
     </div>
 
-    <!-- Assignee row -->
-    <div class="gcal-row" *ngIf="filteredEmployees.length > 0">
+    <!-- Assignee row: ONE grouped picker for teams and workers (#1295).
+         Teams (worker tags, maintained under Medarbejdere → Etiketter) are the FIRST
+         group and workers the LAST; the Teams group is absent when the property has no
+         teams. Values are string keys ('t:'+tagId / 's:'+siteId), split back into
+         workerTagIds / sites on save. The group header and option label reuse the
+         global grouped-dropdown styles (scss/components/_material-dropdown.scss). -->
+    <div class="gcal-row" *ngIf="assigneeItems.length > 0">
       <mat-icon class="gcal-icon">people</mat-icon>
       <div class="gcal-row-content">
         <mat-form-field class="w-100">
@@ -152,12 +157,30 @@
           <mtx-select
             id="calendarEventAssignee"
             [formControl]="assigneeControl"
-            [items]="filteredEmployees"
-            bindValue="id"
+            [items]="assigneeItems"
+            bindValue="key"
             bindLabel="name"
+            groupBy="group"
             [multiple]="true"
             [clearable]="true"
-          ></mtx-select>
+          >
+            <ng-template ng-optgroup-tmp let-item="item">
+              <span class="eform-worker-group-label">
+                {{ (item.group === 'teams' ? 'Teams' : 'Employees') | translate }}
+              </span>
+            </ng-template>
+            <ng-template ng-option-tmp let-item="item" let-item$="item$">
+              <span class="eform-worker-option-label">{{ item$.label }}</span>
+            </ng-template>
+            <!-- Same markup as ng-select's default chip (× then .ng-value-label, which
+                 e2e specs assert on), plus a group icon on team chips. -->
+            <ng-template ng-label-tmp let-item="item" let-clear="clear">
+              <span class="ng-value-icon left" (click)="clear(item)" aria-hidden="true">×</span>
+              <mat-icon *ngIf="item.group === 'teams'" class="md-18 calendar-assignee-team-icon"
+                        aria-hidden="true">groups</mat-icon>
+              <span class="ng-value-label">{{ item.name }}</span>
+            </ng-template>
+          </mtx-select>
         </mat-form-field>
       </div>
     </div>
@@ -174,25 +197,6 @@
             [items]="data.tags"
             [multiple]="true"
             [addTag]="addTagToList"
-            [clearable]="true"
-          ></mtx-select>
-        </mat-form-field>
-      </div>
-    </div>
-
-    <!-- Worker tags (assignment) row -->
-    <div class="gcal-row" *ngIf="data.workerTags.length > 0">
-      <mat-icon class="gcal-icon">groups</mat-icon>
-      <div class="gcal-row-content">
-        <mat-form-field class="w-100">
-          <mat-label>{{ 'Assign to worker tags' | translate }}</mat-label>
-          <mtx-select
-            id="calendarEventWorkerTags"
-            [formControl]="workerTagsControl"
-            [items]="data.workerTags"
-            bindValue="id"
-            bindLabel="name"
-            [multiple]="true"
             [clearable]="true"
           ></mtx-select>
         </mat-form-field>
@@ -488,8 +492,8 @@
 
   <div class="gcal-actions" *ngIf="!isReadonly">
     <button id="calendarEventSaveBtn" class="btn-primary btn-primary--icon-left"
-            [disabled]="titleControl.invalid || !((assigneeControl.value?.length) || (workerTagsControl.value?.length)) || (reportHeadlineEnabledControl.value && !planningTagControl.value)"
-            [title]="!((assigneeControl.value?.length) || (workerTagsControl.value?.length)) ? ('At least one worker or worker tag must be assigned' | translate) : ''"
+            [disabled]="titleControl.invalid || !hasAssignee || (reportHeadlineEnabledControl.value && !planningTagControl.value)"
+            [title]="!hasAssignee ? ('At least one worker or worker tag must be assigned' | translate) : ''"
             (click)="onSave()">
       {{ isEditMode ? ('Save changes' | translate) : ('Save' | translate) }}
     </button>

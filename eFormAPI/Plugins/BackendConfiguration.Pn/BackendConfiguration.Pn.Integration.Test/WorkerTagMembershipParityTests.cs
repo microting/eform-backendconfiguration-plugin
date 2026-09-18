@@ -306,6 +306,23 @@ public class WorkerTagMembershipParityTests : TestBaseSetup
         return arp;
     }
 
+    /// <summary>
+    /// Links a site to the event's property via an active <c>PropertyWorker</c>. Since
+    /// #1295 the resolver only deploys a team to members linked to the event's property,
+    /// so every tag member whose resolution a test asserts (either way) is linked here —
+    /// keeping the liveness clauses, not the property clause, as the reason for any
+    /// exclusion these tests pin.
+    /// </summary>
+    private async Task LinkSiteToProperty(int propertyId, int siteId)
+    {
+        await BackendConfigurationPnDbContext!.PropertyWorkers.AddAsync(new PropertyWorker
+        {
+            PropertyId = propertyId, WorkerId = siteId,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+    }
+
     private async Task AddWorkerTagLink(int arpId, int tagId)
     {
         await BackendConfigurationPnDbContext!.AreaRulePlanningWorkerTags.AddAsync(
@@ -330,7 +347,7 @@ public class WorkerTagMembershipParityTests : TestBaseSetup
         var coreHelper = Substitute.For<IEFormCoreService>();
         coreHelper.GetCore().Returns(Task.FromResult(core));
 
-        var membership = new WorkerTagMembershipService(coreHelper);
+        var membership = new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext);
         return (
             membership,
             new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, membership),
@@ -378,6 +395,8 @@ public class WorkerTagMembershipParityTests : TestBaseSetup
         // Both SiteTags rows stay Created — exactly what SiteDelete leaves behind.
         await LinkSiteToTag(tagId, liveSite);
         await LinkSiteToTag(tagId, deletedSite);
+        await LinkSiteToProperty(arp.PropertyId, liveSite);
+        await LinkSiteToProperty(arp.PropertyId, deletedSite);
 
         await AddWorkerTagLink(arp.Id, tagId);
 
@@ -611,6 +630,8 @@ public class WorkerTagMembershipParityTests : TestBaseSetup
         await LinkSiteToTag(deadTag, deletedMember);
 
         var arp = await SeedEvent();
+        await LinkSiteToProperty(arp.PropertyId, liveMember);
+        await LinkSiteToProperty(arp.PropertyId, deletedMember);
         await AddWorkerTagLink(arp.Id, liveTag);
         await AddWorkerTagLink(arp.Id, deadTag);
 

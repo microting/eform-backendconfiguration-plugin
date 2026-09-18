@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using eFormCore;
+using BackendConfiguration.Pn.Infrastructure.Models.WorkerTags;
 using BackendConfiguration.Pn.Services.BackendConfigurationWorkerTagsService;
 using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using Microsoft.EntityFrameworkCore;
@@ -144,7 +145,7 @@ public class WorkerTagsListTests : TestBaseSetup
         await sdk.SaveChangesAsync();
     }
 
-    private static List<int> IdsOf(OperationDataResult<List<CommonDictionaryModel>> result)
+    private static List<int> IdsOf(OperationDataResult<List<WorkerTagModel>> result)
     {
         Assert.That(result.Success, Is.True, result.Message);
         return result.Model.Where(x => x.Id.HasValue).Select(x => x.Id!.Value).ToList();

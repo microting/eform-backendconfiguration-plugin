@@ -3,6 +3,15 @@ import {Observable} from 'rxjs';
 import {CommonDictionaryModel, OperationDataResult} from 'src/app/common/models';
 import {ApiBaseService} from 'src/app/common/services';
 
+/**
+ * A team entry. `memberSiteIds` is only present on the property-scoped list
+ * (`getWorkerTags(propertyId)`, #1295): the team's live members linked to that
+ * property — exactly the sites the team deploys to there.
+ */
+export interface WorkerTagModel extends CommonDictionaryModel {
+  memberSiteIds?: number[] | null;
+}
+
 export let BackendConfigurationWorkerTagsMethods = {
   WorkerTags: 'api/backend-configuration-pn/worker-tags',
 };
@@ -22,9 +31,21 @@ export let BackendConfigurationWorkerTagsMethods = {
 export class BackendConfigurationPnWorkerTagsService {
   constructor(private apiBaseService: ApiBaseService) {}
 
-  getWorkerTags(): Observable<OperationDataResult<CommonDictionaryModel[]>> {
-    return this.apiBaseService.get<CommonDictionaryModel[]>(
-      BackendConfigurationWorkerTagsMethods.WorkerTags
+  /**
+   * Without `propertyId`: the installation-wide teams list (header filter, tile name
+   * maps). With `propertyId` (#1295): only teams with at least one live member linked
+   * to that property, each carrying those members in `memberSiteIds` — the task
+   * modal's grouped assignee picker uses this.
+   */
+  getWorkerTags(propertyId?: number | null): Observable<OperationDataResult<WorkerTagModel[]>> {
+    if (propertyId == null) {
+      return this.apiBaseService.get<WorkerTagModel[]>(
+        BackendConfigurationWorkerTagsMethods.WorkerTags
+      );
+    }
+    return this.apiBaseService.get<WorkerTagModel[]>(
+      BackendConfigurationWorkerTagsMethods.WorkerTags,
+      {propertyId}
     );
   }
 }

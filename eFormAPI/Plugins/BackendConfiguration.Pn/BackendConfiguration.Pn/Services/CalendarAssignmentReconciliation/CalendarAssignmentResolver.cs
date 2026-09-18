@@ -42,6 +42,13 @@ namespace BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
 /// </para>
 ///
 /// <para>
+/// <b>Property scope (#1295).</b> The tag-derived half is further restricted to members
+/// linked to the event's property (<c>AreaRulePlanning.PropertyId</c> → active
+/// <c>PropertyWorker</c>), via
+/// <see cref="IWorkerTagMembershipService.GetLiveMemberSiteIdsOnPropertyAsync"/>.
+/// </para>
+///
+/// <para>
 /// Explicit <c>PlanningSites</c> assignment is deliberately NOT filtered by that rule:
 /// naming a person on an event is a fact about the event and survives their
 /// resignation. Only the tag-derived half is membership-gated.
@@ -70,10 +77,31 @@ public class CalendarAssignmentResolver(
             .Select(x => x.TagId)
             .ToListAsync(ct).ConfigureAwait(false);
 
-        // 3. Live members of those tags — one query, the shared membership rule.
-        //    Returns empty without touching the database when there are no tags.
+        if (tagIds.Count == 0)
+        {
+            return result;
+        }
+
+        // 3. Live members of those tags that are linked to the EVENT'S PROPERTY — the
+        //    shared membership rule plus its property clause (#1295, resolves #1256).
+        //    A team is installation-wide in the SDK, so without the property clause a
+        //    team with members on property A, picked on an event on property B,
+        //    deployed cases to A's workers. The team stays a live link: membership
+        //    changes still flow into future cases, only restricted to this property.
+        //    The removed-state of the event is deliberately not filtered here — a
+        //    reconcile of a removed event must still see the same property.
+        var propertyId = await backendConfigurationPnDbContext.AreaRulePlannings
+            .Where(x => x.Id == areaRulePlanningId)
+            .Select(x => (int?)x.PropertyId)
+            .FirstOrDefaultAsync(ct).ConfigureAwait(false);
+
+        if (propertyId == null)
+        {
+            return result;
+        }
+
         var memberSiteIds = await workerTagMembershipService
-            .GetLiveMemberSiteIdsAsync(tagIds, ct).ConfigureAwait(false);
+            .GetLiveMemberSiteIdsOnPropertyAsync(tagIds, propertyId.Value, ct).ConfigureAwait(false);
 
         result.UnionWith(memberSiteIds);
 

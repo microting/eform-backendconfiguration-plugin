@@ -502,7 +502,7 @@ export const skSK = {
   'Edit repeat': 'Upraviť opakovanie',
   'Move repeat': 'Opakovanie pohybu',
   'Delete repeat': 'Odstrániť opakovanie',
-  'At least one worker or worker tag must be assigned': 'Musí byť priradený aspoň jeden pracovník alebo značka pracovníka',
+  'At least one worker or worker tag must be assigned': 'Musí byť priradený aspoň jeden pracovník alebo tím',
   'Assign to worker tags': 'Priradiť k značkám pracovníka',
   'This and following (incl. completed)': 'Toto a nasledujúce (vrátane dokončených)',
   'Payroll rules': 'Pravidlá pre výplaty miezd',

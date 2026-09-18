@@ -10,6 +10,7 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
+import { assigneeWorkerOptions } from '../calendar-assignee.helper';
 
 /**
  * Regression suite for the "Alle hverdage (mandag til fredag)" repeat option.
@@ -167,7 +168,7 @@ test.describe.serial('Calendar weekdays repeat — Mon-Fri visibility', () => {
     const assignee = page.locator('#calendarEventAssignee');
     await assignee.click();
     await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
-    await page.locator('.ng-dropdown-panel .ng-option').first().click();
+    await assigneeWorkerOptions(page).first().click();
     await page.locator('#calendarEventTitle').click();
     await page.waitForTimeout(300);
 

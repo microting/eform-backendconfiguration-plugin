@@ -502,7 +502,7 @@ export const roRO = {
   'Edit repeat': 'Repetare editare',
   'Move repeat': 'Repetare mutare',
   'Delete repeat': 'Ștergeți repetarea',
-  'At least one worker or worker tag must be assigned': 'Trebuie atribuit cel puțin un lucrător sau o etichetă de lucrător',
+  'At least one worker or worker tag must be assigned': 'Trebuie atribuit cel puțin un lucrător sau o echipă',
   'Assign to worker tags': 'Atribuiți etichetelor lucrătorilor',
   'This and following (incl. completed)': 'Aceasta și următoarele (inclusiv finalizate)',
   'Payroll rules': 'Reguli de salarizare',

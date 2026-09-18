@@ -502,7 +502,7 @@ export const lvLV = {
   'Edit repeat': 'Rediģēt atkārtojumu',
   'Move repeat': 'Pārvietošanas atkārtošana',
   'Delete repeat': 'Dzēst atkārtojumu',
-  'At least one worker or worker tag must be assigned': 'Jāpiešķir vismaz viens darbinieks vai darbinieka atzīme',
+  'At least one worker or worker tag must be assigned': 'Jāpiešķir vismaz viens darbinieks vai komanda',
   'Assign to worker tags': 'Piešķirt darbinieka tagiem',
   'This and following (incl. completed)': 'Šis un turpmākie (ieskaitot pabeigtos)',
   'Payroll rules': 'Algu aprēķināšanas noteikumi',

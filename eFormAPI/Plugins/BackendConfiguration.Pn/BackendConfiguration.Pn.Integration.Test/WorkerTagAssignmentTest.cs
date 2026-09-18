@@ -182,6 +182,21 @@ public class WorkerTagAssignmentTest : TestBaseSetup
     }
 
     /// <summary>
+    /// Links an SDK site to a property via an active <c>PropertyWorker</c> row. Since
+    /// #1295 a team only deploys to members linked to the EVENT'S property, so every
+    /// tag member a test expects the resolver to return must be linked here.
+    /// </summary>
+    private async Task LinkSiteToProperty(int propertyId, int siteId)
+    {
+        await BackendConfigurationPnDbContext!.PropertyWorkers.AddAsync(new PropertyWorker
+        {
+            PropertyId = propertyId, WorkerId = siteId,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+    }
+
+    /// <summary>
     /// Creates an SDK Site together with the Worker + SiteWorker triple that real
     /// device-user creation leaves behind, with the worker's <c>Resigned</c> flag set
     /// as requested.
@@ -237,7 +252,8 @@ public class WorkerTagAssignmentTest : TestBaseSetup
         var core = await GetCore();
         var coreHelper = Substitute.For<IEFormCoreService>();
         coreHelper.GetCore().Returns(Task.FromResult(core));
-        return new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, new WorkerTagMembershipService(coreHelper));
+        return new CalendarAssignmentResolver(BackendConfigurationPnDbContext!,
+            new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext));
     }
 
     /// <summary>
@@ -251,7 +267,8 @@ public class WorkerTagAssignmentTest : TestBaseSetup
         var core = await GetCore();
         var coreHelper = Substitute.For<IEFormCoreService>();
         coreHelper.GetCore().Returns(Task.FromResult(core));
-        var resolver = new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, new WorkerTagMembershipService(coreHelper));
+        var resolver = new CalendarAssignmentResolver(BackendConfigurationPnDbContext!,
+            new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext));
         var deploy = Substitute.For<IEventDeployService>();
         var batches = new List<CalendarChangeBatch>();
         var notifier = Substitute.For<ICalendarChangeNotifier>();
@@ -293,11 +310,13 @@ public class WorkerTagAssignmentTest : TestBaseSetup
     [Test]
     public async Task ResolveEffectiveSiteIds_ReturnsExplicitUnionTagMembers()
     {
-        var (arp, _, _) = await SeedEvent();
+        var (arp, _, property) = await SeedEvent();
         var explicitSite = await AddExplicitSite(arp.Id, await SeedSdkSite());
 
         var memberA = await SeedSdkSite();
         var memberB = await SeedSdkSite();
+        await LinkSiteToProperty(property.Id, memberA);
+        await LinkSiteToProperty(property.Id, memberB);
         var tagId = await SeedSdkTag();
         await LinkSiteToTag(tagId, memberA);
         await LinkSiteToTag(tagId, memberB);
@@ -315,11 +334,13 @@ public class WorkerTagAssignmentTest : TestBaseSetup
     [Test]
     public async Task ResolveEffectiveSiteIds_ExcludesRemovedSiteTag()
     {
-        var (arp, _, _) = await SeedEvent();
+        var (arp, _, property) = await SeedEvent();
         var explicitSite = await AddExplicitSite(arp.Id, await SeedSdkSite());
 
         var liveMember = await SeedSdkSite();
         var removedMember = await SeedSdkSite();
+        await LinkSiteToProperty(property.Id, liveMember);
+        await LinkSiteToProperty(property.Id, removedMember);
         var tagId = await SeedSdkTag();
         await LinkSiteToTag(tagId, liveMember);
         await LinkSiteToTag(tagId, removedMember, removed: true);
@@ -335,11 +356,13 @@ public class WorkerTagAssignmentTest : TestBaseSetup
     [Test]
     public async Task ResolveEffectiveSiteIds_RemovedWorkerTagLink_YieldsOnlyExplicit()
     {
-        var (arp, _, _) = await SeedEvent();
+        var (arp, _, property) = await SeedEvent();
         var explicitSite = await AddExplicitSite(arp.Id, await SeedSdkSite());
 
         var memberA = await SeedSdkSite();
         var memberB = await SeedSdkSite();
+        await LinkSiteToProperty(property.Id, memberA);
+        await LinkSiteToProperty(property.Id, memberB);
         var tagId = await SeedSdkTag();
         await LinkSiteToTag(tagId, memberA);
         await LinkSiteToTag(tagId, memberB);
@@ -376,7 +399,7 @@ public class WorkerTagAssignmentTest : TestBaseSetup
     [Test]
     public async Task ResolveEffectiveSiteIds_ExcludesResignedTagMember()
     {
-        var (arp, _, _) = await SeedEvent();
+        var (arp, _, property) = await SeedEvent();
 
         var tagId = await SeedSdkTag();
 
@@ -389,11 +412,13 @@ public class WorkerTagAssignmentTest : TestBaseSetup
         // Site A — tag member whose SDK Worker is still employed.
         var (activeSite, _) = await SeedSdkSiteWithWorker(sdkDbContext, resigned: false);
         await LinkSiteToTag(tagId, activeSite);
+        await LinkSiteToProperty(property.Id, activeSite);
 
         // Site B — same tag, same shape, but the SDK Worker has resigned. The
         // SiteTag row survives the resignation, exactly as in production.
         var (resignedSite, resignedWorkerId) = await SeedSdkSiteWithWorker(sdkDbContext, resigned: true);
         await LinkSiteToTag(tagId, resignedSite);
+        await LinkSiteToProperty(property.Id, resignedSite);
 
         await AddWorkerTagLink(arp.Id, tagId);
 
@@ -427,10 +452,11 @@ public class WorkerTagAssignmentTest : TestBaseSetup
     [Test]
     public async Task ReconcileEvent_AddsTagMemberToAlreadyDeployedFutureOccurrence()
     {
-        var (arp, planning, _) = await SeedEvent();
+        var (arp, planning, property) = await SeedEvent();
 
         // Assigned ONLY via a worker tag whose member is desiredSite (no explicit sites).
         var desiredSite = await SeedSdkSite();
+        await LinkSiteToProperty(property.Id, desiredSite);
         var alreadyDeployedSite = await SeedSdkSite();
         var tagId = await SeedSdkTag();
         await LinkSiteToTag(tagId, desiredSite);
@@ -463,9 +489,10 @@ public class WorkerTagAssignmentTest : TestBaseSetup
     [Test]
     public async Task ReconcileEvent_DoesNotTouchPastOccurrences()
     {
-        var (arp, planning, _) = await SeedEvent();
+        var (arp, planning, property) = await SeedEvent();
 
         var desiredSite = await SeedSdkSite();
+        await LinkSiteToProperty(property.Id, desiredSite);
         var deployedSite = await SeedSdkSite();
         var tagId = await SeedSdkTag();
         await LinkSiteToTag(tagId, desiredSite);

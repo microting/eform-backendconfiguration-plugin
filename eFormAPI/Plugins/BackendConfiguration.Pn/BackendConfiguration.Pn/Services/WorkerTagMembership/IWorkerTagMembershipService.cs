@@ -64,4 +64,23 @@ public interface IWorkerTagMembershipService
     /// SDK has one <c>Tags</c> table and no discriminator column (#1213).
     /// </summary>
     Task<HashSet<int>> GetTagIdsWithLiveMembersAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Property-scoped forward lookup (#1295, resolves #1256): the live members of any of
+    /// <paramref name="tagIds"/> that are ALSO linked to <paramref name="propertyId"/>
+    /// (an active <c>PropertyWorker</c> row). This is what a team deploys to: a team
+    /// picked on a property never reaches a member who only works on another property.
+    /// Returns an empty set for a null/empty input without querying.
+    /// </summary>
+    Task<HashSet<int>> GetLiveMemberSiteIdsOnPropertyAsync(
+        IReadOnlyCollection<int> tagIds, int propertyId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Every worker tag with at least one live member linked to
+    /// <paramref name="propertyId"/>, mapped to exactly those property-linked live members.
+    /// Tags with no such member are not keys. Feeds the property-scoped teams list and
+    /// its per-team member ids (the task modal resolves member languages from them).
+    /// </summary>
+    Task<Dictionary<int, HashSet<int>>> GetLiveMemberSiteIdsByTagOnPropertyAsync(
+        int propertyId, CancellationToken ct = default);
 }

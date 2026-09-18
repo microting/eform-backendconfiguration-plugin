@@ -7,6 +7,7 @@ using Microting.eForm.Infrastructure;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn.Abstractions;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 
 namespace BackendConfiguration.Pn.Services.WorkerTagMembership;
 
@@ -106,8 +107,25 @@ namespace BackendConfiguration.Pn.Services.WorkerTagMembership;
 /// <c>GetTasksForWeek</c>, <c>Index</c> and <c>GetTaskTrackerList</c> — would have
 /// needed the same loop had this overload not existed; they never wrote one.
 /// </para>
+/// <para>
+/// <b>Property scoping (#1295, resolves #1256).</b> The property-scoped lookups
+/// (<see cref="GetLiveMemberSiteIdsOnPropertyAsync"/>,
+/// <see cref="GetLiveMemberSiteIdsByTagOnPropertyAsync"/>) add ONE clause on top of the
+/// rule above: the member site must be linked to the property through an active
+/// (<c>WorkflowState != Removed</c>) <c>PropertyWorker</c> row — the same link the
+/// property's worker picker (<c>GetLinkedSites</c>) reads. <c>PropertyWorkers</c> lives in
+/// the plugin database, not the SDK one, so the property's site ids are read first
+/// (one plugin-db statement) and then fed into the SDK statement as a plain
+/// <c>IN (...)</c>. That is why this class optionally takes the plugin
+/// <see cref="BackendConfigurationPnDbContext"/>: production DI always supplies it; the
+/// many test fixtures that only exercise the unscoped lookups may omit it, and the
+/// property-scoped methods throw if called without it rather than silently skipping
+/// the property clause.
+/// </para>
 /// </summary>
-public class WorkerTagMembershipService(IEFormCoreService coreHelper) : IWorkerTagMembershipService
+public class WorkerTagMembershipService(
+    IEFormCoreService coreHelper,
+    BackendConfigurationPnDbContext? backendConfigurationPnDbContext = null) : IWorkerTagMembershipService
 {
     /// <summary>
     /// THE predicate. It exists exactly once in the codebase, on purpose. Every clause
@@ -223,5 +241,88 @@ public class WorkerTagMembershipService(IEFormCoreService coreHelper) : IWorkerT
             .ToListAsync(ct).ConfigureAwait(false);
 
         return [..tagIds];
+    }
+
+    /// <summary>
+    /// The SDK site ids linked to <paramref name="propertyId"/> by an active
+    /// <c>PropertyWorker</c> row. The property clause of the scoped rule — stated once.
+    /// </summary>
+    private async Task<List<int>> PropertyLinkedSiteIdsAsync(int propertyId, CancellationToken ct)
+    {
+        if (backendConfigurationPnDbContext == null)
+        {
+            throw new System.InvalidOperationException(
+                "WorkerTagMembershipService was constructed without a BackendConfigurationPnDbContext; "
+                + "the property-scoped membership lookups need it.");
+        }
+
+        return await backendConfigurationPnDbContext.PropertyWorkers
+            .AsNoTracking()
+            .Where(pw => pw.PropertyId == propertyId
+                         && pw.WorkflowState != Constants.WorkflowStates.Removed)
+            .Select(pw => pw.WorkerId)
+            .Distinct()
+            .ToListAsync(ct).ConfigureAwait(false);
+    }
+
+    public async Task<HashSet<int>> GetLiveMemberSiteIdsOnPropertyAsync(
+        IReadOnlyCollection<int> tagIds, int propertyId, CancellationToken ct = default)
+    {
+        if (tagIds == null || tagIds.Count == 0)
+        {
+            return [];
+        }
+
+        var propertySiteIds = await PropertyLinkedSiteIdsAsync(propertyId, ct).ConfigureAwait(false);
+        if (propertySiteIds.Count == 0)
+        {
+            return [];
+        }
+
+        var tagIdList = tagIds.Distinct().ToList();
+
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+        var siteIds = await LiveMemberships(sdkDbContext)
+            .Where(st => tagIdList.Contains(st.TagId.Value)
+                         && propertySiteIds.Contains(st.SiteId.Value))
+            .Select(st => st.SiteId.Value)
+            .Distinct()
+            .ToListAsync(ct).ConfigureAwait(false);
+
+        return [..siteIds];
+    }
+
+    public async Task<Dictionary<int, HashSet<int>>> GetLiveMemberSiteIdsByTagOnPropertyAsync(
+        int propertyId, CancellationToken ct = default)
+    {
+        var propertySiteIds = await PropertyLinkedSiteIdsAsync(propertyId, ct).ConfigureAwait(false);
+        var byTagId = new Dictionary<int, HashSet<int>>();
+        if (propertySiteIds.Count == 0)
+        {
+            return byTagId;
+        }
+
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+        var pairs = await LiveMemberships(sdkDbContext)
+            .Where(st => propertySiteIds.Contains(st.SiteId.Value))
+            .Select(st => new { TagId = st.TagId.Value, SiteId = st.SiteId.Value })
+            .Distinct()
+            .ToListAsync(ct).ConfigureAwait(false);
+
+        foreach (var pair in pairs)
+        {
+            if (!byTagId.TryGetValue(pair.TagId, out var members))
+            {
+                members = [];
+                byTagId[pair.TagId] = members;
+            }
+            members.Add(pair.SiteId);
+        }
+
+        return byTagId;
     }
 }

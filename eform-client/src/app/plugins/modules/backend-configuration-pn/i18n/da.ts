@@ -514,7 +514,7 @@ export const da = {
   'Edit repeat': 'Rediger gentagelse',
   'Move repeat': 'Flyt gentagelse',
   'Delete repeat': 'Slet gentagelse',
-  'At least one worker or worker tag must be assigned': 'Mindst én medarbejder eller medarbejder-tag skal tildeles',
+  'At least one worker or worker tag must be assigned': 'Mindst én medarbejder eller ét team skal tildeles',
   'Assign to worker tags': 'Tildel til medarbejder-tags',
   'This and following (incl. completed)': 'Denne og følgende (inkl. færdiggjorte)',
   'Payroll rules': 'Lønregler',

@@ -501,7 +501,7 @@ export const frFR = {
   'Edit repeat': 'Répéter la modification',
   'Move repeat': 'Répéter le déplacement',
   'Delete repeat': 'Supprimer la répétition',
-  'At least one worker or worker tag must be assigned': 'Au moins un travailleur ou une étiquette de travailleur doit être attribué(e).',
+  'At least one worker or worker tag must be assigned': 'Au moins un travailleur ou une équipe doit être attribué(e).',
   'Assign to worker tags': 'Attribuer aux étiquettes de travailleur',
   'This and following (incl. completed)': 'Ceci et les suivants (y compris les éléments terminés)',
   'Payroll rules': 'Règles de paie',

@@ -10,6 +10,7 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
+import { assigneeWorkerOptions } from '../calendar-assignee.helper';
 
 /**
  * Calendar EDIT-event field-combination suite for GitHub issue #891.
@@ -237,7 +238,7 @@ test.describe.serial('Calendar edit-event field combinations (#891)', () => {
     const assignee = page.locator('#calendarEventAssignee');
     await assignee.click();
     await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
-    await page.locator('.ng-dropdown-panel .ng-option').nth(index).click();
+    await assigneeWorkerOptions(page).nth(index).click();
     await page.waitForTimeout(300);
   }
 

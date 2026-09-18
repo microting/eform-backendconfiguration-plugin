@@ -35,6 +35,7 @@ using Microting.eFormApi.BasePn.Abstractions;
 using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+using BackendConfiguration.Pn.Infrastructure.Models.WorkerTags;
 
 /// <summary>
 /// The "teams" (worker groups) list the calendar offers when assigning an event to a
@@ -89,7 +90,7 @@ public class BackendConfigurationWorkerTagsService(
     ILogger<BackendConfigurationWorkerTagsService> logger)
     : IBackendConfigurationWorkerTagsService
 {
-    public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetWorkerTags()
+    public async Task<OperationDataResult<List<WorkerTagModel>>> GetWorkerTags(int? propertyId = null)
     {
         try
         {
@@ -101,13 +102,28 @@ public class BackendConfigurationWorkerTagsService(
             // rule, owned by IWorkerTagMembershipService and shared with the deploy
             // resolver and the calendar's assignee filter. One query, server-side; the
             // id set then filters Tags with a plain IN (...).
-            var liveTagIds = await workerTagMembershipService
-                .GetTagIdsWithLiveMembersAsync().ConfigureAwait(false);
+            //
+            // With a propertyId (#1295) the membership is additionally restricted to
+            // members linked to that property — the SAME rule the deploy resolver now
+            // applies, so a team offered on a property always deploys to someone there.
+            Dictionary<int, HashSet<int>>? membersByTagId = null;
+            HashSet<int> liveTagIds;
+            if (propertyId.HasValue)
+            {
+                membersByTagId = await workerTagMembershipService
+                    .GetLiveMemberSiteIdsByTagOnPropertyAsync(propertyId.Value).ConfigureAwait(false);
+                liveTagIds = [..membersByTagId.Keys];
+            }
+            else
+            {
+                liveTagIds = await workerTagMembershipService
+                    .GetTagIdsWithLiveMembersAsync().ConfigureAwait(false);
+            }
 
             if (liveTagIds.Count == 0)
             {
-                return new OperationDataResult<List<CommonDictionaryModel>>(
-                    true, new List<CommonDictionaryModel>());
+                return new OperationDataResult<List<WorkerTagModel>>(
+                    true, new List<WorkerTagModel>());
             }
 
             var liveTagIdList = liveTagIds.ToList();
@@ -122,14 +138,24 @@ public class BackendConfigurationWorkerTagsService(
                 // The core list is unordered (PK order in practice); keep that, so this
                 // change alters membership only and never the order of what remains.
                 .OrderBy(t => t.Id)
-                .Select(t => new CommonDictionaryModel
+                .Select(t => new WorkerTagModel
                 {
                     Id = t.Id,
                     Name = t.Name
                 })
                 .ToListAsync().ConfigureAwait(false);
 
-            return new OperationDataResult<List<CommonDictionaryModel>>(true, tags);
+            if (membersByTagId != null)
+            {
+                foreach (var tag in tags)
+                {
+                    tag.MemberSiteIds = tag.Id.HasValue && membersByTagId.TryGetValue(tag.Id.Value, out var members)
+                        ? members.OrderBy(id => id).ToList()
+                        : [];
+                }
+            }
+
+            return new OperationDataResult<List<WorkerTagModel>>(true, tags);
         }
         catch (Exception e)
         {
@@ -140,7 +166,7 @@ public class BackendConfigurationWorkerTagsService(
             // all three Angular callers (the calendar's loadTeams, the calendar task
             // list's and the task list's) read `success` and drop the message. Adding a
             // 26-locale entry for text nobody sees is not worth it.
-            return new OperationDataResult<List<CommonDictionaryModel>>(false, e.Message);
+            return new OperationDataResult<List<WorkerTagModel>>(false, e.Message);
         }
     }
 }

@@ -467,7 +467,7 @@ export const enUS= {
   'Create new': 'Create new',
   'Error': 'Error',
   'At least one worker must be assigned': 'At least one worker must be assigned',
-  'At least one worker or worker tag must be assigned': 'At least one worker or worker tag must be assigned',
+  'At least one worker or worker tag must be assigned': 'At least one worker or team must be assigned',
   'Assign to worker tags': 'Assign to worker tags',
   'Previous week': 'Previous week',
   'Next week': 'Next week',

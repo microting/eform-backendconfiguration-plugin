@@ -11,6 +11,7 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
+import { assigneeWorkerOptions } from '../calendar-assignee.helper';
 
 // Shared property/worker — created by the first (seed) test, reused by the
 // rest of the suite via `test.describe.serial` semantics. Matches the
@@ -892,7 +893,7 @@ test.describe.serial('Calendar UI enhancements', () => {
       const assignee = page.locator('#calendarEventAssignee');
       await assignee.click();
       await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
-      await page.locator('.ng-dropdown-panel .ng-option').first().click();
+      await assigneeWorkerOptions(page).first().click();
       await page.locator('#calendarEventTitle').click();
       await page.waitForTimeout(300);
 

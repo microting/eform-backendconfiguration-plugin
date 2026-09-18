@@ -502,7 +502,7 @@ export const plPL = {
   'Edit repeat': 'Edytuj powtórzenie',
   'Move repeat': 'Przesuń powtórz',
   'Delete repeat': 'Usuń powtórzenie',
-  'At least one worker or worker tag must be assigned': 'Należy przypisać co najmniej jednego pracownika lub znacznik pracownika',
+  'At least one worker or worker tag must be assigned': 'Należy przypisać co najmniej jednego pracownika lub zespół',
   'Assign to worker tags': 'Przypisz do tagów pracownika',
   'This and following (incl. completed)': 'To i następne (w tym ukończone)',
   'Payroll rules': 'Zasady dotyczące płac',

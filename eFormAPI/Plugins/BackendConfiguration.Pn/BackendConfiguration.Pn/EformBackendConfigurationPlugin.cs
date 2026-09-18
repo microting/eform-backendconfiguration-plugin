@@ -145,7 +145,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         // resolver one clause short — a gap that was known and deferred, not
         // undiscovered (the deferral was of the FIX, not a decision to omit). They all
         // go through this now, so they cannot be edited apart. Transient like the resolver
-        // it feeds — it holds only IEFormCoreService and opens its own SDK context per call.
+        // it feeds — it holds IEFormCoreService (opening its own SDK context per call) and the
+        // scoped plugin DbContext for the property-scoped lookups (#1295).
         services.AddTransient<Services.WorkerTagMembership.IWorkerTagMembershipService,
             Services.WorkerTagMembership.WorkerTagMembershipService>();
         services.AddTransient<Services.CalendarAssignmentReconciliation.ICalendarAssignmentResolver,

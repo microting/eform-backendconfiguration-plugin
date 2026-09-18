@@ -502,7 +502,7 @@ export const bgBG = {
   'Edit repeat': 'Редактиране на повторение',
   'Move repeat': 'Повторение на движението',
   'Delete repeat': 'Изтриване на повторение',
-  'At least one worker or worker tag must be assigned': 'Трябва да бъде зададен поне един работник или етикет на работник',
+  'At least one worker or worker tag must be assigned': 'Трябва да бъде зададен поне един работник или екип',
   'Assign to worker tags': 'Присвояване на етикети на работници',
   'This and following (incl. completed)': 'Това и следващите (вкл. завършени)',
   'Payroll rules': 'Правила за изплащане на заплати',

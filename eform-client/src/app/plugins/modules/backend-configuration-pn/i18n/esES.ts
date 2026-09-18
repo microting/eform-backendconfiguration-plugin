@@ -502,7 +502,7 @@ export const esES = {
   'Edit repeat': 'Editar repetir',
   'Move repeat': 'Mover repetir',
   'Delete repeat': 'Eliminar repetir',
-  'At least one worker or worker tag must be assigned': 'Se debe asignar al menos un trabajador o una etiqueta de trabajador.',
+  'At least one worker or worker tag must be assigned': 'Se debe asignar al menos un trabajador o un equipo.',
   'Assign to worker tags': 'Asignar a etiquetas de trabajador',
   'This and following (incl. completed)': 'Esto y lo siguiente (incluidos los completados)',
   'Payroll rules': 'Normas de nómina',

@@ -502,7 +502,7 @@ export const ltLT = {
   'Edit repeat': 'Redaguoti kartojimą',
   'Move repeat': 'Judėjimo kartojimas',
   'Delete repeat': 'Ištrinti kartojimą',
-  'At least one worker or worker tag must be assigned': 'Turi būti priskirtas bent vienas darbuotojas arba darbuotojo žymė',
+  'At least one worker or worker tag must be assigned': 'Turi būti priskirtas bent vienas darbuotojas arba komanda',
   'Assign to worker tags': 'Priskirti darbuotojo žymes',
   'This and following (incl. completed)': 'Šis ir tolesni (įskaitant užbaigtus)',
   'Payroll rules': 'Darbo užmokesčio taisyklės',

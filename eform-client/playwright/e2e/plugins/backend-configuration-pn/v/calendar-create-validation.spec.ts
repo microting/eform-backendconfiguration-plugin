@@ -10,6 +10,7 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
+import { assigneeWorkerOptions } from '../calendar-assignee.helper';
 
 /**
  * Calendar create-event VALIDATION suite for GitHub issue #892.
@@ -199,7 +200,7 @@ test.describe.serial('Calendar create-event validation (#892)', () => {
     const assignee = page.locator('#calendarEventAssignee');
     await assignee.click();
     await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
-    await page.locator('.ng-dropdown-panel .ng-option').first().click();
+    await assigneeWorkerOptions(page).first().click();
     await page.waitForTimeout(300);
     // Close the dropdown without mutating other state.
     await page.locator('#calendarEventTitle').click();

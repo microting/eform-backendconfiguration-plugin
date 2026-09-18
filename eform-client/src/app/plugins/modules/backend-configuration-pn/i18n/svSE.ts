@@ -502,7 +502,7 @@ export const svSE = {
   'Edit repeat': 'Redigera upprepning',
   'Move repeat': 'Flytta upprepa',
   'Delete repeat': 'Ta bort upprepning',
-  'At least one worker or worker tag must be assigned': 'Minst en arbetare eller arbetartagg måste tilldelas',
+  'At least one worker or worker tag must be assigned': 'Minst en arbetare eller ett team måste tilldelas',
   'Assign to worker tags': 'Tilldela till arbetartaggar',
   'This and following (incl. completed)': 'Detta och följande (inkl. färdigställda)',
   'Payroll rules': 'Löneregler',

@@ -502,7 +502,7 @@ export const etET = {
   'Edit repeat': 'Redigeeri kordust',
   'Move repeat': 'Liigutuse kordus',
   'Delete repeat': 'Kustuta kordus',
-  'At least one worker or worker tag must be assigned': 'Vähemalt üks töötaja või töötaja silt peab olema määratud',
+  'At least one worker or worker tag must be assigned': 'Vähemalt üks töötaja või meeskond peab olema määratud',
   'Assign to worker tags': 'Määra töötaja siltidele',
   'This and following (incl. completed)': 'See ja järgnev (sh lõpetatud)',
   'Payroll rules': 'Palgaarvestuse reeglid',

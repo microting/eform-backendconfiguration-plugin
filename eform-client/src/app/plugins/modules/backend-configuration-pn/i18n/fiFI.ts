@@ -502,7 +502,7 @@ export const fiFI = {
   'Edit repeat': 'Muokkaa toistoa',
   'Move repeat': 'Siirrä toisto',
   'Delete repeat': 'Poista toisto',
-  'At least one worker or worker tag must be assigned': 'Vähintään yksi työntekijä tai työntekijätunniste on liitettävä',
+  'At least one worker or worker tag must be assigned': 'Vähintään yksi työntekijä tai tiimi on liitettävä',
   'Assign to worker tags': 'Määritä työntekijätunnisteille',
   'This and following (incl. completed)': 'Tämä ja seuraavat (mukaan lukien valmiit)',
   'Payroll rules': 'Palkanlaskentasäännöt',

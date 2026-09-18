@@ -502,7 +502,7 @@ export const csCZ = {
   'Edit repeat': 'Upravit opakování',
   'Move repeat': 'Opakování pohybu',
   'Delete repeat': 'Smazat opakování',
-  'At least one worker or worker tag must be assigned': 'Musí být přiřazen alespoň jeden pracovník nebo tag pracovníka.',
+  'At least one worker or worker tag must be assigned': 'Musí být přiřazen alespoň jeden pracovník nebo tým.',
   'Assign to worker tags': 'Přiřadit k tagům pracovníka',
   'This and following (incl. completed)': 'Toto a následující (včetně dokončených)',
   'Payroll rules': 'Pravidla pro výplaty',

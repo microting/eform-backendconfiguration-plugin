@@ -11,6 +11,7 @@ import {
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
 import { UI_TIMEOUT } from '../wait-helpers';
+import { assigneeWorkerOptions } from '../calendar-assignee.helper';
 
 /**
  * Calendar task-completion paths suite for GitHub issue #894.
@@ -480,7 +481,7 @@ test.describe.serial('Calendar task completion (#894)', () => {
     const assignee = page.locator('#calendarEventAssignee');
     await assignee.click();
     await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
-    await page.locator('.ng-dropdown-panel .ng-option').first().click();
+    await assigneeWorkerOptions(page).first().click();
     await page.locator('#calendarEventTitle').click();
     await calendarPage.selectRepeatPreset('weekdays');
     await page.locator('#calendarEventSaveBtn').click();
