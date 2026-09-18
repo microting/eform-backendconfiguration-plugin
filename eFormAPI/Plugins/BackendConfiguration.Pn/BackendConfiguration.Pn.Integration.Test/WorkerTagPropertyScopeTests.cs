@@ -398,7 +398,17 @@ public class WorkerTagPropertyScopeTests : TestBaseSetup
     /// <summary>
     /// The release-note risk, pinned: an event already assigned to a cross-property team
     /// that had deployed a FUTURE case to the other property's member gets that case
-    /// retracted on the next reconcile, while the own-property member is left deployed.
+    /// retracted on the next reconcile, while the own-property member is left deployed and
+    /// a COMPLETED case of the other property's member is left untouched.
+    /// <para>
+    /// "Retracted" is asserted where the engine records it
+    /// (<c>RetractSiteForOccurrenceAsync</c>): the member's items-planning
+    /// <c>PlanningCaseSite</c> is soft-deleted, its owning <c>PlanningCase</c> is set to
+    /// Retracted, and the occurrence's Compliance row no longer names the member's case.
+    /// The Compliance row itself is NOT removed: it belongs to the occurrence, and while
+    /// another assignee remains, step (g) of <c>ReconcileEventAsync</c> keeps it live
+    /// (repointed/released) — it is only deleted when nobody is left.
+    /// </para>
     /// <b>Fails on the old code</b>: the A member stayed in the desired set, so nothing was
     /// retracted.
     /// </summary>
@@ -412,10 +422,18 @@ public class WorkerTagPropertyScopeTests : TestBaseSetup
 
         var futureDate = DateTime.UtcNow.Date.AddDays(7);
         // Compliances is UNIQUE on (PlanningId, Deadline): distinct times, same date.
-        var outOfPropertyCompliance = await SeedDeployedOccurrence(
-            planning.Id, futureDate.AddHours(9), memberOnA);
-        var ownPropertyCompliance = await SeedDeployedOccurrence(
-            planning.Id, futureDate.AddHours(10), memberOnB);
+        var outOfProperty = await SeedDeployedOccurrence(
+            planning.Id, futureDate.AddHours(9), memberOnA, OpenCaseStatus);
+        var ownProperty = await SeedDeployedOccurrence(
+            planning.Id, futureDate.AddHours(10), memberOnB, OpenCaseStatus);
+
+        // A later occurrence where the other property's member already COMPLETED the case:
+        // completed cases are immutable and must survive the property restriction.
+        var laterDate = futureDate.AddDays(7);
+        var completedOutOfProperty = await SeedDeployedOccurrence(
+            planning.Id, laterDate.AddHours(9), memberOnA, CompletedCaseStatus);
+        var laterOwnProperty = await SeedDeployedOccurrence(
+            planning.Id, laterDate.AddHours(10), memberOnB, OpenCaseStatus);
 
         var deploy = Substitute.For<IEventDeployService>();
         var engine = new CalendarAssignmentReconciliationService(
@@ -425,40 +443,115 @@ public class WorkerTagPropertyScopeTests : TestBaseSetup
 
         await engine.ReconcileEventAsync(arp.Id);
 
-        var reloadedOut = await BackendConfigurationPnDbContext!.Compliances
-            .AsNoTracking().FirstAsync(x => x.Id == outOfPropertyCompliance);
-        var reloadedOwn = await BackendConfigurationPnDbContext.Compliances
-            .AsNoTracking().FirstAsync(x => x.Id == ownPropertyCompliance);
+        async Task<PlanningCaseSite> PcsOf(DeployedOccurrence o) =>
+            await ItemsPlanningPnDbContext!.PlanningCaseSites.AsNoTracking()
+                .FirstAsync(x => x.Id == o.PlanningCaseSiteId);
+        async Task<PlanningCase> PcOf(DeployedOccurrence o) =>
+            await ItemsPlanningPnDbContext!.PlanningCases.AsNoTracking()
+                .FirstAsync(x => x.Id == o.PlanningCaseId);
+        async Task<BcCompliance> ComplianceOf(DeployedOccurrence o) =>
+            await BackendConfigurationPnDbContext!.Compliances.AsNoTracking()
+                .FirstAsync(x => x.Id == o.ComplianceId);
+
+        var outPcs = await PcsOf(outOfProperty);
+        var outPc = await PcOf(outOfProperty);
+        var outCompliance = await ComplianceOf(outOfProperty);
+        var ownPcs = await PcsOf(ownProperty);
+        var ownPc = await PcOf(ownProperty);
+        var ownCompliance = await ComplianceOf(ownProperty);
+        var completedPcs = await PcsOf(completedOutOfProperty);
+        var completedPc = await PcOf(completedOutOfProperty);
+        var completedCompliance = await ComplianceOf(completedOutOfProperty);
+        var laterOwnPcs = await PcsOf(laterOwnProperty);
 
         Assert.Multiple(() =>
         {
-            Assert.That(reloadedOut.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed),
-                "the other property's member's future case is retracted on reconcile");
-            Assert.That(reloadedOwn.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed),
+            // The other property's member: future, not completed -> retracted.
+            Assert.That(outPcs.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed),
+                "the other property's member's future case is retracted on reconcile "
+                + "(PlanningCaseSite soft-deleted)");
+            Assert.That(outPc.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Retracted),
+                "the retracted member's owning PlanningCase has no live sites left -> Retracted");
+            Assert.That(outCompliance.MicrotingSdkCaseId, Is.Not.EqualTo(outOfProperty.SdkCaseId),
+                "the occurrence's Compliance row no longer names the retracted member's case");
+            Assert.That(outCompliance.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed),
+                "the occurrence still has an assignee (the own-property member), so its "
+                + "Compliance row is kept (released/repointed), not deleted");
+
+            // Control: the own-property member stays deployed.
+            Assert.That(ownPcs.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed),
                 "control: the own-property member's case stays deployed");
+            Assert.That(ownPc.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Retracted));
+            Assert.That(ownCompliance.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed));
+            Assert.That(ownCompliance.MicrotingSdkCaseId, Is.EqualTo(ownProperty.SdkCaseId),
+                "control: the own-property member's Compliance row still names their case");
+            Assert.That(laterOwnPcs.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed));
+
+            // Completed cases are immutable, even for the out-of-property member.
+            Assert.That(completedPcs.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed),
+                "a COMPLETED case of the other property's member is never retracted");
+            Assert.That(completedPc.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Retracted));
+            Assert.That(completedCompliance.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed));
+            Assert.That(completedCompliance.MicrotingSdkCaseId, Is.EqualTo(completedOutOfProperty.SdkCaseId),
+                "the completed case's Compliance row is untouched");
         });
         await deploy.DidNotReceive().EnsureComplianceForOccurrenceAsync(
             Arg.Any<AreaRulePlanning>(), Arg.Any<DateTime>(), memberOnA, Arg.Any<CancellationToken>());
     }
 
-    private async Task<int> SeedDeployedOccurrence(int planningId, DateTime deadline, int siteId)
+    /// <summary>SDK <c>Case.Status</c> of a live, unanswered case.</summary>
+    private const int OpenCaseStatus = 66;
+
+    /// <summary>SDK <c>Case.Status</c> of a completed (immutable) case.</summary>
+    private const int CompletedCaseStatus = 100;
+
+    private sealed record DeployedOccurrence(
+        int SdkCaseId, int PlanningCaseId, int PlanningCaseSiteId, int ComplianceId);
+
+    /// <summary>
+    /// The full deployed shape the reconcile retraction path acts on: SDK Case, its
+    /// items-planning PlanningCase + PlanningCaseSite, and the occurrence's Compliance row
+    /// (shaped like <c>ComplianceReassignmentTests</c>' seeds). MicrotingUid is null so the
+    /// SDK CaseDelete cloud call is skipped; the bookkeeping still runs.
+    /// </summary>
+    private async Task<DeployedOccurrence> SeedDeployedOccurrence(
+        int planningId, DateTime deadline, int siteId, int caseStatus)
     {
         var sdkCase = new SdkCase
         {
-            SiteId = siteId, Status = 66, MicrotingUid = null,
+            SiteId = siteId, Status = caseStatus, MicrotingUid = null,
             WorkflowState = Constants.WorkflowStates.Created
         };
         await MicrotingDbContext!.Cases.AddAsync(sdkCase);
         await MicrotingDbContext.SaveChangesAsync();
 
+        var planningCase = new PlanningCase
+        {
+            PlanningId = planningId, Status = caseStatus, MicrotingSdkeFormId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await ItemsPlanningPnDbContext!.PlanningCases.AddAsync(planningCase);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        var planningCaseSite = new PlanningCaseSite
+        {
+            PlanningId = planningId, PlanningCaseId = planningCase.Id,
+            MicrotingSdkSiteId = siteId, MicrotingSdkeFormId = 0,
+            MicrotingSdkCaseId = sdkCase.Id, Status = caseStatus,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await ItemsPlanningPnDbContext.PlanningCaseSites.AddAsync(planningCaseSite);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
         var compliance = new BcCompliance
         {
             PlanningId = planningId, Deadline = deadline, MicrotingSdkCaseId = sdkCase.Id,
+            PlanningCaseSiteId = planningCase.Id,
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         };
         await BackendConfigurationPnDbContext!.Compliances.AddAsync(compliance);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
-        return compliance.Id;
+        return new DeployedOccurrence(sdkCase.Id, planningCase.Id, planningCaseSite.Id, compliance.Id);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
