@@ -3,10 +3,10 @@ import {Overlay, OverlayRef, ConnectedPosition} from '@angular/cdk/overlay';
 import {ComponentPortal} from '@angular/cdk/portal';
 import {Router} from '@angular/router';
 import {BehaviorSubject, firstValueFrom, forkJoin, Observable, of, Subject} from 'rxjs';
-import {catchError, takeUntil} from 'rxjs/operators';
+import {catchError, take, takeUntil} from 'rxjs/operators';
 import {Store} from '@ngrx/store';
 import {TranslateService} from '@ngx-translate/core';
-import {selectCurrentUserIsAdmin} from 'src/app/state/auth/auth.selector';
+import {selectAuthUser, selectCurrentUserIsAdmin} from 'src/app/state/auth/auth.selector';
 import {
   BackendConfigurationPnCalendarService,
   BackendConfigurationPnPropertiesService,
@@ -179,7 +179,21 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       this.activeTagNames = filters.activeTagNames;
     });
 
-    this.loadProperties();
+    // #1303: restore the signed-in user's saved property/calendars/workers/week
+    // ONCE, before the property list loads, so loadProperties() routes it
+    // through the #1292 restore path (restorePropertySelection) and validates
+    // it — never through onPropertySelected(), which would wipe it. The auth
+    // state is already populated when this route renders (the auth guard runs
+    // on it), so this completes synchronously; a user without an id is never
+    // restored for, and the calendar then behaves as on a first visit.
+    this.store.select(selectAuthUser).pipe(take(1), takeUntil(this.destroy$))
+      .subscribe(user => {
+        const userId = (user as {id?: number} | null | undefined)?.id;
+        if (userId) {
+          this.stateService.restoreSavedFilters(userId);
+        }
+        this.loadProperties();
+      });
     this.loadTags();
     this.loadTeams();
     this.loadEforms();

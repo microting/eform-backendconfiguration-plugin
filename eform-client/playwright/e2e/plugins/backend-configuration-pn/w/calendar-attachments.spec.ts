@@ -247,9 +247,10 @@ test.describe.serial('Calendar event attachments', () => {
     await calendarPage.goToCalendar();
     await calendarPage.selectProperty(property.name);
     await page.waitForTimeout(1500);
-    // We were on next-week when we created the event; advance one week to
-    // the same view as before. openCreateModalAtSlot already advanced once.
-    await calendarPage.navigateToNextWeek();
+    // We were on next-week when we created the event (openCreateModalAtSlot
+    // advanced once). Since #1303 the calendar remembers the last week per
+    // user, so the reload reopens that same week (re-picking the property
+    // keeps the week) — no navigation needed.
 
     // 7. Re-open the event → expect 3 attachment rows.
     await calendarPage.findEventBlock(title).waitFor({ state: 'visible', timeout: 10000 });
@@ -287,7 +288,7 @@ test.describe.serial('Calendar event attachments', () => {
     await calendarPage.goToCalendar();
     await calendarPage.selectProperty(property.name);
     await page.waitForTimeout(1500);
-    await calendarPage.navigateToNextWeek();
+    // #1303: the reload reopens the remembered week (next week) already.
 
     await calendarPage.findEventBlock(title).click();
     await page.locator('app-task-preview-modal').waitFor({ state: 'visible', timeout: 10000 });
@@ -380,7 +381,7 @@ test.describe.serial('Calendar event attachments', () => {
     await calendarPage.goToCalendar();
     await calendarPage.selectProperty(property.name);
     await page.waitForTimeout(1500);
-    await calendarPage.navigateToNextWeek();
+    // #1303: the reload reopens the remembered week (next week) already.
 
     // 7. Reopen the same event in edit mode and assert all 3 attachments.
     await page.locator(`.task-block`).filter({ hasText: j1EventTitle }).first().click();

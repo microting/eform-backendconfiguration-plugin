@@ -15,6 +15,8 @@ import {
 } from '../../../../services';
 import {CalendarLayoutService} from '../../services/calendar-layout.service';
 import {CalendarStateService} from '../store';
+import {readSavedCalendarFilters} from '../store/calendar-filters.storage';
+import {selectAuthUser} from 'src/app/state/auth/auth.selector';
 import {CalendarContainerComponent} from './calendar-container.component';
 
 // rebuildLayout() parses 'YYYY-MM-DD' with `new Date(...)`, which JS reads as
@@ -137,6 +139,13 @@ describe('CalendarContainerComponent', () => {
       // does, and scoped to the assignee filter — boards and tags survive it.
       clearAssignees: jest.fn(() =>
         filters$.next({...filters$.value, activeSiteIds: [], activeTeamIds: []})),
+      // #1303: the fresh-store branch of CalendarStateService.restoreSavedFilters —
+      // read the user's saved settings (real storage helper) and write them
+      // through the restore path.
+      restoreSavedFilters: jest.fn((userId: number) => {
+        const saved = readSavedCalendarFilters(userId);
+        if (saved) stateServiceStub.restoreFilters(saved);
+      }),
     };
 
     boardsByProperty = new Map<number, any>([
@@ -1067,6 +1076,188 @@ describe('CalendarContainerComponent', () => {
 
       // A failed load is not evidence the worker is gone.
       expect(component.activeSiteIds).toEqual([5]);
+    });
+  });
+
+  // #1303: the first visit shows the first property with its default calendar;
+  // later visits (a page reload included) reopen the last property, calendar(s),
+  // worker(s) and week, validated against what still exists.
+  describe('restoring the saved settings on a fresh load', () => {
+    const USER = 1;
+    const KEY = 'bcpn.calendar.filters.1';
+
+    /** A fresh page load: empty store, signed-in user `userId`, new component. */
+    function freshLoad(userId: number | null = USER) {
+      fixture.destroy();
+      filters$.next({
+        propertyId: null,
+        currentDate: toLocalDateString(new Date()),
+        viewMode: 'week',
+        activeBoardIds: [],
+        activeSiteIds: [],
+        activeTeamIds: [],
+        activeTagNames: [],
+      });
+      const store = TestBed.inject(Store) as any;
+      store.select.mockImplementation((selector: any) =>
+        selector === selectAuthUser ? of(userId === null ? {id: 0} : {id: userId}) : of(false));
+      calendarServiceStub.getBoards.mockClear();
+      calendarServiceStub.getTasksForWeek.mockClear();
+      stateServiceStub.updatePropertyId.mockClear();
+      stateServiceStub.setActiveBoardIds.mockClear();
+      stateServiceStub.restoreFilters.mockClear();
+      stateServiceStub.restoreSavedFilters.mockClear();
+      fixture = TestBed.createComponent(CalendarContainerComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+    }
+
+    function save(value: any) {
+      window.localStorage.setItem(KEY, JSON.stringify(value));
+    }
+
+    function lastTaskRequest() {
+      const calls = calendarServiceStub.getTasksForWeek.mock.calls;
+      return calls[calls.length - 1][0];
+    }
+
+    /** The Monday of the week two weeks from now, as the saved week. */
+    function twoWeeksAheadMonday(): string {
+      const d = mondayOfThisWeek();
+      d.setDate(d.getDate() + 14);
+      return toLocalDateString(d);
+    }
+
+    beforeEach(() => {
+      window.localStorage.clear();
+      boardsByProperty.set(PROPERTY_A, {success: true, model: [
+        {id: 10, name: 'Default', color: '#123456'},
+        {id: 11, name: 'Second', color: '#654321'},
+      ]});
+      boardsByProperty.set(PROPERTY_B, {success: true, model: [
+        {id: 20, name: 'B default', color: '#abcdef'},
+        {id: 21, name: 'B second', color: '#fedcba'},
+      ]});
+      propertiesServiceStub.getDeviceUsersFiltered.mockReturnValue(of({
+        success: true,
+        model: [
+          {siteId: 5, fullName: 'Worker A', siteName: 'Worker A'},
+          {siteId: 6, fullName: 'Worker B', siteName: 'Worker B'},
+        ],
+      }));
+    });
+
+    afterEach(() => {
+      window.localStorage.clear();
+      jest.restoreAllMocks();
+    });
+
+    it('restores the saved property, calendar, worker and week when all still exist', () => {
+      const week = twoWeeksAheadMonday();
+      save({propertyId: PROPERTY_B, activeBoardIds: [21], activeSiteIds: [6], currentDate: week});
+
+      freshLoad();
+
+      expect(stateServiceStub.restoreSavedFilters).toHaveBeenCalledWith(USER);
+      expect(stateServiceStub.updatePropertyId).not.toHaveBeenCalled();
+      expect(stateServiceStub.setActiveBoardIds).not.toHaveBeenCalled();
+      expect(component.currentPropertyId).toBe(PROPERTY_B);
+      expect(component.activeBoardIds).toEqual([21]);
+      expect(component.activeSiteIds).toEqual([6]);
+      expect(component.currentDate).toBe(week);
+      expect(lastTaskRequest()).toEqual(expect.objectContaining(
+        {propertyId: PROPERTY_B, boardIds: [21], siteIds: [6], weekStart: week}));
+    });
+
+    it('reopens a saved week in the past as is', () => {
+      save({propertyId: PROPERTY_A, activeBoardIds: [10], activeSiteIds: [], currentDate: '2025-01-06'});
+
+      freshLoad();
+
+      expect(component.currentDate).toBe('2025-01-06');
+      expect(lastTaskRequest()).toEqual(expect.objectContaining({weekStart: '2025-01-06'}));
+    });
+
+    it('falls back to the first property and its default calendar when the saved property is gone', () => {
+      save({propertyId: 99, activeBoardIds: [900], activeSiteIds: [5], currentDate: '2025-01-06'});
+
+      freshLoad();
+
+      expect(stateServiceStub.updatePropertyId).toHaveBeenCalledWith(PROPERTY_A);
+      expect(component.currentPropertyId).toBe(PROPERTY_A);
+      expect(component.activeBoardIds).toEqual([10]);
+      expect(component.activeSiteIds).toEqual([]);
+      expect(calendarServiceStub.getBoards).not.toHaveBeenCalledWith(99);
+    });
+
+    it('selects the default calendar when the saved calendar is gone', () => {
+      save({propertyId: PROPERTY_B, activeBoardIds: [29], activeSiteIds: [6]});
+
+      freshLoad();
+
+      expect(component.currentPropertyId).toBe(PROPERTY_B);
+      expect(component.activeBoardIds).toEqual([20]);
+      expect(component.activeSiteIds).toEqual([6]);
+      expect(calendarServiceStub.getTasksForWeek).toHaveBeenCalledTimes(1);
+      expect(lastTaskRequest()).toEqual(expect.objectContaining({propertyId: PROPERTY_B, boardIds: [20]}));
+    });
+
+    it('drops a saved worker who is no longer on the property', () => {
+      save({propertyId: PROPERTY_A, activeBoardIds: [10], activeSiteIds: [6, 7]});
+
+      freshLoad();
+
+      expect(component.activeSiteIds).toEqual([6]);
+      expect(lastTaskRequest()).toEqual(expect.objectContaining({siteIds: [6]}));
+    });
+
+    it('opens today\'s week when the saved date is unusable', () => {
+      save({propertyId: PROPERTY_A, activeBoardIds: [10], activeSiteIds: [], currentDate: '2026-02-31'});
+
+      freshLoad();
+
+      expect(component.currentPropertyId).toBe(PROPERTY_A);
+      expect(component.currentDate).toBe(toLocalDateString(new Date()));
+      expect(lastTaskRequest()).toEqual(expect.objectContaining({weekStart: toLocalDateString(mondayOfThisWeek())}));
+    });
+
+    it('does not read another user\'s saved settings', () => {
+      save({propertyId: PROPERTY_B, activeBoardIds: [21], activeSiteIds: [6]});
+
+      freshLoad(2);
+
+      expect(stateServiceStub.restoreSavedFilters).toHaveBeenCalledWith(2);
+      expect(component.currentPropertyId).toBe(PROPERTY_A);
+      expect(component.activeBoardIds).toEqual([10]);
+      expect(component.activeSiteIds).toEqual([]);
+    });
+
+    it('does not restore before the user id is known', () => {
+      save({propertyId: PROPERTY_B, activeBoardIds: [21], activeSiteIds: [6]});
+
+      freshLoad(null);
+
+      expect(stateServiceStub.restoreSavedFilters).not.toHaveBeenCalled();
+      expect(component.currentPropertyId).toBe(PROPERTY_A);
+      expect(component.activeBoardIds).toEqual([10]);
+    });
+
+    it('behaves as a first visit when storage throws', () => {
+      jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('SecurityError'); });
+
+      expect(() => freshLoad()).not.toThrow();
+      expect(component.currentPropertyId).toBe(PROPERTY_A);
+      expect(component.activeBoardIds).toEqual([10]);
+    });
+
+    it('is unchanged on a first visit (nothing saved): first property, lowest-id calendar, this week', () => {
+      freshLoad();
+
+      expect(stateServiceStub.updatePropertyId).toHaveBeenCalledWith(PROPERTY_A);
+      expect(component.currentPropertyId).toBe(PROPERTY_A);
+      expect(component.activeBoardIds).toEqual([10]);
+      expect(component.activeSiteIds).toEqual([]);
+      expect(lastTaskRequest()).toEqual(expect.objectContaining({weekStart: toLocalDateString(mondayOfThisWeek())}));
     });
   });
 });

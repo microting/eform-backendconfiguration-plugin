@@ -271,8 +271,8 @@ test.describe.serial('Calendar attachment quota', () => {
     await calendarPage.goToCalendar();
     await calendarPage.selectProperty(property.name);
     await page.waitForTimeout(1500);
-    // openCreateModalAtSlot advanced one week to create the event.
-    await calendarPage.navigateToNextWeek();
+    // openCreateModalAtSlot advanced one week to create the event; since
+    // #1303 the reload reopens that remembered week, so no navigation.
 
     await calendarPage.findEventBlock(title).waitFor({ state: 'visible', timeout: 10000 });
     await calendarPage.findEventBlock(title).click();

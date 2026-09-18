@@ -1,8 +1,11 @@
 import {Injectable} from '@angular/core';
 import {Store} from '@ngrx/store';
+import {withLatestFrom} from 'rxjs/operators';
+import {selectAuthUser} from 'src/app/state/auth/auth.selector';
 import {
   calendarUpdateFilters,
   CalendarFiltersModel,
+  createCalendarInitialState,
   selectCalendarActiveBoardIds,
   selectCalendarActiveSiteIds,
   selectCalendarActiveTeamIds,
@@ -12,6 +15,7 @@ import {
   selectCalendarPropertyId,
   selectCalendarViewMode,
 } from '../../../../state';
+import {readSavedCalendarFilters, writeSavedCalendarFilters} from './calendar-filters.storage';
 
 @Injectable({providedIn: 'root'})
 export class CalendarStateService {
@@ -26,8 +30,58 @@ export class CalendarStateService {
 
   private currentFilters: CalendarFiltersModel;
 
+  /**
+   * The user the in-memory filters belong to (#1303), set by
+   * restoreSavedFilters(). Null until the calendar has been opened once in this
+   * app instance. Nothing is saved until it is known, and nothing is saved
+   * while it differs from the signed-in user, so one user's selections are
+   * never written under another user's key.
+   */
+  private filtersOwnerUserId: number | null = null;
+
   constructor(private store: Store) {
     this.filters$.subscribe(f => this.currentFilters = f);
+    // #1303: remember the last property/calendars/workers/week per user. Only
+    // filter changes trigger a save (never an auth change on its own), and the
+    // untouched initial state (no property) is never written, so the app start
+    // and a logout reset cannot overwrite what the user saved.
+    this.filters$.pipe(withLatestFrom(this.store.select(selectAuthUser)))
+      .subscribe(([filters, user]) => {
+        const userId = (user as {id?: number} | null | undefined)?.id;
+        if (!filters || filters.propertyId == null || !userId) return;
+        if (this.filtersOwnerUserId !== userId) return;
+        writeSavedCalendarFilters(userId, filters);
+      });
+  }
+
+  /**
+   * #1303: called once per calendar visit, with the signed-in user's id, BEFORE
+   * the property list loads. When the in-memory filters are empty (first visit
+   * since the page loaded, or since a logout) the user's saved settings are
+   * written through the restore path; the calendar then validates them against
+   * the fresh property/calendar/worker lists. When the in-memory filters already
+   * belong to this user (re-entry inside the SPA, #1292) they are kept as they
+   * are. If they belong to someone else (the signed-in user changed without a
+   * logout in this tab) they are reset first, so nothing leaks across users.
+   */
+  restoreSavedFilters(userId: number) {
+    if (!userId) return;
+    const hasInMemory = this.currentFilters?.propertyId != null;
+    const ownedByOther = this.filtersOwnerUserId !== null && this.filtersOwnerUserId !== userId;
+    if (hasInMemory && !ownedByOther) {
+      this.filtersOwnerUserId = userId;
+      return;
+    }
+    if (hasInMemory && ownedByOther) {
+      this.dispatch({...createCalendarInitialState().filters});
+    }
+    // Set BEFORE the dispatch below: the save subscription runs synchronously
+    // on it and must already see the new owner.
+    this.filtersOwnerUserId = userId;
+    const saved = readSavedCalendarFilters(userId);
+    if (saved) {
+      this.restoreFilters(saved);
+    }
   }
 
   updatePropertyId(propertyId: number | null) {
