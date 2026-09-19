@@ -158,12 +158,15 @@ public static class BackendConfigurationTaskTrackerHelper
 			// Loaded with each event's PropertyId (#1256): a team is expanded — and
 			// matched by the Workers filter — only against the event's own property.
 			var workerTagLinks = compliancePlanningIds.Count > 0
-				? await backendConfigurationPnDbContext.AreaRulePlannings
-					.Where(arp => arp.WorkflowState != Constants.WorkflowStates.Removed
-					              && compliancePlanningIds.Contains(arp.ItemPlanningId))
-					.SelectMany(arp => arp.AreaRulePlanningWorkerTags
-						.Where(wt => wt.WorkflowState != Constants.WorkflowStates.Removed)
-						.Select(wt => new { ArpId = arp.Id, arp.PropertyId, wt.TagId }))
+				// Explicit inner join: SelectMany over the navigation with an outer-ARP
+				// projection compiles to CROSS APPLY, which MySQL cannot translate.
+				? await backendConfigurationPnDbContext.AreaRulePlanningWorkerTags
+					.Where(wt => wt.WorkflowState != Constants.WorkflowStates.Removed)
+					.Join(backendConfigurationPnDbContext.AreaRulePlannings
+							.Where(arp => arp.WorkflowState != Constants.WorkflowStates.Removed
+							              && compliancePlanningIds.Contains(arp.ItemPlanningId)),
+						wt => wt.AreaRulePlanningId, arp => arp.Id,
+						(wt, arp) => new { ArpId = arp.Id, arp.PropertyId, wt.TagId })
 					.ToListAsync()
 				: [];
 

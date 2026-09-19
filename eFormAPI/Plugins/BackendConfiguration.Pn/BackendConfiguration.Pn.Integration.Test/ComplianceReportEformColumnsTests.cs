@@ -130,6 +130,12 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         BackendConfigurationPnDbContext.AreaRules.RemoveRange(BackendConfigurationPnDbContext.AreaRules);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
+        // #1256: the team-worker tests link members to their property (PropertyWorker),
+        // and those links must go before the properties they point at.
+        BackendConfigurationPnDbContext.PropertyWorkers.RemoveRange(
+            BackendConfigurationPnDbContext.PropertyWorkers);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
         BackendConfigurationPnDbContext.Areas.RemoveRange(BackendConfigurationPnDbContext.Areas);
         BackendConfigurationPnDbContext.Properties.RemoveRange(BackendConfigurationPnDbContext.Properties);
         await BackendConfigurationPnDbContext.SaveChangesAsync();

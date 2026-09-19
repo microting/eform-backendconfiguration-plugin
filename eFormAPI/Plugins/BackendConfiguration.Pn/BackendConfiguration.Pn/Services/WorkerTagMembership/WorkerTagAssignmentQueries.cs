@@ -48,14 +48,18 @@ public static class WorkerTagAssignmentQueries
             return [];
         }
 
-        var rows = await backendConfigurationPnDbContext.AreaRulePlannings
+        // Explicit inner join, not SelectMany over the navigation: a SelectMany whose
+        // inner projection reads the outer ARP compiles to CROSS APPLY, which the MySQL
+        // provider cannot translate.
+        var rows = await backendConfigurationPnDbContext.AreaRulePlanningWorkerTags
             .AsNoTracking()
-            .Where(arp => arp.WorkflowState != Constants.WorkflowStates.Removed
-                          && propertyIds.Contains(arp.PropertyId))
-            .SelectMany(arp => arp.AreaRulePlanningWorkerTags
-                .Where(wt => wt.WorkflowState != Constants.WorkflowStates.Removed
-                             && tagIds.Contains(wt.TagId))
-                .Select(wt => new { ArpId = arp.Id, arp.PropertyId, wt.TagId }))
+            .Where(wt => wt.WorkflowState != Constants.WorkflowStates.Removed
+                         && tagIds.Contains(wt.TagId))
+            .Join(backendConfigurationPnDbContext.AreaRulePlannings
+                    .Where(arp => arp.WorkflowState != Constants.WorkflowStates.Removed
+                                  && propertyIds.Contains(arp.PropertyId)),
+                wt => wt.AreaRulePlanningId, arp => arp.Id,
+                (wt, arp) => new { ArpId = arp.Id, arp.PropertyId, wt.TagId })
             .ToListAsync(ct).ConfigureAwait(false);
 
         return rows
