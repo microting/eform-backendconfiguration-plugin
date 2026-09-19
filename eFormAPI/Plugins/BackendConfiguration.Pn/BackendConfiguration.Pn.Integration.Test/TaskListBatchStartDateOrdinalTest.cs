@@ -154,7 +154,7 @@ public partial class TaskListBatchStartDateTest
         TestContextLogger<BackendConfigurationCalendarService>.Instance,
         _retractionService,
         _backfillService,
-        new WorkerTagMembershipService(_coreHelper));
+        new WorkerTagMembershipService(_coreHelper, BackendConfigurationPnDbContext));
 
     /// <summary>
     /// Runs the PREVIEW, then the real APPLY, on the same data, and reports both

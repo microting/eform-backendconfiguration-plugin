@@ -1,6 +1,6 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
-import {MatDialog} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {Router} from '@angular/router';
 import {Store} from '@ngrx/store';
@@ -1258,6 +1258,255 @@ describe('CalendarContainerComponent', () => {
       expect(component.activeBoardIds).toEqual([10]);
       expect(component.activeSiteIds).toEqual([]);
       expect(lastTaskRequest()).toEqual(expect.objectContaining({weekStart: toLocalDateString(mondayOfThisWeek())}));
+    });
+  });
+
+  // #1256: the toolbar filter's Teams section obeys the same property scope as its
+  // Employees section — only teams with a live member linked to the selected
+  // property are offered, the list follows every property change, and stored team
+  // ids that the property does not offer are pruned so the grid cannot be silently
+  // narrowed to nothing. Team NAMES (tiles, modal fallback) stay installation-wide.
+  describe('property-scoped teams (#1256)', () => {
+    let workerTags: {getWorkerTags: jest.Mock};
+    const TEAM_ON_A = {id: 7, name: 'Team A'};
+    const TEAM_ON_B = {id: 8, name: 'Team B'};
+    const TEAM_ELSEWHERE = {id: 9, name: 'Team elsewhere'};
+
+    /** Scoped list per property; no property id = the installation-wide list. */
+    function teamsResponder(overrides: Map<number | undefined, any> = new Map()) {
+      return (propertyId?: number | null) => {
+        const key = propertyId ?? undefined;
+        if (overrides.has(key)) return overrides.get(key);
+        if (key === PROPERTY_A) return of({success: true, model: [TEAM_ON_A]});
+        if (key === PROPERTY_B) return of({success: true, model: [TEAM_ON_B]});
+        return of({success: true, model: [TEAM_ON_A, TEAM_ON_B, TEAM_ELSEWHERE]});
+      };
+    }
+
+    /** Destroy + re-create with `stored` already in the store (#1292 re-entry). */
+    function reEnter(stored: any) {
+      fixture.destroy();
+      filters$.next({...filters$.value, ...stored});
+      calendarServiceStub.getTasksForWeek.mockClear();
+      stateServiceStub.updatePropertyId.mockClear();
+      workerTags.getWorkerTags.mockClear();
+      fixture = TestBed.createComponent(CalendarContainerComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+    }
+
+    function lastTaskRequest() {
+      const calls = calendarServiceStub.getTasksForWeek.mock.calls;
+      return calls[calls.length - 1][0];
+    }
+
+    beforeEach(() => {
+      workerTags = TestBed.inject(BackendConfigurationPnWorkerTagsService) as any;
+      workerTags.getWorkerTags.mockImplementation(teamsResponder());
+      boardsByProperty.set(PROPERTY_B, {success: true, model: [{id: 20, name: 'B default', color: '#abcdef'}]});
+      // Re-create so ngOnInit runs against the per-property responder.
+      reEnter({propertyId: null});
+    });
+
+    it('loads the teams for the selected property, not the installation-wide list', () => {
+      expect(workerTags.getWorkerTags).toHaveBeenCalledWith(PROPERTY_A);
+      expect(component.teams).toEqual([TEAM_ON_A]);
+    });
+
+    it('also loads the installation-wide list, for names only', () => {
+      expect(workerTags.getWorkerTags).toHaveBeenCalledWith();
+      expect(component.allTeams.map(t => t.id)).toEqual([7, 8, 9]);
+    });
+
+    it('reloads the teams when the property changes', () => {
+      workerTags.getWorkerTags.mockClear();
+
+      component.onPropertySelected(PROPERTY_B);
+
+      expect(workerTags.getWorkerTags).toHaveBeenCalledWith(PROPERTY_B);
+      expect(component.teams).toEqual([TEAM_ON_B]);
+    });
+
+    it('does not offer the previous property\'s teams while the new list is loading', () => {
+      const pendingB = new Subject<any>();
+      workerTags.getWorkerTags.mockImplementation(teamsResponder(new Map([[PROPERTY_B, pendingB]])));
+
+      component.onPropertySelected(PROPERTY_B);
+
+      expect(component.teams).toEqual([]);
+      pendingB.next({success: true, model: [TEAM_ON_B]});
+      pendingB.complete();
+      expect(component.teams).toEqual([TEAM_ON_B]);
+    });
+
+    it('discards a team list for a property the user has already left', () => {
+      const pendingA = new Subject<any>();
+      workerTags.getWorkerTags.mockImplementation(teamsResponder(new Map([[PROPERTY_A, pendingA]])));
+      component.loadTeams();
+
+      workerTags.getWorkerTags.mockImplementation(teamsResponder());
+      component.onPropertySelected(PROPERTY_B);
+      expect(component.teams).toEqual([TEAM_ON_B]);
+
+      pendingA.next({success: true, model: [TEAM_ON_A]});
+      pendingA.complete();
+
+      expect(component.teams).toEqual([TEAM_ON_B]);
+    });
+
+    it('offers no teams when the team load fails', () => {
+      workerTags.getWorkerTags.mockImplementation(
+        teamsResponder(new Map([[PROPERTY_B, of({success: false})]])));
+
+      component.onPropertySelected(PROPERTY_B);
+
+      expect(component.teams).toEqual([]);
+    });
+
+    it('offers no teams with no property selected', () => {
+      component.onPropertySelected(null);
+
+      expect(component.teams).toEqual([]);
+    });
+
+    it('re-entry: keeps a stored team the restored property offers', () => {
+      reEnter({propertyId: PROPERTY_B, activeBoardIds: [20], activeTeamIds: [8]});
+
+      expect(stateServiceStub.updatePropertyId).not.toHaveBeenCalled();
+      expect(workerTags.getWorkerTags).toHaveBeenCalledWith(PROPERTY_B);
+      expect(component.activeTeamIds).toEqual([8]);
+      expect(lastTaskRequest()).toEqual(expect.objectContaining({propertyId: PROPERTY_B, workerTagIds: [8]}));
+    });
+
+    it('re-entry: prunes a stored team with no member on the restored property and reloads the grid', () => {
+      // Team 7 exists installation-wide (and on A) but has no member on B: kept, it
+      // would narrow B's grid to nothing.
+      reEnter({propertyId: PROPERTY_B, activeBoardIds: [20], activeTeamIds: [7, 8]});
+
+      expect(component.activeTeamIds).toEqual([8]);
+      expect(lastTaskRequest()).toEqual(expect.objectContaining({propertyId: PROPERTY_B, workerTagIds: [8]}));
+    });
+
+    it('re-entry: validates stored teams against the SCOPED list, not the installation-wide one', () => {
+      // A slow installation-wide list must not be what the stored ids are checked
+      // against: team 9 is offered installation-wide but on neither property.
+      reEnter({propertyId: PROPERTY_A, activeBoardIds: [10], activeTeamIds: [9]});
+
+      expect(component.activeTeamIds).toEqual([]);
+      expect(lastTaskRequest()).toEqual(expect.objectContaining({propertyId: PROPERTY_A, workerTagIds: []}));
+    });
+
+    it('re-entry: keeps the stored teams when the team load fails', () => {
+      workerTags.getWorkerTags.mockImplementation(
+        teamsResponder(new Map([[PROPERTY_B, of({success: false})]])));
+
+      reEnter({propertyId: PROPERTY_B, activeBoardIds: [20], activeTeamIds: [8]});
+
+      // A failed load is not evidence the team left the property.
+      expect(component.activeTeamIds).toEqual([8]);
+    });
+
+    it('restoring saved settings (#1303) loads the teams of the SAVED property', () => {
+      const store = TestBed.inject(Store) as any;
+      store.select.mockImplementation((selector: any) =>
+        selector === selectAuthUser ? of({id: 1}) : of(false));
+      window.localStorage.setItem('bcpn.calendar.filters.1',
+        JSON.stringify({propertyId: PROPERTY_B, activeBoardIds: [20], activeSiteIds: []}));
+      try {
+        filters$.next({...filters$.value, propertyId: null, activeTeamIds: []});
+        reEnter({});
+
+        expect(component.currentPropertyId).toBe(PROPERTY_B);
+        expect(workerTags.getWorkerTags).toHaveBeenCalledWith(PROPERTY_B);
+        expect(workerTags.getWorkerTags).not.toHaveBeenCalledWith(PROPERTY_A);
+        expect(component.teams).toEqual([TEAM_ON_B]);
+      } finally {
+        window.localStorage.clear();
+      }
+    });
+
+    it('names a tile\'s team from the installation-wide list even when this property does not offer it', () => {
+      weekTasksResponse = {success: true, model: [{...propertyATask, workerTagIds: [9, 7]}]};
+
+      component.loadTasks();
+
+      expect(component.tasks[0].workerTagNames).toEqual(['Team elsewhere', 'Team A']);
+    });
+
+    // REGRESSION GUARDS (#1256). The scoped `teams` list feeds only the toolbar filter;
+    // every task modal and every tile keeps resolving team NAMES from the
+    // installation-wide `allTeams`, because a task can carry a team that has no member
+    // on its property any more (or, for copy, a team from another property). These pin
+    // that split: with `teams` and `allTeams` deliberately different, each modal must be
+    // handed `allTeams`, never the scoped list.
+    describe('task modals and tiles use the installation-wide team list', () => {
+      /** Every popover opened through the CDK Overlay, in order, with its MAT_DIALOG_DATA. */
+      let openedData: any[];
+
+      beforeEach(() => {
+        openedData = [];
+        const strategy: any = {};
+        strategy.withPositions = jest.fn(() => strategy);
+        strategy.withPush = jest.fn(() => strategy);
+        strategy.withFlexibleDimensions = jest.fn(() => strategy);
+        strategy.withViewportMargin = jest.fn(() => strategy);
+        const overlay = TestBed.inject(Overlay) as any;
+        overlay.position = jest.fn(() => ({flexibleConnectedTo: jest.fn(() => strategy)}));
+        overlay.create = jest.fn(() => ({
+          attach: jest.fn((portal: any) => {
+            openedData.push(portal.injector.get(MAT_DIALOG_DATA));
+            return {instance: {timeChanged: new Subject<any>(), popoverClose: new Subject<any>()}};
+          }),
+          backdropClick: () => new Subject<any>(),
+          detachments: () => new Subject<any>(),
+          overlayElement: null,
+          dispose: jest.fn(),
+        }));
+      });
+
+      /** A tile on property A that carries a team property A does not offer. */
+      const tile = () => ({...propertyATask, workerTagIds: [9], workerTagNames: ['Team elsewhere']} as any);
+      const anchor = {cellLeft: 0, cellRight: 100, slotTop: 0};
+
+      it('the scoped and the installation-wide lists differ (premise)', () => {
+        expect(component.teams).toEqual([TEAM_ON_A]);
+        expect(component.allTeams.map(t => t.id)).toEqual([7, 8, 9]);
+      });
+
+      it('create hands the modal the installation-wide list', () => {
+        component.openCreateModal({date: propertyATask.taskDate, startHour: 9, ...anchor});
+
+        expect(openedData).toHaveLength(1);
+        expect(openedData[0].workerTags).toBe(component.allTeams);
+        expect(openedData[0].workerTags).not.toEqual(component.teams);
+      });
+
+      it('edit hands the modal the installation-wide list', () => {
+        (component as any).openEditModal({task: tile(), ...anchor});
+
+        expect(openedData).toHaveLength(1);
+        expect(openedData[0].workerTags).toBe(component.allTeams);
+        expect(openedData[0].workerTags.map((t: any) => t.id)).toContain(9);
+      });
+
+      it('copy hands the modal the installation-wide list', () => {
+        (component as any).openCopyModal({task: tile(), ...anchor});
+
+        expect(openedData).toHaveLength(1);
+        expect(openedData[0].workerTags).toBe(component.allTeams);
+        expect(openedData[0].workerTags.map((t: any) => t.id)).toContain(9);
+      });
+
+      it('month view: a tile names a team found only in the installation-wide list', () => {
+        weekTasksResponse = {success: true, model: [{...propertyATask, workerTagIds: [9, 7]}]};
+        filters$.next({...filters$.value, viewMode: 'month'});
+
+        component.loadTasks();
+
+        const tiles = Array.from(component.monthTasksByDate.values()).flat().filter(t => t.id === propertyATask.id);
+        expect(tiles.length).toBeGreaterThan(0);
+        tiles.forEach(t => expect(t.workerTagNames).toEqual(['Team elsewhere', 'Team A']));
+      });
     });
   });
 });

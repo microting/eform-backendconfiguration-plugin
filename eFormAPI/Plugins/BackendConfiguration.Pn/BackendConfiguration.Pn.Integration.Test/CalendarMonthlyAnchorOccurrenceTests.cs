@@ -838,7 +838,7 @@ public class CalendarMonthlyAnchorRenderTests : TestBaseSetup
             TestContextLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            new WorkerTagMembershipService(coreHelper));
+            new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext));
     }
 
     private async Task<List<string>> QueryWeekDates(int propertyId, int arpId, DateTime weekStartMonday)

@@ -121,8 +121,12 @@ public class CalendarWorkerTagFilterTests : TestBaseSetup
         };
         await BackendConfigurationPnDbContext!.Properties.AddAsync(property);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
+        _lastSeededPropertyId = property.Id;
         return property;
     }
+
+    /// <summary>The property the test seeded most recently — see <see cref="LinkSiteToTag"/>.</summary>
+    private int? _lastSeededPropertyId;
 
     /// <summary>
     /// Seeds a weekly event anchored on <see cref="WeekMonday"/> with no
@@ -254,6 +258,15 @@ public class CalendarWorkerTagFilterTests : TestBaseSetup
         return tag.Id;
     }
 
+    /// <summary>
+    /// Also links the member to the test's most recently seeded property (active
+    /// <c>PropertyWorker</c>): since #1256 the week view's site → team expansion only
+    /// counts sites linked to the requested property, so without the link no member would
+    /// match at all. Every member is linked, removed memberships included, so the
+    /// LIVENESS clauses stay the reason for the exclusions these tests pin. The property
+    /// clause itself is covered by <c>WorkerTagCrossViewFilterTests</c>' cross-property
+    /// tests.
+    /// </summary>
     private async Task LinkSiteToTag(int tagId, int siteId, bool removed = false)
     {
         await MicrotingDbContext!.SiteTags.AddAsync(new SiteTag
@@ -265,6 +278,19 @@ public class CalendarWorkerTagFilterTests : TestBaseSetup
                 : Constants.WorkflowStates.Created
         });
         await MicrotingDbContext.SaveChangesAsync();
+
+        if (_lastSeededPropertyId.HasValue)
+        {
+            await BackendConfigurationPnDbContext!.PropertyWorkers.AddAsync(new PropertyWorker
+            {
+                PropertyId = _lastSeededPropertyId.Value,
+                WorkerId = siteId,
+                WorkflowState = Constants.WorkflowStates.Created,
+                CreatedByUserId = 1,
+                UpdatedByUserId = 1
+            });
+            await BackendConfigurationPnDbContext.SaveChangesAsync();
+        }
     }
 
     /// <summary>
@@ -360,7 +386,7 @@ public class CalendarWorkerTagFilterTests : TestBaseSetup
             // The real membership service: this fixture is entirely about the
             // site -> worker-tag expansion it owns, so a substitute would make every
             // assertion below vacuous.
-            new WorkerTagMembershipService(coreHelper));
+            new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext));
     }
 
     /// <summary>

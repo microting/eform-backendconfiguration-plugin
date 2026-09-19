@@ -157,7 +157,7 @@ public class CalendarComplianceReportTests : TestBaseSetup
             // The real membership service: #1232 made the employee filter and the
             // worker column depend on it, and a substitute would silently answer
             // "no team membership" for every site.
-            new WorkerTagMembershipService(coreHelper));
+            new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext));
     }
 
     // ------------------------------------------------------------------

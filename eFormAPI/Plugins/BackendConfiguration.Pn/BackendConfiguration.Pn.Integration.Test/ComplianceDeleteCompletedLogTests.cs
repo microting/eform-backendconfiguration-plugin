@@ -106,7 +106,7 @@ public class ComplianceDeleteCompletedLogTests : TestBaseSetup
             new BackendConfigurationLocalizationService(), UserService(),
             BackendConfigurationPnDbContext!, coreHelper, ItemsPlanningPnDbContext!,
             TestContextLogger<BackendConfigurationComplianceReportService>.Instance,
-            new WorkerTagMembershipService(coreHelper));
+            new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext));
     }
 
     // ------------------------------------------------------------------
@@ -721,7 +721,7 @@ public class ComplianceDeleteCompletedLogTests : TestBaseSetup
             TestContextLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            new WorkerTagMembershipService(coreHelper));
+            new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext));
     }
 
     private static DateTime NextMonday()

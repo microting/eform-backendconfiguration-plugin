@@ -222,7 +222,7 @@ public class ComplianceReassignmentTests : TestBaseSetup
             BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, coreHelper, sp,
             TestContextLogger<EventDeployService>.Instance);
 
-        var resolver = new CalendarAssignmentResolver(BackendConfigurationPnDbContext, new WorkerTagMembershipService(coreHelper));
+        var resolver = new CalendarAssignmentResolver(BackendConfigurationPnDbContext, new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext));
 
         var engine = new CalendarAssignmentReconciliationService(
             BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, coreHelper,

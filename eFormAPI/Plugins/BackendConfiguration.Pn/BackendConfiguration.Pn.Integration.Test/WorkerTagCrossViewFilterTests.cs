@@ -193,12 +193,27 @@ public class WorkerTagCrossViewFilterTests : TestBaseSetup
             BackendConfigurationPnDbContext.PlanningSites);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
+        // #1256 occurrence-exception tiles: exceptions (and their sites) reference the
+        // AreaRulePlannings removed below.
+        BackendConfigurationPnDbContext.CalendarOccurrenceExceptionSites.RemoveRange(
+            BackendConfigurationPnDbContext.CalendarOccurrenceExceptionSites);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+        BackendConfigurationPnDbContext.CalendarOccurrenceExceptions.RemoveRange(
+            BackendConfigurationPnDbContext.CalendarOccurrenceExceptions);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
         BackendConfigurationPnDbContext.AreaRulePlannings.RemoveRange(
             BackendConfigurationPnDbContext.AreaRulePlannings);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
         BackendConfigurationPnDbContext.AreaRules.RemoveRange(
             BackendConfigurationPnDbContext.AreaRules);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        // #1256: team members are linked to their property (see LinkSiteToTag), and the
+        // links must go before the properties they point at.
+        BackendConfigurationPnDbContext.PropertyWorkers.RemoveRange(
+            BackendConfigurationPnDbContext.PropertyWorkers);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
         BackendConfigurationPnDbContext.Areas.RemoveRange(
@@ -232,7 +247,35 @@ public class WorkerTagCrossViewFilterTests : TestBaseSetup
         };
         await BackendConfigurationPnDbContext!.Properties.AddAsync(property);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
+        _lastSeededPropertyId = property.Id;
         return property;
+    }
+
+    /// <summary>
+    /// The property the test seeded most recently — what <see cref="LinkSiteToTag"/>
+    /// links a team member to by default. Reset by NUnit's one-instance-per-fixture only
+    /// in the sense that every test seeds its own property first.
+    /// </summary>
+    private int? _lastSeededPropertyId;
+
+    /// <summary>
+    /// Links a site to a property via an active (or, with <paramref name="removed"/>, a
+    /// soft-deleted) <c>PropertyWorker</c> — the property link a team's reach is scoped
+    /// by since #1295/#1256.
+    /// </summary>
+    private async Task LinkSiteToProperty(int propertyId, int siteId, bool removed = false)
+    {
+        await BackendConfigurationPnDbContext!.PropertyWorkers.AddAsync(new PropertyWorker
+        {
+            PropertyId = propertyId,
+            WorkerId = siteId,
+            WorkflowState = removed
+                ? Constants.WorkflowStates.Removed
+                : Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
     }
 
     /// <summary>
@@ -411,7 +454,16 @@ public class WorkerTagCrossViewFilterTests : TestBaseSetup
         return tag.Id;
     }
 
-    private async Task LinkSiteToTag(int tagId, int siteId, bool removed = false)
+    /// <param name="linkToProperty">
+    /// Since #1295/#1256 a team reaches only its members linked to the EVENT'S property,
+    /// in every view. By default the member is therefore also linked (active
+    /// <c>PropertyWorker</c>) to the test's most recently seeded property — for every
+    /// member, removed memberships included — so that in the single-property tests the
+    /// LIVENESS clauses, not the property clause, stay the reason for any exclusion they
+    /// pin (the same choice <c>WorkerTagMembershipParityTests</c> made in #1295). The
+    /// cross-property tests pass <c>false</c> and link explicitly.
+    /// </param>
+    private async Task LinkSiteToTag(int tagId, int siteId, bool removed = false, bool linkToProperty = true)
     {
         await MicrotingDbContext!.SiteTags.AddAsync(new SiteTag
         {
@@ -422,6 +474,11 @@ public class WorkerTagCrossViewFilterTests : TestBaseSetup
                 : Constants.WorkflowStates.Created
         });
         await MicrotingDbContext.SaveChangesAsync();
+
+        if (linkToProperty && _lastSeededPropertyId.HasValue)
+        {
+            await LinkSiteToProperty(_lastSeededPropertyId.Value, siteId);
+        }
     }
 
     /// <summary>
@@ -588,7 +645,7 @@ public class WorkerTagCrossViewFilterTests : TestBaseSetup
             // The real membership service — this fixture is entirely about the
             // site → worker-tag expansion it owns, so a substitute would make every
             // assertion below vacuous.
-            new WorkerTagMembershipService(coreHelper));
+            new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext));
     }
 
     private BackendConfigurationComplianceReportService BuildComplianceReportService(eFormCore.Core core)
@@ -598,7 +655,7 @@ public class WorkerTagCrossViewFilterTests : TestBaseSetup
             new BackendConfigurationLocalizationService(), UserService(),
             BackendConfigurationPnDbContext!, coreHelper, ItemsPlanningPnDbContext!,
             TestContextLogger<BackendConfigurationComplianceReportService>.Instance,
-            new WorkerTagMembershipService(coreHelper));
+            new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext));
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -650,7 +707,7 @@ public class WorkerTagCrossViewFilterTests : TestBaseSetup
                 WorkerIds = workerIds
             },
             BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!,
-            new WorkerTagMembershipService(CoreHelper(core)));
+            new WorkerTagMembershipService(CoreHelper(core), BackendConfigurationPnDbContext));
         Assert.That(res.Success, Is.True, res.Message);
         return res.Model!.Select(x => x.AreaRulePlanId).ToHashSet();
     }
@@ -1289,7 +1346,7 @@ public class WorkerTagCrossViewFilterTests : TestBaseSetup
                 WorkerIds = []
             },
             BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!,
-            new WorkerTagMembershipService(CoreHelper(core)));
+            new WorkerTagMembershipService(CoreHelper(core), BackendConfigurationPnDbContext));
         Assert.That(res.Success, Is.True, res.Message);
         return res.Model!.Single(x => x.AreaRulePlanId == arpId);
     }
@@ -1501,6 +1558,584 @@ public class WorkerTagCrossViewFilterTests : TestBaseSetup
         var task = res.Model!.Single(t => t.Id == teamEvent.ArpId);
         Assert.That(task.TeamAssigneeIds, Is.EquivalentTo(new[] { memberSiteId }));
         Assert.That(task.AssigneeIds, Is.Empty);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 12 — #1256: a team is scoped to the EVENT'S property in every view
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private sealed record CrossPropertyTeam(
+        Property A, Property B, int TagId,
+        int MemberOnA, int MemberOnB, int MemberOnBoth, int RemovedLinkOnB, int ResignedOnB);
+
+    /// <summary>
+    /// One team whose members sit on different properties:
+    /// <list type="bullet">
+    ///   <item><c>MemberOnA</c> — linked to A only.</item>
+    ///   <item><c>MemberOnB</c> — linked to B only.</item>
+    ///   <item><c>MemberOnBoth</c> — linked to A and B.</item>
+    ///   <item><c>RemovedLinkOnB</c> — linked to B only through a REMOVED PropertyWorker.</item>
+    ///   <item><c>ResignedOnB</c> — linked to B, but the worker resigned.</item>
+    /// </list>
+    /// Every SiteTags row is live; only the property link / resignation differs.
+    /// </summary>
+    private async Task<CrossPropertyTeam> SeedCrossPropertyTeam()
+    {
+        var a = await SeedProperty();
+        var b = await SeedProperty();
+        var tagId = await SeedSdkWorkerTag();
+
+        var memberOnA = await SeedSdkSite();
+        var memberOnB = await SeedSdkSite();
+        var memberOnBoth = await SeedSdkSite();
+        var removedLinkOnB = await SeedSdkSite();
+        var core = await SharedCore();
+        await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+        var resignedOnB = await SeedSdkSiteWithWorker(sdkDbContext, resigned: true);
+
+        foreach (var site in new[] { memberOnA, memberOnB, memberOnBoth, removedLinkOnB, resignedOnB })
+        {
+            await LinkSiteToTag(tagId, site, linkToProperty: false);
+        }
+
+        await LinkSiteToProperty(a.Id, memberOnA);
+        await LinkSiteToProperty(b.Id, memberOnB);
+        await LinkSiteToProperty(a.Id, memberOnBoth);
+        await LinkSiteToProperty(b.Id, memberOnBoth);
+        await LinkSiteToProperty(b.Id, removedLinkOnB, removed: true);
+        await LinkSiteToProperty(b.Id, resignedOnB);
+
+        return new CrossPropertyTeam(a, b, tagId, memberOnA, memberOnB, memberOnBoth, removedLinkOnB, resignedOnB);
+    }
+
+    /// <summary>
+    /// DISPLAY. A team event on property B carries, in every producer of the team half
+    /// (week view — both render paths —, calendar task list, gRPC task tracker,
+    /// compliance report <c>TeamAssigneeIds</c>, and the web Task Tracker's Workers
+    /// column), exactly the team's live members linked to B: the set the deploy resolver
+    /// sends the event to. <b>Fails on the old code</b>: the unscoped expansion also listed
+    /// the A-only member and the member whose B link was removed.
+    /// </summary>
+    [Test]
+    public async Task CrossProperty_TeamHalf_IsTheEventPropertysLiveMembersOnly_InEveryView()
+    {
+        var team = await SeedCrossPropertyTeam();
+        var teamEvent = await SeedEvent(team.B.Id);
+        await AssignWorkerTag(teamEvent, team.TagId);
+
+        var expected = new[] { team.MemberOnB, team.MemberOnBoth };
+
+        var weekTasks = await WeekViewTasks(team.B.Id, teamEvent.ArpId);
+        Assert.That(weekTasks, Is.Not.Empty, "the week view must render the team event");
+
+        var core = await SharedCore();
+        var taskList = await BuildCalendarService(core).Index(new CalendarTaskIndexRequestModel
+        {
+            Filters = new CalendarTaskListFiltrationModel { PropertyIds = [team.B.Id], AssignToIds = [] }
+        });
+        Assert.That(taskList.Success, Is.True, taskList.Message);
+        var grpc = await BuildCalendarService(core).GetTaskTrackerList(team.B.Id, null, 1);
+        Assert.That(grpc.Success, Is.True, grpc.Message);
+        var reportRow = await ComplianceReportRow(team.B.Id, teamEvent.ArpId);
+        var trackerRow = await TaskTrackerRow(team.B.Id, teamEvent.ArpId);
+
+        Assert.Multiple(() =>
+        {
+            foreach (var task in weekTasks)
+            {
+                Assert.That(task.TeamAssigneeIds, Is.EquivalentTo(expected),
+                    $"week view ({(task.IsFromCompliance ? "compliance" : "recurrence")} path): "
+                    + "only the team's live members linked to the event's property");
+            }
+            Assert.That(taskList.Model!.Single(t => t.Id == teamEvent.ArpId).TeamAssigneeIds,
+                Is.EquivalentTo(expected), "calendar task list");
+            Assert.That(grpc.Model!.Single(t => t.Id == teamEvent.ArpId).TeamAssigneeIds,
+                Is.EquivalentTo(expected), "gRPC task tracker");
+            Assert.That(reportRow.TeamAssigneeIds, Is.EquivalentTo(expected), "compliance report");
+            Assert.That(trackerRow.WorkerIds, Is.EquivalentTo(expected), "web Task Tracker Workers column");
+
+            Assert.That(reportRow.TeamAssigneeIds, Does.Not.Contain(team.MemberOnA),
+                "a member linked only to ANOTHER property is never shown as an assignee (#1256)");
+            Assert.That(reportRow.TeamAssigneeIds, Does.Not.Contain(team.RemovedLinkOnB),
+                "a removed PropertyWorker row is not a property link");
+            Assert.That(reportRow.TeamAssigneeIds, Does.Not.Contain(team.ResignedOnB),
+                "a resigned member is not a live member, property link or not");
+        });
+    }
+
+    /// <summary>
+    /// FILTER, single property. Filtering property B's views by a team member matches
+    /// the team event only when that member is linked to B — the same condition under
+    /// which the team deploys the event to them. <b>Fails on the old code</b>: the site →
+    /// tags expansion ignored the property, so the A-only member (and the member whose B
+    /// link was removed) matched B's team event.
+    /// </summary>
+    [Test]
+    public async Task CrossProperty_MemberNotLinkedToEventProperty_DoesNotMatchTeamEvent_InEveryView()
+    {
+        var team = await SeedCrossPropertyTeam();
+        var teamEvent = await SeedEvent(team.B.Id);
+        await AssignWorkerTag(teamEvent, team.TagId);
+
+        foreach (var (view, ids) in await AllViews(team.B.Id, team.MemberOnB))
+        {
+            Assert.That(ids, Does.Contain(teamEvent.ArpId),
+                $"{view}: control — a team member linked to the event's property matches");
+        }
+
+        foreach (var (view, ids) in await AllViews(team.B.Id, team.MemberOnBoth))
+        {
+            Assert.That(ids, Does.Contain(teamEvent.ArpId),
+                $"{view}: a member linked to BOTH properties matches on either");
+        }
+
+        foreach (var (view, ids) in await AllViews(team.B.Id, team.MemberOnA))
+        {
+            Assert.That(ids, Does.Not.Contain(teamEvent.ArpId),
+                $"{view}: a team member linked only to ANOTHER property must not match the "
+                + "team's event on this one (#1256)");
+        }
+
+        foreach (var (view, ids) in await AllViews(team.B.Id, team.RemovedLinkOnB))
+        {
+            Assert.That(ids, Does.Not.Contain(teamEvent.ArpId),
+                $"{view}: a member whose PropertyWorker link was removed must not match");
+        }
+
+        foreach (var (view, ids) in await AllViews(team.B.Id, team.ResignedOnB))
+        {
+            Assert.That(ids, Does.Not.Contain(teamEvent.ArpId),
+                $"{view}: a resigned member must not match, property link or not");
+        }
+    }
+
+    /// <summary>
+    /// FILTER + DISPLAY across properties. The calendar task list and the web Task
+    /// Tracker can list several properties at once; a worker filter must match each
+    /// event's team against THAT event's property, and each row's team half must be
+    /// expanded against its own property. Same team on an event on A and on B.
+    /// <b>Fails on the old code</b>: a flat, property-blind tag list let the A-only
+    /// member match B's event, and both rows listed every property's members.
+    /// </summary>
+    [Test]
+    public async Task CrossProperty_MultiPropertyLists_MatchAndExpandPerEventProperty()
+    {
+        var team = await SeedCrossPropertyTeam();
+        var eventOnA = await SeedEvent(team.A.Id);
+        var eventOnB = await SeedEvent(team.B.Id);
+        await AssignWorkerTag(eventOnA, team.TagId);
+        await AssignWorkerTag(eventOnB, team.TagId);
+
+        var core = await SharedCore();
+        List<int> both = [team.A.Id, team.B.Id];
+
+        async Task<HashSet<int>> TaskList(int siteId)
+        {
+            var res = await BuildCalendarService(core).Index(new CalendarTaskIndexRequestModel
+            {
+                Filters = new CalendarTaskListFiltrationModel { PropertyIds = both, AssignToIds = [siteId] }
+            });
+            Assert.That(res.Success, Is.True, res.Message);
+            return res.Model!.Select(t => t.Id).ToHashSet();
+        }
+
+        async Task<List<TaskTrackerModel>> Tracker(List<int> workerIds)
+        {
+            var res = await BackendConfigurationTaskTrackerHelper.Index(
+                new TaskTrackerFiltrationModel { PropertyIds = both, TagIds = [], WorkerIds = workerIds },
+                BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!,
+                new WorkerTagMembershipService(CoreHelper(core), BackendConfigurationPnDbContext));
+            Assert.That(res.Success, Is.True, res.Message);
+            return res.Model!;
+        }
+
+        var listForA = await TaskList(team.MemberOnA);
+        var listForBoth = await TaskList(team.MemberOnBoth);
+        var trackerForA = (await Tracker([team.MemberOnA])).Select(x => x.AreaRulePlanId).ToHashSet();
+        var trackerForB = (await Tracker([team.MemberOnB])).Select(x => x.AreaRulePlanId).ToHashSet();
+        var unfilteredTracker = await Tracker([]);
+
+        var taskListUnfiltered = await BuildCalendarService(core).Index(new CalendarTaskIndexRequestModel
+        {
+            Filters = new CalendarTaskListFiltrationModel { PropertyIds = both, AssignToIds = [] }
+        });
+        Assert.That(taskListUnfiltered.Success, Is.True, taskListUnfiltered.Message);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(listForA, Does.Contain(eventOnA.ArpId), "task list: A's member matches A's team event");
+            Assert.That(listForA, Does.Not.Contain(eventOnB.ArpId),
+                "task list: A's member must not match the same team's event on B (#1256)");
+            Assert.That(listForBoth, Does.Contain(eventOnA.ArpId));
+            Assert.That(listForBoth, Does.Contain(eventOnB.ArpId),
+                "task list: a member linked to both properties matches both events");
+
+            Assert.That(trackerForA, Does.Contain(eventOnA.ArpId));
+            Assert.That(trackerForA, Does.Not.Contain(eventOnB.ArpId),
+                "task tracker: A's member must not match the team's event on B (#1256)");
+            Assert.That(trackerForB, Does.Contain(eventOnB.ArpId));
+            Assert.That(trackerForB, Does.Not.Contain(eventOnA.ArpId),
+                "task tracker: B's member must not match the team's event on A (#1256)");
+
+            Assert.That(unfilteredTracker.Single(x => x.AreaRulePlanId == eventOnA.ArpId).WorkerIds,
+                Is.EquivalentTo(new[] { team.MemberOnA, team.MemberOnBoth }),
+                "task tracker Workers column on A's row: A's live members only");
+            Assert.That(unfilteredTracker.Single(x => x.AreaRulePlanId == eventOnB.ArpId).WorkerIds,
+                Is.EquivalentTo(new[] { team.MemberOnB, team.MemberOnBoth }),
+                "task tracker Workers column on B's row: B's live members only");
+
+            Assert.That(taskListUnfiltered.Model!.Single(t => t.Id == eventOnA.ArpId).TeamAssigneeIds,
+                Is.EquivalentTo(new[] { team.MemberOnA, team.MemberOnBoth }),
+                "task list team half on A's row: A's live members only");
+            Assert.That(taskListUnfiltered.Model!.Single(t => t.Id == eventOnB.ArpId).TeamAssigneeIds,
+                Is.EquivalentTo(new[] { team.MemberOnB, team.MemberOnBoth }),
+                "task list team half on B's row: B's live members only");
+        });
+    }
+
+    /// <summary>
+    /// The toolbar TEAM filter (explicit <c>WorkerTagIds</c>) on the week view: selecting
+    /// the team on property B shows B's team event, whose team half names only B's
+    /// members. The explicit tag filter itself is not membership-driven (it matches the
+    /// tag carried by the event), so this pins that it keeps working unchanged next to the
+    /// scoped expansion — and that it never pulls in another property's event.
+    /// </summary>
+    [Test]
+    public async Task CrossProperty_WeekViewTeamFilter_ShowsOnlyThisPropertysTeamEvent_WithThisPropertysMembers()
+    {
+        var team = await SeedCrossPropertyTeam();
+        var eventOnA = await SeedEvent(team.A.Id);
+        var eventOnB = await SeedEvent(team.B.Id);
+        var unrelatedOnB = await SeedEvent(team.B.Id);
+        await AssignWorkerTag(eventOnA, team.TagId);
+        await AssignWorkerTag(eventOnB, team.TagId);
+        await AssignSite(unrelatedOnB, team.MemberOnB);
+
+        var core = await SharedCore();
+        var res = await BuildCalendarService(core).GetTasksForWeek(new CalendarTaskRequestModel
+        {
+            PropertyId = team.B.Id,
+            WeekStart = IsoUtc(WeekMonday),
+            WeekEnd = IsoUtc(WeekMonday.AddDays(6).AddHours(23).AddMinutes(59)),
+            ActionableOnly = false,
+            BoardIds = [],
+            TagNames = [],
+            SiteIds = [],
+            WorkerTagIds = [team.TagId]
+        });
+        Assert.That(res.Success, Is.True, res.Message);
+        var ids = res.Model!.Select(t => t.Id).ToHashSet();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(ids, Does.Contain(eventOnB.ArpId), "the team's event on this property is shown");
+            Assert.That(ids, Does.Not.Contain(eventOnA.ArpId), "never another property's event");
+            Assert.That(ids, Does.Not.Contain(unrelatedOnB.ArpId),
+                "a team filter matches team-ASSIGNED events, not a member's own events");
+            foreach (var task in res.Model!.Where(t => t.Id == eventOnB.ArpId))
+            {
+                Assert.That(task.TeamAssigneeIds, Is.EquivalentTo(new[] { team.MemberOnB, team.MemberOnBoth }),
+                    "the filtered event's team half names only this property's live members (#1256)");
+            }
+        });
+    }
+
+    /// <summary>
+    /// COMPLIANCE REPORT ACROSS ALL PROPERTIES (<c>PropertyId = null</c>). The report is
+    /// the one view whose default is every property at once, so both halves of the
+    /// property scope are exercised per ROW here: the worker filter must match each
+    /// event's team against that event's own property, and each row's team half must be
+    /// expanded against its own property. Index (Detaljer) and Overview (Oversigt) are
+    /// both driven. <b>Fails on the old code</b>: the flat
+    /// <c>GetTagIdsForSitesAsync</c> filter let A's member match the team's event on B
+    /// (so B's row appeared, and Oversigt counted it), and the unscoped expansion put
+    /// every property's members — plus the removed-link member — on both rows.
+    /// </summary>
+    [Test]
+    public async Task CrossProperty_ComplianceReportAcrossAllProperties_MatchesAndExpandsPerEventProperty()
+    {
+        var team = await SeedCrossPropertyTeam();
+        var eventOnA = await SeedEvent(team.A.Id);
+        var eventOnB = await SeedEvent(team.B.Id);
+        await AssignWorkerTag(eventOnA, team.TagId);
+        await AssignWorkerTag(eventOnB, team.TagId);
+
+        var core = await SharedCore();
+        var service = BuildComplianceReportService(core);
+
+        ComplianceReportRequestModel IndexRequest(List<int> siteIds) => new()
+        {
+            PropertyId = null,
+            BoardIds = [],
+            TagIds = [],
+            SiteIds = siteIds,
+            Status = "all",
+            DateFrom = WeekMonday,
+            DateTo = WeekMonday.AddDays(6),
+            PageSize = 0
+        };
+
+        ComplianceReportOverviewRequestModel OverviewRequest(List<int> siteIds) => new()
+        {
+            PropertyId = null,
+            BoardIds = [],
+            TagIds = [],
+            SiteIds = siteIds,
+            DateFrom = WeekMonday,
+            DateTo = WeekMonday.AddDays(6)
+        };
+
+        async Task<List<ComplianceReportRowModel>> Index(List<int> siteIds)
+        {
+            var res = await service.Index(IndexRequest(siteIds));
+            Assert.That(res.Success, Is.True, res.Message);
+            return res.Model!.Entities;
+        }
+
+        async Task<Dictionary<int, int>> OverviewTotals(List<int> siteIds)
+        {
+            var res = await service.Overview(OverviewRequest(siteIds));
+            Assert.That(res.Success, Is.True, res.Message);
+            return res.Model!.Rows.ToDictionary(r => r.PropertyId, r => r.Total);
+        }
+
+        var unfiltered = await Index([]);
+        var forA = (await Index([team.MemberOnA])).Select(e => e.AreaRulePlanningId).ToHashSet();
+        var forB = (await Index([team.MemberOnB])).Select(e => e.AreaRulePlanningId).ToHashSet();
+        var forBoth = (await Index([team.MemberOnBoth])).Select(e => e.AreaRulePlanningId).ToHashSet();
+        var forRemovedLink = (await Index([team.RemovedLinkOnB])).Select(e => e.AreaRulePlanningId).ToHashSet();
+        var overviewForA = await OverviewTotals([team.MemberOnA]);
+        var overviewForB = await OverviewTotals([team.MemberOnB]);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(unfiltered.Single(e => e.AreaRulePlanningId == eventOnA.ArpId).TeamAssigneeIds,
+                Is.EquivalentTo(new[] { team.MemberOnA, team.MemberOnBoth }),
+                "Index, all properties: A's row names A's live members only");
+            Assert.That(unfiltered.Single(e => e.AreaRulePlanningId == eventOnB.ArpId).TeamAssigneeIds,
+                Is.EquivalentTo(new[] { team.MemberOnB, team.MemberOnBoth }),
+                "Index, all properties: B's row names B's live members only (#1256)");
+
+            Assert.That(forA, Does.Contain(eventOnA.ArpId), "Index: A's member matches the team event on A");
+            Assert.That(forA, Does.Not.Contain(eventOnB.ArpId),
+                "Index: A's member must not match the same team's event on B (#1256)");
+            Assert.That(forB, Does.Contain(eventOnB.ArpId));
+            Assert.That(forB, Does.Not.Contain(eventOnA.ArpId),
+                "Index: B's member must not match the same team's event on A (#1256)");
+            Assert.That(forBoth, Does.Contain(eventOnA.ArpId));
+            Assert.That(forBoth, Does.Contain(eventOnB.ArpId),
+                "Index: a member linked to both properties matches both events");
+            Assert.That(forRemovedLink, Does.Not.Contain(eventOnB.ArpId),
+                "Index: a removed PropertyWorker row is not a property link");
+
+            Assert.That(overviewForA.GetValueOrDefault(team.A.Id), Is.EqualTo(1),
+                "Overview filtered to A's member: A's occurrence is counted");
+            Assert.That(overviewForA.GetValueOrDefault(team.B.Id), Is.EqualTo(0),
+                "Overview filtered to A's member: B's team occurrence must not be counted (#1256)");
+            Assert.That(overviewForB.GetValueOrDefault(team.B.Id), Is.EqualTo(1));
+            Assert.That(overviewForB.GetValueOrDefault(team.A.Id), Is.EqualTo(0),
+                "Overview filtered to B's member: A's team occurrence must not be counted (#1256)");
+        });
+    }
+
+    /// <summary>
+    /// Adds a <c>CalendarOccurrenceException</c> to a seeded event. <paramref name="newDate"/>
+    /// null keeps the occurrence on its original date (an orphan anchor when that date is
+    /// not a recurrence date); a <paramref name="newDate"/> moves it there.
+    /// </summary>
+    private async Task<int> SeedOccurrenceException(SeededEvent evt, DateTime originalDate, DateTime? newDate)
+    {
+        var exception = new CalendarOccurrenceException
+        {
+            AreaRulePlanningId = evt.ArpId,
+            OriginalDate = DateTime.SpecifyKind(originalDate, DateTimeKind.Utc),
+            NewDate = newDate.HasValue ? DateTime.SpecifyKind(newDate.Value, DateTimeKind.Utc) : null,
+            IsDeleted = false,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext!.CalendarOccurrenceExceptions.AddAsync(exception);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+        return exception.Id;
+    }
+
+    /// <summary>
+    /// The two EXCEPTION render paths of the week view carry the scoped team half too:
+    /// <list type="bullet">
+    ///   <item>a MOVED-IN occurrence — originally next Monday (outside the week), moved to
+    ///   this Friday;</item>
+    ///   <item>an ORPHAN anchor — an exception on this Thursday, which the weekly Monday
+    ///   rule does not produce and no compliance row covers.</item>
+    /// </list>
+    /// Both tiles belong to a team event on property B, so both must name exactly B's live
+    /// members. <b>Fails on the old code</b>: both paths expanded the team unscoped and also
+    /// listed the A-only member and the removed-link member.
+    /// </summary>
+    [Test]
+    public async Task CrossProperty_MovedInAndOrphanOccurrenceTiles_CarryTheEventPropertysMembersOnly()
+    {
+        var team = await SeedCrossPropertyTeam();
+        var teamEvent = await SeedEvent(team.B.Id);
+        await AssignWorkerTag(teamEvent, team.TagId);
+
+        var movedInId = await SeedOccurrenceException(teamEvent, WeekMonday.AddDays(7), WeekMonday.AddDays(4));
+        var orphanId = await SeedOccurrenceException(teamEvent, WeekMonday.AddDays(3), null);
+
+        var tiles = await WeekViewTasks(team.B.Id, teamEvent.ArpId);
+        var movedIn = tiles.Where(t => t.ExceptionId == movedInId).ToList();
+        var orphan = tiles.Where(t => t.ExceptionId == orphanId).ToList();
+        var expected = new[] { team.MemberOnB, team.MemberOnBoth };
+
+        Assert.That(movedIn, Has.Count.EqualTo(1), "the moved-in occurrence renders once, on its new date");
+        Assert.That(orphan, Has.Count.EqualTo(1), "the orphan anchor renders once");
+        Assert.Multiple(() =>
+        {
+            Assert.That(movedIn[0].TaskDate,
+                Is.EqualTo(WeekMonday.AddDays(4).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
+            Assert.That(orphan[0].TaskDate,
+                Is.EqualTo(WeekMonday.AddDays(3).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
+            Assert.That(movedIn[0].TeamAssigneeIds, Is.EquivalentTo(expected),
+                "moved-in tile: only the team's live members linked to the event's property (#1256)");
+            Assert.That(orphan[0].TeamAssigneeIds, Is.EquivalentTo(expected),
+                "orphan tile: only the team's live members linked to the event's property (#1256)");
+        });
+    }
+
+    /// <summary>
+    /// MULTI-TEAM. An event on B assigned to TWO teams: T1 has members on B, T2's only
+    /// member works on A. The team half is T1's B members alone — T2 contributes nothing
+    /// on B — and T2's A member does not match the event through T2 in any view.
+    /// <b>Fails on the old code</b>: T2 was expanded unscoped, so its A member was listed
+    /// on the event and matched it as a filter.
+    /// </summary>
+    [Test]
+    public async Task CrossProperty_EventWithTwoTeams_OnlyTheTeamWithMembersOnItsPropertyContributes()
+    {
+        var team = await SeedCrossPropertyTeam();
+        var t2 = await SeedSdkWorkerTag();
+        var t2MemberOnA = await SeedSdkSite();
+        await LinkSiteToTag(t2, t2MemberOnA, linkToProperty: false);
+        await LinkSiteToProperty(team.A.Id, t2MemberOnA);
+
+        var teamEvent = await SeedEvent(team.B.Id);
+        await AssignWorkerTag(teamEvent, team.TagId);
+        await AssignWorkerTag(teamEvent, t2);
+
+        var expected = new[] { team.MemberOnB, team.MemberOnBoth };
+        var weekTasks = await WeekViewTasks(team.B.Id, teamEvent.ArpId);
+        var core = await SharedCore();
+        var taskList = await BuildCalendarService(core).Index(new CalendarTaskIndexRequestModel
+        {
+            Filters = new CalendarTaskListFiltrationModel { PropertyIds = [team.B.Id], AssignToIds = [] }
+        });
+        Assert.That(taskList.Success, Is.True, taskList.Message);
+        var reportRow = await ComplianceReportRow(team.B.Id, teamEvent.ArpId);
+        var trackerRow = await TaskTrackerRow(team.B.Id, teamEvent.ArpId);
+
+        Assert.That(weekTasks, Is.Not.Empty);
+        Assert.Multiple(() =>
+        {
+            foreach (var task in weekTasks)
+            {
+                Assert.That(task.WorkerTagIds, Is.EquivalentTo(new[] { team.TagId, t2 }),
+                    "the event still carries BOTH teams — only the expansion is scoped");
+                Assert.That(task.TeamAssigneeIds, Is.EquivalentTo(expected), "week view");
+            }
+            Assert.That(taskList.Model!.Single(t => t.Id == teamEvent.ArpId).TeamAssigneeIds,
+                Is.EquivalentTo(expected), "calendar task list");
+            Assert.That(reportRow.TeamAssigneeIds, Is.EquivalentTo(expected), "compliance report");
+            Assert.That(trackerRow.WorkerIds, Is.EquivalentTo(expected), "web Task Tracker Workers column");
+        });
+
+        foreach (var (view, ids) in await AllViews(team.B.Id, t2MemberOnA))
+        {
+            Assert.That(ids, Does.Not.Contain(teamEvent.ArpId),
+                $"{view}: T2's member on A must not match B's event through T2 (#1256)");
+        }
+        foreach (var (view, ids) in await AllViews(team.B.Id, team.MemberOnB))
+        {
+            Assert.That(ids, Does.Contain(teamEvent.ArpId), $"{view}: control — T1's member on B matches");
+        }
+    }
+
+    /// <summary>
+    /// TASK LIST WITH NO PROPERTY FILTER (<c>PropertyIds = []</c> — every property). The
+    /// per-row expansion must use each row's own property, and a worker filter must
+    /// match per property, exactly as with an explicit multi-property filter.
+    /// <b>Fails on the old code</b>: both rows listed every property's members (plus the
+    /// removed-link member), and A's member matched B's team event.
+    /// </summary>
+    [Test]
+    public async Task CrossProperty_TaskListWithoutPropertyFilter_ExpandsAndMatchesPerEventProperty()
+    {
+        var team = await SeedCrossPropertyTeam();
+        var eventOnA = await SeedEvent(team.A.Id);
+        var eventOnB = await SeedEvent(team.B.Id);
+        await AssignWorkerTag(eventOnA, team.TagId);
+        await AssignWorkerTag(eventOnB, team.TagId);
+
+        var core = await SharedCore();
+
+        async Task<List<CalendarTaskResponseModel>> TaskList(List<int> assignToIds)
+        {
+            var res = await BuildCalendarService(core).Index(new CalendarTaskIndexRequestModel
+            {
+                Filters = new CalendarTaskListFiltrationModel { PropertyIds = [], AssignToIds = assignToIds }
+            });
+            Assert.That(res.Success, Is.True, res.Message);
+            return res.Model!;
+        }
+
+        var unfiltered = await TaskList([]);
+        var forA = (await TaskList([team.MemberOnA])).Select(t => t.Id).ToHashSet();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(unfiltered.Single(t => t.Id == eventOnA.ArpId).TeamAssigneeIds,
+                Is.EquivalentTo(new[] { team.MemberOnA, team.MemberOnBoth }), "A's row: A's live members only");
+            Assert.That(unfiltered.Single(t => t.Id == eventOnB.ArpId).TeamAssigneeIds,
+                Is.EquivalentTo(new[] { team.MemberOnB, team.MemberOnBoth }), "B's row: B's live members only");
+            Assert.That(forA, Does.Contain(eventOnA.ArpId));
+            Assert.That(forA, Does.Not.Contain(eventOnB.ArpId),
+                "A's member must not match the team's event on B (#1256)");
+        });
+    }
+
+    /// <summary>
+    /// LIVE LINK on the display side (decision: no snapshot). Linking the A-only member to
+    /// B after the assignment puts them on B's team event in the very next read; removing
+    /// the link takes them off again. <b>Fails on the old code</b> at the first assertion:
+    /// the unscoped expansion listed the A-only member on B's event from the start.
+    /// </summary>
+    [Test]
+    public async Task CrossProperty_LinkingAMemberToTheEventProperty_ShowsThemOnTheNextRead()
+    {
+        var team = await SeedCrossPropertyTeam();
+        var teamEvent = await SeedEvent(team.B.Id);
+        await AssignWorkerTag(teamEvent, team.TagId);
+
+        async Task<List<List<int>>> TeamHalves() =>
+            (await WeekViewTasks(team.B.Id, teamEvent.ArpId)).Select(t => t.TeamAssigneeIds).ToList();
+
+        var before = await TeamHalves();
+        Assert.That(before, Is.Not.Empty);
+        Assert.That(before, Has.All.EquivalentTo(new[] { team.MemberOnB, team.MemberOnBoth }),
+            "before the link: the A-only member is not on B's team event");
+
+        await LinkSiteToProperty(team.B.Id, team.MemberOnA);
+        var afterLink = await TeamHalves();
+        Assert.That(afterLink, Has.All.EquivalentTo(new[] { team.MemberOnA, team.MemberOnB, team.MemberOnBoth }),
+            "a member newly linked to the event's property shows on the next read");
+
+        var link = await BackendConfigurationPnDbContext!.PropertyWorkers
+            .SingleAsync(x => x.PropertyId == team.B.Id && x.WorkerId == team.MemberOnA
+                              && x.WorkflowState != Constants.WorkflowStates.Removed);
+        link.WorkflowState = Constants.WorkflowStates.Removed;
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+        var afterUnlink = await TeamHalves();
+        Assert.That(afterUnlink, Has.All.EquivalentTo(new[] { team.MemberOnB, team.MemberOnBoth }),
+            "removing the link takes them off again");
     }
 
     /// <summary>

@@ -26,12 +26,17 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using BackendConfiguration.Pn.Infrastructure.Models.Calendar;
+using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.BackendConfigurationWorkerTagsService;
 using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
 using BackendConfiguration.Pn.Services.CalendarChangeNotification;
 using BackendConfiguration.Pn.Services.EventDeployService;
 using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn.Abstractions;
@@ -647,6 +652,476 @@ public class WorkerTagPropertyScopeTests : TestBaseSetup
         var effective = await resolver.ResolveEffectiveSiteIdsAsync(arp.Id);
 
         Assert.That(effective, Is.EquivalentTo(offered.MemberSiteIds!));
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // gRPC deploy path (EventDeployService) — #1256
+    //
+    // EnsureDeployedAsync's C4 narrowing and ResolveSiteLinkageAsync's WorkerTag probe
+    // used to read SDK SiteTags directly: no property clause and no live-membership
+    // clauses (removed Site, resigned Worker). They now go through the membership
+    // service's property-scoped lookup, so a site reaches an event through a team only
+    // when the resolver would deploy the team's event to it.
+    //
+    // The deploy signal asserted is the PlanningCaseSite for (planning, site): the
+    // pipeline writes it right after the linkage guard and BEFORE the SDK case (which
+    // then fails here — there is no real eForm), so it exists exactly when the site
+    // passed candidate narrowing + linkage.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>A fake eForm id: the pipeline must get past linkage, not build a case.</summary>
+    private const int DeployEformId = 987_654;
+
+    private sealed class CapturingLogger<T> : Microsoft.Extensions.Logging.ILogger<T>
+    {
+        public System.Collections.Concurrent.ConcurrentQueue<string> Messages { get; } = new();
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) => true;
+        public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel,
+            Microsoft.Extensions.Logging.EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter) => Messages.Enqueue(formatter(state, exception));
+    }
+
+    private EventDeployService BuildDeployService(
+        IEFormCoreService coreHelper, WorkerTagMembershipService membership,
+        CalendarTaskResponseModel[] rotations, Microsoft.Extensions.Logging.ILogger<EventDeployService> logger)
+    {
+        var calendar = Substitute.For<IBackendConfigurationCalendarService>();
+        calendar.GetTasksForWeek(Arg.Any<CalendarTaskRequestModel>())
+            .Returns(new OperationDataResult<List<CalendarTaskResponseModel>>(true, rotations.ToList()));
+        var sp = new ServiceCollection().AddSingleton(calendar).BuildServiceProvider();
+        return new EventDeployService(
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, coreHelper, sp, logger, membership);
+    }
+
+    private static CalendarTaskResponseModel FutureRotation(AreaRulePlanning arp, Planning planning, DateTime date) =>
+        new()
+        {
+            Id = arp.Id,
+            PlanningId = planning.Id,
+            EformId = DeployEformId,
+            TaskDate = date.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+            IsFromCompliance = false
+        };
+
+    private async Task<bool> DeployedTo(int planningId, int siteId) =>
+        await ItemsPlanningPnDbContext!.PlanningCaseSites.AsNoTracking()
+            .AnyAsync(x => x.PlanningId == planningId && x.MicrotingSdkSiteId == siteId);
+
+    /// <summary>
+    /// Site + Worker + SiteWorker with the given Resigned flag, through a context the Core
+    /// handed out (<c>Workers.Resigned</c> only exists after the Core migrated the schema).
+    /// </summary>
+    private static async Task<int> SeedSdkSiteWithWorker(eFormCore.Core core, bool resigned)
+    {
+        await using var sdk = core.DbContextHelper.GetDbContext();
+        var language = await sdk.Languages.FirstAsync();
+        var site = new Site
+        {
+            Name = $"site-{Guid.NewGuid()}", MicrotingUid = null, LanguageId = language.Id,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await sdk.Sites.AddAsync(site);
+        await sdk.SaveChangesAsync();
+        var worker = new Worker
+        {
+            FirstName = $"member-{Guid.NewGuid():N}", LastName = "Worker",
+            Email = $"{Guid.NewGuid():N}@example.test", Resigned = resigned,
+            ResignedAtDate = resigned ? DateTime.UtcNow.AddDays(-1) : default,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await sdk.Workers.AddAsync(worker);
+        await sdk.SaveChangesAsync();
+        await sdk.SiteWorkers.AddAsync(new SiteWorker
+        {
+            SiteId = site.Id, WorkerId = worker.Id, WorkflowState = Constants.WorkflowStates.Created
+        });
+        await sdk.SaveChangesAsync();
+        return site.Id;
+    }
+
+    /// <summary>
+    /// C4 narrowing. A team member linked only to ANOTHER property is not a deploy
+    /// candidate for the team's event: the pass ends at "no future-day recurrence rows"
+    /// and nothing is written. <b>Fails on the old code</b>: the direct SiteTags read had
+    /// no property clause, so the event became a candidate and the WorkerTag linkage let
+    /// the deploy through (PlanningCaseSite written).
+    /// </summary>
+    [Test]
+    public async Task EnsureDeployed_TeamMemberLinkedOnlyToAnotherProperty_IsNotDeployed()
+    {
+        var (membership, _, _, coreHelper) = await BuildAsync();
+        var (_, b, tagId, memberOnA, _) = await SeedCrossPropertyTeam();
+        var (arp, planning) = await SeedEvent(b);
+        await AddWorkerTagLink(arp.Id, tagId);
+
+        var logger = new CapturingLogger<EventDeployService>();
+        var date = DateTime.UtcNow.Date.AddDays(3);
+        var service = BuildDeployService(coreHelper, membership, [FutureRotation(arp, planning, date)], logger);
+        var key = date.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+
+        await service.EnsureDeployedAsync(b.Id.ToString(), [], key, key, memberOnA, CancellationToken.None);
+
+        Assert.That(await DeployedTo(planning.Id, memberOnA), Is.False,
+            "a team member who only works on another property must not get the team's event deployed (#1256)");
+        Assert.That(logger.Messages.Any(m => m.Contains("no future-day recurrence rows to deploy")), Is.True,
+            "the candidate must be dropped by the C4 narrowing, not later");
+    }
+
+    /// <summary>
+    /// C4 narrowing, liveness. A RESIGNED team member linked to the event's property is
+    /// not a deploy candidate through the team. <b>Fails on the old code</b>: the direct
+    /// SiteTags read had no resigned clause, so the event became a candidate, and the
+    /// member's PropertyWorker link then passed the deploy guard.
+    /// </summary>
+    [Test]
+    public async Task EnsureDeployed_ResignedTeamMemberOnProperty_IsNotDeployed()
+    {
+        var (membership, _, _, coreHelper) = await BuildAsync();
+        var property = await SeedProperty();
+        var tagId = await SeedSdkTag();
+        var resigned = await SeedSdkSiteWithWorker(await coreHelper.GetCore(), resigned: true);
+        await LinkSiteToTag(tagId, resigned);
+        await LinkSiteToProperty(property.Id, resigned);
+        var (arp, planning) = await SeedEvent(property);
+        await AddWorkerTagLink(arp.Id, tagId);
+
+        var logger = new CapturingLogger<EventDeployService>();
+        var date = DateTime.UtcNow.Date.AddDays(3);
+        var service = BuildDeployService(coreHelper, membership, [FutureRotation(arp, planning, date)], logger);
+        var key = date.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+
+        await service.EnsureDeployedAsync(property.Id.ToString(), [], key, key, resigned, CancellationToken.None);
+
+        Assert.That(await DeployedTo(planning.Id, resigned), Is.False,
+            "a resigned worker is no longer a team member and must not be deployed the team's event");
+        Assert.That(logger.Messages.Any(m => m.Contains("no future-day recurrence rows to deploy")), Is.True);
+    }
+
+    /// <summary>
+    /// C4 narrowing, removed property link. A live team member whose only link to the
+    /// event's property is a REMOVED PropertyWorker is not a candidate. <b>Fails on the
+    /// old code</b> (no property clause at all).
+    /// </summary>
+    [Test]
+    public async Task EnsureDeployed_TeamMemberWithRemovedPropertyLink_IsNotDeployed()
+    {
+        var (membership, _, _, coreHelper) = await BuildAsync();
+        var property = await SeedProperty();
+        var tagId = await SeedSdkTag();
+        var member = await SeedSdkSite();
+        await LinkSiteToTag(tagId, member);
+        var link = await LinkSiteToProperty(property.Id, member);
+        link.WorkflowState = Constants.WorkflowStates.Removed;
+        await BackendConfigurationPnDbContext!.SaveChangesAsync();
+        var (arp, planning) = await SeedEvent(property);
+        await AddWorkerTagLink(arp.Id, tagId);
+
+        var logger = new CapturingLogger<EventDeployService>();
+        var date = DateTime.UtcNow.Date.AddDays(3);
+        var service = BuildDeployService(coreHelper, membership, [FutureRotation(arp, planning, date)], logger);
+        var key = date.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+
+        await service.EnsureDeployedAsync(property.Id.ToString(), [], key, key, member, CancellationToken.None);
+
+        Assert.That(await DeployedTo(planning.Id, member), Is.False);
+        Assert.That(logger.Messages.Any(m => m.Contains("no future-day recurrence rows to deploy")), Is.True);
+    }
+
+    /// <summary>
+    /// Positive control for the three above: a live team member linked to the event's
+    /// property IS a candidate and passes the deploy guard — the PlanningCaseSite is
+    /// written (the SDK case after it then fails on the fake eForm, which the per-rotation
+    /// catch swallows). If this fails, the negatives above prove nothing.
+    /// </summary>
+    [Test]
+    public async Task EnsureDeployed_LiveTeamMemberOnProperty_IsDeployed()
+    {
+        var (membership, _, _, coreHelper) = await BuildAsync();
+        var (_, b, tagId, _, memberOnB) = await SeedCrossPropertyTeam();
+        var (arp, planning) = await SeedEvent(b);
+        await AddWorkerTagLink(arp.Id, tagId);
+
+        var logger = new CapturingLogger<EventDeployService>();
+        var date = DateTime.UtcNow.Date.AddDays(3);
+        var service = BuildDeployService(coreHelper, membership, [FutureRotation(arp, planning, date)], logger);
+        var key = date.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+
+        await service.EnsureDeployedAsync(b.Id.ToString(), [], key, key, memberOnB, CancellationToken.None);
+
+        Assert.That(logger.Messages.Any(m => m.Contains("no future-day recurrence rows to deploy")), Is.False,
+            "a live member on the event's property must survive the C4 narrowing");
+        Assert.That(await DeployedTo(planning.Id, memberOnB), Is.True,
+            "and pass the deploy guard (PlanningCaseSite written before the SDK case)");
+    }
+
+    /// <summary>
+    /// ResolveSiteLinkageAsync's WorkerTag probe, via the on-demand path
+    /// (<c>EnsureComplianceForOccurrenceAsync</c>, which does not pre-narrow). A team
+    /// member who is neither a PlanningSite nor linked to the event's property is refused
+    /// — the guard throws and writes nothing. <b>Fails on the old code</b>: the direct
+    /// SiteTags probe accepted the member as a WorkerTag linkage and the PlanningCaseSite
+    /// was written.
+    /// </summary>
+    [Test]
+    public async Task EnsureComplianceForOccurrence_TeamMemberNotLinkedToEventProperty_IsRefused()
+    {
+        var (membership, _, _, coreHelper) = await BuildAsync();
+        var (_, b, tagId, memberOnA, _) = await SeedCrossPropertyTeam();
+        var (arp, planning) = await SeedEvent(b);
+        planning.RelatedEFormId = DeployEformId;
+        await ItemsPlanningPnDbContext!.SaveChangesAsync();
+        await AddWorkerTagLink(arp.Id, tagId);
+
+        var service = BuildDeployService(coreHelper, membership, [], new CapturingLogger<EventDeployService>());
+
+        var ex = Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.EnsureComplianceForOccurrenceAsync(arp, DateTime.UtcNow.Date.AddDays(3), memberOnA,
+                CancellationToken.None));
+        Assert.That(ex!.Message, Does.Contain("refused to deploy"));
+        Assert.That(await DeployedTo(planning.Id, memberOnA), Is.False,
+            "no PlanningCaseSite may be written for a team member on another property (#1256)");
+    }
+
+    /// <summary>
+    /// C4 narrowing, removed Site. A team member linked to the event's property whose SDK
+    /// <c>Site</c> was deleted (<c>Core.SiteDelete</c> soft-removes the Site and leaves its
+    /// SiteTags rows behind) is not a deploy candidate through the team: the pass ends at
+    /// "no future-day recurrence rows" and no PlanningCaseSite is written. <b>Fails on the
+    /// old code</b>: the direct SiteTags read had no Site clause, so the event became a
+    /// candidate; the removed Site row is still found by id, and the member's active
+    /// PropertyWorker link then passed the deploy guard (PlanningCaseSite written).
+    /// </summary>
+    [Test]
+    public async Task EnsureDeployed_TeamMemberWithRemovedSite_OnProperty_IsNotDeployed()
+    {
+        var (membership, _, _, coreHelper) = await BuildAsync();
+        var property = await SeedProperty();
+        var tagId = await SeedSdkTag();
+        var removedSite = await SeedSdkSite();
+        await LinkSiteToTag(tagId, removedSite);
+        await LinkSiteToProperty(property.Id, removedSite);
+        var site = await MicrotingDbContext!.Sites.FirstAsync(x => x.Id == removedSite);
+        site.WorkflowState = Constants.WorkflowStates.Removed;
+        await MicrotingDbContext.SaveChangesAsync();
+        var (arp, planning) = await SeedEvent(property);
+        await AddWorkerTagLink(arp.Id, tagId);
+
+        var logger = new CapturingLogger<EventDeployService>();
+        var date = DateTime.UtcNow.Date.AddDays(3);
+        var service = BuildDeployService(coreHelper, membership, [FutureRotation(arp, planning, date)], logger);
+        var key = date.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+
+        await service.EnsureDeployedAsync(property.Id.ToString(), [], key, key, removedSite, CancellationToken.None);
+
+        Assert.That(await DeployedTo(planning.Id, removedSite), Is.False,
+            "a deleted device user is no longer a live team member and must not be deployed the team's event");
+        Assert.That(logger.Messages.Any(m => m.Contains("no future-day recurrence rows to deploy")), Is.True,
+            "the candidate must be dropped by the C4 narrowing, not later");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Parity of the #1256 batched / reverse lookups with the per-property rule
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private sealed record MembershipMatrix(
+        int A, int B, int C, int T1, int T2, int T3,
+        int OnlyA, int OnlyB, int Both, int RemovedLinkB, int ResignedB, int RemovedSiteTagT1B, int RemovedSiteB)
+    {
+        public int[] Properties => [A, B, C];
+        public int[] Tags => [T1, T2, T3];
+        public int[] Sites => [OnlyA, OnlyB, Both, RemovedLinkB, ResignedB, RemovedSiteTagT1B, RemovedSiteB];
+    }
+
+    /// <summary>
+    /// Every member state the property-scoped rule distinguishes, against two teams (T1,
+    /// T2) plus a team with no members (T3) and a property with no links (C):
+    /// <list type="bullet">
+    ///   <item><c>OnlyA</c> / <c>OnlyB</c> / <c>Both</c> — live, in T1 and T2, linked to A, B, both.</item>
+    ///   <item><c>RemovedLinkB</c> — in T1 and T2, linked to B only by a REMOVED PropertyWorker.</item>
+    ///   <item><c>ResignedB</c> — in T1 and T2, linked to B, worker resigned.</item>
+    ///   <item><c>RemovedSiteTagT1B</c> — linked to B; its T1 SiteTag is REMOVED, its T2 one live.</item>
+    ///   <item><c>RemovedSiteB</c> — in T1 and T2, linked to B, Site soft-deleted.</item>
+    /// </list>
+    /// Every site, tag and property is fresh, so results can be compared exactly.
+    /// </summary>
+    private async Task<MembershipMatrix> SeedMembershipMatrix(IEFormCoreService coreHelper)
+    {
+        var a = await SeedProperty();
+        var b = await SeedProperty();
+        var c = await SeedProperty();
+        var t1 = await SeedSdkTag();
+        var t2 = await SeedSdkTag();
+        var t3 = await SeedSdkTag();
+
+        var onlyA = await SeedSdkSite();
+        var onlyB = await SeedSdkSite();
+        var both = await SeedSdkSite();
+        var removedLinkB = await SeedSdkSite();
+        var resignedB = await SeedSdkSiteWithWorker(await coreHelper.GetCore(), resigned: true);
+        var removedSiteTagT1B = await SeedSdkSite();
+        var removedSiteB = await SeedSdkSite();
+
+        foreach (var site in new[] { onlyA, onlyB, both, removedLinkB, resignedB, removedSiteB })
+        {
+            await LinkSiteToTag(t1, site);
+            await LinkSiteToTag(t2, site);
+        }
+
+        await MicrotingDbContext!.SiteTags.AddAsync(new SiteTag
+        {
+            TagId = t1, SiteId = removedSiteTagT1B, WorkflowState = Constants.WorkflowStates.Removed
+        });
+        await MicrotingDbContext.SaveChangesAsync();
+        await LinkSiteToTag(t2, removedSiteTagT1B);
+
+        var removed = await MicrotingDbContext.Sites.FirstAsync(x => x.Id == removedSiteB);
+        removed.WorkflowState = Constants.WorkflowStates.Removed;
+        await MicrotingDbContext.SaveChangesAsync();
+
+        await LinkSiteToProperty(a.Id, onlyA);
+        await LinkSiteToProperty(b.Id, onlyB);
+        await LinkSiteToProperty(a.Id, both);
+        await LinkSiteToProperty(b.Id, both);
+        var removedLink = await LinkSiteToProperty(b.Id, removedLinkB);
+        removedLink.WorkflowState = Constants.WorkflowStates.Removed;
+        await BackendConfigurationPnDbContext!.SaveChangesAsync();
+        await LinkSiteToProperty(b.Id, resignedB);
+        await LinkSiteToProperty(b.Id, removedSiteTagT1B);
+        await LinkSiteToProperty(b.Id, removedSiteB);
+
+        return new MembershipMatrix(a.Id, b.Id, c.Id, t1, t2, t3,
+            onlyA, onlyB, both, removedLinkB, resignedB, removedSiteTagT1B, removedSiteB);
+    }
+
+    /// <summary>
+    /// The batched forward lookup agrees, pair by pair, with the single-property lookup
+    /// the deploy resolver uses, and with the hand-derived expectation for every member
+    /// state. Every requested pair is a key — including a member-less team (T3) and a
+    /// property with no links at all (C). <b>New API (#1256)</b>: does not exist on the
+    /// old code; it is what the display paths switched to, so a drift from
+    /// <c>GetLiveMemberSiteIdsOnPropertyAsync</c> would make a tile name someone the
+    /// team never deploys to.
+    /// </summary>
+    [Test]
+    public async Task ByPropertyAndTag_AgreesWithOnPropertyLookup_ForEveryMemberState()
+    {
+        var (membership, _, _, coreHelper) = await BuildAsync();
+        var m = await SeedMembershipMatrix(coreHelper);
+
+        var pairs = (from p in m.Properties from t in m.Tags select (p, t)).ToList();
+        var byPair = await membership.GetLiveMemberSiteIdsByPropertyAndTagAsync(pairs);
+
+        Assert.That(byPair.Keys, Is.EquivalentTo(pairs), "every requested pair is a key, none extra");
+
+        foreach (var (p, t) in pairs)
+        {
+            var single = await membership.GetLiveMemberSiteIdsOnPropertyAsync([t], p);
+            Assert.That(byPair[(p, t)], Is.EquivalentTo(single),
+                $"pair ({p}, {t}) must equal the deploy resolver's single-property lookup");
+        }
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(byPair[(m.A, m.T1)], Is.EquivalentTo(new[] { m.OnlyA, m.Both }));
+            Assert.That(byPair[(m.A, m.T2)], Is.EquivalentTo(new[] { m.OnlyA, m.Both }));
+            Assert.That(byPair[(m.B, m.T1)], Is.EquivalentTo(new[] { m.OnlyB, m.Both }),
+                "B/T1: no A-only member, no removed link, no resigned worker, no removed SiteTag, no removed Site");
+            Assert.That(byPair[(m.B, m.T2)], Is.EquivalentTo(new[] { m.OnlyB, m.Both, m.RemovedSiteTagT1B }),
+                "B/T2: the T1-removed member is still a live T2 member — removal is per team");
+            Assert.That(byPair[(m.A, m.T3)], Is.Empty);
+            Assert.That(byPair[(m.B, m.T3)], Is.Empty);
+            Assert.That(byPair[(m.C, m.T1)], Is.Empty, "a property with no links has no members");
+            Assert.That(byPair[(m.C, m.T2)], Is.Empty);
+        });
+    }
+
+    /// <summary>
+    /// The multi-property reverse lookup is the exact inverse of the forward one: for any
+    /// set of sites S, <c>T ∈ result[P]</c> iff some site of S is in
+    /// <c>forward[(P, T)]</c>; a property none of S is (live-)linked to through any team
+    /// is not a key; and the single-property reverse lookup equals <c>result[P]</c>.
+    /// Checked for every site alone and for all of them together. <b>New API (#1256)</b>:
+    /// the worker filters over multi-property lists use it, so an asymmetry would let a
+    /// filter match an event whose tile does not list the filtered worker, or vice versa.
+    /// </summary>
+    [Test]
+    public async Task TagIdsForSitesByProperty_IsTheInverseOfTheForwardLookup()
+    {
+        var (membership, _, _, coreHelper) = await BuildAsync();
+        var m = await SeedMembershipMatrix(coreHelper);
+
+        var pairs = (from p in m.Properties from t in m.Tags select (p, t)).ToList();
+        var forward = await membership.GetLiveMemberSiteIdsByPropertyAndTagAsync(pairs);
+
+        var siteSets = m.Sites.Select(s => new[] { s }).Append(m.Sites).ToList();
+        foreach (var sites in siteSets)
+        {
+            var byProperty = await membership.GetTagIdsForSitesByPropertyAsync(sites);
+            var label = $"sites [{string.Join(",", sites)}]";
+
+            foreach (var p in m.Properties)
+            {
+                var expected = m.Tags.Where(t => forward[(p, t)].Overlaps(sites)).ToList();
+                if (expected.Count == 0)
+                {
+                    Assert.That(byProperty.ContainsKey(p), Is.False,
+                        $"{label}: property {p} carries none of their live teams and must not be a key");
+                }
+                else
+                {
+                    Assert.That(byProperty[p], Is.EquivalentTo(expected), $"{label}: property {p}");
+                }
+
+                var onProperty = await membership.GetTagIdsForSitesOnPropertyAsync(sites, p);
+                Assert.That(onProperty, Is.EquivalentTo(expected),
+                    $"{label}: the single-property reverse lookup must agree on property {p}");
+            }
+        }
+
+        // Spot checks, so the parity above cannot pass vacuously.
+        var removedStates = await membership.GetTagIdsForSitesByPropertyAsync(
+            [m.RemovedLinkB, m.ResignedB, m.RemovedSiteB]);
+        var t1Removed = await membership.GetTagIdsForSitesOnPropertyAsync([m.RemovedSiteTagT1B], m.B);
+        var onlyA = await membership.GetTagIdsForSitesByPropertyAsync([m.OnlyA]);
+        Assert.Multiple(() =>
+        {
+            Assert.That(removedStates, Is.Empty,
+                "a removed property link, a resigned worker and a removed Site reach no team on any property");
+            Assert.That(t1Removed, Is.EquivalentTo(new[] { m.T2 }));
+            Assert.That(onlyA.Keys, Is.EquivalentTo(new[] { m.A }));
+            Assert.That(onlyA[m.A], Is.EquivalentTo(new[] { m.T1, m.T2 }));
+        });
+    }
+
+    /// <summary>
+    /// Null/empty input short-circuits all three #1256 lookups to an empty result without
+    /// touching either database: the instance below has NO plugin DbContext (any property
+    /// read would throw) and a Core helper that must never be asked for a Core.
+    /// </summary>
+    [Test]
+    public async Task PropertyScopedBatchLookups_EmptyOrNullInput_ReturnEmptyWithoutQuerying()
+    {
+        var coreHelper = Substitute.For<IEFormCoreService>();
+        var membership = new WorkerTagMembershipService(coreHelper);
+
+        var pairsEmpty = await membership.GetLiveMemberSiteIdsByPropertyAndTagAsync([]);
+        var pairsNull = await membership.GetLiveMemberSiteIdsByPropertyAndTagAsync(null!);
+        var byPropertyEmpty = await membership.GetTagIdsForSitesByPropertyAsync([]);
+        var byPropertyNull = await membership.GetTagIdsForSitesByPropertyAsync(null!);
+        var onPropertyEmpty = await membership.GetTagIdsForSitesOnPropertyAsync([], 1);
+        var onPropertyNull = await membership.GetTagIdsForSitesOnPropertyAsync(null!, 1);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(pairsEmpty, Is.Empty);
+            Assert.That(pairsNull, Is.Empty);
+            Assert.That(byPropertyEmpty, Is.Empty);
+            Assert.That(byPropertyNull, Is.Empty);
+            Assert.That(onPropertyEmpty, Is.Empty);
+            Assert.That(onPropertyNull, Is.Empty);
+        });
+        _ = coreHelper.DidNotReceive().GetCore();
     }
 
     /// <summary>
