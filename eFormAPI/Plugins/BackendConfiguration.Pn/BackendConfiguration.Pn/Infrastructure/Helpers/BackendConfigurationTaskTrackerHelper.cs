@@ -155,31 +155,44 @@ public static class BackendConfigurationTaskTrackerHelper
 				.Distinct()
 				.ToList();
 
-			var workerTagIdsByArpId = compliancePlanningIds.Count > 0
-				? await backendConfigurationPnDbContext.AreaRulePlanningWorkerTags
-					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-					.Where(x => backendConfigurationPnDbContext.AreaRulePlannings
-						.Any(arp => arp.Id == x.AreaRulePlanningId
-						            && arp.WorkflowState != Constants.WorkflowStates.Removed
-						            && compliancePlanningIds.Contains(arp.ItemPlanningId)))
-					.GroupBy(x => x.AreaRulePlanningId)
-					.ToDictionaryAsync(g => g.Key, g => g.Select(x => x.TagId).Distinct().ToList())
-				: new Dictionary<int, List<int>>();
+			// Loaded with each event's PropertyId (#1256): a team is expanded — and
+			// matched by the Workers filter — only against the event's own property.
+			var workerTagLinks = compliancePlanningIds.Count > 0
+				? await backendConfigurationPnDbContext.AreaRulePlannings
+					.Where(arp => arp.WorkflowState != Constants.WorkflowStates.Removed
+					              && compliancePlanningIds.Contains(arp.ItemPlanningId))
+					.SelectMany(arp => arp.AreaRulePlanningWorkerTags
+						.Where(wt => wt.WorkflowState != Constants.WorkflowStates.Removed)
+						.Select(wt => new { ArpId = arp.Id, arp.PropertyId, wt.TagId }))
+					.ToListAsync()
+				: [];
 
-			// Per TAG, not per row: the Workers column has to attribute members to the
-			// right event. The batched lookup keeps that attribution and still costs one
-			// round trip for the whole page — and none when nothing here is team-assigned.
-			var memberSiteIdsByTagId = await workerTagMembershipService
-				.GetLiveMemberSiteIdsByTagAsync(
-					workerTagIdsByArpId.Values.SelectMany(x => x).Distinct().ToList())
+			var workerTagIdsByArpId = workerTagLinks
+				.GroupBy(x => x.ArpId)
+				.ToDictionary(g => g.Key, g => g.Select(x => x.TagId).Distinct().ToList());
+			var propertyIdByTeamArpId = workerTagLinks
+				.GroupBy(x => x.ArpId)
+				.ToDictionary(g => g.Key, g => g.First().PropertyId);
+
+			// Per (PROPERTY, TAG), not per row: the Workers column has to attribute members
+			// to the right event, and a team only reaches its members linked to the event's
+			// property (#1256) — the same set the deploy resolver sends the event to. The
+			// batched lookup keeps that attribution and still costs a fixed number of round
+			// trips for the whole page — and none when nothing here is team-assigned.
+			var memberSiteIdsByPropertyAndTag = await workerTagMembershipService
+				.GetLiveMemberSiteIdsByPropertyAndTagAsync(workerTagLinks
+					.Select(x => (x.PropertyId, x.TagId))
+					.Distinct()
+					.ToList())
 				.ConfigureAwait(false);
 
-			// The filter's own half: the tags the REQUESTED sites are live members of.
-			// Empty when no worker filter is set, which leaves the filter untouched.
-			HashSet<int> effectiveWorkerTagIds = filtersModel.WorkerIds.Any()
+			// The filter's own half: per property, the tags the REQUESTED sites are live
+			// members of while linked to that property (#1256). Empty when no worker filter
+			// is set, which leaves the filter untouched.
+			var effectiveWorkerTagIdsByPropertyId = filtersModel.WorkerIds.Any()
 				? await workerTagMembershipService
-					.GetTagIdsForSitesAsync(filtersModel.WorkerIds).ConfigureAwait(false)
-				: [];
+					.GetTagIdsForSitesByPropertyAsync(filtersModel.WorkerIds).ConfigureAwait(false)
+				: new Dictionary<int, HashSet<int>>();
 
 			foreach (var compliance in complianceList)
 			{
@@ -229,6 +242,7 @@ public static class BackendConfigurationTaskTrackerHelper
 					.ToList();
 
 				var arpWorkerTagIds = workerTagIdsByArpId.GetValueOrDefault(areaRulePlanning.Id, []);
+				var arpPropertyId = propertyIdByTeamArpId.GetValueOrDefault(areaRulePlanning.Id);
 
 				if (filtersModel.WorkerIds.Any() /* && !filtersModel.WorkerIds.Contains(-1)*/) // filtration by workers
 				{
@@ -242,7 +256,9 @@ public static class BackendConfigurationTaskTrackerHelper
 
 					// #1231 — team match, OR'd beside it, never AND'd. Same shape as
 					// ShouldIncludeTask on the calendar week view.
-					var workerTagMatch = effectiveWorkerTagIds.Count > 0
+					var workerTagMatch = arpWorkerTagIds.Count > 0
+					                     && effectiveWorkerTagIdsByPropertyId.TryGetValue(
+						                     arpPropertyId, out var effectiveWorkerTagIds)
 					                     && arpWorkerTagIds.Any(effectiveWorkerTagIds.Contains);
 
 					if (!siteMatch && !workerTagMatch)
@@ -293,7 +309,7 @@ public static class BackendConfigurationTaskTrackerHelper
 				var seenDisplaySiteIds = new HashSet<int>(displaySiteIds);
 				foreach (var tagId in arpWorkerTagIds)
 				{
-					foreach (var memberSiteId in memberSiteIdsByTagId.GetValueOrDefault(tagId, []))
+					foreach (var memberSiteId in memberSiteIdsByPropertyAndTag.GetValueOrDefault((arpPropertyId, tagId), []))
 					{
 						if (seenDisplaySiteIds.Add(memberSiteId))
 						{

@@ -69,7 +69,7 @@ public class WorkerTagsListTests : TestBaseSetup
         var coreHelper = Substitute.For<IEFormCoreService>();
         coreHelper.GetCore().Returns(Task.FromResult(core));
         var service = new BackendConfigurationWorkerTagsService(
-            coreHelper, new WorkerTagMembershipService(coreHelper),
+            coreHelper, new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext),
             TestContextLogger<BackendConfigurationWorkerTagsService>.Instance);
         return (service, core.DbContextHelper.GetDbContext(), core);
     }

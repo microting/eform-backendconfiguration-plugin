@@ -55,11 +55,11 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 	/// ("team") assignment as well as explicit PlanningSites rows, and a substitute
 	/// would answer "no membership" for every site.
 	/// </summary>
-	private static IWorkerTagMembershipService WorkerTagMembership(Core core)
+	private IWorkerTagMembershipService WorkerTagMembership(Core core)
 	{
 		var coreHelper = Substitute.For<IEFormCoreService>();
 		coreHelper.GetCore().Returns(Task.FromResult(core));
-		return new WorkerTagMembershipService(coreHelper);
+		return new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext);
 	}
 	[Test]
 	public async Task BackendConfigurationTaskTrackerServiceHelper_IndexTasks_WithoutFilters()

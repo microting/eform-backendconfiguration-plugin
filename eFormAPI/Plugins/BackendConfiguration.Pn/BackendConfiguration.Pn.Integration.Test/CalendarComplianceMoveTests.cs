@@ -287,7 +287,7 @@ public class CalendarComplianceMoveTests : TestBaseSetup
             // halves of a cross-period re-anchor. Neither fires in these fixtures.
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            new WorkerTagMembershipService(coreHelper));
+            new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext));
     }
 
     private async Task<List<CalendarTaskResponseModel>> TilesForWeek(

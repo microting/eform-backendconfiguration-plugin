@@ -244,25 +244,23 @@ public class WorkerTagMembershipService(
     }
 
     /// <summary>
+    /// The plugin DbContext the property clause reads, or a loud failure when this
+    /// instance was built without one — never a silently skipped property clause.
+    /// </summary>
+    private BackendConfigurationPnDbContext PluginDbContext =>
+        backendConfigurationPnDbContext
+        ?? throw new System.InvalidOperationException(
+            "WorkerTagMembershipService was constructed without a BackendConfigurationPnDbContext; "
+            + "the property-scoped membership lookups need it.");
+
+    /// <summary>
     /// The SDK site ids linked to <paramref name="propertyId"/> by an active
     /// <c>PropertyWorker</c> row. The property clause of the scoped rule — stated once.
     /// </summary>
     private async Task<List<int>> PropertyLinkedSiteIdsAsync(int propertyId, CancellationToken ct)
     {
-        if (backendConfigurationPnDbContext == null)
-        {
-            throw new System.InvalidOperationException(
-                "WorkerTagMembershipService was constructed without a BackendConfigurationPnDbContext; "
-                + "the property-scoped membership lookups need it.");
-        }
-
-        return await backendConfigurationPnDbContext.PropertyWorkers
-            .AsNoTracking()
-            .Where(pw => pw.PropertyId == propertyId
-                         && pw.WorkflowState != Constants.WorkflowStates.Removed)
-            .Select(pw => pw.WorkerId)
-            .Distinct()
-            .ToListAsync(ct).ConfigureAwait(false);
+        var links = await PropertyLinksAsync([propertyId], null, ct).ConfigureAwait(false);
+        return links.Select(l => l.SiteId).Distinct().ToList();
     }
 
     public async Task<HashSet<int>> GetLiveMemberSiteIdsOnPropertyAsync(
@@ -324,5 +322,166 @@ public class WorkerTagMembershipService(
         }
 
         return byTagId;
+    }
+
+    /// <summary>
+    /// Active <c>PropertyWorker</c> links as <c>(PropertyId, SiteId)</c> pairs, optionally
+    /// narrowed to some properties and/or some sites. THE property clause of the scoped
+    /// rule — stated once; every property-scoped lookup reads it through here, in one
+    /// plugin-db statement.
+    /// </summary>
+    private async Task<List<(int PropertyId, int SiteId)>> PropertyLinksAsync(
+        List<int>? propertyIds, List<int>? siteIds, CancellationToken ct)
+    {
+        var query = PluginDbContext.PropertyWorkers
+            .AsNoTracking()
+            .Where(pw => pw.WorkflowState != Constants.WorkflowStates.Removed);
+        if (propertyIds != null)
+        {
+            query = query.Where(pw => propertyIds.Contains(pw.PropertyId));
+        }
+        if (siteIds != null)
+        {
+            query = query.Where(pw => siteIds.Contains(pw.WorkerId));
+        }
+
+        var rows = await query
+            .Select(pw => new { pw.PropertyId, pw.WorkerId })
+            .Distinct()
+            .ToListAsync(ct).ConfigureAwait(false);
+
+        return rows.Select(r => (r.PropertyId, r.WorkerId)).ToList();
+    }
+
+    public async Task<Dictionary<(int PropertyId, int TagId), HashSet<int>>> GetLiveMemberSiteIdsByPropertyAndTagAsync(
+        IReadOnlyCollection<(int PropertyId, int TagId)> propertyTagPairs, CancellationToken ct = default)
+    {
+        var result = new Dictionary<(int PropertyId, int TagId), HashSet<int>>();
+        if (propertyTagPairs == null || propertyTagPairs.Count == 0)
+        {
+            return result;
+        }
+
+        foreach (var pair in propertyTagPairs)
+        {
+            result.TryAdd(pair, []);
+        }
+
+        var propertyIds = result.Keys.Select(k => k.PropertyId).Distinct().ToList();
+        var tagIds = result.Keys.Select(k => k.TagId).Distinct().ToList();
+
+        var links = await PropertyLinksAsync(propertyIds, null, ct).ConfigureAwait(false);
+        if (links.Count == 0)
+        {
+            return result;
+        }
+
+        var siteIdsByPropertyId = links
+            .GroupBy(l => l.PropertyId)
+            .ToDictionary(g => g.Key, g => g.Select(l => l.SiteId).ToHashSet());
+        var linkedSiteIds = links.Select(l => l.SiteId).Distinct().ToList();
+
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+        var memberships = await LiveMemberships(sdkDbContext)
+            .Where(st => tagIds.Contains(st.TagId.Value)
+                         && linkedSiteIds.Contains(st.SiteId.Value))
+            .Select(st => new { TagId = st.TagId.Value, SiteId = st.SiteId.Value })
+            .Distinct()
+            .ToListAsync(ct).ConfigureAwait(false);
+
+        var membersByTagId = memberships
+            .GroupBy(m => m.TagId)
+            .ToDictionary(g => g.Key, g => g.Select(m => m.SiteId).ToList());
+
+        foreach (var (key, members) in result)
+        {
+            if (!membersByTagId.TryGetValue(key.TagId, out var tagMembers)
+                || !siteIdsByPropertyId.TryGetValue(key.PropertyId, out var propertySiteIds))
+            {
+                continue;
+            }
+
+            foreach (var siteId in tagMembers)
+            {
+                if (propertySiteIds.Contains(siteId))
+                {
+                    members.Add(siteId);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    public async Task<HashSet<int>> GetTagIdsForSitesOnPropertyAsync(
+        IReadOnlyCollection<int> siteIds, int propertyId, CancellationToken ct = default)
+    {
+        if (siteIds == null || siteIds.Count == 0)
+        {
+            return [];
+        }
+
+        var byProperty = await TagIdsForSitesByPropertyAsync(
+            siteIds.Distinct().ToList(), [propertyId], ct).ConfigureAwait(false);
+        return byProperty.TryGetValue(propertyId, out var tagIds) ? tagIds : [];
+    }
+
+    public async Task<Dictionary<int, HashSet<int>>> GetTagIdsForSitesByPropertyAsync(
+        IReadOnlyCollection<int> siteIds, CancellationToken ct = default)
+    {
+        if (siteIds == null || siteIds.Count == 0)
+        {
+            return new Dictionary<int, HashSet<int>>();
+        }
+
+        return await TagIdsForSitesByPropertyAsync(siteIds.Distinct().ToList(), null, ct)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Shared body of the two property-scoped reverse lookups: the property links of the
+    /// requested sites (plugin db), then the live memberships of the LINKED sites only
+    /// (SDK db, skipped when no site is linked anywhere relevant), joined in memory.
+    /// </summary>
+    private async Task<Dictionary<int, HashSet<int>>> TagIdsForSitesByPropertyAsync(
+        List<int> siteIdList, List<int>? propertyIds, CancellationToken ct)
+    {
+        var byPropertyId = new Dictionary<int, HashSet<int>>();
+
+        var links = await PropertyLinksAsync(propertyIds, siteIdList, ct).ConfigureAwait(false);
+        if (links.Count == 0)
+        {
+            return byPropertyId;
+        }
+
+        var linkedSiteIds = links.Select(l => l.SiteId).Distinct().ToList();
+
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+        var memberships = await LiveMemberships(sdkDbContext)
+            .Where(st => linkedSiteIds.Contains(st.SiteId.Value))
+            .Select(st => new { TagId = st.TagId.Value, SiteId = st.SiteId.Value })
+            .Distinct()
+            .ToListAsync(ct).ConfigureAwait(false);
+
+        var tagIdsBySiteId = memberships
+            .GroupBy(m => m.SiteId)
+            .ToDictionary(g => g.Key, g => g.Select(m => m.TagId).ToList());
+
+        foreach (var (propertyId, siteId) in links)
+        {
+            if (!tagIdsBySiteId.TryGetValue(siteId, out var tagIds)) continue;
+            if (!byPropertyId.TryGetValue(propertyId, out var set))
+            {
+                set = [];
+                byPropertyId[propertyId] = set;
+            }
+            set.UnionWith(tagIds);
+        }
+
+        return byPropertyId;
     }
 }

@@ -8,6 +8,17 @@ namespace BackendConfiguration.Pn.Services.WorkerTagMembership;
 /// The single owner of the "is this site a live member of this worker tag (team)?"
 /// rule. See <see cref="WorkerTagMembershipService"/> for the rule itself and why each
 /// of its clauses exists — do not re-implement any part of it at a call site.
+/// <para>
+/// <b>Property scope (#1295 / #1256).</b> A team reaches only its members linked to the
+/// event's property. Every production consumer that resolves a team FOR AN EVENT — deploy
+/// (resolver, <c>EventDeployService</c>), display (week view, task list, task tracker,
+/// compliance report) and the worker filters over them — uses the <c>…OnProperty…</c> /
+/// <c>…ByProperty…</c> lookups. The installation-wide lookups
+/// (<see cref="GetLiveMemberSiteIdsAsync"/>, <see cref="GetLiveMemberSiteIdsByTagAsync"/>,
+/// <see cref="GetTagIdsForSitesAsync"/>) remain for callers with no event/property in
+/// play; <see cref="GetTagIdsWithLiveMembersAsync"/> backs the unscoped teams list that
+/// only supplies team NAMES.
+/// </para>
 /// </summary>
 public interface IWorkerTagMembershipService
 {
@@ -83,4 +94,47 @@ public interface IWorkerTagMembershipService
     /// </summary>
     Task<Dictionary<int, HashSet<int>>> GetLiveMemberSiteIdsByTagOnPropertyAsync(
         int propertyId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Batched, property-scoped, attribution-preserving forward lookup (#1256): for each
+    /// requested <c>(PropertyId, TagId)</c> pair, the live members of that tag that are
+    /// linked to that property. This is the display twin of what
+    /// <see cref="GetLiveMemberSiteIdsOnPropertyAsync"/> deploys to, for callers that
+    /// render many events across one or more properties at once (the calendar week view
+    /// and task list, the task tracker, the compliance report): each event's team is
+    /// expanded against ITS OWN property, in a fixed number of round trips for the whole
+    /// set — one plugin-db statement for the property links and at most one SDK statement
+    /// for the memberships — never one per event, tag or property.
+    /// <para>
+    /// <b>Every requested pair is a key of the result</b>, mapping to an empty set when
+    /// the tag has no live member on that property. Returns an empty dictionary for a
+    /// null/empty input without querying.
+    /// </para>
+    /// </summary>
+    Task<Dictionary<(int PropertyId, int TagId), HashSet<int>>> GetLiveMemberSiteIdsByPropertyAndTagAsync(
+        IReadOnlyCollection<(int PropertyId, int TagId)> propertyTagPairs, CancellationToken ct = default);
+
+    /// <summary>
+    /// Property-scoped reverse lookup (#1256): the worker tag ids that any of
+    /// <paramref name="siteIds"/> is a live member of, counting only the sites linked to
+    /// <paramref name="propertyId"/>. Equivalently: the tags T for which some requested
+    /// site is in <c>GetLiveMemberSiteIdsOnPropertyAsync([T], propertyId)</c>. Used where a
+    /// worker filter or the deploy path asks "which of this property's teams is this site
+    /// in?". Returns an empty set for a null/empty input without querying, and without an
+    /// SDK round trip when none of the sites is linked to the property.
+    /// </summary>
+    Task<HashSet<int>> GetTagIdsForSitesOnPropertyAsync(
+        IReadOnlyCollection<int> siteIds, int propertyId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Multi-property reverse lookup (#1256): property id → the worker tag ids that any of
+    /// <paramref name="siteIds"/> is a live member of WHILE linked to that property.
+    /// For worker filters over lists that span properties (the task list, the task
+    /// tracker, the compliance report): an event on property P assigned to team T matches
+    /// a filtered site exactly when <c>T ∈ result[P]</c>. Properties none of the sites is
+    /// linked to are not keys. Returns an empty dictionary for a null/empty input without
+    /// querying.
+    /// </summary>
+    Task<Dictionary<int, HashSet<int>>> GetTagIdsForSitesByPropertyAsync(
+        IReadOnlyCollection<int> siteIds, CancellationToken ct = default);
 }

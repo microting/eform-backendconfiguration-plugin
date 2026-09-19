@@ -173,7 +173,7 @@ public class CalendarCompleteOccurrenceTests : TestBaseSetup
             TestContextLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            new WorkerTagMembershipService(coreHelper));
+            new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext));
 
         // Calendar UI fetch (ActionableOnly=false) for the week of the series.
         var result = await service.GetTasksForWeek(new CalendarTaskRequestModel

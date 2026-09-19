@@ -389,10 +389,19 @@ public class BackendConfigurationComplianceReportService(
             // team must be the same ARP the compliance hangs off. With no live
             // membership the id list is empty, the tag half matches nothing, and the
             // result is exactly what it was.
-            var workerTagIds = (await workerTagMembershipService
-                    .GetTagIdsForSitesAsync(siteIds)
-                    .ConfigureAwait(false))
-                .ToList();
+            //
+            // Property scope (#1256): the report spans properties and a team only
+            // reaches its members linked to the EVENT'S property, so the tag half is
+            // resolved per property and pre-matched to the team-assigned ARPs on that
+            // property (one extra plugin-db statement), leaving the predicate a plain
+            // IN (...) over ARP ids.
+            var teamTagIdsByPropertyId = await workerTagMembershipService
+                .GetTagIdsForSitesByPropertyAsync(siteIds)
+                .ConfigureAwait(false);
+            var teamMatchedArpIds = await WorkerTagMembership.WorkerTagAssignmentQueries
+                .ArpIdsAssignedToTeamsOnPropertiesAsync(
+                    backendConfigurationPnDbContext, teamTagIdsByPropertyId)
+                .ConfigureAwait(false);
 
             complianceQuery = complianceQuery.Where(c =>
                 backendConfigurationPnDbContext.AreaRulePlannings.Any(arp =>
@@ -402,10 +411,7 @@ public class BackendConfigurationComplianceReportService(
                             ps.AreaRulePlanningsId == arp.Id
                             && ps.WorkflowState != Constants.WorkflowStates.Removed
                             && siteIds.Contains(ps.SiteId))
-                        || backendConfigurationPnDbContext.AreaRulePlanningWorkerTags.Any(wt =>
-                            wt.AreaRulePlanningId == arp.Id
-                            && wt.WorkflowState != Constants.WorkflowStates.Removed
-                            && workerTagIds.Contains(wt.TagId)))));
+                        || teamMatchedArpIds.Contains(arp.Id))));
         }
 
         // Project rather than materialise entities: nothing downstream writes
@@ -1474,15 +1480,31 @@ public class BackendConfigurationComplianceReportService(
             return siteIdsByArpId;
         }
 
-        var workerTagIdsByArpId = await backendConfigurationPnDbContext.AreaRulePlanningWorkerTags
+        // Each team link comes with its event's PropertyId (#1256): a team is expanded
+        // only to its live members linked to the event's own property — the set the
+        // deploy resolver sends the event to — so the worker column never names a
+        // member on another property. Joined here rather than read off
+        // arpDetailsById, which does not cover every ARP id (see the no-detail branch).
+        var workerTagLinks = await backendConfigurationPnDbContext.AreaRulePlanningWorkerTags
             .Where(x => arpIds.Contains(x.AreaRulePlanningId))
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-            .GroupBy(x => x.AreaRulePlanningId)
-            .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.TagId).Distinct().ToList());
+            .Join(backendConfigurationPnDbContext.AreaRulePlannings,
+                wt => wt.AreaRulePlanningId, arp => arp.Id,
+                (wt, arp) => new { wt.AreaRulePlanningId, arp.PropertyId, wt.TagId })
+            .ToListAsync();
 
-        var memberSiteIdsByTagId = await workerTagMembershipService
-            .GetLiveMemberSiteIdsByTagAsync(
-                workerTagIdsByArpId.Values.SelectMany(x => x).Distinct().ToList())
+        var workerTagIdsByArpId = workerTagLinks
+            .GroupBy(x => x.AreaRulePlanningId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.TagId).Distinct().ToList());
+        var propertyIdByArpId = workerTagLinks
+            .GroupBy(x => x.AreaRulePlanningId)
+            .ToDictionary(g => g.Key, g => g.First().PropertyId);
+
+        var memberSiteIdsByPropertyAndTag = await workerTagMembershipService
+            .GetLiveMemberSiteIdsByPropertyAndTagAsync(workerTagLinks
+                .Select(x => (x.PropertyId, x.TagId))
+                .Distinct()
+                .ToList())
             .ConfigureAwait(false);
 
         foreach (var arpId in arpIds)
@@ -1511,7 +1533,8 @@ public class BackendConfigurationComplianceReportService(
             var seenTeamSiteIds = new HashSet<int>();
             foreach (var tagId in workerTagIdsByArpId.GetValueOrDefault(arpId, []))
             {
-                if (!memberSiteIdsByTagId.TryGetValue(tagId, out var memberSiteIds)) continue;
+                if (!propertyIdByArpId.TryGetValue(arpId, out var arpPropertyId)
+                    || !memberSiteIdsByPropertyAndTag.TryGetValue((arpPropertyId, tagId), out var memberSiteIds)) continue;
                 foreach (var siteId in memberSiteIds)
                 {
                     if (seenTeamSiteIds.Add(siteId))

@@ -203,7 +203,7 @@ public class TaskListBatchReportHeadlineTest : TestBaseSetup
             TestContextLogger<BackendConfigurationCalendarService>.Instance,
             retraction,
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            new WorkerTagMembershipService(coreHelper));
+            new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext));
 
         // Echoes the key back, so the rejection assertion can name the key.
         var localizationService = Substitute.For<IBackendConfigurationLocalizationService>();

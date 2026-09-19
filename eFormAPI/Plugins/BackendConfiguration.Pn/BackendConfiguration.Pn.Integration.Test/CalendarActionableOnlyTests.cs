@@ -217,7 +217,7 @@ public class CalendarActionableOnlyTests : TestBaseSetup
             TestContextLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            new WorkerTagMembershipService(coreHelper));
+            new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext));
 
         // Act — ListEvents-style mobile-worker fetch (ActionableOnly=true) for
         // the week containing the just-completed Monday.

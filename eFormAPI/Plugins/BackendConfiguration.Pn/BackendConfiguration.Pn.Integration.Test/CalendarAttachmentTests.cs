@@ -108,7 +108,7 @@ public class CalendarAttachmentTests : TestBaseSetup
             TestContextLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            new WorkerTagMembershipService(new EFormCoreService(_sdkConnectionString))
+            new WorkerTagMembershipService(new EFormCoreService(_sdkConnectionString), BackendConfigurationPnDbContext)
         );
     }
 

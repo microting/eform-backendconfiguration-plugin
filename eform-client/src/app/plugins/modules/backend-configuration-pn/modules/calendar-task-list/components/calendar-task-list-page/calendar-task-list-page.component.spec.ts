@@ -96,6 +96,25 @@ describe('CalendarTaskListPageComponent', () => {
     expect(calendarServiceStub.getTasksIndex).toHaveBeenCalled();
   });
 
+  // #1256: this list is only the edit modal's team-NAME fallback (the modal loads its
+  // own property-scoped teams for the picker), so it stays installation-wide: a task
+  // whose team has no member on its property any more must still be named.
+  it('loads the installation-wide teams list (names only), not a property-scoped one', () => {
+    expect(workerTagsServiceStub.getWorkerTags).toHaveBeenCalledTimes(1);
+    expect(workerTagsServiceStub.getWorkerTags).toHaveBeenCalledWith();
+  });
+
+  it('does not reload the teams when the property filter changes', () => {
+    workerTagsServiceStub.getWorkerTags.mockClear();
+
+    component.onFiltersChanged({
+      propertyIds: [1, 2], boardIds: [], eformIds: [], assignToIds: [],
+      tagIds: [], status: null, complianceEnabled: null, nameFilter: null,
+    } as any);
+
+    expect(workerTagsServiceStub.getWorkerTags).not.toHaveBeenCalled();
+  });
+
   describe('onFiltersChanged', () => {
     it('reloads tasks through getTasksIndex with the new filters', () => {
       calendarServiceStub.getTasksIndex.mockClear();

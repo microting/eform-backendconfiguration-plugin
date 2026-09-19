@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Calendar;
 using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
+using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -62,8 +63,23 @@ public class EventDeployService(
     ItemsPlanningPnDbContext itemsPlanningPnDbContext,
     IEFormCoreService coreHelper,
     IServiceProvider serviceProvider,
-    ILogger<EventDeployService> logger) : IEventDeployService
+    ILogger<EventDeployService> logger,
+    IWorkerTagMembershipService? workerTagMembershipService = null) : IEventDeployService
 {
+    /// <summary>
+    /// The owner of the team-membership rule (#1256). Worker-tag membership on the deploy
+    /// path — the C4 candidate narrowing in <see cref="EnsureDeployedAsync"/> and the
+    /// <see cref="SiteEventLinkage.WorkerTag"/> probe in
+    /// <see cref="ResolveSiteLinkageAsync"/> — goes through its PROPERTY-SCOPED reverse
+    /// lookup, so a site qualifies through a team only when it is a LIVE member (not a
+    /// removed SiteTag, removed Site or resigned Worker) AND linked to the event's
+    /// property: the same set <c>CalendarAssignmentResolver</c> deploys a team to.
+    /// Production DI supplies the service; fixtures that construct this class directly
+    /// get the real implementation over the same contexts rather than a skipped rule.
+    /// </summary>
+    private IWorkerTagMembershipService WorkerTagMembership =>
+        workerTagMembershipService ??= new WorkerTagMembershipService(coreHelper, dbContext);
+
     // #934 — per-(planning, site) in-process deploy locks. Concurrent deploy
     // passes (the 5s StreamEventChanges poll, ListEvents one-shots, and the
     // several window/board requests a single client fires per sync) all call
@@ -237,15 +253,17 @@ public class EventDeployService(
 
             if (candidateArpIdsWithWorkerTags.Count > 0)
             {
-                var sdkCoreForTags = await coreHelper.GetCore().ConfigureAwait(false);
-                await using var sdkDbContextForTags = sdkCoreForTags.DbContextHelper.GetDbContext();
-                var siteTagIds = await sdkDbContextForTags.SiteTags
-                    .AsNoTracking()
-                    .Where(st => st.SiteId == sdkSiteId
-                                 && st.TagId != null
-                                 && st.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Select(st => st.TagId!.Value)
-                    .ToListAsync(cancellationToken).ConfigureAwait(false);
+                // #1256 — the teams this site is a LIVE member of while linked to this
+                // property, via the membership service's property-scoped rule. The
+                // candidate EVENTS are unchanged (still every property event from
+                // GetTasksForWeek); only the team-membership resolution is scoped, so a
+                // site reached through a team is exactly one the resolver would deploy
+                // the event to. Short-circuits before any SDK round trip when the site is
+                // not linked to the property at all.
+                var siteTagIds = (await WorkerTagMembership
+                        .GetTagIdsForSitesOnPropertyAsync([sdkSiteId], propertyIdInt, cancellationToken)
+                        .ConfigureAwait(false))
+                    .ToList();
 
                 if (siteTagIds.Count > 0)
                 {
@@ -718,12 +736,15 @@ public class EventDeployService(
             .ToListAsync(ct).ConfigureAwait(false);
         if (eventTagIds.Count > 0)
         {
-            var siteIsWorkerTagMember = await sdkDbContext.SiteTags
-                .AsNoTracking()
-                .AnyAsync(st => st.SiteId == sdkSiteId
-                                && st.TagId != null && eventTagIds.Contains(st.TagId.Value)
-                                && st.WorkflowState != Constants.WorkflowStates.Removed, ct)
+            // #1256 — live membership AND a link to the event's property, via the
+            // membership service (the single owner of the rule): a removed SiteTag, a
+            // removed Site, a resigned Worker or a member who only works on another
+            // property is not linked through the team — the same set
+            // CalendarAssignmentResolver deploys the team to.
+            var siteTeamIdsOnProperty = await WorkerTagMembership
+                .GetTagIdsForSitesOnPropertyAsync([sdkSiteId], areaRulePlanning.PropertyId, ct)
                 .ConfigureAwait(false);
+            var siteIsWorkerTagMember = siteTeamIdsOnProperty.Overlaps(eventTagIds);
             if (siteIsWorkerTagMember)
             {
                 return SiteEventLinkage.WorkerTag;

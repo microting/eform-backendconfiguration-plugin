@@ -258,7 +258,7 @@ public class TaskListRenameTest : TestBaseSetup
             TestContextLogger<BackendConfigurationCalendarService>.Instance,
             retraction,
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            new WorkerTagMembershipService(coreHelper));
+            new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext));
 
         // Echoes the key back, matching the plugin's convention where
         // GetString("SomeKey") is itself the message under test — so the

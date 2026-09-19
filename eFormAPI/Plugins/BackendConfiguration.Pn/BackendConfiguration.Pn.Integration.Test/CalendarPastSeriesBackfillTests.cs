@@ -224,7 +224,7 @@ public class CalendarPastSeriesBackfillTests : TestBaseSetup
         var coreHelper = Substitute.For<IEFormCoreService>();
         coreHelper.GetCore().Returns(Task.FromResult(core));
 
-        var resolver = new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, new WorkerTagMembershipService(coreHelper));
+        var resolver = new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext));
         var deploy = Substitute.For<IEventDeployService>();
 
 

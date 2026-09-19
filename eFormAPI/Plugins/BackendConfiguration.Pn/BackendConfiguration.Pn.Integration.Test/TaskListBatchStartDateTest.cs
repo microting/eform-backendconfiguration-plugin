@@ -230,7 +230,7 @@ public partial class TaskListBatchStartDateTest : TestBaseSetup
         _backfillService = new CalendarPastSeriesBackfillService(
             ItemsPlanningPnDbContext!, BackendConfigurationPnDbContext!, coreHelper,
             _deployService,
-            new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, new WorkerTagMembershipService(coreHelper)),
+            new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext)),
             TestContextLogger<CalendarPastSeriesBackfillService>.Instance);
 
         _taskListService = new BackendConfigurationTaskListService(
@@ -474,7 +474,7 @@ public partial class TaskListBatchStartDateTest : TestBaseSetup
             TestContextLogger<BackendConfigurationCalendarService>.Instance,
             _retractionService,
             _backfillService,
-            new WorkerTagMembershipService(_coreHelper));
+            new WorkerTagMembershipService(_coreHelper, BackendConfigurationPnDbContext));
 
         return new BackendConfigurationTaskListService(
             _localizationService,

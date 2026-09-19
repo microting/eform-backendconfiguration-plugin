@@ -199,7 +199,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
             // The real membership service: #1232 made the employee filter and the
             // worker column depend on it, and a substitute would silently answer
             // "no team membership" for every site.
-            new WorkerTagMembershipService(coreHelper));
+            new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext));
     }
 
     private Task<Language> Danish() =>
@@ -2269,6 +2269,13 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         var teamTagId = await SeedSdkWorkerTag();
         var memberSiteId = await SeedSdkSite("team-member");
         await LinkSiteToTag(teamTagId, memberSiteId);
+        // #1256: a team only reaches its members linked to the event's property.
+        await BackendConfigurationPnDbContext!.PropertyWorkers.AddAsync(new PropertyWorker
+        {
+            PropertyId = fixture.PropertyId, WorkerId = memberSiteId,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
         await AssignWorkerTag(fixture.ArpId, teamTagId);
 
         var memberName = await MicrotingDbContext!.Sites
@@ -2296,5 +2303,82 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         Assert.That(caseModel.WorkerNames, Is.EqualTo(row.WorkerNames),
             "the two surfaces share ResolveWorkerSiteIdsByArpId and must therefore "
             + "render the same worker column for the same ARP");
+    }
+
+    /// <summary>
+    /// Rapport (<c>EformColumns</c>) across ALL properties (<c>PropertyId = null</c>, the
+    /// report's default), #1256: one team with a member linked only to property A, one
+    /// linked only to B and one linked to both, assigned to an answered event on A and one
+    /// on B. Each case's worker column names only the team's members linked to ITS OWN
+    /// property, and an employee filter on A's member returns A's case and not B's.
+    /// <b>Fails on the old code</b>: the worker column expanded the team unscoped (both
+    /// cases named all three members) and the flat tag filter let A's member match B's
+    /// case too.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_AllProperties_TeamWorkerColumnAndFilter_ArePerEventProperty()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var onA = await SeedOneCase("HoldA", da.Id, (Constants.FieldTypes.Comment, "Kommentar"));
+        var onB = await SeedOneCase("HoldB", da.Id, (Constants.FieldTypes.Comment, "Kommentar"));
+
+        var teamTagId = await SeedSdkWorkerTag();
+        var memberOnA = await SeedSdkSite("member-on-a");
+        var memberOnB = await SeedSdkSite("member-on-b");
+        var memberOnBoth = await SeedSdkSite("member-on-both");
+        foreach (var siteId in new[] { memberOnA, memberOnB, memberOnBoth })
+        {
+            await LinkSiteToTag(teamTagId, siteId);
+        }
+        foreach (var (propertyId, siteId) in new[]
+                 {
+                     (onA.PropertyId, memberOnA), (onB.PropertyId, memberOnB),
+                     (onA.PropertyId, memberOnBoth), (onB.PropertyId, memberOnBoth)
+                 })
+        {
+            await BackendConfigurationPnDbContext!.PropertyWorkers.AddAsync(new PropertyWorker
+            {
+                PropertyId = propertyId, WorkerId = siteId,
+                WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+            });
+            await BackendConfigurationPnDbContext.SaveChangesAsync();
+        }
+        await AssignWorkerTag(onA.ArpId, teamTagId);
+        await AssignWorkerTag(onB.ArpId, teamTagId);
+
+        var names = await MicrotingDbContext!.Sites
+            .Where(x => x.Id == memberOnA || x.Id == memberOnB || x.Id == memberOnBoth)
+            .ToDictionaryAsync(x => x.Id, x => x.Name);
+
+        var (from, to) = Window();
+        var service = BuildService(core, da);
+
+        var unfilteredRequest = Request(from, to);
+        Assert.That(unfilteredRequest.PropertyId, Is.Null, "the request spans every property");
+        var unfiltered = await service.EformColumns(unfilteredRequest);
+        Assert.That(unfiltered.Success, Is.True, unfiltered.Message);
+        var cases = unfiltered.Model.SelectMany(CasesOf).ToList();
+
+        var filteredRequest = Request(from, to);
+        filteredRequest.SiteIds = [memberOnA];
+        var filtered = await service.EformColumns(filteredRequest);
+        Assert.That(filtered.Success, Is.True, filtered.Message);
+        var filteredComplianceIds = filtered.Model.SelectMany(CasesOf).Select(c => c.ComplianceId).ToList();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(cases.Single(c => c.ComplianceId == onA.ComplianceId).WorkerNames,
+                Is.EquivalentTo(new[] { names[memberOnA], names[memberOnBoth] }),
+                "A's case: only the team's members linked to A");
+            Assert.That(cases.Single(c => c.ComplianceId == onB.ComplianceId).WorkerNames,
+                Is.EquivalentTo(new[] { names[memberOnB], names[memberOnBoth] }),
+                "B's case: only the team's members linked to B (#1256)");
+
+            Assert.That(filteredComplianceIds, Does.Contain(onA.ComplianceId),
+                "filter on A's member: the team's case on A is theirs");
+            Assert.That(filteredComplianceIds, Does.Not.Contain(onB.ComplianceId),
+                "filter on A's member: the same team's case on B is not (#1256)");
+        });
     }
 }

@@ -350,7 +350,7 @@ public class TaskListBatchMoveBoardTest : TestBaseSetup
             TestContextLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            new WorkerTagMembershipService(coreHelper));
+            new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext));
 
     // ------------------------------------------------------------------
     // MoveToBoard — the write
@@ -563,7 +563,7 @@ public class TaskListBatchMoveBoardTest : TestBaseSetup
             new BackendConfigurationLocalizationService(), _userService,
             BackendConfigurationPnDbContext!, CoreHelper(core), ItemsPlanningPnDbContext!,
             TestContextLogger<BackendConfigurationComplianceReportService>.Instance,
-            new WorkerTagMembershipService(CoreHelper(core)));
+            new WorkerTagMembershipService(CoreHelper(core), BackendConfigurationPnDbContext));
 
         async Task<List<int>> RowsOn(int boardId)
         {

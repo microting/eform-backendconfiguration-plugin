@@ -52,7 +52,16 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   boards: CalendarBoardModel[] = [];
   /** In-flight latch for onDuplicateBoard — see the doc comment there. */
   duplicatingBoard = false;
+  // The toolbar filter's Teams section (#1256): PROPERTY-scoped, like `employees` —
+  // only teams with at least one live member linked to the selected property, the
+  // same rule the deploy resolver applies, so picking one can never silently empty
+  // the grid. Reloaded on every property selection / restore (see loadTeams()).
   teams: CommonDictionaryModel[] = [];
+  // Installation-wide teams list, used for NAMES only: the tile name maps and the
+  // task modals' `workerTags` fallback. A task can carry a team that has no member on
+  // its property any more; it must still render by name, so this list is deliberately
+  // not property-scoped.
+  allTeams: CommonDictionaryModel[] = [];
   employees: CommonDictionaryModel[] = [];
   tags: SharedTagModel[] = [];
   tasks: CalendarTaskModel[] = [];
@@ -195,7 +204,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         this.loadProperties();
       });
     this.loadTags();
-    this.loadTeams();
+    this.loadAllTeams();
     this.loadEforms();
   }
 
@@ -276,6 +285,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     this.clearTasks();
     this.loadBoards(propertyId, false, undefined, true);
     this.loadEmployees();
+    this.loadTeams();
   }
 
   /**
@@ -318,10 +328,11 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Same as validateStoredSiteIds, for the worker groups (teams). The team
-   * list is not property-scoped and loads independently of the property, so
-   * it validates on its own arrival and reloads only if a task load already
-   * went out with the stale ids.
+   * Same as validateStoredSiteIds, for the worker groups (teams). Since #1256 the
+   * team list is property-scoped too: a stored team (#1292 re-entry, #1303 saved
+   * settings) that has no live member on the restored property is dropped here, so
+   * it cannot narrow the grid to nothing. The team and task loads race, so it
+   * reloads only if a task load already went out with the stale ids.
    */
   private validateStoredTeamIds() {
     const stored = this.activeTeamIds;
@@ -350,6 +361,9 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       this.clearTasks();
       this.loadBoards(propertyId, true);
       this.loadEmployees();
+      // updatePropertyId() above already cleared activeTeamIds, so there is nothing
+      // stale to prune here — only the offered list changes with the property.
+      this.loadTeams();
     } else {
       // No property selected. Not reachable from the toolbar today (the header
       // only ever emits a real id), but the invariant must hold for every
@@ -361,6 +375,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       // property, so nothing else will ever clear it.
       this.clearTasks();
       this.employees = [];
+      this.teams = [];
     }
   }
 
@@ -468,13 +483,47 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   // (#1213). The plugin endpoint filters server-side to tags that have at
   // least one live worker member. Trade-off: a worker group with no members at
   // all is not listed until someone is added to it.
+  //
+  // Property-scoped (#1256), and loaded exactly where `loadEmployees()` is — on a
+  // property selection and on the restore path — so the Teams and Employees
+  // sections of the toolbar filter obey the same rule. Guarded on property
+  // identity for the same reason as loadEmployees(): a slow response for the
+  // property the user already left must not repaint this one's list, nor prune
+  // this one's selection against it.
   loadTeams() {
-    this.workerTagsService.getWorkerTags().subscribe(res => {
+    const propertyId = this.currentPropertyId;
+    // Dropped up front, not when the response lands: until then the header would
+    // still offer the PREVIOUS property's teams, and a pick among them would be a
+    // filter on a team this property may not have.
+    this.teams = [];
+    if (!propertyId) {
+      return;
+    }
+    this.workerTagsService.getWorkerTags(propertyId).subscribe(res => {
+      if (propertyId !== this.currentPropertyId) return;
       if (res && res.success) {
-        this.teams = res.model;
+        this.teams = res.model ?? [];
         this.validateStoredTeamIds();
+      } else {
+        // Never leave another property's teams offered under this one.
+        this.teams = [];
       }
     });
+  }
+
+  // Installation-wide list, names only (see `allTeams`). Loaded once: team names do
+  // not depend on the property.
+  loadAllTeams() {
+    this.workerTagsService.getWorkerTags().subscribe(res => {
+      if (res && res.success) {
+        this.allTeams = res.model ?? [];
+      }
+    });
+  }
+
+  /** Team id -> name for tiles: installation-wide names, then the scoped list. */
+  private teamNameMap(): Map<number, string> {
+    return new Map([...this.teams, ...this.allTeams].map(t => [t.id, t.name] as [number, string]));
   }
 
   loadEmployees() {
@@ -581,7 +630,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
           this.clearTasks();
           return;
         }
-        const teamNameById = new Map(this.teams.map(t => [t.id, t.name]));
+        const teamNameById = this.teamNameMap();
         this.tasks = (res.model || []).map((t: any) => {
           const task = mapResponseToCalendarTask(t);
           // Resolve worker-tag ids to display names here (the container owns
@@ -623,7 +672,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
     forkJoin(calls).subscribe(results => {
       if (seq !== this.loadSeq) return;
-      const teamNameById = new Map(this.teams.map(t => [t.id, t.name]));
+      const teamNameById = this.teamNameMap();
       const boardColorMap = new Map(this.boards.map(b => [b.id, b.color]));
       const byDate = new Map<string, CalendarTaskLayoutModel[]>();
       results.forEach(res => {
@@ -730,7 +779,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
           : (this.activeBoardIds.length === 1 ? this.activeBoardIds[0] : undefined),
       employees: this.employees,
       tags: this.tags.map(t => t.name),
-      workerTags: this.teams,
+      workerTags: this.allTeams,
       propertyId: this.currentPropertyId!,
       properties: this.properties,
       eforms: this.eforms$,
@@ -1243,7 +1292,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       boards: this.boards,
       employees: this.employees,
       tags: this.tags.map(t => t.name),
-      workerTags: this.teams,
+      workerTags: this.allTeams,
       propertyId: task.propertyId,
       properties: this.properties,
       eforms: this.eforms$,
@@ -1316,7 +1365,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       boards: this.boards,
       employees: this.employees,
       tags: this.tags.map(t => t.name),
-      workerTags: this.teams,
+      workerTags: this.allTeams,
       propertyId: sourceTask.propertyId,
       properties: this.properties,
       eforms: this.eforms$,

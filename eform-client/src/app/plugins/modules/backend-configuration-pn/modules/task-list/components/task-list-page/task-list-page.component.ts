@@ -90,7 +90,8 @@ export class TaskListPageComponent implements OnInit {
   properties: CommonDictionaryModel[] = [];
   boards: CalendarBoardModel[] = [];
   workers: CommonDictionaryModel[] = [];
-  // Available worker tags (a.k.a. "teams") for the edit modal's worker-tag field.
+  // Installation-wide worker tags (a.k.a. "teams"): the edit modal's team-NAME
+  // fallback — see loadWorkerTags() for why this is not property-scoped.
   teams: CommonDictionaryModel[] = [];
   eforms: {id: number; label: string}[] = [];
   tags: SharedTagModel[] = [];
@@ -160,6 +161,14 @@ export class TaskListPageComponent implements OnInit {
   // tags here and picking one produced an event that reached nobody (#1213).
   // The plugin endpoint filters server-side to tags that have at least one
   // live worker member; nothing is discarded client-side.
+  //
+  // Deliberately NOT property-scoped (#1256). This page has no team filter: the list
+  // is only the edit modal's `workerTags`, which since #1295 is a NAME fallback — the
+  // modal loads its own property-scoped teams for the picker, and names a task's
+  // team from here when that property no longer offers it (`withRetainedTeams`).
+  // Rows of this list carry no `workerTagNames`, so this is the only source of that
+  // name; scoping it (to one of possibly several filtered properties) would render
+  // such a team as a bare id.
   loadWorkerTags() {
     this.workerTagsService.getWorkerTags().subscribe(res => {
       if (res && res.success) {

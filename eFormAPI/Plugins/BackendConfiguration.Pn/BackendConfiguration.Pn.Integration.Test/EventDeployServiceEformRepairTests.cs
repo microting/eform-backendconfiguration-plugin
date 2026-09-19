@@ -1494,4 +1494,183 @@ public class EventDeployServiceEformRepairTests : TestBaseSetup
                 "a shared PlanningCase follows only when every one of its sites is on the new eForm");
         });
     }
+
+    // ------------------------------------------------------------------
+    // #1256. Team (worker-tag) linkage on the repair pass. ResolveSiteLinkageAsync
+    //     runs here with acceptPropertyWorker:false, so a site with no PlanningSite
+    //     keeps its case ONLY through the team — and since #1256 only when it is a
+    //     LIVE member of a team on the event AND linked to the event's property
+    //     (the set CalendarAssignmentResolver deploys the team to). Every other
+    //     team-only site has its case retracted and NOT recreated.
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// A team-only site (SiteTag, optionally a PropertyWorker link, and deliberately NO
+    /// PlanningSite of either kind): the site is tied to the event through the team
+    /// alone. <paramref name="resigned"/> seeds a resigned Worker behind the site through
+    /// a Core-handed context (<c>Workers.Resigned</c> only exists after the Core migrated
+    /// the schema); <paramref name="removedSite"/> seeds the Site soft-deleted, the state
+    /// <c>Core.SiteDelete</c> leaves behind (its SiteTags rows survive). MicrotingUid is
+    /// always set, or the repair pass would skip the site before the linkage probe.
+    /// </summary>
+    private async Task<Site> SeedTeamOnlySiteAsync(
+        Scenario s, string name, int microtingUid, int tagId, int? linkedPropertyId,
+        bool resigned = false, bool removedSite = false)
+    {
+        await using var sdk = s.Core.DbContextHelper.GetDbContext();
+        var site = new Site
+        {
+            Name = name, MicrotingUid = microtingUid, LanguageId = s.Language.Id,
+            WorkflowState = removedSite ? Constants.WorkflowStates.Removed : Constants.WorkflowStates.Created
+        };
+        await sdk.Sites.AddAsync(site);
+        await sdk.SaveChangesAsync();
+
+        if (resigned)
+        {
+            var worker = new Worker
+            {
+                FirstName = $"member-{Guid.NewGuid():N}", LastName = "Worker",
+                Email = $"{Guid.NewGuid():N}@example.test", Resigned = true,
+                ResignedAtDate = DateTime.UtcNow.AddDays(-1),
+                WorkflowState = Constants.WorkflowStates.Created
+            };
+            await sdk.Workers.AddAsync(worker);
+            await sdk.SaveChangesAsync();
+            await sdk.SiteWorkers.AddAsync(new SiteWorker
+            {
+                SiteId = site.Id, WorkerId = worker.Id, WorkflowState = Constants.WorkflowStates.Created
+            });
+            await sdk.SaveChangesAsync();
+        }
+
+        await sdk.SiteTags.AddAsync(new SiteTag
+        {
+            TagId = tagId, SiteId = site.Id, WorkflowState = Constants.WorkflowStates.Created
+        });
+        await sdk.SaveChangesAsync();
+
+        if (linkedPropertyId.HasValue)
+        {
+            await BackendConfigurationPnDbContext!.PropertyWorkers.AddAsync(new PropertyWorker
+            {
+                PropertyId = linkedPropertyId.Value, WorkerId = site.Id,
+                WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+            });
+            await BackendConfigurationPnDbContext.SaveChangesAsync();
+        }
+
+        return site;
+    }
+
+    /// <summary>
+    /// The repair pass's WorkerTag linkage is property-scoped and liveness-aware (#1256).
+    /// Four team-only sites, all with a live SiteTag in the event's team:
+    /// <list type="bullet">
+    ///   <item>a live member linked to the event's property — positive control: swapped
+    ///   onto the new eForm like any assignee;</item>
+    ///   <item>a live member linked only to ANOTHER property;</item>
+    ///   <item>a RESIGNED member linked to the event's property;</item>
+    ///   <item>a member linked to the event's property whose Site was REMOVED.</item>
+    /// </list>
+    /// The last three are no longer tied to the event: their open case is retracted and
+    /// NOT recreated. <b>Fails on the old code</b>: the direct SiteTags probe had neither a
+    /// property clause nor the live-membership clauses, so all three passed as
+    /// <c>WorkerTag</c> linkage and each got a brand-new case on the new eForm.
+    /// </summary>
+    [Test]
+    public async Task Repair_TeamOnlySites_OnlyLiveMembersLinkedToTheEventPropertyKeepTheirCase()
+    {
+        var deadline = DateTime.UtcNow.Date.AddDays(6);
+        var s = await SeedScenarioAsync("team-linkage", deadline.AddDays(-14));
+
+        var otherProperty = new Property
+        {
+            Name = $"EformRepair-team-other-{Guid.NewGuid()}", ItemPlanningTagId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext!.Properties.AddAsync(otherProperty);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var team = new Tag { Name = $"team-{Guid.NewGuid()}", WorkflowState = Constants.WorkflowStates.Created };
+        await MicrotingDbContext!.Tags.AddAsync(team);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        await BackendConfigurationPnDbContext.AreaRulePlanningWorkerTags.AddAsync(new AreaRulePlanningWorkerTag
+        {
+            AreaRulePlanningId = s.Arp.Id, TagId = team.Id,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var liveMember = await SeedTeamOnlySiteAsync(s, "repair-team-live", 6301, team.Id, s.Property.Id);
+        var otherPropertyMember = await SeedTeamOnlySiteAsync(
+            s, "repair-team-other-property", 6302, team.Id, otherProperty.Id);
+        var resignedMember = await SeedTeamOnlySiteAsync(
+            s, "repair-team-resigned", 6303, team.Id, s.Property.Id, resigned: true);
+        var removedSiteMember = await SeedTeamOnlySiteAsync(
+            s, "repair-team-removed-site", 6304, team.Id, s.Property.Id, removedSite: true);
+
+        // Calendar deploy shape: one PlanningCase per site; the Compliance row (UNIQUE on
+        // (PlanningId, Deadline)) is owned by the live member, the rest are reached by the
+        // Compliance-independent sweep.
+        async Task<(Case Case, PlanningCaseSite Pcs)> Deploy(Site site)
+        {
+            var planningCase = await SeedPlanningCaseAsync(s, s.OldTemplateId);
+            var sdkCase = await SeedSdkCaseAsync(site, s.OldTemplateId, OpenCaseStatus);
+            var pcs = await SeedPlanningCaseSiteAsync(s, planningCase, site, sdkCase, s.OldTemplateId);
+            if (site.Id == liveMember.Id)
+            {
+                await SeedComplianceAsync(s, deadline, planningCase, sdkCase, s.OldTemplateId);
+            }
+            return (sdkCase, pcs);
+        }
+
+        var live = await Deploy(liveMember);
+        var detached = new[]
+        {
+            ("member only on another property", otherPropertyMember, await Deploy(otherPropertyMember)),
+            ("resigned member", resignedMember, await Deploy(resignedMember)),
+            ("member whose Site was removed", removedSiteMember, await Deploy(removedSiteMember))
+        };
+
+        await s.Service.RepairEformForOpenOccurrencesAsync(s.Arp, s.OldTemplateId, s.NewTemplateId);
+
+        var reloadedLiveCase = await ReadCaseAsync(live.Case.Id);
+        var reloadedLivePcs = await ReadPlanningCaseSiteAsync(live.Pcs.Id);
+        var liveNewCase = await ReadCaseAsync(reloadedLivePcs.MicrotingSdkCaseId);
+
+        Assert.Multiple(() =>
+        {
+            // Positive control: without it the retractions below prove nothing.
+            Assert.That(IsLive(reloadedLiveCase.WorkflowState), Is.False,
+                "control: the live member's old case is retracted as part of the swap");
+            Assert.That(reloadedLivePcs.MicrotingSdkCaseId, Is.Not.EqualTo(live.Case.Id),
+                "control: a live team member linked to the event's property keeps a case (swapped)");
+            Assert.That(liveNewCase.CheckListId, Is.EqualTo(s.NewTemplateId));
+            Assert.That(liveNewCase.SiteId, Is.EqualTo(liveMember.Id));
+            Assert.That(IsLive(liveNewCase.WorkflowState), Is.True);
+        });
+
+        foreach (var (label, site, deployed) in detached)
+        {
+            var reloadedCase = await ReadCaseAsync(deployed.Case.Id);
+            var reloadedPcs = await ReadPlanningCaseSiteAsync(deployed.Pcs.Id);
+            var casesForSite = await MicrotingDbContext.Cases.AsNoTracking()
+                .CountAsync(x => x.SiteId == site.Id);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(IsLive(reloadedCase.WorkflowState), Is.False,
+                    $"{label}: the open case is retracted");
+                Assert.That(casesForSite, Is.EqualTo(1),
+                    $"{label}: must NOT receive a brand-new case on the new eForm — it is not "
+                    + "tied to the event through the team (#1256)");
+                Assert.That(reloadedPcs.MicrotingSdkCaseId, Is.EqualTo(deployed.Case.Id),
+                    $"{label}: the row is not re-pointed — there is no replacement");
+                Assert.That(IsLive(reloadedPcs.WorkflowState), Is.False,
+                    $"{label}: the PlanningCaseSite must not stay live on a retracted case");
+            });
+        }
+    }
 }

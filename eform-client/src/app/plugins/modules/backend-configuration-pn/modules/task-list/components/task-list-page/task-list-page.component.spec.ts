@@ -115,6 +115,19 @@ describe('TaskListPageComponent — Logbøger folder resolution', () => {
     expect(dialogStub.open.mock.calls[0][1].data.folderId).toBe(77);
   });
 
+  // #1256: the page has no team filter; `teams` is only the edit modal's team-NAME
+  // fallback (the modal loads its own property-scoped teams for the picker, and these
+  // rows carry no workerTagNames), so it is the installation-wide list on purpose.
+  it('hands the edit modal the installation-wide teams list as its name fallback', () => {
+    const workerTags = TestBed.inject(BackendConfigurationPnWorkerTagsService) as any;
+    expect(workerTags.getWorkerTags).toHaveBeenCalledTimes(1);
+    expect(workerTags.getWorkerTags).toHaveBeenCalledWith();
+
+    component.onEditTask(buildTask(1));
+
+    expect(dialogStub.open.mock.calls[0][1].data.workerTags).toBe(component.teams);
+  });
+
   it('resolves the folder once per property and reuses it', () => {
     component.onEditTask(buildTask(1));
     component.onEditTask(buildTask(1));
