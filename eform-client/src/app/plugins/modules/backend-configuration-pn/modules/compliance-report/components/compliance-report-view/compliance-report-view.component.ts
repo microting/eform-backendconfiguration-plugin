@@ -5,7 +5,16 @@ import {Router} from '@angular/router';
 import {TranslateService} from '@ngx-translate/core';
 import {MtxGridColumn, MtxGridRowClassFormatter} from '@ng-matero/extensions/grid';
 import {Subject, merge, of} from 'rxjs';
-import {catchError, filter as rxFilter, finalize, switchMap, takeUntil, tap} from 'rxjs/operators';
+import {
+  catchError,
+  distinctUntilChanged,
+  filter as rxFilter,
+  finalize,
+  map,
+  switchMap,
+  takeUntil,
+  tap,
+} from 'rxjs/operators';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {isFutureTask} from '../../../../helpers';
 import {CommonDictionaryModel} from 'src/app/common/models';
@@ -207,6 +216,8 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
 
   private properties: CommonDictionaryModel[] = [];
   private boards: CalendarBoardModel[] = [];
+  /** The employee filter's options, keyed by `siteId` like the filter bar's (#1329). */
+  private employees: CommonDictionaryModel[] = [];
   private destroy$ = new Subject<void>();
   /** Refreshes that are NOT a user gesture: after a delete. */
   private refresh$ = new Subject<void>();
@@ -753,38 +764,74 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
   // -------------------------------------------------------------------
 
   /**
-   * Property and calendar NAMES for the meta line.
+   * Property, calendar and employee NAMES for the meta line.
    *
    * Loaded here rather than read off the filter bar: the two components are
    * siblings with no shared reference-data surface, and threading labels
    * through `ComplianceReportStateService` would mean the filter bar
    * re-publishing them from four call sites, any one of which can be missed.
-   * The cost is one dictionary GET per mount of this view, plus one boards GET
-   * only when a calendar filter is actually set. Neither touches
+   * The properties dictionary is loaded once per mount; the calendars and
+   * employees are property-scoped, so — like the filter bar — they are reloaded
+   * from `filters$` whenever the property changes (#1329). Loading them only at
+   * mount time left a calendar picked AFTER the property reading `#<id>`,
+   * because picking a property clears `boardIds`. `switchMap` drops a slower
+   * response for a property that is no longer selected. None of this touches
    * `setLoading()` — reference data is not a fetch (#1163).
    */
   private loadMetaReferenceData(): void {
-    if (this.state.filters.propertyId != null) {
-      this.propertiesService
-        .getAllPropertiesDictionary()
-        .pipe(takeUntil(this.destroy$))
-        .subscribe((res) => {
-          if (res && res.success) {
-            this.properties = res.model ?? [];
-          }
-        });
-    }
-    const propertyId = this.state.filters.propertyId;
-    if (propertyId != null && this.state.filters.boardIds.length > 0) {
-      this.calendarService
-        .getBoards(propertyId)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe((res) => {
-          if (res && res.success) {
-            this.boards = res.model ?? [];
-          }
-        });
-    }
+    this.propertiesService
+      .getAllPropertiesDictionary()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((res) => {
+        if (res && res.success) {
+          this.properties = res.model ?? [];
+        }
+      });
+
+    const propertyId$ = this.state.filters$.pipe(
+      map((filters) => filters.propertyId),
+      distinctUntilChanged(),
+    );
+
+    propertyId$
+      .pipe(
+        // getBoards is property-scoped; with no property there is no calendar
+        // filter either (the filter bar disables it).
+        switchMap((propertyId) => (propertyId == null ? of(null) : this.calendarService.getBoards(propertyId))),
+        takeUntil(this.destroy$),
+      )
+      .subscribe((res) => {
+        this.boards = res && res.success ? res.model ?? [] : [];
+      });
+
+    propertyId$
+      .pipe(
+        // The filter bar's own request (compliance-report-filters.component.ts
+        // `loadEmployees`), so the names here are the names offered there.
+        switchMap((propertyId) =>
+          this.propertiesService.getDeviceUsersFiltered({
+            propertyIds: propertyId != null ? [propertyId] : [],
+            nameFilter: '',
+            sort: 'Name',
+            isSortDsc: false,
+            showResigned: false,
+            tagIds: [],
+          }),
+        ),
+        takeUntil(this.destroy$),
+      )
+      .subscribe((res) => {
+        if (res && res.success) {
+          this.employees = (res.model ?? []).map(
+            (u) =>
+              ({
+                id: u.siteId,
+                name: u.fullName || `${u.userFirstName} ${u.userLastName}`.trim() || u.siteName,
+                description: '',
+              }) as CommonDictionaryModel,
+          );
+        }
+      });
   }
 
   /**
@@ -809,6 +856,18 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
     }
     const names = boardIds.map((id) => this.boards.find((b) => b.id === id)?.name ?? `#${id}`);
     return names.join(', ');
+  }
+
+  /**
+   * The `Medarbejdere:` line (#1329): the selected employees' names, or `Alle`
+   * when the filter names nobody — the same idiom as `Ejendom: Alle`.
+   */
+  get employeeLabel(): string {
+    const siteIds = this.state.filters.siteIds;
+    if (siteIds.length === 0) {
+      return this.translate.instant('All');
+    }
+    return siteIds.map((id) => this.employees.find((e) => e.id === id)?.name ?? `#${id}`).join(', ');
   }
 
   /** `01.01.2026 – 03.09.2026`, or empty for an incomplete `Sæt periode` range. */

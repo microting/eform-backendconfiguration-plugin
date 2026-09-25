@@ -581,27 +581,40 @@ public class ComplianceExportWordWriter(
     }
 
     /// <summary>
-    /// One paragraph: <c>**Ejendom:** {property}   **Kalender:** {board}   **Periode:** {period}</c>.
-    /// Labels are the existing <c>Property</c>, <c>CalendarBoard</c> keys and the
-    /// new <c>Period</c> one; a missing property/board label falls back to
-    /// <c>All</c>, the same word the file name uses.
+    /// Two paragraphs (#1329):
+    /// <c>**Ejendom:** {property} - **Kalender:** {board} - **Periode:** {period}</c>,
+    /// then <c>**Medarbejdere:** {employees}</c>. Labels are the existing
+    /// <c>Property</c>, <c>CalendarBoard</c>, <c>Period</c> keys and the
+    /// <c>Employees</c> one; a missing property/board/employee label falls back
+    /// to <c>All</c>, the same word the file name uses. The header is shared by
+    /// all three views and the employee filter applies to each, so every view
+    /// gets both lines.
     /// </summary>
     private W.Header BuildHeader(ComplianceExportDocument document)
     {
         var allLabel = localizationService.GetString("All");
-        var propertyLabel = string.IsNullOrWhiteSpace(document.PropertyLabel) ? allLabel : document.PropertyLabel;
-        var boardLabel = string.IsNullOrWhiteSpace(document.BoardLabel) ? allLabel : document.BoardLabel;
+        string OrAll(string label) => string.IsNullOrWhiteSpace(label) ? allLabel : label;
 
-        var paragraph = new W.Paragraph(new W.ParagraphProperties(new W.SpacingBetweenLines { After = "0" }));
-        paragraph.Append(ShellRun($"{localizationService.GetString("Property")}:", bold: true));
-        paragraph.Append(ShellRun($" {propertyLabel}   "));
-        paragraph.Append(ShellRun($"{localizationService.GetString("CalendarBoard")}:", bold: true));
-        paragraph.Append(ShellRun($" {boardLabel}   "));
-        paragraph.Append(ShellRun($"{localizationService.GetString("Period")}:", bold: true));
-        paragraph.Append(ShellRun($" {document.Period ?? string.Empty}"));
+        var filterLine = HeaderParagraph();
+        filterLine.Append(ShellRun($"{localizationService.GetString("Property")}:", bold: true));
+        filterLine.Append(ShellRun($" {OrAll(document.PropertyLabel)}{HeaderSeparator}"));
+        filterLine.Append(ShellRun($"{localizationService.GetString("CalendarBoard")}:", bold: true));
+        filterLine.Append(ShellRun($" {OrAll(document.BoardLabel)}{HeaderSeparator}"));
+        filterLine.Append(ShellRun($"{localizationService.GetString("Period")}:", bold: true));
+        filterLine.Append(ShellRun($" {document.Period ?? string.Empty}"));
 
-        return new W.Header(paragraph);
+        var employeeLine = HeaderParagraph();
+        employeeLine.Append(ShellRun($"{localizationService.GetString("Employees")}:", bold: true));
+        employeeLine.Append(ShellRun($" {OrAll(document.WorkerLabel)}"));
+
+        return new W.Header(filterLine, employeeLine);
     }
+
+    /// <summary>Between the header's filter items on line 1 (#1329): " - ", as on screen.</summary>
+    private const string HeaderSeparator = " - ";
+
+    private static W.Paragraph HeaderParagraph() =>
+        new(new W.ParagraphProperties(new W.SpacingBetweenLines { After = "0" }));
 
     /// <summary>
     /// One paragraph: <c>Microting</c> at the left margin, then a right tab stop at

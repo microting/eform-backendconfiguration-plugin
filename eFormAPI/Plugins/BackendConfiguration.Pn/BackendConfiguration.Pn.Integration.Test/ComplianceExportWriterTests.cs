@@ -957,16 +957,20 @@ public class ComplianceExportWriterTests
     /// <summary>
     /// A default-type header part is REFERENCED from <c>sectPr</c> — the template
     /// has none, so an unreferenced part would be silently ignored — and its text
-    /// is the mock-ups' one line: the bold <c>Ejendom:</c> / <c>Kalender:</c> /
-    /// <c>Periode:</c> labels, the resolved property and board labels (the same
-    /// strings the file name uses) and the period joined with an en dash. The
-    /// header distance is raised from the template's <c>w:header="0"</c>, which
-    /// would otherwise print the line on the paper's edge.
+    /// is two lines (#1329): the bold <c>Ejendom:</c> / <c>Kalender:</c> /
+    /// <c>Periode:</c> labels separated by <c>" - "</c>, the resolved property and
+    /// board labels (the same strings the file name uses) and the period joined
+    /// with an en dash; then the bold <c>Medarbejdere:</c> label and the resolved
+    /// employee names. The header distance is raised from the template's
+    /// <c>w:header="0"</c>, which would otherwise print the lines on the paper's
+    /// edge.
     /// </summary>
     [Test]
     public async Task Word_HeaderIsReferencedAndCarriesTheFilterLine()
     {
-        await using var stream = await NewWordWriter().WriteAsync(SampleDocument(), null);
+        var document = SampleDocument();
+        document.WorkerLabel = "Worker A, Worker B";
+        await using var stream = await NewWordWriter().WriteAsync(document, null);
         using var word = WordprocessingDocument.Open(stream, false);
 
         var sectPr = SectionProperties(word);
@@ -988,12 +992,21 @@ public class ComplianceExportWriterTests
         Assert.That(text, Does.Contain($"01.01.2026 {Dash} 31.03.2026"));
         Assert.That(text, Does.Not.Contain("01.01.2026 - 31.03.2026"));
 
+        // Two paragraphs: the filter line with " - " between its items, then the
+        // employee line (#1329).
+        var lines = headerPart.Header!.Elements<Paragraph>().Select(p => p.InnerText).ToList();
+        Assert.That(lines, Is.EqualTo(new[]
+        {
+            $"Ejendom: Ejendom 9 - Kalender: Miljøtilsyn - Periode: {SamplePeriod}",
+            "Medarbejdere: Worker A, Worker B"
+        }));
+
         // The labels are bold runs, the values are not.
         var boldRunTexts = headerPart.Header!.Descendants<Run>()
             .Where(r => r.RunProperties?.Bold != null)
             .Select(r => r.InnerText)
             .ToList();
-        Assert.That(boldRunTexts, Is.EquivalentTo(new[] { "Ejendom:", "Kalender:", "Periode:" }));
+        Assert.That(boldRunTexts, Is.EquivalentTo(new[] { "Ejendom:", "Kalender:", "Periode:", "Medarbejdere:" }));
 
         var pageMargin = sectPr.GetFirstChild<PageMargin>();
         Assert.That(pageMargin, Is.Not.Null);
@@ -1004,7 +1017,8 @@ public class ComplianceExportWriterTests
     /// With no property filter and a multi-board selection the service resolves
     /// both labels to "Alle" — but a document can also reach the writer with the
     /// labels unset (older callers, the builder tests). Either way the header says
-    /// <c>Alle</c>, never an empty value after a colon.
+    /// <c>Alle</c>, never an empty value after a colon — the employee line
+    /// (#1329) included.
     /// </summary>
     [Test]
     public async Task Word_HeaderFallsBackToAlleWhenNoPropertyOrBoardLabelIsSet()
@@ -1012,6 +1026,7 @@ public class ComplianceExportWriterTests
         var document = SampleDocument();
         document.PropertyLabel = null;
         document.BoardLabel = string.Empty;
+        document.WorkerLabel = null;
 
         await using var stream = await NewWordWriter().WriteAsync(document, null);
         using var word = WordprocessingDocument.Open(stream, false);
@@ -1020,6 +1035,7 @@ public class ComplianceExportWriterTests
 
         Assert.That(text, Does.Contain("Ejendom: Alle"));
         Assert.That(text, Does.Contain("Kalender: Alle"));
+        Assert.That(text, Does.Contain("Medarbejdere: Alle"));
         Assert.That(text, Does.Not.Contain("Ejendom 9"));
     }
 
@@ -1551,6 +1567,7 @@ public class ComplianceExportWriterTests
             ["Property"] = "Ejendom",
             ["CalendarBoard"] = "Kalender",
             ["Period"] = "Periode",
+            ["Employees"] = "Medarbejdere",
             ["All"] = "Alle",
             ["Company"] = "Virksomhed",
             ["Overdue"] = "Overskredet",

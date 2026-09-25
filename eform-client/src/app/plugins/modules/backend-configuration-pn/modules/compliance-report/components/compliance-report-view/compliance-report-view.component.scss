@@ -100,10 +100,21 @@
   // sentence about the filters, not tabular data.
   &__meta {
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-xs) var(--spacing-lg);
-    margin: 0;
+    flex-direction: column;
+    gap: var(--spacing-xs);
     font-size: var(--font-size-table-header);
+  }
+
+  // One line of the meta block (#1329): the items separated by a muted " - ".
+  &__meta-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+    margin: 0;
+  }
+
+  &__meta-separator {
+    color: var(--text-child-muted);
   }
 
   &__meta-item {

@@ -7159,5 +7159,36 @@
       "el-GR": "Οι μελλοντικές εργασίες δεν μπορούν ακόμη να ολοκληρωθούν",
       "is-IS": "Ekki er enn hægt að ljúka framtíðarverkefnum"
     }
+  },
+  {
+    "Key": "Employees",
+    "LocalizedValue": {
+      "da": "Medarbejdere",
+      "de": "Mitarbeiter",
+      "en-US": "Employees",
+      "uk-UA": "Працівники",
+      "pl-PL": "Pracownicy",
+      "no-NO": "Ansatte",
+      "sv-SE": "Medarbetare",
+      "es-ES": "Empleados",
+      "fr-FR": "Employés",
+      "it-IT": "Dipendenti",
+      "nl-NL": "Medewerkers",
+      "pt-BR": "Funcionários",
+      "pt-PT": "Funcionários",
+      "fi-FI": "Työntekijät",
+      "et-ET": "Töötajad",
+      "lv-LV": "Darbinieki",
+      "lt-LT": "Darbuotojai",
+      "ro-RO": "Angajați",
+      "hr-HR": "Zaposlenici",
+      "sl-SL": "Zaposleni",
+      "cs-CZ": "Zaměstnanci",
+      "sk-SK": "Zamestnanci",
+      "hu-HU": "Munkatársak",
+      "bg-BG": "Служители",
+      "el-GR": "Εργαζόμενοι",
+      "is-IS": "Starfsmenn"
+    }
   }
 ]
