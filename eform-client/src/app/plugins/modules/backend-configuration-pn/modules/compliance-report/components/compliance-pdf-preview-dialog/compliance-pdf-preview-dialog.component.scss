@@ -14,6 +14,19 @@
     // 65vh, not more: Material caps mat-dialog-content at max-height: 65vh.
     height: 65vh;
     min-height: 320px;
+
+    // #1327: each page is a white sheet on a grey backdrop. The scroll container
+    // and the pages live in ng2-pdf-viewer's own template, hence ::ng-deep —
+    // scoped under this block so no other pdf-viewer is affected. The page
+    // itself stays white (pdf.js paints it #fff: it is paper) in both themes;
+    // --md-surface-variant is grey in every theme × mode.
+    ::ng-deep .ng2-pdf-viewer-container {
+      background: var(--md-surface-variant);
+    }
+
+    ::ng-deep .pdfViewer .page {
+      box-shadow: var(--md-shadow);
+    }
   }
 
   &__loading {
@@ -32,4 +45,10 @@ pdf-viewer {
   display: block;
   width: 100%;
   height: 100%;
+  // #1327: ng2-pdf-viewer's defaults (`1px auto -8px` plus a 9px shadow-image
+  // border) make consecutive pages overlap by ~8px. It declares these on its
+  // :host; this emulated-encapsulation selector is more specific, so it wins.
+  --page-margin: 16px auto;
+  --page-border: none;
+  --page-border-image: none;
 }
