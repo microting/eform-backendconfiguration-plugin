@@ -21,6 +21,20 @@ import {ComplianceReportStateService} from '../../store';
 import {ComplianceReportViewComponent} from './compliance-report-view.component';
 
 /**
+ * The meta line's reference data (#1329) is loaded on mount — the properties
+ * dictionary always, the calendars and employees for the current property — so
+ * every fixture's stubs answer with an empty list rather than `undefined`.
+ */
+const emptyList = () => of({success: true, model: []});
+const referenceDataPropertiesService = () => ({
+  getAllPropertiesDictionary: jest.fn().mockReturnValue(emptyList()),
+  getDeviceUsersFiltered: jest.fn().mockReturnValue(emptyList()),
+});
+const referenceDataCalendarService = () => ({
+  getBoards: jest.fn().mockReturnValue(emptyList()),
+});
+
+/**
  * The grid rules of the Rapport view, none of which the helper spec can
  * reach: `buildGridColumns` lives on the component because it needs the
  * translate stream and the cell TemplateRefs. (A grid is one eForm's TABLE
@@ -119,8 +133,8 @@ describe('ComplianceReportViewComponent — buildGridColumns', () => {
         ComplianceReportStateService,
         {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns: jest.fn()}},
         {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: jest.fn()}},
-        {provide: BackendConfigurationPnPropertiesService, useValue: {getAllPropertiesDictionary: jest.fn()}},
-        {provide: BackendConfigurationPnCalendarService, useValue: {getBoards: jest.fn()}},
+        {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
+        {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
         {provide: MatDialog, useValue: {open: jest.fn()}},
         {provide: Router, useValue: {navigate: jest.fn(), url: '/plugins/backend-configuration-pn/compliance-report'}},
       ],
@@ -321,8 +335,8 @@ describe('ComplianceReportViewComponent — the row ceilings', () => {
         ComplianceReportStateService,
         {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns: jest.fn()}},
         {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: jest.fn()}},
-        {provide: BackendConfigurationPnPropertiesService, useValue: {getAllPropertiesDictionary: jest.fn()}},
-        {provide: BackendConfigurationPnCalendarService, useValue: {getBoards: jest.fn()}},
+        {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
+        {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
         {provide: MatDialog, useValue: {open: jest.fn()}},
         {provide: Router, useValue: {navigate: jest.fn(), url: '/x'}},
       ],
@@ -501,8 +515,8 @@ describe('ComplianceReportViewComponent — the Billeder cell', () => {
         ComplianceReportStateService,
         {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns: jest.fn()}},
         {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: jest.fn()}},
-        {provide: BackendConfigurationPnPropertiesService, useValue: {getAllPropertiesDictionary: jest.fn()}},
-        {provide: BackendConfigurationPnCalendarService, useValue: {getBoards: jest.fn()}},
+        {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
+        {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
         {provide: MatDialog, useValue: {open: jest.fn()}},
         {provide: Router, useValue: {navigate: jest.fn(), url: '/x'}},
       ],
@@ -761,8 +775,8 @@ describe('ComplianceReportViewComponent — one table per eForm under a headline
         ComplianceReportStateService,
         {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns: jest.fn()}},
         {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: jest.fn()}},
-        {provide: BackendConfigurationPnPropertiesService, useValue: {getAllPropertiesDictionary: jest.fn()}},
-        {provide: BackendConfigurationPnCalendarService, useValue: {getBoards: jest.fn()}},
+        {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
+        {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
         {provide: MatDialog, useValue: {open: jest.fn()}},
         {provide: Router, useValue: router},
       ],
@@ -987,8 +1001,8 @@ describe('ComplianceReportViewComponent — the answer cell', () => {
         ComplianceReportStateService,
         {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns: jest.fn()}},
         {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: jest.fn()}},
-        {provide: BackendConfigurationPnPropertiesService, useValue: {getAllPropertiesDictionary: jest.fn()}},
-        {provide: BackendConfigurationPnCalendarService, useValue: {getBoards: jest.fn()}},
+        {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
+        {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
         {provide: MatDialog, useValue: {open: jest.fn()}},
         {provide: Router, useValue: {navigate: jest.fn(), url: '/x'}},
       ],
@@ -1100,8 +1114,8 @@ describe('ComplianceReportViewComponent — the view-mode guard', () => {
         ComplianceReportStateService,
         {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns}},
         {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: jest.fn()}},
-        {provide: BackendConfigurationPnPropertiesService, useValue: {getAllPropertiesDictionary: jest.fn()}},
-        {provide: BackendConfigurationPnCalendarService, useValue: {getBoards: jest.fn()}},
+        {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
+        {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
         {provide: MatDialog, useValue: {open: jest.fn()}},
         {provide: Router, useValue: {navigate: jest.fn(), url: '/x'}},
       ],
@@ -1254,8 +1268,8 @@ describe('ComplianceReportViewComponent — delete returns to the next row', () 
         ComplianceReportStateService,
         {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns}},
         {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance}},
-        {provide: BackendConfigurationPnPropertiesService, useValue: {getAllPropertiesDictionary: jest.fn()}},
-        {provide: BackendConfigurationPnCalendarService, useValue: {getBoards: jest.fn()}},
+        {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
+        {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
         {
           provide: MatDialog,
           useValue: {open: jest.fn(() => ({afterClosed: () => afterClosed$, close: jest.fn()}))},
@@ -1518,8 +1532,8 @@ describe('ComplianceReportViewComponent — edit returns to the edited row', () 
         ComplianceReportStateService,
         {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns}},
         {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: jest.fn()}},
-        {provide: BackendConfigurationPnPropertiesService, useValue: {getAllPropertiesDictionary: jest.fn()}},
-        {provide: BackendConfigurationPnCalendarService, useValue: {getBoards: jest.fn()}},
+        {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
+        {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
         {provide: MatDialog, useValue: {open: jest.fn()}},
         {provide: Router, useValue: router},
       ],
@@ -1683,8 +1697,8 @@ describe('ComplianceReportViewComponent — future tasks cannot be deleted (#130
         ComplianceReportStateService,
         {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns}},
         {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: jest.fn()}},
-        {provide: BackendConfigurationPnPropertiesService, useValue: {getAllPropertiesDictionary: jest.fn()}},
-        {provide: BackendConfigurationPnCalendarService, useValue: {getBoards: jest.fn()}},
+        {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
+        {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
         {provide: MatDialog, useValue: {open: dialogOpen}},
         {provide: Router, useValue: {navigate: jest.fn(), url: '/x'}},
       ],
@@ -1734,5 +1748,139 @@ describe('ComplianceReportViewComponent — future tasks cannot be deleted (#130
   it('opens the confirm dialog for today\'s row', () => {
     component.openDeleteConfirm(rowById(2));
     expect(dialogOpen).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * #1329: the Rapport meta line names the calendar and the employees.
+ *
+ * The calendar used to read `#<id>` in the usual flow — property picked, then
+ * Rapport, then a calendar — because the boards were fetched only at mount and
+ * only when a calendar was ALREADY set, and picking a property clears it. The
+ * reference data now follows `filters$`, like the filter bar's.
+ */
+describe('ComplianceReportViewComponent — the meta line names the calendar and the employees', () => {
+  let state: ComplianceReportStateService;
+  let component: ComplianceReportViewComponent;
+  let getBoards: jest.Mock;
+  let getDeviceUsersFiltered: jest.Mock;
+
+  const boardsFor = (propertyId: number) =>
+    of({success: true, model: [{id: propertyId * 10, name: `Calendar ${propertyId}`}]});
+  const workersFor = (propertyId: number | null) =>
+    of({
+      success: true,
+      model: [
+        {siteId: 1, fullName: 'Worker A', userFirstName: 'Worker', userLastName: 'A', siteName: 'a'},
+        {siteId: 2, fullName: '', userFirstName: 'Worker', userLastName: `B${propertyId ?? ''}`, siteName: 'b'},
+      ],
+    });
+
+  beforeEach(async () => {
+    getBoards = jest.fn((propertyId: number) => boardsFor(propertyId));
+    getDeviceUsersFiltered = jest.fn((model: {propertyIds: number[]}) => workersFor(model.propertyIds[0] ?? null));
+
+    await TestBed.configureTestingModule({
+      declarations: [ComplianceReportViewComponent],
+      imports: [TranslateModule.forRoot()],
+      providers: [
+        ComplianceReportStateService,
+        {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns: jest.fn()}},
+        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: jest.fn()}},
+        {
+          provide: BackendConfigurationPnPropertiesService,
+          useValue: {
+            getAllPropertiesDictionary: jest.fn().mockReturnValue(of({success: true, model: [{id: 5, name: 'Property A'}]})),
+            getDeviceUsersFiltered,
+          },
+        },
+        {provide: BackendConfigurationPnCalendarService, useValue: {getBoards}},
+        {provide: MatDialog, useValue: {open: jest.fn()}},
+        {provide: Router, useValue: {navigate: jest.fn(), url: '/x'}},
+      ],
+      schemas: [NO_ERRORS_SCHEMA],
+    }).compileComponents();
+
+    state = TestBed.inject(ComplianceReportStateService);
+  });
+
+  const mount = () => {
+    const fixture = TestBed.createComponent(ComplianceReportViewComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    return fixture;
+  };
+
+  it('names a calendar picked AFTER mount, not #<id>', () => {
+    state.setFilterSilently({propertyId: 5, boardIds: []});
+    mount();
+
+    state.setFilterSilently({boardIds: [50]});
+
+    expect(component.boardLabel).toBe('Calendar 5');
+    expect(component.boardLabel).not.toContain('#');
+    expect(component.propertyLabel).toBe('Property A');
+  });
+
+  it('loads the properties dictionary even when no property is set at mount', () => {
+    mount();
+
+    state.setFilterSilently({propertyId: 5});
+
+    expect(component.propertyLabel).toBe('Property A');
+  });
+
+  it('reloads the calendars when the property changes, and only then', () => {
+    state.setFilterSilently({propertyId: 5});
+    mount();
+    expect(getBoards).toHaveBeenCalledTimes(1);
+
+    state.setFilterSilently({propertyId: 6, boardIds: [60]});
+    expect(getBoards).toHaveBeenCalledTimes(2);
+    expect(getBoards).toHaveBeenLastCalledWith(6);
+    expect(component.boardLabel).toBe('Calendar 6');
+
+    // Another filter changing leaves the property-scoped lists alone.
+    state.setFilterSilently({tagIds: [1]});
+    expect(getBoards).toHaveBeenCalledTimes(2);
+    expect(getDeviceUsersFiltered).toHaveBeenCalledTimes(2);
+  });
+
+  it('asks for no calendars without a property', () => {
+    mount();
+
+    expect(getBoards).not.toHaveBeenCalled();
+    expect(component.boardLabel).toBe('All');
+  });
+
+  it('reads Alle on the Medarbejdere line when no employee is selected', () => {
+    mount();
+
+    expect(component.employeeLabel).toBe('All');
+  });
+
+  it('names the selected employees, with the filter bar\'s name fallback', () => {
+    state.setFilterSilently({propertyId: 5});
+    mount();
+
+    state.setFilterSilently({siteIds: [2, 1]});
+
+    expect(getDeviceUsersFiltered).toHaveBeenLastCalledWith(expect.objectContaining({propertyIds: [5]}));
+    expect(component.employeeLabel).toBe('Worker B5, Worker A');
+  });
+
+  it('renders the employee line under the filter line once the report has fetched', () => {
+    const fixture = mount();
+    state.setFilterSilently({siteIds: [1]});
+    component.hasFetched = true;
+    fixture.detectChanges();
+
+    const meta: HTMLElement = fixture.nativeElement.querySelector('#complianceReportMeta');
+    const lines = meta.querySelectorAll('.compliance-report__meta-line');
+    expect(lines.length).toBe(2);
+    expect(lines[1].id).toBe('complianceReportMetaEmployees');
+    expect(lines[1].textContent).toContain('Employees:');
+    expect(lines[1].textContent).toContain('Worker A');
+    expect(lines[0].querySelectorAll('.compliance-report__meta-separator').length).toBeGreaterThanOrEqual(1);
   });
 });
