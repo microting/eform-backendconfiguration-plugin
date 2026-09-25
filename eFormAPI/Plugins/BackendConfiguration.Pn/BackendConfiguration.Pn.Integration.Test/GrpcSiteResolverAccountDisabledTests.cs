@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Services.BackendConfigurationAdhocService;
 using BackendConfiguration.Pn.Services.GrpcServices;
+using eFormCore;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
@@ -26,11 +27,20 @@ public class GrpcSiteResolverAccountDisabledTests : TestBaseSetup
 {
     private sealed record SeededWorker(string Email, int SiteId, int WorkerId);
 
+    private Core? _core;
+
+    private async Task<Core> SharedCore() => _core ??= await GetCore();
+
     private async Task<SeededWorker> SeedWorkerAsync(
         string? email = null,
         bool resigned = false,
         string workflowState = Constants.WorkflowStates.Created)
     {
+        // Starting Core runs the SDK migrations. Until then Workers still has the
+        // 420_SDK.sql seed's shape, which predates columns such as EmployeeNo,
+        // so the first test of the fixture would fail to insert a Worker.
+        await SharedCore();
+
         email ??= $"{Guid.NewGuid():N}@example.test";
         var language = await MicrotingDbContext!.Languages.FirstAsync();
         var site = new Site
@@ -67,7 +77,7 @@ public class GrpcSiteResolverAccountDisabledTests : TestBaseSetup
 
     private async Task<GrpcSiteResolver> CreateResolverAsync(string email, bool isActive = true)
     {
-        var core = await GetCore();
+        var core = await SharedCore();
         var coreHelper = Substitute.For<IEFormCoreService>();
         coreHelper.GetCore().Returns(Task.FromResult(core));
 
