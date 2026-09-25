@@ -1,4 +1,3 @@
-// The Overblik/Historik toggle relies entirely on the host frontend's global
-// button classes (btn-primary / btn-secondary--icon-left in
-// eform-angular-frontend's styles.scss) - the active state is the filled
-// primary pill, so no component-local styling is needed.
+// The Overblik/Historik switcher is a stock mat-button-toggle-group (#1331)
+// that takes its colours from the Material theme, so no component-local
+// styling is needed.

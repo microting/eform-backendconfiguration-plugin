@@ -4,6 +4,7 @@ import { generateRandmString } from '../../../helper-functions';
 import { BackendConfigurationPropertiesPage } from '../BackendConfigurationProperties.page';
 import { BackendConfigurationPropertyWorkersPage, PropertyWorker } from '../BackendConfigurationPropertyWorkers.page';
 import { BackendConfigurationAdhocPage } from '../BackendConfigurationAdhoc.page';
+import { UI_TIMEOUT } from '../wait-helpers';
 
 /**
  * Adhoc overblik — "Ny opgave" drawer suite (M5/T1, flow 2): fills all
@@ -82,7 +83,15 @@ test.describe.serial('Adhoc overblik — new task drawer (all sections)', () => 
     await expect(adhocPage.drawerSelectedTagChips().filter({ hasText: tagName })).toBeVisible({ timeout: 10000 });
 
     // "Tildel til personer" (collapsed by default - expandDrawerSection handles it).
+    // Kun tildelte/Alle is a mat-button-toggle-group (#1331): Kun tildelte is
+    // the default, and a click moves `aria-checked` to the other option.
+    await expect(adhocPage.executionRuleRadio('assignedOnly')).toHaveAttribute('aria-checked', 'true');
+    await expect(adhocPage.executionRuleRadio('everyone')).toHaveAttribute('aria-checked', 'false');
+    await adhocPage.setExecutionRule('everyone');
+    await expect(adhocPage.executionRuleRadio('everyone')).toHaveAttribute('aria-checked', 'true');
+    await expect(adhocPage.executionRuleRadio('assignedOnly')).toHaveAttribute('aria-checked', 'false');
     await adhocPage.setExecutionRule('assignedOnly');
+    await expect(adhocPage.executionRuleRadio('assignedOnly')).toHaveAttribute('aria-checked', 'true');
     await adhocPage.assignDrawerWorker(worker.name as string);
 
     // "Udfør senest og visning første gang" (collapsed by default).
@@ -114,5 +123,27 @@ test.describe.serial('Adhoc overblik — new task drawer (all sections)', () => 
     // the deadline bar + a day-count/overdue/today label render instead.
     await expect(adhocPage.columnCell(taskTitle, 'deadline').locator('.cell-muted')).toHaveCount(0);
     await expect(adhocPage.columnCell(taskTitle, 'deadline').locator('.deadline-bar')).toBeVisible();
+  });
+
+  test('the read-only view drawer shows the saved rule and disables the Kun tildelte/Alle toggle (#1331)', async ({ page }) => {
+    // Login + one row fetch + one task refetch for the drawer.
+    test.setTimeout(120000);
+    await login(page);
+    const adhocPage = new BackendConfigurationAdhocPage(page);
+    await adhocPage.goToAdhoc();
+
+    await expect(adhocPage.row(taskTitle)).toBeVisible({ timeout: UI_TIMEOUT });
+    await adhocPage.openRowMenu(taskTitle);
+    await adhocPage.viewMenuItem().click();
+    await adhocPage.drawerRoot().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+
+    const assignedOnly = adhocPage.executionRuleRadio('assignedOnly');
+    const everyone = adhocPage.executionRuleRadio('everyone');
+    await expect(assignedOnly).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
+    await expect(everyone).toHaveAttribute('aria-checked', 'false');
+    await expect(assignedOnly).toBeDisabled();
+    await expect(everyone).toBeDisabled();
+
+    await adhocPage.closeDrawer();
   });
 });

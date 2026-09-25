@@ -12,9 +12,11 @@ import { API_TIMEOUT, ignoreUnhandledRejections, waitForApiResponse } from './wa
  *
  *   - Nav: `#backend-configuration-pn-adhoc` (E2EId seeded by
  *     `EformBackendConfigurationPlugin.cs`, M5/P1).
- *   - Top bar (`adhoc-container.component.html`): Overblik/Historik segment
- *     `#backend-configuration-pn-adhoc-view-list` / `-view-history`; "Ny
- *     opgave" `#backend-configuration-pn-adhoc-new-task`.
+ *   - Top bar (`adhoc-container.component.html`): Overblik/Historik
+ *     `mat-button-toggle-group` (#1331) - the toggle HOSTS are
+ *     `#backend-configuration-pn-adhoc-view-list` / `-view-history`, Material
+ *     puts `<id>-button` on the inner radio button that carries
+ *     `aria-checked`; "Ny opgave" `#backend-configuration-pn-adhoc-new-task`.
  *   - Toolbar filters (`adhoc-filters.component.html`, rendered inline in
  *     the sub-header card via the plugin's `.filters-inline` convention -
  *     NOT inside `#main-list-view`): `#search` (500ms
@@ -22,7 +24,8 @@ import { API_TIMEOUT, ignoreUnhandledRejections, waitForApiResponse } from './wa
  *     dependent on property), `#task-status-filter` (status - bindValue is
  *     the raw status, the VISIBLE label is `"<Åben/Løste/Arkiverede>
  *     (<count>)"`), tag popup `#tag-filter-btn`/`#tag-filter-panel` (OG/
- *     ELLER toggle + inline create/delete, `#toolbar-tag-ny`).
+ *     ELLER `.tag-logic-toggle` mat-button-toggle-group + inline
+ *     create/delete, `#toolbar-tag-ny`).
  *   - Table (`adhoc-table.component.html`): mtx-grid → `.mat-mdc-row` rows,
  *     `.mat-column-<field>` cells (fields: title, content, propertyName,
  *     areaName, tags, createdByName, assignedTo, deadline, completedByName,
@@ -43,8 +46,9 @@ import { API_TIMEOUT, ignoreUnhandledRejections, waitForApiResponse } from './wa
  *     sections (calendar-module "gcal" idiom - icon-led rows, NO expansion
  *     panels): `#ny-sektion-ejendommen` (property/area/title/description/
  *     urgent/tags `#ny-sektion-tags`/photos+comments),
- *     `#ny-sektion-tildeling` (assignment - Kun tildelte/Alle `.btn-group`
- *     toggle, NO teams), `#ny-sektion-deadline-paamindelse`
+ *     `#ny-sektion-tildeling` (assignment - Kun tildelte/Alle
+ *     `.adhoc-execution-rule-toggle` mat-button-toggle-group, disabled in
+ *     the read-only "view" drawer; NO teams), `#ny-sektion-deadline-paamindelse`
  *     (deadline/reminders). `expandSection()` is retained as a no-op-safe
  *     helper (it only clicks when a `mat-expansion-panel-header` actually
  *     exists) so specs keep passing against either markup.
@@ -103,6 +107,15 @@ export class BackendConfigurationAdhocPage {
 
   viewHistoryBtn(): Locator {
     return this.page.locator('#backend-configuration-pn-adhoc-view-history');
+  }
+
+  /** The inner radio `<button>` of a view toggle - it carries `aria-checked`. */
+  viewListRadio(): Locator {
+    return this.page.locator('#backend-configuration-pn-adhoc-view-list-button');
+  }
+
+  viewHistoryRadio(): Locator {
+    return this.page.locator('#backend-configuration-pn-adhoc-view-history-button');
   }
 
   newTaskBtn(): Locator {
@@ -287,10 +300,17 @@ export class BackendConfigurationAdhocPage {
     await this.page.waitForTimeout(500);
   }
 
+  /** The inner radio `<button>` of the OG/ELLER toggle - it carries `aria-checked`. */
+  tagLogicRadio(logic: 'and' | 'or'): Locator {
+    const label = logic === 'and' ? 'OG' : 'ELLER';
+    return this.tagFilterPanel()
+      .locator('.tag-logic-toggle mat-button-toggle', { hasText: label })
+      .locator('button');
+  }
+
   async setTagLogic(logic: 'and' | 'or'): Promise<void> {
     await this.openTagFilterPanel();
-    const label = logic === 'and' ? 'OG' : 'ELLER';
-    await this.tagFilterPanel().locator('.tag-logic-toggle button', { hasText: label }).click();
+    await this.tagLogicRadio(logic).click();
   }
 
   async createTagInFilter(tagName: string): Promise<void> {
@@ -451,10 +471,17 @@ export class BackendConfigurationAdhocPage {
     await this.page.waitForTimeout(800);
   }
 
+  /** The inner radio `<button>` of the Kun tildelte/Alle toggle - it carries `aria-checked`. */
+  executionRuleRadio(rule: 'assignedOnly' | 'everyone'): Locator {
+    const label = rule === 'assignedOnly' ? 'Kun tildelte' : 'Alle';
+    return this.page
+      .locator('#ny-sektion-tildeling .adhoc-execution-rule-toggle mat-button-toggle', { hasText: label })
+      .locator('button');
+  }
+
   async setExecutionRule(rule: 'assignedOnly' | 'everyone'): Promise<void> {
     await this.expandSection('ny-sektion-tildeling');
-    const label = rule === 'assignedOnly' ? 'Kun tildelte' : 'Alle';
-    await this.page.locator('#ny-sektion-tildeling .btn-group button', { hasText: label }).click();
+    await this.executionRuleRadio(rule).click();
   }
 
   drawerWorkerCheckbox(workerName: string): Locator {
