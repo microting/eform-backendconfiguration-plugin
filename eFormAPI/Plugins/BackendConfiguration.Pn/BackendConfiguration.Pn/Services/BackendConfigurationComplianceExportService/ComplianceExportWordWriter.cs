@@ -153,7 +153,13 @@ public class ComplianceExportWordWriter(
     /// the #1191 row tint is a table-cell shading that the break never touches.
     /// </summary>
     public const string AppendixHeadingStyle =
-        "font-size:14px;font-weight:700;text-align:left;page-break-before:always;";
+        "font-size:14px;font-weight:700;text-align:left;" + PageBreakBefore;
+
+    /// <summary>
+    /// Starts a paragraph on a new page: the appendix heading always, and the
+    /// first heading of a Rapport section that follows an appendix (#1328).
+    /// </summary>
+    private const string PageBreakBefore = "page-break-before:always;";
 
     /// <summary>
     /// The per-case caption on an appendix page, <c>Sag … · … · …</c>.
@@ -240,8 +246,30 @@ public class ComplianceExportWordWriter(
         // and, further down, the appendix case captions.
         var keepWithNext = new HashSet<string>(StringComparer.Ordinal);
 
+        // A Rapport SECTION starts at a table carrying a headline (Title) and
+        // runs to the next such table, or to the end (#1276: one table per eForm,
+        // the headline on the first). Its image appendix (#1192) follows the
+        // section's LAST table directly (#1328), not after every table: headline
+        // 1 + tables, "Bilag – 1" on a new page, headline 2 on a new page, and so
+        // on. The new page for the next headline is forced only when an appendix
+        // was emitted — headlines without images keep flowing on one page.
+        var section = new List<ComplianceExportTable>();
+
         foreach (var table in document.Tables)
         {
+            // Put on the section's FIRST heading paragraph — the caption when
+            // there is one, else the headline — so the two stay together.
+            var pageBreak = string.Empty;
+            if (!string.IsNullOrEmpty(table.Title) && section.Count > 0)
+            {
+                var appendixEmitted = await AppendAppendixBlocks(
+                    body, section, keepWithNext, core, basePicturePath, s3Enabled);
+                if (appendixEmitted) pageBreak = PageBreakBefore;
+                section.Clear();
+            }
+
+            section.Add(table);
+
             keepWithNext.UnionWith(new[] { table.Caption, table.Title, table.Subtitle }
                 .Where(heading => !string.IsNullOrEmpty(heading)));
 
@@ -254,13 +282,14 @@ public class ComplianceExportWordWriter(
             if (!string.IsNullOrEmpty(table.Caption))
             {
                 body.Append(
-                    $@"<p style='{CaptionStyle}'>{Esc(table.Caption)}</p>");
+                    $@"<p style='{CaptionStyle}{pageBreak}'>{Esc(table.Caption)}</p>");
+                pageBreak = string.Empty;
             }
 
             if (!string.IsNullOrEmpty(table.Title))
             {
                 body.Append(
-                    $@"<p style='{SectionTitleStyle}'>{Esc(table.Title)}</p>");
+                    $@"<p style='{SectionTitleStyle}{pageBreak}'>{Esc(table.Title)}</p>");
             }
 
             // The eForm's name over its own table (#1276) — on EVERY Rapport
@@ -312,84 +341,7 @@ public class ComplianceExportWordWriter(
             body.Append(@"<br/>");
         }
 
-        // The image appendix (#1192, PDF page 9): AFTER every table, one page per
-        // section that has any blocks — "Bilag – {section}" on a page break —
-        // then per case its "Sag … · … · …" caption and the images in a
-        // two-column grid. The page header and footer repeat on these pages by
-        // themselves: they are section properties (#1189), not body content.
-        foreach (var table in document.Tables)
-        {
-            if (table.ImageBlocks.Count == 0) continue;
-
-            AppendAppendixSection(body, table);
-
-            foreach (var block in table.ImageBlocks)
-            {
-                var caption = block.TotalImages > block.ImageNames.Count
-                    ? $"{block.Caption} ({block.ImageNames.Count}/{block.TotalImages})"
-                    : block.Caption;
-
-                keepWithNext.Add(caption);
-                body.Append($@"<p style='{AppendixCaseStyle}'>{Esc(caption)}</p>");
-
-                // Two images per row (~300 px each, side by side on the landscape
-                // page) instead of a vertical stack. Every cell is opened, given
-                // content and closed regardless of whether InsertImage managed to
-                // embed anything — a cell left literally empty is at the
-                // converter's mercy — so a missing photograph leaves a blank cell
-                // rather than a broken grid; an odd count ends on a blank cell.
-                //
-                // Borderless through CSS on the table AND every cell: HtmlToOpenXml
-                // 3.5.0 ignores border="0" (every table gets the TableGrid style's
-                // borders), whereas style="border:none" emits w:tblBorders /
-                // w:tcBorders with val="none" — and the table-level ones carry no
-                // insideH/insideV, so the cells need their own.
-                body.Append(@"<table width=""100%"" style=""border:none;"">");
-                for (var i = 0; i < block.ImageNames.Count; i += AppendixImagesPerRow)
-                {
-                    body.Append(@"<tr>");
-                    for (var j = 0; j < AppendixImagesPerRow; j++)
-                    {
-                        body.Append(@"<td style='vertical-align:top;border:none;'>");
-                        var index = i + j;
-                        var cellStart = body.Length;
-                        if (index < block.ImageNames.Count)
-                        {
-                            // Its own marker rather than cellStart: the two are
-                            // equal today, and the guard below must go on meaning
-                            // "the image went in" if anything is ever emitted
-                            // between the <td> and InsertImage.
-                            var imageStart = body.Length;
-                            await InsertImage(block.ImageNames[index], body,
-                                AppendixImageWidthPx, AppendixImageWidthPx, core, basePicturePath, s3Enabled);
-
-                            // The geo link CAPTIONS a photograph; it is not a
-                            // datum of its own. InsertImage appends nothing when
-                            // the bytes could not be resolved (S3 miss, unreadable
-                            // file, an ImageMagick throw), and a cell holding a
-                            // bare Google Maps URL and no picture reads as a
-                            // defect rather than as a missing image — so the link
-                            // is emitted only if the image actually went in.
-                            var geoLink = body.Length > imageStart && index < block.GeoLinks.Count
-                                ? block.GeoLinks[index]
-                                : null;
-                            if (!string.IsNullOrEmpty(geoLink))
-                            {
-                                body.Append(
-                                    $@"<p style='font-size:7pt;'><a href=""{Esc(geoLink)}"">{Esc(geoLink)}</a></p>");
-                            }
-                        }
-
-                        if (body.Length == cellStart) body.Append(@"<p>&nbsp;</p>");
-                        body.Append(@"</td>");
-                    }
-
-                    body.Append(@"</tr>");
-                }
-
-                body.Append(@"</table>");
-            }
-        }
+        await AppendAppendixBlocks(body, section, keepWithNext, core, basePicturePath, s3Enabled);
 
         // The document-wide image ceiling, stated in the same (embedded/requested)
         // idiom a block caption uses for the per-case cap — a report that quietly
@@ -653,6 +605,97 @@ public class ComplianceExportWordWriter(
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// The image appendix of one Rapport section (#1192, PDF page 9; placed per
+    /// section by #1328): per table with blocks, "Bilag – {section}" on a page
+    /// break, then per case its "Sag … · … · …" caption and the images in a
+    /// two-column grid. The page header and footer repeat on these pages by
+    /// themselves: they are section properties (#1189), not body content.
+    /// Returns whether anything was emitted, i.e. whether the next headline has
+    /// to start a new page of its own.
+    /// </summary>
+    private async Task<bool> AppendAppendixBlocks(StringBuilder body, IEnumerable<ComplianceExportTable> tables,
+        ISet<string> keepWithNext, Core core, string basePicturePath, bool s3Enabled)
+    {
+        var emitted = false;
+        foreach (var table in tables)
+        {
+            if (table.ImageBlocks.Count == 0) continue;
+
+            AppendAppendixSection(body, table);
+            emitted = true;
+
+            foreach (var block in table.ImageBlocks)
+            {
+                var caption = block.TotalImages > block.ImageNames.Count
+                    ? $"{block.Caption} ({block.ImageNames.Count}/{block.TotalImages})"
+                    : block.Caption;
+
+                keepWithNext.Add(caption);
+                body.Append($@"<p style='{AppendixCaseStyle}'>{Esc(caption)}</p>");
+
+                // Two images per row (~300 px each, side by side on the landscape
+                // page) instead of a vertical stack. Every cell is opened, given
+                // content and closed regardless of whether InsertImage managed to
+                // embed anything — a cell left literally empty is at the
+                // converter's mercy — so a missing photograph leaves a blank cell
+                // rather than a broken grid; an odd count ends on a blank cell.
+                //
+                // Borderless through CSS on the table AND every cell: HtmlToOpenXml
+                // 3.5.0 ignores border="0" (every table gets the TableGrid style's
+                // borders), whereas style="border:none" emits w:tblBorders /
+                // w:tcBorders with val="none" — and the table-level ones carry no
+                // insideH/insideV, so the cells need their own.
+                body.Append(@"<table width=""100%"" style=""border:none;"">");
+                for (var i = 0; i < block.ImageNames.Count; i += AppendixImagesPerRow)
+                {
+                    body.Append(@"<tr>");
+                    for (var j = 0; j < AppendixImagesPerRow; j++)
+                    {
+                        body.Append(@"<td style='vertical-align:top;border:none;'>");
+                        var index = i + j;
+                        var cellStart = body.Length;
+                        if (index < block.ImageNames.Count)
+                        {
+                            // Its own marker rather than cellStart: the two are
+                            // equal today, and the guard below must go on meaning
+                            // "the image went in" if anything is ever emitted
+                            // between the <td> and InsertImage.
+                            var imageStart = body.Length;
+                            await InsertImage(block.ImageNames[index], body,
+                                AppendixImageWidthPx, AppendixImageWidthPx, core, basePicturePath, s3Enabled);
+
+                            // The geo link CAPTIONS a photograph; it is not a
+                            // datum of its own. InsertImage appends nothing when
+                            // the bytes could not be resolved (S3 miss, unreadable
+                            // file, an ImageMagick throw), and a cell holding a
+                            // bare Google Maps URL and no picture reads as a
+                            // defect rather than as a missing image — so the link
+                            // is emitted only if the image actually went in.
+                            var geoLink = body.Length > imageStart && index < block.GeoLinks.Count
+                                ? block.GeoLinks[index]
+                                : null;
+                            if (!string.IsNullOrEmpty(geoLink))
+                            {
+                                body.Append(
+                                    $@"<p style='font-size:7pt;'><a href=""{Esc(geoLink)}"">{Esc(geoLink)}</a></p>");
+                            }
+                        }
+
+                        if (body.Length == cellStart) body.Append(@"<p>&nbsp;</p>");
+                        body.Append(@"</td>");
+                    }
+
+                    body.Append(@"</tr>");
+                }
+
+                body.Append(@"</table>");
+            }
+        }
+
+        return emitted;
     }
 
     /// <summary>

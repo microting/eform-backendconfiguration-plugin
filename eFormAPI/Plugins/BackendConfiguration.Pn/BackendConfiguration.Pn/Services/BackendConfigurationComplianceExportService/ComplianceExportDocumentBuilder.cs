@@ -352,11 +352,9 @@ public static class ComplianceExportDocumentBuilder
         bool includeImageAppendix,
         IBackendConfigurationLocalizationService localizationService)
     {
-        var document = new ComplianceExportDocument
-        {
-            Title = localizationService.GetString("ComplianceReport"),
-            Period = period
-        };
+        // No document Title (#1328): the Rapport PDF opens with the first report
+        // headline, not a "Rapport" line — the view is already in the file name.
+        var document = new ComplianceExportDocument { Period = period };
 
         var columnsUnavailableLabel = localizationService.GetString("ColumnsUnavailable");
         var caseLabel = localizationService.GetString("Case");
