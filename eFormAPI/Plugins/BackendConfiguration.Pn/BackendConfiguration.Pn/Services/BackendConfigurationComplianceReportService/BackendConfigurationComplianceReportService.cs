@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using Microsoft.EntityFrameworkCore;
@@ -255,6 +256,7 @@ public class BackendConfigurationComplianceReportService(
                     Tags = rowTagIds
                         .Select(id => planningTagNames.GetValueOrDefault(id))
                         .Where(n => n != null)
+                        .OrderBy(n => n, TagNameComparer.Danish)
                         .ToList(),
                     WorkerNames = rowSiteIds
                         .Select(id => siteNamesById.GetValueOrDefault(id, string.Empty))
@@ -1170,7 +1172,7 @@ public class BackendConfigurationComplianceReportService(
                     .Where(id => id != headlineTagId)
                     .Select(id => TagLabel(id, planningTagNames))
                     .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(n => n, TagNameComparer.Danish)
                     .ToList();
 
                 // ONE model per compliance row, in exactly ONE group and, inside
@@ -1219,8 +1221,8 @@ public class BackendConfigurationComplianceReportService(
             // "… - EL", "… - Kontrol", i.e. by the tag line, not the headline —
             // then by headline name, then by headline id.
             var result = built
-                .OrderBy(g => g.TagsCaption ?? string.Empty, StringComparer.OrdinalIgnoreCase)
-                .ThenBy(g => g.HeadlineName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(g => g.TagsCaption ?? string.Empty, TagNameComparer.Danish)
+                .ThenBy(g => g.HeadlineName ?? string.Empty, TagNameComparer.Danish)
                 .ThenBy(g => g.HeadlineTagId ?? int.MaxValue)
                 .ToList();
 
@@ -1327,7 +1329,7 @@ public class BackendConfigurationComplianceReportService(
                 // Distinct union of the group's tag names, alphabetical, joined
                 // " - " (hyphen-minus with spaces — the PDF's separator, NOT the
                 // en dash the export uses for empty cells).
-                TagsCaption = string.Join(" - ", _tagNames.OrderBy(n => n, StringComparer.OrdinalIgnoreCase)),
+                TagsCaption = string.Join(" - ", _tagNames.OrderBy(n => n, TagNameComparer.Danish)),
                 Templates = templates
             };
         }

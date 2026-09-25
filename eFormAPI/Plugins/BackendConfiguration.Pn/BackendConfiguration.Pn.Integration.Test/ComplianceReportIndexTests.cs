@@ -1218,6 +1218,34 @@ public class ComplianceReportIndexTests : TestBaseSetup
     }
 
     /// <summary>
+    /// A row's tag names (Detaljer screen + export) are alphabetical with Danish
+    /// collation (#1334) — æ, ø, å after z, in that order — not in the order the tags
+    /// were attached.
+    /// </summary>
+    [Test]
+    public async Task ComplianceReportIndex_Tags_AreSortedWithDanishCollation()
+    {
+        var core = await GetCore();
+        var today = DateTime.UtcNow.Date;
+
+        var (arpId, propertyId, planningId, areaId, _) =
+            await SeedSeries("TagSortProp", "Tag Sort Title", today.AddDays(-30));
+        await SeedCalendarConfig(arpId);
+        foreach (var name in new[] { "Øko", "Beta", "Åben", "Alfa", "Æble" })
+        {
+            await SeedArpTag(arpId, await SeedTag(name));
+        }
+        var caseId = await SeedSdkCase(status: 50);
+        var complianceId = await SeedCompliance(planningId, propertyId, areaId, today, caseId);
+
+        var result = await BuildService(core).Index(Request(today.AddDays(-1), today.AddDays(1)));
+
+        Assert.That(result.Success, Is.True, result.Message);
+        var row = result.Model!.Entities.Single(r => r.ComplianceId == complianceId);
+        Assert.That(row.Tags, Is.EqualTo(new[] { "Alfa", "Beta", "Æble", "Øko", "Åben" }).AsCollection);
+    }
+
+    /// <summary>
     /// The same three assertions for SiteIds, whose EXISTS push-down over PlanningSites has
     /// the identical fan-out hazard.
     /// </summary>
