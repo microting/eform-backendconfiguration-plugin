@@ -32,6 +32,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
+using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
@@ -135,15 +136,19 @@ public class BackendConfigurationWorkerTagsService(
                 // SUBSET of what the calendar received before — never a superset.
                 .Where(t => t.WorkflowState == Constants.WorkflowStates.Created)
                 .Where(t => liveTagIdList.Contains(t.Id))
-                // The core list is unordered (PK order in practice); keep that, so this
-                // change alters membership only and never the order of what remains.
-                .OrderBy(t => t.Id)
                 .Select(t => new WorkerTagModel
                 {
                     Id = t.Id,
                     Name = t.Name
                 })
                 .ToListAsync().ConfigureAwait(false);
+
+            // Alphabetical with Danish collation (#1334), in memory: the DB collation
+            // is not Danish. Id breaks ties so the order stays deterministic.
+            tags = tags
+                .OrderBy(t => t.Name, TagNameComparer.Danish)
+                .ThenBy(t => t.Id)
+                .ToList();
 
             if (membersByTagId != null)
             {

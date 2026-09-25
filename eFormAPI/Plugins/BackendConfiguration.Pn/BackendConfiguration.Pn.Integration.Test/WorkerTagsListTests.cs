@@ -74,11 +74,12 @@ public class WorkerTagsListTests : TestBaseSetup
         return (service, core.DbContextHelper.GetDbContext(), core);
     }
 
-    private static async Task<int> SeedTagAsync(MicrotingDbContext sdk, bool removed = false)
+    private static async Task<int> SeedTagAsync(
+        MicrotingDbContext sdk, bool removed = false, string? name = null)
     {
         var tag = new Tag
         {
-            Name = $"tag-{Guid.NewGuid()}",
+            Name = name ?? $"tag-{Guid.NewGuid()}",
             WorkflowState = removed
                 ? Constants.WorkflowStates.Removed
                 : Constants.WorkflowStates.Created
@@ -346,5 +347,32 @@ public class WorkerTagsListTests : TestBaseSetup
         var ids = IdsOf(await service.GetWorkerTags());
 
         Assert.That(ids, Does.Not.Contain(removedTag));
+    }
+
+    /// <summary>
+    /// The list is alphabetical with Danish collation (#1334) — æ, ø, å after z, in
+    /// that order — not in id order. Tags are seeded out of order so id order and
+    /// name order disagree. Scoped to the seeded ids (other fixtures leave tags).
+    /// </summary>
+    [Test]
+    public async Task GetWorkerTags_SortsByNameWithDanishCollation()
+    {
+        var (service, sdk, _) = await BuildAsync();
+
+        var suffix = Guid.NewGuid().ToString("N");
+        var seeded = new Dictionary<int, string>();
+        foreach (var prefix in new[] { "Øko", "Beta", "Åben", "Alfa", "Æble" })
+        {
+            var name = $"{prefix} {suffix}";
+            var tagId = await SeedTagAsync(sdk, name: name);
+            await LinkAsync(sdk, tagId, await SeedSiteWithWorkerAsync(sdk));
+            seeded[tagId] = name;
+        }
+
+        var ids = IdsOf(await service.GetWorkerTags());
+        var names = ids.Where(seeded.ContainsKey).Select(id => seeded[id]).ToList();
+
+        Assert.That(names, Is.EqualTo(new[] { "Alfa", "Beta", "Æble", "Øko", "Åben" }
+            .Select(prefix => $"{prefix} {suffix}")).AsCollection);
     }
 }

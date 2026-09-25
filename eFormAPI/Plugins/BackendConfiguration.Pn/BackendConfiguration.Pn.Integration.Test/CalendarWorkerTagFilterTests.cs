@@ -586,6 +586,55 @@ public class CalendarWorkerTagFilterTests : TestBaseSetup
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // #1334 — a task's planning-tag names are alphabetical, Danish collation
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Tags attached out of order come back alphabetical with Danish collation —
+    /// æ, ø, å after z, in that order — from both the week grid
+    /// (<c>GetTasksForWeek</c>, recurrence path) and the task list (<c>Index</c>).
+    /// Pre-fix both returned attach order.
+    /// </summary>
+    [Test]
+    public async Task TaskTags_AreSortedWithDanishCollation_InWeekAndTaskList()
+    {
+        var property = await SeedProperty();
+        var taggedEvent = await SeedWeeklyEvent(property.Id);
+        var suffix = Guid.NewGuid().ToString("N");
+        foreach (var prefix in new[] { "Øko", "Beta", "Åben", "Alfa", "Æble" })
+        {
+            await LinkPlanningTag(taggedEvent.Id, await SeedPlanningTag($"{prefix} {suffix}"));
+        }
+        var expected = new[] { "Alfa", "Beta", "Æble", "Øko", "Åben" }
+            .Select(prefix => $"{prefix} {suffix}").ToList();
+
+        var svc = BuildCalendarService(await GetCore());
+
+        var week = await svc.GetTasksForWeek(new CalendarTaskRequestModel
+        {
+            PropertyId = property.Id,
+            WeekStart = IsoUtc(WeekMonday),
+            WeekEnd = IsoUtc(WeekMonday.AddDays(6).AddHours(23).AddMinutes(59)),
+            ActionableOnly = false,
+            BoardIds = [],
+            TagNames = [],
+            SiteIds = [],
+            WorkerTagIds = []
+        });
+        Assert.That(week.Success, Is.True, week.Message);
+        var tile = week.Model!.First(t => t.Id == taggedEvent.Id);
+        Assert.That(tile.Tags, Is.EqualTo(expected).AsCollection, "week grid");
+
+        var list = await svc.Index(new CalendarTaskIndexRequestModel
+        {
+            Filters = new CalendarTaskListFiltrationModel { PropertyIds = [property.Id] }
+        });
+        Assert.That(list.Success, Is.True, list.Message);
+        var row = list.Model!.Single(t => t.Id == taggedEvent.Id);
+        Assert.That(row.Tags, Is.EqualTo(expected).AsCollection, "task list");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // 6 — SiteIds and WorkerTagIds combine with OR, never AND
     // ─────────────────────────────────────────────────────────────────────────
 

@@ -1495,7 +1495,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         var today = DateTime.UtcNow.Date;
 
         var headlineB = await SeedTag("Bb overskrift");
-        var headlineA = await SeedTag("Aa overskrift");
+        var headlineA = await SeedTag("Ab overskrift");
 
         var (templateId, childId) = await SeedTwoLevelTemplate("Skema", (da.Id, "Skema"));
         await SeedField(childId, Constants.FieldTypes.Comment, 0, [(da.Id, "Felt")]);
@@ -1515,7 +1515,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
 
         Assert.That(groups, Has.Count.EqualTo(2));
         Assert.That(groups.Select(g => g.HeadlineTagId), Is.EqualTo(new int?[] { headlineA, headlineB }).AsCollection);
-        Assert.That(groups.Select(g => g.HeadlineName), Is.EqualTo(new[] { "Aa overskrift", "Bb overskrift" }).AsCollection);
+        Assert.That(groups.Select(g => g.HeadlineName), Is.EqualTo(new[] { "Ab overskrift", "Bb overskrift" }).AsCollection);
         Assert.That(groups.Select(g => g.TagsCaption), Is.All.EqualTo(string.Empty));
         Assert.That(CasesOf(groups[0]).Single().ComplianceId, Is.EqualTo(complianceA));
         Assert.That(CasesOf(groups[1]).Single().ComplianceId, Is.EqualTo(complianceB));
@@ -1738,7 +1738,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
 
         var headline = await SeedTag("Overskrift");
         var secondTag = await SeedTag("Bb tag");
-        var firstTag = await SeedTag("Aa tag");
+        var firstTag = await SeedTag("Ab tag");
 
         var (templateId, childId) = await SeedTwoLevelTemplate("ToTags", (da.Id, "ToTags"));
         await SeedField(childId, Constants.FieldTypes.Comment, 0, [(da.Id, "Felt")]);
@@ -1754,10 +1754,43 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         var groups = await Run(core, da, from, to);
 
         Assert.That(groups, Has.Count.EqualTo(1));
-        Assert.That(groups[0].TagsCaption, Is.EqualTo("Aa tag - Bb tag"));
+        Assert.That(groups[0].TagsCaption, Is.EqualTo("Ab tag - Bb tag"));
         var onlyCase = CasesOf(groups[0]).Single();
         Assert.That(onlyCase.ComplianceId, Is.EqualTo(complianceId));
-        Assert.That(onlyCase.Tags, Is.EqualTo(new[] { "Aa tag", "Bb tag" }).AsCollection);
+        Assert.That(onlyCase.Tags, Is.EqualTo(new[] { "Ab tag", "Bb tag" }).AsCollection);
+    }
+
+    /// <summary>
+    /// Row tags and the group caption are alphabetical with Danish collation (#1334):
+    /// æ, ø, å after z, in that order — ordinal would put Å before Æ and Ø.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_TagsAndCaption_AreSortedWithDanishCollation()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var today = DateTime.UtcNow.Date;
+
+        var headline = await SeedTag("Overskrift");
+        var (templateId, childId) = await SeedTwoLevelTemplate("DanskSortering", (da.Id, "DanskSortering"));
+        await SeedField(childId, Constants.FieldTypes.Comment, 0, [(da.Id, "Felt")]);
+
+        var caseId = await SeedSdkCase(templateId, doneAt: today.AddDays(-1));
+        var (arpId, propertyId, planningId, areaId, _) = await SeedSeries("DanishSortProp", "T", today.AddDays(-30));
+        await SeedHeadline(arpId, headline);
+        foreach (var name in new[] { "Øko", "Beta", "Åben", "Alfa", "Æble" })
+        {
+            await SeedArpTag(arpId, await SeedTag(name));
+        }
+        await SeedCompliance(planningId, propertyId, areaId, today.AddDays(-1), caseId);
+
+        var (from, to) = Window();
+        var groups = await Run(core, da, from, to);
+
+        var expected = new[] { "Alfa", "Beta", "Æble", "Øko", "Åben" };
+        Assert.That(groups, Has.Count.EqualTo(1));
+        Assert.That(CasesOf(groups[0]).Single().Tags, Is.EqualTo(expected).AsCollection);
+        Assert.That(groups[0].TagsCaption, Is.EqualTo(string.Join(" - ", expected)));
     }
 
     /// <summary>
@@ -2121,15 +2154,15 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         var today = DateTime.UtcNow.Date;
 
         var zzHeadline = await SeedTag("Zz overskrift");
-        var aaHeadline = await SeedTag("Aa overskrift");
+        var aaHeadline = await SeedTag("Ab overskrift");
         var mmHeadline = await SeedTag("Mm overskrift");
-        var aaTag = await SeedTag("Aa tag");
+        var aaTag = await SeedTag("Ab tag");
         var bbTag = await SeedTag("Bb tag");
 
         var (templateId, childId) = await SeedTwoLevelTemplate("Skema", (da.Id, "Skema"));
         await SeedField(childId, Constants.FieldTypes.Comment, 0, [(da.Id, "Felt")]);
 
-        // Zz headline + "Aa tag"; Aa headline + "Bb tag"; Mm headline, no tag.
+        // Zz headline + "Ab tag"; Ab headline + "Bb tag"; Mm headline, no tag.
         var seeds = new (int Headline, int? Tag, int Day)[]
         {
             (zzHeadline, aaTag, 1), (aaHeadline, bbTag, 2), (mmHeadline, null, 3)
@@ -2149,7 +2182,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         Assert.That(groups.Select(g => g.HeadlineTagId),
             Is.EqualTo(new int?[] { mmHeadline, zzHeadline, aaHeadline }).AsCollection);
         Assert.That(groups.Select(g => g.TagsCaption),
-            Is.EqualTo(new[] { string.Empty, "Aa tag", "Bb tag" }).AsCollection);
+            Is.EqualTo(new[] { string.Empty, "Ab tag", "Bb tag" }).AsCollection);
     }
 
     /// <summary>
