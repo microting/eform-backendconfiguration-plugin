@@ -922,6 +922,29 @@ public class ComplianceExportDocumentBuilderTests
     }
 
     /// <summary>
+    /// <c>Udført af</c> (#1333) is the ONE worker who completed the case — the service
+    /// hands the builder a single name — and the cell carries exactly that name, not a
+    /// comma-joined assignee list.
+    /// </summary>
+    [Test]
+    public void Report_UdfoertAfCellIsTheSingleCompleter()
+    {
+        var group = Group(1, "Flydelag", "Brand", 509);
+        group.Templates[0].Cases =
+        [
+            new ComplianceReportCaseModel
+            {
+                SdkCaseId = 42, PropertyName = "Property A", Title = "Vand", Tags = [],
+                WorkerNames = ["Worker B"]
+            }
+        ];
+
+        var document = ComplianceExportDocumentBuilder.BuildReport([group], "p", false, _localization);
+
+        Assert.That(document.Tables[0].Rows[0].Cells[3].Text, Is.EqualTo("Worker B"));
+    }
+
+    /// <summary>
     /// <c>Billeder</c> reads <c>3 billeder</c> on the page (#1192, PDF page 9 —
     /// the localised <c>ImagesCount</c> with its <c>{0}</c> filled in, and no
     /// emoji) while the cell stays a <c>Number</c> carrying <c>3</c> for the CSV
