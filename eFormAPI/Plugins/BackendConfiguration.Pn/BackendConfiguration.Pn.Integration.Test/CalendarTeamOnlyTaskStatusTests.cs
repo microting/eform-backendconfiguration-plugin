@@ -33,6 +33,7 @@ using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eForm.Infrastructure.Models;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
 using NSubstitute;
 using BcCompliance = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.Compliance;
 
@@ -197,9 +198,20 @@ public class CalendarTeamOnlyTaskStatusTests : TestBaseSetup
         await MicrotingDbContext!.Folders.AddAsync(folder);
         await MicrotingDbContext.SaveChangesAsync();
 
+        // The wizard tags the new Planning with the property's items-planning
+        // tag, and PlanningsTags has a real foreign key to PlanningTags, so the
+        // property needs an existing tag rather than 0.
+        var propertyPlanningTag = new PlanningTag
+        {
+            Name = $"Property A tag {Guid.NewGuid()}", WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await ItemsPlanningPnDbContext!.PlanningTags.AddAsync(propertyPlanningTag);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
         var property = new Property
         {
-            Name = $"Property A {Guid.NewGuid()}", ItemPlanningTagId = 0,
+            Name = $"Property A {Guid.NewGuid()}", ItemPlanningTagId = propertyPlanningTag.Id,
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         };
         await BackendConfigurationPnDbContext!.Properties.AddAsync(property);
