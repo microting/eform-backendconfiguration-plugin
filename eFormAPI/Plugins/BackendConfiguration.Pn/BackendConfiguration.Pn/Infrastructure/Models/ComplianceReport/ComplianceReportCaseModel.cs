@@ -56,6 +56,9 @@ public class ComplianceReportCaseModel
     /// </summary>
     public DateTime? DoneAt { get; set; }
 
+    /// <summary>"Udført af": the one worker who completed the case (<c>Case.SiteId</c>,
+    /// #1333) — never the assignees. Empty when the case is open or no completer is
+    /// known.</summary>
     public List<string> WorkerNames { get; set; } = [];
 
     /// <summary>
