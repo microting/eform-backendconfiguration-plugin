@@ -1045,6 +1045,11 @@ test.describe('Compliance page shell (#1163)', () => {
   // for a persisted `workspace` variant. The test's page is its own, so
   // nothing outlives it.
   test('on theme-workspace the Download button lines up with the "Hent som" outline (#1330)', async ({ page }) => {
+    // At the suite's 1920px viewport the open sidebar leaves too little room,
+    // so the filter row wraps and Download lands on a line of its own — the
+    // edges would then be a row apart and say nothing about alignment. Give
+    // this test a viewport wide enough for the whole row on one line.
+    await page.setViewportSize({ width: 2560, height: 1080 });
     await goToCompliancePage(page);
 
     const body = page.locator('body');
@@ -1068,8 +1073,13 @@ test.describe('Compliance page shell (#1163)', () => {
           if (!buttonBox || !outlineBox) {
             return 'Download button or "Hent som" outline not rendered';
           }
+          const buttonBottom = buttonBox.y + buttonBox.height;
+          const outlineBottom = outlineBox.y + outlineBox.height;
+          if (buttonBox.y >= outlineBottom || outlineBox.y >= buttonBottom) {
+            return 'Download wrapped onto another row than "Hent som"';
+          }
           const offTop = Math.abs(buttonBox.y - outlineBox.y);
-          const offBottom = Math.abs(buttonBox.y + buttonBox.height - (outlineBox.y + outlineBox.height));
+          const offBottom = Math.abs(buttonBottom - outlineBottom);
           if (offTop <= 1 && offBottom <= 1) {
             return 'aligned';
           }
