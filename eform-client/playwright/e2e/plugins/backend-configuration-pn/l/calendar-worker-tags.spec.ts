@@ -11,9 +11,11 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
+import { UI_TIMEOUT } from '../wait-helpers';
 
 /**
  * E2E for the task modal's merged "Vælg medarbejder / team" picker (#1295).
+ * The team-only event must also stay active on save and reopen (#1322).
  *
  * The separate "Assign to worker tags" select (id="calendarEventWorkerTags") is
  * GONE: teams (worker tags maintained under Medarbejdere → Etiketter) and
@@ -243,9 +245,14 @@ test.describe.serial('Calendar merged worker/team picker (#1295)', () => {
     // Step 6: the event renders on the calendar grid.
     // ------------------------------------------------------------------
     await page.waitForTimeout(1500);
-    await calendarPage
-      .findEventBlock(title)
-      .waitFor({ state: 'visible', timeout: 15000 });
+    const eventBlock = calendarPage.findEventBlock(title);
+    await eventBlock.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    // #1322: a team-only task keeps the Active status it was saved with, so
+    // the tile is not dimmed (.gcal-task--inactive is bound to status === false).
+    await expect(
+      eventBlock,
+      'a team-only task must not be saved inactive (#1322)'
+    ).not.toHaveClass(/gcal-task--inactive/, { timeout: UI_TIMEOUT });
 
     // ------------------------------------------------------------------
     // Step 7 (round-trip): reopen in edit mode; the merged picker should be
@@ -256,6 +263,17 @@ test.describe.serial('Calendar merged worker/team picker (#1295)', () => {
       page.locator('#calendarEventAssignee .ng-value-label').filter({ hasText: workerTagName }).first(),
       'edit mode should rehydrate the merged picker with the team'
     ).toBeVisible({ timeout: 10000 });
+    // #1322: "Opgave synlig i kalender og vises i app" is still on after the
+    // round-trip. mat-slide-toggle renders a `button[role="switch"]` carrying
+    // aria-checked (no <input>), same as task-list-compliance-inactive.spec.ts.
+    await expect(
+      page.locator('#calendarEventStatusActive button[role="switch"]'),
+      'the team-only task must reopen as visible/active (#1322)'
+    ).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
+    await expect(
+      page.locator('#calendarEventStatusInactive button[role="switch"]'),
+      'and the "dimmed" toggle must be off (#1322)'
+    ).toHaveAttribute('aria-checked', 'false', { timeout: UI_TIMEOUT });
     // Close the edit modal without saving.
     await calendarPage.closeEventModal();
 
