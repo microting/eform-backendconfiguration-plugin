@@ -1036,6 +1036,59 @@ test.describe('Compliance page shell (#1163)', () => {
     await expect(page.locator('#complianceDownloadBtn')).toBeDisabled();
   });
 
+  // #1330: theme-workspace gives every form field a 10px margin-bottom, so in
+  // this centred flex row the visible "Hent som" outline sat ~5px above the
+  // Download button. The persisted theme setting is shared with the rest of
+  // the shard and is never changed here: like the frontend's own theme spec
+  // (Tests/g/application-settings.theme-new-design.spec.ts) the body class is
+  // flipped client-side, which is what AppComponent.applyThemeVariant() does
+  // for a persisted `workspace` variant. The test's page is its own, so
+  // nothing outlives it.
+  test('on theme-workspace the Download button lines up with the "Hent som" outline (#1330)', async ({ page }) => {
+    // At the suite's 1920px viewport the open sidebar leaves too little room,
+    // so the filter row wraps and Download lands on a line of its own — the
+    // edges would then be a row apart and say nothing about alignment. Give
+    // this test a viewport wide enough for the whole row on one line.
+    await page.setViewportSize({ width: 2560, height: 1080 });
+    await goToCompliancePage(page);
+
+    const body = page.locator('body');
+    const button = page.locator('#complianceDownloadBtn');
+    const outline = page
+      .locator('.compliance-filters .mat-mdc-form-field')
+      .filter({ has: page.locator('#complianceExportFormat') })
+      .locator('.mat-mdc-text-field-wrapper');
+
+    for (const mode of ['theme-light', 'theme-dark'] as const) {
+      await page.evaluate((themeMode) => {
+        document.body.classList.remove('theme-eform', 'theme-light', 'theme-dark');
+        document.body.classList.add('theme-workspace', themeMode);
+      }, mode);
+      await expect(body).toHaveClass(/\btheme-workspace\b/, { timeout: UI_TIMEOUT });
+      await expect(body).toHaveClass(new RegExp(`\\b${mode}\\b`), { timeout: UI_TIMEOUT });
+
+      await expect
+        .poll(async () => {
+          const [buttonBox, outlineBox] = await Promise.all([button.boundingBox(), outline.boundingBox()]);
+          if (!buttonBox || !outlineBox) {
+            return 'Download button or "Hent som" outline not rendered';
+          }
+          const buttonBottom = buttonBox.y + buttonBox.height;
+          const outlineBottom = outlineBox.y + outlineBox.height;
+          if (buttonBox.y >= outlineBottom || outlineBox.y >= buttonBottom) {
+            return 'Download wrapped onto another row than "Hent som"';
+          }
+          const offTop = Math.abs(buttonBox.y - outlineBox.y);
+          const offBottom = Math.abs(buttonBottom - outlineBottom);
+          if (offTop <= 1 && offBottom <= 1) {
+            return 'aligned';
+          }
+          return `top off by ${offTop.toFixed(1)}px, bottom off by ${offBottom.toFixed(1)}px`;
+        }, { message: `Download vs "Hent som" edges on theme-workspace ${mode}`, timeout: UI_TIMEOUT })
+        .toBe('aligned');
+    }
+  });
+
   test('"Hent som" offers exactly PDF and CSV, nothing else (#1189)', async ({ page }) => {
     await goToCompliancePage(page);
 
