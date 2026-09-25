@@ -7,24 +7,25 @@
     "Ny opgave" button to the row's right edge.
   -->
   <div class="d-flex flex-row flex-wrap align-items-end gap-12">
-    <div class="btn-group d-flex gap-8" role="group">
-      <button
-        type="button"
-        [ngClass]="!isHistoryView ? 'btn-primary btn-primary--icon-left active' : 'btn-secondary btn-secondary--icon-left'"
-        id="backend-configuration-pn-adhoc-view-list"
-        routerLink="."
-      >
-        <span>{{ 'Overview' | translate }}</span>
-      </button>
-      <button
-        type="button"
-        [ngClass]="isHistoryView ? 'btn-primary btn-primary--icon-left active' : 'btn-secondary btn-secondary--icon-left'"
-        id="backend-configuration-pn-adhoc-view-history"
-        routerLink="history"
-      >
-        <span>{{ 'History' | translate }}</span>
-      </button>
-    </div>
+    <!--
+      Overblik/Historik (#1331). The checked toggle is derived from the route
+      (`viewMode`), so browser back/forward moves it too; `(change)` navigates,
+      which also covers the group's keyboard selection (arrows/Enter/Space do
+      not fire a DOM click, so a routerLink on the toggle would miss them).
+    -->
+    <mat-button-toggle-group
+      class="adhoc-view-toggle"
+      [value]="viewMode"
+      [attr.aria-label]="'View mode' | translate"
+      (change)="onViewModeChange($event.value)"
+    >
+      <mat-button-toggle id="backend-configuration-pn-adhoc-view-list" value="list">
+        {{ 'Overview' | translate }}
+      </mat-button-toggle>
+      <mat-button-toggle id="backend-configuration-pn-adhoc-view-history" value="history">
+        {{ 'History' | translate }}
+      </mat-button-toggle>
+    </mat-button-toggle-group>
     <app-adhoc-filters *ngIf="!isHistoryView" [counts]="counts"></app-adhoc-filters>
     <button
       class="btn-primary btn-primary--icon-left ml-auto"

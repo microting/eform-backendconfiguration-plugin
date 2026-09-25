@@ -5,6 +5,7 @@ import {TranslateModule} from '@ngx-translate/core';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
 import {MatButtonModule} from '@angular/material/button';
+import {MatButtonToggleModule} from '@angular/material/button-toggle';
 import {MatTooltipModule} from '@angular/material/tooltip';
 import {MatIconModule} from '@angular/material/icon';
 import {MatCardModule} from '@angular/material/card';
@@ -60,6 +61,8 @@ import {
     FormsModule,
     ReactiveFormsModule,
     MatButtonModule,
+    // Overblik/Historik, tag-logic and execution-rule switchers (#1331).
+    MatButtonToggleModule,
     MatTooltipModule,
     MatIconModule,
     MatCardModule,

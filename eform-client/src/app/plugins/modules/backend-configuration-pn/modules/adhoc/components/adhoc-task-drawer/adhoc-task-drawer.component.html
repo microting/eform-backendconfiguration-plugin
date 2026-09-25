@@ -192,24 +192,16 @@
           <mat-icon class="gcal-icon gcal-icon--top">people</mat-icon>
           <div class="gcal-row-content">
             <div class="adhoc-drawer__section-title">{{ 'Task assigned to' | translate }}</div>
-            <div class="btn-group d-flex gap-8" role="group">
-              <button
-                type="button"
-                [ngClass]="executionRule === 0 ? 'btn-primary btn-primary--icon-left active' : 'btn-secondary btn-secondary--icon-left'"
-                [disabled]="readonly"
-                (click)="onExecutionRuleChange(0)"
-              >
-                <span>{{ 'Assigned only' | translate }}</span>
-              </button>
-              <button
-                type="button"
-                [ngClass]="executionRule === 1 ? 'btn-primary btn-primary--icon-left active' : 'btn-secondary btn-secondary--icon-left'"
-                [disabled]="readonly"
-                (click)="onExecutionRuleChange(1)"
-              >
-                <span>{{ 'Everyone' | translate }}</span>
-              </button>
-            </div>
+            <mat-button-toggle-group
+              class="adhoc-execution-rule-toggle"
+              [value]="executionRule"
+              [disabled]="readonly"
+              [attr.aria-label]="'Task assigned to' | translate"
+              (change)="onExecutionRuleChange($event.value)"
+            >
+              <mat-button-toggle [value]="0">{{ 'Assigned only' | translate }}</mat-button-toggle>
+              <mat-button-toggle [value]="1">{{ 'Everyone' | translate }}</mat-button-toggle>
+            </mat-button-toggle-group>
 
             <!-- #1088: person chips + checkbox list stay visible/selectable
                  regardless of executionRule - persons and "Everyone" coexist
