@@ -25,7 +25,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
-using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using NSubstitute;
 using SdkSite = Microting.eForm.Infrastructure.Data.Entities.Site;
@@ -137,7 +136,7 @@ public class ComplianceExportLabelResolutionTests : TestBaseSetup
         Assert.That(result.Model.FileName,
             Is.EqualTo($"{DetailsLabel}-{name}-{AllLabel}-{DateParts}.csv"));
 
-        var (propertyLabel, boardLabel, _) = await ResolveLabels(request);
+        var (propertyLabel, boardLabel) = await ResolveLabels(request);
         Assert.That(propertyLabel, Is.EqualTo(name));
         Assert.That(boardLabel, Is.EqualTo(AllLabel));
 
@@ -174,7 +173,7 @@ public class ComplianceExportLabelResolutionTests : TestBaseSetup
             Is.EqualTo($"{DetailsLabel}-{AllLabel}-{AllLabel}-{DateParts}.csv"));
         Assert.That(result.Model.FileName, Does.Not.Contain(name));
 
-        var (propertyLabel, _, _) = await ResolveLabels(request);
+        var (propertyLabel, _) = await ResolveLabels(request);
         Assert.That(propertyLabel, Is.EqualTo(AllLabel));
 
         var header = await HeaderTextFor(propertyLabel, AllLabel);
@@ -224,7 +223,7 @@ public class ComplianceExportLabelResolutionTests : TestBaseSetup
         Assert.That(result.Model.FileName,
             Is.EqualTo($"{DetailsLabel}-{propertyName}-{boardName}-{DateParts}.csv"));
 
-        var (propertyLabel, boardLabel, _) = await ResolveLabels(request);
+        var (propertyLabel, boardLabel) = await ResolveLabels(request);
         Assert.That(boardLabel, Is.EqualTo(boardName));
 
         var header = await HeaderTextFor(propertyLabel, boardLabel);
@@ -254,7 +253,7 @@ public class ComplianceExportLabelResolutionTests : TestBaseSetup
         Assert.That(result.Model.FileName,
             Is.EqualTo($"{DetailsLabel}-{AllLabel}-{AllLabel}-{DateParts}.csv"));
 
-        var (_, boardLabel, _) = await ResolveLabels(request);
+        var (_, boardLabel) = await ResolveLabels(request);
         Assert.That(boardLabel, Is.EqualTo(AllLabel));
 
         var header = await HeaderTextFor(AllLabel, boardLabel);
@@ -287,7 +286,7 @@ public class ComplianceExportLabelResolutionTests : TestBaseSetup
         Assert.That(result.Model.FileName, Does.Not.Contain(firstName));
         Assert.That(result.Model.FileName, Does.Not.Contain(secondName));
 
-        var (_, boardLabel, _) = await ResolveLabels(request);
+        var (_, boardLabel) = await ResolveLabels(request);
         Assert.That(boardLabel, Is.EqualTo(AllLabel));
 
         var header = await HeaderTextFor(AllLabel, boardLabel);
@@ -317,7 +316,7 @@ public class ComplianceExportLabelResolutionTests : TestBaseSetup
             Is.EqualTo($"{DetailsLabel}-{AllLabel}-{AllLabel}-{DateParts}.csv"));
         Assert.That(result.Model.FileName, Does.Not.Contain(boardName));
 
-        var (_, boardLabel, _) = await ResolveLabels(request);
+        var (_, boardLabel) = await ResolveLabels(request);
         Assert.That(boardLabel, Is.EqualTo(AllLabel));
     }
 
@@ -334,13 +333,12 @@ public class ComplianceExportLabelResolutionTests : TestBaseSetup
     /// matches no site is skipped rather than printed as a number.
     /// </summary>
     [Test]
-    public async Task ResolveLabels_SiteIdsNameTheEmployeesInFilterOrder()
+    public async Task ResolveWorkerLabel_SiteIdsNameTheEmployeesInFilterOrder()
     {
         var first = await SeedSite(UniqueName("Worker A"));
         var second = await SeedSite(UniqueName("Worker B"), Constants.WorkflowStates.Removed);
 
-        var request = Request(siteIds: [second.Id, first.Id, int.MaxValue]);
-        var (_, _, workerLabel) = await ResolveLabels(request, await GetCore());
+        var workerLabel = await ResolveWorkerLabel([second.Id, first.Id, int.MaxValue], await GetCore());
 
         Assert.That(workerLabel, Is.EqualTo($"{second.Name}, {first.Name}"));
 
@@ -350,15 +348,13 @@ public class ComplianceExportLabelResolutionTests : TestBaseSetup
 
     /// <summary>
     /// No employee filter — an empty list and a null one — reads "Alle", like
-    /// <c>Ejendom: Alle</c>, and never reaches the SDK: the core helper here is
+    /// <c>Ejendom: Alle</c>, and never reaches the SDK: the core passed here is
     /// null, so a lookup would throw.
     /// </summary>
     [Test]
-    public async Task ResolveLabels_NoSiteIdsFallBackToAll([Values] bool nullInsteadOfEmpty)
+    public async Task ResolveWorkerLabel_NoSiteIdsFallBackToAll([Values] bool nullInsteadOfEmpty)
     {
-        var request = Request(siteIds: nullInsteadOfEmpty ? null : new List<int>());
-
-        var (_, _, workerLabel) = await ResolveLabels(request);
+        var workerLabel = await ResolveWorkerLabel(nullInsteadOfEmpty ? null : new List<int>(), null);
 
         Assert.That(workerLabel, Is.EqualTo(AllLabel));
         var header = await HeaderTextFor(AllLabel, AllLabel, workerLabel);
@@ -370,13 +366,29 @@ public class ComplianceExportLabelResolutionTests : TestBaseSetup
     /// than an empty value after the colon.
     /// </summary>
     [Test]
-    public async Task ResolveLabels_UnknownSiteIdsFallBackToAll()
+    public async Task ResolveWorkerLabel_UnknownSiteIdsFallBackToAll()
     {
-        var request = Request(siteIds: [int.MaxValue]);
-
-        var (_, _, workerLabel) = await ResolveLabels(request, await GetCore());
+        var workerLabel = await ResolveWorkerLabel([int.MaxValue], await GetCore());
 
         Assert.That(workerLabel, Is.EqualTo(AllLabel));
+    }
+
+    /// <summary>
+    /// A CSV export with an employee filter does NOT look the employees up: the
+    /// CSV writer has no page header, so the SDK query would be wasted work. The
+    /// service here has a null core helper, so a lookup on the CSV arm would throw
+    /// and the export would fail.
+    /// </summary>
+    [Test]
+    public async Task Export_CsvWithSiteIdsDoesNotReachTheSdk()
+    {
+        var site = await SeedSite(UniqueName("Worker C"));
+
+        var result = await BuildService().Export(Request(siteIds: [site.Id]));
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(result.Model.FileName,
+            Is.EqualTo($"{DetailsLabel}-{AllLabel}-{AllLabel}-{DateParts}.csv"));
     }
 
     // ==================================================================
@@ -441,27 +453,16 @@ public class ComplianceExportLabelResolutionTests : TestBaseSetup
     /// The REAL export service on the REAL seeded context. Only the report service
     /// is a stub — the export owns no data access for the report itself, so there
     /// is nothing to seed for it and an empty result set is enough to reach the file
-    /// naming. The SDK core helper is <c>null</c> unless a test passes a
-    /// <paramref name="core"/> for the employee lookup (#1329): every test here
-    /// takes the CSV arm, and a null reference from it would mean the PDF arm, or
-    /// an employee lookup with no employee filter, had started running
-    /// unconditionally.
+    /// naming. The SDK core helper is <c>null</c>: every test here takes the CSV
+    /// arm, and a null reference from it would mean the PDF arm, or the employee
+    /// lookup (#1329, PDF arm only), had started running on the CSV arm.
     /// </summary>
-    private BackendConfigurationComplianceExportService BuildService(eFormCore.Core? core = null)
-    {
-        IEFormCoreService coreHelper = null!;
-        if (core != null)
-        {
-            coreHelper = Substitute.For<IEFormCoreService>();
-            coreHelper.GetCore().Returns(Task.FromResult(core));
-        }
-
-        return new(StubReportService(),
+    private BackendConfigurationComplianceExportService BuildService() =>
+        new(StubReportService(),
             new DanishShellLocalizer(),
-            coreHelper,
+            null!,
             BackendConfigurationPnDbContext!,
             TestContextLogger<BackendConfigurationComplianceExportService>.Instance);
-    }
 
     private static IBackendConfigurationComplianceReportService StubReportService()
     {
@@ -492,22 +493,26 @@ public class ComplianceExportLabelResolutionTests : TestBaseSetup
     /// same trade <c>PushNotificationServiceTests</c> makes: <c>GetMethod</c> with a
     /// hard failure if the name ever changes, rather than widening production
     /// visibility for a test. The returned tuple's element names are erased at
-    /// runtime, so the cast is to the plain <c>Task&lt;(string, string, string)&gt;</c>.
+    /// runtime, so the cast is to the plain <c>Task&lt;(string, string)&gt;</c>.
+    /// <c>ResolveWorkerLabel</c> (#1329) is reached the same way; <c>Export</c>
+    /// calls it on the PDF arm only, which CI cannot run (no <c>soffice</c>).
     /// </summary>
-    private static readonly MethodInfo ResolveLabelsMethod =
+    private static MethodInfo PrivateMethod(string name) =>
         typeof(BackendConfigurationComplianceExportService)
-            .GetMethod("ResolveLabels", BindingFlags.Instance | BindingFlags.NonPublic)
+            .GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic)
         ?? throw new InvalidOperationException(
-            "BackendConfigurationComplianceExportService.ResolveLabels was not found — "
+            $"BackendConfigurationComplianceExportService.{name} was not found — "
             + "it was renamed or its visibility changed.");
 
-    private async Task<(string PropertyLabel, string BoardLabel, string WorkerLabel)> ResolveLabels(
-        ComplianceReportExportRequestModel request, eFormCore.Core? core = null)
-    {
-        var invocation = (Task<(string, string, string)>)ResolveLabelsMethod.Invoke(
-            BuildService(core), [request])!;
-        return await invocation;
-    }
+    private static readonly MethodInfo ResolveLabelsMethod = PrivateMethod("ResolveLabels");
+    private static readonly MethodInfo ResolveWorkerLabelMethod = PrivateMethod("ResolveWorkerLabel");
+
+    private async Task<(string PropertyLabel, string BoardLabel)> ResolveLabels(
+        ComplianceReportExportRequestModel request) =>
+        await (Task<(string, string)>)ResolveLabelsMethod.Invoke(BuildService(), [request])!;
+
+    private async Task<string> ResolveWorkerLabel(List<int>? siteIds, eFormCore.Core? core) =>
+        await (Task<string>)ResolveWorkerLabelMethod.Invoke(BuildService(), [siteIds, core])!;
 
     /// <summary>
     /// Renders a real docx through the real Word writer with the two resolved

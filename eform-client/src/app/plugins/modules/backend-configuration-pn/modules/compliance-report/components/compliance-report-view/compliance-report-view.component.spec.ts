@@ -3,7 +3,7 @@ import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
 import {Router} from '@angular/router';
 import {TranslateModule} from '@ngx-translate/core';
-import {Subject, of} from 'rxjs';
+import {Subject, of, throwError} from 'rxjs';
 import {
   ComplianceReportCaseModel,
   ComplianceReportColumnModel,
@@ -1844,6 +1844,31 @@ describe('ComplianceReportViewComponent — the meta line names the calendar and
     state.setFilterSilently({tagIds: [1]});
     expect(getBoards).toHaveBeenCalledTimes(2);
     expect(getDeviceUsersFiltered).toHaveBeenCalledTimes(2);
+  });
+
+  it('still loads the calendars for the next property after a getBoards transport error', () => {
+    getBoards.mockReturnValueOnce(throwError(() => new Error('network down')));
+    state.setFilterSilently({propertyId: 5});
+    mount();
+    expect(component.boardLabel).toBe('All');
+
+    state.setFilterSilently({propertyId: 6, boardIds: [60]});
+
+    expect(getBoards).toHaveBeenCalledTimes(2);
+    expect(getBoards).toHaveBeenLastCalledWith(6);
+    expect(component.boardLabel).toBe('Calendar 6');
+  });
+
+  it('still loads the employees for the next property after a getDeviceUsersFiltered transport error', () => {
+    getDeviceUsersFiltered.mockReturnValueOnce(throwError(() => new Error('network down')));
+    state.setFilterSilently({propertyId: 5});
+    mount();
+
+    state.setFilterSilently({propertyId: 6, siteIds: [2]});
+
+    expect(getDeviceUsersFiltered).toHaveBeenCalledTimes(2);
+    expect(getDeviceUsersFiltered).toHaveBeenLastCalledWith(expect.objectContaining({propertyIds: [6]}));
+    expect(component.employeeLabel).toBe('Worker B6');
   });
 
   it('asks for no calendars without a property', () => {

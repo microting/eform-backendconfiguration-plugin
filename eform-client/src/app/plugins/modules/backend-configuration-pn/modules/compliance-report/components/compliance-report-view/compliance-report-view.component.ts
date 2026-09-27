@@ -796,8 +796,14 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
     propertyId$
       .pipe(
         // getBoards is property-scoped; with no property there is no calendar
-        // filter either (the filter bar disables it).
-        switchMap((propertyId) => (propertyId == null ? of(null) : this.calendarService.getBoards(propertyId))),
+        // filter either (the filter bar disables it). The transport error is
+        // caught on the inner observable so the stream survives it and the next
+        // property change still reloads.
+        switchMap((propertyId) =>
+          propertyId == null
+            ? of(null)
+            : this.calendarService.getBoards(propertyId).pipe(catchError(() => of(null))),
+        ),
         takeUntil(this.destroy$),
       )
       .subscribe((res) => {
@@ -808,6 +814,8 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
       .pipe(
         // The filter bar's own request (compliance-report-filters.component.ts
         // `loadEmployees`), so the names here are the names offered there.
+        // Same inner catchError as getBoards: the stream must survive a
+        // transport error.
         switchMap((propertyId) =>
           this.propertiesService.getDeviceUsersFiltered({
             propertyIds: propertyId != null ? [propertyId] : [],
@@ -816,7 +824,7 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
             isSortDsc: false,
             showResigned: false,
             tagIds: [],
-          }),
+          }).pipe(catchError(() => of(null))),
         ),
         takeUntil(this.destroy$),
       )

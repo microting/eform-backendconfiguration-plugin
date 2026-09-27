@@ -107,7 +107,7 @@ public class BackendConfigurationComplianceExportService(
             // builders nor the file naming look anything up themselves.
             // Both label lookups run BEFORE the report call and are display-only reads,
             // so their ordering relative to the report query is harmless.
-            var (propertyLabel, boardLabel, workerLabel) = await ResolveLabels(requestModel);
+            var (propertyLabel, boardLabel) = await ResolveLabels(requestModel);
 
             ComplianceExportDocument document;
             switch (viewMode)
@@ -175,7 +175,6 @@ public class BackendConfigurationComplianceExportService(
 
             document.PropertyLabel = propertyLabel;
             document.BoardLabel = boardLabel;
-            document.WorkerLabel = workerLabel;
 
             var fileName = BuildFileName(requestModel, viewMode, format, propertyLabel, boardLabel);
 
@@ -187,6 +186,9 @@ public class BackendConfigurationComplianceExportService(
                 default:
                 {
                     var core = await coreHelper.GetCore().ConfigureAwait(false);
+                    // Only the Word/PDF page header prints the employees, so only
+                    // this arm pays for the SDK lookup; the CSV writer has no header.
+                    document.WorkerLabel = await ResolveWorkerLabel(requestModel.SiteIds, core);
                     var writer = new ComplianceExportWordWriter(localizationService, logger);
                     await using var docx = await writer.WriteAsync(document, core);
 
@@ -266,7 +268,7 @@ public class BackendConfigurationComplianceExportService(
     /// property filter" and for a multi-board selection, where no single board
     /// names the export.
     /// </summary>
-    private async Task<(string PropertyLabel, string BoardLabel, string WorkerLabel)> ResolveLabels(
+    private async Task<(string PropertyLabel, string BoardLabel)> ResolveLabels(
         ComplianceReportExportRequestModel requestModel)
     {
         var allLabel = localizationService.GetString("All");
@@ -296,7 +298,7 @@ public class BackendConfigurationComplianceExportService(
             if (!string.IsNullOrWhiteSpace(name)) boardLabel = name;
         }
 
-        return (propertyLabel, boardLabel, await ResolveWorkerLabel(requestModel.SiteIds, allLabel));
+        return (propertyLabel, boardLabel);
     }
 
     /// <summary>
@@ -306,14 +308,14 @@ public class BackendConfigurationComplianceExportService(
     /// as the report service resolves its <c>WorkerNames</c>: a resigned or removed
     /// worker the filter still names is still the worker the report was filtered
     /// by. Ids that match no site are skipped; the SDK is only reached when the
-    /// filter names someone.
+    /// filter names someone. Called from the PDF arm only: CSV has no page header.
     /// </summary>
-    private async Task<string> ResolveWorkerLabel(List<int> siteIds, string allLabel)
+    private async Task<string> ResolveWorkerLabel(List<int> siteIds, eFormCore.Core core)
     {
+        var allLabel = localizationService.GetString("All");
         var ids = (siteIds ?? []).Distinct().ToList();
         if (ids.Count == 0) return allLabel;
 
-        var core = await coreHelper.GetCore().ConfigureAwait(false);
         await using var sdkDbContext = core.DbContextHelper.GetDbContext();
         var namesById = await sdkDbContext.Sites
             .Where(s => ids.Contains(s.Id))
