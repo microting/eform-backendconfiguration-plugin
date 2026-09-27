@@ -1,6 +1,6 @@
 import { Page, Locator } from '@playwright/test';
 import { selectValueInNgSelector, selectDateOnNewDatePicker } from '../../helper-functions';
-import { API_TIMEOUT, ignoreUnhandledRejections, waitForApiResponse } from './wait-helpers';
+import { API_TIMEOUT, UI_TIMEOUT, ignoreUnhandledRejections, waitForApiResponse } from './wait-helpers';
 
 /**
  * Page object for the "Adhoc overblik" dashboard
@@ -310,7 +310,7 @@ export class BackendConfigurationAdhocPage {
 
   async setTagLogic(logic: 'and' | 'or'): Promise<void> {
     await this.openTagFilterPanel();
-    await this.tagLogicRadio(logic).click();
+    await this.tagLogicRadio(logic).click({ timeout: UI_TIMEOUT });
   }
 
   async createTagInFilter(tagName: string): Promise<void> {
@@ -481,7 +481,7 @@ export class BackendConfigurationAdhocPage {
 
   async setExecutionRule(rule: 'assignedOnly' | 'everyone'): Promise<void> {
     await this.expandSection('ny-sektion-tildeling');
-    await this.executionRuleRadio(rule).click();
+    await this.executionRuleRadio(rule).click({ timeout: UI_TIMEOUT });
   }
 
   drawerWorkerCheckbox(workerName: string): Locator {

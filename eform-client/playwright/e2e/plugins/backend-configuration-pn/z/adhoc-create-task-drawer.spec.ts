@@ -85,13 +85,13 @@ test.describe.serial('Adhoc overblik — new task drawer (all sections)', () => 
     // "Tildel til personer" (collapsed by default - expandDrawerSection handles it).
     // Kun tildelte/Alle is a mat-button-toggle-group (#1331): Kun tildelte is
     // the default, and a click moves `aria-checked` to the other option.
-    await expect(adhocPage.executionRuleRadio('assignedOnly')).toHaveAttribute('aria-checked', 'true');
-    await expect(adhocPage.executionRuleRadio('everyone')).toHaveAttribute('aria-checked', 'false');
+    await expect(adhocPage.executionRuleRadio('assignedOnly')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
+    await expect(adhocPage.executionRuleRadio('everyone')).toHaveAttribute('aria-checked', 'false', { timeout: UI_TIMEOUT });
     await adhocPage.setExecutionRule('everyone');
-    await expect(adhocPage.executionRuleRadio('everyone')).toHaveAttribute('aria-checked', 'true');
-    await expect(adhocPage.executionRuleRadio('assignedOnly')).toHaveAttribute('aria-checked', 'false');
+    await expect(adhocPage.executionRuleRadio('everyone')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
+    await expect(adhocPage.executionRuleRadio('assignedOnly')).toHaveAttribute('aria-checked', 'false', { timeout: UI_TIMEOUT });
     await adhocPage.setExecutionRule('assignedOnly');
-    await expect(adhocPage.executionRuleRadio('assignedOnly')).toHaveAttribute('aria-checked', 'true');
+    await expect(adhocPage.executionRuleRadio('assignedOnly')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
     await adhocPage.assignDrawerWorker(worker.name as string);
 
     // "Udfør senest og visning første gang" (collapsed by default).
@@ -140,9 +140,9 @@ test.describe.serial('Adhoc overblik — new task drawer (all sections)', () => 
     const assignedOnly = adhocPage.executionRuleRadio('assignedOnly');
     const everyone = adhocPage.executionRuleRadio('everyone');
     await expect(assignedOnly).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
-    await expect(everyone).toHaveAttribute('aria-checked', 'false');
-    await expect(assignedOnly).toBeDisabled();
-    await expect(everyone).toBeDisabled();
+    await expect(everyone).toHaveAttribute('aria-checked', 'false', { timeout: UI_TIMEOUT });
+    await expect(assignedOnly).toBeDisabled({ timeout: UI_TIMEOUT });
+    await expect(everyone).toBeDisabled({ timeout: UI_TIMEOUT });
 
     await adhocPage.closeDrawer();
   });

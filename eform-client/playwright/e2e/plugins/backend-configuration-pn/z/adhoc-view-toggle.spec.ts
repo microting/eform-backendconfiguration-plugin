@@ -26,14 +26,14 @@ async function login(page: Page): Promise<void> {
 
 async function expectListChecked(adhocPage: BackendConfigurationAdhocPage): Promise<void> {
   await expect(adhocPage.viewListBtn()).toHaveClass(/mat-button-toggle-checked/, { timeout: UI_TIMEOUT });
-  await expect(adhocPage.viewListRadio()).toHaveAttribute('aria-checked', 'true');
-  await expect(adhocPage.viewHistoryRadio()).toHaveAttribute('aria-checked', 'false');
+  await expect(adhocPage.viewListRadio()).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
+  await expect(adhocPage.viewHistoryRadio()).toHaveAttribute('aria-checked', 'false', { timeout: UI_TIMEOUT });
 }
 
 async function expectHistoryChecked(adhocPage: BackendConfigurationAdhocPage): Promise<void> {
   await expect(adhocPage.viewHistoryBtn()).toHaveClass(/mat-button-toggle-checked/, { timeout: UI_TIMEOUT });
-  await expect(adhocPage.viewHistoryRadio()).toHaveAttribute('aria-checked', 'true');
-  await expect(adhocPage.viewListRadio()).toHaveAttribute('aria-checked', 'false');
+  await expect(adhocPage.viewHistoryRadio()).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
+  await expect(adhocPage.viewListRadio()).toHaveAttribute('aria-checked', 'false', { timeout: UI_TIMEOUT });
 }
 
 test.describe('Adhoc overblik — toggle-group switchers (#1331)', () => {
@@ -45,8 +45,8 @@ test.describe('Adhoc overblik — toggle-group switchers (#1331)', () => {
     await adhocPage.goToAdhoc();
 
     // A stock single-select group: radiogroup semantics, no aria-pressed.
-    await expect(page.locator('mat-button-toggle-group.adhoc-view-toggle')).toHaveAttribute('role', 'radiogroup');
-    await expect(adhocPage.viewListBtn()).toHaveJSProperty('tagName', 'MAT-BUTTON-TOGGLE');
+    await expect(page.locator('mat-button-toggle-group.adhoc-view-toggle')).toHaveAttribute('role', 'radiogroup', { timeout: UI_TIMEOUT });
+    await expect(adhocPage.viewListBtn()).toHaveJSProperty('tagName', 'MAT-BUTTON-TOGGLE', { timeout: UI_TIMEOUT });
     await expectListChecked(adhocPage);
 
     await adhocPage.goToHistory();
@@ -86,14 +86,14 @@ test.describe('Adhoc overblik — toggle-group switchers (#1331)', () => {
 
     // ELLER ('or') is the reducer default.
     await expect(adhocPage.tagLogicRadio('or')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
-    await expect(adhocPage.tagLogicRadio('and')).toHaveAttribute('aria-checked', 'false');
+    await expect(adhocPage.tagLogicRadio('and')).toHaveAttribute('aria-checked', 'false', { timeout: UI_TIMEOUT });
 
     await adhocPage.setTagLogic('and');
     await expect(adhocPage.tagLogicRadio('and')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
-    await expect(adhocPage.tagLogicRadio('or')).toHaveAttribute('aria-checked', 'false');
+    await expect(adhocPage.tagLogicRadio('or')).toHaveAttribute('aria-checked', 'false', { timeout: UI_TIMEOUT });
 
     await adhocPage.setTagLogic('or');
     await expect(adhocPage.tagLogicRadio('or')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
-    await expect(adhocPage.tagLogicRadio('and')).toHaveAttribute('aria-checked', 'false');
+    await expect(adhocPage.tagLogicRadio('and')).toHaveAttribute('aria-checked', 'false', { timeout: UI_TIMEOUT });
   });
 });
