@@ -40,10 +40,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportS
 /// </para>
 ///
 /// <para>
-/// <b>The only database reads here are two name lookups</b> — the property's
-/// name when the filter names one property, and the board's name when it names
-/// exactly one board. Both are display-only; each is resolved ONCE and reused for
-/// the file name and for the Word/PDF page header (#1189).
+/// <b>The only database reads here are three name lookups</b> — the property's
+/// name when the filter names one property, the board's name when it names
+/// exactly one board, and the employees' names when it names any (#1329). All
+/// are display-only and resolved ONCE; the first two are reused for the file
+/// name and the Word/PDF page header (#1189), the third is header-only.
 /// </para>
 /// </summary>
 public class BackendConfigurationComplianceExportService(
@@ -185,6 +186,9 @@ public class BackendConfigurationComplianceExportService(
                 default:
                 {
                     var core = await coreHelper.GetCore().ConfigureAwait(false);
+                    // Only the Word/PDF page header prints the employees, so only
+                    // this arm pays for the SDK lookup; the CSV writer has no header.
+                    document.WorkerLabel = await ResolveWorkerLabel(requestModel.SiteIds, core);
                     var writer = new ComplianceExportWordWriter(localizationService, logger);
                     await using var docx = await writer.WriteAsync(document, core);
 
@@ -295,6 +299,33 @@ public class BackendConfigurationComplianceExportService(
         }
 
         return (propertyLabel, boardLabel);
+    }
+
+    /// <summary>
+    /// The employee filter's names for the page header's <c>Medarbejdere:</c> line
+    /// (#1329), in the order the filter sent them, joined <c>", "</c>; "All" when
+    /// the filter names nobody. SDK <c>Sites.Name</c> with NO workflow-state guard,
+    /// as the report service resolves its <c>WorkerNames</c>: a resigned or removed
+    /// worker the filter still names is still the worker the report was filtered
+    /// by. Ids that match no site are skipped; the SDK is only reached when the
+    /// filter names someone. Called from the PDF arm only: CSV has no page header.
+    /// </summary>
+    private async Task<string> ResolveWorkerLabel(List<int> siteIds, eFormCore.Core core)
+    {
+        var allLabel = localizationService.GetString("All");
+        var ids = (siteIds ?? []).Distinct().ToList();
+        if (ids.Count == 0) return allLabel;
+
+        await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+        var namesById = await sdkDbContext.Sites
+            .Where(s => ids.Contains(s.Id))
+            .ToDictionaryAsync(s => s.Id, s => s.Name);
+
+        var names = ids
+            .Select(id => namesById.GetValueOrDefault(id))
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .ToList();
+        return names.Count > 0 ? string.Join(", ", names) : allLabel;
     }
 
     /// <summary>

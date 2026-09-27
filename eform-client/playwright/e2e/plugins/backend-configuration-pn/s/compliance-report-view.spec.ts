@@ -278,6 +278,53 @@ async function routeCasePage(page: Page): Promise<{ saves: number }> {
   return counter;
 }
 
+/**
+ * #1329 — one property with one calendar and one employee, served to BOTH the
+ * filter bar and the Rapport view's meta line. Mocked because shard `s` seeds
+ * no SQL; the names are fictional and the ids high enough not to collide with
+ * anything another spec in the shard creates. `eform-columns` answers empty:
+ * only the meta line is under test, and it renders for an empty result too.
+ */
+const META_PROPERTY = { id: 91001, name: 'Property A' };
+const META_BOARD = { id: 92001, name: 'Calendar A' };
+const META_WORKER = { siteId: 93001, name: 'Worker A' };
+
+async function routeMetaReferenceData(page: Page): Promise<void> {
+  const json = (model: unknown) => ({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ success: true, message: '', model }),
+  });
+  await page.route('**/api/backend-configuration-pn/properties/dictionary**', (route) =>
+    route.fulfill(json([{ id: META_PROPERTY.id, name: META_PROPERTY.name, description: '' }])),
+  );
+  await page.route(`**/api/backend-configuration-pn/calendar/boards/${META_PROPERTY.id}`, (route) =>
+    route.fulfill(json([{ id: META_BOARD.id, name: META_BOARD.name, color: '#111111', propertyId: META_PROPERTY.id }])),
+  );
+  await page.route('**/api/backend-configuration-pn/properties/assignment/index-device-user', (route) =>
+    route.fulfill(
+      json([
+        {
+          siteId: META_WORKER.siteId,
+          siteName: META_WORKER.name,
+          fullName: META_WORKER.name,
+          userFirstName: 'Worker',
+          userLastName: 'A',
+        },
+      ]),
+    ),
+  );
+  await page.route(EFORM_COLUMNS_ROUTE, (route) => route.fulfill(json([])));
+}
+
+/** Picks an mtx-select option by its label, scoped to the open dropdown panel. */
+async function pickOption(page: Page, selectId: string, label: string): Promise<void> {
+  await page.locator(`#${selectId}`).click({ timeout: UI_TIMEOUT });
+  await page
+    .locator('.ng-dropdown-panel .ng-option', { hasText: label })
+    .click({ timeout: UI_TIMEOUT });
+}
+
 test.describe.configure({ mode: 'serial' });
 
 test.describe('Compliance — Rapport view', () => {
@@ -640,5 +687,34 @@ test.describe('Compliance — Rapport view', () => {
     await expect(page.locator('.compliance-report__table')).toHaveCount(0);
     expect(casePage.saves).toBe(0);
     expect(rapportQueries).toBe(0);
+  });
+
+  test('the meta line names a calendar picked on Rapport, and a Medarbejdere line shows the employee filter (#1329)', async ({
+    page,
+  }) => {
+    await routeMetaReferenceData(page);
+    await goToRapport(page);
+    await awaitRapportRendered(page);
+
+    const filterLine = page.locator('#complianceReportMetaFilters');
+    const employeeLine = page.locator('#complianceReportMetaEmployees');
+    await expect(employeeLine).toHaveText(/Medarbejdere:\s*Alle/, { timeout: UI_TIMEOUT });
+
+    // Property, then calendar — the flow that used to leave `Kalender: #<id>`,
+    // because the view loaded the calendars only at mount and only when a
+    // calendar was already set.
+    await pickOption(page, 'complianceFilterProperty', META_PROPERTY.name);
+    await expect(filterLine).toContainText(META_PROPERTY.name, { timeout: UI_TIMEOUT });
+
+    await pickOption(page, 'complianceFilterBoard', META_BOARD.name);
+    await expect(filterLine).toContainText(META_BOARD.name, { timeout: UI_TIMEOUT });
+    await expect(filterLine).not.toContainText('#');
+    // " - " between the items, as in the PDF header.
+    await expect(filterLine.locator('.compliance-report__meta-separator')).toHaveCount(2);
+
+    await pickOption(page, 'complianceFilterEmployee', META_WORKER.name);
+    await expect(employeeLine).toHaveText(new RegExp(`Medarbejdere:\\s*${META_WORKER.name}`), {
+      timeout: UI_TIMEOUT,
+    });
   });
 });

@@ -20,24 +20,40 @@
     run with are part of the report, and "nothing matched" is only meaningful
     next to them.
   -->
-  <p
+  <!--
+    Two lines (#1329): `Ejendom: X - Kalender: Y - Periode: …`, then
+    `Medarbejdere: <names|Alle>` — the same two lines the PDF header prints.
+  -->
+  <div
     *ngIf="hasFetched && !loadFailed"
     id="complianceReportMeta"
     class="compliance-report__meta"
   >
-    <span class="compliance-report__meta-item">
-      <span class="compliance-report__meta-label">{{ 'Property' | translate }}:</span>
-      <span class="compliance-report__meta-value">{{ propertyLabel }}</span>
-    </span>
-    <span class="compliance-report__meta-item">
-      <span class="compliance-report__meta-label">{{ 'Calendar' | translate }}:</span>
-      <span class="compliance-report__meta-value">{{ boardLabel }}</span>
-    </span>
-    <span class="compliance-report__meta-item" *ngIf="periodLabel">
-      <span class="compliance-report__meta-label">{{ 'Period' | translate }}:</span>
-      <span class="compliance-report__meta-value">{{ periodLabel }}</span>
-    </span>
-  </p>
+    <p id="complianceReportMetaFilters" class="compliance-report__meta-line">
+      <span class="compliance-report__meta-item">
+        <span class="compliance-report__meta-label">{{ 'Property' | translate }}:</span>
+        <span class="compliance-report__meta-value">{{ propertyLabel }}</span>
+      </span>
+      <span class="compliance-report__meta-separator" aria-hidden="true">-</span>
+      <span class="compliance-report__meta-item">
+        <span class="compliance-report__meta-label">{{ 'Calendar' | translate }}:</span>
+        <span class="compliance-report__meta-value">{{ boardLabel }}</span>
+      </span>
+      <ng-container *ngIf="periodLabel">
+        <span class="compliance-report__meta-separator" aria-hidden="true">-</span>
+        <span class="compliance-report__meta-item">
+          <span class="compliance-report__meta-label">{{ 'Period' | translate }}:</span>
+          <span class="compliance-report__meta-value">{{ periodLabel }}</span>
+        </span>
+      </ng-container>
+    </p>
+    <p id="complianceReportMetaEmployees" class="compliance-report__meta-line">
+      <span class="compliance-report__meta-item">
+        <span class="compliance-report__meta-label">{{ 'Employees' | translate }}:</span>
+        <span class="compliance-report__meta-value">{{ employeeLabel }}</span>
+      </span>
+    </p>
+  </div>
 
   <!--
     Only after a response, and never while the shell's spinner is up: an empty

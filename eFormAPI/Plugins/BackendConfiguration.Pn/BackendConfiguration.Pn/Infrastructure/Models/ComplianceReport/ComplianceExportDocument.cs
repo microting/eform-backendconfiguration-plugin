@@ -84,6 +84,15 @@ public class ComplianceExportDocument
     public string BoardLabel { get; set; }
 
     /// <summary>
+    /// The employee filter's names joined <c>", "</c>, or the localised "All" when
+    /// it names nobody (#1329). Resolved once by the export service, like
+    /// <see cref="PropertyLabel"/>; rendered as the page header's second line
+    /// (<c>Medarbejdere:</c>) in every view. Not part of the file name. Ignored
+    /// by CSV.
+    /// </summary>
+    public string WorkerLabel { get; set; }
+
+    /// <summary>
     /// The rendered tables, in order. Oversigt and Detaljer produce exactly one;
     /// Rapport produces one per eForm template per report headline (#1276, see
     /// <see cref="ComplianceExportTable"/> for how a section spans them).

@@ -177,6 +177,7 @@ public class ExportLocalizationCompletenessTests
 
         // ComplianceExportWordWriter — page header and appendix
         "Period",
+        "Employees",
         "Appendix",
         "ImageAppendixDocumentLimit"
     ];
