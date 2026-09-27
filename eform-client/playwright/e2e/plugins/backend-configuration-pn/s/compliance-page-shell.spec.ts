@@ -1157,10 +1157,11 @@ test.describe('Compliance page shell (#1163)', () => {
 
   /**
    * #1327: the preview shows each page as a white sheet with a real gap on a
-   * grey backdrop. ng2-pdf-viewer's defaults (`--page-margin: 1px auto -8px`
-   * and a 9px shadow-image border) overlap consecutive pages by ~8px on the
-   * dialog's white surface, so the next page read as a continuation. Needs a
-   * 2+ page document, so the export is answered with a two-page PDF.
+   * grey backdrop. ng2-pdf-viewer's defaults (`removePageBorders`: pages
+   * `margin: 0 auto 10px`, scaled to the full container width, on the dialog's
+   * white surface) left no backdrop beside the pages and only a thin seam
+   * between them. Needs a 2+ page document, so the export is answered with a
+   * two-page PDF.
    */
   test('the PDF preview shows each page separated on a grey background (#1327)', async ({ page }) => {
     await routeOverviewWithOneRow(page);
@@ -1184,16 +1185,33 @@ test.describe('Compliance page shell (#1163)', () => {
     // pdf.js lays out one `.page` per PDF page once the document has loaded.
     await expect(pages).toHaveCount(2, { timeout: API_TIMEOUT });
 
-    const first = await pages.nth(0).boundingBox();
-    const second = await pages.nth(1).boundingBox();
-    if (!first || !second) {
-      throw new Error('pdf.js page has no bounding box — it is not laid out');
-    }
-    // A visible gap between the sheets — the old default overlapped them (< 0).
-    expect(second.y - (first.y + first.height)).toBeGreaterThanOrEqual(8);
+    const container = viewer.locator('.ng2-pdf-viewer-container');
+    // pdf.js lays the pages out at scale 1 first and applies the fitted,
+    // zoomed scale a moment later, so the geometry is polled, not read once.
+    await expect
+      .poll(async () => {
+        const [first, second, box] = await Promise.all([
+          pages.nth(0).boundingBox(),
+          pages.nth(1).boundingBox(),
+          container.boundingBox(),
+        ]);
+        if (!first || !second || !box) {
+          return 'pdf.js pages or their container are not laid out';
+        }
+        // A clear gap between the sheets — the library default is a 10px seam.
+        const gap = second.y - (first.y + first.height);
+        // The sheet is narrower than the backdrop, so grey shows on both
+        // sides — the library default scales the page to the full width.
+        const left = first.x - box.x;
+        const right = box.x + box.width - (first.x + first.width);
+        if (gap >= 16 && left >= 8 && right >= 8) {
+          return 'separated';
+        }
+        return `gap ${gap.toFixed(1)}px, left ${left.toFixed(1)}px, right ${right.toFixed(1)}px`;
+      }, { message: 'PDF preview pages on the grey backdrop', timeout: UI_TIMEOUT })
+      .toBe('separated');
 
-    const containerBg = await viewer.locator('.ng2-pdf-viewer-container')
-      .evaluate(el => getComputedStyle(el).backgroundColor);
+    const containerBg = await container.evaluate(el => getComputedStyle(el).backgroundColor);
     const pageBg = await pages.nth(1).evaluate(el => getComputedStyle(el).backgroundColor);
     // An opaque backdrop (the old container was transparent, showing the white
     // dialog), and one that is not the page colour.

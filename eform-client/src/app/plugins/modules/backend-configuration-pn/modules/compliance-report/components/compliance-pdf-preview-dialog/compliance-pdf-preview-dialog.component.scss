@@ -24,7 +24,12 @@
       background: var(--md-surface-variant);
     }
 
-    ::ng-deep .pdfViewer .page {
+    // ng2-pdf-viewer renders with `removePageBorders` (show-borders is off),
+    // whose own rule pins every page to `margin: 0 auto 10px` and ignores the
+    // --page-margin variable. This selector is one class more specific, so the
+    // sheets get a real gap; the grey on their sides comes from `pageZoom`.
+    ::ng-deep .pdfViewer.removePageBorders .page {
+      margin: 16px auto;
       box-shadow: var(--md-shadow);
     }
   }
@@ -45,10 +50,4 @@ pdf-viewer {
   display: block;
   width: 100%;
   height: 100%;
-  // #1327: ng2-pdf-viewer's defaults (`1px auto -8px` plus a 9px shadow-image
-  // border) make consecutive pages overlap by ~8px. It declares these on its
-  // :host; this emulated-encapsulation selector is more specific, so it wins.
-  --page-margin: 16px auto;
-  --page-border: none;
-  --page-border-image: none;
 }
