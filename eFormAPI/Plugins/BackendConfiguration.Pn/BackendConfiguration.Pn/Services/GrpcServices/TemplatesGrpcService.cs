@@ -7,13 +7,17 @@ using Microting.eFormApi.BasePn.Abstractions;
 
 namespace BackendConfiguration.Pn.Services.GrpcServices;
 
-public class TemplatesGrpcService(IEFormCoreService coreHelper)
+public class TemplatesGrpcService(IEFormCoreService coreHelper, IGrpcSiteResolver siteResolver)
     : BackendConfigurationTemplatesGrpc.BackendConfigurationTemplatesGrpcBase
 {
     public override async Task<GetTemplateResponse> GetTemplate(
         GetTemplateRequest request,
         ServerCallContext context)
     {
+        // Not site-scoped, but a resigned/disabled worker must not be served
+        // either (#1326).
+        await siteResolver.EnsureCallerActiveAsync().ConfigureAwait(false);
+
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContext = core.DbContextHelper.GetDbContext();
         var language = await sdkDbContext.Languages
