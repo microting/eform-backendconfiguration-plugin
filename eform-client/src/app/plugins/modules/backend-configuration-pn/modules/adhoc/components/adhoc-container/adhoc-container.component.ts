@@ -17,6 +17,8 @@ import {AdhocDeleteModalComponent} from '../adhoc-delete-modal/adhoc-delete-moda
 import {AdhocCopyModalComponent} from '../adhoc-copy-modal/adhoc-copy-modal.component';
 import {AdhocCompleteModalComponent} from '../adhoc-complete-modal/adhoc-complete-modal.component';
 
+export type AdhocViewMode = 'list' | 'history';
+
 /**
  * Top bar + Overblik data orchestration for the "Adhoc overblik" dashboard
  * (M5/F4, extended F5/F7/F8). The Overblik view (toolbar filters + table)
@@ -90,8 +92,19 @@ export class AdhocContainerComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
   }
 
+  // `route.snapshot` is replaced on every navigation (including browser
+  // back/forward), so both getters follow the URL without a router-events
+  // subscription.
   get isHistoryView(): boolean {
     return this.route.snapshot.firstChild?.routeConfig?.path === 'history';
+  }
+
+  get viewMode(): AdhocViewMode {
+    return this.isHistoryView ? 'history' : 'list';
+  }
+
+  onViewModeChange(mode: AdhocViewMode): void {
+    this.router.navigate(mode === 'history' ? ['history'] : ['./'], {relativeTo: this.route});
   }
 
   updateTable(): void {
