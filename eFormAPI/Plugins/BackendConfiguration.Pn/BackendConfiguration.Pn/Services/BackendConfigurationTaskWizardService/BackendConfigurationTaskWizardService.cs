@@ -414,7 +414,11 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 .Select(x => x.Name)
                 .FirstOrDefault();
 
-            if (createModel.Status == TaskWizardStatuses.Active && createModel.Sites.Count == 0)
+            // A task nobody can perform is saved inactive. A team is an assignee
+            // too: its members are expanded at deploy time (#1295), so a
+            // team-only calendar task keeps the status the user chose (#1322),
+            // even while the team has no live member on the property.
+            if (createModel.Status == TaskWizardStatuses.Active && createModel.Sites.Count == 0 && !createModel.HasWorkerTags)
             {
                 createModel.Status = TaskWizardStatuses.NotActive;
             }
@@ -808,7 +812,9 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     _localizationService.GetString("TaskNotFound"));
             }
 
-            if (updateModel.Status == TaskWizardStatuses.Active && updateModel.Sites.Count == 0)
+            // Same rule as CreateTask: only a task with neither sites nor a team
+            // is downgraded (#1322).
+            if (updateModel.Status == TaskWizardStatuses.Active && updateModel.Sites.Count == 0 && !updateModel.HasWorkerTags)
             {
                 updateModel.Status = TaskWizardStatuses.NotActive;
             }

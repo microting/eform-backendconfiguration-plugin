@@ -1560,11 +1560,11 @@ public class BackendConfigurationCalendarService(
             // missed occurrences backfilled as overdue. Callers that still want a
             // future-only anchor must enforce that themselves.
 
-            // Validate: at least one worker must be assigned. Events without
-            // an assignee would be downgraded to NotActive by task-wizard and
-            // render as a dimmed inactive task with no one to perform it.
-            // Reject here with a clear error rather than silently creating
-            // an orphan event.
+            // Validate: at least one worker or team must be assigned. An event
+            // with neither has no one to perform it (task-wizard would save it
+            // NotActive), so reject it here with a clear error. A team-only
+            // event is valid: hasWorkerTags is handed to task-wizard so it
+            // keeps the chosen status (#1322).
             var hasExplicitSites = createModel.Sites is { Count: > 0 };
             var hasWorkerTags = createModel.WorkerTagIds is { Count: > 0 };
             if (!hasExplicitSites && !hasWorkerTags)
@@ -1594,6 +1594,7 @@ public class BackendConfigurationCalendarService(
                 RepeatEvery = createModel.RepeatEvery,
                 Status = (Infrastructure.Enums.TaskWizardStatuses)createModel.Status,
                 Sites = createModel.Sites,
+                HasWorkerTags = hasWorkerTags,
                 ComplianceEnabled = createModel.ComplianceEnabled
             };
 
@@ -1776,10 +1777,10 @@ public class BackendConfigurationCalendarService(
             // synthetic "nearest future same-weekday" anchor only ever existed to
             // dodge the guard that used to sit on this line.
 
-            // Validate: at least one worker must remain assigned. Clearing
-            // assignees would downgrade the task to NotActive (same as the
-            // Create path); reject rather than silently producing an
-            // inactive task with no one to perform it.
+            // Validate: at least one worker or team must remain assigned.
+            // Clearing both would leave no one to perform the task (same as the
+            // Create path); reject rather than silently producing an inactive
+            // task. A team-only task stays active (#1322).
             var hasExplicitSites = updateModel.Sites is { Count: > 0 };
             var hasWorkerTags = updateModel.WorkerTagIds is { Count: > 0 };
             if (!hasExplicitSites && !hasWorkerTags)
@@ -1970,6 +1971,9 @@ public class BackendConfigurationCalendarService(
                 RepeatEvery = updateModel.RepeatEvery,
                 Status = (Infrastructure.Enums.TaskWizardStatuses)updateModel.Status,
                 Sites = updateModel.Sites,
+                // The "all" scope persists updateModel.WorkerTagIds below, so the
+                // requested teams are the task's teams once this save completes.
+                HasWorkerTags = hasWorkerTags,
                 ComplianceEnabled = updateModel.ComplianceEnabled
             };
 
@@ -2562,6 +2566,14 @@ public class BackendConfigurationCalendarService(
             }
         }
 
+        // #1322 — this scope does not write worker-tag links (only "all" does),
+        // so the teams the task keeps are the ones already persisted, not the
+        // request's WorkerTagIds. A task left with a team and no explicit site
+        // must stay active.
+        var hasWorkerTags = await backendConfigurationPnDbContext.AreaRulePlanningWorkerTags
+            .AnyAsync(x => x.AreaRulePlanningId == updateModel.Id
+                           && x.WorkflowState != Constants.WorkflowStates.Removed);
+
         // Apply NEW field values to the series. The wizard re-derives the
         // items-planning weekday/day-of-month from this StartDate, so it must
         // receive the (possibly re-anchored) series start to keep both
@@ -2580,6 +2592,7 @@ public class BackendConfigurationCalendarService(
             RepeatEvery = updateModel.RepeatEvery,
             Status = (Infrastructure.Enums.TaskWizardStatuses)updateModel.Status,
             Sites = updateModel.Sites,
+            HasWorkerTags = hasWorkerTags,
             ComplianceEnabled = updateModel.ComplianceEnabled
         };
         var wizardResult = await taskWizardService.UpdateTask(wizardModel);
