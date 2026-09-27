@@ -117,21 +117,29 @@ public class GrpcSiteResolver(
     /// kept being served. <c>Worker.Resigned</c> also catches accounts whose
     /// <c>IsActive</c> was never written (legacy rows, #1286).
     /// <para>
-    /// <c>sdkDbContext</c> is null when there is no current user/email; <c>worker</c>
-    /// is null when no non-removed worker matches the email.
+    /// <c>sdkDbContext</c> is null when there is no current user, or an active user
+    /// has no (or a blank) email; <c>worker</c> is null when no non-removed worker
+    /// matches the email.
     /// </para>
     /// </summary>
     private async Task<(Worker worker, MicrotingDbContext sdkDbContext)> ResolveActiveCallerAsync()
     {
         var user = await userService.GetCurrentUserAsync().ConfigureAwait(false);
-        if (user?.Email == null)
+        if (user == null)
         {
             return (null, null);
         }
 
+        // IsActive before the email check: a disabled account with no email
+        // must be refused too, not fall through as "no caller".
         if (!user.IsActive)
         {
             throw AccountDisabled(user.Id, "EformUser.IsActive is false");
+        }
+
+        if (string.IsNullOrWhiteSpace(user.Email))
+        {
+            return (null, null);
         }
 
         var core = await coreHelper.GetCore().ConfigureAwait(false);

@@ -75,7 +75,7 @@ public class GrpcSiteResolverAccountDisabledTests : TestBaseSetup
         return new SeededWorker(email, site.Id, worker.Id);
     }
 
-    private async Task<GrpcSiteResolver> CreateResolverAsync(string email, bool isActive = true)
+    private async Task<GrpcSiteResolver> CreateResolverAsync(string? email, bool isActive = true)
     {
         var core = await SharedCore();
         var coreHelper = Substitute.For<IEFormCoreService>();
@@ -149,6 +149,26 @@ public class GrpcSiteResolverAccountDisabledTests : TestBaseSetup
         var resolver = await CreateResolverAsync(email);
 
         Assert.That(await resolver.GetSdkSiteIdAsync(), Is.EqualTo(active.SiteId));
+    }
+
+    /// <summary>
+    /// A disabled account with no email must still be refused: the IsActive
+    /// check runs before the missing-email early return.
+    /// </summary>
+    [Test]
+    public async Task EnsureCallerActive_DisabledUserWithNullEmail_ThrowsAccountDisabled()
+    {
+        var resolver = await CreateResolverAsync(null, isActive: false);
+
+        AssertAccountDisabled(Assert.ThrowsAsync<RpcException>(() => resolver.EnsureCallerActiveAsync()));
+    }
+
+    [Test]
+    public async Task GetSdkSiteId_ActiveUserWithBlankEmail_ResolvesToZero()
+    {
+        var resolver = await CreateResolverAsync("   ");
+
+        Assert.That(await resolver.GetSdkSiteIdAsync(), Is.EqualTo(0));
     }
 
     [Test]
