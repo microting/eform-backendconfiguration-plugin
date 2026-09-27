@@ -224,6 +224,8 @@ public class BackendConfigurationComplianceReportService(
                     .ToDictionaryAsync(s => s.Id, s => s.Name)
                 : new Dictionary<int, string>();
 
+            var completerNames = await LoadCompleterNames(page, sdkDbContext);
+
             ApplyTitles(page, arpDetailsById, userLanguageId);
             ApplyPropertyNames(page, propertyNamesById);
             ApplyBoardNames(page, boardNamesById);
@@ -256,13 +258,17 @@ public class BackendConfigurationComplianceReportService(
                         .Select(id => planningTagNames.GetValueOrDefault(id))
                         .Where(n => n != null)
                         .ToList(),
-                    WorkerNames = rowSiteIds
-                        .Select(id => siteNamesById.GetValueOrDefault(id, string.Empty))
-                        .Where(n => !string.IsNullOrEmpty(n))
-                        .ToList(),
+                    // #1333: a completed row names the ONE worker who did it; an open
+                    // row names who it is assigned to.
+                    WorkerNames = row.Completed
+                        ? CompleterNameOf(row, completerNames)
+                        : rowSiteIds
+                            .Select(id => siteNamesById.GetValueOrDefault(id, string.Empty))
+                            .Where(n => !string.IsNullOrEmpty(n))
+                            .ToList(),
                     // DELIBERATELY the NARROW set — the ARP's own non-removed
-                    // PlanningSites — while WorkerNames just above is the WIDENED one
-                    // (PlanningSites plus live worker-tag members, #1232). Do not
+                    // PlanningSites — while WorkerNames just above, on an OPEN row, is the
+                    // WIDENED one (PlanningSites plus live worker-tag members, #1232). Do not
                     // "fix" the inconsistency by feeding it rowSiteIds: this field is
                     // not display-only. The frontend's compliance-details view passes
                     // it to the complete-event modal as assigneeIds, and the modal
@@ -447,7 +453,8 @@ public class BackendConfigurationComplianceReportService(
                     Status = c.Status,
                     DoneAt = c.DoneAt,
                     DoneAtUserModifiable = c.DoneAtUserModifiable,
-                    CheckListId = c.CheckListId
+                    CheckListId = c.CheckListId,
+                    SiteId = c.SiteId
                 })
                 .ToDictionaryAsync(c => c.Id)
             : new Dictionary<int, SdkCaseInfo>();
@@ -1079,14 +1086,9 @@ public class BackendConfigurationComplianceReportService(
                     .ToDictionaryAsync(x => x.Id, x => x.Name)
                 : new Dictionary<int, string>();
 
-            var siteSetsByArpId = await ResolveWorkerSiteIdsByArpId(arpIds, arpDetailsById);
-
-            var siteIdsNeeded = siteSetsByArpId.Values.SelectMany(x => x.AllSiteIds).Distinct().ToList();
-            var siteNamesById = siteIdsNeeded.Count > 0
-                ? await sdkDbContext.Sites
-                    .Where(s => siteIdsNeeded.Contains(s.Id))
-                    .ToDictionaryAsync(s => s.Id, s => s.Name)
-                : new Dictionary<int, string>();
+            // "Udført af" (#1333): the worker who completed the case, never the
+            // assignees — an open row has no performer and shows nobody.
+            var completerNames = await LoadCompleterNames(answered, sdkDbContext);
 
             // ==========================================================
             // Column schemas, answers and images — ONCE per template, never
@@ -1139,10 +1141,6 @@ public class BackendConfigurationComplianceReportService(
                 // Never null here: headline-less rows were filtered out above.
                 var headlineTagId = HeadlineTagIdOf(row.Arp).Value;
 
-                var rowSiteIds = row.Arp != null
-                    ? siteSetsByArpId.GetValueOrDefault(row.Arp.Id, WorkerSiteSets.Empty).AllSiteIds
-                    : new List<int>();
-
                 var images = projection.ImagesByCaseId.GetValueOrDefault(sdkCaseId, []);
 
                 // The row's tags, read per PLANNING over every live ARP (see the
@@ -1190,10 +1188,7 @@ public class BackendConfigurationComplianceReportService(
                     // Case METADATA — the prototype's "Udført dato". Never an answer
                     // field (#1160 finding 7).
                     DoneAt = row.DoneAt,
-                    WorkerNames = rowSiteIds
-                        .Select(id => siteNamesById.GetValueOrDefault(id, string.Empty))
-                        .Where(n => !string.IsNullOrEmpty(n))
-                        .ToList(),
+                    WorkerNames = CompleterNameOf(row, completerNames),
                     Tags = rowTagNames,
                     Cells = projection.CellsByCaseId.GetValueOrDefault(sdkCaseId, new Dictionary<string, string>()),
                     ImagesCount = images.Count,
@@ -1410,6 +1405,71 @@ public class BackendConfigurationComplianceReportService(
     }
 
     /// <summary>
+    /// "Udført af" (#1333): the name of the ONE worker who completed each COMPLETED
+    /// row's case, keyed by SDK case id. The completer is <c>Case.SiteId</c> — set by
+    /// the device and by the calendar's complete modal — never the assignment, which
+    /// lists every assignee and every live team member.
+    /// </summary>
+    /// <remarks>
+    /// Sites are read WITHOUT a workflow-state filter: a worker removed since still
+    /// did the work. A case whose <c>SiteId</c> is null or no longer resolves falls
+    /// back to the items-planning mirror, <c>PlanningCase.DoneByUserName</c>; with
+    /// neither, the case has no entry and the row shows nobody — never the assignees.
+    /// </remarks>
+    private async Task<Dictionary<int, string>> LoadCompleterNames(
+        List<MatchedRow> rows, SdkDbContext sdkDbContext)
+    {
+        var completedCases = rows
+            .Where(r => r.Completed && r.SdkCase != null)
+            .Select(r => r.SdkCase)
+            .DistinctBy(c => c.Id)
+            .ToList();
+        var names = new Dictionary<int, string>();
+        if (completedCases.Count == 0) return names;
+
+        var siteIds = completedCases
+            .Where(c => c.SiteId.HasValue)
+            .Select(c => c.SiteId.Value)
+            .Distinct()
+            .ToList();
+        var siteNamesById = siteIds.Count > 0
+            ? await sdkDbContext.Sites
+                .Where(s => siteIds.Contains(s.Id))
+                .ToDictionaryAsync(s => s.Id, s => s.Name)
+            : new Dictionary<int, string>();
+
+        foreach (var sdkCase in completedCases)
+        {
+            if (sdkCase.SiteId is { } siteId
+                && siteNamesById.TryGetValue(siteId, out var name)
+                && !string.IsNullOrEmpty(name))
+            {
+                names[sdkCase.Id] = name;
+            }
+        }
+
+        var unresolved = completedCases.Select(c => c.Id).Where(id => !names.ContainsKey(id)).ToList();
+        if (unresolved.Count > 0)
+        {
+            var mirrored = await itemsPlanningPnDbContext.PlanningCases
+                .Where(pc => unresolved.Contains(pc.MicrotingSdkCaseId)
+                             && pc.DoneByUserName != null && pc.DoneByUserName != "")
+                .OrderByDescending(pc => pc.Id)
+                .Select(pc => new { pc.MicrotingSdkCaseId, pc.DoneByUserName })
+                .ToListAsync();
+            foreach (var pc in mirrored)
+            {
+                names.TryAdd(pc.MicrotingSdkCaseId, pc.DoneByUserName);
+            }
+        }
+
+        return names;
+    }
+
+    private static List<string> CompleterNameOf(MatchedRow row, Dictionary<int, string> completerNames) =>
+        completerNames.TryGetValue(row.Candidate.MicrotingSdkCaseId, out var name) ? [name] : [];
+
+    /// <summary>
     /// The two worker-site sets one ARP resolves to. <see cref="AllSiteIds"/> is what
     /// the worker COLUMN renders; <see cref="PlanningSiteIds"/> is the assignment the
     /// complete-event modal acts on. They differ only for a worker-tag ("team")
@@ -1451,10 +1511,10 @@ public class BackendConfigurationComplianceReportService(
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Before #1232 this was two copies of the PlanningSites-only projection, one in
-    /// <see cref="Index"/>'s phase E and one in <see cref="EformColumns"/>. Both are
-    /// now this method, so the worker column cannot come out different on the two
-    /// surfaces.
+    /// Only <see cref="Index"/> calls this: since #1333 a completed row's worker
+    /// column is the completer (<see cref="LoadCompleterNames"/>), so the assignee sets
+    /// feed only Detaljer's OPEN rows and the complete-event modal. Rapport
+    /// (<see cref="EformColumns"/>) names the completer alone.
     /// </para>
     /// <para>
     /// Additive by construction: the PlanningSites half is appended first, in its
@@ -1755,6 +1815,8 @@ public class BackendConfigurationComplianceReportService(
         public DateTime? DoneAt { get; set; }
         public DateTime? DoneAtUserModifiable { get; set; }
         public int? CheckListId { get; set; }
+        /// <summary>The worker who completed the case (#1333) — "Udført af".</summary>
+        public int? SiteId { get; set; }
     }
 
     /// <summary>A row that survived phase C, carrying what phases D and E need.</summary>

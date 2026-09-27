@@ -71,6 +71,10 @@ export interface ComplianceReportRowModel {
   boardId: number | null;
   boardName: string;
   tags: string[];
+  /**
+   * A COMPLETED row: the one worker who completed the case (#1333). An OPEN row: its
+   * assignees — PlanningSites plus live team members (#1232).
+   */
   workerNames: string[];
   /**
    * The row's EXPLICIT individual assignees — the ARP's non-removed PlanningSites, as
@@ -278,6 +282,7 @@ export interface ComplianceReportCaseModel {
    * `date` pipe, which is the only reader.
    */
   doneAt: string | null;
+  /** "Udført af": the one worker who completed the case (#1333); empty when unknown. */
   workerNames: string[];
   /**
    * Answers keyed by `ComplianceReportColumnModel.key`. A MISSING key means

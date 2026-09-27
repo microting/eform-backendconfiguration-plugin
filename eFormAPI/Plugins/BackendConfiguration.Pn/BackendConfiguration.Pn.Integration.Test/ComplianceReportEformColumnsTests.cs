@@ -140,7 +140,11 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         BackendConfigurationPnDbContext.Properties.RemoveRange(BackendConfigurationPnDbContext.Properties);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
-        ItemsPlanningPnDbContext!.Plannings.RemoveRange(ItemsPlanningPnDbContext.Plannings);
+        // #1333: the completer tests seed a PlanningCase mirror; it hangs off Planning.
+        ItemsPlanningPnDbContext!.PlanningCases.RemoveRange(ItemsPlanningPnDbContext.PlanningCases);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        ItemsPlanningPnDbContext.Plannings.RemoveRange(ItemsPlanningPnDbContext.Plannings);
         await ItemsPlanningPnDbContext.SaveChangesAsync();
 
         ItemsPlanningPnDbContext.PlanningTags.RemoveRange(ItemsPlanningPnDbContext.PlanningTags);
@@ -2242,19 +2246,16 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
     // ==================================================================
 
     /// <summary>
-    /// #1232's worker column, on THIS surface. <c>ResolveWorkerSiteIdsByArpId</c> is
-    /// called from both <see cref="BackendConfigurationComplianceReportService.Index"/>
-    /// and <see cref="BackendConfigurationComplianceReportService.EformColumns"/>, and
-    /// its remarks claim the column "cannot come out different on the two surfaces".
-    /// Sharing one method makes that structurally true; this drives it, so the claim is
-    /// tested rather than asserted.
+    /// #1333 on a TEAM-assigned event: the team has two live members on the property
+    /// and ONE of them completes the case. Both surfaces — Rapport
+    /// (<see cref="BackendConfigurationComplianceReportService.EformColumns"/>) and
+    /// Detaljer (<see cref="BackendConfigurationComplianceReportService.Index"/>) —
+    /// name exactly that member, not the team. <b>Fails on the old code</b>: the
+    /// column listed every live team member (#1232).
     ///
     /// <para>
-    /// The event is assigned to a TEAM and to nobody by name, so there is no
-    /// <c>PlanningSites</c> row at all: pre-#1232 both surfaces projected the column
-    /// from <c>detail.PlanningSites</c> alone and rendered this row EMPTY. Both halves
-    /// are checked in one test because the point is the agreement, not either value on
-    /// its own.
+    /// The event is assigned to the team and to nobody by name, so there is no
+    /// <c>PlanningSites</c> row at all, and <c>WorkerSiteIds</c> stays empty (#1236).
     /// </para>
     ///
     /// <para>
@@ -2266,60 +2267,56 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
     /// </para>
     /// </summary>
     [Test]
-    public async Task EformColumns_WorkerColumn_PopulatesFromTeamMembership_AndAgreesWithIndex()
+    public async Task EformColumns_TeamAssignedCase_NamesOnlyTheMemberWhoCompletedIt_AndAgreesWithIndex()
     {
         var core = await GetCore();
         var da = await Danish();
         var fixture = await SeedOneCase("Hold", da.Id, (Constants.FieldTypes.Comment, "Kommentar"));
 
         var teamTagId = await SeedSdkWorkerTag();
-        var memberSiteId = await SeedSdkSite("team-member");
-        await LinkSiteToTag(teamTagId, memberSiteId);
-        // #1256: a team only reaches its members linked to the event's property.
-        await BackendConfigurationPnDbContext!.PropertyWorkers.AddAsync(new PropertyWorker
+        var otherMemberSiteId = await SeedSdkSite("team-member-a");
+        var completerSiteId = await SeedSdkSite("team-member-b");
+        foreach (var siteId in new[] { otherMemberSiteId, completerSiteId })
         {
-            PropertyId = fixture.PropertyId, WorkerId = memberSiteId,
-            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
-        });
-        await BackendConfigurationPnDbContext.SaveChangesAsync();
+            await LinkSiteToTag(teamTagId, siteId);
+            // #1256: a team only reaches its members linked to the event's property.
+            await BackendConfigurationPnDbContext!.PropertyWorkers.AddAsync(new PropertyWorker
+            {
+                PropertyId = fixture.PropertyId, WorkerId = siteId,
+                WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+            });
+            await BackendConfigurationPnDbContext.SaveChangesAsync();
+        }
         await AssignWorkerTag(fixture.ArpId, teamTagId);
+        await SetCompleter(fixture.CaseId, completerSiteId);
 
-        var memberName = await MicrotingDbContext!.Sites
-            .Where(s => s.Id == memberSiteId)
-            .Select(s => s.Name)
-            .FirstAsync();
-
+        var completerName = await SiteName(completerSiteId);
         var (from, to) = Window();
 
         var caseModel = OnlyTemplateTable(await Run(core, da, from, to)).Cases.Single();
-        Assert.That(caseModel.WorkerNames, Is.EqualTo(new List<string> { memberName }),
-            "EformColumns: a tag-assigned row's worker column must be filled from live "
-            + "team membership, not left empty because there is no PlanningSites row");
+        Assert.That(caseModel.WorkerNames, Is.EqualTo(new List<string> { completerName }),
+            "Rapport: \"Udført af\" is the one member who completed the case, not the team");
 
         var index = await BuildService(core, da).Index(Request(from, to));
         Assert.That(index.Success, Is.True, index.Message);
         var row = index.Model!.Entities.Single(e => e.AreaRulePlanningId == fixture.ArpId);
 
-        Assert.That(row.WorkerNames, Is.EqualTo(new List<string> { memberName }),
-            "Index: the same ARP resolves to the same member");
+        Assert.That(row.WorkerNames, Is.EqualTo(new List<string> { completerName }),
+            "Detaljer: a completed row names the same single completer");
         Assert.That(row.WorkerSiteIds, Is.Empty,
             "Index's WorkerSiteIds is the row's PlanningSites ASSIGNMENT, not its worker "
-            + "column: it feeds the complete-event modal's assigneeIds and stays narrow "
-            + "even when the column is filled from team membership");
-        Assert.That(caseModel.WorkerNames, Is.EqualTo(row.WorkerNames),
-            "the two surfaces share ResolveWorkerSiteIdsByArpId and must therefore "
-            + "render the same worker column for the same ARP");
+            + "column: it feeds the complete-event modal's assigneeIds (#1236)");
+        Assert.That(row.TeamAssigneeIds, Is.EquivalentTo(new[] { otherMemberSiteId, completerSiteId }),
+            "the team half of the assignment is unchanged by #1333");
     }
 
     /// <summary>
     /// Rapport (<c>EformColumns</c>) across ALL properties (<c>PropertyId = null</c>, the
     /// report's default), #1256: one team with a member linked only to property A, one
     /// linked only to B and one linked to both, assigned to an answered event on A and one
-    /// on B. Each case's worker column names only the team's members linked to ITS OWN
-    /// property, and an employee filter on A's member returns A's case and not B's.
-    /// <b>Fails on the old code</b>: the worker column expanded the team unscoped (both
-    /// cases named all three members) and the flat tag filter let A's member match B's
-    /// case too.
+    /// on B. An employee filter on A's member returns A's case and not B's (the flat tag
+    /// filter used to let A's member match B's case too). Since #1333 each case's worker
+    /// column is the ONE member who completed it, whatever the team's size.
     /// </summary>
     [Test]
     public async Task EformColumns_AllProperties_TeamWorkerColumnAndFilter_ArePerEventProperty()
@@ -2352,6 +2349,8 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         }
         await AssignWorkerTag(onA.ArpId, teamTagId);
         await AssignWorkerTag(onB.ArpId, teamTagId);
+        await SetCompleter(onA.CaseId, memberOnA);
+        await SetCompleter(onB.CaseId, memberOnBoth);
 
         var names = await MicrotingDbContext!.Sites
             .Where(x => x.Id == memberOnA || x.Id == memberOnB || x.Id == memberOnBoth)
@@ -2375,11 +2374,11 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         Assert.Multiple(() =>
         {
             Assert.That(cases.Single(c => c.ComplianceId == onA.ComplianceId).WorkerNames,
-                Is.EquivalentTo(new[] { names[memberOnA], names[memberOnBoth] }),
-                "A's case: only the team's members linked to A");
+                Is.EqualTo(new[] { names[memberOnA] }),
+                "A's case: only the member who completed it (#1333)");
             Assert.That(cases.Single(c => c.ComplianceId == onB.ComplianceId).WorkerNames,
-                Is.EquivalentTo(new[] { names[memberOnB], names[memberOnBoth] }),
-                "B's case: only the team's members linked to B (#1256)");
+                Is.EqualTo(new[] { names[memberOnBoth] }),
+                "B's case: only the member who completed it (#1333)");
 
             Assert.That(filteredComplianceIds, Does.Contain(onA.ComplianceId),
                 "filter on A's member: the team's case on A is theirs");
@@ -2387,4 +2386,181 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
                 "filter on A's member: the same team's case on B is not (#1256)");
         });
     }
+
+    // ==================================================================
+    // "UDFØRT AF" IS THE COMPLETER (#1333)
+    // ==================================================================
+
+    /// <summary>
+    /// Two explicit assignees; the SECOND completes the case. Rapport and Detaljer name
+    /// only that worker. <b>Fails on the old code</b>: both listed "A, B".
+    /// </summary>
+    [Test]
+    public async Task CompletedCase_TwoAssignees_BothSurfacesNameOnlyTheCompleter()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("Udfoerer", da.Id, (Constants.FieldTypes.Comment, "Kommentar"));
+        var workerA = await SeedSdkSite("worker-a");
+        var workerB = await SeedSdkSite("worker-b");
+        await SeedPlanningSite(fixture, workerA);
+        await SeedPlanningSite(fixture, workerB);
+        await SetCompleter(fixture.CaseId, workerB);
+
+        var workerBName = await SiteName(workerB);
+        var (from, to) = Window();
+
+        var caseModel = OnlyTemplateTable(await Run(core, da, from, to)).Cases.Single();
+        var index = await BuildService(core, da).Index(Request(from, to));
+        Assert.That(index.Success, Is.True, index.Message);
+        var row = index.Model!.Entities.Single(e => e.ComplianceId == fixture.ComplianceId);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(caseModel.WorkerNames, Is.EqualTo(new[] { workerBName }), "Rapport");
+            Assert.That(row.Completed, Is.True);
+            Assert.That(row.WorkerNames, Is.EqualTo(new[] { workerBName }), "Detaljer, completed row");
+            Assert.That(row.WorkerSiteIds, Is.EquivalentTo(new[] { workerA, workerB }),
+                "WorkerSiteIds stays the assignment (#1236)");
+        });
+    }
+
+    /// <summary>
+    /// An OPEN row in Detaljer still names who it is assigned to — nobody has performed
+    /// it yet — while in Rapport, whose column is "Udført af", it names nobody.
+    /// </summary>
+    [Test]
+    public async Task OpenCase_DetaljerListsTheAssignees_RapportNamesNobody()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("Aaben", da.Id, (Constants.FieldTypes.Comment, "Kommentar"));
+        var workerA = await SeedSdkSite("worker-a");
+        var workerB = await SeedSdkSite("worker-b");
+        await SeedPlanningSite(fixture, workerA);
+        await SeedPlanningSite(fixture, workerB);
+
+        var sdkCase = await MicrotingDbContext!.Cases.SingleAsync(c => c.Id == fixture.CaseId);
+        sdkCase.Status = 66;
+        await MicrotingDbContext.SaveChangesAsync();
+
+        var assigneeNames = new[] { await SiteName(workerA), await SiteName(workerB) };
+        var (from, to) = Window();
+        var caseModel = OnlyTemplateTable(await Run(core, da, from, to)).Cases.Single();
+        var index = await BuildService(core, da).Index(Request(from, to));
+        Assert.That(index.Success, Is.True, index.Message);
+        var row = index.Model!.Entities.Single(e => e.ComplianceId == fixture.ComplianceId);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(caseModel.Completed, Is.False);
+            Assert.That(caseModel.WorkerNames, Is.Empty, "Rapport: an open case has no performer");
+            Assert.That(row.Completed, Is.False);
+            Assert.That(row.WorkerNames, Is.EquivalentTo(assigneeNames),
+                "Detaljer: an open row lists its assignees");
+        });
+    }
+
+    /// <summary>
+    /// The completer was removed after completing the case. Sites are read without a
+    /// workflow-state filter, so the name still resolves.
+    /// </summary>
+    [Test]
+    public async Task CompletedCase_CompleterRemovedAfterwards_NameStillResolves()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("Fratraadt", da.Id, (Constants.FieldTypes.Comment, "Kommentar"));
+        var completer = await SeedSdkSite("removed-worker");
+        await SeedPlanningSite(fixture, completer);
+        await SetCompleter(fixture.CaseId, completer);
+        var completerName = await SiteName(completer);
+
+        var site = await MicrotingDbContext!.Sites.SingleAsync(s => s.Id == completer);
+        site.WorkflowState = Constants.WorkflowStates.Removed;
+        await MicrotingDbContext.SaveChangesAsync();
+
+        var (from, to) = Window();
+        var caseModel = OnlyTemplateTable(await Run(core, da, from, to)).Cases.Single();
+        var index = await BuildService(core, da).Index(Request(from, to));
+        Assert.That(index.Success, Is.True, index.Message);
+
+        Assert.That(caseModel.WorkerNames, Is.EqualTo(new[] { completerName }), "Rapport");
+        Assert.That(index.Model!.Entities.Single(e => e.ComplianceId == fixture.ComplianceId).WorkerNames,
+            Is.EqualTo(new[] { completerName }), "Detaljer");
+    }
+
+    /// <summary>
+    /// A completed case with no <c>SiteId</c> falls back to the items-planning mirror
+    /// <c>PlanningCase.DoneByUserName</c>; with no mirror either it names nobody —
+    /// never the assignee list.
+    /// </summary>
+    [Test]
+    public async Task CompletedCase_NoSiteId_FallsBackToPlanningCaseDoneBy_ElseNobody()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var mirrored = await SeedOneCase("Spejlet", da.Id, (Constants.FieldTypes.Comment, "Kommentar"));
+        var bare = await SeedOneCase("Uden", da.Id, (Constants.FieldTypes.Comment, "Kommentar"));
+        var assignee = await SeedSdkSite("assignee");
+        await SeedPlanningSite(mirrored, assignee);
+        await SeedPlanningSite(bare, assignee);
+        await SetCompleter(mirrored.CaseId, null);
+        await SetCompleter(bare.CaseId, null);
+
+        await ItemsPlanningPnDbContext!.PlanningCases.AddAsync(new PlanningCase
+        {
+            PlanningId = mirrored.PlanningId, MicrotingSdkeFormId = mirrored.TemplateId,
+            MicrotingSdkCaseId = mirrored.CaseId, Status = 100,
+            DoneByUserName = "Jane Doe",
+            WorkflowState = Constants.WorkflowStates.Processed, CreatedByUserId = 1, UpdatedByUserId = 1
+        });
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        var (from, to) = Window();
+        var result = await Run(core, da, from, to);
+        var cases = result.SelectMany(CasesOf).ToList();
+        var index = await BuildService(core, da).Index(Request(from, to));
+        Assert.That(index.Success, Is.True, index.Message);
+        var rows = index.Model!.Entities;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(cases.Single(c => c.ComplianceId == mirrored.ComplianceId).WorkerNames,
+                Is.EqualTo(new[] { "Jane Doe" }), "Rapport: the PlanningCase mirror");
+            Assert.That(rows.Single(r => r.ComplianceId == mirrored.ComplianceId).WorkerNames,
+                Is.EqualTo(new[] { "Jane Doe" }), "Detaljer: the PlanningCase mirror");
+            Assert.That(cases.Single(c => c.ComplianceId == bare.ComplianceId).WorkerNames,
+                Is.Empty, "Rapport: no completer known, and never the assignees");
+            Assert.That(rows.Single(r => r.ComplianceId == bare.ComplianceId).WorkerNames,
+                Is.Empty, "Detaljer: no completer known, and never the assignees");
+        });
+    }
+
+    private async Task SeedPlanningSite(Fixture fixture, int siteId)
+    {
+        var areaRuleId = await BackendConfigurationPnDbContext!.AreaRulePlannings
+            .Where(x => x.Id == fixture.ArpId)
+            .Select(x => x.AreaRuleId)
+            .SingleAsync();
+        await BackendConfigurationPnDbContext.PlanningSites.AddAsync(
+            new Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.PlanningSite
+            {
+                AreaRulePlanningsId = fixture.ArpId, SiteId = siteId,
+                AreaId = fixture.AreaId, AreaRuleId = areaRuleId, Status = 33,
+                WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+            });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+    }
+
+    /// <summary>Sets <c>Case.SiteId</c> — the worker who completed the case.</summary>
+    private async Task SetCompleter(int caseId, int? siteId)
+    {
+        var sdkCase = await MicrotingDbContext!.Cases.SingleAsync(c => c.Id == caseId);
+        sdkCase.SiteId = siteId;
+        await MicrotingDbContext.SaveChangesAsync();
+    }
+
+    private Task<string> SiteName(int siteId) =>
+        MicrotingDbContext!.Sites.Where(s => s.Id == siteId).Select(s => s.Name).SingleAsync();
 }

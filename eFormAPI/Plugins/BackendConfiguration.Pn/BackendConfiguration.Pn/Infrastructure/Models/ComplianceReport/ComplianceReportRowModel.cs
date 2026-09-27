@@ -22,6 +22,9 @@ public class ComplianceReportRowModel
     public int? BoardId { get; set; }
     public string BoardName { get; set; }
     public List<string> Tags { get; set; } = [];
+    /// <summary>The worker column. A COMPLETED row names the one worker who completed
+    /// the case (<c>Case.SiteId</c>, #1333); an OPEN row names its assignees —
+    /// PlanningSites plus live team members (#1232).</summary>
     public List<string> WorkerNames { get; set; } = [];
     /// <summary>#1187: the ARP's non-removed PlanningSites site ids — the row's
     /// EXPLICIT INDIVIDUAL assignees, and the only set the complete modal pre-selects a
