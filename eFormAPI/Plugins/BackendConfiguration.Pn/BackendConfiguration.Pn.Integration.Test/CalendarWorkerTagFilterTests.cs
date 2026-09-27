@@ -78,6 +78,9 @@ namespace BackendConfiguration.Pn.Integration.Test;
 /// <c>Compliance</c> rows). <c>Compliances</c> is UNIQUE on
 /// <c>(PlanningId, Deadline)</c>, and the filter is shared by both render paths, so
 /// seeding compliance rows would add a collision hazard without adding coverage.
+/// The #1334 tag-order tests are the exceptions: one drives the moved-in
+/// (occurrence-exception) branch, and one seeds a single compliance row on its
+/// own fresh planning to drive the compliance branch.
 /// </para>
 ///
 /// All dates are fixed in 2026-06 (Mon 2026-06-01 .. Sun 2026-06-07), never relative
@@ -600,29 +603,12 @@ public class CalendarWorkerTagFilterTests : TestBaseSetup
     {
         var property = await SeedProperty();
         var taggedEvent = await SeedWeeklyEvent(property.Id);
-        var suffix = Guid.NewGuid().ToString("N");
-        foreach (var prefix in new[] { "Øko", "Beta", "Åben", "Alfa", "Æble" })
-        {
-            await LinkPlanningTag(taggedEvent.Id, await SeedPlanningTag($"{prefix} {suffix}"));
-        }
-        var expected = new[] { "Alfa", "Beta", "Æble", "Øko", "Åben" }
-            .Select(prefix => $"{prefix} {suffix}").ToList();
+        var expected = await LinkDanishTagsOutOfOrder(taggedEvent.Id);
 
         var svc = BuildCalendarService(await GetCore());
 
-        var week = await svc.GetTasksForWeek(new CalendarTaskRequestModel
-        {
-            PropertyId = property.Id,
-            WeekStart = IsoUtc(WeekMonday),
-            WeekEnd = IsoUtc(WeekMonday.AddDays(6).AddHours(23).AddMinutes(59)),
-            ActionableOnly = false,
-            BoardIds = [],
-            TagNames = [],
-            SiteIds = [],
-            WorkerTagIds = []
-        });
-        Assert.That(week.Success, Is.True, week.Message);
-        var tile = week.Model!.First(t => t.Id == taggedEvent.Id);
+        var week = await QueryWeek(svc, property.Id);
+        var tile = week.Single(t => t.Id == taggedEvent.Id);
         Assert.That(tile.Tags, Is.EqualTo(expected).AsCollection, "week grid");
 
         var list = await svc.Index(new CalendarTaskIndexRequestModel
@@ -632,6 +618,107 @@ public class CalendarWorkerTagFilterTests : TestBaseSetup
         Assert.That(list.Success, Is.True, list.Message);
         var row = list.Model!.Single(t => t.Id == taggedEvent.Id);
         Assert.That(row.Tags, Is.EqualTo(expected).AsCollection, "task list");
+    }
+
+    /// <summary>
+    /// The moved-in branch of <c>GetTasksForWeek</c> (<c>movedTags</c>): a scope="this"
+    /// <see cref="CalendarOccurrenceException"/> moves NEXT week's Monday occurrence
+    /// into the queried week (Wednesday), so the tile is rendered from the exception,
+    /// not from the recurrence expansion. Its tags must be Danish-sorted too.
+    /// </summary>
+    [Test]
+    public async Task TaskTags_AreSortedWithDanishCollation_OnMovedInOccurrence()
+    {
+        var property = await SeedProperty();
+        var taggedEvent = await SeedWeeklyEvent(property.Id);
+        var expected = await LinkDanishTagsOutOfOrder(taggedEvent.Id);
+
+        var movedIn = new CalendarOccurrenceException
+        {
+            AreaRulePlanningId = taggedEvent.Id,
+            OriginalDate = WeekMonday.AddDays(7),
+            NewDate = WeekMonday.AddDays(2),
+            IsDeleted = false,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext!.CalendarOccurrenceExceptions.AddAsync(movedIn);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var week = await QueryWeek(BuildCalendarService(await GetCore()), property.Id);
+        var tile = week.Single(t => t.ExceptionId == movedIn.Id);
+        Assert.That(tile.TaskDate, Is.EqualTo("2026-06-03"), "moved-in tile renders on its new date");
+        Assert.That(tile.Tags, Is.EqualTo(expected).AsCollection, "moved-in occurrence");
+    }
+
+    /// <summary>
+    /// The compliance render branch of <c>GetTasksForWeek</c>: a <see cref="Compliance"/>
+    /// row on the event's Monday renders the tile (<c>IsFromCompliance</c>) from
+    /// <c>complianceArpTags</c>, a separate tag lookup. Its tags must be Danish-sorted too.
+    /// </summary>
+    [Test]
+    public async Task TaskTags_AreSortedWithDanishCollation_OnComplianceTile()
+    {
+        var property = await SeedProperty();
+        var taggedEvent = await SeedWeeklyEvent(property.Id);
+        var expected = await LinkDanishTagsOutOfOrder(taggedEvent.Id);
+
+        var compliance = new Compliance
+        {
+            PlanningId = taggedEvent.ItemPlanningId,
+            PropertyId = property.Id,
+            AreaId = taggedEvent.AreaId,
+            Deadline = WeekMonday,
+            StartDate = WeekMonday.AddDays(-7),
+            MicrotingSdkCaseId = 0,
+            MicrotingSdkeFormId = 0,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext!.Compliances.AddAsync(compliance);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var week = await QueryWeek(BuildCalendarService(await GetCore()), property.Id);
+        var tile = week.Single(t => t.ComplianceId == compliance.Id);
+        Assert.That(tile.IsFromCompliance, Is.True, "tile comes from the compliance branch");
+        Assert.That(tile.Tags, Is.EqualTo(expected).AsCollection, "compliance tile");
+    }
+
+    /// <summary>
+    /// Links five planning tags to <paramref name="arpId"/> in a NON-alphabetical
+    /// order and returns their names in the expected Danish order (æ, ø, å after z,
+    /// in that order; ordinal would put Å first).
+    /// </summary>
+    private async Task<List<string>> LinkDanishTagsOutOfOrder(int arpId)
+    {
+        var suffix = Guid.NewGuid().ToString("N");
+        foreach (var prefix in new[] { "Øko", "Beta", "Åben", "Alfa", "Æble" })
+        {
+            await LinkPlanningTag(arpId, await SeedPlanningTag($"{prefix} {suffix}"));
+        }
+        return new[] { "Alfa", "Beta", "Æble", "Øko", "Åben" }
+            .Select(prefix => $"{prefix} {suffix}").ToList();
+    }
+
+    /// <summary>The unfiltered Mon-Sun week query, returning every tile.</summary>
+    private static async Task<List<CalendarTaskResponseModel>> QueryWeek(
+        BackendConfigurationCalendarService svc, int propertyId)
+    {
+        var week = await svc.GetTasksForWeek(new CalendarTaskRequestModel
+        {
+            PropertyId = propertyId,
+            WeekStart = IsoUtc(WeekMonday),
+            WeekEnd = IsoUtc(WeekMonday.AddDays(6).AddHours(23).AddMinutes(59)),
+            ActionableOnly = false,
+            BoardIds = [],
+            TagNames = [],
+            SiteIds = [],
+            WorkerTagIds = []
+        });
+        Assert.That(week.Success, Is.True, week.Message);
+        return week.Model!;
     }
 
     // ─────────────────────────────────────────────────────────────────────────

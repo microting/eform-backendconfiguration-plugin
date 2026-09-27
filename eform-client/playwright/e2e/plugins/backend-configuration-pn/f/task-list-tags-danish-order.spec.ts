@@ -22,9 +22,9 @@ import { API_TIMEOUT, UI_TIMEOUT } from '../wait-helpers';
  * formatter and `exportCsv` only `join(', ')`, so both surfaces are asserted.
  *
  * The five tags are bulk-created in a NON-alphabetical order (so their ids,
- * and the attach order below, disagree with the expected order) and deleted
- * again at the end — tags are global in the shared CI DB and `clearTable()`
- * never touches them.
+ * and the attach order below, disagree with the expected order). Tags are
+ * global in the shared CI DB and `clearTable()` never touches them, so
+ * `afterAll` deletes them best effort — also when an earlier test failed.
  */
 
 const property: PropertyCreateUpdate = {
@@ -53,6 +53,10 @@ const expectedOrder = ['Alfa', 'Beta', 'Æble', 'Øko', 'Åben'].map(p => `${p} 
 // Danish label of the addTags batch action (BackendConfiguration da.ts).
 const LABEL_ADD_TAGS = 'Tilføj tags';
 
+// Set just before the bulk create, so afterAll only opens the tag dialog when
+// this run may actually have created tags.
+let tagsRequested = false;
+
 test.describe.serial('Task list — tags in Danish alphabetical order', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('http://localhost:4200');
@@ -60,6 +64,11 @@ test.describe.serial('Task list — tags in Danish alphabetical order', () => {
   });
 
   test.afterAll(async ({ browser }) => {
+    // Up to five tag deletes (each waits for two reloads) plus the worker and
+    // property clearTable() — more than the default 120s hook budget.
+    test.setTimeout(180000);
+    // Raced below the 180s hook budget so the hook itself never times out.
+    const CLEANUP_BUDGET_MS = 150000;
     // Non-fatal teardown, same shape as the neighbouring task-list specs.
     const page = await browser.newPage().catch((err: any) => {
       console.log(`afterAll cleanup failed (non-fatal): could not open a cleanup page: ${err?.message ?? err}`);
@@ -68,9 +77,35 @@ test.describe.serial('Task list — tags in Danish alphabetical order', () => {
     if (!page) {
       return;
     }
+    // Delete only this run's tags that exist: the names carry this run's
+    // random suffix, so no other spec's tag can match.
+    const deleteTags = async () => {
+      const taskListPage = new TaskListPage(page);
+      await taskListPage.goto();
+      await taskListPage.openManageTagsDialog();
+      for (const name of attachOrder) {
+        if (await taskListPage.tagRow(name).count() === 0) {
+          continue;
+        }
+        try {
+          await taskListPage.deleteTag(name);
+        } catch (err: any) {
+          console.log(`afterAll: could not delete tag "${name}" (non-fatal): ${err?.message ?? err}`);
+        }
+      }
+      await taskListPage.closeManageTagsDialog();
+    };
     const cleanup = async () => {
       await page.goto('http://localhost:4200');
       await new LoginPage(page).login();
+
+      if (tagsRequested) {
+        try {
+          await deleteTags();
+        } catch (err: any) {
+          console.log(`afterAll tag cleanup failed (non-fatal): ${err?.message ?? err}`);
+        }
+      }
 
       const workersPage = new BackendConfigurationPropertyWorkersPage(page);
       await workersPage.goToPropertyWorkers();
@@ -83,7 +118,7 @@ test.describe.serial('Task list — tags in Danish alphabetical order', () => {
     try {
       await Promise.race([
         cleanup(),
-        new Promise(resolve => setTimeout(resolve, 60000)),
+        new Promise(resolve => setTimeout(resolve, CLEANUP_BUDGET_MS)),
       ]);
     } catch (err: any) {
       console.log(`afterAll cleanup failed (non-fatal): ${err?.message ?? err}`);
@@ -112,6 +147,7 @@ test.describe.serial('Task list — tags in Danish alphabetical order', () => {
     const taskListPage = new TaskListPage(page);
     await taskListPage.goto();
     await taskListPage.openManageTagsDialog();
+    tagsRequested = true;
     await taskListPage.bulkCreateTags(attachOrder.join('\n'));
     for (const name of attachOrder) {
       await expect(taskListPage.tagRow(name)).toHaveCount(1, { timeout: UI_TIMEOUT });
@@ -151,16 +187,5 @@ test.describe.serial('Task list — tags in Danish alphabetical order', () => {
     const taskLine = lines.find(l => l.includes(task));
     expect(taskLine, `CSV has no line for ${task}`).toBeDefined();
     expect(taskLine).toContain(expectedOrder.join(', '));
-  });
-
-  test('cleanup: delete the five tags', async ({ page }) => {
-    const taskListPage = new TaskListPage(page);
-    await taskListPage.goto();
-    await taskListPage.openManageTagsDialog();
-    for (const name of attachOrder) {
-      await taskListPage.deleteTag(name);
-      await expect(taskListPage.tagRow(name)).toHaveCount(0, { timeout: UI_TIMEOUT });
-    }
-    await taskListPage.closeManageTagsDialog();
   });
 });
