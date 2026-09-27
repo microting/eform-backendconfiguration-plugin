@@ -696,6 +696,7 @@ public class BackendConfigurationCalendarService(
                     .Where(x => x.AreaRulePlanningId == arp.Id)
                     .Select(x => planningTagNames.TryGetValue(x.ItemPlanningTagId, out var name) ? name : null)
                     .Where(x => x != null)
+                    .OrderBy(n => n, TagNameComparer.Danish)
                     .ToList();
 
                 var assigneeIds = arp.PlanningSites?
@@ -936,6 +937,7 @@ public class BackendConfigurationCalendarService(
                     .Where(x => x.AreaRulePlanningId == arp.Id)
                     .Select(x => planningTagNames.TryGetValue(x.ItemPlanningTagId, out var name) ? name : null)
                     .Where(x => x != null)
+                    .OrderBy(n => n, TagNameComparer.Danish)
                     .ToList();
 
                 var movedAssignees = movedIn.ExceptionSites is { Count: > 0 }
@@ -1126,6 +1128,7 @@ public class BackendConfigurationCalendarService(
                         .Where(x => x.AreaRulePlanningId == arp.Id)
                         .Select(x => compliancePlanningTagNames.TryGetValue(x.ItemPlanningTagId, out var name) ? name : null)
                         .Where(x => x != null)
+                        .OrderBy(n => n, TagNameComparer.Danish)
                         .ToList()
                     : [];
 
@@ -1458,7 +1461,9 @@ public class BackendConfigurationCalendarService(
                 var tags = (arp.AreaRulePlanningTags ?? new List<AreaRulePlanningTag>())
                     .Where(t => t.WorkflowState != Constants.WorkflowStates.Removed)
                     .Select(t => planningTagNames.TryGetValue(t.ItemPlanningTagId, out var n) ? n : null)
-                    .Where(n => n != null).ToList();
+                    .Where(n => n != null)
+                    .OrderBy(n => n, TagNameComparer.Danish)
+                    .ToList();
 
                 // Same derivation GetTasksForWeek uses, so the list and the grid
                 // agree: an unconfigured series is all-day only when it has no

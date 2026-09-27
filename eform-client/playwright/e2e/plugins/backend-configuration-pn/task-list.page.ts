@@ -1,6 +1,6 @@
 import { Page, Locator } from '@playwright/test';
 import { readFileSync } from 'fs';
-import { API_TIMEOUT, ignoreUnhandledRejections, waitForApiResponse } from './wait-helpers';
+import { API_TIMEOUT, UI_TIMEOUT, ignoreUnhandledRejections, waitForApiResponse } from './wait-helpers';
 
 /**
  * Page object for the admin-only Task list page
@@ -995,7 +995,7 @@ export class TaskListPage {
    * `Ja`/`Nej`/`--` tokens and nothing follows them on the line.
    */
   async exportCsvAndReadLines(): Promise<string[]> {
-    const downloadPromise = this.page.waitForEvent('download');
+    const downloadPromise = this.page.waitForEvent('download', { timeout: UI_TIMEOUT });
     await this.page.locator('#taskListCsvExportBtn').click();
     const download = await downloadPromise;
     const filePath = await download.path();
@@ -1006,7 +1006,7 @@ export class TaskListPage {
   }
 
   async exportCsvAndGetFilename(): Promise<string> {
-    const downloadPromise = this.page.waitForEvent('download');
+    const downloadPromise = this.page.waitForEvent('download', { timeout: UI_TIMEOUT });
     await this.page.locator('#taskListCsvExportBtn').click();
     const download = await downloadPromise;
     return download.suggestedFilename();
