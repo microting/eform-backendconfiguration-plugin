@@ -380,12 +380,14 @@ async function selectExportFormat(page: Page, label: 'PDF' | 'CSV'): Promise<voi
   await expect(page.locator('#complianceExportFormat .ng-value-label')).toHaveText(label);
 }
 
-/** The smallest PDF pdf.js will open: one empty A4-landscape page, correct xref. */
-function minimalPdf(): string {
+/** The smallest PDF pdf.js will open: `pageCount` empty A4-landscape pages, correct xref. */
+function minimalPdf(pageCount = 1): string {
+  // Objects 1 and 2 are the catalog and the page tree; the pages are 3…n+2.
+  const pageRefs = Array.from({ length: pageCount }, (_, i) => `${i + 3} 0 R`);
   const objects = [
     '<</Type/Catalog/Pages 2 0 R>>',
-    '<</Type/Pages/Kids[3 0 R]/Count 1>>',
-    '<</Type/Page/Parent 2 0 R/MediaBox[0 0 842 595]>>',
+    `<</Type/Pages/Kids[${pageRefs.join(' ')}]/Count ${pageCount}>>`,
+    ...pageRefs.map(() => '<</Type/Page/Parent 2 0 R/MediaBox[0 0 842 595]>>'),
   ];
   let out = '%PDF-1.4\n';
   const offsets: number[] = [];
@@ -1204,6 +1206,74 @@ test.describe('Compliance page shell (#1163)', () => {
     expect(downloads).toBe(1);
     // Still 2: `Gem` reused the preview's bytes rather than re-exporting.
     expect(exportRequests).toBe(2);
+  });
+
+  /**
+   * #1327: the preview shows each page as a white sheet with a real gap on a
+   * grey backdrop. ng2-pdf-viewer's defaults (`removePageBorders`: pages
+   * `margin: 0 auto 10px`, scaled to the full container width, on the dialog's
+   * white surface) left no backdrop beside the pages and only a thin seam
+   * between them. Needs a 2+ page document, so the export is answered with a
+   * two-page PDF.
+   */
+  test('the PDF preview shows each page separated on a grey background (#1327)', async ({ page }) => {
+    await routeOverviewWithOneRow(page);
+    await page.route(EXPORT_ROUTE, route => route.fulfill({
+      status: 200,
+      headers: {
+        'content-type': 'application/pdf',
+        'content-disposition': contentDisposition(PDF_FILE_NAME),
+      },
+      body: Buffer.from(minimalPdf(2), 'latin1'),
+    }));
+
+    await goToCompliancePage(page);
+    await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
+    await selectExportFormat(page, 'PDF');
+    await expect(page.locator('#complianceDownloadBtn')).toBeEnabled({ timeout: API_TIMEOUT });
+    await page.locator('#complianceDownloadBtn').click();
+
+    const viewer = page.locator('#compliancePdfPreviewViewer');
+    const pages = viewer.locator('.pdfViewer .page');
+    // pdf.js lays out one `.page` per PDF page once the document has loaded.
+    await expect(pages).toHaveCount(2, { timeout: API_TIMEOUT });
+
+    const container = viewer.locator('.ng2-pdf-viewer-container');
+    // pdf.js lays the pages out at scale 1 first and applies the fitted,
+    // zoomed scale a moment later, so the geometry is polled, not read once.
+    await expect
+      .poll(async () => {
+        const [first, second, box] = await Promise.all([
+          pages.nth(0).boundingBox(),
+          pages.nth(1).boundingBox(),
+          container.boundingBox(),
+        ]);
+        if (!first || !second || !box) {
+          return 'pdf.js pages or their container are not laid out';
+        }
+        // A clear gap between the sheets — the library default is a 10px seam.
+        const gap = second.y - (first.y + first.height);
+        // The sheet is narrower than the backdrop, so grey shows on both
+        // sides — the library default scales the page to the full width.
+        const left = first.x - box.x;
+        const right = box.x + box.width - (first.x + first.width);
+        if (gap >= 16 && left >= 8 && right >= 8) {
+          return 'separated';
+        }
+        return `gap ${gap.toFixed(1)}px, left ${left.toFixed(1)}px, right ${right.toFixed(1)}px`;
+      }, { message: 'PDF preview pages on the grey backdrop', timeout: UI_TIMEOUT })
+      .toBe('separated');
+
+    const containerBg = await container.evaluate(el => getComputedStyle(el).backgroundColor);
+    const pageBg = await pages.nth(1).evaluate(el => getComputedStyle(el).backgroundColor);
+    // An opaque backdrop (the old container was transparent, showing the white
+    // dialog), and one that is not the page colour.
+    expect(containerBg).not.toBe('rgba(0, 0, 0, 0)');
+    expect(containerBg).not.toBe(pageBg);
+
+    const title = page.locator('#compliancePdfPreviewTitle');
+    await page.locator('#compliancePdfPreviewCancelBtn').click();
+    await expect(title).toHaveCount(0, { timeout: UI_TIMEOUT });
   });
 
   /**

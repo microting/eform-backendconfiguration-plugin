@@ -36,6 +36,12 @@ export class CompliancePdfPreviewDialogComponent implements OnInit {
    * decoded preview; only the on-screen rendering is replaced by a message.
    */
   loadFailed = false;
+  /**
+   * #1327: with `original-size` off, ng2-pdf-viewer scales each page to
+   * `zoom × container width`. Below 1 the sheet is narrower than the grey
+   * backdrop, so grey shows on both sides and not only between pages.
+   */
+  readonly pageZoom = 0.92;
 
   constructor(
     public dialogRef: MatDialogRef<CompliancePdfPreviewDialogComponent>,

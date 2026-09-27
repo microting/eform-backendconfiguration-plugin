@@ -14,6 +14,24 @@
     // 65vh, not more: Material caps mat-dialog-content at max-height: 65vh.
     height: 65vh;
     min-height: 320px;
+
+    // #1327: each page is a white sheet on a grey backdrop. The scroll container
+    // and the pages live in ng2-pdf-viewer's own template, hence ::ng-deep —
+    // scoped under this block so no other pdf-viewer is affected. The page
+    // itself stays white (pdf.js paints it #fff: it is paper) in both themes;
+    // --md-surface-variant is grey in every theme × mode.
+    ::ng-deep .ng2-pdf-viewer-container {
+      background: var(--md-surface-variant);
+    }
+
+    // ng2-pdf-viewer renders with `removePageBorders` (show-borders is off),
+    // whose own rule pins every page to `margin: 0 auto 10px` and ignores the
+    // --page-margin variable. This selector is one class more specific, so the
+    // sheets get a real gap; the grey on their sides comes from `pageZoom`.
+    ::ng-deep .pdfViewer.removePageBorders .page {
+      margin: 16px auto;
+      box-shadow: var(--md-shadow);
+    }
   }
 
   &__loading {
