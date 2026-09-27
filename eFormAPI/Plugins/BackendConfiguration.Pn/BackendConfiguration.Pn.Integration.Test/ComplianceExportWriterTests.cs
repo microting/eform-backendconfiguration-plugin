@@ -1198,8 +1198,9 @@ public class ComplianceExportWriterTests
     }
 
     /// <summary>
-    /// The appendix layout (#1192, PDF page 9): after ALL the tables, exactly one
-    /// page-break paragraph per section that has images, headed
+    /// The appendix layout (#1192, PDF page 9; placed per section by #1328):
+    /// directly after its OWN section's tables, one page-break paragraph per
+    /// section that has images, headed
     /// <c>Bilag – {tags caption}</c> (en dash); under it, per case, the caption
     /// <c>Sag {id} · {Område} · {dd.MM.yyyy}</c> and the images in a two-column
     /// grid — a table with two cells per row, an odd count ending on an empty
@@ -1226,7 +1227,7 @@ public class ComplianceExportWriterTests
     /// </para>
     /// </summary>
     [Test]
-    public async Task Word_AppendixHasOnePageBreakPerSectionWithImagesCaseCaptionsAndATwoColumnGrid()
+    public async Task Word_AppendixHasOneBilagPagePerSectionWithImagesCaseCaptionsAndATwoColumnGrid()
     {
         var document = ReportDocument(includeImageAppendix: true);
         Assert.That(document.Tables.Select(t => t.ImageBlocks.Count), Is.EqualTo(new[] { 1, 1 }),
@@ -1243,9 +1244,6 @@ public class ComplianceExportWriterTests
             p.ParagraphProperties?.PageBreakBefore != null
             || p.Descendants<Break>().Any(b => b.Type != null && b.Type.Value == BreakValues.Page);
 
-        var breaks = paragraphs.Where(IsPageBreak).ToList();
-        Assert.That(breaks, Has.Count.EqualTo(2), "one page break per section with images");
-
         // The heading is the break paragraph's own text, or — should the
         // converter have put the break in a paragraph of its own — the next
         // paragraph's.
@@ -1254,13 +1252,20 @@ public class ComplianceExportWriterTests
             .Select(p => p.InnerText.Trim())
             .First(t => t.Length > 0);
 
+        // One "Bilag" page per section with images. The break before the second
+        // section's caption (#1328) is pinned by
+        // Word_EachHeadlinesBilagFollowsItsOwnTableAndTheNextHeadlineStartsANewPage.
+        var breaks = paragraphs.Where(IsPageBreak).Where(p => HeadingOf(p).StartsWith("Bilag")).ToList();
         Assert.That(breaks.Select(HeadingOf),
             Is.EqualTo(new[] { "Bilag – Miljøtilsyn - Brand", "Bilag – Miljøtilsyn - EL" }));
 
+        // Section table, its grid, section table, its grid (#1328).
         var tables = body.Descendants<Table>().ToList();
-        Assert.That(tables, Has.Count.EqualTo(4), "two section tables, then two image grids");
-        Assert.That(elements.IndexOf(breaks[0]), Is.GreaterThan(elements.IndexOf(tables[1])),
-            "the appendix starts after the last section table");
+        Assert.That(tables, Has.Count.EqualTo(4), "per section: its table, then its image grid");
+        Assert.That(elements.IndexOf(breaks[0]), Is.GreaterThan(elements.IndexOf(tables[0])),
+            "the first appendix starts after its own section's table");
+        Assert.That(elements.IndexOf(breaks[0]), Is.LessThan(elements.IndexOf(tables[2])),
+            "...and before the next section's table");
 
         // Case captions, in order, each after its section heading.
         var captionParagraphs = paragraphs.Where(p => p.InnerText.Trim().StartsWith("Sag ")).ToList();
@@ -1294,9 +1299,9 @@ public class ComplianceExportWriterTests
         // Three images → two rows of two cells; one image → one row of two cells.
         static int[] CellsPerRow(Table grid) =>
             grid.Elements<TableRow>().Select(r => r.Elements<TableCell>().Count()).ToArray();
-        Assert.That(CellsPerRow(tables[2]), Is.EqualTo(new[] { 2, 2 }));
+        Assert.That(CellsPerRow(tables[1]), Is.EqualTo(new[] { 2, 2 }));
         Assert.That(CellsPerRow(tables[3]), Is.EqualTo(new[] { 2 }));
-        Assert.That(elements.IndexOf(tables[2]), Is.GreaterThan(elements.IndexOf(breaks[0])));
+        Assert.That(elements.IndexOf(tables[1]), Is.GreaterThan(elements.IndexOf(breaks[0])));
         Assert.That(elements.IndexOf(tables[3]), Is.GreaterThan(elements.IndexOf(breaks[1])));
 
         // Borderless: w:tblBorders on the grid and w:tcBorders on every cell,
@@ -1306,7 +1311,7 @@ public class ComplianceExportWriterTests
             && borders.Elements<BorderType>().Any()
             && borders.Elements<BorderType>().All(b => b.Val != null && b.Val.Value == BorderValues.None);
 
-        foreach (var grid in new[] { tables[2], tables[3] })
+        foreach (var grid in new[] { tables[1], tables[3] })
         {
             Assert.That(AllEdgesNone(grid.GetFirstChild<TableProperties>()?.TableBorders), Is.True,
                 "the image grid's table borders are all 'none'");
@@ -1315,10 +1320,92 @@ public class ComplianceExportWriterTests
                 "every grid cell's borders are all 'none'");
         }
 
-        foreach (var section in new[] { tables[0], tables[1] })
+        foreach (var section in new[] { tables[0], tables[2] })
         {
             Assert.That(AllEdgesNone(section.GetFirstChild<TableProperties>()?.TableBorders), Is.False,
                 "the section tables keep their visible borders");
+        }
+    }
+
+    /// <summary>
+    /// #1328, in body order: headline 1 and its table, then "Bilag – 1" on a new
+    /// page with its grid, then headline 2 on a NEW page with its table, then
+    /// "Bilag – 2" on a new page with its grid — each section's appendix
+    /// directly after its own table instead of every appendix after the last
+    /// table. The first headline starts the document on the first page: no
+    /// break ahead of it.
+    /// </summary>
+    [Test]
+    public async Task Word_EachHeadlinesBilagFollowsItsOwnTableAndTheNextHeadlineStartsANewPage()
+    {
+        var document = ReportDocument(includeImageAppendix: true);
+
+        Assert.That(BodySequence(await NewWordWriter().WriteAsync(document, null)), Is.EqualTo(new[]
+        {
+            "Miljøtilsyn - Brand", "Brandsikkerhed og beredskab", document.Tables[0].Subtitle, TableToken,
+            PageBreakToken, "Bilag – Miljøtilsyn - Brand", "Sag 2183 · Kontrol af arbejdsmiljø · 13.05.2026", TableToken,
+            PageBreakToken, "Miljøtilsyn - EL", "Elinstallationer og eftersyn", document.Tables[1].Subtitle, TableToken,
+            PageBreakToken, "Bilag – Miljøtilsyn - EL", "Sag 2185 · El-tavle · 20.05.2026", TableToken
+        }));
+    }
+
+    /// <summary>
+    /// #1328: the next headline is forced onto a new page only when the section
+    /// before it ended on an appendix. A headline without images is followed by
+    /// the next headline on the same page, as before; only the "Bilag" page of
+    /// the second headline breaks.
+    /// </summary>
+    [Test]
+    public async Task Word_AHeadlineWithoutImagesForcesNoPageBreakBeforeTheNextHeadline()
+    {
+        var document = ReportDocument(includeImageAppendix: true);
+        document.Tables[0].ImageBlocks.Clear();
+
+        Assert.That(BodySequence(await NewWordWriter().WriteAsync(document, null)), Is.EqualTo(new[]
+        {
+            "Miljøtilsyn - Brand", "Brandsikkerhed og beredskab", document.Tables[0].Subtitle, TableToken,
+            "Miljøtilsyn - EL", "Elinstallationer og eftersyn", document.Tables[1].Subtitle, TableToken,
+            PageBreakToken, "Bilag – Miljøtilsyn - EL", "Sag 2185 · El-tavle · 20.05.2026", TableToken
+        }));
+    }
+
+    private const string TableToken = "<table>";
+    private const string PageBreakToken = "<page-break>";
+
+    /// <summary>
+    /// The body's top-level blocks in order: a table as <see cref="TableToken"/>,
+    /// a paragraph as its text, preceded by <see cref="PageBreakToken"/> when it
+    /// starts a new page (a <c>w:pageBreakBefore</c> property or a page
+    /// <c>w:br</c> — HtmlToOpenXml may emit either). Empty paragraphs (the
+    /// <c>&lt;br/&gt;</c> after each table) are skipped.
+    /// </summary>
+    private static List<string> BodySequence(Stream stream)
+    {
+        using (stream)
+        using (var word = WordprocessingDocument.Open(stream, false))
+        {
+            var sequence = new List<string>();
+            foreach (var element in word.MainDocumentPart!.Document!.Body!.ChildElements)
+            {
+                switch (element)
+                {
+                    case Table:
+                        sequence.Add(TableToken);
+                        break;
+                    case Paragraph paragraph:
+                        if (paragraph.ParagraphProperties?.PageBreakBefore != null
+                            || paragraph.Descendants<Break>().Any(b => b.Type != null && b.Type.Value == BreakValues.Page))
+                        {
+                            sequence.Add(PageBreakToken);
+                        }
+
+                        var text = paragraph.InnerText.Trim();
+                        if (text.Length > 0) sequence.Add(text);
+                        break;
+                }
+            }
+
+            return sequence;
         }
     }
 
@@ -1369,8 +1456,8 @@ public class ComplianceExportWriterTests
             .ToList();
         Assert.That(headings.Select(p => p.InnerText.Trim()), Is.EqualTo(new[]
         {
-            "Rapport", "Miljøtilsyn - Brand", "Headline 1", "Gennemgang", "Kontrol"
-        }), "the caption and the headline once, then one sub-heading per eForm");
+            "Miljøtilsyn - Brand", "Headline 1", "Gennemgang", "Kontrol"
+        }), "no document title (#1328); the caption and the headline once, then one sub-heading per eForm");
 
         var firstEform = headings.Single(p => p.InnerText.Trim() == "Gennemgang");
         var secondEform = headings.Single(p => p.InnerText.Trim() == "Kontrol");
@@ -1383,7 +1470,7 @@ public class ComplianceExportWriterTests
 
         // No heading is stranded at the foot of a page: the sub-headings are kept
         // with their tables, the caption and headline with the heading under them.
-        foreach (var heading in headings.Skip(1))
+        foreach (var heading in headings)
         {
             Assert.That(heading.ParagraphProperties?.KeepNext, Is.Not.Null,
                 $"'{heading.InnerText.Trim()}' must carry w:keepNext");

@@ -55,7 +55,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 /// </summary>
 public class ComplianceExportDocument
 {
-    /// <summary>Localised document title, e.g. the Oversigt/Detaljer/Rapport label.</summary>
+    /// <summary>Localised document title (Oversigt/Detaljer); Rapport has none (#1328).</summary>
     public string Title { get; set; }
 
     /// <summary>
@@ -178,8 +178,9 @@ public class ComplianceExportTable
     /// <summary>
     /// Per-case image blocks, populated ONLY for Rapport when the request opted
     /// into the appendix, holding the blocks of every table of the section (first
-    /// table of a section only, #1276). CSV ignores it; Word/PDF render it after
-    /// ALL the tables, one page per section that has any (#1192), headed by
+    /// table of a section only, #1276). CSV ignores it; Word/PDF render it
+    /// directly after the section's own tables (#1328), one page per section
+    /// that has any (#1192), headed by
     /// <see cref="AppendixLabel"/>.
     /// </summary>
     public List<ComplianceExportImageBlock> ImageBlocks { get; set; } = [];

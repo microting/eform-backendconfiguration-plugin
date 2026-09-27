@@ -611,6 +611,20 @@ public class ComplianceExportDocumentBuilderTests
     }
 
     /// <summary>
+    /// #1328: the Rapport document has no title. The PDF opens with the first
+    /// report headline, not a bold "Rapport" line; Oversigt and Detaljer keep
+    /// theirs (#1190/#1191, pinned above).
+    /// </summary>
+    [Test]
+    public void Report_HasNoDocumentTitle()
+    {
+        var document = ComplianceExportDocumentBuilder.BuildReport(
+            [Group(7, "Headline 1", "Miljøtilsyn - Brand", Template(511, "Gennemgang"))], "p", false, _localization);
+
+        Assert.That(document.Title, Is.Null.Or.Empty);
+    }
+
+    /// <summary>
     /// The fixed Rapport columns, then the table's REAL answer columns — its own
     /// template's schema. The prototype's fabricated placeholders <c>Note</c>,
     /// <c>Option 1</c> and <c>Option 2</c> must not appear as hard-coded headers
