@@ -169,6 +169,11 @@ public static class BackendConfigurationTaskTrackerHelper
 				.Distinct()
 				.ToList();
 
+			// #1325 — whether any live task on the planning reports missed occurrences.
+			var reportingPlanningIds = await HiddenOverdueRule
+				.LoadReportingPlanningIdsAsync(backendConfigurationPnDbContext, compliancePlanningIds)
+				.ConfigureAwait(false);
+
 			// Loaded with each event's PropertyId (#1256): a team is expanded — and
 			// matched by the Workers filter — only against the event's own property.
 			var workerTagLinks = compliancePlanningIds.Count > 0
@@ -234,7 +239,7 @@ public static class BackendConfigurationTaskTrackerHelper
 					.Where(x => x.ItemPlanningId == compliance.PlanningId);
 
 				var areaRulePlanning = await areaRulePlanningQuery
-					.Select(x => new { x.AreaRuleId, x.StartDate, x.Id, x.ComplianceEnabled })
+					.Select(x => new { x.AreaRuleId, x.StartDate, x.Id })
 					.FirstOrDefaultAsync();
 
 				if (areaRulePlanning == null) continue;
@@ -242,7 +247,7 @@ public static class BackendConfigurationTaskTrackerHelper
 				// #1325 — hidden on read, never soft-deleted: this GET used to delete the row,
 				// and dated by Deadline.AddDays(-1) it took today's and tomorrow's with it.
 				if (HiddenOverdueRule.IsHiddenOverdue(
-					    areaRulePlanning.ComplianceEnabled,
+					    reportingPlanningIds.Contains(compliance.PlanningId),
 					    HiddenOverdueRule.IsPastDue(compliance.Deadline, dateTimeNow),
 					    completedSdkCaseIds.Contains(compliance.MicrotingSdkCaseId)))
 				{

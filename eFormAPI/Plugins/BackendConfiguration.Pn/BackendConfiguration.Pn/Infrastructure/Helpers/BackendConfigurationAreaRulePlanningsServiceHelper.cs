@@ -1061,7 +1061,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                             {
                                                 await compliance.Delete(backendConfigurationPnDbContext)
                                                     .ConfigureAwait(false);
-                                                if (HiddenOverdueRule.ExcludeHiddenOverdue(backendConfigurationPnDbContext.Compliances, backendConfigurationPnDbContext, DateTime.UtcNow).Any(x =>
+                                                if (HiddenOverdueRule.ExcludeNeverOverdue(backendConfigurationPnDbContext.Compliances, backendConfigurationPnDbContext, DateTime.UtcNow).Any(x =>
                                                         x.PropertyId == property.Id &&
                                                         x.Deadline < DateTime.UtcNow &&
                                                         x.WorkflowState != Constants.WorkflowStates.Removed))
@@ -2577,7 +2577,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                         await dbCompliacne.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
                         var property = await backendConfigurationPnDbContext.Properties
                             .SingleAsync(x => x.Id == compliance.PropertyId).ConfigureAwait(false);
-                        if (HiddenOverdueRule.ExcludeHiddenOverdue(backendConfigurationPnDbContext.Compliances, backendConfigurationPnDbContext, DateTime.UtcNow).Any(x =>
+                        if (HiddenOverdueRule.ExcludeNeverOverdue(backendConfigurationPnDbContext.Compliances, backendConfigurationPnDbContext, DateTime.UtcNow).Any(x =>
                                 x.PropertyId == property.Id && x.Deadline < DateTime.UtcNow &&
                                 x.WorkflowState != Constants.WorkflowStates.Removed))
                         {

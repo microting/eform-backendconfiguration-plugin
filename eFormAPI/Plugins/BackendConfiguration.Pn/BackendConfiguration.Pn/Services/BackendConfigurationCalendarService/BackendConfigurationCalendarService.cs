@@ -6633,6 +6633,8 @@ public class BackendConfigurationCalendarService(
                 var taskIsExpired = ComputeTaskIsExpired(sdkCase, effectiveDate, dateTimeNow);
 
                 // #1325 — the app's "Forfaldne opgaver" banner is built from these rows.
+                // One live ARP per planning here (the ToDictionary above), so its flag is
+                // the planning's.
                 if (HiddenOverdueRule.IsHiddenOverdue(arp.ComplianceEnabled, taskIsExpired, completed))
                 {
                     continue;

@@ -17,7 +17,10 @@ copies or substantial portions of the Software.
 namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
@@ -51,21 +54,58 @@ public static class HiddenOverdueRule
         => taskDate.Date < utcNow.Date;
 
     /// <summary>
-    /// The same rule as a query filter, for the surfaces that count in SQL (the compliance
-    /// list and its stats). A live (not soft-removed) compliance row is an open occurrence:
-    /// completion soft-removes the row. Past due is <c>Deadline &lt; today</c>, i.e.
-    /// <see cref="IsPastDue"/> on the stored date. A planning shared by several live
-    /// tasks is hidden only when none of them reports missed occurrences.
+    /// The same rule as a query filter, for the surfaces that list or count in SQL (the
+    /// compliance list and its stats). A live (not soft-removed) compliance row is an open
+    /// occurrence: completion soft-removes the row. Past due is <c>Deadline &lt; today</c>,
+    /// i.e. <see cref="IsPastDue"/> on the stored date.
     /// </summary>
     public static IQueryable<Compliance> ExcludeHiddenOverdue(
         IQueryable<Compliance> compliances,
         BackendConfigurationPnDbContext dbContext,
         DateTime utcNow)
-    {
-        var today = utcNow.Date;
-        return compliances.Where(c => !(
+        => ExcludeOpenRowsOfHidingTasksBefore(compliances, dbContext, utcNow.Date);
+
+    /// <summary>
+    /// For the legacy overdue checks that compare the stored deadline with the clock
+    /// (<c>Deadline &lt; UtcNow</c> for the persisted property status,
+    /// <c>Deadline.AddDays(-1) &lt; today</c> for the dashboard): those count a row dated
+    /// TODAY as overdue, yet a task that hides missed occurrences is never overdue. So its
+    /// open rows are excluded up to and including today; enabled tasks keep the legacy
+    /// behaviour.
+    /// </summary>
+    public static IQueryable<Compliance> ExcludeNeverOverdue(
+        IQueryable<Compliance> compliances,
+        BackendConfigurationPnDbContext dbContext,
+        DateTime utcNow)
+        => ExcludeOpenRowsOfHidingTasksBefore(compliances, dbContext, utcNow.Date.AddDays(1));
+
+    /// <summary>
+    /// The planning ids among <paramref name="planningIds"/> with a live task that reports
+    /// missed occurrences. A planning shared by several live tasks hides its missed
+    /// occurrences only when none of them does — the in-memory surfaces pass
+    /// <c>reportingPlanningIds.Contains(planningId)</c> as <c>complianceEnabled</c>.
+    /// </summary>
+    public static async Task<HashSet<int>> LoadReportingPlanningIdsAsync(
+        BackendConfigurationPnDbContext dbContext,
+        IReadOnlyCollection<int> planningIds)
+        => (await dbContext.AreaRulePlannings
+                .AsNoTracking()
+                .Where(a => planningIds.Contains(a.ItemPlanningId)
+                            && a.WorkflowState != Constants.WorkflowStates.Removed
+                            && a.ComplianceEnabled)
+                .Select(a => a.ItemPlanningId)
+                .Distinct()
+                .ToListAsync()
+                .ConfigureAwait(false))
+            .ToHashSet();
+
+    private static IQueryable<Compliance> ExcludeOpenRowsOfHidingTasksBefore(
+        IQueryable<Compliance> compliances,
+        BackendConfigurationPnDbContext dbContext,
+        DateTime before)
+        => compliances.Where(c => !(
             c.WorkflowState != Constants.WorkflowStates.Removed
-            && c.Deadline < today
+            && c.Deadline < before
             && dbContext.AreaRulePlannings.Any(a =>
                 a.ItemPlanningId == c.PlanningId
                 && a.WorkflowState != Constants.WorkflowStates.Removed
@@ -74,5 +114,4 @@ public static class HiddenOverdueRule
                 a.ItemPlanningId == c.PlanningId
                 && a.WorkflowState != Constants.WorkflowStates.Removed
                 && a.ComplianceEnabled)));
-    }
 }

@@ -517,7 +517,7 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
 
             var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == compliance.PropertyId).ConfigureAwait(false);
 
-            if (HiddenOverdueRule.ExcludeHiddenOverdue(_backendConfigurationPnDbContext.Compliances.AsNoTracking(), _backendConfigurationPnDbContext, DateTime.UtcNow).Any(x =>
+            if (HiddenOverdueRule.ExcludeNeverOverdue(_backendConfigurationPnDbContext.Compliances.AsNoTracking(), _backendConfigurationPnDbContext, DateTime.UtcNow).Any(x =>
                     x.Deadline < DateTime.UtcNow && x.PropertyId == property.Id &&
                     x.WorkflowState != Constants.WorkflowStates.Removed))
             {
@@ -535,7 +535,7 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
                     await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
 
-                if (!HiddenOverdueRule.ExcludeHiddenOverdue(_backendConfigurationPnDbContext.Compliances.AsNoTracking(), _backendConfigurationPnDbContext, DateTime.UtcNow).Any(x =>
+                if (!HiddenOverdueRule.ExcludeNeverOverdue(_backendConfigurationPnDbContext.Compliances.AsNoTracking(), _backendConfigurationPnDbContext, DateTime.UtcNow).Any(x =>
                         x.Deadline < DateTime.UtcNow && x.PropertyId == property.Id &&
                         x.WorkflowState != Constants.WorkflowStates.Removed))
                 {
@@ -809,7 +809,7 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
 
             var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == compliance.PropertyId).ConfigureAwait(false);
 
-            if (HiddenOverdueRule.ExcludeHiddenOverdue(_backendConfigurationPnDbContext.Compliances.AsNoTracking(), _backendConfigurationPnDbContext, DateTime.UtcNow).Any(x =>
+            if (HiddenOverdueRule.ExcludeNeverOverdue(_backendConfigurationPnDbContext.Compliances.AsNoTracking(), _backendConfigurationPnDbContext, DateTime.UtcNow).Any(x =>
                     x.Deadline < DateTime.UtcNow && x.PropertyId == property.Id &&
                     x.WorkflowState != Constants.WorkflowStates.Removed))
             {
@@ -827,7 +827,7 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
                     await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
 
-                if (!HiddenOverdueRule.ExcludeHiddenOverdue(_backendConfigurationPnDbContext.Compliances.AsNoTracking(), _backendConfigurationPnDbContext, DateTime.UtcNow).Any(x =>
+                if (!HiddenOverdueRule.ExcludeNeverOverdue(_backendConfigurationPnDbContext.Compliances.AsNoTracking(), _backendConfigurationPnDbContext, DateTime.UtcNow).Any(x =>
                         x.Deadline < DateTime.UtcNow && x.PropertyId == property.Id &&
                         x.WorkflowState != Constants.WorkflowStates.Removed))
                 {

@@ -46,7 +46,7 @@ public async Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(
 
         // #1325 — missed occurrences of a task with "Overskredet opgave vises ikke i app"
         // are not counted as exceeded.
-        var compliancesQuery = HiddenOverdueRule.ExcludeHiddenOverdue(
+        var compliancesQuery = HiddenOverdueRule.ExcludeNeverOverdue(
                 backendConfigurationPnDbContext.Compliances, backendConfigurationPnDbContext, DateTime.UtcNow)
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
             .Where(x => x.PlanningId != 0);

@@ -1617,6 +1617,46 @@ public class ComplianceReportIndexTests : TestBaseSetup
         Assert.That(Ids(open.Model!), Is.EqualTo(new List<int> { missedYesterday }));
     }
 
+    /// <summary>
+    /// #1325: a planning shared by two live tasks hides its missed occurrences only when
+    /// NEITHER reports them. BuildCandidateSet pins each row to the LOWEST-Id live ARP, so
+    /// the disabled task is seeded first (lower id) and the enabled one second: reading
+    /// ComplianceEnabled off the pinned ARP alone would wrongly hide the row.
+    /// </summary>
+    [Test]
+    public async Task ComplianceReportIndex_PlanningSharedWithEnabledTask_StillListsMissedOpenRow()
+    {
+        var core = await GetCore();
+        var today = DateTime.UtcNow.Date;
+        var (disabledArpId, propertyId, planningId, areaId, areaRuleId) = await SeedSeries(
+            "Property C", "Shared Planning Title", today.AddDays(-30), complianceEnabled: false);
+        await SeedCalendarConfig(disabledArpId);
+
+        var enabledArp = new AreaRulePlanning
+        {
+            AreaRuleId = areaRuleId, PropertyId = propertyId, AreaId = areaId,
+            ItemPlanningId = planningId,
+            StartDate = DateTime.SpecifyKind(today.AddDays(-30), DateTimeKind.Utc), Status = true,
+            RepeatType = 2, RepeatEvery = 1, RepeatWeekdaysCsv = "1", DayOfWeek = 1,
+            ComplianceEnabled = true,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext!.AreaRulePlannings.AddAsync(enabledArp);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+        Assert.That(enabledArp.Id, Is.GreaterThan(disabledArpId),
+            "precondition: the disabled ARP must be the lowest-Id one BuildCandidateSet pins");
+
+        var missedYesterday = await SeedCompliance(
+            planningId, propertyId, areaId, today.AddDays(-1), await SeedSdkCase(status: 33));
+
+        var open = await BuildService(core).Index(
+            Request(today.AddDays(-7), today.AddDays(7), status: "open", propertyId: propertyId));
+
+        Assert.That(open.Success, Is.True, open.Message);
+        Assert.That(Ids(open.Model!), Is.EqualTo(new List<int> { missedYesterday }),
+            "a live ComplianceEnabled=true task on the planning keeps its missed occurrence open");
+    }
+
     // ------------------------------------------------------------------
     // Small composite seeders for the sorting fixtures. Each builds a
     // self-contained series + one open compliance row on <paramref name="date"/>.

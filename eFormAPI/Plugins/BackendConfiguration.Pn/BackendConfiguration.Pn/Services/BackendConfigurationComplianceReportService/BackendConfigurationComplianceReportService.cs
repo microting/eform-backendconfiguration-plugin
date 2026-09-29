@@ -493,6 +493,9 @@ public class BackendConfigurationComplianceReportService(
             .GroupBy(x => x.ItemPlanningId)
             .ToDictionary(g => g.Key, g => g.OrderBy(a => a.Id).First());
         var arpIds = arps.Select(x => x.Id).ToList();
+        // #1325 — a planning shared by several live tasks hides missed occurrences only
+        // when none of them reports them (HiddenOverdueRule), not by the pinned ARP alone.
+        var reportingPlanningIds = arps.Where(x => x.ComplianceEnabled).Select(x => x.ItemPlanningId).ToHashSet();
 
         // Same reasoning as arpByPlanningId above: IX_CalendarConfigurations_
         // AreaRulePlanningId is a plain, non-unique index and the entity carries
@@ -613,7 +616,7 @@ public class BackendConfigurationComplianceReportService(
                 // #1325 — a missed occurrence of a task with "Overskredet opgave vises
                 // ikke i app" is neither open in Detaljer nor overdue/due in Oversigt.
                 if (arp != null && HiddenOverdueRule.IsHiddenOverdue(
-                        arp.ComplianceEnabled,
+                        reportingPlanningIds.Contains(candidate.PlanningId),
                         HiddenOverdueRule.IsPastDue(effectiveTaskDate, filter.Today),
                         completed: false))
                 {

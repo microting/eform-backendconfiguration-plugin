@@ -745,7 +745,7 @@ public class BackendConfigurationAreaRulesService : IBackendConfigurationAreaRul
 								await compliance.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
 							}
 							var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == compliance.PropertyId).ConfigureAwait(false);
-							if (HiddenOverdueRule.ExcludeHiddenOverdue(_backendConfigurationPnDbContext.Compliances, _backendConfigurationPnDbContext, DateTime.UtcNow).Any(x => x.PropertyId == property.Id && x.Deadline < DateTime.UtcNow && x.WorkflowState != Constants.WorkflowStates.Removed))
+							if (HiddenOverdueRule.ExcludeNeverOverdue(_backendConfigurationPnDbContext.Compliances, _backendConfigurationPnDbContext, DateTime.UtcNow).Any(x => x.PropertyId == property.Id && x.Deadline < DateTime.UtcNow && x.WorkflowState != Constants.WorkflowStates.Removed))
 							{
 								property.ComplianceStatusThirty = 2;
 								property.ComplianceStatus = 2;
@@ -992,7 +992,7 @@ public class BackendConfigurationAreaRulesService : IBackendConfigurationAreaRul
 									await _backendConfigurationPnDbContext.Compliances.SingleAsync(x => x.Id == compliance.Id).ConfigureAwait(false);
 								await dbCompliacne.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
 								var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == compliance.PropertyId).ConfigureAwait(false);
-								if (HiddenOverdueRule.ExcludeHiddenOverdue(_backendConfigurationPnDbContext.Compliances, _backendConfigurationPnDbContext, DateTime.UtcNow).Any(x => x.PropertyId == property.Id && x.Deadline < DateTime.UtcNow && x.WorkflowState != Constants.WorkflowStates.Removed))
+								if (HiddenOverdueRule.ExcludeNeverOverdue(_backendConfigurationPnDbContext.Compliances, _backendConfigurationPnDbContext, DateTime.UtcNow).Any(x => x.PropertyId == property.Id && x.Deadline < DateTime.UtcNow && x.WorkflowState != Constants.WorkflowStates.Removed))
 								{
 									property.ComplianceStatusThirty = 2;
 									property.ComplianceStatus = 2;

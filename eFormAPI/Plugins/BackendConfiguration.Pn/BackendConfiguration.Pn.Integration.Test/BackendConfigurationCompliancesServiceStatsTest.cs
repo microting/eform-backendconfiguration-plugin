@@ -32,6 +32,7 @@ using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Enums;
 using Services.BackendConfigurationCompliancesService;
 using Services.BackendConfigurationLocalizationService;
+using Services.BackendConfigurationStatsService;
 using BackendConfiguration.Pn.Infrastructure.Models.Compliances.Index;
 using Microting.eFormApi.BasePn.Abstractions;
 using NSubstitute;
@@ -680,6 +681,73 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         Assert.That(result.Model.TodayCount, Is.EqualTo(1));
         Assert.That(result.Model.OneWeekCount, Is.EqualTo(1));
     }
+
+    // ------------------------------------------------------------------
+    // #1325 — the dashboard's BackendConfigurationStatsService.GetPlannedTaskDays. Its
+    // Exceeded bucket is the legacy clock check `Deadline.AddDays(-1) < today`, which
+    // counts a row dated TODAY as exceeded. A ComplianceEnabled=false task is never
+    // overdue, so its open rows up to and including today are not counted
+    // (HiddenOverdueRule.ExcludeNeverOverdue). Each task sits on its own property and
+    // is read through the propertyIds filter, so the two halves cannot see each other.
+    // ------------------------------------------------------------------
+
+    [TestCase(0)]  // dated today: the legacy check already calls it exceeded
+    [TestCase(-1)] // dated yesterday: a missed occurrence
+    public async Task GetPlannedTaskDays_DisabledTaskOpenRow_IsNotExceeded_EnabledTwinIs(int deadlineOffsetDays)
+    {
+        await GetCore();
+        var deadline = DateTime.UtcNow.Date.AddDays(deadlineOffsetDays);
+        var (hiddenPropertyId, _) =
+            await SeedTaskWithCompliance("Property A", complianceEnabled: false, deadline);
+        var (reportedPropertyId, _) =
+            await SeedTaskWithCompliance("Property B", complianceEnabled: true, deadline);
+
+        var service = BuildStatsService();
+        var hidden = await service.GetPlannedTaskDays([hiddenPropertyId], [], []);
+        var reported = await service.GetPlannedTaskDays([reportedPropertyId], [], []);
+
+        Assert.That(hidden.Success, Is.True, hidden.Message);
+        Assert.That(reported.Success, Is.True, reported.Message);
+        Assert.Multiple(() =>
+        {
+            Assert.That(hidden.Model.Exceeded, Is.EqualTo(0),
+                "an open row of a ComplianceEnabled=false task is never exceeded");
+            Assert.That(reported.Model.Exceeded, Is.EqualTo(1),
+                "the ComplianceEnabled=true twin keeps the legacy Deadline.AddDays(-1) < today check");
+        });
+    }
+
+    /// <summary>
+    /// #1325 boundary: ExcludeNeverOverdue stops at today. A disabled task's row dated
+    /// TOMORROW is not overdue under any rule and still lands in the Today bucket
+    /// (<c>Deadline.AddDays(-1) == today</c>), exactly as for an enabled task.
+    /// </summary>
+    [Test]
+    public async Task GetPlannedTaskDays_DisabledTaskRowDatedTomorrow_IsStillCountedInToday()
+    {
+        await GetCore();
+        var (propertyId, _) = await SeedTaskWithCompliance(
+            "Property A", complianceEnabled: false, DateTime.UtcNow.Date.AddDays(1));
+
+        var result = await BuildStatsService().GetPlannedTaskDays([propertyId], [], []);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Model.Exceeded, Is.EqualTo(0));
+            Assert.That(result.Model.Today, Is.EqualTo(1),
+                "only rows up to and including today are excluded; tomorrow's row is still planned work");
+        });
+    }
+
+    private BackendConfigurationStatsService BuildStatsService()
+        => new(
+            BackendConfigurationPnDbContext!,
+            TestContextLogger<BackendConfigurationStatsService>.Instance,
+            new BackendConfigurationLocalizationService(),
+            ItemsPlanningPnDbContext!,
+            CaseTemplatePnDbContext!,
+            new EFormCoreService(MicrotingDbContext!.Database.GetConnectionString()!));
 
     private BackendConfigurationCompliancesService BuildCompliancesService()
     {
