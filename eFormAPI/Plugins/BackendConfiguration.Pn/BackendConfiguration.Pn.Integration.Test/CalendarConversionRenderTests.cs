@@ -341,50 +341,50 @@ public class CalendarConversionRenderTests : TestBaseSetup
     }
 
     [Test]
-    public async Task MonthlyTaskStartingJan31_AfterConversion_RendersFirstSaturdayNotDayOfMonth()
+    public async Task MonthlyTaskStartingJan31_AfterConversion_RendersLastSaturdayNotDayOfMonth()
     {
         var property = await SeedProperty();
         var area = await SeedArea();
-        // (Month, 1) from Sat 2026-01-31 — the conversion rewrites it to
-        // "1st Saturday of every month" (ordinal-weekday), dropping the
-        // day-of-month anchor entirely.
+        // (Month, 1) from Sat 2026-01-31 — the 5th Saturday of January. Since
+        // #1294 the conversion keeps that week: "5th Saturday of every month"
+        // (ordinal 5), which spills to the month's LAST Saturday wherever there is
+        // no 5th, exactly like the scheduler. The day-of-month anchor is dropped.
         var (arp, _) = await SeedWizardTask(
             property.Id, area.Id, repeatType: (int)RepeatType.Month, repeatEvery: 1,
             startDate: new DateTime(2026, 1, 31));
 
         await _sut.RunIfNeededAsync();
 
-        // February's 1st Saturday is 2026-02-07 (Feb 1st 2026 is a Sunday);
-        // its week is Mon 2026-02-02 .. Sun 2026-02-08.
-        var febWeek = await QueryWeek(property.Id, new DateTime(2026, 2, 2, 0, 0, 0, DateTimeKind.Utc));
-        var febMine = febWeek.Where(t => t.Id == arp.Id).ToList();
-        Assert.That(febMine, Has.Count.EqualTo(1), "one occurrence in the first-Saturday week of February");
-        Assert.That(febMine[0].TaskDate, Is.EqualTo("2026-02-07"), "on February's 1st Saturday");
-        AssertNineToTen(febMine[0]);
-
-        // #1207 — the upgrade-path guarantee. The conversion rewrites this
-        // series to "1st Saturday" unconditionally, so its own anchor
-        // (Sat 2026-01-31, the 5th Saturday) violates the rule it was given:
-        // January's pattern date is 2026-01-03, which precedes the start date
-        // and used to be discarded, taking January's occurrence with it. Since
-        // #1207 the anchor is occurrence #1, so the start week renders it.
-        // Every legacy task-wizard monthly series whose start date is not in
-        // the first seven days of its month is in this cohort.
+        // The start week renders the series' own start date — now simply January's
+        // pattern date (before #1294 it was the #1207 dropped-anchor case).
         var startWeek = await QueryWeek(property.Id, new DateTime(2026, 1, 26, 0, 0, 0, DateTimeKind.Utc));
         var startWeekMine = startWeek.Where(t => t.Id == arp.Id).ToList();
         Assert.That(startWeekMine.Select(t => t.TaskDate), Is.EquivalentTo(new[] { "2026-01-31" }),
-            "the converted series renders on its own start date (#1207) — and only there in that week");
+            "the converted series renders on its own start date — and only there in that week");
         AssertNineToTen(startWeekMine[0]);
 
-        // Day-of-month semantics are gone: the week containing the next
-        // 31st (Tue 2026-03-31; week Mon 2026-03-30 .. Sun 2026-04-05) has NO
-        // occurrence on the 31st — only April's 1st Saturday (2026-04-04).
+        // February 2026 has four Saturdays (7, 14, 21, 28): the 5th spills to the
+        // last, Sat 2026-02-28 (week Mon 2026-02-23 .. Sun 2026-03-01) ...
+        var febLastWeek = await QueryWeek(property.Id, new DateTime(2026, 2, 23, 0, 0, 0, DateTimeKind.Utc));
+        var febMine = febLastWeek.Where(t => t.Id == arp.Id).ToList();
+        Assert.That(febMine, Has.Count.EqualTo(1), "one occurrence in the last-Saturday week of February");
+        Assert.That(febMine[0].TaskDate, Is.EqualTo("2026-02-28"), "on February's last Saturday");
+        AssertNineToTen(febMine[0]);
+
+        // ... and nothing in the first-Saturday week any more.
+        var febFirstWeek = await QueryWeek(property.Id, new DateTime(2026, 2, 2, 0, 0, 0, DateTimeKind.Utc));
+        Assert.That(febFirstWeek.Where(t => t.Id == arp.Id), Is.Empty,
+            "no occurrence on February's 1st Saturday — the legacy week is kept");
+
+        // Day-of-month semantics are gone: the week containing the next 31st
+        // (Tue 2026-03-31; week Mon 2026-03-30 .. Sun 2026-04-05) has no occurrence
+        // at all — March's is Sat 2026-03-28 and April's last Saturday is 2026-04-25.
         var day31Week = await QueryWeek(property.Id, new DateTime(2026, 3, 30, 0, 0, 0, DateTimeKind.Utc));
-        var day31Mine = day31Week.Where(t => t.Id == arp.Id).ToList();
-        Assert.That(day31Mine.Select(t => t.TaskDate), Does.Not.Contain("2026-03-31"),
+        Assert.That(day31Week.Where(t => t.Id == arp.Id).Select(t => t.TaskDate), Is.Empty,
             "no occurrence on the 31st — day-of-month semantics gone");
-        Assert.That(day31Mine.Select(t => t.TaskDate), Is.EquivalentTo(new[] { "2026-04-04" }),
-            "the only occurrence in that week is April's 1st Saturday");
+        var marchLastWeek = await QueryWeek(property.Id, new DateTime(2026, 3, 23, 0, 0, 0, DateTimeKind.Utc));
+        Assert.That(marchLastWeek.Where(t => t.Id == arp.Id).Select(t => t.TaskDate),
+            Is.EquivalentTo(new[] { "2026-03-28" }), "March's last Saturday");
     }
 
     [Test]

@@ -387,15 +387,16 @@ public class CalendarConfigurationBackfillTest : TestBaseSetup
 
         // The stale marker must NOT gate normalization: the ordinal-weekday encoding
         // has to be derived exactly as the no-prior-marker Month test asserts.
+        // #1294: the 31st is the 5th Saturday (ordinal 5 = the month's last).
         var updatedArp = BackendConfigurationPnDbContext!.AreaRulePlannings.Single(x => x.Id == arp.Id);
         Assert.That(updatedArp.RepeatType, Is.EqualTo(3));
         Assert.That(updatedArp.RepeatEvery, Is.EqualTo(1));
         Assert.That(updatedArp.DayOfWeek, Is.EqualTo(6));
-        Assert.That(updatedArp.RepeatOrdinalWeek, Is.EqualTo(1));
+        Assert.That(updatedArp.RepeatOrdinalWeek, Is.EqualTo(5));
         Assert.That(updatedArp.DayOfMonth, Is.EqualTo(0));
 
         var updatedPlanning = ItemsPlanningPnDbContext!.Plannings.Single(x => x.Id == planning.Id);
-        Assert.That(updatedPlanning.RepeatOrdinalWeek, Is.EqualTo(1));
+        Assert.That(updatedPlanning.RepeatOrdinalWeek, Is.EqualTo(5));
 
         // The existing marker is reused, not duplicated.
         Assert.That(BackendConfigurationPnDbContext.CalendarConfigurations
@@ -659,7 +660,7 @@ public class CalendarConfigurationBackfillTest : TestBaseSetup
     }
 
     [Test]
-    public async Task RunIfNeededAsync_MonthlyEveryOneStartingDay31_WritesFirstOrdinalWeekday()
+    public async Task RunIfNeededAsync_MonthlyEveryOneStartingDay31_WritesFifthOrdinalWeekday()
     {
         var property = await SeedProperty();
         var area = await SeedArea();
@@ -675,19 +676,21 @@ public class CalendarConfigurationBackfillTest : TestBaseSetup
         Assert.That(updatedArp.RepeatType, Is.EqualTo(3));
         Assert.That(updatedArp.RepeatEvery, Is.EqualTo(1));
         Assert.That(updatedArp.DayOfWeek, Is.EqualTo(6));
-        Assert.That(updatedArp.RepeatOrdinalWeek, Is.EqualTo(1));
+        // #1294: the legacy day's week, not a hardcoded 1st — the 31st is the 5th
+        // Saturday, which spills to the month's last Saturday like the scheduler.
+        Assert.That(updatedArp.RepeatOrdinalWeek, Is.EqualTo(5));
         Assert.That(updatedArp.DayOfMonth, Is.EqualTo(0));
 
         var updatedPlanning = ItemsPlanningPnDbContext!.Plannings.Single(x => x.Id == planning.Id);
         Assert.That(updatedPlanning.RepeatType, Is.EqualTo(RepeatType.Month));
         Assert.That(updatedPlanning.RepeatEvery, Is.EqualTo(1));
-        Assert.That(updatedPlanning.RepeatOrdinalWeek, Is.EqualTo(1));
+        Assert.That(updatedPlanning.RepeatOrdinalWeek, Is.EqualTo(5));
 
         AssertNineToTenOnDefaultBoard(GetSingleConfiguration(arp.Id), property.Id);
     }
 
     [Test]
-    public async Task RunIfNeededAsync_MonthlyEveryThreeStartingDay29_WritesFirstOrdinalWeekday()
+    public async Task RunIfNeededAsync_MonthlyEveryThreeStartingDay29_WritesFifthOrdinalWeekday()
     {
         var property = await SeedProperty();
         var area = await SeedArea();
@@ -702,15 +705,43 @@ public class CalendarConfigurationBackfillTest : TestBaseSetup
         Assert.That(updatedArp.RepeatType, Is.EqualTo(3));
         Assert.That(updatedArp.RepeatEvery, Is.EqualTo(3));
         Assert.That(updatedArp.DayOfWeek, Is.EqualTo(0));
-        Assert.That(updatedArp.RepeatOrdinalWeek, Is.EqualTo(1));
+        // #1294: 29 March 2026 is the 5th Sunday.
+        Assert.That(updatedArp.RepeatOrdinalWeek, Is.EqualTo(5));
         Assert.That(updatedArp.DayOfMonth, Is.EqualTo(0));
 
         var updatedPlanning = ItemsPlanningPnDbContext!.Plannings.Single(x => x.Id == planning.Id);
         Assert.That(updatedPlanning.RepeatType, Is.EqualTo(RepeatType.Month));
         Assert.That(updatedPlanning.RepeatEvery, Is.EqualTo(3));
-        Assert.That(updatedPlanning.RepeatOrdinalWeek, Is.EqualTo(1));
+        Assert.That(updatedPlanning.RepeatOrdinalWeek, Is.EqualTo(5));
 
         AssertNineToTenOnDefaultBoard(GetSingleConfiguration(arp.Id), property.Id);
+    }
+
+    /// <summary>
+    /// #1294 — a legacy "on the 17th" monthly task (Wed 2026-06-17, the 3rd Wednesday)
+    /// converts to "3rd Wednesday", not the "1st Wednesday" the conversion used to
+    /// hardcode; the scheduler's Planning carries the same weekday and ordinal.
+    /// </summary>
+    [Test]
+    public async Task RunIfNeededAsync_MonthlyStartingDay17_WritesThirdOrdinalWeekday()
+    {
+        var property = await SeedProperty();
+        var area = await SeedArea();
+        var (arp, planning) = await SeedWizardTask(
+            property.Id, area.Id, repeatType: (int)RepeatType.Month, repeatEvery: 1,
+            startDate: new DateTime(2026, 6, 17));
+
+        await _sut.RunIfNeededAsync();
+
+        var updatedArp = BackendConfigurationPnDbContext!.AreaRulePlannings.Single(x => x.Id == arp.Id);
+        Assert.That(updatedArp.RepeatType, Is.EqualTo(3));
+        Assert.That(updatedArp.DayOfWeek, Is.EqualTo((int)DayOfWeek.Wednesday));
+        Assert.That(updatedArp.RepeatOrdinalWeek, Is.EqualTo(3));
+        Assert.That(updatedArp.DayOfMonth, Is.EqualTo(0));
+
+        var updatedPlanning = ItemsPlanningPnDbContext!.Plannings.Single(x => x.Id == planning.Id);
+        Assert.That(updatedPlanning.RepeatOrdinalWeek, Is.EqualTo(3));
+        Assert.That(updatedPlanning.DayOfWeek, Is.EqualTo(DayOfWeek.Wednesday));
     }
 
     [Test]

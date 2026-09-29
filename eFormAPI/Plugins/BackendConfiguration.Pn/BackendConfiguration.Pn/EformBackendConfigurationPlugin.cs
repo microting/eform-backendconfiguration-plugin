@@ -184,6 +184,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddSingleton<ITaskUpdateCompletionService, TaskUpdateCompletionService>();
         services.AddTransient<WorkorderCaseGroupIdBackfillService>();
         services.AddTransient<CalendarConfigurationBackfillService>();
+        services.AddTransient<Services.CalendarMonthlyReanchorRepair.ICalendarMonthlyReanchorRepairService,
+            Services.CalendarMonthlyReanchorRepair.CalendarMonthlyReanchorRepairService>();
         services.AddTransient<AreaRulePlanningTagPurgeService>();
         services.AddTransient<SecurityGroupBackfillService>();
         services.AddTransient<IExcelService, ExcelService>();

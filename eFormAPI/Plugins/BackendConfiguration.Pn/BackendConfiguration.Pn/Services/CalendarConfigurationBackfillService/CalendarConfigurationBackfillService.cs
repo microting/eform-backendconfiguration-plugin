@@ -9,6 +9,7 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Enums;
+using CalendarService = BackendConfiguration.Pn.Services.BackendConfigurationCalendarService.BackendConfigurationCalendarService;
 
 namespace BackendConfiguration.Pn.Services.CalendarConfigurationBackfillService;
 
@@ -235,6 +236,12 @@ public class CalendarConfigurationBackfillService(
     // Normalizes recurrence to the calendar encoding. All ARP writes are
     // unconditional re-derivations from Planning.StartDate/RepeatType/RepeatEvery,
     // so any interrupted pass converges to the same final state on the next run.
+    //
+    // #1294 — only the RULE is fixed here (deterministic, derived from the Planning).
+    // Data the legacy rule already produced — the open compliance of the running
+    // period and NextExecutionTime, both on the legacy day — is deliberately NOT moved
+    // at startup: moving customer data needs a reviewed dry run, so it is left to the
+    // admin repair (CalendarMonthlyReanchorRepairService), whose dry run lists it.
     private async Task NormalizeRecurrence(AreaRulePlanning arp, Planning planning)
     {
         // "Altid" (RepeatType 0) and legacy (Day, 0) both become daily.
@@ -260,6 +267,15 @@ public class CalendarConfigurationBackfillService(
                 await arp.Update(dbContext);
                 break;
             case RepeatType.Week:
+                // #1294 — the scheduler (SearchListJob) snaps with the planning's
+                // weekday, so it must equal the ARP's; the legacy value is stale.
+                // The planning is written FIRST and the ARP LAST: the ARP's
+                // still-unnormalized shape is what re-selects the row on the next
+                // startup, so an interrupted pass must not leave the ARP done and
+                // the planning behind.
+                planning.DayOfWeek = (DayOfWeek)dow;
+                await planning.Update(itemsPlanningPnDbContext);
+
                 arp.RepeatType = 2;
                 arp.RepeatEvery = planning.RepeatEvery;
                 arp.DayOfWeek = dow;
@@ -267,16 +283,26 @@ public class CalendarConfigurationBackfillService(
                 await arp.Update(dbContext);
                 break;
             case RepeatType.Month:
+            {
+                // #1294 — the WEEK of the legacy day, not a hardcoded 1st: "on the
+                // 17th" (a Wednesday) is the 3rd Wednesday. Weekday and ordinal both
+                // come from Planning.StartDate, the legacy anchor the old scheduler
+                // advanced whole months from. 29th–31st give 5, which every Month
+                // producer and the scheduler spill to the month's last such weekday.
+                var ordinal = CalendarService.OrdinalWeekOf(planning.StartDate);
+                // Planning first, ARP last — see the Week branch.
+                planning.RepeatOrdinalWeek = ordinal;
+                planning.DayOfWeek = (DayOfWeek)dow; // #1294 — see the Week branch
+                await planning.Update(itemsPlanningPnDbContext);
+
                 arp.RepeatType = 3;
                 arp.RepeatEvery = planning.RepeatEvery;
                 arp.DayOfWeek = dow;
-                arp.RepeatOrdinalWeek = 1;
+                arp.RepeatOrdinalWeek = ordinal;
                 arp.DayOfMonth = 0;
                 await arp.Update(dbContext);
-
-                planning.RepeatOrdinalWeek = 1;
-                await planning.Update(itemsPlanningPnDbContext);
                 break;
+            }
             // Year/unknown: not wizard-producible — pass through untouched.
         }
     }
