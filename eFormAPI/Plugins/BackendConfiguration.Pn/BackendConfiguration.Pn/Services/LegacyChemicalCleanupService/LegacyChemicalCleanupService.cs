@@ -27,6 +27,7 @@ using System.Threading.Tasks;
 using Infrastructure.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microting.eForm.Infrastructure;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
@@ -52,6 +53,8 @@ public sealed record LegacyChemicalCleanupResult(
 /// "Chemicals - Areas - &lt;property&gt;". Works by area type and entity-group
 /// name, so it does not need the Property columns the ChemicalInventory
 /// migration dropped. Idempotent; marker-gated like AreaRulePlanningTagPurgeService.
+/// Items are deleted one by one in isolation; the marker is written after every
+/// completed pass, even one with failed items (those are logged in one warning).
 /// </summary>
 public class LegacyChemicalCleanupService(
     BackendConfigurationPnDbContext dbContext,
@@ -95,26 +98,71 @@ public class LegacyChemicalCleanupService(
         logger.LogInformation(
             "LegacyChemicalCleanup: removed {AreaProperties} area assignments, {Cases} cases, {EntityGroups} entity lists",
             result.AreaProperties, result.Cases, result.EntityGroups);
+
+        // The marker is written even when items failed: a deterministic failure
+        // would otherwise re-run the whole cleanup (and report to Sentry) on
+        // every boot. The failed ids are left for manual follow-up.
+        if (result.Failures.Count > 0)
+        {
+            logger.LogWarning(
+                "LegacyChemicalCleanup: {FailureCount} items could not be removed and will not be retried: {Failures}",
+                result.Failures.Count, string.Join(", ", result.Failures));
+        }
     }
 
+    /// <summary>
+    /// One pass over the legacy data. Every item is deleted in isolation: a
+    /// failing delete is logged and listed in <see cref="LegacyChemicalCleanupResult.Failures"/>,
+    /// and the pass carries on with the rest.
+    /// </summary>
     public async Task<LegacyChemicalCleanupResult> CleanupAsync()
     {
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContext = core.DbContextHelper.GetDbContext();
+        var failures = new List<string>();
 
         var assignments = await dbContext.AreaProperties
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed && x.Area.Type == AreaTypesEnum.Type9)
+            .OrderBy(x => x.Id)
             .ToListAsync().ConfigureAwait(false);
-        var assignmentIds = assignments.Select(x => x.Id).ToList();
 
+        // Cases deployed straight into the legacy folders (the 25.02–25.07 expiry
+        // folders) are not reachable through plannings, so they go first.
+        var deployedUids = await CollectDeployedCaseUidsAsync(sdkDbContext, assignments.Select(x => x.Id).ToList())
+            .ConfigureAwait(false);
+        var cases = await DeleteEachAsync(deployedUids, "case", uid => uid, sdkOperations.DeleteCaseAsync, failures)
+            .ConfigureAwait(false);
+
+        var areaProperties = await DeleteEachAsync(assignments, "areaProperty", assignment => assignment.Id,
+            assignment => BackendConfigurationPropertyAreasServiceHelper.DeleteAreaPropertyAsync(
+                assignment, core, dbContext, itemsPlanningPnDbContext, SystemUserId),
+            failures).ConfigureAwait(false);
+
+        var entityGroupUids = await sdkDbContext.EntityGroups
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
+                        && x.MicrotingUid != null
+                        && (GlobalEntityGroupNames.Contains(x.Name) || x.Name.StartsWith(PropertyEntityGroupPrefix)))
+            .Select(x => x.MicrotingUid)
+            .ToListAsync().ConfigureAwait(false);
+        var entityGroups = await DeleteEachAsync(entityGroupUids, "entityGroup", uid => uid,
+            sdkOperations.DeleteEntityGroupAsync, failures).ConfigureAwait(false);
+
+        return new LegacyChemicalCleanupResult(areaProperties, cases, entityGroups, failures);
+    }
+
+    /// <summary>
+    /// MicrotingUids of the cases and check-list sites deployed into the SDK
+    /// folders of the given area assignments.
+    /// </summary>
+    private async Task<List<int>> CollectDeployedCaseUidsAsync(
+        MicrotingDbContext sdkDbContext, List<int> assignmentIds)
+    {
         var folderIds = await dbContext.ProperyAreaFolders
             .Where(x => assignmentIds.Contains(x.ProperyAreaAsignmentId))
             .Select(x => x.FolderId)
             .Distinct()
             .ToListAsync().ConfigureAwait(false);
 
-        // Cases deployed straight into the legacy folders (the 25.02–25.07 expiry
-        // folders) are not reachable through plannings, so they go first.
         var caseUids = await sdkDbContext.Cases
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
                         && x.FolderId != null && folderIds.Contains(x.FolderId.Value)
@@ -126,28 +174,32 @@ public class LegacyChemicalCleanupService(
                         && x.FolderId != null && folderIds.Contains(x.FolderId.Value))
             .Select(x => x.MicrotingUid)
             .ToListAsync().ConfigureAwait(false);
-        var deployedUids = caseUids.Concat(checkListSiteUids).Distinct().ToList();
-        foreach (var uid in deployedUids)
+
+        return caseUids.Concat(checkListSiteUids).Distinct().ToList();
+    }
+
+    /// <summary>
+    /// Runs <paramref name="delete"/> for every item, logging and recording a
+    /// failure as "&lt;kind&gt;:&lt;id&gt;" instead of stopping. Returns how many succeeded.
+    /// </summary>
+    private async Task<int> DeleteEachAsync<T>(IEnumerable<T> items, string kind, Func<T, object> idOf,
+        Func<T, Task> delete, List<string> failures)
+    {
+        var deleted = 0;
+        foreach (var item in items)
         {
-            await sdkOperations.DeleteCaseAsync(uid).ConfigureAwait(false);
+            try
+            {
+                await delete(item).ConfigureAwait(false);
+                deleted++;
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "LegacyChemicalCleanup: could not delete {Kind} {Id}", kind, idOf(item));
+                failures.Add($"{kind}:{idOf(item)}");
+            }
         }
 
-        foreach (var assignment in assignments)
-        {
-            await BackendConfigurationPropertyAreasServiceHelper.DeleteAreaPropertyAsync(
-                assignment, core, dbContext, itemsPlanningPnDbContext, SystemUserId).ConfigureAwait(false);
-        }
-
-        var entityGroupUids = await sdkDbContext.EntityGroups
-            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
-                        && (GlobalEntityGroupNames.Contains(x.Name) || x.Name.StartsWith(PropertyEntityGroupPrefix)))
-            .Select(x => x.MicrotingUid)
-            .ToListAsync().ConfigureAwait(false);
-        foreach (var uid in entityGroupUids)
-        {
-            await sdkOperations.DeleteEntityGroupAsync(uid).ConfigureAwait(false);
-        }
-
-        return new LegacyChemicalCleanupResult(assignments.Count, deployedUids.Count, entityGroupUids.Count, []);
+        return deleted;
     }
 }
