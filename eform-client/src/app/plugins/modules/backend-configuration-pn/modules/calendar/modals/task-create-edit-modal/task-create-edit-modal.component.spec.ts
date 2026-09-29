@@ -153,7 +153,8 @@ describe('TaskCreateEditModalComponent — merged teams/workers picker (#1295)',
       calendarService,
       repeatService,
       dialog,
-      {} as any,
+      // dialogConfigHelper reads overlay.scrollStrategies.reposition() before dialog.open.
+      {scrollStrategies: {reposition: () => ({})}} as any,
       translate,
       eformVisualEditorService,
       propertiesService,
@@ -502,6 +503,8 @@ describe('TaskCreateEditModalComponent — merged teams/workers picker (#1295)',
       expect(dialog.open).toHaveBeenCalledTimes(1);
       expect(calendarService.updateTask).not.toHaveBeenCalled();
       expect(component.isSaving).toBe(false);
+      // Cleared by the cancel, not by abortSave after a throw.
+      expect(toastr.error).not.toHaveBeenCalled();
     });
 
     it('clears the guard and shows an error when building the payload throws', async () => {
