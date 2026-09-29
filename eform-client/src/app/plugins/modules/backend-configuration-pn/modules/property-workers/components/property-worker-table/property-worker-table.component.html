@@ -176,6 +176,7 @@
     [attr.data-app]="appKey"
     [attr.data-app-state]="appState(app)"
     [matTooltip]="appDeviceTooltip(app)"
+    [attr.tabindex]="appDeviceTooltip(app) ? 0 : null"
   >
     <mat-chip class="app-install-state" [ngClass]="appStateClass(app)">
       <span>{{ appStateLabel(app) | translate }}</span>

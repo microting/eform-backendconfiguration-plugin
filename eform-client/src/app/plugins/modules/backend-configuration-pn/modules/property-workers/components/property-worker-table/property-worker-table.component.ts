@@ -239,9 +239,10 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
   /** Model and OS of the device that reported the version; empty when unknown. */
   appDeviceTooltip(app: AppInstallModel | undefined): string {
     const parts: string[] = [];
-    if (app?.model) {
-      const manufacturer = app.manufacturer ? ` (${app.manufacturer})` : '';
-      parts.push(`${this.translateService.instant('Model')}: ${app.model}${manufacturer}`);
+    // Model and manufacturer are reported independently; show whichever is known.
+    const device = [app?.model, app?.manufacturer ? `(${app.manufacturer})` : null].filter(Boolean).join(' ');
+    if (device) {
+      parts.push(`${this.translateService.instant('Model')}: ${device}`);
     }
     if (app?.osVersion) {
       parts.push(`${this.translateService.instant('OS version')}: ${app.osVersion}`);
