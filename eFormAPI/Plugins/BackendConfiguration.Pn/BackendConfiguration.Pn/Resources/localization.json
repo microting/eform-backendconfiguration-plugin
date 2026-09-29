@@ -6200,6 +6200,37 @@
     }
   },
   {
+    "Key": "Planned",
+    "LocalizedValue": {
+      "da": "Planlagt",
+      "en-US": "Planned",
+      "uk-UA": "Заплановано",
+      "de": "Geplant",
+      "pl-PL": "Zaplanowane",
+      "no-NO": "Planlagt",
+      "sv-SE": "Planerad",
+      "es-ES": "Planificado",
+      "fr-FR": "Planifié",
+      "it-IT": "Pianificato",
+      "nl-NL": "Gepland",
+      "pt-BR": "Planejado",
+      "pt-PT": "Planeado",
+      "fi-FI": "Suunniteltu",
+      "et-ET": "Planeeritud",
+      "lv-LV": "Plānots",
+      "lt-LT": "Suplanuota",
+      "ro-RO": "Planificat",
+      "hr-HR": "Planirano",
+      "sl-SL": "Načrtovano",
+      "cs-CZ": "Naplánováno",
+      "sk-SK": "Naplánované",
+      "hu-HU": "Tervezett",
+      "bg-BG": "Планирано",
+      "el-GR": "Προγραμματισμένο",
+      "is-IS": "Áætlað"
+    }
+  },
+  {
     "Key": "NotDone",
     "LocalizedValue": {
       "da": "Ikke udført",

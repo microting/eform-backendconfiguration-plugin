@@ -623,6 +623,7 @@ export const frFR = {
   'No tasks match the selected filters.': 'Aucune tâche ne correspond aux filtres sélectionnés.',
   'Task done': 'Tâche accomplie',
   'Task not done': 'Tâche non terminée',
+  'Planned': 'Planifié',
   'Could not load the data': 'Impossible de charger les données',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.

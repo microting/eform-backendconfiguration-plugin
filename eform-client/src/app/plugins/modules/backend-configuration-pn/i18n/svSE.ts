@@ -624,6 +624,7 @@ export const svSE = {
   'No tasks match the selected filters.': 'Inga uppgifter matchar de valda filtren.',
   'Task done': 'Uppgift klar',
   'Task not done': 'Uppgiften är inte klar',
+  'Planned': 'Planerad',
   'Could not load the data': 'Kunde inte ladda data',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.

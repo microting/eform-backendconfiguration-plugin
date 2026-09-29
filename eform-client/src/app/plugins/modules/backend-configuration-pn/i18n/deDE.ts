@@ -672,6 +672,7 @@ export const deDE = {
   'No tasks match the selected filters.': 'Es wurden keine Aufgaben gefunden, die den ausgewählten Filtern entsprechen.',
   'Task done': 'Aufgabe erledigt',
   'Task not done': 'Aufgabe nicht erledigt',
+  'Planned': 'Geplant',
   'Could not load the data': 'Die Daten konnten nicht geladen werden',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.

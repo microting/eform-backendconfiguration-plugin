@@ -624,6 +624,7 @@ export const hrHR = {
   'No tasks match the selected filters.': 'Nijedan zadatak ne odgovara odabranim filterima.',
   'Task done': 'Zadatak obavljen',
   'Task not done': 'Zadatak nije dovršen',
+  'Planned': 'Planirano',
   'Could not load the data': 'Nije moguće učitati podatke',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.

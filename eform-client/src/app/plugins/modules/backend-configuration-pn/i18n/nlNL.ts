@@ -624,6 +624,7 @@ export const nlNL = {
   'No tasks match the selected filters.': 'Er zijn geen taken die overeenkomen met de geselecteerde filters.',
   'Task done': 'Taak voltooid',
   'Task not done': 'Taak niet voltooid',
+  'Planned': 'Gepland',
   'Could not load the data': 'De gegevens konden niet worden geladen',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.

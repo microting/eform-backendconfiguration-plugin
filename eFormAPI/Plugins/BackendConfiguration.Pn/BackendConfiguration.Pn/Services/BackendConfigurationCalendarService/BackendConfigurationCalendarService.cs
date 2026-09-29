@@ -4995,8 +4995,11 @@ public class BackendConfigurationCalendarService(
     ///     branch).
     ///   * monthly → year+month.
     ///   * yearly (RepeatType cast 4) → year.
+    ///
+    /// internal (not private) so the compliance report's projected rows (#1332)
+    /// suppress the same completed periods the week view does.
     /// </summary>
-    private static string? CompletedPeriodKey(
+    internal static string? CompletedPeriodKey(
         Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType repeatType,
         string? repeatWeekdaysCsv,
         DateTime date)
@@ -5572,6 +5575,48 @@ public class BackendConfigurationCalendarService(
         }
 
         ApplyRepeatEndBound(planning, arp, occurrences, occurrences[^1]);
+        return occurrences;
+    }
+
+    /// <summary>
+    /// #1332 — every date the calendar WEEK VIEW renders for one series in
+    /// [<paramref name="fromInclusive"/>, <paramref name="toInclusive"/>], ascending,
+    /// for ranges of any length.
+    ///
+    /// It is exactly the two calls <see cref="GetTasksForWeek"/> makes per week —
+    /// <see cref="GetOccurrencesInWeek"/> then <see cref="ApplyRepeatEndBound"/> —
+    /// walked over consecutive 7-day windows. The week-view enumerator is used rather
+    /// than <see cref="EnumerateOccurrences"/> on purpose: it is what the calendar
+    /// paints AND what <c>EventDeployService.EnsureDeployedAsync</c> deploys from, and
+    /// the two differ (a one-off task and <c>Planning.RepeatUntil</c> are honoured only
+    /// by the week view; a multi-day every-Nth-week rule buckets Monday- vs
+    /// Sunday-aligned). A projected occurrence must be one that will really appear.
+    ///
+    /// Occurrence exceptions are NOT applied here — callers key them on the dates
+    /// returned, as the week view does.
+    /// </summary>
+    internal static List<DateTime> GetWeekViewOccurrences(
+        Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
+        AreaRulePlanning arp,
+        DateTime fromInclusive,
+        DateTime toInclusive)
+    {
+        var from = fromInclusive.Date;
+        var to = toInclusive.Date;
+        var occurrences = new List<DateTime>();
+        // GetOccurrencesInWeek assumes a week-sized window (its multi-day weekly
+        // branch paints one 7-day window and its Month/Year branches cap their
+        // candidates), so a longer range is walked in disjoint 7-day windows.
+        for (var weekStart = from; weekStart <= to; weekStart = weekStart.AddDays(7))
+        {
+            var weekEnd = weekStart.AddDays(7).AddTicks(-1);
+            occurrences.AddRange(GetOccurrencesInWeek(planning, weekStart, weekEnd,
+                    arp.RepeatWeekdaysCsv, arp.RepeatOrdinalWeek, arp.DayOfWeek)
+                .Where(d => d.Date <= to));
+        }
+
+        ApplyRepeatEndBound(planning, arp, occurrences, to);
+        occurrences.Sort();
         return occurrences;
     }
 

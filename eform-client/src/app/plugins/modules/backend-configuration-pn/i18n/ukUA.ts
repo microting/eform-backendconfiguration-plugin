@@ -624,6 +624,7 @@ export const ukUA = {
   'No tasks match the selected filters.': 'Жодне завдання не відповідає вибраним фільтрам.',
   'Task done': 'Завдання виконано',
   'Task not done': 'Завдання не виконано',
+  'Planned': 'Заплановано',
   'Could not load the data': 'Не вдалося завантажити дані',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.

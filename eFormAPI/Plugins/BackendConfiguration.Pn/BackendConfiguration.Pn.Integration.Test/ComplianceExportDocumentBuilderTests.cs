@@ -515,6 +515,26 @@ public class ComplianceExportDocumentBuilderTests
     }
 
     /// <summary>
+    /// #1332: a planned occurrence (no compliance row yet) reads "Planlagt" in the
+    /// Status column — the same status the Detaljer screen shows — and is not
+    /// marked done.
+    /// </summary>
+    [Test]
+    public void Details_PlannedRowsReadPlanlagt()
+    {
+        var document = ComplianceExportDocumentBuilder.BuildDetails(
+        [
+            new ComplianceReportRowModel { TaskDate = "2026-11-30", IsProjected = true },
+            new ComplianceReportRowModel { TaskDate = "2026-03-09", Completed = false },
+            new ComplianceReportRowModel { TaskDate = "2026-03-02", Completed = true }
+        ], "p", _danish);
+
+        var rows = document.Tables[0].Rows;
+        Assert.That(rows.Select(r => r.Cells[7].Text), Is.EqualTo(new[] { "Planlagt", "Ikke udført", "Udført" }));
+        Assert.That(rows[0].IsDone, Is.False);
+    }
+
+    /// <summary>
     /// A completed row is marked <see cref="ComplianceExportRow.IsDone"/> (#1191)
     /// so Word/PDF can tint it; an open row is not. The mark is a row property
     /// next to <c>IsTotal</c>, and a Detaljer row is never a totals row.
@@ -1460,6 +1480,7 @@ public class ComplianceExportDocumentBuilderTests
             ["Status"] = "Status",
             ["Done"] = "Udført",
             ["NotDone"] = "Ikke udført",
+            ["Planned"] = "Planlagt",
             // Rapport (#1192): the formatted image count, the appendix case label.
             ["ImagesCount"] = "{0} billeder",
             ["ImagesCountOne"] = "1 billede",

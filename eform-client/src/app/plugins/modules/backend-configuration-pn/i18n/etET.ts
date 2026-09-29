@@ -624,6 +624,7 @@ export const etET = {
   'No tasks match the selected filters.': 'Valitud filtritele ei vasta ükski ülesanne.',
   'Task done': 'Ülesanne tehtud',
   'Task not done': 'Ülesanne pole tehtud',
+  'Planned': 'Planeeritud',
   'Could not load the data': 'Andmeid ei õnnestunud laadida',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.

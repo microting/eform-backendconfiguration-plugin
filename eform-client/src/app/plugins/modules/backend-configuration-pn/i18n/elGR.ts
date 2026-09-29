@@ -624,6 +624,7 @@ export const elGR = {
   'No tasks match the selected filters.': 'Δεν υπάρχουν εργασίες που να αντιστοιχούν στα επιλεγμένα φίλτρα.',
   'Task done': 'Η εργασία ολοκληρώθηκε',
   'Task not done': 'Η εργασία δεν ολοκληρώθηκε',
+  'Planned': 'Προγραμματισμένο',
   'Could not load the data': 'Δεν ήταν δυνατή η φόρτωση των δεδομένων',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.

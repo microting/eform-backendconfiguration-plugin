@@ -624,6 +624,7 @@ export const ltLT = {
   'No tasks match the selected filters.': 'Nėra pasirinktų filtrų atitinkančių užduočių.',
   'Task done': 'Užduotis atlikta',
   'Task not done': 'Užduotis neatlikta',
+  'Planned': 'Suplanuota',
   'Could not load the data': 'Nepavyko įkelti duomenų',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.

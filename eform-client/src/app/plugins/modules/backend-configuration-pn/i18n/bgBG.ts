@@ -624,6 +624,7 @@ export const bgBG = {
   'No tasks match the selected filters.': 'Няма задачи, които да отговарят на избраните филтри.',
   'Task done': 'Задачата е изпълнена',
   'Task not done': 'Задачата не е изпълнена',
+  'Planned': 'Планирано',
   'Could not load the data': 'Не можаха да се заредят данните',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.

@@ -624,6 +624,7 @@ export const esES = {
   'No tasks match the selected filters.': 'No se encontraron tareas que coincidan con los filtros seleccionados.',
   'Task done': 'Tarea realizada',
   'Task not done': 'Tarea no realizada',
+  'Planned': 'Planificado',
   'Could not load the data': 'No se pudieron cargar los datos',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.

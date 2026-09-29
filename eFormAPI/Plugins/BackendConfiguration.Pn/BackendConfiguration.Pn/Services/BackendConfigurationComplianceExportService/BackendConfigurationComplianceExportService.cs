@@ -143,8 +143,10 @@ public class BackendConfigurationComplianceExportService(
                     // regardless of what is paginated on screen (#1169 §3,
                     // behaviour 1, deliberately kept). The service's 5000-row
                     // ceiling still applies — logged there — instead of pulling an
-                    // unbounded set into memory.
-                    var result = await complianceReportService.Index(BuildReportRequest(requestModel));
+                    // unbounded set into memory. The planned occurrences after today
+                    // are included, as on screen (#1332).
+                    var result = await complianceReportService.Index(
+                        BuildReportRequest(requestModel, includeProjected: true));
 
                     if (!result.Success)
                     {
@@ -158,7 +160,9 @@ public class BackendConfigurationComplianceExportService(
 
                 default:
                 {
-                    var result = await complianceReportService.EformColumns(BuildReportRequest(requestModel));
+                    // Rapport exports answers only: no planned occurrences (#1332).
+                    var result = await complianceReportService.EformColumns(
+                        BuildReportRequest(requestModel, includeProjected: false));
 
                     if (!result.Success)
                     {
@@ -248,7 +252,7 @@ public class BackendConfigurationComplianceExportService(
     /// (taskDate descending), and <c>EformColumns</c> ignores both regardless.
     /// </summary>
     private static ComplianceReportRequestModel BuildReportRequest(
-        ComplianceReportExportRequestModel requestModel) => new()
+        ComplianceReportExportRequestModel requestModel, bool includeProjected) => new()
     {
         PropertyId = requestModel.PropertyId,
         BoardIds = requestModel.BoardIds ?? [],
@@ -258,7 +262,8 @@ public class BackendConfigurationComplianceExportService(
         DateFrom = requestModel.DateFrom,
         DateTo = requestModel.DateTo,
         PageIndex = 0,
-        PageSize = 0
+        PageSize = 0,
+        IncludeProjected = includeProjected
     };
 
     /// <summary>

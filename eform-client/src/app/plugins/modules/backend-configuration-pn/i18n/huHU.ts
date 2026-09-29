@@ -624,6 +624,7 @@ export const huHU = {
   'No tasks match the selected filters.': 'Egyik feladat sem felel meg a kiválasztott szűrőknek.',
   'Task done': 'Feladat elvégezve',
   'Task not done': 'Feladat nincs elvégezve',
+  'Planned': 'Tervezett',
   'Could not load the data': 'Nem sikerült betölteni az adatokat',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.

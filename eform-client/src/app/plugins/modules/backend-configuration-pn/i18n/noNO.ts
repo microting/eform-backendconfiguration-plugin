@@ -624,6 +624,7 @@ export const noNO = {
   'No tasks match the selected filters.': 'Ingen oppgaver samsvarer med de valgte filtrene.',
   'Task done': 'Oppgaven er fullført',
   'Task not done': 'Oppgaven er ikke utført',
+  'Planned': 'Planlagt',
   'Could not load the data': 'Kunne ikke laste inn dataene',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.

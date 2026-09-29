@@ -787,6 +787,7 @@ export const enUS= {
   // key: its Danish is 'Færdig' and it is used on unrelated screens.
   'Task done': 'Task done',
   'Task not done': 'Task not done',
+  'Planned': 'Planned',
   // Shown in the result card when the FIRST fetch of a visit fails. Kept
   // distinct from 'No tasks match the selected filters.' on purpose: a
   // transport or server error is not the filters' fault.
