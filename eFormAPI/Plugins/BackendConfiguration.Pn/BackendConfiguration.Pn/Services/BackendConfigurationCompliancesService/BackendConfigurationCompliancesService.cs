@@ -141,7 +141,10 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
         var core = await _coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContext = core.DbContextHelper.GetDbContext();
 
-        var complianceList = _backendConfigurationPnDbContext.Compliances
+        // #1325 — missed occurrences of a task with "Overskredet opgave vises ikke i app"
+        // are not open work; ComplianceStatus reads this list too.
+        var complianceList = HiddenOverdueRule.ExcludeHiddenOverdue(
+                _backendConfigurationPnDbContext.Compliances, _backendConfigurationPnDbContext, UtcNow())
             .Where(x => x.PropertyId == request.PropertyId)
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
@@ -514,7 +517,7 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
 
             var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == compliance.PropertyId).ConfigureAwait(false);
 
-            if (_backendConfigurationPnDbContext.Compliances.AsNoTracking().Any(x =>
+            if (HiddenOverdueRule.ExcludeNeverOverdue(_backendConfigurationPnDbContext.Compliances.AsNoTracking(), _backendConfigurationPnDbContext, DateTime.UtcNow).Any(x =>
                     x.Deadline < DateTime.UtcNow && x.PropertyId == property.Id &&
                     x.WorkflowState != Constants.WorkflowStates.Removed))
             {
@@ -532,7 +535,7 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
                     await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
 
-                if (!_backendConfigurationPnDbContext.Compliances.AsNoTracking().Any(x =>
+                if (!HiddenOverdueRule.ExcludeNeverOverdue(_backendConfigurationPnDbContext.Compliances.AsNoTracking(), _backendConfigurationPnDbContext, DateTime.UtcNow).Any(x =>
                         x.Deadline < DateTime.UtcNow && x.PropertyId == property.Id &&
                         x.WorkflowState != Constants.WorkflowStates.Removed))
                 {
@@ -806,7 +809,7 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
 
             var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == compliance.PropertyId).ConfigureAwait(false);
 
-            if (_backendConfigurationPnDbContext.Compliances.AsNoTracking().Any(x =>
+            if (HiddenOverdueRule.ExcludeNeverOverdue(_backendConfigurationPnDbContext.Compliances.AsNoTracking(), _backendConfigurationPnDbContext, DateTime.UtcNow).Any(x =>
                     x.Deadline < DateTime.UtcNow && x.PropertyId == property.Id &&
                     x.WorkflowState != Constants.WorkflowStates.Removed))
             {
@@ -824,7 +827,7 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
                     await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
 
-                if (!_backendConfigurationPnDbContext.Compliances.AsNoTracking().Any(x =>
+                if (!HiddenOverdueRule.ExcludeNeverOverdue(_backendConfigurationPnDbContext.Compliances.AsNoTracking(), _backendConfigurationPnDbContext, DateTime.UtcNow).Any(x =>
                         x.Deadline < DateTime.UtcNow && x.PropertyId == property.Id &&
                         x.WorkflowState != Constants.WorkflowStates.Removed))
                 {
@@ -1118,7 +1121,9 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
     public async Task<OperationDataResult<CompliancesStatsModel>> Stats()
     {
         var envTag = await _itemsPlanningPnDbContext.PlanningTags.Where(x => x.Name == "Miljøtilsyn").FirstAsync();
-        var complianceList = _backendConfigurationPnDbContext.Compliances;
+        // #1325 — hidden missed occurrences count nowhere, the past-due buckets included.
+        var complianceList = HiddenOverdueRule.ExcludeHiddenOverdue(
+            _backendConfigurationPnDbContext.Compliances, _backendConfigurationPnDbContext, UtcNow());
         var oneWeekInTheFutureCount = await complianceList.CountAsync(x => x.Deadline >= DateTime.UtcNow && x.Deadline <= DateTime.UtcNow.AddDays(7));
         var todayCount = await complianceList.CountAsync(x => x.Deadline.Date <= DateTime.UtcNow.Date && x.WorkflowState != Constants.WorkflowStates.Removed);
 

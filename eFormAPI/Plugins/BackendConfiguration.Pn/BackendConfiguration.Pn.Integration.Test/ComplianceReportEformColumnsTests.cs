@@ -602,6 +602,8 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
             ItemPlanningId = planning.Id,
             StartDate = DateTime.SpecifyKind(startDate, DateTimeKind.Utc), Status = true,
             RepeatType = 2, RepeatEvery = 1, RepeatWeekdaysCsv = "1", DayOfWeek = 1,
+            // #1325: a task whose missed occurrences are reported
+            ComplianceEnabled = true,
             ItemPlanningTagId = withHeadline ? await DefaultHeadline() : null,
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         };

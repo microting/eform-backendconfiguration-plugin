@@ -6390,6 +6390,8 @@ public class BackendConfigurationCalendarService(
     /// <see cref="CalendarTaskResponseModel.TaskIsExpired"/>
     /// (<c>(Case.WorkflowState=Removed AND Status=77) OR
     /// (compliance.Deadline &lt; UtcNow AND Status != 100)</c>).
+    /// Expired, uncompleted rows of a task with <c>ComplianceEnabled = false</c> are left
+    /// out (#1325, <see cref="HiddenOverdueRule"/>).
     /// </remarks>
     public async Task<OperationDataResult<List<CalendarTaskResponseModel>>> GetTaskTrackerList(
         int propertyId, int? sdkSiteIdForFilter, int? languageId = null)
@@ -6629,6 +6631,14 @@ public class BackendConfigurationCalendarService(
                     : null;
                 bool completed = sdkCase?.Status == 100;
                 var taskIsExpired = ComputeTaskIsExpired(sdkCase, effectiveDate, dateTimeNow);
+
+                // #1325 — the app's "Forfaldne opgaver" banner is built from these rows.
+                // One live ARP per planning here (the ToDictionary above), so its flag is
+                // the planning's.
+                if (HiddenOverdueRule.IsHiddenOverdue(arp.ComplianceEnabled, taskIsExpired, completed))
+                {
+                    continue;
+                }
 
                 var rowWorkerTagIds = arp != null
                     ? complianceWorkerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>())

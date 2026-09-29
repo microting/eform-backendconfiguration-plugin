@@ -82,7 +82,7 @@ public class TaskTrackerModel
 	/// <summary>
 	/// Gets or sets the next execution time of the task tracker model.
 	/// </summary>
-	public DateTime NextExecutionTime { get; set; }
+	public DateTime? NextExecutionTime { get; set; }
 
 	/// <summary>
 	/// Gets or sets a value indicating whether the task is expired or not.

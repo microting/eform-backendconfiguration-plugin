@@ -493,6 +493,9 @@ public class BackendConfigurationComplianceReportService(
             .GroupBy(x => x.ItemPlanningId)
             .ToDictionary(g => g.Key, g => g.OrderBy(a => a.Id).First());
         var arpIds = arps.Select(x => x.Id).ToList();
+        // #1325 — a planning shared by several live tasks hides missed occurrences only
+        // when none of them reports them (HiddenOverdueRule), not by the pinned ARP alone.
+        var reportingPlanningIds = arps.Where(x => x.ComplianceEnabled).Select(x => x.ItemPlanningId).ToHashSet();
 
         // Same reasoning as arpByPlanningId above: IX_CalendarConfigurations_
         // AreaRulePlanningId is a plain, non-unique index and the entity carries
@@ -610,6 +613,15 @@ public class BackendConfigurationComplianceReportService(
             {
                 // Not done + soft-removed = user-deleted occurrence: never shown.
                 if (candidate.WorkflowState == Constants.WorkflowStates.Removed) continue;
+                // #1325 — a missed occurrence of a task with "Overskredet opgave vises
+                // ikke i app" is neither open in Detaljer nor overdue/due in Oversigt.
+                if (arp != null && HiddenOverdueRule.IsHiddenOverdue(
+                        reportingPlanningIds.Contains(candidate.PlanningId),
+                        HiddenOverdueRule.IsPastDue(effectiveTaskDate, filter.Today),
+                        completed: false))
+                {
+                    continue;
+                }
                 if (!wantOpen) continue;
             }
 
@@ -715,7 +727,8 @@ public class BackendConfigurationComplianceReportService(
                     // No titles, no all-day/StartHour/Duration, no DoneAt, no tag,
                     // worker or board NAMES, no CheckListId. Property names are the
                     // only lookup the aggregation needs.
-                    ComputeDisplayFields = false
+                    ComputeDisplayFields = false,
+                    Today = today
                 },
                 sdkDbContext);
 
@@ -1363,6 +1376,12 @@ public class BackendConfigurationComplianceReportService(
         /// This flag can change NOTHING that the filtering above reads.
         /// </summary>
         public bool ComputeDisplayFields { get; init; } = true;
+
+        /// <summary>
+        /// "Today" for the #1325 hidden-overdue rule. Overview passes the value it
+        /// classifies overdue rows against, so the two can never disagree across midnight.
+        /// </summary>
+        public DateTime Today { get; init; } = DateTime.UtcNow.Date;
     }
 
     /// <summary>What phases A-C produce.</summary>

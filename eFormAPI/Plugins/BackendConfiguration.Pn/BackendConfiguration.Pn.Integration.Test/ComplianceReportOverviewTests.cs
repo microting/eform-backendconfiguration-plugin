@@ -238,7 +238,7 @@ public class ComplianceReportOverviewTests : TestBaseSetup
     /// Returns (arpId, propertyId, planningId, areaId, areaRuleId).
     /// </summary>
     private async Task<(int ArpId, int PropertyId, int PlanningId, int AreaId, int AreaRuleId)> SeedSeries(
-        string propertyName, string title, DateTime startDate)
+        string propertyName, string title, DateTime startDate, bool complianceEnabled = true)
     {
         var (areaId, propertyId) = await SeedAreaAndProperty(propertyName);
 
@@ -274,6 +274,8 @@ public class ComplianceReportOverviewTests : TestBaseSetup
             ItemPlanningId = planning.Id,
             StartDate = DateTime.SpecifyKind(startDate, DateTimeKind.Utc), Status = true,
             RepeatType = 2, RepeatEvery = 1, RepeatWeekdaysCsv = "1", DayOfWeek = 1,
+            // #1325: a task whose missed occurrences are reported
+            ComplianceEnabled = complianceEnabled,
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         };
         await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(arp);
@@ -1431,6 +1433,63 @@ public class ComplianceReportOverviewTests : TestBaseSetup
             Assert.That(result.Model.Totals.PropertyId, Is.Zero, "the totals row carries no property");
             Assert.That(result.Model.Totals.PropertyName, Is.Null,
                 "and no label — #1164 supplies 'I alt'; the API carries no Danish");
+        });
+    }
+
+    // ==================================================================
+    // #1325 — HIDDEN OVERDUE ("Overskredet opgave vises ikke i app")
+    // ==================================================================
+
+    /// <summary>
+    /// #1325: a property whose only task has <c>ComplianceEnabled = false</c> and missed
+    /// yesterday's occurrence reports no overdue and has nothing due — the missed occurrence
+    /// counts nowhere. A twin property with <c>ComplianceEnabled = true</c> and the same
+    /// missed occurrence is still overdue and still due.
+    /// </summary>
+    [Test]
+    public async Task ComplianceReportOverview_ComplianceDisabledTask_MissedOccurrenceIsNotOverdueNorDue()
+    {
+        var core = await GetCore();
+        var today = DateTime.UtcNow.Date;
+
+        var hidden = await SeedSeries("Property A", "T", today.AddDays(-30), complianceEnabled: false);
+        await SeedCalendarConfig(hidden.ArpId);
+        await SeedCompliance(hidden.PlanningId, hidden.PropertyId, hidden.AreaId,
+            today.AddDays(-1), await SeedSdkCase(33));
+
+        var reported = await SeedSeries("Property B", "T", today.AddDays(-30), complianceEnabled: true);
+        await SeedCalendarConfig(reported.ArpId);
+        await SeedCompliance(reported.PlanningId, reported.PropertyId, reported.AreaId,
+            today.AddDays(-1), await SeedSdkCase(33));
+
+        var service = BuildService(core);
+        var result = await service.Overview(Request(today.AddDays(-30), today.AddDays(30)));
+
+        Assert.That(result.Success, Is.True, result.Message);
+        var hiddenRow = result.Model!.Rows.SingleOrDefault(r => r.PropertyId == hidden.PropertyId);
+        var reportedRow = result.Model.Rows.Single(r => r.PropertyId == reported.PropertyId);
+
+        // The property may still be listed (#1278 lists every live property), but the
+        // missed occurrence must reach no counter.
+        Assert.Multiple(() =>
+        {
+            Assert.That(hiddenRow?.Overdue ?? 0, Is.Zero,
+                "a missed occurrence of a ComplianceEnabled=false task is not overdue");
+            Assert.That(hiddenRow?.DueTotal ?? 0, Is.Zero,
+                "and it is not in the due denominator either");
+            Assert.That(hiddenRow?.Total ?? 0, Is.Zero);
+            Assert.That(hiddenRow?.CompliancePct, Is.Null,
+                "nothing has fallen due, so there is no percentage");
+        });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(reportedRow.Overdue, Is.EqualTo(1),
+                "the ComplianceEnabled=true twin is still overdue");
+            Assert.That(reportedRow.DueTotal, Is.EqualTo(1));
+            Assert.That(reportedRow.CompliancePct, Is.Zero);
+            Assert.That(result.Model.Totals.Overdue, Is.EqualTo(1), "only the twin reaches the totals");
+            Assert.That(result.Model.Totals.DueTotal, Is.EqualTo(1));
         });
     }
 }
