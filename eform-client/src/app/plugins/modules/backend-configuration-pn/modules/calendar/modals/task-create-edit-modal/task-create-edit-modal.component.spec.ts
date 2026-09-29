@@ -1,4 +1,4 @@
-import {of, throwError, Subject} from 'rxjs';
+import {NEVER, of, throwError, Subject} from 'rxjs';
 import {
   AssigneeOption,
   siteKey,
@@ -260,6 +260,39 @@ describe('TaskCreateEditModalComponent — merged teams/workers picker (#1295)',
 
     const savedTranslates = () => calendarService.createTask.mock.calls[0][0].translates as
       {name: string; description: string; languageId: number}[];
+
+    it('saves nothing when the title is cleared while translations are fetched', async () => {
+      component = buildForSave();
+      configureTranslation();
+      const pending = new Subject<any>();
+      translationService.getTranslation.mockReturnValue(pending);
+
+      const save = component.onSave();
+      component.titleControl.setValue('');
+      pending.next({success: true, model: '[x] late'});
+      pending.complete();
+      await save;
+
+      expect(calendarService.createTask).not.toHaveBeenCalled();
+    });
+
+    it('treats a translation call that never answers as failed and still saves', async () => {
+      jest.useFakeTimers();
+      try {
+        component = buildForSave();
+        configureTranslation();
+        translationService.getTranslation.mockReturnValue(NEVER);
+
+        const save = component.onSave();
+        await jest.advanceTimersByTimeAsync(15000);
+        await save;
+
+        expect(toastr.warning).toHaveBeenCalled();
+        expect(calendarService.createTask).toHaveBeenCalledTimes(1);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
 
     it('saves nothing when the dialog is closed while translations are fetched', async () => {
       component = buildForSave();

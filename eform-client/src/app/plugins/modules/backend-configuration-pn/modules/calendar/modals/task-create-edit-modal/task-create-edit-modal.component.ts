@@ -42,7 +42,7 @@ import {EformChangeScopeModalComponent} from '../eform-change-scope-modal/eform-
 import {TranslateService} from '@ngx-translate/core';
 import {ToastrService} from 'ngx-toastr';
 import {firstValueFrom, Observable, of} from 'rxjs';
-import {switchMap, take} from 'rxjs/operators';
+import {switchMap, take, timeout} from 'rxjs/operators';
 import {OperationDataResult} from 'src/app/common/models';
 
 export interface TaskCreateEditModalData {
@@ -123,6 +123,9 @@ type CalendarTaskSavePayload = CalendarTaskCreateModel &
 // official types we can drop these declarations.
 declare const gapi: any;
 declare const google: any;
+
+/** Bound on each wait in the save-time translation (#1324): a hung call counts as failed. */
+const SAVE_TRANSLATION_TIMEOUT_MS = 15000;
 
 @Component({
   standalone: false,
@@ -969,6 +972,11 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     });
   }
 
+  /** The target languages the save-time translation fills. */
+  private targetLanguagesKey(): string {
+    return this.targetLanguages.map(l => l.id).join(',');
+  }
+
   /**
    * Subscribes and returns a promise that settles however the load ends — a value
    * (even if the handler throws), an error or an empty completion — so onSave can
@@ -995,14 +1003,10 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
    * language whose field is still empty. Text already there — typed by hand or
    * translated earlier — is never overwritten, and a changed Danish text is not
    * re-translated (the translate icon is for that). When translation is not
-   * configured or a call fails, the task is saved with what it has and the user
-   * gets a non-blocking notice.
+   * configured or a call fails, the task is saved with what it has; the caller shows
+   * the notice. Returns true when something could not be translated.
    */
-  private async fillMissingTranslations(): Promise<void> {
-    // Save clicked before the languages, workers or teams arrived: the targets are
-    // not known yet. Each load recomputes them; recompute once more to be sure.
-    await Promise.all([this.languagesLoaded, this.employeesLoaded, this.teamsLoaded]);
-    this.recomputeTargetLanguages();
+  private async fillMissingTranslations(): Promise<boolean> {
     const jobs: { kind: 'title' | 'desc'; lang: { id: number; code: string; name: string }; source: string }[] = [];
     const title = this.titleControl.value ?? '';
     const desc = this.descriptionControl.value ?? '';
@@ -1014,12 +1018,15 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
         jobs.push({kind: 'desc', lang, source: desc});
       }
     }
-    if (jobs.length === 0) return;
+    if (jobs.length === 0) return false;
 
     if (!this.translationProbeAnswered) {
-      // The init-time probe has not answered yet when Save is clicked early.
-      const probe = await firstValueFrom(this.translationService.translationPossible()).catch(() => null);
+      // The init-time probe has not answered yet when Save is clicked early. A
+      // timeout counts as an answer, so a later pass does not wait for it again.
+      const probe = await firstValueFrom(this.translationService.translationPossible()
+        .pipe(timeout(SAVE_TRANSLATION_TIMEOUT_MS))).catch(() => null);
       this.translationConfigured = !!(probe && probe.success && probe.model);
+      this.translationProbeAnswered = true;
     }
     let failed = !this.translationConfigured;
     if (!failed) {
@@ -1028,7 +1035,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
           sourceText: job.source,
           sourceLanguageCode: 'da',
           targetLanguageCode: job.lang.code,
-        }))).then(res => ({job, text: res?.success ? (res.model ?? '') : ''}), () => ({job, text: ''}))));
+        })).pipe(timeout(SAVE_TRANSLATION_TIMEOUT_MS))).then(res => ({job, text: res?.success ? (res.model ?? '') : ''}), () => ({job, text: ''}))));
       for (const {job, text} of results) {
         if (!text) {
           failed = true;
@@ -1041,9 +1048,22 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
         }
       }
     }
-    if (failed) {
-      this.toastr.warning(this.translate.instant('Automatic translation was not possible. The task is saved without it.'));
-    }
+    return failed;
+  }
+
+  /**
+   * Save clicked before the languages, workers or teams arrived: the targets are not
+   * known yet. Each load recomputes them; recompute once more to be sure. The wait is
+   * bounded so a hung request cannot keep Save disabled.
+   */
+  private async awaitTranslationTargets(): Promise<void> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    await Promise.race([
+      Promise.all([this.languagesLoaded, this.employeesLoaded, this.teamsLoaded]),
+      new Promise<void>(resolve => { timer = setTimeout(resolve, SAVE_TRANSLATION_TIMEOUT_MS); }),
+    ]);
+    clearTimeout(timer);
+    this.recomputeTargetLanguages();
   }
 
   /**
@@ -1366,14 +1386,27 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
 
     // #1324 — fill every empty target title/description before sending, so a
     // non-Danish assignee never receives the task untranslated. Never overwrites.
+    // The form stays editable while the calls run: if the assignees (and so the
+    // target languages) changed meanwhile, fill once more for the final set.
     this.isFillingTranslations = true;
+    let translationFailed = false;
     try {
-      await this.fillMissingTranslations();
+      await this.awaitTranslationTargets();
+      for (let pass = 0; pass < 2; pass++) {
+        const before = this.targetLanguagesKey();
+        translationFailed = (await this.fillMissingTranslations()) || translationFailed;
+        if (this.dialogClosed || this.targetLanguagesKey() === before) break;
+      }
     } finally {
       this.isFillingTranslations = false;
     }
+    if (translationFailed && !this.dialogClosed) {
+      this.toastr.warning(this.translate.instant('Automatic translation was not possible. The task is saved without it.'));
+    }
     // Cancelled while the translations were being fetched: save nothing.
     if (this.dialogClosed) return;
+    // The title may have been cleared meanwhile.
+    if (this.titleControl.invalid) return;
 
     // Build the per-language Translates array: Danish source (real SDK
     // Languages.Id, NOT the hardcoded app-locale id 1) always included, plus one
