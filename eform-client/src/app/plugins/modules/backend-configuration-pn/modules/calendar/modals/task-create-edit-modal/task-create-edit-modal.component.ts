@@ -182,6 +182,11 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   // ---- Per-language Title & Description state ----
   // Active languages from the app-settings store (filtered to isActive).
   private activeLanguages: { id: number; code: string; name: string }[] = [];
+  /**
+   * SDK Languages.Id of Danish, resolved from the FULL language list (Danish may be
+   * inactive and still be the source language). 1 until the list has loaded.
+   */
+  private danishLanguageId = 1;
   // Distinct non-Danish languages spoken by the currently-selected assignees,
   // resolved to {id, code, name}. Drives the translate button + per-lang fields.
   targetLanguages: { id: number; code: string; name: string }[] = [];
@@ -386,7 +391,9 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     // would never appear.
     this.languagesLoaded = this.whenLoaded(this.appSettingsStateService.getLanguages().pipe(take(1)), res => {
       if (!(res && res.success)) return false;
-      this.activeLanguages = (res?.model?.languages ?? [])
+      const languages = res.model?.languages ?? [];
+      this.danishLanguageId = languages.find(l => l.languageCode === 'da')?.id ?? 1;
+      this.activeLanguages = languages
         .filter(l => l.isActive)
         .map(l => ({id: l.id, code: l.languageCode, name: l.name}));
       this.recomputeTargetLanguages();
@@ -858,15 +865,14 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
    */
   /**
    * Resolve the real SDK Languages.Id for the Danish source title from the
-   * loaded active-languages list (same list the targets resolve their ids from,
-   * populated from getLanguages() -> SDK Languages). The SDK Languages table is
-   * customer-specific: Danish is NOT guaranteed to be id 1 (e.g. customer 420 has
-   * da=2). Falls back to 1 only if Danish is somehow absent from the loaded list,
-   * so the backend existence-based remap can still recover it.
+   * full language list (getLanguages() -> SDK Languages), active or not — Danish
+   * is the source even where it is not an active language. The SDK Languages
+   * table is customer-specific: Danish is NOT guaranteed to be id 1. Falls back
+   * to 1 only if the list failed to load or has no Danish, so the backend
+   * existence-based remap can still recover it.
    */
   private resolveDanishLanguageId(): number {
-    const danish = this.activeLanguages.find(l => l.code === 'da');
-    return danish?.id ?? 1;
+    return this.danishLanguageId;
   }
 
   private recomputeTargetLanguages(): void {
@@ -1329,13 +1335,16 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     return taskDate < new Date();
   }
 
-  async onSave() {
-    if (this.titleControl.invalid || this.isSaving) return;
+  /**
+   * The board / edit-mode schedule guards of onSave. True (with the existing
+   * feedback) when the save must not go ahead: no calendar picked, or an edit of a
+   * past or completed occurrence.
+   */
+  private saveBlockedBySchedule(): boolean {
     // boardControl is `number | null` and the Save button's [disabled] binding
     // doesn't cover the board select — so guard here rather than asserting the
-    // value away with `!` in the payload below.
-    const boardId = this.boardControl.value;
-    if (boardId == null) {
+    // value away with `!` in the payload.
+    if (this.boardControl.value == null) {
       // Never return silently: boardControl is null in edit mode whenever the
       // task carries no boardId (e.g. a task-wizard-created event that has no
       // CalendarConfiguration) and in create mode when the property has no
@@ -1347,75 +1356,21 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       this.toastr.error(
         this.translate.instant('Select a calendar'),
         this.translate.instant('Error'));
-      return;
+      return true;
     }
     // Only block past-date save in edit mode. Copy mode may open with a past
     // date seeded from the source event; the user is expected to pick a new
     // date before saving, and we surface that via the standard datepicker
     // min-date validator rather than silently returning.
-    if (this.isEditMode && (this.isInPast(this.dateControl.value!, this.startTimeControl.value!) || this.data.task?.completed)) {
-      return;
-    }
+    return !!(this.isEditMode
+      && (this.isInPast(this.dateControl.value!, this.startTimeControl.value!) || this.data.task?.completed));
+  }
 
-    const startHour = this.timeStrToHour(this.startTimeControl.value!);
-    const endHour = this.timeStrToHour(this.endTimeControl.value!);
-    const duration = Math.max(endHour - startHour, 0.25);
-    const taskDate = this.dateControl.value!;
-    const dateStr = `${taskDate.getFullYear()}-${(taskDate.getMonth() + 1).toString().padStart(2, '0')}-${taskDate.getDate().toString().padStart(2, '0')}`;
-
-    const repeatRuleMap: Record<string, number> = {
-      'none': 0,
-      'daily': 1,
-      'weekly': 2, 'weeklyOne': 2, 'weeklyAll': 2,
-      'monthly': 3, 'monthlyDom': 3, 'monthlyByDay': 3,
-      'yearly': 4, 'yearlyOne': 4,
-      // "Alle hverdage (mandag til fredag)" is wire-encoded as a weekly
-      // rule whose weekday CSV is "1,2,3,4,5" — the backend's
-      // GetOccurrencesInWeek already loops the multi-day weekly branch.
-      // A dedicated RepeatType value (e.g. 5) would have no matching enum
-      // member on the server and the entire planning falls through to the
-      // default case, emitting zero occurrences for the week.
-      'weekdays': 2,
-      'custom': 6,
-      'customCurrent': 6,
-    };
-    // Widened with 'customCurrent' — the synthesized "current custom rule"
-    // option isn't a persisted CalendarRepeatRule; it collapses to 'custom'
-    // when the payload is built below.
-    const repeatRuleValue = (this.repeatControl.value ?? 'none') as CalendarRepeatRule | 'customCurrent';
-
-    // For custom repeat, map the meta's kind back to a standard repeatType
-    // and use the meta's step as repeatEvery
-    let resolvedRepeatType = repeatRuleMap[repeatRuleValue] ?? 0;
-    let resolvedRepeatEvery = 1;
-    let repeatEndMode = 0; // 0=Never
-    let repeatOccurrences: number | null = null;
-    let repeatUntilDate: string | null = null;
-
-    const isCustomRule = repeatRuleValue === 'custom' || repeatRuleValue === 'customCurrent';
-    if (isCustomRule && this.customRepeatMeta) {
-      const meta = this.customRepeatMeta;
-      const kindMap: Record<string, number> = {
-        'daily': 1, 'everyNd': 1,
-        'weeklyOne': 2, 'weeklyMulti': 2, 'everyNWeekOne': 2, 'everyNWeekMulti': 2, 'everyNWeekAll': 2,
-        'monthlyDom': 3, 'everyNMonthDom': 3, 'monthlyByDay': 3, 'everyNMonthByDay': 3,
-        'monthlyFirstWeekday': 3, 'everyNMonthFirstWeekday': 3,
-        'yearlyOne': 4, 'everyNYear': 4,
-      };
-      resolvedRepeatType = kindMap[meta.kind] ?? 0;
-      resolvedRepeatEvery = meta.n ?? 1;
-
-      if (meta.endMode === 'after' && meta.afterCount) {
-        repeatEndMode = 1;
-        repeatOccurrences = meta.afterCount;
-      } else if (meta.endMode === 'until' && meta.untilTs) {
-        repeatEndMode = 2;
-        // Date-only local Y-M-D (#1293, the #966 pattern): toISOString() sent
-        // UTC+1 "10 Dec" as 2026-12-09T23:00Z, which dropped the last
-        // occurrence and read back as "9. december".
-        repeatUntilDate = toDateOnlyString(meta.untilTs);
-      }
-    }
+  async onSave() {
+    if (this.titleControl.invalid || this.isSaving) return;
+    // Cheap pre-check so a missing calendar or a readonly task is reported at
+    // once, not after the translation wait; re-checked after it (see below).
+    if (this.saveBlockedBySchedule()) return;
 
     // #1324 — fill every empty target title/description before sending, so a
     // non-Danish assignee never receives the task untranslated. Never overwrites.
@@ -1440,14 +1395,80 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       } finally {
         this.isFillingTranslations = false;
       }
-      if (translationFailed && !this.dialogClosed) {
-        this.toastr.warning(this.translate.instant('Automatic translation was not possible. The task is saved without it.'));
-      }
       // Cancelled while the translations were being fetched, or the title was
       // cleared meanwhile: save nothing.
       if (this.dialogClosed || this.titleControl.invalid) {
         this.isSaving = false;
         return;
+      }
+
+      // Everything the schedule is built from is read HERE, after the translation
+      // wait: the form stays editable meanwhile, so board, date, times and repeat
+      // must be the values on screen when the request is sent.
+      if (this.saveBlockedBySchedule()) {
+        this.isSaving = false;
+        return;
+      }
+      const boardId = this.boardControl.value!;
+
+      const startHour = this.timeStrToHour(this.startTimeControl.value!);
+      const endHour = this.timeStrToHour(this.endTimeControl.value!);
+      const duration = Math.max(endHour - startHour, 0.25);
+      const taskDate = this.dateControl.value!;
+      const dateStr = `${taskDate.getFullYear()}-${(taskDate.getMonth() + 1).toString().padStart(2, '0')}-${taskDate.getDate().toString().padStart(2, '0')}`;
+
+      const repeatRuleMap: Record<string, number> = {
+        'none': 0,
+        'daily': 1,
+        'weekly': 2, 'weeklyOne': 2, 'weeklyAll': 2,
+        'monthly': 3, 'monthlyDom': 3, 'monthlyByDay': 3,
+        'yearly': 4, 'yearlyOne': 4,
+        // "Alle hverdage (mandag til fredag)" is wire-encoded as a weekly
+        // rule whose weekday CSV is "1,2,3,4,5" — the backend's
+        // GetOccurrencesInWeek already loops the multi-day weekly branch.
+        // A dedicated RepeatType value (e.g. 5) would have no matching enum
+        // member on the server and the entire planning falls through to the
+        // default case, emitting zero occurrences for the week.
+        'weekdays': 2,
+        'custom': 6,
+        'customCurrent': 6,
+      };
+      // Widened with 'customCurrent' — the synthesized "current custom rule"
+      // option isn't a persisted CalendarRepeatRule; it collapses to 'custom'
+      // when the payload is built below.
+      const repeatRuleValue = (this.repeatControl.value ?? 'none') as CalendarRepeatRule | 'customCurrent';
+
+      // For custom repeat, map the meta's kind back to a standard repeatType
+      // and use the meta's step as repeatEvery
+      let resolvedRepeatType = repeatRuleMap[repeatRuleValue] ?? 0;
+      let resolvedRepeatEvery = 1;
+      let repeatEndMode = 0; // 0=Never
+      let repeatOccurrences: number | null = null;
+      let repeatUntilDate: string | null = null;
+
+      const isCustomRule = repeatRuleValue === 'custom' || repeatRuleValue === 'customCurrent';
+      if (isCustomRule && this.customRepeatMeta) {
+        const meta = this.customRepeatMeta;
+        const kindMap: Record<string, number> = {
+          'daily': 1, 'everyNd': 1,
+          'weeklyOne': 2, 'weeklyMulti': 2, 'everyNWeekOne': 2, 'everyNWeekMulti': 2, 'everyNWeekAll': 2,
+          'monthlyDom': 3, 'everyNMonthDom': 3, 'monthlyByDay': 3, 'everyNMonthByDay': 3,
+          'monthlyFirstWeekday': 3, 'everyNMonthFirstWeekday': 3,
+          'yearlyOne': 4, 'everyNYear': 4,
+        };
+        resolvedRepeatType = kindMap[meta.kind] ?? 0;
+        resolvedRepeatEvery = meta.n ?? 1;
+
+        if (meta.endMode === 'after' && meta.afterCount) {
+          repeatEndMode = 1;
+          repeatOccurrences = meta.afterCount;
+        } else if (meta.endMode === 'until' && meta.untilTs) {
+          repeatEndMode = 2;
+          // Date-only local Y-M-D (#1293, the #966 pattern): toISOString() sent
+          // UTC+1 "10 Dec" as 2026-12-09T23:00Z, which dropped the last
+          // occurrence and read back as "9. december".
+          repeatUntilDate = toDateOnlyString(meta.untilTs);
+        }
       }
 
       // Build the per-language Translates array: Danish source (real SDK
@@ -1585,6 +1606,10 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
               const newId = (res as OperationDataResult<number>)?.model;
               if (!this.isEditMode && this.stagedFiles.length > 0 && newId) {
                 await this.uploadStagedFilesSequential(newId);
+              }
+              // Only now is the task actually saved without (some of) its translations.
+              if (translationFailed) {
+                this.toastr.warning(this.translate.instant('Automatic translation was not possible. The task is saved without it.'));
               }
               // isSaving stays set: the dialog is closing.
               this.close(true);

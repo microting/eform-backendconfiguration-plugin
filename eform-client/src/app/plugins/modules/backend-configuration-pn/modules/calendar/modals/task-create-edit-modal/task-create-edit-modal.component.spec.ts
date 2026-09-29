@@ -97,7 +97,8 @@ describe('TaskCreateEditModalComponent — merged teams/workers picker (#1295)',
   function build(data: Partial<TaskCreateEditModalData> = {}, configure?: () => void): TaskCreateEditModalComponent {
     calendarService = {
       getBoards: jest.fn().mockReturnValue(of({success: true, model: [{id: 1, name: 'Kalender', color: '#fff'}]})),
-      createTask: jest.fn().mockReturnValue(of({success: false})),
+      // A successful create (new id 1): the translation warning is only shown after one.
+      createTask: jest.fn().mockReturnValue(of({success: true, model: 1})),
       updateTask: jest.fn().mockReturnValue(of({success: false})),
     };
     propertiesService = {
@@ -437,6 +438,89 @@ describe('TaskCreateEditModalComponent — merged teams/workers picker (#1295)',
 
       expect(toastr.warning).not.toHaveBeenCalled();
       expect(calendarService.createTask).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows the warning once, after the successful create', async () => {
+      component = buildForSave();
+
+      await component.onSave();
+
+      expect(toastr.warning).toHaveBeenCalledTimes(1);
+      expect(toastr.warning).toHaveBeenCalledWith(WARNING);
+      expect(dialogRef.close).toHaveBeenCalledWith(true);
+    });
+
+    it('does not warn when the create answers success=false', async () => {
+      component = buildForSave();
+      calendarService.createTask.mockReturnValue(of({success: false}));
+
+      await component.onSave();
+
+      expect(calendarService.createTask).toHaveBeenCalledTimes(1);
+      expect(toastr.warning).not.toHaveBeenCalled();
+    });
+
+    it('does not warn when the repeat-scope dialog is cancelled', async () => {
+      // Edit mode, English worker 12, translation not configured: the fill fails.
+      component = build({task: makeTask({repeatRule: 'daily', workerTagIds: [], workerTagNames: []})});
+      dialog.open.mockReturnValue({afterClosed: () => of(undefined)});
+
+      await component.onSave();
+
+      expect(dialog.open).toHaveBeenCalledTimes(1);
+      expect(calendarService.updateTask).not.toHaveBeenCalled();
+      expect(toastr.warning).not.toHaveBeenCalled();
+    });
+
+    it('sends the board, date and times on screen when the save is sent, not when it was clicked', async () => {
+      component = build({boards: [
+        {id: 1, name: 'Kalender', color: '#fff'} as any,
+        {id: 2, name: 'Stald', color: '#000'} as any,
+      ]});
+      component.titleControl.setValue('Tjek ventilation');
+      component.assigneeControl.setValue(['s:12']);
+      configureTranslation();
+      const pending = new Subject<any>();
+      translationService.getTranslation.mockReturnValue(pending);
+      const later = new Date();
+      later.setDate(later.getDate() + 10);
+      const laterStr = `${later.getFullYear()}-${String(later.getMonth() + 1).padStart(2, '0')}-${String(later.getDate()).padStart(2, '0')}`;
+
+      const save = component.onSave();
+      component.boardControl.setValue(2);
+      component.dateControl.setValue(later);
+      component.startTimeControl.setValue('11:00');
+      component.endTimeControl.setValue('12:30');
+      pending.next({success: true, model: '[en-US] Tjek ventilation'});
+      pending.complete();
+      await save;
+
+      const payload = calendarService.createTask.mock.calls[0][0];
+      expect(payload.boardId).toBe(2);
+      expect(payload.color).toBe('#000');
+      expect(payload.startDate).toBe(laterStr);
+      expect(payload.startHour).toBe(11);
+      expect(payload.duration).toBe(1.5);
+    });
+
+    it('saves the Danish source under Danish\'s id when Danish is an inactive language', async () => {
+      // English at id 1, Danish (inactive) at id 2, German at id 3.
+      component = build({}, () => {
+        appSettingsStateService.getLanguages.mockReturnValue(of({success: true, model: {languages: [
+          {id: 1, languageCode: 'en-US', name: 'English', isActive: true},
+          {id: 2, languageCode: 'da', name: 'Dansk', isActive: false},
+          {id: 3, languageCode: 'de-DE', name: 'Deutsch', isActive: true},
+        ]}}));
+      });
+      component.titleControl.setValue('Tjek ventilation');
+      // Worker 11's languageId 1 is English on this installation: a target.
+      component.assigneeControl.setValue(['s:11']);
+
+      await component.onSave();
+
+      expect(component.targetLanguages.map(l => l.id)).toEqual([1]);
+      expect(savedTranslates()[0]).toEqual({name: 'Tjek ventilation', description: '', languageId: 2});
+      expect(savedTranslates().some(t => t.languageId === 1)).toBe(false);
     });
 
     it('ignores a second Save click while translations are being filled', async () => {
