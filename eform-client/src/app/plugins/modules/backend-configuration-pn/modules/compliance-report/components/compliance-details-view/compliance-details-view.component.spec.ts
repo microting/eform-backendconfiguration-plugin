@@ -176,7 +176,7 @@ describe('ComplianceDetailsViewComponent — future tasks (#1300)', () => {
     });
 
     it('is never completable or deletable, even dated today in the browser', () => {
-      // Around Copenhagen midnight the server's (UTC) tomorrow is already today here.
+      // A page left open past midnight: a row planned for "tomorrow" is now dated today.
       const today = planned(3, '2026-09-18');
       expect(component.isRowCompletable(today)).toBe(false);
       expect(component.canDeleteRow(today)).toBe(false);

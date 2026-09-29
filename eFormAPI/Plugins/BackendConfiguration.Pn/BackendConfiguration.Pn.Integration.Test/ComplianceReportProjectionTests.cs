@@ -119,7 +119,12 @@ public class ComplianceReportProjectionTests : TestBaseSetup
         await MicrotingDbContext.SaveChangesAsync();
     }
 
-    private BackendConfigurationComplianceReportService BuildService(Core core)
+    /// <param name="utcNow">
+    /// The service's clock. Defaults to noon UTC of <see cref="Today"/>, which is the same
+    /// date in Copenhagen, so the projection starts the day after <see cref="Today"/> in
+    /// every test that does not pin its own instant.
+    /// </param>
+    private BackendConfigurationComplianceReportService BuildService(Core core, DateTime? utcNow = null)
     {
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
@@ -133,7 +138,10 @@ public class ComplianceReportProjectionTests : TestBaseSetup
             new BackendConfigurationLocalizationService(), userService,
             BackendConfigurationPnDbContext!, coreHelper, ItemsPlanningPnDbContext!,
             TestContextLogger<BackendConfigurationComplianceReportService>.Instance,
-            new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext));
+            new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext))
+        {
+            UtcNow = () => utcNow ?? DateTime.SpecifyKind(Today.AddHours(12), DateTimeKind.Utc)
+        };
     }
 
     // ------------------------------------------------------------------
@@ -185,11 +193,11 @@ public class ComplianceReportProjectionTests : TestBaseSetup
     /// </summary>
     private async Task<Series> SeedSeries(
         string title, bool daily = false, bool complianceEnabled = true, bool active = true,
-        DateTime? repeatUntil = null, int? propertyId = null)
+        DateTime? repeatUntil = null, int? propertyId = null, DateTime? start = null)
     {
         var (areaId, seededPropertyId) = await SeedAreaAndProperty();
         propertyId ??= seededPropertyId;
-        var startDate = DateTime.SpecifyKind(MondayWeeksAgo(8), DateTimeKind.Utc);
+        var startDate = DateTime.SpecifyKind(start ?? MondayWeeksAgo(8), DateTimeKind.Utc);
 
         var areaRule = new AreaRule
         {
@@ -812,6 +820,69 @@ public class ComplianceReportProjectionTests : TestBaseSetup
         }
         // Newest-first order is preserved in what is returned.
         Assert.That(Dates(model.Entities), Is.Ordered.Descending);
+    }
+
+    /// <summary>
+    /// The projection starts the day after the COPENHAGEN date, the product's future-task
+    /// boundary. In summer (CEST, UTC+2) 21:30 UTC on 15 July is still the 15th in
+    /// Copenhagen, so the 16th is the first planned day; 22:30 UTC is already 00:30 on the
+    /// 16th there — the local today, whose occurrence the scheduler owns — so the 17th is.
+    /// A UTC "tomorrow" would have planned the 16th in both cases.
+    /// </summary>
+    [TestCase(21, 16)]
+    [TestCase(22, 17)]
+    [TestCase(23, 17)]
+    public async Task Index_ProjectionStartsAfterTheCopenhagenToday(int utcHour, int firstPlannedDay)
+    {
+        var core = await GetCore();
+        await SeedSeries("Task A", daily: true, start: new DateTime(2026, 1, 5));
+        var utcNow = new DateTime(2026, 7, 15, utcHour, 30, 0, DateTimeKind.Utc);
+
+        var result = await BuildService(core, utcNow).Index(
+            Request(new DateTime(2026, 7, 10), new DateTime(2026, 7, 31)));
+
+        Assert.That(result.Success, Is.True, result.Message);
+        var planned = Dates(result.Model!.Entities.Where(r => r.IsProjected)).OrderBy(d => d).ToList();
+        Assert.That(planned.First(), Is.EqualTo(new DateTime(2026, 7, firstPlannedDay)));
+        Assert.That(planned.Last(), Is.EqualTo(new DateTime(2026, 7, 31)));
+        Assert.That(planned, Has.Count.EqualTo(31 - firstPlannedDay + 1));
+    }
+
+    /// <summary>
+    /// An open-ended period ending on the last day of the calendar must not overflow the
+    /// end-of-day boundary: Detaljer answers, and the projection stops at the horizon.
+    /// </summary>
+    [Test]
+    public async Task Index_PeriodEndingOnDateTimeMaxValue_Succeeds()
+    {
+        var core = await GetCore();
+        await SeedSeries("Task A");
+        var horizon = Today.AddYears(BackendConfigurationComplianceReportService.MaxProjectionYears);
+
+        var model = await Index(core, Request(Today, DateTime.MaxValue.Date));
+
+        Assert.That(PlannedDates(model), Is.EqualTo(DaysOf(DayOfWeek.Monday, Today.AddDays(1), horizon)));
+    }
+
+    /// <summary>
+    /// Oversigt and Rapport share the window normalisation, so the same period does not
+    /// fail them either.
+    /// </summary>
+    [Test]
+    public async Task OverviewAndEformColumns_PeriodEndingOnDateTimeMaxValue_Succeed()
+    {
+        var core = await GetCore();
+        await SeedSeries("Task A");
+        var service = BuildService(core);
+
+        var overview = await service.Overview(new ComplianceReportOverviewRequestModel
+        {
+            DateFrom = Today, DateTo = DateTime.MaxValue.Date, BoardIds = [], TagIds = [], SiteIds = []
+        });
+        var report = await service.EformColumns(Request(Today, DateTime.MaxValue.Date));
+
+        Assert.That(overview.Success, Is.True, overview.Message);
+        Assert.That(report.Success, Is.True, report.Message);
     }
 
     /// <summary>A period reaching past the projection horizon is projected up to it only.</summary>

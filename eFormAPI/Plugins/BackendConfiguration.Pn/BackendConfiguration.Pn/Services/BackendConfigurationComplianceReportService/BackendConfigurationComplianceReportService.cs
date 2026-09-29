@@ -70,6 +70,22 @@ public class BackendConfigurationComplianceReportService(
     /// </summary>
     public const int MaxRowsReturned = 5000;
 
+    /// <summary>
+    /// Clock seam (#1332), the same shape as <c>BackendConfigurationCalendarService.UtcNow</c>:
+    /// instance-level so a test can pin "now" around Copenhagen midnight without
+    /// affecting fixtures running in parallel.
+    /// </summary>
+    internal Func<DateTime> UtcNow { get; set; } = () => DateTime.UtcNow;
+
+    /// <summary>
+    /// The inclusive end-of-day boundary of the report window's last day. The last day
+    /// of the calendar (9999-12-31) has no "next day" to step back from, so it maps to
+    /// <see cref="DateTime.MaxValue"/> instead of overflowing — a hand-edited or
+    /// open-ended period must not fail the report.
+    /// </summary>
+    internal static DateTime EndOfDay(DateTime date) =>
+        date.Date == DateTime.MaxValue.Date ? DateTime.MaxValue : date.Date.AddDays(1).AddTicks(-1);
+
     /// <inheritdoc />
     public async Task<OperationDataResult<ComplianceReportPagedModel>> Index(
         ComplianceReportRequestModel requestModel)
@@ -78,7 +94,9 @@ public class BackendConfigurationComplianceReportService(
         {
             var userLanguageId = (await userService.GetCurrentUserLanguage()).Id;
             var dateFrom = requestModel.DateFrom.Date;
-            var dateTo = requestModel.DateTo.Date.AddDays(1).AddTicks(-1);
+            var dateTo = EndOfDay(requestModel.DateTo);
+            // One read of the clock for the whole request.
+            var utcNow = UtcNow();
 
             var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
             // NOTE: this context stays alive for the whole method — phase E reads
@@ -104,7 +122,9 @@ public class BackendConfigurationComplianceReportService(
                     // #1332 — Detaljer (and its export) opt in to the planned,
                     // not-yet-deployed occurrences after today. Index is the ONLY
                     // caller that may set this; see CandidateFilter.IncludeProjected.
-                    IncludeProjected = requestModel.IncludeProjected
+                    IncludeProjected = requestModel.IncludeProjected,
+                    Today = utcNow.Date,
+                    ProjectionToday = ComplianceFutureTaskGuard.TodayInCopenhagen(utcNow)
                 },
                 sdkDbContext);
 
@@ -785,11 +805,14 @@ public class BackendConfigurationComplianceReportService(
     /// projected: the caller did not opt in, the status excludes open rows, the window
     /// holds no day after today, or no series matches the filters.
     ///
-    /// <para><b>"After today" starts TOMORROW</b>, with "today" the same UTC date the
-    /// report classifies overdue against (<see cref="CandidateFilter.Today"/>). Today's
-    /// occurrence is never projected: the scheduler dates the CURRENT cycle's
-    /// compliance with the NEXT occurrence's date (<c>Planning.NextExecutionTime</c>),
-    /// so a planned row for today would count the running cycle twice.</para>
+    /// <para><b>"After today" starts TOMORROW</b>, where "today" is the COPENHAGEN date
+    /// (<see cref="CandidateFilter.ProjectionToday"/>) — the product's future-task
+    /// boundary (<c>ComplianceFutureTaskGuard</c>, and <c>isFutureTask</c> in the
+    /// browser). Between Copenhagen and UTC midnight the UTC date is still yesterday, and
+    /// a UTC "tomorrow" would be the local today. Today's occurrence is never projected:
+    /// the scheduler dates the CURRENT cycle's compliance with the NEXT occurrence's date
+    /// (<c>Planning.NextExecutionTime</c>), so a planned row for today would count the
+    /// running cycle twice. Phase C keeps its UTC <see cref="CandidateFilter.Today"/>.</para>
     ///
     /// <para><b>Which series:</b> the lowest-Id live ARP per planning (the pin phase C
     /// uses), active (<c>Status</c> true — an inactive task deploys nothing, and its
@@ -815,11 +838,11 @@ public class BackendConfigurationComplianceReportService(
             return null;
         }
 
-        var from = filter.DateFrom.Date > filter.Today.AddDays(1)
+        var from = filter.DateFrom.Date > filter.ProjectionToday.AddDays(1)
             ? filter.DateFrom.Date
-            : filter.Today.AddDays(1);
+            : filter.ProjectionToday.AddDays(1);
         var to = filter.DateTo.Date;
-        var horizon = filter.Today.AddYears(MaxProjectionYears);
+        var horizon = filter.ProjectionToday.AddYears(MaxProjectionYears);
         if (to > horizon)
         {
             logger.LogWarning(
@@ -1068,7 +1091,7 @@ public class BackendConfigurationComplianceReportService(
             var today = DateTime.UtcNow.Date;
 
             var dateFrom = requestModel.DateFrom.Date;
-            var dateTo = requestModel.DateTo.Date.AddDays(1).AddTicks(-1);
+            var dateTo = EndOfDay(requestModel.DateTo);
 
             var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
             await using var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
@@ -1320,7 +1343,7 @@ public class BackendConfigurationComplianceReportService(
             // takes one, and the option/checklist translation fallbacks key off it.
             var userLanguage = await userService.GetCurrentUserLanguage();
             var dateFrom = requestModel.DateFrom.Date;
-            var dateTo = requestModel.DateTo.Date.AddDays(1).AddTicks(-1);
+            var dateTo = EndOfDay(requestModel.DateTo);
 
             var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
             // Must outlive every enrichment pass below — worker names, the column
@@ -1753,6 +1776,12 @@ public class BackendConfigurationComplianceReportService(
         /// Rapport is a report of answers, which a planned occurrence has none of.
         /// </summary>
         public bool IncludeProjected { get; init; }
+
+        /// <summary>
+        /// The Copenhagen date phase P projects AFTER — see <see cref="LoadProjectionSources"/>.
+        /// Read only when <see cref="IncludeProjected"/> is set.
+        /// </summary>
+        public DateTime ProjectionToday { get; init; }
     }
 
     /// <summary>What phase P reads — see <see cref="LoadProjectionSources"/>.</summary>

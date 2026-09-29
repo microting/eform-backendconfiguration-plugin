@@ -311,9 +311,9 @@ export class ComplianceDetailsViewComponent implements OnInit, OnDestroy {
   /**
    * The rows #1300 locks; they carry an explanatory title instead of actions.
    * A planned row (#1332) is always one of them, whatever the browser's clock
-   * says: the server projects from ITS tomorrow (UTC), which around Copenhagen
-   * midnight is already today here — and a planned row has no compliance to
-   * complete or delete in any case.
+   * says: the server projects from the Copenhagen tomorrow, but a browser clock
+   * or a page left open past midnight can disagree — and a planned row has no
+   * compliance to complete or delete in any case.
    */
   isFutureUncompleted(row: ComplianceReportRowModel): boolean {
     return !!row.isProjected || (!row.completed && isFutureTask(row.taskDate));

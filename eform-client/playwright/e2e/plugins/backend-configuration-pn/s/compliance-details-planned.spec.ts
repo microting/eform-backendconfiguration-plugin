@@ -107,31 +107,118 @@ async function withIndexResponse(page: Page, description: string, gesture: () =>
 }
 
 test.describe.serial('Compliance Detaljer — planned occurrences (#1332)', () => {
+  /**
+   * Guarded teardown, mirroring `b/task-list-inline-rename.spec.ts`: each phase runs
+   * against one shared budget, a phase that stalls is REPORTED by name instead of the
+   * race quietly resolving as success, and a final phase verifies nothing is left for
+   * the next spec in this shard. Never throws — cleanup must not fail the run.
+   */
   test.afterAll(async ({ browser }) => {
-    // Non-fatal teardown, the same shape as the other `s/` calendar specs.
+    const CLEANUP_BUDGET_MS = 60000;
+    const deadline = Date.now() + CLEANUP_BUDGET_MS;
+    const problems: string[] = [];
+    let aborted = false;
+
+    // Never throws. Returns whether the phase actually completed.
+    const phase = async (label: string, fn: () => Promise<void>): Promise<boolean> => {
+      if (aborted) {
+        problems.push(`${label}: skipped, an earlier phase did not complete`);
+        return false;
+      }
+      const budget = deadline - Date.now();
+      if (budget <= 0) {
+        problems.push(`${label}: skipped, cleanup budget exhausted`);
+        aborted = true;
+        return false;
+      }
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const outcome = await Promise.race([
+          fn().then(() => 'done' as const),
+          new Promise<'timeout'>(resolve => {
+            timer = setTimeout(() => resolve('timeout'), budget);
+          }),
+        ]);
+        if (outcome === 'timeout') {
+          aborted = true;
+          problems.push(`${label}: timed out after ${budget}ms`);
+          return false;
+        }
+        return true;
+      } catch (err: any) {
+        problems.push(`${label}: ${err?.message ?? err}`);
+        return false;
+      } finally {
+        if (timer) {
+          clearTimeout(timer);
+        }
+      }
+    };
+
     const page = await browser.newPage().catch((err: any) => {
-      console.log(`afterAll cleanup failed (non-fatal): could not open a cleanup page: ${err?.message ?? err}`);
+      problems.push(`cleanup harness: browser.newPage() failed: ${err?.message ?? err}`);
       return undefined;
     });
-    if (!page) {
-      return;
-    }
-    const cleanup = async () => {
-      await page.goto(BASE_URL);
-      await new LoginPage(page).login();
-      const workersPage = new BackendConfigurationPropertyWorkersPage(page);
-      await workersPage.goToPropertyWorkers();
-      await workersPage.clearTable();
-      const propertiesPage = new BackendConfigurationPropertiesPage(page);
-      await propertiesPage.goToProperties();
-      await propertiesPage.clearTable();
-    };
     try {
-      await Promise.race([cleanup(), new Promise(resolve => setTimeout(resolve, 60000))]);
+      if (!page) {
+        return;
+      }
+      const workersPage = new BackendConfigurationPropertyWorkersPage(page);
+      const propertiesPage = new BackendConfigurationPropertiesPage(page);
+
+      const loggedIn = await phase('login', async () => {
+        await page.goto(BASE_URL);
+        await new LoginPage(page).login();
+      });
+      if (!loggedIn) {
+        // Nothing below can work unauthenticated.
+        aborted = true;
+      }
+
+      // Workers first: the property cannot go while a worker is assigned to it. The
+      // grid host is awaited so clearTable() never counts an unrendered table as empty
+      // — and the verify phase reports anything it still missed.
+      await phase('clear workers', async () => {
+        await workersPage.goToPropertyWorkers();
+        await workersPage.newDeviceUserBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+        await workersPage.clearTable();
+      });
+
+      await phase('clear properties', async () => {
+        await propertiesPage.goToProperties();
+        await page.locator('app-properties-table').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+        await propertiesPage.clearTable();
+      });
+
+      await phase('verify', async () => {
+        await propertiesPage.goToProperties();
+        await page.locator('app-properties-table').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+        const propertiesLeft = await page.locator('app-properties-table .mat-mdc-row').count();
+        if (propertiesLeft > 0) {
+          problems.push(`verify: ${propertiesLeft} property row(s) still present`);
+        }
+        await workersPage.goToPropertyWorkers();
+        await workersPage.newDeviceUserBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+        const workersLeft = await workersPage.rowNum();
+        if (workersLeft > 0) {
+          problems.push(`verify: ${workersLeft} worker row(s) still present`);
+        }
+      });
     } catch (err: any) {
-      console.log(`afterAll cleanup failed (non-fatal): ${err?.message ?? err}`);
+      problems.push(`cleanup harness: ${err?.message ?? err}`);
+    } finally {
+      if (problems.length > 0) {
+        console.log(
+          '[compliance-details-planned] afterAll cleanup INCOMPLETE (non-fatal) — ' +
+          `may have left property "${property.name}" / worker ` +
+          `"${worker.name} ${worker.surname}" for the next spec in this shard: ` +
+          problems.join(' | '),
+        );
+      }
+      if (page) {
+        try { await page.close(); } catch {}
+      }
     }
-    try { await page.close(); } catch {}
   });
 
   test('seed: property, worker and a weekly task', async ({ page }) => {
