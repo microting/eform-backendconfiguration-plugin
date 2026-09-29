@@ -141,8 +141,10 @@ export class ComplianceDetailsViewComponent implements OnInit, OnDestroy {
         }),
         // switchMap, so a page click landing while an earlier request is in
         // flight cancels it rather than racing it into the view.
+        // Detaljer lists the planned occurrences after today too (#1332); the
+        // shared request model leaves the flag off for every other view.
         switchMap(() =>
-          this.complianceReportService.index(this.state.requestModel).pipe(
+          this.complianceReportService.index({...this.state.requestModel, includeProjected: true}).pipe(
             // The service already toasts a failed OperationResult; swallow the
             // transport error here so the trigger stream survives it.
             catchError(() => of(null)),
@@ -289,7 +291,12 @@ export class ComplianceDetailsViewComponent implements OnInit, OnDestroy {
    * focusable. The calendar keeps its own early completion.
    */
   isRowCompletable(row: ComplianceReportRowModel): boolean {
-    return !row.completed && row.areaRulePlanningId != null && !isFutureTask(row.taskDate);
+    return (
+      !row.isProjected &&
+      !row.completed &&
+      row.areaRulePlanningId != null &&
+      !isFutureTask(row.taskDate)
+    );
   }
 
   /**
@@ -298,12 +305,18 @@ export class ComplianceDetailsViewComponent implements OnInit, OnDestroy {
    * that delete (`FutureTaskCannotBeDeleted`).
    */
   canDeleteRow(row: ComplianceReportRowModel): boolean {
-    return !row.completed && !isFutureTask(row.taskDate);
+    return !row.isProjected && !row.completed && !isFutureTask(row.taskDate);
   }
 
-  /** The rows #1300 locks; they carry an explanatory title instead of actions. */
+  /**
+   * The rows #1300 locks; they carry an explanatory title instead of actions.
+   * A planned row (#1332) is always one of them, whatever the browser's clock
+   * says: the server projects from ITS tomorrow (UTC), which around Copenhagen
+   * midnight is already today here — and a planned row has no compliance to
+   * complete or delete in any case.
+   */
   isFutureUncompleted(row: ComplianceReportRowModel): boolean {
-    return !row.completed && isFutureTask(row.taskDate);
+    return !!row.isProjected || (!row.completed && isFutureTask(row.taskDate));
   }
 
   formatDayLabel(taskDate: string): string {
@@ -325,8 +338,23 @@ export class ComplianceDetailsViewComponent implements OnInit, OnDestroy {
     return `${index}:${group.key}`;
   }
 
-  trackByRow(_: number, row: ComplianceReportRowModel): number {
-    return row.complianceId;
+  /**
+   * Planned rows (#1332) all carry complianceId 0, and planning + date is not
+   * unique either (an occurrence moved onto another rule date shares both), so
+   * they are keyed by position as well.
+   */
+  trackByRow(index: number, row: ComplianceReportRowModel): string {
+    return row.isProjected
+      ? `planned:${row.planningId}:${row.taskDate}:${index}`
+      : `compliance:${row.complianceId}`;
+  }
+
+  /** The status circle's accessible name. */
+  statusLabelKey(row: ComplianceReportRowModel): string {
+    if (row.isProjected) {
+      return 'Planned';
+    }
+    return row.completed ? 'Task done' : 'Task not done';
   }
 
   // -------------------------------------------------------------------

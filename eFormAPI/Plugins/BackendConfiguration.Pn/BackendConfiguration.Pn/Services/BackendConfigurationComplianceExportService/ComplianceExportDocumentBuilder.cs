@@ -186,6 +186,11 @@ public static class ComplianceExportDocumentBuilder
     /// Word/PDF can tint it; the <c>Status</c> cell still carries the label, which
     /// is what CSV readers get.
     /// </para>
+    ///
+    /// <para>
+    /// A planned occurrence (#1332, <see cref="ComplianceReportRowModel.IsProjected"/>)
+    /// reads "Planlagt" (key <c>Planned</c>), matching its status on screen.
+    /// </para>
     /// </summary>
     public static ComplianceExportDocument BuildDetails(
         List<ComplianceReportRowModel> rows,
@@ -220,6 +225,7 @@ public static class ComplianceExportDocumentBuilder
 
         var doneLabel = localizationService.GetString("Done");
         var notDoneLabel = localizationService.GetString("NotDone");
+        var plannedLabel = localizationService.GetString("Planned");
 
         foreach (var row in rows ?? [])
         {
@@ -246,13 +252,19 @@ public static class ComplianceExportDocumentBuilder
                     ComplianceExportCell.FromText(row.Title),
                     ComplianceExportCell.FromText(JoinNames(row.WorkerNames)),
                     ComplianceExportCell.FromText(JoinNames(row.Tags)),
-                    ComplianceExportCell.FromText(row.Completed ? doneLabel : notDoneLabel)
+                    ComplianceExportCell.FromText(StatusLabel(row))
                 ]
             });
         }
 
         document.Tables.Add(table);
         return document;
+
+        string StatusLabel(ComplianceReportRowModel row)
+        {
+            if (row.IsProjected) return plannedLabel;
+            return row.Completed ? doneLabel : notDoneLabel;
+        }
     }
 
     /// <summary>

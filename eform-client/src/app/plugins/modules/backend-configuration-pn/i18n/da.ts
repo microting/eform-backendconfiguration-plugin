@@ -749,6 +749,7 @@ export const da = {
   'No tasks match the selected filters.': 'Ingen opgaver matcher de valgte filtre.',
   'Task done': 'Udført',
   'Task not done': 'Ikke udført',
+  'Planned': 'Planlagt',
   'Could not load the data': 'Kunne ikke indlæse data',
   'Compliance %': 'Compliance %',
   'Compliance total': 'I alt',

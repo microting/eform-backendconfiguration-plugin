@@ -624,6 +624,7 @@ export const roRO = {
   'No tasks match the selected filters.': 'Nicio sarcină nu corespunde filtrelor selectate.',
   'Task done': 'Sarcină finalizată',
   'Task not done': 'Sarcină neterminată',
+  'Planned': 'Planificat',
   'Could not load the data': 'Nu s-au putut încărca datele',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.

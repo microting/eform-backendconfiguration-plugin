@@ -225,6 +225,29 @@ public class ComplianceExportServiceTests
     }
 
     /// <summary>
+    /// #1332: the Detaljer export lists the planned occurrences after today, as the
+    /// screen does; the Rapport export does not (Rapport shows answers).
+    /// </summary>
+    [Test]
+    public async Task Export_Details_IncludesPlannedRows_Report_DoesNot()
+    {
+        ComplianceReportRequestModel? details = null;
+        ComplianceReportRequestModel? report = null;
+        var reportService = StubReportService(
+            onIndex: request => details = request,
+            onEformColumns: request => report = request);
+        var service = BuildService(reportService);
+
+        Assert.That((await service.Export(Request("details", "csv"))).Success, Is.True);
+        Assert.That((await service.Export(Request("report", "csv"))).Success, Is.True);
+
+        Assert.That(details, Is.Not.Null);
+        Assert.That(details!.IncludeProjected, Is.True);
+        Assert.That(report, Is.Not.Null);
+        Assert.That(report!.IncludeProjected, Is.False);
+    }
+
+    /// <summary>
     /// The whole filter set travels through unchanged — the export re-runs the
     /// screen's filters rather than approximating them. Null collections normalise
     /// to empty ones so the report service never has to guard.

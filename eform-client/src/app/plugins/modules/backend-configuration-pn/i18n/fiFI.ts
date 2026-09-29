@@ -624,6 +624,7 @@ export const fiFI = {
   'No tasks match the selected filters.': 'Yksikään tehtävä ei vastaa valittuja suodattimia.',
   'Task done': 'Tehtävä suoritettu',
   'Task not done': 'Tehtävä ei ole suoritettu',
+  'Planned': 'Suunniteltu',
   'Could not load the data': 'Tietojen lataaminen epäonnistui',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.

@@ -60,4 +60,9 @@ public class ComplianceReportRowModel
     /// <summary>SDK Case.CheckListId — the template actually answered.
     /// The template key for #1166; EformId is NOT (see #1160 finding 1).</summary>
     public int? CheckListId { get; set; }
+
+    /// <summary>#1332 — a planned occurrence after today that has not been deployed:
+    /// no Compliance row (<see cref="ComplianceId"/> and <see cref="SdkCaseId"/> are 0),
+    /// never completed. Detaljer shows it read-only with the status "Planlagt".</summary>
+    public bool IsProjected { get; set; }
 }

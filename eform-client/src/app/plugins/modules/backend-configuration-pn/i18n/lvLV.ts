@@ -624,6 +624,7 @@ export const lvLV = {
   'No tasks match the selected filters.': 'Neviens uzdevums neatbilst atlasītajiem filtriem.',
   'Task done': 'Uzdevums paveikts',
   'Task not done': 'Uzdevums nav pabeigts',
+  'Planned': 'Plānots',
   'Could not load the data': 'Nevarēja ielādēt datus',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.

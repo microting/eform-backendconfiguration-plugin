@@ -624,6 +624,7 @@ export const itIT = {
   'No tasks match the selected filters.': 'Nessuna attività corrisponde ai filtri selezionati.',
   'Task done': 'Compito completato',
   'Task not done': 'Compito non completato',
+  'Planned': 'Pianificato',
   'Could not load the data': 'Impossibile caricare i dati',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.

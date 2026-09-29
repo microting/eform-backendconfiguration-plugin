@@ -624,6 +624,7 @@ export const slSL = {
   'No tasks match the selected filters.': 'Nobena naloga se ne ujema z izbranimi filtri.',
   'Task done': 'Naloga opravljena',
   'Task not done': 'Naloga ni opravljena',
+  'Planned': 'Načrtovano',
   'Could not load the data': 'Podatkov ni bilo mogoče naložiti',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.

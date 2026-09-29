@@ -624,6 +624,7 @@ export const plPL = {
   'No tasks match the selected filters.': 'Żadne zadanie nie pasuje do wybranych filtrów.',
   'Task done': 'Zadanie wykonane',
   'Task not done': 'Zadanie nie zostało wykonane',
+  'Planned': 'Zaplanowane',
   'Could not load the data': 'Nie można załadować danych',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.

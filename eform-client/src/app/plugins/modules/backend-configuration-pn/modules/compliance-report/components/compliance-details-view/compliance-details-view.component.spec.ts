@@ -161,6 +161,64 @@ describe('ComplianceDetailsViewComponent — future tasks (#1300)', () => {
     expect(deleteCompliance).not.toHaveBeenCalled();
   });
 
+  describe('planned occurrences (#1332)', () => {
+    const planned = (planningId: number, taskDate: string): ComplianceReportRowModel => ({
+      ...row(0, taskDate),
+      sdkCaseId: 0,
+      checkListId: null,
+      planningId,
+      isProjected: true,
+    });
+
+    it('asks the server for planned rows', () => {
+      render([]);
+      expect(index).toHaveBeenLastCalledWith(expect.objectContaining({includeProjected: true}));
+    });
+
+    it('is never completable or deletable, even dated today in the browser', () => {
+      // Around Copenhagen midnight the server's (UTC) tomorrow is already today here.
+      const today = planned(3, '2026-09-18');
+      expect(component.isRowCompletable(today)).toBe(false);
+      expect(component.canDeleteRow(today)).toBe(false);
+      expect(component.isFutureUncompleted(today)).toBe(true);
+      component.onRowClicked(today);
+      expect(dialogOpen).not.toHaveBeenCalled();
+    });
+
+    it('renders read-only with a "Planned" chip and no compliance id', () => {
+      render([planned(3, '2026-11-30'), planned(4, '2026-11-30'), row(2, '2026-09-18')]);
+
+      const rows = fixture.nativeElement.querySelectorAll('[data-planned]') as NodeListOf<HTMLElement>;
+      // Both planned rows render although they share complianceId 0.
+      expect(rows.length).toBe(2);
+      rows.forEach((el) => {
+        expect(el.getAttribute('data-compliance-id')).toBeNull();
+        expect(el.classList).not.toContain('is-clickable');
+        expect(el.classList).toContain('is-future');
+        expect(el.getAttribute('tabindex')).toBeNull();
+        expect(el.querySelector('.compliance-details__delete')).toBeNull();
+        expect(el.querySelector('.compliance-details__planned')?.textContent?.trim()).toBe('Planned');
+      });
+
+      // A deployed row carries no chip.
+      expect(rowEl(2).querySelector('.compliance-details__planned')).toBeNull();
+      expect(deleteButton(2)).not.toBeNull();
+    });
+
+    it('keys planned rows by planning, date and position, deployed rows by compliance id', () => {
+      // Same planning and date twice: an occurrence moved onto another rule date.
+      expect(component.trackByRow(0, planned(3, '2026-11-30'))).toBe('planned:3:2026-11-30:0');
+      expect(component.trackByRow(1, planned(3, '2026-11-30'))).toBe('planned:3:2026-11-30:1');
+      expect(component.trackByRow(2, row(2, '2026-09-18'))).toBe('compliance:2');
+    });
+
+    it('labels the status circle "Planned" for a planned row', () => {
+      expect(component.statusLabelKey(planned(3, '2026-11-30'))).toBe('Planned');
+      expect(component.statusLabelKey(row(2, '2026-09-18', true))).toBe('Task done');
+      expect(component.statusLabelKey(row(2, '2026-09-18'))).toBe('Task not done');
+    });
+  });
+
   it('flips at Copenhagen midnight, not UTC midnight (CEST: 22:00 UTC)', () => {
     const tomorrow = row(1, '2026-09-19');
     jest.setSystemTime(new Date('2026-09-18T21:59:00Z')); // 23:59 in Copenhagen

@@ -624,6 +624,7 @@ export const skSK = {
   'No tasks match the selected filters.': 'Žiadne úlohy nezodpovedajú vybraným filtrom.',
   'Task done': 'Úloha hotová',
   'Task not done': 'Úloha nebola dokončená',
+  'Planned': 'Naplánované',
   'Could not load the data': 'Nepodarilo sa načítať údaje',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.

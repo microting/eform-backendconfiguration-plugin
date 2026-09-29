@@ -624,6 +624,7 @@ export const ptPT = {
   'No tasks match the selected filters.': 'Nenhuma tarefa corresponde aos filtros selecionados.',
   'Task done': 'Tarefa concluída',
   'Task not done': 'Tarefa não concluída',
+  'Planned': 'Planeado',
   'Could not load the data': 'Não foi possível carregar os dados',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.

@@ -18,6 +18,7 @@ using Sentry;
 using CalendarService =
     BackendConfiguration.Pn.Services.BackendConfigurationCalendarService.BackendConfigurationCalendarService;
 using SdkDbContext = Microting.eForm.Infrastructure.MicrotingDbContext;
+using Planning = Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationComplianceReportService;
 
@@ -32,7 +33,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationComplianceReportS
 ///       PropertyId, TagIds and SiteIds. Projected, not materialised as entities.
 ///   B — one SQL query in the SDK context: the backing cases for the candidates.
 ///   C — in memory: occurrence-exception delete/move, effective board + BoardIds,
-///       and the status filter. <c>Total</c> is the count at the END of this phase.
+///       and the status filter.
+///   P — in memory, Detaljer only (#1332): the planned occurrences after today that
+///       no Compliance row backs yet. <c>Total</c> is the count at the END of this phase.
 ///   D — sort, then Skip/Take.
 ///   E — enrich the RETURNED PAGE only: titles, tag names, worker names, board
 ///       and property names.
@@ -97,7 +100,11 @@ public class BackendConfigurationComplianceReportService(
                     DateFrom = dateFrom,
                     DateTo = dateTo,
                     Status = requestModel.Status,
-                    ComputeDisplayFields = true
+                    ComputeDisplayFields = true,
+                    // #1332 — Detaljer (and its export) opt in to the planned,
+                    // not-yet-deployed occurrences after today. Index is the ONLY
+                    // caller that may set this; see CandidateFilter.IncludeProjected.
+                    IncludeProjected = requestModel.IncludeProjected
                 },
                 sdkDbContext);
 
@@ -147,13 +154,14 @@ public class BackendConfigurationComplianceReportService(
                 // Unpaged: #1167 groups the whole filtered set, #1169 exports it.
                 if (sorted.Count > MaxRowsReturned)
                 {
+                    page = CapRows(sorted, out var plannedDropped, out var realDropped);
                     logger.LogWarning(
                         "BackendConfigurationComplianceReportService.Index: unpaged request matched {Total} rows, "
-                        + "truncated to the {Cap}-row cap. Filters: propertyId={PropertyId}, status={Status}, "
+                        + "truncated to the {Cap}-row cap ({PlannedDropped} planned and {RealDropped} deployed "
+                        + "rows dropped). Filters: propertyId={PropertyId}, status={Status}, "
                         + "dateFrom={DateFrom:yyyy-MM-dd}, dateTo={DateTo:yyyy-MM-dd}",
-                        sorted.Count, MaxRowsReturned, requestModel.PropertyId, requestModel.Status,
-                        dateFrom, dateTo);
-                    page = sorted.Take(MaxRowsReturned).ToList();
+                        sorted.Count, MaxRowsReturned, plannedDropped, realDropped, requestModel.PropertyId,
+                        requestModel.Status, dateFrom, dateTo);
                 }
                 else
                 {
@@ -294,7 +302,8 @@ public class BackendConfigurationComplianceReportService(
                     // The template ACTUALLY answered, from the SDK case — not
                     // AreaRule.EformId (current configuration) and not
                     // Compliance.MicrotingSdkeFormId. See #1160 finding 1.
-                    CheckListId = row.SdkCase?.CheckListId
+                    CheckListId = row.SdkCase?.CheckListId,
+                    IsProjected = row.IsProjected
                 });
             }
 
@@ -370,18 +379,26 @@ public class BackendConfigurationComplianceReportService(
         // Property patterns, so a body posting "tagIds": null (or a null
         // siteIds/boardIds) means "no filtering" exactly as an absent or
         // empty list does, instead of NRE-ing into the catch below.
+        //
+        // Each filter is expressed ONCE, as the set of planning ids it admits (an
+        // IN (subquery) — still no join, so still no fan-out), and applied both to
+        // the compliance rows here and to the series the #1332 projection phase
+        // enumerates, so a planned row can never pass a filter its deployed
+        // sibling would fail.
+        IQueryable<int> tagScopedPlanningIds = null;
         if (filter.TagIds is { Count: > 0 } tagIds)
         {
-            complianceQuery = complianceQuery.Where(c =>
-                backendConfigurationPnDbContext.AreaRulePlannings.Any(arp =>
-                    arp.ItemPlanningId == c.PlanningId
-                    && arp.WorkflowState != Constants.WorkflowStates.Removed
-                    && backendConfigurationPnDbContext.AreaRulePlanningTags.Any(t =>
-                        t.AreaRulePlanningId == arp.Id
-                        && t.WorkflowState != Constants.WorkflowStates.Removed
-                        && tagIds.Contains(t.ItemPlanningTagId))));
+            tagScopedPlanningIds = backendConfigurationPnDbContext.AreaRulePlannings
+                .Where(arp => arp.WorkflowState != Constants.WorkflowStates.Removed
+                              && backendConfigurationPnDbContext.AreaRulePlanningTags.Any(t =>
+                                  t.AreaRulePlanningId == arp.Id
+                                  && t.WorkflowState != Constants.WorkflowStates.Removed
+                                  && tagIds.Contains(t.ItemPlanningTagId)))
+                .Select(arp => arp.ItemPlanningId);
+            complianceQuery = complianceQuery.Where(c => tagScopedPlanningIds.Contains(c.PlanningId));
         }
 
+        IQueryable<int> siteScopedPlanningIds = null;
         if (filter.SiteIds is { Count: > 0 } siteIds)
         {
             // #1232 — an occurrence whose event is assigned to a worker tag ("team")
@@ -411,15 +428,15 @@ public class BackendConfigurationComplianceReportService(
                     backendConfigurationPnDbContext, teamTagIdsByPropertyId)
                 .ConfigureAwait(false);
 
-            complianceQuery = complianceQuery.Where(c =>
-                backendConfigurationPnDbContext.AreaRulePlannings.Any(arp =>
-                    arp.ItemPlanningId == c.PlanningId
-                    && arp.WorkflowState != Constants.WorkflowStates.Removed
-                    && (backendConfigurationPnDbContext.PlanningSites.Any(ps =>
-                            ps.AreaRulePlanningsId == arp.Id
-                            && ps.WorkflowState != Constants.WorkflowStates.Removed
-                            && siteIds.Contains(ps.SiteId))
-                        || teamMatchedArpIds.Contains(arp.Id))));
+            siteScopedPlanningIds = backendConfigurationPnDbContext.AreaRulePlannings
+                .Where(arp => arp.WorkflowState != Constants.WorkflowStates.Removed
+                              && (backendConfigurationPnDbContext.PlanningSites.Any(ps =>
+                                      ps.AreaRulePlanningsId == arp.Id
+                                      && ps.WorkflowState != Constants.WorkflowStates.Removed
+                                      && siteIds.Contains(ps.SiteId))
+                                  || teamMatchedArpIds.Contains(arp.Id)))
+                .Select(arp => arp.ItemPlanningId);
+            complianceQuery = complianceQuery.Where(c => siteScopedPlanningIds.Contains(c.PlanningId));
         }
 
         // Project rather than materialise entities: nothing downstream writes
@@ -527,11 +544,23 @@ public class BackendConfigurationComplianceReportService(
                 .GroupBy(x => x.OriginalDate.Date)
                 .ToDictionary(gg => gg.Key, gg => gg.First()));
 
+        var wantOpen = filter.Status is "open" or "all";
+        var wantDone = filter.Status is "done" or "all";
+
+        // #1332 — the series whose not-yet-deployed occurrences after today are
+        // projected. Loaded BEFORE the boards, because a projected row needs its
+        // property's default board exactly like a compliance row does.
+        var projection = await LoadProjectionSources(
+            filter, wantOpen, tagScopedPlanningIds, siteScopedPlanningIds, sdkDbContext);
+
         // Boards: one row per board, not per compliance row. Needed HERE
         // because the BoardIds filter runs in phase C — the effective board is
         // exception.BoardId ?? calConfig.BoardId ?? the property's lowest
         // non-removed board id, and the first arm only exists in memory.
-        var propertyIds = candidates.Select(c => c.PropertyId).Distinct().ToList();
+        var propertyIds = candidates.Select(c => c.PropertyId)
+            .Concat(projection?.Series.Select(x => x.Arp.PropertyId) ?? [])
+            .Distinct()
+            .ToList();
         var boardsForProperties = await backendConfigurationPnDbContext.CalendarBoards
             .Where(b => b.WorkflowState != Constants.WorkflowStates.Removed)
             .Where(b => propertyIds.Contains(b.PropertyId))
@@ -541,8 +570,48 @@ public class BackendConfigurationComplianceReportService(
             .GroupBy(b => b.PropertyId)
             .ToDictionary(g => g.Key, g => g.OrderBy(b => b.Id).First().Id);
 
-        var wantOpen = filter.Status is "open" or "all";
-        var wantDone = filter.Status is "done" or "all";
+        int EffectiveBoardIdOf(CalendarOccurrenceException exception, CalendarConfiguration calConfig, int propertyId) =>
+            exception?.BoardId
+            ?? calConfig?.BoardId
+            ?? defaultBoardIdByProperty.GetValueOrDefault(propertyId, 0);
+
+        // A property with no non-removed board yields 0, and such rows are
+        // excluded whenever a board filter is set. Preserved deliberately.
+        bool FailsBoardFilter(int effectiveBoardId) =>
+            filter.BoardIds is { Count: > 0 } boardIds
+            && (effectiveBoardId == 0 || !boardIds.Contains(effectiveBoardId));
+
+        // Occurrence DISPLAY fields. Overview (#1162) reads none of them — it
+        // aggregates over PropertyId / EffectiveTaskDate / Completed — so it opts
+        // out and the coalesce chain is skipped entirely.
+        MatchedRow CreateRow(
+            CandidateRow candidate, AreaRulePlanning arp, CalendarConfiguration calConfig,
+            CalendarOccurrenceException exception, DateTime effectiveTaskDate, int effectiveBoardId,
+            bool done, SdkCaseInfo sdkCase, bool isProjected)
+        {
+            var isAllDay = filter.ComputeDisplayFields && CalendarService.ComputeIsAllDay(arp, calConfig);
+            return new MatchedRow
+            {
+                Candidate = candidate,
+                Arp = arp,
+                Exception = exception,
+                EffectiveTaskDate = effectiveTaskDate,
+                EffectiveBoardId = effectiveBoardId,
+                Completed = done,
+                SdkCase = sdkCase,
+                IsAllDay = isAllDay,
+                StartHour = !filter.ComputeDisplayFields || isAllDay
+                    ? 0
+                    : exception?.StartHour ?? calConfig?.StartHour ?? 9.0,
+                Duration = !filter.ComputeDisplayFields || isAllDay
+                    ? 0
+                    : exception?.Duration ?? calConfig?.Duration ?? 1.0,
+                DoneAt = filter.ComputeDisplayFields && done
+                    ? sdkCase?.DoneAtUserModifiable ?? sdkCase?.DoneAt
+                    : null,
+                IsProjected = isProjected
+            };
+        }
 
         var matched = new List<MatchedRow>();
         foreach (var candidate in candidates)
@@ -587,16 +656,8 @@ public class BackendConfigurationComplianceReportService(
             // — non-sargable, so it defeats every index — plus a correlated
             // MIN(Id) sub-select, in exchange for zero extra narrowing over a
             // set already cut down by date, property, tags and sites.
-            var effectiveBoardId = exception?.BoardId
-                ?? calConfig?.BoardId
-                ?? defaultBoardIdByProperty.GetValueOrDefault(candidate.PropertyId, 0);
-            // A property with no non-removed board yields 0, and such rows are
-            // excluded whenever a board filter is set. Preserved deliberately.
-            if (filter.BoardIds is { Count: > 0 } boardIds
-                && (effectiveBoardId == 0 || !boardIds.Contains(effectiveBoardId)))
-            {
-                continue;
-            }
+            var effectiveBoardId = EffectiveBoardIdOf(exception, calConfig, candidate.PropertyId);
+            if (FailsBoardFilter(effectiveBoardId)) continue;
 
             var done = IsDone(candidate);
             // STATUS FILTER — structurally impossible in SQL. Done-ness is
@@ -629,38 +690,340 @@ public class BackendConfigurationComplianceReportService(
                 ? casesById.GetValueOrDefault(candidate.MicrotingSdkCaseId)
                 : null;
 
-            // Occurrence DISPLAY fields. Overview (#1162) reads none of them
-            // — it aggregates over PropertyId / EffectiveTaskDate / Completed
-            // — so it opts out and the coalesce chain is skipped entirely.
-            // Index always opts in, which is why its rows are unchanged.
-            var isAllDay = filter.ComputeDisplayFields && CalendarService.ComputeIsAllDay(arp, calConfig);
+            matched.Add(CreateRow(candidate, arp, calConfig, exception, effectiveTaskDate,
+                effectiveBoardId, done, sdkCase, isProjected: false));
+        }
 
-            matched.Add(new MatchedRow
+        // ==========================================================
+        // Phase P (#1332) — project the planned occurrences after today.
+        //
+        // A future Compliance row exists only once something has deployed that
+        // occurrence (the mobile watch window, on-demand completion, or the
+        // scheduler's current cycle), so without this phase a long period stops
+        // about a month ahead. The rows are built in memory, BEFORE the sort and
+        // page of phase D, so Total and every page include them. They are open
+        // ("Planlagt"), never done and never overdue.
+        // ==========================================================
+        if (projection != null)
+        {
+            foreach (var (arp, planning) in projection.Series)
             {
-                Candidate = candidate,
-                Arp = arp,
-                Exception = exception,
-                EffectiveTaskDate = effectiveTaskDate,
-                EffectiveBoardId = effectiveBoardId,
-                Completed = done,
-                SdkCase = sdkCase,
-                IsAllDay = isAllDay,
-                StartHour = !filter.ComputeDisplayFields || isAllDay
-                    ? 0
-                    : exception?.StartHour ?? calConfig?.StartHour ?? 9.0,
-                Duration = !filter.ComputeDisplayFields || isAllDay
-                    ? 0
-                    : exception?.Duration ?? calConfig?.Duration ?? 1.0,
-                DoneAt = filter.ComputeDisplayFields && done
-                    ? sdkCase?.DoneAtUserModifiable ?? sdkCase?.DoneAt
-                    : null
-            });
+                projection.CalConfigByArpId.TryGetValue(arp.Id, out var calConfig);
+                var exceptionsByDate = projection.ExceptionsByArpAndDate.GetValueOrDefault(arp.Id)
+                                       ?? new Dictionary<DateTime, CalendarOccurrenceException>();
+
+                void Project(DateTime originalDate, CalendarOccurrenceException exception)
+                {
+                    if (exception?.IsDeleted == true) return;
+                    var effectiveTaskDate = exception?.NewDate?.Date ?? originalDate;
+                    if (effectiveTaskDate < projection.From || effectiveTaskDate > projection.To) return;
+                    // Stricter than the week view, which dedups on the original date only:
+                    // a moved deployed occurrence carries its NEW date as Deadline (MoveTask),
+                    // and phase C already lists it there, so either date suppresses the row.
+                    if (projection.IsMaterialised(planning.Id, originalDate)
+                        || projection.IsMaterialised(planning.Id, effectiveTaskDate)) return;
+                    // The week view's completed-period backstop (#960): a period that
+                    // already holds a completed occurrence renders no further sibling.
+                    var periodKey = CalendarService.CompletedPeriodKey(
+                        planning.RepeatType, arp.RepeatWeekdaysCsv, originalDate);
+                    if (periodKey != null && projection.CompletedPeriods.Contains($"{planning.Id}:{periodKey}")) return;
+
+                    var effectiveBoardId = EffectiveBoardIdOf(exception, calConfig, arp.PropertyId);
+                    if (FailsBoardFilter(effectiveBoardId)) return;
+
+                    matched.Add(CreateRow(
+                        new CandidateRow
+                        {
+                            // The title fallback ApplyTitles uses when the task has no
+                            // translation — the planning name, as on a deployed row.
+                            ItemName = projection.ItemNameByPlanningId.GetValueOrDefault(planning.Id),
+                            PlanningId = planning.Id,
+                            PropertyId = arp.PropertyId,
+                            Deadline = originalDate,
+                            WorkflowState = Constants.WorkflowStates.Created
+                        },
+                        arp, calConfig, exception, effectiveTaskDate, effectiveBoardId,
+                        done: false, sdkCase: null, isProjected: true));
+                }
+
+                var ruleDates = CalendarService.GetWeekViewOccurrences(planning, arp, projection.From, projection.To);
+                foreach (var ruleDate in ruleDates)
+                {
+                    Project(ruleDate, exceptionsByDate.GetValueOrDefault(ruleDate));
+                }
+
+                // Exceptions keyed on a date the loop above did not visit: an
+                // occurrence MOVED into the window from today, the past or beyond it
+                // (the week view's movedInExceptions pass), and an anchor the rule no
+                // longer produces (its orphan pass). Project applies the same delete,
+                // range and dedup rules to both.
+                var visited = ruleDates.ToHashSet();
+                foreach (var orphan in exceptionsByDate.Values.Where(x => !visited.Contains(x.OriginalDate.Date)))
+                {
+                    Project(orphan.OriginalDate.Date, orphan);
+                }
+            }
         }
 
         return new CandidateSet
         {
             MatchedRows = matched,
             BoardNamesById = boardNamesById
+        };
+    }
+
+    /// <summary>
+    /// The furthest ahead the #1332 projection enumerates, counted from today. The
+    /// largest period preset is "År til dato + 1 år"; a hand-picked "Sæt periode"
+    /// range reaching further is projected up to this horizon only (logged), so a
+    /// window ending in year 9999 cannot enumerate millions of occurrences in memory.
+    /// </summary>
+    internal const int MaxProjectionYears = 5;
+
+    /// <summary>
+    /// Loads everything phase P needs, or returns <c>null</c> when nothing is to be
+    /// projected: the caller did not opt in, the status excludes open rows, the window
+    /// holds no day after today, or no series matches the filters.
+    ///
+    /// <para><b>"After today" starts TOMORROW</b>, with "today" the same UTC date the
+    /// report classifies overdue against (<see cref="CandidateFilter.Today"/>). Today's
+    /// occurrence is never projected: the scheduler dates the CURRENT cycle's
+    /// compliance with the NEXT occurrence's date (<c>Planning.NextExecutionTime</c>),
+    /// so a planned row for today would count the running cycle twice.</para>
+    ///
+    /// <para><b>Which series:</b> the lowest-Id live ARP per planning (the pin phase C
+    /// uses), active (<c>Status</c> true — an inactive task deploys nothing, and its
+    /// compliance rows are retracted on deactivation), on a live planning, matching
+    /// the property filter and the same tag and employee scopes as phase A.
+    /// <c>ComplianceEnabled</c> ("Overskredet opgave vises ikke i app") is
+    /// deliberately NOT a filter: planned rows are future, never overdue.</para>
+    ///
+    /// <para><b>Dedup:</b> a (planning, date) with ANY Compliance row, in ANY workflow
+    /// state, is not projected. A live row is shown by phase C already (or, for a
+    /// multi-worker task, represents the occurrence); a soft-removed row is a
+    /// completed, deleted or retracted occurrence, which
+    /// <c>EventDeployService.EnsureDeployedAsync</c> likewise never re-deploys. On top
+    /// of that, the week view's completed-period backstop applies.</para>
+    /// </summary>
+    private async Task<ProjectionSources> LoadProjectionSources(
+        CandidateFilter filter, bool wantOpen,
+        IQueryable<int> tagScopedPlanningIds, IQueryable<int> siteScopedPlanningIds,
+        SdkDbContext sdkDbContext)
+    {
+        if (!filter.IncludeProjected || !wantOpen)
+        {
+            return null;
+        }
+
+        var from = filter.DateFrom.Date > filter.Today.AddDays(1)
+            ? filter.DateFrom.Date
+            : filter.Today.AddDays(1);
+        var to = filter.DateTo.Date;
+        var horizon = filter.Today.AddYears(MaxProjectionYears);
+        if (to > horizon)
+        {
+            logger.LogWarning(
+                "BackendConfigurationComplianceReportService: the period ends {DateTo:yyyy-MM-dd}; planned "
+                + "occurrences are projected only up to {Horizon:yyyy-MM-dd} ({Years} years ahead).",
+                to, horizon, MaxProjectionYears);
+            to = horizon;
+        }
+
+        if (from > to)
+        {
+            return null;
+        }
+
+        var arpQuery = backendConfigurationPnDbContext.AreaRulePlannings
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => x.ItemPlanningId > 0);
+        if (filter.PropertyId.HasValue)
+        {
+            arpQuery = arpQuery.Where(x => x.PropertyId == filter.PropertyId.Value);
+        }
+        if (tagScopedPlanningIds != null)
+        {
+            arpQuery = arpQuery.Where(x => tagScopedPlanningIds.Contains(x.ItemPlanningId));
+        }
+        if (siteScopedPlanningIds != null)
+        {
+            arpQuery = arpQuery.Where(x => siteScopedPlanningIds.Contains(x.ItemPlanningId));
+        }
+
+        var scopedPlanningIds = await arpQuery.Select(x => x.ItemPlanningId).Distinct().ToListAsync();
+        if (scopedPlanningIds.Count == 0)
+        {
+            return null;
+        }
+
+        // Pin the lowest-Id live ARP per planning — the same rule as phase C — and
+        // only then apply the per-series conditions, so a planning is judged by the
+        // same ARP whether its occurrence is projected or already deployed.
+        var pinnedArps = (await backendConfigurationPnDbContext.AreaRulePlannings
+                .Where(x => scopedPlanningIds.Contains(x.ItemPlanningId))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToListAsync())
+            .GroupBy(x => x.ItemPlanningId)
+            .Select(g => g.OrderBy(a => a.Id).First())
+            .Where(a => a.Status)
+            .Where(a => !filter.PropertyId.HasValue || a.PropertyId == filter.PropertyId.Value)
+            .ToList();
+
+        var pinnedPlanningIds = pinnedArps.Select(a => a.ItemPlanningId).ToList();
+        var planningsById = pinnedPlanningIds.Count > 0
+            ? await itemsPlanningPnDbContext.Plannings
+                .Where(p => pinnedPlanningIds.Contains(p.Id))
+                .Where(p => p.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToDictionaryAsync(p => p.Id)
+            : new Dictionary<int, Planning>();
+
+        var series = pinnedArps
+            .Where(a => planningsById.ContainsKey(a.ItemPlanningId))
+            .Select(a => (Arp: a, Planning: planningsById[a.ItemPlanningId]))
+            .ToList();
+        if (series.Count == 0)
+        {
+            return null;
+        }
+
+        var arpIds = series.Select(x => x.Arp.Id).ToList();
+        var planningIds = series.Select(x => x.Planning.Id).ToList();
+
+        // Lowest-Id configuration per ARP, as phase C.
+        var calConfigByArpId = (await backendConfigurationPnDbContext.CalendarConfigurations
+                .Where(x => arpIds.Contains(x.AreaRulePlanningId))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToListAsync())
+            .GroupBy(x => x.AreaRulePlanningId)
+            .ToDictionary(g => g.Key, g => g.OrderBy(c => c.Id).First());
+
+        var windowEnd = to.AddDays(1); // exclusive
+        var exceptions = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+            .Where(x => arpIds.Contains(x.AreaRulePlanningId))
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => (x.OriginalDate >= from && x.OriginalDate < windowEnd)
+                        || (x.NewDate.HasValue && x.NewDate.Value >= from && x.NewDate.Value < windowEnd))
+            .ToListAsync();
+        var exceptionsByArpAndDate = exceptions
+            .GroupBy(x => x.AreaRulePlanningId)
+            .ToDictionary(g => g.Key, g => g
+                .GroupBy(x => x.OriginalDate.Date)
+                .ToDictionary(gg => gg.Key, gg => gg.First()));
+
+        // Compliance rows are read NARROWLY — only what phase P can look up:
+        //  - dedup keys on an occurrence's original and effective date. Effective
+        //    dates lie in the window; original dates too, except for an exception
+        //    that moves an occurrence in from outside it, whose original date is
+        //    added explicitly;
+        //  - completed-period suppression, which only matters for a series with a
+        //    period key (single-weekday weekly, monthly, yearly) and only for the
+        //    periods overlapping the dates that series projects. Only those rows'
+        //    SDK cases are looked up.
+        var outsideOriginalDates = exceptions
+            .Select(x => x.OriginalDate.Date)
+            .Where(d => d < from || d >= windowEnd)
+            .Distinct()
+            .ToList();
+        var materialisedDates = (await backendConfigurationPnDbContext.Compliances
+                .Where(x => planningIds.Contains(x.PlanningId))
+                .Where(x => (x.Deadline >= from && x.Deadline < windowEnd)
+                            || outsideOriginalDates.Contains(x.Deadline.Date))
+                .Select(x => new { x.PlanningId, x.Deadline })
+                .ToListAsync())
+            .Select(x => (x.PlanningId, x.Deadline.Date))
+            .ToHashSet();
+
+        var periodRangeByPlanningId = new Dictionary<int, (DateTime Start, DateTime End)>();
+        foreach (var (arp, planning) in series)
+        {
+            var originals = exceptionsByArpAndDate.GetValueOrDefault(arp.Id)?.Keys ?? Enumerable.Empty<DateTime>();
+            var first = originals.Append(from).Min();
+            var last = originals.Append(to).Max();
+            if (CompletedPeriodRange(planning, arp, first, last) is { } range)
+            {
+                periodRangeByPlanningId[planning.Id] = range;
+            }
+        }
+
+        var completedPeriods = new HashSet<string>();
+        if (periodRangeByPlanningId.Count > 0)
+        {
+            var keyedPlanningIds = periodRangeByPlanningId.Keys.ToList();
+            var rangeStart = periodRangeByPlanningId.Values.Min(r => r.Start);
+            var rangeEnd = periodRangeByPlanningId.Values.Max(r => r.End);
+            var periodRows = (await backendConfigurationPnDbContext.Compliances
+                    .Where(x => keyedPlanningIds.Contains(x.PlanningId))
+                    .Where(x => x.MicrotingSdkCaseId > 0)
+                    .Where(x => x.Deadline >= rangeStart && x.Deadline < rangeEnd)
+                    .Select(x => new { x.PlanningId, x.Deadline, x.MicrotingSdkCaseId })
+                    .ToListAsync())
+                // Each series only cares about its OWN periods.
+                .Where(x => x.Deadline >= periodRangeByPlanningId[x.PlanningId].Start
+                            && x.Deadline < periodRangeByPlanningId[x.PlanningId].End)
+                .ToList();
+
+            var caseIds = periodRows.Select(x => x.MicrotingSdkCaseId).Distinct().ToList();
+            var completedCaseIds = caseIds.Count > 0
+                ? (await sdkDbContext.Cases
+                    .Where(c => caseIds.Contains(c.Id) && c.Status == 100)
+                    .Select(c => c.Id)
+                    .ToListAsync()).ToHashSet()
+                : [];
+
+            var seriesByPlanningId = series.ToDictionary(x => x.Planning.Id);
+            foreach (var c in periodRows.Where(x => completedCaseIds.Contains(x.MicrotingSdkCaseId)))
+            {
+                var (arp, planning) = seriesByPlanningId[c.PlanningId];
+                var key = CalendarService.CompletedPeriodKey(planning.RepeatType, arp.RepeatWeekdaysCsv, c.Deadline);
+                if (key != null) completedPeriods.Add($"{c.PlanningId}:{key}");
+            }
+        }
+
+        // Language-agnostic on purpose: it is only the fallback behind the task's
+        // own translation, exactly as Compliance.ItemName is on a deployed row.
+        var itemNameByPlanningId = (await itemsPlanningPnDbContext.PlanningNameTranslation
+                .Where(x => planningIds.Contains(x.PlanningId))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Select(x => new { x.Id, x.PlanningId, x.Name })
+                .ToListAsync())
+            .GroupBy(x => x.PlanningId)
+            .ToDictionary(g => g.Key, g => g.OrderBy(x => x.Id).First().Name);
+
+        return new ProjectionSources
+        {
+            From = from,
+            To = to,
+            Series = series,
+            CalConfigByArpId = calConfigByArpId,
+            ExceptionsByArpAndDate = exceptionsByArpAndDate,
+            MaterialisedDates = materialisedDates,
+            CompletedPeriods = completedPeriods,
+            ItemNameByPlanningId = itemNameByPlanningId
+        };
+    }
+
+    /// <summary>
+    /// The half-open date range covering every <see cref="CalendarService.CompletedPeriodKey"/>
+    /// period that contains a day in [<paramref name="first"/>, <paramref name="last"/>], or
+    /// <c>null</c> when the series has no period key (daily, multi-day weekly, one-off) and
+    /// completed-period suppression therefore never applies. Its granularity mirrors that
+    /// key's: a Monday-aligned week, a month or a year.
+    /// </summary>
+    private static (DateTime Start, DateTime End)? CompletedPeriodRange(
+        Planning planning, AreaRulePlanning arp, DateTime first, DateTime last)
+    {
+        if (CalendarService.CompletedPeriodKey(planning.RepeatType, arp.RepeatWeekdaysCsv, first) == null)
+        {
+            return null;
+        }
+
+        static DateTime MondayOf(DateTime d) => d.Date.AddDays(-(((int)d.DayOfWeek + 6) % 7));
+
+        return (int)planning.RepeatType switch
+        {
+            2 => (MondayOf(first), MondayOf(last).AddDays(7)),
+            3 => (new DateTime(first.Year, first.Month, 1), new DateTime(last.Year, last.Month, 1).AddMonths(1)),
+            _ => (new DateTime(first.Year, 1, 1), new DateTime(last.Year + 1, 1, 1))
         };
     }
 
@@ -1382,6 +1745,38 @@ public class BackendConfigurationComplianceReportService(
         /// classifies overdue rows against, so the two can never disagree across midnight.
         /// </summary>
         public DateTime Today { get; init; } = DateTime.UtcNow.Date;
+
+        /// <summary>
+        /// #1332 — add the planned, not-yet-deployed occurrences after <see cref="Today"/>
+        /// (phase P). Only <see cref="Index"/> sets it, and only when its caller asks:
+        /// Detaljer and its export. Oversigt keeps counting deployed occurrences, and
+        /// Rapport is a report of answers, which a planned occurrence has none of.
+        /// </summary>
+        public bool IncludeProjected { get; init; }
+    }
+
+    /// <summary>What phase P reads — see <see cref="LoadProjectionSources"/>.</summary>
+    private sealed class ProjectionSources
+    {
+        /// <summary>First projected day (tomorrow at the earliest).</summary>
+        public DateTime From { get; init; }
+        /// <summary>Last projected day, inclusive.</summary>
+        public DateTime To { get; init; }
+        public List<(AreaRulePlanning Arp, Planning Planning)> Series { get; init; }
+        public Dictionary<int, CalendarConfiguration> CalConfigByArpId { get; init; }
+        public Dictionary<int, Dictionary<DateTime, CalendarOccurrenceException>> ExceptionsByArpAndDate { get; init; }
+        /// <summary>
+        /// (PlanningId, Deadline date) of every Compliance row, any workflow state, dated
+        /// in the window or on an exception's original date — the only dates phase P
+        /// looks up.
+        /// </summary>
+        public HashSet<(int PlanningId, DateTime Date)> MaterialisedDates { get; init; }
+        /// <summary>"{planningId}:{CompletedPeriodKey}" of every completed period overlapping the projection.</summary>
+        public HashSet<string> CompletedPeriods { get; init; }
+        /// <summary>A planning name per planning — the title fallback of a projected row.</summary>
+        public Dictionary<int, string> ItemNameByPlanningId { get; init; }
+
+        public bool IsMaterialised(int planningId, DateTime date) => MaterialisedDates.Contains((planningId, date.Date));
     }
 
     /// <summary>What phases A-C produce.</summary>
@@ -1741,6 +2136,30 @@ public class BackendConfigurationComplianceReportService(
         }
     }
 
+    /// <summary>
+    /// Cuts an over-long unpaged result to <see cref="MaxRowsReturned"/>, keeping the
+    /// given order. PLANNED rows (#1332) go first, furthest-future first: they are the
+    /// newest rows, so under the default taskDate-descending sort a plain Take would
+    /// fill the cap with planned occurrences and evict the deployed history the report
+    /// exists for. Only once no planned row is left to drop is the tail of the deployed
+    /// rows truncated, as before.
+    /// </summary>
+    private static List<MatchedRow> CapRows(List<MatchedRow> sorted, out int plannedDropped, out int realDropped)
+    {
+        var excess = sorted.Count - MaxRowsReturned;
+        var dropped = sorted
+            .Where(r => r.IsProjected)
+            .OrderByDescending(r => r.EffectiveTaskDate)
+            .ThenByDescending(r => r.Candidate.PlanningId)
+            .Take(Math.Max(0, excess))
+            .ToHashSet();
+        plannedDropped = dropped.Count;
+
+        var kept = sorted.Where(r => !dropped.Contains(r)).ToList();
+        realDropped = Math.Max(0, kept.Count - MaxRowsReturned);
+        return kept.Take(MaxRowsReturned).ToList();
+    }
+
     // ------------------------------------------------------------------
     // Sorting
     // ------------------------------------------------------------------
@@ -1776,7 +2195,7 @@ public class BackendConfigurationComplianceReportService(
 
     private static List<MatchedRow> Sort(List<MatchedRow> rows, string sortKey, bool descending)
     {
-        // ComplianceId is the final tiebreak everywhere, so paging is stable: two
+        // ComplianceId is the tiebreak everywhere, so paging is stable: two
         // rows that compare equal on the requested key must not swap between page
         // requests.
         IOrderedEnumerable<MatchedRow> ordered = sortKey switch
@@ -1807,7 +2226,13 @@ public class BackendConfigurationComplianceReportService(
                 : rows.OrderBy(r => r.EffectiveTaskDate).ThenBy(r => r.StartHour)
         };
 
-        return ordered.ThenBy(r => r.Candidate.ComplianceId).ToList();
+        // Projected rows (#1332) all carry ComplianceId 0, so they are ordered among
+        // themselves by planning and date.
+        return ordered
+            .ThenBy(r => r.Candidate.ComplianceId)
+            .ThenBy(r => r.Candidate.PlanningId)
+            .ThenBy(r => r.EffectiveTaskDate)
+            .ToList();
     }
 
     // ------------------------------------------------------------------
@@ -1854,6 +2279,8 @@ public class BackendConfigurationComplianceReportService(
         public double StartHour { get; init; }
         public double Duration { get; init; }
         public DateTime? DoneAt { get; init; }
+        /// <summary>#1332 — a planned occurrence with no Compliance row (phase P).</summary>
+        public bool IsProjected { get; init; }
 
         // Display columns, filled by the ApplyX helpers over either the page or
         // (for a display-column sort) the whole match set.

@@ -624,6 +624,7 @@ export const csCZ = {
   'No tasks match the selected filters.': 'Vybraným filtrům neodpovídají žádné úkoly.',
   'Task done': 'Úkol hotový',
   'Task not done': 'Úkol nebyl dokončen',
+  'Planned': 'Naplánováno',
   'Could not load the data': 'Nepodařilo se načíst data',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.
