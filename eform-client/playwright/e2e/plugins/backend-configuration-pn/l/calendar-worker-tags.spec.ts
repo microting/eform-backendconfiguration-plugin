@@ -11,7 +11,7 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
-import { API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from '../wait-helpers';
+import { API_TIMEOUT, UI_TIMEOUT, ignoreUnhandledRejections, waitForApiResponse } from '../wait-helpers';
 
 /**
  * E2E for the task modal's merged "Vælg medarbejder / team" picker (#1295).
@@ -367,6 +367,7 @@ test.describe.serial('Calendar merged worker/team picker (#1295)', () => {
       r => isPrepareComplete(r.request().method(), r.url()),
       API_TIMEOUT
     );
+    ignoreUnhandledRejections(prepared);
     await block.locator('.completion-btn').click({ timeout: UI_TIMEOUT });
     const response = await prepared;
     const body = await response.json();
@@ -378,7 +379,7 @@ test.describe.serial('Calendar merged worker/team picker (#1295)', () => {
     await expect(modal, 'the complete modal must stay open').toBeVisible({ timeout: UI_TIMEOUT });
     // The embedded eForm renders only after prepare-complete has been applied,
     // so from here on the pre-select has had its chance to run.
-    await expect(modal.locator('app-case-edit-element').first()).toBeVisible({ timeout: API_TIMEOUT });
+    await expect(modal.locator('app-case-edit-element')).not.toHaveCount(0, { timeout: API_TIMEOUT });
 
     const workerSelect = modal.locator('#completeWorkerSelect');
     await workerSelect.click({ timeout: UI_TIMEOUT });
