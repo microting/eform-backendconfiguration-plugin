@@ -88,7 +88,6 @@ using Services.BackendConfigurationTaskListService;
 using Services.BackendConfigurationTaskManagementService;
 using Services.BackendConfigurationTaskTrackerService;
 using Services.BackendConfigurationTaskWizardService;
-using Services.ChemicalService;
 using Services.ExcelService;
 using Services.GoogleDrive;
 using Services.TaskUpdateCompletionService;
@@ -180,7 +179,6 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<IBackendConfigurationTagsService, BackendConfigurationTagsService>();
         services.AddTransient<Services.BackendConfigurationWorkerTagsService.IBackendConfigurationWorkerTagsService,
             Services.BackendConfigurationWorkerTagsService.BackendConfigurationWorkerTagsService>();
-        services.AddTransient<IChemicalService, ChemicalService>();
         services.AddSingleton<ITaskUpdateCompletionService, TaskUpdateCompletionService>();
         services.AddTransient<WorkorderCaseGroupIdBackfillService>();
         services.AddTransient<CalendarConfigurationBackfillService>();
@@ -338,11 +336,6 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                         case "05. Halebid og risikovurdering":
                             contents = contents.Replace("SOURCE_REPLACE_ME", "123");
                             break;
-                        // Commented out as it is not used in the current version
-                        // case "25.01 Registrer produkter":
-                        //     contents = contents.Replace("SOURCE_REPLACE_ME_2", "123");
-                        //     contents = contents.Replace("SOURCE_REPLACE_ME", "456");
-                        //     break;
                     }
 
                     var newTemplate = await core.TemplateFromXml(contents).ConfigureAwait(false);

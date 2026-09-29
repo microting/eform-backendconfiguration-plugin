@@ -25,8 +25,6 @@ SOFTWARE.
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models.Pools;
 using BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas;
-using ChemicalsBase.Infrastructure;
-using ChemicalsBase.Infrastructure.Data.Entities;
 using eFormCore;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService;
@@ -56,21 +54,19 @@ public class BackendConfigurationAreaRulesService : IBackendConfigurationAreaRul
 	private readonly IUserService _userService;
 	private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
 	private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
-	private readonly ChemicalsDbContext _chemicalsDbContext;
 
 	public BackendConfigurationAreaRulesService(
 		IEFormCoreService coreHelper,
 		IUserService userService,
 		BackendConfigurationPnDbContext backendConfigurationPnDbContext,
 		IBackendConfigurationLocalizationService backendConfigurationLocalizationService,
-		ItemsPlanningPnDbContext itemsPlanningPnDbContext, ChemicalsDbContext chemicalsDbContext)
+		ItemsPlanningPnDbContext itemsPlanningPnDbContext)
 	{
 		_coreHelper = coreHelper;
 		_userService = userService;
 		_backendConfigurationLocalizationService = backendConfigurationLocalizationService;
 		_backendConfigurationPnDbContext = backendConfigurationPnDbContext;
 		_itemsPlanningPnDbContext = itemsPlanningPnDbContext;
-		_chemicalsDbContext = chemicalsDbContext;
 	}
 
 	public async Task<OperationDataResult<List<AreaRuleSimpleModel>>> Index(int propertyAreaId, string sort, bool isSortDsc)
@@ -169,51 +165,6 @@ public class BackendConfigurationAreaRulesService : IBackendConfigurationAreaRul
 			if (areaProperty.Type == AreaTypesEnum.Type7 || areaProperty.Type == AreaTypesEnum.Type8)
 			{
 				queryWithSelect = queryWithSelect.OrderBy(x => x.TranslatedName);
-			}
-
-			if (areaProperty.Type == AreaTypesEnum.Type9)
-			{
-				// Inline ChemicalAreaCreatedHandler logic
-				{
-					var chemicalProperty = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == areaProperty.PropertyId).ConfigureAwait(false);
-					if (chemicalProperty.EntitySearchListChemicals == null && chemicalProperty.EntitySearchListChemicalRegNos == null)
-					{
-						var entityGroup = await sdkDbContext.EntityGroups.FirstOrDefaultAsync(x => x.Name == "Chemicals - Barcode").ConfigureAwait(false) ??
-						                  await core.EntityGroupCreate(Constants.FieldTypes.EntitySearch, "Chemicals - Barcode", "", true, false).ConfigureAwait(false);
-						chemicalProperty.EntitySearchListChemicals = Convert.ToInt32(entityGroup.MicrotingUid);
-
-						var entityGroupRegNo = await sdkDbContext.EntityGroups.FirstOrDefaultAsync(x => x.Name == "Chemicals - RegNo").ConfigureAwait(false) ??
-						                       await core.EntityGroupCreate(Constants.FieldTypes.EntitySearch, "Chemicals - RegNo", "", true, false).ConfigureAwait(false);
-
-						chemicalProperty.EntitySearchListChemicalRegNos = Convert.ToInt32(entityGroupRegNo.MicrotingUid);
-						chemicalProperty.ChemicalLastUpdatedAt = DateTime.UtcNow;
-
-						await chemicalProperty.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
-
-						if (sdkDbContext.EntityItems.Count(x => x.EntityGroupId == entityGroup.Id) == 0)
-						{
-							var nextItemUid = 0;
-							var chemicals = await _chemicalsDbContext.Chemicals.Include(x => x.Products).ToListAsync();
-							var options = new ParallelOptions { MaxDegreeOfParallelism = 20 };
-							await Parallel.ForEachAsync(chemicals, options, async (chemical, token) =>
-							{
-								foreach (Product product in chemical.Products)
-								{
-									if (product.Verified)
-									{
-										await core.EntitySearchItemCreate(entityGroup.Id, product.Barcode, chemical.Name, nextItemUid.ToString()).ConfigureAwait(false);
-										nextItemUid++;
-									}
-								}
-								if (chemical.Verified)
-								{
-									await core.EntitySearchItemCreate(entityGroupRegNo.Id, chemical.RegistrationNo, chemical.Name, nextItemUid.ToString()).ConfigureAwait(false);
-									nextItemUid++;
-								}
-							}).ConfigureAwait(false);
-						}
-					}
-				}
 			}
 
 			var areaRules = await queryWithSelect

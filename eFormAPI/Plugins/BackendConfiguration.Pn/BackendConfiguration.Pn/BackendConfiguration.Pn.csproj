@@ -170,14 +170,6 @@
       <None Remove="Resources\eForms\24.02.08.02 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme - Dokumenter.xml" />
       <None Remove="Resources\eForms\24.04.02 Reduceret indhold af råprotein.xml" />
       <None Remove="Resources\eForms\24.04.03 Tilsætningsstoffer i foder - fytase eller andet.xml" />
-      <None Remove="Resources\eForms\25.01 Kemisk produkt registrering.xml" />
-      <EmbeddedResource Include="Resources\eForms\25.01 Registrer produkter.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
-      <None Remove="Resources\eForms\25.02 Vis kemisk produkt.xml" />
-      <EmbeddedResource Include="Resources\eForms\25.02 Vis kemisk produkt.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\01. Aflæsninger.xml" />
       <None Remove="Resources\eForms\02. Fækale uheld.xml" />
       <None Remove="Resources\eForms\00. Info boks.xml" />
@@ -287,7 +279,7 @@
     <PackageReference Include="Microting.EformAngularFrontendBase" Version="10.0.40" />
     <PackageReference Include="Microting.eFormApi.BasePn" Version="10.0.36" />
     <PackageReference Include="McMaster.NETCore.Plugins" Version="2.0.0" />
-    <PackageReference Include="Microting.EformBackendConfigurationBase" Version="10.0.52" />
+    <PackageReference Include="Microting.EformBackendConfigurationBase" Version="10.0.53" />
     <PackageReference Include="Microting.eFormCaseTemplateBase" Version="10.0.38" />
     <PackageReference Include="Microting.ItemsPlanningBase" Version="10.0.40" />
     <PackageReference Include="Microting.TimePlanningBase" Version="10.0.66" />
