@@ -95,11 +95,12 @@ public class EventDeployServiceCaseLabelNameTests : TestBaseSetup
         Assert.That(await ResolveForEnglishWorkerAsync(service, planningId), Is.EqualTo("Check ventilation"));
     }
 
-    [Test]
-    public async Task EnglishWorker_EmptyEnglishName_FallsBackToDanish()
+    [TestCase("")]
+    [TestCase("   ")]
+    public async Task EnglishWorker_EmptyEnglishName_FallsBackToDanish(string englishName)
     {
         var (service, planningId) = await SeedPlanningAsync(
-            ("en-US", ""), ("da", "Tjek ventilation"));
+            ("en-US", englishName), ("da", "Tjek ventilation"));
 
         Assert.That(await ResolveForEnglishWorkerAsync(service, planningId), Is.EqualTo("Tjek ventilation"));
     }

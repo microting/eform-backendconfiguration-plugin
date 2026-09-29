@@ -195,8 +195,10 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   isFillingTranslations = false;
   /** Whether the init-time translationPossible() probe has answered. */
   private translationProbeAnswered = false;
-  /** Resolves once the active-languages list has loaded (or failed to). */
+  /** Resolve once the active languages / linked workers / teams have loaded (or failed to). */
   private languagesLoaded: Promise<void> = Promise.resolve();
+  private employeesLoaded: Promise<void> = Promise.resolve();
+  private teamsLoaded: Promise<void> = Promise.resolve();
   /** Set when the dialog closes, so a save still filling translations stops. */
   private dialogClosed = false;
 
@@ -368,17 +370,11 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     // app-settings store — that store is only populated by the settings/profile
     // pages, so in the calendar flow it would be empty and the translate icon
     // would never appear.
-    this.languagesLoaded = new Promise<void>(resolve => {
-      this.appSettingsStateService.getLanguages().pipe(take(1)).subscribe({
-        next: res => {
-          this.activeLanguages = (res?.model?.languages ?? [])
-            .filter(l => l.isActive)
-            .map(l => ({id: l.id, code: l.languageCode, name: l.name}));
-          this.recomputeTargetLanguages();
-          resolve();
-        },
-        error: () => resolve(),
-      });
+    this.languagesLoaded = this.whenLoaded(this.appSettingsStateService.getLanguages().pipe(take(1)), res => {
+      this.activeLanguages = (res?.model?.languages ?? [])
+        .filter(l => l.isActive)
+        .map(l => ({id: l.id, code: l.languageCode, name: l.name}));
+      this.recomputeTargetLanguages();
     });
 
     // Cache whether Google Translate is configured so the translate action can
@@ -682,8 +678,9 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       this.rebuildAssigneeItems();
       return;
     }
-    this.propertiesService.getLinkedSites(propertyId, false).subscribe(res => {
-      if (res && res.success && res.model) {
+    this.employeesLoaded = this.whenLoaded(this.propertiesService.getLinkedSites(propertyId, false), res => {
+      // A response for a property that is no longer selected is dropped (as for teams).
+      if (this.propertyControl.value === propertyId && res && res.success && res.model) {
         this.filteredEmployees = this.withResignedAssignees(res.model);
         this.rebuildAssigneeItems();
         // Sites (and their languages) are now known — re-resolve the target set
@@ -705,11 +702,8 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       this.rebuildAssigneeItems();
       return;
     }
-    this.workerTagsService.getWorkerTags(propertyId).subscribe(res => {
-      if (this.propertyControl.value !== propertyId) {
-        return;
-      }
-      if (res && res.success && res.model) {
+    this.teamsLoaded = this.whenLoaded(this.workerTagsService.getWorkerTags(propertyId), res => {
+      if (this.propertyControl.value === propertyId && res && res.success && res.model) {
         this.filteredTeams = this.withRetainedTeams(res.model);
         this.rebuildAssigneeItems();
         // Team member ids are now known — include their languages.
@@ -870,7 +864,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     const langIds = new Set<number>();
     for (const id of Array.from(selectedIds)) {
       const site = this.filteredEmployees.find(e => e.id === id);
-      if (site && site.languageId && site.languageId !== 1) {
+      if (site && site.languageId && site.languageId !== this.resolveDanishLanguageId()) {
         langIds.add(site.languageId);
       }
     }
@@ -976,6 +970,27 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   }
 
   /**
+   * Subscribes and returns a promise that settles however the load ends — a value
+   * (even if the handler throws), an error or an empty completion — so onSave can
+   * wait for it without ever hanging.
+   */
+  private whenLoaded<T>(source: Observable<T>, onNext: (res: T) => void): Promise<void> {
+    return new Promise<void>(resolve => {
+      source.subscribe({
+        next: res => {
+          try {
+            onNext(res);
+          } finally {
+            resolve();
+          }
+        },
+        error: () => resolve(),
+        complete: () => resolve(),
+      });
+    });
+  }
+
+  /**
    * #1324 — on save, translate the Danish title and description into every target
    * language whose field is still empty. Text already there — typed by hand or
    * translated earlier — is never overwritten, and a changed Danish text is not
@@ -984,8 +999,10 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
    * gets a non-blocking notice.
    */
   private async fillMissingTranslations(): Promise<void> {
-    // Save clicked before the language list arrived: the targets are not known yet.
-    await this.languagesLoaded;
+    // Save clicked before the languages, workers or teams arrived: the targets are
+    // not known yet. Each load recomputes them; recompute once more to be sure.
+    await Promise.all([this.languagesLoaded, this.employeesLoaded, this.teamsLoaded]);
+    this.recomputeTargetLanguages();
     const jobs: { kind: 'title' | 'desc'; lang: { id: number; code: string; name: string }; source: string }[] = [];
     const title = this.titleControl.value ?? '';
     const desc = this.descriptionControl.value ?? '';

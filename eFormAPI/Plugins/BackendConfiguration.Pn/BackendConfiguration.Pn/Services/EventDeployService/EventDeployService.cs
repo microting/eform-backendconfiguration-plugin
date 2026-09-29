@@ -789,6 +789,8 @@ public class EventDeployService(
             .Select(x => new { x.LanguageId, x.Name })
             .ToListAsync(ct)
             .ConfigureAwait(false);
+        // A whitespace-only name is no name either.
+        names = names.Where(x => !string.IsNullOrWhiteSpace(x.Name)).ToList();
         if (names.Count == 0)
         {
             return null;
