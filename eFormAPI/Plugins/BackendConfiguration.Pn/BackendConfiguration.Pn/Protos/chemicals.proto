@@ -1,0 +1,464 @@
+syntax = "proto3";
+
+// Wire contract for the flutter-chemistry app (chemical inventory).
+// Spec: flutter-chemistry docs/superpowers/specs/2026-09-29-flutter-chemistry-design.md §6.
+// Plan: flutter-chemistry docs/superpowers/plans/2026-09-29-plan-a-backend-core.md, Task 1.
+// Other plans copy this file verbatim; change it only with every consumer.
+//
+// Conventions
+// - Every message and enum carries a "Chemical" prefix: all files in Protos/
+//   share `package backend_configuration`, so names must not collide with
+//   adhoc.proto / events.proto (PropertyRef, PhotoChunk, ...).
+// - Ids are int32 database ids. On fields documented "0 = none", zero means unset.
+// - Worker ids are SDK site ids (PropertyWorker.WorkerId), the id
+//   GrpcSiteResolver resolves for the caller. User ids are eForm user ids.
+// - Timestamps are UTC. An unset Timestamp means null.
+// - Quantities are int64 thousandths of their unit ("_milli"): 2.5 L = 2500.
+// - Permissions are per (property, worker): view, register, remove, stock,
+//   manage_locations, admin. Admin implies every flag. Each RPC names the flag
+//   it needs; a missing flag fails with PERMISSION_DENIED.
+// - Other status codes: NOT_FOUND (unknown or archived id), INVALID_ARGUMENT
+//   (bad input), FAILED_PRECONDITION (state forbids it: closed placement,
+//   stock disabled, archiving a location with open placements),
+//   ALREADY_EXISTS (duplicate location name), OUT_OF_RANGE (download offset
+//   past the end), UNAVAILABLE (chemicalbase.microting.com unreachable or not
+//   configured), UNAUTHENTICATED (no worker identity, or account disabled with
+//   detail "account_disabled").
+// - Write RPCs return the rows they changed so the client updates its cache
+//   without a full resync. Nothing is ever hard-deleted.
+
+package backend_configuration;
+
+option csharp_namespace = "BackendConfiguration.Pn.Grpc.Chemicals";
+
+import "google/protobuf/timestamp.proto";
+
+service ChemicalsGrpc {
+  // Delta sync of everything on the caller's properties. Needs: view (per property;
+  // properties without it are simply absent).
+  rpc GetMyInventory(ChemicalInventoryRequest) returns (ChemicalInventoryResponse);
+  // SDS PDF proxied from chemicalbase, resumable from `offset`. Needs: view on any property.
+  rpc GetSdsPdf(ChemicalSdsPdfRequest) returns (stream ChemicalFileChunk);
+  // Location photo, resumable from `offset`. Needs: view.
+  rpc GetLocationPhoto(ChemicalLocationPhotoRequest) returns (stream ChemicalFileChunk);
+  // Barcode match against the customer register copy. Needs: view on any property.
+  rpc LookupBarcode(ChemicalLookupBarcodeRequest) returns (ChemicalRegisterSearchResponse);
+  // Register-wide search on name, reg.nr and barcode. Needs: view on any property.
+  rpc SearchRegister(ChemicalSearchRegisterRequest) returns (ChemicalRegisterSearchResponse);
+  // Needs: register. With stock enabled, may carry an initial RECEIVED entry.
+  rpc RegisterPlacement(ChemicalRegisterPlacementRequest) returns (ChemicalPlacementChangeResponse);
+  // Needs: register. Full move closes the source (MOVED); partial move is stock only.
+  rpc MovePlacement(ChemicalMovePlacementRequest) returns (ChemicalPlacementChangeResponse);
+  // Needs: remove. Reason USED or DISPOSED; writes off the remaining balance.
+  rpc RemovePlacement(ChemicalRemovePlacementRequest) returns (ChemicalPlacementChangeResponse);
+  // Needs: register.
+  rpc UpdatePlacementNote(ChemicalUpdatePlacementNoteRequest) returns (ChemicalPlacementChangeResponse);
+  // Needs: stock, and stock enabled on the property.
+  rpc AddStockEntry(ChemicalAddStockEntryRequest) returns (ChemicalPlacementChangeResponse);
+  // Needs: manage_locations.
+  rpc CreateLocation(ChemicalCreateLocationRequest) returns (ChemicalLocationResponse);
+  // Needs: manage_locations.
+  rpc UpdateLocation(ChemicalUpdateLocationRequest) returns (ChemicalLocationResponse);
+  // Needs: manage_locations. FAILED_PRECONDITION while open placements exist.
+  rpc ArchiveLocation(ChemicalArchiveLocationRequest) returns (ChemicalLocationResponse);
+  // Needs: manage_locations. Meta first, then photo bytes.
+  rpc UploadLocationPhoto(stream ChemicalLocationPhotoUploadChunk) returns (ChemicalLocationResponse);
+  // Needs: view on any property. Meta first, then optional label-photo bytes;
+  // forwarded to chemicalbase for curation.
+  rpc SuggestBarcode(stream ChemicalSuggestBarcodeChunk) returns (ChemicalSuggestBarcodeResponse);
+  // Needs: admin.
+  rpc ListWorkerPermissions(ChemicalListWorkerPermissionsRequest) returns (ChemicalListWorkerPermissionsResponse);
+  // Needs: admin.
+  rpc SetWorkerPermission(ChemicalSetWorkerPermissionRequest) returns (ChemicalWorkerPermissionEntry);
+  // Needs: admin.
+  rpc GetPropertySettings(ChemicalPropertySettingsRequest) returns (ChemicalSettings);
+  // Needs: admin.
+  rpc SetPropertySettings(ChemicalSetPropertySettingsRequest) returns (ChemicalSettings);
+}
+
+// ---------------------------------------------------------------- enums
+
+enum ChemicalRemovalReason {
+  CHEMICAL_REMOVAL_REASON_UNSPECIFIED = 0;
+  CHEMICAL_REMOVAL_REASON_USED = 1;      // "Opbrugt"
+  CHEMICAL_REMOVAL_REASON_DISPOSED = 2;  // "Bortskaffet"
+  CHEMICAL_REMOVAL_REASON_MOVED = 3;     // set by MovePlacement only
+}
+
+enum ChemicalStockEntryKind {
+  CHEMICAL_STOCK_ENTRY_KIND_UNSPECIFIED = 0;
+  CHEMICAL_STOCK_ENTRY_KIND_RECEIVED = 1;
+  CHEMICAL_STOCK_ENTRY_KIND_CONSUMED = 2;
+  CHEMICAL_STOCK_ENTRY_KIND_ADJUSTED = 3;
+  CHEMICAL_STOCK_ENTRY_KIND_MOVED_OUT = 4;
+  CHEMICAL_STOCK_ENTRY_KIND_MOVED_IN = 5;
+}
+
+enum ChemicalStockUnit {
+  CHEMICAL_STOCK_UNIT_UNSPECIFIED = 0;
+  CHEMICAL_STOCK_UNIT_L = 1;
+  CHEMICAL_STOCK_UNIT_KG = 2;
+}
+
+// BMD product status (Miljøstyrelsen); numbers are the register's own codes.
+enum ChemicalRegisterStatus {
+  CHEMICAL_REGISTER_STATUS_UNSPECIFIED = 0;
+  CHEMICAL_REGISTER_STATUS_APPLICATION_RECEIVED = 1;
+  CHEMICAL_REGISTER_STATUS_APPLICATION_WITHDRAWN = 2;
+  CHEMICAL_REGISTER_STATUS_APPLICATION_RETURNED = 3;
+  CHEMICAL_REGISTER_STATUS_APPLICATION_REFUSED = 4;
+  CHEMICAL_REGISTER_STATUS_APPROVED = 5;
+  CHEMICAL_REGISTER_STATUS_DEREGISTERED = 6;  // "Produkt afmeldt": requires action
+  CHEMICAL_REGISTER_STATUS_EXPIRED = 7;       // "Produkt udløbet": requires action
+  CHEMICAL_REGISTER_STATUS_REFUSED = 8;
+  CHEMICAL_REGISTER_STATUS_APPLICATION_CANCELLED = 9;
+}
+
+enum ChemicalSignalWord {
+  CHEMICAL_SIGNAL_WORD_UNSPECIFIED = 0;
+  CHEMICAL_SIGNAL_WORD_DANGER = 1;   // "Fare"
+  CHEMICAL_SIGNAL_WORD_WARNING = 2;  // "Advarsel"
+  CHEMICAL_SIGNAL_WORD_CAUTION = 3;  // "Forsigtig"
+}
+
+// ---------------------------------------------------------------- shared rows
+
+message ChemicalPermissionFlags {
+  bool view = 1;
+  bool register = 2;
+  bool remove = 3;
+  bool stock = 4;
+  bool manage_locations = 5;
+  bool admin = 6;
+}
+
+message ChemicalPropertyAccess {
+  int32 property_id = 1;
+  string name = 2;
+  ChemicalPermissionFlags permissions = 3;  // effective: admin already expanded
+  bool stock_enabled = 4;
+}
+
+message ChemicalLocationItem {
+  int32 id = 1;
+  int32 property_id = 2;
+  string name = 3;
+  string description = 4;
+  // "" = no photo. Changes whenever the photo is replaced: use it as cache key.
+  string photo_file_name = 5;
+  int32 sort_order = 6;                     // 1-based order shown in app and web
+  bool archived = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+message ChemicalPlacementItem {
+  int32 id = 1;
+  int32 location_id = 2;
+  int32 property_id = 3;
+  int32 chemical_id = 4;
+  int32 product_id = 5;                     // 0 = no product variant chosen
+  string placement_note = 6;
+  int32 registered_by_user_id = 7;
+  string registered_by_name = 8;
+  google.protobuf.Timestamp registered_at = 9;
+  int32 removed_by_user_id = 10;            // 0 while open
+  string removed_by_name = 11;
+  google.protobuf.Timestamp removed_at = 12; // unset = open
+  ChemicalRemovalReason removal_reason = 13; // UNSPECIFIED while open
+  string removal_note = 14;
+  int32 moved_from_placement_id = 15;       // 0 = not created by a move
+  int64 balance_milli = 16;                 // sum of the placement's stock entries
+  ChemicalStockUnit unit = 17;              // UNSPECIFIED = no stock entries yet
+  google.protobuf.Timestamp updated_at = 18;
+}
+
+message ChemicalStockEntryItem {
+  int32 id = 1;
+  int32 placement_id = 2;
+  ChemicalStockEntryKind kind = 3;
+  int64 container_size_milli = 4;           // 0 = not given
+  ChemicalStockUnit unit = 5;
+  int64 amount_milli = 6;                   // signed change of the balance
+  int32 container_count = 7;                // 0 = not given
+  string batch_lot = 8;
+  string note = 9;
+  int32 by_user_id = 10;
+  string by_name = 11;
+  google.protobuf.Timestamp at = 12;
+}
+
+message ChemicalHazardStatement {
+  string code = 1;                          // "H302", "EUH401"
+  string text = 2;                          // Danish BMD text without the code
+}
+
+message ChemicalActiveSubstance {
+  string name = 1;
+  string cas_no = 2;
+  string concentration = 3;                 // e.g. "360 g/l"; "" = unknown
+}
+
+message ChemicalProductItem {
+  int32 product_id = 1;
+  string name = 2;
+  string barcode = 3;                       // "" = none curated yet
+  string sds_file_name = 4;                 // "" = no SDS; fetch with GetSdsPdf
+  // Version key of the SDS: changes whenever the document changes. Cache the
+  // file under it and verify each download against ChemicalFileTrailer.md5.
+  string sds_checksum = 5;
+}
+
+message ChemicalRegisterEntry {
+  int32 chemical_id = 1;
+  string name = 2;
+  string registration_no = 3;
+  ChemicalRegisterStatus status = 4;
+  string status_text = 5;                   // Danish BMD text, e.g. "Produkt afmeldt"
+  google.protobuf.Timestamp sales_deadline = 6;
+  google.protobuf.Timestamp use_and_possession_deadline = 7;
+  google.protobuf.Timestamp authorisation_date = 8;
+  google.protobuf.Timestamp authorisation_expiration_date = 9;
+  google.protobuf.Timestamp authorisation_termination_date = 10;
+  repeated string hazard_pictograms = 11;   // GHS codes "GHS01".."GHS09"
+  ChemicalSignalWord signal_word = 12;
+  string signal_word_text = 13;             // Danish: "Fare", "Advarsel", "Forsigtig"
+  repeated ChemicalHazardStatement hazard_statements = 14;
+  repeated ChemicalActiveSubstance active_substances = 15;
+  string authorisation_holder = 16;
+  repeated ChemicalProductItem products = 17;
+  google.protobuf.Timestamp updated_at = 18;
+}
+
+// ---------------------------------------------------------------- sync
+
+message ChemicalInventoryRequest {
+  // sync_token of the previous response; "" asks for a full load. An
+  // unparseable or future token is answered with a full load, never an error.
+  string since = 1;
+}
+
+message ChemicalInventoryResponse {
+  // ALWAYS the complete list of properties the caller may see. A cached
+  // property missing here (permission revoked, worker removed from the
+  // property, property deleted) must be dropped locally with all its data.
+  repeated ChemicalPropertyAccess properties = 1;
+  // Locations changed since `since`, archived ones included (archived = true).
+  // A property that became visible since `since` is sent in full.
+  repeated ChemicalLocationItem locations = 2;
+  // Placements that are open or were closed within the last 12 months and
+  // changed since `since`; a new stock entry counts as a change. Clients drop
+  // cached placements whose removed_at is older than 12 months.
+  repeated ChemicalPlacementItem placements = 3;
+  // Every stock entry of every placement in `placements`: the placement is the
+  // unit of sync, replace its cached entries with these.
+  repeated ChemicalStockEntryItem stock_entries = 4;
+  // Register details of the chemicals of `placements`, plus held chemicals
+  // whose register data changed since `since`.
+  repeated ChemicalRegisterEntry register_entries = 5;
+  // Pass back as ChemicalInventoryRequest.since on the next sync.
+  string sync_token = 6;
+  // True when this is a full load: replace the cache instead of merging.
+  bool full = 7;
+}
+
+// ---------------------------------------------------------------- files
+
+message ChemicalSdsPdfRequest {
+  string file_name = 1;                     // ChemicalProductItem.sds_file_name
+  int64 offset = 2;                         // resume point; 0 = from the start
+}
+
+message ChemicalLocationPhotoRequest {
+  int32 location_id = 1;
+  int64 offset = 2;
+}
+
+// Download stream: exactly one meta, then 128 KB chunks from the requested
+// offset, then exactly one trailer.
+message ChemicalFileChunk {
+  oneof kind {
+    ChemicalFileMeta meta = 1;
+    bytes chunk = 2;
+    ChemicalFileTrailer trailer = 3;
+  }
+}
+
+message ChemicalFileMeta {
+  string content_type = 1;
+  int64 total_bytes = 2;                    // size of the whole file
+  int64 offset = 3;                         // echo of the requested offset
+}
+
+message ChemicalFileTrailer {
+  string md5 = 1;                           // lowercase hex md5 of the WHOLE file
+}
+
+// ---------------------------------------------------------------- register
+
+message ChemicalLookupBarcodeRequest {
+  string barcode = 1;                       // 6-14 digits; UPC-A and EAN-13 forms match each other
+}
+
+message ChemicalSearchRegisterRequest {
+  string query = 1;                         // at least 2 characters
+  int32 page = 2;                           // 0-based
+  int32 page_size = 3;                      // 0 = 25; at most 50
+}
+
+message ChemicalRegisterSearchResponse {
+  repeated ChemicalRegisterEntry entries = 1;
+  int32 total = 2;                          // matches across all pages
+}
+
+// ---------------------------------------------------------------- placements and stock
+
+message ChemicalStockAmount {
+  // RECEIVED / CONSUMED / initial stock: the amount moved, > 0. Give
+  // amount_milli, or container_size_milli and container_count (the amount is
+  // then their product). ADJUSTED: amount_milli is the newly counted balance
+  // (>= 0) and the server stores the difference.
+  optional int64 amount_milli = 1;
+  int64 container_size_milli = 2;           // 0 = not given
+  int32 container_count = 3;                // 0 = not given
+  ChemicalStockUnit unit = 4;               // required; must match the placement's earlier entries
+  string batch_lot = 5;
+  string note = 6;
+  google.protobuf.Timestamp at = 7;         // unset = now; not in the future
+}
+
+message ChemicalRegisterPlacementRequest {
+  int32 location_id = 1;
+  int32 chemical_id = 2;
+  int32 product_id = 3;                     // 0 = none
+  string placement_note = 4;
+  ChemicalStockAmount initial_stock = 5;    // unset = none; only allowed with stock enabled
+}
+
+message ChemicalMovePlacementRequest {
+  int32 placement_id = 1;
+  int32 target_location_id = 2;             // same property, not archived, not the current location
+  string target_placement_note = 3;
+  // 0 = move everything (the source closes with reason MOVED). > 0 and below
+  // the balance = partial move (stock only; the source stays open).
+  int64 amount_milli = 4;
+}
+
+message ChemicalRemovePlacementRequest {
+  int32 placement_id = 1;
+  ChemicalRemovalReason reason = 2;         // USED or DISPOSED
+  google.protobuf.Timestamp removed_at = 3; // unset = now; not in the future, not before registration
+  string note = 4;
+}
+
+message ChemicalUpdatePlacementNoteRequest {
+  int32 placement_id = 1;
+  string placement_note = 2;
+}
+
+message ChemicalAddStockEntryRequest {
+  int32 placement_id = 1;
+  ChemicalStockEntryKind kind = 2;          // RECEIVED, CONSUMED or ADJUSTED
+  ChemicalStockAmount amount = 3;
+}
+
+message ChemicalPlacementChangeResponse {
+  repeated ChemicalPlacementItem placements = 1;       // every placement the call touched
+  repeated ChemicalStockEntryItem stock_entries = 2;   // all entries of those placements
+  repeated ChemicalRegisterEntry register_entries = 3; // their chemicals
+}
+
+// ---------------------------------------------------------------- locations
+
+message ChemicalCreateLocationRequest {
+  int32 property_id = 1;
+  string name = 2;                          // 1-250 characters, unique among active locations
+  string description = 3;
+  int32 sort_order = 4;                     // 0 = after the last location
+}
+
+message ChemicalUpdateLocationRequest {
+  int32 location_id = 1;
+  string name = 2;
+  string description = 3;
+  int32 sort_order = 4;                     // 0 = unchanged
+}
+
+message ChemicalArchiveLocationRequest {
+  int32 location_id = 1;
+}
+
+message ChemicalLocationResponse {
+  ChemicalLocationItem location = 1;
+}
+
+message ChemicalLocationPhotoUploadChunk {
+  oneof kind {
+    ChemicalLocationPhotoMeta meta = 1;     // first message only
+    bytes chunk = 2;                        // every later message
+  }
+}
+
+message ChemicalLocationPhotoMeta {
+  int32 location_id = 1;
+  string content_type = 2;                  // image/jpeg, image/png or image/heic; at most 20 MB
+}
+
+// ---------------------------------------------------------------- barcode suggestion
+
+message ChemicalSuggestBarcodeChunk {
+  oneof kind {
+    ChemicalSuggestBarcodeMeta meta = 1;    // first message only
+    bytes label_photo_chunk = 2;            // every later message
+  }
+}
+
+message ChemicalSuggestBarcodeMeta {
+  string barcode = 1;                       // 6-14 digits
+  int32 chemical_id = 2;                    // 0 = no matching product found: a label photo is then required
+  int32 product_id = 3;                     // 0 = none
+  string label_photo_content_type = 4;      // "" = no photo follows
+}
+
+message ChemicalSuggestBarcodeResponse {
+  int32 suggestion_id = 1;                  // BarcodeSuggestion id at chemicalbase
+}
+
+// ---------------------------------------------------------------- admin
+
+message ChemicalListWorkerPermissionsRequest {
+  int32 property_id = 1;
+}
+
+message ChemicalListWorkerPermissionsResponse {
+  repeated ChemicalWorkerPermissionEntry workers = 1;  // every worker assigned to the property
+}
+
+// Stored flags as set: admin is NOT expanded, so the UI can show the implied
+// flags as locked.
+message ChemicalWorkerPermissionEntry {
+  int32 worker_id = 1;
+  string worker_name = 2;
+  ChemicalPermissionFlags flags = 3;
+}
+
+message ChemicalSetWorkerPermissionRequest {
+  int32 property_id = 1;
+  int32 worker_id = 2;                      // must be assigned to the property
+  ChemicalPermissionFlags flags = 3;
+}
+
+message ChemicalPropertySettingsRequest {
+  int32 property_id = 1;
+}
+
+message ChemicalSettings {
+  int32 property_id = 1;
+  bool stock_enabled = 2;
+  repeated string digest_recipients = 3;    // lower-case e-mail addresses
+}
+
+message ChemicalSetPropertySettingsRequest {
+  int32 property_id = 1;
+  bool stock_enabled = 2;
+  repeated string digest_recipients = 3;
+}

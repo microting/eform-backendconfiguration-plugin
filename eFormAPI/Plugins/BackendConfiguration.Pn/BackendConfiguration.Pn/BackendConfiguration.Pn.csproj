@@ -311,6 +311,7 @@
       <Protobuf Include="Protos\events.proto" GrpcServices="Server" ProtoRoot="Protos" />
       <Protobuf Include="Protos\adhoc.proto" GrpcServices="Server" ProtoRoot="Protos" />
       <Protobuf Include="Protos\settings.proto" GrpcServices="Server" ProtoRoot="Protos" />
+      <Protobuf Include="Protos\chemicals.proto" GrpcServices="Server" ProtoRoot="Protos" />
     </ItemGroup>
 
 </Project>
