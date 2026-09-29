@@ -907,4 +907,126 @@ public class CalendarMonthlyReanchorRepairTests : TestBaseSetup
             Assert.That(run.Message, Does.Contain("planHash is required"));
         });
     }
+
+    // ── Copilot review round ────────────────────────────────────────────────
+
+    /// <summary>
+    /// Another occurrence moved ONTO the target (exception NewDate = target, OriginalDate
+    /// elsewhere) occupies it: the row is reviewed, not moved.
+    /// </summary>
+    [Test]
+    public async Task OccurrenceMovedOntoTheTargetDate_IsNotMoved_AndIsReviewed()
+    {
+        var (arpId, planningId) = await SeedLegacyYearlyTaskAsync(D(2024, 1, 3), nextExecution: D(2027, 1, 3));
+        await ConvertAsync();
+        var compliance = await SeedComplianceAsync(planningId, D(2027, 1, 3), D(2026, 1, 3), (await SeedCaseAsync()).Id);
+        await new CalendarOccurrenceException
+        {
+            AreaRulePlanningId = arpId, OriginalDate = D(2028, 1, 5), NewDate = D(2027, 1, 6),
+            CreatedByUserId = 1, UpdatedByUserId = 1
+        }.Create(BackendConfigurationPnDbContext!);
+
+        var result = await RunAsync();
+
+        await AssertOnReviewAndUntouched(result, compliance,
+            CalendarMonthlyReanchorRepairService.ReasonOccurrenceExceptionOnTarget);
+    }
+
+    /// <summary>
+    /// A "partial" run whose recomputed plan is empty (everything was finished in the
+    /// meantime) is finalized to "done" instead of being refused for ever.
+    /// </summary>
+    [Test]
+    public async Task PartialRun_WithNothingLeftToDo_IsFinalizedToDone()
+    {
+        await SeedMarkerAsync(CalendarMonthlyReanchorRepairService.MarkerPartial, DateTime.UtcNow);
+
+        var plan = await DryRunAsync();
+        var run = await _sut.RunAsync(plan.PlanHash);
+
+        Assert.That(run.Success, Is.True, run.Message);
+        Assert.That(await MarkerAsync(), Is.EqualTo(CalendarMonthlyReanchorRepairService.MarkerDone));
+    }
+
+    /// <summary>
+    /// A run whose claim is re-claimed while it runs (as an abandoned-run reclaim by
+    /// another run would do) must not overwrite the new owner's marker when it finishes.
+    /// </summary>
+    [Test]
+    public async Task ReclaimedRun_OldOwnerCannotFinalizeTheMarker()
+    {
+        var (_, planningId) = await SeedLegacyYearlyTaskAsync(D(2024, 1, 3), nextExecution: D(2027, 1, 3));
+        await ConvertAsync();
+        await SeedComplianceAsync(planningId, D(2027, 1, 3), D(2026, 1, 3), (await SeedCaseAsync()).Id);
+        const string otherOwner = "running:another-run";
+        _sut.OnBeforeWrite = async _ =>
+            await BackendConfigurationPnDbContext!.Database.ExecuteSqlRawAsync(
+                "UPDATE `PluginConfigurationValues` SET `Value` = {0} WHERE `Name` = {1}",
+                otherOwner, CalendarMonthlyReanchorRepairService.MarkerName);
+
+        var plan = await DryRunAsync();
+        var run = await _sut.RunAsync(plan.PlanHash);
+
+        await Assert.MultipleAsync(async () =>
+        {
+            Assert.That(run.Success, Is.False, "a run that lost its claim reports it");
+            Assert.That(run.Model.Failures, Has.Some.Contains("claim"));
+            Assert.That(await MarkerAsync(), Is.EqualTo(otherOwner), "the new owner's claim is untouched");
+        });
+    }
+
+    /// <summary>A reviewed plan hash is valid only on the (Copenhagen) day it was made.</summary>
+    [Test]
+    public async Task PlanHash_DependsOnThePlanDate()
+    {
+        var (_, planningId) = await SeedLegacyYearlyTaskAsync(D(2024, 1, 3), nextExecution: D(2027, 1, 3));
+        await ConvertAsync();
+        await SeedComplianceAsync(planningId, D(2027, 1, 3), D(2026, 1, 3), (await SeedCaseAsync()).Id);
+
+        var today = await DryRunAsync();
+        _sut.UtcNow = () => Now.AddDays(1);
+        var tomorrow = await DryRunAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(tomorrow.ComplianceMoves.Select(x => (x.ComplianceId, x.NewDeadline)),
+                Is.EqualTo(today.ComplianceMoves.Select(x => (x.ComplianceId, x.NewDeadline))), "same writes");
+            Assert.That(tomorrow.PlanHash, Is.Not.EqualTo(today.PlanHash), "but a different day");
+        });
+    }
+
+    /// <summary>
+    /// Every move guard is re-evaluated right before the write: an exception created on the
+    /// target after the plan was computed makes the row skipped, not moved.
+    /// </summary>
+    [Test]
+    public async Task ExceptionAddedAfterPlanning_OnTheTarget_IsSkipped_NotMoved()
+    {
+        var (arpId, planningId) = await SeedLegacyYearlyTaskAsync(D(2024, 1, 3), nextExecution: D(2027, 1, 3));
+        await ConvertAsync();
+        var compliance = await SeedComplianceAsync(planningId, D(2027, 1, 3), D(2026, 1, 3), (await SeedCaseAsync()).Id);
+        _sut.OnBeforeWrite = async entity =>
+        {
+            if (entity is Planning)
+            {
+                await new CalendarOccurrenceException
+                {
+                    AreaRulePlanningId = arpId, OriginalDate = D(2027, 1, 6), IsDeleted = true,
+                    CreatedByUserId = 1, UpdatedByUserId = 1
+                }.Create(BackendConfigurationPnDbContext!);
+            }
+        };
+
+        var plan = await DryRunAsync();
+        var run = await _sut.RunAsync(plan.PlanHash);
+
+        await Assert.MultipleAsync(async () =>
+        {
+            Assert.That(run.Success, Is.True, "a skipped row is not a failure");
+            Assert.That(run.Model.Skipped, Has.Some.Contains(CalendarMonthlyReanchorRepairService.ReasonOccurrenceExceptionOnTarget));
+            Assert.That(run.Model.MovedCompliances, Is.Zero);
+            Assert.That(await DeadlineAsync(compliance.Id), Is.EqualTo(D(2027, 1, 3)));
+            Assert.That(await MarkerAsync(), Is.EqualTo(CalendarMonthlyReanchorRepairService.MarkerPartial));
+        });
+    }
 }

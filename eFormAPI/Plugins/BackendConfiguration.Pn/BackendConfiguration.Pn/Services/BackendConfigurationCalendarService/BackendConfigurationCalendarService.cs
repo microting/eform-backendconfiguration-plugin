@@ -3395,8 +3395,9 @@ public class BackendConfigurationCalendarService(
         //   * UNIQUE (PlanningId, Deadline) spans every WorkflowState — a target that
         //     is taken (or claimed earlier in this pass) is left in place;
         //   * a live override on the old date (the user's own re-dating) or on the
-        //     target (GetTasksForWeek keys overrides on the deadline, so it would hide
-        //     or relocate the moved row) — left in place;
+        //     target — keyed there (GetTasksForWeek keys overrides on the deadline, so
+        //     it would hide or relocate the moved row) or another occurrence moved
+        //     onto it (its NewDate) — left in place;
         //   * an occurrence another site already answered (a completed sibling case
         //     under the same PlanningCase) is history — left in place.
         var occupied = (await backendConfigurationPnDbContext.Compliances
@@ -3410,13 +3411,16 @@ public class BackendConfigurationCalendarService(
             .Where(x => x.ItemPlanningId == arp.ItemPlanningId)
             .Select(x => x.Id)
             .ToListAsync();
+        // OriginalDate AND NewDate: an occurrence moved ONTO a date occupies it too.
         var overrideDates = (await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
                 .AsNoTracking()
                 .Where(e => planningArpIds.Contains(e.AreaRulePlanningId))
                 .Where(e => e.WorkflowState != Constants.WorkflowStates.Removed)
-                .Select(e => e.OriginalDate)
+                .Select(e => new { e.OriginalDate, e.NewDate })
                 .ToListAsync())
-            .Select(d => d.Date)
+            .SelectMany(e => e.NewDate.HasValue
+                ? new[] { e.OriginalDate.Date, e.NewDate.Value.Date }
+                : new[] { e.OriginalDate.Date })
             .ToHashSet();
         var planningCaseIds = rows.Where(c => c.PlanningCaseSiteId > 0).Select(c => c.PlanningCaseSiteId)
             .Distinct().ToList();

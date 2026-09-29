@@ -120,7 +120,7 @@ public class CalendarMonthlyReanchorRepairService(
         {
             var work = await ComputeAsync(cancellationToken).ConfigureAwait(false);
             var marker = await ReadMarkerAsync(cancellationToken).ConfigureAwait(false);
-            work.Model.MarkerState = marker?.Value;
+            work.Model.MarkerState = MarkerStateOf(marker?.Value);
             work.Model.AlreadyExecuted = marker?.Value == MarkerDone;
             LogPlan(work.Model, isRun: false);
             return new OperationDataResult<MonthlyReanchorRepairPlanModel>(true, work.Model);
@@ -141,13 +141,13 @@ public class CalendarMonthlyReanchorRepairService(
             return Refused("planHash is required: run the dry run, review it, and pass its PlanHash.");
         }
 
-        var claimed = false;
+        string claimToken = null;
         try
         {
             var marker = await ReadMarkerAsync(cancellationToken).ConfigureAwait(false);
             if (marker != null && !IsClaimable(marker.Value, marker.UpdatedAt))
             {
-                return Refused(marker.Value == MarkerRunning
+                return Refused(IsRunning(marker.Value)
                     ? "A monthly re-anchor run is already in progress."
                     : "The monthly re-anchor repair has already been executed on this installation.");
             }
@@ -160,26 +160,43 @@ public class CalendarMonthlyReanchorRepairService(
                     planHash, work.Model.PlanHash);
                 return Refused("The data changed since the reviewed dry run (plan hash mismatch). Run the dry run again and review it.");
             }
-            if (work.Model.OrdinalRestorations.Count == 0 && work.Model.PlanningUpdates.Count == 0
-                && work.Model.ComplianceMoves.Count == 0)
+            var planIsEmpty = work.Model.OrdinalRestorations.Count == 0 && work.Model.PlanningUpdates.Count == 0
+                              && work.Model.ComplianceMoves.Count == 0;
+            if (planIsEmpty && marker == null)
             {
                 // Never burn the marker on a run that writes nothing.
                 return Refused("The plan has nothing to write; the repair was not started.");
             }
 
-            claimed = await ClaimMarkerAsync(marker != null).ConfigureAwait(false);
-            if (!claimed)
+            claimToken = await ClaimMarkerAsync(marker != null).ConfigureAwait(false);
+            if (claimToken == null)
             {
                 return Refused("Another monthly re-anchor run claimed the repair first.");
             }
 
-            // From here on the run writes; a closed browser tab must not stop it halfway.
-            LogPlan(work.Model, isRun: true);
-            var result = await ApplyAsync(work).ConfigureAwait(false);
+            MonthlyReanchorRepairRunResultModel result;
+            if (planIsEmpty)
+            {
+                // A resumed partial run with nothing left to do: finish it, or the marker
+                // would stay "partial" for ever.
+                result = new MonthlyReanchorRepairRunResultModel { Plan = work.Model };
+            }
+            else
+            {
+                // From here on the run writes; a closed browser tab must not stop it halfway.
+                LogPlan(work.Model, isRun: true);
+                result = await ApplyAsync(work).ConfigureAwait(false);
+            }
             // Anything not written (failed, skipped as changed, or not attempted) is left
             // for the next dry run + run, which a "partial" marker allows.
             var state = result.Failures.Count == 0 && result.Skipped.Count == 0 ? MarkerDone : MarkerPartial;
-            await SetMarkerAsync(state).ConfigureAwait(false);
+            if (!await FinishMarkerAsync(claimToken, state).ConfigureAwait(false))
+            {
+                const string claimLost =
+                    "this run's claim was taken over by another run (abandoned-run reclaim); the marker was left to that run";
+                logger.LogError("CalendarMonthlyReanchorRepair: {ClaimLost}", claimLost);
+                result.Failures.Add(claimLost);
+            }
             logger.LogInformation(
                 "CalendarMonthlyReanchorRepair: {State} — {Restored} ordinals restored, {Plannings} plannings updated, {Moved} compliances moved, {Skipped} skipped as changed, {Failures} failures",
                 state, result.RestoredOrdinals, result.UpdatedPlannings, result.MovedCompliances,
@@ -189,11 +206,11 @@ public class CalendarMonthlyReanchorRepairService(
         catch (Exception e)
         {
             logger.LogError(e, "CalendarMonthlyReanchorRepair: run failed");
-            if (claimed)
+            if (claimToken != null)
             {
                 try
                 {
-                    await SetMarkerAsync(MarkerPartial).ConfigureAwait(false);
+                    await FinishMarkerAsync(claimToken, MarkerPartial).ConfigureAwait(false);
                 }
                 catch (Exception markerError)
                 {
@@ -219,9 +236,16 @@ public class CalendarMonthlyReanchorRepairService(
             .Select(x => new MarkerRow(x.Value, x.UpdatedAt))
             .FirstOrDefaultAsync(ct);
 
+    /// <summary>A running marker holds the owning run's claim id, as running:{id} (a new Guid per run).</summary>
+    private static bool IsRunning(string value)
+        => value != null && value.StartsWith(MarkerRunning, StringComparison.Ordinal);
+
+    /// <summary>The marker's state without the claim token.</summary>
+    private static string MarkerStateOf(string value) => IsRunning(value) ? MarkerRunning : value;
+
     private static bool IsClaimable(string value, DateTime? updatedAt)
         => value == MarkerPartial
-           || (value == MarkerRunning && updatedAt < DateTime.UtcNow - AbandonedRunAfter);
+           || (IsRunning(value) && updatedAt < DateTime.UtcNow - AbandonedRunAfter);
 
     /// <summary>
     /// Atomic claim, one statement each way, so two concurrent requests can never both
@@ -229,17 +253,23 @@ public class CalendarMonthlyReanchorRepairService(
     /// <c>CalendarConfigurationBackfillService.RepairLegacyMidnightConfigurationsAsync</c>,
     /// which explains why a unique index is not an option), or a conditional UPDATE of a
     /// <c>partial</c> / abandoned <c>running</c> marker. Exactly one caller gets a row.
+    ///
+    /// The marker value becomes running:{id} with an id only this run knows;
+    /// the final write (<see cref="FinishMarkerAsync"/>) is conditional on it, so a run
+    /// whose abandoned claim was re-claimed by another run can never overwrite that run's
+    /// marker. Returns the token, or null when another caller won.
     /// </summary>
-    private async Task<bool> ClaimMarkerAsync(bool markerExists)
+    private async Task<string> ClaimMarkerAsync(bool markerExists)
     {
         var now = DateTime.UtcNow;
+        var token = $"{MarkerRunning}:{Guid.NewGuid():N}";
         var affected = markerExists
             ? await dbContext.Database.ExecuteSqlRawAsync(
                 @"UPDATE `PluginConfigurationValues`
                      SET `Value` = {1}, `UpdatedAt` = {2}, `Version` = `Version` + 1
                    WHERE `Name` = {0}
-                     AND (`Value` = {3} OR (`Value` = {1} AND `UpdatedAt` < {4}))",
-                [MarkerName, MarkerRunning, now, MarkerPartial, now - AbandonedRunAfter],
+                     AND (`Value` = {3} OR (`Value` LIKE {4} AND `UpdatedAt` < {5}))",
+                [MarkerName, token, now, MarkerPartial, MarkerRunning + "%", now - AbandonedRunAfter],
                 CancellationToken.None).ConfigureAwait(false)
             : await dbContext.Database.ExecuteSqlRawAsync(
                 @"INSERT INTO `PluginConfigurationValues`
@@ -249,19 +279,22 @@ public class CalendarMonthlyReanchorRepairService(
                   WHERE NOT EXISTS (
                       SELECT 1 FROM `PluginConfigurationValues` `existing`
                       WHERE `existing`.`Name` = {0})",
-                [MarkerName, MarkerRunning, now, Constants.WorkflowStates.Created],
+                [MarkerName, token, now, Constants.WorkflowStates.Created],
                 CancellationToken.None).ConfigureAwait(false);
-        return affected == 1;
+        return affected == 1 ? token : null;
     }
 
-    /// <summary>Ends this run's claim; conditional, so it never overwrites another run's claim.</summary>
-    private Task SetMarkerAsync(string state)
-        => dbContext.Database.ExecuteSqlRawAsync(
+    /// <summary>
+    /// Ends this run's claim — only while the marker still holds THIS run's token. False
+    /// when another run re-claimed it (this run was taken for abandoned).
+    /// </summary>
+    private async Task<bool> FinishMarkerAsync(string claimToken, string state)
+        => await dbContext.Database.ExecuteSqlRawAsync(
             @"UPDATE `PluginConfigurationValues`
                  SET `Value` = {1}, `UpdatedAt` = {2}, `Version` = `Version` + 1
                WHERE `Name` = {0} AND `Value` = {3}",
-            [MarkerName, state, DateTime.UtcNow, MarkerRunning],
-            CancellationToken.None);
+            [MarkerName, state, DateTime.UtcNow, claimToken],
+            CancellationToken.None).ConfigureAwait(false) == 1;
 
     // ── Plan ────────────────────────────────────────────────────────────────
 
@@ -288,16 +321,35 @@ public class CalendarMonthlyReanchorRepairService(
         public DayOfWeek? SeenPlanningDayOfWeek { get; init; }
         public int? SeenPlanningOrdinal { get; init; }
         public DateTime? SeenNextExecutionTime { get; init; }
+        public DateTime SeenPlanningStartDate { get; init; }
+        public RepeatType SeenPlanningRepeatType { get; init; }
+        public int SeenPlanningRepeatEvery { get; init; }
         public int NewDayOfWeek { get; set; }
         public int NewOrdinal { get; set; }
         public DateTime? NewNextExecutionTime { get; set; }
 
-        // Step 3.
+        // Step 3 — computed from this pattern (the ordinal after step 1).
+        public int PatternOrdinal { get; set; }
+        public int PatternDayOfWeek { get; set; }
         public List<MoveWork> Moves { get; } = [];
     }
 
-    private sealed record MoveWork(Compliance Compliance, DateTime OldDeadline, DateTime NewDeadline,
-        int SdkCaseId, IReadOnlyList<int> SiblingCaseIds);
+    private sealed record MoveWork(Compliance Compliance, DateTime OldDeadline, DateTime NewDeadline, int SdkCaseId);
+
+    /// <summary>
+    /// What the move guard looks at besides the compliance row itself — loaded for the whole
+    /// plan when planning, and again for one row right before its write.
+    /// </summary>
+    private sealed class GuardData
+    {
+        /// <summary>(PlanningId, date) of every compliance, any WorkflowState (the unique index spans them).</summary>
+        public HashSet<(int PlanningId, DateTime Date)> Occupied { get; init; } = [];
+        /// <summary>(PlanningId, date) of every live exception's OriginalDate AND NewDate.</summary>
+        public HashSet<(int PlanningId, DateTime Date)> ExceptionDates { get; init; } = [];
+        /// <summary>PlanningCaseId → the SDK case ids of its live PlanningCaseSites.</summary>
+        public Dictionary<int, List<int>> SiblingCaseIds { get; init; } = [];
+        public Dictionary<int, SdkCaseInfo> SdkCases { get; init; } = [];
+    }
 
     private sealed record SdkCaseInfo(int Id, string WorkflowState, int? Status, DateTime? DoneAt, int? SiteId, int? MicrotingUid)
     {
@@ -376,7 +428,9 @@ public class CalendarMonthlyReanchorRepairService(
                 SeenArpOrdinal = arp.RepeatOrdinalWeek!.Value, SeenArpDayOfWeek = arp.DayOfWeek,
                 SeenArpUpdatedAt = arp.UpdatedAt,
                 SeenPlanningDayOfWeek = planning.DayOfWeek, SeenPlanningOrdinal = planning.RepeatOrdinalWeek,
-                SeenNextExecutionTime = planning.NextExecutionTime
+                SeenNextExecutionTime = planning.NextExecutionTime,
+                SeenPlanningStartDate = planning.StartDate, SeenPlanningRepeatType = planning.RepeatType,
+                SeenPlanningRepeatEvery = planning.RepeatEvery
             };
 
             // Informational: a Month rule whose CSV names another weekday than DayOfWeek
@@ -433,6 +487,8 @@ public class CalendarMonthlyReanchorRepairService(
                 RepeatWeekdaysCsv = arp.RepeatWeekdaysCsv
             };
             patternByPlanning[planningId] = pattern;
+            pw.PatternOrdinal = ordinal;
+            pw.PatternDayOfWeek = arp.DayOfWeek;
 
             // ── Step 2: mirror the weekday/ordinal and re-snap NextExecutionTime.
             // Pulling the next run into the past would make the scheduler fire at once and
@@ -527,47 +583,16 @@ public class CalendarMonthlyReanchorRepairService(
             return;
         }
 
-        // UNIQUE (PlanningId, Deadline) spans every WorkflowState, so removed rows collide
-        // too. A row's own date never equals its target (on-pattern rows are skipped), so
-        // it cannot collide with itself. Targets claimed by earlier moves of this plan are
-        // added as they are planned.
-        var occupied = (await dbContext.Compliances
-                .AsNoTracking()
-                .Where(c => planningIds.Contains(c.PlanningId))
-                .Select(c => new { c.PlanningId, c.Deadline })
-                .ToListAsync(ct).ConfigureAwait(false))
-            .Select(x => (x.PlanningId, x.Deadline.Date))
-            .ToHashSet();
-
-        // Live exceptions (moves AND IsDeleted markers) of ANY ARP of the planning, by the
-        // date they key on. GetTasksForWeek and the device's ListEvents look an exception
-        // up by Compliance.Deadline, so one on the OLD date is the user's own re-dating and
-        // one on the TARGET date would hide or relocate the moved row — both are reviewed.
-        var arpPlanning = await dbContext.AreaRulePlannings
-            .AsNoTracking()
-            .Where(x => planningIds.Contains(x.ItemPlanningId))
-            .Select(x => new { x.Id, x.ItemPlanningId })
-            .ToDictionaryAsync(x => x.Id, x => x.ItemPlanningId, ct).ConfigureAwait(false);
-        var arpIds = arpPlanning.Keys.ToList();
-        var exceptionDates = (await dbContext.CalendarOccurrenceExceptions
-                .AsNoTracking()
-                .Where(e => arpIds.Contains(e.AreaRulePlanningId))
-                .Where(e => e.WorkflowState != Constants.WorkflowStates.Removed)
-                .Select(e => new { e.AreaRulePlanningId, e.OriginalDate })
-                .ToListAsync(ct).ConfigureAwait(false))
-            .Select(e => (PlanningId: arpPlanning[e.AreaRulePlanningId], Date: e.OriginalDate.Date))
-            .ToHashSet();
-
-        // Sibling sites of an occurrence share its PlanningCase (Compliance.PlanningCaseSiteId
-        // holds the PlanningCaseId — see EventDeployService.EnsureComplianceRowAsync).
-        var siblingCaseIds = await LoadSiblingCaseIdsAsync(compliances, ct).ConfigureAwait(false);
-
-        // The LIVE SDK case of every row (decision 4: the plan must join it).
+        // The LIVE SDK case of every row (decision 4: the plan must join it), and the rest
+        // of what the move guard reads. A row's own date never equals its target (on-pattern
+        // rows are skipped), so it cannot collide with itself; targets claimed by earlier
+        // moves of this plan are added to Occupied as they are planned.
         var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
         await using var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
-        var sdkCases = await LoadSdkCasesAsync(sdkDbContext,
-            compliances.Select(c => c.MicrotingSdkCaseId).Concat(siblingCaseIds.Values.SelectMany(x => x)), ct)
+        var guard = await LoadGuardDataAsync(planningIds,
+            compliances.Select(c => (c.MicrotingSdkCaseId, c.PlanningCaseSiteId)), sdkDbContext, ct)
             .ConfigureAwait(false);
+        var sdkCases = guard.SdkCases;
 
         var workByPlanning = work.Plannings.ToDictionary(x => x.Planning.Id);
 
@@ -593,51 +618,8 @@ public class CalendarMonthlyReanchorRepairService(
                 continue; // on pattern already
             }
             var targetDate = target.Value.Date;
-            var siblings = siblingCaseIds.TryGetValue(compliance.PlanningCaseSiteId, out var ids)
-                ? ids.Where(id => id != sdkCase.Id).ToList()
-                : [];
-
-            var reasons = new List<string>();
-            if (occupied.Contains((compliance.PlanningId, targetDate)))
-            {
-                reasons.Add(ReasonCollision);
-            }
-            if (exceptionDates.Contains((compliance.PlanningId, compliance.Deadline.Date)))
-            {
-                reasons.Add(ReasonOccurrenceException);
-            }
-            if (exceptionDates.Contains((compliance.PlanningId, targetDate)))
-            {
-                reasons.Add(ReasonOccurrenceExceptionOnTarget);
-            }
-            if (targetDate < compliance.StartDate.Date)
-            {
-                reasons.Add(ReasonBeforeStartDate);
-            }
-            if (targetDate < today)
-            {
-                reasons.Add(ReasonBeforeToday);
-            }
-            // Overdue: the cloud case already sits in the expired folder (or is about to),
-            // and the hour-9 expiry job never looks at it again after a move.
-            if (compliance.Deadline.Date < today)
-            {
-                reasons.Add(ReasonOldDeadlineBeforeToday);
-            }
-            if (compliance.MovedToExpiredFolder)
-            {
-                reasons.Add(ReasonMovedToExpiredFolder);
-            }
-            if (siblings.Any(id => sdkCases.TryGetValue(id, out var c) && c.IsLive && c.IsCompleted))
-            {
-                reasons.Add(ReasonSiblingCaseCompleted);
-            }
-            if (targetDate > compliance.Deadline.Date
-                && siblings.Append(sdkCase.Id)
-                    .Any(id => sdkCases.TryGetValue(id, out var c) && c.IsLive && IsCloudDeployed(c)))
-            {
-                reasons.Add(ReasonCloudCaseEndDate);
-            }
+            var reasons = ReasonsNotToMove(compliance.PlanningId, compliance.Deadline, compliance.StartDate,
+                compliance.MovedToExpiredFolder, compliance.PlanningCaseSiteId, sdkCase.Id, targetDate, today, guard);
 
             if (reasons.Count > 0)
             {
@@ -651,8 +633,8 @@ public class CalendarMonthlyReanchorRepairService(
             }
 
             var newDeadline = SameTimeOfDay(targetDate, compliance.Deadline);
-            occupied.Add((compliance.PlanningId, targetDate));
-            pw.Moves.Add(new MoveWork(compliance, compliance.Deadline, newDeadline, sdkCase.Id, siblings));
+            guard.Occupied.Add((compliance.PlanningId, targetDate));
+            pw.Moves.Add(new MoveWork(compliance, compliance.Deadline, newDeadline, sdkCase.Id));
             work.Model.ComplianceMoves.Add(new MonthlyReanchorComplianceMoveModel
             {
                 ComplianceId = compliance.Id, PlanningId = compliance.PlanningId, AreaRulePlanningId = pattern.Id,
@@ -662,24 +644,123 @@ public class CalendarMonthlyReanchorRepairService(
         }
     }
 
-    private async Task<Dictionary<int, List<int>>> LoadSiblingCaseIdsAsync(
-        IReadOnlyCollection<Compliance> compliances, CancellationToken ct)
+    /// <summary>
+    /// Loads what the move guard reads for <paramref name="planningIds"/> and the given
+    /// rows (their SDK case and PlanningCase): every compliance date of the plannings, every
+    /// live exception date of any of their rules (OriginalDate AND NewDate — an occurrence
+    /// moved ONTO a date occupies it just as much; GetTasksForWeek and ListEvents key
+    /// overrides on the compliance's deadline), the sibling sites' cases, and the SDK cases.
+    /// </summary>
+    private async Task<GuardData> LoadGuardDataAsync(IReadOnlyCollection<int> planningIds,
+        IEnumerable<(int SdkCaseId, int PlanningCaseId)> rows, SdkDbContext sdkDbContext, CancellationToken ct)
     {
-        var planningCaseIds = compliances.Where(c => c.PlanningCaseSiteId > 0)
-            .Select(c => c.PlanningCaseSiteId).Distinct().ToList();
-        if (planningCaseIds.Count == 0)
-        {
-            return [];
-        }
-        return (await itemsPlanningPnDbContext.PlanningCaseSites
+        var rowList = rows.ToList();
+        var occupied = (await dbContext.Compliances
                 .AsNoTracking()
-                .Where(x => planningCaseIds.Contains(x.PlanningCaseId) && x.MicrotingSdkCaseId > 0)
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
-                            && x.WorkflowState != Constants.WorkflowStates.Retracted)
-                .Select(x => new { x.PlanningCaseId, x.MicrotingSdkCaseId })
+                .Where(c => planningIds.Contains(c.PlanningId))
+                .Select(c => new { c.PlanningId, c.Deadline })
                 .ToListAsync(ct).ConfigureAwait(false))
-            .GroupBy(x => x.PlanningCaseId)
-            .ToDictionary(g => g.Key, g => g.Select(x => x.MicrotingSdkCaseId).Distinct().ToList());
+            .Select(x => (x.PlanningId, x.Deadline.Date))
+            .ToHashSet();
+
+        var arpPlanning = await dbContext.AreaRulePlannings
+            .AsNoTracking()
+            .Where(x => planningIds.Contains(x.ItemPlanningId))
+            .Select(x => new { x.Id, x.ItemPlanningId })
+            .ToDictionaryAsync(x => x.Id, x => x.ItemPlanningId, ct).ConfigureAwait(false);
+        var arpIds = arpPlanning.Keys.ToList();
+        var exceptions = await dbContext.CalendarOccurrenceExceptions
+            .AsNoTracking()
+            .Where(e => arpIds.Contains(e.AreaRulePlanningId))
+            .Where(e => e.WorkflowState != Constants.WorkflowStates.Removed)
+            .Select(e => new { e.AreaRulePlanningId, e.OriginalDate, e.NewDate })
+            .ToListAsync(ct).ConfigureAwait(false);
+        var exceptionDates = new HashSet<(int PlanningId, DateTime Date)>();
+        foreach (var e in exceptions)
+        {
+            var planningId = arpPlanning[e.AreaRulePlanningId];
+            exceptionDates.Add((planningId, e.OriginalDate.Date));
+            if (e.NewDate.HasValue)
+            {
+                exceptionDates.Add((planningId, e.NewDate.Value.Date));
+            }
+        }
+
+        var planningCaseIds = rowList.Where(r => r.PlanningCaseId > 0).Select(r => r.PlanningCaseId).Distinct().ToList();
+        var siblingCaseIds = planningCaseIds.Count == 0
+            ? new Dictionary<int, List<int>>()
+            : (await itemsPlanningPnDbContext.PlanningCaseSites
+                    .AsNoTracking()
+                    .Where(x => planningCaseIds.Contains(x.PlanningCaseId) && x.MicrotingSdkCaseId > 0)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
+                                && x.WorkflowState != Constants.WorkflowStates.Retracted)
+                    .Select(x => new { x.PlanningCaseId, x.MicrotingSdkCaseId })
+                    .ToListAsync(ct).ConfigureAwait(false))
+                .GroupBy(x => x.PlanningCaseId)
+                .ToDictionary(g => g.Key, g => g.Select(x => x.MicrotingSdkCaseId).Distinct().ToList());
+
+        var sdkCases = await LoadSdkCasesAsync(sdkDbContext,
+            rowList.Select(r => r.SdkCaseId).Concat(siblingCaseIds.Values.SelectMany(x => x)), ct).ConfigureAwait(false);
+
+        return new GuardData
+        {
+            Occupied = occupied, ExceptionDates = exceptionDates, SiblingCaseIds = siblingCaseIds, SdkCases = sdkCases
+        };
+    }
+
+    /// <summary>
+    /// Every reason an open compliance must NOT be moved to <paramref name="targetDate"/> —
+    /// one rule set, applied when planning and again right before the write. Empty = move.
+    /// </summary>
+    private static List<string> ReasonsNotToMove(int planningId, DateTime oldDeadline, DateTime startDate,
+        bool movedToExpiredFolder, int planningCaseId, int ownCaseId, DateTime targetDate, DateTime today,
+        GuardData guard)
+    {
+        var siblings = guard.SiblingCaseIds.TryGetValue(planningCaseId, out var ids)
+            ? ids.Where(id => id != ownCaseId).ToList()
+            : [];
+        var reasons = new List<string>();
+        if (guard.Occupied.Contains((planningId, targetDate)))
+        {
+            reasons.Add(ReasonCollision);
+        }
+        if (guard.ExceptionDates.Contains((planningId, oldDeadline.Date)))
+        {
+            reasons.Add(ReasonOccurrenceException);
+        }
+        if (guard.ExceptionDates.Contains((planningId, targetDate)))
+        {
+            reasons.Add(ReasonOccurrenceExceptionOnTarget);
+        }
+        if (targetDate < startDate.Date)
+        {
+            reasons.Add(ReasonBeforeStartDate);
+        }
+        if (targetDate < today)
+        {
+            reasons.Add(ReasonBeforeToday);
+        }
+        // Overdue: the cloud case already sits in the expired folder (or is about to), and
+        // the hour-9 expiry job never looks at it again after a move.
+        if (oldDeadline.Date < today)
+        {
+            reasons.Add(ReasonOldDeadlineBeforeToday);
+        }
+        if (movedToExpiredFolder)
+        {
+            reasons.Add(ReasonMovedToExpiredFolder);
+        }
+        if (siblings.Any(id => guard.SdkCases.TryGetValue(id, out var c) && c.IsLive && c.IsCompleted))
+        {
+            reasons.Add(ReasonSiblingCaseCompleted);
+        }
+        if (targetDate > oldDeadline.Date
+            && siblings.Append(ownCaseId)
+                .Any(id => guard.SdkCases.TryGetValue(id, out var c) && c.IsLive && IsCloudDeployed(c)))
+        {
+            reasons.Add(ReasonCloudCaseEndDate);
+        }
+        return reasons;
     }
 
     private static async Task<Dictionary<int, SdkCaseInfo>> LoadSdkCasesAsync(
@@ -708,7 +789,10 @@ public class CalendarMonthlyReanchorRepairService(
 
     private static string HashOf(Work work)
     {
+        // The Copenhagen plan date is part of the plan: "before today" and "overdue" are
+        // judged against it, so a reviewed hash is only valid the day it was made.
         var sb = new StringBuilder();
+        sb.Append(CultureInfo.InvariantCulture, $"T|{work.Model.Today:yyyy-MM-dd}\n");
         foreach (var r in work.Model.OrdinalRestorations)
         {
             sb.Append(CultureInfo.InvariantCulture, $"R|{r.AreaRulePlanningId}|{r.OldOrdinal}|{r.NewOrdinal}\n");
@@ -762,7 +846,9 @@ public class CalendarMonthlyReanchorRepairService(
                             return now != null && now.WorkflowState != Constants.WorkflowStates.Removed
                                    && now.RepeatOrdinalWeek == pw.SeenArpOrdinal
                                    && now.DayOfWeek == pw.SeenArpDayOfWeek
-                                   && now.UpdatedAt == pw.SeenArpUpdatedAt;
+                                   && now.UpdatedAt == pw.SeenArpUpdatedAt
+                                ? null
+                                : ChangedSincePlan;
                         },
                         () =>
                         {
@@ -784,16 +870,8 @@ public class CalendarMonthlyReanchorRepairService(
                 {
                     var planning = pw.Planning;
                     var outcome = await WriteAsync(itemsPlanningPnDbContext, planning, result, $"planning {planning.Id}",
-                        async () =>
-                        {
-                            var now = await itemsPlanningPnDbContext.Plannings.AsNoTracking()
-                                .Where(x => x.Id == planning.Id)
-                                .Select(x => new { x.DayOfWeek, x.RepeatOrdinalWeek, x.NextExecutionTime })
-                                .FirstOrDefaultAsync().ConfigureAwait(false);
-                            return now != null && now.DayOfWeek == pw.SeenPlanningDayOfWeek
-                                   && now.RepeatOrdinalWeek == pw.SeenPlanningOrdinal
-                                   && now.NextExecutionTime == pw.SeenNextExecutionTime;
-                        },
+                        async () => await PlanningChangedSincePlanAsync(pw, checkMirroredFields: true)
+                            .ConfigureAwait(false),
                         () =>
                         {
                             planning.DayOfWeek = (DayOfWeek)pw.NewDayOfWeek;
@@ -826,24 +904,7 @@ public class CalendarMonthlyReanchorRepairService(
                     var compliance = move.Compliance;
                     var sdk = sdkDbContext;
                     var outcome = await WriteAsync(dbContext, compliance, result, $"compliance {compliance.Id}",
-                        async () =>
-                        {
-                            var now = await dbContext.Compliances.AsNoTracking()
-                                .Where(x => x.Id == compliance.Id)
-                                .Select(x => new { x.Deadline, x.WorkflowState, x.MicrotingSdkCaseId, x.MovedToExpiredFolder })
-                                .FirstOrDefaultAsync().ConfigureAwait(false);
-                            if (now == null || now.WorkflowState == Constants.WorkflowStates.Removed
-                                || now.Deadline != move.OldDeadline || now.MicrotingSdkCaseId != move.SdkCaseId
-                                || now.MovedToExpiredFolder)
-                            {
-                                return false;
-                            }
-                            var cases = await LoadSdkCasesAsync(sdk, move.SiblingCaseIds.Append(move.SdkCaseId),
-                                CancellationToken.None).ConfigureAwait(false);
-                            return cases.TryGetValue(move.SdkCaseId, out var own) && own.IsLive && !own.IsCompleted
-                                   && !move.SiblingCaseIds.Any(id =>
-                                       cases.TryGetValue(id, out var c) && c.IsLive && c.IsCompleted);
-                        },
+                        () => MoveNoLongerSafeAsync(pw, move, sdk),
                         () =>
                         {
                             compliance.Deadline = move.NewDeadline;
@@ -870,6 +931,89 @@ public class CalendarMonthlyReanchorRepairService(
         return result;
     }
 
+    private const string ChangedSincePlan = "changed since the plan was computed";
+
+    /// <summary>
+    /// Null when the planning row still is what the plan saw; else why not. Also compares
+    /// the fields the targets were computed from (StartDate — the start month's anchor —
+    /// RepeatType, RepeatEvery) and, for the planning's own write, the ones it overwrites.
+    /// </summary>
+    private async Task<string> PlanningChangedSincePlanAsync(PlanningWork pw, bool checkMirroredFields)
+    {
+        var now = await itemsPlanningPnDbContext.Plannings.AsNoTracking()
+            .Where(x => x.Id == pw.Planning.Id)
+            .Select(x => new
+            {
+                x.DayOfWeek, x.RepeatOrdinalWeek, x.NextExecutionTime, x.StartDate, x.RepeatType, x.RepeatEvery,
+                x.WorkflowState
+            })
+            .FirstOrDefaultAsync().ConfigureAwait(false);
+        if (now == null
+            || now.StartDate != pw.SeenPlanningStartDate
+            || now.RepeatType != pw.SeenPlanningRepeatType
+            || now.RepeatEvery != pw.SeenPlanningRepeatEvery)
+        {
+            return $"planning {ChangedSincePlan}";
+        }
+        if (checkMirroredFields
+            && (now.DayOfWeek != pw.SeenPlanningDayOfWeek
+                || now.RepeatOrdinalWeek != pw.SeenPlanningOrdinal
+                || now.NextExecutionTime != pw.SeenNextExecutionTime))
+        {
+            return $"planning {ChangedSincePlan}";
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Right before a compliance move: re-reads the row, its rule and planning, and every
+    /// input of the move guard, and applies the SAME rules the plan applied
+    /// (<see cref="ReasonsNotToMove"/>) against today. Null = still safe to move; else the
+    /// reason the row is skipped.
+    /// </summary>
+    private async Task<string> MoveNoLongerSafeAsync(PlanningWork pw, MoveWork move, SdkDbContext sdk)
+    {
+        var row = await dbContext.Compliances.AsNoTracking()
+            .Where(x => x.Id == move.Compliance.Id)
+            .Select(x => new
+            {
+                x.Deadline, x.WorkflowState, x.MicrotingSdkCaseId, x.MovedToExpiredFolder, x.StartDate,
+                x.PlanningCaseSiteId
+            })
+            .FirstOrDefaultAsync().ConfigureAwait(false);
+        if (row == null || row.WorkflowState == Constants.WorkflowStates.Removed
+            || row.Deadline != move.OldDeadline || row.MicrotingSdkCaseId != move.SdkCaseId)
+        {
+            return ChangedSincePlan;
+        }
+
+        var rule = await dbContext.AreaRulePlannings.AsNoTracking()
+            .Where(x => x.Id == pw.Arp.Id)
+            .Select(x => new { x.RepeatOrdinalWeek, x.DayOfWeek, x.WorkflowState })
+            .FirstOrDefaultAsync().ConfigureAwait(false);
+        if (rule == null || rule.WorkflowState == Constants.WorkflowStates.Removed
+            || rule.RepeatOrdinalWeek != pw.PatternOrdinal || rule.DayOfWeek != pw.PatternDayOfWeek)
+        {
+            return $"rule {ChangedSincePlan}";
+        }
+        var planningChanged = await PlanningChangedSincePlanAsync(pw, checkMirroredFields: false).ConfigureAwait(false);
+        if (planningChanged != null)
+        {
+            return planningChanged;
+        }
+
+        var guard = await LoadGuardDataAsync([pw.Planning.Id], [(row.MicrotingSdkCaseId, row.PlanningCaseSiteId)],
+            sdk, CancellationToken.None).ConfigureAwait(false);
+        if (!guard.SdkCases.TryGetValue(row.MicrotingSdkCaseId, out var own) || !own.IsLive || own.IsCompleted)
+        {
+            return "SDK case no longer open";
+        }
+        var reasons = ReasonsNotToMove(pw.Planning.Id, row.Deadline, row.StartDate, row.MovedToExpiredFolder,
+            row.PlanningCaseSiteId, row.MicrotingSdkCaseId, move.NewDeadline.Date,
+            ComplianceFutureTaskGuard.TodayInCopenhagen(UtcNow()), guard);
+        return reasons.Count == 0 ? null : string.Join(", ", reasons);
+    }
+
     /// <summary>
     /// Accounts for the planned writes a planning drops after one of its steps was not
     /// written, so the result names every planned write that did not happen.
@@ -891,22 +1035,23 @@ public class CalendarMonthlyReanchorRepairService(
     }
 
     /// <summary>
-    /// One row's write: <paramref name="stillAsPlanned"/> false → skipped (logged);
-    /// an exception → failed (logged, recorded) and the row's pending change is
-    /// discarded — otherwise the still-Modified entity would be re-sent (and fail again)
-    /// by every later SaveChanges of the same context.
+    /// One row's write: <paramref name="whyNot"/> returning a reason → skipped (logged,
+    /// with that reason); an exception → failed (logged, recorded) and the row's pending
+    /// change is discarded — otherwise the still-Modified entity would be re-sent (and fail
+    /// again) by every later SaveChanges of the same context.
     /// </summary>
     private async Task<WriteOutcome> WriteAsync(DbContext context, object entity,
-        MonthlyReanchorRepairRunResultModel result, string what, Func<Task<bool>> stillAsPlanned, Func<Task> write)
+        MonthlyReanchorRepairRunResultModel result, string what, Func<Task<string>> whyNot, Func<Task> write)
     {
         try
         {
-            if (!await stillAsPlanned().ConfigureAwait(false))
+            var reason = await whyNot().ConfigureAwait(false);
+            if (reason != null)
             {
                 logger.LogInformation(
-                    "CalendarMonthlyReanchorRepair: {What} changed since the plan was computed; skipped (the next dry run re-evaluates it)",
-                    what);
-                result.Skipped.Add($"{what}: changed since the plan was computed");
+                    "CalendarMonthlyReanchorRepair: {What} skipped: {Reason} (the next dry run re-evaluates it)",
+                    what, reason);
+                result.Skipped.Add($"{what}: {reason}");
                 return WriteOutcome.Skipped;
             }
             await OnBeforeWrite(entity).ConfigureAwait(false);

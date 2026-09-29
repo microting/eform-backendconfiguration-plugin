@@ -820,7 +820,7 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
 
         Assert.That(result.Success, Is.True, result.Message);
         var arp = await BackendConfigurationPnDbContext!.AreaRulePlannings.AsNoTracking().SingleAsync(x => x.Id == arpId);
-        Assert.Multiple(async () =>
+        await Assert.MultipleAsync(async () =>
         {
             Assert.That(arp.DayOfWeek, Is.EqualTo(1), "the rule edit itself is saved");
             Assert.That((await DeadlineOf(complianceId)).Date, Is.EqualTo(NextMonthFirstThu.Date), "left in place");
@@ -1082,5 +1082,28 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
             Assert.That((await DeadlineOf(laterId)).Date,
                 Is.EqualTo(FirstWeekdayOfMonth(NextMonthFirstThu, DayOfWeek.Monday).Date));
         });
+    }
+
+    /// <summary>
+    /// The relocation target is occupied by ANOTHER occurrence moved onto it (an exception
+    /// whose NewDate is the target, OriginalDate elsewhere): the row is left in place.
+    /// </summary>
+    [Test]
+    public async Task UpdateTask_ScopeAll_Relocation_OccurrenceMovedOntoTheTarget_LeavesTheRow()
+    {
+        var arpId = await SeedFirstThursdayRule();
+        var service = await BuildCalendarServiceWithCoreAsync();
+        var complianceId = await SeedComplianceAsync(arpId, NextMonthFirstThu, await SeedSdkCaseAsync(status: 33));
+        await new CalendarOccurrenceException
+        {
+            AreaRulePlanningId = arpId, OriginalDate = NextMonthFirstThu.AddMonths(1),
+            NewDate = FirstWeekdayOfMonth(NextMonthFirstThu, DayOfWeek.Monday),
+            CreatedByUserId = 1, UpdatedByUserId = 1
+        }.Create(BackendConfigurationPnDbContext!);
+
+        var result = await service.UpdateTask(DialogWeekdayEdit(arpId, "all"));
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That((await DeadlineOf(complianceId)).Date, Is.EqualTo(NextMonthFirstThu.Date), "left in place");
     }
 }
