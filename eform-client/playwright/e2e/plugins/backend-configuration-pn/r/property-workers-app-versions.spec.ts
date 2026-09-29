@@ -76,7 +76,7 @@ async function seedTimeAppVersion(email: string): Promise<void> {
     throw new Error(`Refusing to build SQL for email ${email}`);
   }
   const sql =
-    `UPDATE AspNetUsers SET TimeRegistrationSoftwareVersion = '4.0.36', ` +
+    `UPDATE Users SET TimeRegistrationSoftwareVersion = '4.0.36', ` +
     `TimeRegistrationModel = 'Pixel 8', TimeRegistrationManufacturer = 'Google', ` +
     `TimeRegistrationOsVersion = '15' WHERE Email = '${email}'; SELECT ROW_COUNT();`;
   const stdout = await runMariadbSql(sql, `seed a Time app version for ${email}`, customerDatabase('Angular'));
