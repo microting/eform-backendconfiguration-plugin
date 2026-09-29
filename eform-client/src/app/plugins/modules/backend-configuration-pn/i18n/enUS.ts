@@ -478,6 +478,7 @@ export const enUS= {
   'Attach file': 'Attach file',
   'Save event first to attach files': 'Save event first to attach files',
   'Pending save': 'Pending save',
+  'Inherited from original': 'Inherited from original',
   'Delete attachment?': 'Delete attachment?',
   'Could not download file': 'Could not download file',
   'Add Google Drive file': 'Add Google Drive file',

@@ -447,6 +447,7 @@ export const da = {
   'Delete attachment?': 'Slet vedhæftet fil?',
   'Could not download file': 'Kunne ikke downloade filen',
   'Pending save': 'Afventer gem',
+  'Inherited from original': 'Arvet fra originalen',
   'Add Google Drive file': 'Tilføj Google Drive-fil',
   'Loading Google Picker': 'Indlæser Google Picker',
   'Connect Google Drive': 'Forbind Google Drev',

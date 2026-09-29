@@ -1578,6 +1578,20 @@ public class BackendConfigurationCalendarService(
                     localizationService.GetString("AtLeastOneWorkerMustBeAssigned"));
             }
 
+            // #1323 — validated before anything is created, so a bad source or an
+            // over-quota selection never leaves a half-copied task behind.
+            List<AreaRulePlanningFile> inheritedAttachments = [];
+            if (createModel.CopyAttachmentsFromTaskId is > 0 and var sourceTaskId)
+            {
+                (inheritedAttachments, var attachmentError) = await TaskAttachmentCopyHelper.ResolveAsync(
+                    backendConfigurationPnDbContext, sourceTaskId, createModel.AttachmentIds,
+                    MaxAttachmentsPerPlanning);
+                if (attachmentError != null)
+                {
+                    return new OperationDataResult<int>(false, localizationService.GetString(attachmentError));
+                }
+            }
+
             // Resolve FolderId: if not provided, find or create the "00. Logbøger" folder
             var resolvedFolderId = createModel.FolderId;
             if (resolvedFolderId is null or 0)
@@ -1691,6 +1705,9 @@ public class BackendConfigurationCalendarService(
                         await link.Create(backendConfigurationPnDbContext);
                     }
                 }
+
+                await TaskAttachmentCopyHelper.CopyAsync(
+                    backendConfigurationPnDbContext, inheritedAttachments, latestArp.Id, userService.UserId);
 
                 // Reconcile the new event so an already-deployed current week
                 // picks up the effective recipient set (explicit PlanningSites ∪

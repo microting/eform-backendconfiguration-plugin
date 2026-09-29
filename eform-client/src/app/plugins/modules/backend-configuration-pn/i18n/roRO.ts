@@ -437,6 +437,7 @@ export const roRO = {
   'Delete attachment?': 'Ștergeți atașamentul?',
   'Could not download file': 'Nu s-a putut descărca fișierul',
   'Pending save': 'Salvare în așteptare',
+  'Inherited from original': 'Moștenit de la original',
   'Add Google Drive file': 'Adăugați fișierul Google Drive',
   'Loading Google Picker': 'Se încarcă Selectorul Google',
   'Connect Google Drive': 'Conectați Google Drive',

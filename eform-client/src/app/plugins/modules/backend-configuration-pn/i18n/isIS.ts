@@ -437,6 +437,7 @@ export const isIS = {
   'Delete attachment?': 'Eyða viðhengi?',
   'Could not download file': 'Gat ekki sótt skrána',
   'Pending save': 'Bíður vistunar',
+  'Inherited from original': 'Erft frá upprunalegu',
   'Add Google Drive file': 'Bæta við Google Drive skrá',
   'Loading Google Picker': 'Hleður Google Picker',
   'Connect Google Drive': 'Tengja Google Drive',

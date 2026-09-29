@@ -437,6 +437,7 @@ export const huHU = {
   'Delete attachment?': 'Törli a mellékletet?',
   'Could not download file': 'Nem sikerült letölteni a fájlt',
   'Pending save': 'Mentés függőben',
+  'Inherited from original': 'Az eredetiből átvéve',
   'Add Google Drive file': 'Google Drive-fájl hozzáadása',
   'Loading Google Picker': 'Google Picker betöltése',
   'Connect Google Drive': 'Csatlakoztassa a Google Drive-ot',

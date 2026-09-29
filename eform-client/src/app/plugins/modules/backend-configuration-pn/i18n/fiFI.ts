@@ -437,6 +437,7 @@ export const fiFI = {
   'Delete attachment?': 'Poistetaanko liite?',
   'Could not download file': 'Tiedoston lataaminen epäonnistui',
   'Pending save': 'Tallennus odottaa',
+  'Inherited from original': 'Peritty alkuperäisestä',
   'Add Google Drive file': 'Lisää Google Drive -tiedosto',
   'Loading Google Picker': 'Google Pickerin lataus',
   'Connect Google Drive': 'Yhdistä Google Driveen',

@@ -437,6 +437,7 @@ export const skSK = {
   'Delete attachment?': 'Odstrániť prílohu?',
   'Could not download file': 'Súbor sa nepodarilo stiahnuť',
   'Pending save': 'Čaká sa na uloženie',
+  'Inherited from original': 'Prevzaté z originálu',
   'Add Google Drive file': 'Pridať súbor z Disku Google',
   'Loading Google Picker': 'Načítava sa nástroj Google Picker',
   'Connect Google Drive': 'Pripojiť Disk Google',

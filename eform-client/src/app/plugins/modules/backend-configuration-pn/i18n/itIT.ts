@@ -436,6 +436,7 @@ export const itIT = {
   'Could not create report headline': 'Impossibile creare l&#39;intestazione del report',
   'Save event first to attach files': 'Salva prima l&#39;evento per allegare i file.',
   'Pending save': 'Salvataggio in sospeso',
+  'Inherited from original': "Ereditato dall'originale",
   'Delete attachment?': 'Eliminare l&#39;allegato?',
   'Add Google Drive file': 'Aggiungi file di Google Drive',
   'Loading Google Picker': 'Caricamento di Google Picker',

@@ -439,6 +439,7 @@ export const noNO = {
   'Delete attachment?': 'Slette vedlegg?',
   'Could not download file': 'Kunne ikke laste ned filen',
   'Pending save': 'Venter på lagring',
+  'Inherited from original': 'Arvet fra originalen',
   'Add Google Drive file': 'Legg til Google Drive-fil',
   'Loading Google Picker': 'Laster inn Google Picker',
   'Connect Google Drive': 'Koble til Google Disk',

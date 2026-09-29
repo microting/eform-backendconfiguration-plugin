@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import * as path from 'path';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
@@ -12,6 +12,13 @@ import {
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
 import { assigneeWorkerOptions } from '../calendar-assignee.helper';
+import {
+  API_TIMEOUT,
+  SLOW_API_TIMEOUT,
+  UI_TIMEOUT,
+  ignoreUnhandledRejections,
+  waitForApiResponse,
+} from '../wait-helpers';
 
 /**
  * Calendar copy-flow suite for GitHub issue #886. Each test creates its own
@@ -28,7 +35,8 @@ import { assigneeWorkerOptions } from '../calendar-assignee.helper';
  *         Not duplicated here.
  *   P02 — copy adjusts a past-dated source forward (date invariant).
  *   P03 — copy reconstructs a custom repeat rule.
- *   P04 — copy does NOT carry attachments forward.
+ *   P04 — copy carries the attachments as inherited chips (#1323).
+ *   P04b — an inherited chip removed before save is not copied (#1323).
  *   P05 — copy from the schedule (list) view.
  *
  * Lives in `r/` to share the matrix slot with the other UI-enhancement
@@ -119,6 +127,62 @@ async function createSimpleEvent(
   await createResp;
   await page.waitForTimeout(1500);
   await calendarPage.findEventBlock(title).waitFor({ state: 'visible', timeout: 10000 });
+}
+
+// Creates a non-recurring source event next week on dayOffset at 09:00 with one
+// staged PDF, and waits for both the create and the post-create upload.
+async function createSourceWithPdf(
+  page: Page,
+  calendarPage: CalendarUiEnhancementsPage,
+  title: string,
+  dayOffset: number,
+): Promise<void> {
+  await calendarPage.openCreateModalAtSlot(dayOffset, 9);
+  await fillRequiredFields(page, title);
+
+  // Stage one PDF before save — queues as a pending row, uploaded post-create.
+  await page.locator('#calendarEventAttachInput').setInputFiles([PDF_FIXTURE]);
+  await expect(page.locator('.gcal-attachment-row .gcal-attachment-pending-icon'))
+    .toHaveCount(1, { timeout: UI_TIMEOUT });
+
+  const createSource = waitForApiResponse(page, 'the source create POST', isCreatePost, API_TIMEOUT);
+  const upload = waitForApiResponse(
+    page,
+    'the staged PDF upload',
+    r => /\/calendar\/tasks\/\d+\/files$/.test(r.url()) && r.request().method() === 'POST',
+    SLOW_API_TIMEOUT
+  );
+  ignoreUnhandledRejections(upload);
+  await page.locator('#calendarEventSaveBtn').click();
+  await createSource;
+  await upload;
+  await calendarPage.findEventBlock(title).waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+}
+
+// The source and its copy both contain `title`; the copy's is the longer one
+// ("Copy of " / "Kopi af " prefix). Opens the chosen block's edit modal.
+async function openTitledBlockForEdit(
+  page: Page,
+  calendarPage: CalendarUiEnhancementsPage,
+  title: string,
+  which: 'copy' | 'source',
+): Promise<void> {
+  const candidateBlocks = page.locator('.task-block').filter({ hasText: title });
+  await expect(candidateBlocks, 'the source and its copy are both on the grid').toHaveCount(2, { timeout: UI_TIMEOUT });
+  const [firstLen, secondLen] = await candidateBlocks.evaluateAll(
+    els => els.map(el => (el.querySelector('.task-title')?.textContent ?? '').trim().length));
+  const copyIndex = firstLen > secondLen ? 0 : 1;
+  await candidateBlocks.nth(which === 'copy' ? copyIndex : 1 - copyIndex).locator('.task-block-body').click();
+  await page.locator('app-task-preview-modal').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+  await calendarPage.clickEditInPreview();
+}
+
+async function openCopyForEdit(page: Page, calendarPage: CalendarUiEnhancementsPage, title: string): Promise<void> {
+  await openTitledBlockForEdit(page, calendarPage, title, 'copy');
+}
+
+async function openSourceForEdit(page: Page, calendarPage: CalendarUiEnhancementsPage, title: string): Promise<void> {
+  await openTitledBlockForEdit(page, calendarPage, title, 'source');
 }
 
 test.describe.serial('Calendar copy flows (#886)', () => {
@@ -373,92 +437,82 @@ test.describe.serial('Calendar copy flows (#886)', () => {
   });
 
   // =======================================================================
-  // P04: copy does NOT carry attachments forward.
+  // P04: copy carries the source's attachments (#1323, reverses #886/#896).
   //
   // Create a source event with one PDF attachment (pre-save staging flow from
-  // calendar-attachments.spec.ts J1), save, then copy it. After saving the
-  // copy, reopen the COPY in edit mode and assert ZERO attachment rows — copy
-  // mode intentionally drops attachments (see task-create-edit-modal.component
-  // comment "copy mode intentionally does NOT carry attachments forward").
+  // calendar-attachments.spec.ts J1), save, then copy it. The copy dialog lists
+  // the PDF as an inherited chip, the create POST names it, and the saved copy
+  // lists it when reopened.
   // =======================================================================
-  test('P04: copy does not carry attachments', async ({ page }) => {
+  test('P04: copy carries the attachments', async ({ page }) => {
+    // Two creates, one upload and three modal round-trips.
     test.setTimeout(180000);
     const calendarPage = new CalendarUiEnhancementsPage(page);
     const title = `P04-${generateRandmString(5)}`;
 
-    // Source: Saturday next week at 09:00. Saturday avoids P03's Mon/Wed/Fri
-    // recurring occurrences (which would otherwise sit on this week's
-    // Wednesday and intercept the empty-slot click).
-    await calendarPage.openCreateModalAtSlot(5, 9);
-    await fillRequiredFields(page, title);
+    // Saturday avoids P03's Mon/Wed/Fri recurring occurrences.
+    await createSourceWithPdf(page, calendarPage, title, 5);
 
-    // Stage one PDF before save — queues as a pending row, uploaded post-create.
-    await page.locator('#calendarEventAttachInput').setInputFiles([PDF_FIXTURE]);
-    await expect(page.locator('.gcal-attachment-row .gcal-attachment-pending-icon'))
-      .toHaveCount(1, { timeout: 5000 });
-
-    const createSource = page.waitForResponse(isCreatePost, { timeout: 30000 });
-    const upload = page.waitForResponse(
-      r => /\/calendar\/tasks\/\d+\/files$/.test(r.url())
-        && r.request().method() === 'POST',
-      { timeout: 60000 }
-    );
-    await page.locator('#calendarEventSaveBtn').click();
-    await createSource;
-    await upload;
-    await page.waitForTimeout(1500);
-    await calendarPage.findEventBlock(title).waitFor({ state: 'visible', timeout: 10000 });
-
-    // Sanity: the source actually has the attachment when reopened for edit.
-    await calendarPage.openEventPreview(title);
-    await calendarPage.clickEditInPreview();
-    await expect(page.locator('.gcal-attachment-row', { hasText: 'sample.pdf' }))
-      .toBeVisible({ timeout: 10000 });
-    await calendarPage.closeEventModal();
-    await page.waitForTimeout(500);
-
-    // Open preview → Copy → save the copy.
     await calendarPage.openEventPreview(title);
     await calendarPage.clickCopyInPreview();
 
-    // While we're in the copy modal, attachments must already be empty.
-    await expect(page.locator('.gcal-attachment-row')).toHaveCount(0, { timeout: 5000 });
+    const inherited = page.locator('.gcal-attachment-row', { hasText: 'sample.pdf' });
+    await expect(inherited, 'the copy dialog lists the source PDF').toBeVisible({ timeout: UI_TIMEOUT });
+    await expect(inherited.locator('.gcal-attachment-hint'), 'as an inherited chip').toBeVisible({ timeout: UI_TIMEOUT });
 
-    const copyTitle = await calendarPage.getCreateModalTitle();
-    expect(copyTitle).toContain(title);
-    expect(copyTitle.length).toBeGreaterThan(title.length);
-
-    const createCopy = page.waitForResponse(isCreatePost, { timeout: 30000 });
+    const createCopy = waitForApiResponse(page, 'the copy create POST', isCreatePost, API_TIMEOUT);
     await page.locator('#calendarEventSaveBtn').click();
     const response = await createCopy;
+    const request = response.request().postDataJSON();
+    expect(request?.copyAttachmentsFromTaskId, 'the copy names its source').toBeGreaterThan(0);
+    expect(request?.attachmentIds, 'and the kept attachment').toHaveLength(1);
     const body = await response.json().catch(() => null);
     expect(response.status()).toBe(200);
     expect(body?.success).toBeTruthy();
-    await page.waitForTimeout(1500);
 
-    // Reopen the COPY in edit mode. The copy's title is locale-prefixed
-    // ("Copy of " / "Kopi af "); two blocks now contain the `title`
-    // substring (source + copy). Pick the block whose visible title is the
-    // LONGER one (the prefixed copy) so we open the copy, not the source.
-    const candidateBlocks = page.locator('.task-block').filter({ hasText: title });
-    const count = await candidateBlocks.count();
-    expect(count).toBeGreaterThanOrEqual(2);
-    let copyBlockIndex = 0;
-    let longestLen = -1;
-    for (let i = 0; i < count; i++) {
-      const text = ((await candidateBlocks.nth(i).locator('.task-title').first().textContent()) ?? '').trim();
-      if (text.length > longestLen) {
-        longestLen = text.length;
-        copyBlockIndex = i;
-      }
-    }
-    await candidateBlocks.nth(copyBlockIndex).locator('.task-block-body').click();
-    await page.locator('app-task-preview-modal').waitFor({ state: 'visible', timeout: 10000 });
-    await calendarPage.clickEditInPreview();
+    await openCopyForEdit(page, calendarPage, title);
+    await expect(
+      page.locator('.gcal-attachment-row', { hasText: 'sample.pdf' }),
+      'the saved copy has the PDF'
+    ).toBeVisible({ timeout: UI_TIMEOUT });
+    await calendarPage.closeEventModal();
+  });
 
-    // The copy must have NO attachments — the source's PDF was not carried.
-    await expect(page.locator('.gcal-attachment-row')).toHaveCount(0, { timeout: 10000 });
+  // =======================================================================
+  // P04b: an inherited chip removed before save is not copied, and the
+  // source keeps its file (#1323).
+  // =======================================================================
+  test('P04b: removing an inherited attachment before save leaves it out', async ({ page }) => {
+    // Two creates, one upload and four modal round-trips.
+    test.setTimeout(180000);
+    const calendarPage = new CalendarUiEnhancementsPage(page);
+    const title = `P04b-${generateRandmString(5)}`;
 
+    await createSourceWithPdf(page, calendarPage, title, 6);
+
+    await calendarPage.openEventPreview(title);
+    await calendarPage.clickCopyInPreview();
+    const inherited = page.locator('.gcal-attachment-row', { hasText: 'sample.pdf' });
+    await expect(inherited).toBeVisible({ timeout: UI_TIMEOUT });
+    // Local only in copy mode: no confirm dialog and no DELETE request.
+    await inherited.locator('.gcal-attachment-delete').click();
+    await expect(page.locator('.gcal-attachment-row')).toHaveCount(0, { timeout: UI_TIMEOUT });
+
+    const createCopy = waitForApiResponse(page, 'the copy create POST', isCreatePost, API_TIMEOUT);
+    await page.locator('#calendarEventSaveBtn').click();
+    const response = await createCopy;
+    expect(response.request().postDataJSON()?.attachmentIds, 'nothing kept').toEqual([]);
+    expect((await response.json().catch(() => null))?.success).toBeTruthy();
+
+    await openCopyForEdit(page, calendarPage, title);
+    await expect(page.locator('.gcal-attachment-row'), 'the copy has no attachment').toHaveCount(0, { timeout: UI_TIMEOUT });
+    await calendarPage.closeEventModal();
+
+    await openSourceForEdit(page, calendarPage, title);
+    await expect(
+      page.locator('.gcal-attachment-row', { hasText: 'sample.pdf' }),
+      'the source keeps its PDF'
+    ).toBeVisible({ timeout: UI_TIMEOUT });
     await calendarPage.closeEventModal();
   });
 

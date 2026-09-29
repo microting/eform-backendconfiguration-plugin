@@ -439,6 +439,7 @@ export const svSE = {
   'Delete attachment?': 'Ta bort bilagan?',
   'Could not download file': 'Kunde inte ladda ner filen',
   'Pending save': 'Väntar på att spara',
+  'Inherited from original': 'Ärvd från originalet',
   'Add Google Drive file': 'Lägg till Google Drive-fil',
   'Loading Google Picker': 'Läser in Google Picker',
   'Connect Google Drive': 'Anslut Google Drive',

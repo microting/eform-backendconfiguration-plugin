@@ -437,6 +437,7 @@ export const nlNL = {
   'Could not download file': 'Het downloaden van het bestand is niet gelukt.',
   Pictures: 'Foto&#39;s',
   'Pending save': 'Opslaan in behandeling',
+  'Inherited from original': 'Overgenomen van origineel',
   'Add Google Drive file': 'Voeg een Google Drive-bestand toe',
   'Loading Google Picker': 'Google Picker laden',
   'Connect Google Drive': 'Verbinden met Google Drive',

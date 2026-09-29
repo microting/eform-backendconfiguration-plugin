@@ -437,6 +437,7 @@ export const plPL = {
   'Delete attachment?': 'Usunąć załącznik?',
   'Could not download file': 'Nie można pobrać pliku',
   'Pending save': 'Oczekiwanie na zapisanie',
+  'Inherited from original': 'Przejęte z oryginału',
   'Add Google Drive file': 'Dodaj plik Google Drive',
   'Loading Google Picker': 'Ładowanie selektora Google',
   'Connect Google Drive': 'Połącz Google Drive',
