@@ -125,5 +125,10 @@ public class MonthlyReanchorRepairRunResultModel
     /// attempted"). Any entry makes the marker "partial", so the next dry run re-evaluates them.
     /// </summary>
     public List<string> Skipped { get; set; } = [];
+    /// <summary>
+    /// Writes that became eligible while the run was applying (not in the reviewed plan);
+    /// not written. Any entry makes the marker "partial", so a new reviewed dry run is needed.
+    /// </summary>
+    public List<string> ArrivedDuringRun { get; set; } = [];
     public List<string> Failures { get; set; } = [];
 }

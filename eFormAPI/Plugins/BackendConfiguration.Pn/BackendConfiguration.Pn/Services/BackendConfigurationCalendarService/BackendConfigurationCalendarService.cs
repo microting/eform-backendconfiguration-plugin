@@ -3399,7 +3399,9 @@ public class BackendConfigurationCalendarService(
         //     it would hide or relocate the moved row) or another occurrence moved
         //     onto it (its NewDate) — left in place;
         //   * an occurrence another site already answered (a completed sibling case
-        //     under the same PlanningCase) is history — left in place.
+        //     under the same PlanningCase) is history — left in place;
+        //   * a later date for a cloud-deployed case (CloudCaseEndDateRule): its
+        //     immutable cloud EndDate would expire it on the device first — left in place.
         var occupied = (await backendConfigurationPnDbContext.Compliances
                 .AsNoTracking()
                 .Where(c => c.PlanningId == arp.ItemPlanningId)
@@ -3437,10 +3439,16 @@ public class BackendConfigurationCalendarService(
             .Distinct().ToList();
         var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
         await using var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
-        var completedCaseIds = (await sdkDbContext.Cases
-            .Where(c => caseIds.Contains(c.Id) && c.Status == 100)
-            .Select(c => c.Id)
-            .ToListAsync()).ToHashSet();
+        var cases = await sdkDbContext.Cases
+            .AsNoTracking()
+            .Where(c => caseIds.Contains(c.Id))
+            .Select(c => new { c.Id, c.Status, c.MicrotingUid, c.WorkflowState })
+            .ToListAsync();
+        var completedCaseIds = cases.Where(c => c.Status == 100).Select(c => c.Id).ToHashSet();
+        var liveCaseUids = cases
+            .Where(c => c.WorkflowState != Constants.WorkflowStates.Removed
+                        && c.WorkflowState != Constants.WorkflowStates.Retracted)
+            .ToDictionary(c => c.Id, c => c.MicrotingUid);
 
         foreach (var row in rows)
         {
@@ -3465,6 +3473,16 @@ public class BackendConfigurationCalendarService(
                                            && completedCaseIds.Contains(x.MicrotingSdkCaseId)))
             {
                 leftInPlaceBecause = "another site already completed this occurrence";
+            }
+            else if (CloudCaseEndDateRule.MoveWouldOutliveCloudCase(row.Deadline, target,
+                         siblingCases.Where(x => x.PlanningCaseId == row.PlanningCaseSiteId)
+                             .Select(x => x.MicrotingSdkCaseId)
+                             .Append(row.MicrotingSdkCaseId)
+                             .Distinct()
+                             .Where(liveCaseUids.ContainsKey)
+                             .Select(id => liveCaseUids[id])))
+            {
+                leftInPlaceBecause = "a cloud-deployed case would expire on the device before the later date";
             }
             if (leftInPlaceBecause != null)
             {

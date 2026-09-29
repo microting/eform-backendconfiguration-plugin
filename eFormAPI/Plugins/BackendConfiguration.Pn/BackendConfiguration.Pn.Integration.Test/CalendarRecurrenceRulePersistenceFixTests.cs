@@ -721,7 +721,7 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
             new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext!));
     }
 
-    private async Task<int> SeedSdkCaseAsync(int status)
+    private async Task<int> SeedSdkCaseAsync(int status, int? microtingUid = null)
     {
         var language = await MicrotingDbContext!.Languages.FirstAsync();
         var site = new Site
@@ -731,7 +731,10 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
         };
         await MicrotingDbContext.Sites.AddAsync(site);
         await MicrotingDbContext.SaveChangesAsync();
-        var sdkCase = new Case { SiteId = site.Id, Status = status, WorkflowState = Constants.WorkflowStates.Created };
+        var sdkCase = new Case
+        {
+            SiteId = site.Id, Status = status, MicrotingUid = microtingUid, WorkflowState = Constants.WorkflowStates.Created
+        };
         await MicrotingDbContext.Cases.AddAsync(sdkCase);
         await MicrotingDbContext.SaveChangesAsync();
         return sdkCase.Id;
@@ -1105,5 +1108,32 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
 
         Assert.That(result.Success, Is.True, result.Message);
         Assert.That((await DeadlineOf(complianceId)).Date, Is.EqualTo(NextMonthFirstThu.Date), "left in place");
+    }
+
+    /// <summary>
+    /// A case the items-planning scheduler deployed through the cloud (MicrotingUid below
+    /// the local-only range) has an immutable cloud EndDate = its original date; a LATER
+    /// date ("1st" → "2nd Thursday") would let it expire on the device first, so the row
+    /// is left in place — the same rule the monthly re-anchor repair applies.
+    /// </summary>
+    [Test]
+    public async Task UpdateTask_ScopeAll_OrdinalChange_CloudDeployedCaseIsNotMovedLater()
+    {
+        var arpId = await SeedFirstThursdayRule();
+        var service = await BuildCalendarServiceWithCoreAsync();
+        var complianceId = await SeedComplianceAsync(arpId, NextMonthFirstThu,
+            await SeedSdkCaseAsync(status: 33, microtingUid: 4711));
+
+        var model = BuildEdit(arpId, startDate: NextMonthFirstThu, scope: "all",
+            originalDate: NextMonthFirstThu, repeatType: 3, repeatOrdinalWeek: 2);
+        var result = await service.UpdateTask(model);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        var arp = await BackendConfigurationPnDbContext!.AreaRulePlannings.AsNoTracking().SingleAsync(x => x.Id == arpId);
+        await Assert.MultipleAsync(async () =>
+        {
+            Assert.That(arp.RepeatOrdinalWeek, Is.EqualTo(2), "the rule edit itself is saved");
+            Assert.That((await DeadlineOf(complianceId)).Date, Is.EqualTo(NextMonthFirstThu.Date), "left in place");
+        });
     }
 }

@@ -1029,4 +1029,108 @@ public class CalendarMonthlyReanchorRepairTests : TestBaseSetup
             Assert.That(await MarkerAsync(), Is.EqualTo(CalendarMonthlyReanchorRepairService.MarkerPartial));
         });
     }
+
+    // ── Copilot review round 2 ──────────────────────────────────────────────
+
+    /// <summary>
+    /// The claim is taken over while planning A is written: the lease renewal before
+    /// planning B fails, so the run stops — B is not written — and reports the takeover.
+    /// </summary>
+    [Test]
+    public async Task ClaimReplacedMidRun_StopsWritingFurtherPlannings()
+    {
+        var (_, planningA) = await SeedLegacyYearlyTaskAsync(D(2024, 1, 3), nextExecution: D(2027, 1, 3));
+        var (_, planningB) = await SeedLegacyYearlyTaskAsync(D(2024, 1, 17), nextExecution: D(2027, 1, 17));
+        await ConvertAsync();
+        await SeedComplianceAsync(planningA, D(2027, 1, 3), D(2026, 1, 3), (await SeedCaseAsync()).Id);
+        var complianceB = await SeedComplianceAsync(planningB, D(2027, 1, 17), D(2026, 1, 17), (await SeedCaseAsync()).Id);
+        const string otherOwner = "running:another-run";
+        var swapped = false;
+        _sut.OnBeforeWrite = async entity =>
+        {
+            if (!swapped && entity is Planning { Id: var id } && id == planningA)
+            {
+                swapped = true;
+                await BackendConfigurationPnDbContext!.Database.ExecuteSqlRawAsync(
+                    "UPDATE `PluginConfigurationValues` SET `Value` = {0} WHERE `Name` = {1}",
+                    otherOwner, CalendarMonthlyReanchorRepairService.MarkerName);
+            }
+        };
+
+        var plan = await DryRunAsync();
+        var run = await _sut.RunAsync(plan.PlanHash);
+
+        await Assert.MultipleAsync(async () =>
+        {
+            Assert.That(run.Success, Is.False);
+            Assert.That(run.Model.Failures, Has.Some.Contains("claim"));
+            Assert.That(run.Model.Skipped, Has.Some.Contains("lost its claim"));
+            Assert.That(await DeadlineAsync(complianceB.Id), Is.EqualTo(D(2027, 1, 17)), "B is not written");
+            Assert.That((await PlanningAsync(planningB)).DayOfWeek, Is.EqualTo(DayOfWeek.Friday), "B's planning neither");
+            Assert.That(await MarkerAsync(), Is.EqualTo(otherOwner));
+        });
+    }
+
+    /// <summary>A change that only alters the review list (no write) still changes the plan hash.</summary>
+    [Test]
+    public async Task PlanHash_CoversTheReviewList()
+    {
+        var (arpId, planningId) = await SeedLegacyYearlyTaskAsync(D(2024, 1, 3), nextExecution: D(2027, 1, 3));
+        await ConvertAsync();
+        await SeedComplianceAsync(planningId, D(2027, 1, 3), D(2026, 1, 3), (await SeedCaseAsync()).Id);
+        var before = await DryRunAsync();
+
+        // Makes the rule's CSV disagree with its weekday: an informational review item only.
+        await BackendConfigurationPnDbContext!.AreaRulePlannings.Where(x => x.Id == arpId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.RepeatWeekdaysCsv, "1"));
+        ForgetTrackedRows();
+        var after = await DryRunAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(after.ComplianceMoves.Select(x => (x.ComplianceId, x.NewDeadline)),
+                Is.EqualTo(before.ComplianceMoves.Select(x => (x.ComplianceId, x.NewDeadline))), "same writes");
+            Assert.That(after.ReviewItems, Has.Count.EqualTo(before.ReviewItems.Count + 1));
+            Assert.That(after.PlanHash, Is.Not.EqualTo(before.PlanHash), "but a different reviewed plan");
+        });
+    }
+
+    /// <summary>
+    /// An eligible compliance created while the run is applying was never reviewed: it is
+    /// not written, the marker stays "partial", and the next dry run lists it.
+    /// </summary>
+    [Test]
+    public async Task WorkArrivingDuringTheRun_LeavesThePartialMarker_AndTheNextDryRunListsIt()
+    {
+        var (_, planningId) = await SeedLegacyYearlyTaskAsync(D(2024, 1, 3), nextExecution: D(2027, 1, 3));
+        await ConvertAsync();
+        await SeedComplianceAsync(planningId, D(2027, 1, 3), D(2026, 1, 3), (await SeedCaseAsync()).Id);
+        var arrivedCaseId = (await SeedCaseAsync()).Id;
+        Compliance arrived = null!;
+        _sut.OnBeforeWrite = async entity =>
+        {
+            if (arrived == null && entity is Planning)
+            {
+                // Sun 2 Jan 2028; the rule's 1st Wednesday that month is 5 Jan.
+                arrived = await SeedComplianceAsync(planningId, D(2028, 1, 2), D(2027, 1, 2), arrivedCaseId);
+            }
+        };
+
+        var plan = await DryRunAsync();
+        var run = await _sut.RunAsync(plan.PlanHash);
+
+        await Assert.MultipleAsync(async () =>
+        {
+            Assert.That(run.Success, Is.True, run.Message);
+            Assert.That(run.Model.MovedCompliances, Is.EqualTo(1), "the reviewed move is written");
+            Assert.That(run.Model.ArrivedDuringRun, Has.Some.Contains($"compliance {arrived.Id}"));
+            Assert.That(await DeadlineAsync(arrived.Id), Is.EqualTo(D(2028, 1, 2)), "the unreviewed one is not");
+            Assert.That(await MarkerAsync(), Is.EqualTo(CalendarMonthlyReanchorRepairService.MarkerPartial));
+        });
+
+        _sut.OnBeforeWrite = _ => Task.CompletedTask;
+        var next = await DryRunAsync();
+        Assert.That(next.ComplianceMoves.Select(x => (x.ComplianceId, x.NewDeadline)),
+            Is.EqualTo(new[] { (arrived.Id, D(2028, 1, 5)) }));
+    }
 }

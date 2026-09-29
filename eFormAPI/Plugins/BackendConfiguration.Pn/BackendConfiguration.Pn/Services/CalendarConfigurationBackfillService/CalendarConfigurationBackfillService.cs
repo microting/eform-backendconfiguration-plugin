@@ -267,16 +267,20 @@ public class CalendarConfigurationBackfillService(
                 await arp.Update(dbContext);
                 break;
             case RepeatType.Week:
+                // #1294 — the scheduler (SearchListJob) snaps with the planning's
+                // weekday, so it must equal the ARP's; the legacy value is stale.
+                // The planning is written FIRST and the ARP LAST: the ARP's
+                // still-unnormalized shape is what re-selects the row on the next
+                // startup, so an interrupted pass must not leave the ARP done and
+                // the planning behind.
+                planning.DayOfWeek = (DayOfWeek)dow;
+                await planning.Update(itemsPlanningPnDbContext);
+
                 arp.RepeatType = 2;
                 arp.RepeatEvery = planning.RepeatEvery;
                 arp.DayOfWeek = dow;
                 arp.RepeatWeekdaysCsv = dow.ToString();
                 await arp.Update(dbContext);
-
-                // #1294 — the scheduler (SearchListJob) snaps with the planning's
-                // weekday, so it must equal the ARP's; the legacy value is stale.
-                planning.DayOfWeek = (DayOfWeek)dow;
-                await planning.Update(itemsPlanningPnDbContext);
                 break;
             case RepeatType.Month:
             {
@@ -286,16 +290,17 @@ public class CalendarConfigurationBackfillService(
                 // advanced whole months from. 29th–31st give 5, which every Month
                 // producer and the scheduler spill to the month's last such weekday.
                 var ordinal = CalendarService.OrdinalWeekOf(planning.StartDate);
+                // Planning first, ARP last — see the Week branch.
+                planning.RepeatOrdinalWeek = ordinal;
+                planning.DayOfWeek = (DayOfWeek)dow; // #1294 — see the Week branch
+                await planning.Update(itemsPlanningPnDbContext);
+
                 arp.RepeatType = 3;
                 arp.RepeatEvery = planning.RepeatEvery;
                 arp.DayOfWeek = dow;
                 arp.RepeatOrdinalWeek = ordinal;
                 arp.DayOfMonth = 0;
                 await arp.Update(dbContext);
-
-                planning.RepeatOrdinalWeek = ordinal;
-                planning.DayOfWeek = (DayOfWeek)dow; // #1294 — see the Week branch
-                await planning.Update(itemsPlanningPnDbContext);
                 break;
             }
             // Year/unknown: not wizard-producible — pass through untouched.

@@ -82,12 +82,6 @@ public class CalendarMonthlyReanchorRepairService(
     private const int MonthRepeatType = 3;
     private const int CompletedStatus = 100;
 
-    /// <summary>
-    /// The SDK's <c>NextSyntheticMicrotingUidAsync</c> hands local-only cases uids from
-    /// 2,000,000,000 up; anything below was a real cloud CaseCreate.
-    /// </summary>
-    private const int LocalOnlyMicrotingUidFloor = 2_000_000_000;
-
     internal const string ReasonCollision = "Collision";
     internal const string ReasonOccurrenceException = "OccurrenceExceptionOnOldDate";
     internal const string ReasonOccurrenceExceptionOnTarget = "OccurrenceExceptionOnTargetDate";
@@ -175,6 +169,7 @@ public class CalendarMonthlyReanchorRepairService(
             }
 
             MonthlyReanchorRepairRunResultModel result;
+            var claimLost = false;
             if (planIsEmpty)
             {
                 // A resumed partial run with nothing left to do: finish it, or the marker
@@ -185,22 +180,30 @@ public class CalendarMonthlyReanchorRepairService(
             {
                 // From here on the run writes; a closed browser tab must not stop it halfway.
                 LogPlan(work.Model, isRun: true);
-                result = await ApplyAsync(work).ConfigureAwait(false);
+                (result, claimLost) = await ApplyAsync(work, claimToken).ConfigureAwait(false);
             }
-            // Anything not written (failed, skipped as changed, or not attempted) is left
-            // for the next dry run + run, which a "partial" marker allows.
-            var state = result.Failures.Count == 0 && result.Skipped.Count == 0 ? MarkerDone : MarkerPartial;
-            if (!await FinishMarkerAsync(claimToken, state).ConfigureAwait(false))
+
+            if (!claimLost)
             {
-                const string claimLost =
-                    "this run's claim was taken over by another run (abandoned-run reclaim); the marker was left to that run";
-                logger.LogError("CalendarMonthlyReanchorRepair: {ClaimLost}", claimLost);
-                result.Failures.Add(claimLost);
+                // Work that arrived AFTER the plan was computed (not the rows this run
+                // skipped or failed — those are in the plan) was never reviewed: it needs
+                // another dry run + run, so the marker stays "partial".
+                result.ArrivedDuringRun.AddRange(await WritesArrivedDuringRunAsync(work).ConfigureAwait(false));
+
+                // Anything not written (failed, skipped as changed, not attempted) or not yet
+                // reviewed is left for the next dry run + run, which "partial" allows.
+                var state = result.Failures.Count == 0 && result.Skipped.Count == 0 && result.ArrivedDuringRun.Count == 0
+                    ? MarkerDone
+                    : MarkerPartial;
+                if (!await FinishMarkerAsync(claimToken, state).ConfigureAwait(false))
+                {
+                    RecordClaimLost(result);
+                }
             }
             logger.LogInformation(
-                "CalendarMonthlyReanchorRepair: {State} — {Restored} ordinals restored, {Plannings} plannings updated, {Moved} compliances moved, {Skipped} skipped as changed, {Failures} failures",
-                state, result.RestoredOrdinals, result.UpdatedPlannings, result.MovedCompliances,
-                result.Skipped.Count, result.Failures.Count);
+                "CalendarMonthlyReanchorRepair: finished — {Restored} ordinals restored, {Plannings} plannings updated, {Moved} compliances moved, {Skipped} skipped, {Arrived} new writes arrived during the run, {Failures} failures",
+                result.RestoredOrdinals, result.UpdatedPlannings, result.MovedCompliances,
+                result.Skipped.Count, result.ArrivedDuringRun.Count, result.Failures.Count);
             return new OperationDataResult<MonthlyReanchorRepairRunResultModel>(result.Failures.Count == 0, result);
         }
         catch (Exception e)
@@ -282,6 +285,54 @@ public class CalendarMonthlyReanchorRepairService(
                 [MarkerName, token, now, Constants.WorkflowStates.Created],
                 CancellationToken.None).ConfigureAwait(false);
         return affected == 1 ? token : null;
+    }
+
+    private const string ClaimLostMessage =
+        "this run's claim was taken over by another run (abandoned-run reclaim); it stopped writing and left the marker to that run";
+
+    private void RecordClaimLost(MonthlyReanchorRepairRunResultModel result)
+    {
+        logger.LogError("CalendarMonthlyReanchorRepair: {ClaimLost}", ClaimLostMessage);
+        result.Failures.Add(ClaimLostMessage);
+    }
+
+    /// <summary>
+    /// Renews this run's lease (the marker's UpdatedAt) while it still holds the claim, so a
+    /// long run is never taken for abandoned. False when the claim was taken over.
+    /// </summary>
+    private async Task<bool> RenewClaimAsync(string claimToken)
+        => await dbContext.Database.ExecuteSqlRawAsync(
+            @"UPDATE `PluginConfigurationValues`
+                 SET `UpdatedAt` = {2}
+               WHERE `Name` = {0} AND `Value` = {1}",
+            [MarkerName, claimToken, DateTime.UtcNow],
+            CancellationToken.None).ConfigureAwait(false) == 1;
+
+    /// <summary>The writes a plan makes, as stable keys (rule / planning / compliance ids).</summary>
+    private static HashSet<string> WriteKeys(MonthlyReanchorRepairPlanModel plan)
+        => plan.OrdinalRestorations.Select(r => $"ordinal of AreaRulePlanning {r.AreaRulePlanningId}")
+            .Concat(plan.PlanningUpdates.Select(p => $"planning {p.PlanningId}"))
+            .Concat(plan.ComplianceMoves.Select(m => $"compliance {m.ComplianceId}"))
+            .ToHashSet();
+
+    /// <summary>
+    /// Recomputes the plan after the run (while the claim is still held) and returns the
+    /// writes it now wants that were NOT in the executed plan — work that arrived after the
+    /// plan was computed and so was never reviewed.
+    /// </summary>
+    private async Task<List<string>> WritesArrivedDuringRunAsync(Work executed)
+    {
+        var executedKeys = WriteKeys(executed.Model);
+        var now = await ComputeAsync(CancellationToken.None).ConfigureAwait(false);
+        var arrived = WriteKeys(now.Model).Where(k => !executedKeys.Contains(k)).OrderBy(k => k, StringComparer.Ordinal)
+            .ToList();
+        foreach (var key in arrived)
+        {
+            logger.LogWarning(
+                "CalendarMonthlyReanchorRepair: {Write} became eligible during the run; not written — it needs a new reviewed dry run",
+                key);
+        }
+        return arrived;
     }
 
     /// <summary>
@@ -754,9 +805,10 @@ public class CalendarMonthlyReanchorRepairService(
         {
             reasons.Add(ReasonSiblingCaseCompleted);
         }
-        if (targetDate > oldDeadline.Date
-            && siblings.Append(ownCaseId)
-                .Any(id => guard.SdkCases.TryGetValue(id, out var c) && c.IsLive && IsCloudDeployed(c)))
+        if (CloudCaseEndDateRule.MoveWouldOutliveCloudCase(oldDeadline, targetDate,
+                siblings.Append(ownCaseId)
+                    .Where(id => guard.SdkCases.TryGetValue(id, out var c) && c.IsLive)
+                    .Select(id => guard.SdkCases[id].MicrotingUid)))
         {
             reasons.Add(ReasonCloudCaseEndDate);
         }
@@ -773,9 +825,6 @@ public class CalendarMonthlyReanchorRepairService(
             .Select(x => new SdkCaseInfo(x.Id, x.WorkflowState, x.Status, x.DoneAt, x.SiteId, x.MicrotingUid))
             .ToDictionaryAsync(x => x.Id, ct).ConfigureAwait(false);
     }
-
-    private static bool IsCloudDeployed(SdkCaseInfo sdkCase)
-        => sdkCase.MicrotingUid is > 0 and < LocalOnlyMicrotingUidFloor;
 
     private static void AddOrphan(Work work, Compliance compliance, string reason)
         => work.Model.SkippedOrphans.Add(new MonthlyReanchorSkippedOrphanModel
@@ -807,6 +856,25 @@ public class CalendarMonthlyReanchorRepairService(
             sb.Append(CultureInfo.InvariantCulture,
                 $"M|{m.ComplianceId}|{m.SdkCaseId}|{m.OldDeadline:O}|{m.NewDeadline:O}\n");
         }
+        // Everything else the reviewer signs off on, in a stable order: a change that only
+        // alters what is kept, reviewed or skipped also invalidates the reviewed hash.
+        foreach (var k in work.Model.OrdinalsKept.OrderBy(k => k.AreaRulePlanningId))
+        {
+            sb.Append(CultureInfo.InvariantCulture,
+                $"K|{k.AreaRulePlanningId}|{k.PlanningId}|{k.CurrentOrdinal}|{k.LegacyOrdinal}|{k.Reason}\n");
+        }
+        foreach (var r in work.Model.ReviewItems
+                     .OrderBy(r => r.Kind, StringComparer.Ordinal).ThenBy(r => r.PlanningId)
+                     .ThenBy(r => r.ComplianceId ?? 0).ThenBy(r => r.AreaRulePlanningId))
+        {
+            sb.Append(CultureInfo.InvariantCulture,
+                $"V|{r.Kind}|{r.PlanningId}|{r.AreaRulePlanningId}|{r.ComplianceId}|{r.SdkCaseId}|{r.CurrentDate:O}|{r.TargetDate:O}|{string.Join(",", r.Reasons)}\n");
+        }
+        foreach (var o in work.Model.SkippedOrphans.OrderBy(o => o.ComplianceId))
+        {
+            sb.Append(CultureInfo.InvariantCulture,
+                $"O|{o.ComplianceId}|{o.PlanningId}|{o.SdkCaseId}|{o.Deadline:O}|{o.Reason}\n");
+        }
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(sb.ToString())));
     }
 
@@ -826,14 +894,27 @@ public class CalendarMonthlyReanchorRepairService(
     /// of that planning is left for the next run. Runs without a cancellation token on
     /// purpose: once writing has started it must not stop halfway.
     /// </summary>
-    private async Task<MonthlyReanchorRepairRunResultModel> ApplyAsync(Work work)
+    private async Task<(MonthlyReanchorRepairRunResultModel Result, bool ClaimLost)> ApplyAsync(
+        Work work, string claimToken)
     {
         var result = new MonthlyReanchorRepairRunResultModel { Plan = work.Model };
         SdkDbContext sdkDbContext = null;
+        var writesSinceRenewal = 0;
         try
         {
-            foreach (var pw in work.Plannings)
+            for (var index = 0; index < work.Plannings.Count; index++)
             {
+                var pw = work.Plannings[index];
+
+                // The lease is renewed after every planning and every RenewLeaseEvery
+                // compliance moves; a lost claim stops this run before its next write.
+                if (index > 0 && !await RenewClaimAsync(claimToken).ConfigureAwait(false))
+                {
+                    RecordClaimLost(result);
+                    ReportNotAttemptedAfterClaimLost(result, work.Plannings.Skip(index));
+                    return (result, true);
+                }
+
                 if (pw.RestoreOrdinalTo is { } newOrdinal)
                 {
                     var outcome = await WriteAsync(dbContext, pw.Arp, result, $"ordinal of AreaRulePlanning {pw.Arp.Id}",
@@ -894,8 +975,23 @@ public class CalendarMonthlyReanchorRepairService(
                         pw.NewOrdinal, pw.SeenNextExecutionTime, planning.NextExecutionTime);
                 }
 
-                foreach (var move in pw.Moves)
+                for (var moveIndex = 0; moveIndex < pw.Moves.Count; moveIndex++)
                 {
+                    var move = pw.Moves[moveIndex];
+                    if (++writesSinceRenewal >= RenewLeaseEvery)
+                    {
+                        writesSinceRenewal = 0;
+                        if (!await RenewClaimAsync(claimToken).ConfigureAwait(false))
+                        {
+                            RecordClaimLost(result);
+                            foreach (var dropped in pw.Moves.Skip(moveIndex))
+                            {
+                                result.Skipped.Add($"compliance {dropped.Compliance.Id}: not attempted: the run lost its claim");
+                            }
+                            ReportNotAttemptedAfterClaimLost(result, work.Plannings.Skip(index + 1));
+                            return (result, true);
+                        }
+                    }
                     if (sdkDbContext == null)
                     {
                         var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
@@ -919,6 +1015,14 @@ public class CalendarMonthlyReanchorRepairService(
                     }
                 }
             }
+
+            // The last planning's writes are done; one more renewal confirms the claim
+            // was held throughout before the run reports success.
+            if (!await RenewClaimAsync(claimToken).ConfigureAwait(false))
+            {
+                RecordClaimLost(result);
+                return (result, true);
+            }
         }
         finally
         {
@@ -928,7 +1032,27 @@ public class CalendarMonthlyReanchorRepairService(
             }
         }
 
-        return result;
+        return (result, false);
+    }
+
+    /// <summary>Renew the lease at least this often within one planning's compliance moves.</summary>
+    private const int RenewLeaseEvery = 25;
+
+    private void ReportNotAttemptedAfterClaimLost(MonthlyReanchorRepairRunResultModel result,
+        IEnumerable<PlanningWork> remaining)
+    {
+        foreach (var pw in remaining)
+        {
+            if (pw.RestoreOrdinalTo.HasValue)
+            {
+                result.Skipped.Add($"ordinal of AreaRulePlanning {pw.Arp.Id}: not attempted: the run lost its claim");
+            }
+            if (pw.UpdatePlanning)
+            {
+                result.Skipped.Add($"planning {pw.Planning.Id}: not attempted: the run lost its claim");
+            }
+            result.Skipped.AddRange(pw.Moves.Select(m => $"compliance {m.Compliance.Id}: not attempted: the run lost its claim"));
+        }
     }
 
     private const string ChangedSincePlan = "changed since the plan was computed";
