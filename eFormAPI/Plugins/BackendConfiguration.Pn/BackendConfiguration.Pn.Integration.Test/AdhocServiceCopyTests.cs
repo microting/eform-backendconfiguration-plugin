@@ -287,7 +287,7 @@ public class AdhocServiceCopyTests : TestBaseSetup
         var sut = CreateSut(core);
         var source = await sut.CreateTask(1, MakeCreateModel(property.Id));
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.CopyTask(99, isAdmin: false, source.Id, includeComments: false));
     }
 
@@ -307,11 +307,11 @@ public class AdhocServiceCopyTests : TestBaseSetup
     }
 
     [Test]
-    public void CopyTask_Throws_NotFound_ForUnknownTask()
+    public async Task CopyTask_Throws_NotFound_ForUnknownTask()
     {
         var sut = CreateSut(null!);
 
-        Assert.ThrowsAsync<AdhocTaskNotFoundException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskNotFoundException>(async () =>
             await sut.CopyTask(1, isAdmin: true, 987654, includeComments: false));
     }
 }

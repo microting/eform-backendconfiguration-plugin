@@ -309,7 +309,7 @@ public class AdhocServiceVisibilityTests : TestBaseSetup
 
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.GetTask(2, created.Id));
     }
 
@@ -335,7 +335,7 @@ public class AdhocServiceVisibilityTests : TestBaseSetup
             .First(p => p.PropertyId == property.Id && p.WorkerId == 1);
         await pw.Delete(BackendConfigurationPnDbContext);
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.GetTask(1, created.Id));
     }
 
@@ -353,7 +353,7 @@ public class AdhocServiceVisibilityTests : TestBaseSetup
             .First(p => p.PropertyId == property.Id && p.WorkerId == 7);
         await pw.Delete(BackendConfigurationPnDbContext);
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.SetCompleted(7, created.Id, true));
     }
 

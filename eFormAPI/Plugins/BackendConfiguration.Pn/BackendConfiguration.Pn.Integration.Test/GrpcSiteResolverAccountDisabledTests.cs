@@ -115,7 +115,7 @@ public class GrpcSiteResolverAccountDisabledTests : TestBaseSetup
         var seeded = await SeedWorkerAsync();
         var resolver = await CreateResolverAsync(seeded.Email, isActive: false);
 
-        AssertAccountDisabled(Assert.ThrowsAsync<RpcException>(() => resolver.GetSdkSiteIdAsync()));
+        AssertAccountDisabled(await Assert.ThrowsAsync<RpcException>(() => resolver.GetSdkSiteIdAsync()));
     }
 
     [Test]
@@ -124,7 +124,7 @@ public class GrpcSiteResolverAccountDisabledTests : TestBaseSetup
         var seeded = await SeedWorkerAsync(resigned: true);
         var resolver = await CreateResolverAsync(seeded.Email);
 
-        AssertAccountDisabled(Assert.ThrowsAsync<RpcException>(() => resolver.GetSdkSiteIdAsync()));
+        AssertAccountDisabled(await Assert.ThrowsAsync<RpcException>(() => resolver.GetSdkSiteIdAsync()));
     }
 
     [Test]
@@ -160,7 +160,7 @@ public class GrpcSiteResolverAccountDisabledTests : TestBaseSetup
     {
         var resolver = await CreateResolverAsync(null, isActive: false);
 
-        AssertAccountDisabled(Assert.ThrowsAsync<RpcException>(() => resolver.EnsureCallerActiveAsync()));
+        AssertAccountDisabled(await Assert.ThrowsAsync<RpcException>(() => resolver.EnsureCallerActiveAsync()));
     }
 
     [Test]
@@ -176,7 +176,7 @@ public class GrpcSiteResolverAccountDisabledTests : TestBaseSetup
     {
         var resolver = await CreateResolverAsync($"{Guid.NewGuid():N}@example.test");
 
-        Assert.DoesNotThrowAsync(() => resolver.EnsureCallerActiveAsync());
+        await Assert.DoesNotThrowAsync(() => resolver.EnsureCallerActiveAsync());
     }
 
     /// <summary>
@@ -191,7 +191,7 @@ public class GrpcSiteResolverAccountDisabledTests : TestBaseSetup
         var adhocService = Substitute.For<IBackendConfigurationAdhocService>();
         var sut = new AdhocGrpcService(adhocService, resolver, TestContextLogger<AdhocGrpcService>.Instance);
 
-        AssertAccountDisabled(Assert.ThrowsAsync<RpcException>(() =>
+        AssertAccountDisabled(await Assert.ThrowsAsync<RpcException>(() =>
             sut.GetCurrentWorker(new AdhocGrpc.GetCurrentWorkerRequest(), Substitute.For<ServerCallContext>())));
         Assert.That(adhocService.ReceivedCalls(), Is.Empty);
     }
@@ -207,7 +207,7 @@ public class GrpcSiteResolverAccountDisabledTests : TestBaseSetup
         var resolver = await CreateResolverAsync(seeded.Email);
         var sut = new TemplatesGrpcService(Substitute.For<IEFormCoreService>(), resolver);
 
-        AssertAccountDisabled(Assert.ThrowsAsync<RpcException>(() =>
+        AssertAccountDisabled(await Assert.ThrowsAsync<RpcException>(() =>
             sut.GetTemplate(new TemplatesGrpc.GetTemplateRequest(), Substitute.For<ServerCallContext>())));
     }
 }
