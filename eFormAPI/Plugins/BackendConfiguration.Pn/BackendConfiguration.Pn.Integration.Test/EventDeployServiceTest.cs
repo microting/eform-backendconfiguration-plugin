@@ -360,7 +360,7 @@ public class EventDeployServiceTest : TestBaseSetup
         // TaskCanceledException subclass). A previous swallowing try/catch
         // would have masked a regression that accidentally drops the token
         // (e.g. passes CancellationToken.None to the EF call).
-        Assert.ThrowsAsync<OperationCanceledException>(
+        await Assert.ThrowsAsync<OperationCanceledException>(
             () => service.EnsureDeployedAsync(
                 PropertyId, BoardIds, "2026-05-14", "2026-05-20", SdkSiteId, cts.Token));
 
@@ -903,7 +903,7 @@ public class EventDeployServiceTest : TestBaseSetup
         var service = MakeService(calendar, coreHelper);
 
         // Act + Assert — the guard refuses to deploy to a non-assigned site.
-        Assert.ThrowsAsync<InvalidOperationException>(
+        await Assert.ThrowsAsync<InvalidOperationException>(
             () => service.EnsureComplianceForOccurrenceAsync(
                 areaRulePlanning, deadline, callingSite.Id, CancellationToken.None));
 
@@ -1048,7 +1048,7 @@ public class EventDeployServiceTest : TestBaseSetup
         // Act — target site B (an active property worker, absent from
         // PlanningSites) materialises the occurrence. The guard must NOT throw.
         EnsureComplianceResult? result = null;
-        Assert.DoesNotThrowAsync(async () =>
+        await Assert.DoesNotThrowAsync(async () =>
             result = await service.EnsureComplianceForOccurrenceAsync(
                 areaRulePlanning, deadline, targetSite.Id, CancellationToken.None));
 

@@ -248,7 +248,7 @@ public class CalendarChangeNotifierTests
     /// throws must die here rather than surface anywhere.
     /// </summary>
     [Test]
-    public void Dispatch_WhenTheSenderThrows_DoesNotPropagate()
+    public async Task Dispatch_WhenTheSenderThrows_DoesNotPropagate()
     {
         var push = Substitute.For<IPushNotificationService>();
         push.SendToSiteAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(),
@@ -256,7 +256,7 @@ public class CalendarChangeNotifierTests
             .Returns(_ => Task.FromException(new InvalidOperationException("firebase is down")));
         var (notifier, _) = BuildNotifier(push);
 
-        Assert.DoesNotThrowAsync(() =>
+        await Assert.DoesNotThrowAsync(() =>
             notifier.DispatchAsync(new[] { new CalendarChangePair(10, 5) }));
     }
 
@@ -266,12 +266,12 @@ public class CalendarChangeNotifierTests
     /// guard of their own.
     /// </summary>
     [Test]
-    public void Dispatch_WhenTheSenderCannotBeResolved_DoesNotPropagate()
+    public async Task Dispatch_WhenTheSenderCannotBeResolved_DoesNotPropagate()
     {
         // Nothing registered: resolving IPushNotificationService throws.
         var notifier = CreateNotifier(new ServiceCollection().BuildServiceProvider());
 
-        Assert.DoesNotThrowAsync(() =>
+        await Assert.DoesNotThrowAsync(() =>
             notifier.DispatchAsync(new[] { new CalendarChangePair(10, 5) }));
     }
 }

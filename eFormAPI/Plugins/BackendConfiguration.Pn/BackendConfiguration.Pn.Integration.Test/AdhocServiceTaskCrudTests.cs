@@ -171,7 +171,7 @@ public class AdhocServiceTaskCrudTests : TestBaseSetup
 
         var sut = CreateSut();
 
-        Assert.ThrowsAsync<ArgumentException>(async () =>
+        await Assert.ThrowsAsync<ArgumentException>(async () =>
             await sut.CreateTask(1, MakeCreateModel(property.Id, areaId: area.Id)));
     }
 
@@ -182,7 +182,7 @@ public class AdhocServiceTaskCrudTests : TestBaseSetup
         // Deliberately no PropertyWorker row for worker 1.
         var sut = CreateSut();
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.CreateTask(1, MakeCreateModel(property.Id)));
     }
 
@@ -210,7 +210,7 @@ public class AdhocServiceTaskCrudTests : TestBaseSetup
 
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.UpdateTask(2, created.Id, MakeCreateModel(property.Id)));
     }
 
@@ -345,7 +345,7 @@ public class AdhocServiceTaskCrudTests : TestBaseSetup
         // assignedOnly, not assigned to 99, not the creator -> not visible.
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.SetCompleted(99, created.Id, true));
     }
 
@@ -395,7 +395,7 @@ public class AdhocServiceTaskCrudTests : TestBaseSetup
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
 
         // Worker 99 has no PropertyWorker row for this property.
-        Assert.ThrowsAsync<ArgumentException>(async () =>
+        await Assert.ThrowsAsync<ArgumentException>(async () =>
             await sut.SetCompleted(0, created.Id, true, isAdmin: true, completedByWorkerId: 99));
     }
 
@@ -409,7 +409,7 @@ public class AdhocServiceTaskCrudTests : TestBaseSetup
 
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.Archive(2, created.Id));
     }
 
@@ -458,7 +458,7 @@ public class AdhocServiceTaskCrudTests : TestBaseSetup
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
         await sut.Archive(1, created.Id);
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.Reopen(2, created.Id));
     }
 
@@ -472,7 +472,7 @@ public class AdhocServiceTaskCrudTests : TestBaseSetup
 
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.Delete(2, created.Id));
     }
 
@@ -497,7 +497,7 @@ public class AdhocServiceTaskCrudTests : TestBaseSetup
 
         var created = await sut.CreateTask(0, MakeCreateModel(property.Id), isAdmin: true);
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.Archive(0, created.Id));
     }
 
@@ -510,7 +510,7 @@ public class AdhocServiceTaskCrudTests : TestBaseSetup
         var created = await sut.CreateTask(0, MakeCreateModel(property.Id), isAdmin: true);
         await sut.Archive(0, created.Id, isAdmin: true);
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.Reopen(0, created.Id));
     }
 
@@ -522,7 +522,7 @@ public class AdhocServiceTaskCrudTests : TestBaseSetup
 
         var created = await sut.CreateTask(0, MakeCreateModel(property.Id), isAdmin: true);
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.Delete(0, created.Id));
     }
 
@@ -534,7 +534,7 @@ public class AdhocServiceTaskCrudTests : TestBaseSetup
 
         var created = await sut.CreateTask(0, MakeCreateModel(property.Id), isAdmin: true);
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.UpdateTask(0, created.Id, MakeCreateModel(property.Id)));
     }
 
@@ -552,7 +552,7 @@ public class AdhocServiceTaskCrudTests : TestBaseSetup
         var reopened = await sut.Reopen(0, created.Id, isAdmin: true);
         Assert.That(reopened.Archived, Is.False);
 
-        Assert.DoesNotThrowAsync(async () => await sut.Delete(0, created.Id, isAdmin: true));
+        await Assert.DoesNotThrowAsync(async () => await sut.Delete(0, created.Id, isAdmin: true));
     }
 
     [Test]
@@ -684,7 +684,7 @@ public class AdhocServiceTaskCrudTests : TestBaseSetup
 
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.AddComment(99, created.Id, "nope"));
     }
 
@@ -698,7 +698,7 @@ public class AdhocServiceTaskCrudTests : TestBaseSetup
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
         await sut.Delete(1, created.Id);
 
-        Assert.ThrowsAsync<AdhocTaskNotFoundException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskNotFoundException>(async () =>
             await sut.GetTask(1, created.Id));
     }
 
@@ -707,7 +707,7 @@ public class AdhocServiceTaskCrudTests : TestBaseSetup
     {
         var sut = CreateSut();
 
-        Assert.ThrowsAsync<AdhocTaskNotFoundException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskNotFoundException>(async () =>
             await sut.GetTask(1, 987654));
     }
 
@@ -796,7 +796,7 @@ public class AdhocServiceTaskCrudTests : TestBaseSetup
         // and the task is AssignedOnly - so CanSee is false.
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.UpdateTask(3, created.Id, MakeCreateModel(property.Id)));
     }
 
