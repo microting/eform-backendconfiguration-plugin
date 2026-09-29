@@ -440,6 +440,7 @@ export const svSE = {
   'Could not download file': 'Kunde inte ladda ner filen',
   'Pending save': 'Väntar på att spara',
   'Inherited from original': 'Ärvd från originalet',
+  'Automatic translation was not possible. The task is saved without it.': 'Automatisk översättning var inte möjlig. Uppgiften sparades utan den.',
   'Add Google Drive file': 'Lägg till Google Drive-fil',
   'Loading Google Picker': 'Läser in Google Picker',
   'Connect Google Drive': 'Anslut Google Drive',

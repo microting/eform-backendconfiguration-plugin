@@ -191,6 +191,14 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   descTranslateExpanded = false;
   /** Cached result of TranslationService.translationPossible() (Google config). */
   private translationConfigured = false;
+  /** True while onSave fills missing translations; Save is disabled meanwhile. */
+  isFillingTranslations = false;
+  /** Whether the init-time translationPossible() probe has answered. */
+  private translationProbeAnswered = false;
+  /** Resolves once the active-languages list has loaded (or failed to). */
+  private languagesLoaded: Promise<void> = Promise.resolve();
+  /** Set when the dialog closes, so a save still filling translations stops. */
+  private dialogClosed = false;
 
   // eForm id that was loaded into the dialog in edit mode. Compared against the
   // current eformControl value on save: the eForm is a series-level property,
@@ -360,17 +368,24 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     // app-settings store — that store is only populated by the settings/profile
     // pages, so in the calendar flow it would be empty and the translate icon
     // would never appear.
-    this.appSettingsStateService.getLanguages().pipe(take(1)).subscribe(res => {
-      this.activeLanguages = (res?.model?.languages ?? [])
-        .filter(l => l.isActive)
-        .map(l => ({id: l.id, code: l.languageCode, name: l.name}));
-      this.recomputeTargetLanguages();
+    this.languagesLoaded = new Promise<void>(resolve => {
+      this.appSettingsStateService.getLanguages().pipe(take(1)).subscribe({
+        next: res => {
+          this.activeLanguages = (res?.model?.languages ?? [])
+            .filter(l => l.isActive)
+            .map(l => ({id: l.id, code: l.languageCode, name: l.name}));
+          this.recomputeTargetLanguages();
+          resolve();
+        },
+        error: () => resolve(),
+      });
     });
 
     // Cache whether Google Translate is configured so the translate action can
     // decide between auto-fill and just revealing empty editable fields.
     this.translationService.translationPossible().pipe(take(1)).subscribe(res => {
       this.translationConfigured = !!(res && res.success && res.model);
+      this.translationProbeAnswered = true;
     });
 
     this.isEditMode = !!this.data.task;
@@ -961,6 +976,60 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   }
 
   /**
+   * #1324 — on save, translate the Danish title and description into every target
+   * language whose field is still empty. Text already there — typed by hand or
+   * translated earlier — is never overwritten, and a changed Danish text is not
+   * re-translated (the translate icon is for that). When translation is not
+   * configured or a call fails, the task is saved with what it has and the user
+   * gets a non-blocking notice.
+   */
+  private async fillMissingTranslations(): Promise<void> {
+    // Save clicked before the language list arrived: the targets are not known yet.
+    await this.languagesLoaded;
+    const jobs: { kind: 'title' | 'desc'; lang: { id: number; code: string; name: string }; source: string }[] = [];
+    const title = this.titleControl.value ?? '';
+    const desc = this.descriptionControl.value ?? '';
+    for (const lang of this.targetLanguages) {
+      if (title.trim() && !(this.titleByLang[lang.id] ?? '').trim()) {
+        jobs.push({kind: 'title', lang, source: title});
+      }
+      if (desc.trim() && !(this.descByLang[lang.id] ?? '').trim()) {
+        jobs.push({kind: 'desc', lang, source: desc});
+      }
+    }
+    if (jobs.length === 0) return;
+
+    if (!this.translationProbeAnswered) {
+      // The init-time probe has not answered yet when Save is clicked early.
+      const probe = await firstValueFrom(this.translationService.translationPossible()).catch(() => null);
+      this.translationConfigured = !!(probe && probe.success && probe.model);
+    }
+    let failed = !this.translationConfigured;
+    if (!failed) {
+      const results = await Promise.all(jobs.map(job => firstValueFrom(
+        this.translationService.getTranslation(new TranslationRequestModel({
+          sourceText: job.source,
+          sourceLanguageCode: 'da',
+          targetLanguageCode: job.lang.code,
+        }))).then(res => ({job, text: res?.success ? (res.model ?? '') : ''}), () => ({job, text: ''}))));
+      for (const {job, text} of results) {
+        if (!text) {
+          failed = true;
+          continue;
+        }
+        const target = job.kind === 'title' ? this.titleByLang : this.descByLang;
+        // Re-checked: the user may have typed into the field while the call ran.
+        if (!(target[job.lang.id] ?? '').trim()) {
+          target[job.lang.id] = text;
+        }
+      }
+    }
+    if (failed) {
+      this.toastr.warning(this.translate.instant('Automatic translation was not possible. The task is saved without it.'));
+    }
+  }
+
+  /**
    * Display name of the loaded eForm for the preview header.
    *
    * The visual-editor endpoint returns the checklist's per-language
@@ -1190,8 +1259,8 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     return taskDate < new Date();
   }
 
-  onSave() {
-    if (this.titleControl.invalid) return;
+  async onSave() {
+    if (this.titleControl.invalid || this.isFillingTranslations) return;
     // boardControl is `number | null` and the Save button's [disabled] binding
     // doesn't cover the board select — so guard here rather than asserting the
     // value away with `!` in the payload below.
@@ -1277,6 +1346,17 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
         repeatUntilDate = toDateOnlyString(meta.untilTs);
       }
     }
+
+    // #1324 — fill every empty target title/description before sending, so a
+    // non-Danish assignee never receives the task untranslated. Never overwrites.
+    this.isFillingTranslations = true;
+    try {
+      await this.fillMissingTranslations();
+    } finally {
+      this.isFillingTranslations = false;
+    }
+    // Cancelled while the translations were being fetched: save nothing.
+    if (this.dialogClosed) return;
 
     // Build the per-language Translates array: Danish source (real SDK
     // Languages.Id, NOT the hardcoded app-locale id 1) always included, plus one
@@ -1487,6 +1567,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   }
 
   private close(result: boolean | null) {
+    this.dialogClosed = true;
     if (this.usePopoverMode) {
       this.popoverClose.emit(result);
     } else {
@@ -1725,6 +1806,8 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   // ---- Google Drive picker ------------------------------------------------
 
   ngOnDestroy(): void {
+    // Backdrop / Escape close the dialog without close(); a pending save must stop too.
+    this.dialogClosed = true;
     // Clean up the postMessage listener if the modal closes mid-OAuth-dance.
     // Without this, an abandoned popup that posts back later would still
     // fire into a destroyed component.

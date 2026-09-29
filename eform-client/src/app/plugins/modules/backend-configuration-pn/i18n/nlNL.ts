@@ -438,6 +438,7 @@ export const nlNL = {
   Pictures: 'Foto&#39;s',
   'Pending save': 'Opslaan in behandeling',
   'Inherited from original': 'Overgenomen van origineel',
+  'Automatic translation was not possible. The task is saved without it.': 'Automatische vertaling was niet mogelijk. De taak is zonder vertaling opgeslagen.',
   'Add Google Drive file': 'Voeg een Google Drive-bestand toe',
   'Loading Google Picker': 'Google Picker laden',
   'Connect Google Drive': 'Verbinden met Google Drive',

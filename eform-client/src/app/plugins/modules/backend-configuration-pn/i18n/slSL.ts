@@ -438,6 +438,7 @@ export const slSL = {
   'Could not download file': 'Datoteke ni bilo mogoče prenesti',
   'Pending save': 'Čaka na shranjevanje',
   'Inherited from original': 'Podedovano od izvirnika',
+  'Automatic translation was not possible. The task is saved without it.': 'Samodejni prevod ni bil mogoč. Opravilo je shranjeno brez njega.',
   'Add Google Drive file': 'Dodaj datoteko v Google Drive',
   'Loading Google Picker': 'Nalaganje Google Pickerja',
   'Connect Google Drive': 'Poveži Google Drive',

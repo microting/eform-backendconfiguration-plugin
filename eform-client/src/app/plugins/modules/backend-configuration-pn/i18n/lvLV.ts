@@ -438,6 +438,7 @@ export const lvLV = {
   'Could not download file': 'Nevarēja lejupielādēt failu',
   'Pending save': 'Gaida saglabāšanu',
   'Inherited from original': 'Mantots no oriģināla',
+  'Automatic translation was not possible. The task is saved without it.': 'Automātiskā tulkošana nebija iespējama. Uzdevums ir saglabāts bez tās.',
   'Add Google Drive file': 'Pievienot Google diska failu',
   'Loading Google Picker': 'Notiek Google atlasītāja ielāde',
   'Connect Google Drive': 'Izveidot savienojumu ar Google disku',

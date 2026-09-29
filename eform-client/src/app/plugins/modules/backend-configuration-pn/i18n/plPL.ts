@@ -438,6 +438,7 @@ export const plPL = {
   'Could not download file': 'Nie można pobrać pliku',
   'Pending save': 'Oczekiwanie na zapisanie',
   'Inherited from original': 'Przejęte z oryginału',
+  'Automatic translation was not possible. The task is saved without it.': 'Automatyczne tłumaczenie nie było możliwe. Zadanie zapisano bez niego.',
   'Add Google Drive file': 'Dodaj plik Google Drive',
   'Loading Google Picker': 'Ładowanie selektora Google',
   'Connect Google Drive': 'Połącz Google Drive',

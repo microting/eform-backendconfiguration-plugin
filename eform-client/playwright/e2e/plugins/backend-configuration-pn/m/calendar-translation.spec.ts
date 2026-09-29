@@ -375,4 +375,55 @@ test.describe.serial('Calendar task-modal translation', () => {
 
     await calendarPage.closeEventModal();
   });
+
+  // =======================================================================
+  // #1324 — Save alone translates: no click on the translate icon.
+  // =======================================================================
+  test('save auto-translates an empty title and description for a Deutsch assignee', async ({ page }) => {
+    const calendarPage = new CalendarUiEnhancementsPage(page);
+
+    // Wednesday 09:00 (next week).
+    await openCreateAt(page, calendarPage, 2, 9);
+    await page.locator('#calendarEventTitle').fill('Tank 5');
+    await page.locator('#calendarEventDescription').fill('Check the valve');
+    await fillEformAndPlanningTag(page);
+    await pickAssigneeByName(page, workerDe.name as string);
+
+    const translates: Array<{ name: string; description: string; languageId: number }> =
+      (await saveAndCaptureCreate(page))?.translates ?? [];
+
+    const deutsch = translates.find(t => t.languageId === 3);
+    expect(deutsch, 'Save alone must add the Deutsch entry').toBeTruthy();
+    expect(deutsch?.name).toBe('[de-DE] Tank 5');
+    expect(deutsch?.description).toBe('[de-DE] Check the valve');
+    expect(translates.find(t => t.languageId === 1)?.name, 'the Danish source is unchanged').toBe('Tank 5');
+  });
+
+  // =======================================================================
+  // #1324 — a translation already in the field is never overwritten; only the
+  // empty field is filled.
+  // =======================================================================
+  test('save keeps a hand-written translation and fills only the empty field', async ({ page }) => {
+    const calendarPage = new CalendarUiEnhancementsPage(page);
+
+    // Thursday 09:00 (next week).
+    await openCreateAt(page, calendarPage, 3, 9);
+    await page.locator('#calendarEventTitle').fill('Tank 6');
+    await page.locator('#calendarEventDescription').fill('Clean the filter');
+    await fillEformAndPlanningTag(page);
+    await pickAssigneeByName(page, workerDe.name as string);
+
+    // Reveal the Deutsch title field, wait for its auto-fill, then replace it by hand.
+    await page.locator('#calendarEventTitleTranslate').click();
+    const deTitleInput = translatableFieldByLang(page, 'Deutsch').locator('input[matInput]').first();
+    await expect(deTitleInput).toHaveValue('[de-DE] Tank 6', { timeout: 15000 });
+    await deTitleInput.fill('Tank sechs');
+
+    const translates: Array<{ name: string; description: string; languageId: number }> =
+      (await saveAndCaptureCreate(page))?.translates ?? [];
+
+    const deutsch = translates.find(t => t.languageId === 3);
+    expect(deutsch?.name, 'the hand-written title is kept').toBe('Tank sechs');
+    expect(deutsch?.description, 'the empty description is filled on save').toBe('[de-DE] Clean the filter');
+  });
 });

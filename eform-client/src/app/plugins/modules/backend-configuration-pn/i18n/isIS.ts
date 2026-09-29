@@ -438,6 +438,7 @@ export const isIS = {
   'Could not download file': 'Gat ekki sótt skrána',
   'Pending save': 'Bíður vistunar',
   'Inherited from original': 'Erft frá upprunalegu',
+  'Automatic translation was not possible. The task is saved without it.': 'Sjálfvirk þýðing var ekki möguleg. Verkefnið er vistað án hennar.',
   'Add Google Drive file': 'Bæta við Google Drive skrá',
   'Loading Google Picker': 'Hleður Google Picker',
   'Connect Google Drive': 'Tengja Google Drive',

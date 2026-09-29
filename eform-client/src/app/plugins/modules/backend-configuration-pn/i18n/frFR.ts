@@ -437,6 +437,7 @@ export const frFR = {
   'Save event first to attach files': 'Enregistrez d&#39;abord l&#39;événement pour joindre des fichiers.',
   'Pending save': 'Sauvegarde en attente',
   'Inherited from original': "Hérité de l'original",
+  'Automatic translation was not possible. The task is saved without it.': "La traduction automatique n'a pas été possible. La tâche est enregistrée sans elle.",
   'Add Google Drive file': 'Ajouter un fichier Google Drive',
   'Loading Google Picker': 'Chargement du sélecteur Google',
   'Connect Google Drive': 'Connecter Google Drive',

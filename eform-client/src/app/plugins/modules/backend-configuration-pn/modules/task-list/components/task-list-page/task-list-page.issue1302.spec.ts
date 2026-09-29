@@ -314,13 +314,13 @@ describe('TaskListPageComponent — #1302', () => {
 
     afterEach(() => jest.useRealTimers());
 
-    it('a past-started recurring series opens EDITABLE and Save shows RepeatScopeModalComponent', () => {
+    it('a past-started recurring series opens EDITABLE and Save shows RepeatScopeModalComponent', async () => {
       component.onEditTask(buildTask());
       const modal = buildModal(dialogStub.open.mock.calls[0][1].data);
 
       expect(modal.isReadonly).toBe(false);
 
-      modal.onSave();
+      await modal.onSave();
 
       expect(modalDialog.open).toHaveBeenCalledTimes(1);
       expect(modalDialog.open.mock.calls[0][0]).toBe(RepeatScopeModalComponent);

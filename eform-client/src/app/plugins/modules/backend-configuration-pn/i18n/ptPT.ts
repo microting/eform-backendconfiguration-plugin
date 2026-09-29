@@ -438,6 +438,7 @@ export const ptPT = {
   'Could not download file': 'Não foi possível baixar o arquivo.',
   'Pending save': 'Salvamento pendente',
   'Inherited from original': 'Herdado do original',
+  'Automatic translation was not possible. The task is saved without it.': 'A tradução automática não foi possível. A tarefa foi guardada sem ela.',
   'Add Google Drive file': 'Adicionar arquivo do Google Drive',
   'Loading Google Picker': 'Carregando o Seletor do Google',
   'Connect Google Drive': 'Conectar o Google Drive',

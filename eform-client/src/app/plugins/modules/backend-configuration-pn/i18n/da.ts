@@ -448,6 +448,7 @@ export const da = {
   'Could not download file': 'Kunne ikke downloade filen',
   'Pending save': 'Afventer gem',
   'Inherited from original': 'Arvet fra originalen',
+  'Automatic translation was not possible. The task is saved without it.': 'Automatisk oversættelse var ikke mulig. Opgaven er gemt uden.',
   'Add Google Drive file': 'Tilføj Google Drive-fil',
   'Loading Google Picker': 'Indlæser Google Picker',
   'Connect Google Drive': 'Forbind Google Drev',

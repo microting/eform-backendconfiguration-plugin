@@ -437,6 +437,7 @@ export const itIT = {
   'Save event first to attach files': 'Salva prima l&#39;evento per allegare i file.',
   'Pending save': 'Salvataggio in sospeso',
   'Inherited from original': "Ereditato dall'originale",
+  'Automatic translation was not possible. The task is saved without it.': "La traduzione automatica non è stata possibile. L'attività è stata salvata senza.",
   'Delete attachment?': 'Eliminare l&#39;allegato?',
   'Add Google Drive file': 'Aggiungi file di Google Drive',
   'Loading Google Picker': 'Caricamento di Google Picker',

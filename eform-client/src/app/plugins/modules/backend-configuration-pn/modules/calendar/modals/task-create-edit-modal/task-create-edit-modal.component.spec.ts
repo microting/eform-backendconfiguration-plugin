@@ -1,4 +1,4 @@
-import {of} from 'rxjs';
+import {of, throwError, Subject} from 'rxjs';
 import {
   AssigneeOption,
   siteKey,
@@ -85,6 +85,8 @@ describe('TaskCreateEditModalComponent — merged teams/workers picker (#1295)',
   let calendarService: any;
   let propertiesService: any;
   let workerTagsService: any;
+  let translationService: any;
+  let toastr: any;
   let component: TaskCreateEditModalComponent;
 
   function build(data: Partial<TaskCreateEditModalData> = {}): TaskCreateEditModalComponent {
@@ -109,10 +111,11 @@ describe('TaskCreateEditModalComponent — merged teams/workers picker (#1295)',
       metaToDayOfMonth: jest.fn().mockReturnValue(null),
       metaToRepeatOrdinalWeek: jest.fn().mockReturnValue(null),
     };
+    toastr = {error: jest.fn(), warning: jest.fn()};
     const translate: any = {instant: (k: string) => k, currentLang: 'da'};
     const store: any = {select: () => of(1)};
     const eformVisualEditorService: any = {getVisualEditorTemplate: jest.fn().mockReturnValue(of({success: false}))};
-    const translationService: any = {
+    translationService = {
       translationPossible: jest.fn().mockReturnValue(of({success: true, model: false})),
       getTranslation: jest.fn(),
     };
@@ -147,7 +150,7 @@ describe('TaskCreateEditModalComponent — merged teams/workers picker (#1295)',
       eformVisualEditorService,
       propertiesService,
       store,
-      {error: jest.fn()} as any,
+      toastr,
       {createPlanningTag: jest.fn()} as any,
       {} as any,
       {} as any,
@@ -204,12 +207,12 @@ describe('TaskCreateEditModalComponent — merged teams/workers picker (#1295)',
   });
 
   describe('onSave', () => {
-    it('splits the merged selection into sites / workerTagIds (no DTO change)', () => {
+    it('splits the merged selection into sites / workerTagIds (no DTO change)', async () => {
       component = build();
       component.titleControl.setValue('New task');
       component.assigneeControl.setValue(['t:7', 's:11']);
 
-      component.onSave();
+      await component.onSave();
 
       expect(calendarService.createTask).toHaveBeenCalledTimes(1);
       const payload = calendarService.createTask.mock.calls[0][0];
@@ -218,16 +221,151 @@ describe('TaskCreateEditModalComponent — merged teams/workers picker (#1295)',
       expect(payload.assigneeIds).toEqual([11]);
     });
 
-    it('sends a team-only selection as workerTagIds with empty sites', () => {
+    it('sends a team-only selection as workerTagIds with empty sites', async () => {
       component = build();
       component.titleControl.setValue('New task');
       component.assigneeControl.setValue(['t:8']);
 
-      component.onSave();
+      await component.onSave();
 
       const payload = calendarService.createTask.mock.calls[0][0];
       expect(payload.sites).toEqual([]);
       expect(payload.workerTagIds).toEqual([8]);
+    });
+  });
+
+  describe('onSave fills missing translations (#1324)', () => {
+    const WARNING = 'Automatic translation was not possible. The task is saved without it.';
+
+    /** Danish title + description, assigned to an English (12) and a German (13) worker. */
+    function buildForSave(): TaskCreateEditModalComponent {
+      const c = build();
+      c.titleControl.setValue('Tjek ventilation');
+      c.descriptionControl.setValue('Rengør filtre');
+      c.assigneeControl.setValue(['s:12', 's:13']);
+      return c;
+    }
+
+    /**
+     * Translation configured; each call echoes its target code. The init probe has
+     * already answered "not configured" when build() ran, so the component's cached
+     * answer is set directly (onSave only re-probes when the probe never answered).
+     */
+    function configureTranslation() {
+      translationService.translationPossible.mockReturnValue(of({success: true, model: true}));
+      (component as any).translationConfigured = true;
+      translationService.getTranslation.mockImplementation((req: any) =>
+        of({success: true, model: `[${req.targetLanguageCode}] ${req.sourceText}`}));
+    }
+
+    const savedTranslates = () => calendarService.createTask.mock.calls[0][0].translates as
+      {name: string; description: string; languageId: number}[];
+
+    it('saves nothing when the dialog is closed while translations are fetched', async () => {
+      component = buildForSave();
+      configureTranslation();
+      const pending = new Subject<any>();
+      translationService.getTranslation.mockReturnValue(pending);
+
+      const save = component.onSave();
+      component.ngOnDestroy();
+      pending.next({success: true, model: '[x] late'});
+      pending.complete();
+      await save;
+
+      expect(calendarService.createTask).not.toHaveBeenCalled();
+    });
+
+    it('fills every empty target title and description before saving', async () => {
+      component = buildForSave();
+      configureTranslation();
+
+      await component.onSave();
+
+      expect(component.titleByLang[ENGLISH]).toBe('[en-US] Tjek ventilation');
+      expect(component.descByLang[ENGLISH]).toBe('[en-US] Rengør filtre');
+      expect(component.titleByLang[GERMAN]).toBe('[de-DE] Tjek ventilation');
+      expect(component.descByLang[GERMAN]).toBe('[de-DE] Rengør filtre');
+      expect(savedTranslates()).toEqual([
+        {name: 'Tjek ventilation', description: 'Rengør filtre', languageId: DANISH},
+        {name: '[en-US] Tjek ventilation', description: '[en-US] Rengør filtre', languageId: ENGLISH},
+        {name: '[de-DE] Tjek ventilation', description: '[de-DE] Rengør filtre', languageId: GERMAN},
+      ]);
+      expect(toastr.warning).not.toHaveBeenCalled();
+    });
+
+    it('never overwrites a target that already has text', async () => {
+      component = buildForSave();
+      configureTranslation();
+      component.titleByLang[ENGLISH] = 'Check ventilation';
+
+      await component.onSave();
+
+      expect(component.titleByLang[ENGLISH]).toBe('Check ventilation');
+      expect(translationService.getTranslation).not.toHaveBeenCalledWith(
+        expect.objectContaining({targetLanguageCode: 'en-US', sourceText: 'Tjek ventilation'}));
+      expect(savedTranslates()).toContainEqual(
+        {name: 'Check ventilation', description: '[en-US] Rengør filtre', languageId: ENGLISH});
+    });
+
+    it('keeps text typed into a target while its translation was running', async () => {
+      component = buildForSave();
+      configureTranslation();
+      translationService.getTranslation.mockImplementation((req: any) => {
+        if (req.targetLanguageCode === 'en-US' && req.sourceText === 'Tjek ventilation') {
+          component.titleByLang[ENGLISH] = 'Typed meanwhile';
+        }
+        return of({success: true, model: `[${req.targetLanguageCode}] ${req.sourceText}`});
+      });
+
+      await component.onSave();
+
+      expect(component.titleByLang[ENGLISH]).toBe('Typed meanwhile');
+    });
+
+    it('saves with only the non-empty entries and warns when translation is not configured', async () => {
+      component = buildForSave();
+      component.titleByLang[ENGLISH] = 'Check ventilation';
+
+      await component.onSave();
+
+      expect(translationService.getTranslation).not.toHaveBeenCalled();
+      expect(toastr.warning).toHaveBeenCalledWith(WARNING);
+      expect(calendarService.createTask).toHaveBeenCalledTimes(1);
+      expect(savedTranslates()).toEqual([
+        {name: 'Tjek ventilation', description: 'Rengør filtre', languageId: DANISH},
+        {name: 'Check ventilation', description: '', languageId: ENGLISH},
+      ]);
+    });
+
+    it('warns on a failed call but still fills and saves the others', async () => {
+      component = buildForSave();
+      configureTranslation();
+      translationService.getTranslation.mockImplementation((req: any) =>
+        req.targetLanguageCode === 'de-DE' && req.sourceText === 'Tjek ventilation'
+          ? throwError(() => new Error('translation service down'))
+          : of({success: true, model: `[${req.targetLanguageCode}] ${req.sourceText}`}));
+
+      await component.onSave();
+
+      expect(toastr.warning).toHaveBeenCalledWith(WARNING);
+      expect(calendarService.createTask).toHaveBeenCalledTimes(1);
+      expect(savedTranslates()).toEqual([
+        {name: 'Tjek ventilation', description: 'Rengør filtre', languageId: DANISH},
+        {name: '[en-US] Tjek ventilation', description: '[en-US] Rengør filtre', languageId: ENGLISH},
+        {name: '', description: '[de-DE] Rengør filtre', languageId: GERMAN},
+      ]);
+    });
+
+    it('ignores a second Save click while translations are being filled', async () => {
+      component = buildForSave();
+      configureTranslation();
+
+      const first = component.onSave();
+      const second = component.onSave();
+      await Promise.all([first, second]);
+
+      expect(calendarService.createTask).toHaveBeenCalledTimes(1);
     });
   });
 
