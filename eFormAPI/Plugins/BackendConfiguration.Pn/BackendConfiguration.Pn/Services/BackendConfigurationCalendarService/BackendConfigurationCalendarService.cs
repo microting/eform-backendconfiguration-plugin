@@ -4250,14 +4250,13 @@ public class BackendConfigurationCalendarService(
                 }
                 else
                 {
-                    var planningSite = arp.PlanningSites?.FirstOrDefault(s =>
-                        s.WorkflowState != Constants.WorkflowStates.Removed);
-                    if (planningSite == null)
+                    var defaultSiteId = await ResolveDefaultTargetSiteIdAsync(arp).ConfigureAwait(false);
+                    if (defaultSiteId == null)
                     {
                         return new OperationDataResult<CalendarToggleCompleteResult>(false,
                             localizationService.GetString("NoAssignedWorker"));
                     }
-                    targetSiteId = planningSite.SiteId;
+                    targetSiteId = defaultSiteId.Value;
                 }
 
                 if (string.IsNullOrWhiteSpace(occurrenceDate))
@@ -4472,12 +4471,36 @@ public class BackendConfigurationCalendarService(
     }
 
     /// <summary>
+    /// The site an on-demand occurrence is materialised for when the caller picked no
+    /// worker: the first explicit assignee, as always; for a task assigned only to a
+    /// team (#1352) the lowest-id live team member linked to the event's property — the
+    /// same set <see cref="CalendarAssignmentResolver"/> deploys the team to. The site is
+    /// only where the case is created; whoever completes it is picked in the modal and
+    /// written to the case on save. <c>null</c> when nobody is assigned at all.
+    /// </summary>
+    private async Task<int?> ResolveDefaultTargetSiteIdAsync(AreaRulePlanning arp)
+    {
+        var planningSite = arp.PlanningSites?.FirstOrDefault(s =>
+            s.WorkflowState != Constants.WorkflowStates.Removed);
+        if (planningSite != null)
+        {
+            return planningSite.SiteId;
+        }
+
+        var effectiveSiteIds = await new CalendarAssignmentResolver(
+                backendConfigurationPnDbContext, workerTagMembershipService)
+            .ResolveEffectiveSiteIdsAsync(arp.Id)
+            .ConfigureAwait(false);
+        return effectiveSiteIds.Count > 0 ? effectiveSiteIds.Min() : null;
+    }
+
+    /// <summary>
     /// Materialises/resolves the occurrence the combined complete modal is about
     /// to fill, WITHOUT completing anything and WITHOUT a worker (the worker is
     /// committed on save via PUT compliances/cases). Deliberately duplicates
     /// <see cref="ToggleComplete"/>'s resolution steps rather than refactoring
-    /// them out — <see cref="ToggleComplete"/> backs mobile/gRPC and must stay
-    /// byte-identical.
+    /// them out — <see cref="ToggleComplete"/> backs mobile/gRPC. The two share only
+    /// the default-site choice, <see cref="ResolveDefaultTargetSiteIdAsync"/> (#1352).
     /// </summary>
     public async Task<OperationDataResult<CalendarPrepareCompleteResult>> PrepareComplete(
         int id, int? complianceId, string occurrenceDate, string source = null)
@@ -4536,14 +4559,13 @@ public class BackendConfigurationCalendarService(
                         localizationService.GetString("TaskHasNoComplianceCase"));
                 }
 
-                var planningSite = arp.PlanningSites?.FirstOrDefault(s =>
-                    s.WorkflowState != Constants.WorkflowStates.Removed);
-                if (planningSite == null)
+                var defaultSiteId = await ResolveDefaultTargetSiteIdAsync(arp).ConfigureAwait(false);
+                if (defaultSiteId == null)
                 {
                     return new OperationDataResult<CalendarPrepareCompleteResult>(false,
                         localizationService.GetString("NoAssignedWorker"));
                 }
-                var targetSiteId = planningSite.SiteId;
+                var targetSiteId = defaultSiteId.Value;
 
                 if (string.IsNullOrWhiteSpace(occurrenceDate))
                 {

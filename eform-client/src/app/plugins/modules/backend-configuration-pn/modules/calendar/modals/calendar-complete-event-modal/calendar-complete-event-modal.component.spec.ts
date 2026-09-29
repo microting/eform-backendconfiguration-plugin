@@ -54,12 +54,16 @@ describe('CalendarCompleteEventModalComponent', () => {
   const compliancesService = {getCase: jest.fn(), updateCaseFromCalendar: jest.fn()};
   const eFormService = {getSingle: jest.fn()};
 
-  async function setup(data: Partial<CalendarCompleteEventModalData> = {}) {
+  async function setup(data: Partial<CalendarCompleteEventModalData> = {}, assignedSiteId: number | null = null) {
     jest.clearAllMocks();
     propertiesService.getLinkedSites.mockReturnValue(of({success: true, model: WORKERS}));
     // Stop the chain right after the worker list loads: this suite is about
-    // grouping and gating, not the case-loading pipeline.
-    calendarService.prepareComplete.mockReturnValue(of({success: false, model: null}));
+    // grouping and gating, not the case-loading pipeline. With an assignedSiteId,
+    // prepare succeeds (so the preselect sees it) and the template lookup stops the chain.
+    calendarService.prepareComplete.mockReturnValue(assignedSiteId == null
+      ? of({success: false, model: null})
+      : of({success: true, model: {sdkCaseId: 10, templateId: 20, propertyId: 5, complianceId: 30, assignedSiteId}}));
+    eFormService.getSingle.mockReturnValue(of({success: false, model: null}));
 
     await TestBed.configureTestingModule({
       declarations: [CalendarCompleteEventModalComponent, StubCaseEditElement],
@@ -186,6 +190,20 @@ describe('CalendarCompleteEventModalComponent', () => {
   it('does not preselect a lone team member', async () => {
     await setup({assigneeIds: [], teamAssigneeIds: [2]});
     expect(component.selectedWorkerId).toBeNull();
+  });
+
+  /**
+   * #1352 — a team-only event's case is materialised on one team member. That member is
+   * where the case lives, not who did the work, so it is not preselected either.
+   */
+  it('does not preselect the team member a team-only case was materialised on', async () => {
+    await setup({assigneeIds: [], teamAssigneeIds: [2, 3]}, 2);
+    expect(component.selectedWorkerId).toBeNull();
+  });
+
+  it('still preselects the deployed site of an event with no assignees at all', async () => {
+    await setup({assigneeIds: [], teamAssigneeIds: []}, 2);
+    expect(component.selectedWorkerId).toBe(2);
   });
 
   it('still preselects a lone explicit assignee when a team is also assigned', async () => {
