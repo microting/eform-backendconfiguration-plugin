@@ -779,4 +779,8 @@ export const svSE = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} gånger',
   '{{rule}}, 1 time': '{{rule}}, 1 gång',
   'Future tasks cannot be completed or deleted yet': 'Framtida uppgifter kan inte fyllas i eller tas bort ännu',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Inte registrerad',
+  Model: 'Modell',
+  'OS version': 'OS-version',
 };

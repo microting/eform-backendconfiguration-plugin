@@ -444,11 +444,21 @@ public class BackendConfigurationAssignmentWorkerService(
             var timeRegistrationEnabledSites =await
                 timePlanningDbContext.AssignedSites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
 
+            // One query per source for the whole page, not one per worker (#1335).
+            var siteIds = deviceUsers.Select(x => x.SiteId).ToList();
+            var unitsBySiteId = (await sdkDbContext.Units
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.SiteId != null && siteIds.Contains((int)x.SiteId))
+                    .OrderBy(x => x.Id)
+                    .ToListAsync().ConfigureAwait(false))
+                .GroupBy(x => (int)x.SiteId!)
+                .ToDictionary(g => g.Key, g => g.First());
+
+            var appUsersByEmail = await LoadAppUsersByEmail(deviceUsers).ConfigureAwait(false);
+
             foreach (var deviceUserModel in deviceUsers)
             {
-                var unit = await sdkDbContext.Units
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .FirstOrDefaultAsync(x => x.SiteId == deviceUserModel.SiteId);
+                unitsBySiteId.TryGetValue(deviceUserModel.SiteId, out var unit);
                 if (unit != null)
                 {
                     deviceUserModel.Version = unit.eFormVersion;
@@ -571,6 +581,8 @@ public class BackendConfigurationAssignmentWorkerService(
                 deviceUserModel.IsLocked = deviceUserModel.IsLocked ? deviceUserModel.IsLocked : workOrderCases.Count > 0;
                 deviceUserModel.WorkOrderCases = workOrderCases;
                 deviceUserModel.HasWorkOrdersAssigned = workOrderCases.Count > 0;
+
+                FillAppInstalls(deviceUserModel, unit, FindAppUser(appUsersByEmail, deviceUserModel.WorkerEmail));
             }
 
             if (requestModel.PropertyIds != null)
@@ -609,6 +621,118 @@ public class BackendConfigurationAssignmentWorkerService(
             return new OperationDataResult<List<DeviceUserModel>>(false, backendConfigurationLocalizationService.GetStringWithFormat("ErrorWhileGetDeviceUsers") + " " + ex.Message);
         }
     }
+
+    /// <summary>
+    /// The app-version columns of the core login (EformUser) behind a worker. The Time
+    /// and Archive apps write them on every sign-in (#1335).
+    /// </summary>
+    private sealed record AppUserVersions(
+        string UserName,
+        string Email,
+        string TimeVersion,
+        string TimeModel,
+        string TimeManufacturer,
+        string TimeOsVersion,
+        string ArchiveVersion,
+        string ArchiveModel,
+        string ArchiveManufacturer,
+        string ArchiveOsVersion);
+
+    private sealed record AppUserLookup(
+        ILookup<string, AppUserVersions> ByUserName,
+        ILookup<string, AppUserVersions> ByEmail);
+
+    /// <summary>
+    /// Loads the logins of every listed worker in one query. Matched the way
+    /// <c>IUserService.GetByUsernameAsync</c> matches: UserName first, then Email,
+    /// case-insensitively like the MySQL collation.
+    /// </summary>
+    private async Task<AppUserLookup> LoadAppUsersByEmail(List<DeviceUserModel> deviceUsers)
+    {
+        var emails = deviceUsers
+            .Select(x => x.WorkerEmail)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct()
+            .ToList();
+
+        var users = emails.Count == 0
+            ? []
+            : await baseDbContext.Users
+                .Where(u => emails.Contains(u.UserName) || emails.Contains(u.Email))
+                .Select(u => new AppUserVersions(
+                    u.UserName,
+                    u.Email,
+                    u.TimeRegistrationSoftwareVersion,
+                    u.TimeRegistrationModel,
+                    u.TimeRegistrationManufacturer,
+                    u.TimeRegistrationOsVersion,
+                    u.ArchiveSoftwareVersion,
+                    u.ArchiveModel,
+                    u.ArchiveManufacturer,
+                    u.ArchiveOsVersion))
+                .ToListAsync().ConfigureAwait(false);
+
+        return new AppUserLookup(
+            users.ToLookup(u => u.UserName, StringComparer.OrdinalIgnoreCase),
+            users.ToLookup(u => u.Email, StringComparer.OrdinalIgnoreCase));
+    }
+
+    private static AppUserVersions FindAppUser(AppUserLookup lookup, string email)
+    {
+        // Same skip as the security-group lookup: an "invalid" placeholder email is no login.
+        if (string.IsNullOrWhiteSpace(email) || email.Contains("invalid"))
+        {
+            return null;
+        }
+
+        return lookup.ByUserName[email].FirstOrDefault() ?? lookup.ByEmail[email].FirstOrDefault();
+    }
+
+    /// <summary>
+    /// Fills the four per-app columns. Must run after TimeRegistrationEnabled,
+    /// TaskManagementEnabled and ArchiveEnabled are known - they are the access flags.
+    /// </summary>
+    private static void FillAppInstalls(DeviceUserModel deviceUserModel,
+        Microting.eForm.Infrastructure.Data.Entities.Unit unit, AppUserVersions appUser)
+    {
+        // Compliance has no per-worker switch: every device user can use it, through the
+        // email login (active EformUser + non-resigned Worker, see GrpcSiteResolver) or,
+        // without an email, the legacy OTP pairing of the Unit every SiteCreate makes.
+        deviceUserModel.ComplianceApp = new AppInstallModel
+        {
+            HasAccess = true,
+            Version = NullIfBlank(unit?.eFormVersion),
+            Model = NullIfBlank(unit?.Model),
+            Manufacturer = NullIfBlank(unit?.Manufacturer),
+            OsVersion = NullIfBlank(unit?.OsVersion)
+        };
+
+        // Ad-hoc reports no version anywhere yet (phase 2 of #1335).
+        deviceUserModel.AdHocApp = new AppInstallModel
+        {
+            HasAccess = deviceUserModel.TaskManagementEnabled == true
+        };
+
+        deviceUserModel.TimeApp = new AppInstallModel
+        {
+            HasAccess = deviceUserModel.TimeRegistrationEnabled == true,
+            Version = NullIfBlank(appUser?.TimeVersion),
+            Model = NullIfBlank(appUser?.TimeModel),
+            Manufacturer = NullIfBlank(appUser?.TimeManufacturer),
+            OsVersion = NullIfBlank(appUser?.TimeOsVersion)
+        };
+
+        deviceUserModel.ArchiveApp = new AppInstallModel
+        {
+            HasAccess = deviceUserModel.ArchiveEnabled,
+            Version = NullIfBlank(appUser?.ArchiveVersion),
+            Model = NullIfBlank(appUser?.ArchiveModel),
+            Manufacturer = NullIfBlank(appUser?.ArchiveManufacturer),
+            OsVersion = NullIfBlank(appUser?.ArchiveOsVersion)
+        };
+    }
+
+    private static string NullIfBlank(string value) => string.IsNullOrWhiteSpace(value) ? null : value;
 
     public async Task<OperationResult> UpdateDeviceUser(DeviceUserModel deviceUserModel)
     {

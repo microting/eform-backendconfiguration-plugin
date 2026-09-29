@@ -825,4 +825,8 @@ export const deDE = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} Mal',
   '{{rule}}, 1 time': '{{rule}}, 1 Mal',
   'Future tasks cannot be completed or deleted yet': 'Zukünftige Aufgaben können noch nicht ausgefüllt oder gelöscht werden',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Nicht registriert',
+  Model: 'Modell',
+  'OS version': 'OS-Version',
 };

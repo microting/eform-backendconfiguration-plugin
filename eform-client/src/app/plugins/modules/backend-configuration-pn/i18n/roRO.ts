@@ -779,4 +779,8 @@ export const roRO = {
   '{{rule}}, {{count}} times': '{{rule}}, de {{count}} ori',
   '{{rule}}, 1 time': '{{rule}}, o dată',
   'Future tasks cannot be completed or deleted yet': 'Sarcinile viitoare nu pot fi încă completate sau șterse',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Neînregistrat',
+  Model: 'Model',
+  'OS version': 'Versiune SO',
 };

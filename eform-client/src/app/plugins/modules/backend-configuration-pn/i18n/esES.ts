@@ -779,4 +779,8 @@ export const esES = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} veces',
   '{{rule}}, 1 time': '{{rule}}, 1 vez',
   'Future tasks cannot be completed or deleted yet': 'Las tareas futuras aún no se pueden completar ni eliminar',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'No registrado',
+  Model: 'Modelo',
+  'OS version': 'Versión del SO',
 };

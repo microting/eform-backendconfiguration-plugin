@@ -779,4 +779,8 @@ export const ukUA = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} разів',
   '{{rule}}, 1 time': '{{rule}}, 1 раз',
   'Future tasks cannot be completed or deleted yet': 'Майбутні завдання ще не можна виконати або видалити',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Не зареєстровано',
+  Model: 'Модель',
+  'OS version': 'Версія ОС',
 };

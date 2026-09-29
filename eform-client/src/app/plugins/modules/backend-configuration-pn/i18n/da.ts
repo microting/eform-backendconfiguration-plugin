@@ -800,4 +800,8 @@ export const da = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} gange',
   '{{rule}}, 1 time': '{{rule}}, 1 gang',
   'Future tasks cannot be completed or deleted yet': 'Fremtidige opgaver kan ikke udfyldes eller slettes endnu',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Ikke registreret',
+  Model: 'Model',
+  'OS version': 'OS-version',
 };

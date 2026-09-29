@@ -900,4 +900,8 @@ export const enUS= {
   '{{rule}}, 1 time': '{{rule}}, 1 time',
   // Compliance pages: uncompleted future tasks are locked (#1300).
   'Future tasks cannot be completed or deleted yet': 'Future tasks cannot be completed or deleted yet',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Not registered',
+  Model: 'Model',
+  'OS version': 'OS version',
 };
