@@ -32,6 +32,7 @@ using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Enums;
 using Services.BackendConfigurationCompliancesService;
 using Services.BackendConfigurationLocalizationService;
+using BackendConfiguration.Pn.Infrastructure.Models.Compliances.Index;
 using Microting.eFormApi.BasePn.Abstractions;
 using NSubstitute;
 using eFormCore;
@@ -256,6 +257,8 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
             ItemPlanningTagId = envTag.Id,
             PropertyId = property.Id,
             Status = true,
+            // #1325: a task whose missed occurrences are reported
+            ComplianceEnabled = true,
             WorkflowState = Constants.WorkflowStates.Created,
             CreatedByUserId = 1,
             UpdatedByUserId = 1
@@ -601,6 +604,210 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
             .Where(x => x.LeadingCase == true)
             .CountAsync();
         Assert.That(result.Model.NumberOfAdHocTasks, Is.EqualTo(actualWorkorderCount));
+    }
+
+    // ------------------------------------------------------------------
+    // #1325 — a task with ComplianceEnabled = false ("Overskredet opgave vises ikke i
+    // app") hides its missed occurrences from Index, ComplianceStatus and Stats.
+    // ------------------------------------------------------------------
+
+    [Test]
+    public async Task Index_ComplianceDisabledTask_HidesYesterdaysMissedRow_ListsTodaysRow()
+    {
+        await GetCore();
+        var today = DateTime.UtcNow.Date;
+        var (propertyId, hiddenComplianceId) =
+            await SeedTaskWithCompliance("Property A", complianceEnabled: false, today.AddDays(-1));
+        var (_, todayComplianceId) =
+            await SeedTaskWithCompliance("Property A", complianceEnabled: false, today, propertyId);
+
+        var result = await BuildCompliancesService().Index(new CompliancesRequestModel { PropertyId = propertyId });
+
+        Assert.That(result.Success, Is.True, result.Message);
+        var ids = result.Model.Entities.Select(x => x.Id).ToList();
+        Assert.That(ids, Does.Not.Contain(hiddenComplianceId),
+            "a missed occurrence of a ComplianceEnabled=false task must not be listed");
+        Assert.That(ids, Is.EqualTo(new[] { todayComplianceId }),
+            "today's occurrence is not missed yet and must still be listed");
+    }
+
+    [Test]
+    public async Task ComplianceStatus_OnlyOpenRowIsHiddenOverdue_ReturnsZero_ComplianceEnabledTwinReturnsOne()
+    {
+        await GetCore();
+        var yesterday = DateTime.UtcNow.Date.AddDays(-1);
+        var (hiddenPropertyId, _) =
+            await SeedTaskWithCompliance("Property A", complianceEnabled: false, yesterday);
+        var (reportedPropertyId, _) =
+            await SeedTaskWithCompliance("Property B", complianceEnabled: true, yesterday);
+
+        var service = BuildCompliancesService();
+        var hidden = await service.ComplianceStatus(hiddenPropertyId);
+        var reported = await service.ComplianceStatus(reportedPropertyId);
+
+        Assert.That(hidden.Success, Is.True, hidden.Message);
+        Assert.That(hidden.Model, Is.EqualTo(0),
+            "a property whose only open row is a hidden missed occurrence has nothing overdue");
+        Assert.That(reported.Success, Is.True, reported.Message);
+        Assert.That(reported.Model, Is.EqualTo(1),
+            "the ComplianceEnabled=true twin's missed occurrence is still reported");
+    }
+
+    [Test]
+    public async Task Stats_HiddenOverdueRow_IsNotCountedInPastBuckets_ComplianceEnabledTwinIs()
+    {
+        await GetCore();
+        var envTag = new PlanningTag
+        {
+            Name = "Miljøtilsyn",
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await ItemsPlanningPnDbContext!.PlanningTags.AddAsync(envTag);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        // Both three days ago: inside TodayCount (<= today) and OneWeekCount (last 7 days).
+        var threeDaysAgo = DateTime.UtcNow.AddDays(-3);
+        await SeedTaskWithCompliance("Property A", complianceEnabled: false, threeDaysAgo);
+        await SeedTaskWithCompliance("Property B", complianceEnabled: true, threeDaysAgo);
+
+        var result = await BuildCompliancesService().Stats();
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(result.Model.TotalCount, Is.EqualTo(1),
+            "only the ComplianceEnabled=true twin's missed occurrence counts");
+        Assert.That(result.Model.TodayCount, Is.EqualTo(1));
+        Assert.That(result.Model.OneWeekCount, Is.EqualTo(1));
+    }
+
+    private BackendConfigurationCompliancesService BuildCompliancesService()
+    {
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        userService.GetCurrentUserLanguage().Returns(Task.FromResult(
+            new Microting.eForm.Infrastructure.Data.Entities.Language
+                { Id = 1, Name = "English", LanguageCode = "en-US" }));
+
+        return new BackendConfigurationCompliancesService(
+            ItemsPlanningPnDbContext!,
+            BackendConfigurationPnDbContext!,
+            userService,
+            new BackendConfigurationLocalizationService(),
+            new EFormCoreService(MicrotingDbContext!.Database.GetConnectionString()!),
+            TimePlanningPnDbContext!);
+    }
+
+    /// <summary>
+    /// Seeds one task (Area + AreaTranslation, AreaRule, Planning + PlanningNameTranslation,
+    /// AreaRulePlanning with the given <paramref name="complianceEnabled"/>) and one live,
+    /// uncompleted Compliance on <paramref name="deadline"/>. The translations in language 1
+    /// are what Index needs to list the row. Reuses <paramref name="propertyId"/> when given.
+    /// </summary>
+    private async Task<(int PropertyId, int ComplianceId)> SeedTaskWithCompliance(
+        string propertyName, bool complianceEnabled, DateTime deadline, int? propertyId = null)
+    {
+        if (propertyId == null)
+        {
+            var property = new Property
+            {
+                Name = $"{propertyName}-{Guid.NewGuid()}",
+                ItemPlanningTagId = 0,
+                WorkflowState = Constants.WorkflowStates.Created,
+                CreatedByUserId = 1,
+                UpdatedByUserId = 1
+            };
+            await BackendConfigurationPnDbContext!.Properties.AddAsync(property);
+            await BackendConfigurationPnDbContext.SaveChangesAsync();
+            propertyId = property.Id;
+        }
+
+        var area = new Area
+        {
+            Type = AreaTypesEnum.Type1,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext!.Areas.AddAsync(area);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        await BackendConfigurationPnDbContext.AreaTranslations.AddAsync(new AreaTranslation
+        {
+            AreaId = area.Id,
+            LanguageId = 1,
+            Name = "Area A",
+            Description = "",
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var areaRule = new AreaRule
+        {
+            AreaId = area.Id,
+            PropertyId = propertyId.Value,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.AreaRules.AddAsync(areaRule);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var planning = new Planning
+        {
+            Enabled = true,
+            RepeatEvery = 1,
+            RepeatType = RepeatType.Day,
+            RelatedEFormId = 0,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        await ItemsPlanningPnDbContext.PlanningNameTranslation.AddAsync(new PlanningNameTranslation
+        {
+            PlanningId = planning.Id,
+            LanguageId = 1,
+            Name = "Task A",
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        });
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(new AreaRulePlanning
+        {
+            AreaRuleId = areaRule.Id,
+            AreaId = area.Id,
+            PropertyId = propertyId.Value,
+            ItemPlanningId = planning.Id,
+            Status = true,
+            ComplianceEnabled = complianceEnabled,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var compliance = new Compliance
+        {
+            Deadline = deadline,
+            PlanningId = planning.Id,
+            PropertyId = propertyId.Value,
+            AreaId = area.Id,
+            StartDate = deadline.AddDays(-7),
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.Compliances.AddAsync(compliance);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        return (propertyId.Value, compliance.Id);
     }
 
     // Helper methods

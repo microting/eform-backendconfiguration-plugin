@@ -215,7 +215,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		Assert.That(mine, Has.Count.EqualTo(1));
 		Assert.That(mine[0].DeadlineTask.ToString(CultureInfo.InvariantCulture), Is.EqualTo(compliance.Deadline.AddDays(-1).ToString(CultureInfo.InvariantCulture)));
 		Assert.That(
-			mine[0].NextExecutionTime.ToString(CultureInfo.InvariantCulture),
+			mine[0].NextExecutionTime?.ToString(CultureInfo.InvariantCulture),
 			Is.EqualTo(planning.NextExecutionTime?.ToString(CultureInfo.InvariantCulture)
 			));
 		Assert.That(mine[0].Property, Is.EqualTo(property.Name));
@@ -357,7 +357,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		Assert.That(result.Model.Count, Is.EqualTo(1));
 		Assert.That(result.Model[0].DeadlineTask.ToString(CultureInfo.InvariantCulture), Is.EqualTo(compliance.Deadline.AddDays(-1).ToString(CultureInfo.InvariantCulture)));
 		Assert.That(
-			result.Model[0].NextExecutionTime.ToString(CultureInfo.InvariantCulture),
+			result.Model[0].NextExecutionTime?.ToString(CultureInfo.InvariantCulture),
 			Is.EqualTo(planning.NextExecutionTime?.ToString(CultureInfo.InvariantCulture)
 			));
 		Assert.That(result.Model[0].Property, Is.EqualTo(property.Name));
@@ -499,7 +499,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		Assert.That(result.Model.Count, Is.EqualTo(1));
 		Assert.That(result.Model[0].DeadlineTask.ToString(CultureInfo.InvariantCulture), Is.EqualTo(compliance.Deadline.AddDays(-1).ToString(CultureInfo.InvariantCulture)));
 		Assert.That(
-			result.Model[0].NextExecutionTime.ToString(CultureInfo.InvariantCulture),
+			result.Model[0].NextExecutionTime?.ToString(CultureInfo.InvariantCulture),
 			Is.EqualTo(planning.NextExecutionTime?.ToString(CultureInfo.InvariantCulture)
 			));
 		Assert.That(result.Model[0].Property, Is.EqualTo(property.Name));
@@ -641,7 +641,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		Assert.That(result.Model.Count, Is.EqualTo(1));
 		Assert.That(result.Model[0].DeadlineTask.ToString(CultureInfo.InvariantCulture), Is.EqualTo(compliance.Deadline.AddDays(-1).ToString(CultureInfo.InvariantCulture)));
 		Assert.That(
-			result.Model[0].NextExecutionTime.ToString(CultureInfo.InvariantCulture),
+			result.Model[0].NextExecutionTime?.ToString(CultureInfo.InvariantCulture),
 			Is.EqualTo(planning.NextExecutionTime?.ToString(CultureInfo.InvariantCulture)
 			));
 		Assert.That(result.Model[0].Property, Is.EqualTo(property.Name));
@@ -806,5 +806,142 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			Assert.That(unmatchedResult.Success, Is.EqualTo(true));
 			Assert.That(unmatchedResult.Model, Is.Empty, $"tag {unmatchableTagId} is not rendered in the Tags column, so it must not match");
 		}
+	}
+
+	/// <summary>
+	/// Seeds Property → Area → AreaRule → Planning → AreaRulePlanning with no compliances.
+	/// Returns (propertyId, planningId).
+	/// </summary>
+	private async Task<(int PropertyId, int PlanningId)> SeedTaskWithoutCompliances(
+		bool complianceEnabled, DateTime? nextExecutionTime)
+	{
+		var property = new Property
+		{
+			Name = $"Property A-{Guid.NewGuid()}",
+			ItemPlanningTagId = 0,
+			WorkflowState = Constants.WorkflowStates.Created,
+			CreatedByUserId = 1,
+			UpdatedByUserId = 1
+		};
+		await BackendConfigurationPnDbContext!.Properties.AddAsync(property);
+		await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+		var area = new Area { WorkflowState = Constants.WorkflowStates.Created };
+		await BackendConfigurationPnDbContext.Areas.AddAsync(area);
+		await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+		var areaRule = new AreaRule
+		{
+			AreaId = area.Id,
+			PropertyId = property.Id,
+			WorkflowState = Constants.WorkflowStates.Created
+		};
+		await BackendConfigurationPnDbContext.AreaRules.AddAsync(areaRule);
+		await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+		var today = DateTime.UtcNow.Date;
+		var planning = new Planning
+		{
+			WorkflowState = Constants.WorkflowStates.Created,
+			StartDate = today.AddDays(-7),
+			Enabled = true,
+			RepeatEvery = 1,
+			RepeatType = RepeatType.Day,
+			RelatedEFormId = 0,
+			NextExecutionTime = nextExecutionTime
+		};
+		await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
+		await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+		var areaRulePlanning = new AreaRulePlanning
+		{
+			AreaRuleId = areaRule.Id,
+			AreaId = area.Id,
+			PropertyId = property.Id,
+			ItemPlanningId = planning.Id,
+			ComplianceEnabled = complianceEnabled,
+			WorkflowState = Constants.WorkflowStates.Created
+		};
+		await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(areaRulePlanning);
+		await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+		return (property.Id, planning.Id);
+	}
+
+	private async Task<int> SeedOpenCompliance(int propertyId, int planningId, DateTime deadline)
+	{
+		var compliance = new Compliance
+		{
+			Deadline = deadline,
+			PlanningId = planningId,
+			PropertyId = propertyId,
+			StartDate = deadline.Date.AddDays(-1),
+			WorkflowState = Constants.WorkflowStates.Created
+		};
+		await BackendConfigurationPnDbContext!.Compliances.AddAsync(compliance);
+		await BackendConfigurationPnDbContext.SaveChangesAsync();
+		return compliance.Id;
+	}
+
+	/// <summary>
+	/// #1325 — a task with ComplianceEnabled = false hides its missed (yesterday's)
+	/// occurrence on read, keeps today's and tomorrow's, and the GET never soft-deletes any
+	/// of them. The old code deleted every row with Deadline.AddDays(-1) &lt; now, which
+	/// took today's and tomorrow's rows with it.
+	/// </summary>
+	[Test]
+	public async Task Index_ComplianceDisabled_HidesYesterdayKeepsTodayAndTomorrow_AndDeletesNothing()
+	{
+		var core = await GetCore();
+		var today = DateTime.UtcNow.Date;
+		var (propertyId, planningId) = await SeedTaskWithoutCompliances(
+			complianceEnabled: false, nextExecutionTime: today.AddDays(1));
+
+		var yesterdayId = await SeedOpenCompliance(propertyId, planningId, today.AddDays(-1).AddHours(12));
+		var todayId = await SeedOpenCompliance(propertyId, planningId, today.AddHours(12));
+		var tomorrowId = await SeedOpenCompliance(propertyId, planningId, today.AddDays(1).AddHours(12));
+
+		var result = await BackendConfigurationTaskTrackerHelper.Index(
+			new TaskTrackerFiltrationModel { PropertyIds = [propertyId], TagIds = [], WorkerIds = [] },
+			BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!, WorkerTagMembership(core));
+
+		Assert.That(result.Success, Is.True, result.Message);
+		var complianceIds = result.Model.Select(x => x.ComplianceId).ToList();
+		Assert.That(complianceIds, Does.Not.Contain(yesterdayId), "a missed occurrence of a ComplianceEnabled=false task must be hidden");
+		Assert.That(complianceIds, Does.Contain(todayId), "today's occurrence is not missed yet");
+		Assert.That(complianceIds, Does.Contain(tomorrowId), "tomorrow's occurrence is not missed yet");
+		Assert.That(complianceIds, Has.Count.EqualTo(2));
+
+		var workflowStates = await BackendConfigurationPnDbContext!.Compliances
+			.AsNoTracking()
+			.Where(x => x.Id == yesterdayId || x.Id == todayId || x.Id == tomorrowId)
+			.Select(x => x.WorkflowState)
+			.ToListAsync();
+		Assert.That(workflowStates, Has.Count.EqualTo(3));
+		Assert.That(workflowStates, Is.All.EqualTo(Constants.WorkflowStates.Created),
+			"reading the task tracker must never soft-delete a compliance row");
+	}
+
+	/// <summary>
+	/// #1325 — calendar-created plannings have NULL NextExecutionTime. The old
+	/// (DateTime) cast threw inside the per-row try and silently dropped the row.
+	/// </summary>
+	[Test]
+	public async Task Index_PlanningWithNullNextExecutionTime_IsReturnedWithNullNextExecutionTime()
+	{
+		var core = await GetCore();
+		var today = DateTime.UtcNow.Date;
+		var (propertyId, planningId) = await SeedTaskWithoutCompliances(
+			complianceEnabled: true, nextExecutionTime: null);
+		var complianceId = await SeedOpenCompliance(propertyId, planningId, today.AddDays(2).AddHours(12));
+
+		var result = await BackendConfigurationTaskTrackerHelper.Index(
+			new TaskTrackerFiltrationModel { PropertyIds = [propertyId], TagIds = [], WorkerIds = [] },
+			BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!, WorkerTagMembership(core));
+
+		Assert.That(result.Success, Is.True, result.Message);
+		Assert.That(result.Model, Has.Count.EqualTo(1));
+		Assert.That(result.Model[0].ComplianceId, Is.EqualTo(complianceId));
+		Assert.That(result.Model[0].NextExecutionTime, Is.Null);
 	}
 }

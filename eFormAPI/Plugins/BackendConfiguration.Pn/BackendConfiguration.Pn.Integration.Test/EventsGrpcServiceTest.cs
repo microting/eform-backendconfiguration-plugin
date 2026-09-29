@@ -29,18 +29,32 @@ using BackendConfiguration.Pn.Grpc.Events;
 using BackendConfiguration.Pn.Infrastructure.Models.Calendar;
 using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService;
+using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
+using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
+using BackendConfiguration.Pn.Services.CalendarChangeNotification;
 using BackendConfiguration.Pn.Services.EventDeployService;
 using BackendConfiguration.Pn.Services.GrpcServices;
 using BackendConfiguration.Pn.Services.UserPropertyAccess;
+using BackendConfiguration.Pn.Services.WorkerTagMembership;
 // Fully qualify Grpc.Core to avoid ambiguity with the
 // generated BackendConfiguration.Pn.Grpc.* namespace which shadows the
 // short alias inside this test namespace.
 using GrpcCore = global::Grpc.Core;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microting.eForm.Infrastructure.Constants;
+using Microting.eForm.Infrastructure.Data.Entities;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+using Microting.ItemsPlanningBase.Infrastructure.Enums;
 using NSubstitute;
+using IpPlanning = Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning;
+using IpPlanningSite = Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite;
+// The generated gRPC namespace has its own Property message.
+using BcProperty = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.Property;
 
 /// <summary>
 /// Targeted tests for the projection helpers + parsing branches that back the
@@ -336,5 +350,121 @@ public class EventsGrpcServiceTest : TestBaseSetup
         Assert.That(a.MimeType, Is.EqualTo("application/pdf"));
         Assert.That(a.SizeBytes, Is.EqualTo(12345));
         Assert.That(a.Name, Is.EqualTo("report.pdf"));
+    }
+
+    /// <summary>
+    /// #1325 end to end through the app's RPC: the REAL calendar service behind
+    /// <see cref="EventsGrpcService.ListTaskTracker"/>. A task with
+    /// <c>ComplianceEnabled = false</c> ("Overskredet opgave vises ikke i app") has a missed
+    /// occurrence yesterday and an open one today, both targeting the calling worker's
+    /// site. Only today's reaches the wire — the app's "Forfaldne opgaver" banner is built
+    /// from this reply.
+    /// </summary>
+    [Test]
+    public async Task ListTaskTracker_ComplianceDisabled_OmitsMissedOccurrence_KeepsToday()
+    {
+        var today = System.DateTime.UtcNow.Date;
+
+        var area = new Area
+        {
+            Type = AreaTypesEnum.Type1, ItemPlanningTagId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext!.Areas.AddAsync(area);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var property = new BcProperty
+        {
+            Name = $"Property A-{System.Guid.NewGuid()}", ItemPlanningTagId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.Properties.AddAsync(property);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var areaRule = new AreaRule
+        {
+            AreaId = area.Id, PropertyId = property.Id,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.AreaRules.AddAsync(areaRule);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var planning = new IpPlanning
+        {
+            Enabled = true, RepeatEvery = 1, RepeatType = RepeatType.Day,
+            StartDate = today.AddDays(-7), RelatedEFormId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        // The mobile worker's site must be on the planning for the per-row worker filter.
+        await ItemsPlanningPnDbContext.PlanningSites.AddAsync(new IpPlanningSite
+        {
+            PlanningId = planning.Id, SiteId = SdkSiteId,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        });
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        var arp = new AreaRulePlanning
+        {
+            AreaRuleId = areaRule.Id, PropertyId = property.Id, AreaId = area.Id,
+            ItemPlanningId = planning.Id, StartDate = today.AddDays(-7), Status = true,
+            RepeatType = 1, RepeatEvery = 1,
+            ComplianceEnabled = false,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(arp);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        foreach (var deadline in new[] { today.AddDays(-1).AddHours(10), today.AddHours(10) })
+        {
+            // MicrotingSdkCaseId 0: no SDK case, so the envelope/field loaders short-circuit.
+            await BackendConfigurationPnDbContext.Compliances.AddAsync(new Compliance
+            {
+                Deadline = deadline, PlanningId = planning.Id, PropertyId = property.Id,
+                AreaId = area.Id, StartDate = deadline.Date.AddDays(-1), MicrotingSdkCaseId = 0,
+                WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+            });
+        }
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var sdkConnectionString = MicrotingDbContext!.Database.GetConnectionString()!;
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        userService.GetCurrentUserLanguage().Returns(System.Threading.Tasks.Task.FromResult(
+            new Language { Id = 1, Name = "English", LanguageCode = "en-US" }));
+        var calendar = new BackendConfigurationCalendarService(
+            new BackendConfigurationLocalizationService(),
+            userService,
+            BackendConfigurationPnDbContext,
+            new EFormCoreService(sdkConnectionString),
+            Substitute.For<IEventDeployService>(),
+            ItemsPlanningPnDbContext,
+            Substitute.For<IBackendConfigurationTaskWizardService>(),
+            Substitute.For<ICalendarAssignmentReconciliationService>(),
+            Substitute.For<ICalendarChangeNotifier>(),
+            TestContextLogger<BackendConfigurationCalendarService>.Instance,
+            Substitute.For<ICalendarOccurrenceRetractionService>(),
+            Substitute.For<ICalendarPastSeriesBackfillService>(),
+            new WorkerTagMembershipService(new EFormCoreService(sdkConnectionString), BackendConfigurationPnDbContext));
+
+        var siteResolver = Substitute.For<IGrpcSiteResolver>();
+        siteResolver.GetSdkSiteIdAsync().Returns(System.Threading.Tasks.Task.FromResult(SdkSiteId));
+        var access = Substitute.For<IBackendConfigurationUserPropertyAccess>();
+        access.HasAccessAsync(SdkSiteId, property.Id).Returns(System.Threading.Tasks.Task.FromResult(true));
+
+        var service = MakeService(calendar, access, siteResolver, Substitute.For<IEventDeployService>());
+
+        var response = await service.ListTaskTracker(
+            new ListTaskTrackerRequest { PropertyId = property.Id }, new TestServerCallContext());
+
+        Assert.That(response.Events, Has.Count.EqualTo(1),
+            "The missed occurrence of a ComplianceEnabled = false task must not be sent to the app.");
+        Assert.Multiple(() =>
+        {
+            Assert.That(response.Events[0].PlanDayKey, Is.EqualTo(today.ToString("yyyy-MM-dd")));
+            Assert.That(response.Events[0].TaskIsExpired, Is.False);
+        });
     }
 }

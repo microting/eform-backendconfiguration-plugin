@@ -120,6 +120,20 @@ public static class BackendConfigurationTaskTrackerHelper
 			// 	localCurrentDate = localCurrentDate.AddDays(weekRange);
 			// }
 
+			// Completed occurrences are soft-removed with their compliance, so a live row is
+			// normally open; the case status is still read so the #1325 rule sees the truth
+			// for a completion that is in flight.
+			var sdkCaseIds = complianceList
+				.Select(x => x.MicrotingSdkCaseId)
+				.Where(x => x > 0)
+				.Distinct()
+				.ToList();
+			var completedSdkCaseIds = (await sdkDbContext.Cases
+					.Where(x => sdkCaseIds.Contains(x.Id) && x.Status == 100)
+					.Select(x => x.Id)
+					.ToListAsync())
+				.ToHashSet();
+
 			var properties = await backendConfigurationPnDbContext.Properties
 				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
 				.ToListAsync();
@@ -225,10 +239,13 @@ public static class BackendConfigurationTaskTrackerHelper
 
 				if (areaRulePlanning == null) continue;
 
-				if (deadlineDate < dateTimeNow && !areaRulePlanning.ComplianceEnabled)
+				// #1325 — hidden on read, never soft-deleted: this GET used to delete the row,
+				// and dated by Deadline.AddDays(-1) it took today's and tomorrow's with it.
+				if (HiddenOverdueRule.IsHiddenOverdue(
+					    areaRulePlanning.ComplianceEnabled,
+					    HiddenOverdueRule.IsPastDue(compliance.Deadline, dateTimeNow),
+					    completedSdkCaseIds.Contains(compliance.MicrotingSdkCaseId)))
 				{
-					var comp = await backendConfigurationPnDbContext.Compliances.FirstAsync(x => x.Id == compliance.Id);
-					await comp.Delete(backendConfigurationPnDbContext);
 					continue;
 				}
 
@@ -395,7 +412,8 @@ public static class BackendConfigurationTaskTrackerHelper
 						StartTask = startDate,
 						RepeatEvery = planning.RepeatEvery,
 						RepeatType = (RepeatType)planning.RepeatType,
-						NextExecutionTime = (DateTime)planning.NextExecutionTime,
+						// NULL for calendar-created plannings; the cast used to throw and drop the row (#1325).
+						NextExecutionTime = planning.NextExecutionTime,
 						TaskName = taskName,
 						TaskIsExpired = dateTimeNow > compliance.Deadline,
 						PropertyId = compliance.PropertyId,

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using BackendConfiguration.Pn.Infrastructure.Enums;
+using BackendConfiguration.Pn.Infrastructure.Helpers;
 using Sentry;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationStatsService;
@@ -43,7 +44,10 @@ public async Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(
         var today = DateTime.UtcNow.Date;
         var tomorrow = today.AddDays(1);
 
-        var compliancesQuery = backendConfigurationPnDbContext.Compliances
+        // #1325 — missed occurrences of a task with "Overskredet opgave vises ikke i app"
+        // are not counted as exceeded.
+        var compliancesQuery = HiddenOverdueRule.ExcludeHiddenOverdue(
+                backendConfigurationPnDbContext.Compliances, backendConfigurationPnDbContext, DateTime.UtcNow)
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
             .Where(x => x.PlanningId != 0);
 

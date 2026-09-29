@@ -271,7 +271,7 @@ public class ComplianceReportIndexTests : TestBaseSetup
     /// </para>
     /// </summary>
     private async Task<(int ArpId, int PropertyId, int PlanningId, int AreaId, int AreaRuleId)> SeedSeries(
-        string propertyName, string title, DateTime startDate, int? eformId = 0)
+        string propertyName, string title, DateTime startDate, int? eformId = 0, bool complianceEnabled = true)
     {
         var (areaId, propertyId) = await SeedAreaAndProperty(propertyName);
 
@@ -307,6 +307,8 @@ public class ComplianceReportIndexTests : TestBaseSetup
             ItemPlanningId = planning.Id,
             StartDate = DateTime.SpecifyKind(startDate, DateTimeKind.Utc), Status = true,
             RepeatType = 2, RepeatEvery = 1, RepeatWeekdaysCsv = "1", DayOfWeek = 1,
+            // #1325: a task whose missed occurrences are reported
+            ComplianceEnabled = complianceEnabled,
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         };
         await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(arp);
@@ -1537,6 +1539,82 @@ public class ComplianceReportIndexTests : TestBaseSetup
             Assert.That(row.CheckListId, Is.EqualTo(checkListId),
                 "CheckListId must still be populated — it does not come from AreaRule.EformId");
         });
+    }
+
+    // ==================================================================
+    // #1325 — HIDDEN OVERDUE ("Overskredet opgave vises ikke i app")
+    // ==================================================================
+
+    /// <summary>
+    /// #1325: a task with <c>ComplianceEnabled = false</c> hides its missed occurrences. The
+    /// yesterday row that was never done is not open work in Detaljer, today's row still is,
+    /// and a completed past occurrence of the same task stays in the "done" history.
+    /// </summary>
+    [Test]
+    public async Task ComplianceReportIndex_ComplianceDisabledTask_HidesMissedOpenRowButKeepsTodayAndCompletedHistory()
+    {
+        var core = await GetCore();
+        var today = DateTime.UtcNow.Date;
+        var (arpId, propertyId, planningId, areaId, _) = await SeedSeries(
+            "Property A", "Hidden Overdue Title", today.AddDays(-30), complianceEnabled: false);
+        await SeedCalendarConfig(arpId);
+
+        var missedYesterday = await SeedCompliance(
+            planningId, propertyId, areaId, today.AddDays(-1), await SeedSdkCase(status: 33));
+        var openToday = await SeedCompliance(
+            planningId, propertyId, areaId, today, await SeedSdkCase(status: 33));
+        // Completion soft-removes the compliance row; the Status 100 case is what makes it done.
+        var completedPast = await SeedCompliance(
+            planningId, propertyId, areaId, today.AddDays(-2),
+            await SeedSdkCase(status: 100, doneAt: today.AddDays(-2)), removed: true);
+
+        var service = BuildService(core);
+        var from = today.AddDays(-7);
+        var to = today.AddDays(7);
+
+        var open = await service.Index(Request(from, to, status: "open", propertyId: propertyId));
+        Assert.That(open.Success, Is.True, open.Message);
+        Assert.Multiple(() =>
+        {
+            Assert.That(Ids(open.Model!), Does.Not.Contain(missedYesterday),
+                "a missed occurrence of a ComplianceEnabled=false task must not be listed as open");
+            Assert.That(Ids(open.Model), Does.Contain(openToday),
+                "today's occurrence is not missed yet and must still be listed");
+            Assert.That(open.Model.Total, Is.EqualTo(1), "Total must not count the hidden row");
+        });
+
+        var done = await service.Index(Request(from, to, status: "done", propertyId: propertyId));
+        Assert.That(done.Success, Is.True, done.Message);
+        Assert.That(Ids(done.Model!), Is.EqualTo(new List<int> { completedPast }),
+            "a completed occurrence of the same task stays in the done history");
+
+        var all = await service.Index(Request(from, to, status: "all", propertyId: propertyId));
+        Assert.That(all.Success, Is.True, all.Message);
+        Assert.That(Ids(all.Model!), Is.EquivalentTo(new List<int> { openToday, completedPast }),
+            "\"all\" is open plus done, so the hidden row is absent there too");
+    }
+
+    /// <summary>
+    /// #1325 control: the same missed yesterday row on a task with
+    /// <c>ComplianceEnabled = true</c> is still reported as open.
+    /// </summary>
+    [Test]
+    public async Task ComplianceReportIndex_ComplianceEnabledTask_StillListsMissedOpenRow()
+    {
+        var core = await GetCore();
+        var today = DateTime.UtcNow.Date;
+        var (arpId, propertyId, planningId, areaId, _) = await SeedSeries(
+            "Property B", "Reported Overdue Title", today.AddDays(-30), complianceEnabled: true);
+        await SeedCalendarConfig(arpId);
+
+        var missedYesterday = await SeedCompliance(
+            planningId, propertyId, areaId, today.AddDays(-1), await SeedSdkCase(status: 33));
+
+        var open = await BuildService(core).Index(
+            Request(today.AddDays(-7), today.AddDays(7), status: "open", propertyId: propertyId));
+
+        Assert.That(open.Success, Is.True, open.Message);
+        Assert.That(Ids(open.Model!), Is.EqualTo(new List<int> { missedYesterday }));
     }
 
     // ------------------------------------------------------------------

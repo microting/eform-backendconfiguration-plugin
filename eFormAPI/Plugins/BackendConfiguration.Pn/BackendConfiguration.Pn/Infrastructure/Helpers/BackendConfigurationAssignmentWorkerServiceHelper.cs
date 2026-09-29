@@ -2062,7 +2062,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         await compliance.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
                     }
                     // var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == compliance.PropertyId);
-                    if (backendConfigurationPnDbContext.Compliances.Any(x => x.PropertyId == property.Id && x.Deadline < DateTime.UtcNow && x.WorkflowState != Constants.WorkflowStates.Removed))
+                    if (HiddenOverdueRule.ExcludeHiddenOverdue(backendConfigurationPnDbContext.Compliances, backendConfigurationPnDbContext, DateTime.UtcNow).Any(x => x.PropertyId == property.Id && x.Deadline < DateTime.UtcNow && x.WorkflowState != Constants.WorkflowStates.Removed))
                     {
                         property.ComplianceStatusThirty = 2;
                         property.ComplianceStatus = 2;
