@@ -11,11 +11,12 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
-import { UI_TIMEOUT } from '../wait-helpers';
+import { API_TIMEOUT, UI_TIMEOUT, ignoreUnhandledRejections, waitForApiResponse } from '../wait-helpers';
 
 /**
  * E2E for the task modal's merged "Vælg medarbejder / team" picker (#1295).
- * The team-only event must also stay active on save and reopen (#1322).
+ * The team-only event must also stay active on save and reopen (#1322), and
+ * its completion circle must open the complete modal (#1352).
  *
  * The separate "Assign to worker tags" select (id="calendarEventWorkerTags") is
  * GONE: teams (worker tags maintained under Medarbejdere → Etiketter) and
@@ -32,7 +33,9 @@ import { UI_TIMEOUT } from '../wait-helpers';
  * Seeding is UI-only through the ID-stable property-workers page objects:
  *   (a) the team (tag) via workersPage.createTag(name),
  *   (b) a worker on property A carrying it via workersPage.create({tags:[name]}),
- *   (c) a worker on property B WITHOUT it — B must offer no Teams group.
+ *   (c) a worker on property B WITHOUT it — B must offer no Teams group,
+ *   (d) a second worker on property A WITHOUT it, so the complete modal has an
+ *       "other workers" group to set the team member apart from (#1352).
  */
 
 const rand = generateRandmString(5);
@@ -71,7 +74,30 @@ const workerB: PropertyWorker = {
   workerEmail: generateRandmString(5) + '@test.com',
 };
 
+// Property A's second worker: NOT in the team, so the complete modal splits
+// its worker list into the team member (assigned) and this worker (other).
+const workerA2: PropertyWorker = {
+  name: generateRandmString(5),
+  surname: generateRandmString(5),
+  language: 'Dansk',
+  properties: [property.name],
+  workerEmail: generateRandmString(5) + '@test.com',
+};
+
+const fullName = (w: PropertyWorker) => `${w.name} ${w.surname}`;
+
 const title = `EventWT-${rand}`;
+
+// Set by the first test once the team-only event exists; the completion test
+// depends on it (serial describe) and says so instead of failing obscurely.
+let teamOnlyEventCreated = false;
+
+// The call the completion circle fires to materialise the occurrence and open
+// the combined complete modal (POST .../calendar/tasks/{id}/prepare-complete).
+function isPrepareComplete(method: string, url: string): boolean {
+  return /\/api\/backend-configuration-pn\/calendar\/tasks\/\d+\/prepare-complete/.test(url)
+    && method === 'POST';
+}
 
 // Predicate: the create backend call (POST .../calendar/tasks) excluding the
 // week reload + move/resize sibling routes.
@@ -111,6 +137,7 @@ test.describe.serial('Calendar merged worker/team picker (#1295)', () => {
     // the worker (and so it shows up as a team for the worker's property).
     await workersPage.createTag(workerTagName);
     await workersPage.create(worker);
+    await workersPage.create(workerA2);
     await workersPage.create(workerB);
 
     // ------------------------------------------------------------------
@@ -253,6 +280,7 @@ test.describe.serial('Calendar merged worker/team picker (#1295)', () => {
       eventBlock,
       'a team-only task must not be saved inactive (#1322)'
     ).not.toHaveClass(/gcal-task--inactive/, { timeout: UI_TIMEOUT });
+    teamOnlyEventCreated = true;
 
     // ------------------------------------------------------------------
     // Step 7 (round-trip): reopen in edit mode; the merged picker should be
@@ -298,6 +326,109 @@ test.describe.serial('Calendar merged worker/team picker (#1295)', () => {
     await expect(assigneeWorkerOptions(page).filter({ hasText: workerB.name })).toHaveCount(1);
     await page.locator('#calendarEventTitle').click();
     await calendarPage.closeEventModal();
+  });
+
+  // -----------------------------------------------------------------------
+  // #1352 — the team-only event's completion circle opens the complete modal.
+  //
+  // prepare-complete used to materialise the case only on an explicit
+  // PlanningSite, so a team-only event answered "NoAssignedWorker" and the
+  // modal closed itself. It now materialises on a team member linked to the
+  // property. The modal lists that member under "assigned" but pre-selects
+  // NOBODY: the materialisation site is where the case lives, not who did the
+  // work (#1236 — team members never pre-select).
+  //
+  // NOT covered here: saving the modal and the tile turning completed. The
+  // event uses the first eForm in the dropdown, which carries mandatory fields
+  // of arbitrary types; filling them through the embedded reply UI is what
+  // p/calendar-complete.spec.ts X03 documents as not automatable. The save
+  // path (the picked member is written to the case) is covered server-side by
+  // CalendarTeamOnlyCompleteTests.PrepareComplete_TeamOnlyTask_SavedAsTheOtherMember_StoresThatMemberOnTheCase.
+  // -----------------------------------------------------------------------
+  test('team-only event: the completion circle opens the complete modal with the team member unselected (#1352)', async ({ page }) => {
+    // Calendar load + property pick + one week step + prepare-complete (an SDK
+    // case is materialised) + modal load: each step is bounded below; 3 minutes
+    // is their sum with headroom, not a hiding place.
+    test.setTimeout(180000);
+    expect(teamOnlyEventCreated, 'the previous test must have created the team-only event').toBe(true);
+
+    const calendarPage = new CalendarUiEnhancementsPage(page);
+    await calendarPage.goToCalendar();
+    await calendarPage.selectProperty(property.name);
+    // The event was created next week (openCreateModalAtSlot advances a week).
+    await calendarPage.navigateToNextWeek();
+
+    const block = calendarPage.findEventBlock(title);
+    await expect(block).toBeVisible({ timeout: UI_TIMEOUT });
+
+    const prepared = waitForApiResponse(
+      page,
+      'POST .../calendar/tasks/{id}/prepare-complete',
+      r => isPrepareComplete(r.request().method(), r.url()),
+      API_TIMEOUT
+    );
+    ignoreUnhandledRejections(prepared);
+    await block.locator('.completion-btn').click({ timeout: UI_TIMEOUT });
+    const response = await prepared;
+    const body = await response.json();
+    // Pre-fix: success=false with the NoAssignedWorker message.
+    expect(body?.success, `prepare-complete must resolve a team-only event; got ${JSON.stringify(body?.message)}`)
+      .toBe(true);
+
+    const modal = page.locator('app-calendar-complete-event-modal');
+    await expect(modal, 'the complete modal must stay open').toBeVisible({ timeout: UI_TIMEOUT });
+    // The embedded eForm renders only after prepare-complete has been applied,
+    // so from here on the pre-select has had its chance to run.
+    await expect(modal.locator('app-case-edit-element')).not.toHaveCount(0, { timeout: API_TIMEOUT });
+
+    const workerSelect = modal.locator('#completeWorkerSelect');
+    await workerSelect.click({ timeout: UI_TIMEOUT });
+    // mtx-select appends its panel to <body>, outside the modal.
+    const panel = page.locator('.ng-dropdown-panel');
+    await expect(panel).toBeVisible({ timeout: UI_TIMEOUT });
+
+    // The panel lists the linked sites, so the worker list has loaded and the
+    // pre-select has run on it as well. Nobody may have been chosen.
+    await expect(panel.locator('.ng-option').filter({ hasText: fullName(worker) })).toHaveCount(1, { timeout: UI_TIMEOUT });
+    await expect(
+      workerSelect.locator('.ng-value-label'),
+      'a team-only event must not pre-select the team member it was materialised on (#1236)'
+    ).toHaveCount(0, { timeout: UI_TIMEOUT });
+
+    // Two groups: the team member under "assigned", the other worker below.
+    // Membership is positional in ng-select's flat panel DOM (same walk as
+    // u/compliance-details-complete-worker-groups.spec.ts).
+    const groups = panel.locator('.ng-optgroup');
+    await expect(groups).toHaveCount(2, { timeout: UI_TIMEOUT });
+    await expect(groups.nth(0)).toHaveText(/^\s*Tildelte medarbejdere\s*$/, { timeout: UI_TIMEOUT });
+    await expect(groups.nth(1)).toHaveText(/^\s*Øvrige medarbejdere\s*$/, { timeout: UI_TIMEOUT });
+    const membership = await panel.evaluate((el, names) => {
+      const out: Record<string, string | null> = {};
+      let current: string | null = null;
+      for (const node of Array.from(el.querySelectorAll('.ng-optgroup, .ng-option'))) {
+        const text = (node.textContent ?? '').trim();
+        if (node.classList.contains('ng-optgroup')) {
+          current = text;
+          continue;
+        }
+        for (const name of names) {
+          if (text === name) { out[name] = current; }
+        }
+      }
+      return out;
+    }, [fullName(worker), fullName(workerA2)]);
+    expect(membership[fullName(worker)], 'the team member is an assigned worker').toBe('Tildelte medarbejdere');
+    expect(membership[fullName(workerA2)], 'the worker outside the team is not').toBe('Øvrige medarbejdere');
+
+    // Picking the member is what makes the modal savable.
+    await expect(modal.locator('#completeSaveBtn')).toBeDisabled({ timeout: UI_TIMEOUT });
+    await panel.locator('.ng-option').filter({ hasText: fullName(worker) }).click({ timeout: UI_TIMEOUT });
+    await expect(workerSelect.locator('.ng-value-label')).toHaveText(fullName(worker), { timeout: UI_TIMEOUT });
+    await expect(modal.locator('#completeSaveBtn')).toBeEnabled({ timeout: UI_TIMEOUT });
+
+    // Leave without saving (see the block comment above).
+    await modal.locator('#completeCancelBtn').click({ timeout: UI_TIMEOUT });
+    await expect(modal).toHaveCount(0, { timeout: UI_TIMEOUT });
   });
 
   // Best-effort cleanup; the matrix slot runs against an ephemeral DB.

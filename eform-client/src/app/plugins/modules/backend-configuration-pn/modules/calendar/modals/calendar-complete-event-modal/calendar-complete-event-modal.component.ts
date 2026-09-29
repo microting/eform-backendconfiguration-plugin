@@ -122,12 +122,13 @@ export class CalendarCompleteEventModalComponent implements OnInit {
   // else the site the case is deployed to — but only when that site is in the
   // property-workers list. Multi-assignee events stay unselected (explicit pick).
   //
-  // `teamAssigneeIds` is DELIBERATELY absent from this method, and that omission is
-  // the decision recorded in #1236: worker-tag members are grouped as assigned by
-  // buildGroupedSites, but they never pre-select. What this control sets is the site
-  // recorded as having completed the case (`replyElement.siteId` in saveCase), so a
-  // team of one must not have a name chosen on the user's behalf. Do not "make the
-  // two consistent" by counting team members here.
+  // `teamAssigneeIds` never CAUSES a pre-select — the decision recorded in #1236:
+  // worker-tag members are grouped as assigned by buildGroupedSites, but they never
+  // pre-select. What this control sets is the site recorded as having completed the
+  // case (`replyElement.siteId` in saveCase), so a team of one must not have a name
+  // chosen on the user's behalf. Do not "make the two consistent" by counting team
+  // members here. The one place it is read suppresses the deployed-site fallback for
+  // a team-only event (#1352).
   private applyPreselect() {
     if (this.selectedWorkerId != null || this.sites.length === 0) { return; }
     if (this.data.assigneeIds?.length === 1
@@ -136,6 +137,8 @@ export class CalendarCompleteEventModalComponent implements OnInit {
       return;
     }
     if (this.data.assigneeIds?.length > 1) { return; }
+    // Team-only event (#1352): the case lives on a team member, not on who did the work.
+    if (!this.data.assigneeIds?.length && this.data.teamAssigneeIds?.length) { return; }
     const assigned = this.prepared?.assignedSiteId;
     if (assigned != null && this.sites.some(s => s.id === assigned)) {
       this.selectedWorkerId = assigned;
@@ -152,7 +155,7 @@ export class CalendarCompleteEventModalComponent implements OnInit {
    * any worker tag ("team") the event is assigned to (#1236). Reconciliation deploys
    * the case to a team's members, so they are shown where the people who do the work
    * belong. The Set de-dupes a site that is both. The pre-select in `applyPreselect`
-   * counts `assigneeIds` only and is intentionally NOT the same rule.
+   * never picks a team member and is intentionally NOT the same rule.
    */
   private buildGroupedSites() {
     const assigned = new Set([
