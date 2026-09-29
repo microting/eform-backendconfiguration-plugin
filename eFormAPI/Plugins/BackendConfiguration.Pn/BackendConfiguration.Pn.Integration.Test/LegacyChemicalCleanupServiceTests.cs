@@ -55,6 +55,10 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
         string PropertyGroupUid,
         string UnrelatedGroupUid);
 
+    /// <summary>
+    /// Call before seeding: GetCore() runs Core.StartSqlOnly, which migrates the
+    /// SDK database to the current model (e.g. Folders.ChildrenProhibited).
+    /// </summary>
     private async Task<LegacyChemicalCleanupService> CreateSut()
     {
         var core = await GetCore();
@@ -102,8 +106,8 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
     [Test]
     public async Task Cleanup_RemovesLegacyAssignmentFoldersCasesAndEntityLists_OnlyThose()
     {
-        var seeded = await SeedLegacyAsync();
         var sut = await CreateSut();
+        var seeded = await SeedLegacyAsync();
 
         var result = await sut.CleanupAsync();
 
@@ -125,13 +129,13 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
     [Test]
     public async Task Cleanup_ToleratesLegacyFolderAlreadyRemovedByHand()
     {
+        var sut = await CreateSut();
         var seeded = await SeedLegacyAsync();
         var removedFolder = new Folder { Name = "25.03 Udløber om en uge", Description = "already removed" };
         await removedFolder.Create(MicrotingDbContext!);
         await removedFolder.Delete(MicrotingDbContext!);
         await new ProperyAreaFolder { FolderId = removedFolder.Id, ProperyAreaAsignmentId = seeded.Legacy.Id, CreatedByUserId = 1, UpdatedByUserId = 1 }
             .Create(BackendConfigurationPnDbContext!);
-        var sut = await CreateSut();
 
         await sut.CleanupAsync();
 
@@ -146,8 +150,8 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
     {
         await BackendConfigurationPnDbContext!.PluginConfigurationValues
             .Where(x => x.Name == LegacyChemicalCleanupService.MarkerName).ExecuteDeleteAsync();
-        await SeedLegacyAsync();
         var sut = await CreateSut();
+        await SeedLegacyAsync();
 
         await sut.RunIfNeededAsync();
         _sdkOperations.ClearReceivedCalls();
