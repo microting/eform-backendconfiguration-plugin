@@ -778,4 +778,8 @@ export const lvLV = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} reizes',
   '{{rule}}, 1 time': '{{rule}}, 1 reizi',
   'Future tasks cannot be completed or deleted yet': 'Nākotnes uzdevumus vēl nevar izpildīt vai dzēst',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Nav reģistrēts',
+  Model: 'Modelis',
+  'OS version': 'OS versija',
 };

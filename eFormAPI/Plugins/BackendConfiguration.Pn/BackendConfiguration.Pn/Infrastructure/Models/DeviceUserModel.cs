@@ -104,6 +104,13 @@ public class DeviceUserModel
 
     public string Version { get; set; } = "";
 
+    // Per-app access + last reported version, one per Medarbejdere column (#1335).
+    // Filled by IndexDeviceUser only; ignored on create/update.
+    public AppInstallModel ComplianceApp { get; set; } = new();
+    public AppInstallModel AdHocApp { get; set; } = new();
+    public AppInstallModel TimeApp { get; set; } = new();
+    public AppInstallModel ArchiveApp { get; set; } = new();
+
     public string PinCode { get; set; } = null!;
 
     public string EmployeeNo { get; set; } = null!;

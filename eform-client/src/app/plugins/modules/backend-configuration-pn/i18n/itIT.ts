@@ -778,4 +778,8 @@ export const itIT = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} volte',
   '{{rule}}, 1 time': '{{rule}}, 1 volta',
   'Future tasks cannot be completed or deleted yet': 'Le attività future non possono ancora essere completate né eliminate',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Non registrato',
+  Model: 'Modello',
+  'OS version': 'Versione del SO',
 };

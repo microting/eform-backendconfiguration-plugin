@@ -3,10 +3,11 @@ import {Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, Si
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
-import {DeviceUserModel, PropertyAssignWorkersModel} from '../../../../models';
+import {AppInstallModel, DeviceUserModel, PropertyAssignWorkersModel} from '../../../../models';
+import {APP_INSTALL_STATE_CLASS, APP_INSTALL_STATE_LABEL, appInstallState, AppInstallState} from './app-install-state';
 import {PropertyWorkersStateService} from '../store';
 import {TranslateService} from '@ngx-translate/core';
-import {combineLatest, Subject, Subscription} from 'rxjs';
+import {combineLatest, Subject, Subscription, of} from 'rxjs';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {CommonDictionaryModel, SiteNameDto} from 'src/app/common/models';
@@ -185,45 +186,17 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
         sortable: true,
         sortProp: {id: 'LanguageId'},
       },
-      {
-        header: this.translateService.stream('eForm'),
-        sortProp: {id: 'WebAccessEnabled'},
-        field: 'webAccessEnabled',
-        sortable: true,
-      },
-      {
-        header: this.translateService.stream('Ad hoc'),
-        sortProp: {id: 'TaskManagementEnabled'},
-        field: 'taskManagementEnabled',
-        sortable: true,
-      },
-      {
-        header: this.translateService.stream('Time'),
-        sortProp: {id: 'TimeRegistrationEnabled'},
-        field: 'timeRegistrationEnabled',
-        sortable: true,
-      },
-      {
-        header: this.translateService.stream('Archive'),
-        sortProp: {id: 'ArchiveEnabled'},
-        field: 'archiveEnabled',
-        sortable: true,
-      },
-      {
-        header: this.translateService.stream('Model & OS version'),
-        field: 'manufacturer',
-        sortable: true,
-        sortProp: {id: 'Manufacturer'},
-      },
+      // #1335: one column per mobile app. They replace the eForm / Ad hoc / Time /
+      // Archive permission chips (the toggles stay in the edit dialog) and the
+      // Model & OS / Software version columns (device details are the tooltip).
+      // App names are the same in every language (Time is the app, not "Tid").
+      {header: of('Compliance'), field: 'complianceApp'},
+      {header: of('Ad-hoc'), field: 'adHocApp'},
+      {header: of('Time'), field: 'timeApp'},
+      {header: of('Archive'), field: 'archiveApp'},
       {
         header: this.translateService.stream('Customer no & OTP'),
         field: 'customerOtp',
-      },
-      {
-        header: this.translateService.stream('Software version'),
-        field: 'version',
-        sortable: true,
-        sortProp: {id: 'Version'},
       },
       {
         header: this.translateService.stream('Actions'),
@@ -250,6 +223,31 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
     this.tableHeaders = baseHeaders;
   }
 
+
+  appState(app: AppInstallModel | undefined): AppInstallState {
+    return appInstallState(app);
+  }
+
+  appStateLabel(app: AppInstallModel | undefined): string {
+    return APP_INSTALL_STATE_LABEL[appInstallState(app)];
+  }
+
+  appStateClass(app: AppInstallModel | undefined): string {
+    return APP_INSTALL_STATE_CLASS[appInstallState(app)];
+  }
+
+  /** Model and OS of the device that reported the version; empty when unknown. */
+  appDeviceTooltip(app: AppInstallModel | undefined): string {
+    const parts: string[] = [];
+    if (app?.model) {
+      const manufacturer = app.manufacturer ? ` (${app.manufacturer})` : '';
+      parts.push(`${this.translateService.instant('Model')}: ${app.model}${manufacturer}`);
+    }
+    if (app?.osVersion) {
+      parts.push(`${this.translateService.instant('OS version')}: ${app.osVersion}`);
+    }
+    return parts.join(' · ');
+  }
 
   // get userClaims() {
   //   return this.authStateService.currentUserClaims;

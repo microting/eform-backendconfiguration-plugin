@@ -777,4 +777,8 @@ export const frFR = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} fois',
   '{{rule}}, 1 time': '{{rule}}, 1 fois',
   'Future tasks cannot be completed or deleted yet': 'Les tâches futures ne peuvent pas encore être effectuées ni supprimées',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Non enregistré',
+  Model: 'Modèle',
+  'OS version': 'Version du système',
 };

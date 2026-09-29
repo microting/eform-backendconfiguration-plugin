@@ -778,4 +778,8 @@ export const hrHR = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} puta',
   '{{rule}}, 1 time': '{{rule}}, 1 put',
   'Future tasks cannot be completed or deleted yet': 'Buduće zadatke još nije moguće ispuniti ni izbrisati',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Nije registrirano',
+  Model: 'Model',
+  'OS version': 'Verzija OS-a',
 };

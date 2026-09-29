@@ -778,4 +778,8 @@ export const csCZ = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}}krát',
   '{{rule}}, 1 time': '{{rule}}, 1krát',
   'Future tasks cannot be completed or deleted yet': 'Budoucí úkoly zatím nelze vyplnit ani smazat',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Neregistrováno',
+  Model: 'Model',
+  'OS version': 'Verze OS',
 };

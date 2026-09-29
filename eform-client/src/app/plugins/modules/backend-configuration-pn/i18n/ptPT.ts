@@ -778,4 +778,8 @@ export const ptPT = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} vezes',
   '{{rule}}, 1 time': '{{rule}}, 1 vez',
   'Future tasks cannot be completed or deleted yet': 'As tarefas futuras ainda não podem ser concluídas nem eliminadas',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Não registado',
+  Model: 'Modelo',
+  'OS version': 'Versão do SO',
 };

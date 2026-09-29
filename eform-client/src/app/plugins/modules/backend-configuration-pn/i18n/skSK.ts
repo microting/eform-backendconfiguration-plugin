@@ -778,4 +778,8 @@ export const skSK = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}}-krát',
   '{{rule}}, 1 time': '{{rule}}, 1-krát',
   'Future tasks cannot be completed or deleted yet': 'Budúce úlohy zatiaľ nie je možné vyplniť ani odstrániť',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Neregistrované',
+  Model: 'Model',
+  'OS version': 'Verzia OS',
 };

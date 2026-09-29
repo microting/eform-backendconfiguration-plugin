@@ -778,4 +778,8 @@ export const huHU = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} alkalommal',
   '{{rule}}, 1 time': '{{rule}}, 1 alkalommal',
   'Future tasks cannot be completed or deleted yet': 'A jövőbeli feladatok még nem tölthetők ki és nem törölhetők',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Nincs regisztrálva',
+  Model: 'Modell',
+  'OS version': 'OS-verzió',
 };

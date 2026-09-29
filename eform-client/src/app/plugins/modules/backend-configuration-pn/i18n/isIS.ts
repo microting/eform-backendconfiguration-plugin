@@ -778,4 +778,8 @@ export const isIS = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} sinnum',
   '{{rule}}, 1 time': '{{rule}}, 1 sinni',
   'Future tasks cannot be completed or deleted yet': 'Ekki er enn hægt að fylla út eða eyða framtíðarverkefnum',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Ekki skráð',
+  Model: 'Gerð',
+  'OS version': 'Útgáfa stýrikerfis',
 };

@@ -778,4 +778,8 @@ export const noNO = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} ganger',
   '{{rule}}, 1 time': '{{rule}}, 1 gang',
   'Future tasks cannot be completed or deleted yet': 'Fremtidige oppgaver kan ikke fylles ut eller slettes ennå',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Ikke registrert',
+  Model: 'Modell',
+  'OS version': 'OS-versjon',
 };

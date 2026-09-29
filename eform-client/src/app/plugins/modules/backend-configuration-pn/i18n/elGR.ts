@@ -778,4 +778,8 @@ export const elGR = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} φορές',
   '{{rule}}, 1 time': '{{rule}}, 1 φορά',
   'Future tasks cannot be completed or deleted yet': 'Οι μελλοντικές εργασίες δεν μπορούν ακόμη να ολοκληρωθούν ή να διαγραφούν',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Δεν έχει καταχωριστεί',
+  Model: 'Μοντέλο',
+  'OS version': 'Έκδοση ΛΣ',
 };

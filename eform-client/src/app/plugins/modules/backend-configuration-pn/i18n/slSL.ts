@@ -778,4 +778,8 @@ export const slSL = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}}-krat',
   '{{rule}}, 1 time': '{{rule}}, 1-krat',
   'Future tasks cannot be completed or deleted yet': 'Prihodnjih opravil še ni mogoče izpolniti ali izbrisati',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Ni registrirano',
+  Model: 'Model',
+  'OS version': 'Različica OS',
 };

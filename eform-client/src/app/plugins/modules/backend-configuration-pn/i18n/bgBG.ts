@@ -778,4 +778,8 @@ export const bgBG = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} пъти',
   '{{rule}}, 1 time': '{{rule}}, 1 път',
   'Future tasks cannot be completed or deleted yet': 'Бъдещите задачи все още не могат да бъдат изпълнени или изтрити',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Не е регистрирано',
+  Model: 'Модел',
+  'OS version': 'Версия на ОС',
 };
