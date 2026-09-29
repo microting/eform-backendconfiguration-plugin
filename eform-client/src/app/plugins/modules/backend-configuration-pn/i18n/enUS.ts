@@ -479,6 +479,7 @@ export const enUS= {
   'Save event first to attach files': 'Save event first to attach files',
   'Pending save': 'Pending save',
   'Inherited from original': 'Inherited from original',
+  'Automatic translation was not possible. The task is saved without it.': 'Automatic translation was not possible. The task is saved without it.',
   'Delete attachment?': 'Delete attachment?',
   'Could not download file': 'Could not download file',
   'Add Google Drive file': 'Add Google Drive file',

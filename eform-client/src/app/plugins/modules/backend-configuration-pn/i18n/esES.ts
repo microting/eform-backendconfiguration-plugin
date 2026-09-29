@@ -438,6 +438,7 @@ export const esES = {
   'Could not download file': 'No se pudo descargar el archivo.',
   'Pending save': 'Pendiente de guardar',
   'Inherited from original': 'Heredado del original',
+  'Automatic translation was not possible. The task is saved without it.': 'La traducción automática no fue posible. La tarea se guardó sin ella.',
   'Add Google Drive file': 'Agregar archivo de Google Drive',
   'Loading Google Picker': 'Cargando selector de Google',
   'Connect Google Drive': 'Conectar Google Drive',

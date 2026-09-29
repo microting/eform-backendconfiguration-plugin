@@ -438,6 +438,7 @@ export const ukUA = {
   'Enable fifth shift': 'Увімкнути п&#39;яту зміну',
   'Pending save': 'Очікується збереження',
   'Inherited from original': 'Успадковано з оригіналу',
+  'Automatic translation was not possible. The task is saved without it.': 'Автоматичний переклад був неможливий. Завдання збережено без нього.',
   'Add Google Drive file': 'Додати файл з Google Диска',
   'Loading Google Picker': 'Завантаження вибору Google',
   'Connect Google Drive': 'Підключити Google Диск',

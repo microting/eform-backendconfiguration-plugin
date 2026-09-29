@@ -438,6 +438,7 @@ export const elGR = {
   'Could not download file': 'Δεν ήταν δυνατή η λήψη του αρχείου',
   'Pending save': 'Εκκρεμής αποθήκευση',
   'Inherited from original': 'Από το πρωτότυπο',
+  'Automatic translation was not possible. The task is saved without it.': 'Η αυτόματη μετάφραση δεν ήταν δυνατή. Η εργασία αποθηκεύτηκε χωρίς αυτήν.',
   'Add Google Drive file': 'Προσθήκη αρχείου στο Google Drive',
   'Loading Google Picker': 'Φόρτωση Επιλογέα Google',
   'Connect Google Drive': 'Σύνδεση Google Drive',

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { API_TIMEOUT, ignoreUnhandledRejections, waitForApiResponse } from '../wait-helpers';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
 import { CalendarUiEnhancementsPage } from '../calendar-ui-enhancements.page';
@@ -226,28 +227,26 @@ test.describe.serial('Calendar task-modal translation', () => {
   async function saveAndCaptureCreate(
     page: import('@playwright/test').Page,
   ): Promise<any> {
-    const reqPromise = page.waitForRequest(
-      r => isCreatePost(r.method(), r.url()),
-      { timeout: 30000 }
-    );
-    const respPromise = page.waitForResponse(
+    const respPromise = waitForApiResponse(
+      page,
+      'the create POST (calendar/tasks)',
       r => isCreatePost(r.request().method(), r.url()),
-      { timeout: 30000 }
+      API_TIMEOUT
     );
+    ignoreUnhandledRejections(respPromise);
     // The expanded per-language fields leave an animating element overlapping
     // the save button, so a coordinate-based click never lands on it (Playwright
     // reports it as "not stable"). The button is enabled (title valid + a worker
     // assigned), so dispatch the click event directly to fire onSave().
     // NOTE: dispatchEvent bypasses Playwright's disabled/actionability checks.
-    // If reqPromise below times out, first confirm titleControl is valid (title
+    // If respPromise below times out, first confirm titleControl is valid (title
     // filled) and a worker is assigned — onSave() returns early otherwise.
     const saveBtn = page.locator('#calendarEventSaveBtn');
     await saveBtn.scrollIntoViewIfNeeded();
     await saveBtn.dispatchEvent('click');
-    const req = await reqPromise;
     const resp = await respPromise;
     expect(resp.status(), 'create POST should return 200').toBe(200);
-    return req.postDataJSON();
+    return resp.request().postDataJSON();
   }
 
   // -----------------------------------------------------------------------
@@ -331,7 +330,7 @@ test.describe.serial('Calendar task-modal translation', () => {
     // Click the Title translate icon → the Deutsch title field auto-fills from
     // the sentinel backend: "[de-DE] Tank 4".
     await page.locator('#calendarEventTitleTranslate').click();
-    const deTitleInput = translatableFieldByLang(page, 'Deutsch').locator('input[matInput]').first();
+    const deTitleInput = translatableFieldByLang(page, 'Deutsch').locator('input[matInput]');
     await expect(deTitleInput).toHaveValue('[de-DE] Tank 4', { timeout: 15000 });
 
     // Click the Description translate icon → the Deutsch description field
@@ -367,12 +366,63 @@ test.describe.serial('Calendar task-modal translation', () => {
     // In edit mode the translate fields auto-expand when a target translation
     // exists (descTranslateExpanded/titleTranslateExpanded), so the Deutsch
     // title input should be present and prefilled without re-clicking.
-    const editDeTitle = translatableFieldByLang(page, 'Deutsch').locator('input[matInput]').first();
+    const editDeTitle = translatableFieldByLang(page, 'Deutsch').locator('input[matInput]');
     await expect(editDeTitle, 'edit mode prefills the Deutsch title field').toHaveValue(
       '[de-DE] Tank 4',
       { timeout: 15000 }
     );
 
     await calendarPage.closeEventModal();
+  });
+
+  // =======================================================================
+  // #1324 — Save alone translates: no click on the translate icon.
+  // =======================================================================
+  test('save auto-translates an empty title and description for a Deutsch assignee', async ({ page }) => {
+    const calendarPage = new CalendarUiEnhancementsPage(page);
+
+    // Wednesday 09:00 (next week).
+    await openCreateAt(page, calendarPage, 2, 9);
+    await page.locator('#calendarEventTitle').fill('Tank 5');
+    await page.locator('#calendarEventDescription').fill('Check the valve');
+    await fillEformAndPlanningTag(page);
+    await pickAssigneeByName(page, workerDe.name as string);
+
+    const translates: Array<{ name: string; description: string; languageId: number }> =
+      (await saveAndCaptureCreate(page))?.translates ?? [];
+
+    const deutsch = translates.find(t => t.languageId === 3);
+    expect(deutsch, 'Save alone must add the Deutsch entry').toBeTruthy();
+    expect(deutsch?.name).toBe('[de-DE] Tank 5');
+    expect(deutsch?.description).toBe('[de-DE] Check the valve');
+    expect(translates.find(t => t.languageId === 1)?.name, 'the Danish source is unchanged').toBe('Tank 5');
+  });
+
+  // =======================================================================
+  // #1324 — a translation already in the field is never overwritten; only the
+  // empty field is filled.
+  // =======================================================================
+  test('save keeps a hand-written translation and fills only the empty field', async ({ page }) => {
+    const calendarPage = new CalendarUiEnhancementsPage(page);
+
+    // Thursday 09:00 (next week).
+    await openCreateAt(page, calendarPage, 3, 9);
+    await page.locator('#calendarEventTitle').fill('Tank 6');
+    await page.locator('#calendarEventDescription').fill('Clean the filter');
+    await fillEformAndPlanningTag(page);
+    await pickAssigneeByName(page, workerDe.name as string);
+
+    // Reveal the Deutsch title field, wait for its auto-fill, then replace it by hand.
+    await page.locator('#calendarEventTitleTranslate').click();
+    const deTitleInput = translatableFieldByLang(page, 'Deutsch').locator('input[matInput]');
+    await expect(deTitleInput).toHaveValue('[de-DE] Tank 6', { timeout: 15000 });
+    await deTitleInput.fill('Tank sechs');
+
+    const translates: Array<{ name: string; description: string; languageId: number }> =
+      (await saveAndCaptureCreate(page))?.translates ?? [];
+
+    const deutsch = translates.find(t => t.languageId === 3);
+    expect(deutsch?.name, 'the hand-written title is kept').toBe('Tank sechs');
+    expect(deutsch?.description, 'the empty description is filled on save').toBe('[de-DE] Clean the filter');
   });
 });

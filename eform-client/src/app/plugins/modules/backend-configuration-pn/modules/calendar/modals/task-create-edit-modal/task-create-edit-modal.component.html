@@ -493,7 +493,7 @@
 
   <div class="gcal-actions" *ngIf="!isReadonly">
     <button id="calendarEventSaveBtn" class="btn-primary btn-primary--icon-left"
-            [disabled]="titleControl.invalid || !hasAssignee || (reportHeadlineEnabledControl.value && !planningTagControl.value)"
+            [disabled]="isSaving || isFillingTranslations || titleControl.invalid || !hasAssignee || (reportHeadlineEnabledControl.value && !planningTagControl.value)"
             [title]="!hasAssignee ? ('At least one worker or worker tag must be assigned' | translate) : ''"
             (click)="onSave()">
       {{ isEditMode ? ('Save changes' | translate) : ('Save' | translate) }}

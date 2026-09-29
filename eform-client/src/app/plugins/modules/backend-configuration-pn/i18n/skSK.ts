@@ -438,6 +438,7 @@ export const skSK = {
   'Could not download file': 'Súbor sa nepodarilo stiahnuť',
   'Pending save': 'Čaká sa na uloženie',
   'Inherited from original': 'Prevzaté z originálu',
+  'Automatic translation was not possible. The task is saved without it.': 'Automatický preklad nebol možný. Úloha je uložená bez neho.',
   'Add Google Drive file': 'Pridať súbor z Disku Google',
   'Loading Google Picker': 'Načítava sa nástroj Google Picker',
   'Connect Google Drive': 'Pripojiť Disk Google',

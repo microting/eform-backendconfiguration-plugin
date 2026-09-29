@@ -440,6 +440,7 @@ export const noNO = {
   'Could not download file': 'Kunne ikke laste ned filen',
   'Pending save': 'Venter på lagring',
   'Inherited from original': 'Arvet fra originalen',
+  'Automatic translation was not possible. The task is saved without it.': 'Automatisk oversettelse var ikke mulig. Oppgaven er lagret uten.',
   'Add Google Drive file': 'Legg til Google Drive-fil',
   'Loading Google Picker': 'Laster inn Google Picker',
   'Connect Google Drive': 'Koble til Google Disk',

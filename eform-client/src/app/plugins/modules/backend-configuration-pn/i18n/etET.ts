@@ -438,6 +438,7 @@ export const etET = {
   'Could not download file': 'Faili allalaadimine ebaõnnestus',
   'Pending save': 'Salvestamist ootel',
   'Inherited from original': 'Päritud originaalist',
+  'Automatic translation was not possible. The task is saved without it.': 'Automaatne tõlge ei olnud võimalik. Ülesanne salvestati ilma selleta.',
   'Add Google Drive file': 'Lisa Google Drive&#39;i fail',
   'Loading Google Picker': 'Google&#39;i valija laadimine',
   'Connect Google Drive': 'Ühenda Google Drive&#39;iga',

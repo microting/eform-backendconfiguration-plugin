@@ -438,6 +438,7 @@ export const csCZ = {
   'Could not download file': 'Soubor se nepodařilo stáhnout',
   'Pending save': 'Čeká na uložení',
   'Inherited from original': 'Převzato z originálu',
+  'Automatic translation was not possible. The task is saved without it.': 'Automatický překlad nebyl možný. Úkol je uložen bez něj.',
   'Add Google Drive file': 'Přidat soubor z Disku Google',
   'Loading Google Picker': 'Načítání nástroje Google Picker',
   'Connect Google Drive': 'Připojit Disk Google',

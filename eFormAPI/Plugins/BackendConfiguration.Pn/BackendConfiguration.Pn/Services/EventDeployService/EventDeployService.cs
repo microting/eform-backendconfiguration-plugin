@@ -772,6 +772,46 @@ public class EventDeployService(
     }
 
     /// <summary>
+    /// #1324 — the task name on the device case: the worker's language, else Danish (the
+    /// language every task is written in), else any non-empty translation, so a case label
+    /// never lacks the task name when nobody translated it into the worker's language.
+    /// Danish is looked up by code: its SDK <c>Languages.Id</c> differs per installation.
+    /// </summary>
+    /// <remarks>Internal for the integration tests (the label is not persisted by CaseCreateLocalOnly).</remarks>
+    internal async Task<string?> ResolveCaseLabelNameAsync(
+        int planningId, int languageId, SdkDbContext sdkDbContext, CancellationToken ct)
+    {
+        var names = await itemsPlanningPnDbContext.PlanningNameTranslation
+            .AsNoTracking()
+            .Where(x => x.PlanningId == planningId && x.Name != null && x.Name != ""
+                        && x.WorkflowState != Constants.WorkflowStates.Removed)
+            .OrderBy(x => x.Id)
+            .Select(x => new { x.LanguageId, x.Name })
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+        // A whitespace-only name is no name either.
+        names = names.Where(x => !string.IsNullOrWhiteSpace(x.Name)).ToList();
+        if (names.Count == 0)
+        {
+            return null;
+        }
+
+        var own = names.FirstOrDefault(x => x.LanguageId == languageId);
+        if (own != null)
+        {
+            return own.Name;
+        }
+
+        var danishLanguageId = await sdkDbContext.Languages
+            .AsNoTracking()
+            .Where(x => x.LanguageCode == "da")
+            .Select(x => (int?)x.Id)
+            .FirstOrDefaultAsync(ct)
+            .ConfigureAwait(false);
+        return (names.FirstOrDefault(x => x.LanguageId == danishLanguageId) ?? names[0]).Name;
+    }
+
+    /// <summary>
     /// Builds the mainElement for one (planning, rotationDate, eform, site)
     /// tuple and creates the backing SDK case. Shared by
     /// <see cref="DeployForRotationAsync"/> (first deploy) and
@@ -827,12 +867,8 @@ public class EventDeployService(
         }
         else
         {
-            var planningNameTranslation = await itemsPlanningPnDbContext.PlanningNameTranslation
-                .FirstOrDefaultAsync(x =>
-                        x.LanguageId == language.Id && x.PlanningId == planning.Id,
-                    ct)
+            translation = await ResolveCaseLabelNameAsync(planning.Id, language.Id, sdkDbContext, ct)
                 .ConfigureAwait(false);
-            translation = planningNameTranslation?.Name;
             if (cache != null)
             {
                 cache.Translations[language.Id] = translation;

@@ -438,6 +438,7 @@ export const huHU = {
   'Could not download file': 'Nem sikerült letölteni a fájlt',
   'Pending save': 'Mentés függőben',
   'Inherited from original': 'Az eredetiből átvéve',
+  'Automatic translation was not possible. The task is saved without it.': 'Az automatikus fordítás nem volt lehetséges. A feladat nélküle lett mentve.',
   'Add Google Drive file': 'Google Drive-fájl hozzáadása',
   'Loading Google Picker': 'Google Picker betöltése',
   'Connect Google Drive': 'Csatlakoztassa a Google Drive-ot',

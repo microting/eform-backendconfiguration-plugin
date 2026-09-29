@@ -438,6 +438,7 @@ export const hrHR = {
   'Could not download file': 'Nije moguće preuzeti datoteku',
   'Pending save': 'Spremanje na čekanju',
   'Inherited from original': 'Preuzeto iz izvornika',
+  'Automatic translation was not possible. The task is saved without it.': 'Automatski prijevod nije bio moguć. Zadatak je spremljen bez njega.',
   'Add Google Drive file': 'Dodaj datoteku s Google diska',
   'Loading Google Picker': 'Učitavanje Google Pickera',
   'Connect Google Drive': 'Poveži Google disk',

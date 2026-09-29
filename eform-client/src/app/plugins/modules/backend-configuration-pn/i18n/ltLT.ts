@@ -438,6 +438,7 @@ export const ltLT = {
   'Could not download file': 'Nepavyko atsisiųsti failo',
   'Pending save': 'Laukiama išsaugojimo',
   'Inherited from original': 'Paveldėta iš originalo',
+  'Automatic translation was not possible. The task is saved without it.': 'Automatinis vertimas nepavyko. Užduotis išsaugota be jo.',
   'Add Google Drive file': 'Pridėti „Google“ disko failą',
   'Loading Google Picker': 'Įkeliamas „Google“ rinkiklis',
   'Connect Google Drive': 'Prijungti „Google“ diską',

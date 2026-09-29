@@ -438,6 +438,7 @@ export const fiFI = {
   'Could not download file': 'Tiedoston lataaminen epäonnistui',
   'Pending save': 'Tallennus odottaa',
   'Inherited from original': 'Peritty alkuperäisestä',
+  'Automatic translation was not possible. The task is saved without it.': 'Automaattinen käännös ei onnistunut. Tehtävä tallennettiin ilman sitä.',
   'Add Google Drive file': 'Lisää Google Drive -tiedosto',
   'Loading Google Picker': 'Google Pickerin lataus',
   'Connect Google Drive': 'Yhdistä Google Driveen',

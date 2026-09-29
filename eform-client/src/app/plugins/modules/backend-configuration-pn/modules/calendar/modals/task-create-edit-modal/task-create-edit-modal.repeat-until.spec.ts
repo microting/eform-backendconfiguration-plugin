@@ -108,13 +108,13 @@ describe('TaskCreateEditModalComponent — repeat-until payload (#1293)', () => 
     restoreZone = null;
   });
 
-  function saveWithCustomMeta(meta: CalendarRepeatMeta) {
+  async function saveWithCustomMeta(meta: CalendarRepeatMeta) {
     const component = build();
     component.titleControl.setValue('Weekly Thursday');
     component.assigneeControl.setValue(['s:11']);
     (component as any).customRepeatMeta = meta;
     component.repeatControl.setValue('customCurrent');
-    component.onSave();
+    await component.onSave();
     expect(calendarService.createTask).toHaveBeenCalledTimes(1);
     return calendarService.createTask.mock.calls[0][0];
   }
@@ -126,10 +126,10 @@ describe('TaskCreateEditModalComponent — repeat-until payload (#1293)', () => 
     [-5, 11, 10, '2026-12-10'],  // New York
     [1, 11, 31, '2026-12-31'],   // 31 Dec → 1 Jan boundary — was 2026-12-30T23:00:00.000Z
     [1, 0, 1, '2027-01-01'],     // was 2026-12-31T23:00:00.000Z (the PREVIOUS year)
-  ])('UTC%s: until %s/%s is sent as "%s"', (offset, month, day, wire) => {
+  ])('UTC%s: until %s/%s is sent as "%s"', async (offset, month, day, wire) => {
     restoreZone = useFixedUtcOffset(offset);
     const year = month === 0 ? 2027 : 2026;
-    const payload = saveWithCustomMeta({
+    const payload = await saveWithCustomMeta({
       kind: 'weeklyOne', n: 1, weekday: 4, endMode: 'until',
       untilTs: new Date(year, month, day).getTime(),
     });
@@ -137,8 +137,8 @@ describe('TaskCreateEditModalComponent — repeat-until payload (#1293)', () => 
     expect(payload.repeatUntilDate).toBe(wire);
   });
 
-  it('after N sends the count and no until date', () => {
-    const payload = saveWithCustomMeta({kind: 'weeklyOne', n: 1, weekday: 4, endMode: 'after', afterCount: 10});
+  it('after N sends the count and no until date', async () => {
+    const payload = await saveWithCustomMeta({kind: 'weeklyOne', n: 1, weekday: 4, endMode: 'after', afterCount: 10});
     expect(payload.repeatEndMode).toBe(1);
     expect(payload.repeatOccurrences).toBe(10);
     expect(payload.repeatUntilDate).toBeNull();

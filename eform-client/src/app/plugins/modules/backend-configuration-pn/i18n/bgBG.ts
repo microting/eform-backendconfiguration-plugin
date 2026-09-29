@@ -438,6 +438,7 @@ export const bgBG = {
   'Could not download file': 'Файлът не можа да бъде изтеглен',
   'Pending save': 'Чакащо запазване',
   'Inherited from original': 'Наследено от оригинала',
+  'Automatic translation was not possible. The task is saved without it.': 'Автоматичният превод не беше възможен. Задачата е запазена без него.',
   'Add Google Drive file': 'Добавяне на файл от Google Диск',
   'Loading Google Picker': 'Зареждане на Google Picker',
   'Connect Google Drive': 'Свързване на Google Диск',

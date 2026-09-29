@@ -491,6 +491,7 @@ export const deDE = {
   'Could not download file': 'Datei konnte nicht heruntergeladen werden',
   'Pending save': 'Ausstehender Speichervorgang',
   'Inherited from original': 'Vom Original übernommen',
+  'Automatic translation was not possible. The task is saved without it.': 'Automatische Übersetzung war nicht möglich. Die Aufgabe wurde ohne sie gespeichert.',
   'Add Google Drive file': 'Google Drive-Datei hinzufügen',
   'Loading Google Picker': 'Google Picker wird geladen',
   'Connect Google Drive': 'Google Drive verbinden',
