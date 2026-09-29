@@ -184,6 +184,9 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<CalendarConfigurationBackfillService>();
         services.AddTransient<AreaRulePlanningTagPurgeService>();
         services.AddTransient<SecurityGroupBackfillService>();
+        services.AddTransient<Services.LegacyChemicalCleanupService.ILegacyChemicalSdkOperations,
+            Services.LegacyChemicalCleanupService.LegacyChemicalSdkOperations>();
+        services.AddTransient<Services.LegacyChemicalCleanupService.LegacyChemicalCleanupService>();
         services.AddTransient<IExcelService, ExcelService>();
         services.AddTransient<IWordService, WordService>();
         services.AddTransient<IGoogleDriveAuthService, GoogleDriveAuthService>();
@@ -900,6 +903,28 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         {
             Console.WriteLine($"SecurityGroupBackfill failed at startup: {e}");
         }
+
+        // One-off removal of the legacy eForm chemical flow's folders, cases and
+        // entity lists (flutter-chemistry spec §12). In the background: every
+        // CaseDelete/EntityGroupDelete is a cloud round-trip, and startup must not
+        // wait for them. Its own scope, because the startup scope above is disposed
+        // when Configure returns. The marker is written only after a full run, so
+        // a failure is retried on the next boot.
+        _ = Task.Run(async () =>
+        {
+            using var cleanupScope = serviceProvider.CreateScope();
+            try
+            {
+                await cleanupScope.ServiceProvider
+                    .GetRequiredService<Services.LegacyChemicalCleanupService.LegacyChemicalCleanupService>()
+                    .RunIfNeededAsync().ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"LegacyChemicalCleanup failed: {e}");
+                SentrySdk.CaptureException(e);
+            }
+        });
 
         appBuilder.UseEndpoints(endpoints =>
         {

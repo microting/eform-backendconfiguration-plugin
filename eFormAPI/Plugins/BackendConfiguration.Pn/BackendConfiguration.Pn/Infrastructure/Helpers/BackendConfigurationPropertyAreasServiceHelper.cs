@@ -206,135 +206,8 @@ public static class BackendConfigurationPropertyAreasServiceHelper
 
             foreach (var areaPropertyForDelete in assignmentsForDelete)
             {
-                // get areaRules and select all linked entity for delete
-                var areaRules = await backendConfigurationPnDbContext.AreaRules
-                    .Where(x => x.PropertyId == areaPropertyForDelete.PropertyId)
-                    .Where(x => x.AreaId == areaPropertyForDelete.AreaId)
-                    .Include(x => x.Area)
-                    .Include(x => x.AreaRuleTranslations)
-                    .Include(x => x.AreaRulesPlannings)
-                    .ThenInclude(x => x.PlanningSites)
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .ToListAsync().ConfigureAwait(false);
-
-                foreach (var areaRule in areaRules)
-                {
-                    if (areaRule.Area.Type is AreaTypesEnum.Type3 && areaRule.GroupItemId != 0)
-                    {
-                        // delete item from selectable list
-                        var entityGroupItem = await sdkDbContext.EntityItems
-                            .Where(x => x.Id == areaRule.GroupItemId).FirstOrDefaultAsync().ConfigureAwait(false);
-                        if (entityGroupItem != null)
-                        {
-                            await entityGroupItem.Delete(sdkDbContext).ConfigureAwait(false);
-                        }
-
-                        Property property =
-                            await backendConfigurationPnDbContext.Properties
-                                .SingleOrDefaultAsync(x => x.Id == areaRule.PropertyId).ConfigureAwait(false);
-                        string eformName = $"05. Halebid og risikovurdering - {property.Name}";
-                        var eformId = await sdkDbContext.CheckListTranslations
-                            .Where(x => x.Text == eformName)
-                            .Select(x => x.CheckListId)
-                            .FirstAsync().ConfigureAwait(false);
-                        foreach (CheckListSite checkListSite in sdkDbContext.CheckListSites.Where(x =>
-                                     x.CheckListId == eformId))
-                        {
-                            await core.CaseDelete(checkListSite.MicrotingUid).ConfigureAwait(false);
-                        }
-                    }
-
-                    // delete translations for are rules
-                    foreach (var areaRuleAreaRuleTranslation in areaRule.AreaRuleTranslations.Where(x =>
-                                 x.WorkflowState != Constants.WorkflowStates.Removed))
-                    {
-                        areaRuleAreaRuleTranslation.UpdatedByUserId = userId;
-                        await areaRuleAreaRuleTranslation.Delete(backendConfigurationPnDbContext)
-                            .ConfigureAwait(false);
-                    }
-
-                    // delete plannings area rules and items planning
-                    foreach (var areaRulePlanning in areaRule.AreaRulesPlannings
-                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
-                    {
-                        foreach (var planningSite in areaRulePlanning.PlanningSites
-                                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
-                        {
-                            planningSite.UpdatedByUserId = userId;
-                            await planningSite.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
-                        }
-
-                        if (areaRulePlanning.ItemPlanningId != 0)
-                        {
-                            var planning = await itemsPlanningPnDbContext.Plannings
-                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                                .Where(x => x.Id == areaRulePlanning.ItemPlanningId)
-                                .Include(x => x.NameTranslations)
-                                .FirstOrDefaultAsync().ConfigureAwait(false);
-                            if (planning != null)
-                            {
-                                foreach (var translation in planning.NameTranslations
-                                             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
-                                {
-                                    translation.UpdatedByUserId = userId;
-                                    await translation.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
-                                }
-
-                                planning.UpdatedByUserId = userId;
-                                await planning.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
-
-                                var planningCaseSites = await itemsPlanningPnDbContext.PlanningCaseSites
-                                    .Where(x => x.PlanningId == planning.Id)
-                                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                                    .ToListAsync().ConfigureAwait(false);
-                                foreach (PlanningCaseSite planningCaseSite in planningCaseSites)
-                                {
-                                    planningCaseSite.UpdatedByUserId = userId;
-                                    await planningCaseSite.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
-                                    var result =
-                                        await sdkDbContext.Cases.SingleAsync(x =>
-                                            x.Id == planningCaseSite.MicrotingSdkCaseId).ConfigureAwait(false);
-                                    if (result.MicrotingUid != null)
-                                    {
-                                        await core.CaseDelete((int)result.MicrotingUid).ConfigureAwait(false);
-                                    }
-                                }
-                            }
-                        }
-
-                        areaRulePlanning.UpdatedByUserId = userId;
-                        await areaRulePlanning.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
-                    }
-
-                    // delete area rule
-                    areaRule.UpdatedByUserId = userId;
-                    await areaRule.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
-                }
-
-                // delete entity select group. only for type 3(tail bite and stables)
-                if (areaPropertyForDelete.GroupMicrotingUuid != 0)
-                {
-                    await core.EntityGroupDelete(areaPropertyForDelete.GroupMicrotingUuid.ToString())
-                        .ConfigureAwait(false);
-                }
-
-                areaPropertyForDelete.UpdatedByUserId = userId;
-                await areaPropertyForDelete.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
-
-                var foldersIdForDelete = backendConfigurationPnDbContext.ProperyAreaFolders
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.ProperyAreaAsignmentId == areaPropertyForDelete.Id)
-                    .Select(x => x.FolderId)
-                    .ToList();
-
-                foreach (var folderIdForDelete in foldersIdForDelete)
-                {
-                    var folder = await sdkDbContext.Folders
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Where(x => x.Id == folderIdForDelete)
-                        .FirstAsync().ConfigureAwait(false);
-                    await folder.Delete(sdkDbContext).ConfigureAwait(false);
-                }
+                await DeleteAreaPropertyAsync(areaPropertyForDelete, core, backendConfigurationPnDbContext,
+                    itemsPlanningPnDbContext, userId).ConfigureAwait(false);
             }
 
             return new OperationResult(true, "SuccessfullyUpdatePropertyAreas");
@@ -344,6 +217,154 @@ public static class BackendConfigurationPropertyAreasServiceHelper
             Console.WriteLine(e.Message);
             Console.WriteLine(e.StackTrace);
             return new OperationResult(false, "ErrorWhileUpdatePropertyAreas");
+        }
+    }
+
+    /// <summary>
+    /// Deactivates one area on a property: soft-deletes its area rules,
+    /// plannings, planning sites, items-planning plannings (deleting their SDK
+    /// cases), its entity group, the assignment itself and its SDK folders.
+    /// Shared by the property-areas update and LegacyChemicalCleanupService.
+    /// </summary>
+    public static async Task DeleteAreaPropertyAsync(AreaProperty areaProperty, Core core,
+        BackendConfigurationPnDbContext backendConfigurationPnDbContext,
+        ItemsPlanningPnDbContext itemsPlanningPnDbContext, int userId)
+    {
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+        // get areaRules and select all linked entity for delete
+        var areaRules = await backendConfigurationPnDbContext.AreaRules
+            .Where(x => x.PropertyId == areaProperty.PropertyId)
+            .Where(x => x.AreaId == areaProperty.AreaId)
+            .Include(x => x.Area)
+            .Include(x => x.AreaRuleTranslations)
+            .Include(x => x.AreaRulesPlannings)
+            .ThenInclude(x => x.PlanningSites)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync().ConfigureAwait(false);
+
+        foreach (var areaRule in areaRules)
+        {
+            if (areaRule.Area.Type is AreaTypesEnum.Type3 && areaRule.GroupItemId != 0)
+            {
+                // delete item from selectable list
+                var entityGroupItem = await sdkDbContext.EntityItems
+                    .Where(x => x.Id == areaRule.GroupItemId).FirstOrDefaultAsync().ConfigureAwait(false);
+                if (entityGroupItem != null)
+                {
+                    await entityGroupItem.Delete(sdkDbContext).ConfigureAwait(false);
+                }
+
+                Property property =
+                    await backendConfigurationPnDbContext.Properties
+                        .SingleOrDefaultAsync(x => x.Id == areaRule.PropertyId).ConfigureAwait(false);
+                string eformName = $"05. Halebid og risikovurdering - {property.Name}";
+                var eformId = await sdkDbContext.CheckListTranslations
+                    .Where(x => x.Text == eformName)
+                    .Select(x => x.CheckListId)
+                    .FirstAsync().ConfigureAwait(false);
+                foreach (CheckListSite checkListSite in sdkDbContext.CheckListSites.Where(x =>
+                             x.CheckListId == eformId))
+                {
+                    await core.CaseDelete(checkListSite.MicrotingUid).ConfigureAwait(false);
+                }
+            }
+
+            // delete translations for are rules
+            foreach (var areaRuleAreaRuleTranslation in areaRule.AreaRuleTranslations.Where(x =>
+                         x.WorkflowState != Constants.WorkflowStates.Removed))
+            {
+                areaRuleAreaRuleTranslation.UpdatedByUserId = userId;
+                await areaRuleAreaRuleTranslation.Delete(backendConfigurationPnDbContext)
+                    .ConfigureAwait(false);
+            }
+
+            // delete plannings area rules and items planning
+            foreach (var areaRulePlanning in areaRule.AreaRulesPlannings
+                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+            {
+                foreach (var planningSite in areaRulePlanning.PlanningSites
+                             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+                {
+                    planningSite.UpdatedByUserId = userId;
+                    await planningSite.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
+                }
+
+                if (areaRulePlanning.ItemPlanningId != 0)
+                {
+                    var planning = await itemsPlanningPnDbContext.Plannings
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.Id == areaRulePlanning.ItemPlanningId)
+                        .Include(x => x.NameTranslations)
+                        .FirstOrDefaultAsync().ConfigureAwait(false);
+                    if (planning != null)
+                    {
+                        foreach (var translation in planning.NameTranslations
+                                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+                        {
+                            translation.UpdatedByUserId = userId;
+                            await translation.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
+                        }
+
+                        planning.UpdatedByUserId = userId;
+                        await planning.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
+
+                        var planningCaseSites = await itemsPlanningPnDbContext.PlanningCaseSites
+                            .Where(x => x.PlanningId == planning.Id)
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .ToListAsync().ConfigureAwait(false);
+                        foreach (PlanningCaseSite planningCaseSite in planningCaseSites)
+                        {
+                            planningCaseSite.UpdatedByUserId = userId;
+                            await planningCaseSite.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
+                            var result =
+                                await sdkDbContext.Cases.SingleAsync(x =>
+                                    x.Id == planningCaseSite.MicrotingSdkCaseId).ConfigureAwait(false);
+                            if (result.MicrotingUid != null)
+                            {
+                                await core.CaseDelete((int)result.MicrotingUid).ConfigureAwait(false);
+                            }
+                        }
+                    }
+                }
+
+                areaRulePlanning.UpdatedByUserId = userId;
+                await areaRulePlanning.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
+            }
+
+            // delete area rule
+            areaRule.UpdatedByUserId = userId;
+            await areaRule.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
+        }
+
+        // delete entity select group. only for type 3(tail bite and stables)
+        if (areaProperty.GroupMicrotingUuid != 0)
+        {
+            await core.EntityGroupDelete(areaProperty.GroupMicrotingUuid.ToString())
+                .ConfigureAwait(false);
+        }
+
+        areaProperty.UpdatedByUserId = userId;
+        await areaProperty.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
+
+        var foldersIdForDelete = backendConfigurationPnDbContext.ProperyAreaFolders
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => x.ProperyAreaAsignmentId == areaProperty.Id)
+            .Select(x => x.FolderId)
+            .ToList();
+
+        foreach (var folderIdForDelete in foldersIdForDelete)
+        {
+            // Tolerate folders already removed by hand, so the one-off
+            // LegacyChemicalCleanupService cannot wedge on them.
+            var folder = await sdkDbContext.Folders
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.Id == folderIdForDelete)
+                .FirstOrDefaultAsync().ConfigureAwait(false);
+            if (folder != null)
+            {
+                await folder.Delete(sdkDbContext).ConfigureAwait(false);
+            }
         }
     }
 
