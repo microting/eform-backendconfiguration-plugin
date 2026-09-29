@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { API_TIMEOUT, ignoreUnhandledRejections, waitForApiResponse } from '../wait-helpers';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
 import { CalendarUiEnhancementsPage } from '../calendar-ui-enhancements.page';
@@ -226,28 +227,26 @@ test.describe.serial('Calendar task-modal translation', () => {
   async function saveAndCaptureCreate(
     page: import('@playwright/test').Page,
   ): Promise<any> {
-    const reqPromise = page.waitForRequest(
-      r => isCreatePost(r.method(), r.url()),
-      { timeout: 30000 }
-    );
-    const respPromise = page.waitForResponse(
+    const respPromise = waitForApiResponse(
+      page,
+      'the create POST (calendar/tasks)',
       r => isCreatePost(r.request().method(), r.url()),
-      { timeout: 30000 }
+      API_TIMEOUT
     );
+    ignoreUnhandledRejections(respPromise);
     // The expanded per-language fields leave an animating element overlapping
     // the save button, so a coordinate-based click never lands on it (Playwright
     // reports it as "not stable"). The button is enabled (title valid + a worker
     // assigned), so dispatch the click event directly to fire onSave().
     // NOTE: dispatchEvent bypasses Playwright's disabled/actionability checks.
-    // If reqPromise below times out, first confirm titleControl is valid (title
+    // If respPromise below times out, first confirm titleControl is valid (title
     // filled) and a worker is assigned — onSave() returns early otherwise.
     const saveBtn = page.locator('#calendarEventSaveBtn');
     await saveBtn.scrollIntoViewIfNeeded();
     await saveBtn.dispatchEvent('click');
-    const req = await reqPromise;
     const resp = await respPromise;
     expect(resp.status(), 'create POST should return 200').toBe(200);
-    return req.postDataJSON();
+    return resp.request().postDataJSON();
   }
 
   // -----------------------------------------------------------------------
