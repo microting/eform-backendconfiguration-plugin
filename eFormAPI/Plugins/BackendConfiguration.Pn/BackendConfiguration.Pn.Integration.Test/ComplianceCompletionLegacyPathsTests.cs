@@ -765,7 +765,7 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
 
         var service = MakeGrpcService(s, hasAccess: false);
 
-        var ex = Assert.ThrowsAsync<GrpcCore.RpcException>(async () =>
+        var ex = await Assert.ThrowsAsync<GrpcCore.RpcException>(async () =>
             await service.UpdateComplianceCase(request, Substitute.For<GrpcCore.ServerCallContext>()));
 
         var reloadedCompliance = await ReadComplianceAsync(compliance.Id);

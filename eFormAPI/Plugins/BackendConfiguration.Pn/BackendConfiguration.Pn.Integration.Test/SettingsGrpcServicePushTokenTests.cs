@@ -339,44 +339,44 @@ public class SettingsGrpcServicePushTokenTests : TestBaseSetup
     }
 
     [Test]
-    public void RegisterPushToken_NoResolvableWorker_ThrowsUnauthenticated()
+    public async Task RegisterPushToken_NoResolvableWorker_ThrowsUnauthenticated()
     {
         var sut = CreateSut(0);
 
-        var ex = Assert.ThrowsAsync<RpcException>(async () =>
+        var ex = await Assert.ThrowsAsync<RpcException>(async () =>
             await sut.RegisterPushToken(MakeRequest("token-a", "inst-a"), Context()));
         Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.Unauthenticated));
         Assert.That(BackendConfigurationPnDbContext!.DeviceTokens.AsNoTracking().Count(), Is.EqualTo(0));
     }
 
     [Test]
-    public void RegisterPushToken_EmptyToken_ThrowsInvalidArgument()
+    public async Task RegisterPushToken_EmptyToken_ThrowsInvalidArgument()
     {
         var sut = CreateSut(7);
 
-        var ex = Assert.ThrowsAsync<RpcException>(async () =>
+        var ex = await Assert.ThrowsAsync<RpcException>(async () =>
             await sut.RegisterPushToken(MakeRequest("   ", "inst-a"), Context()));
         Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.InvalidArgument));
         Assert.That(BackendConfigurationPnDbContext!.DeviceTokens.AsNoTracking().Count(), Is.EqualTo(0));
     }
 
     [Test]
-    public void RegisterPushToken_MissingAppId_ThrowsInvalidArgument()
+    public async Task RegisterPushToken_MissingAppId_ThrowsInvalidArgument()
     {
         var sut = CreateSut(7);
 
-        var ex = Assert.ThrowsAsync<RpcException>(async () =>
+        var ex = await Assert.ThrowsAsync<RpcException>(async () =>
             await sut.RegisterPushToken(MakeRequest("token-a", "inst-a", appId: "  "), Context()));
         Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.InvalidArgument));
         Assert.That(BackendConfigurationPnDbContext!.DeviceTokens.AsNoTracking().Count(), Is.EqualTo(0));
     }
 
     [Test]
-    public void RegisterPushToken_MissingInstallationId_ThrowsInvalidArgument()
+    public async Task RegisterPushToken_MissingInstallationId_ThrowsInvalidArgument()
     {
         var sut = CreateSut(7);
 
-        var ex = Assert.ThrowsAsync<RpcException>(async () =>
+        var ex = await Assert.ThrowsAsync<RpcException>(async () =>
             await sut.RegisterPushToken(MakeRequest("token-a", "  "), Context()));
         Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.InvalidArgument));
         Assert.That(BackendConfigurationPnDbContext!.DeviceTokens.AsNoTracking().Count(), Is.EqualTo(0));

@@ -159,7 +159,7 @@ public class AdhocServiceAreaCrudTests : TestBaseSetup
     {
         var sut = CreateSut();
 
-        Assert.ThrowsAsync<ArgumentException>(async () =>
+        await Assert.ThrowsAsync<ArgumentException>(async () =>
             await sut.CreateAreas(0, 999999, ["Lade"], isAdmin: true));
     }
 
@@ -190,7 +190,7 @@ public class AdhocServiceAreaCrudTests : TestBaseSetup
         await other.Create(BackendConfigurationPnDbContext!);
         var sut = CreateSut();
 
-        Assert.ThrowsAsync<ArgumentException>(async () =>
+        await Assert.ThrowsAsync<ArgumentException>(async () =>
             await sut.RenameArea(0, area.Id, "stald", isAdmin: true));
     }
 
@@ -219,9 +219,9 @@ public class AdhocServiceAreaCrudTests : TestBaseSetup
         await removed.Delete(BackendConfigurationPnDbContext!);
         var sut = CreateSut();
 
-        Assert.ThrowsAsync<AdhocAreaNotFoundException>(async () =>
+        await Assert.ThrowsAsync<AdhocAreaNotFoundException>(async () =>
             await sut.RenameArea(0, removed.Id, "Ny", isAdmin: true));
-        Assert.ThrowsAsync<AdhocAreaNotFoundException>(async () =>
+        await Assert.ThrowsAsync<AdhocAreaNotFoundException>(async () =>
             await sut.RenameArea(0, 999999, "Ny", isAdmin: true));
     }
 
@@ -233,7 +233,7 @@ public class AdhocServiceAreaCrudTests : TestBaseSetup
         await area.Create(BackendConfigurationPnDbContext!);
         var sut = CreateSut();
 
-        Assert.ThrowsAsync<ArgumentException>(async () =>
+        await Assert.ThrowsAsync<ArgumentException>(async () =>
             await sut.RenameArea(0, area.Id, "   ", isAdmin: true));
     }
 
@@ -297,7 +297,7 @@ public class AdhocServiceAreaCrudTests : TestBaseSetup
     {
         var sut = CreateSut();
 
-        Assert.ThrowsAsync<AdhocAreaNotFoundException>(async () =>
+        await Assert.ThrowsAsync<AdhocAreaNotFoundException>(async () =>
             await sut.DeleteArea(0, 999999, isAdmin: true));
     }
 
@@ -332,16 +332,16 @@ public class AdhocServiceAreaCrudTests : TestBaseSetup
 
         // CreateAreas already names the propertyId explicitly - nothing to
         // enumerate - so it keeps the plain unauthorized signal.
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.CreateAreas(0, property.Id, ["Stald"]));
 
         // RenameArea/DeleteArea are id-only mutations: enumeration hardening
         // means access denial on a real-but-inaccessible area id surfaces as
         // "not found", same as a genuinely unknown id (see
         // AreaMutations_DeniedAccessAndMissingArea_AreIndistinguishable).
-        Assert.ThrowsAsync<AdhocAreaNotFoundException>(async () =>
+        await Assert.ThrowsAsync<AdhocAreaNotFoundException>(async () =>
             await sut.RenameArea(0, area.Id, "Stald"));
-        Assert.ThrowsAsync<AdhocAreaNotFoundException>(async () =>
+        await Assert.ThrowsAsync<AdhocAreaNotFoundException>(async () =>
             await sut.DeleteArea(0, area.Id));
     }
 
@@ -357,15 +357,15 @@ public class AdhocServiceAreaCrudTests : TestBaseSetup
         // a real area id it may not touch and a wholly nonexistent id must
         // throw the exact same exception type, so the response can't be used
         // to tell "exists but denied" apart from "doesn't exist".
-        var deniedRename = Assert.ThrowsAsync<AdhocAreaNotFoundException>(async () =>
+        var deniedRename = await Assert.ThrowsAsync<AdhocAreaNotFoundException>(async () =>
             await sut.RenameArea(0, area.Id, "Stald"));
-        var missingRename = Assert.ThrowsAsync<AdhocAreaNotFoundException>(async () =>
+        var missingRename = await Assert.ThrowsAsync<AdhocAreaNotFoundException>(async () =>
             await sut.RenameArea(0, 999999, "Stald"));
         Assert.That(deniedRename!.GetType(), Is.EqualTo(missingRename!.GetType()));
 
-        var deniedDelete = Assert.ThrowsAsync<AdhocAreaNotFoundException>(async () =>
+        var deniedDelete = await Assert.ThrowsAsync<AdhocAreaNotFoundException>(async () =>
             await sut.DeleteArea(0, area.Id));
-        var missingDelete = Assert.ThrowsAsync<AdhocAreaNotFoundException>(async () =>
+        var missingDelete = await Assert.ThrowsAsync<AdhocAreaNotFoundException>(async () =>
             await sut.DeleteArea(0, 999999));
         Assert.That(deniedDelete!.GetType(), Is.EqualTo(missingDelete!.GetType()));
     }

@@ -875,7 +875,7 @@ public class WorkerTagPropertyScopeTests : TestBaseSetup
 
         var service = BuildDeployService(coreHelper, membership, [], new CapturingLogger<EventDeployService>());
 
-        var ex = Assert.ThrowsAsync<InvalidOperationException>(() =>
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             service.EnsureComplianceForOccurrenceAsync(arp, DateTime.UtcNow.Date.AddDays(3), memberOnA,
                 CancellationToken.None));
         Assert.That(ex!.Message, Does.Contain("refused to deploy"));
@@ -1129,13 +1129,13 @@ public class WorkerTagPropertyScopeTests : TestBaseSetup
     /// silently dropping the property clause.
     /// </summary>
     [Test]
-    public void PropertyScopedLookup_WithoutPluginDbContext_Throws()
+    public async Task PropertyScopedLookup_WithoutPluginDbContext_Throws()
     {
         var membership = new WorkerTagMembershipService(Substitute.For<IEFormCoreService>());
 
-        Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             await membership.GetLiveMemberSiteIdsOnPropertyAsync([1], 1));
-        Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             await membership.GetLiveMemberSiteIdsByTagOnPropertyAsync(1));
     }
 }

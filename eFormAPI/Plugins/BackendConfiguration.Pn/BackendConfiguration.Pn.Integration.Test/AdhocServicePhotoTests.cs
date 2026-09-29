@@ -167,7 +167,7 @@ public class AdhocServicePhotoTests : TestBaseSetup
         // assignedOnly, not assigned to 99, not the creator -> not visible.
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.SavePhoto(99, created.Id, SomeBytes(), "image/png"));
     }
 
@@ -194,7 +194,7 @@ public class AdhocServicePhotoTests : TestBaseSetup
         var core = await GetCore();
         var sut = CreateSut(core);
 
-        Assert.ThrowsAsync<AdhocTaskNotFoundException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskNotFoundException>(async () =>
             await sut.SavePhoto(1, 987654, SomeBytes(), "image/png"));
     }
 
@@ -207,7 +207,7 @@ public class AdhocServicePhotoTests : TestBaseSetup
         var sut = CreateSut(core);
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
 
-        Assert.ThrowsAsync<ArgumentException>(async () =>
+        await Assert.ThrowsAsync<ArgumentException>(async () =>
             await sut.SavePhoto(1, created.Id, SomeBytes(), "application/pdf"));
     }
 
@@ -220,7 +220,7 @@ public class AdhocServicePhotoTests : TestBaseSetup
         var sut = CreateSut(core);
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
 
-        Assert.ThrowsAsync<ArgumentException>(async () =>
+        await Assert.ThrowsAsync<ArgumentException>(async () =>
             await sut.SavePhoto(1, created.Id, [], "image/png"));
     }
 
@@ -238,7 +238,7 @@ public class AdhocServicePhotoTests : TestBaseSetup
         // Unique bytes so the checksum below finds only this attempt's row.
         var bytes = SomeBytes(Guid.NewGuid().ToString());
 
-        var thrown = Assert.ThrowsAsync<IOException>(async () =>
+        var thrown = await Assert.ThrowsAsync<IOException>(async () =>
             await sut.SavePhoto(1, created.Id, bytes, "image/png"));
         Assert.That(thrown, Is.SameAs(failure));
 
@@ -274,7 +274,7 @@ public class AdhocServicePhotoTests : TestBaseSetup
             var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
             var bytes = SomeBytes(Guid.NewGuid().ToString());
 
-            var thrown = Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            var thrown = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await sut.SavePhoto(1, created.Id, bytes, "image/png"));
             Assert.That(thrown!.Message, Does.Contain("no S3 client"));
 
@@ -307,7 +307,7 @@ public class AdhocServicePhotoTests : TestBaseSetup
             var sut = CreateSut(core, new AdhocPhotoStorage(CoreHelperFor(core)));
             var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
 
-            var thrown = Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            var thrown = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await sut.SavePhoto(1, created.Id, SomeBytes(Guid.NewGuid().ToString()), "image/png"));
             Assert.That(thrown!.Message, Does.Contain("Cannot choose adhoc photo storage"));
         }
@@ -370,7 +370,7 @@ public class AdhocServicePhotoTests : TestBaseSetup
         var core = await GetCore();
         var sut = CreateSut(core);
 
-        Assert.ThrowsAsync<AdhocTaskPhotoNotFoundException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskPhotoNotFoundException>(async () =>
             await sut.GetPhoto(1, 987654));
     }
 
@@ -388,7 +388,7 @@ public class AdhocServicePhotoTests : TestBaseSetup
         var updateModel = MakeCreateModel(property.Id);
         await sut.UpdateTask(1, created.Id, updateModel);
 
-        Assert.ThrowsAsync<AdhocTaskPhotoNotFoundException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskPhotoNotFoundException>(async () =>
             await sut.GetPhoto(1, photoId));
     }
 
@@ -403,7 +403,7 @@ public class AdhocServicePhotoTests : TestBaseSetup
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
         var photoId = await sut.SavePhoto(1, created.Id, SomeBytes(), "image/png");
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.GetPhoto(99, photoId));
     }
 
