@@ -2064,6 +2064,13 @@ public class BackendConfigurationCalendarService(
                     {
                         planning.DayOfWeek = (DayOfWeek)arp.DayOfWeek;
                     }
+                    // #1294 — a weekday/week-only change: the next scheduled deploy
+                    // follows the new day too.
+                    if (!dateChanged && NthWeekdayPatternChanged(previousOrdinal, previousDayOfWeek,
+                            arp.RepeatOrdinalWeek, arp.DayOfWeek))
+                    {
+                        ResnapNextExecutionTimeToRule(planning, arp);
+                    }
                     planning.UpdatedByUserId = userService.UserId;
                     await planning.Update(itemsPlanningPnDbContext);
 
@@ -2600,13 +2607,21 @@ public class BackendConfigurationCalendarService(
         // #1294 — the date stays but the dialog changes the Nth-weekday pattern
         // (weekday or week). The rule below is rewritten for the whole ARP, so
         // without a split every past month would render the new day next to its
-        // old, still-open row — the double tile #1294 is about. Split exactly like
-        // a date change: re-anchor at the edited occurrence (newAnchor ==
-        // originalDate here); the past stays pinned by the anchors created above.
+        // old, still-open row — the double tile #1294 is about. Split like a date
+        // change, but anchored on the NEW pattern date in the edited occurrence's
+        // month (not on the clicked tile, which sits on the OLD weekday): the
+        // anchor then satisfies its own rule, so the renderer, the relocation below
+        // and the scheduler all put that month — and every later one — on the new
+        // day. The past stays pinned by the anchors created above.
+        var newRuleDayOfWeek = NthWeekdayRuleDayOfWeek(updateModel.RepeatWeekdaysCsv, updateModel.StartDate,
+            anchorMoved: false, storedDayOfWeek: arp.RepeatOrdinalWeek.HasValue ? arp.DayOfWeek : null);
         var patternOnlyChange = !dateChanged && NthWeekdayPatternChanged(
-            arp.RepeatOrdinalWeek, arp.DayOfWeek, updateModel.RepeatOrdinalWeek,
-            NthWeekdayRuleDayOfWeek(updateModel.RepeatWeekdaysCsv, updateModel.StartDate, anchorMoved: false,
-                storedDayOfWeek: arp.RepeatOrdinalWeek.HasValue ? arp.DayOfWeek : null));
+            arp.RepeatOrdinalWeek, arp.DayOfWeek, updateModel.RepeatOrdinalWeek, newRuleDayOfWeek);
+        if (patternOnlyChange)
+        {
+            newAnchor = await PatternAnchorForSplitAsync(arp.ItemPlanningId, originalDate,
+                updateModel.RepeatOrdinalWeek!.Value, newRuleDayOfWeek);
+        }
         if (dateChanged || patternOnlyChange)
         {
             arp.StartDate = newAnchor;
@@ -2676,6 +2691,12 @@ public class BackendConfigurationCalendarService(
             {
                 planning.DayOfWeek = (DayOfWeek)arp.DayOfWeek;
             }
+            // #1294 — a weekday/week-only change: the next scheduled deploy follows
+            // the new day too.
+            if (patternOnlyChange)
+            {
+                ResnapNextExecutionTimeToRule(planning, arp);
+            }
             planning.UpdatedByUserId = userService.UserId;
             await planning.Update(itemsPlanningPnDbContext);
         }
@@ -2711,7 +2732,7 @@ public class BackendConfigurationCalendarService(
         // is earlier than originalDate, so the cutoff is the new anchor — else a
         // backfilled anchor at/after the new anchor double-renders the same day
         // with stale values (#927).
-        var staleCutoff = dateChanged && newAnchor < originalDate ? newAnchor : originalDate;
+        var staleCutoff = (dateChanged || patternOnlyChange) && newAnchor < originalDate ? newAnchor : originalDate;
         var staleExceptions = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
             .Where(x => x.AreaRulePlanningId == updateModel.Id)
             .Where(x => x.OriginalDate >= staleCutoff)
@@ -2723,14 +2744,16 @@ public class BackendConfigurationCalendarService(
             await stale.Delete(backendConfigurationPnDbContext);
         }
 
-        // #1294 — a pattern-only change (the series was split at originalDate above):
-        // from the edited occurrence on, open occurrences follow the new day within
-        // their own month; earlier ones stay where they are, like the rest of this
-        // scope's history. After the stale-override purge, so an override the new
-        // series drops cannot block the move.
+        // #1294 — a pattern-only change (the series was split above, at the new
+        // pattern date of the edited occurrence's month): from that month on, open
+        // occurrences follow the new day within their own month; earlier ones stay
+        // where they are, like the rest of this scope's history. After the
+        // stale-override purge, so an override the new series drops cannot block
+        // the move.
         if (patternOnlyChange && planning != null)
         {
-            await RelocateNonCompletedComplianceRowsToNewPattern(arp, planning, fromDate: originalDate);
+            await RelocateNonCompletedComplianceRowsToNewPattern(arp, planning,
+                fromDate: newAnchor < originalDate ? newAnchor : originalDate);
         }
 
         // #966 (RC2) — mirror the MoveTask #954 fix for the edit-modal path: a
@@ -3487,7 +3510,7 @@ public class BackendConfigurationCalendarService(
                 // enumerators emit the series' own StartDate as the START
                 // MONTH's occurrence whenever that month's pattern date sorts
                 // strictly earlier than the anchor (option (b) — see
-                // MonthStartAnchorIsDroppedOccurrence). A relocation that
+                // MonthStartAnchorIsStartMonthOccurrence). A relocation that
                 // mapped the start month to the pure pattern date would move a
                 // deployed row onto a day the renderer does NOT paint, while
                 // the renderer still emits the anchor — TWO tiles in one
@@ -3503,7 +3526,7 @@ public class BackendConfigurationCalendarService(
                 // actually render under.
                 if (oldDeadline.Year == planning.StartDate.Year
                     && oldDeadline.Month == planning.StartDate.Month
-                    && MonthStartAnchorIsDroppedOccurrence(planning, planning.StartDate.Date,
+                    && MonthStartAnchorIsStartMonthOccurrence(planning, planning.StartDate.Date,
                         arp.RepeatOrdinalWeek, arp.DayOfWeek))
                 {
                     return planning.StartDate.Date;
@@ -3605,7 +3628,7 @@ public class BackendConfigurationCalendarService(
     // #1207's anchor-awareness in the Month arm cannot move a verdict in an
     // unsafe direction — but NOT because the mapper is one-date-per-month.
     // It is not (see "Known and accepted" below). The argument is:
-    //   * The start-month guard calls MonthStartAnchorIsDroppedOccurrence with
+    //   * The start-month guard calls MonthStartAnchorIsStartMonthOccurrence with
     //     planning.StartDate, never the probe date, so it is CONSTANT for a
     //     given (planning, arp). Call it A.
     //   * A false — the mapper is identical to the pre-#1207 one, so no
@@ -5210,6 +5233,76 @@ public class BackendConfigurationCalendarService(
     }
 
     /// <summary>
+    /// #1294 — the anchor of a pattern-only "thisAndFollowing" split: the new rule's
+    /// date in the edited occurrence's month (<see cref="NthWeekdayOfMonth"/>, with
+    /// its 5th→4th spill), so the new anchor satisfies its own rule. Falls back to
+    /// <paramref name="originalDate"/> (logged) when no such date exists or another
+    /// compliance of the planning already holds it — the relocation could not move
+    /// the edited row there, and an anchor on it would paint a second tile next to
+    /// that row; on the clicked date the anchor is that month's occurrence instead
+    /// (<see cref="MonthStartAnchorIsStartMonthOccurrence"/>).
+    /// </summary>
+    private async Task<DateTime> PatternAnchorForSplitAsync(int planningId, DateTime originalDate,
+        int newOrdinal, int newDayOfWeek)
+    {
+        var patternDate = NthWeekdayOfMonth(originalDate.Year, originalDate.Month, newOrdinal, newDayOfWeek)?.Date;
+        if (patternDate == null)
+        {
+            logger.LogWarning(
+                "UpdateTaskThisAndFollowing: no {Ordinal}. weekday {DayOfWeek} in {Month:yyyy-MM}; the split stays at {OriginalDate:yyyy-MM-dd}",
+                newOrdinal, newDayOfWeek, originalDate, originalDate);
+            return originalDate;
+        }
+        var taken = await backendConfigurationPnDbContext.Compliances
+            .AnyAsync(c => c.PlanningId == planningId && c.Deadline.Date == patternDate.Value);
+        if (taken)
+        {
+            logger.LogWarning(
+                "UpdateTaskThisAndFollowing: planning {PlanningId} already has a compliance on {PatternDate:yyyy-MM-dd}; the split stays at {OriginalDate:yyyy-MM-dd}",
+                planningId, patternDate.Value, originalDate);
+            return originalDate;
+        }
+        return DateTime.SpecifyKind(patternDate.Value, DateTimeKind.Utc);
+    }
+
+    /// <summary>
+    /// #1294 — <c>Planning.NextExecutionTime</c> re-snapped to <paramref name="pattern"/>
+    /// within its own month, via the same Month producer the renderer uses. Returns
+    /// <c>NewNext</c> when it should change; when the snap would pull a next run that
+    /// is today-or-later into the past (the scheduler would fire at once and deploy
+    /// the next period early) it returns <c>RefusedTarget</c> instead and nothing is
+    /// changed. Shared by UpdateTask and the monthly re-anchor repair.
+    /// </summary>
+    internal static (DateTime? NewNext, DateTime? RefusedTarget) ResnapNextExecutionTime(
+        Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
+        AreaRulePlanning pattern,
+        DateTime today)
+    {
+        if (planning.NextExecutionTime is not { } next) return (null, null);
+        var target = NewPatternDateForPeriodOf(planning, pattern, next);
+        if (target == null || target.Value.Date == next.Date) return (null, null);
+        if (target.Value.Date < today && next.Date >= today) return (null, target.Value.Date);
+        return (DateTime.SpecifyKind(target.Value.Date, next.Kind).Add(next.TimeOfDay), null);
+    }
+
+    private void ResnapNextExecutionTimeToRule(
+        Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning, AreaRulePlanning arp)
+    {
+        var (newNext, refused) = ResnapNextExecutionTime(planning, arp,
+            ComplianceFutureTaskGuard.TodayInCopenhagen(UtcNow()));
+        if (newNext.HasValue)
+        {
+            planning.NextExecutionTime = newNext;
+        }
+        else if (refused.HasValue)
+        {
+            logger.LogWarning(
+                "UpdateTask: planning {PlanningId} NextExecutionTime {Next:yyyy-MM-dd} kept — the new pattern date {Target:yyyy-MM-dd} is in the past",
+                planning.Id, planning.NextExecutionTime, refused.Value);
+        }
+    }
+
+    /// <summary>
     /// #1294 — an Nth-weekday rule that stayed one but now names another weekday or
     /// week. (A change of rule KIND is left alone: its old occurrences have no
     /// same-period counterpart to move to.)
@@ -5273,8 +5366,22 @@ public class BackendConfigurationCalendarService(
     }
 
     /// <summary>
-    /// True when a RepeatType.Month series must emit its own StartDate as an
-    /// occurrence in its own right (#1207).
+    /// True when a RepeatType.Month series' own StartDate is the occurrence of
+    /// its START MONTH (#1207, extended by #1294) — emitted by both enumerators
+    /// in place of that month's pattern date, which they then skip. Two cases:
+    /// <list type="number">
+    /// <item><b>#1207 option (b)</b>: the start month's pattern date sorts
+    /// strictly before the anchor, so without this the month's occurrence would
+    /// be lost (details below).</item>
+    /// <item><b>#1294</b>: an Nth-weekday rule whose weekday is NOT the anchor's
+    /// own (the dialog's "Månedligt på den første &lt;ugedag&gt;" picked another
+    /// day than the clicked cell). The anchor can never be a pattern date then;
+    /// it is the start month's occurrence even when the pattern date falls after
+    /// it — the task shows on the day it was created, as the scheduler deploys
+    /// it (SearchListJob: <c>NextExecutionTime ??= StartDate</c>). Rules whose
+    /// weekday IS the anchor's are unaffected: for them only case 1 applies.</item>
+    /// </list>
+    /// Either way the start month carries exactly one occurrence.
     ///
     /// Semantics: <b>the anchor is occurrence #1; the pattern governs #2
     /// onward.</b> Before #1207 both enumerators treated StartDate purely as a
@@ -5321,7 +5428,7 @@ public class BackendConfigurationCalendarService(
     /// never a second implementation, or a backfilled occurrence and a
     /// rendered occurrence could land on different days for the same rule.
     /// </summary>
-    private static bool MonthStartAnchorIsDroppedOccurrence(
+    private static bool MonthStartAnchorIsStartMonthOccurrence(
         Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
         DateTime startDate,
         int? repeatOrdinalWeek,
@@ -5331,8 +5438,24 @@ public class BackendConfigurationCalendarService(
         // No pattern date for the start month (an unusable rule shape; a
         // 5th-weekday spill falls back to the last occurrence since #1289)
         // means nothing is lost that month — do not synthesise an anchor there.
-        return patternDate.HasValue && patternDate.Value < startDate;
+        if (!patternDate.HasValue) return false;
+        if (patternDate.Value < startDate) return true;
+        // #1294 — an Nth-weekday rule whose weekday is NOT the anchor's own (the
+        // dialog's "Månedligt på den første <ugedag>" picked another day than the
+        // clicked cell; before #1294 CreateTask overwrote the pick with the
+        // anchor's weekday, so this shape could not arise). The anchor can never
+        // be a pattern date then, so under option (b) alone it would be dropped
+        // whenever the start month's pattern date falls after it, and the task
+        // would not show on the day it was created. Here the anchor IS the start
+        // month's occurrence — replacing that month's pattern date, so the
+        // one-occurrence-per-month invariant holds (both enumerators then start
+        // their pattern loop one period later) — which is also what the scheduler
+        // does: SearchListJob deploys first on StartDate (NextExecutionTime ??=
+        // StartDate) and snaps to the pattern from the next period on.
+        return repeatOrdinalWeek.HasValue && dayOfWeekOverride.HasValue
+               && dayOfWeekOverride.Value != (int)startDate.DayOfWeek;
     }
+
 
     /// <summary>
     /// The date a RepeatType.Month rule produces for the calendar month that
@@ -5390,7 +5513,7 @@ public class BackendConfigurationCalendarService(
     /// True when a yearly series (RepeatType cast 4) must emit its own
     /// StartDate as an occurrence in its own right (#1217).
     ///
-    /// The Year twin of <see cref="MonthStartAnchorIsDroppedOccurrence"/>, with
+    /// The Year twin of <see cref="MonthStartAnchorIsStartMonthOccurrence"/>, with
     /// the identical option-(b) rule: emit the anchor ONLY when the start
     /// YEAR's pattern date sorts STRICTLY EARLIER than it, i.e. only when an
     /// occurrence would otherwise be lost. Strictness is what makes a duplicate
@@ -5552,24 +5675,27 @@ public class BackendConfigurationCalendarService(
             }
             case Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Month:
             {
-                // #1207: the anchor is occurrence #1; the pattern governs #2
-                // onward. Emit StartDate itself when the start month's pattern
-                // date sorts before it — otherwise that first occurrence is
-                // silently dropped below and the cursor jumps a whole
-                // repeatEvery period. See MonthStartAnchorIsDroppedOccurrence
-                // for the scope and the "only when an occurrence would
-                // otherwise be lost" rule. Yielded FIRST keeps the sequence
-                // ascending: the start month's own pattern date is < rangeStart
-                // in exactly this case, so the loop's first emitted candidate
-                // is a whole period later.
-                if (startDate >= rangeStart && startDate < rangeEnd
-                    && MonthStartAnchorIsDroppedOccurrence(planning, startDate, repeatOrdinalWeek, dayOfWeekOverride))
+                // #1207 / #1294: when StartDate itself is the start month's
+                // occurrence (its pattern date sorts before the anchor, or an
+                // Nth-weekday rule's weekday is not the anchor's — see
+                // MonthStartAnchorIsStartMonthOccurrence), emit it and start the
+                // pattern loop one period later, so the start month never
+                // carries a second occurrence. Yielded FIRST keeps the sequence
+                // ascending: every pattern candidate is then a whole period later.
+                var anchorIsStartMonthOccurrence =
+                    MonthStartAnchorIsStartMonthOccurrence(planning, startDate, repeatOrdinalWeek, dayOfWeekOverride);
+                if (startDate >= rangeStart && startDate < rangeEnd && anchorIsStartMonthOccurrence)
                 {
                     yield return startDate;
                 }
                 var monthsSinceStart = (rangeStart.Year - startDate.Year) * 12 + rangeStart.Month - startDate.Month;
                 var skip = monthsSinceStart > 0 ? (int)Math.Ceiling((double)monthsSinceStart / repeatEvery) : 0;
                 var candidateMonth = startDate.AddMonths(skip * repeatEvery);
+                if (anchorIsStartMonthOccurrence
+                    && candidateMonth.Year == startDate.Year && candidateMonth.Month == startDate.Month)
+                {
+                    candidateMonth = candidateMonth.AddMonths(repeatEvery);
+                }
                 if (repeatOrdinalWeek.HasValue)
                 {
                     // Nth-weekday-of-month path (e.g. "2nd Tuesday of each month").
@@ -5908,13 +6034,15 @@ public class BackendConfigurationCalendarService(
             case Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Month:
             {
                 if (startDate > weekEnd) break;
-                // #1207: mirror of EnumerateOccurrences' Month branch — emit
-                // the series anchor itself when the start month's pattern date
-                // sorts before it. Both enumerators MUST agree (see the
-                // invariant on EnumerateOccurrences), so the test lives in the
-                // single shared helper.
-                if (startDate >= weekStart && startDate <= weekEnd
-                    && MonthStartAnchorIsDroppedOccurrence(planning, startDate, repeatOrdinalWeek, dayOfWeekOverride))
+                // #1207 / #1294: mirror of EnumerateOccurrences' Month branch —
+                // emit the series anchor itself when it is the start month's
+                // occurrence, and start the pattern loop one period later. Both
+                // enumerators MUST agree (see the invariant on
+                // EnumerateOccurrences), so the test lives in the single shared
+                // helper MonthStartAnchorIsStartMonthOccurrence.
+                var anchorIsStartMonthOccurrence =
+                    MonthStartAnchorIsStartMonthOccurrence(planning, startDate, repeatOrdinalWeek, dayOfWeekOverride);
+                if (startDate >= weekStart && startDate <= weekEnd && anchorIsStartMonthOccurrence)
                 {
                     occurrences.Add(startDate);
                 }
@@ -5922,6 +6050,11 @@ public class BackendConfigurationCalendarService(
                 var monthsSinceStart = (weekStart.Year - startDate.Year) * 12 + weekStart.Month - startDate.Month;
                 var periods = monthsSinceStart > 0 ? (int)Math.Ceiling((double)monthsSinceStart / repeatEvery) : 0;
                 var candidateMonth = startDate.AddMonths(periods * repeatEvery);
+                if (anchorIsStartMonthOccurrence
+                    && candidateMonth.Year == startDate.Year && candidateMonth.Month == startDate.Month)
+                {
+                    candidateMonth = candidateMonth.AddMonths(repeatEvery);
+                }
                 if (repeatOrdinalWeek.HasValue)
                 {
                     // Nth-weekday-of-month path (e.g. "2nd Tuesday of each month").

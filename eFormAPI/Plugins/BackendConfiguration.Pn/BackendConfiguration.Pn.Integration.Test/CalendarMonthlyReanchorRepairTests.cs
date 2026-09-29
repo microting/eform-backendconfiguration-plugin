@@ -86,8 +86,16 @@ public class CalendarMonthlyReanchorRepairTests : TestBaseSetup
             || x.Name == CalendarConfigurationBackfillService.LegacyStartHourRepairMarkerName));
         await ctx.SaveChangesAsync();
 
-        ItemsPlanningPnDbContext!.Plannings.RemoveRange(ItemsPlanningPnDbContext.Plannings);
-        await ItemsPlanningPnDbContext.SaveChangesAsync();
+        // Items-planning children before their Planning (FK_PlanningCases_Plannings_PlanningId
+        // and friends): SiblingSitesCaseCompleted seeds PlanningCase + PlanningCaseSites, and
+        // the fixture's tests run in any order on one shared database.
+        var ip = ItemsPlanningPnDbContext!;
+        ip.PlanningCaseSites.RemoveRange(ip.PlanningCaseSites);
+        await ip.SaveChangesAsync();
+        ip.PlanningCases.RemoveRange(ip.PlanningCases);
+        await ip.SaveChangesAsync();
+        ip.Plannings.RemoveRange(ip.Plannings);
+        await ip.SaveChangesAsync();
 
         var core = await GetCore();
         var coreHelper = Substitute.For<IEFormCoreService>();

@@ -735,6 +735,39 @@ public class CalendarMonthlyAnchorOccurrenceTests
         return (DateTime?)mi!.Invoke(null,
             new object?[] { planning, startDate, repeatOrdinalWeek, dayOfWeekOverride });
     }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // #1294 — an Nth-weekday rule whose weekday is not the anchor's own
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Start Mon 2026-06-01, "1st Wednesday" (DayOfWeek 3, ordinal 1), every month — the
+    /// shape #1294's CreateTask stores when the dialog picks another weekday than the
+    /// clicked cell. The anchor is June's occurrence (not Wed 3 June); the pattern governs
+    /// from July (Wed 1 July, Wed 5 August). All Month producers agree.
+    /// </summary>
+    [Test]
+    public void OffWeekdayAnchor_IsTheStartMonthsOccurrence_InEveryProducer()
+    {
+        var planning = MonthlyPlanning(Utc(2026, 6, 1), repeatEvery: 1, dayOfMonth: 0);
+        var arp = new AreaRulePlanning { RepeatType = 3, RepeatEvery = 1, RepeatOrdinalWeek = 1, DayOfWeek = 3 };
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Enumerate(planning, Utc(2026, 6, 1), Utc(2026, 9, 1), repeatOrdinalWeek: 1, dayOfWeekOverride: 3),
+                Is.EqualTo(new[] { Utc(2026, 6, 1), Utc(2026, 7, 1), Utc(2026, 8, 5) }));
+            Assert.That(OccurrencesInWeek(planning, Utc(2026, 6, 1), Utc(2026, 6, 7), repeatOrdinalWeek: 1, dayOfWeekOverride: 3),
+                Is.EqualTo(new[] { Utc(2026, 6, 1) }), "the anchor, not Wed 3 June");
+            Assert.That(OccurrencesInWeek(planning, Utc(2026, 6, 29), Utc(2026, 7, 5), repeatOrdinalWeek: 1, dayOfWeekOverride: 3),
+                Is.EqualTo(new[] { Utc(2026, 7, 1) }));
+            Assert.That(BackendConfigurationCalendarService.NewPatternDateForPeriodOf(planning, arp, Utc(2026, 6, 20)),
+                Is.EqualTo(Utc(2026, 6, 1)));
+            Assert.That(BackendConfigurationCalendarService.NewPatternDateForPeriodOf(planning, arp, Utc(2026, 7, 10)),
+                Is.EqualTo(Utc(2026, 7, 1)));
+            Assert.That(BackendConfigurationCalendarService.IsSameRecurrencePeriod(planning, arp, Utc(2026, 6, 3), Utc(2026, 6, 20)),
+                Is.True);
+        });
+    }
 }
 
 /// <summary>

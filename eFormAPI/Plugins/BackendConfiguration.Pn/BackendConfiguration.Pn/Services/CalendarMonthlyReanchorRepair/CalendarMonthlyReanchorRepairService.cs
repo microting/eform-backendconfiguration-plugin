@@ -435,27 +435,18 @@ public class CalendarMonthlyReanchorRepairService(
             patternByPlanning[planningId] = pattern;
 
             // ── Step 2: mirror the weekday/ordinal and re-snap NextExecutionTime.
-            DateTime? newNext = null;
-            if (planning.NextExecutionTime is { } next)
+            // Pulling the next run into the past would make the scheduler fire at once and
+            // deploy the NEXT period early — a person decides that (same rule UpdateTask
+            // applies after a weekday-only edit; the helper is shared).
+            var (newNext, refusedNext) = CalendarService.ResnapNextExecutionTime(planning, pattern, today);
+            if (refusedNext.HasValue)
             {
-                var target = CalendarService.NewPatternDateForPeriodOf(planning, pattern, next);
-                if (target.HasValue && target.Value.Date != next.Date)
+                work.Model.ReviewItems.Add(new MonthlyReanchorReviewItemModel
                 {
-                    // Pulling the next run into the past would make the scheduler fire at
-                    // once and deploy the NEXT period early — a person decides that.
-                    if (target.Value.Date < today && next.Date >= today)
-                    {
-                        work.Model.ReviewItems.Add(new MonthlyReanchorReviewItemModel
-                        {
-                            Kind = "NextExecutionTime", PlanningId = planningId, AreaRulePlanningId = arp.Id,
-                            CurrentDate = next, TargetDate = target.Value.Date, Reasons = [ReasonBeforeToday]
-                        });
-                    }
-                    else
-                    {
-                        newNext = SameTimeOfDay(target.Value, next);
-                    }
-                }
+                    Kind = "NextExecutionTime", PlanningId = planningId, AreaRulePlanningId = arp.Id,
+                    CurrentDate = planning.NextExecutionTime!.Value, TargetDate = refusedNext.Value,
+                    Reasons = [ReasonBeforeToday]
+                });
             }
 
             if (planning.DayOfWeek != (DayOfWeek)arp.DayOfWeek || planning.RepeatOrdinalWeek != ordinal
