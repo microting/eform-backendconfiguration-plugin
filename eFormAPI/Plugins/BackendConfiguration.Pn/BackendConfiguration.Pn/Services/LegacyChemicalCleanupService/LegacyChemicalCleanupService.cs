@@ -21,6 +21,7 @@ SOFTWARE.
 namespace BackendConfiguration.Pn.Services.LegacyChemicalCleanupService;
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Infrastructure.Helpers;
@@ -32,7 +33,15 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 
-public sealed record LegacyChemicalCleanupResult(int AreaProperties, int Cases, int EntityGroups);
+/// <param name="AreaProperties">Area assignments removed.</param>
+/// <param name="Cases">Deployed cases deleted.</param>
+/// <param name="EntityGroups">Entity lists deleted.</param>
+/// <param name="Failures">Items whose delete threw, as "areaProperty:&lt;id&gt;", "case:&lt;uid&gt;" or "entityGroup:&lt;uid&gt;".</param>
+public sealed record LegacyChemicalCleanupResult(
+    int AreaProperties,
+    int Cases,
+    int EntityGroups,
+    IReadOnlyList<string> Failures);
 
 /// <summary>
 /// One-off removal of what the legacy eForm chemical flow left on a customer
@@ -139,6 +148,6 @@ public class LegacyChemicalCleanupService(
             await sdkOperations.DeleteEntityGroupAsync(uid).ConfigureAwait(false);
         }
 
-        return new LegacyChemicalCleanupResult(assignments.Count, deployedUids.Count, entityGroupUids.Count);
+        return new LegacyChemicalCleanupResult(assignments.Count, deployedUids.Count, entityGroupUids.Count, []);
     }
 }

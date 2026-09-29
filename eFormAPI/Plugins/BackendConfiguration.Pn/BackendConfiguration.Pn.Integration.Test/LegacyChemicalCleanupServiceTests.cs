@@ -30,6 +30,8 @@ using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
+using Microting.ItemsPlanningBase.Infrastructure.Enums;
 using NSubstitute;
 
 namespace BackendConfiguration.Pn.Integration.Test;
@@ -55,6 +57,12 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
         string PropertyGroupUid,
         string UnrelatedGroupUid);
 
+    [SetUp]
+    public void CreateSdkOperationsSubstitute()
+    {
+        _sdkOperations = Substitute.For<ILegacyChemicalSdkOperations>();
+    }
+
     /// <summary>
     /// Call before seeding: GetCore() runs Core.StartSqlOnly, which migrates the
     /// SDK database to the current model (e.g. Folders.ChildrenProhibited).
@@ -64,7 +72,6 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
         var core = await GetCore();
         var coreHelper = Substitute.For<IEFormCoreService>();
         coreHelper.GetCore().Returns(Task.FromResult(core));
-        _sdkOperations = Substitute.For<ILegacyChemicalSdkOperations>();
         return new LegacyChemicalCleanupService(BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!,
             coreHelper, _sdkOperations, NullLogger<LegacyChemicalCleanupService>.Instance);
     }
@@ -143,6 +150,113 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
         var folder = await MicrotingDbContext!.Folders.AsNoTracking().SingleAsync(x => x.Id == seeded.LegacyFolder.Id);
         Assert.That(legacy.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
         Assert.That(folder.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+    }
+
+    /// <summary>
+    /// A legacy assignment whose deletion throws inside DeleteAreaPropertyAsync:
+    /// its items-planning PlanningCaseSite points at an SDK case that does not
+    /// exist (never deployed), so the moved <c>Cases.SingleAsync</c> throws.
+    /// </summary>
+    private async Task<AreaProperty> SeedUndeletableLegacyAssignmentAsync()
+    {
+        var property = new Property { Name = Guid.NewGuid().ToString(), CreatedByUserId = 1, UpdatedByUserId = 1 };
+        await property.Create(BackendConfigurationPnDbContext!);
+        var chemicalArea = new Area { Type = AreaTypesEnum.Type9, IsDisabled = true, CreatedByUserId = 1, UpdatedByUserId = 1 };
+        await chemicalArea.Create(BackendConfigurationPnDbContext!);
+        var assignment = new AreaProperty { AreaId = chemicalArea.Id, PropertyId = property.Id, Checked = true, CreatedByUserId = 1, UpdatedByUserId = 1 };
+        await assignment.Create(BackendConfigurationPnDbContext!);
+
+        var areaRule = new AreaRule
+        {
+            AreaId = chemicalArea.Id, PropertyId = property.Id, EformId = 7, CreatedInGuide = true,
+            CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await areaRule.Create(BackendConfigurationPnDbContext!);
+        var planning = new Planning
+        {
+            Enabled = true, RepeatEvery = 1, RepeatType = RepeatType.Week,
+            StartDate = DateTime.UtcNow.Date, RelatedEFormId = 7, Description = "Legacy chemical",
+            CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await planning.Create(ItemsPlanningPnDbContext!);
+        await new AreaRulePlanning
+        {
+            AreaRuleId = areaRule.Id, PropertyId = property.Id, AreaId = chemicalArea.Id,
+            ItemPlanningId = planning.Id, StartDate = DateTime.UtcNow.Date, Status = true,
+            RepeatType = 2, RepeatEvery = 1, CreatedByUserId = 1, UpdatedByUserId = 1
+        }.Create(BackendConfigurationPnDbContext!);
+
+        const int missingSdkCaseId = int.MaxValue;
+        var planningCase = new PlanningCase
+        {
+            PlanningId = planning.Id, Status = 66, MicrotingSdkCaseId = missingSdkCaseId,
+            MicrotingSdkeFormId = 7, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await planningCase.Create(ItemsPlanningPnDbContext!);
+        await new PlanningCaseSite
+        {
+            PlanningId = planning.Id, PlanningCaseId = planningCase.Id, MicrotingSdkSiteId = 0,
+            MicrotingSdkeFormId = 7, MicrotingSdkCaseId = missingSdkCaseId, Status = 66,
+            CreatedByUserId = 1, UpdatedByUserId = 1
+        }.Create(ItemsPlanningPnDbContext!);
+
+        return assignment;
+    }
+
+    private void FailSdkDeletesFor(Seeded seeded)
+    {
+        _sdkOperations.DeleteCaseAsync(seeded.CaseUid)
+            .Returns(Task.FromException(new InvalidOperationException("cloud said no")));
+        _sdkOperations.DeleteEntityGroupAsync(seeded.BarcodeGroupUid)
+            .Returns(Task.FromException(new InvalidOperationException("cloud said no")));
+    }
+
+    [Test]
+    public async Task Cleanup_OneItemFailing_StillCleansTheRestAndReportsTheFailures()
+    {
+        var sut = await CreateSut();
+        var undeletable = await SeedUndeletableLegacyAssignmentAsync();
+        var seeded = await SeedLegacyAsync();
+        FailSdkDeletesFor(seeded);
+
+        var result = await sut.CleanupAsync();
+
+        await _sdkOperations.Received(1).DeleteEntityGroupAsync(seeded.PropertyGroupUid);
+        var legacy = await BackendConfigurationPnDbContext!.AreaProperties.AsNoTracking().SingleAsync(x => x.Id == seeded.Legacy.Id);
+        var folder = await MicrotingDbContext!.Folders.AsNoTracking().SingleAsync(x => x.Id == seeded.LegacyFolder.Id);
+        Assert.That(legacy.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(folder.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(result.Failures, Does.Contain($"areaProperty:{undeletable.Id}"));
+        Assert.That(result.Failures, Does.Contain($"case:{seeded.CaseUid}"));
+        Assert.That(result.Failures, Does.Contain($"entityGroup:{seeded.BarcodeGroupUid}"));
+    }
+
+    [Test]
+    public async Task RunIfNeeded_OneItemFailing_StillWritesTheMarker()
+    {
+        await BackendConfigurationPnDbContext!.PluginConfigurationValues
+            .Where(x => x.Name == LegacyChemicalCleanupService.MarkerName).ExecuteDeleteAsync();
+        var sut = await CreateSut();
+        await SeedUndeletableLegacyAssignmentAsync();
+        var seeded = await SeedLegacyAsync();
+        FailSdkDeletesFor(seeded);
+
+        await sut.RunIfNeededAsync();
+
+        await _sdkOperations.Received(1).DeleteEntityGroupAsync(seeded.PropertyGroupUid);
+        Assert.That(await BackendConfigurationPnDbContext.PluginConfigurationValues
+            .CountAsync(x => x.Name == LegacyChemicalCleanupService.MarkerName), Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task Cleanup_LegacyNamedEntityGroupWithoutMicrotingUid_IsNotDeleted()
+    {
+        var sut = await CreateSut();
+        await new EntityGroup { Name = "Chemicals - RegNo", MicrotingUid = null, Type = "EntitySearch" }.Create(MicrotingDbContext!);
+
+        await sut.CleanupAsync();
+
+        await _sdkOperations.DidNotReceive().DeleteEntityGroupAsync(Arg.Is<string>(x => x == null));
     }
 
     [Test]
