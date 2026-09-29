@@ -331,7 +331,7 @@ test.describe.serial('Calendar task-modal translation', () => {
     // Click the Title translate icon → the Deutsch title field auto-fills from
     // the sentinel backend: "[de-DE] Tank 4".
     await page.locator('#calendarEventTitleTranslate').click();
-    const deTitleInput = translatableFieldByLang(page, 'Deutsch').locator('input[matInput]').first();
+    const deTitleInput = translatableFieldByLang(page, 'Deutsch').locator('input[matInput]');
     await expect(deTitleInput).toHaveValue('[de-DE] Tank 4', { timeout: 15000 });
 
     // Click the Description translate icon → the Deutsch description field
@@ -367,7 +367,7 @@ test.describe.serial('Calendar task-modal translation', () => {
     // In edit mode the translate fields auto-expand when a target translation
     // exists (descTranslateExpanded/titleTranslateExpanded), so the Deutsch
     // title input should be present and prefilled without re-clicking.
-    const editDeTitle = translatableFieldByLang(page, 'Deutsch').locator('input[matInput]').first();
+    const editDeTitle = translatableFieldByLang(page, 'Deutsch').locator('input[matInput]');
     await expect(editDeTitle, 'edit mode prefills the Deutsch title field').toHaveValue(
       '[de-DE] Tank 4',
       { timeout: 15000 }
@@ -415,7 +415,7 @@ test.describe.serial('Calendar task-modal translation', () => {
 
     // Reveal the Deutsch title field, wait for its auto-fill, then replace it by hand.
     await page.locator('#calendarEventTitleTranslate').click();
-    const deTitleInput = translatableFieldByLang(page, 'Deutsch').locator('input[matInput]').first();
+    const deTitleInput = translatableFieldByLang(page, 'Deutsch').locator('input[matInput]');
     await expect(deTitleInput).toHaveValue('[de-DE] Tank 6', { timeout: 15000 });
     await deTitleInput.fill('Tank sechs');
 

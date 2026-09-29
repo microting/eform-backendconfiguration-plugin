@@ -196,12 +196,23 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   private translationConfigured = false;
   /** True while onSave fills missing translations; Save is disabled meanwhile. */
   isFillingTranslations = false;
+  /**
+   * True from the moment onSave starts its real work until the create/update
+   * request has answered (or the save was abandoned). Guards against a second
+   * Save click sending a duplicate request; Save is disabled meanwhile. After a
+   * successful save it stays set — the dialog closes.
+   */
+  isSaving = false;
   /** Whether the init-time translationPossible() probe has answered. */
   private translationProbeAnswered = false;
-  /** Resolve once the active languages / linked workers / teams have loaded (or failed to). */
-  private languagesLoaded: Promise<void> = Promise.resolve();
-  private employeesLoaded: Promise<void> = Promise.resolve();
-  private teamsLoaded: Promise<void> = Promise.resolve();
+  /**
+   * Resolve once the active languages / linked workers / teams have loaded (or failed
+   * to): true when the load delivered its data, false on an error, a failed response
+   * or an empty completion.
+   */
+  private languagesLoaded: Promise<boolean> = Promise.resolve(true);
+  private employeesLoaded: Promise<boolean> = Promise.resolve(true);
+  private teamsLoaded: Promise<boolean> = Promise.resolve(true);
   /** Set when the dialog closes, so a save still filling translations stops. */
   private dialogClosed = false;
 
@@ -374,6 +385,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     // pages, so in the calendar flow it would be empty and the translate icon
     // would never appear.
     this.languagesLoaded = this.whenLoaded(this.appSettingsStateService.getLanguages().pipe(take(1)), res => {
+      if (!(res && res.success)) return false;
       this.activeLanguages = (res?.model?.languages ?? [])
         .filter(l => l.isActive)
         .map(l => ({id: l.id, code: l.languageCode, name: l.name}));
@@ -432,10 +444,13 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       this.tagsControl.setValue(task.tags ?? []);
       this.descriptionControl.setValue(task.descriptionHtml ?? '');
       // Prefill the per-language Title/Description fields from the saved
-      // translations. Danish (1) seeds the source controls (fall back to the
-      // single title/descriptionHtml); non-Danish entries seed the maps and
-      // auto-expand so the saved translations are visible.
-      this.prefillTranslations(task);
+      // translations once the language list is known: Danish is resolved by its
+      // code (its SDK id differs per installation), so which entry seeds the
+      // source controls can only be decided then. Non-Danish entries seed the
+      // maps and auto-expand so the saved translations are visible.
+      this.languagesLoaded.then(() => {
+        if (!this.dialogClosed) this.prefillTranslations(task);
+      });
       this.driveLinkControl.setValue(task.driveLink ?? '');
       this.showDriveInput = !!task.driveLink;
       this.boardControl.setValue(task.boardId ?? null);
@@ -682,8 +697,9 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       return;
     }
     this.employeesLoaded = this.whenLoaded(this.propertiesService.getLinkedSites(propertyId, false), res => {
+      if (!(res && res.success && res.model)) return false;
       // A response for a property that is no longer selected is dropped (as for teams).
-      if (this.propertyControl.value === propertyId && res && res.success && res.model) {
+      if (this.propertyControl.value === propertyId) {
         this.filteredEmployees = this.withResignedAssignees(res.model);
         this.rebuildAssigneeItems();
         // Sites (and their languages) are now known — re-resolve the target set
@@ -706,7 +722,8 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       return;
     }
     this.teamsLoaded = this.whenLoaded(this.workerTagsService.getWorkerTags(propertyId), res => {
-      if (this.propertyControl.value === propertyId && res && res.success && res.model) {
+      if (!(res && res.success && res.model)) return false;
+      if (this.propertyControl.value === propertyId) {
         this.filteredTeams = this.withRetainedTeams(res.model);
         this.rebuildAssigneeItems();
         // Team member ids are now known — include their languages.
@@ -885,10 +902,10 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     } else {
       // Re-expand when a current target language already has translated text.
       // In edit mode prefillTranslations populates titleByLang/descByLang and
-      // expands the fields, but it runs before the active-languages list has
-      // loaded; the first recompute pass then sees an empty target set and
-      // collapses them. Once the languages arrive we restore the expansion so
-      // the saved translations aren't hidden behind a collapsed field.
+      // expands the fields, but a recompute pass that runs while the workers
+      // or teams are still loading sees an empty target set and collapses
+      // them. Once the targets are known we restore the expansion so the saved
+      // translations aren't hidden behind a collapsed field.
       if (this.targetLanguages.some(l => (this.titleByLang[l.id] ?? '').length > 0)) {
         this.titleTranslateExpanded = true;
       }
@@ -898,21 +915,32 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     }
   }
 
-  /** Seed the per-language maps + source controls from saved task.translations. */
+  /**
+   * Seed the per-language maps + source controls from saved task.translations.
+   * Runs once the language list has loaded (or failed to — then Danish falls back
+   * to id 1): the entry whose languageId is Danish's seeds the source controls,
+   * every other entry is a target. Anything the user already typed while the list
+   * was loading is kept.
+   */
   private prefillTranslations(task: CalendarTaskModel): void {
     const translations = task.translations ?? [];
     if (translations.length === 0) return;
-    const danish = translations.find(t => t.languageId === 1);
+    const danishId = this.resolveDanishLanguageId();
+    const danish = translations.find(t => t.languageId === danishId);
     if (danish) {
-      this.titleControl.setValue(danish.name ?? task.title ?? '');
-      this.descriptionControl.setValue(danish.description ?? task.descriptionHtml ?? '');
+      if ((this.titleControl.value ?? '') === (task.title ?? '')) {
+        this.titleControl.setValue(danish.name ?? task.title ?? '');
+      }
+      if ((this.descriptionControl.value ?? '') === (task.descriptionHtml ?? '')) {
+        this.descriptionControl.setValue(danish.description ?? task.descriptionHtml ?? '');
+      }
     }
     let hasTitleTarget = false;
     let hasDescTarget = false;
     for (const t of translations) {
-      if (t.languageId === 1) continue;
-      this.titleByLang[t.languageId] = t.name ?? '';
-      this.descByLang[t.languageId] = t.description ?? '';
+      if (t.languageId === danishId) continue;
+      if (!(this.titleByLang[t.languageId] ?? '')) this.titleByLang[t.languageId] = t.name ?? '';
+      if (!(this.descByLang[t.languageId] ?? '')) this.descByLang[t.languageId] = t.description ?? '';
       if (t.name) hasTitleTarget = true;
       if (t.description) hasDescTarget = true;
     }
@@ -978,22 +1006,24 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   }
 
   /**
-   * Subscribes and returns a promise that settles however the load ends — a value
-   * (even if the handler throws), an error or an empty completion — so onSave can
-   * wait for it without ever hanging.
+   * Subscribes and returns a promise that settles however the load ends, so onSave
+   * can wait for it without ever hanging. It resolves true when a value arrived and
+   * the handler accepted it; false when the handler returned false (a failed
+   * response) or threw, on an error, or on a completion without a value.
    */
-  private whenLoaded<T>(source: Observable<T>, onNext: (res: T) => void): Promise<void> {
-    return new Promise<void>(resolve => {
+  private whenLoaded<T>(source: Observable<T>, onNext: (res: T) => boolean | void): Promise<boolean> {
+    return new Promise<boolean>(resolve => {
       source.subscribe({
         next: res => {
+          let ok = false;
           try {
-            onNext(res);
+            ok = onNext(res) !== false;
           } finally {
-            resolve();
+            resolve(ok);
           }
         },
-        error: () => resolve(),
-        complete: () => resolve(),
+        error: () => resolve(false),
+        complete: () => resolve(false),
       });
     });
   }
@@ -1054,16 +1084,19 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   /**
    * Save clicked before the languages, workers or teams arrived: the targets are not
    * known yet. Each load recomputes them; recompute once more to be sure. The wait is
-   * bounded so a hung request cannot keep Save disabled.
+   * bounded so a hung request cannot keep Save disabled. Returns false when the wait
+   * timed out or a load failed — the target languages may then be incomplete.
    */
-  private async awaitTranslationTargets(): Promise<void> {
+  private async awaitTranslationTargets(): Promise<boolean> {
     let timer: ReturnType<typeof setTimeout> | undefined;
-    await Promise.race([
-      Promise.all([this.languagesLoaded, this.employeesLoaded, this.teamsLoaded]),
-      new Promise<void>(resolve => { timer = setTimeout(resolve, SAVE_TRANSLATION_TIMEOUT_MS); }),
+    const loaded = await Promise.race([
+      Promise.all([this.languagesLoaded, this.employeesLoaded, this.teamsLoaded])
+        .then(results => results.every(ok => ok)),
+      new Promise<boolean>(resolve => { timer = setTimeout(() => resolve(false), SAVE_TRANSLATION_TIMEOUT_MS); }),
     ]);
     clearTimeout(timer);
     this.recomputeTargetLanguages();
+    return loaded;
   }
 
   /**
@@ -1297,7 +1330,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   }
 
   async onSave() {
-    if (this.titleControl.invalid || this.isFillingTranslations) return;
+    if (this.titleControl.invalid || this.isSaving) return;
     // boardControl is `number | null` and the Save button's [disabled] binding
     // doesn't cover the board select — so guard here rather than asserting the
     // value away with `!` in the payload below.
@@ -1388,215 +1421,256 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     // non-Danish assignee never receives the task untranslated. Never overwrites.
     // The form stays editable while the calls run: if the assignees (and so the
     // target languages) changed meanwhile, fill once more for the final set.
-    this.isFillingTranslations = true;
-    let translationFailed = false;
+    this.isSaving = true;
+    // Anything that throws before the request is on its way (a translation or
+    // repeat helper, a dialog, the service call itself) must not leave Save
+    // disabled with the dialog open.
     try {
-      await this.awaitTranslationTargets();
-      for (let pass = 0; pass < 2; pass++) {
-        const before = this.targetLanguagesKey();
-        translationFailed = (await this.fillMissingTranslations()) || translationFailed;
-        if (this.dialogClosed || this.targetLanguagesKey() === before) break;
+      this.isFillingTranslations = true;
+      let translationFailed = false;
+      try {
+        // A failed or timed-out load of the languages, workers or teams leaves the
+        // targets unknown: with anyone assigned, some may be missing — say so.
+        translationFailed = !(await this.awaitTranslationTargets()) && this.hasAssignee;
+        for (let pass = 0; pass < 2; pass++) {
+          const before = this.targetLanguagesKey();
+          translationFailed = (await this.fillMissingTranslations()) || translationFailed;
+          if (this.dialogClosed || this.targetLanguagesKey() === before) break;
+        }
+      } finally {
+        this.isFillingTranslations = false;
       }
-    } finally {
-      this.isFillingTranslations = false;
-    }
-    if (translationFailed && !this.dialogClosed) {
-      this.toastr.warning(this.translate.instant('Automatic translation was not possible. The task is saved without it.'));
-    }
-    // Cancelled while the translations were being fetched: save nothing.
-    if (this.dialogClosed) return;
-    // The title may have been cleared meanwhile.
-    if (this.titleControl.invalid) return;
-
-    // Build the per-language Translates array: Danish source (real SDK
-    // Languages.Id, NOT the hardcoded app-locale id 1) always included, plus one
-    // entry per target language that has a non-empty title OR description. Empty
-    // targets are dropped (not persisted).
-    const danishName = this.titleControl.value ?? '';
-    const danishDescription = this.descriptionControl.value ?? '';
-    const translates: { name: string; description: string; languageId: number }[] = [
-      {name: danishName, description: danishDescription, languageId: this.resolveDanishLanguageId()},
-    ];
-    for (const lang of this.targetLanguages) {
-      const name = this.titleByLang[lang.id] ?? '';
-      const description = this.descByLang[lang.id] ?? '';
-      if (name || description) {
-        translates.push({name, description, languageId: lang.id});
+      if (translationFailed && !this.dialogClosed) {
+        this.toastr.warning(this.translate.instant('Automatic translation was not possible. The task is saved without it.'));
       }
-    }
-
-    // One merged control (#1295), split back into the two unchanged wire fields.
-    const assignees = splitAssigneeKeys(this.assigneeControl.value);
-
-    const payload: CalendarTaskSavePayload = {
-      // Backend CalendarTaskCreateRequestModel fields
-      translates,
-      // Send the date-only string (local Y-M-D), NOT the raw Date — a raw Date
-      // is JSON-serialised via toISOString(), which shifts a local-midnight pick
-      // by the browser's UTC offset (UTC+2 "Fri 3 Jul" → 2026-07-02T22:00Z) and
-      // re-anchors the series to the wrong weekday on the backend (#966). This
-      // mirrors how originalDate/taskDate are already sent as date-only strings.
-      startDate: dateStr,
-      startHour,
-      duration,
-      sites: assignees.siteIds,
-      workerTagIds: assignees.workerTagIds,
-      tagIds: (this.tagsControl.value ?? []).map((t: any) => {
-        if (typeof t === 'number') return t;
-        const match = this.data.planningTags.find(pt => pt.name === t);
-        return match?.id ?? 0;
-      }).filter((id: number) => id > 0),
-      boardId,
-      color: this.filteredBoards.find(b => b.id === this.boardControl.value)?.color ?? CALENDAR_COLORS[0],
-      descriptionHtml: this.descriptionControl.value ?? '',
-      repeatType: resolvedRepeatType,
-      repeatEvery: resolvedRepeatEvery,
-      repeatEndMode,
-      repeatOccurrences,
-      repeatUntilDate,
-      // CSV of JS getDay() weekday indices. Custom rules use whichever shape
-      // metaToWeekdaysCsv supports (single via meta.weekday, multi via
-      // meta.weekdays). For built-in non-custom rules we ONLY emit a CSV
-      // when the option's embedded meta is a multi-day pattern
-      // (meta.weekdays?.length > 0) — that's how the "Alle hverdage" preset
-      // ships its [1..5] payload. Single-day built-ins like 'weeklyOne'
-      // intentionally keep the legacy null payload so the backend's
-      // Week-case takes its 7-day stride path (CalendarService
-      // GetOccurrencesInWeek:2326) rather than the multi-day anchor path —
-      // the two paths are not identical under edit/move flows that
-      // calendar-resize.spec.ts depends on.
-      repeatWeekdaysCsv: isCustomRule
-        ? this.repeatService.metaToWeekdaysCsv(this.customRepeatMeta)
-        : ((meta) =>
-            meta?.weekdays?.length
-              ? this.repeatService.metaToWeekdaysCsv(meta)
-              : null)(
-            this.repeatOptions.find(o => o.value === repeatRuleValue)?.meta ?? null,
-          ),
-      // Day-of-month for monthly + yearly rules. Pre-fix the modal didn't
-      // ship this field at all, the request model had no DayOfMonth
-      // property, and AreaRulePlanning.DayOfMonth defaulted to its int 0
-      // on insert — so reopening "Månedlig på dag 21" read back as
-      // "dag 0". Two source paths feed this:
-      //  * Custom rule → customRepeatMeta has the user's picked dom.
-      //  * Built-in dropdown ("Månedligt på dag {today}" / "Yearly on
-      //    {today.day} {today.month}") → the selected option's
-      //    embedded meta carries it (buildRepeatSelectOptions:266-280).
-      // Both flows funnel through metaToDayOfMonth, which returns null
-      // for non-DOM kinds — so weekly/daily saves don't ship a stale
-      // value.
-      dayOfMonth: isCustomRule
-        ? this.repeatService.metaToDayOfMonth(this.customRepeatMeta)
-        : this.repeatService.metaToDayOfMonth(
-            this.repeatOptions.find(o => o.value === repeatRuleValue)?.meta ?? null,
-          ),
-      repeatOrdinalWeek: isCustomRule
-        ? this.repeatService.metaToRepeatOrdinalWeek(this.customRepeatMeta)
-        : this.repeatService.metaToRepeatOrdinalWeek(
-            this.repeatOptions.find(o => o.value === repeatRuleValue)?.meta ?? null,
-          ),
-      driveLink: this.driveLinkControl.value ?? '',
-      propertyId: this.propertyControl.value ?? this.data.propertyId,
-      status: this.statusControl.value ? 1 : 2,
-      complianceEnabled: this.complianceEnabledControl.value,
-      folderId: this.data.folderId,
-      eformId: this.eformControl.value,
-      itemPlanningTagId: this.reportHeadlineEnabledControl.value ? this.planningTagControl.value : null,
-      ...(this.isCopyMode ? {
-        copyAttachmentsFromTaskId: this.data.sourceTask!.id,
-        attachmentIds: this.attachments.map(a => a.id),
-      } : {}),
-
-      // Keep these for local/UI use and backward compat
-      title: this.titleControl.value ?? '',
-      taskDate: dateStr,
-      startText: this.startTimeControl.value,
-      endText: this.endTimeControl.value,
-      assigneeIds: assignees.siteIds,
-      tags: this.tagsControl.value ?? [],
-      repeatRule: repeatRuleValue === 'customCurrent' ? 'custom' : repeatRuleValue,
-      id: this.data.task?.id,
-      repeatSeriesId: this.data.task?.repeatSeriesId,
-      // Pre-edit occurrence date so a "this"/"thisAndFollowing" edit targets
-      // the right occurrence instead of relocating the series (#885).
-      // startDate/taskDate above carry the NEW (edited) date.
-      originalDate: this.data.task?.taskDate,
-    };
-
-    const doSave = (scope?: string) => {
-      // `id` is optional on the payload because create mode posts the same
-      // object without one; in edit mode `data.task.id` is always present, so
-      // the cast is the only thing the update signature needs.
-      const obs = this.isEditMode
-        ? this.calendarService.updateTask(payload as CalendarTaskUpdateModel, (scope ?? 'this') as RepeatEditScope)
-        : this.calendarService.createTask(payload);
-
-      obs.subscribe({
-        next: async res => {
-          if (res && res.success) {
-            // Create-mode only: drain the staged-files queue against the new
-            // ARP id returned by the backend. createTask resolves to
-            // OperationDataResult<number> whose .model is the new id.
-            // updateTask still resolves to a plain OperationResult (no model).
-            const newId = (res as OperationDataResult<number>)?.model;
-            if (!this.isEditMode && this.stagedFiles.length > 0 && newId) {
-              await this.uploadStagedFilesSequential(newId);
-            }
-            this.close(true);
-          }
-          // success=false: the calendar service already toasts the uniform
-          // "Error [key]" — the modal stays open so the user can retry.
-        },
-        error: err => {
-          const msg = err?.error?.message || err?.message || this.translate.instant('Could not save the event');
-          this.toastr.error(msg, this.translate.instant('Error'));
-        },
-      });
-    };
-
-    // The eForm is a series-level property: the backend re-points every
-    // uncompleted occurrence at the new eForm no matter which scope was picked
-    // (see 2026-08-19-calendar-eform-change-propagation-design.md §3). So when
-    // the user swapped the eForm and then chose a narrower scope than "all",
-    // confirm the wider blast radius before sending the save. Cancelling
-    // aborts the save and leaves this dialog open so the eForm can be reset.
-    const saveWithScope = (scope?: string) => {
-      // Also require a non-null eForm: the backend's UpdateTaskThisOccurrence
-      // only re-points the series when EformId > 0, so a cleared select would
-      // have the user confirm a change the backend then silently discards.
-      const eformChanged =
-        (this.eformControl.value ?? null) !== this.loadedEformId && this.eformControl.value != null;
-      if (!eformChanged || scope === 'all') {
-        doSave(scope);
+      // Cancelled while the translations were being fetched, or the title was
+      // cleared meanwhile: save nothing.
+      if (this.dialogClosed || this.titleControl.invalid) {
+        this.isSaving = false;
         return;
       }
-      const confirmRef = this.dialog.open(
-        EformChangeScopeModalComponent,
-        dialogConfigHelper(this.overlay)
-      );
-      confirmRef.afterClosed().subscribe(confirmed => {
-        if (confirmed) doSave(scope);
-      });
-    };
 
-    // Show the scope picker for a recurring series — keyed on repeatRule
-    // (the same signal move/resize use), NOT repeatSeriesId which is never
-    // populated on calendar tasks. Without this the picker never opened and
-    // every recurring edit fell through to doSave() with the default scope.
-    const isRepeating = !!this.data.task?.repeatRule && this.data.task.repeatRule !== 'none';
-    if (this.isEditMode && isRepeating) {
-      const ref = this.dialog.open(
-        RepeatScopeModalComponent,
-        dialogConfigHelper(this.overlay, {mode: 'edit'})
-      );
-      ref.afterClosed().subscribe(scope => {
-        if (scope) saveWithScope(scope);
-      });
-    } else {
-      // Create mode and one-off events: no series exists, so there is nothing
-      // to warn about — a one-off edit only ever touches its own occurrence.
-      doSave();
+      // Build the per-language Translates array: Danish source (real SDK
+      // Languages.Id, NOT the hardcoded app-locale id 1) always included, plus one
+      // entry per target language that has a non-empty title OR description. Empty
+      // targets are dropped (not persisted).
+      const danishName = this.titleControl.value ?? '';
+      const danishDescription = this.descriptionControl.value ?? '';
+      const translates: { name: string; description: string; languageId: number }[] = [
+        {name: danishName, description: danishDescription, languageId: this.resolveDanishLanguageId()},
+      ];
+      for (const lang of this.targetLanguages) {
+        const name = this.titleByLang[lang.id] ?? '';
+        const description = this.descByLang[lang.id] ?? '';
+        if (name || description) {
+          translates.push({name, description, languageId: lang.id});
+        }
+      }
+
+      // One merged control (#1295), split back into the two unchanged wire fields.
+      const assignees = splitAssigneeKeys(this.assigneeControl.value);
+
+      const payload: CalendarTaskSavePayload = {
+        // Backend CalendarTaskCreateRequestModel fields
+        translates,
+        // Send the date-only string (local Y-M-D), NOT the raw Date — a raw Date
+        // is JSON-serialised via toISOString(), which shifts a local-midnight pick
+        // by the browser's UTC offset (UTC+2 "Fri 3 Jul" → 2026-07-02T22:00Z) and
+        // re-anchors the series to the wrong weekday on the backend (#966). This
+        // mirrors how originalDate/taskDate are already sent as date-only strings.
+        startDate: dateStr,
+        startHour,
+        duration,
+        sites: assignees.siteIds,
+        workerTagIds: assignees.workerTagIds,
+        tagIds: (this.tagsControl.value ?? []).map((t: any) => {
+          if (typeof t === 'number') return t;
+          const match = this.data.planningTags.find(pt => pt.name === t);
+          return match?.id ?? 0;
+        }).filter((id: number) => id > 0),
+        boardId,
+        color: this.filteredBoards.find(b => b.id === this.boardControl.value)?.color ?? CALENDAR_COLORS[0],
+        descriptionHtml: this.descriptionControl.value ?? '',
+        repeatType: resolvedRepeatType,
+        repeatEvery: resolvedRepeatEvery,
+        repeatEndMode,
+        repeatOccurrences,
+        repeatUntilDate,
+        // CSV of JS getDay() weekday indices. Custom rules use whichever shape
+        // metaToWeekdaysCsv supports (single via meta.weekday, multi via
+        // meta.weekdays). For built-in non-custom rules we ONLY emit a CSV
+        // when the option's embedded meta is a multi-day pattern
+        // (meta.weekdays?.length > 0) — that's how the "Alle hverdage" preset
+        // ships its [1..5] payload. Single-day built-ins like 'weeklyOne'
+        // intentionally keep the legacy null payload so the backend's
+        // Week-case takes its 7-day stride path (CalendarService
+        // GetOccurrencesInWeek:2326) rather than the multi-day anchor path —
+        // the two paths are not identical under edit/move flows that
+        // calendar-resize.spec.ts depends on.
+        repeatWeekdaysCsv: isCustomRule
+          ? this.repeatService.metaToWeekdaysCsv(this.customRepeatMeta)
+          : ((meta) =>
+              meta?.weekdays?.length
+                ? this.repeatService.metaToWeekdaysCsv(meta)
+                : null)(
+              this.repeatOptions.find(o => o.value === repeatRuleValue)?.meta ?? null,
+            ),
+        // Day-of-month for monthly + yearly rules. Pre-fix the modal didn't
+        // ship this field at all, the request model had no DayOfMonth
+        // property, and AreaRulePlanning.DayOfMonth defaulted to its int 0
+        // on insert — so reopening "Månedlig på dag 21" read back as
+        // "dag 0". Two source paths feed this:
+        //  * Custom rule → customRepeatMeta has the user's picked dom.
+        //  * Built-in dropdown ("Månedligt på dag {today}" / "Yearly on
+        //    {today.day} {today.month}") → the selected option's
+        //    embedded meta carries it (buildRepeatSelectOptions:266-280).
+        // Both flows funnel through metaToDayOfMonth, which returns null
+        // for non-DOM kinds — so weekly/daily saves don't ship a stale
+        // value.
+        dayOfMonth: isCustomRule
+          ? this.repeatService.metaToDayOfMonth(this.customRepeatMeta)
+          : this.repeatService.metaToDayOfMonth(
+              this.repeatOptions.find(o => o.value === repeatRuleValue)?.meta ?? null,
+            ),
+        repeatOrdinalWeek: isCustomRule
+          ? this.repeatService.metaToRepeatOrdinalWeek(this.customRepeatMeta)
+          : this.repeatService.metaToRepeatOrdinalWeek(
+              this.repeatOptions.find(o => o.value === repeatRuleValue)?.meta ?? null,
+            ),
+        driveLink: this.driveLinkControl.value ?? '',
+        propertyId: this.propertyControl.value ?? this.data.propertyId,
+        status: this.statusControl.value ? 1 : 2,
+        complianceEnabled: this.complianceEnabledControl.value,
+        folderId: this.data.folderId,
+        eformId: this.eformControl.value,
+        itemPlanningTagId: this.reportHeadlineEnabledControl.value ? this.planningTagControl.value : null,
+        ...(this.isCopyMode ? {
+          copyAttachmentsFromTaskId: this.data.sourceTask!.id,
+          attachmentIds: this.attachments.map(a => a.id),
+        } : {}),
+
+        // Keep these for local/UI use and backward compat
+        title: this.titleControl.value ?? '',
+        taskDate: dateStr,
+        startText: this.startTimeControl.value,
+        endText: this.endTimeControl.value,
+        assigneeIds: assignees.siteIds,
+        tags: this.tagsControl.value ?? [],
+        repeatRule: repeatRuleValue === 'customCurrent' ? 'custom' : repeatRuleValue,
+        id: this.data.task?.id,
+        repeatSeriesId: this.data.task?.repeatSeriesId,
+        // Pre-edit occurrence date so a "this"/"thisAndFollowing" edit targets
+        // the right occurrence instead of relocating the series (#885).
+        // startDate/taskDate above carry the NEW (edited) date.
+        originalDate: this.data.task?.taskDate,
+      };
+
+      const doSave = (scope?: string) => {
+        // `id` is optional on the payload because create mode posts the same
+        // object without one; in edit mode `data.task.id` is always present, so
+        // the cast is the only thing the update signature needs.
+        const obs = this.isEditMode
+          ? this.calendarService.updateTask(payload as CalendarTaskUpdateModel, (scope ?? 'this') as RepeatEditScope)
+          : this.calendarService.createTask(payload);
+
+        let answered = false;
+        obs.subscribe({
+          next: async res => {
+            answered = true;
+            if (res && res.success) {
+              // Create-mode only: drain the staged-files queue against the new
+              // ARP id returned by the backend. createTask resolves to
+              // OperationDataResult<number> whose .model is the new id.
+              // updateTask still resolves to a plain OperationResult (no model).
+              const newId = (res as OperationDataResult<number>)?.model;
+              if (!this.isEditMode && this.stagedFiles.length > 0 && newId) {
+                await this.uploadStagedFilesSequential(newId);
+              }
+              // isSaving stays set: the dialog is closing.
+              this.close(true);
+            } else {
+              // success=false: the calendar service already toasts the uniform
+              // "Error [key]" — the modal stays open so the user can retry.
+              this.isSaving = false;
+            }
+          },
+          complete: () => {
+            if (!answered) this.isSaving = false;
+          },
+          error: err => this.abortSave(err),
+        });
+      };
+
+      // The eForm is a series-level property: the backend re-points every
+      // uncompleted occurrence at the new eForm no matter which scope was picked
+      // (see 2026-08-19-calendar-eform-change-propagation-design.md §3). So when
+      // the user swapped the eForm and then chose a narrower scope than "all",
+      // confirm the wider blast radius before sending the save. Cancelling
+      // aborts the save and leaves this dialog open so the eForm can be reset.
+      const saveWithScope = (scope?: string) => {
+        // Also require a non-null eForm: the backend's UpdateTaskThisOccurrence
+        // only re-points the series when EformId > 0, so a cleared select would
+        // have the user confirm a change the backend then silently discards.
+        const eformChanged =
+          (this.eformControl.value ?? null) !== this.loadedEformId && this.eformControl.value != null;
+        if (!eformChanged || scope === 'all') {
+          doSave(scope);
+          return;
+        }
+        const confirmRef = this.dialog.open(
+          EformChangeScopeModalComponent,
+          dialogConfigHelper(this.overlay)
+        );
+        confirmRef.afterClosed().subscribe(confirmed => {
+          try {
+            if (confirmed) {
+              doSave(scope);
+            } else {
+              this.isSaving = false;
+            }
+          } catch (err) {
+            this.abortSave(err);
+          }
+        });
+      };
+
+      // Show the scope picker for a recurring series — keyed on repeatRule
+      // (the same signal move/resize use), NOT repeatSeriesId which is never
+      // populated on calendar tasks. Without this the picker never opened and
+      // every recurring edit fell through to doSave() with the default scope.
+      const isRepeating = !!this.data.task?.repeatRule && this.data.task.repeatRule !== 'none';
+      if (this.isEditMode && isRepeating) {
+        const ref = this.dialog.open(
+          RepeatScopeModalComponent,
+          dialogConfigHelper(this.overlay, {mode: 'edit'})
+        );
+        ref.afterClosed().subscribe(scope => {
+          try {
+            if (scope) {
+              saveWithScope(scope);
+            } else {
+              this.isSaving = false;
+            }
+          } catch (err) {
+            this.abortSave(err);
+          }
+        });
+      } else {
+        // Create mode and one-off events: no series exists, so there is nothing
+        // to warn about — a one-off edit only ever touches its own occurrence.
+        doSave();
+      }
+    } catch (err) {
+      this.abortSave(err);
     }
+  }
+
+  /** A save that failed or threw: re-enable Save and tell the user. */
+  private abortSave(err: any): void {
+    this.isSaving = false;
+    this.isFillingTranslations = false;
+    const msg = err?.error?.message || err?.message || this.translate.instant('Could not save the event');
+    this.toastr.error(msg, this.translate.instant('Error'));
   }
 
   onCancel() {
