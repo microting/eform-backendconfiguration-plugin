@@ -437,6 +437,7 @@ export const elGR = {
   'Delete attachment?': 'Διαγραφή συνημμένου;',
   'Could not download file': 'Δεν ήταν δυνατή η λήψη του αρχείου',
   'Pending save': 'Εκκρεμής αποθήκευση',
+  'Inherited from original': 'Από το πρωτότυπο',
   'Add Google Drive file': 'Προσθήκη αρχείου στο Google Drive',
   'Loading Google Picker': 'Φόρτωση Επιλογέα Google',
   'Connect Google Drive': 'Σύνδεση Google Drive',

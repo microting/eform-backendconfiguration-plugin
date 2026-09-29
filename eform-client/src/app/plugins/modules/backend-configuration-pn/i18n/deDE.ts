@@ -490,6 +490,7 @@ export const deDE = {
   'Delete attachment?': 'Anhang löschen?',
   'Could not download file': 'Datei konnte nicht heruntergeladen werden',
   'Pending save': 'Ausstehender Speichervorgang',
+  'Inherited from original': 'Vom Original übernommen',
   'Add Google Drive file': 'Google Drive-Datei hinzufügen',
   'Loading Google Picker': 'Google Picker wird geladen',
   'Connect Google Drive': 'Google Drive verbinden',

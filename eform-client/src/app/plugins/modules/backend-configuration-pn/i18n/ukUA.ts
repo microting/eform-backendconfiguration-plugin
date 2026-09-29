@@ -437,6 +437,7 @@ export const ukUA = {
   'File name': 'Ім&#39;я файлу',
   'Enable fifth shift': 'Увімкнути п&#39;яту зміну',
   'Pending save': 'Очікується збереження',
+  'Inherited from original': 'Успадковано з оригіналу',
   'Add Google Drive file': 'Додати файл з Google Диска',
   'Loading Google Picker': 'Завантаження вибору Google',
   'Connect Google Drive': 'Підключити Google Диск',

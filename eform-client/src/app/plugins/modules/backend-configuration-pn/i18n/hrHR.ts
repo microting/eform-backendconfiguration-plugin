@@ -437,6 +437,7 @@ export const hrHR = {
   'Delete attachment?': 'Izbrisati privitak?',
   'Could not download file': 'Nije moguće preuzeti datoteku',
   'Pending save': 'Spremanje na čekanju',
+  'Inherited from original': 'Preuzeto iz izvornika',
   'Add Google Drive file': 'Dodaj datoteku s Google diska',
   'Loading Google Picker': 'Učitavanje Google Pickera',
   'Connect Google Drive': 'Poveži Google disk',

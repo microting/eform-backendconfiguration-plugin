@@ -815,7 +815,9 @@ public class BackendConfigurationTaskListService(
                     ? CalendarService.OrdinalWeekOf(
                         CalendarService.NormalizeStartDateToLocalDay(model.StartDate))
                     : null,
-                DescriptionHtml = source.DescriptionHtml
+                DescriptionHtml = source.DescriptionHtml,
+                // #1323 — every attachment goes along, to another property too.
+                CopyAttachmentsFromTaskId = id
             };
             var result = await calendarService.CreateTask(create);
             return (result.Success, result.Message);

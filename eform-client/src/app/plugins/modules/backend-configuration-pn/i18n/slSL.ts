@@ -437,6 +437,7 @@ export const slSL = {
   'Delete attachment?': 'Izbrisati prilogo?',
   'Could not download file': 'Datoteke ni bilo mogoče prenesti',
   'Pending save': 'Čaka na shranjevanje',
+  'Inherited from original': 'Podedovano od izvirnika',
   'Add Google Drive file': 'Dodaj datoteko v Google Drive',
   'Loading Google Picker': 'Nalaganje Google Pickerja',
   'Connect Google Drive': 'Poveži Google Drive',

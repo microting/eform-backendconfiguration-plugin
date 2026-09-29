@@ -437,6 +437,7 @@ export const etET = {
   'Delete attachment?': 'Kustutada manus?',
   'Could not download file': 'Faili allalaadimine ebaõnnestus',
   'Pending save': 'Salvestamist ootel',
+  'Inherited from original': 'Päritud originaalist',
   'Add Google Drive file': 'Lisa Google Drive&#39;i fail',
   'Loading Google Picker': 'Google&#39;i valija laadimine',
   'Connect Google Drive': 'Ühenda Google Drive&#39;iga',

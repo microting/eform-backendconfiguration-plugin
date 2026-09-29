@@ -437,6 +437,7 @@ export const bgBG = {
   'Delete attachment?': 'Да се изтрие ли прикаченият файл?',
   'Could not download file': 'Файлът не можа да бъде изтеглен',
   'Pending save': 'Чакащо запазване',
+  'Inherited from original': 'Наследено от оригинала',
   'Add Google Drive file': 'Добавяне на файл от Google Диск',
   'Loading Google Picker': 'Зареждане на Google Picker',
   'Connect Google Drive': 'Свързване на Google Диск',

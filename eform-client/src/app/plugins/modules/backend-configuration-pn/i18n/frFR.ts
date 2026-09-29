@@ -436,6 +436,7 @@ export const frFR = {
   'Could not save the event': 'Impossible d&#39;enregistrer l&#39;événement',
   'Save event first to attach files': 'Enregistrez d&#39;abord l&#39;événement pour joindre des fichiers.',
   'Pending save': 'Sauvegarde en attente',
+  'Inherited from original': "Hérité de l'original",
   'Add Google Drive file': 'Ajouter un fichier Google Drive',
   'Loading Google Picker': 'Chargement du sélecteur Google',
   'Connect Google Drive': 'Connecter Google Drive',

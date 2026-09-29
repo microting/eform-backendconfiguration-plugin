@@ -437,6 +437,7 @@ export const ptPT = {
   'Delete attachment?': 'Excluir anexo?',
   'Could not download file': 'Não foi possível baixar o arquivo.',
   'Pending save': 'Salvamento pendente',
+  'Inherited from original': 'Herdado do original',
   'Add Google Drive file': 'Adicionar arquivo do Google Drive',
   'Loading Google Picker': 'Carregando o Seletor do Google',
   'Connect Google Drive': 'Conectar o Google Drive',

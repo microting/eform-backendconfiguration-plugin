@@ -437,6 +437,7 @@ export const csCZ = {
   'Delete attachment?': 'Smazat přílohu?',
   'Could not download file': 'Soubor se nepodařilo stáhnout',
   'Pending save': 'Čeká na uložení',
+  'Inherited from original': 'Převzato z originálu',
   'Add Google Drive file': 'Přidat soubor z Disku Google',
   'Loading Google Picker': 'Načítání nástroje Google Picker',
   'Connect Google Drive': 'Připojit Disk Google',

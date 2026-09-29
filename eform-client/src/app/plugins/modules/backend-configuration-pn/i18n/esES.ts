@@ -437,6 +437,7 @@ export const esES = {
   'Delete attachment?': '¿Eliminar archivo adjunto?',
   'Could not download file': 'No se pudo descargar el archivo.',
   'Pending save': 'Pendiente de guardar',
+  'Inherited from original': 'Heredado del original',
   'Add Google Drive file': 'Agregar archivo de Google Drive',
   'Loading Google Picker': 'Cargando selector de Google',
   'Connect Google Drive': 'Conectar Google Drive',

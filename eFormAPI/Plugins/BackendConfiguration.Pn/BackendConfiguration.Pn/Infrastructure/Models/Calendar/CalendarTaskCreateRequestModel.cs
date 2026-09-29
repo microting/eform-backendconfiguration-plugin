@@ -39,4 +39,8 @@ public class CalendarTaskCreateRequestModel
     // (0=Sun..6=Sat). When null, DayOfMonth is used (legacy day-of-month rule).
     public int? RepeatOrdinalWeek { get; set; }
     public string? DescriptionHtml { get; set; }
+    // #1323 — copy: carry these attachments of the source task over to the new one.
+    // AttachmentIds null means all of the source's attachments; an empty list, none.
+    public int? CopyAttachmentsFromTaskId { get; set; }
+    public List<int>? AttachmentIds { get; set; }
 }

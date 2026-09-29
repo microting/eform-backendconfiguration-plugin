@@ -437,6 +437,7 @@ export const ltLT = {
   'Delete attachment?': 'Ištrinti priedą?',
   'Could not download file': 'Nepavyko atsisiųsti failo',
   'Pending save': 'Laukiama išsaugojimo',
+  'Inherited from original': 'Paveldėta iš originalo',
   'Add Google Drive file': 'Pridėti „Google“ disko failą',
   'Loading Google Picker': 'Įkeliamas „Google“ rinkiklis',
   'Connect Google Drive': 'Prijungti „Google“ diską',

@@ -437,11 +437,14 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       this.complianceEnabledControl.setValue(task.complianceEnabled ?? true);
       // Seed attachments from the task DTO. The backend mapper populates
       // `attachments` for every occurrence of a recurring rule (master-rule
-      // scope) — copy mode intentionally does NOT carry attachments forward.
+      // scope).
       this.attachments = task.attachments ? [...task.attachments] : [];
     } else if (isCopyMode) {
       const copyPrefix = this.translate.instant('Copy of');
       this.titleControl.setValue(`${copyPrefix} ${sourceTask.title}`);
+      // #1323 — the source's attachments come along as "inherited" chips; the ones
+      // still listed on save are linked to the copy by CreateTask.
+      this.attachments = sourceTask.attachments ? [...sourceTask.attachments] : [];
       this.startTimeControl.setValue(this.hourToTimeStr(sourceTask.startHour));
       this.endTimeControl.setValue(this.hourToTimeStr(sourceTask.startHour + sourceTask.duration));
       // Same reconstruction logic as edit mode — copy carries the source's
@@ -1369,6 +1372,10 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       folderId: this.data.folderId,
       eformId: this.eformControl.value,
       itemPlanningTagId: this.reportHeadlineEnabledControl.value ? this.planningTagControl.value : null,
+      ...(this.isCopyMode ? {
+        copyAttachmentsFromTaskId: this.data.sourceTask!.id,
+        attachmentIds: this.attachments.map(a => a.id),
+      } : {}),
 
       // Keep these for local/UI use and backward compat
       title: this.titleControl.value ?? '',
@@ -1631,7 +1638,8 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
    * the new tab is still loading would break the preview.
    */
   downloadAttachment(att: CalendarTaskAttachment): void {
-    const taskId = this.data.task?.id;
+    // Copy mode: an inherited chip still belongs to the source task until saved.
+    const taskId = this.data.task?.id ?? this.data.sourceTask?.id;
     if (!taskId) return;
     this.filesService.getFileBlob(taskId, att.id).subscribe({
       next: (blob: Blob) => {
@@ -1643,6 +1651,11 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   }
 
   deleteAttachment(att: CalendarTaskAttachment): void {
+    // Copy mode: an inherited chip only leaves the list; the source keeps its file.
+    if (this.isCopyMode) {
+      this.attachments = this.attachments.filter(a => a.id !== att.id);
+      return;
+    }
     const taskId = this.data.task?.id;
     if (!taskId) return;
     const confirmMsg = this.translate.instant('Delete attachment?');
@@ -1661,6 +1674,11 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
         this.toastr.error(msg, this.translate.instant('Error'));
       },
     });
+  }
+
+  /** Copy mode (#1323): the dialog was opened from a source task, not an existing one. */
+  get isCopyMode(): boolean {
+    return !this.data.task && !!this.data.sourceTask;
   }
 
   isImage(att: CalendarTaskAttachment): boolean {
