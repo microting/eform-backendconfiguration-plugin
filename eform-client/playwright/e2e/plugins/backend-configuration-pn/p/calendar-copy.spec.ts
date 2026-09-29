@@ -160,29 +160,21 @@ async function createSourceWithPdf(
 }
 
 // The source and its copy both contain `title`; the copy's is the longer one
-// ("Copy of " / "Kopi af " prefix). Opens the chosen block's edit modal.
-async function openTitledBlockForEdit(
+// ("Copy of " / "Kopi af " prefix). Opens the copy's edit modal (the copy lands in the
+// source's slot and covers it, so the source tile itself cannot be clicked).
+async function openCopyForEdit(
   page: Page,
   calendarPage: CalendarUiEnhancementsPage,
   title: string,
-  which: 'copy' | 'source',
 ): Promise<void> {
   const candidateBlocks = page.locator('.task-block').filter({ hasText: title });
   await expect(candidateBlocks, 'the source and its copy are both on the grid').toHaveCount(2, { timeout: UI_TIMEOUT });
   const [firstLen, secondLen] = await candidateBlocks.evaluateAll(
     els => els.map(el => (el.querySelector('.task-title')?.textContent ?? '').trim().length));
   const copyIndex = firstLen > secondLen ? 0 : 1;
-  await candidateBlocks.nth(which === 'copy' ? copyIndex : 1 - copyIndex).locator('.task-block-body').click();
+  await candidateBlocks.nth(copyIndex).locator('.task-block-body').click({ timeout: UI_TIMEOUT });
   await page.locator('app-task-preview-modal').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   await calendarPage.clickEditInPreview();
-}
-
-async function openCopyForEdit(page: Page, calendarPage: CalendarUiEnhancementsPage, title: string): Promise<void> {
-  await openTitledBlockForEdit(page, calendarPage, title, 'copy');
-}
-
-async function openSourceForEdit(page: Page, calendarPage: CalendarUiEnhancementsPage, title: string): Promise<void> {
-  await openTitledBlockForEdit(page, calendarPage, title, 'source');
 }
 
 test.describe.serial('Calendar copy flows (#886)', () => {
@@ -494,8 +486,16 @@ test.describe.serial('Calendar copy flows (#886)', () => {
     await calendarPage.clickCopyInPreview();
     const inherited = page.locator('.gcal-attachment-row', { hasText: 'sample.pdf' });
     await expect(inherited).toBeVisible({ timeout: UI_TIMEOUT });
-    // Local only in copy mode: no confirm dialog and no DELETE request.
-    await inherited.locator('.gcal-attachment-delete').click();
+    // Local only in copy mode: no confirm dialog and no DELETE request, so the
+    // source keeps its file.
+    const fileDeletes: string[] = [];
+    const recordFileDelete = (r: import('@playwright/test').Request) => {
+      if (r.method() === 'DELETE' && /\/calendar\/tasks\/\d+\/files\/\d+/.test(r.url())) {
+        fileDeletes.push(r.url());
+      }
+    };
+    page.on('request', recordFileDelete);
+    await inherited.locator('.gcal-attachment-delete').click({ timeout: UI_TIMEOUT });
     await expect(page.locator('.gcal-attachment-row')).toHaveCount(0, { timeout: UI_TIMEOUT });
 
     const createCopy = waitForApiResponse(page, 'the copy create POST', isCreatePost, API_TIMEOUT);
@@ -507,13 +507,8 @@ test.describe.serial('Calendar copy flows (#886)', () => {
     await openCopyForEdit(page, calendarPage, title);
     await expect(page.locator('.gcal-attachment-row'), 'the copy has no attachment').toHaveCount(0, { timeout: UI_TIMEOUT });
     await calendarPage.closeEventModal();
-
-    await openSourceForEdit(page, calendarPage, title);
-    await expect(
-      page.locator('.gcal-attachment-row', { hasText: 'sample.pdf' }),
-      'the source keeps its PDF'
-    ).toBeVisible({ timeout: UI_TIMEOUT });
-    await calendarPage.closeEventModal();
+    page.off('request', recordFileDelete);
+    expect(fileDeletes, 'removing an inherited chip must not delete the source file').toEqual([]);
   });
 
   // =======================================================================
