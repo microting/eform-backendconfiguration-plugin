@@ -721,7 +721,7 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
             new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext!));
     }
 
-    private async Task<int> SeedSdkCaseAsync(int status, int? microtingUid = null)
+    private async Task<int> SeedSdkCaseAsync(int status, int? microtingUid = null, DateTime? doneAt = null)
     {
         var language = await MicrotingDbContext!.Languages.FirstAsync();
         var site = new Site
@@ -733,7 +733,8 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
         await MicrotingDbContext.SaveChangesAsync();
         var sdkCase = new Case
         {
-            SiteId = site.Id, Status = status, MicrotingUid = microtingUid, WorkflowState = Constants.WorkflowStates.Created
+            SiteId = site.Id, Status = status, MicrotingUid = microtingUid, DoneAt = doneAt,
+            WorkflowState = Constants.WorkflowStates.Created
         };
         await MicrotingDbContext.Cases.AddAsync(sdkCase);
         await MicrotingDbContext.SaveChangesAsync();
@@ -792,13 +793,18 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
             "the open occurrence follows the rule to the 1st Monday of its month");
     }
 
-    /// <summary>Completed occurrences are immutable (R2) in the new branch too.</summary>
-    [Test]
-    public async Task UpdateTask_ScopeAll_NthWeekday_DialogWeekdayChange_LeavesACompletedRow()
+    /// <summary>
+    /// Completed occurrences are immutable (R2) in the new branch too. Answered = Status 100
+    /// OR DoneAt set: DoneAt can land before the status does.
+    /// </summary>
+    [TestCase(100, false, TestName = "UpdateTask_ScopeAll_NthWeekday_DialogWeekdayChange_LeavesACompletedRow")]
+    [TestCase(66, true, TestName = "UpdateTask_ScopeAll_NthWeekday_DialogWeekdayChange_LeavesARowWithDoneAt")]
+    public async Task UpdateTask_ScopeAll_NthWeekday_DialogWeekdayChange_LeavesAnAnsweredRow(int status, bool doneAt)
     {
         var arpId = await SeedFirstThursdayRule();
         var service = await BuildCalendarServiceWithCoreAsync();
-        var complianceId = await SeedComplianceAsync(arpId, NextMonthFirstThu, await SeedSdkCaseAsync(status: 100));
+        var complianceId = await SeedComplianceAsync(arpId, NextMonthFirstThu,
+            await SeedSdkCaseAsync(status, doneAt: doneAt ? DateTime.UtcNow : null));
 
         var result = await service.UpdateTask(DialogWeekdayEdit(arpId, "all"));
         Assert.That(result.Success, Is.True, result.Message);

@@ -709,14 +709,17 @@ public class CalendarMonthlyReanchorRepairTests : TestBaseSetup
     }
 
     /// <summary>
-    /// Informational: a rule whose weekday CSV names another day than DayOfWeek would flip
-    /// on the next unrelated dialog save — listed, nothing written for it.
+    /// A rule whose weekday CSV names another day than DayOfWeek would flip on the next
+    /// unrelated dialog save; which weekday is meant is unclear, so the rule is listed and
+    /// NOTHING of its planning is written — not the planning, not its off-pattern compliance.
     /// </summary>
     [Test]
-    public async Task RuleWhoseCsvDisagreesWithItsWeekday_IsListedForReview()
+    public async Task RuleWhoseCsvDisagreesWithItsWeekday_IsListedForReview_AndNothingIsWritten()
     {
-        var (arpId, _) = await SeedLegacyYearlyTaskAsync(D(2024, 1, 3), nextExecution: D(2027, 1, 3));
+        var (arpId, planningId) = await SeedLegacyYearlyTaskAsync(D(2024, 1, 3), nextExecution: D(2027, 1, 3));
         await ConvertAsync();
+        // Off-pattern (Sun 3 Jan 2027 vs the rule's Wed 6 Jan): moved if the rule were clear.
+        await SeedComplianceAsync(planningId, D(2027, 1, 3), D(2026, 1, 3), (await SeedCaseAsync()).Id);
         await BackendConfigurationPnDbContext!.AreaRulePlannings.Where(x => x.Id == arpId)
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.RepeatWeekdaysCsv, "1"));
         ForgetTrackedRows();
@@ -728,6 +731,9 @@ public class CalendarMonthlyReanchorRepairTests : TestBaseSetup
         {
             Assert.That(item.AreaRulePlanningId, Is.EqualTo(arpId));
             Assert.That(item.Reasons, Does.Contain(CalendarMonthlyReanchorRepairService.ReasonCsvDisagrees));
+            Assert.That(plan.OrdinalRestorations, Is.Empty);
+            Assert.That(plan.PlanningUpdates, Is.Empty);
+            Assert.That(plan.ComplianceMoves, Is.Empty);
         });
     }
 
@@ -1075,14 +1081,13 @@ public class CalendarMonthlyReanchorRepairTests : TestBaseSetup
     [Test]
     public async Task PlanHash_CoversTheReviewList()
     {
-        var (arpId, planningId) = await SeedLegacyYearlyTaskAsync(D(2024, 1, 3), nextExecution: D(2027, 1, 3));
+        var (_, planningId) = await SeedLegacyYearlyTaskAsync(D(2024, 1, 3), nextExecution: D(2027, 1, 3));
         await ConvertAsync();
         await SeedComplianceAsync(planningId, D(2027, 1, 3), D(2026, 1, 3), (await SeedCaseAsync()).Id);
         var before = await DryRunAsync();
 
-        // Makes the rule's CSV disagree with its weekday: an informational review item only.
-        await BackendConfigurationPnDbContext!.AreaRulePlannings.Where(x => x.Id == arpId)
-            .ExecuteUpdateAsync(s => s.SetProperty(x => x.RepeatWeekdaysCsv, "1"));
+        // An overdue open row (deadline 28 Sep, today 29 Sep): a review item, no write.
+        await SeedComplianceAsync(planningId, D(2026, 9, 28), D(2025, 9, 28), (await SeedCaseAsync()).Id);
         ForgetTrackedRows();
         var after = await DryRunAsync();
 
@@ -1132,5 +1137,41 @@ public class CalendarMonthlyReanchorRepairTests : TestBaseSetup
         var next = await DryRunAsync();
         Assert.That(next.ComplianceMoves.Select(x => (x.ComplianceId, x.NewDeadline)),
             Is.EqualTo(new[] { (arrived.Id, D(2028, 1, 5)) }));
+    }
+
+    /// <summary>
+    /// A row the plan loaded on-pattern and another writer moves off-pattern during the run
+    /// is new work too: the final scan reads the database, not the run's tracked copy.
+    /// </summary>
+    [Test]
+    public async Task RowMovedOffPatternDuringTheRun_IsSeenByTheFinalScan()
+    {
+        var (_, planningId) = await SeedLegacyYearlyTaskAsync(D(2024, 1, 3), nextExecution: D(2027, 1, 3));
+        await ConvertAsync();
+        await SeedComplianceAsync(planningId, D(2027, 1, 3), D(2026, 1, 3), (await SeedCaseAsync()).Id);
+        // Wed 5 Jan 2028 = the rule's 1st Wednesday that month: on-pattern, not in the plan.
+        var onPattern = await SeedComplianceAsync(planningId, D(2028, 1, 5), D(2027, 1, 5), (await SeedCaseAsync()).Id);
+        ForgetTrackedRows();
+        var moved = false;
+        _sut.OnBeforeWrite = async entity =>
+        {
+            if (!moved && entity is Planning)
+            {
+                moved = true;
+                await BackendConfigurationPnDbContext!.Compliances.Where(x => x.Id == onPattern.Id)
+                    .ExecuteUpdateAsync(s => s.SetProperty(x => x.Deadline, D(2028, 1, 2)));
+            }
+        };
+
+        var plan = await DryRunAsync();
+        var run = await _sut.RunAsync(plan.PlanHash);
+
+        await Assert.MultipleAsync(async () =>
+        {
+            Assert.That(run.Success, Is.True, run.Message);
+            Assert.That(plan.ComplianceMoves.Select(x => x.ComplianceId), Does.Not.Contain(onPattern.Id));
+            Assert.That(run.Model.ArrivedDuringRun, Has.Some.Contains($"compliance {onPattern.Id}"));
+            Assert.That(await MarkerAsync(), Is.EqualTo(CalendarMonthlyReanchorRepairService.MarkerPartial));
+        });
     }
 }

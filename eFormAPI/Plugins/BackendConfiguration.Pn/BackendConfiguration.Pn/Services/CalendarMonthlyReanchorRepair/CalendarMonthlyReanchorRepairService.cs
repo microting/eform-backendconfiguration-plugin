@@ -323,6 +323,10 @@ public class CalendarMonthlyReanchorRepairService(
     private async Task<List<string>> WritesArrivedDuringRunAsync(Work executed)
     {
         var executedKeys = WriteKeys(executed.Model);
+        // The run has written what it will. Forget the tracked rows so the scan reads what is
+        // in the database now, not the values this run loaded before another writer changed them.
+        dbContext.ChangeTracker.Clear();
+        itemsPlanningPnDbContext.ChangeTracker.Clear();
         var now = await ComputeAsync(CancellationToken.None).ConfigureAwait(false);
         var arrived = WriteKeys(now.Model).Where(k => !executedKeys.Contains(k)).OrderBy(k => k, StringComparer.Ordinal)
             .ToList();
@@ -484,9 +488,11 @@ public class CalendarMonthlyReanchorRepairService(
                 SeenPlanningRepeatEvery = planning.RepeatEvery
             };
 
-            // Informational: a Month rule whose CSV names another weekday than DayOfWeek
-            // would flip to the CSV's weekday on the next unrelated dialog save
-            // (CalendarService.NthWeekdayRuleDayOfWeek trusts a single-weekday CSV).
+            // A Month rule whose CSV names another weekday than DayOfWeek would flip to the
+            // CSV's weekday on the next unrelated dialog save
+            // (CalendarService.NthWeekdayRuleDayOfWeek trusts a single-weekday CSV). Which
+            // weekday is meant is a person's call: review only — no ordinal, planning or
+            // compliance write for this planning.
             if (!string.IsNullOrEmpty(arp.RepeatWeekdaysCsv)
                 && !(CalendarService.ParseWeekdaysCsv(arp.RepeatWeekdaysCsv) is [var csvDay] && csvDay == arp.DayOfWeek))
             {
@@ -495,6 +501,7 @@ public class CalendarMonthlyReanchorRepairService(
                     Kind = "Rule", PlanningId = planningId, AreaRulePlanningId = arp.Id,
                     Reasons = [ReasonCsvDisagrees]
                 });
+                continue;
             }
 
             // ── Step 1: restore the legacy week of a converted "1st <weekday>" rule.

@@ -3370,7 +3370,7 @@ public class BackendConfigurationCalendarService(
     // future + never-deployed dates, but already-deployed Compliance rows keep
     // their old Deadline, so move each non-completed one to the new-pattern
     // date within its OWN recurrence period. COMPLETED rows (backing SDK Case
-    // Status==100) are frozen and never touched — the hard immutability
+    // Status==100 or DoneAt set) are frozen and never touched — the hard immutability
     // invariant (R2). Rows already on the new-pattern date are left as-is.
     // `fromDate` (optional) limits it to occurrences on or after that date.
     private async Task RelocateNonCompletedComplianceRowsToNewPattern(
@@ -3442,9 +3442,10 @@ public class BackendConfigurationCalendarService(
         var cases = await sdkDbContext.Cases
             .AsNoTracking()
             .Where(c => caseIds.Contains(c.Id))
-            .Select(c => new { c.Id, c.Status, c.MicrotingUid, c.WorkflowState })
+            .Select(c => new { c.Id, c.Status, c.DoneAt, c.MicrotingUid, c.WorkflowState })
             .ToListAsync();
-        var completedCaseIds = cases.Where(c => c.Status == 100).Select(c => c.Id).ToHashSet();
+        // Answered = Status 100 OR DoneAt set (DoneAt can land before the status does).
+        var completedCaseIds = cases.Where(c => c.Status == 100 || c.DoneAt.HasValue).Select(c => c.Id).ToHashSet();
         var liveCaseUids = cases
             .Where(c => c.WorkflowState != Constants.WorkflowStates.Removed
                         && c.WorkflowState != Constants.WorkflowStates.Retracted)
