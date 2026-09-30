@@ -44,4 +44,11 @@ public interface IChemicalInventoryService
     Task<ChemicalSettingsModel> SetSettingsAsync(ChemicalCaller caller, ChemicalSetSettingsCommand command);
     Task<IReadOnlyList<ChemicalWorkerPermissionModel>> ListWorkerPermissionsAsync(ChemicalCaller caller, int propertyId);
     Task<IReadOnlyList<ChemicalWorkerPermissionModel>> SetWorkerPermissionsAsync(ChemicalCaller caller, int propertyId, IReadOnlyList<ChemicalSetWorkerPermissionCommand> changes);
+
+    // ---- placements and stock ----
+    Task<ChemicalPlacementChangeModel> RegisterPlacementAsync(ChemicalCaller caller, ChemicalRegisterPlacementCommand command);
+    Task<ChemicalPlacementChangeModel> MovePlacementAsync(ChemicalCaller caller, ChemicalMovePlacementCommand command);
+    Task<ChemicalPlacementChangeModel> RemovePlacementAsync(ChemicalCaller caller, ChemicalRemovePlacementCommand command);
+    Task<ChemicalPlacementChangeModel> UpdatePlacementNoteAsync(ChemicalCaller caller, int placementId, string placementNote);
+    Task<ChemicalPlacementChangeModel> AddStockEntryAsync(ChemicalCaller caller, ChemicalAddStockEntryCommand command);
 }
