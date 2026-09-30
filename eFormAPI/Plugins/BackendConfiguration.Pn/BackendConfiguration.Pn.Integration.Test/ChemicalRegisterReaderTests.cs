@@ -160,6 +160,42 @@ public class ChemicalRegisterReaderTests : ChemicalTestBase
     }
 
     [Test]
+    public async Task Search_PageOffsetOverflow_Throws()
+    {
+        var token = $"Zo{Guid.NewGuid():N}"[..12];
+        await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, $"{token} A", "5-101");
+
+        // 134_217_728 * 32 = 2^32: an unchecked multiply wraps to offset 0 and silently returns page 0.
+        Assert.That(async () => await CreateSut().SearchAsync(token, page: 134_217_728, pageSize: 32),
+            Throws.TypeOf<ArgumentException>());
+        // Wraps to a negative offset.
+        Assert.That(async () => await CreateSut().SearchAsync(token, page: int.MaxValue, pageSize: 50),
+            Throws.TypeOf<ArgumentException>());
+    }
+
+    [Test]
+    public async Task Search_KeepsTheDatabaseOrder_ForDanishLettersAndCase()
+    {
+        var token = $"Zd{Guid.NewGuid():N}"[..12];
+        // "B" is seeded before "b": a case-insensitive collation ties them and the id decides,
+        // whereas .NET culture ordering puts lowercase first.
+        foreach (var suffix in new[] { "B", "b", "Åben", "Æble", "Øre", "Zebra", "aa", "Ab" })
+        {
+            await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, $"{token} {suffix}", $"5-2{suffix.Length}");
+        }
+
+        var databaseOrder = await ChemicalsDbContext!.Chemicals.AsNoTracking()
+            .Where(c => c.Name.StartsWith(token))
+            .OrderBy(c => c.Name).ThenBy(c => c.Id)
+            .Select(c => c.Name)
+            .ToListAsync();
+        var first = await CreateSut().SearchAsync(token, page: 0, pageSize: 4);
+        var second = await CreateSut().SearchAsync(token, page: 1, pageSize: 4);
+
+        Assert.That(first.Entries.Concat(second.Entries).Select(e => e.Name), Is.EqualTo(databaseOrder));
+    }
+
+    [Test]
     public async Task FindProduct_ValidatesTheChemicalProductPair()
     {
         var a = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Product A", "6-001", sdsFileName: "f00d");
