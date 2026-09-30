@@ -23,8 +23,12 @@ SOFTWARE.
 */
 
 using BackendConfiguration.Pn.Infrastructure.Models.Chemicals;
+using BackendConfiguration.Pn.Services.BackendConfigurationAdhocService;
+using BackendConfiguration.Pn.Services.ChemicalInventoryService;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+using NSubstitute;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
@@ -36,6 +40,20 @@ namespace BackendConfiguration.Pn.Integration.Test;
 public abstract class ChemicalTestBase : TestBaseSetup
 {
     protected const int TestUserId = 1;
+
+    protected readonly FakeAdhocPhotoStorage PhotoStorage = new();
+    protected readonly FakeChemicalNameDirectory Names = new();
+    protected IChemicalBaseClient ChemicalBase = Substitute.For<IChemicalBaseClient>();
+
+    /// <summary>Real permission service and register reader over the fixture databases.</summary>
+    protected ChemicalInventoryService CreateInventoryService(TimeProvider? time = null) => new(
+        BackendConfigurationPnDbContext!,
+        new ChemicalPermissionService(BackendConfigurationPnDbContext!),
+        new ChemicalRegisterReader(ChemicalsDbContext!),
+        Names,
+        PhotoStorage,
+        ChemicalBase,
+        time ?? TimeProvider.System);
 
     protected async Task<Property> CreatePropertyAsync()
     {
@@ -114,6 +132,20 @@ public abstract class ChemicalTestBase : TestBaseSetup
         };
         await location.Create(BackendConfigurationPnDbContext!);
         return location;
+    }
+
+    protected async Task<ChemicalPlacement> CreatePlacementAsync(int locationId, int chemicalId, DateTime? removedAt = null)
+    {
+        var placement = new ChemicalPlacement
+        {
+            LocationId = locationId, ChemicalId = chemicalId, PlacementNote = string.Empty,
+            RegisteredByUserId = TestUserId, RegisteredAt = DateTime.UtcNow.AddDays(-30),
+            RemovedAt = removedAt, RemovedByUserId = removedAt.HasValue ? TestUserId : null,
+            RemovalReason = removedAt.HasValue ? ChemicalRemovalReasonEnum.Used : null,
+            CreatedByUserId = TestUserId, UpdatedByUserId = TestUserId,
+        };
+        await placement.Create(BackendConfigurationPnDbContext!);
+        return placement;
     }
 
     private static void Apply(ChemicalWorkerPermission row, ChemicalPermissionFlagsModel flags)
