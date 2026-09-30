@@ -44,15 +44,13 @@ public partial class ChemicalInventoryService
         var note = RequireText(command.PlacementNote, "placement note", MaxNoteLength, required: false);
         var now = UtcNow();
 
-        decimal initialAmount = 0;
-        var initialAt = now;
-        if (command.InitialStock != null)
+        // Built and validated before the transaction; its placement id is set once the placement exists.
+        ChemicalStockEntry initialEntry = null;
+        if (command.InitialStock is { } initial)
         {
             await RequireStockEnabledAsync(location.PropertyId).ConfigureAwait(false);
-            initialAmount = ChemicalQuantity.ResolveMovedAmount(command.InitialStock);
-            initialAt = ResolveEntryTime(command.InitialStock.At, now);
-            // Fail on the entry's texts before the placement row is written.
-            EntryText(command.InitialStock);
+            initialEntry = NewEntry(ChemicalStockEntryKindEnum.Received, ChemicalQuantity.ResolveMovedAmount(initial),
+                initial.Unit, caller, ResolveEntryTime(initial.At, now), initial);
         }
 
         var placementId = await InTransactionAsync(async () =>
@@ -70,10 +68,10 @@ public partial class ChemicalInventoryService
                 UpdatedByUserId = caller.UserId,
             };
             await placement.Create(dbContext).ConfigureAwait(false);
-            if (command.InitialStock != null)
+            if (initialEntry != null)
             {
-                await AddEntryAsync(placement.Id, ChemicalStockEntryKindEnum.Received, initialAmount,
-                    command.InitialStock.Unit, caller, initialAt, command.InitialStock).ConfigureAwait(false);
+                initialEntry.PlacementId = placement.Id;
+                await initialEntry.Create(dbContext).ConfigureAwait(false);
             }
 
             return placement.Id;
@@ -84,9 +82,8 @@ public partial class ChemicalInventoryService
 
     public async Task<ChemicalPlacementChangeModel> MovePlacementAsync(ChemicalCaller caller, ChemicalMovePlacementCommand command)
     {
-        var (source, propertyId) = await LoadPlacementAsync(command.PlacementId).ConfigureAwait(false);
-        await permissions.RequireAsync(caller, propertyId, ChemicalPermission.Register).ConfigureAwait(false);
-        RequireOpen(source);
+        var (source, propertyId) = await LoadOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Register)
+            .ConfigureAwait(false);
         var target = await LoadActiveLocationAsync(command.TargetLocationId).ConfigureAwait(false);
         if (target.PropertyId != propertyId)
         {
@@ -165,9 +162,8 @@ public partial class ChemicalInventoryService
             throw new ArgumentException("Removal needs the reason Used or Disposed; Moved is set by a move.");
         }
 
-        var (placement, propertyId) = await LoadPlacementAsync(command.PlacementId).ConfigureAwait(false);
-        await permissions.RequireAsync(caller, propertyId, ChemicalPermission.Remove).ConfigureAwait(false);
-        RequireOpen(placement);
+        var (placement, _) = await LoadOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Remove)
+            .ConfigureAwait(false);
         var removedAt = ResolveEntryTime(command.RemovedAt, UtcNow());
         if (removedAt < placement.RegisteredAt)
         {
@@ -196,9 +192,7 @@ public partial class ChemicalInventoryService
 
     public async Task<ChemicalPlacementChangeModel> UpdatePlacementNoteAsync(ChemicalCaller caller, int placementId, string placementNote)
     {
-        var (placement, propertyId) = await LoadPlacementAsync(placementId).ConfigureAwait(false);
-        await permissions.RequireAsync(caller, propertyId, ChemicalPermission.Register).ConfigureAwait(false);
-        RequireOpen(placement);
+        var (placement, _) = await LoadOpenPlacementAsync(caller, placementId, ChemicalPermission.Register).ConfigureAwait(false);
         placement.PlacementNote = RequireText(placementNote, "placement note", MaxNoteLength, required: false);
         placement.UpdatedByUserId = caller.UserId;
         await placement.Update(dbContext).ConfigureAwait(false);
@@ -213,9 +207,8 @@ public partial class ChemicalInventoryService
             throw new ArgumentException("Only Received, Consumed and Adjusted entries can be added; moves write their own.");
         }
 
-        var (placement, propertyId) = await LoadPlacementAsync(command.PlacementId).ConfigureAwait(false);
-        await permissions.RequireAsync(caller, propertyId, ChemicalPermission.Stock).ConfigureAwait(false);
-        RequireOpen(placement);
+        var (placement, propertyId) = await LoadOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Stock)
+            .ConfigureAwait(false);
         await RequireStockEnabledAsync(propertyId).ConfigureAwait(false);
 
         var amount = command.Amount ?? throw new ArgumentException("An amount is required.");
@@ -226,24 +219,37 @@ public partial class ChemicalInventoryService
             throw new ArgumentException($"This placement is counted in {existing}; use the same unit.");
         }
 
-        var delta = command.Kind switch
+        decimal delta;
+        switch (command.Kind)
         {
-            ChemicalStockEntryKindEnum.Received => ChemicalQuantity.ResolveMovedAmount(amount),
-            ChemicalStockEntryKindEnum.Consumed => -ChemicalQuantity.ResolveMovedAmount(amount),
-            _ => ChemicalQuantity.ResolveCountedBalance(amount) - balance,
-        };
-        if (balance + delta < 0)
-        {
-            throw new ArgumentException("The consumption exceeds the balance.");
-        }
+            case ChemicalStockEntryKindEnum.Received:
+                delta = ChemicalQuantity.ResolveMovedAmount(amount);
+                break;
+            case ChemicalStockEntryKindEnum.Consumed:
+                var consumed = ChemicalQuantity.ResolveMovedAmount(amount);
+                if (consumed > balance)
+                {
+                    throw new ArgumentException("The consumption exceeds the balance.");
+                }
 
-        if (delta == 0)
-        {
-            throw new ArgumentException("The adjustment does not change the balance.");
+                delta = -consumed;
+                break;
+            default:
+                delta = ChemicalQuantity.ResolveCountedBalance(amount) - balance;
+                if (delta == 0)
+                {
+                    throw new ArgumentException("The adjustment does not change the balance.");
+                }
+
+                break;
         }
 
         var at = ResolveEntryTime(amount.At, UtcNow());
-        await AddEntryAsync(placement.Id, command.Kind, delta, amount.Unit, caller, at, amount).ConfigureAwait(false);
+        await InTransactionAsync(async () =>
+        {
+            await AddEntryAsync(placement.Id, command.Kind, delta, amount.Unit, caller, at, amount).ConfigureAwait(false);
+            return true;
+        }).ConfigureAwait(false);
         return await ChangeResultAsync([placement.Id]).ConfigureAwait(false);
     }
 
@@ -268,13 +274,7 @@ public partial class ChemicalInventoryService
                 orderby placement.Id
                 select new { Placement = placement, location.PropertyId })
             .ToListAsync().ConfigureAwait(false);
-        var stock = await dbContext.ChemicalStockEntries.AsNoTracking()
-            .Where(e => ids.Contains(e.PlacementId) && e.WorkflowState != Removed)
-            .Select(e => new { e.Id, e.PlacementId, e.Amount, e.Unit })
-            .ToListAsync().ConfigureAwait(false);
-        var stockByPlacement = stock
-            .GroupBy(e => e.PlacementId)
-            .ToDictionary(g => g.Key, g => (Balance: g.Sum(e => e.Amount), Unit: g.OrderByDescending(e => e.Id).First().Unit));
+        var stockByPlacement = await StockBalancesAsync(ids).ConfigureAwait(false);
         var userNames = await names.UserNamesAsync(
                 rows.SelectMany(r => new[] { r.Placement.RegisteredByUserId, r.Placement.RemovedByUserId ?? 0 }))
             .ConfigureAwait(false);
@@ -298,9 +298,7 @@ public partial class ChemicalInventoryService
 
     private async Task<List<ChemicalStockEntryModel>> LoadEntryModelsAsync(IReadOnlyCollection<int> placementIds)
     {
-        var ids = placementIds.Distinct().ToArray();
-        var entries = await dbContext.ChemicalStockEntries.AsNoTracking()
-            .Where(e => ids.Contains(e.PlacementId) && e.WorkflowState != Removed)
+        var entries = await LiveEntries(placementIds)
             .OrderBy(e => e.At).ThenBy(e => e.Id)
             .ToListAsync().ConfigureAwait(false);
         var userNames = await names.UserNamesAsync(entries.Select(e => e.ByUserId)).ConfigureAwait(false);
@@ -313,8 +311,12 @@ public partial class ChemicalInventoryService
 
     // ---- private helpers ----
 
-    /// <summary>The tracked placement and its property. Permission is checked by the caller before any state is revealed.</summary>
-    private async Task<(ChemicalPlacement Placement, int PropertyId)> LoadPlacementAsync(int placementId)
+    /// <summary>
+    /// The tracked, still-open placement and its property. The caller's permission is checked
+    /// before the open state is revealed; a missing id is NotFound.
+    /// </summary>
+    private async Task<(ChemicalPlacement Placement, int PropertyId)> LoadOpenPlacementAsync(
+        ChemicalCaller caller, int placementId, ChemicalPermission permission)
     {
         var row = await (
                       from placement in dbContext.ChemicalPlacements
@@ -323,25 +325,42 @@ public partial class ChemicalInventoryService
                       select new { Placement = placement, location.PropertyId })
                   .FirstOrDefaultAsync().ConfigureAwait(false)
                   ?? throw new ChemicalNotFoundException($"Placement {placementId} not found.");
+        await permissions.RequireAsync(caller, row.PropertyId, permission).ConfigureAwait(false);
+        if (row.Placement.RemovedAt != null)
+        {
+            throw new ChemicalPreconditionException($"Placement {placementId} is already closed.");
+        }
+
         return (row.Placement, row.PropertyId);
     }
 
-    private static void RequireOpen(ChemicalPlacement placement)
+    /// <summary>The placements' stock entries that count (not soft-deleted).</summary>
+    private IQueryable<ChemicalStockEntry> LiveEntries(IReadOnlyCollection<int> placementIds)
     {
-        if (placement.RemovedAt != null)
-        {
-            throw new ChemicalPreconditionException($"Placement {placement.Id} is already closed.");
-        }
+        var ids = placementIds.Distinct().ToArray();
+        return dbContext.ChemicalStockEntries.AsNoTracking()
+            .Where(e => ids.Contains(e.PlacementId) && e.WorkflowState != Removed);
+    }
+
+    /// <summary>
+    /// Balance (sum of the live entries) and unit per placement that has entries.
+    /// The unit is that of the latest written entry (highest id).
+    /// </summary>
+    private async Task<Dictionary<int, (decimal Balance, ChemicalStockUnitEnum Unit)>> StockBalancesAsync(
+        IReadOnlyCollection<int> placementIds)
+    {
+        var entries = await LiveEntries(placementIds)
+            .Select(e => new { e.Id, e.PlacementId, e.Amount, e.Unit })
+            .ToListAsync().ConfigureAwait(false);
+        return entries
+            .GroupBy(e => e.PlacementId)
+            .ToDictionary(g => g.Key, g => (g.Sum(e => e.Amount), g.MaxBy(e => e.Id).Unit));
     }
 
     private async Task<(decimal Balance, ChemicalStockUnitEnum? Unit)> StockStateAsync(int placementId)
     {
-        var entries = await dbContext.ChemicalStockEntries.AsNoTracking()
-            .Where(e => e.PlacementId == placementId && e.WorkflowState != Removed)
-            .OrderBy(e => e.Id)
-            .Select(e => new { e.Amount, e.Unit })
-            .ToListAsync().ConfigureAwait(false);
-        return entries.Count == 0 ? (0m, null) : (entries.Sum(e => e.Amount), entries[^1].Unit);
+        var balances = await StockBalancesAsync([placementId]).ConfigureAwait(false);
+        return balances.TryGetValue(placementId, out var s) ? (s.Balance, s.Unit) : (0m, null);
     }
 
     private async Task ClosePlacementAsync(ChemicalPlacement placement, ChemicalRemovalReasonEnum reason, DateTime at,
@@ -358,28 +377,27 @@ public partial class ChemicalInventoryService
     private async Task AddEntryAsync(int placementId, ChemicalStockEntryKindEnum kind, decimal amount,
         ChemicalStockUnitEnum unit, ChemicalCaller caller, DateTime at, ChemicalStockAmountModel details = null)
     {
-        var (batchLot, note) = EntryText(details);
-        var entry = new ChemicalStockEntry
-        {
-            PlacementId = placementId,
-            Kind = kind,
-            Amount = amount,
-            Unit = unit,
-            ContainerSize = details?.ContainerSize,
-            ContainerCount = details?.ContainerCount,
-            BatchLot = batchLot,
-            Note = note,
-            ByUserId = caller.UserId,
-            At = at,
-            CreatedByUserId = caller.UserId,
-            UpdatedByUserId = caller.UserId,
-        };
+        var entry = NewEntry(kind, amount, unit, caller, at, details);
+        entry.PlacementId = placementId;
         await entry.Create(dbContext).ConfigureAwait(false);
     }
 
-    private static (string BatchLot, string Note) EntryText(ChemicalStockAmountModel details) =>
-        (RequireText(details?.BatchLot, "batch/lot", MaxBatchLotLength, required: false),
-            RequireText(details?.Note, "note", MaxNoteLength, required: false));
+    /// <summary>An unsaved entry with its texts validated; the caller sets PlacementId.</summary>
+    private static ChemicalStockEntry NewEntry(ChemicalStockEntryKindEnum kind, decimal amount,
+        ChemicalStockUnitEnum unit, ChemicalCaller caller, DateTime at, ChemicalStockAmountModel details) => new()
+    {
+        Kind = kind,
+        Amount = amount,
+        Unit = unit,
+        ContainerSize = details?.ContainerSize,
+        ContainerCount = details?.ContainerCount,
+        BatchLot = RequireText(details?.BatchLot, "batch/lot", MaxBatchLotLength, required: false),
+        Note = RequireText(details?.Note, "note", MaxNoteLength, required: false),
+        ByUserId = caller.UserId,
+        At = at,
+        CreatedByUserId = caller.UserId,
+        UpdatedByUserId = caller.UserId,
+    };
 
     private static DateTime ResolveEntryTime(DateTime? requested, DateTime now)
     {
