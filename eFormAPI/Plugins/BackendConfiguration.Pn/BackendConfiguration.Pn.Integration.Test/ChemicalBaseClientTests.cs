@@ -18,7 +18,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using System.Net;
 using BackendConfiguration.Pn.Services.ChemicalInventoryService;
 using Microsoft.Extensions.Options;
 using WireMock.RequestBuilders;
@@ -42,23 +41,12 @@ public class ChemicalBaseClientTests
         _server.Dispose();
     }
 
-    private ChemicalBaseClient CreateSut(string serviceKey = "secret-key", string? baseUrl = null)
+    private ChemicalBaseClient CreateSut(string? baseUrl = null)
     {
-        var options = Options.Create(new ChemicalBaseOptions { BaseUrl = baseUrl ?? _server.Url!, ServiceKey = serviceKey });
+        var options = Options.Create(new ChemicalBaseOptions { BaseUrl = baseUrl ?? _server.Url! });
         var http = new HttpClient { BaseAddress = new Uri((baseUrl ?? _server.Url!).TrimEnd('/') + "/"), Timeout = TimeSpan.FromSeconds(10) };
         return new ChemicalBaseClient(http, options);
     }
-
-    // WireMock keeps a multipart body as bytes, not as a string: decode it for the assertions.
-    private string LoggedBody()
-    {
-        var request = _server.LogEntries.Single().RequestMessage;
-        return request.Body ?? System.Text.Encoding.UTF8.GetString(request.BodyAsBytes ?? []);
-    }
-
-    private static ChemicalBarcodeSuggestionPayload Payload(byte[]? photo = null) => new(
-        "5701234567892", "bmd-77", "1-234", "a1b2c3", "Roundup Flex 1 L", "420", "Anna Hansen", "anna@example.com",
-        photo, photo == null ? null! : "image/jpeg");
 
     [Test]
     public async Task DownloadSds_ReturnsBytes_404IsNull()
@@ -79,65 +67,6 @@ public class ChemicalBaseClientTests
             .RespondWith(Response.Create().WithStatusCode(500));
 
         Assert.That(async () => await CreateSut().DownloadSdsAsync("a1b2c3"), Throws.InstanceOf<ChemicalUnavailableException>());
-    }
-
-    [Test]
-    public async Task SubmitSuggestion_PostsTheContractAndReturnsTheId()
-    {
-        _server.Given(Request.Create().WithPath("/api/chemicals-pn/barcode-suggestions").UsingPost()
-                .WithHeader("X-Service-Key", "secret-key"))
-            .RespondWith(Response.Create().WithStatusCode(201).WithBody("{\"id\":42}"));
-
-        var id = await CreateSut().SubmitBarcodeSuggestionAsync(Payload(photo: new byte[] { 1, 2, 3 }));
-
-        Assert.That(id, Is.EqualTo(42));
-        var body = LoggedBody();
-        foreach (var part in new[] { "barcode", "chemicalRemoteId", "registrationNo", "productFileName", "productName",
-                     "customerNo", "userName", "userEmail", "labelPhoto" })
-        {
-            Assert.That(body, Does.Contain($"name={part}"), part);
-        }
-
-        Assert.That(body, Does.Contain("5701234567892"));
-        Assert.That(body, Does.Contain("bmd-77"));
-    }
-
-    [Test]
-    public async Task SubmitSuggestion_OmitsAbsentOptionalParts()
-    {
-        _server.Given(Request.Create().WithPath("/api/chemicals-pn/barcode-suggestions").UsingPost())
-            .RespondWith(Response.Create().WithStatusCode(201).WithBody("{\"id\":7}"));
-
-        await CreateSut().SubmitBarcodeSuggestionAsync(Payload(photo: new byte[] { 1 }) with
-        {
-            ChemicalRemoteId = null!, RegistrationNo = null!, ProductFileName = null!, ProductName = null!,
-        });
-
-        var body = LoggedBody();
-        Assert.That(body, Does.Not.Contain("name=chemicalRemoteId"));
-        Assert.That(body, Does.Not.Contain("name=productFileName"));
-    }
-
-    [Test]
-    public void SubmitSuggestion_400IsInvalidArgument_401IsUnavailable()
-    {
-        _server.Given(Request.Create().WithPath("/api/chemicals-pn/barcode-suggestions").UsingPost().WithHeader("X-Service-Key", "secret-key"))
-            .RespondWith(Response.Create().WithStatusCode(400).WithBody("barcode already approved"));
-        _server.Given(Request.Create().WithPath("/api/chemicals-pn/barcode-suggestions").UsingPost().WithHeader("X-Service-Key", "wrong"))
-            .RespondWith(Response.Create().WithStatusCode(401));
-
-        Assert.That(async () => await CreateSut().SubmitBarcodeSuggestionAsync(Payload()),
-            Throws.InstanceOf<ArgumentException>().With.Message.Contains("barcode already approved"));
-        Assert.That(async () => await CreateSut("wrong").SubmitBarcodeSuggestionAsync(Payload()),
-            Throws.InstanceOf<ChemicalUnavailableException>());
-    }
-
-    [Test]
-    public void SubmitSuggestion_WithoutServiceKey_IsUnavailable_AndSendsNothing()
-    {
-        Assert.That(async () => await CreateSut(serviceKey: "").SubmitBarcodeSuggestionAsync(Payload()),
-            Throws.InstanceOf<ChemicalUnavailableException>());
-        Assert.That(_server.LogEntries, Is.Empty);
     }
 
     [Test]

@@ -63,19 +63,6 @@ public class ChemicalNameDirectoryTests : TestBaseSetup
     }
 
     [Test]
-    public async Task User_ReturnsNameAndEmail_UnknownIsNotFound()
-    {
-        var bo = await AddUserAsync("Bo", "Jensen");
-        var sut = await CreateSut();
-
-        var (name, email) = await sut.UserAsync(bo.Id);
-
-        Assert.That(name, Is.EqualTo("Bo Jensen"));
-        Assert.That(email, Is.EqualTo(bo.Email));
-        Assert.That(async () => await sut.UserAsync(int.MaxValue), Throws.InstanceOf<ChemicalNotFoundException>());
-    }
-
-    [Test]
     public async Task WorkerNames_ResolvesSdkSiteNames()
     {
         var site = new Site { Name = $"Worker {Guid.NewGuid():N}" };
@@ -85,15 +72,5 @@ public class ChemicalNameDirectoryTests : TestBaseSetup
         var names = await sut.WorkerNamesAsync([site.Id]);
 
         Assert.That(names[site.Id], Is.EqualTo(site.Name));
-    }
-
-    [Test]
-    public async Task TenantInfo_ReadsTheSdkCustomerNumber()
-    {
-        var core = await GetCore();
-        var coreHelper = Substitute.For<IEFormCoreService>();
-        coreHelper.GetCore().Returns(Task.FromResult(core));
-
-        Assert.That(await new ChemicalTenantInfo(coreHelper).GetCustomerNoAsync(), Is.EqualTo("420"));
     }
 }
