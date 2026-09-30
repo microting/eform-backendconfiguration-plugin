@@ -97,7 +97,35 @@ public class ChemicalRegisterAndFilesTests : ChemicalTestBase
 
         Assert.That(async () => await sut.GetSdsPdfAsync(caller, fileName), Throws.InstanceOf<ChemicalNotFoundException>());
         Assert.That(async () => await sut.GetSdsPdfAsync(caller, "   "), Throws.InstanceOf<ChemicalNotFoundException>());
-        Assert.That(async () => await sut.GetSdsPdfAsync(caller, "d41d8cd98f00b204e9800998ecf8427e"), Throws.InstanceOf<ChemicalNotFoundException>());
+        await ChemicalBase.DidNotReceive().DownloadSdsAsync(Arg.Is<string>(n => n != fileName), Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task Sds_EmptyContentMd5_IsNoSds_InAnyCase()
+    {
+        var caller = await WorkerAsync(view: true);
+        // A product really stores the md5 of an empty upload, so only the md5 guard can refuse it.
+        const string upperMd5 = "D41D8CD98F00B204E9800998ECF8427E";
+        await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Empty upload", "5-681", sdsFileName: upperMd5);
+        ChemicalBase.DownloadSdsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(new byte[] { 37, 80, 68, 70 });
+        var sut = CreateInventoryService();
+
+        Assert.That(async () => await sut.GetSdsPdfAsync(caller, upperMd5), Throws.InstanceOf<ChemicalNotFoundException>());
+        Assert.That(async () => await sut.GetSdsPdfAsync(caller, upperMd5.ToLowerInvariant()), Throws.InstanceOf<ChemicalNotFoundException>());
+        await ChemicalBase.DidNotReceive().DownloadSdsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task Sds_ForwardsTheStoredFileName_NotTheCallersSpelling()
+    {
+        var caller = await WorkerAsync(view: true);
+        var fileName = Guid.NewGuid().ToString("N");
+        await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Stored SDS", "5-682", sdsFileName: fileName);
+        ChemicalBase.DownloadSdsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(new byte[] { 37, 80, 68, 70 });
+
+        await CreateInventoryService().GetSdsPdfAsync(caller, $" {fileName.ToUpperInvariant()} ");
+
+        await ChemicalBase.Received(1).DownloadSdsAsync(fileName, Arg.Any<CancellationToken>());
         await ChemicalBase.DidNotReceive().DownloadSdsAsync(Arg.Is<string>(n => n != fileName), Arg.Any<CancellationToken>());
     }
 }

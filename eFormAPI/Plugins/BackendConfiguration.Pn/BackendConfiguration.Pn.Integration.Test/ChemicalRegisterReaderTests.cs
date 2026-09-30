@@ -69,6 +69,7 @@ public class ChemicalRegisterReaderTests : ChemicalTestBase
     }
 
     [TestCase(ChemicalRegisterReader.EmptyContentMd5)]
+    [TestCase("D41D8CD98F00B204E9800998ECF8427E")]
     [TestCase("")]
     [TestCase("   ")]
     public async Task EmptyContentMd5OrBlank_IsTreatedAsNoSds(string sdsFileName)
@@ -82,22 +83,32 @@ public class ChemicalRegisterReaderTests : ChemicalTestBase
         Assert.That(product.SdsFileName, Is.Empty);
         Assert.That(product.SdsChecksum, Is.Empty);
         Assert.That(reference.ProductFileName, Is.Empty);
-        Assert.That(await CreateSut().SdsFileExistsAsync(sdsFileName), Is.False);
+        Assert.That(await CreateSut().FindSdsFileNameAsync(sdsFileName), Is.Null);
     }
 
     [Test]
-    public async Task SdsFileExists_OnlyForAnActiveProductsFile()
+    public async Task FindSdsFileName_OnlyForAnActiveProductsFile()
     {
         var fileName = Guid.NewGuid().ToString("N");
         var seeded = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "With SDS", "2-223", sdsFileName: fileName);
 
-        Assert.That(await CreateSut().SdsFileExistsAsync(fileName), Is.True);
-        Assert.That(await CreateSut().SdsFileExistsAsync(Guid.NewGuid().ToString("N")), Is.False);
+        Assert.That(await CreateSut().FindSdsFileNameAsync(fileName), Is.EqualTo(fileName));
+        Assert.That(await CreateSut().FindSdsFileNameAsync(Guid.NewGuid().ToString("N")), Is.Null);
 
         await ChemicalsDbContext!.Products.Where(p => p.Id == seeded.ProductId)
             .ExecuteUpdateAsync(s => s.SetProperty(p => p.WorkflowState, "removed"));
 
-        Assert.That(await CreateSut().SdsFileExistsAsync(fileName), Is.False);
+        Assert.That(await CreateSut().FindSdsFileNameAsync(fileName), Is.Null);
+    }
+
+    [Test]
+    public async Task FindSdsFileName_ReturnsTheStoredSpelling()
+    {
+        var fileName = Guid.NewGuid().ToString("N");
+        await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Stored SDS", "2-224", sdsFileName: fileName);
+
+        // The register's collation matches case-insensitively; the stored spelling is what chemicalbase knows.
+        Assert.That(await CreateSut().FindSdsFileNameAsync(fileName.ToUpperInvariant()), Is.EqualTo(fileName));
     }
 
     [Test]
