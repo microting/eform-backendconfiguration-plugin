@@ -1,4 +1,5 @@
 // using BackendConfiguration.Pn.Services.RebusService;
+using ChemicalsBase.Infrastructure;
 using eFormCore;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure;
@@ -27,7 +28,7 @@ namespace BackendConfiguration.Pn.Integration.Test;
 /// pulls the SDK database forward to the current model on its own (it needs the dump's
 /// __EFMigrationsHistory rows to know where to resume, so this one must stay a full dump).
 /// 420_Angular.sql - never replayed; GetBaseDbContext only calls EnsureCreated().
-/// 420_chemical-base-plugin.sql - not loaded by this fixture at all.
+/// 420_chemical-base-plugin.sql - not replayed; the schema comes from EnsureCreated() and chemical tests seed their own rows.
 /// </para>
 /// <para>
 /// EnsureCreated() does not create __EFMigrationsHistory, and the seed files no longer carry
@@ -58,6 +59,7 @@ public abstract class TestBaseSetup
     protected MicrotingDbContext? MicrotingDbContext;
     protected CaseTemplatePnDbContext? CaseTemplatePnDbContext;
     protected BaseDbContext BaseDbContext;
+    protected ChemicalsDbContext? ChemicalsDbContext;
     protected IBus? Bus;
 
     /// <summary>
@@ -122,6 +124,26 @@ public abstract class TestBaseSetup
         baseDbContext.Database.SetCommandTimeout(CommandTimeoutSeconds);
 
         return baseDbContext;
+    }
+
+    /// <summary>
+    /// The customer register copy the chemical inventory reads. Schema only, from
+    /// the ChemicalsBase model via EnsureCreated(); tests seed the few rows they
+    /// need through ChemicalRegisterSeed. 420_chemical-base-plugin.sql is a full
+    /// production-shaped dump and is still not replayed.
+    /// </summary>
+    private static ChemicalsDbContext GetChemicalsDbContext(string connectionStr, bool bootstrapSchema)
+    {
+        var context = new ChemicalsDbContext(BuildOptions<ChemicalsDbContext>(connectionStr, "420_chemical-base-plugin"));
+
+        if (bootstrapSchema)
+        {
+            context.Database.EnsureCreated();
+        }
+
+        context.Database.SetCommandTimeout(CommandTimeoutSeconds);
+
+        return context;
     }
 
     protected async Task<Core> GetCore()
@@ -191,6 +213,8 @@ public abstract class TestBaseSetup
 
         BaseDbContext = GetBaseDbContext(connectionStr, bootstrapSchema);
 
+        ChemicalsDbContext = GetChemicalsDbContext(connectionStr, bootstrapSchema);
+
         // var rebusService =
             // new RebusService(
                 // new EFormCoreService(_mariadbTestcontainer.GetConnectionString().Replace("myDb", "420_SDK")
@@ -219,6 +243,7 @@ public abstract class TestBaseSetup
         await MicrotingDbContext!.DisposeAsync();
         await CaseTemplatePnDbContext!.DisposeAsync();
         await BaseDbContext.DisposeAsync();
+        await ChemicalsDbContext!.DisposeAsync();
         if (Bus != null) Bus.Dispose();
     }
 }
