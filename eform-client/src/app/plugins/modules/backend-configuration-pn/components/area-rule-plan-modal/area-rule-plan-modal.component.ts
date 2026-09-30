@@ -349,11 +349,6 @@ export class AreaRulePlanModalComponent implements OnInit {
           notificationsModifiable: this.selectedAreaRule.typeSpecificFields.notificationsModifiable,
         };
       }
-      case 9: {
-        return {
-          startDate: this.currentDate,
-        };
-      }
       case 10: {
         return {
           startDate: this.currentDate,
