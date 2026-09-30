@@ -163,7 +163,7 @@ public class ChemicalsGrpcPermissionTests : ChemicalTestBase
         var (required, call) = Rpcs[rpc];
         var scenario = await ArrangeAsync(AllExcept(required));
 
-        var ex = Assert.ThrowsAsync<RpcException>(async () => await call(CreateSut(scenario.WorkerId), scenario));
+        var ex = await Assert.ThrowsAsync<RpcException>(async () => await call(CreateSut(scenario.WorkerId), scenario));
 
         Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.PermissionDenied));
     }

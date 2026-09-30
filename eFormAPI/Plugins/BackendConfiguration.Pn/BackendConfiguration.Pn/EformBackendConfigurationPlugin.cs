@@ -88,6 +88,7 @@ using Services.BackendConfigurationTaskListService;
 using Services.BackendConfigurationTaskManagementService;
 using Services.BackendConfigurationTaskTrackerService;
 using Services.BackendConfigurationTaskWizardService;
+using Services.ChemicalInventoryService;
 using Services.ExcelService;
 using Services.GoogleDrive;
 using Services.TaskUpdateCompletionService;
@@ -126,6 +127,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             Services.BackendConfigurationAdhocService.BackendConfigurationAdhocService>();
         services.AddTransient<Services.BackendConfigurationAdhocService.IAdhocPhotoStorage,
             Services.BackendConfigurationAdhocService.AdhocPhotoStorage>();
+        // flutter-chemistry: the inventory service, its readers and the chemicalbase client.
+        services.AddChemicalInventory();
         services.AddTransient<Services.EventDeployService.IEventDeployService,
             Services.EventDeployService.EventDeployService>();
         // Transient, like the sibling DbContext-backed services here; see
@@ -251,6 +254,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddOptions<Infrastructure.Models.Settings.GoogleDriveOptions>()
             .Bind(configuration.GetSection("GoogleDrive"))
             .ValidateDataAnnotations();
+
+        services.AddChemicalBaseOptions(configuration);
     }
 
     private static async Task SeedEForms(IServiceCollection services)
@@ -939,6 +944,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             endpoints.MapGrpcService<Services.GrpcServices.EventsGrpcService>();
             endpoints.MapGrpcService<Services.GrpcServices.AdhocGrpcService>();
             endpoints.MapGrpcService<Services.GrpcServices.SettingsGrpcService>();
+            endpoints.MapGrpcService<Services.GrpcServices.ChemicalsGrpcService>();
         });
     }
 

@@ -75,10 +75,10 @@ public class ChemicalsGrpcServiceMappingTests
     private static ChemicalPlacementChangeModel Change(params ChemicalPlacementModel[] placements) => new(placements, [], []);
 
     [Test]
-    public void NoResolvableWorker_IsUnauthenticated()
+    public async Task NoResolvableWorker_IsUnauthenticated()
     {
         var sut = CreateSut(workerId: 0);
-        var ex = Assert.ThrowsAsync<RpcException>(async () => await sut.GetMyInventory(new ChemicalInventoryRequest(), Context()));
+        var ex = await Assert.ThrowsAsync<RpcException>(async () => await sut.GetMyInventory(new ChemicalInventoryRequest(), Context()));
         Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.Unauthenticated));
     }
 
@@ -114,12 +114,12 @@ public class ChemicalsGrpcServiceMappingTests
     }
 
     [TestCaseSource(nameof(Failures))]
-    public void TypedFailures_MapToStatusCodes(Exception exception, StatusCode expected)
+    public async Task TypedFailures_MapToStatusCodes(Exception exception, StatusCode expected)
     {
         var sut = CreateSut();
         _inventory.ArchiveLocationAsync(Caller, 9).ThrowsAsync(exception);
 
-        var ex = Assert.ThrowsAsync<RpcException>(async () =>
+        var ex = await Assert.ThrowsAsync<RpcException>(async () =>
             await sut.ArchiveLocation(new ChemicalArchiveLocationRequest { LocationId = 9 }, Context()));
         Assert.That(ex!.StatusCode, Is.EqualTo(expected));
     }
@@ -157,7 +157,7 @@ public class ChemicalsGrpcServiceMappingTests
         Assert.That(atEnd.Written.Select(c => c.KindCase),
             Is.EqualTo(new[] { ChemicalFileChunk.KindOneofCase.Meta, ChemicalFileChunk.KindOneofCase.Trailer }));
 
-        var ex = Assert.ThrowsAsync<RpcException>(async () =>
+        var ex = await Assert.ThrowsAsync<RpcException>(async () =>
             await sut.GetSdsPdf(new ChemicalSdsPdfRequest { FileName = "abc", Offset = 1001 }, new FakeServerStreamWriter<ChemicalFileChunk>(), Context()));
         Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.OutOfRange));
     }
@@ -182,17 +182,17 @@ public class ChemicalsGrpcServiceMappingTests
     }
 
     [Test]
-    public void UploadLocationPhoto_WithoutMetaFirst_IsInvalidArgument()
+    public async Task UploadLocationPhoto_WithoutMetaFirst_IsInvalidArgument()
     {
         var sut = CreateSut();
         var reader = new FakeAsyncStreamReader<ChemicalLocationPhotoUploadChunk>([new() { Chunk = ByteString.CopyFrom(1) }]);
 
-        var ex = Assert.ThrowsAsync<RpcException>(async () => await sut.UploadLocationPhoto(reader, Context()));
+        var ex = await Assert.ThrowsAsync<RpcException>(async () => await sut.UploadLocationPhoto(reader, Context()));
         Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.InvalidArgument));
     }
 
     [Test]
-    public void UploadLocationPhoto_OverThePhotoLimit_IsInvalidArgument_BeforeTheInventorySeesIt()
+    public async Task UploadLocationPhoto_OverThePhotoLimit_IsInvalidArgument_BeforeTheInventorySeesIt()
     {
         var sut = CreateSut();
         var reader = new FakeAsyncStreamReader<ChemicalLocationPhotoUploadChunk>([
@@ -201,21 +201,21 @@ public class ChemicalsGrpcServiceMappingTests
             new() { Chunk = ByteString.CopyFrom(1) },
         ]);
 
-        var ex = Assert.ThrowsAsync<RpcException>(async () => await sut.UploadLocationPhoto(reader, Context()));
+        var ex = await Assert.ThrowsAsync<RpcException>(async () => await sut.UploadLocationPhoto(reader, Context()));
 
         Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.InvalidArgument));
         Assert.That(_inventory.ReceivedCalls(), Is.Empty);
     }
 
     [Test]
-    public void SuggestBarcode_IsUnimplemented_AndNeverTouchesTheInventory()
+    public async Task SuggestBarcode_IsUnimplemented_AndNeverTouchesTheInventory()
     {
         var sut = CreateSut();
         var reader = new FakeAsyncStreamReader<ChemicalSuggestBarcodeChunk>([
             new() { Meta = new ChemicalSuggestBarcodeMeta { Barcode = "5701234567892" } },
         ]);
 
-        var ex = Assert.ThrowsAsync<RpcException>(async () => await sut.SuggestBarcode(reader, Context()));
+        var ex = await Assert.ThrowsAsync<RpcException>(async () => await sut.SuggestBarcode(reader, Context()));
 
         Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.Unimplemented));
         Assert.That(_inventory.ReceivedCalls(), Is.Empty);
