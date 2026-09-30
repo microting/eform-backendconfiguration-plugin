@@ -266,4 +266,17 @@ public class ChemicalPrimitivesTests
         var future = ChemicalSyncToken.Create(Now.AddDays(1));
         Assert.That(ChemicalSyncToken.Parse(future, Now), Is.Null);
     }
+
+    // ---- BMD hazard statement texts: "<text> (<code>)" ----
+
+    [TestCase("Ustabilt eksplosiv (H200)", "H200", "Ustabilt eksplosiv")]
+    [TestCase("Kan skade forplantningsevnen (H360Fd)", "H360Fd", "Kan skade forplantningsevnen")]
+    [TestCase("Eksplosiv i tør tilstand (EUH 001)", "EUH001", "Eksplosiv i tør tilstand")]
+    [TestCase("Text without a code", "", "Text without a code")]
+    public void SplitHazardStatement_SeparatesCodeFromText(string bmdText, string code, string text)
+    {
+        var statement = ChemicalRegisterReader.SplitHazardStatement(bmdText);
+        Assert.That(statement.Code, Is.EqualTo(code));
+        Assert.That(statement.Text, Is.EqualTo(text));
+    }
 }
