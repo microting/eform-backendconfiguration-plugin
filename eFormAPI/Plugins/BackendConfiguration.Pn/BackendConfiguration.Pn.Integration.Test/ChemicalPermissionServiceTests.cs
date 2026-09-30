@@ -110,6 +110,7 @@ public class ChemicalPermissionServiceTests : ChemicalTestBase
         var visible = await CreateSut().ListVisiblePropertiesAsync(caller);
         var row = visible.Single(v => v.Access.PropertyId == property.Id);
         Assert.That(row.Access.Permissions, Is.EqualTo(ChemicalPermissionFlagsModel.All));
+        Assert.That(row.AccessChangedAt.Kind, Is.EqualTo(DateTimeKind.Utc));
     }
 
     [Test]
@@ -133,6 +134,7 @@ public class ChemicalPermissionServiceTests : ChemicalTestBase
 
         Assert.That(visible.Select(v => v.Access.PropertyId),
             Is.EquivalentTo(new[] { visibleProperty.Id, adminProperty.Id }));
+        Assert.That(visible.Select(v => v.AccessChangedAt.Kind), Is.All.EqualTo(DateTimeKind.Utc));
         var admin = visible.Single(v => v.Access.PropertyId == adminProperty.Id).Access;
         Assert.That(admin.Permissions, Is.EqualTo(ChemicalPermissionFlagsModel.All));
         Assert.That(admin.StockEnabled, Is.True);
@@ -151,5 +153,59 @@ public class ChemicalPermissionServiceTests : ChemicalTestBase
 
         await GrantAsync(property.Id, worker, ViewOnly);
         Assert.That(async () => await CreateSut().RequireViewOnAnyPropertyAsync(caller), Throws.Nothing);
+    }
+
+    [Test]
+    public async Task RemovedPermissionRow_GrantsNothing()
+    {
+        var property = await CreatePropertyAsync();
+        var worker = await AddWorkerAsync(property.Id);
+        await GrantAsync(property.Id, worker, ChemicalPermissionFlagsModel.All);
+        var grant = BackendConfigurationPnDbContext!.ChemicalWorkerPermissions
+            .Single(x => x.PropertyId == property.Id && x.WorkerId == worker);
+        await grant.Delete(BackendConfigurationPnDbContext);
+        var caller = ChemicalCaller.App(TestUserId, worker);
+
+        Assert.That(async () => await CreateSut().RequireAsync(caller, property.Id, ChemicalPermission.View),
+            Throws.InstanceOf<ChemicalPermissionDeniedException>());
+        var visible = await CreateSut().ListVisiblePropertiesAsync(caller);
+        Assert.That(visible.Select(v => v.Access.PropertyId), Has.No.Member(property.Id));
+    }
+
+    [Test]
+    public async Task AssignedWorkerWithoutPermissionRow_IsDenied()
+    {
+        var property = await CreatePropertyAsync();
+        var worker = await AddWorkerAsync(property.Id);
+
+        Assert.That(async () => await CreateSut().RequireAsync(ChemicalCaller.App(TestUserId, worker), property.Id, ChemicalPermission.View),
+            Throws.InstanceOf<ChemicalPermissionDeniedException>());
+    }
+
+    [Test]
+    public async Task GrantOnOneProperty_DoesNotApplyToAnother()
+    {
+        var granted = await CreatePropertyAsync();
+        var other = await CreatePropertyAsync();
+        var worker = Random.Shared.Next(100_000, 999_999);
+        await AddWorkerAsync(granted.Id, worker);
+        await AddWorkerAsync(other.Id, worker);
+        await GrantAsync(granted.Id, worker, ChemicalPermissionFlagsModel.All);
+
+        Assert.That(async () => await CreateSut().RequireAsync(ChemicalCaller.App(TestUserId, worker), other.Id, ChemicalPermission.View),
+            Throws.InstanceOf<ChemicalPermissionDeniedException>());
+    }
+
+    [Test]
+    public async Task RemovedProperty_IsNotListedForWorkers()
+    {
+        var property = await CreatePropertyAsync();
+        var worker = await AddWorkerAsync(property.Id);
+        await GrantAsync(property.Id, worker, ChemicalPermissionFlagsModel.All);
+        await property.Delete(BackendConfigurationPnDbContext!);
+
+        var visible = await CreateSut().ListVisiblePropertiesAsync(ChemicalCaller.App(TestUserId, worker));
+
+        Assert.That(visible.Select(v => v.Access.PropertyId), Has.No.Member(property.Id));
     }
 }

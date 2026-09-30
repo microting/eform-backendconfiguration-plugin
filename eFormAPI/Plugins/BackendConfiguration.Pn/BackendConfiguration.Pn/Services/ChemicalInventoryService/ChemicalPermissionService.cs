@@ -45,6 +45,9 @@ public class ChemicalPermissionService(BackendConfigurationPnDbContext dbContext
 {
     private const string Removed = Constants.WorkflowStates.Removed;
 
+    /// <summary>AccessChangedAt when nothing is known to have changed; UTC like every other value.</summary>
+    private static readonly DateTime NeverChanged = DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc);
+
     private readonly BackendConfigurationUserPropertyAccess _propertyAccess = new(dbContext);
 
     /// <summary>The single mapping from a stored permission row to its (unexpanded) flags.</summary>
@@ -66,7 +69,7 @@ public class ChemicalPermissionService(BackendConfigurationPnDbContext dbContext
                 .ToListAsync().ConfigureAwait(false);
             return all.Select(p => new ChemicalPropertyAccessRow(
                     new ChemicalPropertyAccessModel(p.Id, p.Name, ChemicalPermissionFlagsModel.All, stockEnabled.GetValueOrDefault(p.Id)),
-                    DateTime.MinValue))
+                    NeverChanged))
                 .ToList();
         }
 
@@ -151,8 +154,8 @@ public class ChemicalPermissionService(BackendConfigurationPnDbContext dbContext
 
     private static DateTime Later(DateTime? first, DateTime? second)
     {
-        var a = first ?? DateTime.MinValue;
-        var b = second ?? DateTime.MinValue;
+        var a = first ?? NeverChanged;
+        var b = second ?? NeverChanged;
         return DateTime.SpecifyKind(a > b ? a : b, DateTimeKind.Utc);
     }
 }
