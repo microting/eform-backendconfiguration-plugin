@@ -41,7 +41,8 @@ namespace BackendConfiguration.Pn.Services.CalendarMonthlyReanchorRepair;
 /// compliances below are moved once, straight onto the restored pattern.</item>
 /// <item><c>Planning.DayOfWeek</c> kept a stale legacy weekday (the scheduler
 /// snaps with it) and <c>Planning.NextExecutionTime</c> the legacy day: mirrored
-/// from the ARP and re-snapped within its month, on every Month-Nth rule.</item>
+/// from the ARP and re-snapped within its month on every Month-Nth rule; a next
+/// run already in the past (typically a deactivated task) is left as it is.</item>
 /// <item>The open compliance of the running period kept the legacy deadline, so
 /// the calendar painted it on the old day AND the rule's own occurrence on the new
 /// day. It is moved to the rule's day in the same month.</item>
