@@ -155,6 +155,30 @@ public class ChemicalPlacementsTests : ChemicalTestBase
     }
 
     [Test]
+    public async Task Move_CopiesTheObservedStatus_AndLinksTheSource()
+    {
+        var a = await ArrangeAsync(Handler);
+        var chemical = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Status product", "3-456", status: 3);
+        var sut = CreateInventoryService(a.Clock);
+        var registered = await sut.RegisterPlacementAsync(a.Caller,
+            new ChemicalRegisterPlacementCommand(a.LocationId, chemical.ChemicalId, null, "", null));
+        var source = registered.Placements.Single().Id;
+
+        // The register moves on; a moved placement keeps the status its source was observed with.
+        var row = await ChemicalsDbContext!.Chemicals.SingleAsync(c => c.Id == chemical.ChemicalId);
+        row.Status = 5;
+        await ChemicalsDbContext.SaveChangesAsync();
+
+        var change = await sut.MovePlacementAsync(a.Caller, new ChemicalMovePlacementCommand(source, a.OtherLocationId, "", null));
+
+        var opened = change.Placements.Single(p => p.Id != source);
+        Assert.That(opened.MovedFromPlacementId, Is.EqualTo(source));
+        var stored = await BackendConfigurationPnDbContext!.ChemicalPlacements.AsNoTracking().SingleAsync(p => p.Id == opened.Id);
+        Assert.That(stored.MovedFromPlacementId, Is.EqualTo(source));
+        Assert.That(stored.ObservedStatus, Is.EqualTo(3));
+    }
+
+    [Test]
     public async Task Move_RejectsBadTargetsAndAmounts()
     {
         var a = await ArrangeAsync(Handler);
