@@ -47,13 +47,6 @@ public static class BackendConfigurationSeedEforms
 		item = new KeyValuePair<string, List<string>>("02. Igangværende opgave", headers);
 		theList.Add(item);
 
-		// Commented out as it is not used in the current version
-		// headers = ["", "", ""];
-		// item = new KeyValuePair<string, List<string>>("25.01 Registrer produkter", headers);
-		// theList.Add(item);
-		// headers = ["", "", ""];
-		// item = new KeyValuePair<string, List<string>>("25.02 Vis kemisk produkt", headers);
-		// theList.Add(item);
 		headers = ["", "", ""];
 		item = new KeyValuePair<string, List<string>>("00. Info boks", headers);
 		theList.Add(item);

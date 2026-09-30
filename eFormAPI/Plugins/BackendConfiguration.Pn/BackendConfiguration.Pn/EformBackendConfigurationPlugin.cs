@@ -88,7 +88,6 @@ using Services.BackendConfigurationTaskListService;
 using Services.BackendConfigurationTaskManagementService;
 using Services.BackendConfigurationTaskTrackerService;
 using Services.BackendConfigurationTaskWizardService;
-using Services.ChemicalService;
 using Services.ExcelService;
 using Services.GoogleDrive;
 using Services.TaskUpdateCompletionService;
@@ -180,7 +179,6 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<IBackendConfigurationTagsService, BackendConfigurationTagsService>();
         services.AddTransient<Services.BackendConfigurationWorkerTagsService.IBackendConfigurationWorkerTagsService,
             Services.BackendConfigurationWorkerTagsService.BackendConfigurationWorkerTagsService>();
-        services.AddTransient<IChemicalService, ChemicalService>();
         services.AddSingleton<ITaskUpdateCompletionService, TaskUpdateCompletionService>();
         services.AddTransient<WorkorderCaseGroupIdBackfillService>();
         services.AddTransient<CalendarConfigurationBackfillService>();
@@ -188,6 +186,9 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             Services.CalendarMonthlyReanchorRepair.CalendarMonthlyReanchorRepairService>();
         services.AddTransient<AreaRulePlanningTagPurgeService>();
         services.AddTransient<SecurityGroupBackfillService>();
+        services.AddTransient<Services.LegacyChemicalCleanupService.ILegacyChemicalSdkOperations,
+            Services.LegacyChemicalCleanupService.LegacyChemicalSdkOperations>();
+        services.AddTransient<Services.LegacyChemicalCleanupService.LegacyChemicalCleanupService>();
         services.AddTransient<IExcelService, ExcelService>();
         services.AddTransient<IWordService, WordService>();
         services.AddTransient<IGoogleDriveAuthService, GoogleDriveAuthService>();
@@ -340,11 +341,6 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                         case "05. Halebid og risikovurdering":
                             contents = contents.Replace("SOURCE_REPLACE_ME", "123");
                             break;
-                        // Commented out as it is not used in the current version
-                        // case "25.01 Registrer produkter":
-                        //     contents = contents.Replace("SOURCE_REPLACE_ME_2", "123");
-                        //     contents = contents.Replace("SOURCE_REPLACE_ME", "456");
-                        //     break;
                     }
 
                     var newTemplate = await core.TemplateFromXml(contents).ConfigureAwait(false);
@@ -909,6 +905,29 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         {
             Console.WriteLine($"SecurityGroupBackfill failed at startup: {e}");
         }
+
+        // One-off removal of the legacy eForm chemical flow's folders, cases and
+        // entity lists (flutter-chemistry spec §12). In the background: every
+        // CaseDelete/EntityGroupDelete is a cloud round-trip, and startup must not
+        // wait for them. Its own scope, because the startup scope above is disposed
+        // when Configure returns. The marker is written after every completed pass
+        // (per-item failures are logged, not retried); only a pass that aborts
+        // outright, e.g. on a database error, is retried on the next boot.
+        _ = Task.Run(async () =>
+        {
+            using var cleanupScope = serviceProvider.CreateScope();
+            try
+            {
+                await cleanupScope.ServiceProvider
+                    .GetRequiredService<Services.LegacyChemicalCleanupService.LegacyChemicalCleanupService>()
+                    .RunIfNeededAsync().ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"LegacyChemicalCleanup failed: {e}");
+                SentrySdk.CaptureException(e);
+            }
+        });
 
         appBuilder.UseEndpoints(endpoints =>
         {

@@ -17,7 +17,6 @@ import {
   AreaRuleUpdateModel,
   AreaModel,
   PropertyModel,
-  ChemicalModel,
 } from '../../../../models';
 import {
   BackendConfigurationPnAreasService,
@@ -25,9 +24,8 @@ import {
 } from '../../../../services';
 import {TranslateService} from '@ngx-translate/core';
 import {AreaRuleEntityListModalComponent, AreaRulePlanModalComponent} from '../../../../components';
-import {EntityItemModel, Paged} from 'src/app/common/models';
+import {EntityItemModel} from 'src/app/common/models';
 import {EntitySelectService} from 'src/app/common/services';
-// import {ChemicalsStateService} from '../../../../components/chemicals/store';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
@@ -54,7 +52,6 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
 
   areaRules: AreaRuleSimpleModel[] = [];
   selectedArea: AreaModel = new AreaModel();
-  chemicalsModel: Paged<ChemicalModel> = new Paged<ChemicalModel>();
   propertyAreaId: number;
   selectedPropertyId: number;
   selectedProperty: PropertyModel;
@@ -79,7 +76,6 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   deleteAreaRulesSub$: Subscription;
   getTranslateSub$: Subscription;
   routerSub$: Subscription;
-  getChemicalsSub$: Subscription;
   updateAreaRulePlanSub$: Subscription;
   onDeleteAreaRuleSub$: Subscription;
   onCreateAreaRuleSub$: Subscription;
@@ -103,29 +99,6 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
     });
   }
 
-  // getChemicals() {
-  //   this.getChemicalsSub$ = this.chemicalsStateService
-  //     .getAllChemicals(this.selectedPropertyId)
-  //     .subscribe((data) => {
-  //       if (data && data.success) {
-  //         // map folder names to items
-  //         if (data.model.total > 0) {
-  //           this.chemicalsModel = {
-  //             ...data.model,
-  //             entities: data.model.entities.map((x) => {
-  //               return {
-  //                 ...x,
-  //               };
-  //             }),
-  //           };
-  //         } else {
-  //           this.chemicalsModel = data.model;
-  //         }
-  //         // Required if page or anything else was changed
-  //       }
-  //     });
-  // }
-
   getArea(propertyAreaId: number) {
     this.getAreaSub$ = this.areasService
       .getAreaByPropertyAreaId(propertyAreaId)
@@ -133,7 +106,6 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
         if (operation && operation.success) {
           this.selectedArea = operation.model;
           this.breadcrumbs[2] = {name: this.selectedArea.name};
-          // this.getChemicals();
         }
       });
   }

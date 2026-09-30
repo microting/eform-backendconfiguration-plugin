@@ -6,8 +6,7 @@
       color="primary"
       id="planAreaRuleStatusToggle"
       [checked]="selectedAreaRulePlanning.status"
-      [(ngModel)]="selectedAreaRulePlanning.status"
-      [disabled]="selectedArea.type === 9">
+      [(ngModel)]="selectedAreaRulePlanning.status">
       {{ selectedAreaRule.translatedName }}
     </mat-slide-toggle>
     <mat-slide-toggle
@@ -156,8 +155,7 @@
 <!--        <mat-form-field
           *ngIf="
           selectedAreaRule.translatedName !== '01. Registrer halebid' &&
-          selectedArea.type !== 10 &&
-          selectedArea.type !== 9"
+          selectedArea.type !== 10"
           [owlDateTimeTrigger]="dt1">
           <mat-label>{{ 'Start date' | translate }}</mat-label>
           <input
@@ -232,10 +230,9 @@
       [rowSelected]="selectedWorkers"
       (rowSelectionChange)="changeArray($event)"
       [rowSelectionFormatter]="rowSelectionFormatter"
-      *ngIf="selectedArea.type !== 9"
     >
     </mtx-grid>-->
-    <mat-card *ngIf="selectedArea.type !== 9">
+    <mat-card>
       <h4>{{ 'Select worker' | translate}}</h4>
       <mat-card-content>
         <div class="mtx-grid">
@@ -284,31 +281,6 @@
         </div>
       </mat-card-content>
     </mat-card>
-    <mat-form-field *ngIf="selectedArea.type === 9 && !selectedSite.siteName">
-      <mat-label>{{ 'Assigned worker' | translate }}</mat-label>
-      <mtx-select
-        [items]="selectedArea.availableWorkers"
-        [searchable]="false"
-        [clearable]="false"
-        [multiple]="false"
-        [(ngModel)]="type9assignedSite"
-        (change)="addToArraySelect($event)"
-        bindLabel="siteName"
-        bindValue="siteId"
-        id="createAssignedWorkers"
-        appendTo="body"
-      >
-      </mtx-select>
-    </mat-form-field>
-    <mat-form-field *ngIf="selectedArea.type === 9 && !!selectedSite.siteName">
-      <mat-label>{{ 'Assigned worker' | translate }}</mat-label>
-      <input
-        matInput
-        type="text"
-        [ngModel]="selectedSite.siteName"
-        disabled="true"
-      >
-    </mat-form-field>
   </div>
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">

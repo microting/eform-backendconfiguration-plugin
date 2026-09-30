@@ -8,19 +8,13 @@ import {
   SimpleChanges,
   inject
 } from '@angular/core';
-import {Paged,} from 'src/app/common/models';
 import {
   AreaRuleT2AlarmsEnum,
   AreaRuleT2TypesEnum,
 } from '../../../../enums';
-import {AreaModel, ChemicalModel, AreaRuleSimpleModel} from '../../../../models';
-import {Subscription} from 'rxjs';
-import {TemplateFilesService} from 'src/app/common/services';
+import {AreaModel, AreaRuleSimpleModel} from '../../../../models';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TranslateService} from '@ngx-translate/core';
-import {MatIconRegistry} from '@angular/material/icon';
-import {DomSanitizer} from '@angular/platform-browser';
-import {PdfIcon} from 'src/app/common/const';
 import {AuthStateService} from 'src/app/common/store';
 import {AreaRulesStateService} from '../store';
 import {Sort} from '@angular/material/sort';
@@ -42,12 +36,10 @@ import {
 export class AreaRulesTableComponent implements OnChanges, OnInit {
   private store = inject(Store);
   private authStateService = inject(AuthStateService);
-  private templateFilesService = inject(TemplateFilesService);
   private translateService = inject(TranslateService);
   public areaRulesStateService = inject(AreaRulesStateService);
 
   @Input() areaRules: AreaRuleSimpleModel[] = [];
-  @Input() chemicalsModel: Paged<ChemicalModel> = new Paged<ChemicalModel>();
   @Input() selectedArea: AreaModel = new AreaModel();
   @Output()
   showPlanAreaRuleModal: EventEmitter<AreaRuleSimpleModel> = new EventEmitter();
@@ -61,8 +53,6 @@ export class AreaRulesTableComponent implements OnChanges, OnInit {
 
   tableItemsForAreaRulesDefaultT3: AreaRuleSimpleModel[] = [];
   tableItemsForAreaRulesDefaultT10b: AreaRuleSimpleModel[] = [];
-
-  pdfSub$: Subscription;
 
   tableHeadersT1: MtxGridColumn[] = [
     {
@@ -308,64 +298,6 @@ export class AreaRulesTableComponent implements OnChanges, OnInit {
     },
   ];
 
-  tableHeadersT9: MtxGridColumn[] = [
-    {
-      field: 'id',
-      header: this.translateService.stream('ID'),
-    },
-    {
-      field: 'eformName',
-      header: this.translateService.stream('Name'),
-    },
-    {
-      field: 'planningStatus',
-      header: this.translateService.stream('Status'),
-      formatter: (rowData: AreaRuleSimpleModel) => this.translateService.instant(rowData.planningStatus ? 'ON' : 'OFF'),
-      class: 'rulePlanningStatus'
-    },
-    {
-      field: 'actions',
-      header: this.translateService.stream('Actions'),
-    },
-  ];
-
-  tableHeadersT9SecondTable: MtxGridColumn[] = [
-    {
-      field: 'name',
-      header: this.translateService.stream('Name'),
-    },
-    {
-      field: 'registrationNo',
-      header: this.translateService.stream('Registration No'),
-    },
-    {
-      field: 'status',
-      header: this.translateService.stream('Status'),
-      formatter: (chemical: ChemicalModel) => this.getStatus(chemical.status),
-      class: 'rulePlanningStatus'
-    },
-    {
-      field: 'propertyName',
-      header: this.translateService.stream('Property'),
-    },
-    {
-      field: 'locations',
-      header: this.translateService.stream('Rum'),
-    },
-    {
-      field: 'expiredState',
-      header: this.translateService.stream('Expire state'),
-    },
-    {
-      field: 'expiredDate',
-      header: this.translateService.stream('Expiration Date'),
-    },
-    {
-      field: 'pdf',
-      header: this.translateService.stream('PDF'),
-    },
-  ];
-
   tableHeadersT10: MtxGridColumn[] = [
     {
       field: 'id',
@@ -452,8 +384,6 @@ export class AreaRulesTableComponent implements OnChanges, OnInit {
         return [...this.tableHeadersT7, ...this.tableHeaderAdmin];
       case 8:
         return [...this.tableHeadersT7, ...this.tableHeaderAdmin];
-      case 9:
-        return [...this.tableHeadersT9, ...this.tableHeaderAdmin];
       case 10:
         return [...this.tableHeadersT10, ...this.tableHeaderAdmin];
       default:
@@ -520,39 +450,6 @@ export class AreaRulesTableComponent implements OnChanges, OnInit {
 
   onSortTable(sort: Sort) {
     this.sortTable.emit(sort);
-  }
-
-  getPdf(fileName: string) {
-    // TODO: CHECK
-    this.pdfSub$ = this.templateFilesService.getPdfFile(fileName).subscribe((blob) => {
-      const fileURL = URL.createObjectURL(blob);
-      window.open(fileURL, '_blank');
-    });
-  }
-
-  getStatus(status: number) {
-    switch (status) {
-      case 1:
-        return 'Ansøgning om nyt produkt modtaget';
-      case 2:
-        return 'Ansøgning om nyt produkt trukket';
-      case 3:
-        return 'Ansøgning om nyt produkt returneret';
-      case 4:
-        return 'Ansøgning om nyt produkt afslået';
-      case 5:
-        return 'Produkt godkendt';
-      case 6:
-        return 'Produkt afmeldt';
-      case 7:
-        return 'Produkt udløbet';
-      case 8:
-        return 'Produkt afslået';
-      case 9:
-        return 'Ansøgning om nyt produkt annulleret';
-      default:
-        return '';
-    }
   }
 
   ngOnInit(): void {

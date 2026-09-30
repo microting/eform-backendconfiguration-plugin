@@ -1,18 +1,14 @@
 /*
 The MIT License (MIT)
-
-Copyright (c) 2007 - 2021 Microting A/S
-
+Copyright (c) 2007 - 2026 Microting A/S
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
-
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
-
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,39 +18,21 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using System;
+namespace BackendConfiguration.Pn.Services.LegacyChemicalCleanupService;
 
-namespace Chemicals.Pn.Infrastructure.Models.Chemical;
+using System.Threading.Tasks;
 
-public class ChemicalUpdateModel
+/// <summary>
+/// The SDK calls the cleanup makes that talk to the Microting cloud. Core is
+/// concrete with non-virtual members, so this seam is what lets the cleanup be
+/// tested without cloud credentials. It covers only the cleanup's own deletes of
+/// cases deployed into the legacy folders and of the legacy entity lists;
+/// BackendConfigurationPropertyAreasServiceHelper.DeleteAreaPropertyAsync, which
+/// the cleanup also calls, still goes through the real Core.
+/// </summary>
+public interface ILegacyChemicalSdkOperations
 {
-    public int Id { get; set; }
+    Task DeleteCaseAsync(int microtingUid);
 
-    public string Name { get; set; }
-
-    public string RegistrationNo { get; set; }
-
-    public int? Status { get; set; }
-
-    public DateTime? AuthorisationDate { get; set; }
-
-    public DateTime? AuthorisationExpirationDate { get; set; }
-
-    public DateTime? AuthorisationTerminationDate { get; set; }
-
-    public DateTime? SalesDeadline { get; set; }
-
-    public DateTime? UseAndPossesionDeadline { get; set; }
-
-    public DateTime? PossessionDeadline { get; set; }
-
-    public bool Verified { get; set; }
-
-    public string Barcode { get; set; }
-
-    public string FileName { get; set; }
-
-    public string ProductName { get; set; }
-
-    public int ProductId { get; set; }
+    Task DeleteEntityGroupAsync(string entityGroupMicrotingUid);
 }

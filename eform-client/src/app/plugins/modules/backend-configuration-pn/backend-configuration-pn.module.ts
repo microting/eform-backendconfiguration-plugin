@@ -27,7 +27,6 @@ import {
 } from './components';
 import {BackendConfigurationPnLayoutComponent} from './layouts';
 import {
-  BackendConfigurationPnChemicalsService,
   BackendConfigurationPnPropertiesService,
   BackendConfigurationPnSettingsService,
   BackendConfigurationPnTaskTrackerService,
@@ -139,7 +138,6 @@ import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
   providers: [
     BackendConfigurationPnSettingsService,
     BackendConfigurationPnPropertiesService,
-    BackendConfigurationPnChemicalsService,
     BackendConfigurationPnTaskTrackerService,
     ItemsPlanningPnTagsService,
     TimePlanningPnSettingsService,
