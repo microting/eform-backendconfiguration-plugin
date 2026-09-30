@@ -46,6 +46,9 @@ public interface IChemicalRegisterReader
     /// </summary>
     Task<ChemicalProductRef> FindProductAsync(int chemicalId, int? productId);
 
-    /// <summary>True when an active product references this SDS file name.</summary>
-    Task<bool> SdsFileExistsAsync(string fileName);
+    /// <summary>
+    /// The stored SDS file name of an active product matching <paramref name="fileName"/>
+    /// (by the register's collation), or null when there is none or it means "no SDS".
+    /// </summary>
+    Task<string> FindSdsFileNameAsync(string fileName);
 }

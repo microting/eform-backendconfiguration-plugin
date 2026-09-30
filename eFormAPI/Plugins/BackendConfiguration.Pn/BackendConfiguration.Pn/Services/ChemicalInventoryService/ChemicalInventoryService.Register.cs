@@ -54,16 +54,15 @@ public partial class ChemicalInventoryService
         }
 
         // Only names the register knows: the backend is not an open proxy to chemicalbase.
-        // A blank name or the md5 of an empty upload means "no SDS" and is never known.
-        if (!await register.SdsFileExistsAsync(name).ConfigureAwait(false))
-        {
-            throw new ChemicalNotFoundException($"No product in the register has the SDS '{name}'.");
-        }
+        // A blank name or the md5 of an empty upload means "no SDS" and is never found.
+        // The stored spelling is forwarded, never the caller's.
+        var stored = await register.FindSdsFileNameAsync(name).ConfigureAwait(false)
+                     ?? throw new ChemicalNotFoundException($"No product in the register has the SDS '{name}'.");
 
         // null = 404 at chemicalbase; an empty 200 body is no PDF either.
-        var pdf = await chemicalBase.DownloadSdsAsync(name).ConfigureAwait(false);
+        var pdf = await chemicalBase.DownloadSdsAsync(stored).ConfigureAwait(false);
         return pdf is { Length: > 0 }
             ? pdf
-            : throw new ChemicalNotFoundException($"chemicalbase has no SDS named '{name}'.");
+            : throw new ChemicalNotFoundException($"chemicalbase has no SDS named '{stored}'.");
     }
 }

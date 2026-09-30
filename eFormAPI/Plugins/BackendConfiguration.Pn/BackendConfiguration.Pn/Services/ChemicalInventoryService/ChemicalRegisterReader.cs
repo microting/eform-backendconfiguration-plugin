@@ -140,11 +140,19 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
             product.Id, product.Name, SdsFileName(product.FileName) ?? string.Empty);
     }
 
-    public async Task<bool> SdsFileExistsAsync(string fileName)
+    public async Task<string> FindSdsFileNameAsync(string fileName)
     {
         var sdsFileName = SdsFileName(fileName);
-        return sdsFileName != null
-               && await ActiveProducts().AnyAsync(p => p.FileName == sdsFileName).ConfigureAwait(false);
+        if (sdsFileName == null)
+        {
+            return null;
+        }
+
+        var stored = await ActiveProducts()
+            .Where(p => p.FileName == sdsFileName)
+            .Select(p => p.FileName)
+            .FirstOrDefaultAsync().ConfigureAwait(false);
+        return SdsFileName(stored);
     }
 
     private IQueryable<Product> ActiveProducts() => chemicalsDbContext.Products.AsNoTracking().Where(IsActiveProduct);
@@ -249,7 +257,7 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
     private static string SdsFileName(string fileName)
     {
         var name = fileName?.Trim();
-        return string.IsNullOrEmpty(name) || name == EmptyContentMd5 ? null : name;
+        return string.IsNullOrEmpty(name) || string.Equals(name, EmptyContentMd5, StringComparison.OrdinalIgnoreCase) ? null : name;
     }
 
     private static string Text(IReadOnlyDictionary<int, string> table, int? key) =>
