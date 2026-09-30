@@ -551,8 +551,14 @@ public class CalendarMonthlyReanchorRepairService(
             // ── Step 2: mirror the weekday/ordinal and re-snap NextExecutionTime.
             // Pulling the next run into the past would make the scheduler fire at once and
             // deploy the NEXT period early — a person decides that (same rule UpdateTask
-            // applies after a weekday-only edit; the helper is shared).
-            var (newNext, refusedNext) = CalendarService.ResnapNextExecutionTime(planning, pattern, today);
+            // applies after a weekday-only edit; the helper is shared). Any next run already
+            // before today — typically a deactivated task: the scheduler skips it, and
+            // reactivation takes its dates from the dialog — is left as it is: re-snapping one
+            // past date to another would only clutter the reviewed plan.
+            var nextAlreadyPast = planning.NextExecutionTime?.Date < today;
+            var (newNext, refusedNext) = nextAlreadyPast
+                ? ((DateTime?)null, (DateTime?)null)
+                : CalendarService.ResnapNextExecutionTime(planning, pattern, today);
             if (refusedNext.HasValue)
             {
                 work.Model.ReviewItems.Add(new MonthlyReanchorReviewItemModel
