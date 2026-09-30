@@ -41,7 +41,8 @@ namespace BackendConfiguration.Pn.Services.CalendarMonthlyReanchorRepair;
 /// compliances below are moved once, straight onto the restored pattern.</item>
 /// <item><c>Planning.DayOfWeek</c> kept a stale legacy weekday (the scheduler
 /// snaps with it) and <c>Planning.NextExecutionTime</c> the legacy day: mirrored
-/// from the ARP and re-snapped within its month, on every Month-Nth rule.</item>
+/// from the ARP and re-snapped within its month on every Month-Nth rule; a next
+/// run already in the past (typically a deactivated task) is left as it is.</item>
 /// <item>The open compliance of the running period kept the legacy deadline, so
 /// the calendar painted it on the old day AND the rule's own occurrence on the new
 /// day. It is moved to the rule's day in the same month.</item>
@@ -551,8 +552,14 @@ public class CalendarMonthlyReanchorRepairService(
             // ── Step 2: mirror the weekday/ordinal and re-snap NextExecutionTime.
             // Pulling the next run into the past would make the scheduler fire at once and
             // deploy the NEXT period early — a person decides that (same rule UpdateTask
-            // applies after a weekday-only edit; the helper is shared).
-            var (newNext, refusedNext) = CalendarService.ResnapNextExecutionTime(planning, pattern, today);
+            // applies after a weekday-only edit; the helper is shared). Any next run already
+            // before today — typically a deactivated task: the scheduler skips it, and
+            // reactivation takes its dates from the dialog — is left as it is: re-snapping one
+            // past date to another would only clutter the reviewed plan.
+            var nextAlreadyPast = planning.NextExecutionTime?.Date < today;
+            var (newNext, refusedNext) = nextAlreadyPast
+                ? ((DateTime?)null, (DateTime?)null)
+                : CalendarService.ResnapNextExecutionTime(planning, pattern, today);
             if (refusedNext.HasValue)
             {
                 work.Model.ReviewItems.Add(new MonthlyReanchorReviewItemModel

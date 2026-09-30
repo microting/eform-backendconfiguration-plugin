@@ -471,6 +471,57 @@ public class CalendarMonthlyReanchorRepairTests : TestBaseSetup
     }
 
     /// <summary>
+    /// Any next run already before today (typically a deactivated task) is left as it is:
+    /// re-snapping 3 Jan 2025 to the rule's 1st Wednesday (1 Jan 2025) would move one past
+    /// date to another. The weekday is still mirrored, and no review item is made.
+    /// </summary>
+    [Test]
+    public async Task NextExecutionTimeAlreadyInThePast_IsLeftAsIs_TheWeekdayIsStillMirrored()
+    {
+        var (_, planningId) = await SeedLegacyYearlyTaskAsync(D(2024, 1, 3), nextExecution: D(2025, 1, 3));
+        await ConvertAsync();
+
+        var result = await RunAsync();
+
+        var planning = await PlanningAsync(planningId);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Failures, Is.Empty);
+            Assert.That(planning.NextExecutionTime, Is.EqualTo(D(2025, 1, 3)), "a past next run is not re-snapped");
+            Assert.That(planning.DayOfWeek, Is.EqualTo(DayOfWeek.Wednesday), "the weekday is still mirrored");
+            Assert.That(result.Plan.ReviewItems.Where(x => x.PlanningId == planningId), Is.Empty);
+        });
+        var update = result.Plan.PlanningUpdates.Single(x => x.PlanningId == planningId);
+        Assert.Multiple(() =>
+        {
+            Assert.That(update.OldNextExecutionTime, Is.EqualTo(D(2025, 1, 3)));
+            Assert.That(update.NewNextExecutionTime, Is.EqualTo(D(2025, 1, 3)));
+            Assert.That(update.NewDayOfWeek, Is.EqualTo((int)DayOfWeek.Wednesday));
+        });
+    }
+
+    /// <summary>
+    /// The boundary: a next run of exactly today is not "already past". It still goes through
+    /// the shared re-snap, whose target (the 1st Wednesday of September, 2 Sep) lies before
+    /// today — so it is refused and listed for review, and the next run stays.
+    /// </summary>
+    [Test]
+    public async Task NextExecutionTimeToday_IsStillCheckedAndRefused_NotSkipped()
+    {
+        var (_, planningId) = await SeedLegacyYearlyTaskAsync(D(2024, 1, 3), nextExecution: D(2026, 9, 29));
+        await ConvertAsync();
+
+        var result = await RunAsync();
+
+        await Assert.MultipleAsync(async () =>
+        {
+            Assert.That((await PlanningAsync(planningId)).NextExecutionTime, Is.EqualTo(D(2026, 9, 29)));
+            Assert.That(result.Plan.ReviewItems.Any(x => x.Kind == "NextExecutionTime" && x.PlanningId == planningId),
+                Is.True);
+        });
+    }
+
+    /// <summary>
     /// A case the items-planning scheduler deployed through the cloud carries an EndDate
     /// (= the old deadline) the SDK cannot change; moving the deadline LATER would
     /// outlive it on the device.
