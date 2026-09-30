@@ -437,6 +437,8 @@ export const elGR = {
   'Delete attachment?': 'Διαγραφή συνημμένου;',
   'Could not download file': 'Δεν ήταν δυνατή η λήψη του αρχείου',
   'Pending save': 'Εκκρεμής αποθήκευση',
+  'Inherited from original': 'Από το πρωτότυπο',
+  'Automatic translation was not possible. The task is saved without it.': 'Η αυτόματη μετάφραση δεν ήταν δυνατή. Η εργασία αποθηκεύτηκε χωρίς αυτήν.',
   'Add Google Drive file': 'Προσθήκη αρχείου στο Google Drive',
   'Loading Google Picker': 'Φόρτωση Επιλογέα Google',
   'Connect Google Drive': 'Σύνδεση Google Drive',
@@ -623,6 +625,7 @@ export const elGR = {
   'No tasks match the selected filters.': 'Δεν υπάρχουν εργασίες που να αντιστοιχούν στα επιλεγμένα φίλτρα.',
   'Task done': 'Η εργασία ολοκληρώθηκε',
   'Task not done': 'Η εργασία δεν ολοκληρώθηκε',
+  'Planned': 'Προγραμματισμένο',
   'Could not load the data': 'Δεν ήταν δυνατή η φόρτωση των δεδομένων',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.
@@ -778,4 +781,8 @@ export const elGR = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} φορές',
   '{{rule}}, 1 time': '{{rule}}, 1 φορά',
   'Future tasks cannot be completed or deleted yet': 'Οι μελλοντικές εργασίες δεν μπορούν ακόμη να ολοκληρωθούν ή να διαγραφούν',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Δεν έχει καταχωριστεί',
+  Model: 'Μοντέλο',
+  'OS version': 'Έκδοση ΛΣ',
 };

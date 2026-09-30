@@ -181,7 +181,10 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
         int dayOfWeek,
         int dayOfMonth = 0,
         PlanningRepeatType planningRepeatType = PlanningRepeatType.Month,
-        DayOfWeek? planningDayOfWeek = null)
+        DayOfWeek? planningDayOfWeek = null,
+        bool createdInGuide = false,
+        int repeatEvery = 1,
+        bool withCalendarConfiguration = true)
     {
         var area = new Area
         {
@@ -201,7 +204,7 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
 
         var areaRule = new AreaRule
         {
-            AreaId = area.Id, PropertyId = property.Id, EformId = 0,
+            AreaId = area.Id, PropertyId = property.Id, EformId = 0, CreatedInGuide = createdInGuide,
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         };
         await BackendConfigurationPnDbContext.AreaRules.AddAsync(areaRule);
@@ -217,7 +220,7 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
 
         var planning = new Planning
         {
-            Enabled = true, RepeatEvery = 1, RepeatType = planningRepeatType, StartDate = startDate,
+            Enabled = true, RepeatEvery = repeatEvery, RepeatType = planningRepeatType, StartDate = startDate,
             DayOfWeek = planningDayOfWeek, RelatedEFormId = 0, Description = "Original description",
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         };
@@ -228,12 +231,17 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
         {
             AreaRuleId = areaRule.Id, PropertyId = property.Id, AreaId = area.Id,
             ItemPlanningId = planning.Id, StartDate = startDate, Status = true,
-            RepeatType = arpRepeatType, RepeatEvery = 1,
+            RepeatType = arpRepeatType, RepeatEvery = repeatEvery,
             DayOfWeek = dayOfWeek, DayOfMonth = dayOfMonth, RepeatOrdinalWeek = repeatOrdinalWeek,
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         };
         await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(arp);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        if (!withCalendarConfiguration)
+        {
+            return arp.Id;
+        }
 
         var calConfig = new CalendarConfiguration
         {
@@ -552,5 +560,586 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
 
         var arp = await BackendConfigurationPnDbContext!.AreaRulePlannings.SingleAsync(x => x.Id == arpId);
         Assert.That(arp.DayOfWeek, Is.EqualTo(4), "Thursday");
+    }
+
+    // ------------------------------------------------------------------
+    // G. #1294 — an Nth-weekday rule keeps the weekday the dialog picked
+    //    ("Månedligt på den første <ugedag>" ships it only in
+    //    RepeatWeekdaysCsv), not the weekday of the clicked cell, and the
+    //    items-planning Planning (the scheduler's master) mirrors it.
+    // ------------------------------------------------------------------
+
+    [Test]
+    public async Task CreateTask_NthWeekday_TakesTheDialogWeekday_OnArpAndPlanning()
+    {
+        // The wizard is mocked, so pre-seed the ARP it would have created; the
+        // calendar correlates it by property + CreatedInGuide + eForm.
+        var arpId = await SeedTask(
+            SeriesStart, arpRepeatType: 3, repeatOrdinalWeek: null, dayOfWeek: 0,
+            planningRepeatType: PlanningRepeatType.Month, planningDayOfWeek: DayOfWeek.Sunday,
+            createdInGuide: true);
+        var seeded = await BackendConfigurationPnDbContext!.AreaRulePlannings.AsNoTracking()
+            .SingleAsync(x => x.Id == arpId);
+        _taskWizardService.CreateTask(Arg.Any<TaskWizardCreateModel>())
+            .Returns(Task.FromResult(new OperationResult(true)));
+
+        // The user clicked the Wednesday cell and picked "1st Monday".
+        var result = await _calendarService.CreateTask(new CalendarTaskCreateRequestModel
+        {
+            PropertyId = seeded.PropertyId,
+            FolderId = 1,
+            EformId = 0,
+            StartDate = DateTime.SpecifyKind(WedBeforeNextMonthFirstThu, DateTimeKind.Utc),
+            StartHour = 9.0,
+            Duration = 1.0,
+            RepeatType = 3,
+            RepeatEvery = 1,
+            RepeatOrdinalWeek = 1,
+            RepeatWeekdaysCsv = "1",
+            DayOfMonth = 0,
+            Status = 1,
+            Sites = [101],
+            Translates = [new CommonTranslationsModel { LanguageId = 1, Name = "Created Title" }]
+        });
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(result.Model, Is.EqualTo(arpId));
+
+        var arp = await BackendConfigurationPnDbContext.AreaRulePlannings.AsNoTracking().SingleAsync(x => x.Id == arpId);
+        var planning = await ItemsPlanningPnDbContext!.Plannings.AsNoTracking().SingleAsync(x => x.Id == arp.ItemPlanningId);
+        Assert.Multiple(() =>
+        {
+            Assert.That(arp.DayOfWeek, Is.EqualTo(1), "Monday, as picked — not the clicked Wednesday");
+            Assert.That(arp.RepeatOrdinalWeek, Is.EqualTo(1));
+            Assert.That(planning.DayOfWeek, Is.EqualTo(DayOfWeek.Monday), "the scheduler's weekday mirrors the ARP");
+        });
+    }
+
+    [Test]
+    public async Task UpdateTask_ScopeAll_NthWeekday_UnchangedDate_TakesTheDialogWeekday()
+    {
+        // "1st Thursday" whose user switches the dialog to "1st Monday" without
+        // moving the date.
+        var arpId = await SeedTask(
+            SeriesStart, arpRepeatType: 3, repeatOrdinalWeek: 1, dayOfWeek: 4,
+            planningRepeatType: PlanningRepeatType.Month, planningDayOfWeek: DayOfWeek.Thursday);
+
+        var model = BuildEdit(arpId, startDate: NextMonthFirstThu, scope: "all",
+            originalDate: NextMonthFirstThu, repeatType: 3, repeatOrdinalWeek: 1);
+        model.RepeatWeekdaysCsv = "1";
+
+        var result = await _calendarService.UpdateTask(model);
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var arp = await BackendConfigurationPnDbContext!.AreaRulePlannings.AsNoTracking().SingleAsync(x => x.Id == arpId);
+        var planning = await ItemsPlanningPnDbContext!.Plannings.AsNoTracking().SingleAsync(x => x.Id == arp.ItemPlanningId);
+        Assert.Multiple(() =>
+        {
+            Assert.That(arp.DayOfWeek, Is.EqualTo(1), "Monday, as picked in the dialog");
+            Assert.That(arp.RepeatWeekdaysCsv, Is.EqualTo("1"));
+            Assert.That(planning.DayOfWeek, Is.EqualTo(DayOfWeek.Monday));
+        });
+    }
+
+    [Test]
+    public async Task UpdateTask_ThisAndFollowing_NthWeekday_UnchangedDate_TakesTheDialogWeekday()
+    {
+        var arpId = await SeedTask(
+            SeriesStart, arpRepeatType: 3, repeatOrdinalWeek: 1, dayOfWeek: 4,
+            planningRepeatType: PlanningRepeatType.Month, planningDayOfWeek: DayOfWeek.Thursday);
+
+        var model = BuildEdit(arpId, startDate: NextMonthFirstThu, scope: "thisAndFollowing",
+            originalDate: NextMonthFirstThu, repeatType: 3, repeatOrdinalWeek: 1);
+        model.RepeatWeekdaysCsv = "1";
+
+        var result = await _calendarService.UpdateTask(model);
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var arp = await BackendConfigurationPnDbContext!.AreaRulePlannings.AsNoTracking().SingleAsync(x => x.Id == arpId);
+        var planning = await ItemsPlanningPnDbContext!.Plannings.AsNoTracking().SingleAsync(x => x.Id == arp.ItemPlanningId);
+        Assert.Multiple(() =>
+        {
+            Assert.That(arp.DayOfWeek, Is.EqualTo(1));
+            Assert.That(planning.DayOfWeek, Is.EqualTo(DayOfWeek.Monday));
+        });
+    }
+
+    /// <summary>
+    /// When the anchor MOVES, the new date defines the rule (#1289 re-derives the
+    /// ordinal from it) — a stale CSV (the task-list batch copies the stored one
+    /// verbatim) must not drag the weekday back, and is rewritten to match.
+    /// </summary>
+    [Test]
+    public async Task UpdateTask_ScopeAll_NthWeekday_DateChanged_TakesTheWeekdayOfTheNewDate()
+    {
+        var arpId = await SeedTask(
+            SeriesStart, arpRepeatType: 3, repeatOrdinalWeek: 1, dayOfWeek: 4,
+            planningRepeatType: PlanningRepeatType.Month, planningDayOfWeek: DayOfWeek.Thursday);
+
+        var model = BuildEdit(arpId, startDate: WedBeforeNextMonthFirstThu, scope: "all",
+            originalDate: NextMonthFirstThu, repeatType: 3, repeatOrdinalWeek: 1);
+        model.RepeatWeekdaysCsv = "4";
+
+        var result = await _calendarService.UpdateTask(model);
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var arp = await BackendConfigurationPnDbContext!.AreaRulePlannings.AsNoTracking().SingleAsync(x => x.Id == arpId);
+        var planning = await ItemsPlanningPnDbContext!.Plannings.AsNoTracking().SingleAsync(x => x.Id == arp.ItemPlanningId);
+        Assert.Multiple(() =>
+        {
+            Assert.That(arp.DayOfWeek, Is.EqualTo(3), "Wednesday — the new anchor's weekday");
+            Assert.That(arp.RepeatWeekdaysCsv, Is.EqualTo("3"), "the stale CSV follows the weekday");
+            Assert.That(planning.DayOfWeek, Is.EqualTo(DayOfWeek.Wednesday));
+        });
+    }
+
+    // ------------------------------------------------------------------
+    // H. #1294 — a pattern change without a date move re-patterns open
+    //    occurrences (and, for thisAndFollowing, splits the series).
+    // ------------------------------------------------------------------
+
+    private static DateTime FirstWeekdayOfMonth(DateTime anyDayInMonth, DayOfWeek dow)
+    {
+        var first = new DateTime(anyDayInMonth.Year, anyDayInMonth.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        return first.AddDays(((int)dow - (int)first.DayOfWeek + 7) % 7);
+    }
+
+    /// <summary>
+    /// The relocation (and GetTasksForWeek's compliance loop) consult the SDK, so these
+    /// tests need a calendar service wired to a real core.
+    /// </summary>
+    private async Task<BackendConfigurationCalendarService> BuildCalendarServiceWithCoreAsync()
+    {
+        var core = await GetCore();
+        var coreHelper = Substitute.For<IEFormCoreService>();
+        coreHelper.GetCore().Returns(Task.FromResult(core));
+        return new BackendConfigurationCalendarService(
+            new BackendConfigurationLocalizationService(), _userService, BackendConfigurationPnDbContext!,
+            coreHelper, Substitute.For<IEventDeployService>(), ItemsPlanningPnDbContext!, _taskWizardService,
+            Substitute.For<ICalendarAssignmentReconciliationService>(), Substitute.For<ICalendarChangeNotifier>(),
+            TestContextLogger<BackendConfigurationCalendarService>.Instance,
+            Substitute.For<ICalendarOccurrenceRetractionService>(), Substitute.For<ICalendarPastSeriesBackfillService>(),
+            new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext!));
+    }
+
+    private async Task<int> SeedSdkCaseAsync(int status, int? microtingUid = null, DateTime? doneAt = null)
+    {
+        var language = await MicrotingDbContext!.Languages.FirstAsync();
+        var site = new Site
+        {
+            Name = "Device B", MicrotingUid = Random.Shared.Next(100_000, 900_000), LanguageId = language.Id,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext.Sites.AddAsync(site);
+        await MicrotingDbContext.SaveChangesAsync();
+        var sdkCase = new Case
+        {
+            SiteId = site.Id, Status = status, MicrotingUid = microtingUid, DoneAt = doneAt,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext.Cases.AddAsync(sdkCase);
+        await MicrotingDbContext.SaveChangesAsync();
+        return sdkCase.Id;
+    }
+
+    private async Task<int> SeedComplianceAsync(int arpId, DateTime deadline, int sdkCaseId,
+        string workflowState = Constants.WorkflowStates.Created)
+    {
+        var arp = await BackendConfigurationPnDbContext!.AreaRulePlannings.AsNoTracking().SingleAsync(x => x.Id == arpId);
+        var compliance = new Compliance
+        {
+            PlanningId = arp.ItemPlanningId, PropertyId = arp.PropertyId, AreaId = arp.AreaId,
+            Deadline = deadline, StartDate = deadline.AddDays(-7), MicrotingSdkCaseId = sdkCaseId,
+            WorkflowState = workflowState, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.Compliances.AddAsync(compliance);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+        return compliance.Id;
+    }
+
+    private async Task<DateTime> DeadlineOf(int complianceId)
+        => (await BackendConfigurationPnDbContext!.Compliances.AsNoTracking().SingleAsync(x => x.Id == complianceId))
+            .Deadline;
+
+    /// <summary>A "1st Thursday" rule edited in the dialog to "1st Monday", date untouched.</summary>
+    private CalendarTaskUpdateRequestModel DialogWeekdayEdit(int arpId, string scope)
+    {
+        var model = BuildEdit(arpId, startDate: NextMonthFirstThu, scope: scope,
+            originalDate: NextMonthFirstThu, repeatType: 3, repeatOrdinalWeek: 1);
+        model.RepeatWeekdaysCsv = "1";
+        return model;
+    }
+
+    private Task<int> SeedFirstThursdayRule()
+        => SeedTask(SeriesStart, arpRepeatType: 3, repeatOrdinalWeek: 1, dayOfWeek: 4,
+            planningRepeatType: PlanningRepeatType.Month, planningDayOfWeek: DayOfWeek.Thursday);
+
+    /// <summary>
+    /// A dialog-only weekday change (date untouched) re-patterns the rule, so an open,
+    /// deployed occurrence follows it to the new weekday in its own month — exactly what
+    /// the date-change path's relocate branch does — never left behind as a second tile.
+    /// </summary>
+    [Test]
+    public async Task UpdateTask_ScopeAll_NthWeekday_DialogWeekdayChange_RelocatesTheOpenCompliance()
+    {
+        var arpId = await SeedFirstThursdayRule();
+        var service = await BuildCalendarServiceWithCoreAsync();
+        var complianceId = await SeedComplianceAsync(arpId, NextMonthFirstThu, await SeedSdkCaseAsync(status: 33));
+
+        var result = await service.UpdateTask(DialogWeekdayEdit(arpId, "all"));
+        Assert.That(result.Success, Is.True, result.Message);
+
+        Assert.That((await DeadlineOf(complianceId)).Date,
+            Is.EqualTo(FirstWeekdayOfMonth(NextMonthFirstThu, DayOfWeek.Monday).Date),
+            "the open occurrence follows the rule to the 1st Monday of its month");
+    }
+
+    /// <summary>
+    /// Completed occurrences are immutable (R2) in the new branch too. Answered = Status 100
+    /// OR DoneAt set: DoneAt can land before the status does.
+    /// </summary>
+    [TestCase(100, false, TestName = "UpdateTask_ScopeAll_NthWeekday_DialogWeekdayChange_LeavesACompletedRow")]
+    [TestCase(66, true, TestName = "UpdateTask_ScopeAll_NthWeekday_DialogWeekdayChange_LeavesARowWithDoneAt")]
+    public async Task UpdateTask_ScopeAll_NthWeekday_DialogWeekdayChange_LeavesAnAnsweredRow(int status, bool doneAt)
+    {
+        var arpId = await SeedFirstThursdayRule();
+        var service = await BuildCalendarServiceWithCoreAsync();
+        var complianceId = await SeedComplianceAsync(arpId, NextMonthFirstThu,
+            await SeedSdkCaseAsync(status, doneAt: doneAt ? DateTime.UtcNow : null));
+
+        var result = await service.UpdateTask(DialogWeekdayEdit(arpId, "all"));
+        Assert.That(result.Success, Is.True, result.Message);
+
+        Assert.That((await DeadlineOf(complianceId)).Date, Is.EqualTo(NextMonthFirstThu.Date));
+    }
+
+    /// <summary>
+    /// The target is taken on the unique (PlanningId, Deadline) — here by a removed row.
+    /// The relocation leaves the row in place instead of throwing after the rule was saved.
+    /// </summary>
+    [Test]
+    public async Task UpdateTask_ScopeAll_Relocation_TargetTaken_LeavesTheRowAndSucceeds()
+    {
+        var arpId = await SeedFirstThursdayRule();
+        var service = await BuildCalendarServiceWithCoreAsync();
+        var complianceId = await SeedComplianceAsync(arpId, NextMonthFirstThu, await SeedSdkCaseAsync(status: 33));
+        await SeedComplianceAsync(arpId, FirstWeekdayOfMonth(NextMonthFirstThu, DayOfWeek.Monday),
+            await SeedSdkCaseAsync(status: 33), Constants.WorkflowStates.Removed);
+
+        var result = await service.UpdateTask(DialogWeekdayEdit(arpId, "all"));
+
+        Assert.That(result.Success, Is.True, result.Message);
+        var arp = await BackendConfigurationPnDbContext!.AreaRulePlannings.AsNoTracking().SingleAsync(x => x.Id == arpId);
+        await Assert.MultipleAsync(async () =>
+        {
+            Assert.That(arp.DayOfWeek, Is.EqualTo(1), "the rule edit itself is saved");
+            Assert.That((await DeadlineOf(complianceId)).Date, Is.EqualTo(NextMonthFirstThu.Date), "left in place");
+        });
+    }
+
+    /// <summary>
+    /// A title-only edit opened from any tile of an Nth-weekday rule, with a built-in
+    /// Month preset (no weekday CSV), must keep the stored weekday — not take the clicked
+    /// tile's (here a Sunday, e.g. a legacy off-pattern compliance tile).
+    /// </summary>
+    [Test]
+    public async Task UpdateTask_ScopeAll_NthWeekday_NoCsv_UnchangedDate_KeepsTheStoredWeekday()
+    {
+        var arpId = await SeedFirstThursdayRule();
+        var sundayTile = NextMonthFirstThu.AddDays(3);
+        var model = BuildEdit(arpId, startDate: sundayTile, scope: "all", originalDate: sundayTile,
+            repeatType: 3, repeatOrdinalWeek: 1);
+        model.RepeatWeekdaysCsv = null;
+
+        var result = await _calendarService.UpdateTask(model);
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var arp = await BackendConfigurationPnDbContext!.AreaRulePlannings.AsNoTracking().SingleAsync(x => x.Id == arpId);
+        var planning = await ItemsPlanningPnDbContext!.Plannings.AsNoTracking().SingleAsync(x => x.Id == arp.ItemPlanningId);
+        Assert.Multiple(() =>
+        {
+            Assert.That(arp.DayOfWeek, Is.EqualTo(4), "still Thursday");
+            Assert.That(planning.DayOfWeek, Is.EqualTo(DayOfWeek.Thursday));
+        });
+    }
+
+    /// <summary>
+    /// "thisAndFollowing", date untouched, ordinal changed ("1st" → "2nd Thursday"): the
+    /// series is split at the edited occurrence. The earlier month keeps its open row and
+    /// renders ONCE (not also on its 2nd Thursday — the #1294 double tile); the row from
+    /// the edited occurrence on moves to the new pattern.
+    /// </summary>
+    [Test]
+    public async Task UpdateTask_ThisAndFollowing_OrdinalOnlyChange_SplitsTheSeries_PastMonthRendersOnce()
+    {
+        var arpId = await SeedFirstThursdayRule();
+        var service = await BuildCalendarServiceWithCoreAsync();
+        var earlierId = await SeedComplianceAsync(arpId, SeriesStart, await SeedSdkCaseAsync(status: 33));
+        var editedId = await SeedComplianceAsync(arpId, NextMonthFirstThu, await SeedSdkCaseAsync(status: 33));
+
+        var model = BuildEdit(arpId, startDate: NextMonthFirstThu, scope: "thisAndFollowing",
+            originalDate: NextMonthFirstThu, repeatType: 3, repeatOrdinalWeek: 2);
+        var result = await service.UpdateTask(model);
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var arp = await BackendConfigurationPnDbContext!.AreaRulePlannings.AsNoTracking().SingleAsync(x => x.Id == arpId);
+        await Assert.MultipleAsync(async () =>
+        {
+            Assert.That(arp.StartDate!.Value.Date, Is.EqualTo(NextMonthFirstThu.AddDays(7).Date),
+                "split at the NEW pattern date of the edited occurrence's month (its 2nd Thursday)");
+            Assert.That(arp.RepeatOrdinalWeek, Is.EqualTo(2));
+            Assert.That((await DeadlineOf(earlierId)).Date, Is.EqualTo(SeriesStart.Date), "the earlier row stays");
+            Assert.That((await DeadlineOf(editedId)).Date, Is.EqualTo(NextMonthFirstThu.AddDays(7).Date),
+                "the edited occurrence's row moves to the 2nd Thursday");
+        });
+
+        // The earlier month: its 1st and 2nd Thursday weeks together hold exactly one tile.
+        var tiles = new List<CalendarTaskResponseModel>();
+        foreach (var monday in new[] { SeriesStart, SeriesStart.AddDays(7) }
+                     .Select(d => d.Date.AddDays(-(((int)d.DayOfWeek + 6) % 7))))
+        {
+            var week = await service.GetTasksForWeek(new CalendarTaskRequestModel
+            {
+                PropertyId = arp.PropertyId,
+                WeekStart = monday.ToString("yyyy-MM-ddT00:00:00Z"),
+                WeekEnd = monday.AddDays(6).ToString("yyyy-MM-ddT23:59:00Z"),
+                ActionableOnly = false,
+                BoardIds = [], TagNames = [], SiteIds = []
+            });
+            Assert.That(week.Success, Is.True, week.Message);
+            tiles.AddRange(week.Model.Where(t => t.PlanningId == arp.ItemPlanningId));
+        }
+        Assert.That(tiles.Select(t => t.TaskDate), Is.EquivalentTo(new[] { SeriesStart.ToString("yyyy-MM-dd") }),
+            "the past month renders once, on its own open row");
+    }
+
+    /// <summary>
+    /// The first future Monday for which the month's 1st Wednesday comes AFTER it
+    /// (Monday on the 1st–5th) or BEFORE it (Monday on the 8th or later).
+    /// </summary>
+    private static DateTime FutureMonday(bool firstWednesdayAfterIt)
+    {
+        var d = DateTime.UtcNow.Date.AddDays(7);
+        while (d.DayOfWeek != DayOfWeek.Monday || (firstWednesdayAfterIt ? d.Day > 5 : d.Day < 8))
+        {
+            d = d.AddDays(1);
+        }
+        return DateTime.SpecifyKind(d, DateTimeKind.Utc);
+    }
+
+    /// <summary>
+    /// Playwright CR32 as a backend test: the dialog is opened on a MONDAY cell, custom
+    /// month every 12, "Månedligt på den første" + Wednesday — the payload the spec
+    /// captures (repeatType 3, repeatEvery 12, repeatOrdinalWeek 1, dayOfMonth 0,
+    /// repeatWeekdaysCsv "3"). Since #1294 the rule keeps the picked Wednesday, so the
+    /// anchor is not on the rule's weekday; the start week must still paint the task on
+    /// its Monday — and nothing else — whether the month's 1st Wednesday comes before
+    /// the Monday (#1207 option (b)) or after it (the anchor replaces the start month's
+    /// pattern date).
+    /// </summary>
+    [TestCase(true, TestName = "CreateTask_CR32_FirstWednesdayAfterTheMondayAnchor_StartWeekPaintsTheMonday")]
+    [TestCase(false, TestName = "CreateTask_CR32_FirstWednesdayBeforeTheMondayAnchor_StartWeekPaintsTheMonday")]
+    public async Task CreateTask_CR32_StartWeekPaintsTheMondayAnchor(bool firstWednesdayAfterIt)
+    {
+        var monday = FutureMonday(firstWednesdayAfterIt);
+        // The ARP/Planning the (mocked) wizard creates from the request.
+        var arpId = await SeedTask(monday, arpRepeatType: 3, repeatOrdinalWeek: null, dayOfWeek: 0,
+            planningRepeatType: PlanningRepeatType.Month, planningDayOfWeek: DayOfWeek.Monday,
+            createdInGuide: true, repeatEvery: 12, withCalendarConfiguration: false);
+        var seeded = await BackendConfigurationPnDbContext!.AreaRulePlannings.AsNoTracking()
+            .SingleAsync(x => x.Id == arpId);
+        _taskWizardService.CreateTask(Arg.Any<TaskWizardCreateModel>())
+            .Returns(Task.FromResult(new OperationResult(true)));
+        var service = await BuildCalendarServiceWithCoreAsync();
+
+        var created = await service.CreateTask(new CalendarTaskCreateRequestModel
+        {
+            PropertyId = seeded.PropertyId, FolderId = 1, EformId = 0,
+            StartDate = monday, StartHour = 15.0, Duration = 1.0,
+            RepeatType = 3, RepeatEvery = 12, RepeatOrdinalWeek = 1, RepeatWeekdaysCsv = "3", DayOfMonth = 0,
+            Status = 1, Sites = [101],
+            Translates = [new CommonTranslationsModel { LanguageId = 1, Name = "CR32 Title" }]
+        });
+        Assert.That(created.Success, Is.True, created.Message);
+
+        var arp = await BackendConfigurationPnDbContext.AreaRulePlannings.AsNoTracking().SingleAsync(x => x.Id == arpId);
+        Assert.That(arp.DayOfWeek, Is.EqualTo((int)DayOfWeek.Wednesday), "the picked weekday is kept (#1294)");
+
+        var week = await service.GetTasksForWeek(new CalendarTaskRequestModel
+        {
+            PropertyId = seeded.PropertyId,
+            WeekStart = monday.ToString("yyyy-MM-ddT00:00:00Z"),
+            WeekEnd = monday.AddDays(6).ToString("yyyy-MM-ddT23:59:00Z"),
+            ActionableOnly = false,
+            BoardIds = [], TagNames = [], SiteIds = []
+        });
+        Assert.That(week.Success, Is.True, week.Message);
+        Assert.That(week.Model.Where(t => t.Id == arpId).Select(t => t.TaskDate),
+            Is.EquivalentTo(new[] { monday.ToString("yyyy-MM-dd") }),
+            "the start week paints the Monday anchor, and only it");
+    }
+
+    private async Task SetNextExecutionTimeAsync(int arpId, DateTime next)
+    {
+        var arp = await BackendConfigurationPnDbContext!.AreaRulePlannings.AsNoTracking().SingleAsync(x => x.Id == arpId);
+        var planning = await ItemsPlanningPnDbContext!.Plannings.SingleAsync(x => x.Id == arp.ItemPlanningId);
+        planning.NextExecutionTime = next;
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+    }
+
+    private async Task<Planning> PlanningOf(int arpId)
+    {
+        var arp = await BackendConfigurationPnDbContext!.AreaRulePlannings.AsNoTracking().SingleAsync(x => x.Id == arpId);
+        return await ItemsPlanningPnDbContext!.Plannings.AsNoTracking().SingleAsync(x => x.Id == arp.ItemPlanningId);
+    }
+
+    /// <summary>Every tile of the planning in the calendar months [firstMonth, firstMonth + months).</summary>
+    private static async Task<List<DateTime>> TileDatesAsync(BackendConfigurationCalendarService service,
+        int propertyId, int planningId, DateTime firstMonth, int months)
+    {
+        var from = new DateTime(firstMonth.Year, firstMonth.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var to = from.AddMonths(months);
+        var monday = from.AddDays(-(((int)from.DayOfWeek + 6) % 7));
+        var dates = new List<DateTime>();
+        for (; monday < to; monday = monday.AddDays(7))
+        {
+            var week = await service.GetTasksForWeek(new CalendarTaskRequestModel
+            {
+                PropertyId = propertyId,
+                WeekStart = monday.ToString("yyyy-MM-ddT00:00:00Z"),
+                WeekEnd = monday.AddDays(6).ToString("yyyy-MM-ddT23:59:00Z"),
+                ActionableOnly = false,
+                BoardIds = [], TagNames = [], SiteIds = []
+            });
+            Assert.That(week.Success, Is.True, week.Message);
+            dates.AddRange(week.Model.Where(t => t.PlanningId == planningId)
+                .Select(t => DateTime.ParseExact(t.TaskDate, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)));
+        }
+        return dates.Where(d => d >= from.Date && d < to.Date).OrderBy(d => d).ToList();
+    }
+
+    /// <summary>
+    /// #1294 — "thisAndFollowing", date untouched, "1st Thursday" → "1st Monday" opened on
+    /// the clicked Thursday tile. The split anchors on the month's NEW pattern date (its 1st
+    /// Monday), so that month and every later one follow Monday: the tile's open row moves
+    /// to the 1st Monday, NextExecutionTime follows, the earlier month keeps its own row,
+    /// and every month shows exactly one tile. (All dates are months ahead of today.)
+    /// </summary>
+    [Test]
+    public async Task UpdateTask_ThisAndFollowing_WeekdayOnlyChange_SplitsOnTheNewPatternDate()
+    {
+        var arpId = await SeedFirstThursdayRule();
+        var service = await BuildCalendarServiceWithCoreAsync();
+        await SetNextExecutionTimeAsync(arpId, NextMonthFirstThu);
+        var earlierId = await SeedComplianceAsync(arpId, SeriesStart, await SeedSdkCaseAsync(status: 33));
+        var editedId = await SeedComplianceAsync(arpId, NextMonthFirstThu, await SeedSdkCaseAsync(status: 33));
+        var firstMondayNext = FirstWeekdayOfMonth(NextMonthFirstThu, DayOfWeek.Monday).Date;
+        var firstMondayAfter = FirstWeekdayOfMonth(NextMonthFirstThu.AddMonths(1), DayOfWeek.Monday).Date;
+
+        var result = await service.UpdateTask(DialogWeekdayEdit(arpId, "thisAndFollowing"));
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var arp = await BackendConfigurationPnDbContext!.AreaRulePlannings.AsNoTracking().SingleAsync(x => x.Id == arpId);
+        var planning = await PlanningOf(arpId);
+        await Assert.MultipleAsync(async () =>
+        {
+            Assert.That(arp.StartDate!.Value.Date, Is.EqualTo(firstMondayNext), "split at the month's 1st Monday");
+            Assert.That(arp.DayOfWeek, Is.EqualTo(1));
+            Assert.That(planning.NextExecutionTime!.Value.Date, Is.EqualTo(firstMondayNext), "the next deploy follows");
+            Assert.That((await DeadlineOf(editedId)).Date, Is.EqualTo(firstMondayNext), "the tile's open row moves");
+            Assert.That((await DeadlineOf(earlierId)).Date, Is.EqualTo(SeriesStart.Date), "the earlier month is untouched");
+        });
+
+        var tiles = await TileDatesAsync(service, arp.PropertyId, arp.ItemPlanningId, SeriesStart, months: 3);
+        Assert.That(tiles, Is.EqualTo(new[] { SeriesStart.Date, firstMondayNext, firstMondayAfter }),
+            "exactly one tile per month: the earlier row, then the 1st Mondays");
+    }
+
+    /// <summary>#1294 — a weekday-only "all" edit re-snaps NextExecutionTime to the new day in its month.</summary>
+    [Test]
+    public async Task UpdateTask_ScopeAll_WeekdayOnlyChange_ResnapsNextExecutionTime()
+    {
+        var arpId = await SeedFirstThursdayRule();
+        await SetNextExecutionTimeAsync(arpId, NextMonthFirstThu);
+
+        var result = await _calendarService.UpdateTask(DialogWeekdayEdit(arpId, "all"));
+        Assert.That(result.Success, Is.True, result.Message);
+
+        Assert.That((await PlanningOf(arpId)).NextExecutionTime!.Value.Date,
+            Is.EqualTo(FirstWeekdayOfMonth(NextMonthFirstThu, DayOfWeek.Monday).Date));
+    }
+
+    /// <summary>
+    /// Pins the "all" weekday-only side effect: the series keeps its StartDate (a Thursday),
+    /// which is now off the rule's weekday and so IS its start month's occurrence — the
+    /// start-month row stays on it; a later month's row follows the new 1st Monday.
+    /// </summary>
+    [Test]
+    public async Task UpdateTask_ScopeAll_WeekdayOnlyChange_StartMonthRowStays_LaterRowMoves()
+    {
+        var arpId = await SeedFirstThursdayRule();
+        var service = await BuildCalendarServiceWithCoreAsync();
+        var startMonthId = await SeedComplianceAsync(arpId, SeriesStart, await SeedSdkCaseAsync(status: 33));
+        var laterId = await SeedComplianceAsync(arpId, NextMonthFirstThu, await SeedSdkCaseAsync(status: 33));
+
+        var result = await service.UpdateTask(DialogWeekdayEdit(arpId, "all"));
+        Assert.That(result.Success, Is.True, result.Message);
+
+        await Assert.MultipleAsync(async () =>
+        {
+            Assert.That((await DeadlineOf(startMonthId)).Date, Is.EqualTo(SeriesStart.Date),
+                "the start month's occurrence is the StartDate itself");
+            Assert.That((await DeadlineOf(laterId)).Date,
+                Is.EqualTo(FirstWeekdayOfMonth(NextMonthFirstThu, DayOfWeek.Monday).Date));
+        });
+    }
+
+    /// <summary>
+    /// The relocation target is occupied by ANOTHER occurrence moved onto it (an exception
+    /// whose NewDate is the target, OriginalDate elsewhere): the row is left in place.
+    /// </summary>
+    [Test]
+    public async Task UpdateTask_ScopeAll_Relocation_OccurrenceMovedOntoTheTarget_LeavesTheRow()
+    {
+        var arpId = await SeedFirstThursdayRule();
+        var service = await BuildCalendarServiceWithCoreAsync();
+        var complianceId = await SeedComplianceAsync(arpId, NextMonthFirstThu, await SeedSdkCaseAsync(status: 33));
+        await new CalendarOccurrenceException
+        {
+            AreaRulePlanningId = arpId, OriginalDate = NextMonthFirstThu.AddMonths(1),
+            NewDate = FirstWeekdayOfMonth(NextMonthFirstThu, DayOfWeek.Monday),
+            CreatedByUserId = 1, UpdatedByUserId = 1
+        }.Create(BackendConfigurationPnDbContext!);
+
+        var result = await service.UpdateTask(DialogWeekdayEdit(arpId, "all"));
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That((await DeadlineOf(complianceId)).Date, Is.EqualTo(NextMonthFirstThu.Date), "left in place");
+    }
+
+    /// <summary>
+    /// A case the items-planning scheduler deployed through the cloud (MicrotingUid below
+    /// the local-only range) has an immutable cloud EndDate = its original date; a LATER
+    /// date ("1st" → "2nd Thursday") would let it expire on the device first, so the row
+    /// is left in place — the same rule the monthly re-anchor repair applies.
+    /// </summary>
+    [Test]
+    public async Task UpdateTask_ScopeAll_OrdinalChange_CloudDeployedCaseIsNotMovedLater()
+    {
+        var arpId = await SeedFirstThursdayRule();
+        var service = await BuildCalendarServiceWithCoreAsync();
+        var complianceId = await SeedComplianceAsync(arpId, NextMonthFirstThu,
+            await SeedSdkCaseAsync(status: 33, microtingUid: 4711));
+
+        var model = BuildEdit(arpId, startDate: NextMonthFirstThu, scope: "all",
+            originalDate: NextMonthFirstThu, repeatType: 3, repeatOrdinalWeek: 2);
+        var result = await service.UpdateTask(model);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        var arp = await BackendConfigurationPnDbContext!.AreaRulePlannings.AsNoTracking().SingleAsync(x => x.Id == arpId);
+        await Assert.MultipleAsync(async () =>
+        {
+            Assert.That(arp.RepeatOrdinalWeek, Is.EqualTo(2), "the rule edit itself is saved");
+            Assert.That((await DeadlineOf(complianceId)).Date, Is.EqualTo(NextMonthFirstThu.Date), "left in place");
+        });
     }
 }

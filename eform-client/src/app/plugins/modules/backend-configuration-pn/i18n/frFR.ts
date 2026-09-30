@@ -436,6 +436,8 @@ export const frFR = {
   'Could not save the event': 'Impossible d&#39;enregistrer l&#39;événement',
   'Save event first to attach files': 'Enregistrez d&#39;abord l&#39;événement pour joindre des fichiers.',
   'Pending save': 'Sauvegarde en attente',
+  'Inherited from original': "Hérité de l'original",
+  'Automatic translation was not possible. The task is saved without it.': "La traduction automatique n'a pas été possible. La tâche est enregistrée sans elle.",
   'Add Google Drive file': 'Ajouter un fichier Google Drive',
   'Loading Google Picker': 'Chargement du sélecteur Google',
   'Connect Google Drive': 'Connecter Google Drive',
@@ -622,6 +624,7 @@ export const frFR = {
   'No tasks match the selected filters.': 'Aucune tâche ne correspond aux filtres sélectionnés.',
   'Task done': 'Tâche accomplie',
   'Task not done': 'Tâche non terminée',
+  'Planned': 'Planifié',
   'Could not load the data': 'Impossible de charger les données',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.
@@ -777,4 +780,8 @@ export const frFR = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} fois',
   '{{rule}}, 1 time': '{{rule}}, 1 fois',
   'Future tasks cannot be completed or deleted yet': 'Les tâches futures ne peuvent pas encore être effectuées ni supprimées',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Non enregistré',
+  Model: 'Modèle',
+  'OS version': 'Version du système',
 };

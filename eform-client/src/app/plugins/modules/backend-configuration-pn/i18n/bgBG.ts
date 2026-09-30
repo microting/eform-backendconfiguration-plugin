@@ -437,6 +437,8 @@ export const bgBG = {
   'Delete attachment?': 'Да се изтрие ли прикаченият файл?',
   'Could not download file': 'Файлът не можа да бъде изтеглен',
   'Pending save': 'Чакащо запазване',
+  'Inherited from original': 'Наследено от оригинала',
+  'Automatic translation was not possible. The task is saved without it.': 'Автоматичният превод не беше възможен. Задачата е запазена без него.',
   'Add Google Drive file': 'Добавяне на файл от Google Диск',
   'Loading Google Picker': 'Зареждане на Google Picker',
   'Connect Google Drive': 'Свързване на Google Диск',
@@ -623,6 +625,7 @@ export const bgBG = {
   'No tasks match the selected filters.': 'Няма задачи, които да отговарят на избраните филтри.',
   'Task done': 'Задачата е изпълнена',
   'Task not done': 'Задачата не е изпълнена',
+  'Planned': 'Планирано',
   'Could not load the data': 'Не можаха да се заредят данните',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.
@@ -778,4 +781,8 @@ export const bgBG = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} пъти',
   '{{rule}}, 1 time': '{{rule}}, 1 път',
   'Future tasks cannot be completed or deleted yet': 'Бъдещите задачи все още не могат да бъдат изпълнени или изтрити',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Не е регистрирано',
+  Model: 'Модел',
+  'OS version': 'Версия на ОС',
 };

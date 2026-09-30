@@ -765,7 +765,7 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
 
         var service = MakeGrpcService(s, hasAccess: false);
 
-        var ex = Assert.ThrowsAsync<GrpcCore.RpcException>(async () =>
+        var ex = await Assert.ThrowsAsync<GrpcCore.RpcException>(async () =>
             await service.UpdateComplianceCase(request, Substitute.For<GrpcCore.ServerCallContext>()));
 
         var reloadedCompliance = await ReadComplianceAsync(compliance.Id);
@@ -1505,6 +1505,125 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
             Assert.That(reloadedProperty.ComplianceStatus, Is.EqualTo(OverdueComplianceStatus),
                 "the Property recompute sits after the early return");
         });
+    }
+
+    // ==================================================================
+    // 5. #1325 — the Property.ComplianceStatus recompute after a completion.
+    //    Its overdue check is the legacy clock comparison Deadline < UtcNow,
+    //    which calls a row dated TODAY (midnight) overdue. A task with
+    //    ComplianceEnabled = false ("Overskredet opgave vises ikke i app") is
+    //    never overdue, so its open rows up to and including today must not
+    //    keep the property red (HiddenOverdueRule.ExcludeNeverOverdue).
+    // ==================================================================
+
+    /// <summary>
+    /// Completes the scenario's own occurrence while the property's only other open row
+    /// belongs to a second task dated TODAY. With that task disabled the recompute lands on
+    /// 0; the enabled control keeps the legacy behaviour and lands on 2. Only
+    /// <c>ComplianceStatus</c> is asserted: <c>ComplianceStatusThirty</c> is a 30-day
+    /// horizon that counts today's row either way.
+    /// </summary>
+    [TestCase(false, false, 0)]
+    [TestCase(false, true, OverdueComplianceStatus)]
+    [TestCase(true, false, 0)]
+    [TestCase(true, true, OverdueComplianceStatus)]
+    public async Task Completion_OtherOpenRowDatedToday_OnlyAnEnabledTaskKeepsThePropertyOverdue(
+        bool fromCalendar, bool otherTaskComplianceEnabled, int expectedComplianceStatus)
+    {
+        var s = await SeedScenarioAsync($"1325-{fromCalendar}-{otherTaskComplianceEnabled}");
+        var microtingUid = 970_020 + (fromCalendar ? 2 : 0) + (otherTaskComplianceEnabled ? 1 : 0);
+        var sdkCase = await SeedSdkCaseAsync(s, microtingUid);
+        var planningCase = await SeedPlanningCaseAsync(s);
+        await SeedPlanningCaseSiteAsync(s, planningCase, sdkCase);
+        var compliance = await SeedComplianceAsync(s, planningCase, sdkCase);
+        var otherRow = await SeedOtherTaskOpenRowAsync(
+            s, otherTaskComplianceEnabled, DateTime.UtcNow.Date);
+
+        var service = MakeCompliancesService(s);
+        var reply = MakeReply(s, compliance.Id, sdkCase.Id, new DateTime(2026, 3, 17, 14, 35, 0));
+        var result = fromCalendar
+            ? await service.UpdateFromCalendar(reply)
+            : await service.Update(reply);
+
+        var reloadedCompliance = await ReadComplianceAsync(compliance.Id);
+        var reloadedOtherRow = await ReadComplianceAsync(otherRow.Id);
+        var reloadedProperty = await ReadPropertyAsync(s.Property.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True, result.Message);
+            Assert.That(reloadedCompliance.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed),
+                "precondition: the scenario's own occurrence was completed");
+            Assert.That(reloadedOtherRow.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created),
+                "precondition: the other task's row dated today is still open");
+            Assert.That(reloadedProperty.ComplianceStatus, Is.EqualTo(expectedComplianceStatus),
+                otherTaskComplianceEnabled
+                    ? "an enabled task's open row dated today keeps the legacy overdue status"
+                    : "an open row of a ComplianceEnabled=false task is never overdue");
+        });
+    }
+
+    /// <summary>
+    /// A second task on the scenario's property — Area, AreaRule, its own Planning and an
+    /// AreaRulePlanning carrying <paramref name="complianceEnabled"/> — with one live,
+    /// uncompleted Compliance on <paramref name="deadline"/>. The rule reads
+    /// ComplianceEnabled off the live AreaRulePlannings of the row's planning, so that is
+    /// the part this section needs that <see cref="SeedScenarioAsync"/> leaves out.
+    /// </summary>
+    private async Task<Compliance> SeedOtherTaskOpenRowAsync(Scenario s, bool complianceEnabled, DateTime deadline)
+    {
+        var area = new Area
+        {
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext!.Areas.AddAsync(area);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var areaRule = new AreaRule
+        {
+            AreaId = area.Id, PropertyId = s.Property.Id,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.AreaRules.AddAsync(areaRule);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var planning = new Planning
+        {
+            Enabled = true,
+            RepeatEvery = 1,
+            RepeatType = RepeatType.Day,
+            RelatedEFormId = s.CheckListId,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(new AreaRulePlanning
+        {
+            AreaRuleId = areaRule.Id, AreaId = area.Id, PropertyId = s.Property.Id,
+            ItemPlanningId = planning.Id,
+            Status = true,
+            ComplianceEnabled = complianceEnabled,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var compliance = new Compliance
+        {
+            PlanningId = planning.Id,
+            PropertyId = s.Property.Id,
+            AreaId = area.Id,
+            Deadline = deadline,
+            StartDate = deadline.AddDays(-7),
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.Compliances.AddAsync(compliance);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+        return compliance;
     }
 }
 

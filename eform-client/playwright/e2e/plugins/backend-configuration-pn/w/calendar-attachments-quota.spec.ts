@@ -26,9 +26,9 @@ import { assigneeWorkerOptions } from '../calendar-assignee.helper';
  * MaxAttachmentsPerPlanning=10): an 11th attachment is rejected and the
  * persisted row count stays at exactly 10.
  *
- * A09 (copy excludes attachments) is intentionally NOT implemented here — it
- * is ALREADY covered by P04 in `r/calendar-copy.spec.ts` ("copy does not
- * carry attachments"). Do not duplicate it.
+ * Copying attachments (#1323, which reversed the old "copy excludes
+ * attachments" rule A09) is covered by P04/P04b in `p/calendar-copy.spec.ts`.
+ * Do not duplicate it.
  *
  * Lives in `r/` to share the matrix slot with the existing UI-enhancement
  * and attachments suites.

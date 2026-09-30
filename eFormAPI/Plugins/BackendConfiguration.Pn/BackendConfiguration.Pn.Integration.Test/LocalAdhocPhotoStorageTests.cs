@@ -51,11 +51,11 @@ public class LocalAdhocPhotoStorageTests
     }
 
     [Test]
-    public void Get_Throws_FileNotFound_ForMissingFile()
+    public async Task Get_Throws_FileNotFound_ForMissingFile()
     {
         var sut = new LocalAdhocPhotoStorage(_root);
 
-        Assert.ThrowsAsync<FileNotFoundException>(async () => await sut.GetAsync("missing.png"));
+        await Assert.ThrowsAsync<FileNotFoundException>(async () => await sut.GetAsync("missing.png"));
     }
 
     [TestCase("../x.jpg")]
@@ -66,11 +66,11 @@ public class LocalAdhocPhotoStorageTests
     [TestCase(" ")]
     [TestCase(".")]
     [TestCase("..")]
-    public void PutAndGet_Reject_NonBareFileNames(string fileName)
+    public async Task PutAndGet_Reject_NonBareFileNames(string fileName)
     {
         var sut = new LocalAdhocPhotoStorage(_root);
 
-        Assert.ThrowsAsync<ArgumentException>(async () => await sut.PutAsync(fileName, new MemoryStream([1])));
-        Assert.ThrowsAsync<ArgumentException>(async () => await sut.GetAsync(fileName));
+        await Assert.ThrowsAsync<ArgumentException>(async () => await sut.PutAsync(fileName, new MemoryStream([1])));
+        await Assert.ThrowsAsync<ArgumentException>(async () => await sut.GetAsync(fileName));
     }
 }

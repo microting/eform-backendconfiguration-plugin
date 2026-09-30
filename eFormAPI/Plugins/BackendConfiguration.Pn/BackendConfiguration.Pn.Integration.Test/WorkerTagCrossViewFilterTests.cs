@@ -138,8 +138,8 @@ namespace BackendConfiguration.Pn.Integration.Test;
 ///
 /// <para>
 /// Dates are derived from the CURRENT UTC week rather than pinned to a literal, because
-/// the web Task Tracker DELETES a compliance whose deadline has passed when the series
-/// has <c>ComplianceEnabled</c> false. Every series seeded here sets
+/// every view hides a missed occurrence (#1325) when the series has
+/// <c>ComplianceEnabled</c> false. Every series seeded here sets
 /// <c>ComplianceEnabled = true</c> for the same reason, so that branch is never taken
 /// whatever weekday the suite runs on.
 /// </para>
@@ -333,9 +333,9 @@ public class WorkerTagCrossViewFilterTests : TestBaseSetup
             ItemPlanningId = planning.Id,
             StartDate = WeekMonday,
             Status = true,
-            // Not decoration: the web Task Tracker DELETES a compliance whose deadline
-            // has passed when this is false, which would silently empty the fixture on
-            // any run later in the week.
+            // Not decoration: every view HIDES a missed occurrence (deadline before today)
+            // when this is false (#1325), which would silently empty the fixture on any
+            // run later in the week.
             ComplianceEnabled = true,
             RepeatType = 2,
             RepeatEvery = 1,

@@ -60,13 +60,13 @@ public class AdhocGrpcServiceMappingTests
     // ---- worker resolution ----
 
     [Test]
-    public void ListTasks_NoResolvableWorker_ThrowsUnauthenticated()
+    public async Task ListTasks_NoResolvableWorker_ThrowsUnauthenticated()
     {
         var resolver = Substitute.For<IGrpcSiteResolver>();
         resolver.GetSdkSiteIdAsync().Returns(0);
         var sut = CreateSut(resolver: resolver);
 
-        var ex = Assert.ThrowsAsync<RpcException>(async () =>
+        var ex = await Assert.ThrowsAsync<RpcException>(async () =>
             await sut.ListTasks(new ListTasksRequest(), Substitute.For<ServerCallContext>()));
         Assert.That(ex.StatusCode, Is.EqualTo(StatusCode.Unauthenticated));
     }
@@ -177,7 +177,7 @@ public class AdhocGrpcServiceMappingTests
     }
 
     [Test]
-    public void GetTask_NotFound_MapsToRpcNotFound()
+    public async Task GetTask_NotFound_MapsToRpcNotFound()
     {
         var resolver = Substitute.For<IGrpcSiteResolver>();
         resolver.GetSdkSiteIdAsync().Returns(7);
@@ -186,13 +186,13 @@ public class AdhocGrpcServiceMappingTests
             .Returns<AdhocTaskModel>(_ => throw new AdhocTaskNotFoundException(42));
 
         var sut = CreateSut(adhocService, resolver);
-        var ex = Assert.ThrowsAsync<RpcException>(async () =>
+        var ex = await Assert.ThrowsAsync<RpcException>(async () =>
             await sut.GetTask(new GetTaskRequest { TaskId = "42" }, Substitute.For<ServerCallContext>()));
         Assert.That(ex.StatusCode, Is.EqualTo(StatusCode.NotFound));
     }
 
     [Test]
-    public void GetTask_Unauthorized_MapsToRpcPermissionDenied()
+    public async Task GetTask_Unauthorized_MapsToRpcPermissionDenied()
     {
         var resolver = Substitute.For<IGrpcSiteResolver>();
         resolver.GetSdkSiteIdAsync().Returns(7);
@@ -201,19 +201,19 @@ public class AdhocGrpcServiceMappingTests
             .Returns<AdhocTaskModel>(_ => throw new AdhocTaskUnauthorizedException("no access"));
 
         var sut = CreateSut(adhocService, resolver);
-        var ex = Assert.ThrowsAsync<RpcException>(async () =>
+        var ex = await Assert.ThrowsAsync<RpcException>(async () =>
             await sut.GetTask(new GetTaskRequest { TaskId = "42" }, Substitute.For<ServerCallContext>()));
         Assert.That(ex.StatusCode, Is.EqualTo(StatusCode.PermissionDenied));
     }
 
     [Test]
-    public void GetTask_NonNumericTaskId_ThrowsInvalidArgument()
+    public async Task GetTask_NonNumericTaskId_ThrowsInvalidArgument()
     {
         var resolver = Substitute.For<IGrpcSiteResolver>();
         resolver.GetSdkSiteIdAsync().Returns(7);
 
         var sut = CreateSut(resolver: resolver);
-        var ex = Assert.ThrowsAsync<RpcException>(async () =>
+        var ex = await Assert.ThrowsAsync<RpcException>(async () =>
             await sut.GetTask(new GetTaskRequest { TaskId = "not-a-number" }, Substitute.For<ServerCallContext>()));
         Assert.That(ex.StatusCode, Is.EqualTo(StatusCode.InvalidArgument));
     }
@@ -310,7 +310,7 @@ public class AdhocGrpcServiceMappingTests
     }
 
     [Test]
-    public void Delete_NotFound_MapsToRpcNotFound()
+    public async Task Delete_NotFound_MapsToRpcNotFound()
     {
         var resolver = Substitute.For<IGrpcSiteResolver>();
         resolver.GetSdkSiteIdAsync().Returns(7);
@@ -318,7 +318,7 @@ public class AdhocGrpcServiceMappingTests
         adhocService.Delete(7, 42, false).Returns(_ => throw new AdhocTaskNotFoundException(42));
 
         var sut = CreateSut(adhocService, resolver);
-        var ex = Assert.ThrowsAsync<RpcException>(async () =>
+        var ex = await Assert.ThrowsAsync<RpcException>(async () =>
             await sut.Delete(new DeleteRequest { TaskId = "42" }, Substitute.For<ServerCallContext>()));
         Assert.That(ex.StatusCode, Is.EqualTo(StatusCode.NotFound));
     }
@@ -342,7 +342,7 @@ public class AdhocGrpcServiceMappingTests
     }
 
     [Test]
-    public void ListAreas_Unauthorized_MapsToRpcPermissionDenied()
+    public async Task ListAreas_Unauthorized_MapsToRpcPermissionDenied()
     {
         var resolver = Substitute.For<IGrpcSiteResolver>();
         resolver.GetSdkSiteIdAsync().Returns(7);
@@ -351,7 +351,7 @@ public class AdhocGrpcServiceMappingTests
             .Returns<List<AdhocAreaModel>>(_ => throw new AdhocTaskUnauthorizedException("no access"));
 
         var sut = CreateSut(adhocService, resolver);
-        var ex = Assert.ThrowsAsync<RpcException>(async () =>
+        var ex = await Assert.ThrowsAsync<RpcException>(async () =>
             await sut.ListAreas(new ListAreasRequest { PropertyId = "10" }, Substitute.For<ServerCallContext>()));
         Assert.That(ex.StatusCode, Is.EqualTo(StatusCode.PermissionDenied));
     }
@@ -395,7 +395,7 @@ public class AdhocGrpcServiceMappingTests
     }
 
     [Test]
-    public void CreateTag_EmptyName_MapsToRpcInvalidArgument()
+    public async Task CreateTag_EmptyName_MapsToRpcInvalidArgument()
     {
         var resolver = Substitute.For<IGrpcSiteResolver>();
         resolver.GetSdkSiteIdAsync().Returns(7);
@@ -404,13 +404,13 @@ public class AdhocGrpcServiceMappingTests
             .Returns<AdhocTagModel>(_ => throw new ArgumentException("Tag name must not be empty.", "name"));
 
         var sut = CreateSut(adhocService, resolver);
-        var ex = Assert.ThrowsAsync<RpcException>(async () =>
+        var ex = await Assert.ThrowsAsync<RpcException>(async () =>
             await sut.CreateTag(new CreateTagRequest { Name = "" }, Substitute.For<ServerCallContext>()));
         Assert.That(ex.StatusCode, Is.EqualTo(StatusCode.InvalidArgument));
     }
 
     [Test]
-    public void RenameTag_NotFound_MapsToRpcNotFound()
+    public async Task RenameTag_NotFound_MapsToRpcNotFound()
     {
         var resolver = Substitute.For<IGrpcSiteResolver>();
         resolver.GetSdkSiteIdAsync().Returns(7);
@@ -419,7 +419,7 @@ public class AdhocGrpcServiceMappingTests
             .Returns<AdhocTagModel>(_ => throw new AdhocTagNotFoundException(99));
 
         var sut = CreateSut(adhocService, resolver);
-        var ex = Assert.ThrowsAsync<RpcException>(async () =>
+        var ex = await Assert.ThrowsAsync<RpcException>(async () =>
             await sut.RenameTag(new RenameTagRequest { Id = "99", Name = "New" }, Substitute.For<ServerCallContext>()));
         Assert.That(ex.StatusCode, Is.EqualTo(StatusCode.NotFound));
     }
@@ -440,7 +440,7 @@ public class AdhocGrpcServiceMappingTests
     // ---- photos ----
 
     [Test]
-    public void UploadPhoto_StreamNotStartingWithMeta_ThrowsInvalidArgument()
+    public async Task UploadPhoto_StreamNotStartingWithMeta_ThrowsInvalidArgument()
     {
         var resolver = Substitute.For<IGrpcSiteResolver>();
         resolver.GetSdkSiteIdAsync().Returns(7);
@@ -450,13 +450,13 @@ public class AdhocGrpcServiceMappingTests
             new UploadPhotoChunk { Chunk = ByteString.CopyFrom([1, 2, 3]) }
         ]);
 
-        var ex = Assert.ThrowsAsync<RpcException>(async () =>
+        var ex = await Assert.ThrowsAsync<RpcException>(async () =>
             await sut.UploadPhoto(reader, Substitute.For<ServerCallContext>()));
         Assert.That(ex.StatusCode, Is.EqualTo(StatusCode.InvalidArgument));
     }
 
     [Test]
-    public void UploadPhoto_EmptyStream_ThrowsInvalidArgument()
+    public async Task UploadPhoto_EmptyStream_ThrowsInvalidArgument()
     {
         var resolver = Substitute.For<IGrpcSiteResolver>();
         resolver.GetSdkSiteIdAsync().Returns(7);
@@ -464,7 +464,7 @@ public class AdhocGrpcServiceMappingTests
 
         var reader = new FakeAsyncStreamReader<UploadPhotoChunk>([]);
 
-        var ex = Assert.ThrowsAsync<RpcException>(async () =>
+        var ex = await Assert.ThrowsAsync<RpcException>(async () =>
             await sut.UploadPhoto(reader, Substitute.For<ServerCallContext>()));
         Assert.That(ex.StatusCode, Is.EqualTo(StatusCode.InvalidArgument));
     }
@@ -513,7 +513,7 @@ public class AdhocGrpcServiceMappingTests
     }
 
     [Test]
-    public void GetPhoto_NotFound_MapsToRpcNotFound()
+    public async Task GetPhoto_NotFound_MapsToRpcNotFound()
     {
         var resolver = Substitute.For<IGrpcSiteResolver>();
         resolver.GetSdkSiteIdAsync().Returns(7);
@@ -524,7 +524,7 @@ public class AdhocGrpcServiceMappingTests
         var sut = CreateSut(adhocService, resolver);
         var writer = new FakeServerStreamWriter<PhotoChunk>();
 
-        var ex = Assert.ThrowsAsync<RpcException>(async () =>
+        var ex = await Assert.ThrowsAsync<RpcException>(async () =>
             await sut.GetPhoto(new GetPhotoRequest { PhotoId = "101" }, writer, Substitute.For<ServerCallContext>()));
         Assert.That(ex.StatusCode, Is.EqualTo(StatusCode.NotFound));
     }

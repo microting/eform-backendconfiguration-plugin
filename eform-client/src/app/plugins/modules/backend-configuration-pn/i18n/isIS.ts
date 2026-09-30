@@ -437,6 +437,8 @@ export const isIS = {
   'Delete attachment?': 'Eyða viðhengi?',
   'Could not download file': 'Gat ekki sótt skrána',
   'Pending save': 'Bíður vistunar',
+  'Inherited from original': 'Erft frá upprunalegu',
+  'Automatic translation was not possible. The task is saved without it.': 'Sjálfvirk þýðing var ekki möguleg. Verkefnið er vistað án hennar.',
   'Add Google Drive file': 'Bæta við Google Drive skrá',
   'Loading Google Picker': 'Hleður Google Picker',
   'Connect Google Drive': 'Tengja Google Drive',
@@ -623,6 +625,7 @@ export const isIS = {
   'No tasks match the selected filters.': 'Engin verkefni passa við valdar síur.',
   'Task done': 'Verkefni lokið',
   'Task not done': 'Verkefni ekki lokið',
+  'Planned': 'Áætlað',
   'Could not load the data': 'Gat ekki hlaðið gögnunum',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.
@@ -778,4 +781,8 @@ export const isIS = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} sinnum',
   '{{rule}}, 1 time': '{{rule}}, 1 sinni',
   'Future tasks cannot be completed or deleted yet': 'Ekki er enn hægt að fylla út eða eyða framtíðarverkefnum',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Ekki skráð',
+  Model: 'Gerð',
+  'OS version': 'Útgáfa stýrikerfis',
 };

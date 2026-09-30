@@ -28,7 +28,7 @@ public class CalendarGrpcServiceTests
     }
 
     [Test]
-    public void GetTasksForWeek_AccessDenied_ThrowsPermissionDenied()
+    public async Task GetTasksForWeek_AccessDenied_ThrowsPermissionDenied()
     {
         var resolver = Substitute.For<IGrpcSiteResolver>();
         resolver.GetSdkSiteIdAsync().Returns(7);
@@ -38,7 +38,7 @@ public class CalendarGrpcServiceTests
         var sut = CreateSut(access: access, resolver: resolver);
         var request = new GetTasksForWeekRequest { PropertyId = 10 };
 
-        var ex = Assert.ThrowsAsync<RpcException>(async () =>
+        var ex = await Assert.ThrowsAsync<RpcException>(async () =>
             await sut.GetTasksForWeek(request, Substitute.For<ServerCallContext>()));
         Assert.That(ex.StatusCode, Is.EqualTo(StatusCode.PermissionDenied));
     }
@@ -161,7 +161,7 @@ public class CalendarGrpcServiceTests
     }
 
     [Test]
-    public void GetBoards_AccessDenied_ThrowsPermissionDenied()
+    public async Task GetBoards_AccessDenied_ThrowsPermissionDenied()
     {
         var resolver = Substitute.For<IGrpcSiteResolver>();
         resolver.GetSdkSiteIdAsync().Returns(7);
@@ -170,7 +170,7 @@ public class CalendarGrpcServiceTests
 
         var sut = CreateSut(access: access, resolver: resolver);
 
-        var ex = Assert.ThrowsAsync<RpcException>(async () =>
+        var ex = await Assert.ThrowsAsync<RpcException>(async () =>
             await sut.GetBoards(new GetBoardsRequest { PropertyId = 10 }, Substitute.For<ServerCallContext>()));
         Assert.That(ex.StatusCode, Is.EqualTo(StatusCode.PermissionDenied));
     }

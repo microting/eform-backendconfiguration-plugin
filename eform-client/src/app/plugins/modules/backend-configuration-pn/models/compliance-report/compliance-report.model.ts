@@ -56,6 +56,11 @@ export interface ComplianceReportRequestModel {
   pageSize: number;
   sort: ComplianceReportSortKey | null;
   isSortDsc: boolean;
+  /**
+   * #1332 — also return the planned occurrences after today that have not been
+   * deployed yet (`isProjected` rows). Only Detaljer sends it; absent means false.
+   */
+  includeProjected?: boolean;
 }
 
 export interface ComplianceReportRowModel {
@@ -101,6 +106,12 @@ export interface ComplianceReportRowModel {
    * (#1160 finding 1).
    */
   checkListId: number | null;
+  /**
+   * #1332 — a planned occurrence after today with no compliance row yet
+   * (`complianceId` and `sdkCaseId` are 0). Shown read-only as "Planlagt".
+   * Optional so a response from an older backend reads as "not planned".
+   */
+  isProjected?: boolean;
 }
 
 export interface ComplianceReportPagedModel {

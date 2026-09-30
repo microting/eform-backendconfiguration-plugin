@@ -437,6 +437,8 @@ export const csCZ = {
   'Delete attachment?': 'Smazat přílohu?',
   'Could not download file': 'Soubor se nepodařilo stáhnout',
   'Pending save': 'Čeká na uložení',
+  'Inherited from original': 'Převzato z originálu',
+  'Automatic translation was not possible. The task is saved without it.': 'Automatický překlad nebyl možný. Úkol je uložen bez něj.',
   'Add Google Drive file': 'Přidat soubor z Disku Google',
   'Loading Google Picker': 'Načítání nástroje Google Picker',
   'Connect Google Drive': 'Připojit Disk Google',
@@ -623,6 +625,7 @@ export const csCZ = {
   'No tasks match the selected filters.': 'Vybraným filtrům neodpovídají žádné úkoly.',
   'Task done': 'Úkol hotový',
   'Task not done': 'Úkol nebyl dokončen',
+  'Planned': 'Naplánováno',
   'Could not load the data': 'Nepodařilo se načíst data',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.
@@ -778,4 +781,8 @@ export const csCZ = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}}krát',
   '{{rule}}, 1 time': '{{rule}}, 1krát',
   'Future tasks cannot be completed or deleted yet': 'Budoucí úkoly zatím nelze vyplnit ani smazat',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Neregistrováno',
+  Model: 'Model',
+  'OS version': 'Verze OS',
 };

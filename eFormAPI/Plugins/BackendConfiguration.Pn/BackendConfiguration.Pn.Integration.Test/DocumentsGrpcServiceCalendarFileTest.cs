@@ -285,7 +285,7 @@ public class DocumentsGrpcServiceCalendarFileTest : TestBaseSetup
         };
 
         // Should throw RpcException with NotFound status
-        var ex = Assert.ThrowsAsync<RpcException>(async () =>
+        var ex = await Assert.ThrowsAsync<RpcException>(async () =>
             await _documentsService.GetAttachment(request, context));
 
         Assert.That(ex.Status.StatusCode, Is.EqualTo(StatusCode.NotFound));
@@ -318,7 +318,7 @@ public class DocumentsGrpcServiceCalendarFileTest : TestBaseSetup
         };
 
         // Assert: expect PermissionDenied
-        var ex = Assert.ThrowsAsync<RpcException>(async () =>
+        var ex = await Assert.ThrowsAsync<RpcException>(async () =>
             await _documentsService.GetAttachment(request, context));
 
         Assert.That(ex.Status.StatusCode, Is.EqualTo(StatusCode.PermissionDenied));

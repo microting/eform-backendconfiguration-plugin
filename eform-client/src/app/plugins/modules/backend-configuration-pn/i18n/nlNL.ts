@@ -437,6 +437,8 @@ export const nlNL = {
   'Could not download file': 'Het downloaden van het bestand is niet gelukt.',
   Pictures: 'Foto&#39;s',
   'Pending save': 'Opslaan in behandeling',
+  'Inherited from original': 'Overgenomen van origineel',
+  'Automatic translation was not possible. The task is saved without it.': 'Automatische vertaling was niet mogelijk. De taak is zonder vertaling opgeslagen.',
   'Add Google Drive file': 'Voeg een Google Drive-bestand toe',
   'Loading Google Picker': 'Google Picker laden',
   'Connect Google Drive': 'Verbinden met Google Drive',
@@ -623,6 +625,7 @@ export const nlNL = {
   'No tasks match the selected filters.': 'Er zijn geen taken die overeenkomen met de geselecteerde filters.',
   'Task done': 'Taak voltooid',
   'Task not done': 'Taak niet voltooid',
+  'Planned': 'Gepland',
   'Could not load the data': 'De gegevens konden niet worden geladen',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.
@@ -778,4 +781,8 @@ export const nlNL = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} keer',
   '{{rule}}, 1 time': '{{rule}}, 1 keer',
   'Future tasks cannot be completed or deleted yet': 'Toekomstige taken kunnen nog niet worden ingevuld of verwijderd',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Niet geregistreerd',
+  Model: 'Model',
+  'OS version': 'OS-versie',
 };

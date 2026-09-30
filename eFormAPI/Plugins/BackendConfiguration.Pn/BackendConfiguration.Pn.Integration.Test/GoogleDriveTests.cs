@@ -315,7 +315,7 @@ public class GoogleDriveTests : TestBaseSetup
                        + jwt[(midSigIndex + 1)..];
 
         var sut = NewAuthService();
-        Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             await sut.StoreEnvelopeAsync(tampered, userId, nonce));
     }
 
@@ -329,7 +329,7 @@ public class GoogleDriveTests : TestBaseSetup
         var jwt = MintEnvelope("state", 1, "abc", "rt");
 
         var sut = NewAuthService();
-        Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             await sut.StoreEnvelopeAsync(jwt, 1, "abc"));
     }
 
@@ -339,7 +339,7 @@ public class GoogleDriveTests : TestBaseSetup
         var jwt = MintEnvelope("envelope", 1, "real-nonce", "rt");
 
         var sut = NewAuthService();
-        Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             await sut.StoreEnvelopeAsync(jwt, 1, "different-nonce"));
     }
 
@@ -411,7 +411,7 @@ public class GoogleDriveTests : TestBaseSetup
             Options.Create(_options),
             TestContextLogger<GoogleDriveAuthService>.Instance);
 
-        Assert.ThrowsAsync<GoogleDriveTokenRevokedException>(
+        await Assert.ThrowsAsync<GoogleDriveTokenRevokedException>(
             async () => await sut.GetAccessTokenAsync(userId));
 
         var row = await BackendConfigurationPnDbContext!.GoogleOAuthTokens
@@ -682,7 +682,7 @@ public class GoogleDriveTests : TestBaseSetup
                 .WithBody("internal-server-error"));
 
         var sut = NewAuthServiceForWatch();
-        Assert.ThrowsAsync<InvalidOperationException>(
+        await Assert.ThrowsAsync<InvalidOperationException>(
             async () => await sut.EnsureWatchChannelAsync(userId));
 
         // No DriveWatchChannel should have been persisted.
@@ -1197,7 +1197,7 @@ public class GoogleDriveTests : TestBaseSetup
         var token = await auth0.StoreEnvelopeAsync(jwt, ownerUserId, "n43");
 
         var sut = NewAuthServiceForWatch();
-        Assert.ThrowsAsync<UnauthorizedAccessException>(
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(
             async () => await sut.DisconnectAsync(token.Id, otherUserId));
 
         // Token must NOT have been revoked — ownership check fails before

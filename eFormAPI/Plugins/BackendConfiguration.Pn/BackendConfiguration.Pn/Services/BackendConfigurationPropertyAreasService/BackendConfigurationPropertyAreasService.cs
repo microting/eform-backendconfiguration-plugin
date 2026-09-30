@@ -271,10 +271,6 @@ public class BackendConfigurationPropertyAreasService : IBackendConfigurationPro
                 GroupId = areaProperties.GroupMicrotingUuid
             };
 
-            if (areaModel.Type == AreaTypesEnum.Type9)
-            {
-                areaModel.GroupId = (int)areaProperties.Property.EntitySelectListChemicalAreas!;
-            }
             if (areaModel.InitialFields != null && !string.IsNullOrEmpty(areaModel.InitialFields.EformName))
             {
                 areaModel.InitialFields.EformId = await sdkDbContex.CheckListTranslations

@@ -439,6 +439,8 @@ export const noNO = {
   'Delete attachment?': 'Slette vedlegg?',
   'Could not download file': 'Kunne ikke laste ned filen',
   'Pending save': 'Venter på lagring',
+  'Inherited from original': 'Arvet fra originalen',
+  'Automatic translation was not possible. The task is saved without it.': 'Automatisk oversettelse var ikke mulig. Oppgaven er lagret uten.',
   'Add Google Drive file': 'Legg til Google Drive-fil',
   'Loading Google Picker': 'Laster inn Google Picker',
   'Connect Google Drive': 'Koble til Google Disk',
@@ -623,6 +625,7 @@ export const noNO = {
   'No tasks match the selected filters.': 'Ingen oppgaver samsvarer med de valgte filtrene.',
   'Task done': 'Oppgaven er fullført',
   'Task not done': 'Oppgaven er ikke utført',
+  'Planned': 'Planlagt',
   'Could not load the data': 'Kunne ikke laste inn dataene',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.
@@ -778,4 +781,8 @@ export const noNO = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} ganger',
   '{{rule}}, 1 time': '{{rule}}, 1 gang',
   'Future tasks cannot be completed or deleted yet': 'Fremtidige oppgaver kan ikke fylles ut eller slettes ennå',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Ikke registrert',
+  Model: 'Modell',
+  'OS version': 'OS-versjon',
 };

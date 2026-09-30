@@ -217,6 +217,9 @@ public class ComplianceDeleteCompletedLogTests : TestBaseSetup
             AreaRuleId = areaRule.Id, PropertyId = property.Id, AreaId = area.Id,
             ItemPlanningId = planning.Id, StartDate = startDate, Status = true,
             ItemPlanningTagId = headline.Id,
+            // #1325: a task whose missed occurrences are reported — the not-done delete
+            // tests need a past open occurrence to show in Detaljer first.
+            ComplianceEnabled = true,
             RepeatType = 2, RepeatEvery = 1, RepeatWeekdaysCsv = "1", DayOfWeek = 1,
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         };

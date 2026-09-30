@@ -772,6 +772,46 @@ public class EventDeployService(
     }
 
     /// <summary>
+    /// #1324 — the task name on the device case: the worker's language, else Danish (the
+    /// language every task is written in), else any non-empty translation, so a case label
+    /// never lacks the task name when nobody translated it into the worker's language.
+    /// Danish is looked up by code: its SDK <c>Languages.Id</c> differs per installation.
+    /// </summary>
+    /// <remarks>Internal for the integration tests (the label is not persisted by CaseCreateLocalOnly).</remarks>
+    internal async Task<string?> ResolveCaseLabelNameAsync(
+        int planningId, int languageId, SdkDbContext sdkDbContext, CancellationToken ct)
+    {
+        var names = await itemsPlanningPnDbContext.PlanningNameTranslation
+            .AsNoTracking()
+            .Where(x => x.PlanningId == planningId && x.Name != null && x.Name != ""
+                        && x.WorkflowState != Constants.WorkflowStates.Removed)
+            .OrderBy(x => x.Id)
+            .Select(x => new { x.LanguageId, x.Name })
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+        // A whitespace-only name is no name either.
+        names = names.Where(x => !string.IsNullOrWhiteSpace(x.Name)).ToList();
+        if (names.Count == 0)
+        {
+            return null;
+        }
+
+        var own = names.FirstOrDefault(x => x.LanguageId == languageId);
+        if (own != null)
+        {
+            return own.Name;
+        }
+
+        var danishLanguageId = await sdkDbContext.Languages
+            .AsNoTracking()
+            .Where(x => x.LanguageCode == "da")
+            .Select(x => (int?)x.Id)
+            .FirstOrDefaultAsync(ct)
+            .ConfigureAwait(false);
+        return (names.FirstOrDefault(x => x.LanguageId == danishLanguageId) ?? names[0]).Name;
+    }
+
+    /// <summary>
     /// Builds the mainElement for one (planning, rotationDate, eform, site)
     /// tuple and creates the backing SDK case. Shared by
     /// <see cref="DeployForRotationAsync"/> (first deploy) and
@@ -827,12 +867,8 @@ public class EventDeployService(
         }
         else
         {
-            var planningNameTranslation = await itemsPlanningPnDbContext.PlanningNameTranslation
-                .FirstOrDefaultAsync(x =>
-                        x.LanguageId == language.Id && x.PlanningId == planning.Id,
-                    ct)
+            translation = await ResolveCaseLabelNameAsync(planning.Id, language.Id, sdkDbContext, ct)
                 .ConfigureAwait(false);
-            translation = planningNameTranslation?.Name;
             if (cache != null)
             {
                 cache.Translations[language.Id] = translation;
@@ -2338,9 +2374,12 @@ public class EventDeployService(
         }
 
         var claimStrategy = dbContext.Database.CreateExecutionStrategy();
+        Compliance? revived;
+        // The case the soft-removed row pointed at before this revive re-pointed it (#1325).
+        int previousSdkCaseId;
         try
         {
-            return await claimStrategy.ExecuteAsync(async ct =>
+            (revived, previousSdkCaseId) = await claimStrategy.ExecuteAsync(async ct =>
             {
                 DetachPendingVersions();
                 await using var claimTx = await dbContext.Database
@@ -2371,7 +2410,7 @@ public class EventDeployService(
                 {
                     // Lost the claim: another deploy revived the row first.
                     await claimTx.CommitAsync(ct).ConfigureAwait(false);
-                    return tracked;
+                    return (tracked, 0);
                 }
 
                 var completed = tracked.MicrotingSdkCaseId > 0
@@ -2386,9 +2425,10 @@ public class EventDeployService(
                     logger.LogWarning(
                         "EventDeployService: planning {PlanningId} deadline {Deadline} is held by completed compliance {ComplianceId}; SDK case {SdkCaseId} is left without a Compliance row",
                         rejectedInsert.PlanningId, rejectedInsert.Deadline, tracked.Id, rejectedInsert.MicrotingSdkCaseId);
-                    return null;
+                    return ((Compliance?)null, 0);
                 }
 
+                var supersededSdkCaseId = tracked.MicrotingSdkCaseId;
                 tracked.WorkflowState = Constants.WorkflowStates.Created;
                 tracked.PropertyId = rejectedInsert.PropertyId;
                 tracked.AreaId = rejectedInsert.AreaId;
@@ -2404,7 +2444,7 @@ public class EventDeployService(
                 logger.LogInformation(
                     "EventDeployService: revived retracted compliance {ComplianceId} (planning {PlanningId}, deadline {Deadline}) onto SDK case {SdkCaseId}",
                     tracked.Id, tracked.PlanningId, tracked.Deadline, tracked.MicrotingSdkCaseId);
-                return tracked;
+                return (tracked, supersededSdkCaseId);
             }, cancellationToken).ConfigureAwait(false);
         }
         catch
@@ -2419,6 +2459,71 @@ public class EventDeployService(
             DetachPendingVersions();
             throw;
         }
+
+        if (revived != null && previousSdkCaseId > 0)
+        {
+            // Best-effort: the revive has committed, so failing the deploy here would
+            // hand the caller an error for a row that is already live — and a retry
+            // finds that live row and never comes back to this case.
+            try
+            {
+                await RetractSupersededCaseAsync(
+                        previousSdkCaseId, revived.MicrotingSdkCaseId, sdkDbContext, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex,
+                    "EventDeployService: could not retract SDK case {PreviousSdkCaseId}, superseded by case {SdkCaseId} when compliance {ComplianceId} was revived",
+                    previousSdkCaseId, revived.MicrotingSdkCaseId, revived.Id);
+            }
+        }
+
+        return revived;
+    }
+
+    /// <summary>
+    /// #1325 — a revive re-points the row at the case this deploy just created. A row
+    /// that was soft-removed WITHOUT retracting its case (the task tracker used to do that
+    /// on read) still has that case live on the device, so reviving it would leave the
+    /// worker two live cases for one occurrence. The old case is retracted — but only
+    /// when it is the SAME worker's, still live and not completed: a case on another site
+    /// is that worker's own copy of the occurrence, and a completed one is history.
+    /// </summary>
+    private async Task RetractSupersededCaseAsync(
+        int previousSdkCaseId,
+        int currentSdkCaseId,
+        SdkDbContext sdkDbContext,
+        CancellationToken cancellationToken)
+    {
+        if (previousSdkCaseId == currentSdkCaseId)
+        {
+            return;
+        }
+
+        var cases = await sdkDbContext.Cases
+            .AsNoTracking()
+            .Where(c => c.Id == previousSdkCaseId || c.Id == currentSdkCaseId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var previous = cases.FirstOrDefault(c => c.Id == previousSdkCaseId);
+        var current = cases.FirstOrDefault(c => c.Id == currentSdkCaseId);
+        if (previous == null
+            || current == null
+            || previous.SiteId != current.SiteId
+            || previous.Status == CompletedStatus
+            || previous.DoneAt.HasValue
+            || previous.WorkflowState == Constants.WorkflowStates.Removed
+            || previous.WorkflowState == Constants.WorkflowStates.Retracted)
+        {
+            return;
+        }
+
+        var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
+        await RetractSdkCaseAsync(sdkCore, sdkDbContext, previous, cancellationToken).ConfigureAwait(false);
+        logger.LogInformation(
+            "EventDeployService: retracted SDK case {PreviousSdkCaseId}, superseded by case {SdkCaseId} when its compliance was revived",
+            previousSdkCaseId, currentSdkCaseId);
     }
 
     private static List<int> ParseBoardIds(IReadOnlyCollection<string> boardIds)

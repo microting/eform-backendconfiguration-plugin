@@ -437,6 +437,8 @@ export const roRO = {
   'Delete attachment?': 'Ștergeți atașamentul?',
   'Could not download file': 'Nu s-a putut descărca fișierul',
   'Pending save': 'Salvare în așteptare',
+  'Inherited from original': 'Moștenit de la original',
+  'Automatic translation was not possible. The task is saved without it.': 'Traducerea automată nu a fost posibilă. Sarcina a fost salvată fără ea.',
   'Add Google Drive file': 'Adăugați fișierul Google Drive',
   'Loading Google Picker': 'Se încarcă Selectorul Google',
   'Connect Google Drive': 'Conectați Google Drive',
@@ -623,6 +625,7 @@ export const roRO = {
   'No tasks match the selected filters.': 'Nicio sarcină nu corespunde filtrelor selectate.',
   'Task done': 'Sarcină finalizată',
   'Task not done': 'Sarcină neterminată',
+  'Planned': 'Planificat',
   'Could not load the data': 'Nu s-au putut încărca datele',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.
@@ -778,4 +781,8 @@ export const roRO = {
   '{{rule}}, {{count}} times': '{{rule}}, de {{count}} ori',
   '{{rule}}, 1 time': '{{rule}}, o dată',
   'Future tasks cannot be completed or deleted yet': 'Sarcinile viitoare nu pot fi încă completate sau șterse',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Neînregistrat',
+  Model: 'Model',
+  'OS version': 'Versiune SO',
 };

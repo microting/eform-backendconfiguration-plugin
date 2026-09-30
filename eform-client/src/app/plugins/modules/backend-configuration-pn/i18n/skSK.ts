@@ -437,6 +437,8 @@ export const skSK = {
   'Delete attachment?': 'Odstrániť prílohu?',
   'Could not download file': 'Súbor sa nepodarilo stiahnuť',
   'Pending save': 'Čaká sa na uloženie',
+  'Inherited from original': 'Prevzaté z originálu',
+  'Automatic translation was not possible. The task is saved without it.': 'Automatický preklad nebol možný. Úloha je uložená bez neho.',
   'Add Google Drive file': 'Pridať súbor z Disku Google',
   'Loading Google Picker': 'Načítava sa nástroj Google Picker',
   'Connect Google Drive': 'Pripojiť Disk Google',
@@ -623,6 +625,7 @@ export const skSK = {
   'No tasks match the selected filters.': 'Žiadne úlohy nezodpovedajú vybraným filtrom.',
   'Task done': 'Úloha hotová',
   'Task not done': 'Úloha nebola dokončená',
+  'Planned': 'Naplánované',
   'Could not load the data': 'Nepodarilo sa načítať údaje',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.
@@ -778,4 +781,8 @@ export const skSK = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}}-krát',
   '{{rule}}, 1 time': '{{rule}}, 1-krát',
   'Future tasks cannot be completed or deleted yet': 'Budúce úlohy zatiaľ nie je možné vyplniť ani odstrániť',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Neregistrované',
+  Model: 'Model',
+  'OS version': 'Verzia OS',
 };

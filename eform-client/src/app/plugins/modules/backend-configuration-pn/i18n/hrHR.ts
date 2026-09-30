@@ -437,6 +437,8 @@ export const hrHR = {
   'Delete attachment?': 'Izbrisati privitak?',
   'Could not download file': 'Nije moguće preuzeti datoteku',
   'Pending save': 'Spremanje na čekanju',
+  'Inherited from original': 'Preuzeto iz izvornika',
+  'Automatic translation was not possible. The task is saved without it.': 'Automatski prijevod nije bio moguć. Zadatak je spremljen bez njega.',
   'Add Google Drive file': 'Dodaj datoteku s Google diska',
   'Loading Google Picker': 'Učitavanje Google Pickera',
   'Connect Google Drive': 'Poveži Google disk',
@@ -623,6 +625,7 @@ export const hrHR = {
   'No tasks match the selected filters.': 'Nijedan zadatak ne odgovara odabranim filterima.',
   'Task done': 'Zadatak obavljen',
   'Task not done': 'Zadatak nije dovršen',
+  'Planned': 'Planirano',
   'Could not load the data': 'Nije moguće učitati podatke',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.
@@ -778,4 +781,8 @@ export const hrHR = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} puta',
   '{{rule}}, 1 time': '{{rule}}, 1 put',
   'Future tasks cannot be completed or deleted yet': 'Buduće zadatke još nije moguće ispuniti ni izbrisati',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Nije registrirano',
+  Model: 'Model',
+  'OS version': 'Verzija OS-a',
 };

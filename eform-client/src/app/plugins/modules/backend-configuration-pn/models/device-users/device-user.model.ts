@@ -1,3 +1,5 @@
+import {AppInstallModel} from './app-install.model';
+
 export class DeviceUserModel {
   id: number;
   siteId: number;
@@ -27,6 +29,11 @@ export class DeviceUserModel {
   model: string;
   osVersion: string;
   version: string;
+  // Per-app access + last reported version, filled by index-device-user only (#1335).
+  complianceApp?: AppInstallModel;
+  adHocApp?: AppInstallModel;
+  timeApp?: AppInstallModel;
+  archiveApp?: AppInstallModel;
   pinCode: string;
   employeeNo: string;
   startMonday: number;

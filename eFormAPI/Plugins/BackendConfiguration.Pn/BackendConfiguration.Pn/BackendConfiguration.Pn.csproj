@@ -170,14 +170,6 @@
       <None Remove="Resources\eForms\24.02.08.02 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme - Dokumenter.xml" />
       <None Remove="Resources\eForms\24.04.02 Reduceret indhold af råprotein.xml" />
       <None Remove="Resources\eForms\24.04.03 Tilsætningsstoffer i foder - fytase eller andet.xml" />
-      <None Remove="Resources\eForms\25.01 Kemisk produkt registrering.xml" />
-      <EmbeddedResource Include="Resources\eForms\25.01 Registrer produkter.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
-      <None Remove="Resources\eForms\25.02 Vis kemisk produkt.xml" />
-      <EmbeddedResource Include="Resources\eForms\25.02 Vis kemisk produkt.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\01. Aflæsninger.xml" />
       <None Remove="Resources\eForms\02. Fækale uheld.xml" />
       <None Remove="Resources\eForms\00. Info boks.xml" />
@@ -311,6 +303,7 @@
       <Protobuf Include="Protos\events.proto" GrpcServices="Server" ProtoRoot="Protos" />
       <Protobuf Include="Protos\adhoc.proto" GrpcServices="Server" ProtoRoot="Protos" />
       <Protobuf Include="Protos\settings.proto" GrpcServices="Server" ProtoRoot="Protos" />
+      <Protobuf Include="Protos\chemicals.proto" GrpcServices="Server" ProtoRoot="Protos" />
     </ItemGroup>
 
 </Project>

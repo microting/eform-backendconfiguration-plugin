@@ -188,7 +188,7 @@ public class AdhocServiceReferenceDataTests : TestBaseSetup
         var property = await CreatePropertyAsync();
         var sut = CreateSut();
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.ListAreas(1, property.Id));
     }
 
@@ -377,7 +377,7 @@ public class AdhocServiceReferenceDataTests : TestBaseSetup
         var property = await CreatePropertyAsync();
         var sut = CreateSut();
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.ListWorkers(1, property.Id));
     }
 
@@ -482,11 +482,11 @@ public class AdhocServiceReferenceDataTests : TestBaseSetup
     }
 
     [Test]
-    public void CreateTag_Throws_ForEmptyName()
+    public async Task CreateTag_Throws_ForEmptyName()
     {
         var sut = CreateSut();
 
-        Assert.ThrowsAsync<ArgumentException>(async () => await sut.CreateTag(1, "  "));
+        await Assert.ThrowsAsync<ArgumentException>(async () => await sut.CreateTag(1, "  "));
     }
 
     [Test]
@@ -525,7 +525,7 @@ public class AdhocServiceReferenceDataTests : TestBaseSetup
         await globalTag.Create(BackendConfigurationPnDbContext!);
         var sut = CreateSut();
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.RenameTag(1, globalTag.Id, "renamed"));
     }
 
@@ -535,16 +535,16 @@ public class AdhocServiceReferenceDataTests : TestBaseSetup
         var sut = CreateSut();
         var created = await sut.CreateTag(1, "mine");
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.RenameTag(2, created.Id, "stolen"));
     }
 
     [Test]
-    public void RenameTag_Throws_NotFound_ForUnknownId()
+    public async Task RenameTag_Throws_NotFound_ForUnknownId()
     {
         var sut = CreateSut();
 
-        Assert.ThrowsAsync<AdhocTagNotFoundException>(async () =>
+        await Assert.ThrowsAsync<AdhocTagNotFoundException>(async () =>
             await sut.RenameTag(1, 987654, "renamed"));
     }
 
@@ -586,7 +586,7 @@ public class AdhocServiceReferenceDataTests : TestBaseSetup
         var sut = CreateSut();
         var created = await sut.CreateTag(1, "mine");
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.DeleteTag(2, created.Id));
     }
 
@@ -625,14 +625,14 @@ public class AdhocServiceReferenceDataTests : TestBaseSetup
     }
 
     [Test]
-    public void CreateTag_Throws_ForNonAdminWorkerZero()
+    public async Task CreateTag_Throws_ForNonAdminWorkerZero()
     {
         // Pins RequireRealIdentityOrAdmin, not a caller: tag mutations demand a
         // real identity, and worker 0 is not one. No production caller passes
         // (0, false) since 2026-08-24 - see the note on RenameTag below.
         var sut = CreateSut();
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.CreateTag(0, "not-allowed"));
     }
 
@@ -652,7 +652,7 @@ public class AdhocServiceReferenceDataTests : TestBaseSetup
         await zeroOwnedTag.Create(BackendConfigurationPnDbContext!);
         var sut = CreateSut();
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.RenameTag(0, zeroOwnedTag.Id, "renamed"));
     }
 
@@ -727,7 +727,7 @@ public class AdhocServiceReferenceDataTests : TestBaseSetup
         await zeroOwnedTag.Create(BackendConfigurationPnDbContext!);
         var sut = CreateSut();
 
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        await Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.DeleteTag(0, zeroOwnedTag.Id));
     }
 }

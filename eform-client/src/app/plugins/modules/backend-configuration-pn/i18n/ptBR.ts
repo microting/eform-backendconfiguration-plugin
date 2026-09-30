@@ -437,6 +437,8 @@ export const ptBR = {
   'Delete attachment?': 'Excluir anexo?',
   'Could not download file': 'Não foi possível baixar o arquivo.',
   'Pending save': 'Salvamento pendente',
+  'Inherited from original': 'Herdado do original',
+  'Automatic translation was not possible. The task is saved without it.': 'A tradução automática não foi possível. A tarefa foi salva sem ela.',
   'Add Google Drive file': 'Adicionar arquivo do Google Drive',
   'Loading Google Picker': 'Carregando o Seletor do Google',
   'Connect Google Drive': 'Conectar o Google Drive',
@@ -623,6 +625,7 @@ export const ptBR = {
   'No tasks match the selected filters.': 'Nenhuma tarefa corresponde aos filtros selecionados.',
   'Task done': 'Tarefa concluída',
   'Task not done': 'Tarefa não concluída',
+  'Planned': 'Planejado',
   'Could not load the data': 'Não foi possível carregar os dados',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.
@@ -778,4 +781,8 @@ export const ptBR = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} vezes',
   '{{rule}}, 1 time': '{{rule}}, 1 vez',
   'Future tasks cannot be completed or deleted yet': 'Tarefas futuras ainda não podem ser concluídas nem excluídas',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Não registrado',
+  Model: 'Modelo',
+  'OS version': 'Versão do SO',
 };

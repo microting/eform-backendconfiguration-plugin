@@ -73,7 +73,9 @@
         <tr
           *ngFor="let row of group.rows; trackBy: trackByRow"
           class="compliance-details__row"
-          [attr.data-compliance-id]="row.complianceId"
+          [attr.data-compliance-id]="row.isProjected ? null : row.complianceId"
+          [attr.data-planned]="row.isProjected ? true : null"
+          [attr.data-task-date]="row.taskDate"
           [class.is-done]="row.completed"
           [class.is-clickable]="isRowCompletable(row)"
           [class.is-future]="isFutureUncompleted(row)"
@@ -97,7 +99,7 @@
             <span
               class="compliance-details__circle"
               role="img"
-              [attr.aria-label]="(row.completed ? 'Task done' : 'Task not done') | translate"
+              [attr.aria-label]="statusLabelKey(row) | translate"
             >
               <mat-icon class="compliance-details__check" [class.is-visible]="row.completed"
                 >check</mat-icon
@@ -115,6 +117,10 @@
           <td>
             <span class="compliance-details__body">
               <span class="compliance-details__title">{{ row.title }}</span>
+              <!-- #1332: a planned occurrence, not deployed yet. The neutral chip. -->
+              <span class="compliance-details__chip compliance-details__planned" *ngIf="row.isProjected">{{
+                'Planned' | translate
+              }}</span>
               <span
                 class="compliance-details__chip compliance-details__chip--worker"
                 *ngIf="row.workerNames && row.workerNames.length > 0"

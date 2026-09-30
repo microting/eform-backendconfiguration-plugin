@@ -9,13 +9,12 @@
     phoneNumber: phoneNumberTpl,
     language: languageTpl,
     customerOtp: customerOtpTpl,
-    manufacturer: manufacturerTpl,
     tags: tagsTpl,
     actions: actionsTpl,
-    taskManagementEnabled: taskManagementEnabledTpl,
-    timeRegistrationEnabled: timeRegistrationEnabledTpl,
-    webAccessEnabled: webAccessEnabledTpl,
-    archiveEnabled: archiveEnabledTpl
+    complianceApp: complianceAppTpl,
+    adHocApp: adHocAppTpl,
+    timeApp: timeAppTpl,
+    archiveApp: archiveAppTpl
     }"
   [showPaginator]="false"
   [pageOnFront]="false"
@@ -169,74 +168,39 @@
   </div>
 </ng-template>
 
-<ng-template #manufacturerTpl let-row>
-  <ng-container *ngIf="row.osVersion !== null">
-    <ng-container *ngIf="row['manufacturer'] === 'iOS' ">
-      <div class="manufacturer" id="manufacturer-{{row.id}}">
-                <span [matTooltip]="row['deviceModel']" class="neutral-icon">
-                  <mat-icon svgIcon="ios-icon"></mat-icon>
-                </span>
-        {{ row.model }} ({{ row.osVersion }})
-      </div>
-    </ng-container>
-    <ng-container *ngIf="row['manufacturer'] === 'Android' ">
-      <div class="manufacturer" id="manufacturer-{{row.id}}">
-                <span [matTooltip]="row['deviceModel']" class="neutral-icon">
-                  <mat-icon svgIcon="android-icon"></mat-icon>
-                </span>
-        {{ row.model }} ({{ row.osVersion }})
-      </div>
-    </ng-container>
-  </ng-container>
+<!-- #1335: one cell per mobile app. Line 1 is the state (appInstallState), line 2
+     the reported version; the reporting device's model and OS are the tooltip. -->
+<ng-template #appInstallTpl let-app="app" let-appKey="appKey">
+  <div
+    class="app-install"
+    [attr.data-app]="appKey"
+    [attr.data-app-state]="appState(app)"
+    [matTooltip]="appDeviceTooltip(app)"
+    [attr.tabindex]="appDeviceTooltip(app) ? 0 : null"
+  >
+    <mat-chip class="app-install-state" [ngClass]="appStateClass(app)">
+      <span>{{ appStateLabel(app) | translate }}</span>
+    </mat-chip>
+    <div class="app-install-version" *ngIf="app?.version">{{ app.version }}</div>
+  </div>
 </ng-template>
 
-<ng-template #taskManagementEnabledTpl let-row>
-  <mat-chip
-    [ngClass]="{
-      'tag-success': row.taskManagementEnabled,
-      'tag-error': !row.taskManagementEnabled
-    }"
-  >
-    <span
-      title="{{ (row.taskManagementEnabled ? 'Yes' : 'No') | translate }}">{{ (row.taskManagementEnabled ? 'Yes' : 'No') | translate }}</span>
-  </mat-chip>
+<ng-template #complianceAppTpl let-row>
+  <ng-container *ngTemplateOutlet="appInstallTpl; context: {app: row.complianceApp, appKey: 'compliance'}"></ng-container>
 </ng-template>
 
-<ng-template #timeRegistrationEnabledTpl let-row>
-  <mat-chip
-    [ngClass]="{
-      'tag-success': row.timeRegistrationEnabled,
-      'tag-error': !row.timeRegistrationEnabled
-    }"
-  >
-    <span
-      title="{{ (row.timeRegistrationEnabled ? 'Yes' : 'No') | translate }}">{{ (row.timeRegistrationEnabled ? 'Yes' : 'No') | translate }}</span>
-  </mat-chip>
+<ng-template #adHocAppTpl let-row>
+  <ng-container *ngTemplateOutlet="appInstallTpl; context: {app: row.adHocApp, appKey: 'adhoc'}"></ng-container>
 </ng-template>
 
-<ng-template #webAccessEnabledTpl let-row>
-  <mat-chip
-    [ngClass]="{
-      'tag-success': row.webAccessEnabled === true,
-      'tag-error': row.webAccessEnabled !== true
-    }"
-  >
-    <span
-      title="{{ (row.webAccessEnabled === true ? 'Yes' : 'No') | translate }}">{{ (row.webAccessEnabled === true ? 'Yes' : 'No') | translate }}</span>
-  </mat-chip>
+<ng-template #timeAppTpl let-row>
+  <ng-container *ngTemplateOutlet="appInstallTpl; context: {app: row.timeApp, appKey: 'time'}"></ng-container>
 </ng-template>
 
-<ng-template #archiveEnabledTpl let-row>
-  <mat-chip
-    [ngClass]="{
-      'tag-success': row.archiveEnabled === true,
-      'tag-error': row.archiveEnabled !== true
-    }"
-  >
-    <span
-      title="{{ (row.archiveEnabled === true ? 'Yes' : 'No') | translate }}">{{ (row.archiveEnabled === true ? 'Yes' : 'No') | translate }}</span>
-  </mat-chip>
+<ng-template #archiveAppTpl let-row>
+  <ng-container *ngTemplateOutlet="appInstallTpl; context: {app: row.archiveApp, appKey: 'archive'}"></ng-container>
 </ng-template>
+
 <ng-template #tagsTpl let-row>
   <div id="tags">
     <app-eform-tag [tags]="getTagsBySiteDto(row)"/>

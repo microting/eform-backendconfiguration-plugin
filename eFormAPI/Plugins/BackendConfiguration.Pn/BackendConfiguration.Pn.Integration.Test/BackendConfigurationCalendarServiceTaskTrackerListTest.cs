@@ -126,8 +126,15 @@ public class BackendConfigurationCalendarServiceTaskTrackerListTest : TestBaseSe
     /// GetTaskTrackerList falls through to the "no SDK case" else branch
     /// (taskIsExpired = compliance.Deadline &lt; dateTimeNow). That's the
     /// predicate this test set targets; Task 3's fix updates this exact line.
+    /// <para>
+    /// #1325: <paramref name="complianceEnabled"/> defaults to true — a task whose missed
+    /// occurrences are reported. With false, a missed (expired, not completed) occurrence
+    /// is hidden from the list. <paramref name="sdkCaseId"/> backs the row with a seeded
+    /// SDK case so Completed / the retracted-case branch can be exercised.
+    /// </para>
     /// </summary>
-    private async Task<int> SeedEventWithDeadline(DateTime deadlineUtc)
+    private async Task<int> SeedEventWithDeadline(
+        DateTime deadlineUtc, bool complianceEnabled = true, int sdkCaseId = 0)
     {
         var area = new Area
         {
@@ -186,6 +193,7 @@ public class BackendConfigurationCalendarServiceTaskTrackerListTest : TestBaseSe
             Status = true,
             RepeatType = 2,
             RepeatEvery = 1,
+            ComplianceEnabled = complianceEnabled,
             WorkflowState = Constants.WorkflowStates.Created,
             CreatedByUserId = 1,
             UpdatedByUserId = 1
@@ -199,7 +207,7 @@ public class BackendConfigurationCalendarServiceTaskTrackerListTest : TestBaseSe
             PlanningId = planning.Id,
             PropertyId = property.Id,
             StartDate = deadlineUtc.Date.AddDays(-7),
-            MicrotingSdkCaseId = 0, // forces the else branch in GetTaskTrackerList
+            MicrotingSdkCaseId = sdkCaseId, // 0 forces the no-SDK-case branch in GetTaskTrackerList
             WorkflowState = Constants.WorkflowStates.Created
         };
         await BackendConfigurationPnDbContext.Compliances.AddAsync(compliance);
@@ -268,5 +276,122 @@ public class BackendConfigurationCalendarServiceTaskTrackerListTest : TestBaseSe
         Assert.That(result.Model, Has.Count.EqualTo(1));
         Assert.That(result.Model[0].TaskIsExpired, Is.False,
             "Deadline strictly after today must not be expired.");
+    }
+
+    // ------------------------------------------------------------------
+    // #1325 — "Overskredet opgave vises ikke i app" (ComplianceEnabled = false)
+    // hides a task's missed occurrences from the app's task tracker list.
+    // ------------------------------------------------------------------
+
+    // SDK Site MicrotingUid must be unique across the fixture's shared database.
+    private int _uidCounter = 1_325_000;
+
+    /// <summary>Seeds an SDK Case on a fresh SDK Site and returns the Case Id.</summary>
+    private async Task<int> SeedSdkCase(int status, string workflowState = Constants.WorkflowStates.Created)
+    {
+        var language = await MicrotingDbContext!.Languages.FirstAsync();
+        var uid = ++_uidCounter;
+        var site = new Site
+        {
+            Name = $"Worker A-{uid}",
+            MicrotingUid = uid,
+            LanguageId = language.Id,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext.Sites.AddAsync(site);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        var sdkCase = new Case
+        {
+            SiteId = site.Id,
+            Status = status,
+            DoneAt = status == 100 ? DateTime.UtcNow.AddDays(-1) : null,
+            WorkflowState = workflowState
+        };
+        await MicrotingDbContext.Cases.AddAsync(sdkCase);
+        await MicrotingDbContext.SaveChangesAsync();
+        return sdkCase.Id;
+    }
+
+    private static DateTime YesterdayUtc => DateTime.UtcNow.Date.AddDays(-1).AddHours(10);
+
+    [Test]
+    public async Task GetTaskTrackerList_ComplianceDisabled_MissedYesterdayWithOpenCase_IsHidden()
+    {
+        var caseId = await SeedSdkCase(status: 33);
+        var propertyId = await SeedEventWithDeadline(YesterdayUtc, complianceEnabled: false, sdkCaseId: caseId);
+
+        var result = await _calendarService.GetTaskTrackerList(propertyId, sdkSiteIdForFilter: null);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(result.Model, Is.Empty,
+            "A missed occurrence of a task with ComplianceEnabled = false must not reach the app.");
+    }
+
+    [Test]
+    public async Task GetTaskTrackerList_ComplianceDisabled_MissedYesterdayWithRetractedCase_IsHidden()
+    {
+        var caseId = await SeedSdkCase(status: 77, workflowState: Constants.WorkflowStates.Removed);
+        var propertyId = await SeedEventWithDeadline(YesterdayUtc, complianceEnabled: false, sdkCaseId: caseId);
+
+        var result = await _calendarService.GetTaskTrackerList(propertyId, sdkSiteIdForFilter: null);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(result.Model, Is.Empty,
+            "A retracted case counts as expired, so the occurrence is hidden like any other missed one.");
+    }
+
+    [Test]
+    public async Task GetTaskTrackerList_ComplianceDisabled_Today_IsReturnedNotExpired()
+    {
+        var propertyId = await SeedEventWithDeadline(DateTime.UtcNow.Date.AddSeconds(1), complianceEnabled: false);
+
+        var result = await _calendarService.GetTaskTrackerList(propertyId, sdkSiteIdForFilter: null);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(result.Model, Has.Count.EqualTo(1), "Today's occurrence is not missed yet and must stay listed.");
+        Assert.That(result.Model[0].TaskIsExpired, Is.False);
+    }
+
+    [Test]
+    public async Task GetTaskTrackerList_ComplianceDisabled_Tomorrow_IsReturnedNotExpired()
+    {
+        var propertyId = await SeedEventWithDeadline(DateTime.UtcNow.Date.AddDays(1).AddHours(8), complianceEnabled: false);
+
+        var result = await _calendarService.GetTaskTrackerList(propertyId, sdkSiteIdForFilter: null);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(result.Model, Has.Count.EqualTo(1), "Tomorrow's occurrence must stay listed.");
+        Assert.That(result.Model[0].TaskIsExpired, Is.False);
+    }
+
+    [Test]
+    public async Task GetTaskTrackerList_ComplianceEnabled_MissedYesterdayWithOpenCase_IsReturnedExpired()
+    {
+        var caseId = await SeedSdkCase(status: 33);
+        var propertyId = await SeedEventWithDeadline(YesterdayUtc, complianceEnabled: true, sdkCaseId: caseId);
+
+        var result = await _calendarService.GetTaskTrackerList(propertyId, sdkSiteIdForFilter: null);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(result.Model, Has.Count.EqualTo(1),
+            "A task whose missed occurrences are reported keeps showing them as overdue.");
+        Assert.That(result.Model[0].TaskIsExpired, Is.True);
+        Assert.That(result.Model[0].Completed, Is.False);
+    }
+
+    [Test]
+    public async Task GetTaskTrackerList_ComplianceDisabled_CompletedYesterday_IsReturnedCompleted()
+    {
+        var caseId = await SeedSdkCase(status: 100);
+        var propertyId = await SeedEventWithDeadline(YesterdayUtc, complianceEnabled: false, sdkCaseId: caseId);
+
+        var result = await _calendarService.GetTaskTrackerList(propertyId, sdkSiteIdForFilter: null);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(result.Model, Has.Count.EqualTo(1),
+            "A completed occurrence is history, not a missed one: it stays visible.");
+        Assert.That(result.Model[0].Completed, Is.True);
+        Assert.That(result.Model[0].TaskIsExpired, Is.False);
     }
 }

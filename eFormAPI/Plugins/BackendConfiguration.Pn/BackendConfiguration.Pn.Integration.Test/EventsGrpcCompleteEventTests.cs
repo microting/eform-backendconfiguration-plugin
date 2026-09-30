@@ -649,7 +649,7 @@ public class EventsGrpcCompleteEventTests : TestBaseSetup
             .FirstAsync(x => x.Id == s.ComplianceId);
         await compliance.Delete(BackendConfigurationPnDbContext);
 
-        var ex = Assert.ThrowsAsync<GrpcCore.RpcException>(async () =>
+        var ex = await Assert.ThrowsAsync<GrpcCore.RpcException>(async () =>
             await s.Service.CompleteEvent(MakeRequest(s), new TestServerCallContext()));
 
         var uninvolvedSiteName = await MicrotingDbContext!.Sites
@@ -871,7 +871,7 @@ public class EventsGrpcCompleteEventTests : TestBaseSetup
     {
         var s = await SeedScenarioAsync("no-access", hasPropertyAccess: false);
 
-        var ex = Assert.ThrowsAsync<GrpcCore.RpcException>(async () =>
+        var ex = await Assert.ThrowsAsync<GrpcCore.RpcException>(async () =>
             await s.Service.CompleteEvent(MakeRequest(s), new TestServerCallContext()));
 
         Assert.That(ex!.StatusCode, Is.EqualTo(GrpcCore.StatusCode.PermissionDenied));

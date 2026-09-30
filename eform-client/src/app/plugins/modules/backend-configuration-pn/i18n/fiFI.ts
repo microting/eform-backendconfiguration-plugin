@@ -437,6 +437,8 @@ export const fiFI = {
   'Delete attachment?': 'Poistetaanko liite?',
   'Could not download file': 'Tiedoston lataaminen epäonnistui',
   'Pending save': 'Tallennus odottaa',
+  'Inherited from original': 'Peritty alkuperäisestä',
+  'Automatic translation was not possible. The task is saved without it.': 'Automaattinen käännös ei onnistunut. Tehtävä tallennettiin ilman sitä.',
   'Add Google Drive file': 'Lisää Google Drive -tiedosto',
   'Loading Google Picker': 'Google Pickerin lataus',
   'Connect Google Drive': 'Yhdistä Google Driveen',
@@ -623,6 +625,7 @@ export const fiFI = {
   'No tasks match the selected filters.': 'Yksikään tehtävä ei vastaa valittuja suodattimia.',
   'Task done': 'Tehtävä suoritettu',
   'Task not done': 'Tehtävä ei ole suoritettu',
+  'Planned': 'Suunniteltu',
   'Could not load the data': 'Tietojen lataaminen epäonnistui',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.
@@ -778,4 +781,8 @@ export const fiFI = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} kertaa',
   '{{rule}}, 1 time': '{{rule}}, 1 kerran',
   'Future tasks cannot be completed or deleted yet': 'Tulevia tehtäviä ei voi vielä suorittaa eikä poistaa',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Ei rekisteröity',
+  Model: 'Malli',
+  'OS version': 'Käyttöjärjestelmän versio',
 };

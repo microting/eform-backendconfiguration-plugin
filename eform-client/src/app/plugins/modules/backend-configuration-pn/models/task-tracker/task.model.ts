@@ -11,7 +11,7 @@ export interface TaskModel {
   repeatEvery: number;
   repeatType: RepeatTypeEnum;
   deadlineTask: Date,
-  nextExecutionTime: string;
+  nextExecutionTime: string | null;
   taskIsExpired: boolean;
   sdkCaseId: number;
   templateId: number;

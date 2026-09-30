@@ -436,6 +436,8 @@ export const itIT = {
   'Could not create report headline': 'Impossibile creare l&#39;intestazione del report',
   'Save event first to attach files': 'Salva prima l&#39;evento per allegare i file.',
   'Pending save': 'Salvataggio in sospeso',
+  'Inherited from original': "Ereditato dall'originale",
+  'Automatic translation was not possible. The task is saved without it.': "La traduzione automatica non è stata possibile. L'attività è stata salvata senza.",
   'Delete attachment?': 'Eliminare l&#39;allegato?',
   'Add Google Drive file': 'Aggiungi file di Google Drive',
   'Loading Google Picker': 'Caricamento di Google Picker',
@@ -623,6 +625,7 @@ export const itIT = {
   'No tasks match the selected filters.': 'Nessuna attività corrisponde ai filtri selezionati.',
   'Task done': 'Compito completato',
   'Task not done': 'Compito non completato',
+  'Planned': 'Pianificato',
   'Could not load the data': 'Impossibile caricare i dati',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.
@@ -778,4 +781,8 @@ export const itIT = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} volte',
   '{{rule}}, 1 time': '{{rule}}, 1 volta',
   'Future tasks cannot be completed or deleted yet': 'Le attività future non possono ancora essere completate né eliminate',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Non registrato',
+  Model: 'Modello',
+  'OS version': 'Versione del SO',
 };

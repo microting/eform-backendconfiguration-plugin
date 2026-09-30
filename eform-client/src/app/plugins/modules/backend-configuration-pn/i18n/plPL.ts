@@ -437,6 +437,8 @@ export const plPL = {
   'Delete attachment?': 'Usunąć załącznik?',
   'Could not download file': 'Nie można pobrać pliku',
   'Pending save': 'Oczekiwanie na zapisanie',
+  'Inherited from original': 'Przejęte z oryginału',
+  'Automatic translation was not possible. The task is saved without it.': 'Automatyczne tłumaczenie nie było możliwe. Zadanie zapisano bez niego.',
   'Add Google Drive file': 'Dodaj plik Google Drive',
   'Loading Google Picker': 'Ładowanie selektora Google',
   'Connect Google Drive': 'Połącz Google Drive',
@@ -623,6 +625,7 @@ export const plPL = {
   'No tasks match the selected filters.': 'Żadne zadanie nie pasuje do wybranych filtrów.',
   'Task done': 'Zadanie wykonane',
   'Task not done': 'Zadanie nie zostało wykonane',
+  'Planned': 'Zaplanowane',
   'Could not load the data': 'Nie można załadować danych',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.
@@ -778,4 +781,8 @@ export const plPL = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} razy',
   '{{rule}}, 1 time': '{{rule}}, 1 raz',
   'Future tasks cannot be completed or deleted yet': 'Przyszłych zadań nie można jeszcze wykonać ani usunąć',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Nie zarejestrowano',
+  Model: 'Model',
+  'OS version': 'Wersja systemu',
 };

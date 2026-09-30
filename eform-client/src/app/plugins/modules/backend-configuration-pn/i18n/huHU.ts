@@ -437,6 +437,8 @@ export const huHU = {
   'Delete attachment?': 'Törli a mellékletet?',
   'Could not download file': 'Nem sikerült letölteni a fájlt',
   'Pending save': 'Mentés függőben',
+  'Inherited from original': 'Az eredetiből átvéve',
+  'Automatic translation was not possible. The task is saved without it.': 'Az automatikus fordítás nem volt lehetséges. A feladat nélküle lett mentve.',
   'Add Google Drive file': 'Google Drive-fájl hozzáadása',
   'Loading Google Picker': 'Google Picker betöltése',
   'Connect Google Drive': 'Csatlakoztassa a Google Drive-ot',
@@ -623,6 +625,7 @@ export const huHU = {
   'No tasks match the selected filters.': 'Egyik feladat sem felel meg a kiválasztott szűrőknek.',
   'Task done': 'Feladat elvégezve',
   'Task not done': 'Feladat nincs elvégezve',
+  'Planned': 'Tervezett',
   'Could not load the data': 'Nem sikerült betölteni az adatokat',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.
@@ -778,4 +781,8 @@ export const huHU = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} alkalommal',
   '{{rule}}, 1 time': '{{rule}}, 1 alkalommal',
   'Future tasks cannot be completed or deleted yet': 'A jövőbeli feladatok még nem tölthetők ki és nem törölhetők',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Nincs regisztrálva',
+  Model: 'Modell',
+  'OS version': 'OS-verzió',
 };

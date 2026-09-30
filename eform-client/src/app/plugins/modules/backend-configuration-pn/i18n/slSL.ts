@@ -437,6 +437,8 @@ export const slSL = {
   'Delete attachment?': 'Izbrisati prilogo?',
   'Could not download file': 'Datoteke ni bilo mogoče prenesti',
   'Pending save': 'Čaka na shranjevanje',
+  'Inherited from original': 'Podedovano od izvirnika',
+  'Automatic translation was not possible. The task is saved without it.': 'Samodejni prevod ni bil mogoč. Opravilo je shranjeno brez njega.',
   'Add Google Drive file': 'Dodaj datoteko v Google Drive',
   'Loading Google Picker': 'Nalaganje Google Pickerja',
   'Connect Google Drive': 'Poveži Google Drive',
@@ -623,6 +625,7 @@ export const slSL = {
   'No tasks match the selected filters.': 'Nobena naloga se ne ujema z izbranimi filtri.',
   'Task done': 'Naloga opravljena',
   'Task not done': 'Naloga ni opravljena',
+  'Planned': 'Načrtovano',
   'Could not load the data': 'Podatkov ni bilo mogoče naložiti',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.
@@ -778,4 +781,8 @@ export const slSL = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}}-krat',
   '{{rule}}, 1 time': '{{rule}}, 1-krat',
   'Future tasks cannot be completed or deleted yet': 'Prihodnjih opravil še ni mogoče izpolniti ali izbrisati',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Ni registrirano',
+  Model: 'Model',
+  'OS version': 'Različica OS',
 };

@@ -243,6 +243,9 @@ public class TaskListBatchMoveBoardTest : TestBaseSetup
             AreaRuleId = areaRule.Id, PropertyId = propertyId, AreaId = areaId,
             ItemPlanningId = planning.Id, StartDate = DateTime.SpecifyKind(anchor, DateTimeKind.Utc),
             Status = true, RepeatType = 2, RepeatEvery = 1, RepeatWeekdaysCsv = "1", DayOfWeek = 1,
+            // #1325: a task whose missed occurrences are reported — the compliance-report
+            // test lists a past open row.
+            ComplianceEnabled = true,
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         };
         await BackendConfigurationPnDbContext!.AreaRulePlannings.AddAsync(arp);

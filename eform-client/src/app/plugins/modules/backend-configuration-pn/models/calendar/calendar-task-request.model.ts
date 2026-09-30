@@ -23,6 +23,9 @@ export interface CalendarTaskCreateModel {
   // multi-day weekly custom rules. Cleared (sent as null) for any non-custom
   // rule so the backend column is wiped on rule change.
   repeatWeekdaysCsv?: string | null;
+  // #1323 — copy mode: link these attachments of the source task to the new task.
+  copyAttachmentsFromTaskId?: number;
+  attachmentIds?: number[];
 }
 
 export interface CalendarTaskUpdateModel extends CalendarTaskCreateModel {

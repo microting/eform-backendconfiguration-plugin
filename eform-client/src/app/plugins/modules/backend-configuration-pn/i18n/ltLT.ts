@@ -437,6 +437,8 @@ export const ltLT = {
   'Delete attachment?': 'Ištrinti priedą?',
   'Could not download file': 'Nepavyko atsisiųsti failo',
   'Pending save': 'Laukiama išsaugojimo',
+  'Inherited from original': 'Paveldėta iš originalo',
+  'Automatic translation was not possible. The task is saved without it.': 'Automatinis vertimas nepavyko. Užduotis išsaugota be jo.',
   'Add Google Drive file': 'Pridėti „Google“ disko failą',
   'Loading Google Picker': 'Įkeliamas „Google“ rinkiklis',
   'Connect Google Drive': 'Prijungti „Google“ diską',
@@ -623,6 +625,7 @@ export const ltLT = {
   'No tasks match the selected filters.': 'Nėra pasirinktų filtrų atitinkančių užduočių.',
   'Task done': 'Užduotis atlikta',
   'Task not done': 'Užduotis neatlikta',
+  'Planned': 'Suplanuota',
   'Could not load the data': 'Nepavyko įkelti duomenų',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.
@@ -778,4 +781,8 @@ export const ltLT = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} kartų',
   '{{rule}}, 1 time': '{{rule}}, 1 kartą',
   'Future tasks cannot be completed or deleted yet': 'Būsimų užduočių dar negalima atlikti ar ištrinti',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Neužregistruota',
+  Model: 'Modelis',
+  'OS version': 'OS versija',
 };

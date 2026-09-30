@@ -437,6 +437,8 @@ export const esES = {
   'Delete attachment?': '¿Eliminar archivo adjunto?',
   'Could not download file': 'No se pudo descargar el archivo.',
   'Pending save': 'Pendiente de guardar',
+  'Inherited from original': 'Heredado del original',
+  'Automatic translation was not possible. The task is saved without it.': 'La traducción automática no fue posible. La tarea se guardó sin ella.',
   'Add Google Drive file': 'Agregar archivo de Google Drive',
   'Loading Google Picker': 'Cargando selector de Google',
   'Connect Google Drive': 'Conectar Google Drive',
@@ -623,6 +625,7 @@ export const esES = {
   'No tasks match the selected filters.': 'No se encontraron tareas que coincidan con los filtros seleccionados.',
   'Task done': 'Tarea realizada',
   'Task not done': 'Tarea no realizada',
+  'Planned': 'Planificado',
   'Could not load the data': 'No se pudieron cargar los datos',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.
@@ -778,4 +781,8 @@ export const esES = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} veces',
   '{{rule}}, 1 time': '{{rule}}, 1 vez',
   'Future tasks cannot be completed or deleted yet': 'Las tareas futuras aún no se pueden completar ni eliminar',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'No registrado',
+  Model: 'Modelo',
+  'OS version': 'Versión del SO',
 };

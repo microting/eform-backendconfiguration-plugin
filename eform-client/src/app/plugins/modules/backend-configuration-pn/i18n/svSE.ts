@@ -439,6 +439,8 @@ export const svSE = {
   'Delete attachment?': 'Ta bort bilagan?',
   'Could not download file': 'Kunde inte ladda ner filen',
   'Pending save': 'Väntar på att spara',
+  'Inherited from original': 'Ärvd från originalet',
+  'Automatic translation was not possible. The task is saved without it.': 'Automatisk översättning var inte möjlig. Uppgiften sparades utan den.',
   'Add Google Drive file': 'Lägg till Google Drive-fil',
   'Loading Google Picker': 'Läser in Google Picker',
   'Connect Google Drive': 'Anslut Google Drive',
@@ -623,6 +625,7 @@ export const svSE = {
   'No tasks match the selected filters.': 'Inga uppgifter matchar de valda filtren.',
   'Task done': 'Uppgift klar',
   'Task not done': 'Uppgiften är inte klar',
+  'Planned': 'Planerad',
   'Could not load the data': 'Kunde inte ladda data',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.
@@ -778,4 +781,8 @@ export const svSE = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} gånger',
   '{{rule}}, 1 time': '{{rule}}, 1 gång',
   'Future tasks cannot be completed or deleted yet': 'Framtida uppgifter kan inte fyllas i eller tas bort ännu',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Inte registrerad',
+  Model: 'Modell',
+  'OS version': 'OS-version',
 };

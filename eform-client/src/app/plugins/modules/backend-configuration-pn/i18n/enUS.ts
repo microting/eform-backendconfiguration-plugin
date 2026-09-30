@@ -478,6 +478,8 @@ export const enUS= {
   'Attach file': 'Attach file',
   'Save event first to attach files': 'Save event first to attach files',
   'Pending save': 'Pending save',
+  'Inherited from original': 'Inherited from original',
+  'Automatic translation was not possible. The task is saved without it.': 'Automatic translation was not possible. The task is saved without it.',
   'Delete attachment?': 'Delete attachment?',
   'Could not download file': 'Could not download file',
   'Add Google Drive file': 'Add Google Drive file',
@@ -786,6 +788,7 @@ export const enUS= {
   // key: its Danish is 'Færdig' and it is used on unrelated screens.
   'Task done': 'Task done',
   'Task not done': 'Task not done',
+  'Planned': 'Planned',
   // Shown in the result card when the FIRST fetch of a visit fails. Kept
   // distinct from 'No tasks match the selected filters.' on purpose: a
   // transport or server error is not the filters' fault.
@@ -899,4 +902,8 @@ export const enUS= {
   '{{rule}}, 1 time': '{{rule}}, 1 time',
   // Compliance pages: uncompleted future tasks are locked (#1300).
   'Future tasks cannot be completed or deleted yet': 'Future tasks cannot be completed or deleted yet',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Not registered',
+  Model: 'Model',
+  'OS version': 'OS version',
 };

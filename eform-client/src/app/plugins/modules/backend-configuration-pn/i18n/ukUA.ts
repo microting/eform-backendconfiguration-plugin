@@ -437,6 +437,8 @@ export const ukUA = {
   'File name': 'Ім&#39;я файлу',
   'Enable fifth shift': 'Увімкнути п&#39;яту зміну',
   'Pending save': 'Очікується збереження',
+  'Inherited from original': 'Успадковано з оригіналу',
+  'Automatic translation was not possible. The task is saved without it.': 'Автоматичний переклад був неможливий. Завдання збережено без нього.',
   'Add Google Drive file': 'Додати файл з Google Диска',
   'Loading Google Picker': 'Завантаження вибору Google',
   'Connect Google Drive': 'Підключити Google Диск',
@@ -623,6 +625,7 @@ export const ukUA = {
   'No tasks match the selected filters.': 'Жодне завдання не відповідає вибраним фільтрам.',
   'Task done': 'Завдання виконано',
   'Task not done': 'Завдання не виконано',
+  'Planned': 'Заплановано',
   'Could not load the data': 'Не вдалося завантажити дані',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.
@@ -778,4 +781,8 @@ export const ukUA = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} разів',
   '{{rule}}, 1 time': '{{rule}}, 1 раз',
   'Future tasks cannot be completed or deleted yet': 'Майбутні завдання ще не можна виконати або видалити',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Не зареєстровано',
+  Model: 'Модель',
+  'OS version': 'Версія ОС',
 };

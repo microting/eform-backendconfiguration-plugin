@@ -437,6 +437,8 @@ export const lvLV = {
   'Delete attachment?': 'Vai dzēst pielikumu?',
   'Could not download file': 'Nevarēja lejupielādēt failu',
   'Pending save': 'Gaida saglabāšanu',
+  'Inherited from original': 'Mantots no oriģināla',
+  'Automatic translation was not possible. The task is saved without it.': 'Automātiskā tulkošana nebija iespējama. Uzdevums ir saglabāts bez tās.',
   'Add Google Drive file': 'Pievienot Google diska failu',
   'Loading Google Picker': 'Notiek Google atlasītāja ielāde',
   'Connect Google Drive': 'Izveidot savienojumu ar Google disku',
@@ -623,6 +625,7 @@ export const lvLV = {
   'No tasks match the selected filters.': 'Neviens uzdevums neatbilst atlasītajiem filtriem.',
   'Task done': 'Uzdevums paveikts',
   'Task not done': 'Uzdevums nav pabeigts',
+  'Planned': 'Plānots',
   'Could not load the data': 'Nevarēja ielādēt datus',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.
@@ -778,4 +781,8 @@ export const lvLV = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} reizes',
   '{{rule}}, 1 time': '{{rule}}, 1 reizi',
   'Future tasks cannot be completed or deleted yet': 'Nākotnes uzdevumus vēl nevar izpildīt vai dzēst',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Nav reģistrēts',
+  Model: 'Modelis',
+  'OS version': 'OS versija',
 };

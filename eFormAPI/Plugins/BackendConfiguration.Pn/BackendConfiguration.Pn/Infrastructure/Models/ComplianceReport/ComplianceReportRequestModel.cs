@@ -52,4 +52,14 @@ public class ComplianceReportRequestModel
 
     /// <summary>Descending when true. Defaults to true, which is taskDate's natural direction.</summary>
     public bool IsSortDsc { get; set; } = true;
+
+    /// <summary>
+    /// #1332 — also return the planned occurrences after today that have not been
+    /// deployed yet (no Compliance row), as read-only rows with
+    /// <see cref="ComplianceReportRowModel.IsProjected"/> set. Detaljer and its export
+    /// send true. Opt-in, so every other caller of <c>Index</c> keeps the deployed-rows
+    /// contract; <c>EformColumns</c> (Rapport) ignores it — a planned occurrence has no
+    /// answers.
+    /// </summary>
+    public bool IncludeProjected { get; set; }
 }

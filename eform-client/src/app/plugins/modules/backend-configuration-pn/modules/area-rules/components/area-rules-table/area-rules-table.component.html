@@ -32,10 +32,6 @@
   <br>
   <h3>{{'Klargøring af stalde' | translate}}</h3>
 </ng-container>
-<ng-container *ngIf="selectedArea.type === 9">
-  <br>
-  <h3>{{'Oprettelse af kemikalier' | translate}}</h3>
-</ng-container>
 <ng-container *ngIf="selectedArea.type === 10">
   <br>
   <h3>{{'Pools' | translate}}</h3>
@@ -80,7 +76,6 @@
   <ng-container>
     <button
       mat-icon-button
-      *ngIf="selectedArea.type !== 9"
       id="showEditRuleBtn-{{i}}"
       matTooltip="{{ 'Edit rule' | translate }}"
       (click)="onShowEditRuleModal(row)"
@@ -89,23 +84,12 @@
     </button>
     <button
       mat-icon-button
-      *ngIf="selectedArea.type !== 9"
       id="deleteRuleBtn-{{i}}"
       color="warn"
       matTooltip="{{ 'Delete rule' | translate }}"
       (click)="onShowDeleteRuleModal(row)"
     >
       <mat-icon>delete</mat-icon>
-    </button>
-    <button
-      *ngIf="selectedArea.type === 9"
-      mat-icon-button
-      color="accent"
-      (click)="onShowEditEntityListModal(this.selectedArea.groupId)"
-      matTooltip="{{ 'Edit list of areas' | translate }}"
-      id="updateEntityListChemicalAreas-{{i}}"
-    >
-      <mat-icon>list</mat-icon>
     </button>
   </ng-container>
 </ng-template>
@@ -155,7 +139,7 @@
       </button>
       <button
         mat-menu-item
-        *ngIf="!row.isDefault && selectedArea.type !== 9 && !row.planningStatus"
+        *ngIf="!row.isDefault && !row.planningStatus"
         id="showEditRuleBtn-t10b-{{i}}"
         (click)="onShowEditRuleModal(row)"
       >
@@ -165,37 +149,3 @@
     </mat-menu>
   </div>
 </ng-template>
-
-<ng-container *ngIf="selectedArea.type === 9">
-  <h3 class="mt-3">{{'Chemicals' | translate}}</h3>
-  <mtx-grid
-    [data]="chemicalsModel.entities"
-    [columns]="tableHeadersT9SecondTable"
-    [cellTemplate]="{expiredDate: expiredDateTpl, pdf: pdfTpl}"
-    [showPaginator]="false"
-    [pageOnFront]="false"
-    [rowStriped]="true"
-    [showToolbar]="false"
-    [showColumnMenuButton]="false"
-    class="mb-2"
-  >
-  </mtx-grid>
-  <ng-template #expiredDateTpl let-row let-i="index">
-    <date-formatter
-      [date]="row.expiredDate"
-      [Format]="'date'"
-    ></date-formatter>
-  </ng-template>
-  <ng-template #pdfTpl let-row let-i="index">
-    <a
-      *ngIf="row.fileName !== ''"
-      href="javascript:void(0)"
-      (click)="getPdf(row.fileName)"
-      mat-icon-button
-      id="planningCreateBtn-{{i}}"
-      color="accent"
-    >
-      <mat-icon svgIcon="file-pdf"></mat-icon>
-    </a>
-  </ng-template>
-</ng-container>

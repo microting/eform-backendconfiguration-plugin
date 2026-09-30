@@ -437,6 +437,8 @@ export const etET = {
   'Delete attachment?': 'Kustutada manus?',
   'Could not download file': 'Faili allalaadimine ebaõnnestus',
   'Pending save': 'Salvestamist ootel',
+  'Inherited from original': 'Päritud originaalist',
+  'Automatic translation was not possible. The task is saved without it.': 'Automaatne tõlge ei olnud võimalik. Ülesanne salvestati ilma selleta.',
   'Add Google Drive file': 'Lisa Google Drive&#39;i fail',
   'Loading Google Picker': 'Google&#39;i valija laadimine',
   'Connect Google Drive': 'Ühenda Google Drive&#39;iga',
@@ -623,6 +625,7 @@ export const etET = {
   'No tasks match the selected filters.': 'Valitud filtritele ei vasta ükski ülesanne.',
   'Task done': 'Ülesanne tehtud',
   'Task not done': 'Ülesanne pole tehtud',
+  'Planned': 'Planeeritud',
   'Could not load the data': 'Andmeid ei õnnestunud laadida',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.
@@ -778,4 +781,8 @@ export const etET = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} korda',
   '{{rule}}, 1 time': '{{rule}}, 1 kord',
   'Future tasks cannot be completed or deleted yet': 'Tulevasi ülesandeid ei saa veel täita ega kustutada',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Registreerimata',
+  Model: 'Mudel',
+  'OS version': 'OS-i versioon',
 };

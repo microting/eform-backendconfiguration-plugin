@@ -490,6 +490,8 @@ export const deDE = {
   'Delete attachment?': 'Anhang löschen?',
   'Could not download file': 'Datei konnte nicht heruntergeladen werden',
   'Pending save': 'Ausstehender Speichervorgang',
+  'Inherited from original': 'Vom Original übernommen',
+  'Automatic translation was not possible. The task is saved without it.': 'Automatische Übersetzung war nicht möglich. Die Aufgabe wurde ohne sie gespeichert.',
   'Add Google Drive file': 'Google Drive-Datei hinzufügen',
   'Loading Google Picker': 'Google Picker wird geladen',
   'Connect Google Drive': 'Google Drive verbinden',
@@ -671,6 +673,7 @@ export const deDE = {
   'No tasks match the selected filters.': 'Es wurden keine Aufgaben gefunden, die den ausgewählten Filtern entsprechen.',
   'Task done': 'Aufgabe erledigt',
   'Task not done': 'Aufgabe nicht erledigt',
+  'Planned': 'Geplant',
   'Could not load the data': 'Die Daten konnten nicht geladen werden',
   // Backfill of keys present in enUS.ts but missing here (#1167).
   // Machine-translated via translateTsFiles.py; review welcome.
@@ -824,4 +827,8 @@ export const deDE = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} Mal',
   '{{rule}}, 1 time': '{{rule}}, 1 Mal',
   'Future tasks cannot be completed or deleted yet': 'Zukünftige Aufgaben können noch nicht ausgefüllt oder gelöscht werden',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Nicht registriert',
+  Model: 'Modell',
+  'OS version': 'OS-Version',
 };

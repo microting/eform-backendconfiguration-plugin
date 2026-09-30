@@ -447,6 +447,8 @@ export const da = {
   'Delete attachment?': 'Slet vedhæftet fil?',
   'Could not download file': 'Kunne ikke downloade filen',
   'Pending save': 'Afventer gem',
+  'Inherited from original': 'Arvet fra originalen',
+  'Automatic translation was not possible. The task is saved without it.': 'Automatisk oversættelse var ikke mulig. Opgaven er gemt uden.',
   'Add Google Drive file': 'Tilføj Google Drive-fil',
   'Loading Google Picker': 'Indlæser Google Picker',
   'Connect Google Drive': 'Forbind Google Drev',
@@ -748,6 +750,7 @@ export const da = {
   'No tasks match the selected filters.': 'Ingen opgaver matcher de valgte filtre.',
   'Task done': 'Udført',
   'Task not done': 'Ikke udført',
+  'Planned': 'Planlagt',
   'Could not load the data': 'Kunne ikke indlæse data',
   'Compliance %': 'Compliance %',
   'Compliance total': 'I alt',
@@ -799,4 +802,8 @@ export const da = {
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} gange',
   '{{rule}}, 1 time': '{{rule}}, 1 gang',
   'Future tasks cannot be completed or deleted yet': 'Fremtidige opgaver kan ikke udfyldes eller slettes endnu',
+  // #1335 Medarbejdere app columns
+  'Not registered': 'Ikke registreret',
+  Model: 'Model',
+  'OS version': 'OS-version',
 };
