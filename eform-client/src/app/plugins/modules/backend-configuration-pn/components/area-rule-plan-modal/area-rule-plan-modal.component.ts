@@ -18,7 +18,6 @@ import {
 import {add, set} from 'date-fns';
 import * as R from 'ramda';
 import {TranslateService} from '@ngx-translate/core';
-import {SiteDto} from 'src/app/common/models';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {MtxGridColumn, MtxGridRowSelectionFormatter} from '@ng-matero/extensions/grid';
 import {MatDatepickerInputEvent} from '@angular/material/datepicker';
@@ -68,8 +67,6 @@ export class AreaRulePlanModalComponent implements OnInit {
   dayOfWeekArr: { id: number, name: string }[];
   repeatEveryArr: { id: number, name: string }[];
   repeatTypeArr: { id: number, name: string }[];
-  selectedSite: SiteDto = new SiteDto();
-  type9assignedSite: number;
 
   tableHeaders: MtxGridColumn[] = [
     {
@@ -190,14 +187,6 @@ export class AreaRulePlanModalComponent implements OnInit {
         this.selectedAreaRulePlanning.typeSpecificFields.dayOfWeek = rule.typeSpecificFields.dayOfWeek;
       }
     }
-    if (this.selectedArea.type === 9) {
-      if (this.selectedAreaRulePlanning.assignedSites.length > 0) {
-        this.selectedSite = this.selectedArea.availableWorkers.find(
-          (x) => x.siteId === this.selectedAreaRulePlanning.assignedSites[0].siteId
-        );
-        this.type9assignedSite = this.selectedSite.siteId;
-      }
-    }
     if (!this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery && !this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery) {
       this.selectedAreaRulePlanning.sendNotifications = false;
       this.selectedAreaRulePlanning.complianceEnabled = false;
@@ -242,22 +231,6 @@ export class AreaRulePlanModalComponent implements OnInit {
       this.selectedAreaRulePlanning.assignedSites = this.selectedAreaRulePlanning.assignedSites.filter(
         (x) => x.siteId !== siteId
       );
-    }
-  }
-
-  addToArraySelect(e: any) {
-    const assignmentObject = new AreaRuleAssignedSitesModel();
-    assignmentObject.checked = true;
-    assignmentObject.siteId = e.siteId;
-    assignmentObject.status = 0;
-    if (this.selectedArea.type !== 9) {
-      this.selectedAreaRulePlanning.assignedSites = [
-        ...this.selectedAreaRulePlanning.assignedSites,
-        assignmentObject,
-      ];
-    } else {
-      this.selectedAreaRulePlanning.assignedSites = [assignmentObject];
-      this.type9assignedSite = assignmentObject.siteId;
     }
   }
 
@@ -409,9 +382,7 @@ export class AreaRulePlanModalComponent implements OnInit {
   }
 
   isDisabledSaveBtn() {
-    if (this.selectedArea.type !== 9) {
-      return !this.selectedAreaRulePlanning.assignedSites.some((x) => x.checked);
-    }
+    return !this.selectedAreaRulePlanning.assignedSites.some((x) => x.checked);
   }
 
   repeatTypeMass() {
