@@ -246,8 +246,9 @@ public static class BackendConfigurationTaskTrackerHelper
 
 				// #1325 — hidden on read, never soft-deleted: this GET used to delete the row,
 				// and dated by Deadline.AddDays(-1) it took today's and tomorrow's with it.
+				var reportsMissedOccurrences = reportingPlanningIds.Contains(compliance.PlanningId);
 				if (HiddenOverdueRule.IsHiddenOverdue(
-					    reportingPlanningIds.Contains(compliance.PlanningId),
+					    reportsMissedOccurrences,
 					    HiddenOverdueRule.IsPastDue(compliance.Deadline, dateTimeNow),
 					    completedSdkCaseIds.Contains(compliance.MicrotingSdkCaseId)))
 				{
@@ -420,7 +421,9 @@ public static class BackendConfigurationTaskTrackerHelper
 						// NULL for calendar-created plannings; the cast used to throw and drop the row (#1325).
 						NextExecutionTime = planning.NextExecutionTime,
 						TaskName = taskName,
-						TaskIsExpired = dateTimeNow > compliance.Deadline,
+						// #1325 — a task that hides missed occurrences is never overdue; its rows here
+						// are today's or later, and their midnight Deadline would otherwise read as expired.
+						TaskIsExpired = dateTimeNow > compliance.Deadline && reportsMissedOccurrences,
 						PropertyId = compliance.PropertyId,
 						SdkCaseId = compliance.MicrotingSdkCaseId,
 						TemplateId = compliance.MicrotingSdkeFormId,
