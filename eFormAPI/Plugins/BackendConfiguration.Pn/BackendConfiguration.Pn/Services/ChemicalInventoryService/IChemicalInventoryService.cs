@@ -51,4 +51,24 @@ public interface IChemicalInventoryService
     Task<ChemicalPlacementChangeModel> RemovePlacementAsync(ChemicalCaller caller, ChemicalRemovePlacementCommand command);
     Task<ChemicalPlacementChangeModel> UpdatePlacementNoteAsync(ChemicalCaller caller, int placementId, string placementNote);
     Task<ChemicalPlacementChangeModel> AddStockEntryAsync(ChemicalCaller caller, ChemicalAddStockEntryCommand command);
+
+    // ---- sync and read ----
+    /// <summary>
+    /// The app's delta sync (spec §6). <paramref name="since"/> is the previous
+    /// SyncToken; empty, garbage or future tokens give a full load.
+    /// </summary>
+    Task<ChemicalInventoryModel> GetInventoryAsync(ChemicalCaller caller, string since);
+
+    /// <summary>One property in full for the web (View); SyncToken is empty.</summary>
+    Task<ChemicalInventoryModel> GetPropertyInventoryAsync(ChemicalCaller caller, int propertyId);
+
+    // ---- register-wide (View on any property) ----
+    Task<IReadOnlyList<ChemicalRegisterEntryModel>> LookupBarcodeAsync(ChemicalCaller caller, string barcode);
+    Task<ChemicalRegisterPageModel> SearchRegisterAsync(ChemicalCaller caller, string query, int page, int pageSize);
+
+    /// <summary>
+    /// The SDS PDF of a file name the register knows, proxied from chemicalbase.
+    /// ArgumentException for a malformed name; NotFound for no SDS.
+    /// </summary>
+    Task<byte[]> GetSdsPdfAsync(ChemicalCaller caller, string fileName);
 }
