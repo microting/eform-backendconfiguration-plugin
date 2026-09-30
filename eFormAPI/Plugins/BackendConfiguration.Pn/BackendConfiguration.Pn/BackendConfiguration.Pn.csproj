@@ -18,6 +18,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <AssemblyMetadata Include="SentryDsn" Value="https://d07e105f7f60b749142c7883f0b9f2df@o4506241219428352.ingest.sentry.io/4506285252739072" />
+    </ItemGroup>
+
+    <ItemGroup>
       <InternalsVisibleTo Include="BackendConfiguration.Pn.Test" />
       <InternalsVisibleTo Include="BackendConfiguration.Pn.Integration.Test" />
     </ItemGroup>

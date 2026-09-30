@@ -725,28 +725,38 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         }
     }
 
+    // Declared once, as <AssemblyMetadata Include="SentryDsn" /> in the csproj: the API host reads the
+    // same assembly metadata to route this plugin's events to its own Sentry project.
+    private static string SentryDsn =>
+        typeof(EformBackendConfigurationPlugin).Assembly
+            .GetCustomAttributes<AssemblyMetadataAttribute>()
+            .FirstOrDefault(x => x.Key == "SentryDsn")?.Value;
+
     public void ConfigureDbContext(IServiceCollection services, string connectionString)
     {
-        SentrySdk.Init(options =>
+        if (!string.IsNullOrWhiteSpace(SentryDsn))
         {
-            // A Sentry Data Source Name (DSN) is required.
-            // See https://docs.sentry.io/product/sentry-basics/dsn-explainer/
-            // You can set it in the SENTRY_DSN environment variable, or you can set it in code here.
-            options.Dsn = "https://d07e105f7f60b749142c7883f0b9f2df@o4506241219428352.ingest.sentry.io/4506285252739072";
+            SentrySdk.Init(options =>
+            {
+                // A Sentry Data Source Name (DSN) is required.
+                // See https://docs.sentry.io/product/sentry-basics/dsn-explainer/
+                // You can set it in the SENTRY_DSN environment variable, or you can set it in code here.
+                options.Dsn = SentryDsn;
 
-            // When debug is enabled, the Sentry client will emit detailed debugging information to the console.
-            // This might be helpful, or might interfere with the normal operation of your application.
-            // We enable it here for demonstration purposes when first trying Sentry.
-            // You shouldn't do this in your applications unless you're troubleshooting issues with Sentry.
-            options.Debug = false;
+                // When debug is enabled, the Sentry client will emit detailed debugging information to the console.
+                // This might be helpful, or might interfere with the normal operation of your application.
+                // We enable it here for demonstration purposes when first trying Sentry.
+                // You shouldn't do this in your applications unless you're troubleshooting issues with Sentry.
+                options.Debug = false;
 
-            // This option is recommended. It enables Sentry's "Release Health" feature.
-            options.AutoSessionTracking = true;
+                // This option is recommended. It enables Sentry's "Release Health" feature.
+                options.AutoSessionTracking = true;
 
-            // This option is recommended for client applications only. It ensures all threads use the same global scope.
-            // If you're writing a background service of any kind, you should remove this.
-            options.IsGlobalModeEnabled = true;
-        });
+                // This option is recommended for client applications only. It ensures all threads use the same global scope.
+                // If you're writing a background service of any kind, you should remove this.
+                options.IsGlobalModeEnabled = true;
+            });
+        }
 
         string pattern = @"Database=(\d+)_eform-backend-configuration-plugin;";
         Match match = Regex.Match(connectionString!, pattern);
