@@ -49,10 +49,20 @@ public static class ChemicalQuantity
             throw new ArgumentException("The container count must be greater than zero.");
         }
 
-        var value = amount.Amount
-                    ?? (amount.ContainerSize is { } containerSize && amount.ContainerCount is { } count
-                        ? containerSize * count
-                        : throw new ArgumentException("Give an amount, or a container size and a container count."));
+        decimal value;
+        if (amount.Amount is { } explicitAmount)
+        {
+            value = explicitAmount;
+        }
+        else if (amount.ContainerSize is { } containerSize && amount.ContainerCount is { } count)
+        {
+            value = containerSize * count;
+        }
+        else
+        {
+            throw new ArgumentException("Give an amount, or a container size and a container count.");
+        }
+
         RequireQuantity(value, "amount", allowZero: false);
         return value;
     }
@@ -91,11 +101,14 @@ public static class ChemicalQuantity
 
     private static void RequireQuantity(decimal value, string what, bool allowZero)
     {
-        if (value < 0 || (!allowZero && value == 0))
+        if (!allowZero && value <= 0)
         {
-            throw new ArgumentException(allowZero
-                ? $"The {what} cannot be negative."
-                : $"The {what} must be greater than zero.");
+            throw new ArgumentException($"The {what} must be greater than zero.");
+        }
+
+        if (value < 0)
+        {
+            throw new ArgumentException($"The {what} cannot be negative.");
         }
 
         if (value > MaxAmount)

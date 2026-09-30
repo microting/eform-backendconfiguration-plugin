@@ -19,6 +19,7 @@ SOFTWARE.
 */
 
 using System;
+using System.Linq;
 using BackendConfiguration.Pn.Infrastructure.Models.Chemicals;
 using BackendConfiguration.Pn.Services.ChemicalInventoryService;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
@@ -99,7 +100,7 @@ public class ChemicalPrimitivesTests
     [Test]
     public void ResolveMovedAmount_RequiresAUnit()
     {
-        var amount = new ChemicalStockAmountModel(null, null, 1m, (ChemicalStockUnitEnum)0, null, null, null);
+        var amount = new ChemicalStockAmountModel(null, null, 1m, UndefinedUnit, null, null, null);
         Assert.That(() => ChemicalQuantity.ResolveMovedAmount(amount), Throws.InstanceOf<ArgumentException>());
     }
 
@@ -125,6 +126,71 @@ public class ChemicalPrimitivesTests
         var value = decimal.Parse(raw, System.Globalization.CultureInfo.InvariantCulture);
         Assert.That(ChemicalQuantity.ToMilli(value), Is.EqualTo(milli));
         Assert.That(ChemicalQuantity.FromMilli(milli), Is.EqualTo(value));
+    }
+
+    private static readonly ChemicalStockUnitEnum UndefinedUnit =
+        (ChemicalStockUnitEnum)(Enum.GetValues<ChemicalStockUnitEnum>().Max(u => (int)u) + 1);
+
+    [Test]
+    public void RequireUnit_RejectsUndefinedUnit()
+    {
+        Assert.That(() => ChemicalQuantity.RequireUnit(UndefinedUnit), Throws.InstanceOf<ArgumentException>());
+        Assert.That(() => ChemicalQuantity.RequireUnit(ChemicalStockUnitEnum.L), Throws.Nothing);
+    }
+
+    [TestCase("0")]
+    [TestCase("-1")]
+    [TestCase("1.0005")]
+    [TestCase("1000000.001")]
+    public void RequireMoveAmount_RejectsInvalid(string raw)
+    {
+        var value = decimal.Parse(raw, System.Globalization.CultureInfo.InvariantCulture);
+        Assert.That(() => ChemicalQuantity.RequireMoveAmount(value), Throws.InstanceOf<ArgumentException>());
+    }
+
+    [Test]
+    public void RequireMoveAmount_ReturnsValidAmount()
+    {
+        Assert.That(ChemicalQuantity.RequireMoveAmount(1.5m), Is.EqualTo(1.5m));
+    }
+
+    [TestCase(0, 2)]
+    [TestCase(-1, 2)]
+    [TestCase(1, 0)]
+    [TestCase(1, -3)]
+    public void ResolveMovedAmount_RejectsNonPositiveContainerSizeOrCount(int size, int count)
+    {
+        var amount = new ChemicalStockAmountModel(size, count, null, ChemicalStockUnitEnum.L, null, null, null);
+        Assert.That(() => ChemicalQuantity.ResolveMovedAmount(amount), Throws.InstanceOf<ArgumentException>());
+    }
+
+    [Test]
+    public void ResolveMovedAmount_NullAmount_Throws()
+    {
+        Assert.That(() => ChemicalQuantity.ResolveMovedAmount(null), Throws.InstanceOf<ArgumentException>());
+    }
+
+    [Test]
+    public void ResolveCountedBalance_RejectsNegativeNullAndMissingAmount()
+    {
+        var negative = new ChemicalStockAmountModel(null, null, -0.5m, ChemicalStockUnitEnum.L, null, null, null);
+        var missing = new ChemicalStockAmountModel(null, null, null, ChemicalStockUnitEnum.L, null, null, null);
+        Assert.That(() => ChemicalQuantity.ResolveCountedBalance(negative), Throws.InstanceOf<ArgumentException>());
+        Assert.That(() => ChemicalQuantity.ResolveCountedBalance(missing), Throws.InstanceOf<ArgumentException>());
+        Assert.That(() => ChemicalQuantity.ResolveCountedBalance(null), Throws.InstanceOf<ArgumentException>());
+    }
+
+    [Test]
+    public void ToMilli_RoundsHalfAwayFromZero()
+    {
+        Assert.That(ChemicalQuantity.ToMilli(0.0005m), Is.EqualTo(1L));
+        Assert.That(ChemicalQuantity.ToMilli(-0.0005m), Is.EqualTo(-1L));
+    }
+
+    [Test]
+    public void Allows_UndefinedPermission_IsFalse()
+    {
+        Assert.That(ChemicalPermissionFlagsModel.All.Allows((ChemicalPermission)99), Is.False);
     }
 
     // ---- barcodes (Review Focus 5) ----
@@ -177,6 +243,20 @@ public class ChemicalPrimitivesTests
     [TestCase("v1:-5")]
     public void SyncToken_UnusableTokens_MeanFullLoad(string token)
     {
+        Assert.That(ChemicalSyncToken.Parse(token, Now), Is.Null);
+    }
+
+    [Test]
+    public void SyncToken_ExactlyNow_IsAccepted()
+    {
+        var token = "v1:" + Now.Ticks.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        Assert.That(ChemicalSyncToken.Parse(token, Now), Is.EqualTo(Now));
+    }
+
+    [Test]
+    public void SyncToken_OneTickInTheFuture_MeansFullLoad()
+    {
+        var token = "v1:" + (Now.Ticks + 1).ToString(System.Globalization.CultureInfo.InvariantCulture);
         Assert.That(ChemicalSyncToken.Parse(token, Now), Is.Null);
     }
 
