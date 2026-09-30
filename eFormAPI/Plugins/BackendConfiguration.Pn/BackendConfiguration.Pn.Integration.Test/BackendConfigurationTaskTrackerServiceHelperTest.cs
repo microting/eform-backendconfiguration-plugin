@@ -923,6 +923,31 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 	}
 
 	/// <summary>
+	/// #1325 — a calendar occurrence's Deadline is its date at midnight, so the clock check
+	/// calls today's row expired from 00:00. A task that hides missed occurrences is never
+	/// overdue: its today row is not expired. A task that reports them keeps the legacy flag.
+	/// </summary>
+	[TestCase(false, false)]
+	[TestCase(true, true)]
+	public async Task Index_TodaysRow_IsExpiredOnlyForATaskThatReportsMissedOccurrences(
+		bool complianceEnabled, bool expectedExpired)
+	{
+		var core = await GetCore();
+		var today = DateTime.UtcNow.Date;
+		var (propertyId, planningId) = await SeedTaskWithoutCompliances(
+			complianceEnabled: complianceEnabled, nextExecutionTime: today.AddDays(1));
+		var todayId = await SeedOpenCompliance(propertyId, planningId, today);
+
+		var result = await BackendConfigurationTaskTrackerHelper.Index(
+			new TaskTrackerFiltrationModel { PropertyIds = [propertyId], TagIds = [], WorkerIds = [] },
+			BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!, WorkerTagMembership(core));
+
+		Assert.That(result.Success, Is.True, result.Message);
+		var row = result.Model.Single(x => x.ComplianceId == todayId);
+		Assert.That(row.TaskIsExpired, Is.EqualTo(expectedExpired));
+	}
+
+	/// <summary>
 	/// #1325 — calendar-created plannings have NULL NextExecutionTime. The old
 	/// (DateTime) cast threw inside the per-row try and silently dropped the row.
 	/// </summary>
