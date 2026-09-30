@@ -33,38 +33,41 @@ public class ChemicalBaseClient(HttpClient httpClient, IOptions<ChemicalBaseOpti
 
     public async Task<byte[]> DownloadSdsAsync(string fileName, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(fileName);
+
         // BaseUrl comes from options, so the client does not depend on HttpClient.BaseAddress being set.
         var baseUri = new Uri(options.Value.BaseUrl.TrimEnd('/') + "/");
         var requestUri = new Uri(baseUri, $"{SdsPath}?fileName={Uri.EscapeDataString(fileName)}");
-        using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
-        using var response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
-        if (response.StatusCode == HttpStatusCode.NotFound)
-        {
-            return null;
-        }
+        var timeout = options.Value.SdsDownloadTimeout;
 
-        if (!response.IsSuccessStatusCode)
-        {
-            throw new ChemicalUnavailableException(
-                $"chemicalbase answered {(int)response.StatusCode} for SDS {fileName}.");
-        }
-
-        return await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
-    }
-
-    private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-    {
+        // The client bounds its own wait, whatever HttpClient.Timeout the registration sets.
+        using var timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutSource.CancelAfter(timeout);
         try
         {
-            return await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
+            using var response = await httpClient.SendAsync(request, timeoutSource.Token).ConfigureAwait(false);
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new ChemicalUnavailableException(
+                    $"chemicalbase answered {(int)response.StatusCode} for SDS {fileName}.");
+            }
+
+            return await response.Content.ReadAsByteArrayAsync(timeoutSource.Token).ConfigureAwait(false);
         }
         catch (HttpRequestException e)
         {
             throw new ChemicalUnavailableException("chemicalbase is unreachable.", e);
         }
-        catch (TaskCanceledException e) when (!cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException e) when (!cancellationToken.IsCancellationRequested)
         {
-            throw new ChemicalUnavailableException("chemicalbase did not answer in time.", e);
+            // Our own timeout or HttpClient.Timeout - never the caller's cancellation, which propagates.
+            throw new ChemicalUnavailableException($"chemicalbase did not answer within {timeout}.", e);
         }
     }
 }

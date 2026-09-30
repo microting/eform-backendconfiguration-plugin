@@ -126,7 +126,7 @@ public class ChemicalBaseClientTests
 
         await CreateSut().DownloadSdsAsync(fileName);
 
-        var request = _server.LogEntries.Single().RequestMessage;
+        var request = _server.LogEntries.Single().RequestMessage!;
         var rawQuery = request.RawQuery!.TrimStart('?');
         Assert.That(rawQuery, Is.EqualTo("fileName=a%20b%20%C3%A6%C3%B8%C3%A5%2B%2Fx.pdf"));
         Assert.That(Uri.UnescapeDataString(rawQuery["fileName=".Length..]), Is.EqualTo(fileName));
