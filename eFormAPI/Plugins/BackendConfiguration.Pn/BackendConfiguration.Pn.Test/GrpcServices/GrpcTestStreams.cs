@@ -18,42 +18,28 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using BackendConfiguration.Pn.Services.ChemicalInventoryService;
+
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Grpc.Core;
 
-namespace BackendConfiguration.Pn.Integration.Test;
+namespace BackendConfiguration.Pn.Test.GrpcServices;
 
-/// <summary>A clock that stays where the test put it.</summary>
-public sealed class FixedTimeProvider(DateTime utcNow) : TimeProvider
-{
-    public DateTime UtcNow { get; set; } = DateTime.SpecifyKind(utcNow, DateTimeKind.Utc);
-
-    public override DateTimeOffset GetUtcNow() => new(UtcNow);
-}
-
-/// <summary>Names without the Angular users table or an SDK core.</summary>
-public sealed class FakeChemicalNameDirectory : IChemicalNameDirectory
-{
-    public Task<IReadOnlyDictionary<int, string>> UserNamesAsync(IEnumerable<int> userIds) =>
-        Task.FromResult<IReadOnlyDictionary<int, string>>(
-            userIds.Where(id => id > 0).Distinct().ToDictionary(id => id, id => $"User {id}"));
-
-    public Task<IReadOnlyDictionary<int, string>> WorkerNamesAsync(IEnumerable<int> sdkSiteIds) =>
-        Task.FromResult<IReadOnlyDictionary<int, string>>(
-            sdkSiteIds.Where(id => id > 0).Distinct().ToDictionary(id => id, id => $"Worker {id}"));
-}
+// In-memory gRPC streams shared by the gRPC service unit fixtures.
 
 /// <summary>A client stream that yields the given messages, then ends.</summary>
-public sealed class FakeAsyncStreamReader<T>(IEnumerable<T> items) : IAsyncStreamReader<T> where T : class
+internal sealed class FakeAsyncStreamReader<T>(IEnumerable<T> items) : IAsyncStreamReader<T> where T : class
 {
     private readonly Queue<T> _items = new(items);
 
-    public T Current { get; private set; } = null!;
+    public T Current { get; private set; }
 
     public Task<bool> MoveNext(CancellationToken cancellationToken)
     {
         if (_items.Count == 0)
         {
+            Current = null;
             return Task.FromResult(false);
         }
 
@@ -63,11 +49,11 @@ public sealed class FakeAsyncStreamReader<T>(IEnumerable<T> items) : IAsyncStrea
 }
 
 /// <summary>A server stream that records every message written to it.</summary>
-public sealed class FakeServerStreamWriter<T> : IServerStreamWriter<T>
+internal sealed class FakeServerStreamWriter<T> : IServerStreamWriter<T>
 {
     public List<T> Written { get; } = [];
 
-    public WriteOptions? WriteOptions { get; set; }
+    public WriteOptions WriteOptions { get; set; }
 
     public Task WriteAsync(T message)
     {

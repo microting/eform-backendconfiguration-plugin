@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Grpc.Adhoc;
 using BackendConfiguration.Pn.Infrastructure.Models.Adhoc;
@@ -527,42 +526,5 @@ public class AdhocGrpcServiceMappingTests
         var ex = await Assert.ThrowsAsync<RpcException>(async () =>
             await sut.GetPhoto(new GetPhotoRequest { PhotoId = "101" }, writer, Substitute.For<ServerCallContext>()));
         Assert.That(ex.StatusCode, Is.EqualTo(StatusCode.NotFound));
-    }
-
-    // ---- streaming test doubles ----
-
-    private sealed class FakeAsyncStreamReader<T> : IAsyncStreamReader<T> where T : class
-    {
-        private readonly Queue<T> _items;
-
-        public FakeAsyncStreamReader(IEnumerable<T> items) => _items = new Queue<T>(items);
-
-        public T Current { get; private set; }
-
-        public Task<bool> MoveNext(CancellationToken cancellationToken)
-        {
-            if (_items.Count == 0)
-            {
-                Current = null;
-                return Task.FromResult(false);
-            }
-
-            Current = _items.Dequeue();
-            return Task.FromResult(true);
-        }
-    }
-
-    private sealed class FakeServerStreamWriter<T> : IServerStreamWriter<T>
-    {
-        public List<T> Written { get; } = [];
-        public WriteOptions WriteOptions { get; set; }
-
-        public Task WriteAsync(T message)
-        {
-            Written.Add(message);
-            return Task.CompletedTask;
-        }
-
-        public Task WriteAsync(T message, CancellationToken cancellationToken) => WriteAsync(message);
     }
 }
