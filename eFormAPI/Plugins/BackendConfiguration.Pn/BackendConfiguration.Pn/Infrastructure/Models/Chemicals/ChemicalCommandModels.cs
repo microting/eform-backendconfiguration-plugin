@@ -54,7 +54,3 @@ public sealed record ChemicalUpdateLocationCommand(int LocationId, string Name, 
 public sealed record ChemicalSetWorkerPermissionCommand(int WorkerId, ChemicalPermissionFlagsModel Flags);
 
 public sealed record ChemicalSetSettingsCommand(int PropertyId, bool StockEnabled, IReadOnlyList<string> DigestRecipients);
-
-/// <summary>ChemicalId null = the user found no matching product; LabelPhoto is then required.</summary>
-public sealed record ChemicalBarcodeSuggestionCommand(
-    string Barcode, int? ChemicalId, int? ProductId, byte[] LabelPhoto, string LabelPhotoContentType);
