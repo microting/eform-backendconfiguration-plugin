@@ -276,7 +276,7 @@
     </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="ChemicalsBase" Version="10.0.18" />
+    <PackageReference Include="ChemicalsBase" Version="10.0.19" />
     <PackageReference Include="FirebaseAdmin" Version="3.7.0" />
     <PackageReference Include="Google.Apis.Sheets.v4" Version="1.75.0.4178" />
     <PackageReference Include="Google.Protobuf" Version="3.36.2" />
@@ -287,13 +287,13 @@
     <PackageReference Include="Microting.EformAngularFrontendBase" Version="10.0.40" />
     <PackageReference Include="Microting.eFormApi.BasePn" Version="10.0.36" />
     <PackageReference Include="McMaster.NETCore.Plugins" Version="2.0.0" />
-    <PackageReference Include="Microting.EformBackendConfigurationBase" Version="10.0.52" />
+    <PackageReference Include="Microting.EformBackendConfigurationBase" Version="10.0.53" />
     <PackageReference Include="Microting.eFormCaseTemplateBase" Version="10.0.38" />
     <PackageReference Include="Microting.ItemsPlanningBase" Version="10.0.40" />
     <PackageReference Include="Microting.TimePlanningBase" Version="10.0.66" />
     <PackageReference Include="QuestPDF" Version="2026.9.1" />
-    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.2.1.201" />
-    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.152.1" />
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.2.1.301" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.153.1" />
     <PackageReference Include="Sentry" Version="6.11.1" />
   </ItemGroup>
 
