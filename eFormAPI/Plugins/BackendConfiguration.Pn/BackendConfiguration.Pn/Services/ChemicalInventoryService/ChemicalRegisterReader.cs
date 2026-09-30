@@ -24,12 +24,14 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ChemicalsBase.Infrastructure;
 using ChemicalsBase.Infrastructure.Data.Entities;
 using Infrastructure.Models.Chemicals;
 using Microsoft.EntityFrameworkCore;
+using Microting.eForm.Infrastructure.Constants;
 using BmdTexts = Microting.EformBackendConfigurationBase.Infrastructure.Const.Constants;
 
 public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : IChemicalRegisterReader
@@ -40,12 +42,16 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
     /// </summary>
     internal const string EmptyContentMd5 = "d41d8cd98f00b204e9800998ecf8427e";
 
-    private const string Removed = "removed";
+    private const string Removed = Constants.WorkflowStates.Removed;
     private const int DefaultPageSize = 25;
     private const int MaxPageSize = 50;
 
     // BMD texts end in "(H302)", "(H360Fd)" or "(EUH 001)".
     private static readonly Regex HazardCode = new(@"\s*\(((?:EU)?H\s?[0-9A-Za-z+]+)\)\s*$", RegexOptions.Compiled);
+
+    private static readonly Expression<Func<Chemical, bool>> IsActiveChemical = c => c.WorkflowState != Removed;
+
+    private static readonly Expression<Func<Product, bool>> IsActiveProduct = p => p.WorkflowState != Removed;
 
     public async Task<IReadOnlyList<ChemicalRegisterEntryModel>> GetByIdsAsync(IReadOnlyCollection<int> chemicalIds)
     {
@@ -74,10 +80,8 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
 
     public async Task<IReadOnlyList<ChemicalRegisterEntryModel>> LookupBarcodeAsync(string barcode)
     {
-        // Every spelling of the GTIN: the register may hold a UPC-A as 12 digits or as its 13-digit EAN form.
-        var candidates = ChemicalBarcode.Candidates(barcode).ToArray();
-        return await LoadAsync(WithDetails().Where(c => c.WorkflowState != Removed
-                && c.Products.Any(p => p.WorkflowState != Removed && p.Barcode != null && candidates.Contains(p.Barcode))))
+        var withBarcode = ChemicalIdsWithBarcode(ChemicalBarcode.Candidates(barcode));
+        return await LoadAsync(WithDetails().Where(IsActiveChemical).Where(c => withBarcode.Contains(c.Id)))
             .ConfigureAwait(false);
     }
 
@@ -89,24 +93,21 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
             throw new ArgumentException("Search for at least two characters.");
         }
 
-        if (page < 0)
+        var size = pageSize <= 0 ? DefaultPageSize : Math.Min(pageSize, MaxPageSize);
+        if (page < 0 || page > int.MaxValue / size)
         {
-            throw new ArgumentException("page must be 0 or greater.");
+            throw new ArgumentException($"page must be between 0 and {int.MaxValue / size}.");
         }
 
-        var size = pageSize <= 0 ? DefaultPageSize : Math.Min(pageSize, MaxPageSize);
-        var barcodes = text.Length is >= 6 and <= 14 && text.All(char.IsAsciiDigit)
-            ? ChemicalBarcode.Candidates(text).ToArray()
-            : [];
+        var withBarcode = ChemicalIdsWithBarcode(
+            text.Length is >= 6 and <= 14 && text.All(char.IsAsciiDigit) ? ChemicalBarcode.Candidates(text) : []);
 
         var matches = chemicalsDbContext.Chemicals.AsNoTracking()
-            .Where(c => c.WorkflowState != Removed)
-            .Where(c => c.Name.Contains(text)
-                        || c.RegistrationNo.Contains(text)
-                        || c.Products.Any(p => p.WorkflowState != Removed && p.Barcode != null && barcodes.Contains(p.Barcode)));
+            .Where(IsActiveChemical)
+            .Where(c => c.Name.Contains(text) || c.RegistrationNo.Contains(text) || withBarcode.Contains(c.Id));
 
         var total = await matches.CountAsync().ConfigureAwait(false);
-        var ids = await matches.OrderBy(c => c.Name).ThenBy(c => c.Id)
+        var ids = await ByName(matches)
             .Skip(page * size).Take(size)
             .Select(c => c.Id)
             .ToListAsync().ConfigureAwait(false);
@@ -118,7 +119,8 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
     public async Task<ChemicalProductRef> FindProductAsync(int chemicalId, int? productId)
     {
         var chemical = await chemicalsDbContext.Chemicals.AsNoTracking()
-                           .Where(c => c.Id == chemicalId && c.WorkflowState != Removed)
+                           .Where(IsActiveChemical)
+                           .Where(c => c.Id == chemicalId)
                            .Select(c => new { c.Id, c.RemoteId, c.RegistrationNo, c.Status })
                            .FirstOrDefaultAsync().ConfigureAwait(false)
                        ?? throw new ChemicalNotFoundException($"Chemical {chemicalId} is not in the register.");
@@ -128,21 +130,33 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
             return new ChemicalProductRef(chemical.Id, chemical.RemoteId, chemical.RegistrationNo, chemical.Status, null, null, null);
         }
 
-        var product = await chemicalsDbContext.Products.AsNoTracking()
-                          .Where(p => p.Id == productId && p.ChemicalId == chemicalId && p.WorkflowState != Removed)
+        var product = await ActiveProducts()
+                          .Where(p => p.Id == productId && p.ChemicalId == chemicalId)
                           .Select(p => new { p.Id, p.Name, p.FileName })
                           .FirstOrDefaultAsync().ConfigureAwait(false)
                       ?? throw new ArgumentException($"Product {productId} does not belong to chemical {chemicalId}.");
 
         return new ChemicalProductRef(chemical.Id, chemical.RemoteId, chemical.RegistrationNo, chemical.Status,
-            product.Id, product.Name, SdsName(product.FileName));
+            product.Id, product.Name, SdsFileName(product.FileName) ?? string.Empty);
     }
 
-    public Task<bool> SdsFileExistsAsync(string fileName) =>
-        SdsName(fileName).Length == 0
-            ? Task.FromResult(false)
-            : chemicalsDbContext.Products.AsNoTracking()
-                .AnyAsync(p => p.FileName == fileName && p.WorkflowState != Removed);
+    public async Task<bool> SdsFileExistsAsync(string fileName)
+    {
+        var sdsFileName = SdsFileName(fileName);
+        return sdsFileName != null
+               && await ActiveProducts().AnyAsync(p => p.FileName == sdsFileName).ConfigureAwait(false);
+    }
+
+    private IQueryable<Product> ActiveProducts() => chemicalsDbContext.Products.AsNoTracking().Where(IsActiveProduct);
+
+    /// <summary>Chemicals with an active product carrying one of the barcode spellings (a subquery, not materialised).</summary>
+    private IQueryable<int> ChemicalIdsWithBarcode(IReadOnlyCollection<string> barcodes)
+    {
+        var candidates = barcodes.ToArray();
+        return ActiveProducts()
+            .Where(p => p.Barcode != null && candidates.Contains(p.Barcode))
+            .Select(p => p.ChemicalId);
+    }
 
     private IQueryable<Chemical> WithDetails() =>
         chemicalsDbContext.Chemicals.AsNoTracking()
@@ -152,11 +166,17 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
             .Include(c => c.ClassificationAndLabeling).ThenInclude(cl => cl.CLP).ThenInclude(clp => clp.HazardStatements)
             .AsSplitQuery();
 
+    /// <summary>The one ordering of register lists, applied in SQL so pages and their contents agree with the collation.</summary>
+    private static IOrderedQueryable<Chemical> ByName(IQueryable<Chemical> query) =>
+        query.OrderBy(c => c.Name).ThenBy(c => c.Id);
+
     private static async Task<IReadOnlyList<ChemicalRegisterEntryModel>> LoadAsync(IQueryable<Chemical> query)
     {
-        var chemicals = await query.ToListAsync().ConfigureAwait(false);
-        return chemicals.OrderBy(c => c.Name).ThenBy(c => c.Id).Select(Map).ToList();
+        var chemicals = await ByName(query).ToListAsync().ConfigureAwait(false);
+        return chemicals.Select(Map).ToList();
     }
+
+    private static bool IsActive(BaseEntity entity) => entity.WorkflowState != Removed;
 
     private static ChemicalRegisterEntryModel Map(Chemical chemical)
     {
@@ -177,24 +197,31 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
             clp?.SignalWord,
             Text(BmdTexts.SignalWord, clp?.SignalWord),
             (clp?.HazardStatements ?? [])
-                .Where(h => h.WorkflowState != Removed && h.Statement is { } s && BmdTexts.HazardStatement.ContainsKey(s))
+                .Where(h => IsActive(h) && h.Statement is { } s && BmdTexts.HazardStatement.ContainsKey(s))
                 .Select(h => SplitHazardStatement(BmdTexts.HazardStatement[h.Statement!.Value]))
                 .Distinct()
                 .OrderBy(h => h.Code, StringComparer.Ordinal)
                 .ToList(),
             (chemical.ActiveSubstances ?? [])
-                .Where(a => a.WorkflowState != Removed)
+                .Where(IsActive)
                 .OrderBy(a => a.Name)
                 .Select(a => new ChemicalActiveSubstanceModel(a.Name, a.CASNo ?? string.Empty, Concentration(a)))
                 .ToList(),
             chemical.AuthorisationHolder?.Name ?? string.Empty,
             (chemical.Products ?? [])
-                .Where(p => p.WorkflowState != Removed)
+                .Where(IsActive)
                 .OrderBy(p => p.Id)
-                .Select(p => new ChemicalProductModel(p.Id, p.Name ?? string.Empty, p.Barcode ?? string.Empty,
-                    SdsName(p.FileName), SdsName(p.FileName)))
+                .Select(MapProduct)
                 .ToList(),
             DateTime.SpecifyKind(chemical.UpdatedAt, DateTimeKind.Utc));
+    }
+
+    private static ChemicalProductModel MapProduct(Product product)
+    {
+        // The SDS file name is the md5 of the document, so it doubles as the
+        // version key the app compares: SdsFileName and SdsChecksum are deliberately equal.
+        var sds = SdsFileName(product.FileName) ?? string.Empty;
+        return new ChemicalProductModel(product.Id, product.Name ?? string.Empty, product.Barcode ?? string.Empty, sds, sds);
     }
 
     /// <summary>"Farlig ved indtagelse (H302)" → ("H302", "Farlig ved indtagelse"); "(EUH 001)" → "EUH001".</summary>
@@ -218,9 +245,12 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
         return unit.Length == 0 ? number : $"{number} {unit}";
     }
 
-    /// <summary>The SDS file name, or empty when there is none (blank, or the md5 of an empty upload).</summary>
-    private static string SdsName(string fileName) =>
-        string.IsNullOrWhiteSpace(fileName) || fileName.Trim() == EmptyContentMd5 ? string.Empty : fileName;
+    /// <summary>The trimmed SDS file name, or null when there is none (blank, or the md5 of an empty upload).</summary>
+    private static string SdsFileName(string fileName)
+    {
+        var name = fileName?.Trim();
+        return string.IsNullOrEmpty(name) || name == EmptyContentMd5 ? null : name;
+    }
 
     private static string Text(IReadOnlyDictionary<int, string> table, int? key) =>
         key is { } k && table.TryGetValue(k, out var text) ? text : string.Empty;
