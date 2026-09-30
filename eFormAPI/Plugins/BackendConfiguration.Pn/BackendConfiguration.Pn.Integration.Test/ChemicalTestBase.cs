@@ -97,13 +97,22 @@ public abstract class ChemicalTestBase : TestBaseSetup
             {
                 PropertyId = propertyId, WorkerId = workerId, CreatedByUserId = TestUserId, UpdatedByUserId = TestUserId,
             };
-            Apply(row, flags);
+            ChemicalPermissionService.Apply(row, flags);
             await row.Create(BackendConfigurationPnDbContext);
             return;
         }
 
-        Apply(row, flags);
+        ChemicalPermissionService.Apply(row, flags);
         await row.Update(BackendConfigurationPnDbContext);
+    }
+
+    /// <summary>A fresh property with one assigned worker holding <paramref name="flags"/>, and that worker as app caller.</summary>
+    protected async Task<(int PropertyId, int WorkerId, ChemicalCaller Caller)> WorkerWith(ChemicalPermissionFlagsModel flags)
+    {
+        var property = await CreatePropertyAsync();
+        var worker = await AddWorkerAsync(property.Id);
+        await GrantAsync(property.Id, worker, flags);
+        return (property.Id, worker, ChemicalCaller.App(TestUserId, worker));
     }
 
     protected async Task EnableStockAsync(int propertyId, bool enabled = true)
@@ -146,15 +155,5 @@ public abstract class ChemicalTestBase : TestBaseSetup
         };
         await placement.Create(BackendConfigurationPnDbContext!);
         return placement;
-    }
-
-    private static void Apply(ChemicalWorkerPermission row, ChemicalPermissionFlagsModel flags)
-    {
-        row.View = flags.View;
-        row.Register = flags.Register;
-        row.Remove = flags.Remove;
-        row.Stock = flags.Stock;
-        row.ManageLocations = flags.ManageLocations;
-        row.Admin = flags.Admin;
     }
 }

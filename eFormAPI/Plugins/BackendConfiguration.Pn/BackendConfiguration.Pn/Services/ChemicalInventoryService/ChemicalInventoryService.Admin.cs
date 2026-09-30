@@ -119,12 +119,12 @@ public partial class ChemicalInventoryService
                         PropertyId = propertyId, WorkerId = change.WorkerId,
                         CreatedByUserId = caller.UserId, UpdatedByUserId = caller.UserId,
                     };
-                    Apply(row, change.Flags);
+                    ChemicalPermissionService.Apply(row, change.Flags);
                     await row.Create(dbContext).ConfigureAwait(false);
                     continue;
                 }
 
-                Apply(row, change.Flags);
+                ChemicalPermissionService.Apply(row, change.Flags);
                 row.WorkflowState = Constants.WorkflowStates.Created;
                 row.UpdatedByUserId = caller.UserId;
                 await row.Update(dbContext).ConfigureAwait(false);
@@ -173,15 +173,4 @@ public partial class ChemicalInventoryService
         propertyId,
         settings?.StockEnabled ?? false,
         (settings?.DigestRecipients ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-
-    /// <summary>Flags onto a stored row; the reverse mapping is ChemicalPermissionService.ToFlags.</summary>
-    private static void Apply(ChemicalWorkerPermission row, ChemicalPermissionFlagsModel flags)
-    {
-        row.View = flags.View;
-        row.Register = flags.Register;
-        row.Remove = flags.Remove;
-        row.Stock = flags.Stock;
-        row.ManageLocations = flags.ManageLocations;
-        row.Admin = flags.Admin;
-    }
 }

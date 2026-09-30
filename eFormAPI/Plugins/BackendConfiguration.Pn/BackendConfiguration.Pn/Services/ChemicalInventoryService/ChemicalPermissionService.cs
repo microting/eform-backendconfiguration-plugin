@@ -54,6 +54,17 @@ public class ChemicalPermissionService(BackendConfigurationPnDbContext dbContext
     internal static ChemicalPermissionFlagsModel ToFlags(ChemicalWorkerPermission row) =>
         new(row.View, row.Register, row.Remove, row.Stock, row.ManageLocations, row.Admin);
 
+    /// <summary>The single mapping from flags onto a stored permission row (the reverse of <see cref="ToFlags"/>).</summary>
+    internal static void Apply(ChemicalWorkerPermission row, ChemicalPermissionFlagsModel flags)
+    {
+        row.View = flags.View;
+        row.Register = flags.Register;
+        row.Remove = flags.Remove;
+        row.Stock = flags.Stock;
+        row.ManageLocations = flags.ManageLocations;
+        row.Admin = flags.Admin;
+    }
+
     public async Task<IReadOnlyList<ChemicalPropertyAccessRow>> ListVisiblePropertiesAsync(ChemicalCaller caller)
     {
         var stockEnabled = await dbContext.ChemicalPropertySettings.AsNoTracking()

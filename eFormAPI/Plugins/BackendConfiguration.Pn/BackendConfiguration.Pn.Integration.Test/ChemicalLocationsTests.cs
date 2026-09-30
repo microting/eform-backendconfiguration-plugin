@@ -30,18 +30,10 @@ public class ChemicalLocationsTests : ChemicalTestBase
     private static readonly ChemicalPermissionFlagsModel Locations =
         ChemicalPermissionFlagsModel.None with { View = true, ManageLocations = true };
 
-    private async Task<(int PropertyId, ChemicalCaller Caller)> WorkerWith(ChemicalPermissionFlagsModel flags)
-    {
-        var property = await CreatePropertyAsync();
-        var worker = await AddWorkerAsync(property.Id);
-        await GrantAsync(property.Id, worker, flags);
-        return (property.Id, ChemicalCaller.App(TestUserId, worker));
-    }
-
     [Test]
     public async Task Create_TrimsName_AndAppendsAfterTheLastLocation()
     {
-        var (propertyId, caller) = await WorkerWith(Locations);
+        var (propertyId, _, caller) = await WorkerWith(Locations);
         await CreateLocationAsync(propertyId, "Lade", sortOrder: 4);
 
         var created = await CreateInventoryService().CreateLocationAsync(caller,
@@ -55,7 +47,7 @@ public class ChemicalLocationsTests : ChemicalTestBase
     [Test]
     public async Task Create_DuplicateActiveName_IsConflict_ArchivedNameIsFree()
     {
-        var (propertyId, caller) = await WorkerWith(Locations);
+        var (propertyId, _, caller) = await WorkerWith(Locations);
         var sut = CreateInventoryService();
         var first = await sut.CreateLocationAsync(caller, new ChemicalCreateLocationCommand(propertyId, "Kemirum", "", null));
 
@@ -71,7 +63,7 @@ public class ChemicalLocationsTests : ChemicalTestBase
     [TestCase("   ")]
     public async Task Create_BlankName_IsInvalid(string name)
     {
-        var (propertyId, caller) = await WorkerWith(Locations);
+        var (propertyId, _, caller) = await WorkerWith(Locations);
         Assert.That(async () => await CreateInventoryService().CreateLocationAsync(caller, new ChemicalCreateLocationCommand(propertyId, name, "", null)),
             Throws.InstanceOf<ArgumentException>());
     }
@@ -79,15 +71,44 @@ public class ChemicalLocationsTests : ChemicalTestBase
     [Test]
     public async Task Create_WithoutManageLocations_IsDenied()
     {
-        var (propertyId, caller) = await WorkerWith(ChemicalPermissionFlagsModel.None with { View = true, Register = true });
+        var (propertyId, _, caller) = await WorkerWith(ChemicalPermissionFlagsModel.None with { View = true, Register = true });
         Assert.That(async () => await CreateInventoryService().CreateLocationAsync(caller, new ChemicalCreateLocationCommand(propertyId, "X", "", null)),
             Throws.InstanceOf<ChemicalPermissionDeniedException>());
     }
 
     [Test]
+    public async Task LocationWrites_WithoutManageLocations_AreDenied()
+    {
+        var (propertyId, _, caller) = await WorkerWith(ChemicalPermissionFlagsModel.All with { ManageLocations = false, Admin = false });
+        var location = await CreateLocationAsync(propertyId);
+        var sut = CreateInventoryService();
+
+        Assert.That(async () => await sut.UpdateLocationAsync(caller, new ChemicalUpdateLocationCommand(location.Id, "X", "", null)),
+            Throws.InstanceOf<ChemicalPermissionDeniedException>());
+        Assert.That(async () => await sut.ArchiveLocationAsync(caller, location.Id),
+            Throws.InstanceOf<ChemicalPermissionDeniedException>());
+        Assert.That(async () => await sut.ReorderLocationsAsync(caller, propertyId, [location.Id]),
+            Throws.InstanceOf<ChemicalPermissionDeniedException>());
+        Assert.That(async () => await sut.SaveLocationPhotoAsync(caller, location.Id, [1], "image/jpeg"),
+            Throws.InstanceOf<ChemicalPermissionDeniedException>());
+    }
+
+    [Test]
+    public async Task Update_RenameToAnotherActiveLocationsName_IsConflict()
+    {
+        var (propertyId, _, caller) = await WorkerWith(Locations);
+        await CreateLocationAsync(propertyId, "Kemirum");
+        var other = await CreateLocationAsync(propertyId, "Lade");
+
+        Assert.That(async () => await CreateInventoryService().UpdateLocationAsync(caller,
+                new ChemicalUpdateLocationCommand(other.Id, "kemirum", "", null)),
+            Throws.InstanceOf<ChemicalConflictException>());
+    }
+
+    [Test]
     public async Task Update_ChangesNameDescriptionAndSortOrder_ZeroKeepsOrder()
     {
-        var (propertyId, caller) = await WorkerWith(Locations);
+        var (propertyId, _, caller) = await WorkerWith(Locations);
         var location = await CreateLocationAsync(propertyId, "Old", sortOrder: 3);
         var sut = CreateInventoryService();
 
@@ -103,7 +124,7 @@ public class ChemicalLocationsTests : ChemicalTestBase
     [Test]
     public async Task Archive_WithAnOpenPlacement_IsPrecondition_EmptyLocationArchives()
     {
-        var (propertyId, caller) = await WorkerWith(Locations);
+        var (propertyId, _, caller) = await WorkerWith(Locations);
         var busy = await CreateLocationAsync(propertyId);
         var empty = await CreateLocationAsync(propertyId);
         await CreatePlacementAsync(busy.Id, chemicalId: 1);
@@ -120,7 +141,7 @@ public class ChemicalLocationsTests : ChemicalTestBase
     [Test]
     public async Task Reorder_SetsOneBasedOrder_AndRejectsIncompleteLists()
     {
-        var (propertyId, caller) = await WorkerWith(Locations);
+        var (propertyId, _, caller) = await WorkerWith(Locations);
         var a = await CreateLocationAsync(propertyId, sortOrder: 1);
         var b = await CreateLocationAsync(propertyId, sortOrder: 2);
         var c = await CreateLocationAsync(propertyId, sortOrder: 3);
@@ -136,7 +157,7 @@ public class ChemicalLocationsTests : ChemicalTestBase
     [Test]
     public async Task Photo_UploadThenRead_RoundTrips_ReadNeedsOnlyView()
     {
-        var (propertyId, admin) = await WorkerWith(Locations);
+        var (propertyId, _, admin) = await WorkerWith(Locations);
         var location = await CreateLocationAsync(propertyId);
         var viewer = await AddWorkerAsync(propertyId);
         await GrantAsync(propertyId, viewer, ChemicalPermissionFlagsModel.None with { View = true });
@@ -153,7 +174,7 @@ public class ChemicalLocationsTests : ChemicalTestBase
     [Test]
     public async Task Photo_OfAnArchivedLocation_StaysReadable_ForHistory()
     {
-        var (propertyId, caller) = await WorkerWith(Locations);
+        var (propertyId, _, caller) = await WorkerWith(Locations);
         var location = await CreateLocationAsync(propertyId);
         var sut = CreateInventoryService();
         await sut.SaveLocationPhotoAsync(caller, location.Id, [7, 8], "image/png");
@@ -168,12 +189,14 @@ public class ChemicalLocationsTests : ChemicalTestBase
     [Test]
     public async Task Photo_WrongTypeEmptyOrMissing_IsRejected()
     {
-        var (propertyId, caller) = await WorkerWith(Locations);
+        var (propertyId, _, caller) = await WorkerWith(Locations);
         var location = await CreateLocationAsync(propertyId);
         var sut = CreateInventoryService();
 
         Assert.That(async () => await sut.SaveLocationPhotoAsync(caller, location.Id, [1], "application/pdf"), Throws.InstanceOf<ArgumentException>());
         Assert.That(async () => await sut.SaveLocationPhotoAsync(caller, location.Id, [], "image/png"), Throws.InstanceOf<ArgumentException>());
+        Assert.That(async () => await sut.SaveLocationPhotoAsync(caller, location.Id, new byte[ChemicalInventoryService.MaxPhotoBytes + 1], "image/png"),
+            Throws.InstanceOf<ArgumentException>());
         Assert.That(async () => await sut.GetLocationPhotoAsync(caller, location.Id), Throws.InstanceOf<ChemicalNotFoundException>());
     }
 }

@@ -57,8 +57,7 @@ public partial class ChemicalInventoryService
 
     public async Task<ChemicalLocationModel> UpdateLocationAsync(ChemicalCaller caller, ChemicalUpdateLocationCommand command)
     {
-        var location = await LoadActiveLocationAsync(command.LocationId).ConfigureAwait(false);
-        await permissions.RequireAsync(caller, location.PropertyId, ChemicalPermission.ManageLocations).ConfigureAwait(false);
+        var location = await LoadManageableLocationAsync(caller, command.LocationId).ConfigureAwait(false);
         var name = RequireText(command.Name, "location name", MaxLocationNameLength, required: true);
         await EnsureLocationNameFreeAsync(location.PropertyId, name, location.Id).ConfigureAwait(false);
 
@@ -76,8 +75,7 @@ public partial class ChemicalInventoryService
 
     public async Task<ChemicalLocationModel> ArchiveLocationAsync(ChemicalCaller caller, int locationId)
     {
-        var location = await LoadActiveLocationAsync(locationId).ConfigureAwait(false);
-        await permissions.RequireAsync(caller, location.PropertyId, ChemicalPermission.ManageLocations).ConfigureAwait(false);
+        var location = await LoadManageableLocationAsync(caller, locationId).ConfigureAwait(false);
         var hasOpenPlacements = await dbContext.ChemicalPlacements
             .AnyAsync(p => p.LocationId == locationId && p.RemovedAt == null && p.WorkflowState != Removed)
             .ConfigureAwait(false);
@@ -104,18 +102,24 @@ public partial class ChemicalInventoryService
             throw new ArgumentException("The order must list every active location of the property exactly once.");
         }
 
-        for (var index = 0; index < orderedLocationIds.Count; index++)
+        // One transaction: a failure mid-loop must not leave a partial order.
+        await InTransactionAsync(async () =>
         {
-            var location = locations.Single(l => l.Id == orderedLocationIds[index]);
-            if (location.SortOrder == index + 1)
+            for (var index = 0; index < orderedLocationIds.Count; index++)
             {
-                continue;
+                var location = locations.Single(l => l.Id == orderedLocationIds[index]);
+                if (location.SortOrder == index + 1)
+                {
+                    continue;
+                }
+
+                location.SortOrder = index + 1;
+                location.UpdatedByUserId = caller.UserId;
+                await location.Update(dbContext).ConfigureAwait(false);
             }
 
-            location.SortOrder = index + 1;
-            location.UpdatedByUserId = caller.UserId;
-            await location.Update(dbContext).ConfigureAwait(false);
-        }
+            return true;
+        }).ConfigureAwait(false);
 
         return locations.OrderBy(l => l.SortOrder).Select(MapLocation).ToList();
     }
@@ -123,8 +127,7 @@ public partial class ChemicalInventoryService
     public async Task<ChemicalLocationModel> SaveLocationPhotoAsync(
         ChemicalCaller caller, int locationId, byte[] content, string contentType)
     {
-        var location = await LoadActiveLocationAsync(locationId).ConfigureAwait(false);
-        await permissions.RequireAsync(caller, location.PropertyId, ChemicalPermission.ManageLocations).ConfigureAwait(false);
+        var location = await LoadManageableLocationAsync(caller, locationId).ConfigureAwait(false);
         RequirePhoto(content, contentType);
 
         // A new name per upload: clients cache by photo_file_name.
@@ -162,6 +165,14 @@ public partial class ChemicalInventoryService
         var extension = Path.GetExtension(location.PhotoFileName).TrimStart('.');
         var contentType = PhotoExtensions.First(p => p.Value.Equals(extension, StringComparison.OrdinalIgnoreCase)).Key;
         return (buffer.ToArray(), contentType);
+    }
+
+    /// <summary>An active location the caller may manage (ManageLocations on its property).</summary>
+    private async Task<ChemicalLocation> LoadManageableLocationAsync(ChemicalCaller caller, int locationId)
+    {
+        var location = await LoadActiveLocationAsync(locationId).ConfigureAwait(false);
+        await permissions.RequireAsync(caller, location.PropertyId, ChemicalPermission.ManageLocations).ConfigureAwait(false);
+        return location;
     }
 
     private async Task EnsureLocationNameFreeAsync(int propertyId, string name, int? exceptLocationId)

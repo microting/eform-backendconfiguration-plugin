@@ -31,14 +31,6 @@ public class ChemicalAdminTests : ChemicalTestBase
 
     private static readonly ChemicalPermissionFlagsModel EverythingButAdmin = ChemicalPermissionFlagsModel.All with { Admin = false };
 
-    private async Task<(int PropertyId, int WorkerId, ChemicalCaller Caller)> WorkerWith(ChemicalPermissionFlagsModel flags)
-    {
-        var property = await CreatePropertyAsync();
-        var worker = await AddWorkerAsync(property.Id);
-        await GrantAsync(property.Id, worker, flags);
-        return (property.Id, worker, ChemicalCaller.App(TestUserId, worker));
-    }
-
     [Test]
     public async Task Settings_DefaultToStockOffAndNoRecipients()
     {
@@ -83,6 +75,19 @@ public class ChemicalAdminTests : ChemicalTestBase
 
         Assert.That(async () => await sut.GetSettingsAsync(caller, propertyId), Throws.InstanceOf<ChemicalPermissionDeniedException>());
         Assert.That(async () => await sut.ListWorkerPermissionsAsync(caller, propertyId), Throws.InstanceOf<ChemicalPermissionDeniedException>());
+    }
+
+    [Test]
+    public async Task SettingsAndPermissionWrites_NeedAdmin()
+    {
+        var (propertyId, workerId, caller) = await WorkerWith(EverythingButAdmin);
+        var sut = CreateInventoryService();
+
+        Assert.That(async () => await sut.SetSettingsAsync(caller, new ChemicalSetSettingsCommand(propertyId, true, [])),
+            Throws.InstanceOf<ChemicalPermissionDeniedException>());
+        Assert.That(async () => await sut.SetWorkerPermissionsAsync(caller, propertyId,
+                [new ChemicalSetWorkerPermissionCommand(workerId, ChemicalPermissionFlagsModel.All)]),
+            Throws.InstanceOf<ChemicalPermissionDeniedException>());
     }
 
     [Test]
