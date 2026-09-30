@@ -20,6 +20,8 @@ SOFTWARE.
 
 namespace BackendConfiguration.Pn.Services.ChemicalInventoryService;
 
+using System;
+
 /// <summary>
 /// chemicalbase.microting.com access (anonymous SDS downloads). Bound from the
 /// "ChemicalBase" section (env ChemicalBase__BaseUrl).
@@ -29,4 +31,7 @@ public class ChemicalBaseOptions
     public const string SectionName = "ChemicalBase";
 
     public string BaseUrl { get; set; } = "https://chemicalbase.microting.com";
+
+    /// <summary>Upper bound for one SDS download (env ChemicalBase__SdsDownloadTimeout, e.g. "00:00:30").</summary>
+    public TimeSpan SdsDownloadTimeout { get; set; } = TimeSpan.FromSeconds(30);
 }
