@@ -104,6 +104,21 @@ public class ChemicalAdminTests : ChemicalTestBase
     }
 
     [Test]
+    public async Task SetWorkerPermissions_NullFlags_MeanNoFlags_LikeTheGrpcMapper()
+    {
+        // A REST body item without "flags" binds Flags to null; gRPC maps a missing message to None.
+        var (propertyId, _, caller) = await WorkerWith(AdminOnly);
+        var target = await AddWorkerAsync(propertyId);
+        var sut = CreateInventoryService();
+        await sut.SetWorkerPermissionsAsync(caller, propertyId,
+            [new ChemicalSetWorkerPermissionCommand(target, ChemicalPermissionFlagsModel.None with { View = true })]);
+
+        var list = await sut.SetWorkerPermissionsAsync(caller, propertyId, [new ChemicalSetWorkerPermissionCommand(target, null!)]);
+
+        Assert.That(list.Single(w => w.WorkerId == target).Flags, Is.EqualTo(ChemicalPermissionFlagsModel.None));
+    }
+
+    [Test]
     public async Task SetWorkerPermissions_Upserts_AndRejectsUnknownOrDuplicateWorkers()
     {
         var (propertyId, _, caller) = await WorkerWith(AdminOnly);
