@@ -18,6 +18,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using BackendConfiguration.Pn.Infrastructure.Models.Chemicals;
 using BackendConfiguration.Pn.Services.ChemicalInventoryService;
 using Microsoft.EntityFrameworkCore;
 
@@ -78,11 +79,9 @@ public class ChemicalRegisterReaderTests : ChemicalTestBase
             sdsFileName: sdsFileName);
 
         var product = (await CreateSut().GetByIdsAsync([seeded.ChemicalId])).Single().Products.Single();
-        var reference = await CreateSut().FindProductAsync(seeded.ChemicalId, seeded.ProductId);
 
         Assert.That(product.SdsFileName, Is.Empty);
         Assert.That(product.SdsChecksum, Is.Empty);
-        Assert.That(reference.ProductFileName, Is.Empty);
         Assert.That(await CreateSut().FindSdsFileNameAsync(sdsFileName), Is.Null);
     }
 
@@ -214,9 +213,8 @@ public class ChemicalRegisterReaderTests : ChemicalTestBase
 
         var found = await CreateSut().FindProductAsync(a.ChemicalId, a.ProductId);
 
-        Assert.That(found.ChemicalRemoteId, Is.EqualTo(a.RemoteId));
-        Assert.That(found.ProductFileName, Is.EqualTo("f00d"));
-        Assert.That(found.Status, Is.EqualTo(5));
+        Assert.That(found, Is.EqualTo(new ChemicalProductRef(a.ChemicalId, 5, a.ProductId)));
+        Assert.That(await CreateSut().FindProductAsync(a.ChemicalId, null), Is.EqualTo(new ChemicalProductRef(a.ChemicalId, 5, null)));
         Assert.That(async () => await CreateSut().FindProductAsync(a.ChemicalId, b.ProductId), Throws.InstanceOf<ArgumentException>());
         Assert.That(async () => await CreateSut().FindProductAsync(int.MaxValue, null), Throws.InstanceOf<ChemicalNotFoundException>());
     }

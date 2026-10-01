@@ -41,7 +41,5 @@ public sealed record ChemicalRegisterEntryModel(
 
 public sealed record ChemicalRegisterPageModel(IReadOnlyList<ChemicalRegisterEntryModel> Entries, int Total);
 
-/// <summary>The identifiers of a chemical/product the writes need (validation, suggestions).</summary>
-public sealed record ChemicalProductRef(
-    int ChemicalId, string ChemicalRemoteId, string RegistrationNo, int? Status,
-    int? ProductId, string ProductName, string ProductFileName);
+/// <summary>What a placement write needs of a validated chemical/product pair.</summary>
+public sealed record ChemicalProductRef(int ChemicalId, int? Status, int? ProductId);

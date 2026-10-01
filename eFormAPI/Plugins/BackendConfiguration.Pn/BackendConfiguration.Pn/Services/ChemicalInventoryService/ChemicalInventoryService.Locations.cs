@@ -92,19 +92,20 @@ public partial class ChemicalInventoryService
     public async Task<IReadOnlyList<ChemicalLocationModel>> ReorderLocationsAsync(
         ChemicalCaller caller, int propertyId, IReadOnlyList<int> orderedLocationIds)
     {
-        await permissions.RequireAsync(caller, propertyId, ChemicalPermission.ManageLocations).ConfigureAwait(false);
-        var locations = await dbContext.ChemicalLocations
-            .Where(l => l.PropertyId == propertyId && l.WorkflowState != Removed)
-            .ToListAsync().ConfigureAwait(false);
-        if (orderedLocationIds.Count != locations.Count
-            || !orderedLocationIds.ToHashSet().SetEquals(locations.Select(l => l.Id)))
+        // One transaction: a failure mid-loop must not leave a partial order. The
+        // locations are loaded inside it so a retry starts from current rows.
+        return await InTransactionAsync(async () =>
         {
-            throw new ArgumentException("The order must list every active location of the property exactly once.");
-        }
+            await permissions.RequireAsync(caller, propertyId, ChemicalPermission.ManageLocations).ConfigureAwait(false);
+            var locations = await dbContext.ChemicalLocations
+                .Where(l => l.PropertyId == propertyId && l.WorkflowState != Removed)
+                .ToListAsync().ConfigureAwait(false);
+            if (orderedLocationIds.Count != locations.Count
+                || !orderedLocationIds.ToHashSet().SetEquals(locations.Select(l => l.Id)))
+            {
+                throw new ArgumentException("The order must list every active location of the property exactly once.");
+            }
 
-        // One transaction: a failure mid-loop must not leave a partial order.
-        await InTransactionAsync(async () =>
-        {
             for (var index = 0; index < orderedLocationIds.Count; index++)
             {
                 var location = locations.Single(l => l.Id == orderedLocationIds[index]);
@@ -118,10 +119,8 @@ public partial class ChemicalInventoryService
                 await location.Update(dbContext).ConfigureAwait(false);
             }
 
-            return true;
+            return (IReadOnlyList<ChemicalLocationModel>)locations.OrderBy(l => l.SortOrder).Select(MapLocation).ToList();
         }).ConfigureAwait(false);
-
-        return locations.OrderBy(l => l.SortOrder).Select(MapLocation).ToList();
     }
 
     public Task RequireCanManageLocationAsync(ChemicalCaller caller, int locationId) =>

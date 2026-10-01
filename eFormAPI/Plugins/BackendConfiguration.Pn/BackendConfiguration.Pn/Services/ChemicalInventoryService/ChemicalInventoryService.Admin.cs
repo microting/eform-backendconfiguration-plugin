@@ -91,23 +91,26 @@ public partial class ChemicalInventoryService
     public async Task<IReadOnlyList<ChemicalWorkerPermissionModel>> SetWorkerPermissionsAsync(
         ChemicalCaller caller, int propertyId, IReadOnlyList<ChemicalSetWorkerPermissionCommand> changes)
     {
-        await permissions.RequireAsync(caller, propertyId, ChemicalPermission.Admin).ConfigureAwait(false);
-        if (changes.Select(c => c.WorkerId).Distinct().Count() != changes.Count)
-        {
-            throw new ArgumentException("Each worker may appear only once.");
-        }
-
-        var assigned = (await AssignedWorkerIdsAsync(propertyId).ConfigureAwait(false)).ToHashSet();
-        var unknown = changes.FirstOrDefault(c => !assigned.Contains(c.WorkerId));
-        if (unknown != null)
-        {
-            throw new ArgumentException($"Worker {unknown.WorkerId} is not assigned to property {propertyId}.");
-        }
-
         await InTransactionAsync(async () =>
         {
+            await permissions.RequireAsync(caller, propertyId, ChemicalPermission.Admin).ConfigureAwait(false);
+            if (changes.Select(c => c.WorkerId).Distinct().Count() != changes.Count)
+            {
+                throw new ArgumentException("Each worker may appear only once.");
+            }
+
+            var assigned = (await AssignedWorkerIdsAsync(propertyId).ConfigureAwait(false)).ToHashSet();
+            var unknown = changes.FirstOrDefault(c => !assigned.Contains(c.WorkerId));
+            if (unknown != null)
+            {
+                throw new ArgumentException($"Worker {unknown.WorkerId} is not assigned to property {propertyId}.");
+            }
+
             foreach (var change in changes)
             {
+                // A missing flags object means no flags, as ChemicalsProtoMapper maps it for gRPC.
+                var flags = change.Flags ?? ChemicalPermissionFlagsModel.None;
+
                 // Unique on (PropertyId, WorkerId) including soft-deleted rows: upsert.
                 var row = await dbContext.ChemicalWorkerPermissions
                     .FirstOrDefaultAsync(p => p.PropertyId == propertyId && p.WorkerId == change.WorkerId)
@@ -119,12 +122,12 @@ public partial class ChemicalInventoryService
                         PropertyId = propertyId, WorkerId = change.WorkerId,
                         CreatedByUserId = caller.UserId, UpdatedByUserId = caller.UserId,
                     };
-                    ChemicalPermissionService.Apply(row, change.Flags);
+                    ChemicalPermissionService.Apply(row, flags);
                     await row.Create(dbContext).ConfigureAwait(false);
                     continue;
                 }
 
-                ChemicalPermissionService.Apply(row, change.Flags);
+                ChemicalPermissionService.Apply(row, flags);
                 row.WorkflowState = Constants.WorkflowStates.Created;
                 row.UpdatedByUserId = caller.UserId;
                 await row.Update(dbContext).ConfigureAwait(false);

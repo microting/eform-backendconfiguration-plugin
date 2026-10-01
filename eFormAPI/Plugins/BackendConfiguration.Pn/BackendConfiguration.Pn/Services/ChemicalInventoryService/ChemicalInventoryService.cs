@@ -117,15 +117,28 @@ public partial class ChemicalInventoryService(
     }
 
     /// <summary>
-    /// A user transaction inside the execution strategy: the plugin's DbContext
-    /// uses EnableRetryOnFailure, which refuses bare BeginTransaction (same
-    /// pattern as GoogleDriveAuthService).
+    /// One unit of work in a user transaction inside the execution strategy: the
+    /// plugin's DbContext uses EnableRetryOnFailure, which refuses bare
+    /// BeginTransaction (same pattern as GoogleDriveAuthService). A transient
+    /// failure (e.g. a Galera certification failure on COMMIT) rolls the
+    /// transaction back and the strategy runs <paramref name="work"/> again, so
+    /// <paramref name="work"/> must be the WHOLE unit: it loads and validates
+    /// everything it writes. Before a retry the change tracker is cleared, so the
+    /// retry re-reads current rows instead of reusing entities that still hold the
+    /// rolled-back values (PnBase.Update writes nothing for an entity it thinks is
+    /// unchanged, which would half-apply a move or lose a grant).
     /// </summary>
     private async Task<T> InTransactionAsync<T>(Func<Task<T>> work)
     {
         var strategy = dbContext.Database.CreateExecutionStrategy();
+        var attempt = 0;
         return await strategy.ExecuteAsync(async () =>
         {
+            if (attempt++ > 0)
+            {
+                dbContext.ChangeTracker.Clear();
+            }
+
             await using var transaction = await dbContext.Database.BeginTransactionAsync().ConfigureAwait(false);
             var result = await work().ConfigureAwait(false);
             await transaction.CommitAsync().ConfigureAwait(false);

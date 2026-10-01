@@ -121,23 +121,17 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
         var chemical = await chemicalsDbContext.Chemicals.AsNoTracking()
                            .Where(IsActiveChemical)
                            .Where(c => c.Id == chemicalId)
-                           .Select(c => new { c.Id, c.RemoteId, c.RegistrationNo, c.Status })
+                           .Select(c => new { c.Id, c.Status })
                            .FirstOrDefaultAsync().ConfigureAwait(false)
                        ?? throw new ChemicalNotFoundException($"Chemical {chemicalId} is not in the register.");
 
-        if (productId is null)
+        if (productId is not null
+            && !await ActiveProducts().AnyAsync(p => p.Id == productId && p.ChemicalId == chemicalId).ConfigureAwait(false))
         {
-            return new ChemicalProductRef(chemical.Id, chemical.RemoteId, chemical.RegistrationNo, chemical.Status, null, null, null);
+            throw new ArgumentException($"Product {productId} does not belong to chemical {chemicalId}.");
         }
 
-        var product = await ActiveProducts()
-                          .Where(p => p.Id == productId && p.ChemicalId == chemicalId)
-                          .Select(p => new { p.Id, p.Name, p.FileName })
-                          .FirstOrDefaultAsync().ConfigureAwait(false)
-                      ?? throw new ArgumentException($"Product {productId} does not belong to chemical {chemicalId}.");
-
-        return new ChemicalProductRef(chemical.Id, chemical.RemoteId, chemical.RegistrationNo, chemical.Status,
-            product.Id, product.Name, SdsFileName(product.FileName) ?? string.Empty);
+        return new ChemicalProductRef(chemical.Id, chemical.Status, productId);
     }
 
     public async Task<string> FindSdsFileNameAsync(string fileName)

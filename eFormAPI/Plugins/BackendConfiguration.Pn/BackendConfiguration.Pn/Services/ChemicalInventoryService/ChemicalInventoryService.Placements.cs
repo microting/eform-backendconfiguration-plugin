@@ -36,25 +36,29 @@ public partial class ChemicalInventoryService
     /// <summary>Client clocks drift; a date this far ahead of the server is still "now".</summary>
     private static readonly TimeSpan FutureTolerance = TimeSpan.FromMinutes(5);
 
+    // Every write below runs its loads and checks inside InTransactionAsync: a
+    // retried transaction must start from current rows, not from entities that
+    // still hold the values of the rolled-back attempt.
+
     public async Task<ChemicalPlacementChangeModel> RegisterPlacementAsync(ChemicalCaller caller, ChemicalRegisterPlacementCommand command)
     {
-        var location = await LoadActiveLocationAsync(command.LocationId).ConfigureAwait(false);
-        await permissions.RequireAsync(caller, location.PropertyId, ChemicalPermission.Register).ConfigureAwait(false);
-        var product = await register.FindProductAsync(command.ChemicalId, command.ProductId).ConfigureAwait(false);
-        var note = RequireText(command.PlacementNote, "placement note", MaxNoteLength, required: false);
-        var now = UtcNow();
-
-        // Built and validated before the transaction; its placement id is set once the placement exists.
-        ChemicalStockEntry initialEntry = null;
-        if (command.InitialStock is { } initial)
-        {
-            await RequireStockEnabledAsync(location.PropertyId).ConfigureAwait(false);
-            initialEntry = NewEntry(ChemicalStockEntryKindEnum.Received, ChemicalQuantity.ResolveMovedAmount(initial),
-                initial.Unit, caller, ResolveEntryTime(initial.At, now), initial);
-        }
-
         var placementId = await InTransactionAsync(async () =>
         {
+            var location = await LoadActiveLocationAsync(command.LocationId).ConfigureAwait(false);
+            await permissions.RequireAsync(caller, location.PropertyId, ChemicalPermission.Register).ConfigureAwait(false);
+            var product = await register.FindProductAsync(command.ChemicalId, command.ProductId).ConfigureAwait(false);
+            var note = RequireText(command.PlacementNote, "placement note", MaxNoteLength, required: false);
+            var now = UtcNow();
+
+            // Built and validated before the placement is written; its placement id is set once the placement exists.
+            ChemicalStockEntry initialEntry = null;
+            if (command.InitialStock is { } initial)
+            {
+                await RequireStockEnabledAsync(location.PropertyId).ConfigureAwait(false);
+                initialEntry = NewEntry(ChemicalStockEntryKindEnum.Received, ChemicalQuantity.ResolveMovedAmount(initial),
+                    initial.Unit, caller, ResolveEntryTime(initial.At, now), initial);
+            }
+
             var placement = new ChemicalPlacement
             {
                 LocationId = location.Id,
@@ -82,45 +86,45 @@ public partial class ChemicalInventoryService
 
     public async Task<ChemicalPlacementChangeModel> MovePlacementAsync(ChemicalCaller caller, ChemicalMovePlacementCommand command)
     {
-        var (source, propertyId) = await LoadOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Register)
-            .ConfigureAwait(false);
-        var target = await LoadActiveLocationAsync(command.TargetLocationId).ConfigureAwait(false);
-        if (target.PropertyId != propertyId)
-        {
-            throw new ArgumentException("A placement can only move to a location on the same property.");
-        }
-
-        if (target.Id == source.LocationId)
-        {
-            throw new ArgumentException("The placement is already at that location.");
-        }
-
-        var note = RequireText(command.TargetPlacementNote, "placement note", MaxNoteLength, required: false);
-        var (balance, unit) = await StockStateAsync(source.Id).ConfigureAwait(false);
-
-        var moved = balance;
-        if (command.Amount is { } requested)
-        {
-            if (unit is null)
-            {
-                throw new ArgumentException("Only a placement with stock can be moved in part.");
-            }
-
-            await RequireStockEnabledAsync(propertyId).ConfigureAwait(false);
-            ChemicalQuantity.RequireMoveAmount(requested);
-            if (requested > balance)
-            {
-                throw new ArgumentException("The amount to move exceeds the balance.");
-            }
-
-            moved = requested;
-        }
-
-        var partial = moved < balance;
-        var now = UtcNow();
-
         var ids = await InTransactionAsync(async () =>
         {
+            var (source, propertyId) = await LoadOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Register)
+                .ConfigureAwait(false);
+            var target = await LoadActiveLocationAsync(command.TargetLocationId).ConfigureAwait(false);
+            if (target.PropertyId != propertyId)
+            {
+                throw new ArgumentException("A placement can only move to a location on the same property.");
+            }
+
+            if (target.Id == source.LocationId)
+            {
+                throw new ArgumentException("The placement is already at that location.");
+            }
+
+            var note = RequireText(command.TargetPlacementNote, "placement note", MaxNoteLength, required: false);
+            var (balance, unit) = await StockStateAsync(source.Id).ConfigureAwait(false);
+
+            var moved = balance;
+            if (command.Amount is { } requested)
+            {
+                if (unit is null)
+                {
+                    throw new ArgumentException("Only a placement with stock can be moved in part.");
+                }
+
+                await RequireStockEnabledAsync(propertyId).ConfigureAwait(false);
+                ChemicalQuantity.RequireMoveAmount(requested);
+                if (requested > balance)
+                {
+                    throw new ArgumentException("The amount to move exceeds the balance.");
+                }
+
+                moved = requested;
+            }
+
+            var partial = moved < balance;
+            var now = UtcNow();
+
             var created = new ChemicalPlacement
             {
                 LocationId = target.Id,
@@ -162,19 +166,19 @@ public partial class ChemicalInventoryService
             throw new ArgumentException("Removal needs the reason Used or Disposed; Moved is set by a move.");
         }
 
-        var (placement, _) = await LoadOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Remove)
-            .ConfigureAwait(false);
-        var removedAt = ResolveEntryTime(command.RemovedAt, UtcNow());
-        if (removedAt < placement.RegisteredAt)
+        var placementId = await InTransactionAsync(async () =>
         {
-            throw new ArgumentException("The removal date is before the placement was registered.");
-        }
+            var (placement, _) = await LoadOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Remove)
+                .ConfigureAwait(false);
+            var removedAt = ResolveEntryTime(command.RemovedAt, UtcNow());
+            if (removedAt < placement.RegisteredAt)
+            {
+                throw new ArgumentException("The removal date is before the placement was registered.");
+            }
 
-        var note = RequireText(command.Note, "note", MaxNoteLength, required: false);
-        var (balance, unit) = await StockStateAsync(placement.Id).ConfigureAwait(false);
+            var note = RequireText(command.Note, "note", MaxNoteLength, required: false);
+            var (balance, unit) = await StockStateAsync(placement.Id).ConfigureAwait(false);
 
-        await InTransactionAsync(async () =>
-        {
             if (balance != 0 && unit is { } stockUnit)
             {
                 var writeOff = command.Reason == ChemicalRemovalReasonEnum.Used
@@ -184,10 +188,10 @@ public partial class ChemicalInventoryService
             }
 
             await ClosePlacementAsync(placement, command.Reason, removedAt, note, caller).ConfigureAwait(false);
-            return true;
+            return placement.Id;
         }).ConfigureAwait(false);
 
-        return await ChangeResultAsync([placement.Id]).ConfigureAwait(false);
+        return await ChangeResultAsync([placementId]).ConfigureAwait(false);
     }
 
     public async Task<ChemicalPlacementChangeModel> UpdatePlacementNoteAsync(ChemicalCaller caller, int placementId, string placementNote)
@@ -207,50 +211,51 @@ public partial class ChemicalInventoryService
             throw new ArgumentException("Only Received, Consumed and Adjusted entries can be added; moves write their own.");
         }
 
-        var (placement, propertyId) = await LoadOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Stock)
-            .ConfigureAwait(false);
-        await RequireStockEnabledAsync(propertyId).ConfigureAwait(false);
-
-        var amount = command.Amount ?? throw new ArgumentException("An amount is required.");
-        ChemicalQuantity.RequireUnit(amount.Unit);
-        var (balance, unit) = await StockStateAsync(placement.Id).ConfigureAwait(false);
-        if (unit is { } existing && existing != amount.Unit)
+        var placementId = await InTransactionAsync(async () =>
         {
-            throw new ArgumentException($"This placement is counted in {existing}; use the same unit.");
-        }
+            var (placement, propertyId) = await LoadOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Stock)
+                .ConfigureAwait(false);
+            await RequireStockEnabledAsync(propertyId).ConfigureAwait(false);
 
-        decimal delta;
-        switch (command.Kind)
-        {
-            case ChemicalStockEntryKindEnum.Received:
-                delta = ChemicalQuantity.ResolveMovedAmount(amount);
-                break;
-            case ChemicalStockEntryKindEnum.Consumed:
-                var consumed = ChemicalQuantity.ResolveMovedAmount(amount);
-                if (consumed > balance)
-                {
-                    throw new ArgumentException("The consumption exceeds the balance.");
-                }
+            var amount = command.Amount ?? throw new ArgumentException("An amount is required.");
+            ChemicalQuantity.RequireUnit(amount.Unit);
+            var (balance, unit) = await StockStateAsync(placement.Id).ConfigureAwait(false);
+            if (unit is { } existing && existing != amount.Unit)
+            {
+                throw new ArgumentException($"This placement is counted in {existing}; use the same unit.");
+            }
 
-                delta = -consumed;
-                break;
-            default:
-                delta = ChemicalQuantity.ResolveCountedBalance(amount) - balance;
-                if (delta == 0)
-                {
-                    throw new ArgumentException("The adjustment does not change the balance.");
-                }
+            decimal delta;
+            switch (command.Kind)
+            {
+                case ChemicalStockEntryKindEnum.Received:
+                    delta = ChemicalQuantity.ResolveMovedAmount(amount);
+                    break;
+                case ChemicalStockEntryKindEnum.Consumed:
+                    var consumed = ChemicalQuantity.ResolveMovedAmount(amount);
+                    if (consumed > balance)
+                    {
+                        throw new ArgumentException("The consumption exceeds the balance.");
+                    }
 
-                break;
-        }
+                    delta = -consumed;
+                    break;
+                default:
+                    delta = ChemicalQuantity.ResolveCountedBalance(amount) - balance;
+                    if (delta == 0)
+                    {
+                        throw new ArgumentException("The adjustment does not change the balance.");
+                    }
 
-        var at = ResolveEntryTime(amount.At, UtcNow());
-        await InTransactionAsync(async () =>
-        {
+                    break;
+            }
+
+            var at = ResolveEntryTime(amount.At, UtcNow());
             await AddEntryAsync(placement.Id, command.Kind, delta, amount.Unit, caller, at, amount).ConfigureAwait(false);
-            return true;
+            return placement.Id;
         }).ConfigureAwait(false);
-        return await ChangeResultAsync([placement.Id]).ConfigureAwait(false);
+
+        return await ChangeResultAsync([placementId]).ConfigureAwait(false);
     }
 
     // ---- shared with the sync (Task 13) ----
