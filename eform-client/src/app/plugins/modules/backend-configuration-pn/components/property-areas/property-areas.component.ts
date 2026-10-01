@@ -17,7 +17,7 @@ import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
-import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
+import {selectAuthIsAdmin, selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
@@ -46,12 +46,6 @@ export class PropertyAreasComponent implements OnInit, OnDestroy {
       href: '/plugins/backend-configuration-pn/properties',
     },
     {name: ''},
-  ];
-  disabledAreas: string[] = [
-    '21. DANISH Standard',
-    '100. Diverse',
-    '25. Kemisk APV',
-    '00. Aflæsninger, målinger, forbrug og fækale uheld'
   ];
 
   tableHeaders: MtxGridColumn[] = [
@@ -93,7 +87,7 @@ export class PropertyAreasComponent implements OnInit, OnDestroy {
   updatePropertyAreasSub$: Subscription;
   onUpdatePropertyAreasSub$: Subscription;
   public isAuth$ = this.store.select(selectAuthIsAuth);
-  public selectAuthIsAdmin$ = this.store.select(selectAuthIsAuth);
+  public selectAuthIsAdmin$ = this.store.select(selectAuthIsAdmin);
 
   
 
@@ -128,10 +122,9 @@ export class PropertyAreasComponent implements OnInit, OnDestroy {
       .getPropertyAreas(selectedPropertyId)
       .subscribe((data) => {
         if (data && data.success) {
-          let isAdmin = false;
-          this.selectAuthIsAdmin$.subscribe(x => isAdmin = x);
-          this.selectedPropertyAreas = data.model
-            .filter(x => (!this.disabledAreas.includes(x.name) || isAdmin) && x.activated);
+          // Every activated area is listed for every user; which areas a
+          // non-admin may switch on is decided in the (admin-only) edit modal.
+          this.selectedPropertyAreas = data.model.filter(x => x.activated);
         }
       });
   }

@@ -14,8 +14,9 @@ import {AuthStateService} from 'src/app/common/store';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TranslateService} from '@ngx-translate/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
-import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
+import {selectAuthIsAdmin, selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
+import {take} from 'rxjs';
 
 @Component({
     selector: 'app-property-edit-areas-modal',
@@ -53,13 +54,13 @@ export class PropertyAreasEditModalComponent implements OnInit {
     '100. Diverse',
   ];
   public isAuth$ = this.store.select(selectAuthIsAuth);
-  private selectAuthIsAdmin$ = this.store.select(selectAuthIsAuth);
+  private selectAuthIsAdmin$ = this.store.select(selectAuthIsAdmin);
 
   
 
   ngOnInit() {
     this.selectedProperty = {...this.model.selectedProperty, languagesIds: []};
-    this.selectAuthIsAdmin$.subscribe((isAdmin) => {
+    this.selectAuthIsAdmin$.pipe(take(1)).subscribe((isAdmin) => {
       this.selectedPropertyAreas = this.model.propertyAreas
         .filter(x => (!this.disabledAreas.includes(x.name) || isAdmin));
     });

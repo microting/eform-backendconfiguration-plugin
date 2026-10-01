@@ -21,7 +21,7 @@ import {TranslateService} from '@ngx-translate/core';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper, getRandomInt} from 'src/app/common/helpers';
-import {Subscription} from 'rxjs';
+import {Subscription, take} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {format, isValid, parseISO} from 'date-fns';
 import {selectAuthIsAdmin, selectAuthIsAuth, selectCurrentUserFullName} from 'src/app/state/auth/auth.selector';
@@ -159,7 +159,7 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy, After
         };
       });
       let isAdmin = false;
-      this.selectAuthIsAdmin$.subscribe((selectAuthIsAdmin$) => isAdmin = selectAuthIsAdmin$);
+      this.selectAuthIsAdmin$.pipe(take(1)).subscribe((admin) => isAdmin = admin);
       const tableHeaders = [...(isAdmin ? [...this.adminTableHeaders] : [...this.tableHeaders])];
 
       this.mergedTableHeaders = [
@@ -195,7 +195,7 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy, After
   ) {
     this.newPostModal.caseId = caseId;
     this.newPostModal.efmroId = eformId;
-    this.selectCurrentUserFullName$.subscribe((selectCurrentUserFullName$) =>
+    this.selectCurrentUserFullName$.pipe(take(1)).subscribe((selectCurrentUserFullName$) =>
       this.newPostModal.currentUserFullName = selectCurrentUserFullName$);
     this.newPostModal.pdfReportAvailable = pdfReportAvailable;
     this.newPostModal.show();

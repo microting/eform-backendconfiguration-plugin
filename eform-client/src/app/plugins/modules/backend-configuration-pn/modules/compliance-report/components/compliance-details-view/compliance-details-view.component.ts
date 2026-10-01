@@ -3,6 +3,7 @@ import {TemplatePortal} from '@angular/cdk/portal';
 import {
   Component,
   ElementRef,
+  Input,
   NgZone,
   OnDestroy,
   OnInit,
@@ -68,6 +69,8 @@ const HIGHLIGHT_MS = 2200;
 })
 export class ComplianceDetailsViewComponent implements OnInit, OnDestroy {
   @ViewChild('deleteConfirmTpl') deleteConfirmTpl!: TemplateRef<unknown>;
+  /** Deleting a log is admin-only (enforced server-side); the page passes the role in. */
+  @Input() canDeleteLogs = false;
 
   readonly emptyCell = COMPLIANCE_EMPTY_CELL;
 
@@ -302,10 +305,10 @@ export class ComplianceDetailsViewComponent implements OnInit, OnDestroy {
   /**
    * The delete action. Completed rows never had one here (status quo), and
    * #1300 removes it from uncompleted FUTURE rows too — the server refuses
-   * that delete (`FutureTaskCannotBeDeleted`).
+   * that delete (`FutureTaskCannotBeDeleted`). Admin only.
    */
   canDeleteRow(row: ComplianceReportRowModel): boolean {
-    return !row.isProjected && !row.completed && !isFutureTask(row.taskDate);
+    return this.canDeleteLogs && !row.isProjected && !row.completed && !isFutureTask(row.taskDate);
   }
 
   /**

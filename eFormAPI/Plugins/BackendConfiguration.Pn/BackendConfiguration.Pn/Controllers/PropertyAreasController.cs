@@ -25,6 +25,7 @@ using System.Threading.Tasks;
 using Infrastructure.Models.PropertyAreas;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 using Microting.eForm.Infrastructure.Models;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Services.BackendConfigurationPropertyAreasService;
@@ -49,6 +50,7 @@ public class PropertyAreasController : Controller
 
     [HttpPut]
     [Route("property-areas")]
+    [Authorize(Roles = EformRole.Admin)]
     public Task<OperationResult> Update([FromBody] PropertyAreasUpdateModel updateModel)
     {
         return _backendConfigurationPropertyAreasService.Update(updateModel);

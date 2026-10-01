@@ -20,7 +20,7 @@ import {dialogConfigHelper} from 'src/app/common/helpers';
 import {Subscription, take} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {format, parseISO} from 'date-fns';
-import {selectAuthIsAuth, selectCurrentUserFullName} from 'src/app/state';
+import {selectAuthIsAdmin, selectAuthIsAuth, selectCurrentUserFullName} from 'src/app/state';
 import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
@@ -89,7 +89,7 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
 
   caseDeleteComponentComponentAfterClosedSub$: Subscription;
   public isAuth$ = this.store.select(selectAuthIsAuth);
-  private selectAuthIsAdmin$ = this.store.select(selectAuthIsAuth);
+  private selectAuthIsAdmin$ = this.store.select(selectAuthIsAdmin);
   private selectCurrentUserFullName$ = this.store.select(selectCurrentUserFullName);
 
   
@@ -147,7 +147,7 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
   ) {
     this.newPostModal.caseId = caseId;
     this.newPostModal.efmroId = eformId;
-    this.selectCurrentUserFullName$.subscribe((selectCurrentUserFullName$) =>
+    this.selectCurrentUserFullName$.pipe(take(1)).subscribe((selectCurrentUserFullName$) =>
       this.newPostModal.currentUserFullName = selectCurrentUserFullName$);
     this.newPostModal.pdfReportAvailable = pdfReportAvailable;
     this.newPostModal.show();

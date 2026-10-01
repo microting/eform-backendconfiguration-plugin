@@ -19,7 +19,8 @@ import {AuthStateService} from 'src/app/common/store';
 import {AreaRulesStateService} from '../store';
 import {Sort} from '@angular/material/sort';
 import * as R from 'ramda';
-import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
+import {selectAuthIsAdmin, selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
+import {take} from 'rxjs';
 import {Store} from '@ngrx/store';
 import {
   selectAreaRulesPaginationIsSortDsc,
@@ -358,12 +359,10 @@ export class AreaRulesTableComponent implements OnChanges, OnInit {
   repeatEveryTypeWeek: { id: number; name: string; }[] = [];
   repeatEveryTypeMonth: { id: number; name: string; }[] = [];
   repeatEveryTypeDay: { id: number; name: string; }[] = [];
-  private selectAuthIsAdmin$ = this.store.select(selectAuthIsAuth);
+  private isAdmin = false;
 
   getColumns(): MtxGridColumn[] {
-    let isAdmin = false;
-    this.selectAuthIsAdmin$.subscribe((selectAuthIsAdmin$) => isAdmin = selectAuthIsAdmin$);
-    if (!isAdmin) {
+    if (!this.isAdmin) {
       this.tableHeaderAdmin = [];
     }
 
@@ -396,6 +395,8 @@ export class AreaRulesTableComponent implements OnChanges, OnInit {
 
 
   constructor() {
+    // Read once: getColumns() runs on every change detection.
+    this.store.select(selectAuthIsAdmin).pipe(take(1)).subscribe((isAdmin) => this.isAdmin = isAdmin);
   }
 
 

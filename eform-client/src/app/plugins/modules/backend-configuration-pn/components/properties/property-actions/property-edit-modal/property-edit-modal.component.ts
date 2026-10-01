@@ -14,7 +14,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
 import { Store } from '@ngrx/store';
-import { selectAuthIsAuth } from 'src/app/state/auth/auth.selector';
+import { selectAuthIsAdmin } from 'src/app/state/auth/auth.selector';
 
 @AutoUnsubscribe()
 @Component({
@@ -38,7 +38,7 @@ export class PropertyEditModalComponent implements OnInit, OnDestroy {
 
   getChrInformationSub$: Subscription;
   getCompanyTypeSub$: Subscription;
-  public selectAuthIsAdmin$ = this.store.select(selectAuthIsAuth);
+  public selectAuthIsAdmin$ = this.store.select(selectAuthIsAdmin);
 
   
 

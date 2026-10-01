@@ -89,6 +89,8 @@ describe('ComplianceDetailsViewComponent — future tasks (#1300)', () => {
 
     fixture = TestBed.createComponent(ComplianceDetailsViewComponent);
     component = fixture.componentInstance;
+    // The page passes the admin role in; these cases run as an admin.
+    component.canDeleteLogs = true;
     state = TestBed.inject(ComplianceReportStateService);
     state.setMode('details');
     fixture.detectChanges();
@@ -139,6 +141,15 @@ describe('ComplianceDetailsViewComponent — future tasks (#1300)', () => {
     expect(rowEl(2).getAttribute('tabindex')).toBe('0');
 
     expect(deleteButton(3)).not.toBeNull();
+  });
+
+  it('renders no delete button for a non-admin', () => {
+    component.canDeleteLogs = false;
+    render([row(2, '2026-09-18'), row(3, '2026-09-17')]);
+
+    expect(component.canDeleteRow(row(2, '2026-09-18'))).toBe(false);
+    expect(deleteButton(2)).toBeNull();
+    expect(deleteButton(3)).toBeNull();
   });
 
   it('does not open the complete modal for a future row', () => {

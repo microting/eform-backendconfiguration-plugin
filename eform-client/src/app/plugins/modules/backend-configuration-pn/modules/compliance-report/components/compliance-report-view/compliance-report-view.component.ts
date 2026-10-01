@@ -1,5 +1,5 @@
 import {Overlay} from '@angular/cdk/overlay';
-import {Component, ElementRef, NgZone, OnDestroy, OnInit, TemplateRef, ViewChild} from '@angular/core';
+import {Component, ElementRef, Input, NgZone, OnDestroy, OnInit, TemplateRef, ViewChild} from '@angular/core';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Router} from '@angular/router';
 import {TranslateService} from '@ngx-translate/core';
@@ -201,6 +201,8 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
   @ViewChild('imagesTpl', {static: true}) imagesTpl!: TemplateRef<unknown>;
   @ViewChild('actionsTpl', {static: true}) actionsTpl!: TemplateRef<unknown>;
   @ViewChild('deleteConfirmTpl', {static: true}) deleteConfirmTpl!: TemplateRef<unknown>;
+  /** Deleting a log is admin-only (enforced server-side); the page passes the role in. */
+  @Input() canDeleteLogs = false;
 
   readonly emptyCell = COMPLIANCE_EMPTY_CELL;
 
@@ -954,7 +956,7 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
    * not-completed rows only (compliance.js:1246 vs :1652).
    */
   openDeleteConfirm(row: ComplianceReportRowVm): void {
-    if (!this.canDelete(row)) {
+    if (!this.canDeleteLogs || !this.canDelete(row)) {
       return;
     }
     this.pendingDeleteId = row.complianceId;

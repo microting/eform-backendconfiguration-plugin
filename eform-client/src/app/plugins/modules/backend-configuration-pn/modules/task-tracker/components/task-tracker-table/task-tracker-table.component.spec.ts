@@ -6,6 +6,7 @@ import {ActivatedRoute, Router} from '@angular/router';
 import {Store} from '@ngrx/store';
 import {TranslateService} from '@ngx-translate/core';
 import {of} from 'rxjs';
+import {selectCurrentUserIsAdmin} from 'src/app/state';
 import {TaskModel} from '../../../../models';
 import {TaskTrackerStateService} from '../store';
 import {TaskTrackerTableComponent} from './task-tracker-table.component';
@@ -23,6 +24,7 @@ import {TaskTrackerTableComponent} from './task-tracker-table.component';
 describe('TaskTrackerTableComponent — Delete Case gate (#1300)', () => {
   let component: TaskTrackerTableComponent;
   let dialogOpen: jest.Mock;
+  let isAdmin: boolean;
 
   const task = (deadlineTaskUtc: string, overrides: Partial<TaskModel> = {}): TaskModel =>
     ({
@@ -37,12 +39,13 @@ describe('TaskTrackerTableComponent — Delete Case gate (#1300)', () => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date('2026-09-18T10:00:00Z'));
     dialogOpen = jest.fn(() => ({afterClosed: () => of(false)}));
+    isAdmin = true;
 
     TestBed.configureTestingModule({
       providers: [
         {provide: MatDialog, useValue: {open: dialogOpen}},
         {provide: Overlay, useValue: {scrollStrategies: {reposition: jest.fn()}}},
-        {provide: Store, useValue: {select: jest.fn(() => of(false))}},
+        {provide: Store, useValue: {select: jest.fn((selector: unknown) => of(selector === selectCurrentUserIsAdmin ? isAdmin : false))}},
         {provide: TranslateService, useValue: {stream: jest.fn(() => of('')), instant: jest.fn((k: string) => k)}},
         {provide: TaskTrackerStateService, useValue: {}},
         {provide: ActivatedRoute, useValue: {}},
@@ -69,6 +72,12 @@ describe('TaskTrackerTableComponent — Delete Case gate (#1300)', () => {
   it('keeps the existing wizard / expired-folder conditions', () => {
     expect(component.canDeleteTask(task('2026-09-10T00:00:00Z', {createdInWizard: false}))).toBe(false);
     expect(component.canDeleteTask(task('2026-09-10T00:00:00Z', {movedToExpiredFolder: true}))).toBe(false);
+  });
+
+  it('withholds Delete Case from a non-admin', () => {
+    isAdmin = false;
+    const nonAdmin = TestBed.runInInjectionContext(() => new TaskTrackerTableComponent());
+    expect(nonAdmin.canDeleteTask(task('2026-09-10T00:00:00Z'))).toBe(false);
   });
 
   it('does not open the delete dialog for a future task even if invoked directly', () => {
