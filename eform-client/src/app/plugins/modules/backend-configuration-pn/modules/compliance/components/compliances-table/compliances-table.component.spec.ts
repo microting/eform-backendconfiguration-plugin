@@ -83,9 +83,11 @@ describe('CompliancesTableComponent — future tasks (#1300)', () => {
     [true, true],
     [false, false],
   ])('admin=%s → the delete action is in the grid: %s', (admin, hasDelete) => {
+    // The component selects the flag at construction, so build it after setting the role.
     isAdmin = admin;
-    component.ngOnInit();
-    const actions = component.mergedTableHeaders.find((h) => h.field === 'actions')!;
+    const table = TestBed.runInInjectionContext(() => new CompliancesTableComponent());
+    table.ngOnInit();
+    const actions = table.mergedTableHeaders.find((h) => h.field === 'actions')!;
     expect((actions.buttons as any[]).some((b) => b.icon === 'delete')).toBe(hasDelete);
   });
 
