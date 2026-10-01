@@ -30,7 +30,9 @@ using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.ChemicalInventoryService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Const;
@@ -50,6 +52,8 @@ public class ChemicalsControllerTests
 {
     private const int UserId = 5;
 
+    private static readonly ChemicalCaller Web = ChemicalCaller.Web(UserId);
+
     private IChemicalInventoryService _inventory;
 
     private ChemicalsController CreateSut()
@@ -61,8 +65,6 @@ public class ChemicalsControllerTests
         localization.GetString(Arg.Any<string>()).Returns(ci => ci.Arg<string>());
         return new ChemicalsController(_inventory, userService, localization);
     }
-
-    private static readonly ChemicalCaller Web = ChemicalCaller.Web(UserId);
 
     [Test]
     public void Controller_RequiresTheBackendConfigurationPluginPolicy()
@@ -219,6 +221,8 @@ public class ChemicalsControllerTests
         var result = await sut.UploadLocationPhoto(4, file);
 
         Assert.That(result.Success, Is.False);
+        Assert.That(result.Message, Does.Contain("The photo exceeds 20 MB."));
+        await _inventory.DidNotReceiveWithAnyArgs().RequireCanManageLocationAsync(default, default);
         await file.DidNotReceiveWithAnyArgs().CopyToAsync(default, default);
         await _inventory.DidNotReceiveWithAnyArgs().SaveLocationPhotoAsync(default, default, default, default);
     }
@@ -233,6 +237,128 @@ public class ChemicalsControllerTests
         var result = await sut.UploadLocationPhoto(4, file);
 
         Assert.That(result.Success, Is.False);
+        Assert.That(result.Message, Does.Contain("The photo is empty."));
+        await _inventory.DidNotReceiveWithAnyArgs().RequireCanManageLocationAsync(default, default);
+        await file.DidNotReceiveWithAnyArgs().CopyToAsync(default, default);
         await _inventory.DidNotReceiveWithAnyArgs().SaveLocationPhotoAsync(default, default, default, default);
+    }
+
+    [Test]
+    public void UploadPhoto_LimitsTheRequestToThePhotoLimitPlusTheMultipartEnvelope()
+    {
+        // The host lifts Kestrel's limit to 100 MB and the multipart limit to long.MaxValue,
+        // so without these the form binder would spool up to 100 MB before the action runs.
+        var method = typeof(ChemicalsController).GetMethod(nameof(ChemicalsController.UploadLocationPhoto))!;
+        const long expected = ChemicalInventoryService.MaxPhotoBytes + 1024 * 1024;
+
+        var sizeLimit = method.GetCustomAttribute<RequestSizeLimitAttribute>();
+        var formLimits = method.GetCustomAttribute<RequestFormLimitsAttribute>();
+
+        Assert.That(((IRequestSizeLimitMetadata)sizeLimit)?.MaxRequestBodySize, Is.EqualTo(expected));
+        Assert.That(formLimits?.MultipartBodyLengthLimit, Is.EqualTo(expected));
+    }
+
+    // ---- file routes map the typed outcomes like the gRPC adapter ----
+
+    [Test]
+    public async Task Sds_MalformedNameIs400()
+    {
+        var sut = CreateSut();
+        _inventory.GetSdsPdfAsync(Web, "../x").ThrowsAsync(new ArgumentException("bad name"));
+
+        var result = await sut.GetSds("../x");
+
+        Assert.That(((IStatusCodeActionResult)result).StatusCode, Is.EqualTo(StatusCodes.Status400BadRequest));
+    }
+
+    [Test]
+    public async Task Sds_ChemicalbaseUnavailableIs503()
+    {
+        var sut = CreateSut();
+        _inventory.GetSdsPdfAsync(Web, "abc").ThrowsAsync(new ChemicalUnavailableException("chemicalbase is down"));
+
+        var result = await sut.GetSds("abc");
+
+        Assert.That(((IStatusCodeActionResult)result).StatusCode, Is.EqualTo(StatusCodes.Status503ServiceUnavailable));
+    }
+
+    [Test]
+    public async Task GetLocationPhoto_ServesTheStoredContentType()
+    {
+        var sut = CreateSut();
+        _inventory.GetLocationPhotoAsync(Web, 4).Returns((new byte[] { 1, 2 }, "image/png"));
+
+        var file = (FileContentResult)await sut.GetLocationPhoto(4);
+
+        Assert.That(file.ContentType, Is.EqualTo("image/png"));
+        Assert.That(file.FileContents, Is.EqualTo(new byte[] { 1, 2 }));
+    }
+
+    // ---- expected outcomes are not Sentry events; only unexpected ones are ----
+
+    [Test]
+    public void ExpectedStatusCode_ClassifiesTheTypedOutcomesLikeTheGrpcAdapter()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(ChemicalsController.ExpectedStatusCode(new ChemicalNotFoundException("x")), Is.EqualTo(404));
+            Assert.That(ChemicalsController.ExpectedStatusCode(new ArgumentException("x")), Is.EqualTo(400));
+            Assert.That(ChemicalsController.ExpectedStatusCode(new ArgumentNullException("x")), Is.EqualTo(400));
+            Assert.That(ChemicalsController.ExpectedStatusCode(new ChemicalPermissionDeniedException("x")), Is.EqualTo(403));
+            Assert.That(ChemicalsController.ExpectedStatusCode(new ChemicalPreconditionException("x")), Is.EqualTo(409));
+            Assert.That(ChemicalsController.ExpectedStatusCode(new ChemicalConflictException("x")), Is.EqualTo(409));
+            Assert.That(ChemicalsController.ExpectedStatusCode(new ChemicalUnavailableException("x")), Is.EqualTo(503));
+            Assert.That(ChemicalsController.ExpectedStatusCode(new InvalidOperationException("x")), Is.Null);
+            Assert.That(ChemicalsController.ExpectedStatusCode(new NullReferenceException()), Is.Null);
+        });
+    }
+
+    [Test]
+    public async Task UnexpectedFailures_StillBecomeUnsuccessfulResults()
+    {
+        var sut = CreateSut();
+        _inventory.GetSettingsAsync(Web, 1).ThrowsAsync(new InvalidOperationException("boom"));
+
+        var result = await sut.GetSettings(1);
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Message, Does.Contain("ErrorWhileReadingChemicalSettings").And.Contain("boom"));
+    }
+
+    // ---- a missing or malformed JSON body binds to null ----
+
+    [Test]
+    public async Task MissingBody_IsAnInvalidArgument_NotANullReference()
+    {
+        var sut = CreateSut();
+        const string bodyRequired = "A request body is required.";
+
+        var results = new[]
+        {
+            (await sut.RegisterPlacement(null)).Message,
+            (await sut.MovePlacement(7, null)).Message,
+            (await sut.RemovePlacement(7, null)).Message,
+            (await sut.UpdatePlacementNote(7, null)).Message,
+            (await sut.AddStockEntry(7, null)).Message,
+            (await sut.CreateLocation(null)).Message,
+            (await sut.UpdateLocation(4, null)).Message,
+            (await sut.ReorderLocations(1, null)).Message,
+            (await sut.SavePermissions(1, null)).Message,
+            (await sut.SaveSettings(1, null)).Message,
+        };
+
+        Assert.That(results, Has.All.Contain(bodyRequired));
+        Assert.That(_inventory.ReceivedCalls(), Is.Empty);
+    }
+
+    [Test]
+    public async Task SaveSettings_MissingRecipients_SavesAnEmptyList()
+    {
+        var sut = CreateSut();
+
+        await sut.SaveSettings(1, new ChemicalSettingsBody(true, null));
+
+        await _inventory.Received(1).SetSettingsAsync(Web,
+            Arg.Is<ChemicalSetSettingsCommand>(c => c.PropertyId == 1 && c.StockEnabled && c.DigestRecipients.Count == 0));
     }
 }
