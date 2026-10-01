@@ -3,9 +3,9 @@ import {MatDialog} from '@angular/material/dialog';
 import {ActivatedRoute, Router} from '@angular/router';
 import {TranslateService} from '@ngx-translate/core';
 import {Store} from '@ngrx/store';
-import {Subject} from 'rxjs';
+import {Observable, Subject} from 'rxjs';
 import {finalize, take, takeUntil} from 'rxjs/operators';
-import {selectAuthUser} from 'src/app/state/auth/auth.selector';
+import {selectAuthIsAdmin, selectAuthUser} from 'src/app/state/auth/auth.selector';
 import {saveAs} from 'file-saver';
 import {ComplianceReportExportRequestModel} from '../../../../models';
 import {BackendConfigurationPnComplianceReportService} from '../../../../services';
@@ -53,6 +53,9 @@ export class ComplianceReportPageComponent implements OnInit, OnDestroy {
    */
   exporting = false;
 
+  /** Deleting a log is admin-only; Detaljer and Rapport show the action to an admin. */
+  isAdmin$: Observable<boolean>;
+
   /** The deferred removal of `?highlightId=` from the URL — see `ngOnInit`. */
   private clearHighlightTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -64,7 +67,9 @@ export class ComplianceReportPageComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private store: Store,
-  ) {}
+  ) {
+    this.isAdmin$ = this.store.select(selectAuthIsAdmin);
+  }
 
   ngOnInit(): void {
     // Land on a populated Oversigt rather than a placeholder: Oversigt is one

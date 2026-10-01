@@ -15,8 +15,8 @@ import {Overlay} from '@angular/cdk/overlay';
 import {
   ComplianceDeleteComponent
 } from '../compliance-delete/compliance-delete.component';
-import {Subscription} from 'rxjs';
-import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
+import {Subscription, take} from 'rxjs';
+import {selectAuthIsAdmin, selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
 import {isFutureLegacyDeadline} from '../../../../helpers';
 
@@ -145,18 +145,14 @@ export class CompliancesTableComponent implements OnInit {
   @Input() isComplianceThirtyDays: boolean;
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
   public isAuth$ = this.store.select(selectAuthIsAuth);
-  private selectAuthIsAdmin$ = this.store.select(selectAuthIsAuth);
+  private selectAuthIsAdmin$ = this.store.select(selectAuthIsAdmin);
 
   
 
   ngOnInit(): void {
-    let isAdmin = false;
-    this.selectAuthIsAdmin$.subscribe((selectAuthIsAdmin$) => isAdmin = selectAuthIsAdmin$);
-    if (isAdmin) {
-      this.mergedTableHeaders = this.adminTableHeaders;
-    } else {
-      this.mergedTableHeaders = this.tableHeaders;
-    }
+    // Only an admin gets the delete action (and the CreatedAt column).
+    this.selectAuthIsAdmin$.pipe(take(1)).subscribe((isAdmin) =>
+      this.mergedTableHeaders = isAdmin ? this.adminTableHeaders : this.tableHeaders);
   }
 
   getColorBadge(compliance: PropertyCompliancesColorBadgesEnum): string {

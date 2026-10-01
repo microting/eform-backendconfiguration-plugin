@@ -78,21 +78,22 @@
         <mat-icon>list</mat-icon>
         <span>{{ 'Edit list of areas for task management' | translate }}</span>
       </button>
+      <!-- Editing and deleting a property are admin-only (enforced server-side). -->
       <button
+        *ngIf="selectAuthIsAdmin$ | async"
         mat-menu-item
         id="editPropertyBtn-{{i}}"
         (click)="onShowEditPropertyModal(row)"
-        [disabled]="!authStateService.checkClaim('property_edit') && (selectAuthIsAdmin$ | async) !== true"
       >
         <mat-icon fontSet="material-symbols-outlined">edit_square</mat-icon>
         <span>{{ 'Edit property' | translate }}</span>
       </button>
       <button
+        *ngIf="selectAuthIsAdmin$ | async"
         mat-menu-item
         id="deletePropertyBtn-{{i}}"
         class="btn-delete-menu"
         (click)="onShowDeletePropertyModal(row)"
-        [disabled]="!authStateService.checkClaim('property_delete') && (selectAuthIsAdmin$ | async) !== true"
       >
         <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
         <span>{{ 'Delete property' | translate }}</span>

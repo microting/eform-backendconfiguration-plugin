@@ -72,10 +72,10 @@
         <app-compliance-overview-view></app-compliance-overview-view>
       </ng-container>
       <ng-container *ngSwitchCase="'details'">
-        <app-compliance-details-view></app-compliance-details-view>
+        <app-compliance-details-view [canDeleteLogs]="(isAdmin$ | async) === true"></app-compliance-details-view>
       </ng-container>
       <ng-container *ngSwitchCase="'report'">
-        <app-compliance-report-view></app-compliance-report-view>
+        <app-compliance-report-view [canDeleteLogs]="(isAdmin$ | async) === true"></app-compliance-report-view>
       </ng-container>
     </ng-container>
   </mat-card>

@@ -6,6 +6,7 @@ import {Store} from '@ngrx/store';
 import {TranslateService} from '@ngx-translate/core';
 import {of} from 'rxjs';
 import {AuthStateService} from 'src/app/common/store';
+import {selectAuthIsAdmin} from 'src/app/state/auth/auth.selector';
 import {ComplianceModel} from '../../../../models';
 import {CompliancesStateService} from '../store';
 import {CompliancesTableComponent} from './compliances-table.component';
@@ -23,15 +24,18 @@ import {CompliancesTableComponent} from './compliances-table.component';
 describe('CompliancesTableComponent — future tasks (#1300)', () => {
   let component: CompliancesTableComponent;
   let dialogOpen: jest.Mock;
+  let isAdmin: boolean;
 
   beforeEach(() => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date('2026-09-18T10:00:00Z'));
     dialogOpen = jest.fn(() => ({afterClosed: () => of(false)}));
+    isAdmin = true;
 
     TestBed.configureTestingModule({
       providers: [
-        {provide: Store, useValue: {select: jest.fn(() => of(true))}},
+        // Signed in (every selector truthy) except where a case flips the admin role.
+        {provide: Store, useValue: {select: jest.fn((selector: unknown) => of(selector === selectAuthIsAdmin ? isAdmin : true))}},
         {provide: CompliancesStateService, useValue: {}},
         {provide: AuthStateService, useValue: {}},
         {provide: TranslateService, useValue: {stream: jest.fn(() => of(''))}},
@@ -73,6 +77,16 @@ describe('CompliancesTableComponent — future tasks (#1300)', () => {
     const row = (deadline: string) => ({deadline: new Date(deadline)}) as ComplianceModel;
     expect(deleteBtn.iif(row('2026-09-18T00:00:00Z'))).toBe(false);
     expect(deleteBtn.iif(row('2026-09-17T00:00:00Z'))).toBe(true);
+  });
+
+  it.each([
+    [true, true],
+    [false, false],
+  ])('admin=%s → the delete action is in the grid: %s', (admin, hasDelete) => {
+    isAdmin = admin;
+    component.ngOnInit();
+    const actions = component.mergedTableHeaders.find((h) => h.field === 'actions')!;
+    expect((actions.buttons as any[]).some((b) => b.icon === 'delete')).toBe(hasDelete);
   });
 
   it('does not open the delete dialog for a future row even if invoked directly', () => {

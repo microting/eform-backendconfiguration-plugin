@@ -5,7 +5,6 @@ import {Paged, TableHeaderElementModel} from 'src/app/common/models';
 import {PropertyModel} from '../../../../models/properties';
 import {PropertiesStateService} from '../../store';
 import {PropertyCompliancesColorBadgesEnum} from 'src/app/plugins/modules/backend-configuration-pn/enums';
-import {AuthStateService} from 'src/app/common/store';
 import {EntitySelectService} from 'src/app/common/services';
 import {Sort} from '@angular/material/sort';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
@@ -14,7 +13,7 @@ import {MatIconRegistry} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
 import {WordIcon} from 'src/app/common/const';
 import { ThemePalette } from '@angular/material/core';
-import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
+import {selectAuthIsAdmin, selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
 import {
   selectPropertiesNameFilters,
@@ -33,7 +32,6 @@ export class PropertiesTableComponent implements OnInit {
   private store = inject(Store);
   public propertiesStateService = inject(PropertiesStateService);
   private entitySelectService = inject(EntitySelectService);
-  public authStateService = inject(AuthStateService);
 
   @Input() nameSearchSubject = new Subject();
   @Input() propertiesModel: Paged<PropertyModel> = new Paged<PropertyModel>();
@@ -56,7 +54,7 @@ export class PropertiesTableComponent implements OnInit {
   @Output()
   showEditEntityListModal: EventEmitter<PropertyModel> = new EventEmitter<PropertyModel>();
   public isAuth$ = this.store.select(selectAuthIsAuth);
-  public selectAuthIsAdmin$ = this.store.select(selectAuthIsAuth);
+  public selectAuthIsAdmin$ = this.store.select(selectAuthIsAdmin);
   public selectPropertiesPaginationSort$ = this.store.select(selectPropertiesPaginationSort);
   public selectPropertiesPaginationIsSortDsc$ = this.store.select(selectPropertiesPaginationIsSortDsc);
   public selectPropertiesNameFilters$ = this.store.select(selectPropertiesNameFilters);

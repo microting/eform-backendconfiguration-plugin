@@ -4,6 +4,7 @@ import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {Store} from '@ngrx/store';
 import {TranslateService} from '@ngx-translate/core';
+import {selectAuthIsAdmin} from 'src/app/state';
 
 // The plugin components barrel ('../../../components', imported by
 // report-table.component.ts for CaseDeleteComponent) re-exports
@@ -35,8 +36,9 @@ describe('ReportTableComponent', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        // selectAuthIsAuth drives isAdmin (take(1) in the constructor).
-        {provide: Store, useValue: {select: jest.fn().mockReturnValue(of(false))}},
+        // A signed-in non-admin: every selector is truthy except selectAuthIsAdmin,
+        // which drives isAdmin (take(1) in the constructor).
+        {provide: Store, useValue: {select: jest.fn((selector: unknown) => of(selector !== selectAuthIsAdmin))}},
         {provide: TranslateService, useValue: {stream: (key: string) => of(key)}},
         {provide: MatDialog, useValue: {open: jest.fn()}},
         {provide: Overlay, useValue: {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}}},

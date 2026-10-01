@@ -31,6 +31,7 @@ using Infrastructure.Helpers;
 using Infrastructure.Models.Properties;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 using Services.BackendConfigurationPropertiesService;
@@ -68,12 +69,14 @@ public class PropertiesController : Controller
     }
 
     [HttpPut]
+    [Authorize(Roles = EformRole.Admin)]
     public Task<OperationResult> Update([FromBody] PropertiesUpdateModel updateModel)
     {
         return _backendConfigurationPropertiesService.Update(updateModel);
     }
 
     [HttpDelete]
+    [Authorize(Roles = EformRole.Admin)]
     public Task<OperationResult> Delete(int propertyId)
     {
         return _backendConfigurationPropertiesService.Delete(propertyId);

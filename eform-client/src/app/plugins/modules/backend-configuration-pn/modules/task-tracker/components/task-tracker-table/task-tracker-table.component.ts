@@ -28,7 +28,7 @@ import {
   ComplianceDeleteComponent
 } from 'src/app/plugins/modules/backend-configuration-pn/modules/compliance/components';
 import {dialogConfigHelper} from 'src/app/common/helpers';
-import {Subscription} from 'rxjs';
+import {Subscription, take} from 'rxjs';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {isFutureLegacyDeadline} from '../../../../helpers';
@@ -49,6 +49,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges, AfterViewCh
   private router = inject(Router);
   private el = inject(ElementRef);
   public selectCurrentUserIsAdmin$ = this.store.select(selectCurrentUserIsAdmin);
+  private isAdmin = false;
 
   @Input() columnsFromDb: Columns;
   @Input() tasks: TaskModel[] = [];
@@ -105,13 +106,14 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges, AfterViewCh
    * after today. Every task-tracker row is an uncompleted occurrence.
    * `deadlineTask` is the DISPLAYED deadline (`Compliance.Deadline − 1 day`);
    * `isFutureLegacyDeadline` adds the day back so this matches the server.
+   * Deleting is admin-only (enforced server-side).
    */
   canDeleteTask(row: TaskModel): boolean {
-    return !!row.createdInWizard && !row.movedToExpiredFolder && !isFutureLegacyDeadline(row.deadlineTask);
+    return this.isAdmin && !!row.createdInWizard && !row.movedToExpiredFolder && !isFutureLegacyDeadline(row.deadlineTask);
   }
 
   onShowDeleteComplianceModal(item: TaskModel) {
-    if (isFutureLegacyDeadline(item?.deadlineTask)) {
+    if (!this.isAdmin || isFutureLegacyDeadline(item?.deadlineTask)) {
       return;
     }
     let complianceModel = new ComplianceModel();
@@ -135,6 +137,10 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges, AfterViewCh
   };
   private selectCurrentUserFullName$ = this.store.select(selectCurrentUserFullName);
   private currentUserFullName: string;
+
+  constructor() {
+    this.selectCurrentUserIsAdmin$.pipe(take(1)).subscribe((isAdmin) => this.isAdmin = isAdmin);
+  }
 
   ngOnInit(): void {
     // this.taskTrackerStateService.getFiltersAsync().subscribe(filters => {

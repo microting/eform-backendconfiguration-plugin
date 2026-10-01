@@ -245,6 +245,7 @@
 <!--
   HANDLINGER. Both buttons on EVERY row — the divergence from Detaljer, which
   renders delete for not-completed rows only (compliance.js:1246 vs :1652).
+  `Slet` is shown to an admin only.
 
   `Rediger` is disabled for a not-completed case, and the tooltip sits on the
   WRAPPER: a disabled button fires no pointer events, so a matTooltip on the
@@ -272,9 +273,10 @@
     <!--
       `Slet` is disabled for an uncompleted FUTURE task (#1300); as with
       `Rediger`, the tooltip sits on the wrapper so it still shows while the
-      button is disabled.
+      button is disabled. Admin only.
     -->
     <span
+      *ngIf="canDeleteLogs"
       [matTooltip]="
         (canDelete(row) ? 'Delete log' : 'Future tasks cannot be completed or deleted yet') | translate
       "

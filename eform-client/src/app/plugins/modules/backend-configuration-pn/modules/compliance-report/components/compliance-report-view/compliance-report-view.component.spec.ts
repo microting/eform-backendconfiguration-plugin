@@ -1281,6 +1281,8 @@ describe('ComplianceReportViewComponent — delete returns to the next row', () 
 
     fixture = TestBed.createComponent(ComplianceReportViewComponent);
     component = fixture.componentInstance;
+    // The page passes the admin role in; deleting is admin-only.
+    component.canDeleteLogs = true;
     state = TestBed.inject(ComplianceReportStateService);
     state.setMode('report');
     fixture.detectChanges();
@@ -1707,6 +1709,8 @@ describe('ComplianceReportViewComponent — future tasks cannot be deleted (#130
 
     fixture = TestBed.createComponent(ComplianceReportViewComponent);
     component = fixture.componentInstance;
+    // The page passes the admin role in; deleting is admin-only.
+    component.canDeleteLogs = true;
     state = TestBed.inject(ComplianceReportStateService);
     state.setMode('report');
     fixture.detectChanges();
@@ -1748,6 +1752,12 @@ describe('ComplianceReportViewComponent — future tasks cannot be deleted (#130
   it('opens the confirm dialog for today\'s row', () => {
     component.openDeleteConfirm(rowById(2));
     expect(dialogOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not open the confirm dialog for a non-admin', () => {
+    component.canDeleteLogs = false;
+    component.openDeleteConfirm(rowById(2));
+    expect(dialogOpen).not.toHaveBeenCalled();
   });
 });
 

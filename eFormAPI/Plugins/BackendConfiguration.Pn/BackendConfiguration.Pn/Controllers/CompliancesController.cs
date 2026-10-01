@@ -27,6 +27,7 @@ namespace BackendConfiguration.Pn.Controllers;
 using Infrastructure.Models.Compliances.Index;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Application.Case.CaseEdit;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
@@ -68,6 +69,7 @@ public class CompliancesController : Controller
 
     [HttpDelete]
     [Route("delete/{id}")]
+    [Authorize(Roles = EformRole.Admin)]
     public Task<OperationResult> Delete(int id)
     {
         return _backendConfigurationCompliancesService.Delete(id);
