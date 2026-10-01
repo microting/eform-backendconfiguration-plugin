@@ -57,131 +57,89 @@ public class ChemicalsGrpcService(
     /// <summary>Upload ceiling: the inventory service's own photo limit, enforced while the stream is read.</summary>
     private const int MaxUploadBytes = Services.ChemicalInventoryService.ChemicalInventoryService.MaxPhotoBytes;
 
-    public override async Task<ChemicalInventoryResponse> GetMyInventory(ChemicalInventoryRequest request, ServerCallContext context)
-    {
-        var caller = await ResolveCallerAsync().ConfigureAwait(false);
-        return ToProto(await RunAsync(() => inventory.GetInventoryAsync(caller, request.Since)).ConfigureAwait(false));
-    }
+    public override async Task<ChemicalInventoryResponse> GetMyInventory(ChemicalInventoryRequest request, ServerCallContext context) =>
+        ToProto(await RunAsync(caller => inventory.GetInventoryAsync(caller, request.Since)).ConfigureAwait(false));
 
     public override async Task GetSdsPdf(ChemicalSdsPdfRequest request, IServerStreamWriter<ChemicalFileChunk> responseStream,
         ServerCallContext context)
     {
-        var caller = await ResolveCallerAsync().ConfigureAwait(false);
-        var content = await RunAsync(() => inventory.GetSdsPdfAsync(caller, request.FileName)).ConfigureAwait(false);
+        var content = await RunAsync(caller => inventory.GetSdsPdfAsync(caller, request.FileName)).ConfigureAwait(false);
         await WriteFileAsync(responseStream, content, "application/pdf", request.Offset, context.CancellationToken).ConfigureAwait(false);
     }
 
     public override async Task GetLocationPhoto(ChemicalLocationPhotoRequest request, IServerStreamWriter<ChemicalFileChunk> responseStream,
         ServerCallContext context)
     {
-        var caller = await ResolveCallerAsync().ConfigureAwait(false);
-        var (content, contentType) = await RunAsync(() => inventory.GetLocationPhotoAsync(caller, request.LocationId)).ConfigureAwait(false);
+        var (content, contentType) = await RunAsync(caller => inventory.GetLocationPhotoAsync(caller, request.LocationId)).ConfigureAwait(false);
         await WriteFileAsync(responseStream, content, contentType, request.Offset, context.CancellationToken).ConfigureAwait(false);
     }
 
     public override async Task<ChemicalRegisterSearchResponse> LookupBarcode(ChemicalLookupBarcodeRequest request, ServerCallContext context)
     {
-        var caller = await ResolveCallerAsync().ConfigureAwait(false);
-        var entries = await RunAsync(() => inventory.LookupBarcodeAsync(caller, request.Barcode)).ConfigureAwait(false);
+        var entries = await RunAsync(caller => inventory.LookupBarcodeAsync(caller, request.Barcode)).ConfigureAwait(false);
         return ToProto(new ChemicalRegisterPageModel(entries, entries.Count));
     }
 
-    public override async Task<ChemicalRegisterSearchResponse> SearchRegister(ChemicalSearchRegisterRequest request, ServerCallContext context)
-    {
-        var caller = await ResolveCallerAsync().ConfigureAwait(false);
-        return ToProto(await RunAsync(() => inventory.SearchRegisterAsync(caller, request.Query, request.Page, request.PageSize))
+    public override async Task<ChemicalRegisterSearchResponse> SearchRegister(ChemicalSearchRegisterRequest request, ServerCallContext context) =>
+        ToProto(await RunAsync(caller => inventory.SearchRegisterAsync(caller, request.Query, request.Page, request.PageSize))
             .ConfigureAwait(false));
-    }
 
-    public override async Task<ChemicalPlacementChangeResponse> RegisterPlacement(ChemicalRegisterPlacementRequest request, ServerCallContext context)
-    {
-        var caller = await ResolveCallerAsync().ConfigureAwait(false);
-        var command = new ChemicalRegisterPlacementCommand(request.LocationId, request.ChemicalId, OptionalId(request.ProductId),
-            request.PlacementNote, FromProto(request.InitialStock));
-        return ToProto(await RunAsync(() => inventory.RegisterPlacementAsync(caller, command)).ConfigureAwait(false));
-    }
+    // Commands are built inside RunAsync: a malformed timestamp or amount is an
+    // ArgumentException there, and so INVALID_ARGUMENT rather than UNKNOWN.
 
-    public override async Task<ChemicalPlacementChangeResponse> MovePlacement(ChemicalMovePlacementRequest request, ServerCallContext context)
-    {
-        var caller = await ResolveCallerAsync().ConfigureAwait(false);
-        var command = new ChemicalMovePlacementCommand(request.PlacementId, request.TargetLocationId, request.TargetPlacementNote,
-            request.AmountMilli == 0 ? null : ChemicalQuantity.FromMilli(request.AmountMilli));
-        return ToProto(await RunAsync(() => inventory.MovePlacementAsync(caller, command)).ConfigureAwait(false));
-    }
+    public override async Task<ChemicalPlacementChangeResponse> RegisterPlacement(ChemicalRegisterPlacementRequest request, ServerCallContext context) =>
+        ToProto(await RunAsync(caller => inventory.RegisterPlacementAsync(caller, new ChemicalRegisterPlacementCommand(
+            request.LocationId, request.ChemicalId, OptionalId(request.ProductId), request.PlacementNote,
+            FromProto(request.InitialStock)))).ConfigureAwait(false));
 
-    public override async Task<ChemicalPlacementChangeResponse> RemovePlacement(ChemicalRemovePlacementRequest request, ServerCallContext context)
-    {
-        var caller = await ResolveCallerAsync().ConfigureAwait(false);
-        var command = new ChemicalRemovePlacementCommand(request.PlacementId, (ChemicalRemovalReasonEnum)(int)request.Reason,
-            FromProto(request.RemovedAt), request.Note);
-        return ToProto(await RunAsync(() => inventory.RemovePlacementAsync(caller, command)).ConfigureAwait(false));
-    }
+    public override async Task<ChemicalPlacementChangeResponse> MovePlacement(ChemicalMovePlacementRequest request, ServerCallContext context) =>
+        ToProto(await RunAsync(caller => inventory.MovePlacementAsync(caller, new ChemicalMovePlacementCommand(
+            request.PlacementId, request.TargetLocationId, request.TargetPlacementNote,
+            request.AmountMilli == 0 ? null : ChemicalQuantity.FromMilli(request.AmountMilli)))).ConfigureAwait(false));
+
+    public override async Task<ChemicalPlacementChangeResponse> RemovePlacement(ChemicalRemovePlacementRequest request, ServerCallContext context) =>
+        ToProto(await RunAsync(caller => inventory.RemovePlacementAsync(caller, new ChemicalRemovePlacementCommand(
+            request.PlacementId, FromProto(request.Reason), FromProto(request.RemovedAt), request.Note))).ConfigureAwait(false));
 
     public override async Task<ChemicalPlacementChangeResponse> UpdatePlacementNote(ChemicalUpdatePlacementNoteRequest request,
-        ServerCallContext context)
-    {
-        var caller = await ResolveCallerAsync().ConfigureAwait(false);
-        return ToProto(await RunAsync(() => inventory.UpdatePlacementNoteAsync(caller, request.PlacementId, request.PlacementNote))
+        ServerCallContext context) =>
+        ToProto(await RunAsync(caller => inventory.UpdatePlacementNoteAsync(caller, request.PlacementId, request.PlacementNote))
             .ConfigureAwait(false));
-    }
 
-    public override async Task<ChemicalPlacementChangeResponse> AddStockEntry(ChemicalAddStockEntryRequest request, ServerCallContext context)
-    {
-        var caller = await ResolveCallerAsync().ConfigureAwait(false);
-        var command = new ChemicalAddStockEntryCommand(request.PlacementId, (ChemicalStockEntryKindEnum)(int)request.Kind,
-            FromProto(request.Amount));
-        return ToProto(await RunAsync(() => inventory.AddStockEntryAsync(caller, command)).ConfigureAwait(false));
-    }
+    public override async Task<ChemicalPlacementChangeResponse> AddStockEntry(ChemicalAddStockEntryRequest request, ServerCallContext context) =>
+        ToProto(await RunAsync(caller => inventory.AddStockEntryAsync(caller, new ChemicalAddStockEntryCommand(
+            request.PlacementId, FromProto(request.Kind), FromProto(request.Amount)))).ConfigureAwait(false));
 
-    public override async Task<ChemicalLocationResponse> CreateLocation(ChemicalCreateLocationRequest request, ServerCallContext context)
-    {
-        var caller = await ResolveCallerAsync().ConfigureAwait(false);
-        var command = new ChemicalCreateLocationCommand(request.PropertyId, request.Name, request.Description, OptionalId(request.SortOrder));
-        return new ChemicalLocationResponse
-        {
-            Location = ToProto(await RunAsync(() => inventory.CreateLocationAsync(caller, command)).ConfigureAwait(false)),
-        };
-    }
+    public override async Task<ChemicalLocationResponse> CreateLocation(ChemicalCreateLocationRequest request, ServerCallContext context) =>
+        ToLocationResponse(await RunAsync(caller => inventory.CreateLocationAsync(caller, new ChemicalCreateLocationCommand(
+            request.PropertyId, request.Name, request.Description, OptionalId(request.SortOrder)))).ConfigureAwait(false));
 
-    public override async Task<ChemicalLocationResponse> UpdateLocation(ChemicalUpdateLocationRequest request, ServerCallContext context)
-    {
-        var caller = await ResolveCallerAsync().ConfigureAwait(false);
-        var command = new ChemicalUpdateLocationCommand(request.LocationId, request.Name, request.Description, OptionalId(request.SortOrder));
-        return new ChemicalLocationResponse
-        {
-            Location = ToProto(await RunAsync(() => inventory.UpdateLocationAsync(caller, command)).ConfigureAwait(false)),
-        };
-    }
+    public override async Task<ChemicalLocationResponse> UpdateLocation(ChemicalUpdateLocationRequest request, ServerCallContext context) =>
+        ToLocationResponse(await RunAsync(caller => inventory.UpdateLocationAsync(caller, new ChemicalUpdateLocationCommand(
+            request.LocationId, request.Name, request.Description, OptionalId(request.SortOrder)))).ConfigureAwait(false));
 
-    public override async Task<ChemicalLocationResponse> ArchiveLocation(ChemicalArchiveLocationRequest request, ServerCallContext context)
-    {
-        var caller = await ResolveCallerAsync().ConfigureAwait(false);
-        return new ChemicalLocationResponse
-        {
-            Location = ToProto(await RunAsync(() => inventory.ArchiveLocationAsync(caller, request.LocationId)).ConfigureAwait(false)),
-        };
-    }
+    public override async Task<ChemicalLocationResponse> ArchiveLocation(ChemicalArchiveLocationRequest request, ServerCallContext context) =>
+        ToLocationResponse(await RunAsync(caller => inventory.ArchiveLocationAsync(caller, request.LocationId)).ConfigureAwait(false));
 
     public override async Task<ChemicalLocationResponse> UploadLocationPhoto(IAsyncStreamReader<ChemicalLocationPhotoUploadChunk> requestStream,
-        ServerCallContext context)
-    {
-        var caller = await ResolveCallerAsync().ConfigureAwait(false);
-        var (meta, content) = await ReadMetaThenBytesAsync(requestStream,
-            c => c.KindCase == ChemicalLocationPhotoUploadChunk.KindOneofCase.Meta ? c.Meta : null,
-            c => c.KindCase == ChemicalLocationPhotoUploadChunk.KindOneofCase.Chunk ? c.Chunk : null,
-            context.CancellationToken).ConfigureAwait(false);
-        return new ChemicalLocationResponse
+        ServerCallContext context) =>
+        ToLocationResponse(await RunAsync(async caller =>
         {
-            Location = ToProto(await RunAsync(() => inventory.SaveLocationPhotoAsync(caller, meta.LocationId, content, meta.ContentType))
-                .ConfigureAwait(false)),
-        };
-    }
+            var meta = await ReadMetaAsync(requestStream,
+                c => c.KindCase == ChemicalLocationPhotoUploadChunk.KindOneofCase.Meta ? c.Meta : null,
+                context.CancellationToken).ConfigureAwait(false);
+            // Refuse before buffering up to MaxUploadBytes; SaveLocationPhotoAsync checks again.
+            await inventory.RequireCanManageLocationAsync(caller, meta.LocationId).ConfigureAwait(false);
+            var content = await ReadBytesAsync(requestStream,
+                c => c.KindCase == ChemicalLocationPhotoUploadChunk.KindOneofCase.Chunk ? c.Chunk : null,
+                context.CancellationToken).ConfigureAwait(false);
+            return await inventory.SaveLocationPhotoAsync(caller, meta.LocationId, content, meta.ContentType).ConfigureAwait(false);
+        }).ConfigureAwait(false));
 
     public override async Task<ChemicalListWorkerPermissionsResponse> ListWorkerPermissions(ChemicalListWorkerPermissionsRequest request,
         ServerCallContext context)
     {
-        var caller = await ResolveCallerAsync().ConfigureAwait(false);
-        var workers = await RunAsync(() => inventory.ListWorkerPermissionsAsync(caller, request.PropertyId)).ConfigureAwait(false);
+        var workers = await RunAsync(caller => inventory.ListWorkerPermissionsAsync(caller, request.PropertyId)).ConfigureAwait(false);
         var response = new ChemicalListWorkerPermissionsResponse();
         response.Workers.AddRange(workers.Select(ToProto));
         return response;
@@ -190,24 +148,17 @@ public class ChemicalsGrpcService(
     public override async Task<ChemicalWorkerPermissionEntry> SetWorkerPermission(ChemicalSetWorkerPermissionRequest request,
         ServerCallContext context)
     {
-        var caller = await ResolveCallerAsync().ConfigureAwait(false);
-        var workers = await RunAsync(() => inventory.SetWorkerPermissionsAsync(caller, request.PropertyId,
+        var workers = await RunAsync(caller => inventory.SetWorkerPermissionsAsync(caller, request.PropertyId,
             [new ChemicalSetWorkerPermissionCommand(request.WorkerId, FromProto(request.Flags))])).ConfigureAwait(false);
         return ToProto(workers.Single(w => w.WorkerId == request.WorkerId));
     }
 
-    public override async Task<ChemicalSettings> GetPropertySettings(ChemicalPropertySettingsRequest request, ServerCallContext context)
-    {
-        var caller = await ResolveCallerAsync().ConfigureAwait(false);
-        return ToProto(await RunAsync(() => inventory.GetSettingsAsync(caller, request.PropertyId)).ConfigureAwait(false));
-    }
+    public override async Task<ChemicalSettings> GetPropertySettings(ChemicalPropertySettingsRequest request, ServerCallContext context) =>
+        ToProto(await RunAsync(caller => inventory.GetSettingsAsync(caller, request.PropertyId)).ConfigureAwait(false));
 
-    public override async Task<ChemicalSettings> SetPropertySettings(ChemicalSetPropertySettingsRequest request, ServerCallContext context)
-    {
-        var caller = await ResolveCallerAsync().ConfigureAwait(false);
-        var command = new ChemicalSetSettingsCommand(request.PropertyId, request.StockEnabled, request.DigestRecipients.ToList());
-        return ToProto(await RunAsync(() => inventory.SetSettingsAsync(caller, command)).ConfigureAwait(false));
-    }
+    public override async Task<ChemicalSettings> SetPropertySettings(ChemicalSetPropertySettingsRequest request, ServerCallContext context) =>
+        ToProto(await RunAsync(caller => inventory.SetSettingsAsync(caller,
+            new ChemicalSetSettingsCommand(request.PropertyId, request.StockEnabled, request.DigestRecipients.ToList()))).ConfigureAwait(false));
 
     // ---------------------------------------------------------------- helpers
 
@@ -223,11 +174,16 @@ public class ChemicalsGrpcService(
         return ChemicalCaller.App(userService.UserId, workerId);
     }
 
-    private static async Task<T> RunAsync<T>(Func<Task<T>> action)
+    /// <summary>
+    /// Resolves the caller first (UNAUTHENTICATED passes straight through), then
+    /// runs <paramref name="action"/> and maps typed failures to status codes.
+    /// </summary>
+    private async Task<T> RunAsync<T>(Func<ChemicalCaller, Task<T>> action)
     {
+        var caller = await ResolveCallerAsync().ConfigureAwait(false);
         try
         {
-            return await action().ConfigureAwait(false);
+            return await action(caller).ConfigureAwait(false);
         }
         catch (ChemicalNotFoundException e)
         {
@@ -255,7 +211,7 @@ public class ChemicalsGrpcService(
         }
     }
 
-    /// <summary>One meta message, 128 KB chunks from <paramref name="offset"/>, one trailer with the whole file's md5.</summary>
+    /// <summary>One meta message, FileChunkSize chunks from <paramref name="offset"/>, one trailer with the whole file's md5.</summary>
     private static async Task WriteFileAsync(IServerStreamWriter<ChemicalFileChunk> stream, byte[] content, string contentType,
         long offset, CancellationToken cancellationToken)
     {
@@ -282,10 +238,9 @@ public class ChemicalsGrpcService(
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Client-stream uploads: exactly one meta message first, then byte chunks only.</summary>
-    private static async Task<(TMeta Meta, byte[] Content)> ReadMetaThenBytesAsync<TChunk, TMeta>(
-        IAsyncStreamReader<TChunk> requestStream, Func<TChunk, TMeta> metaOf, Func<TChunk, ByteString> bytesOf,
-        CancellationToken cancellationToken)
+    /// <summary>Client-stream uploads: the first message must carry meta.</summary>
+    private static async Task<TMeta> ReadMetaAsync<TChunk, TMeta>(IAsyncStreamReader<TChunk> requestStream,
+        Func<TChunk, TMeta> metaOf, CancellationToken cancellationToken)
         where TMeta : class
     {
         if (!await requestStream.MoveNext(cancellationToken).ConfigureAwait(false)
@@ -294,6 +249,13 @@ public class ChemicalsGrpcService(
             throw new RpcException(new Status(StatusCode.InvalidArgument, "The first message must carry meta."));
         }
 
+        return meta;
+    }
+
+    /// <summary>The rest of a client-stream upload: byte chunks only, at most MaxUploadBytes.</summary>
+    private static async Task<byte[]> ReadBytesAsync<TChunk>(IAsyncStreamReader<TChunk> requestStream,
+        Func<TChunk, ByteString> bytesOf, CancellationToken cancellationToken)
+    {
         using var buffer = new MemoryStream();
         while (await requestStream.MoveNext(cancellationToken).ConfigureAwait(false))
         {
@@ -307,6 +269,6 @@ public class ChemicalsGrpcService(
             bytes.WriteTo(buffer);
         }
 
-        return (meta, buffer.ToArray());
+        return buffer.ToArray();
     }
 }

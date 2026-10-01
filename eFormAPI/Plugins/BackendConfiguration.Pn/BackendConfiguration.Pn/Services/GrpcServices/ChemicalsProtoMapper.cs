@@ -35,7 +35,8 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 
 /// <summary>
 /// Model ⇄ chemicals.proto. Base enums and proto enums share their numbers
-/// (proto 0 = UNSPECIFIED = null), so enum casts are exact.
+/// (proto 0 = UNSPECIFIED = null), so enum casts are exact; every enum cast lives
+/// in the enum helpers at the end of this class.
 /// </summary>
 internal static class ChemicalsProtoMapper
 {
@@ -102,11 +103,11 @@ internal static class ChemicalsProtoMapper
         RemovedByUserId = model.RemovedByUserId ?? 0,
         RemovedByName = model.RemovedByName,
         RemovedAt = OptionalTs(model.RemovedAt),
-        RemovalReason = (ChemicalRemovalReason)(int)(model.RemovalReason ?? 0),
+        RemovalReason = ToProto(model.RemovalReason),
         RemovalNote = model.RemovalNote,
         MovedFromPlacementId = model.MovedFromPlacementId ?? 0,
         BalanceMilli = ChemicalQuantity.ToMilli(model.Balance),
-        Unit = (ChemicalStockUnit)(int)(model.Unit ?? 0),
+        Unit = ToProto(model.Unit),
         UpdatedAt = Ts(model.UpdatedAt),
     };
 
@@ -114,9 +115,9 @@ internal static class ChemicalsProtoMapper
     {
         Id = model.Id,
         PlacementId = model.PlacementId,
-        Kind = (ChemicalStockEntryKind)(int)model.Kind,
+        Kind = ToProto(model.Kind),
         ContainerSizeMilli = model.ContainerSize is { } size ? ChemicalQuantity.ToMilli(size) : 0,
-        Unit = (ChemicalStockUnit)(int)model.Unit,
+        Unit = ToProto(model.Unit),
         AmountMilli = ChemicalQuantity.ToMilli(model.Amount),
         ContainerCount = model.ContainerCount ?? 0,
         BatchLot = model.BatchLot,
@@ -171,17 +172,50 @@ internal static class ChemicalsProtoMapper
     public static ChemicalStockAmountModel FromProto(ChemicalStockAmount amount) => amount == null
         ? null
         : new ChemicalStockAmountModel(
-            amount.ContainerSizeMilli > 0 ? ChemicalQuantity.FromMilli(amount.ContainerSizeMilli) : null,
-            amount.ContainerCount > 0 ? amount.ContainerCount : null,
+            // 0 = not given; anything else (negatives included) goes to ChemicalQuantity to be validated.
+            amount.ContainerSizeMilli != 0 ? ChemicalQuantity.FromMilli(amount.ContainerSizeMilli) : null,
+            amount.ContainerCount != 0 ? amount.ContainerCount : null,
             amount.HasAmountMilli ? ChemicalQuantity.FromMilli(amount.AmountMilli) : null,
-            (ChemicalStockUnitEnum)(int)amount.Unit,
+            FromProto(amount.Unit),
             amount.BatchLot,
             amount.Note,
-            amount.At?.ToDateTime());
+            FromProto(amount.At));
 
     public static int? OptionalId(int id) => id == 0 ? null : id;
 
-    public static DateTime? FromProto(Timestamp timestamp) => timestamp?.ToDateTime();
+    public static ChemicalLocationResponse ToLocationResponse(ChemicalLocationModel model) => new() { Location = ToProto(model) };
+
+    /// <summary>UTC; a malformed or out-of-range timestamp is an ArgumentException (INVALID_ARGUMENT).</summary>
+    public static DateTime? FromProto(Timestamp timestamp)
+    {
+        if (timestamp == null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return timestamp.ToDateTime();
+        }
+        catch (InvalidOperationException e)
+        {
+            throw new ArgumentException("The timestamp is malformed or out of range.", e);
+        }
+    }
+
+    // ---- enums: proto and base share their numbers; proto 0 (UNSPECIFIED) = null ----
+
+    public static ChemicalRemovalReasonEnum FromProto(ChemicalRemovalReason reason) => (ChemicalRemovalReasonEnum)(int)reason;
+
+    public static ChemicalStockEntryKindEnum FromProto(ChemicalStockEntryKind kind) => (ChemicalStockEntryKindEnum)(int)kind;
+
+    public static ChemicalStockUnitEnum FromProto(ChemicalStockUnit unit) => (ChemicalStockUnitEnum)(int)unit;
+
+    private static ChemicalRemovalReason ToProto(ChemicalRemovalReasonEnum? reason) => (ChemicalRemovalReason)(int)(reason ?? 0);
+
+    private static ChemicalStockEntryKind ToProto(ChemicalStockEntryKindEnum kind) => (ChemicalStockEntryKind)(int)kind;
+
+    private static ChemicalStockUnit ToProto(ChemicalStockUnitEnum? unit) => (ChemicalStockUnit)(int)(unit ?? 0);
 
     private static Timestamp Ts(DateTime value) => Timestamp.FromDateTime(DateTime.SpecifyKind(value, DateTimeKind.Utc));
 
