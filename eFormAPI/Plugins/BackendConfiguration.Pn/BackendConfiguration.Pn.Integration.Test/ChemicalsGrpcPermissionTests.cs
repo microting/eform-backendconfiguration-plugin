@@ -99,25 +99,23 @@ public class ChemicalsGrpcPermissionTests : ChemicalTestBase
 
     private static IEnumerable<string> RpcNames() => Rpcs.Keys;
 
-    private static ChemicalPermissionFlagsModel Only(ChemicalPermission permission) => permission switch
-    {
-        ChemicalPermission.View => ChemicalPermissionFlagsModel.None with { View = true },
-        ChemicalPermission.Register => ChemicalPermissionFlagsModel.None with { Register = true },
-        ChemicalPermission.Remove => ChemicalPermissionFlagsModel.None with { Remove = true },
-        ChemicalPermission.Stock => ChemicalPermissionFlagsModel.None with { Stock = true },
-        ChemicalPermission.ManageLocations => ChemicalPermissionFlagsModel.None with { ManageLocations = true },
-        _ => ChemicalPermissionFlagsModel.None with { Admin = true },
-    };
+    private static ChemicalPermissionFlagsModel Only(ChemicalPermission permission) =>
+        With(ChemicalPermissionFlagsModel.None, permission, true);
 
-    private static ChemicalPermissionFlagsModel AllExcept(ChemicalPermission permission) => permission switch
-    {
-        ChemicalPermission.View => ChemicalPermissionFlagsModel.All with { View = false, Admin = false },
-        ChemicalPermission.Register => ChemicalPermissionFlagsModel.All with { Register = false, Admin = false },
-        ChemicalPermission.Remove => ChemicalPermissionFlagsModel.All with { Remove = false, Admin = false },
-        ChemicalPermission.Stock => ChemicalPermissionFlagsModel.All with { Stock = false, Admin = false },
-        ChemicalPermission.ManageLocations => ChemicalPermissionFlagsModel.All with { ManageLocations = false, Admin = false },
-        _ => ChemicalPermissionFlagsModel.All with { Admin = false },
-    };
+    private static ChemicalPermissionFlagsModel AllExcept(ChemicalPermission permission) =>
+        With(ChemicalPermissionFlagsModel.All, permission, false) with { Admin = false };
+
+    private static ChemicalPermissionFlagsModel With(ChemicalPermissionFlagsModel flags, ChemicalPermission permission, bool value) =>
+        permission switch
+        {
+            ChemicalPermission.View => flags with { View = value },
+            ChemicalPermission.Register => flags with { Register = value },
+            ChemicalPermission.Remove => flags with { Remove = value },
+            ChemicalPermission.Stock => flags with { Stock = value },
+            ChemicalPermission.ManageLocations => flags with { ManageLocations = value },
+            ChemicalPermission.Admin => flags with { Admin = value },
+            _ => throw new ArgumentOutOfRangeException(nameof(permission), permission, "No flag for this permission."),
+        };
 
     private async Task<Scenario> ArrangeAsync(ChemicalPermissionFlagsModel flags)
     {
@@ -189,5 +187,26 @@ public class ChemicalsGrpcPermissionTests : ChemicalTestBase
         Assert.That(none.Properties, Is.Empty);
         Assert.That(one.Properties.Select(p => p.PropertyId), Is.EqualTo(new[] { visible.PropertyId }));
         Assert.That(one.Placements.Single().BalanceMilli, Is.EqualTo(2000));
+    }
+
+    [Test]
+    public async Task AllFlagsOnOneProperty_GrantNothingOnAnother()
+    {
+        var mine = await ArrangeAsync(ChemicalPermissionFlagsModel.All);
+        var theirs = await ArrangeAsync(ChemicalPermissionFlagsModel.All);
+        var sut = CreateSut(mine.WorkerId);
+
+        Func<Task>[] calls =
+        [
+            () => sut.RemovePlacement(new ChemicalRemovePlacementRequest { PlacementId = theirs.PlacementId, Reason = ChemicalRemovalReason.Used }, Context()),
+            () => sut.ArchiveLocation(new ChemicalArchiveLocationRequest { LocationId = theirs.EmptyLocationId }, Context()),
+            () => sut.SetPropertySettings(new ChemicalSetPropertySettingsRequest { PropertyId = theirs.PropertyId, StockEnabled = false }, Context()),
+        ];
+
+        foreach (var call in calls)
+        {
+            var ex = await Assert.ThrowsAsync<RpcException>(async () => await call());
+            Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.PermissionDenied));
+        }
     }
 }

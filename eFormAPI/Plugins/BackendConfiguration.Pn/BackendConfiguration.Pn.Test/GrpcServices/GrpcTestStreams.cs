@@ -35,6 +35,9 @@ internal sealed class FakeAsyncStreamReader<T>(IEnumerable<T> items) : IAsyncStr
 
     public T Current { get; private set; }
 
+    /// <summary>Messages not read yet.</summary>
+    public int Remaining => _items.Count;
+
     public Task<bool> MoveNext(CancellationToken cancellationToken)
     {
         if (_items.Count == 0)

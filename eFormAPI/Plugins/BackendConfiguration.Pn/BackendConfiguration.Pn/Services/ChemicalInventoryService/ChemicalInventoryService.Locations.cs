@@ -124,6 +124,9 @@ public partial class ChemicalInventoryService
         return locations.OrderBy(l => l.SortOrder).Select(MapLocation).ToList();
     }
 
+    public Task RequireCanManageLocationAsync(ChemicalCaller caller, int locationId) =>
+        LoadManageableLocationAsync(caller, locationId);
+
     public async Task<ChemicalLocationModel> SaveLocationPhotoAsync(
         ChemicalCaller caller, int locationId, byte[] content, string contentType)
     {

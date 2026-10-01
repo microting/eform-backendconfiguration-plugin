@@ -36,6 +36,11 @@ public interface IChemicalInventoryService
     Task<ChemicalLocationModel> UpdateLocationAsync(ChemicalCaller caller, ChemicalUpdateLocationCommand command);
     Task<ChemicalLocationModel> ArchiveLocationAsync(ChemicalCaller caller, int locationId);
     Task<IReadOnlyList<ChemicalLocationModel>> ReorderLocationsAsync(ChemicalCaller caller, int propertyId, IReadOnlyList<int> orderedLocationIds);
+    /// <summary>
+    /// The location is active and the caller may manage it. A cheap pre-check so an
+    /// upload is refused before its bytes are read; SaveLocationPhotoAsync checks again.
+    /// </summary>
+    Task RequireCanManageLocationAsync(ChemicalCaller caller, int locationId);
     Task<ChemicalLocationModel> SaveLocationPhotoAsync(ChemicalCaller caller, int locationId, byte[] content, string contentType);
     Task<(byte[] Content, string ContentType)> GetLocationPhotoAsync(ChemicalCaller caller, int locationId);
 

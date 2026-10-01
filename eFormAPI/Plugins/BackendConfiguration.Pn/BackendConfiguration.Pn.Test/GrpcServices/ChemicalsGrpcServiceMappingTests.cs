@@ -29,6 +29,7 @@ using BackendConfiguration.Pn.Infrastructure.Models.Chemicals;
 using BackendConfiguration.Pn.Services.ChemicalInventoryService;
 using BackendConfiguration.Pn.Services.GrpcServices;
 using Google.Protobuf;
+using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eFormApi.BasePn.Abstractions;
@@ -145,12 +146,18 @@ public class ChemicalsGrpcServiceMappingTests
     public async Task GetSdsPdf_ResumesFromOffset_EndOffsetSendsNoBytes_PastTheEndIsOutOfRange()
     {
         var sut = CreateSut();
-        var content = new byte[1000];
+        var content = Enumerable.Range(0, 1000).Select(i => (byte)(i % 251)).ToArray();
         _inventory.GetSdsPdfAsync(Caller, "abc").Returns(content);
 
         var resumed = new FakeServerStreamWriter<ChemicalFileChunk>();
         await sut.GetSdsPdf(new ChemicalSdsPdfRequest { FileName = "abc", Offset = 600 }, resumed, Context());
-        Assert.That(resumed.Written.Where(c => c.KindCase == ChemicalFileChunk.KindOneofCase.Chunk).Sum(c => c.Chunk.Length), Is.EqualTo(400));
+        Assert.That(resumed.Written[0].Meta.Offset, Is.EqualTo(600));
+        Assert.That(resumed.Written[0].Meta.TotalBytes, Is.EqualTo(1000));
+        var resumedBytes = resumed.Written.Where(c => c.KindCase == ChemicalFileChunk.KindOneofCase.Chunk)
+            .SelectMany(c => c.Chunk.ToByteArray()).ToArray();
+        Assert.That(resumedBytes, Is.EqualTo(content[600..]));
+        Assert.That(resumed.Written[^1].Trailer.Md5, Is.EqualTo(Convert.ToHexStringLower(MD5.HashData(content))),
+            "the trailer md5 covers the whole file, not the resumed tail");
 
         var atEnd = new FakeServerStreamWriter<ChemicalFileChunk>();
         await sut.GetSdsPdf(new ChemicalSdsPdfRequest { FileName = "abc", Offset = 1000 }, atEnd, Context());
@@ -204,7 +211,25 @@ public class ChemicalsGrpcServiceMappingTests
         var ex = await Assert.ThrowsAsync<RpcException>(async () => await sut.UploadLocationPhoto(reader, Context()));
 
         Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.InvalidArgument));
-        Assert.That(_inventory.ReceivedCalls(), Is.Empty);
+        await _inventory.DidNotReceiveWithAnyArgs().SaveLocationPhotoAsync(default!, default, default!, default!);
+    }
+
+    [Test]
+    public async Task UploadLocationPhoto_WithoutManageLocations_IsDenied_BeforeTheBytesAreRead()
+    {
+        var sut = CreateSut();
+        _inventory.RequireCanManageLocationAsync(Caller, 11).ThrowsAsync(new ChemicalPermissionDeniedException("no"));
+        var reader = new FakeAsyncStreamReader<ChemicalLocationPhotoUploadChunk>([
+            new() { Meta = new ChemicalLocationPhotoMeta { LocationId = 11, ContentType = "image/jpeg" } },
+            new() { Chunk = ByteString.CopyFrom(1, 2) },
+            new() { Chunk = ByteString.CopyFrom(3) },
+        ]);
+
+        var ex = await Assert.ThrowsAsync<RpcException>(async () => await sut.UploadLocationPhoto(reader, Context()));
+
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.PermissionDenied));
+        Assert.That(reader.Remaining, Is.EqualTo(2), "only the meta message may be read before the permission check");
+        await _inventory.DidNotReceiveWithAnyArgs().SaveLocationPhotoAsync(default!, default, default!, default!);
     }
 
     [Test]
@@ -274,5 +299,46 @@ public class ChemicalsGrpcServiceMappingTests
         Assert.That(entry.WorkerId, Is.EqualTo(8));
         Assert.That(entry.WorkerName, Is.EqualTo("Anna"));
         Assert.That(entry.Flags.View, Is.True);
+    }
+
+    [Test]
+    public async Task AddStockEntry_NegativeContainerSizeAndCount_ReachTheInventoryToBeRejected()
+    {
+        var sut = CreateSut();
+        _inventory.AddStockEntryAsync(Caller, Arg.Any<ChemicalAddStockEntryCommand>()).Returns(Change(Placement()));
+
+        await sut.AddStockEntry(new ChemicalAddStockEntryRequest
+        {
+            PlacementId = 7, Kind = ChemicalStockEntryKind.Received,
+            Amount = new ChemicalStockAmount { ContainerSizeMilli = -5000, ContainerCount = -2, Unit = ChemicalStockUnit.L },
+        }, Context());
+
+        await _inventory.Received(1).AddStockEntryAsync(Caller, Arg.Is<ChemicalAddStockEntryCommand>(c =>
+            c.Amount.ContainerSize == -5m && c.Amount.ContainerCount == -2));
+    }
+
+    [Test]
+    public async Task MalformedOrOutOfRangeTimestamps_AreInvalidArgument()
+    {
+        var sut = CreateSut();
+        Timestamp[] bad = [new() { Seconds = long.MaxValue }, new() { Seconds = 0, Nanos = -1 }];
+
+        foreach (var timestamp in bad)
+        {
+            var removed = await Assert.ThrowsAsync<RpcException>(async () => await sut.RemovePlacement(new ChemicalRemovePlacementRequest
+            {
+                PlacementId = 7, Reason = ChemicalRemovalReason.Used, RemovedAt = timestamp,
+            }, Context()));
+            var stocked = await Assert.ThrowsAsync<RpcException>(async () => await sut.AddStockEntry(new ChemicalAddStockEntryRequest
+            {
+                PlacementId = 7, Kind = ChemicalStockEntryKind.Received,
+                Amount = new ChemicalStockAmount { AmountMilli = 1000, Unit = ChemicalStockUnit.L, At = timestamp },
+            }, Context()));
+
+            Assert.That(removed!.StatusCode, Is.EqualTo(StatusCode.InvalidArgument), $"RemovedAt {timestamp.Seconds}s {timestamp.Nanos}ns");
+            Assert.That(stocked!.StatusCode, Is.EqualTo(StatusCode.InvalidArgument), $"At {timestamp.Seconds}s {timestamp.Nanos}ns");
+        }
+
+        Assert.That(_inventory.ReceivedCalls(), Is.Empty);
     }
 }
