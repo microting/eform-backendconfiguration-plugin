@@ -46,7 +46,7 @@ public partial class ChemicalInventoryService(
 {
     internal const int MaxNoteLength = 1000;
 
-    /// <summary>The one photo size limit; the gRPC upload adapter (Task 14) reuses it.</summary>
+    /// <summary>The one photo size limit; see EnsurePhotoSize.</summary>
     internal const int MaxPhotoBytes = 20 * 1024 * 1024;
 
     private const string Removed = Constants.WorkflowStates.Removed;
@@ -87,12 +87,30 @@ public partial class ChemicalInventoryService(
             throw new ArgumentException("Photos must be image/jpeg, image/png or image/heic.");
         }
 
-        if (content is not { Length: > 0 })
+        EnsurePhotoSize(content?.Length ?? 0);
+    }
+
+    /// <summary>
+    /// The one photo size rule: not empty, at most MaxPhotoBytes. Shared by this
+    /// service and both adapters (ChemicalsController before the form file is read).
+    /// </summary>
+    internal static void EnsurePhotoSize(long length)
+    {
+        if (length <= 0)
         {
             throw new ArgumentException("The photo is empty.");
         }
 
-        if (content.Length > MaxPhotoBytes)
+        EnsurePhotoWithinLimit(length);
+    }
+
+    /// <summary>
+    /// The upper half of <see cref="EnsurePhotoSize"/>, for a stream read so far
+    /// (ChemicalsGrpcService refuses as soon as the running total is over).
+    /// </summary>
+    internal static void EnsurePhotoWithinLimit(long length)
+    {
+        if (length > MaxPhotoBytes)
         {
             throw new ArgumentException($"The photo exceeds {MaxPhotoBytes / (1024 * 1024)} MB.");
         }

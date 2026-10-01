@@ -54,9 +54,6 @@ public class ChemicalsGrpcService(
     /// <summary>Download chunk size (spec §6: 64–256 KB).</summary>
     internal const int FileChunkSize = 128 * 1024;
 
-    /// <summary>Upload ceiling: the inventory service's own photo limit, enforced while the stream is read.</summary>
-    private const int MaxUploadBytes = Services.ChemicalInventoryService.ChemicalInventoryService.MaxPhotoBytes;
-
     public override async Task<ChemicalInventoryResponse> GetMyInventory(ChemicalInventoryRequest request, ServerCallContext context) =>
         ToProto(await RunAsync(caller => inventory.GetInventoryAsync(caller, request.Since)).ConfigureAwait(false));
 
@@ -128,7 +125,7 @@ public class ChemicalsGrpcService(
             var meta = await ReadMetaAsync(requestStream,
                 c => c.KindCase == ChemicalLocationPhotoUploadChunk.KindOneofCase.Meta ? c.Meta : null,
                 context.CancellationToken).ConfigureAwait(false);
-            // Refuse before buffering up to MaxUploadBytes; SaveLocationPhotoAsync checks again.
+            // Refuse before buffering the photo; SaveLocationPhotoAsync checks again.
             await inventory.RequireCanManageLocationAsync(caller, meta.LocationId).ConfigureAwait(false);
             var content = await ReadBytesAsync(requestStream,
                 c => c.KindCase == ChemicalLocationPhotoUploadChunk.KindOneofCase.Chunk ? c.Chunk : null,
@@ -252,7 +249,7 @@ public class ChemicalsGrpcService(
         return meta;
     }
 
-    /// <summary>The rest of a client-stream upload: byte chunks only, at most MaxUploadBytes.</summary>
+    /// <summary>The rest of a client-stream upload: byte chunks only, within the photo size limit.</summary>
     private static async Task<byte[]> ReadBytesAsync<TChunk>(IAsyncStreamReader<TChunk> requestStream,
         Func<TChunk, ByteString> bytesOf, CancellationToken cancellationToken)
     {
@@ -261,11 +258,8 @@ public class ChemicalsGrpcService(
         {
             var bytes = bytesOf(requestStream.Current)
                         ?? throw new RpcException(new Status(StatusCode.InvalidArgument, "Only the first message may carry meta."));
-            if (buffer.Length + bytes.Length > MaxUploadBytes)
-            {
-                throw new RpcException(new Status(StatusCode.InvalidArgument, $"The upload exceeds {MaxUploadBytes / (1024 * 1024)} MB."));
-            }
-
+            // ArgumentException: RunAsync maps it to INVALID_ARGUMENT.
+            Services.ChemicalInventoryService.ChemicalInventoryService.EnsurePhotoWithinLimit(buffer.Length + bytes.Length);
             bytes.WriteTo(buffer);
         }
 

@@ -25,15 +25,33 @@ using System.Collections.Generic;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 
 // Request bodies for routes that carry the id in the path (ChemicalsController).
+// ToCommand joins the route id and the body into the service command.
 
-public sealed record ChemicalMovePlacementBody(int TargetLocationId, string TargetPlacementNote, decimal? Amount);
+public sealed record ChemicalMovePlacementBody(int TargetLocationId, string TargetPlacementNote, decimal? Amount)
+{
+    public ChemicalMovePlacementCommand ToCommand(int placementId) =>
+        new(placementId, TargetLocationId, TargetPlacementNote, Amount);
+}
 
-public sealed record ChemicalRemovePlacementBody(ChemicalRemovalReasonEnum Reason, DateTime? RemovedAt, string Note);
+public sealed record ChemicalRemovePlacementBody(ChemicalRemovalReasonEnum Reason, DateTime? RemovedAt, string Note)
+{
+    public ChemicalRemovePlacementCommand ToCommand(int placementId) => new(placementId, Reason, RemovedAt, Note);
+}
 
 public sealed record ChemicalPlacementNoteBody(string PlacementNote);
 
-public sealed record ChemicalStockEntryBody(ChemicalStockEntryKindEnum Kind, ChemicalStockAmountModel Amount);
+public sealed record ChemicalStockEntryBody(ChemicalStockEntryKindEnum Kind, ChemicalStockAmountModel Amount)
+{
+    public ChemicalAddStockEntryCommand ToCommand(int placementId) => new(placementId, Kind, Amount);
+}
 
-public sealed record ChemicalUpdateLocationBody(string Name, string Description, int? SortOrder);
+public sealed record ChemicalUpdateLocationBody(string Name, string Description, int? SortOrder)
+{
+    public ChemicalUpdateLocationCommand ToCommand(int locationId) => new(locationId, Name, Description, SortOrder);
+}
 
-public sealed record ChemicalSettingsBody(bool StockEnabled, List<string> DigestRecipients);
+/// <summary>DigestRecipients null (absent from the JSON) = no recipients.</summary>
+public sealed record ChemicalSettingsBody(bool StockEnabled, List<string> DigestRecipients)
+{
+    public ChemicalSetSettingsCommand ToCommand(int propertyId) => new(propertyId, StockEnabled, DigestRecipients ?? []);
+}
