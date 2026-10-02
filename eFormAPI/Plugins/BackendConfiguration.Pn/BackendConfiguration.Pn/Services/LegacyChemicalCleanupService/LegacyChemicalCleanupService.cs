@@ -61,6 +61,8 @@ public sealed record LegacyChemicalCleanupResult(
 /// folders, legacy entity lists), and at most <see cref="MaxPasses"/> passes in
 /// all; then it logs one warning and leaves the rest for manual follow-up.
 /// Items are deleted one by one in isolation; failures are logged in one warning per pass.
+/// Completed case records (Status 100) are never deleted or changed (owner decision):
+/// they stay in history and reports.
 /// </summary>
 public class LegacyChemicalCleanupService(
     BackendConfigurationPnDbContext dbContext,
@@ -222,6 +224,21 @@ public class LegacyChemicalCleanupService(
         var sdkDbContext = core.DbContextHelper.GetDbContext();
         var failures = new List<string>();
 
+        // Planned cases go through the same guard as the folder pass: a uid whose
+        // only Cases row is a completed record is never deleted (see
+        // IsCompletedRecordAsync), so Core cannot soft-delete that record.
+        Func<int, Task> deleteCase = async uid =>
+        {
+            if (await IsCompletedRecordAsync(sdkDbContext, uid).ConfigureAwait(false))
+            {
+                logger.LogInformation(
+                    "LegacyChemicalCleanup: left uid {MicrotingUid} alone, its only case is a completed record", uid);
+                return;
+            }
+
+            await sdkOperations.DeleteCaseAsync(uid).ConfigureAwait(false);
+        };
+
         var assignments = await dbContext.AreaProperties
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed && x.Area.Type == LegacyArea)
             .OrderBy(x => x.Id)
@@ -240,7 +257,7 @@ public class LegacyChemicalCleanupService(
 
         var areaProperties = await DeleteEachAsync(assignments, "areaProperty", assignment => assignment.Id,
             assignment => BackendConfigurationPropertyAreasServiceHelper.DeleteAreaPropertyAsync(
-                assignment, core, dbContext, itemsPlanningPnDbContext, SystemUserId, sdkOperations.DeleteCaseAsync),
+                assignment, core, dbContext, itemsPlanningPnDbContext, SystemUserId, deleteCase),
             failures).ConfigureAwait(false);
 
         // Rules whose assignment is already gone, and rule plannings whose rule is,
@@ -257,7 +274,7 @@ public class LegacyChemicalCleanupService(
             .ToList();
         await DeleteEachAsync(orphanRulePairs, "areaRules", pair => $"{pair.PropertyId}/{pair.AreaId}",
             pair => BackendConfigurationPropertyAreasServiceHelper.DeleteAreaRulesAsync(pair.PropertyId, pair.AreaId,
-                core, dbContext, itemsPlanningPnDbContext, SystemUserId, sdkOperations.DeleteCaseAsync),
+                core, dbContext, itemsPlanningPnDbContext, SystemUserId, deleteCase),
             failures).ConfigureAwait(false);
 
         var orphanRulePlannings = await dbContext.AreaRulePlannings
@@ -268,7 +285,7 @@ public class LegacyChemicalCleanupService(
             .ToListAsync().ConfigureAwait(false);
         await DeleteEachAsync(orphanRulePlannings, "areaRulePlanning", x => x.Id,
             x => BackendConfigurationPropertyAreasServiceHelper.DeleteAreaRulePlanningAsync(x, sdkDbContext, dbContext,
-                itemsPlanningPnDbContext, SystemUserId, sdkOperations.DeleteCaseAsync),
+                itemsPlanningPnDbContext, SystemUserId, deleteCase),
             failures).ConfigureAwait(false);
 
         var entityGroupUids = await LegacyEntityGroups(sdkDbContext)
@@ -314,8 +331,28 @@ public class LegacyChemicalCleanupService(
             .Select(x => x.MicrotingUid)
             .ToListAsync().ConfigureAwait(false);
 
-        return caseUids.Concat(checkListSiteUids).Distinct().ToList();
+        // Never a uid whose only Cases row is a completed record (see IsCompletedRecordAsync).
+        var uids = caseUids.Concat(checkListSiteUids).Distinct().ToList();
+        var completedRecordUids = await CompletedRecordUids(sdkDbContext, uids).ToListAsync().ConfigureAwait(false);
+        return uids.Except(completedRecordUids).ToList();
     }
+
+    /// <summary>
+    /// Owner decision: the cleanup never soft-deletes or changes a completed legacy
+    /// case record (Status 100). Core.CaseDelete(uid) marks the Cases row Removed
+    /// when it is the only row with that uid, so such a uid is never deleted. With
+    /// two or more rows Core marks none of them, so deleting stays safe.
+    /// </summary>
+    private static async Task<bool> IsCompletedRecordAsync(MicrotingDbContext sdkDbContext, int uid) =>
+        await CompletedRecordUids(sdkDbContext, [uid]).AnyAsync().ConfigureAwait(false);
+
+    /// <summary>Those of <paramref name="uids"/> with exactly one Cases row, and that row completed.</summary>
+    private static IQueryable<int> CompletedRecordUids(MicrotingDbContext sdkDbContext, IReadOnlyCollection<int> uids) =>
+        sdkDbContext.Cases
+            .Where(x => x.MicrotingUid != null && uids.Contains(x.MicrotingUid.Value))
+            .GroupBy(x => x.MicrotingUid!.Value)
+            .Where(g => g.Count() == 1 && g.Max(x => x.Status) == CompletedStatus)
+            .Select(g => g.Key);
 
     private IQueryable<EntityGroup> LegacyEntityGroups(MicrotingDbContext sdkDbContext) =>
         sdkDbContext.EntityGroups
