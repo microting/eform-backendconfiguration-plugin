@@ -381,7 +381,13 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
         await SeedLegacyPlanningAsync(plannedUid);
         var plannedRecord = new Case { MicrotingUid = plannedUid, Status = 100, DoneAt = DateTime.UtcNow };
         await plannedRecord.Create(MicrotingDbContext!);
-        var records = new[] { folderRecord, plainRecord, plannedRecord };
+        // Answered but not yet Status 100: DoneAt alone also makes a completed record
+        // (the codebase's answered predicate, CalendarOccurrenceRetractionService R2).
+        var doneAtOnlyUid = NewUid();
+        await new CheckListSite { MicrotingUid = doneAtOnlyUid, FolderId = seeded.LegacyFolder.Id }.Create(MicrotingDbContext!);
+        var doneAtOnlyRecord = new Case { FolderId = seeded.LegacyFolder.Id, MicrotingUid = doneAtOnlyUid, Status = 66, DoneAt = DateTime.UtcNow };
+        await doneAtOnlyRecord.Create(MicrotingDbContext!);
+        var records = new[] { folderRecord, plainRecord, plannedRecord, doneAtOnlyRecord };
         var before = await MicrotingDbContext!.Cases.AsNoTracking()
             .Where(x => records.Select(r => r.Id).Contains(x.Id))
             .Select(x => new { x.Id, x.WorkflowState, x.Version, x.UpdatedAt })
@@ -394,7 +400,7 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
         await SetMarkerAsync();
         await sut.RunIfNeededAsync();
 
-        foreach (var uid in new[] { folderUid, plainRecord.MicrotingUid!.Value, plannedUid })
+        foreach (var uid in new[] { folderUid, plainRecord.MicrotingUid!.Value, plannedUid, doneAtOnlyUid })
         {
             await _sdkOperations.DidNotReceive().DeleteCaseAsync(uid);
         }
