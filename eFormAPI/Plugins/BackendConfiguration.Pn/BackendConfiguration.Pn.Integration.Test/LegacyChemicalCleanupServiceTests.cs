@@ -203,6 +203,90 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
         return assignment;
     }
 
+    /// <summary>
+    /// Plans one case into the legacy assignment's 25.02 folder and one outside
+    /// it, each through an items-planning PlanningCaseSite. Returns their MicrotingUids.
+    /// </summary>
+    private async Task<(int InFolderUid, int OutsideFolderUid)> SeedPlannedCasesAsync(Seeded seeded)
+    {
+        var areaRule = new AreaRule
+        {
+            AreaId = seeded.Legacy.AreaId, PropertyId = seeded.Legacy.PropertyId, EformId = 7, CreatedInGuide = true,
+            CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await areaRule.Create(BackendConfigurationPnDbContext!);
+        var planning = new Planning
+        {
+            Enabled = true, RepeatEvery = 1, RepeatType = RepeatType.Week,
+            StartDate = DateTime.UtcNow.Date, RelatedEFormId = 7, Description = "Legacy chemical",
+            CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await planning.Create(ItemsPlanningPnDbContext!);
+        await new AreaRulePlanning
+        {
+            AreaRuleId = areaRule.Id, PropertyId = seeded.Legacy.PropertyId, AreaId = seeded.Legacy.AreaId,
+            ItemPlanningId = planning.Id, StartDate = DateTime.UtcNow.Date, Status = true,
+            RepeatType = 2, RepeatEvery = 1, CreatedByUserId = 1, UpdatedByUserId = 1
+        }.Create(BackendConfigurationPnDbContext!);
+
+        var inFolderUid = Random.Shared.Next(100_000_000, 999_999_999);
+        var inFolder = new Case { FolderId = seeded.LegacyFolder.Id, MicrotingUid = inFolderUid };
+        await inFolder.Create(MicrotingDbContext!);
+        var outsideFolderUid = Random.Shared.Next(100_000_000, 999_999_999);
+        var outsideFolder = new Case { MicrotingUid = outsideFolderUid };
+        await outsideFolder.Create(MicrotingDbContext!);
+
+        foreach (var sdkCase in new[] { inFolder, outsideFolder })
+        {
+            var planningCase = new PlanningCase
+            {
+                PlanningId = planning.Id, Status = 66, MicrotingSdkCaseId = sdkCase.Id,
+                MicrotingSdkeFormId = 7, CreatedByUserId = 1, UpdatedByUserId = 1
+            };
+            await planningCase.Create(ItemsPlanningPnDbContext!);
+            await new PlanningCaseSite
+            {
+                PlanningId = planning.Id, PlanningCaseId = planningCase.Id, MicrotingSdkSiteId = 0,
+                MicrotingSdkeFormId = 7, MicrotingSdkCaseId = sdkCase.Id, Status = 66,
+                CreatedByUserId = 1, UpdatedByUserId = 1
+            }.Create(ItemsPlanningPnDbContext!);
+        }
+
+        return (inFolderUid, outsideFolderUid);
+    }
+
+    [Test]
+    public async Task Cleanup_PlannedCases_AreDeletedOnce_ThroughTheSdkSeam()
+    {
+        var sut = await CreateSut();
+        var seeded = await SeedLegacyAsync();
+        var (inFolderUid, outsideFolderUid) = await SeedPlannedCasesAsync(seeded);
+
+        var result = await sut.CleanupAsync();
+
+        await _sdkOperations.Received(1).DeleteCaseAsync(inFolderUid);
+        await _sdkOperations.Received(1).DeleteCaseAsync(outsideFolderUid);
+        await _sdkOperations.Received(1).DeleteCaseAsync(seeded.CaseUid);
+        Assert.That(result.Failures, Does.Not.Contain($"areaProperty:{seeded.Legacy.Id}"));
+        var legacy = await BackendConfigurationPnDbContext!.AreaProperties.AsNoTracking().SingleAsync(x => x.Id == seeded.Legacy.Id);
+        Assert.That(legacy.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+    }
+
+    [Test]
+    public async Task Cleanup_PlannedCaseDeleteFailing_IsReportedAsAFailedAssignment()
+    {
+        var sut = await CreateSut();
+        var seeded = await SeedLegacyAsync();
+        var (_, outsideFolderUid) = await SeedPlannedCasesAsync(seeded);
+        _sdkOperations.DeleteCaseAsync(outsideFolderUid)
+            .Returns(Task.FromException(new InvalidOperationException("Core.CaseDelete returned false")));
+
+        var result = await sut.CleanupAsync();
+
+        await _sdkOperations.Received(1).DeleteCaseAsync(outsideFolderUid);
+        Assert.That(result.Failures, Does.Contain($"areaProperty:{seeded.Legacy.Id}"));
+    }
+
     private void FailSdkDeletesFor(Seeded seeded)
     {
         _sdkOperations.DeleteCaseAsync(seeded.CaseUid)

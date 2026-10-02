@@ -20,6 +20,7 @@ SOFTWARE.
 
 namespace BackendConfiguration.Pn.Services.LegacyChemicalCleanupService;
 
+using System;
 using System.Threading.Tasks;
 using Microting.eFormApi.BasePn.Abstractions;
 
@@ -28,7 +29,16 @@ public class LegacyChemicalSdkOperations(IEFormCoreService coreHelper) : ILegacy
     public async Task DeleteCaseAsync(int microtingUid)
     {
         var core = await coreHelper.GetCore().ConfigureAwait(false);
-        await core.CaseDelete(microtingUid).ConfigureAwait(false);
+        await EnsureCaseDeletedAsync(core.CaseDelete(microtingUid), microtingUid, CaseDeleteTimeout)
+            .ConfigureAwait(false);
+    }
+
+    internal static readonly TimeSpan CaseDeleteTimeout = TimeSpan.FromMinutes(2);
+
+    // Red-phase seam: still ignores the result and waits without a bound.
+    internal static async Task EnsureCaseDeletedAsync(Task<bool> caseDelete, int microtingUid, TimeSpan timeout)
+    {
+        await caseDelete.ConfigureAwait(false);
     }
 
     public async Task DeleteEntityGroupAsync(string entityGroupMicrotingUid)
