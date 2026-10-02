@@ -61,7 +61,7 @@ public sealed record LegacyChemicalCleanupResult(
 /// folders, legacy entity lists), and at most <see cref="MaxPasses"/> passes in
 /// all; then it logs one warning and leaves the rest for manual follow-up.
 /// Items are deleted one by one in isolation; failures are logged in one warning per pass.
-/// Completed case records (Status 100) are never deleted or changed (owner decision):
+/// Completed case records (Status 100 or DoneAt set) are never deleted or changed (owner decision):
 /// they stay in history and reports.
 /// </summary>
 public class LegacyChemicalCleanupService(
@@ -312,14 +312,14 @@ public class LegacyChemicalCleanupService(
 
         // Retracted rows were already deleted from the device, as
         // BackendConfigurationPropertyAreasServiceHelper.ResolvePlannedCaseUidAsync treats them.
-        // Completed rows (Status 100) are records, not deployments: a reversed
+        // Completed rows (Status 100, or DoneAt set) are records, not deployments: a reversed
         // CheckListSite gets one per completion, all with its uid, and Core.CaseDelete
         // marks a Cases row only on a single match, so they would never clear. The
         // deployment itself is the CheckListSite, collected below. Uids are distinct.
         var caseUids = await sdkDbContext.Cases
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
                         && x.WorkflowState != Constants.WorkflowStates.Retracted
-                        && x.Status != CompletedStatus
+                        && x.Status != CompletedStatus && x.DoneAt == null
                         && x.FolderId != null && folderIds.Contains(x.FolderId.Value)
                         && x.MicrotingUid != null)
             .Select(x => x.MicrotingUid!.Value)
@@ -346,12 +346,16 @@ public class LegacyChemicalCleanupService(
     private static async Task<bool> IsCompletedRecordAsync(MicrotingDbContext sdkDbContext, int uid) =>
         await CompletedRecordUids(sdkDbContext, [uid]).AnyAsync().ConfigureAwait(false);
 
-    /// <summary>Those of <paramref name="uids"/> with exactly one Cases row, and that row completed.</summary>
+    /// <summary>
+    /// Those of <paramref name="uids"/> with exactly one Cases row, and that row answered:
+    /// <c>Status == 100 || DoneAt.HasValue</c>, the codebase's predicate for a completed
+    /// case (CalendarOccurrenceRetractionService, invariant R2).
+    /// </summary>
     private static IQueryable<int> CompletedRecordUids(MicrotingDbContext sdkDbContext, IReadOnlyCollection<int> uids) =>
         sdkDbContext.Cases
             .Where(x => x.MicrotingUid != null && uids.Contains(x.MicrotingUid.Value))
             .GroupBy(x => x.MicrotingUid!.Value)
-            .Where(g => g.Count() == 1 && g.Max(x => x.Status) == CompletedStatus)
+            .Where(g => g.Count() == 1 && g.Count(x => x.Status == CompletedStatus || x.DoneAt != null) == 1)
             .Select(g => g.Key);
 
     private IQueryable<EntityGroup> LegacyEntityGroups(MicrotingDbContext sdkDbContext) =>
