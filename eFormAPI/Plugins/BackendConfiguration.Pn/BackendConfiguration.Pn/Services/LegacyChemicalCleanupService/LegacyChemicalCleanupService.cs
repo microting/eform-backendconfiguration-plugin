@@ -55,10 +55,12 @@ public sealed record LegacyChemicalCleanupResult(
 /// "Chemicals - Areas - &lt;property&gt;". Works by area type and entity-group
 /// name, so it does not need the Property columns the ChemicalInventory
 /// migration dropped. Idempotent. The marker (as in AreaRulePlanningTagPurgeService)
-/// records the first completed pass; after it, a start re-runs the pass only
-/// while Type9 assignments, rules or rule plannings are still live, so items a
-/// pass could not remove are retried on the next start.
-/// Items are deleted one by one in isolation; failures are logged in one warning.
+/// records the first completed pass. After it, a start re-runs the pass only while
+/// something it removes is still live (see HasLegacyLeftoversAsync: Type9
+/// assignments, rules or rule plannings, open cases or check-list sites in Type9
+/// folders, legacy entity lists), and at most <see cref="MaxPasses"/> passes in
+/// all; then it logs one warning and leaves the rest for manual follow-up.
+/// Items are deleted one by one in isolation; failures are logged in one warning per pass.
 /// </summary>
 public class LegacyChemicalCleanupService(
     BackendConfigurationPnDbContext dbContext,
@@ -70,8 +72,14 @@ public class LegacyChemicalCleanupService(
     /// <summary>Same key convention as AreaRulePlanningTagPurgeService.BacklogPurgeMarkerName.</summary>
     public const string MarkerName = "BackendConfigurationBaseSettings:LegacyChemicalFlowRemoved";
 
-    /// <summary>How many passes have run; caps the retries of leftovers.</summary>
+    /// <summary>
+    /// How many passes have run (a tenant whose marker predates it counts as one);
+    /// <see cref="MaxPasses"/> + 1 records that the cleanup gave up.
+    /// </summary>
     public const string AttemptsName = MarkerName + ":Attempts";
+
+    /// <summary>Passes in all, the first included, before leftovers are left for manual follow-up.</summary>
+    internal const int MaxPasses = 5;
 
     internal const string PropertyEntityGroupPrefix = "Chemicals - Areas - ";
 
@@ -79,18 +87,40 @@ public class LegacyChemicalCleanupService(
 
     private const int SystemUserId = 0;
 
+    private const int CompletedStatus = 100;
+
     private const AreaTypesEnum LegacyArea = BackendConfigurationPropertyAreasServiceHelper.LegacyChemicalAreaType;
 
     public async Task RunIfNeededAsync()
     {
         var markerWritten = await dbContext.PluginConfigurationValues.AnyAsync(x => x.Name == MarkerName)
             .ConfigureAwait(false);
-        if (markerWritten && !await HasLegacyLeftoversAsync().ConfigureAwait(false))
+        var passes = 0;
+        if (markerWritten)
         {
-            return;
+            if (!await HasLegacyLeftoversAsync().ConfigureAwait(false))
+            {
+                return;
+            }
+
+            passes = await ReadPassesAsync().ConfigureAwait(false);
+            if (passes > MaxPasses)
+            {
+                return;
+            }
+
+            if (passes == MaxPasses)
+            {
+                logger.LogWarning(
+                    "LegacyChemicalCleanup: giving up after {Passes} passes; the remaining legacy KemiKontrol items are left for manual follow-up",
+                    passes);
+                await WritePassesAsync(MaxPasses + 1).ConfigureAwait(false);
+                return;
+            }
         }
 
         var result = await CleanupAsync().ConfigureAwait(false);
+        await WritePassesAsync(passes + 1).ConfigureAwait(false);
 
         // Conditional insert for the reason given in AreaRulePlanningTagPurgeService:
         // two pods starting together must not write two markers.
@@ -110,14 +140,52 @@ public class LegacyChemicalCleanupService(
             "LegacyChemicalCleanup: removed {AreaProperties} area assignments, {Cases} cases, {EntityGroups} entity lists",
             result.AreaProperties, result.Cases, result.EntityGroups);
 
-        // The marker is written even when items failed. Live Type9 leftovers
-        // re-trigger the pass on the next start (see HasLegacyLeftoversAsync).
+        // The marker is written even when items failed. Leftovers re-trigger the
+        // pass on the next start (see HasLegacyLeftoversAsync), up to MaxPasses.
         if (result.Failures.Count > 0)
         {
             logger.LogWarning(
-                "LegacyChemicalCleanup: {FailureCount} items could not be removed and are retried on the next start: {Failures}",
-                result.Failures.Count, string.Join(", ", result.Failures));
+                "LegacyChemicalCleanup: {FailureCount} items could not be removed (pass {Pass} of at most {MaxPasses}): {Failures}",
+                result.Failures.Count, passes + 1, MaxPasses, string.Join(", ", result.Failures));
         }
+    }
+
+    /// <summary>Passes run so far; a marker without an attempts row is a tenant whose one pass predates it.</summary>
+    private async Task<int> ReadPassesAsync()
+    {
+        var value = await dbContext.PluginConfigurationValues.AsNoTracking()
+            .Where(x => x.Name == AttemptsName)
+            .Select(x => x.Value)
+            .FirstOrDefaultAsync().ConfigureAwait(false);
+        return int.TryParse(value, out var passes) ? passes : 1;
+    }
+
+    private async Task WritePassesAsync(int passes)
+    {
+        var value = passes.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var updated = await dbContext.PluginConfigurationValues
+            .Where(x => x.Name == AttemptsName)
+            .ExecuteUpdateAsync(x => x
+                .SetProperty(v => v.Value, value)
+                .SetProperty(v => v.UpdatedAt, DateTime.UtcNow)).ConfigureAwait(false);
+        if (updated > 0)
+        {
+            return;
+        }
+
+        // Conditional insert, as for the marker.
+        await dbContext.Database.ExecuteSqlRawAsync(
+            @"INSERT INTO `PluginConfigurationValues`
+                  (`Name`, `Value`, `CreatedAt`, `UpdatedAt`, `Version`,
+                   `WorkflowState`, `CreatedByUserId`, `UpdatedByUserId`)
+              SELECT {0}, {1}, {2}, {2}, 1, {3}, 1, 0 FROM DUAL
+              WHERE NOT EXISTS (
+                  SELECT 1 FROM `PluginConfigurationValues` `existing`
+                  WHERE `existing`.`Name` = {0})",
+            AttemptsName,
+            value,
+            DateTime.UtcNow,
+            Constants.WorkflowStates.Created).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -213,8 +281,9 @@ public class LegacyChemicalCleanupService(
     }
 
     /// <summary>
-    /// MicrotingUids of the live (not removed or retracted) cases and check-list
-    /// sites deployed into the SDK folders of any Type9 assignment, live or removed.
+    /// Distinct MicrotingUids of the open (not removed, retracted or completed)
+    /// cases and live check-list sites deployed into the SDK folders of any Type9
+    /// assignment, live or removed.
     /// </summary>
     private async Task<List<int>> CollectDeployedCaseUidsAsync(MicrotingDbContext sdkDbContext)
     {
@@ -226,9 +295,14 @@ public class LegacyChemicalCleanupService(
 
         // Retracted rows were already deleted from the device, as
         // BackendConfigurationPropertyAreasServiceHelper.ResolvePlannedCaseUidAsync treats them.
+        // Completed rows (Status 100) are records, not deployments: a reversed
+        // CheckListSite gets one per completion, all with its uid, and Core.CaseDelete
+        // marks a Cases row only on a single match, so they would never clear. The
+        // deployment itself is the CheckListSite, collected below. Uids are distinct.
         var caseUids = await sdkDbContext.Cases
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
                         && x.WorkflowState != Constants.WorkflowStates.Retracted
+                        && x.Status != CompletedStatus
                         && x.FolderId != null && folderIds.Contains(x.FolderId.Value)
                         && x.MicrotingUid != null)
             .Select(x => x.MicrotingUid!.Value)
