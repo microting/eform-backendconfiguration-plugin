@@ -45,6 +45,7 @@ using Services.ChemicalInventoryService;
 /// errors: they reach the client with their message and never go to Sentry.
 /// </summary>
 [Authorize(Policy = BackendConfigurationClaims.AccessBackendConfigurationPlugin)]
+[ChemistryFirstUserOnly] // TODO(chemistry-GA): remove with ChemistryFirstUserOnlyAttribute.
 [Route("api/backend-configuration-pn/chemicals")]
 public class ChemicalsController(
     IChemicalInventoryService inventory,
