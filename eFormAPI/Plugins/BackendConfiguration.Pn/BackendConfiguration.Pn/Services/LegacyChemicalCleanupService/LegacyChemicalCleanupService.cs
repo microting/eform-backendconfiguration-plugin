@@ -97,32 +97,37 @@ public class LegacyChemicalCleanupService(
     {
         var markerWritten = await dbContext.PluginConfigurationValues.AnyAsync(x => x.Name == MarkerName)
             .ConfigureAwait(false);
-        var passes = 0;
-        if (markerWritten)
+        if (markerWritten && !await HasLegacyLeftoversAsync().ConfigureAwait(false))
         {
-            if (!await HasLegacyLeftoversAsync().ConfigureAwait(false))
-            {
-                return;
-            }
+            return;
+        }
 
-            passes = await ReadPassesAsync().ConfigureAwait(false);
-            if (passes > MaxPasses)
-            {
-                return;
-            }
+        var (passes, counted) = await ReadPassesAsync(markerWritten).ConfigureAwait(false);
+        if (passes > MaxPasses)
+        {
+            return;
+        }
 
-            if (passes == MaxPasses)
+        // Every pass is claimed atomically (compare-and-set on the Attempts row)
+        // before it starts, so pods starting together run it once and the cap holds.
+        if (passes == MaxPasses)
+        {
+            if (await ClaimPassAsync(passes, counted).ConfigureAwait(false))
             {
                 logger.LogWarning(
                     "LegacyChemicalCleanup: giving up after {Passes} passes; the remaining legacy KemiKontrol items are left for manual follow-up",
                     passes);
-                await WritePassesAsync(MaxPasses + 1).ConfigureAwait(false);
-                return;
             }
+
+            return;
+        }
+
+        if (!await ClaimPassAsync(passes, counted).ConfigureAwait(false))
+        {
+            return;
         }
 
         var result = await CleanupAsync().ConfigureAwait(false);
-        await WritePassesAsync(passes + 1).ConfigureAwait(false);
 
         // Conditional insert for the reason given in AreaRulePlanningTagPurgeService:
         // two pods starting together must not write two markers.
@@ -152,31 +157,43 @@ public class LegacyChemicalCleanupService(
         }
     }
 
-    /// <summary>Passes run so far; a marker without an attempts row is a tenant whose one pass predates it.</summary>
-    private async Task<int> ReadPassesAsync()
+    /// <summary>
+    /// Passes run so far, and whether the Attempts row exists. Without the row,
+    /// a written marker means one pass already ran (a tenant whose pass predates it).
+    /// </summary>
+    private async Task<(int Passes, bool Counted)> ReadPassesAsync(bool markerWritten)
     {
         var value = await dbContext.PluginConfigurationValues.AsNoTracking()
             .Where(x => x.Name == AttemptsName)
             .Select(x => x.Value)
             .FirstOrDefaultAsync().ConfigureAwait(false);
-        return int.TryParse(value, out var passes) ? passes : 1;
-    }
-
-    private async Task WritePassesAsync(int passes)
-    {
-        var value = passes.ToString(System.Globalization.CultureInfo.InvariantCulture);
-        var updated = await dbContext.PluginConfigurationValues
-            .Where(x => x.Name == AttemptsName)
-            .ExecuteUpdateAsync(x => x
-                .SetProperty(v => v.Value, value)
-                .SetProperty(v => v.UpdatedAt, DateTime.UtcNow)).ConfigureAwait(false);
-        if (updated > 0)
+        if (value == null)
         {
-            return;
+            return (markerWritten ? 1 : 0, false);
         }
 
-        // Conditional insert, as for the marker.
-        await dbContext.Database.ExecuteSqlRawAsync(
+        return (int.TryParse(value, out var passes) ? passes : MaxPasses + 1, true);
+    }
+
+    /// <summary>
+    /// Moves the Attempts row from <paramref name="passes"/> to passes + 1, atomically:
+    /// a compare-and-set update, or a conditional insert when the row does not exist
+    /// yet. False when another pod claimed it first.
+    /// </summary>
+    private async Task<bool> ClaimPassAsync(int passes, bool counted)
+    {
+        var expected = passes.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var next = (passes + 1).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        if (counted)
+        {
+            return await dbContext.PluginConfigurationValues
+                .Where(x => x.Name == AttemptsName && x.Value == expected)
+                .ExecuteUpdateAsync(x => x
+                    .SetProperty(v => v.Value, next)
+                    .SetProperty(v => v.UpdatedAt, DateTime.UtcNow)).ConfigureAwait(false) == 1;
+        }
+
+        return await dbContext.Database.ExecuteSqlRawAsync(
             @"INSERT INTO `PluginConfigurationValues`
                   (`Name`, `Value`, `CreatedAt`, `UpdatedAt`, `Version`,
                    `WorkflowState`, `CreatedByUserId`, `UpdatedByUserId`)
@@ -185,9 +202,9 @@ public class LegacyChemicalCleanupService(
                   SELECT 1 FROM `PluginConfigurationValues` `existing`
                   WHERE `existing`.`Name` = {0})",
             AttemptsName,
-            value,
+            next,
             DateTime.UtcNow,
-            Constants.WorkflowStates.Created).ConfigureAwait(false);
+            Constants.WorkflowStates.Created).ConfigureAwait(false) == 1;
     }
 
     /// <summary>
@@ -224,8 +241,8 @@ public class LegacyChemicalCleanupService(
         var sdkDbContext = core.DbContextHelper.GetDbContext();
         var failures = new List<string>();
 
-        // Planned cases go through the same guard as the folder pass: a uid whose
-        // only Cases row is a completed record is never deleted (see
+        // Every case delete, folder pass and planned path alike, rechecks just before
+        // the call that the uid's only Cases row is not a completed record (see
         // IsCompletedRecordAsync), so Core cannot soft-delete that record.
         Func<int, Task> deleteCase = async uid =>
         {
@@ -252,7 +269,7 @@ public class LegacyChemicalCleanupService(
         var deployedUids = (await CollectDeployedCaseUidsAsync(sdkDbContext).ConfigureAwait(false))
             .Where(uid => !plannedUids.Contains(uid))
             .ToList();
-        var cases = await DeleteEachAsync(deployedUids, "case", uid => uid, sdkOperations.DeleteCaseAsync, failures)
+        var cases = await DeleteEachAsync(deployedUids, "case", uid => uid, deleteCase, failures)
             .ConfigureAwait(false);
 
         var areaProperties = await DeleteEachAsync(assignments, "areaProperty", assignment => assignment.Id,
