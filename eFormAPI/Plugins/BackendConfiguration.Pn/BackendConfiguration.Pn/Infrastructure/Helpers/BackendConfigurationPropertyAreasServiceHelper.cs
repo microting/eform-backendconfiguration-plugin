@@ -374,8 +374,9 @@ public static class BackendConfigurationPropertyAreasServiceHelper
     /// <summary>
     /// Soft-deletes one area rule planning (its PlanningSites must be loaded),
     /// its planning sites and its items-planning planning, deleting the SDK case
-    /// behind every live PlanningCaseSite before soft-deleting that link, so a
-    /// failed delete leaves the link for a later run.
+    /// behind every live PlanningCaseSite before soft-deleting that link, and the
+    /// planning only after its case sites, so a failed delete leaves both for a
+    /// later run.
     /// </summary>
     internal static async Task DeleteAreaRulePlanningAsync(AreaRulePlanning areaRulePlanning,
         MicrotingDbContext sdkDbContext, BackendConfigurationPnDbContext backendConfigurationPnDbContext,
@@ -390,6 +391,25 @@ public static class BackendConfigurationPropertyAreasServiceHelper
 
         if (areaRulePlanning.ItemPlanningId != 0)
         {
+            // Case sites are walked even when the planning is already removed: an
+            // interrupted earlier pass removed the planning before its case sites.
+            var planningCaseSites = await itemsPlanningPnDbContext.PlanningCaseSites
+                .Where(x => x.PlanningId == areaRulePlanning.ItemPlanningId)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToListAsync().ConfigureAwait(false);
+            foreach (var planningCaseSite in planningCaseSites)
+            {
+                var microtingUid = await ResolvePlannedCaseUidAsync(planningCaseSite, sdkDbContext)
+                    .ConfigureAwait(false);
+                if (microtingUid != null)
+                {
+                    await deleteCase(microtingUid.Value).ConfigureAwait(false);
+                }
+
+                planningCaseSite.UpdatedByUserId = userId;
+                await planningCaseSite.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
+            }
+
             var planning = await itemsPlanningPnDbContext.Plannings
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.Id == areaRulePlanning.ItemPlanningId)
@@ -397,23 +417,6 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                 .FirstOrDefaultAsync().ConfigureAwait(false);
             if (planning != null)
             {
-                var planningCaseSites = await itemsPlanningPnDbContext.PlanningCaseSites
-                    .Where(x => x.PlanningId == planning.Id)
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .ToListAsync().ConfigureAwait(false);
-                foreach (var planningCaseSite in planningCaseSites)
-                {
-                    var microtingUid = await ResolvePlannedCaseUidAsync(planningCaseSite, sdkDbContext)
-                        .ConfigureAwait(false);
-                    if (microtingUid != null)
-                    {
-                        await deleteCase(microtingUid.Value).ConfigureAwait(false);
-                    }
-
-                    planningCaseSite.UpdatedByUserId = userId;
-                    await planningCaseSite.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
-                }
-
                 foreach (var translation in planning.NameTranslations
                              .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
                 {

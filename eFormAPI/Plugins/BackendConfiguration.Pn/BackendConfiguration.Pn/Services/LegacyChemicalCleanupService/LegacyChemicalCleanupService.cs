@@ -29,6 +29,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure;
 using Microting.eForm.Infrastructure.Constants;
+using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
@@ -117,16 +118,27 @@ public class LegacyChemicalCleanupService(
     }
 
     /// <summary>
-    /// Whether any Type9 assignment, area rule or area rule planning is still live,
-    /// e.g. left half-deleted by an earlier pass.
+    /// Whether anything the pass removes is still live: a Type9 assignment, area
+    /// rule or area rule planning, a case or check-list site in a Type9
+    /// assignment's folder, or a legacy entity list. A delete that failed leaves
+    /// its row live (Core marks only what it deleted), so this is what retries it.
     /// </summary>
-    private async Task<bool> HasLegacyLeftoversAsync() =>
-        await dbContext.AreaProperties.AnyAsync(x =>
-            x.WorkflowState != Constants.WorkflowStates.Removed && x.Area.Type == LegacyArea).ConfigureAwait(false)
-        || await dbContext.AreaRules.AnyAsync(x =>
-            x.WorkflowState != Constants.WorkflowStates.Removed && x.Area.Type == LegacyArea).ConfigureAwait(false)
-        || await dbContext.AreaRulePlannings.AnyAsync(x =>
-            x.WorkflowState != Constants.WorkflowStates.Removed && x.AreaRule.Area.Type == LegacyArea).ConfigureAwait(false);
+    private async Task<bool> HasLegacyLeftoversAsync()
+    {
+        if (await dbContext.AreaProperties.AnyAsync(x =>
+                x.WorkflowState != Constants.WorkflowStates.Removed && x.Area.Type == LegacyArea).ConfigureAwait(false)
+            || await dbContext.AreaRules.AnyAsync(x =>
+                x.WorkflowState != Constants.WorkflowStates.Removed && x.Area.Type == LegacyArea).ConfigureAwait(false)
+            || await dbContext.AreaRulePlannings.AnyAsync(x =>
+                x.WorkflowState != Constants.WorkflowStates.Removed && x.AreaRule.Area.Type == LegacyArea).ConfigureAwait(false))
+        {
+            return true;
+        }
+
+        var sdkDbContext = (await coreHelper.GetCore().ConfigureAwait(false)).DbContextHelper.GetDbContext();
+        return (await CollectDeployedCaseUidsAsync(sdkDbContext).ConfigureAwait(false)).Count > 0
+               || await LegacyEntityGroups(sdkDbContext).AnyAsync().ConfigureAwait(false);
+    }
 
     /// <summary>
     /// One pass over the legacy data. Every item is deleted in isolation: a
@@ -145,11 +157,11 @@ public class LegacyChemicalCleanupService(
             .ToListAsync().ConfigureAwait(false);
 
         // Cases deployed straight into the legacy folders (the 25.02–25.07 expiry
-        // folders) are not reachable through plannings, so they go first. Planned
+        // folders) are not reachable through plannings, so they go first. Folders
+        // of already-removed assignments count too, so a failed delete is retried. Planned
         // cases are left to the rule-planning delete, so none is deleted twice.
         var plannedUids = await PlannedCaseUidsAsync(sdkDbContext).ConfigureAwait(false);
-        var deployedUids = (await CollectDeployedCaseUidsAsync(sdkDbContext, assignments.Select(x => x.Id).ToList())
-                .ConfigureAwait(false))
+        var deployedUids = (await CollectDeployedCaseUidsAsync(sdkDbContext).ConfigureAwait(false))
             .Where(uid => !plannedUids.Contains(uid))
             .ToList();
         var cases = await DeleteEachAsync(deployedUids, "case", uid => uid, sdkOperations.DeleteCaseAsync, failures)
@@ -188,10 +200,7 @@ public class LegacyChemicalCleanupService(
                 itemsPlanningPnDbContext, SystemUserId, sdkOperations.DeleteCaseAsync),
             failures).ConfigureAwait(false);
 
-        var entityGroupUids = await sdkDbContext.EntityGroups
-            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
-                        && x.MicrotingUid != null
-                        && (GlobalEntityGroupNames.Contains(x.Name) || x.Name.StartsWith(PropertyEntityGroupPrefix)))
+        var entityGroupUids = await LegacyEntityGroups(sdkDbContext)
             .Select(x => x.MicrotingUid)
             .ToListAsync().ConfigureAwait(false);
         var entityGroups = await DeleteEachAsync(entityGroupUids, "entityGroup", uid => uid,
@@ -201,15 +210,14 @@ public class LegacyChemicalCleanupService(
     }
 
     /// <summary>
-    /// MicrotingUids of the cases and check-list sites deployed into the SDK
-    /// folders of the given area assignments.
+    /// MicrotingUids of the live cases and check-list sites deployed into the SDK
+    /// folders of any Type9 assignment, live or already removed.
     /// </summary>
-    private async Task<List<int>> CollectDeployedCaseUidsAsync(
-        MicrotingDbContext sdkDbContext, List<int> assignmentIds)
+    private async Task<List<int>> CollectDeployedCaseUidsAsync(MicrotingDbContext sdkDbContext)
     {
         var folderIds = await dbContext.ProperyAreaFolders
-            .Where(x => assignmentIds.Contains(x.ProperyAreaAsignmentId))
-            .Select(x => x.FolderId)
+            .Join(dbContext.AreaProperties.Where(x => x.Area.Type == LegacyArea),
+                folder => folder.ProperyAreaAsignmentId, assignment => assignment.Id, (folder, _) => folder.FolderId)
             .Distinct()
             .ToListAsync().ConfigureAwait(false);
 
@@ -228,10 +236,16 @@ public class LegacyChemicalCleanupService(
         return caseUids.Concat(checkListSiteUids).Distinct().ToList();
     }
 
+    private IQueryable<EntityGroup> LegacyEntityGroups(MicrotingDbContext sdkDbContext) =>
+        sdkDbContext.EntityGroups
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
+                        && x.MicrotingUid != null
+                        && (GlobalEntityGroupNames.Contains(x.Name) || x.Name.StartsWith(PropertyEntityGroupPrefix)));
+
     /// <summary>
     /// MicrotingUids that the rule-planning delete will delete itself: those of
-    /// the live PlanningCaseSites of live plannings behind live Type9 rule
-    /// plannings, resolved as BackendConfigurationPropertyAreasServiceHelper does.
+    /// the live PlanningCaseSites behind live Type9 rule plannings, resolved as
+    /// BackendConfigurationPropertyAreasServiceHelper does.
     /// </summary>
     private async Task<HashSet<int>> PlannedCaseUidsAsync(MicrotingDbContext sdkDbContext)
     {
@@ -242,11 +256,8 @@ public class LegacyChemicalCleanupService(
             .Select(x => x.ItemPlanningId)
             .ToListAsync().ConfigureAwait(false);
 
-        var caseSites = await itemsPlanningPnDbContext.PlanningCaseSites
+        var caseSites = await itemsPlanningPnDbContext.PlanningCaseSites.AsNoTracking()
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed && planningIds.Contains(x.PlanningId))
-            .Join(itemsPlanningPnDbContext.Plannings.Where(p => p.WorkflowState != Constants.WorkflowStates.Removed),
-                caseSite => caseSite.PlanningId, planning => planning.Id, (caseSite, _) => caseSite)
-            .AsNoTracking()
             .ToListAsync().ConfigureAwait(false);
 
         var uids = new HashSet<int>();
