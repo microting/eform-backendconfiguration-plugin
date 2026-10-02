@@ -49,6 +49,9 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
 {
     private ILegacyChemicalSdkOperations _sdkOperations = null!;
 
+    /// <summary>Uids whose seam delete fails, so <see cref="EmulateSdkDeletes"/> leaves them live, as Core does.</summary>
+    private readonly HashSet<int> _failingUids = [];
+
     private sealed record Seeded(
         AreaProperty Legacy,
         AreaProperty Other,
@@ -62,6 +65,7 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
     public void CreateSdkOperationsSubstitute()
     {
         _sdkOperations = Substitute.For<ILegacyChemicalSdkOperations>();
+        _failingUids.Clear();
     }
 
     /// <summary>
@@ -298,6 +302,11 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
         _sdkOperations.When(x => x.DeleteCaseAsync(Arg.Any<int>())).Do(call =>
         {
             var uid = call.Arg<int>();
+            if (_failingUids.Contains(uid))
+            {
+                return;
+            }
+
             if (MicrotingDbContext!.Cases.Count(x => x.MicrotingUid == uid) == 1)
             {
                 MicrotingDbContext.Cases.Where(x => x.MicrotingUid == uid)
@@ -668,6 +677,7 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
     private async Task<LegacyPlanning> SeedFailingLegacyPlanningAsync()
     {
         var uid = NewUid();
+        _failingUids.Add(uid);
         _sdkOperations.DeleteCaseAsync(uid).Returns(Task.FromException(new InvalidOperationException("cloud said no")));
         return await SeedLegacyPlanningAsync(uid);
     }
