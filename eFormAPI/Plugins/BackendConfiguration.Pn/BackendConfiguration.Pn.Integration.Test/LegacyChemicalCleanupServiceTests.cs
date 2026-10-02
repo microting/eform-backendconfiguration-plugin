@@ -286,6 +286,85 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
             Is.Not.EqualTo(Constants.WorkflowStates.Removed), "the link that finds the case again is kept");
     }
 
+    /// <summary>
+    /// Makes the SDK seam mark what it "deletes" as removed locally, as
+    /// Core.CaseDelete and Core.EntityGroupDelete do, so retry gating sees it.
+    /// </summary>
+    private void EmulateSdkDeletes()
+    {
+        _sdkOperations.When(x => x.DeleteCaseAsync(Arg.Any<int>())).Do(call =>
+        {
+            var uid = call.Arg<int>();
+            MicrotingDbContext!.Cases.Where(x => x.MicrotingUid == uid)
+                .ExecuteUpdate(x => x.SetProperty(c => c.WorkflowState, Constants.WorkflowStates.Removed));
+            MicrotingDbContext.CheckListSites.Where(x => x.MicrotingUid == uid)
+                .ExecuteUpdate(x => x.SetProperty(c => c.WorkflowState, Constants.WorkflowStates.Removed));
+        });
+        _sdkOperations.When(x => x.DeleteEntityGroupAsync(Arg.Any<string>())).Do(call =>
+        {
+            var uid = call.Arg<string>();
+            MicrotingDbContext!.EntityGroups.Where(x => x.MicrotingUid == uid)
+                .ExecuteUpdate(x => x.SetProperty(c => c.WorkflowState, Constants.WorkflowStates.Removed));
+        });
+    }
+
+    /// <summary>Clears what earlier tests in this fixture left, then forgets those calls.</summary>
+    private async Task StartFromACleanSlateAsync(LegacyChemicalCleanupService sut)
+    {
+        EmulateSdkDeletes();
+        await sut.CleanupAsync();
+        _sdkOperations.ClearReceivedCalls();
+    }
+
+    [Test]
+    public async Task Cleanup_CaseSiteOfAnAlreadyRemovedPlanning_IsStillDeleted()
+    {
+        // An interrupted #1362 pass soft-deleted the planning before its case sites.
+        var sut = await CreateSut();
+        var uid = NewUid();
+        var legacy = await SeedLegacyPlanningAsync(uid);
+        await legacy.Planning.Delete(ItemsPlanningPnDbContext!);
+
+        await sut.CleanupAsync();
+
+        await _sdkOperations.Received(1).DeleteCaseAsync(uid);
+        Assert.That((await ReloadAsync<PlanningCaseSite>(ItemsPlanningPnDbContext!, legacy.CaseSite.Id)).WorkflowState,
+            Is.EqualTo(Constants.WorkflowStates.Removed));
+    }
+
+    [Test]
+    public async Task RunIfNeeded_MarkerSet_FolderCaseLeftAfterItsAssignment_IsRetried()
+    {
+        var sut = await CreateSut();
+        await StartFromACleanSlateAsync(sut);
+        var seeded = await SeedLegacyAsync();
+        await seeded.Legacy.Delete(BackendConfigurationPnDbContext!);
+        foreach (var uid in new[] { seeded.BarcodeGroupUid, seeded.PropertyGroupUid })
+        {
+            await MicrotingDbContext!.EntityGroups.Where(x => x.MicrotingUid == uid)
+                .ExecuteUpdateAsync(x => x.SetProperty(c => c.WorkflowState, Constants.WorkflowStates.Removed));
+        }
+        await SetMarkerAsync();
+
+        await sut.RunIfNeededAsync();
+
+        await _sdkOperations.Received(1).DeleteCaseAsync(seeded.CaseUid);
+    }
+
+    [Test]
+    public async Task RunIfNeeded_MarkerSet_LegacyEntityListLeft_IsRetried()
+    {
+        var sut = await CreateSut();
+        await StartFromACleanSlateAsync(sut);
+        var groupUid = NewEntityGroupUid();
+        await new EntityGroup { Name = "Chemicals - RegNo", MicrotingUid = groupUid, Type = "EntitySearch" }.Create(MicrotingDbContext!);
+        await SetMarkerAsync();
+
+        await sut.RunIfNeededAsync();
+
+        await _sdkOperations.Received(1).DeleteEntityGroupAsync(groupUid);
+    }
+
     private async Task SetMarkerAsync()
     {
         if (!await BackendConfigurationPnDbContext!.PluginConfigurationValues
@@ -503,6 +582,7 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
         await BackendConfigurationPnDbContext!.PluginConfigurationValues
             .Where(x => x.Name == LegacyChemicalCleanupService.MarkerName).ExecuteDeleteAsync();
         var sut = await CreateSut();
+        EmulateSdkDeletes();
         await SeedLegacyAsync();
 
         await sut.RunIfNeededAsync();
