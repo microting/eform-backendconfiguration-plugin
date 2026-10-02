@@ -268,9 +268,6 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                 .ConfigureAwait(false);
         }
 
-        areaProperty.UpdatedByUserId = userId;
-        await areaProperty.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
-
         var foldersIdForDelete = backendConfigurationPnDbContext.ProperyAreaFolders
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
             .Where(x => x.ProperyAreaAsignmentId == areaProperty.Id)
@@ -290,6 +287,11 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                 await folder.Delete(sdkDbContext).ConfigureAwait(false);
             }
         }
+
+        // The assignment goes last: while it is live, a later cleanup pass can
+        // still find (and retry) everything hanging off it.
+        areaProperty.UpdatedByUserId = userId;
+        await areaProperty.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
     }
 
     private static Func<int, Task> DefaultDeleteCase(Core core) => async microtingUid =>
