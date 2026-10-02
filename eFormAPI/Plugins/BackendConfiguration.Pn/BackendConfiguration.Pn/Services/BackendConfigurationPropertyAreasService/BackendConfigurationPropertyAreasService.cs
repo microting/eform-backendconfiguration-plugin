@@ -74,9 +74,12 @@ public class BackendConfigurationPropertyAreasService : IBackendConfigurationPro
             var property = await _backendConfigurationPnDbContext.Properties.FirstAsync(x => x.Id == propertyId).ConfigureAwait(false);
             var propertyAreas = new List<PropertyAreaModel>();
 
+            // The legacy chemical area is neither offered nor listed (#1362); an
+            // existing assignment is left for LegacyChemicalCleanupService.
             var propertyAreasQuery = _backendConfigurationPnDbContext.AreaProperties
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.PropertyId == propertyId)
+                .Where(x => x.Area.Type != AreaTypesEnum.Type9)
                 .Include(x => x.Area)
                 .ThenInclude(x => x.AreaRules)
                 .ThenInclude(x => x.AreaRulesPlannings);
@@ -85,6 +88,7 @@ public class BackendConfigurationPropertyAreasService : IBackendConfigurationPro
                 .Include(x => x.AreaTranslations)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.IsFarm == property.IsFarm)
+                .Where(x => x.Type != AreaTypesEnum.Type9)
                 .ToList();
 
             List<PropertyAreaModel> areasForAdd;

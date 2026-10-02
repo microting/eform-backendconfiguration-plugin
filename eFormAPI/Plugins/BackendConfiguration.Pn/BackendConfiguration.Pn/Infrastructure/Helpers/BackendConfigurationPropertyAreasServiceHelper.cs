@@ -23,6 +23,12 @@ namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 
 public static class BackendConfigurationPropertyAreasServiceHelper
 {
+    /// <summary>
+    /// Localization key returned when a caller tries to assign, give rules to or
+    /// plan the Type9 area "25. KemiKontrol", whose legacy flow was removed (#1362).
+    /// </summary>
+    public const string LegacyChemicalAreaRemoved = "LegacyChemicalAreaRemoved";
+
     public static async Task<OperationResult> Update(PropertyAreasUpdateModel updateModel, Core core,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
         ItemsPlanningPnDbContext itemsPlanningPnDbContext, int userId)
@@ -30,9 +36,22 @@ public static class BackendConfigurationPropertyAreasServiceHelper
         try
         {
             updateModel.Areas = updateModel.Areas.Where(x => x.Activated).ToList();
+
+            // Refused before any write. Existing Type9 assignments are not listed by
+            // Read, so a save never mentions them: they are excluded from the
+            // delete set below and left for LegacyChemicalCleanupService.
+            var requestedAreaIds = updateModel.Areas.Where(x => x.Id == null).Select(x => x.AreaId).ToList();
+            if (await backendConfigurationPnDbContext.Areas
+                    .AnyAsync(x => requestedAreaIds.Contains(x.Id) && x.Type == AreaTypesEnum.Type9)
+                    .ConfigureAwait(false))
+            {
+                return new OperationResult(false, LegacyChemicalAreaRemoved);
+            }
+
             var assignments = await backendConfigurationPnDbContext.AreaProperties
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.PropertyId == updateModel.PropertyId)
+                .Where(x => x.Area.Type != AreaTypesEnum.Type9)
                 .ToListAsync().ConfigureAwait(false);
 
             var assignmentsForCreate = updateModel.Areas
@@ -226,11 +245,25 @@ public static class BackendConfigurationPropertyAreasServiceHelper
     /// cases), its entity group, the assignment itself and its SDK folders.
     /// Shared by the property-areas update and LegacyChemicalCleanupService.
     /// </summary>
+    /// <param name="deleteCase">
+    /// Deletes one SDK case by MicrotingUid. LegacyChemicalCleanupService passes
+    /// its SDK seam, which throws on failure so the assignment is reported as
+    /// failed. When omitted, Core.CaseDelete is called and a refused delete is
+    /// logged, as the property-areas update has always carried on past it.
+    /// </param>
     public static async Task DeleteAreaPropertyAsync(AreaProperty areaProperty, Core core,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-        ItemsPlanningPnDbContext itemsPlanningPnDbContext, int userId)
+        ItemsPlanningPnDbContext itemsPlanningPnDbContext, int userId,
+        Func<int, Task>? deleteCase = null)
     {
         var sdkDbContext = core.DbContextHelper.GetDbContext();
+        deleteCase ??= async microtingUid =>
+        {
+            if (!await core.CaseDelete(microtingUid).ConfigureAwait(false))
+            {
+                Console.WriteLine($"DeleteAreaPropertyAsync: Core.CaseDelete({microtingUid}) returned false");
+            }
+        };
 
         // get areaRules and select all linked entity for delete
         var areaRules = await backendConfigurationPnDbContext.AreaRules
@@ -266,7 +299,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                 foreach (CheckListSite checkListSite in sdkDbContext.CheckListSites.Where(x =>
                              x.CheckListId == eformId))
                 {
-                    await core.CaseDelete(checkListSite.MicrotingUid).ConfigureAwait(false);
+                    await deleteCase(checkListSite.MicrotingUid).ConfigureAwait(false);
                 }
             }
 
@@ -322,7 +355,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                                     x.Id == planningCaseSite.MicrotingSdkCaseId).ConfigureAwait(false);
                             if (result.MicrotingUid != null)
                             {
-                                await core.CaseDelete((int)result.MicrotingUid).ConfigureAwait(false);
+                                await deleteCase((int)result.MicrotingUid).ConfigureAwait(false);
                             }
                         }
                     }

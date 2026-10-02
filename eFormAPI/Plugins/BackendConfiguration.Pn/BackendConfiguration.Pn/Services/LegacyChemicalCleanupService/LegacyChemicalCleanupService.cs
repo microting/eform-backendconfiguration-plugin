@@ -31,6 +31,7 @@ using Microting.eForm.Infrastructure;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 
@@ -127,15 +128,15 @@ public class LegacyChemicalCleanupService(
             .ToListAsync().ConfigureAwait(false);
 
         // Cases deployed straight into the legacy folders (the 25.02–25.07 expiry
-        // folders) are not reachable through plannings, so they go first.
-        var deployedUids = await CollectDeployedCaseUidsAsync(sdkDbContext, assignments.Select(x => x.Id).ToList())
-            .ConfigureAwait(false);
+        // folders) are not reachable through plannings, so they go first. Planned
+        // cases are left to DeleteAreaPropertyAsync, so none is deleted twice.
+        var deployedUids = await CollectDeployedCaseUidsAsync(sdkDbContext, assignments).ConfigureAwait(false);
         var cases = await DeleteEachAsync(deployedUids, "case", uid => uid, sdkOperations.DeleteCaseAsync, failures)
             .ConfigureAwait(false);
 
         var areaProperties = await DeleteEachAsync(assignments, "areaProperty", assignment => assignment.Id,
             assignment => BackendConfigurationPropertyAreasServiceHelper.DeleteAreaPropertyAsync(
-                assignment, core, dbContext, itemsPlanningPnDbContext, SystemUserId),
+                assignment, core, dbContext, itemsPlanningPnDbContext, SystemUserId, sdkOperations.DeleteCaseAsync),
             failures).ConfigureAwait(false);
 
         var entityGroupUids = await sdkDbContext.EntityGroups
@@ -152,21 +153,26 @@ public class LegacyChemicalCleanupService(
 
     /// <summary>
     /// MicrotingUids of the cases and check-list sites deployed into the SDK
-    /// folders of the given area assignments.
+    /// folders of the given area assignments, except the planned cases that
+    /// DeleteAreaPropertyAsync deletes itself.
     /// </summary>
     private async Task<List<int>> CollectDeployedCaseUidsAsync(
-        MicrotingDbContext sdkDbContext, List<int> assignmentIds)
+        MicrotingDbContext sdkDbContext, List<AreaProperty> assignments)
     {
+        var assignmentIds = assignments.Select(x => x.Id).ToList();
         var folderIds = await dbContext.ProperyAreaFolders
             .Where(x => assignmentIds.Contains(x.ProperyAreaAsignmentId))
             .Select(x => x.FolderId)
             .Distinct()
             .ToListAsync().ConfigureAwait(false);
 
+        var plannedCaseIds = await PlannedCaseIdsAsync(assignments).ConfigureAwait(false);
+
         var caseUids = await sdkDbContext.Cases
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
                         && x.FolderId != null && folderIds.Contains(x.FolderId.Value)
-                        && x.MicrotingUid != null)
+                        && x.MicrotingUid != null
+                        && !plannedCaseIds.Contains(x.Id))
             .Select(x => x.MicrotingUid!.Value)
             .ToListAsync().ConfigureAwait(false);
         var checkListSiteUids = await sdkDbContext.CheckListSites
@@ -176,6 +182,37 @@ public class LegacyChemicalCleanupService(
             .ToListAsync().ConfigureAwait(false);
 
         return caseUids.Concat(checkListSiteUids).Distinct().ToList();
+    }
+
+    /// <summary>
+    /// SDK case ids of the PlanningCaseSites that DeleteAreaPropertyAsync walks
+    /// for these assignments: live rules, live rule plannings with an
+    /// items-planning planning, live plannings, live planning case sites.
+    /// </summary>
+    private async Task<List<int>> PlannedCaseIdsAsync(List<AreaProperty> assignments)
+    {
+        var planningIds = new List<int>();
+        foreach (var assignment in assignments)
+        {
+            planningIds.AddRange(await dbContext.AreaRules
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
+                            && x.PropertyId == assignment.PropertyId && x.AreaId == assignment.AreaId)
+                .SelectMany(x => x.AreaRulesPlannings)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed && x.ItemPlanningId != 0)
+                .Select(x => x.ItemPlanningId)
+                .ToListAsync().ConfigureAwait(false));
+        }
+
+        var livePlanningIds = await itemsPlanningPnDbContext.Plannings
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed && planningIds.Contains(x.Id))
+            .Select(x => x.Id)
+            .ToListAsync().ConfigureAwait(false);
+
+        return await itemsPlanningPnDbContext.PlanningCaseSites
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed && livePlanningIds.Contains(x.PlanningId))
+            .Select(x => x.MicrotingSdkCaseId)
+            .Distinct()
+            .ToListAsync().ConfigureAwait(false);
     }
 
     /// <summary>

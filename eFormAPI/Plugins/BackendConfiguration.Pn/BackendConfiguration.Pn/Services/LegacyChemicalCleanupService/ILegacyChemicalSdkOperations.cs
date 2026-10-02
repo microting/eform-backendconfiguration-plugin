@@ -25,13 +25,15 @@ using System.Threading.Tasks;
 /// <summary>
 /// The SDK calls the cleanup makes that talk to the Microting cloud. Core is
 /// concrete with non-virtual members, so this seam is what lets the cleanup be
-/// tested without cloud credentials. It covers only the cleanup's own deletes of
-/// cases deployed into the legacy folders and of the legacy entity lists;
-/// BackendConfigurationPropertyAreasServiceHelper.DeleteAreaPropertyAsync, which
-/// the cleanup also calls, still goes through the real Core.
+/// tested without cloud credentials. It covers the cleanup's deletes of cases
+/// (deployed into the legacy folders, and the planned cases that
+/// BackendConfigurationPropertyAreasServiceHelper.DeleteAreaPropertyAsync is
+/// handed this seam for) and of the legacy entity lists. The rest of
+/// DeleteAreaPropertyAsync (folders, entity group) still goes through the real Core.
 /// </summary>
 public interface ILegacyChemicalSdkOperations
 {
+    /// <summary>Throws when the case was not deleted or the cloud did not answer in time.</summary>
     Task DeleteCaseAsync(int microtingUid);
 
     Task DeleteEntityGroupAsync(string entityGroupMicrotingUid);

@@ -33,12 +33,24 @@ public class LegacyChemicalSdkOperations(IEFormCoreService coreHelper) : ILegacy
             .ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Core.CaseDelete retries "parsing in progress" for up to about 7 hours;
+    /// the cleanup gives up on one case after this long and records it as failed.
+    /// </summary>
     internal static readonly TimeSpan CaseDeleteTimeout = TimeSpan.FromMinutes(2);
 
-    // Red-phase seam: still ignores the result and waits without a bound.
+    /// <summary>
+    /// Awaits <paramref name="caseDelete"/> for at most <paramref name="timeout"/>
+    /// (a <see cref="TimeoutException"/> after that; the SDK call itself is not
+    /// cancellable and runs on) and throws when it reports false, so the caller
+    /// records a failure instead of a deleted case.
+    /// </summary>
     internal static async Task EnsureCaseDeletedAsync(Task<bool> caseDelete, int microtingUid, TimeSpan timeout)
     {
-        await caseDelete.ConfigureAwait(false);
+        if (!await caseDelete.WaitAsync(timeout).ConfigureAwait(false))
+        {
+            throw new InvalidOperationException($"Core.CaseDelete({microtingUid}) returned false.");
+        }
     }
 
     public async Task DeleteEntityGroupAsync(string entityGroupMicrotingUid)

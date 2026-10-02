@@ -589,6 +589,37 @@
     }
   },
   {
+    "Key": "LegacyChemicalAreaRemoved",
+    "LocalizedValue": {
+      "da": "Området 25. KemiKontrol er fjernet og kan ikke længere bruges",
+      "de": "Der Bereich 25. KemiKontrol wurde entfernt und kann nicht mehr verwendet werden",
+      "en-US": "The area 25. KemiKontrol has been removed and can no longer be used",
+      "uk-UA": "Область 25. KemiKontrol видалено, і її більше не можна використовувати",
+      "pl-PL": "Obszar 25. KemiKontrol został usunięty i nie można go już używać",
+      "no-NO": "Området 25. KemiKontrol er fjernet og kan ikke lenger brukes",
+      "sv-SE": "Området 25. KemiKontrol har tagits bort och kan inte längre användas",
+      "es-ES": "El área 25. KemiKontrol se ha eliminado y ya no se puede usar",
+      "fr-FR": "La zone 25. KemiKontrol a été supprimée et ne peut plus être utilisée",
+      "it-IT": "L'area 25. KemiKontrol è stata rimossa e non può più essere utilizzata",
+      "nl-NL": "Het gebied 25. KemiKontrol is verwijderd en kan niet meer worden gebruikt",
+      "pt-BR": "A área 25. KemiKontrol foi removida e não pode mais ser usada",
+      "pt-PT": "A área 25. KemiKontrol foi removida e já não pode ser utilizada",
+      "fi-FI": "Alue 25. KemiKontrol on poistettu, eikä sitä voi enää käyttää",
+      "et-ET": "Ala 25. KemiKontrol on eemaldatud ja seda ei saa enam kasutada",
+      "lv-LV": "Apgabals 25. KemiKontrol ir noņemts un vairs nav izmantojams",
+      "lt-LT": "Sritis 25. KemiKontrol pašalinta ir nebegali būti naudojama",
+      "ro-RO": "Zona 25. KemiKontrol a fost eliminată și nu mai poate fi folosită",
+      "hr-HR": "Područje 25. KemiKontrol je uklonjeno i više se ne može koristiti",
+      "sl-SL": "Območje 25. KemiKontrol je bilo odstranjeno in ga ni več mogoče uporabljati",
+      "cs-CZ": "Oblast 25. KemiKontrol byla odstraněna a již ji nelze používat",
+      "sk-SK": "Oblasť 25. KemiKontrol bola odstránená a už ju nemožno používať",
+      "hu-HU": "A 25. KemiKontrol terület el lett távolítva, és már nem használható",
+      "bg-BG": "Областта 25. KemiKontrol е премахната и вече не може да се използва",
+      "el-GR": "Η περιοχή 25. KemiKontrol καταργήθηκε και δεν μπορεί πλέον να χρησιμοποιηθεί",
+      "is-IS": "Svæðið 25. KemiKontrol hefur verið fjarlægt og er ekki lengur hægt að nota"
+    }
+  },
+  {
     "Key": "NotFoundPropertyWorkerAssignments",
     "LocalizedValue": {
       "da": "Ikke fundet",
