@@ -352,6 +352,30 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
     }
 
     [Test]
+    public async Task RunIfNeeded_MarkerSet_RetractedFolderCase_IsNotALeftover()
+    {
+        // Retracted means already deleted from the device (as the planned-case
+        // resolver treats it), so it must neither be deleted again nor keep the
+        // retry gate open on every start.
+        var sut = await CreateSut();
+        await StartFromACleanSlateAsync(sut);
+        var seeded = await SeedLegacyAsync();
+        await seeded.Legacy.Delete(BackendConfigurationPnDbContext!);
+        foreach (var uid in new[] { seeded.BarcodeGroupUid, seeded.PropertyGroupUid })
+        {
+            await MicrotingDbContext!.EntityGroups.Where(x => x.MicrotingUid == uid)
+                .ExecuteUpdateAsync(x => x.SetProperty(c => c.WorkflowState, Constants.WorkflowStates.Removed));
+        }
+        await MicrotingDbContext!.Cases.Where(x => x.MicrotingUid == seeded.CaseUid)
+            .ExecuteUpdateAsync(x => x.SetProperty(c => c.WorkflowState, Constants.WorkflowStates.Retracted));
+        await SetMarkerAsync();
+
+        await sut.RunIfNeededAsync();
+
+        await _sdkOperations.DidNotReceiveWithAnyArgs().DeleteCaseAsync(default);
+    }
+
+    [Test]
     public async Task RunIfNeeded_MarkerSet_LegacyEntityListLeft_IsRetried()
     {
         var sut = await CreateSut();
