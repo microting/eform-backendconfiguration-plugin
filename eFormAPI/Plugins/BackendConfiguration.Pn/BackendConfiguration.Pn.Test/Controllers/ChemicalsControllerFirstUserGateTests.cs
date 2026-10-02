@@ -31,7 +31,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
@@ -42,10 +41,10 @@ using NUnit.Framework;
 namespace BackendConfiguration.Pn.Test.Controllers;
 
 /// <summary>
-/// Until chemistry goes GA every Kemi web route is reachable only by the tenant's
+/// TODO(chemistry-GA): remove with the gate. Until chemistry goes GA every Kemi web route is reachable only by the tenant's
 /// first user (lowest AspNetUsers Id, the eForm host's IsFirstUser convention).
 /// The table runs the controller's authorization filters for every routed action,
-/// so a new route that escapes the gate fails here. Remove with the gate at GA.
+/// so a new route that escapes the gate fails here.
 /// </summary>
 [TestFixture]
 public class ChemicalsControllerFirstUserGateTests
@@ -87,21 +86,11 @@ public class ChemicalsControllerFirstUserGateTests
 
         var filters = typeof(ChemicalsController).GetCustomAttributes(true)
             .Concat(action.GetCustomAttributes(true))
-            .OfType<IFilterMetadata>()
-            .Select(f => f is IFilterFactory factory ? factory.CreateInstance(services) : f);
+            .OfType<IAsyncAuthorizationFilter>();
 
         foreach (var filter in filters)
         {
-            switch (filter)
-            {
-                case IAsyncAuthorizationFilter asyncFilter:
-                    await asyncFilter.OnAuthorizationAsync(context);
-                    break;
-                case IAuthorizationFilter syncFilter:
-                    syncFilter.OnAuthorization(context);
-                    break;
-            }
-
+            await filter.OnAuthorizationAsync(context);
             if (context.Result != null)
             {
                 break;
@@ -111,10 +100,15 @@ public class ChemicalsControllerFirstUserGateTests
         return context.Result;
     }
 
+    private static void AssertForbidden(IActionResult result) =>
+        Assert.That(result, Is.TypeOf<StatusCodeResult>()
+            .With.Property(nameof(StatusCodeResult.StatusCode)).EqualTo(StatusCodes.Status403Forbidden));
+
     [Test]
     public void TheTableCoversEveryRoute()
     {
-        Assert.That(RoutedActions().Count(), Is.EqualTo(19));
+        Assert.That(RoutedActions().Count(), Is.EqualTo(19),
+            "add the new route to the gate review, then bump this");
     }
 
     [TestCaseSource(nameof(RoutedActions))]
@@ -122,8 +116,7 @@ public class ChemicalsControllerFirstUserGateTests
     {
         var result = await AuthorizeAsync(actionName, Caller(OtherAdminId));
 
-        Assert.That(result, Is.InstanceOf<IStatusCodeActionResult>());
-        Assert.That(((IStatusCodeActionResult)result).StatusCode, Is.EqualTo(StatusCodes.Status403Forbidden));
+        AssertForbidden(result);
     }
 
     [Test]
@@ -131,8 +124,7 @@ public class ChemicalsControllerFirstUserGateTests
     {
         var result = await AuthorizeAsync(nameof(ChemicalsController.GetPropertyInventory), Caller(0, firstUserId: 0));
 
-        Assert.That(result, Is.InstanceOf<IStatusCodeActionResult>());
-        Assert.That(((IStatusCodeActionResult)result).StatusCode, Is.EqualTo(StatusCodes.Status403Forbidden));
+        AssertForbidden(result);
     }
 
     [Test]

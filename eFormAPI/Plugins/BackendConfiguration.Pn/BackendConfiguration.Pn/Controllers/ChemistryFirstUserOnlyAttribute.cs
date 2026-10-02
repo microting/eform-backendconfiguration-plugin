@@ -25,6 +25,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.DependencyInjection;
 using Microting.eFormApi.BasePn.Abstractions;
 
 /// <summary>
@@ -37,17 +38,15 @@ using Microting.eFormApi.BasePn.Abstractions;
 /// gated; per-worker chemical permissions (default none) already bound it.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
-public sealed class ChemistryFirstUserOnlyAttribute() : TypeFilterAttribute(typeof(Filter))
+public sealed class ChemistryFirstUserOnlyAttribute : Attribute, IAsyncAuthorizationFilter
 {
-    private sealed class Filter(IUserService userService) : IAsyncAuthorizationFilter
+    public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {
-        public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
+        var userService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
+        var userId = userService.UserId;
+        if (userId < 1 || userId != await userService.GetFirstUserIdInDb())
         {
-            var userId = userService.UserId;
-            if (userId < 1 || userId != await userService.GetFirstUserIdInDb().ConfigureAwait(false))
-            {
-                context.Result = new StatusCodeResult(StatusCodes.Status403Forbidden);
-            }
+            context.Result = new StatusCodeResult(StatusCodes.Status403Forbidden);
         }
     }
 }
