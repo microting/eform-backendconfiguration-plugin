@@ -70,6 +70,9 @@ public class LegacyChemicalCleanupService(
     /// <summary>Same key convention as AreaRulePlanningTagPurgeService.BacklogPurgeMarkerName.</summary>
     public const string MarkerName = "BackendConfigurationBaseSettings:LegacyChemicalFlowRemoved";
 
+    /// <summary>How many passes have run; caps the retries of leftovers.</summary>
+    public const string AttemptsName = MarkerName + ":Attempts";
+
     internal const string PropertyEntityGroupPrefix = "Chemicals - Areas - ";
 
     internal static readonly string[] GlobalEntityGroupNames = ["Chemicals - Barcode", "Chemicals - RegNo"];

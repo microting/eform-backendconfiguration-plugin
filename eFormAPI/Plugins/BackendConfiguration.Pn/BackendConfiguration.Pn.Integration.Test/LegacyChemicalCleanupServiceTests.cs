@@ -24,6 +24,7 @@ SOFTWARE.
 
 using BackendConfiguration.Pn.Services.LegacyChemicalCleanupService;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eForm.Infrastructure.Data.Entities;
@@ -67,13 +68,13 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
     /// Call before seeding: GetCore() runs Core.StartSqlOnly, which migrates the
     /// SDK database to the current model (e.g. Folders.ChildrenProhibited).
     /// </summary>
-    private async Task<LegacyChemicalCleanupService> CreateSut()
+    private async Task<LegacyChemicalCleanupService> CreateSut(ILogger<LegacyChemicalCleanupService>? logger = null)
     {
         var core = await GetCore();
         var coreHelper = Substitute.For<IEFormCoreService>();
         coreHelper.GetCore().Returns(Task.FromResult(core));
         return new LegacyChemicalCleanupService(BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!,
-            coreHelper, _sdkOperations, NullLogger<LegacyChemicalCleanupService>.Instance);
+            coreHelper, _sdkOperations, logger ?? NullLogger<LegacyChemicalCleanupService>.Instance);
     }
 
     private static string NewEntityGroupUid() => Guid.NewGuid().ToString("N");
@@ -287,16 +288,22 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
     }
 
     /// <summary>
-    /// Makes the SDK seam mark what it "deletes" as removed locally, as
-    /// Core.CaseDelete and Core.EntityGroupDelete do, so retry gating sees it.
+    /// Makes the SDK seam mark what it "deletes" as removed locally, the way
+    /// Core does: Core.CaseDelete marks a Cases row only when exactly one row
+    /// carries the uid (SqlController.CaseDelete), and always the CheckListSite
+    /// (CaseDeleteReversed); Core.EntityGroupDelete marks the entity group.
     /// </summary>
     private void EmulateSdkDeletes()
     {
         _sdkOperations.When(x => x.DeleteCaseAsync(Arg.Any<int>())).Do(call =>
         {
             var uid = call.Arg<int>();
-            MicrotingDbContext!.Cases.Where(x => x.MicrotingUid == uid)
-                .ExecuteUpdate(x => x.SetProperty(c => c.WorkflowState, Constants.WorkflowStates.Removed));
+            if (MicrotingDbContext!.Cases.Count(x => x.MicrotingUid == uid) == 1)
+            {
+                MicrotingDbContext.Cases.Where(x => x.MicrotingUid == uid)
+                    .ExecuteUpdate(x => x.SetProperty(c => c.WorkflowState, Constants.WorkflowStates.Removed));
+            }
+
             MicrotingDbContext.CheckListSites.Where(x => x.MicrotingUid == uid)
                 .ExecuteUpdate(x => x.SetProperty(c => c.WorkflowState, Constants.WorkflowStates.Removed));
         });
@@ -314,6 +321,69 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
         EmulateSdkDeletes();
         await sut.CleanupAsync();
         _sdkOperations.ClearReceivedCalls();
+    }
+
+    [Test]
+    public async Task RunIfNeeded_ReversedEformCompletedTwice_DoesNotRunAgain()
+    {
+        // The real shape of a legacy deployment: a reversed CheckListSite, plus one
+        // completed Cases row per completion with the same uid. Core.CaseDelete
+        // leaves those rows live (it marks a Cases row only on a single match).
+        var sut = await CreateSut();
+        await StartFromACleanSlateAsync(sut);
+        var seeded = await SeedLegacyAsync();
+        var uid = NewUid();
+        await new CheckListSite { MicrotingUid = uid, FolderId = seeded.LegacyFolder.Id }.Create(MicrotingDbContext!);
+        foreach (var _ in new[] { 1, 2 })
+        {
+            await new Case { FolderId = seeded.LegacyFolder.Id, MicrotingUid = uid, Status = 100, DoneAt = DateTime.UtcNow }
+                .Create(MicrotingDbContext!);
+        }
+        await ClearMarkersAsync();
+
+        await sut.RunIfNeededAsync();
+        _sdkOperations.ClearReceivedCalls();
+        await sut.RunIfNeededAsync();
+
+        await _sdkOperations.DidNotReceiveWithAnyArgs().DeleteCaseAsync(default);
+        await _sdkOperations.DidNotReceiveWithAnyArgs().DeleteEntityGroupAsync(default!);
+    }
+
+    [Test]
+    public async Task RunIfNeeded_LeftoversThatNeverClear_GiveUpAfterFivePasses_WithOneWarning()
+    {
+        var logger = new CapturingLogger();
+        var sut = await CreateSut(logger);
+        await StartFromACleanSlateAsync(sut);
+        var stuck = await SeedFailingLegacyPlanningAsync();
+        await ClearMarkersAsync();
+
+        for (var start = 0; start < 7; start++)
+        {
+            await sut.RunIfNeededAsync();
+        }
+
+        await _sdkOperations.Received(5).DeleteCaseAsync(stuck.CaseSite.MicrotingSdkCaseId);
+        Assert.That(logger.Warnings.Count(x => x.Contains("giving up", StringComparison.OrdinalIgnoreCase)), Is.EqualTo(1),
+            string.Join(Environment.NewLine, logger.Warnings));
+    }
+
+    private sealed class CapturingLogger : ILogger<LegacyChemicalCleanupService>
+    {
+        public List<string> Warnings { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+            if (logLevel == LogLevel.Warning)
+            {
+                Warnings.Add(formatter(state, exception));
+            }
+        }
     }
 
     [Test]
@@ -389,8 +459,17 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
         await _sdkOperations.Received(1).DeleteEntityGroupAsync(groupUid);
     }
 
+    private async Task ClearMarkersAsync() =>
+        await BackendConfigurationPnDbContext!.PluginConfigurationValues
+            .Where(x => x.Name == LegacyChemicalCleanupService.MarkerName
+                        || x.Name == LegacyChemicalCleanupService.AttemptsName)
+            .ExecuteDeleteAsync();
+
+    /// <summary>The state of a tenant where the first pass already ran (279), with no attempts row yet.</summary>
     private async Task SetMarkerAsync()
     {
+        await BackendConfigurationPnDbContext!.PluginConfigurationValues
+            .Where(x => x.Name == LegacyChemicalCleanupService.AttemptsName).ExecuteDeleteAsync();
         if (!await BackendConfigurationPnDbContext!.PluginConfigurationValues
                 .AnyAsync(x => x.Name == LegacyChemicalCleanupService.MarkerName))
         {
@@ -575,8 +654,7 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
     [Test]
     public async Task RunIfNeeded_OneItemFailing_StillWritesTheMarker()
     {
-        await BackendConfigurationPnDbContext!.PluginConfigurationValues
-            .Where(x => x.Name == LegacyChemicalCleanupService.MarkerName).ExecuteDeleteAsync();
+        await ClearMarkersAsync();
         var sut = await CreateSut();
         await SeedFailingLegacyPlanningAsync();
         var seeded = await SeedLegacyAsync();
@@ -603,8 +681,7 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
     [Test]
     public async Task RunIfNeeded_SecondRun_NothingLeft_DoesNothing()
     {
-        await BackendConfigurationPnDbContext!.PluginConfigurationValues
-            .Where(x => x.Name == LegacyChemicalCleanupService.MarkerName).ExecuteDeleteAsync();
+        await ClearMarkersAsync();
         var sut = await CreateSut();
         EmulateSdkDeletes();
         await SeedLegacyAsync();
