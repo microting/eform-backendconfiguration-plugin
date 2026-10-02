@@ -116,6 +116,29 @@ public class KemiKontrolAreaGuardTests : TestBaseSetup
     }
 
     [Test]
+    public async Task Update_NewKemiKontrolNextToANormalArea_RefusesTheWholeSave()
+    {
+        var core = await GetCore();
+        var (property, area) = await SeedPropertyAndKemiKontrolAreaAsync();
+        var normalArea = new Area { Type = AreaTypesEnum.Type1, CreatedByUserId = 1, UpdatedByUserId = 1 };
+        await normalArea.Create(BackendConfigurationPnDbContext!);
+
+        var result = await BackendConfigurationPropertyAreasServiceHelper.Update(new PropertyAreasUpdateModel
+        {
+            PropertyId = property.Id,
+            Areas =
+            [
+                new PropertyAreaModel { AreaId = normalArea.Id, Activated = true },
+                new PropertyAreaModel { AreaId = area.Id, Activated = true }
+            ]
+        }, core, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1);
+
+        Assert.That(result.Message, Is.EqualTo(Refused));
+        Assert.That(await BackendConfigurationPnDbContext!.AreaProperties.AnyAsync(x => x.PropertyId == property.Id),
+            Is.False, "nothing of the refused save is written");
+    }
+
+    [Test]
     public async Task Update_LeavesAnExistingKemiKontrolAssignmentForTheLegacyCleanup()
     {
         // Read no longer lists the assignment, so the client's next save omits it.
@@ -188,5 +211,39 @@ public class KemiKontrolAreaGuardTests : TestBaseSetup
         Assert.That(result.Message, Is.EqualTo(Refused));
         Assert.That(await BackendConfigurationPnDbContext!.AreaRulePlannings
             .AnyAsync(x => x.AreaRuleId == rule.Id), Is.False);
+    }
+
+    [Test]
+    public async Task UpdatePlanning_AnExistingKemiKontrolPlanning_IsRefusedAndUnchanged()
+    {
+        var core = await GetCore();
+        var (property, area) = await SeedPropertyAndKemiKontrolAreaAsync();
+        await AssignAsync(property, area);
+        var rule = new AreaRule
+        {
+            AreaId = area.Id, PropertyId = property.Id, EformId = 7, CreatedInGuide = true,
+            CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await rule.Create(BackendConfigurationPnDbContext!);
+        var rulePlanning = new AreaRulePlanning
+        {
+            AreaRuleId = rule.Id, PropertyId = property.Id, AreaId = area.Id, StartDate = DateTime.UtcNow.Date,
+            Status = true, RepeatType = 1, RepeatEvery = 0, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await rulePlanning.Create(BackendConfigurationPnDbContext!);
+
+        var result = await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(new AreaRulePlanningModel
+        {
+            Id = rulePlanning.Id,
+            RuleId = rule.Id,
+            PropertyId = property.Id,
+            Status = false,
+            StartDate = DateTime.UtcNow.Date
+        }, core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, null);
+
+        Assert.That(result.Message, Is.EqualTo(Refused));
+        var stored = await BackendConfigurationPnDbContext!.AreaRulePlannings.AsNoTracking()
+            .SingleAsync(x => x.Id == rulePlanning.Id);
+        Assert.That(stored.Status, Is.True);
     }
 }

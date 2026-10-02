@@ -152,12 +152,22 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
         Assert.That(folder.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
     }
 
+    private sealed record LegacyPlanning(
+        AreaProperty Assignment,
+        AreaRule Rule,
+        AreaRulePlanning RulePlanning,
+        Planning Planning,
+        PlanningCaseSite CaseSite);
+
     /// <summary>
-    /// A legacy assignment whose deletion throws inside DeleteAreaPropertyAsync:
-    /// its items-planning PlanningCaseSite points at an SDK case that does not
-    /// exist (never deployed), so the moved <c>Cases.SingleAsync</c> throws.
+    /// The shape the removed CreatePlanningType9 left behind. Core.CaseCreate with
+    /// Repeated = 0 returns a MicrotingUid and creates only a CheckListSite (no
+    /// Cases row), and the PlanningCaseSite stores that uid in MicrotingSdkCaseId
+    /// and the CheckListSite's Id in MicrotingCheckListSitId.
+    /// With <paramref name="checkListSiteUid"/> null the SDK side is missing
+    /// altogether (never deployed): MicrotingSdkCaseId points nowhere.
     /// </summary>
-    private async Task<AreaProperty> SeedUndeletableLegacyAssignmentAsync()
+    private async Task<LegacyPlanning> SeedLegacyPlanningAsync(int? checkListSiteUid, int? folderId = null)
     {
         var property = new Property { Name = Guid.NewGuid().ToString(), CreatedByUserId = 1, UpdatedByUserId = 1 };
         await property.Create(BackendConfigurationPnDbContext!);
@@ -165,6 +175,11 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
         await chemicalArea.Create(BackendConfigurationPnDbContext!);
         var assignment = new AreaProperty { AreaId = chemicalArea.Id, PropertyId = property.Id, Checked = true, CreatedByUserId = 1, UpdatedByUserId = 1 };
         await assignment.Create(BackendConfigurationPnDbContext!);
+        if (folderId != null)
+        {
+            await new ProperyAreaFolder { FolderId = folderId.Value, ProperyAreaAsignmentId = assignment.Id, CreatedByUserId = 1, UpdatedByUserId = 1 }
+                .Create(BackendConfigurationPnDbContext!);
+        }
 
         var areaRule = new AreaRule
         {
@@ -174,33 +189,164 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
         await areaRule.Create(BackendConfigurationPnDbContext!);
         var planning = new Planning
         {
-            Enabled = true, RepeatEvery = 1, RepeatType = RepeatType.Week,
+            Enabled = true, RepeatEvery = 0, RepeatType = RepeatType.Day,
             StartDate = DateTime.UtcNow.Date, RelatedEFormId = 7, Description = "Legacy chemical",
             CreatedByUserId = 1, UpdatedByUserId = 1
         };
         await planning.Create(ItemsPlanningPnDbContext!);
-        await new AreaRulePlanning
+        var rulePlanning = new AreaRulePlanning
         {
             AreaRuleId = areaRule.Id, PropertyId = property.Id, AreaId = chemicalArea.Id,
             ItemPlanningId = planning.Id, StartDate = DateTime.UtcNow.Date, Status = true,
-            RepeatType = 2, RepeatEvery = 1, CreatedByUserId = 1, UpdatedByUserId = 1
-        }.Create(BackendConfigurationPnDbContext!);
+            RepeatType = 1, RepeatEvery = 0, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await rulePlanning.Create(BackendConfigurationPnDbContext!);
 
-        const int missingSdkCaseId = int.MaxValue;
+        var checkListSiteId = 0;
+        var sdkCaseId = int.MaxValue;
+        if (checkListSiteUid != null)
+        {
+            var checkListSite = new CheckListSite { MicrotingUid = checkListSiteUid.Value, FolderId = folderId };
+            await checkListSite.Create(MicrotingDbContext!);
+            checkListSiteId = checkListSite.Id;
+            sdkCaseId = checkListSiteUid.Value;
+        }
+
         var planningCase = new PlanningCase
         {
-            PlanningId = planning.Id, Status = 66, MicrotingSdkCaseId = missingSdkCaseId,
-            MicrotingSdkeFormId = 7, CreatedByUserId = 1, UpdatedByUserId = 1
+            PlanningId = planning.Id, Status = 66, MicrotingSdkeFormId = 7, CreatedByUserId = 1, UpdatedByUserId = 1
         };
         await planningCase.Create(ItemsPlanningPnDbContext!);
-        await new PlanningCaseSite
+        var caseSite = new PlanningCaseSite
         {
             PlanningId = planning.Id, PlanningCaseId = planningCase.Id, MicrotingSdkSiteId = 0,
-            MicrotingSdkeFormId = 7, MicrotingSdkCaseId = missingSdkCaseId, Status = 66,
-            CreatedByUserId = 1, UpdatedByUserId = 1
-        }.Create(ItemsPlanningPnDbContext!);
+            MicrotingSdkeFormId = 7, MicrotingSdkCaseId = sdkCaseId, MicrotingCheckListSitId = checkListSiteId,
+            Status = 66, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await caseSite.Create(ItemsPlanningPnDbContext!);
 
-        return assignment;
+        return new LegacyPlanning(assignment, areaRule, rulePlanning, planning, caseSite);
+    }
+
+    private static int NewUid() => Random.Shared.Next(100_000_000, 999_999_999);
+
+    private async Task<T> ReloadAsync<T>(DbContext context, int id) where T : class =>
+        await context.Set<T>().AsNoTracking().SingleAsync(x => EF.Property<int>(x, "Id") == id);
+
+    [Test]
+    public async Task Cleanup_LegacyPlanningShape_DeletesTheCheckListSiteOnce_AndNeverAnUnrelatedCase()
+    {
+        var sut = await CreateSut();
+        // An unrelated case whose Cases.Id equals the legacy uid: reading the uid
+        // as a Cases.Id would delete this case from the device and the cloud.
+        var unrelatedUid = NewUid();
+        var unrelated = new Case { MicrotingUid = unrelatedUid };
+        await unrelated.Create(MicrotingDbContext!);
+        var folder = new Folder { Name = "25.01 Registrer produkter", Description = Guid.NewGuid().ToString() };
+        await folder.Create(MicrotingDbContext!);
+        var legacy = await SeedLegacyPlanningAsync(unrelated.Id, folder.Id);
+
+        var result = await sut.CleanupAsync();
+
+        await _sdkOperations.Received(1).DeleteCaseAsync(unrelated.Id);
+        await _sdkOperations.DidNotReceive().DeleteCaseAsync(unrelatedUid);
+        Assert.That(result.Failures, Does.Not.Contain($"areaProperty:{legacy.Assignment.Id}"));
+        Assert.That((await ReloadAsync<AreaProperty>(BackendConfigurationPnDbContext!, legacy.Assignment.Id)).WorkflowState,
+            Is.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That((await ReloadAsync<AreaRulePlanning>(BackendConfigurationPnDbContext!, legacy.RulePlanning.Id)).WorkflowState,
+            Is.EqualTo(Constants.WorkflowStates.Removed));
+    }
+
+    [Test]
+    public async Task Cleanup_PlanningCaseSiteWithoutAnySdkRow_IsSkipped_AndTheAssignmentRemoved()
+    {
+        var sut = await CreateSut();
+        var legacy = await SeedLegacyPlanningAsync(checkListSiteUid: null);
+
+        var result = await sut.CleanupAsync();
+
+        await _sdkOperations.DidNotReceive().DeleteCaseAsync(int.MaxValue);
+        Assert.That(result.Failures, Does.Not.Contain($"areaProperty:{legacy.Assignment.Id}"));
+        Assert.That((await ReloadAsync<AreaProperty>(BackendConfigurationPnDbContext!, legacy.Assignment.Id)).WorkflowState,
+            Is.EqualTo(Constants.WorkflowStates.Removed));
+    }
+
+    [Test]
+    public async Task Cleanup_FailedPlannedDelete_KeepsTheCaseSiteLink_ForTheNextRun()
+    {
+        var sut = await CreateSut();
+        var uid = NewUid();
+        var legacy = await SeedLegacyPlanningAsync(uid);
+        _sdkOperations.DeleteCaseAsync(uid).Returns(Task.FromException(new InvalidOperationException("cloud said no")));
+
+        var result = await sut.CleanupAsync();
+
+        Assert.That(result.Failures, Does.Contain($"areaProperty:{legacy.Assignment.Id}"));
+        Assert.That((await ReloadAsync<PlanningCaseSite>(ItemsPlanningPnDbContext!, legacy.CaseSite.Id)).WorkflowState,
+            Is.Not.EqualTo(Constants.WorkflowStates.Removed), "the link that finds the case again is kept");
+    }
+
+    private async Task SetMarkerAsync()
+    {
+        if (!await BackendConfigurationPnDbContext!.PluginConfigurationValues
+                .AnyAsync(x => x.Name == LegacyChemicalCleanupService.MarkerName))
+        {
+            BackendConfigurationPnDbContext.PluginConfigurationValues.Add(
+                new Microting.eFormApi.BasePn.Infrastructure.Database.Entities.PluginConfigurationValue
+                {
+                    Name = LegacyChemicalCleanupService.MarkerName, Value = "true",
+                    CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow, Version = 1,
+                    WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1
+                });
+            await BackendConfigurationPnDbContext.SaveChangesAsync();
+        }
+    }
+
+    [Test]
+    public async Task RunIfNeeded_MarkerSet_HalfDeletedAssignment_IsRemovedOnTheNextStart()
+    {
+        // What the #1362 delete path left on tenants: the planning was soft-deleted,
+        // then the case lookup threw, so the rule, its planning and the assignment stayed.
+        var sut = await CreateSut();
+        var legacy = await SeedLegacyPlanningAsync(NewUid());
+        await legacy.Planning.Delete(ItemsPlanningPnDbContext!);
+        await legacy.CaseSite.Delete(ItemsPlanningPnDbContext!);
+        await SetMarkerAsync();
+
+        await sut.RunIfNeededAsync();
+
+        Assert.That((await ReloadAsync<AreaProperty>(BackendConfigurationPnDbContext!, legacy.Assignment.Id)).WorkflowState,
+            Is.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That((await ReloadAsync<AreaRule>(BackendConfigurationPnDbContext!, legacy.Rule.Id)).WorkflowState,
+            Is.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That((await ReloadAsync<AreaRulePlanning>(BackendConfigurationPnDbContext!, legacy.RulePlanning.Id)).WorkflowState,
+            Is.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(await BackendConfigurationPnDbContext!.PluginConfigurationValues
+            .CountAsync(x => x.Name == LegacyChemicalCleanupService.MarkerName), Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task RunIfNeeded_MarkerSet_OrphanRuleAndPlanning_AreRemoved()
+    {
+        var sut = await CreateSut();
+        // A rule left without its assignment, and a rule planning left without its rule.
+        var orphanRule = await SeedLegacyPlanningAsync(NewUid());
+        await orphanRule.Assignment.Delete(BackendConfigurationPnDbContext!);
+        var orphanPlanning = await SeedLegacyPlanningAsync(NewUid());
+        await orphanPlanning.Rule.Delete(BackendConfigurationPnDbContext!);
+        await orphanPlanning.Assignment.Delete(BackendConfigurationPnDbContext!);
+        await SetMarkerAsync();
+
+        await sut.RunIfNeededAsync();
+
+        Assert.That((await ReloadAsync<AreaRule>(BackendConfigurationPnDbContext!, orphanRule.Rule.Id)).WorkflowState,
+            Is.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That((await ReloadAsync<AreaRulePlanning>(BackendConfigurationPnDbContext!, orphanRule.RulePlanning.Id)).WorkflowState,
+            Is.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That((await ReloadAsync<AreaRulePlanning>(BackendConfigurationPnDbContext!, orphanPlanning.RulePlanning.Id)).WorkflowState,
+            Is.EqualTo(Constants.WorkflowStates.Removed));
+        await _sdkOperations.Received(1).DeleteCaseAsync(orphanRule.CaseSite.MicrotingSdkCaseId);
+        await _sdkOperations.Received(1).DeleteCaseAsync(orphanPlanning.CaseSite.MicrotingSdkCaseId);
     }
 
     /// <summary>
@@ -287,6 +433,14 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
         Assert.That(result.Failures, Does.Contain($"areaProperty:{seeded.Legacy.Id}"));
     }
 
+    /// <summary>A legacy planning whose check-list-site delete the cloud refuses.</summary>
+    private async Task<LegacyPlanning> SeedFailingLegacyPlanningAsync()
+    {
+        var uid = NewUid();
+        _sdkOperations.DeleteCaseAsync(uid).Returns(Task.FromException(new InvalidOperationException("cloud said no")));
+        return await SeedLegacyPlanningAsync(uid);
+    }
+
     private void FailSdkDeletesFor(Seeded seeded)
     {
         _sdkOperations.DeleteCaseAsync(seeded.CaseUid)
@@ -299,7 +453,7 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
     public async Task Cleanup_OneItemFailing_StillCleansTheRestAndReportsTheFailures()
     {
         var sut = await CreateSut();
-        var undeletable = await SeedUndeletableLegacyAssignmentAsync();
+        var undeletable = (await SeedFailingLegacyPlanningAsync()).Assignment;
         var seeded = await SeedLegacyAsync();
         FailSdkDeletesFor(seeded);
 
@@ -321,7 +475,7 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
         await BackendConfigurationPnDbContext!.PluginConfigurationValues
             .Where(x => x.Name == LegacyChemicalCleanupService.MarkerName).ExecuteDeleteAsync();
         var sut = await CreateSut();
-        await SeedUndeletableLegacyAssignmentAsync();
+        await SeedFailingLegacyPlanningAsync();
         var seeded = await SeedLegacyAsync();
         FailSdkDeletesFor(seeded);
 
@@ -344,7 +498,7 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
     }
 
     [Test]
-    public async Task RunIfNeeded_SecondRun_DoesNothing()
+    public async Task RunIfNeeded_SecondRun_NothingLeft_DoesNothing()
     {
         await BackendConfigurationPnDbContext!.PluginConfigurationValues
             .Where(x => x.Name == LegacyChemicalCleanupService.MarkerName).ExecuteDeleteAsync();
@@ -353,7 +507,6 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
 
         await sut.RunIfNeededAsync();
         _sdkOperations.ClearReceivedCalls();
-        await SeedLegacyAsync();
         await sut.RunIfNeededAsync();
 
         await _sdkOperations.DidNotReceiveWithAnyArgs().DeleteCaseAsync(default);

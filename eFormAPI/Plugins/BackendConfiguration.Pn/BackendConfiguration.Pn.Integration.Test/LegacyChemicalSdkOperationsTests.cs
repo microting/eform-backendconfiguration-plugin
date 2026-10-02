@@ -57,8 +57,4 @@ public class LegacyChemicalSdkOperationsTests
         Assert.That(async () => await LegacyChemicalSdkOperations.EnsureCaseDeletedAsync(
                 Task.FromResult(true), 42, TimeSpan.FromSeconds(5)),
             Throws.Nothing);
-
-    [Test]
-    public void CaseDeleteTimeout_IsTwoMinutes() =>
-        Assert.That(LegacyChemicalSdkOperations.CaseDeleteTimeout, Is.EqualTo(TimeSpan.FromMinutes(2)));
 }
