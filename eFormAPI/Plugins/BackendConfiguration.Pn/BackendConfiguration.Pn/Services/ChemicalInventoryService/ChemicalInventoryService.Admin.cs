@@ -72,6 +72,12 @@ public partial class ChemicalInventoryService
     public async Task<IReadOnlyList<ChemicalWorkerPermissionModel>> ListWorkerPermissionsAsync(ChemicalCaller caller, int propertyId)
     {
         await permissions.RequireAsync(caller, propertyId, ChemicalPermission.Admin).ConfigureAwait(false);
+        return await ReadWorkerPermissionsAsync(propertyId).ConfigureAwait(false);
+    }
+
+    /// <summary>The worker permission list, without an authorisation check: callers authorise first.</summary>
+    private async Task<IReadOnlyList<ChemicalWorkerPermissionModel>> ReadWorkerPermissionsAsync(int propertyId)
+    {
         var workerIds = await AssignedWorkerIdsAsync(propertyId).ConfigureAwait(false);
         var stored = await dbContext.ChemicalWorkerPermissions.AsNoTracking()
             .Where(p => p.PropertyId == propertyId && p.WorkflowState != Removed)
@@ -136,7 +142,9 @@ public partial class ChemicalInventoryService
             return true;
         }).ConfigureAwait(false);
 
-        return await ListWorkerPermissionsAsync(caller, propertyId).ConfigureAwait(false);
+        // Authorised inside the transaction above. Re-authorising here would turn
+        // an admin's committed self-revocation into a PermissionDenied (#1363).
+        return await ReadWorkerPermissionsAsync(propertyId).ConfigureAwait(false);
     }
 
     /// <summary>Trimmed, lower-cased, de-duplicated plain addresses ("Name &lt;a@b&gt;" and lists are refused).</summary>

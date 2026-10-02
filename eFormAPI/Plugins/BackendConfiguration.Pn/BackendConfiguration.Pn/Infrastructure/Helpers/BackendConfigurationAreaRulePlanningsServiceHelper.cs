@@ -34,6 +34,15 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
     {
         try
         {
+            if (await backendConfigurationPnDbContext.AreaRules
+                    .AnyAsync(x => x.Id == areaRulePlanningModel.RuleId
+                                   && x.Area.Type == BackendConfigurationPropertyAreasServiceHelper.LegacyChemicalAreaType)
+                    .ConfigureAwait(false))
+            {
+                return new OperationDataResult<AreaRuleModel>(false,
+                    BackendConfigurationPropertyAreasServiceHelper.LegacyChemicalAreaRemoved);
+            }
+
             //var core = await _coreHelper.GetCore().ConfigureAwait(false);
             var sdkDbContext = core.DbContextHelper.GetDbContext();
             areaRulePlanningModel.AssignedSites =

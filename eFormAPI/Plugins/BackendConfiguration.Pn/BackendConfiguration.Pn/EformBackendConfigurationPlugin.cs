@@ -925,9 +925,10 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         // entity lists (flutter-chemistry spec §12). In the background: every
         // CaseDelete/EntityGroupDelete is a cloud round-trip, and startup must not
         // wait for them. Its own scope, because the startup scope above is disposed
-        // when Configure returns. The marker is written after every completed pass
-        // (per-item failures are logged, not retried); only a pass that aborts
-        // outright, e.g. on a database error, is retried on the next boot.
+        // when Configure returns. The marker is written after the first completed
+        // pass; a later boot re-runs the pass only while legacy leftovers are still
+        // live, at most five passes in all (then one warning, manual follow-up).
+        // A pass that aborts outright, e.g. on a database error, counts against the cap.
         _ = Task.Run(async () =>
         {
             using var cleanupScope = serviceProvider.CreateScope();

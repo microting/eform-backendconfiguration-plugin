@@ -119,6 +119,25 @@ public class ChemicalAdminTests : ChemicalTestBase
     }
 
     [Test]
+    public async Task SetWorkerPermissions_AdminRevokingOwnAdmin_CommitsAndReturnsTheNewState()
+    {
+        // The write is authorised before it commits, so the caller gets the
+        // committed list back rather than a PermissionDenied for a change that stuck.
+        var (propertyId, adminWorker, caller) = await WorkerWith(AdminOnly);
+        var viewer = ChemicalPermissionFlagsModel.None with { View = true };
+
+        var list = await CreateInventoryService().SetWorkerPermissionsAsync(caller, propertyId,
+            [new ChemicalSetWorkerPermissionCommand(adminWorker, viewer)]);
+
+        Assert.That(list.Single(w => w.WorkerId == adminWorker).Flags, Is.EqualTo(viewer));
+        var stored = BackendConfigurationPnDbContext!.ChemicalWorkerPermissions
+            .Single(x => x.PropertyId == propertyId && x.WorkerId == adminWorker);
+        Assert.That(stored.Admin, Is.False);
+        Assert.That(async () => await CreateInventoryService().ListWorkerPermissionsAsync(caller, propertyId),
+            Throws.InstanceOf<ChemicalPermissionDeniedException>(), "the revocation took effect");
+    }
+
+    [Test]
     public async Task SetWorkerPermissions_Upserts_AndRejectsUnknownOrDuplicateWorkers()
     {
         var (propertyId, _, caller) = await WorkerWith(AdminOnly);
