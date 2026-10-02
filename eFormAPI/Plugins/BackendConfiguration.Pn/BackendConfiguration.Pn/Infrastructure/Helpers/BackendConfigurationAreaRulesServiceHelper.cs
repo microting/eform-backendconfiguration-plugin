@@ -27,7 +27,7 @@ public static class BackendConfigurationAreaRulesServiceHelper
                 .Select(x => new { x.Id, x.Area, x.GroupMicrotingUuid, x.PropertyId, x.ProperyAreaFolders })
                 .FirstAsync().ConfigureAwait(false);
 
-            if (areaProperty.Area.Type == AreaTypesEnum.Type9)
+            if (areaProperty.Area.Type == BackendConfigurationPropertyAreasServiceHelper.LegacyChemicalAreaType)
             {
                 return new OperationResult(false, BackendConfigurationPropertyAreasServiceHelper.LegacyChemicalAreaRemoved);
             }

@@ -79,7 +79,7 @@ public class BackendConfigurationPropertyAreasService : IBackendConfigurationPro
             var propertyAreasQuery = _backendConfigurationPnDbContext.AreaProperties
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.PropertyId == propertyId)
-                .Where(x => x.Area.Type != AreaTypesEnum.Type9)
+                .Where(x => x.Area.Type != BackendConfigurationPropertyAreasServiceHelper.LegacyChemicalAreaType)
                 .Include(x => x.Area)
                 .ThenInclude(x => x.AreaRules)
                 .ThenInclude(x => x.AreaRulesPlannings);
@@ -88,7 +88,7 @@ public class BackendConfigurationPropertyAreasService : IBackendConfigurationPro
                 .Include(x => x.AreaTranslations)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.IsFarm == property.IsFarm)
-                .Where(x => x.Type != AreaTypesEnum.Type9)
+                .Where(x => x.Type != BackendConfigurationPropertyAreasServiceHelper.LegacyChemicalAreaType)
                 .ToList();
 
             List<PropertyAreaModel> areasForAdd;

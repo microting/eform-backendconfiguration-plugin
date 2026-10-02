@@ -34,11 +34,10 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
     {
         try
         {
-            var areaType = await backendConfigurationPnDbContext.AreaRules
-                .Where(x => x.Id == areaRulePlanningModel.RuleId)
-                .Select(x => (AreaTypesEnum?)x.Area.Type)
-                .FirstOrDefaultAsync().ConfigureAwait(false);
-            if (areaType == AreaTypesEnum.Type9)
+            if (await backendConfigurationPnDbContext.AreaRules
+                    .AnyAsync(x => x.Id == areaRulePlanningModel.RuleId
+                                   && x.Area.Type == BackendConfigurationPropertyAreasServiceHelper.LegacyChemicalAreaType)
+                    .ConfigureAwait(false))
             {
                 return new OperationDataResult<AreaRuleModel>(false,
                     BackendConfigurationPropertyAreasServiceHelper.LegacyChemicalAreaRemoved);
