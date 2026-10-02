@@ -210,8 +210,8 @@ public class LegacyChemicalCleanupService(
     }
 
     /// <summary>
-    /// MicrotingUids of the live cases and check-list sites deployed into the SDK
-    /// folders of any Type9 assignment, live or already removed.
+    /// MicrotingUids of the live (not removed or retracted) cases and check-list
+    /// sites deployed into the SDK folders of any Type9 assignment, live or removed.
     /// </summary>
     private async Task<List<int>> CollectDeployedCaseUidsAsync(MicrotingDbContext sdkDbContext)
     {
@@ -221,14 +221,18 @@ public class LegacyChemicalCleanupService(
             .Distinct()
             .ToListAsync().ConfigureAwait(false);
 
+        // Retracted rows were already deleted from the device, as
+        // BackendConfigurationPropertyAreasServiceHelper.ResolvePlannedCaseUidAsync treats them.
         var caseUids = await sdkDbContext.Cases
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
+                        && x.WorkflowState != Constants.WorkflowStates.Retracted
                         && x.FolderId != null && folderIds.Contains(x.FolderId.Value)
                         && x.MicrotingUid != null)
             .Select(x => x.MicrotingUid!.Value)
             .ToListAsync().ConfigureAwait(false);
         var checkListSiteUids = await sdkDbContext.CheckListSites
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
+                        && x.WorkflowState != Constants.WorkflowStates.Retracted
                         && x.FolderId != null && folderIds.Contains(x.FolderId.Value))
             .Select(x => x.MicrotingUid)
             .ToListAsync().ConfigureAwait(false);
