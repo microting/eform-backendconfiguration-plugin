@@ -350,6 +350,55 @@ public class LegacyChemicalCleanupServiceTests : TestBaseSetup
     }
 
     [Test]
+    public async Task CompletedLegacyRecords_SurviveTheCleanupAndTheRepair_Untouched()
+    {
+        // Owner decision (I2): completed legacy cases stay exactly as they are.
+        // Core.CaseDelete(uid) marks the Cases row Removed when it is the only row
+        // with that uid, so a reversed site completed once must not be deleted.
+        var sut = await CreateSut();
+        await StartFromACleanSlateAsync(sut);
+        var seeded = await SeedLegacyAsync();
+
+        // A reversed site in the legacy folder, completed once.
+        var folderUid = NewUid();
+        await new CheckListSite { MicrotingUid = folderUid, FolderId = seeded.LegacyFolder.Id }.Create(MicrotingDbContext!);
+        var folderRecord = new Case { FolderId = seeded.LegacyFolder.Id, MicrotingUid = folderUid, Status = 100, DoneAt = DateTime.UtcNow };
+        await folderRecord.Create(MicrotingDbContext!);
+        // A completed ordinary case in the legacy folder.
+        var plainRecord = new Case { FolderId = seeded.LegacyFolder.Id, MicrotingUid = NewUid(), Status = 100, DoneAt = DateTime.UtcNow };
+        await plainRecord.Create(MicrotingDbContext!);
+        // A legacy 25.01 planning whose site was completed once.
+        var plannedUid = NewUid();
+        await SeedLegacyPlanningAsync(plannedUid);
+        var plannedRecord = new Case { MicrotingUid = plannedUid, Status = 100, DoneAt = DateTime.UtcNow };
+        await plannedRecord.Create(MicrotingDbContext!);
+        var records = new[] { folderRecord, plainRecord, plannedRecord };
+        var before = await MicrotingDbContext!.Cases.AsNoTracking()
+            .Where(x => records.Select(r => r.Id).Contains(x.Id))
+            .Select(x => new { x.Id, x.WorkflowState, x.Version, x.UpdatedAt })
+            .OrderBy(x => x.Id).ToListAsync();
+
+        await ClearMarkersAsync();
+        await sut.RunIfNeededAsync();
+        // The repair: marker set and another leftover forces a re-run.
+        await SeedLegacyPlanningAsync(NewUid());
+        await SetMarkerAsync();
+        await sut.RunIfNeededAsync();
+
+        foreach (var uid in new[] { folderUid, plainRecord.MicrotingUid!.Value, plannedUid })
+        {
+            await _sdkOperations.DidNotReceive().DeleteCaseAsync(uid);
+        }
+        var after = await MicrotingDbContext.Cases.AsNoTracking()
+            .Where(x => records.Select(r => r.Id).Contains(x.Id))
+            .Select(x => new { x.Id, x.WorkflowState, x.Version, x.UpdatedAt })
+            .OrderBy(x => x.Id).ToListAsync();
+        Assert.That(after, Is.EqualTo(before));
+        Assert.That((await ReloadAsync<AreaProperty>(BackendConfigurationPnDbContext!, seeded.Legacy.Id)).WorkflowState,
+            Is.EqualTo(Constants.WorkflowStates.Removed), "the legacy flow itself is still removed");
+    }
+
+    [Test]
     public async Task RunIfNeeded_LeftoversThatNeverClear_GiveUpAfterFivePasses_WithOneWarning()
     {
         var logger = new CapturingLogger();
