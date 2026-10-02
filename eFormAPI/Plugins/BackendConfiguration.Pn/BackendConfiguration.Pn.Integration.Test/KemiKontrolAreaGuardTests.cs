@@ -50,7 +50,8 @@ public class KemiKontrolAreaGuardTests : TestBaseSetup
 
     private async Task<(Property Property, Area Area)> SeedPropertyAndKemiKontrolAreaAsync()
     {
-        var property = new Property { Name = Guid.NewGuid().ToString(), CreatedByUserId = 1, UpdatedByUserId = 1 };
+        // Area.IsFarm defaults to true and Read only offers areas matching the property's IsFarm.
+        var property = new Property { Name = Guid.NewGuid().ToString(), IsFarm = true, CreatedByUserId = 1, UpdatedByUserId = 1 };
         await property.Create(BackendConfigurationPnDbContext!);
         var area = new Area { Type = AreaTypesEnum.Type9, IsDisabled = true, CreatedByUserId = 1, UpdatedByUserId = 1 };
         await area.Create(BackendConfigurationPnDbContext!);
