@@ -361,4 +361,62 @@ public class ChemicalsControllerTests
         await _inventory.Received(1).SetSettingsAsync(Web,
             Arg.Is<ChemicalSetSettingsCommand>(c => c.PropertyId == 1 && c.StockEnabled && c.DigestRecipients.Count == 0));
     }
+
+    // ---- GS1 Sunrise 2027: QR / DataMatrix / GTIN-14 scans find the product stored as EAN-13 ----
+
+    private const string StoredEan13 = "5701234567899";
+
+    private static ChemicalRegisterEntryModel StoredEntry() => new(
+        11, "Roundup", "1-111", 1, "", null, null, null, null, null, [], null, "", [], [], "",
+        [new ChemicalProductModel(21, "Roundup 1 L", StoredEan13, "", "")],
+        new DateTime(2026, 9, 1, 8, 0, 0, DateTimeKind.Utc));
+
+    private static readonly string[] Gs1Scans =
+    [
+        "https://id.gs1.org/01/05701234567899/10/LOT1?17=271231",
+        "(01)05701234567899(10)LOT1",
+        "05701234567899",
+    ];
+
+    private static readonly string[] JunkScans = ["https://example.com/promo", "(01)05701234567892"];
+
+    [TestCaseSource(nameof(Gs1Scans))]
+    [TestCase("https:%2F%2Fid.gs1.org%2F01%2F05701234567899")] // a route value keeps %2F escaped
+    [TestCase("https%3A%2F%2Fid.gs1.org%2F01%2F05701234567899")]
+    public async Task LookupBarcode_Gs1Scan_FindsTheProductStoredAsEan13(string scanned)
+    {
+        var sut = CreateSut();
+        _inventory.LookupBarcodeAsync(Web, StoredEan13).Returns([StoredEntry()]);
+
+        var result = await sut.LookupBarcode(scanned);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(result.Model.Single().ChemicalId, Is.EqualTo(11));
+    }
+
+    [TestCaseSource(nameof(Gs1Scans))]
+    public async Task SearchRegister_Gs1Scan_FindsTheProductStoredAsEan13(string scanned)
+    {
+        var sut = CreateSut();
+        _inventory.SearchRegisterAsync(Web, StoredEan13, 0, 25).Returns(new ChemicalRegisterPageModel([StoredEntry()], 1));
+
+        var result = await sut.SearchRegister(scanned);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(result.Model.Entries.Single().ChemicalId, Is.EqualTo(11));
+    }
+
+    [TestCaseSource(nameof(JunkScans))]
+    public async Task LookupAndSearch_JunkScan_IsAnUnsuccessfulResult(string scanned)
+    {
+        var sut = CreateSut();
+
+        var lookup = await sut.LookupBarcode(scanned);
+        var search = await sut.SearchRegister(scanned);
+
+        Assert.That(lookup.Success, Is.False);
+        Assert.That(search.Success, Is.False);
+        Assert.That(lookup.Message, Does.StartWith("ErrorWhileSearchingChemicalRegister"));
+        Assert.That(_inventory.ReceivedCalls(), Is.Empty);
+    }
 }

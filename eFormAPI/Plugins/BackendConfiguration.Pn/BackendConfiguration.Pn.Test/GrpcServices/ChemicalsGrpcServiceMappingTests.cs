@@ -341,4 +341,68 @@ public class ChemicalsGrpcServiceMappingTests
 
         Assert.That(_inventory.ReceivedCalls(), Is.Empty);
     }
+
+    // ---- GS1 Sunrise 2027: QR / DataMatrix / GTIN-14 scans find the product stored as EAN-13 ----
+
+    private const string StoredEan13 = "5701234567899";
+
+    private static ChemicalRegisterEntryModel StoredEntry() => new(
+        11, "Roundup", "1-111", 1, "", null, null, null, null, null, [], null, "", [], [], "",
+        [new ChemicalProductModel(21, "Roundup 1 L", StoredEan13, "", "")],
+        new DateTime(2026, 9, 1, 8, 0, 0, DateTimeKind.Utc));
+
+    private static readonly string[] Gs1Scans =
+    [
+        "https://id.gs1.org/01/05701234567899/10/LOT1?17=271231",
+        "(01)05701234567899(10)LOT1",
+        "05701234567899",
+    ];
+
+    private static readonly string[] JunkScans = ["https://example.com/promo", "(01)05701234567892"];
+
+    [TestCaseSource(nameof(Gs1Scans))]
+    public async Task LookupBarcode_Gs1Scan_FindsTheProductStoredAsEan13(string scanned)
+    {
+        var sut = CreateSut();
+        _inventory.LookupBarcodeAsync(Caller, StoredEan13).Returns([StoredEntry()]);
+
+        var response = await sut.LookupBarcode(new ChemicalLookupBarcodeRequest { Barcode = scanned }, Context());
+
+        Assert.That(response.Entries.Single().ChemicalId, Is.EqualTo(11));
+    }
+
+    [TestCaseSource(nameof(Gs1Scans))]
+    public async Task SearchRegister_Gs1Scan_FindsTheProductStoredAsEan13(string scanned)
+    {
+        var sut = CreateSut();
+        _inventory.SearchRegisterAsync(Caller, StoredEan13, 0, 25).Returns(new ChemicalRegisterPageModel([StoredEntry()], 1));
+
+        var response = await sut.SearchRegister(new ChemicalSearchRegisterRequest { Query = scanned, Page = 0, PageSize = 25 }, Context());
+
+        Assert.That(response.Entries.Single().ChemicalId, Is.EqualTo(11));
+    }
+
+    [TestCaseSource(nameof(JunkScans))]
+    public async Task LookupAndSearch_JunkScan_IsInvalidArgument(string scanned)
+    {
+        var sut = CreateSut();
+
+        var lookup = await Assert.ThrowsAsync<RpcException>(async () =>
+            await sut.LookupBarcode(new ChemicalLookupBarcodeRequest { Barcode = scanned }, Context()));
+        var search = await Assert.ThrowsAsync<RpcException>(async () =>
+            await sut.SearchRegister(new ChemicalSearchRegisterRequest { Query = scanned, PageSize = 25 }, Context()));
+
+        Assert.That(lookup!.StatusCode, Is.EqualTo(StatusCode.InvalidArgument));
+        Assert.That(search!.StatusCode, Is.EqualTo(StatusCode.InvalidArgument));
+        Assert.That(_inventory.ReceivedCalls(), Is.Empty);
+    }
+
+    [Test]
+    public async Task LookupBarcode_JunkScan_WithoutAWorker_IsStillUnauthenticated()
+    {
+        var sut = CreateSut(workerId: 0);
+        var ex = await Assert.ThrowsAsync<RpcException>(async () =>
+            await sut.LookupBarcode(new ChemicalLookupBarcodeRequest { Barcode = "https://example.com/promo" }, Context()));
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.Unauthenticated));
+    }
 }
