@@ -79,11 +79,17 @@ public class ChemicalsController(
     [HttpGet("register/search")]
     public Task<OperationDataResult<ChemicalRegisterPageModel>> SearchRegister(
         [FromQuery] string query, [FromQuery] int page = 0, [FromQuery] int pageSize = 25) =>
-        ExecuteAsync(() => inventory.SearchRegisterAsync(Caller, query, page, pageSize), SearchingRegister);
+        ExecuteAsync(() => inventory.SearchRegisterAsync(Caller, ChemicalBarcode.NormalizeSearchQuery(query), page, pageSize),
+            SearchingRegister);
 
+    /// <summary>
+    /// <paramref name="barcode"/> may be a GS1 Digital Link URI; a route value keeps an
+    /// escaped "/" as "%2F", so that is unescaped before the GS1 normaliser sees it.
+    /// </summary>
     [HttpGet("register/barcode/{barcode}")]
     public Task<OperationDataResult<List<ChemicalRegisterEntryModel>>> LookupBarcode(string barcode) =>
-        ExecuteListAsync(() => inventory.LookupBarcodeAsync(Caller, barcode), SearchingRegister);
+        ExecuteListAsync(() => inventory.LookupBarcodeAsync(Caller,
+            ChemicalBarcode.Normalize(barcode?.Replace("%2F", "/", StringComparison.OrdinalIgnoreCase))), SearchingRegister);
 
     [HttpGet("sds/{fileName}")]
     public Task<IActionResult> GetSds(string fileName) =>

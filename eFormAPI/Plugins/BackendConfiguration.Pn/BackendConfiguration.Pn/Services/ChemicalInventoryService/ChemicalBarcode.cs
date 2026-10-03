@@ -26,39 +26,41 @@ using System.Linq;
 
 public static class ChemicalBarcode
 {
-    /// <summary>Digits only, 6–14 long (UPC-E, EAN-8, UPC-A, EAN-13, GTIN-14); surrounding whitespace is trimmed.</summary>
-    public static string Normalize(string raw)
-    {
-        var code = (raw ?? string.Empty).Trim();
-        if (code.Length is < 6 or > 14 || !code.All(char.IsAsciiDigit))
-        {
-            throw new ArgumentException("A barcode is 6 to 14 digits.");
-        }
-
-        return code;
-    }
+    /// <summary>
+    /// The GTIN a scan carries (plain EAN-8/UPC-A/EAN-13/GTIN-14, GS1 Digital Link
+    /// or element string; see <see cref="Gs1.TryExtractGtin"/>).
+    /// Throws ArgumentException when it carries none.
+    /// </summary>
+    public static string Normalize(string raw) =>
+        Gs1.TryExtractGtin(raw, out var gtin) ? gtin : throw NotAGtin();
 
     /// <summary>
-    /// Every spelling the same GTIN may be curated under: a 12-digit UPC-A is
-    /// also its 13-digit EAN form with a leading 0, and vice versa.
+    /// Every spelling the same GTIN may be curated under: its zero-padded 14, 13,
+    /// 12 and 8 digit forms, so GTIN-14, EAN-13 and UPC-A variants all match.
     /// </summary>
     public static IReadOnlyList<string> Candidates(string raw)
     {
-        var code = Normalize(raw);
-        var candidates = new List<string> { code };
-        if (code.Length == 12)
-        {
-            candidates.Add("0" + code);
-        }
-
-        if (code.Length == 13 && code[0] == '0')
-        {
-            candidates.Add(code[1..]);
-        }
-
-        return candidates;
+        var gtin14 = Gs1.ToGtin14(Normalize(raw));
+        return new[] { 14, 13, 12, 8 }
+            .Where(length => gtin14[..(14 - length)].All(c => c == '0'))
+            .Select(length => gtin14[(14 - length)..])
+            .ToList();
     }
 
-    /// <summary>Stub (red phase).</summary>
-    public static string NormalizeSearchQuery(string query) => query;
+    /// <summary>
+    /// A register search query: a scan is searched as its GTIN; free text passes
+    /// through unchanged; a scan carrying no valid GTIN (a junk QR) throws ArgumentException.
+    /// </summary>
+    public static string NormalizeSearchQuery(string query)
+    {
+        if (Gs1.TryExtractGtin(query, out var gtin))
+        {
+            return gtin;
+        }
+
+        return Gs1.LooksLikeScan(query) ? throw NotAGtin() : query;
+    }
+
+    private static ArgumentException NotAGtin() =>
+        new("That is not a GTIN barcode, GS1 Digital Link or GS1 element string with a valid check digit.");
 }
