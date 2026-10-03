@@ -121,16 +121,31 @@ public class DuplicatePlanningSiteRepairService(
                 .ConfigureAwait(false))
             .ToHashSet();
 
-        // Filtered in memory: the owned set can be large, and a duplicate is rare.
-        var liveRows = await itemsPlanningPnDbContext.PlanningSites
-            .AsNoTracking()
-            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-            .Select(x => new { x.Id, x.PlanningId, x.SiteId })
-            .ToListAsync(ct)
-            .ConfigureAwait(false);
+        // Grouped in the database, so only the duplicated keys come back. The owned
+        // plannings live in another database, so that filter is applied here.
+        var duplicatedPlanningIds = (await itemsPlanningPnDbContext.PlanningSites
+                .AsNoTracking()
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .GroupBy(x => new { x.PlanningId, x.SiteId })
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key.PlanningId)
+                .Distinct()
+                .ToListAsync(ct)
+                .ConfigureAwait(false))
+            .Where(ownedPlanningIds.Contains)
+            .ToList();
+
+        var liveRows = duplicatedPlanningIds.Count == 0
+            ? []
+            : await itemsPlanningPnDbContext.PlanningSites
+                .AsNoTracking()
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
+                            && duplicatedPlanningIds.Contains(x.PlanningId))
+                .Select(x => new { x.Id, x.PlanningId, x.SiteId })
+                .ToListAsync(ct)
+                .ConfigureAwait(false);
 
         var groups = liveRows
-            .Where(x => ownedPlanningIds.Contains(x.PlanningId))
             .GroupBy(x => (x.PlanningId, x.SiteId))
             .Where(g => g.Count() > 1)
             .Select(g =>

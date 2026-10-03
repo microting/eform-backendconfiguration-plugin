@@ -543,14 +543,16 @@ public class CalendarTeamOnlyTaskStatusTests : TestBaseSetup
 
     /// <summary>
     /// #1385 — the wizard's create path inserted every items-planning PlanningSites row
-    /// twice (A, B, A, B). <b>Fails on the old code.</b> An edit keeps one row per site.
+    /// twice (A, B, A, B), and a repeated id from the client doubled its row too.
+    /// <b>Fails on the old code.</b> An edit keeps one row per site.
     /// </summary>
     [Test]
     public async Task CreateAndUpdateTask_WriteExactlyOnePlanningSitesRowPerSite()
     {
         var s = await SeedScenario();
 
-        var arpId = await CreateViaCalendar(BuildCreate(s, sites: [s.WorkerA, s.WorkerB], teams: []));
+        // WorkerA is sent twice: a repeated id must not double its row either.
+        var arpId = await CreateViaCalendar(BuildCreate(s, sites: [s.WorkerA, s.WorkerB, s.WorkerA], teams: []));
         Assert.That(await LiveItemsPlanningSiteIdsOf(arpId), Is.EquivalentTo(new[] { s.WorkerA, s.WorkerB }),
             "create: one row per site");
 
