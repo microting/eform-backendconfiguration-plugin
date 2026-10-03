@@ -957,6 +957,15 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
                 sdkCase = await sdkDbContext.Cases
                     .AsNoTracking()
                     .FirstOrDefaultAsync(x => x.Id == compliance.MicrotingSdkCaseId).ConfigureAwait(false);
+                if (sdkCase is not { Status: 100 }
+                    && compliance.WorkflowState == Constants.WorkflowStates.Removed)
+                {
+                    // #1371 — completed by another assigned worker: the report lists the
+                    // log by that worker's case, so deleting the log deletes that case.
+                    var completedSiblings = await CompletedSiblingCases.FindAsync(
+                        _itemsPlanningPnDbContext, sdkDbContext, [compliance.MicrotingSdkCaseId]).ConfigureAwait(false);
+                    sdkCase = completedSiblings.GetValueOrDefault(compliance.MicrotingSdkCaseId, sdkCase);
+                }
             }
 
             // The SAME done-ness the compliance report uses (IsDone in BuildCandidateSet).
