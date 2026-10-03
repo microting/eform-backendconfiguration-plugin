@@ -235,7 +235,7 @@ export class AdhocHistoryComponent implements OnInit, OnDestroy {
   // Data fetch
   // -----------------------------------------------------------------
 
-  updateTable(): void {
+  updateTable(): Subscription {
     const range = this.resolveRange();
     const model: AdhocHistoryFiltersModel = {
       dateFrom: format(range.from, PARSING_DATE_FORMAT),
@@ -252,6 +252,7 @@ export class AdhocHistoryComponent implements OnInit, OnDestroy {
         this.total = res.model.total;
       }
     });
+    return this.getHistorySub$;
   }
 
   /**
