@@ -171,10 +171,13 @@ export interface ComplianceReportOverviewRowModel {
   done: number;
   /**
    * Not completed AND dated STRICTLY BEFORE today. A task due *today* and not
-   * done raises `dueTotal` (so lowers the percentage) but is NOT overdue.
+   * done is NOT overdue, and is not in `dueTotal` either (#1374).
    */
   overdue: number;
-  /** Rows that have fallen due: `!(startOfDay(taskDate) > today)`. */
+  /**
+   * Rows that have fallen due: dated strictly before today, or dated today and
+   * completed (#1374). An open task dated today does not lower the percentage.
+   */
   dueTotal: number;
   /** Due rows that are also completed — the numerator of `compliancePct`. */
   dueDone: number;
