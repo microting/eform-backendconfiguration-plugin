@@ -58,4 +58,7 @@ public static class ChemicalBarcode
 
         return candidates;
     }
+
+    /// <summary>Stub (red phase).</summary>
+    public static string NormalizeSearchQuery(string query) => query;
 }
