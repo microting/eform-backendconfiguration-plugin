@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 using eFormCore;
 using Microsoft.EntityFrameworkCore;
@@ -343,18 +344,20 @@ internal sealed class ComplianceReportEformProjector(
                 Id = x.Id,
                 CaseId = x.CaseId.Value,
                 FieldId = x.FieldId.Value,
-                Value = x.Value
+                Value = x.Value,
+                UpdatedAt = x.UpdatedAt
             })
             .ToListAsync();
 
         if (answers.Count == 0) return;
 
-        // A repeated element can leave more than one FieldValue per (case, field).
-        // Take the highest Id — the most recently written — deterministically,
-        // rather than letting row order decide.
+        // A case can carry more than one live FieldValue per (case, field) —
+        // duplicates inserted together, of which the editor saves into one (#1372).
+        // Show the row the user last wrote, the same row the case editor shows,
+        // rather than letting the highest Id or row order decide.
         var latest = answers
             .GroupBy(a => (a.CaseId, a.FieldId))
-            .Select(g => g.OrderByDescending(a => a.Id).First())
+            .Select(g => g.OrderCurrentFirst(a => a.UpdatedAt, a => a.Value, a => a.Id).First())
             .ToList();
 
         var optionLabels = await LoadOptionLabels(schema, latest);
@@ -739,6 +742,7 @@ internal sealed class ComplianceReportEformProjector(
         public int CaseId { get; init; }
         public int FieldId { get; init; }
         public string Value { get; init; }
+        public DateTime? UpdatedAt { get; init; }
     }
 
     /// <summary>The explicit image projection. internal for the same reason as

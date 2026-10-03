@@ -27,6 +27,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models.Report;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.ExcelService;
@@ -378,9 +379,14 @@ public class BackendConfigurationReportService(
                             };
 
 
+                            // Current row first, so FirstOrDefault per field picks the
+                            // answer the case editor saved, not a stale duplicate (#1372).
                             var caseFields = sdkDbContext.FieldValues.Where(x =>
-                                x.CaseId == planningCase.MicrotingSdkCaseId &&
-                                x.WorkflowState != Constants.WorkflowStates.Removed).ToList();
+                                    x.CaseId == planningCase.MicrotingSdkCaseId &&
+                                    x.WorkflowState != Constants.WorkflowStates.Removed)
+                                .AsEnumerable()
+                                .OrderCurrentFirst(x => x.UpdatedAt, x => x.Value, x => x.Id)
+                                .ToList();
                             // var caseFields = await core.Advanced_FieldValueReadList(
                             //     new List<int>()
                             //     {
@@ -839,10 +845,14 @@ public class BackendConfigurationReportService(
                             };
 
 
-                            var caseFields = await sdkDbContext.FieldValues
-                                .Where(x => x.CaseId == planningCase.MicrotingSdkCaseId &&
-                                            x.WorkflowState != Constants.WorkflowStates.Removed)
-                                .ToListAsync();
+                            // Current row first, so FirstOrDefault per field picks the
+                            // answer the case editor saved, not a stale duplicate (#1372).
+                            var caseFields = (await sdkDbContext.FieldValues
+                                    .Where(x => x.CaseId == planningCase.MicrotingSdkCaseId &&
+                                                x.WorkflowState != Constants.WorkflowStates.Removed)
+                                    .ToListAsync())
+                                .OrderCurrentFirst(x => x.UpdatedAt, x => x.Value, x => x.Id)
+                                .ToList();
 
                             foreach (var fieldDto in fields)
                             {
