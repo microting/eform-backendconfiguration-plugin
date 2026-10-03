@@ -83,13 +83,14 @@ public class ChemicalsController(
             SearchingRegister);
 
     /// <summary>
-    /// <paramref name="barcode"/> may be a GS1 Digital Link URI; a route value keeps an
-    /// escaped "/" as "%2F", so that is unescaped before the GS1 normaliser sees it.
+    /// <paramref name="barcode"/> may be a GS1 Digital Link URI. A route value keeps an
+    /// escaped "/" as "%2F" (and a client may escape more), so it is percent-decoded once
+    /// before the GS1 normaliser sees it. Decoding cannot smuggle anything in: only the GTIN digits are used.
     /// </summary>
     [HttpGet("register/barcode/{barcode}")]
     public Task<OperationDataResult<List<ChemicalRegisterEntryModel>>> LookupBarcode(string barcode) =>
         ExecuteListAsync(() => inventory.LookupBarcodeAsync(Caller,
-            ChemicalBarcode.Normalize(barcode?.Replace("%2F", "/", StringComparison.OrdinalIgnoreCase))), SearchingRegister);
+            ChemicalBarcode.Normalize(barcode is null ? null : Uri.UnescapeDataString(barcode))), SearchingRegister);
 
     [HttpGet("sds/{fileName}")]
     public Task<IActionResult> GetSds(string fileName) =>

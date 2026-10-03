@@ -382,6 +382,7 @@ public class ChemicalsControllerTests
 
     [TestCaseSource(nameof(Gs1Scans))]
     [TestCase("https:%2F%2Fid.gs1.org%2F01%2F05701234567899")] // a route value keeps %2F escaped
+    [TestCase("https%3A%2F%2Fid.gs1.org%2F01%2F05701234567899")]
     public async Task LookupBarcode_Gs1Scan_FindsTheProductStoredAsEan13(string scanned)
     {
         var sut = CreateSut();

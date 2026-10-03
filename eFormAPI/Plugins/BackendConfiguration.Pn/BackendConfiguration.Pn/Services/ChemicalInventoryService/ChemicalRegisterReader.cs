@@ -88,7 +88,7 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
     public async Task<ChemicalRegisterPageModel> SearchAsync(string query, int page, int pageSize)
     {
         // A scanned QR / DataMatrix / GTIN-14 is searched as its GTIN; a junk scan throws.
-        var text = ChemicalBarcode.NormalizeSearchQuery((query ?? string.Empty).Trim());
+        var text = ChemicalBarcode.NormalizeSearchQuery(query) ?? string.Empty;
         if (text.Length < 2)
         {
             throw new ArgumentException("Search for at least two characters.");

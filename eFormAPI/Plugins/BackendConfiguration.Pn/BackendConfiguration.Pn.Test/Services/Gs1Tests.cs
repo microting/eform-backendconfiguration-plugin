@@ -161,6 +161,7 @@ public class Gs1Tests
     // ---- search: free text passes through, a scan becomes its GTIN, a junk scan is refused ----
 
     [TestCase("Roundup", "Roundup")]
+    [TestCase("  Roundup ", "Roundup")]
     [TestCase("4-567", "4-567")]
     [TestCase("123456", "123456")]
     [TestCase("5701234567892", "5701234567892")]

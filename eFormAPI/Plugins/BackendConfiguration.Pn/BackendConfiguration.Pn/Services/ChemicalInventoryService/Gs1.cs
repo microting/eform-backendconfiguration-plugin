@@ -60,7 +60,7 @@ public static class Gs1
             return false;
         }
 
-        var candidate = FromDigitLink(text) ?? FromElementString(text) ?? text;
+        var candidate = FromDigitalLink(text) ?? FromElementString(text) ?? text;
         if (!IsGtinLength(candidate.Length) || !candidate.All(char.IsAsciiDigit) || !HasValidCheckDigit(candidate))
         {
             return false;
@@ -102,7 +102,7 @@ public static class Gs1
     }
 
     /// <summary>The value after the first <c>01</c> / <c>gtin</c> path segment of an http(s) URI; "" when it is a URI without one.</summary>
-    private static string FromDigitLink(string text)
+    private static string FromDigitalLink(string text)
     {
         if (!Uri.TryCreate(text, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
         {

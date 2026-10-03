@@ -49,18 +49,19 @@ public static class ChemicalBarcode
 
     /// <summary>
     /// A register search query: a scan is searched as its GTIN; free text passes
-    /// through unchanged; a scan carrying no valid GTIN (a junk QR) throws ArgumentException.
+    /// through trimmed; a scan carrying no valid GTIN (a junk QR) throws ArgumentException.
     /// </summary>
     public static string NormalizeSearchQuery(string query)
     {
-        if (Gs1.TryExtractGtin(query, out var gtin))
+        var text = query?.Trim();
+        if (Gs1.TryExtractGtin(text, out var gtin))
         {
             return gtin;
         }
 
-        return Gs1.LooksLikeScan(query) ? throw NotAGtin() : query;
+        return Gs1.LooksLikeScan(text) ? throw NotAGtin() : text;
     }
 
     private static ArgumentException NotAGtin() =>
-        new("That is not a GTIN barcode, GS1 Digital Link or GS1 element string with a valid check digit.");
+        new("The scan does not contain a valid GTIN (8, 12, 13 or 14 digits with a valid check digit).");
 }
