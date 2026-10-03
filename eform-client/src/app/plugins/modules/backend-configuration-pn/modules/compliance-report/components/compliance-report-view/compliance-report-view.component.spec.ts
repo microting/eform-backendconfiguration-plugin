@@ -1,7 +1,6 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
-import {Router} from '@angular/router';
 import {TranslateModule} from '@ngx-translate/core';
 import {Subject, of, throwError} from 'rxjs';
 import {
@@ -19,6 +18,7 @@ import {
 import {COMPLIANCE_EMPTY_CELL, ComplianceReportTable} from '../../helpers';
 import {ComplianceReportStateService} from '../../store';
 import {ComplianceReportViewComponent} from './compliance-report-view.component';
+import {CalendarCompleteEventModalComponent} from '../../../calendar/modals/calendar-complete-event-modal/calendar-complete-event-modal.component';
 
 /**
  * The meta line's reference data (#1329) is loaded on mount — the properties
@@ -136,7 +136,6 @@ describe('ComplianceReportViewComponent — buildGridColumns', () => {
         {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
         {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
         {provide: MatDialog, useValue: {open: jest.fn()}},
-        {provide: Router, useValue: {navigate: jest.fn(), url: '/plugins/backend-configuration-pn/compliance-report'}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
@@ -338,7 +337,6 @@ describe('ComplianceReportViewComponent — the row ceilings', () => {
         {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
         {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
         {provide: MatDialog, useValue: {open: jest.fn()}},
-        {provide: Router, useValue: {navigate: jest.fn(), url: '/x'}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
@@ -518,7 +516,6 @@ describe('ComplianceReportViewComponent — the Billeder cell', () => {
         {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
         {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
         {provide: MatDialog, useValue: {open: jest.fn()}},
-        {provide: Router, useValue: {navigate: jest.fn(), url: '/x'}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
@@ -707,7 +704,7 @@ describe('ComplianceReportViewComponent — the Billeder cell', () => {
 describe('ComplianceReportViewComponent — one table per eForm under a headline', () => {
   let fixture: ComponentFixture<ComplianceReportViewComponent>;
   let component: ComplianceReportViewComponent;
-  let router: {navigate: jest.Mock; url: string};
+  let dialogOpen: jest.Mock;
   let state: ComplianceReportStateService;
 
   const caseModel = (
@@ -767,7 +764,7 @@ describe('ComplianceReportViewComponent — one table per eForm under a headline
   ];
 
   beforeEach(async () => {
-    router = {navigate: jest.fn().mockResolvedValue(true), url: '/plugins/backend-configuration-pn/compliance-report'};
+    dialogOpen = jest.fn();
     await TestBed.configureTestingModule({
       declarations: [ComplianceReportViewComponent],
       imports: [TranslateModule.forRoot()],
@@ -777,8 +774,7 @@ describe('ComplianceReportViewComponent — one table per eForm under a headline
         {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: jest.fn()}},
         {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
         {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
-        {provide: MatDialog, useValue: {open: jest.fn()}},
-        {provide: Router, useValue: router},
+        {provide: MatDialog, useValue: {open: dialogOpen}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
@@ -865,7 +861,8 @@ describe('ComplianceReportViewComponent — one table per eForm under a headline
     expect(tableEls.map((el) => el.querySelectorAll('.compliance-report__notice').length)).toEqual([0, 1]);
   });
 
-  it('still takes checkListId from the CASE, and routes Rediger with it', () => {
+  it('still takes checkListId from the CASE, and opens Rediger on it (#1373)', () => {
+    dialogOpen.mockReturnValue({afterClosed: () => of(undefined)});
     (component as any).applyResponse(mixedGroup());
     const [kontrol, tilsyn] = component.sections[0].tables;
 
@@ -874,15 +871,13 @@ describe('ComplianceReportViewComponent — one table per eForm under a headline
     expect(tilsyn.allRows.map((r) => r.checkListId)).toEqual([509, 0]);
 
     component.onEdit(kontrol.allRows[0] as any);
-    expect(router.navigate).toHaveBeenCalledWith(
-      ['/plugins/backend-configuration-pn/case', 102, 511, 2],
-      {queryParams: {reverseRoute: router.url}},
+    expect(dialogOpen.mock.calls[0][1].data.edit).toEqual(
+      expect.objectContaining({sdkCaseId: 102, checkListId: 511}),
     );
 
     component.onEdit(tilsyn.allRows[0] as any);
-    expect(router.navigate).toHaveBeenLastCalledWith(
-      ['/plugins/backend-configuration-pn/case', 101, 509, 1],
-      {queryParams: {reverseRoute: router.url}},
+    expect(dialogOpen.mock.calls[1][1].data.edit).toEqual(
+      expect.objectContaining({sdkCaseId: 101, checkListId: 509}),
     );
   });
 
@@ -899,7 +894,8 @@ describe('ComplianceReportViewComponent — one table per eForm under a headline
     expect(component.canEdit(notCompleted as any)).toBe(false);
 
     component.onEdit(noTemplate as any);
-    expect(router.navigate).not.toHaveBeenCalled();
+    component.onEdit(notCompleted as any);
+    expect(dialogOpen).not.toHaveBeenCalled();
   });
 
   it('reports the plain sum of cases over EVERY table as the total', () => {
@@ -1004,7 +1000,6 @@ describe('ComplianceReportViewComponent — the answer cell', () => {
         {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
         {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
         {provide: MatDialog, useValue: {open: jest.fn()}},
-        {provide: Router, useValue: {navigate: jest.fn(), url: '/x'}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
@@ -1117,7 +1112,6 @@ describe('ComplianceReportViewComponent — the view-mode guard', () => {
         {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
         {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
         {provide: MatDialog, useValue: {open: jest.fn()}},
-        {provide: Router, useValue: {navigate: jest.fn(), url: '/x'}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
@@ -1187,7 +1181,7 @@ describe('ComplianceReportViewComponent — the view-mode guard', () => {
  * that followed the deleted one is taken from the page BEFORE the refresh
  * replaces it, handed to the state service, and applied — scroll + a ~3 s
  * `row-highlight-flash` — once the refreshed response has rendered. The same
- * mechanism is what #1291 reuses for the edited row.
+ * mechanism is what #1373 reuses for the edited row.
  */
 describe('ComplianceReportViewComponent — delete returns to the next row', () => {
   let fixture: ComponentFixture<ComplianceReportViewComponent>;
@@ -1274,7 +1268,6 @@ describe('ComplianceReportViewComponent — delete returns to the next row', () 
           provide: MatDialog,
           useValue: {open: jest.fn(() => ({afterClosed: () => afterClosed$, close: jest.fn()}))},
         },
-        {provide: Router, useValue: {navigate: jest.fn(), url: '/x'}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
@@ -1447,31 +1440,33 @@ describe('ComplianceReportViewComponent — delete returns to the next row', () 
 });
 
 /**
- * #1291 — `Rediger` → `Gem` must return to the SAME Rapport result with the
- * edited row landed on, not to the un-fetched placeholder. The round trip is a
- * full router navigation to the shared case page, so THIS view is destroyed on
- * the way out and a NEW one is created on the way back; only the state service
- * (on the cached lazy module) survives. Each test therefore renders one
- * instance, edits from it, destroys it, runs the page's `enterPage()` the way
- * `ComplianceReportPageComponent.ngOnInit` does — with the case page's
- * `?highlightId=` on a save, without it on a plain Back — and then mounts a
- * second instance, exactly the order the real ngSwitch produces.
+ * #1373 — `Rediger` opens the log in the Detaljer dialog
+ * (`CalendarCompleteEventModalComponent`) in EDIT mode instead of navigating to
+ * the shared case page. The view stays mounted, so a save is the delete flow's
+ * return: re-fetch and land on the edited row. A cancel changes nothing.
  */
-describe('ComplianceReportViewComponent — edit returns to the edited row', () => {
+describe('ComplianceReportViewComponent — Rediger opens the Detaljer dialog (#1373)', () => {
+  let fixture: ComponentFixture<ComplianceReportViewComponent>;
+  let component: ComplianceReportViewComponent;
   let state: ComplianceReportStateService;
   let eformColumns: jest.Mock;
-  let router: {navigate: jest.Mock; url: string};
+  let dialogOpen: jest.Mock;
+  let closed: Subject<{saved?: boolean} | undefined>;
 
   const caseModel = (complianceId: number): ComplianceReportCaseModel => ({
     complianceId,
     sdkCaseId: 100 + complianceId,
     propertyId: 5,
-    propertyName: 'Ejendom A',
-    title: `Område ${complianceId}`,
+    propertyName: 'Property A',
+    title: `Area ${complianceId}`,
     taskDate: '2026-08-11',
     completed: true,
-    doneAt: null,
-    workerNames: [],
+    doneAt: '2026-08-11T09:00:00Z',
+    workerNames: ['Jane Doe'],
+    completedBySiteId: 77,
+    areaRulePlanningId: 40 + complianceId,
+    workerSiteIds: [77],
+    teamAssigneeIds: [78, 79],
     checkListId: 509,
     tags: [],
     cells: {},
@@ -1479,53 +1474,34 @@ describe('ComplianceReportViewComponent — edit returns to the edited row', () 
     images: [],
   });
 
-  const response = (...tables: ComplianceReportCaseModel[][]): ComplianceReportHeadlineGroupModel[] => [
+  const response = (): ComplianceReportHeadlineGroupModel[] => [
     {
       headlineTagId: 1,
-      headlineName: 'Overskrift',
+      headlineName: 'Headline',
       tagsCaption: '',
-      templates: tables.map((cases, t) => ({
-        checkListId: 509 + t,
-        checkListName: `eForm ${t}`,
-        schemaUnavailable: false,
-        columns: [],
-        cases,
-      })),
+      templates: [
+        {
+          checkListId: 509,
+          checkListName: 'eForm',
+          schemaUnavailable: false,
+          columns: [],
+          cases: [caseModel(1), caseModel(2)],
+        },
+      ],
     },
   ];
 
-  const mount = (): ComponentFixture<ComplianceReportViewComponent> => {
-    const fixture = TestBed.createComponent(ComplianceReportViewComponent);
-    fixture.detectChanges();
-    return fixture;
-  };
-
-  const rowOf = (component: ComplianceReportViewComponent, complianceId: number) =>
+  const rowOf = (complianceId: number) =>
     component.sections
       .flatMap((s) => s.tables)
       .flatMap((t) => t.allRows)
       .find((r) => r.complianceId === complianceId)!;
 
-  /**
-   * Visit 1 in Rapport: fetch, render, optionally move to `page`, press
-   * Rediger on `complianceId`, leave.
-   */
-  const editAndLeave = (model: ComplianceReportHeadlineGroupModel[], complianceId: number, page = 0) => {
-    state.setMode('report');
-    eformColumns.mockReturnValue(of({success: true, model}));
-    state.requestFetch();
-    const first = mount();
-    if (page > 0) {
-      state.setPage(page);
-    }
-    first.componentInstance.onEdit(rowOf(first.componentInstance, complianceId));
-    first.destroy();
-  };
-
   beforeEach(async () => {
     jest.useFakeTimers();
-    eformColumns = jest.fn().mockReturnValue(of({success: true, model: []}));
-    router = {navigate: jest.fn().mockResolvedValue(true), url: '/plugins/backend-configuration-pn/compliance-report'};
+    eformColumns = jest.fn().mockReturnValue(of({success: true, model: response()}));
+    closed = new Subject();
+    dialogOpen = jest.fn(() => ({afterClosed: () => closed}));
 
     await TestBed.configureTestingModule({
       declarations: [ComplianceReportViewComponent],
@@ -1536,106 +1512,60 @@ describe('ComplianceReportViewComponent — edit returns to the edited row', () 
         {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: jest.fn()}},
         {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
         {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
-        {provide: MatDialog, useValue: {open: jest.fn()}},
-        {provide: Router, useValue: router},
+        {provide: MatDialog, useValue: {open: dialogOpen}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
 
     state = TestBed.inject(ComplianceReportStateService);
+    state.setMode('report');
+    state.requestFetch();
+    fixture = TestBed.createComponent(ComplianceReportViewComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    eformColumns.mockClear();
   });
 
   afterEach(() => {
     jest.useRealTimers();
   });
 
-  it('still routes Rediger to the shared case page with the unchanged reverseRoute contract', () => {
-    editAndLeave(response([caseModel(1), caseModel(2)]), 2);
+  it('opens the dialog in edit mode with the case, its completer and the task assignment', () => {
+    component.onEdit(rowOf(2));
 
-    expect(router.navigate).toHaveBeenCalledWith(
-      ['/plugins/backend-configuration-pn/case', 102, 509, 2],
-      {queryParams: {reverseRoute: '/plugins/backend-configuration-pn/compliance-report'}},
+    expect(dialogOpen).toHaveBeenCalledTimes(1);
+    expect(dialogOpen.mock.calls[0][0]).toBe(CalendarCompleteEventModalComponent);
+    expect(dialogOpen.mock.calls[0][1].data).toEqual(
+      expect.objectContaining({
+        taskId: 42,
+        complianceId: 2,
+        propertyId: 5,
+        assigneeIds: [77],
+        teamAssigneeIds: [78, 79],
+        taskTitle: 'Area 2',
+        edit: {sdkCaseId: 102, checkListId: 509, completedBySiteId: 77, completedByName: 'Jane Doe'},
+      }),
     );
+    // Not a completion: no compliance-page source, so nothing is prepared.
+    expect(dialogOpen.mock.calls[0][1].data.source).toBeUndefined();
   });
 
-  it('after Gem: re-fetches on return and lands on the EDITED row', () => {
-    editAndLeave(response([caseModel(1), caseModel(2), caseModel(3)]), 2);
-    eformColumns.mockClear();
-
-    state.enterPage(102);
-    const second = mount().componentInstance;
-
-    expect(state.reportVisible).toBe(true);
-    expect(eformColumns).toHaveBeenCalledTimes(1);
-    expect(second.sections[0].tables[0].allRows.map((r) => r.complianceId)).toEqual([1, 2, 3]);
-    expect(second.highlightedRowKey).toBe('case:102');
-    expect(second.rowClassFormatter['row-highlight-flash'](rowOf(second, 2), 0)).toBe(true);
-    expect(second.rowClassFormatter['row-highlight-flash'](rowOf(second, 1), 0)).toBe(false);
-  });
-
-  it('after Gem: keeps the page the user left from', () => {
-    editAndLeave(response([caseModel(1), caseModel(2)]), 1, 2);
-    eformColumns.mockClear();
-
-    state.enterPage(101);
-    mount();
+  it('after a save: re-fetches and lands on the EDITED row', () => {
+    component.onEdit(rowOf(2));
+    closed.next({saved: true});
 
     expect(eformColumns).toHaveBeenCalledTimes(1);
-    expect(eformColumns.mock.calls[0][0].pageIndex).toBe(2);
-    expect(state.page).toBe(2);
+    expect(component.highlightedRowKey).toBe('case:102');
+    expect(component.rowClassFormatter['row-highlight-flash'](rowOf(2), 0)).toBe(true);
+    expect(component.rowClassFormatter['row-highlight-flash'](rowOf(1), 0)).toBe(false);
   });
 
-  it('after Gem: expands the table the row budget collapsed, scrolls, and drops the highlight after ~3 s', () => {
-    let id = 1000;
-    const big = () => Array.from({length: 100}, () => caseModel(++id));
-    const model = response(big(), big(), big(), big(), big(), [caseModel(2), caseModel(3)]);
-    editAndLeave(model, 3);
+  it('after a cancel: no fetch and no highlight', () => {
+    component.onEdit(rowOf(2));
+    closed.next({saved: false});
 
-    state.enterPage(103);
-    const fixture = mount();
-    const second = fixture.componentInstance;
-    const tr = document.createElement('tr');
-    tr.className = 'row-highlight-flash';
-    const scrollIntoView = jest.fn();
-    (tr as any).scrollIntoView = scrollIntoView;
-    fixture.nativeElement.appendChild(tr);
-
-    const sixth = second.sections[0].tables[5];
-    expect(sixth.expanded).toBe(true);
-    expect(second.highlightedRowKey).toBe('case:103');
-
-    jest.advanceTimersByTime(0);
-    expect(scrollIntoView).toHaveBeenCalledWith({behavior: 'smooth', block: 'center'});
-
-    jest.advanceTimersByTime(3000);
-    expect(second.highlightedRowKey).toBeNull();
-  });
-
-  it('Back WITHOUT saving (no highlightId) is the status quo: placeholder, no fetch, no highlight', () => {
-    editAndLeave(response([caseModel(1), caseModel(2)]), 2);
-    eformColumns.mockClear();
-
-    state.enterPage();
-
-    expect(state.reportVisible).toBe(false);
-    // The page does not mount the view while the report is hidden; even a view
-    // that did mount could not be served the buffered trigger.
-    const second = mount().componentInstance;
     expect(eformColumns).not.toHaveBeenCalled();
-    expect(second.highlightedRowKey).toBeNull();
-  });
-
-  it('is one-shot: a later entry with the same highlightId does not fetch again', () => {
-    editAndLeave(response([caseModel(1), caseModel(2)]), 2);
-    state.enterPage(102);
-    mount().destroy();
-    eformColumns.mockClear();
-
-    state.enterPage(102);
-
-    expect(state.reportVisible).toBe(false);
-    mount();
-    expect(eformColumns).not.toHaveBeenCalled();
+    expect(component.highlightedRowKey).toBeNull();
   });
 });
 
@@ -1702,7 +1632,6 @@ describe('ComplianceReportViewComponent — future tasks cannot be deleted (#130
         {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
         {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
         {provide: MatDialog, useValue: {open: dialogOpen}},
-        {provide: Router, useValue: {navigate: jest.fn(), url: '/x'}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
@@ -1806,7 +1735,6 @@ describe('ComplianceReportViewComponent — the meta line names the calendar and
         },
         {provide: BackendConfigurationPnCalendarService, useValue: {getBoards}},
         {provide: MatDialog, useValue: {open: jest.fn()}},
-        {provide: Router, useValue: {navigate: jest.fn(), url: '/x'}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
