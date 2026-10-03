@@ -79,26 +79,5 @@ export function isFutureTask(
   return key !== null && key > copenhagenDateKey(now);
 }
 
-/**
- * The legacy `/compliances` table and the task tracker DISPLAY
- * `Compliance.Deadline − 1 day` as their "Deadline"
- * (`BackendConfigurationCompliancesService.Index`,
- * `BackendConfigurationTaskTrackerHelper`). The server's guard judges the
- * compliance's own date, so this adds the day back before comparing — the
- * button is hidden exactly when the server would refuse.
- */
-export function isFutureLegacyDeadline(
-  displayedDeadline: string | Date | null | undefined,
-  now: Date = new Date(),
-): boolean {
-  const key = taskDateKey(displayedDeadline);
-  if (key === null) {
-    return false;
-  }
-  const [y, m, d] = key.split('-').map((part) => parseInt(part, 10));
-  const next = new Date(Date.UTC(y, m - 1, d + 1));
-  return isFutureTask(next, now);
-}
-
 /** The `source` flag the compliance pages send so the server applies its #1300 guard. */
 export const COMPLIANCE_PAGE_SOURCE = 'compliance';
