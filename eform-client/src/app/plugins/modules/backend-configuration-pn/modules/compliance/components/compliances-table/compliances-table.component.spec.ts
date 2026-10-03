@@ -13,13 +13,12 @@ import {CompliancesTableComponent} from './compliances-table.component';
 
 /**
  * #1300 — the legacy `/compliances` table. Every row is an uncompleted
- * occurrence; its `deadline` is the DISPLAYED deadline, `Compliance.Deadline −
- * 1 day`, so "displayed today" is a task dated TOMORROW.
+ * occurrence. Edit and delete are judged on `complianceDeadline`, the
+ * compliance's own stored date — the date the server's guard uses (#1382).
+ * The displayed `deadline` is a day earlier for legacy rows and plays no part.
  *
- * `canEdit` used to compare timestamps (`deadline < now`), which let a task
- * dated tomorrow be filled in from 00:00 UTC today. It is now date-level on the
- * Copenhagen date, and the admin-only delete button follows the same rule.
- * Clock: 2026-09-18 12:00 in Copenhagen.
+ * The check is date-level on the Copenhagen date, and the admin-only delete
+ * button follows the same rule. Clock: 2026-09-18 12:00 in Copenhagen.
  */
 describe('CompliancesTableComponent — future tasks (#1300)', () => {
   let component: CompliancesTableComponent;
@@ -53,30 +52,42 @@ describe('CompliancesTableComponent — future tasks (#1300)', () => {
   });
 
   it.each([
-    ['displayed two days ago → task yesterday', '2026-09-16T00:00:00Z', true],
-    ['displayed yesterday → task today', '2026-09-17T00:00:00Z', true],
-    ['displayed today → task tomorrow (the old timestamp check allowed this)', '2026-09-18T00:00:00Z', false],
-    ['displayed in a week', '2026-09-25T00:00:00Z', false],
-  ])('canEdit / canDelete: %s → %s', (_label, deadline, expected) => {
-    const date = new Date(deadline as string);
+    ['stored yesterday', '2026-09-17T00:00:00Z', true],
+    ['stored today', '2026-09-18T00:00:00Z', true],
+    ['stored tomorrow', '2026-09-19T00:00:00Z', false],
+    ['stored in a week', '2026-09-25T00:00:00Z', false],
+  ])('canEdit / canDelete: %s → %s', (_label, stored, expected) => {
+    const date = new Date(stored as string);
     expect(component.canEdit(date)).toBe(expected);
     expect(component.canDelete(date)).toBe(expected);
   });
 
   it('flips at Copenhagen midnight (CEST), not UTC midnight', () => {
-    const displayedToday = new Date('2026-09-18T00:00:00Z'); // task dated the 19th
+    const storedTomorrow = new Date('2026-09-19T00:00:00Z');
     jest.setSystemTime(new Date('2026-09-18T21:59:00Z')); // 23:59 local
-    expect(component.canEdit(displayedToday)).toBe(false);
+    expect(component.canEdit(storedTomorrow)).toBe(false);
     jest.setSystemTime(new Date('2026-09-18T22:00:00Z')); // 00:00 local on the 19th
-    expect(component.canEdit(displayedToday)).toBe(true);
+    expect(component.canEdit(storedTomorrow)).toBe(true);
   });
 
-  it('gates the admin delete button through the grid iif', () => {
+  const row = (stored: string, displayed = stored) =>
+    ({complianceDeadline: new Date(stored), deadline: new Date(displayed)}) as ComplianceModel;
+
+  it('gates the admin edit and delete buttons through the grid iif on the stored date', () => {
+    const actions = component.adminTableHeaders.find((h) => h.field === 'actions')!;
+    const editBtn = (actions.buttons as any[]).find((b) => b.icon === 'edit');
+    const deleteBtn = (actions.buttons as any[]).find((b) => b.icon === 'delete');
+    expect(deleteBtn.iif(row('2026-09-19T00:00:00Z'))).toBe(false);
+    expect(deleteBtn.iif(row('2026-09-18T00:00:00Z'))).toBe(true);
+    expect(editBtn.iif(row('2026-09-19T00:00:00Z'))).toBe(false);
+    expect(editBtn.iif(row('2026-09-18T00:00:00Z'))).toBe(true);
+  });
+
+  it('judges a legacy row by its stored date, not its display date a day earlier', () => {
     const actions = component.adminTableHeaders.find((h) => h.field === 'actions')!;
     const deleteBtn = (actions.buttons as any[]).find((b) => b.icon === 'delete');
-    const row = (deadline: string) => ({deadline: new Date(deadline)}) as ComplianceModel;
-    expect(deleteBtn.iif(row('2026-09-18T00:00:00Z'))).toBe(false);
-    expect(deleteBtn.iif(row('2026-09-17T00:00:00Z'))).toBe(true);
+    // Displayed today, stored tomorrow: the server would refuse, so no action.
+    expect(deleteBtn.iif(row('2026-09-19T00:00:00Z', '2026-09-18T00:00:00Z'))).toBe(false);
   });
 
   it.each([
@@ -92,9 +103,9 @@ describe('CompliancesTableComponent — future tasks (#1300)', () => {
   });
 
   it('does not open the delete dialog for a future row even if invoked directly', () => {
-    component.onShowDeleteComplianceModal({deadline: new Date('2026-09-18T00:00:00Z')} as any);
+    component.onShowDeleteComplianceModal(row('2026-09-19T00:00:00Z') as any);
     expect(dialogOpen).not.toHaveBeenCalled();
-    component.onShowDeleteComplianceModal({deadline: new Date('2026-09-17T00:00:00Z')} as any);
+    component.onShowDeleteComplianceModal(row('2026-09-18T00:00:00Z') as any);
     expect(dialogOpen).toHaveBeenCalledTimes(1);
   });
 });

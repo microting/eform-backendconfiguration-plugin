@@ -18,7 +18,7 @@ import {
 import {Subscription, take} from 'rxjs';
 import {selectAuthIsAdmin, selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
-import {isFutureLegacyDeadline} from '../../../../helpers';
+import {isFutureTask} from '../../../../helpers';
 
 @Component({
     selector: 'app-compliances-table',
@@ -69,7 +69,7 @@ export class CompliancesTableComponent implements OnInit {
           type: 'icon',
           tooltip:  this.translateService.stream('Edit Case'),
           icon: 'edit',
-          iif: (record: ComplianceModel) => this.canEdit(record.deadline),
+          iif: (record: ComplianceModel) => this.canEdit(record.complianceDeadline),
           click: (record: ComplianceModel) =>
             this.router.navigate([
               '/plugins/backend-configuration-pn/compliances/case/'],
@@ -121,7 +121,7 @@ export class CompliancesTableComponent implements OnInit {
           type: 'icon',
           tooltip:  this.translateService.stream('Edit Case'),
           icon: 'edit',
-          iif: (record: ComplianceModel) => this.canEdit(record.deadline),
+          iif: (record: ComplianceModel) => this.canEdit(record.complianceDeadline),
           click: (record: ComplianceModel) =>
             this.router.navigate([
               '/plugins/backend-configuration-pn/compliances/case/'+record.caseId +'/'+ record.eformId+'/'+ this.propertyId+'/'+ record.deadline.toISOString()+'/'+false+'/'+ record.id,
@@ -134,7 +134,7 @@ export class CompliancesTableComponent implements OnInit {
           color: 'warn',
           // #1300: every row here is an uncompleted occurrence, so a future one
           // gets no delete action (the server refuses it as well).
-          iif: (record: ComplianceModel) => this.canDelete(record.deadline),
+          iif: (record: ComplianceModel) => this.canDelete(record.complianceDeadline),
           click: (record: ReportEformItemModel) => this.onShowDeleteComplianceModal(record),
         }
       ]
@@ -190,22 +190,22 @@ export class CompliancesTableComponent implements OnInit {
   /**
    * #1300: date-level, not a timestamp comparison — a task can be filled in
    * from its own day onward, never before (Copenhagen date). `date` is the
-   * DISPLAYED deadline, which is `Compliance.Deadline − 1 day`;
-   * `isFutureLegacyDeadline` adds the day back so this matches the server.
+   * compliance's own stored deadline — the date the server's guard judges —
+   * not the displayed one, which is a day earlier for legacy rows (#1382).
    */
   canEdit(date: Date): boolean {
-    return !isFutureLegacyDeadline(date);
+    return !isFutureTask(date);
   }
 
   /** #1300: an uncompleted future task cannot be deleted. Same date rule as `canEdit`. */
   canDelete(date: Date): boolean {
-    return !isFutureLegacyDeadline(date);
+    return !isFutureTask(date);
   }
 
   onShowDeleteComplianceModal(item: ReportEformItemModel) {
     // The grid hands over the row, a ComplianceModel, despite the declared type.
-    const deadline = (item as unknown as ComplianceModel)?.deadline;
-    if (deadline && !this.canDelete(deadline)) {
+    const complianceDeadline = (item as unknown as ComplianceModel)?.complianceDeadline;
+    if (complianceDeadline && !this.canDelete(complianceDeadline)) {
       return;
     }
     this.complianceDeleteComponentAfterClosedSub$ = this.dialog.open(ComplianceDeleteComponent,

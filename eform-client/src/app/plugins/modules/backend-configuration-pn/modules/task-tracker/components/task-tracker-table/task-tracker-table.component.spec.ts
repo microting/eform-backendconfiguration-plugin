@@ -14,8 +14,9 @@ import {TaskTrackerTableComponent} from './task-tracker-table.component';
 /**
  * #1300 — the task tracker's "Delete Case" menu item is withheld from an
  * uncompleted task dated after today (Copenhagen date). Every task-tracker row
- * is an uncompleted occurrence. `deadlineTask` is the DISPLAYED deadline,
- * `Compliance.Deadline − 1 day`, so "displayed today" is a task dated TOMORROW.
+ * is an uncompleted occurrence. The gate reads `complianceDeadline`, the
+ * compliance's own stored date that the server's guard uses (#1382); the
+ * displayed `deadlineTask` is a day earlier for legacy rows and plays no part.
  *
  * Built with `new` inside an injection context (the component uses `inject()`),
  * so no template or mtx-grid is involved — this pins the gate, not the DOM.
@@ -26,12 +27,13 @@ describe('TaskTrackerTableComponent — Delete Case gate (#1300)', () => {
   let dialogOpen: jest.Mock;
   let isAdmin: boolean;
 
-  const task = (deadlineTaskUtc: string, overrides: Partial<TaskModel> = {}): TaskModel =>
+  const task = (storedUtc: string, overrides: Partial<TaskModel> = {}): TaskModel =>
     ({
       complianceId: 1,
       createdInWizard: true,
       movedToExpiredFolder: false,
-      deadlineTask: new Date(deadlineTaskUtc),
+      complianceDeadline: new Date(storedUtc),
+      deadlineTask: new Date(storedUtc),
       ...overrides,
     }) as unknown as TaskModel;
 
@@ -61,12 +63,26 @@ describe('TaskTrackerTableComponent — Delete Case gate (#1300)', () => {
   });
 
   it.each([
-    ['displayed two days ago → task yesterday', '2026-09-16T00:00:00Z', true],
-    ['displayed yesterday → task today', '2026-09-17T00:00:00Z', true],
-    ['displayed today → task tomorrow', '2026-09-18T00:00:00Z', false],
-    ['displayed in a week → future', '2026-09-25T00:00:00Z', false],
-  ])('%s → deletable: %s', (_label, deadline, expected) => {
-    expect(component.canDeleteTask(task(deadline as string))).toBe(expected);
+    ['stored yesterday', '2026-09-17T00:00:00Z', true],
+    ['stored today', '2026-09-18T00:00:00Z', true],
+    ['stored tomorrow', '2026-09-19T00:00:00Z', false],
+    ['stored in a week', '2026-09-25T00:00:00Z', false],
+  ])('%s → deletable: %s', (_label, stored, expected) => {
+    expect(component.canDeleteTask(task(stored as string))).toBe(expected);
+  });
+
+  it('flips at Copenhagen midnight (CEST), not UTC midnight', () => {
+    const storedTomorrow = task('2026-09-19T00:00:00Z');
+    jest.setSystemTime(new Date('2026-09-18T21:59:00Z')); // 23:59 local
+    expect(component.canDeleteTask(storedTomorrow)).toBe(false);
+    jest.setSystemTime(new Date('2026-09-18T22:00:00Z')); // 00:00 local on the 19th
+    expect(component.canDeleteTask(storedTomorrow)).toBe(true);
+  });
+
+  it('judges a legacy row by its stored date, not its display date a day earlier', () => {
+    // Displayed today, stored tomorrow: the server would refuse, so no action.
+    const legacy = task('2026-09-19T00:00:00Z', {deadlineTask: new Date('2026-09-18T00:00:00Z')});
+    expect(component.canDeleteTask(legacy)).toBe(false);
   });
 
   it('keeps the existing wizard / expired-folder conditions', () => {
@@ -81,12 +97,12 @@ describe('TaskTrackerTableComponent — Delete Case gate (#1300)', () => {
   });
 
   it('does not open the delete dialog for a future task even if invoked directly', () => {
-    component.onShowDeleteComplianceModal(task('2026-09-18T00:00:00Z'));
+    component.onShowDeleteComplianceModal(task('2026-09-19T00:00:00Z'));
     expect(dialogOpen).not.toHaveBeenCalled();
   });
 
   it('opens the delete dialog for today\'s task', () => {
-    component.onShowDeleteComplianceModal(task('2026-09-17T00:00:00Z'));
+    component.onShowDeleteComplianceModal(task('2026-09-18T00:00:00Z'));
     expect(dialogOpen).toHaveBeenCalledTimes(1);
   });
 });

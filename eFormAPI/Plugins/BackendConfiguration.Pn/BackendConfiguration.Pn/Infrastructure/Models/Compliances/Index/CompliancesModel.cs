@@ -38,6 +38,12 @@ public class CompliancesModel
 
     public DateTime? Deadline { get; set; }
 
+    /// <summary>
+    /// The compliance's own stored <c>Deadline</c>, which the #1300 future-task guard judges.
+    /// <see cref="Deadline"/> is the displayed date and is a day earlier for legacy rows (#1382).
+    /// </summary>
+    public DateTime ComplianceDeadline { get; set; }
+
     public List<KeyValuePair<int, string>> Responsible { get; set; }
 
     public int? ComplianceTypeId { get; set; }
