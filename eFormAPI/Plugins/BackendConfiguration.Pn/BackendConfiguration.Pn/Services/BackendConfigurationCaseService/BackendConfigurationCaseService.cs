@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -25,6 +26,12 @@ public class BackendConfigurationCaseService(
     IUserService userService)
     : IBackendConfigurationCaseService
 {
+    /// <summary>
+    /// Clock seam for the done-date check (#1373), instance-level like the other services'
+    /// so a test can pin "now" around Copenhagen midnight.
+    /// </summary>
+    internal Func<DateTime> UtcNow { get; set; } = () => DateTime.UtcNow;
+
     public async Task<OperationResult> Update(ReplyRequest model)
     {
         var checkListValueList = new List<string>();
@@ -50,9 +57,48 @@ public class BackendConfigurationCaseService(
 
         try
         {
+            var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+            // Read-only pre-flight: the new done instant is computed, and refused, BEFORE
+            // core.CaseUpdate writes anything. The tracked instance that is mutated is
+            // re-read below, after core.CaseUpdate, so it carries that update's state.
+            var originalDoneAt = await sdkDbContext.Cases
+                .AsNoTracking()
+                .Where(x => x.Id == model.Id)
+                .Select(x => new { x.DoneAt })
+                .FirstOrDefaultAsync();
+            if (originalDoneAt == null)
+            {
+                return new OperationResult(false, localizationService.GetString("CaseNotFound"));
+            }
+
+            // #1373 — the picked DAY (a picked day arrives as its UTC midnight, an unchanged
+            // one as the stored instant; both read back as the Danish date the user saw) at
+            // the original completion's Danish time of day, or now's when there is none.
+            // Built in Danish time, so the stored instant falls on the picked Danish day.
+            var utcNow = UtcNow();
+            var timeOfDay = ComplianceFutureTaskGuard
+                .CopenhagenTimeOf(originalDoneAt.DoneAt ?? utcNow).TimeOfDay;
+            var newDoneAt = DateTime.SpecifyKind(
+                ComplianceFutureTaskGuard.UtcFromCopenhagen(
+                    ComplianceFutureTaskGuard.DateInCopenhagen(model.DoneAt) + timeOfDay),
+                DateTimeKind.Unspecified);
+
+            // A completed log is placed on its done date everywhere (Rapport, Detaljer,
+            // Oversigt, Kalender), so a done date after today would file it under a day
+            // that has not happened yet. The date pickers stop at today; this is the
+            // server's half, judged on the instant that would be stored.
+            if (ComplianceFutureTaskGuard.DateInCopenhagen(newDoneAt)
+                > ComplianceFutureTaskGuard.TodayInCopenhagen(utcNow))
+            {
+                logger.LogWarning(
+                    "BackendConfigurationCaseService.Update: case {CaseId} done date {DoneAt:yyyy-MM-dd} is after today - nothing was mutated",
+                    model.Id, newDoneAt);
+                return new OperationResult(false, localizationService.GetString("DoneDateCannotBeInTheFuture"));
+            }
+
             await core.CaseUpdate(model.Id, fieldValueList, checkListValueList);
             await core.CaseUpdateFieldValues(model.Id, language);
-            var sdkDbContext = core.DbContextHelper.GetDbContext();
 
             var foundCase = await sdkDbContext.Cases
                 .Where(x => x.Id == model.Id)
@@ -60,15 +106,7 @@ public class BackendConfigurationCaseService(
 
             if(foundCase != null) {
 
-                if (foundCase.DoneAt != null)
-                {
-                    var newDoneAt = new DateTime(model.DoneAt.Year, model.DoneAt.Month, model.DoneAt.Day, foundCase.DoneAt.Value.Hour, foundCase.DoneAt.Value.Minute, foundCase.DoneAt.Value.Second);
-                    foundCase.DoneAtUserModifiable = newDoneAt;
-                } else
-                {
-                    var newDoneAt = new DateTime(model.DoneAt.Year, model.DoneAt.Month, model.DoneAt.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
-                    foundCase.DoneAtUserModifiable = newDoneAt;
-                }
+                foundCase.DoneAtUserModifiable = newDoneAt;
 
                 foundCase.Status = 100;
                 if (model.SiteId != 0)

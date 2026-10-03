@@ -10,6 +10,7 @@ import {
   CalendarCompleteEventModalData,
 } from './calendar-complete-event-modal.component';
 import {
+  BackendConfigurationPnCasesService,
   BackendConfigurationPnCompliancesService,
   BackendConfigurationPnCalendarService,
   BackendConfigurationPnPropertiesService,
@@ -53,6 +54,7 @@ describe('CalendarCompleteEventModalComponent', () => {
   const calendarService = {prepareComplete: jest.fn()};
   const compliancesService = {getCase: jest.fn(), updateCaseFromCalendar: jest.fn()};
   const eFormService = {getSingle: jest.fn()};
+  const casesService = {updateCase: jest.fn()};
 
   async function setup(data: Partial<CalendarCompleteEventModalData> = {}, assignedSiteId: number | null = null) {
     jest.clearAllMocks();
@@ -74,6 +76,7 @@ describe('CalendarCompleteEventModalComponent', () => {
         {provide: BackendConfigurationPnCalendarService, useValue: calendarService},
         {provide: BackendConfigurationPnCompliancesService, useValue: compliancesService},
         {provide: EFormService, useValue: eFormService},
+        {provide: BackendConfigurationPnCasesService, useValue: casesService},
         {
           provide: MAT_DIALOG_DATA,
           useValue: {
@@ -304,5 +307,80 @@ describe('CalendarCompleteEventModalComponent', () => {
     // The point of the assertion above: NOT the falsy id that produced
     // "Sagen blev ikke fundet".
     expect(only.componentInstance.caseId).not.toBe(0);
+  });
+  /**
+   * #1373 — edit mode, opened by Rapport for a COMPLETED log: no prepare, the
+   * existing case with its own done date and completer, saved through
+   * `PUT .../cases` (`BackendConfigurationCaseService.Update`).
+   */
+  describe('edit mode (#1373)', () => {
+    const storedDoneAt = new Date('2026-05-13T10:00:00Z');
+    const edit = {sdkCaseId: 4002, checkListId: 509, completedBySiteId: 2, completedByName: 'Anton Hansen'};
+
+    async function setupEdit(editData = edit) {
+      await setup({complianceId: 2, edit: editData});
+      // setup() stops the chain at the template; edit mode loads it for real.
+      eFormService.getSingle.mockReturnValue(of({success: true, model: {id: 509}}));
+      compliancesService.getCase.mockReturnValue(
+        of({success: true, model: {id: 4002, label: 'L', doneAt: storedDoneAt, elementList: []}}));
+      casesService.updateCase.mockReturnValue(of({success: true}));
+      component.ngOnInit();
+    }
+
+    it('skips prepare and loads the existing case on its own template', async () => {
+      await setupEdit();
+
+      expect(calendarService.prepareComplete).not.toHaveBeenCalled();
+      expect(eFormService.getSingle).toHaveBeenCalledWith(509);
+      expect(compliancesService.getCase).toHaveBeenCalledWith(4002, 509);
+      expect(component.caseId).toBe(4002);
+      expect(component.loading).toBe(false);
+    });
+
+    it('keeps the stored done date and the completer', async () => {
+      await setupEdit();
+
+      expect(component.replyElement.doneAt).toBe(storedDoneAt);
+      expect(component.selectedWorkerId).toBe(2);
+      expect(component.canSave).toBe(true);
+    });
+
+    it('lists a completer who is no longer linked to the property', async () => {
+      await setupEdit({...edit, completedBySiteId: 99, completedByName: 'Jane Doe'});
+
+      expect(component.selectedWorkerId).toBe(99);
+      expect(component.sites.find(s => s.id === 99)?.name).toBe('Jane Doe');
+    });
+
+    it('saves through PUT cases with the case id and completer, the stored date unchanged', async () => {
+      await setupEdit();
+      component.saveCase();
+
+      expect(compliancesService.updateCaseFromCalendar).not.toHaveBeenCalled();
+      const [request] = casesService.updateCase.mock.calls[0];
+      expect(request.id).toBe(4002);
+      expect(request.extraId).toBe(2);
+      expect(request.siteId).toBe(2);
+      expect(request.doneAt).toBe(storedDoneAt);
+      expect(dialogRef.close).toHaveBeenCalledWith({saved: true});
+    });
+
+    it('sends a PICKED day as that day\'s UTC midnight', async () => {
+      await setupEdit();
+      component.replyElement.doneAt = new Date(2026, 4, 11);
+      component.saveCase();
+
+      const [request] = casesService.updateCase.mock.calls[0];
+      expect(request.doneAt.toISOString()).toBe('2026-05-11T00:00:00.000Z');
+    });
+
+    it('cannot save a done date after today', async () => {
+      await setupEdit();
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      component.replyElement.doneAt = tomorrow;
+
+      expect(component.canSave).toBe(false);
+    });
   });
 });

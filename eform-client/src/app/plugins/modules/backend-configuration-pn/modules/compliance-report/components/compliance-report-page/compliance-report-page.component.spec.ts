@@ -1,7 +1,6 @@
 import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {By} from '@angular/platform-browser';
-import {ActivatedRoute, Router} from '@angular/router';
 import {MatButtonToggle, MatButtonToggleGroup, MatButtonToggleModule} from '@angular/material/button-toggle';
 import {MatDialog} from '@angular/material/dialog';
 import {TranslateModule} from '@ngx-translate/core';
@@ -58,8 +57,6 @@ describe('ComplianceReportPageComponent — mode switcher', () => {
         {provide: ComplianceReportStateService, useValue: state},
         {provide: BackendConfigurationPnComplianceReportService, useValue: {export: jest.fn()}},
         {provide: MatDialog, useValue: {open: jest.fn()}},
-        {provide: ActivatedRoute, useValue: {snapshot: {queryParamMap: {get: () => null}}}},
-        {provide: Router, useValue: {navigate: jest.fn().mockResolvedValue(true)}},
         {provide: Store, useValue: {select: jest.fn().mockReturnValue(of({id: USER_ID}))}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
@@ -198,8 +195,6 @@ describe('ComplianceReportPageComponent — remembered period on entry', () => {
         {provide: ComplianceReportStateService, useValue: state},
         {provide: BackendConfigurationPnComplianceReportService, useValue: {export: jest.fn()}},
         {provide: MatDialog, useValue: {open: jest.fn()}},
-        {provide: ActivatedRoute, useValue: {snapshot: {queryParamMap: {get: () => null}}}},
-        {provide: Router, useValue: {navigate: jest.fn().mockResolvedValue(true)}},
         {provide: Store, useValue: {select: jest.fn().mockReturnValue(of(userId == null ? null : {id: userId}))}},
       ],
       schemas: [NO_ERRORS_SCHEMA],

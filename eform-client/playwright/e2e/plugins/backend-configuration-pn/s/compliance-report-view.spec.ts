@@ -1,6 +1,7 @@
 import { test, expect, Page } from '@playwright/test';
 import { LoginPage } from '../../../Page objects/Login.page';
 import {
+  API_TIMEOUT,
   ignoreUnhandledRejections,
   SLOW_API_TIMEOUT,
   UI_TIMEOUT,
@@ -159,6 +160,9 @@ async function routeHeadlineOnTwoEforms(page: Page): Promise<void> {
   );
 }
 
+/** The fictional worker who completed the three mocked logs (#1373). */
+const EDIT_WORKER = { id: 93501, name: 'Ann Andersen' };
+
 const DELETE_ROUTE = '**/api/backend-configuration-pn/compliances/delete/*';
 
 /**
@@ -180,6 +184,9 @@ async function routeThreeLogsWithDelete(page: Page): Promise<number[]> {
     tags: [], propertyId: 9, propertyName: 'Ejendom 9',
     title, taskDate: '2026-05-13', completed: true,
     doneAt: '2026-05-13T10:00:00', workerNames: ['Ann Andersen'],
+    // #1373 — what the Detaljer dialog is opened with in edit mode.
+    completedBySiteId: EDIT_WORKER.id, areaRulePlanningId: 600 + complianceId,
+    workerSiteIds: [EDIT_WORKER.id], teamAssigneeIds: [],
     cells: { f12: title }, imagesCount: 0, images: [],
   });
   const all = [caseRow(1, 'Tank A'), caseRow(2, 'Tank B'), caseRow(3, 'Tank C')];
@@ -221,61 +228,74 @@ async function routeThreeLogsWithDelete(page: Page): Promise<number[]> {
 }
 
 /**
- * #1291 — the shared case page (`/plugins/backend-configuration-pn/case/...`)
- * that `Rediger` opens, mocked end to end for the three-log fixture above: the
- * eForm (`GET /api/templates/get/509`), the case with NO elements
- * (`GET /api/cases?id=…&templateId=509` — nothing to fill in, so `Gem` is one
- * click) and the save (`PUT /api/backend-configuration-pn/cases`). Shard `s`
- * seeds no SQL and the rows are mocked, so the case ids exist nowhere. What
- * this proves is the round trip the case page drives: on save it navigates to
- * `reverseRoute?highlightId={sdkCaseId}`, and the Rapport page must come back
- * re-fetched with that row landed on.
+ * #1373 — `Rediger` opens the log in the Detaljer dialog in EDIT mode, mocked
+ * end to end for the three-log fixture above: the property's workers
+ * (`get-linked-sites`), the eForm (`GET /api/templates/get/509`), the existing
+ * case with NO elements (`GET .../compliances/cases` — nothing to fill in, so
+ * `Gem` is one click) and the save (`PUT /api/backend-configuration-pn/cases`,
+ * `BackendConfigurationCaseService.Update`). Shard `s` seeds no SQL and the rows
+ * are mocked, so the ids exist nowhere. What the server does with the save — the
+ * done date clamp and the placement — is pinned by `ComplianceDoneDatePlacementTests`.
  *
- * Returns how many `PUT` saves reached the mock.
+ * Returns the bodies of the `PUT` saves that reached the mock, and whether
+ * `prepare-complete` was ever called (edit mode must not prepare anything).
  */
-async function routeCasePage(page: Page): Promise<{ saves: number }> {
-  const counter = { saves: 0 };
+async function routeEditDialog(page: Page): Promise<{ saves: Record<string, unknown>[]; prepares: number }> {
+  const seen = { saves: [] as Record<string, unknown>[], prepares: 0 };
+  const json = (model: unknown) => ({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ success: true, message: '', model }),
+  });
+  await page.route('**/api/backend-configuration-pn/properties/get-linked-sites**', (route) =>
+    route.fulfill(json([{ id: EDIT_WORKER.id, name: EDIT_WORKER.name, description: '', languageId: 1 }])),
+  );
   await page.route('**/api/templates/get/509', (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        success: true,
-        message: '',
-        model: { id: 509, label: 'Flydelag', isDoneAtEditable: false, tags: [] },
-      }),
-    }),
+    route.fulfill(json({ id: 509, label: 'Flydelag', isDoneAtEditable: false, tags: [] })),
   );
   await page.route(
-    (url) => url.pathname === '/api/cases',
+    (url) => url.pathname === '/api/backend-configuration-pn/compliances/cases',
     (route) => {
       if (route.request().method() !== 'GET') {
         return route.fallback();
       }
       const id = Number(new URL(route.request().url()).searchParams.get('id'));
-      return route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          success: true,
-          message: '',
-          model: { id, label: 'Flydelag', doneAt: '2026-05-13T10:00:00', elementList: [] },
-        }),
-      });
+      return route.fulfill(json({ id, label: 'Flydelag', doneAt: '2026-05-13T10:00:00', elementList: [] }));
     },
   );
+  await page.route('**/api/backend-configuration-pn/calendar/tasks/*/prepare-complete**', (route) => {
+    seen.prepares++;
+    return route.fulfill(json(null));
+  });
   await page.route('**/api/backend-configuration-pn/cases', (route) => {
     if (route.request().method() !== 'PUT') {
       return route.fallback();
     }
-    counter.saves++;
+    seen.saves.push(route.request().postDataJSON());
     return route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({ success: true, message: '' }),
     });
   });
-  return counter;
+  return seen;
+}
+
+/** Opens `Rediger` on Tank B and waits until the dialog has loaded the case. */
+async function openEditDialogOnTankB(page: Page) {
+  const table = page.locator('.compliance-report__table[data-table-key="h8-c509"]');
+  const caseLoaded = waitForApiResponse(
+    page,
+    'the edit dialog loading the existing case',
+    (r) => r.url().includes('/compliances/cases?') && r.request().method() === 'GET',
+    API_TIMEOUT,
+  );
+  ignoreUnhandledRejections(caseLoaded);
+  await table.locator('tbody tr', { hasText: 'Tank B' }).locator('.compliance-report__edit').click();
+  await caseLoaded;
+  const dialog = page.locator('mat-dialog-container');
+  await expect(dialog).toBeVisible({ timeout: UI_TIMEOUT });
+  return { table, dialog };
 }
 
 /**
@@ -600,92 +620,74 @@ test.describe('Compliance — Rapport view', () => {
     await expect(table.locator('tbody tr.row-highlight-flash')).toHaveCount(0);
   });
 
-  test('Rediger → Gem returns to the SAME Rapport result with the edited log highlighted (#1291)', async ({
+  test('Rediger opens the Detaljer dialog in edit mode; Gem updates the case and lands on the log (#1373)', async ({
     page,
   }) => {
     await routeThreeLogsWithDelete(page);
-    const casePage = await routeCasePage(page);
+    const seen = await routeEditDialog(page);
     await goToRapport(page);
     await awaitRapportRendered(page);
 
-    const section = page.locator('.compliance-report__section[data-section-key="h8"]');
-    const table = section.locator('.compliance-report__table[data-table-key="h8-c509"]');
-    await table.locator('tbody tr', { hasText: 'Tank B' }).locator('.compliance-report__edit').click();
+    const { table, dialog } = await openEditDialogOnTankB(page);
 
-    // The shared case page, for Tank B's case (4002) and its own eForm (509).
-    await expect(page).toHaveURL(/\/plugins\/backend-configuration-pn\/case\/4002\/509\/2\?/, {
-      timeout: UI_TIMEOUT,
-    });
-    const saveBtn = page.locator('#submit_form');
-    await expect(saveBtn).toBeVisible({ timeout: UI_TIMEOUT });
+    // A dialog over the report — not a navigation to the case page.
+    await expect(page).toHaveURL(/\/plugins\/backend-configuration-pn\/compliance-report/);
+    await expect(dialog.locator('h2[mat-dialog-title]')).toHaveText('Tank B');
+    // The log's completer and done date are kept, and the date picker stops at today.
+    await expect(dialog.locator('#completeWorkerSelect')).toContainText(EDIT_WORKER.name, { timeout: UI_TIMEOUT });
+    const doneAt = dialog.locator('#completeDoneAt');
+    await expect(doneAt).not.toHaveValue('');
+    // `max` is the dialog's "now" (the adapter writes it as a full ISO instant), so it
+    // is checked as "about now", never as a fixed string.
+    const max = await doneAt.getAttribute('max');
+    expect(max, 'the done-date picker has no max').not.toBeNull();
+    expect(Math.abs(Date.parse(max!) - Date.now())).toBeLessThan(10 * 60_000);
+    expect(seen.prepares).toBe(0);
 
-    // The return re-queries Rapport by itself — before #1291 it landed on the
-    // un-fetched placeholder and issued no request at all.
+    const saveBtn = dialog.locator('#completeSaveBtn');
+    await expect(saveBtn).toBeEnabled({ timeout: UI_TIMEOUT });
     const refetch = waitForApiResponse(
       page,
-      'the Rapport re-fetch on return from the case page',
+      'the Rapport re-fetch after the edit dialog saved',
       (r) => r.url().includes('/compliance-report/eform-columns'),
       SLOW_API_TIMEOUT,
     );
     ignoreUnhandledRejections(refetch);
     await saveBtn.click();
     await refetch;
-    expect(casePage.saves).toBe(1);
 
-    // Back on the Compliance page, in Rapport, with the result on screen.
-    await expect(page).toHaveURL(/\/plugins\/backend-configuration-pn\/compliance-report/, {
-      timeout: UI_TIMEOUT,
-    });
-    await expect(page.locator('#complianceMode-report-button')).toHaveAttribute('aria-checked', 'true');
-    await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
-    await awaitRapportRendered(page);
-
-    // The same section and table, all three logs.
-    await expect(section).toHaveCount(1, { timeout: UI_TIMEOUT });
-    await expect(table).toBeVisible();
-    await expect(table.locator('tbody tr')).toHaveCount(3);
+    // One save, of THIS case, by its completer — through PUT .../cases.
+    expect(seen.saves).toHaveLength(1);
+    expect(seen.saves[0]).toMatchObject({ id: 4002, extraId: 2, siteId: EDIT_WORKER.id });
+    await expect(dialog).toBeHidden({ timeout: UI_TIMEOUT });
 
     // The edited log — and only it — is landed on and highlighted briefly.
+    await awaitRapportRendered(page);
+    await expect(table.locator('tbody tr')).toHaveCount(3, { timeout: UI_TIMEOUT });
     const tankB = table.locator('tbody tr', { hasText: 'Tank B' });
     await expect(tankB).toHaveClass(/\brow-highlight-flash\b/, { timeout: UI_TIMEOUT });
     await expect(table.locator('tbody tr.row-highlight-flash')).toHaveCount(1);
-    await expect(tankB).toBeInViewport();
-
-    // `highlightId` is consumed: dropped from the URL (replaceUrl).
-    await expect(page).not.toHaveURL(/highlightId/, { timeout: UI_TIMEOUT });
-
-    // ~3 s, then the highlight is gone again.
-    await expect(tankB).not.toHaveClass(/\brow-highlight-flash\b/, { timeout: 10_000 });
   });
 
-  test('Rediger then Back WITHOUT Gem keeps the status quo: the placeholder, no query (#1291)', async ({
-    page,
-  }) => {
+  test('cancelling the edit dialog saves nothing and re-fetches nothing (#1373)', async ({ page }) => {
     await routeThreeLogsWithDelete(page);
-    const casePage = await routeCasePage(page);
+    const seen = await routeEditDialog(page);
     await goToRapport(page);
     await awaitRapportRendered(page);
 
-    const table = page.locator('.compliance-report__table[data-table-key="h8-c509"]');
-    await table.locator('tbody tr', { hasText: 'Tank B' }).locator('.compliance-report__edit').click();
-    await expect(page.locator('#submit_form')).toBeVisible({ timeout: UI_TIMEOUT });
-
+    const { table, dialog } = await openEditDialogOnTankB(page);
     let rapportQueries = 0;
     page.on('request', (r) => {
       if (r.url().includes('/compliance-report/eform-columns')) {
         rapportQueries++;
       }
     });
-    await page.goBack();
+    await dialog.locator('#completeCancelBtn').click();
 
-    // #1163 §6: no row query without a user gesture — leaving the editor
-    // without saving is not a request to reload the report.
-    await expect(page.locator('#complianceMode-report-button')).toHaveAttribute('aria-checked', 'true', {
-      timeout: UI_TIMEOUT,
-    });
-    await expect(page.locator('#complianceEmptyState')).toBeVisible({ timeout: UI_TIMEOUT });
-    await expect(page.locator('.compliance-report__table')).toHaveCount(0);
-    expect(casePage.saves).toBe(0);
+    await expect(dialog).toBeHidden({ timeout: UI_TIMEOUT });
+    await expect(table.locator('tbody tr')).toHaveCount(3);
+    await expect(table.locator('tbody tr.row-highlight-flash')).toHaveCount(0);
+    expect(seen.saves).toHaveLength(0);
     expect(rapportQueries).toBe(0);
   });
 
