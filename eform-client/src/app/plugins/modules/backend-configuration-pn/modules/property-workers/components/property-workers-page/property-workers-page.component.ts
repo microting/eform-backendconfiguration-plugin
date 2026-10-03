@@ -12,6 +12,8 @@ import {AppMenuStateService, AuthStateService} from 'src/app/common/store';
 import {PropertyAssignWorkersModel, DeviceUserModel, TaskWizardModel,} from '../../../../models';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
 import {
+  PropertyWorkerBulkTagsModalComponent,
+  PropertyWorkerBulkTagsModalData,
   PropertyWorkerCreateEditModalComponent
 } from '../';
 import {PropertyWorkersStateService} from '../store';
@@ -24,7 +26,8 @@ import {dialogConfigHelper} from 'src/app/common/helpers';
 import {tap} from 'rxjs/operators';
 import * as R from 'ramda';
 import {
-  selectCurrentUserClaimsDeviceUsersCreate
+  selectCurrentUserClaimsDeviceUsersCreate,
+  selectCurrentUserClaimsDeviceUsersUpdate
 } from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
 import {
@@ -63,6 +66,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   getSites$: Subscription;
   propertyWorkerEditModalComponentAfterClosedSub$: Subscription;
   propertyWorkerCreateModalComponentAfterClosedSub$: Subscription;
+  bulkTagsModalAfterClosedSub$: Subscription;
   getFiltersAsyncSub$: Subscription;
   filtersInitSub$: Subscription;
   valueChangesPropertyIdsSub$: Subscription;
@@ -76,7 +80,10 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   availableTags: CommonDictionaryModel[] = [];
   selectedTagIds: number[] = [];
   highlightedSiteId: number | null = null;
+  /** #1380 — workers ticked in the table, the target of "Tildel tags". */
+  selectedWorkers: DeviceUserModel[] = [];
   public selectCurrentUserClaimsDeviceUsersCreate$ = this.store.select(selectCurrentUserClaimsDeviceUsersCreate);
+  public selectCurrentUserClaimsDeviceUsersUpdate$ = this.store.select(selectCurrentUserClaimsDeviceUsersUpdate);
   private selectPropertyWorkersFilters$ = this.store.select(selectPropertyWorkersFilters);
   public selectPropertyWorkersNameFilters$ = this.store.select(selectPropertyWorkersNameFilters);
 
@@ -194,6 +201,19 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
         }), minWidth: 1024
       })
       .afterClosed().subscribe(data => data ? this.updateTable() : undefined);
+  }
+
+  openBulkTagsModal() {
+    if (this.selectedWorkers.length === 0) {
+      return;
+    }
+    const data: PropertyWorkerBulkTagsModalData = {
+      workers: this.selectedWorkers,
+      availableTags: this.availableTags,
+    };
+    this.bulkTagsModalAfterClosedSub$ = this.dialog.open(PropertyWorkerBulkTagsModalComponent,
+      dialogConfigHelper(this.overlay, data))
+      .afterClosed().subscribe(saved => saved ? this.updateTable() : undefined);
   }
 
   openEditTagsModal() {

@@ -1,0 +1,31 @@
+<h3 mat-dialog-title>{{ 'Assign tags' | translate }}</h3>
+<div mat-dialog-content>
+  <p>{{ 'Selected employees' | translate }} ({{ data.workers.length }})</p>
+  <ul id="bulkTagsWorkerList">
+    <li *ngFor="let worker of data.workers">{{ worker.siteName }}</li>
+  </ul>
+
+  <mat-radio-group [(ngModel)]="mode" color="primary" class="d-flex flex-row gap-12 mb-2">
+    <mat-radio-button id="bulkTagsModeAdd" [value]="modes.Add">{{ 'Add tags' | translate }}</mat-radio-button>
+    <mat-radio-button id="bulkTagsModeRemove" [value]="modes.Remove">{{ 'Remove tags' | translate }}</mat-radio-button>
+  </mat-radio-group>
+
+  <mat-form-field class="w-100">
+    <mat-label>{{ 'Tags' | translate }}</mat-label>
+    <mtx-select
+      id="bulkTagsSelect"
+      [items]="data.availableTags"
+      bindValue="id"
+      bindLabel="name"
+      [multiple]="true"
+      [clearable]="true"
+      [searchable]="true"
+      appendTo="body"
+      [(ngModel)]="tagIds"
+    ></mtx-select>
+  </mat-form-field>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button id="bulkTagsCancelBtn" class="btn-cancel" (click)="hide()">{{ 'Cancel' | translate }}</button>
+  <button id="bulkTagsSaveBtn" class="btn-primary" [disabled]="!valid" (click)="save()">{{ 'Save' | translate }}</button>
+</div>

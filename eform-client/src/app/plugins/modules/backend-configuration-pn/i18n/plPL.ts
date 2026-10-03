@@ -785,4 +785,8 @@ export const plPL = {
   'Not registered': 'Nie zarejestrowano',
   Model: 'Model',
   'OS version': 'Wersja systemu',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Przypisz tagi',
+  'Assign tags to the selected employees': 'Przypisz tagi wybranym pracownikom',
+  'Selected employees': 'Wybrani pracownicy',
 };

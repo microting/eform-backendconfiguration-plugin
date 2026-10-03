@@ -785,4 +785,8 @@ export const csCZ = {
   'Not registered': 'Neregistrováno',
   Model: 'Model',
   'OS version': 'Verze OS',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Přiřadit štítky',
+  'Assign tags to the selected employees': 'Přiřadit štítky vybraným zaměstnancům',
+  'Selected employees': 'Vybraní zaměstnanci',
 };

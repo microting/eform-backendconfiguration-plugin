@@ -806,4 +806,8 @@ export const da = {
   'Not registered': 'Ikke registreret',
   Model: 'Model',
   'OS version': 'OS-version',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Tildel tags',
+  'Assign tags to the selected employees': 'Tildel tags til de valgte medarbejdere',
+  'Selected employees': 'Valgte medarbejdere',
 };

@@ -785,4 +785,8 @@ export const bgBG = {
   'Not registered': 'Не е регистрирано',
   Model: 'Модел',
   'OS version': 'Версия на ОС',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Задаване на етикети',
+  'Assign tags to the selected employees': 'Задаване на етикети на избраните служители',
+  'Selected employees': 'Избрани служители',
 };

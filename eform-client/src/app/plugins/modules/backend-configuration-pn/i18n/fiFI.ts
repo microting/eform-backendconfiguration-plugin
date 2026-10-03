@@ -785,4 +785,8 @@ export const fiFI = {
   'Not registered': 'Ei rekisteröity',
   Model: 'Malli',
   'OS version': 'Käyttöjärjestelmän versio',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Määritä tunnisteet',
+  'Assign tags to the selected employees': 'Määritä tunnisteet valituille työntekijöille',
+  'Selected employees': 'Valitut työntekijät',
 };

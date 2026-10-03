@@ -785,4 +785,8 @@ export const ltLT = {
   'Not registered': 'Neužregistruota',
   Model: 'Modelis',
   'OS version': 'OS versija',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Priskirti žymes',
+  'Assign tags to the selected employees': 'Priskirti žymes pasirinktiems darbuotojams',
+  'Selected employees': 'Pasirinkti darbuotojai',
 };

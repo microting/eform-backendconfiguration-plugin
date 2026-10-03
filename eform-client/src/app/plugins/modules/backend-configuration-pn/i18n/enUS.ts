@@ -906,4 +906,8 @@ export const enUS= {
   'Not registered': 'Not registered',
   Model: 'Model',
   'OS version': 'OS version',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Assign tags',
+  'Assign tags to the selected employees': 'Assign tags to the selected employees',
+  'Selected employees': 'Selected employees',
 };

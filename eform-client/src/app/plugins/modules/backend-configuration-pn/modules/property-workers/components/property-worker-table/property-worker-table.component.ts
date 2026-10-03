@@ -70,6 +70,14 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
   private waitingForFreshData = false;
   @Output() updateTableWithHighlight: EventEmitter<number> = new EventEmitter<number>();
   @Output() highlightedRowRendered: EventEmitter<void> = new EventEmitter<void>();
+  /**
+   * #1380 — rows ticked in the checkbox column (only rendered for users who may
+   * edit workers). Row clicks do not select (`disableRowClickSelection`), so the
+   * row's own buttons keep working. Bound back as `[rowSelected]` because
+   * mtx-grid rebuilds its selection from that input on every input change.
+   */
+  @Output() selectionChanged: EventEmitter<DeviceUserModel[]> = new EventEmitter<DeviceUserModel[]>();
+  selectedRows: DeviceUserModel[] = [];
   propertyWorkerOtpModalComponentAfterClosedSub$: Subscription;
   propertyWorkerEditModalComponentAfterClosedSub$: Subscription;
   canDeleteWorkerSub$: Subscription;
@@ -91,6 +99,13 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
 
 
   ngOnChanges(changes: SimpleChanges): void {
+    if (changes['sitesDto'] && this.selectedRows.length > 0) {
+      // A reload hands mtx-grid new row objects, so the old selection no longer
+      // matches anything on screen: start over. Emitted after this change
+      // detection pass, as the page's toolbar button has already read it.
+      this.selectedRows = [];
+      Promise.resolve().then(() => this.selectionChanged.emit([]));
+    }
     if (changes['showResigned']) {
       this.buildTableHeaders();
     }
@@ -223,6 +238,11 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
     this.tableHeaders = baseHeaders;
   }
 
+
+  onRowSelected(rows: DeviceUserModel[]) {
+    this.selectedRows = rows;
+    this.selectionChanged.emit(rows);
+  }
 
   appState(app: AppInstallModel | undefined): AppInstallState {
     return appInstallState(app);

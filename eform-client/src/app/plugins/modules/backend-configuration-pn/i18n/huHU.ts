@@ -785,4 +785,8 @@ export const huHU = {
   'Not registered': 'Nincs regisztrálva',
   Model: 'Modell',
   'OS version': 'OS-verzió',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Címkék hozzárendelése',
+  'Assign tags to the selected employees': 'Címkék hozzárendelése a kiválasztott munkatársakhoz',
+  'Selected employees': 'Kiválasztott munkatársak',
 };

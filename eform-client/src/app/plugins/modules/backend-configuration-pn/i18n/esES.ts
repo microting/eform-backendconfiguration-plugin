@@ -785,4 +785,8 @@ export const esES = {
   'Not registered': 'No registrado',
   Model: 'Modelo',
   'OS version': 'Versión del SO',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Asignar etiquetas',
+  'Assign tags to the selected employees': 'Asignar etiquetas a los empleados seleccionados',
+  'Selected employees': 'Empleados seleccionados',
 };
