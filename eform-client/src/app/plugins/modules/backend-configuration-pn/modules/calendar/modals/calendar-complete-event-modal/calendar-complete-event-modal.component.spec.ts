@@ -1,4 +1,4 @@
-import {Component, Input, NO_ERRORS_SCHEMA} from '@angular/core';
+import {Component, Input, NO_ERRORS_SCHEMA, QueryList} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {By} from '@angular/platform-browser';
@@ -325,6 +325,9 @@ describe('CalendarCompleteEventModalComponent', () => {
         of({success: true, model: {id: 4002, label: 'L', doneAt: storedDoneAt, elementList: []}}));
       casesService.updateCase.mockReturnValue(of({success: true}));
       component.ngOnInit();
+      // The template is never rendered here, so @ViewChildren is unset; saveCase reads it.
+      // The case has no elements, so the rendered list would be empty too.
+      component.editElements = new QueryList<any>();
     }
 
     it('skips prepare and loads the existing case on its own template', async () => {
