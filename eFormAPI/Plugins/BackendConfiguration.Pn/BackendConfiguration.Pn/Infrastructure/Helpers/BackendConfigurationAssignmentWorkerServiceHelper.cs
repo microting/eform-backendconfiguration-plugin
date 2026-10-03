@@ -546,6 +546,24 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .ToListAsync().ConfigureAwait(false);
 
+                var assignmentsForDelete = assignments
+                    .Where(x => !updateModel.Assignments.Select(y => y.PropertyId).Contains(x.PropertyId))
+                    .ToList();
+
+                // Authoritative backend block, checked before any write: a worker named on an
+                // active event of a property cannot be unassigned from that property. Worker
+                // tags are not counted: tag membership already ends with the property link
+                // (CalendarAssignmentResolver's property scope), the same per-property lock
+                // the UI shows (NumberOfTasksAssigned).
+                foreach (var propertyAssignment in assignmentsForDelete)
+                {
+                    if (await ActiveEventsAssignedTo(backendConfigurationPnDbContext, updateModel.SiteId, [])
+                            .AnyAsync(x => x.PropertyId == propertyAssignment.PropertyId).ConfigureAwait(false))
+                    {
+                        return new OperationResult(false, WorkerStillAssignedToEventsCannotUnassignPropertyKey);
+                    }
+                }
+
                 foreach (var propertyWorker in assignments)
                 {
                     propertyWorker.TaskManagementEnabled = updateModel.TaskManagementEnabled;
@@ -584,22 +602,22 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     }
                 }
 
-                var assignmentsForDelete = assignments
-                    .Where(x => !updateModel.Assignments.Select(y => y.PropertyId).Contains(x.PropertyId))
-                    .ToList();
-
                 foreach (var propertyAssignment in assignmentsForDelete)
                 {
+                    var property = await backendConfigurationPnDbContext.Properties
+                        .Where(x => x.Id == propertyAssignment.PropertyId)
+                        .SingleAsync().ConfigureAwait(false);
+
+                    // Clean up first, unlink after: a cleanup that throws must leave the worker
+                    // linked to the property, not unlinked with half its assignments left (#1376).
+                    await DeleteAllEntriesForPropertyAssignment(propertyAssignment, core, property, sdkDbContext, caseTemplatePnDbContext, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
+
                     propertyAssignment.UpdatedByUserId = userService.UserId;
                     await propertyAssignment.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
                     if (propertyAssignment.EntityItemId != null)
                     {
                         await core.EntityItemDelete((int)propertyAssignment.EntityItemId).ConfigureAwait(false);
                     }
-
-                    var property = await backendConfigurationPnDbContext.Properties
-                        .Where(x => x.Id == propertyAssignment.PropertyId)
-                        .SingleAsync().ConfigureAwait(false);
 
                     var entityItems = await sdkDbContext.EntityItems
                         .Where(x => x.EntityGroupId == property.EntitySelectListDeviceUsers)
@@ -615,8 +633,6 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             entity.EntityItemUid, entityItemIncrementer).ConfigureAwait(false);
                         entityItemIncrementer++;
                     }
-
-                    await DeleteAllEntriesForPropertyAssignment(propertyAssignment, core, property, sdkDbContext, caseTemplatePnDbContext, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
                 }
 
                 if(assignmentsForDelete.Any())
@@ -844,13 +860,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         // moved to the new state (the email/login split).
                         if (deviceUserModel.Resigned && !worker.Resigned)
                         {
-                            var stillAssigned = await backendConfigurationPnDbContext.AreaRulePlannings
-                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed && x.Status)
-                                .Where(x =>
-                                    x.PlanningSites.Any(y => y.WorkflowState != Constants.WorkflowStates.Removed
-                                                             && y.SiteId == site.Id)
-                                    || x.AreaRulePlanningWorkerTags.Any(wt => wt.WorkflowState != Constants.WorkflowStates.Removed
-                                                                              && deviceUserModel.Tags.Contains(wt.TagId)))
+                            var stillAssigned = await ActiveEventsAssignedTo(
+                                    backendConfigurationPnDbContext, site.Id, deviceUserModel.Tags)
                                 .AnyAsync();
 
                             if (stillAssigned)
@@ -1969,6 +1980,25 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
         }
 
 
+        public const string WorkerStillAssignedToEventsCannotDeleteKey = "WorkerStillAssignedToEventsCannotDelete";
+        public const string WorkerStillAssignedToEventsCannotUnassignPropertyKey = "WorkerStillAssignedToEventsCannotUnassignProperty";
+
+        /// <summary>
+        /// The "still assigned to an active event" rule shared by resign, worker delete and
+        /// property unassign: live, active (<c>Status</c>) rules that name the site through a
+        /// live <c>PlanningSite</c>, or carry one of <paramref name="workerTagIds"/> as a live
+        /// worker tag. Inactive legacy rows never block, as before.
+        /// </summary>
+        public static IQueryable<AreaRulePlanning> ActiveEventsAssignedTo(
+            BackendConfigurationPnDbContext backendConfigurationPnDbContext, int siteId, List<int> workerTagIds)
+            => backendConfigurationPnDbContext.AreaRulePlannings
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed && x.Status)
+                .Where(x =>
+                    x.PlanningSites.Any(y => y.WorkflowState != Constants.WorkflowStates.Removed
+                                             && y.SiteId == siteId)
+                    || x.AreaRulePlanningWorkerTags.Any(wt => wt.WorkflowState != Constants.WorkflowStates.Removed
+                                                              && workerTagIds.Contains(wt.TagId)));
+
         public static async Task DeleteAllEntriesForPropertyAssignment(PropertyWorker propertyAssignment, Core core,
             Property property, MicrotingDbContext sdkDbContext,
             CaseTemplatePnDbContext caseTemplatePnDbContext,
@@ -2006,6 +2036,18 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
             foreach (var planningSite in planningSites)
             {
+                // A legacy row with ItemPlanningId 0 has no items-planning side at all:
+                // only its BC assignment is removed. Looking up Planning 0 used to throw
+                // here and stop the cleanup halfway, leaving the remaining assignments
+                // of the worker behind (#1376).
+                if (planningSite.ItemPlanningId == 0)
+                {
+                    var legacyPlanningSite = await backendConfigurationPnDbContext.PlanningSites
+                        .FirstAsync(x => x.Id == planningSite.Id).ConfigureAwait(false);
+                    await legacyPlanningSite.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
+                    continue;
+                }
+
                 var itemPlanningSites = await itemsPlanningPnDbContext.PlanningSites
                     .SingleOrDefaultAsync(x => x.SiteId == propertyAssignment.WorkerId
                                                && x.PlanningId == planningSite.ItemPlanningId
@@ -2053,7 +2095,13 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 if (itemPlanningCaseSites.Count == 0)
                 {
                     var itemPlanning = await itemsPlanningPnDbContext.Plannings
-                        .FirstAsync(x => x.Id == planningSite.ItemPlanningId).ConfigureAwait(false);
+                        .FirstOrDefaultAsync(x => x.Id == planningSite.ItemPlanningId).ConfigureAwait(false);
+                    if (itemPlanning == null)
+                    {
+                        // The rule points at a planning that no longer exists: nothing
+                        // to remove on the items-planning side.
+                        continue;
+                    }
 
                     await itemPlanning.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
                     var compliance = await backendConfigurationPnDbContext.Compliances.SingleOrDefaultAsync(x => x.PlanningId == itemPlanning.Id).ConfigureAwait(false);
