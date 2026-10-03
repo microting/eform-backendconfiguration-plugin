@@ -123,10 +123,12 @@ public class CalendarTaskListIndexTest : TestBaseSetup
     /// entities' <c>.Create(BackendConfigurationPnDbContext!)</c>, returning the
     /// new AreaRulePlanning's Id. The <paramref name="status"/> flag becomes the
     /// series' <c>Status</c>, which is the column <c>Index</c>'s
-    /// <c>Filters.Status</c> filter targets.
+    /// <c>Filters.Status</c> filter targets. An active series gets a live
+    /// items-planning Planning (as CreateTask gives it); without one Index hides
+    /// it (#1376). <paramref name="itemPlanningId"/> overrides that link.
     /// </summary>
     private async Task<int> SeedSeries(int propertyId, int areaId, bool status,
-        int repeatType = 2, int repeatEvery = 1)
+        int repeatType = 2, int repeatEvery = 1, int? itemPlanningId = null)
     {
         var areaRule = new AreaRule
         {
@@ -143,6 +145,7 @@ public class CalendarTaskListIndexTest : TestBaseSetup
             AreaRuleId = areaRule.Id,
             PropertyId = propertyId,
             AreaId = areaId,
+            ItemPlanningId = itemPlanningId ?? (status ? await SeedPlanning(Constants.WorkflowStates.Created) : 0),
             StartDate = DateTime.UtcNow.Date,
             Status = status,
             RepeatType = repeatType,
@@ -235,6 +238,90 @@ public class CalendarTaskListIndexTest : TestBaseSetup
         Assert.That(row.IsAllDay, Is.True);
         Assert.That(row.StartHour, Is.EqualTo(0.0));
         Assert.That(row.Duration, Is.EqualTo(0.0));
+    }
+
+    /// <summary>A bare items-planning Planning in the given workflow state; returns its Id.</summary>
+    private async Task<int> SeedPlanning(string workflowState)
+    {
+        var planning = new Planning
+        {
+            Enabled = true,
+            RepeatEvery = 1,
+            RepeatType = ItemsPlanningRepeatType.Week,
+            StartDate = DateTime.UtcNow.Date,
+            RelatedEFormId = 0,
+            WorkflowState = workflowState,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+        return planning.Id;
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // #1376 — an ACTIVE row without a live Planning is no task: it cannot be
+    // opened or deployed, and the list showed it as "Aktiv" with eForm "--".
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Active rows whose ItemPlanningId is 0, points at a removed Planning, or
+    /// points at no Planning at all are left out; an active row with a live
+    /// Planning on the same property is still listed.
+    /// </summary>
+    [Test]
+    public async Task Index_ActiveSeriesWithoutLivePlanning_IsNotListed()
+    {
+        var (property, area) = await SeedPropertyAndArea();
+
+        var liveArpId = await SeedSeries(property.Id, area.Id, status: true);
+        var noPlanningArpId = await SeedSeries(property.Id, area.Id, status: true, itemPlanningId: 0);
+        var removedPlanningArpId = await SeedSeries(property.Id, area.Id, status: true,
+            itemPlanningId: await SeedPlanning(Constants.WorkflowStates.Removed));
+        var missingPlanningArpId = await SeedSeries(property.Id, area.Id, status: true,
+            itemPlanningId: int.MaxValue);
+
+        foreach (var status in new bool?[] { null, true })
+        {
+            var result = await _calendarService.Index(new CalendarTaskIndexRequestModel
+            {
+                Filters = new CalendarTaskListFiltrationModel { PropertyIds = [property.Id], Status = status }
+            });
+
+            Assert.That(result.Success, Is.True, result.Message);
+            var ids = result.Model.Select(x => x.Id).ToList();
+            Assert.Multiple(() =>
+            {
+                Assert.That(ids, Does.Contain(liveArpId), $"Status filter {status}: the live task must stay listed.");
+                Assert.That(ids, Does.Not.Contain(noPlanningArpId),
+                    $"Status filter {status}: an active row with ItemPlanningId 0 is no task.");
+                Assert.That(ids, Does.Not.Contain(removedPlanningArpId),
+                    $"Status filter {status}: an active row on a removed Planning is no task.");
+                Assert.That(ids, Does.Not.Contain(missingPlanningArpId),
+                    $"Status filter {status}: an active row on a missing Planning is no task.");
+            });
+        }
+    }
+
+    /// <summary>
+    /// An INACTIVE row without a Planning is a normal deactivated task and stays
+    /// listed under Aktiv = Nej.
+    /// </summary>
+    [Test]
+    public async Task Index_InactiveSeriesWithoutPlanning_StaysListedAsInactive()
+    {
+        var (property, area) = await SeedPropertyAndArea();
+        var inactiveArpId = await SeedSeries(property.Id, area.Id, status: false);
+
+        var result = await _calendarService.Index(new CalendarTaskIndexRequestModel
+        {
+            Filters = new CalendarTaskListFiltrationModel { PropertyIds = [property.Id], Status = false }
+        });
+
+        Assert.That(result.Success, Is.True, result.Message);
+        var row = result.Model.Single(x => x.Id == inactiveArpId);
+        Assert.That(row.Status, Is.False);
+        Assert.That(row.PlanningId, Is.EqualTo(0));
     }
 
     // ═════════════════════════════════════════════════════════════════════════
