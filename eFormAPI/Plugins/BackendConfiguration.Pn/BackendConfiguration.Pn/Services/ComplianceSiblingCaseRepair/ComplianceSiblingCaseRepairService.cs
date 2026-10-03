@@ -92,9 +92,11 @@ public class ComplianceSiblingCaseRepairService(
 
             // From here on the run writes; a closed browser tab must not stop it halfway.
             var result = new ComplianceSiblingCaseRepairRunResultModel { Plan = plan };
+            var core = await coreHelper.GetCore().ConfigureAwait(false);
+            await using var sdkDbContext = core.DbContextHelper.GetDbContext();
             foreach (var repoint in plan.Repoints)
             {
-                await RepointAsync(repoint, result).ConfigureAwait(false);
+                await RepointAsync(repoint, sdkDbContext, result).ConfigureAwait(false);
             }
 
             logger.LogInformation(
@@ -173,7 +175,9 @@ public class ComplianceSiblingCaseRepairService(
         return plan;
     }
 
-    private async Task RepointAsync(ComplianceSiblingCaseRepointModel repoint, ComplianceSiblingCaseRepairRunResultModel result)
+    private async Task RepointAsync(ComplianceSiblingCaseRepointModel repoint,
+        Microting.eForm.Infrastructure.MicrotingDbContext sdkDbContext,
+        ComplianceSiblingCaseRepairRunResultModel result)
     {
         var what = $"compliance {repoint.ComplianceId}";
         var compliance = await dbContext.Compliances
@@ -186,6 +190,19 @@ public class ComplianceSiblingCaseRepairService(
             logger.LogInformation(
                 "ComplianceSiblingCaseRepair: {What} skipped: it changed since the dry run", what);
             result.Skipped.Add($"{what}: changed since the dry run");
+            return;
+        }
+
+        // The planned target must still be the completed sibling the readers resolve:
+        // its completion may have been undone, or an earlier completion may have arrived.
+        var current = await CompletedSiblingCases.FindAsync(
+                itemsPlanningPnDbContext, sdkDbContext, [repoint.OldSdkCaseId])
+            .ConfigureAwait(false);
+        if (current.GetValueOrDefault(repoint.OldSdkCaseId)?.Id != repoint.NewSdkCaseId)
+        {
+            logger.LogInformation(
+                "ComplianceSiblingCaseRepair: {What} skipped: its completed sibling changed during the run", what);
+            result.Skipped.Add($"{what}: completed sibling changed during the run");
             return;
         }
 
@@ -213,7 +230,7 @@ public class ComplianceSiblingCaseRepairService(
         foreach (var r in plan.Repoints)
         {
             sb.Append(CultureInfo.InvariantCulture,
-                $"S|{r.ComplianceId}|{r.OldSdkCaseId}|{r.NewSdkCaseId}\n");
+                $"S|{r.ComplianceId}|{r.PlanningId}|{r.PropertyId}|{r.Deadline:O}|{r.OldSdkCaseId}|{r.NewSdkCaseId}\n");
         }
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(sb.ToString())));
     }

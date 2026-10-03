@@ -735,6 +735,33 @@ public class ComplianceSiblingCompletedCaseTests : TestBaseSetup
     }
 
     /// <summary>
+    /// The hash covers every reviewed field: a compliance moved to another date after the
+    /// dry run invalidates it even though its case ids are unchanged.
+    /// </summary>
+    [Test]
+    public async Task Repair_Run_AfterTheReviewedRowMoved_IsRefused()
+    {
+        var core = await SharedCore();
+        var series = await SeedSeries("Repair moved row");
+        var occ = await SeedTwoWorkerOccurrence(series, PastMonday());
+        var service = BuildRepairService(core);
+        var dryRun = await service.DryRunAsync();
+        Assert.That(dryRun.Model.Repoints, Has.Count.EqualTo(1), "premise: the row is planned");
+
+        var compliance = await BackendConfigurationPnDbContext!.Compliances.SingleAsync(x => x.Id == occ.ComplianceId);
+        compliance.Deadline = compliance.Deadline.AddDays(1);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+        ClearTrackers();
+
+        var run = await service.RunAsync(dryRun.Model.PlanHash);
+        ClearTrackers();
+
+        Assert.That(run.Success, Is.False, "the reviewed plan no longer matches the data");
+        Assert.That(run.Message, Does.Contain("plan hash mismatch"));
+        Assert.That((await StoredCompliance(occ.ComplianceId)).MicrotingSdkCaseId, Is.EqualTo(occ.OwnCaseId));
+    }
+
+    /// <summary>
     /// The compliance's OWN case is completed — later than a sibling's. It is an ordinary
     /// completed log and keeps its case: the helper never repoints a completed case.
     /// </summary>
