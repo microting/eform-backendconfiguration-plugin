@@ -209,12 +209,16 @@ test.describe.serial('Task list — active tasks without a planning are not list
     expect(inserted.length, `the insert must print the new id; got ${JSON.stringify(inserted)}`).toBe(1);
     orphanArpId = requireId(Number(inserted[0][0]), 'the inserted AreaRulePlanning id');
 
+    // WorkflowState is compared null-safely: the copied row keeps the source row's value,
+    // and a calendar-created row can carry NULL there (live, as far as every reader is
+    // concerned — they all filter `<> 'removed'` with EF's null semantics).
     const verify = parseRows(await runMariadbSql(
-      `SELECT ItemPlanningId, Status, WorkflowState FROM \`${BC_DB}\`.AreaRulePlannings WHERE Id = ${orphanArpId};`,
+      `SELECT ItemPlanningId, Status, IFNULL(WorkflowState, '') = 'removed' ` +
+        `FROM \`${BC_DB}\`.AreaRulePlannings WHERE Id = ${orphanArpId};`,
       `read back AreaRulePlanning ${orphanArpId}`
     ));
     expect(verify, `AreaRulePlanning ${orphanArpId} must be an active, live row with no planning`)
-      .toEqual([['0', '1', 'created']]);
+      .toEqual([['0', '1', '0']]);
   });
 
   test('TLP03: the task list leaves the active row without a planning out', async ({ page }) => {
