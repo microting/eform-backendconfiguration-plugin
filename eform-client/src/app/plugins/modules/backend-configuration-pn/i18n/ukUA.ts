@@ -785,4 +785,8 @@ export const ukUA = {
   'Not registered': 'Не зареєстровано',
   Model: 'Модель',
   'OS version': 'Версія ОС',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Призначити теги',
+  'Assign tags to the selected employees': 'Призначити теги вибраним працівникам',
+  'Selected employees': 'Вибрані працівники',
 };

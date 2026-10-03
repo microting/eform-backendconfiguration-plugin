@@ -785,4 +785,8 @@ export const isIS = {
   'Not registered': 'Ekki skráð',
   Model: 'Gerð',
   'OS version': 'Útgáfa stýrikerfis',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Úthluta merkjum',
+  'Assign tags to the selected employees': 'Úthluta merkjum til valinna starfsmanna',
+  'Selected employees': 'Valdir starfsmenn',
 };

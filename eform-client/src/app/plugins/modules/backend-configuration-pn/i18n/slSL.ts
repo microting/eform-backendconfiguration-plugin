@@ -785,4 +785,8 @@ export const slSL = {
   'Not registered': 'Ni registrirano',
   Model: 'Model',
   'OS version': 'Različica OS',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Dodeli oznake',
+  'Assign tags to the selected employees': 'Dodeli oznake izbranim zaposlenim',
+  'Selected employees': 'Izbrani zaposleni',
 };

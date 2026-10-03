@@ -785,4 +785,8 @@ export const elGR = {
   'Not registered': 'Δεν έχει καταχωριστεί',
   Model: 'Μοντέλο',
   'OS version': 'Έκδοση ΛΣ',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Ανάθεση ετικετών',
+  'Assign tags to the selected employees': 'Ανάθεση ετικετών στους επιλεγμένους υπαλλήλους',
+  'Selected employees': 'Επιλεγμένοι υπάλληλοι',
 };

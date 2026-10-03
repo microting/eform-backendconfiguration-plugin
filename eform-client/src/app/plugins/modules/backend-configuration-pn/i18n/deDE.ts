@@ -831,4 +831,8 @@ export const deDE = {
   'Not registered': 'Nicht registriert',
   Model: 'Modell',
   'OS version': 'OS-Version',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Tags zuweisen',
+  'Assign tags to the selected employees': 'Den ausgewählten Mitarbeitern Tags zuweisen',
+  'Selected employees': 'Ausgewählte Mitarbeiter',
 };

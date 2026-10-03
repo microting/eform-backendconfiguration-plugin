@@ -785,4 +785,8 @@ export const etET = {
   'Not registered': 'Registreerimata',
   Model: 'Mudel',
   'OS version': 'OS-i versioon',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Määra sildid',
+  'Assign tags to the selected employees': 'Määra sildid valitud töötajatele',
+  'Selected employees': 'Valitud töötajad',
 };

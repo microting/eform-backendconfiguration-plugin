@@ -785,4 +785,8 @@ export const skSK = {
   'Not registered': 'Neregistrované',
   Model: 'Model',
   'OS version': 'Verzia OS',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Priradiť štítky',
+  'Assign tags to the selected employees': 'Priradiť štítky vybraným zamestnancom',
+  'Selected employees': 'Vybraní zamestnanci',
 };

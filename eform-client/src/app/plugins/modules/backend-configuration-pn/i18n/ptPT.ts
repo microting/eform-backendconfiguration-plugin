@@ -785,4 +785,8 @@ export const ptPT = {
   'Not registered': 'Não registado',
   Model: 'Modelo',
   'OS version': 'Versão do SO',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Atribuir etiquetas',
+  'Assign tags to the selected employees': 'Atribuir etiquetas aos funcionários selecionados',
+  'Selected employees': 'Funcionários selecionados',
 };

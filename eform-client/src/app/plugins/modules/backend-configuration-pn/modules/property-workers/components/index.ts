@@ -4,3 +4,4 @@ export * from './property-worker-delete-modal/property-worker-delete-modal.compo
 export * from './property-worker-create-edit-modal/property-worker-create-edit-modal.component';
 export * from './property-worker-table/property-worker-table.component';
 export * from './property-worker-qr-modal/property-worker-qr-modal.component';
+export * from './property-worker-bulk-tags-modal/property-worker-bulk-tags-modal.component';

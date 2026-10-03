@@ -785,4 +785,8 @@ export const svSE = {
   'Not registered': 'Inte registrerad',
   Model: 'Modell',
   'OS version': 'OS-version',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Tilldela taggar',
+  'Assign tags to the selected employees': 'Tilldela taggar till de valda medarbetarna',
+  'Selected employees': 'Valda medarbetare',
 };

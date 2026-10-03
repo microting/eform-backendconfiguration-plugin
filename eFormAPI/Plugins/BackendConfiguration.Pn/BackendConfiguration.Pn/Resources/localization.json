@@ -7252,5 +7252,67 @@
       "el-GR": "Εργαζόμενοι",
       "is-IS": "Starfsmenn"
     }
+  },
+  {
+    "Key": "WorkerTagsUpdated",
+    "LocalizedValue": {
+      "da": "Tags er opdateret",
+      "de": "Tags wurden aktualisiert",
+      "en-US": "Tags updated",
+      "uk-UA": "Теги оновлено",
+      "pl-PL": "Tagi zostały zaktualizowane",
+      "no-NO": "Merkene er oppdatert",
+      "sv-SE": "Taggarna har uppdaterats",
+      "es-ES": "Etiquetas actualizadas",
+      "fr-FR": "Étiquettes mises à jour",
+      "it-IT": "Tag aggiornati",
+      "nl-NL": "Labels bijgewerkt",
+      "pt-BR": "Tags atualizadas",
+      "pt-PT": "Etiquetas atualizadas",
+      "fi-FI": "Tunnisteet päivitetty",
+      "et-ET": "Sildid on uuendatud",
+      "lv-LV": "Tagi ir atjaunināti",
+      "lt-LT": "Žymės atnaujintos",
+      "ro-RO": "Etichetele au fost actualizate",
+      "hr-HR": "Oznake su ažurirane",
+      "sl-SL": "Oznake so posodobljene",
+      "cs-CZ": "Štítky byly aktualizovány",
+      "sk-SK": "Štítky boli aktualizované",
+      "hu-HU": "A címkék frissítve",
+      "bg-BG": "Етикетите са актуализирани",
+      "el-GR": "Οι ετικέτες ενημερώθηκαν",
+      "is-IS": "Merkin hafa verið uppfærð"
+    }
+  },
+  {
+    "Key": "WorkerTagsCouldNotBeUpdated",
+    "LocalizedValue": {
+      "da": "Tags kunne ikke opdateres. Vælg mindst én medarbejder og ét tag, og genindlæs siden, hvis en medarbejder eller et tag er slettet.",
+      "de": "Tags konnten nicht aktualisiert werden. Wählen Sie mindestens einen Mitarbeiter und ein Tag aus und laden Sie die Seite neu, falls ein Mitarbeiter oder Tag gelöscht wurde.",
+      "en-US": "Tags could not be updated. Select at least one worker and one tag, and reload the page if a worker or tag has been deleted.",
+      "uk-UA": "Не вдалося оновити теги. Виберіть принаймні одного працівника й один тег і перезавантажте сторінку, якщо працівника або тег було видалено.",
+      "pl-PL": "Nie można zaktualizować tagów. Wybierz co najmniej jednego pracownika i jeden tag oraz odśwież stronę, jeśli pracownik lub tag został usunięty.",
+      "no-NO": "Merkene kunne ikke oppdateres. Velg minst én medarbeider og ett merke, og last inn siden på nytt hvis en medarbeider eller et merke er slettet.",
+      "sv-SE": "Taggarna kunde inte uppdateras. Välj minst en arbetare och en tagg, och ladda om sidan om en arbetare eller tagg har tagits bort.",
+      "es-ES": "No se pudieron actualizar las etiquetas. Seleccione al menos un trabajador y una etiqueta, y recargue la página si se ha eliminado un trabajador o una etiqueta.",
+      "fr-FR": "Les étiquettes n'ont pas pu être mises à jour. Sélectionnez au moins un travailleur et une étiquette, et rechargez la page si un travailleur ou une étiquette a été supprimé.",
+      "it-IT": "Impossibile aggiornare i tag. Seleziona almeno un lavoratore e un tag e ricarica la pagina se un lavoratore o un tag è stato eliminato.",
+      "nl-NL": "Labels konden niet worden bijgewerkt. Selecteer minstens één medewerker en één label en laad de pagina opnieuw als een medewerker of label is verwijderd.",
+      "pt-BR": "Não foi possível atualizar as tags. Selecione pelo menos um trabalhador e uma tag e recarregue a página se um trabalhador ou tag tiver sido excluído.",
+      "pt-PT": "Não foi possível atualizar as etiquetas. Selecione pelo menos um trabalhador e uma etiqueta e recarregue a página se um trabalhador ou etiqueta tiver sido eliminado.",
+      "fi-FI": "Tunnisteita ei voitu päivittää. Valitse vähintään yksi työntekijä ja yksi tunniste ja lataa sivu uudelleen, jos työntekijä tai tunniste on poistettu.",
+      "et-ET": "Silte ei saanud uuendada. Valige vähemalt üks töötaja ja üks silt ning laadige leht uuesti, kui töötaja või silt on kustutatud.",
+      "lv-LV": "Tagus nevarēja atjaunināt. Atlasiet vismaz vienu darbinieku un vienu tagu un pārlādējiet lapu, ja darbinieks vai tags ir dzēsts.",
+      "lt-LT": "Nepavyko atnaujinti žymių. Pasirinkite bent vieną darbuotoją ir vieną žymę ir iš naujo įkelkite puslapį, jei darbuotojas ar žymė buvo ištrinti.",
+      "ro-RO": "Etichetele nu au putut fi actualizate. Selectați cel puțin un lucrător și o etichetă și reîncărcați pagina dacă un lucrător sau o etichetă a fost ștearsă.",
+      "hr-HR": "Oznake nije moguće ažurirati. Odaberite barem jednog radnika i jednu oznaku i ponovno učitajte stranicu ako je radnik ili oznaka izbrisan.",
+      "sl-SL": "Oznak ni bilo mogoče posodobiti. Izberite vsaj enega delavca in eno oznako ter znova naložite stran, če je bil delavec ali oznaka izbrisan.",
+      "cs-CZ": "Štítky nelze aktualizovat. Vyberte alespoň jednoho pracovníka a jeden štítek a znovu načtěte stránku, pokud byl pracovník nebo štítek odstraněn.",
+      "sk-SK": "Štítky sa nepodarilo aktualizovať. Vyberte aspoň jedného pracovníka a jeden štítok a znova načítajte stránku, ak bol pracovník alebo štítok odstránený.",
+      "hu-HU": "A címkéket nem sikerült frissíteni. Válasszon ki legalább egy dolgozót és egy címkét, és töltse újra az oldalt, ha egy dolgozót vagy címkét töröltek.",
+      "bg-BG": "Етикетите не можаха да бъдат актуализирани. Изберете поне един работник и един етикет и презаредете страницата, ако работник или етикет е изтрит.",
+      "el-GR": "Δεν ήταν δυνατή η ενημέρωση των ετικετών. Επιλέξτε τουλάχιστον έναν εργαζόμενο και μία ετικέτα και φορτώστε ξανά τη σελίδα αν έχει διαγραφεί εργαζόμενος ή ετικέτα.",
+      "is-IS": "Ekki tókst að uppfæra merkin. Veldu að minnsta kosti einn starfsmann og eitt merki og endurhlaðaðu síðunni ef starfsmaður eða merki hefur verið eytt."
+    }
   }
 ]

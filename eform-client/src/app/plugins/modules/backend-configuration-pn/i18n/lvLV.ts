@@ -785,4 +785,8 @@ export const lvLV = {
   'Not registered': 'Nav reģistrēts',
   Model: 'Modelis',
   'OS version': 'OS versija',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Piešķirt tagus',
+  'Assign tags to the selected employees': 'Piešķirt tagus atlasītajiem darbiniekiem',
+  'Selected employees': 'Atlasītie darbinieki',
 };
