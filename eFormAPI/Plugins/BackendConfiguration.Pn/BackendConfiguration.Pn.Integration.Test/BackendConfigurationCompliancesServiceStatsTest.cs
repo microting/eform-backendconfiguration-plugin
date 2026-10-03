@@ -646,12 +646,18 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         var today = DateTime.UtcNow.Date;
         var (propertyId, complianceId) =
             await SeedTaskWithCompliance("Property A", complianceEnabled: true, today);
+        var planningId = await BackendConfigurationPnDbContext!.Compliances
+            .Where(x => x.Id == complianceId).Select(x => x.PlanningId).SingleAsync();
+        var arpId = await BackendConfigurationPnDbContext.AreaRulePlannings
+            .Where(x => x.ItemPlanningId == planningId).Select(x => x.Id).SingleAsync();
+        // CalendarConfigurations is in no seed file, so the per-test reset keeps its rows
+        // while AreaRulePlannings restarts its ids: an earlier test's row would make this
+        // ARP a calendar task.
+        await BackendConfigurationPnDbContext.CalendarConfigurations
+            .Where(x => x.AreaRulePlanningId == arpId)
+            .ExecuteDeleteAsync();
         if (calendarTask)
         {
-            var planningId = await BackendConfigurationPnDbContext!.Compliances
-                .Where(x => x.Id == complianceId).Select(x => x.PlanningId).SingleAsync();
-            var arpId = await BackendConfigurationPnDbContext.AreaRulePlannings
-                .Where(x => x.ItemPlanningId == planningId).Select(x => x.Id).SingleAsync();
             await BackendConfigurationPnDbContext.CalendarConfigurations.AddAsync(new CalendarConfiguration
             {
                 AreaRulePlanningId = arpId, StartHour = 9.0, Duration = 1.0,
