@@ -424,6 +424,17 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         return fieldValue.Id;
     }
 
+    private async Task SetFieldValueWritten(
+        int fieldValueId, DateTime createdAt, DateTime updatedAt, string value, int version)
+    {
+        var row = await MicrotingDbContext!.FieldValues.SingleAsync(x => x.Id == fieldValueId);
+        row.CreatedAt = createdAt;
+        row.UpdatedAt = updatedAt;
+        row.Value = value;
+        row.Version = version;
+        await MicrotingDbContext.SaveChangesAsync();
+    }
+
     private async Task<int> SeedUploadedData(
         string fileName = "photo.jpg", string checksum = "abc123", string extension = ".jpg",
         bool removed = false)
@@ -910,6 +921,61 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         Assert.That(cells.ContainsKey($"f{fixture.FieldIds[0]}"), Is.False);
         Assert.That(cells[$"f{fixture.FieldIds[1]}"], Is.EqualTo("kun midterste"));
         Assert.That(cells.ContainsKey($"f{fixture.FieldIds[2]}"), Is.False);
+    }
+
+    // ==================================================================
+    // DUPLICATE FIELD VALUES (#1372)
+    // ==================================================================
+
+    /// <summary>
+    /// #1372: two live FieldValues for one field, inserted in the same second. The case
+    /// editor saves into the LOWER Id (the first row the SDK returns); the higher Id stays
+    /// the untouched empty duplicate. Rapport must show the value the user just saved, not
+    /// the empty row the old highest-Id rule picked.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_DuplicateFieldValues_ShowTheRowTheEditorSaved()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("Duplicate edited", da.Id, (Constants.FieldTypes.Comment, "Bemærkning"));
+
+        var insertedAt = DateTime.UtcNow.AddHours(-1);
+        var edited = await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, null);
+        var untouched = await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, null);
+        Assert.That(untouched, Is.GreaterThan(edited));
+        await SetFieldValueWritten(edited, insertedAt, insertedAt.AddMinutes(5), "rettet i Rapport", version: 2);
+        await SetFieldValueWritten(untouched, insertedAt, insertedAt, null, version: 1);
+
+        var (from, to) = Window();
+        var template = OnlyTemplateTable(await Run(core, da, from, to));
+
+        Assert.That(template.Cases.Single().Cells[$"f{fixture.FieldIds[0]}"], Is.EqualTo("rettet i Rapport"));
+    }
+
+    /// <summary>
+    /// #1372: neither duplicate was edited after the insert (same second, so the same
+    /// <c>UpdatedAt</c>) and the answer sits in the LOWER Id. The answered row wins over
+    /// the empty one regardless of Id.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_DuplicateFieldValues_WrittenTogether_PreferTheAnsweredRow()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("Duplicate together", da.Id, (Constants.FieldTypes.Comment, "Bemærkning"));
+
+        var insertedAt = DateTime.UtcNow.AddHours(-1);
+        var answered = await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, null);
+        var empty = await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, null);
+        Assert.That(empty, Is.GreaterThan(answered));
+        await SetFieldValueWritten(answered, insertedAt, insertedAt, "svar fra appen", version: 1);
+        await SetFieldValueWritten(empty, insertedAt, insertedAt, null, version: 1);
+
+        var (from, to) = Window();
+        var template = OnlyTemplateTable(await Run(core, da, from, to));
+
+        Assert.That(template.Cases.Single().Cells[$"f{fixture.FieldIds[0]}"], Is.EqualTo("svar fra appen"));
     }
 
     // ==================================================================
