@@ -211,7 +211,9 @@ public class RemovedSiteAssignmentCleanupTests : TestBaseSetup
         var site = new Site
         {
             Name = $"Jane Doe {Guid.NewGuid()}", MicrotingUid = null, LanguageId = language.Id,
-            WorkflowState = workflowState
+            WorkflowState = workflowState,
+            // Sites.Add bypasses the SDK's Create/Delete, which stamp these; a real removal sets UpdatedAt.
+            CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow
         };
         await MicrotingDbContext.Sites.AddAsync(site);
         await MicrotingDbContext.SaveChangesAsync();
