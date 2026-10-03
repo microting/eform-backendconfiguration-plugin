@@ -2006,14 +2006,17 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
             foreach (var planningSite in planningSites)
             {
+                // Every live row, not SingleOrDefault: plannings created before #1385 carry
+                // two rows per site, which made SingleOrDefault throw and left one behind.
                 var itemPlanningSites = await itemsPlanningPnDbContext.PlanningSites
-                    .SingleOrDefaultAsync(x => x.SiteId == propertyAssignment.WorkerId
-                                               && x.PlanningId == planningSite.ItemPlanningId
-                                               && x.WorkflowState != Constants.WorkflowStates.Removed).ConfigureAwait(false);
+                    .Where(x => x.SiteId == propertyAssignment.WorkerId
+                                && x.PlanningId == planningSite.ItemPlanningId
+                                && x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .ToListAsync().ConfigureAwait(false);
 
-                if (itemPlanningSites != null)
+                foreach (var itemPlanningSite in itemPlanningSites)
                 {
-                    await itemPlanningSites.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
+                    await itemPlanningSite.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
                 }
 
                 var itemPlanningCaseSites = await itemsPlanningPnDbContext.PlanningCaseSites

@@ -3,6 +3,7 @@ import {TranslateService} from '@ngx-translate/core';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {CommonDictionaryModel, SharedTagModel} from 'src/app/common/models';
 import {CalendarBoardModel, CalendarTaskModel} from '../../../../models/calendar';
+import {assigneeDisplayNames} from '../../../calendar/services/calendar-task.mapper';
 import {CalendarRepeatService} from '../../../calendar/services/calendar-repeat.service';
 import {formatRepeatText} from '../../calendar-task-list-repeat.util';
 
@@ -74,7 +75,7 @@ export class CalendarTaskListTableComponent {
     },
     {
       field: 'assignedTo', header: this.translate.stream('Assigned to'),
-      formatter: (t: CalendarTaskModel) => (t.workerNames ?? []).join('<br/>'),
+      formatter: (t: CalendarTaskModel) => assigneeDisplayNames(t).join('<br/>'),
     },
     {
       field: 'tags', header: this.translate.stream('Tags'),

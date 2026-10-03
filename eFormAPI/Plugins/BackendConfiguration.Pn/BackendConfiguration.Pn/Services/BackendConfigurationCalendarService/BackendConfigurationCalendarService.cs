@@ -1397,6 +1397,16 @@ public class BackendConfigurationCalendarService(
                 .Where(s => siteIds.Contains((int)s.Id))
                 .ToDictionaryAsync(s => (int)s.Id, s => s.Name ?? string.Empty);
 
+            // #1385 — team names for the "Assigned to" column, so a team-only task does
+            // not read as unassigned.
+            var workerTagIds = workerTagIdsByArpId.Values.SelectMany(x => x).Distinct().ToList();
+            var workerTagNamesById = workerTagIds.Count == 0
+                ? new Dictionary<int, string>()
+                : await sdkDbContext.Tags
+                    .AsNoTracking()
+                    .Where(t => workerTagIds.Contains(t.Id) && t.WorkflowState != Constants.WorkflowStates.Removed)
+                    .ToDictionaryAsync(t => t.Id, t => t.Name ?? string.Empty);
+
             // #1302 / #1140 — upcoming occurrences per recurring series. TaskDate
             // below is the SERIES START, so opening the edit modal on it made
             // every series that started in the past read-only. The dates come
@@ -1516,6 +1526,9 @@ public class BackendConfigurationCalendarService(
                     DescriptionHtml = description,
                     Translations = translations,
                     WorkerTagIds = arpWorkerTagIds,
+                    WorkerTagNames = arpWorkerTagIds
+                        .Select(id => workerTagNamesById.GetValueOrDefault(id, string.Empty))
+                        .ToList(),
                     // #1236 — the team half of the assignment, beside AssigneeIds. This
                     // list feeds the complete modal's "assigned to this event" group;
                     // AssigneeIds alone still drives its pre-select.

@@ -34,6 +34,12 @@ public class CalendarTaskResponseModel
 
     // Worker tags assigned to this event (SDK Tag ids).
     public List<int> WorkerTagIds { get; set; } = [];
+
+    /// <summary>#1385: the names of <see cref="WorkerTagIds"/>, index for index (an empty
+    /// string for a tag that is gone). Filled by the task list <c>Index</c> so its
+    /// "Assigned to" column shows a team-only task's team; empty on the other producers,
+    /// whose callers resolve the names themselves.</summary>
+    public List<string> WorkerTagNames { get; set; } = [];
     public List<string> WorkerNames { get; set; } = [];
     public int? BoardId { get; set; }
     public string Color { get; set; }
