@@ -408,11 +408,25 @@ public class BackendConfigurationCalendarService(
             // includes MicrotingSdkCaseId == 0 rows) and a no-op in the ActionableOnly
             // branch — placement at the union point is intentional for single-source-of-truth
             // semantics.
+            var dedupCompliances = compliancesForDedup
+                .Where(c => c.WorkflowState == Constants.WorkflowStates.Removed
+                            || c.MicrotingSdkCaseId > 0)
+                .ToList();
             var complianceDateSet = new HashSet<string>(
-                compliancesForDedup
-                    .Where(c => c.WorkflowState == Constants.WorkflowStates.Removed
-                                || c.MicrotingSdkCaseId > 0)
+                dedupCompliances
                     .Select(c => $"{c.PlanningId}:{c.Deadline.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}"));
+
+            // #1375 — the same rows bucketed by Monday-aligned week. A single-weekday
+            // weekly rule has one occurrence per week, so a compliance row of that
+            // planning anywhere in the week already IS this week's occurrence, even
+            // when its deadline sits on another weekday than the rule's (a converted
+            // legacy cadence, or a deploy made before the rule's weekday changed).
+            // Without this the week rendered twice: the compliance on its deadline and
+            // the rule on its weekday. Only single-weekday weekly rules can match: they
+            // are the one kind CompletedPeriodKey gives a "W:" key.
+            var complianceWeekSet = new HashSet<string>(
+                dedupCompliances
+                    .Select(c => $"{c.PlanningId}:{CompletedPeriodKey(Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Week, null, c.Deadline)}"));
 
             // 1. Query AreaRulePlannings (future/active and inactive tasks).
             // Inactive (Status=false) plannings are included so the calendar can
@@ -724,6 +738,13 @@ public class BackendConfigurationCalendarService(
                     var completedPeriodKey = CompletedPeriodKey(planning.RepeatType, arp.RepeatWeekdaysCsv, occurrenceDate);
                     if (completedPeriodKey != null
                         && completedPeriodSet.Contains($"{arp.ItemPlanningId}:{completedPeriodKey}"))
+                        continue;
+
+                    // #1375 — a single-weekday weekly rule whose week already holds a
+                    // compliance row of the planning, on any weekday, renders once: the
+                    // compliance loop owns that week.
+                    if (completedPeriodKey != null
+                        && complianceWeekSet.Contains($"{arp.ItemPlanningId}:{completedPeriodKey}"))
                         continue;
 
                     CalendarOccurrenceException exception = null;
@@ -1676,6 +1697,7 @@ public class BackendConfigurationCalendarService(
                     {
                         planning.DayOfWeek = (DayOfWeek)latestArp.DayOfWeek;
                     }
+                    SnapWeeklyNextExecutionToRule(planning, latestArp); // #1375
                     planning.UpdatedByUserId = userService.UserId;
                     await planning.Update(itemsPlanningPnDbContext);
                 }
@@ -2071,6 +2093,7 @@ public class BackendConfigurationCalendarService(
                     {
                         ResnapNextExecutionTimeToRule(planning, arp);
                     }
+                    SnapWeeklyNextExecutionToRule(planning, arp); // #1375
                     planning.UpdatedByUserId = userService.UserId;
                     await planning.Update(itemsPlanningPnDbContext);
 
@@ -2697,6 +2720,7 @@ public class BackendConfigurationCalendarService(
             {
                 ResnapNextExecutionTimeToRule(planning, arp);
             }
+            SnapWeeklyNextExecutionToRule(planning, arp); // #1375
             planning.UpdatedByUserId = userService.UserId;
             await planning.Update(itemsPlanningPnDbContext);
         }
@@ -3524,7 +3548,7 @@ public class BackendConfigurationCalendarService(
                 // DayOfWeek is stored .NET/JS-style (Sun=0..Sat=6).
                 int targetDow = arp.DayOfWeek;
                 // Monday-aligned week containing oldDeadline, projected onto targetDow.
-                var monday = oldDeadline.Date.AddDays(-(((int)oldDeadline.DayOfWeek + 6) % 7));
+                var monday = MondayOf(oldDeadline);
                 return monday.AddDays((targetDow + 6) % 7);
             }
             case 3: // Month
@@ -3940,6 +3964,7 @@ public class BackendConfigurationCalendarService(
                     {
                         oldPlanning.DayOfMonth = newDate.Day;
                     }
+                    SnapWeeklyNextExecutionToRule(oldPlanning, arp); // #1375
                     oldPlanning.UpdatedByUserId = userService.UserId;
                     await oldPlanning.Update(itemsPlanningPnDbContext);
                 }
@@ -4022,6 +4047,7 @@ public class BackendConfigurationCalendarService(
                     {
                         planning.DayOfMonth = newDate.Day;
                     }
+                    SnapWeeklyNextExecutionToRule(planning, arp); // #1375
                     planning.UpdatedByUserId = userService.UserId;
                     await planning.Update(itemsPlanningPnDbContext);
                 }
@@ -5178,8 +5204,7 @@ public class BackendConfigurationCalendarService(
             case 2: // Week
                 if (ParseWeekdaysCsv(repeatWeekdaysCsv).Length > 1) return null;
                 // Monday of the date's week (ISO Mon=0..Sun=6).
-                var monday = date.Date.AddDays(-(((int)date.DayOfWeek + 6) % 7));
-                return "W:" + monday.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+                return "W:" + MondayOf(date).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             case 3: // Month
                 return $"M:{date.Year:D4}-{date.Month:D2}";
             case 4: // Year (enum has no member; cast used throughout this file)
@@ -5202,6 +5227,76 @@ public class BackendConfigurationCalendarService(
     /// (<c>Math.ceil(dom / 7)</c>, the same function).
     /// </summary>
     internal static int OrdinalWeekOf(DateTime d) => (d.Day - 1) / 7 + 1;
+
+    /// <summary>
+    /// Midnight of the Monday of <paramref name="date"/>'s week. Weekly rules stride, bucket
+    /// and relocate by Monday-aligned weeks throughout this service.
+    /// </summary>
+    internal static DateTime MondayOf(DateTime date) => date.Date.AddDays(-(((int)date.DayOfWeek + 6) % 7));
+
+    /// <summary>
+    /// #1375 — the first date on or after <paramref name="from"/> on <paramref name="weekday"/>
+    /// in a week a weekly rule draws: every <paramref name="repeatEvery"/>th Monday-aligned
+    /// week from the week of <paramref name="startDate"/>, the stride GetOccurrencesInWeek
+    /// uses. Keeps the time of day of <paramref name="from"/>.
+    /// </summary>
+    internal static DateTime NextWeeklyOccurrenceOnOrAfter(DateTime startDate, int repeatEvery, DayOfWeek weekday,
+        DateTime from)
+    {
+        var every = Math.Max(repeatEvery, 1);
+        var startMonday = MondayOf(startDate);
+        var candidate = from.AddDays(((int)weekday - (int)from.DayOfWeek + 7) % 7);
+        while (((MondayOf(candidate) - startMonday).Days / 7 % every + every) % every != 0)
+        {
+            candidate = candidate.AddDays(7);
+        }
+        return candidate;
+    }
+
+    /// <summary>
+    /// #1375 — after an edit gave a single-weekday weekly rule another weekday or anchor,
+    /// moves <c>Planning.NextExecutionTime</c> onto the rule: the first rule occurrence on or
+    /// after the later of the series start and the Monday of the next run's week. The items-planning
+    /// scheduler only ever adds <c>RepeatEvery * 7</c> days, so the weekday the next run is
+    /// on is the weekday it deploys on from then on; left on the old weekday, the calendar
+    /// drew the task twice a week. Projecting within the next run's week keeps it in step
+    /// with the open compliance (its deadline is that next run), which the relocation moves
+    /// within the same Monday-aligned week. Multi-day rules have no single weekday and are
+    /// left alone; so is a planning without a next run. Call after StartDate is final.
+    /// </summary>
+    private void SnapWeeklyNextExecutionToRule(
+        Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning, AreaRulePlanning arp)
+    {
+        if (planning.RepeatType != Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Week
+            || planning.NextExecutionTime is not { } next)
+        {
+            return;
+        }
+        var csv = ParseWeekdaysCsv(arp.RepeatWeekdaysCsv);
+        if (csv.Length > 1)
+        {
+            return;
+        }
+        // The weekday the week view draws: the single CSV day, else (legacy single-day
+        // path) StartDate's weekday — MoveTask does not rewrite arp.DayOfWeek for those.
+        var weekday = csv.Length == 1 ? (DayOfWeek)csv[0] : planning.StartDate.DayOfWeek;
+        // Not before the series start (the rule draws nothing earlier). Deliberately NOT
+        // floored at today: when the new weekday of the old next run's week has already
+        // passed, a next run on it lets the scheduler deploy that week on its next pass
+        // instead of skipping a whole week.
+        var mondayOfNext = MondayOf(next);
+        var from = mondayOfNext > planning.StartDate.Date ? mondayOfNext : planning.StartDate.Date;
+        var snapped = NextWeeklyOccurrenceOnOrAfter(planning.StartDate, planning.RepeatEvery, weekday, from);
+        var newNext = DateTime.SpecifyKind(snapped.Date, next.Kind).Add(next.TimeOfDay);
+        if (newNext == next)
+        {
+            return;
+        }
+        logger.LogInformation(
+            "Calendar edit: weekly planning {PlanningId} NextExecutionTime {OldNext:yyyy-MM-dd} -> {NewNext:yyyy-MM-dd} (rule weekday {Weekday})",
+            planning.Id, next, newNext, weekday);
+        planning.NextExecutionTime = newNext;
+    }
 
     /// <summary>
     /// #1294 — the weekday an Nth-weekday-of-month rule recurs on. The dialog
@@ -6030,7 +6125,7 @@ public class BackendConfigurationCalendarService(
                     // getDay() Sun=0..Sat=6), so candidates land in
                     // [weekStart, weekStart+6]; only the stride bucketing is
                     // Monday-aligned.
-                    var anchorWeekStart = startDate.AddDays(-(((int)startDate.DayOfWeek + 6) % 7));
+                    var anchorWeekStart = MondayOf(startDate);
                     var weekStartDow = (int)weekStart.Date.DayOfWeek;
                     foreach (var wd in weekdays)
                     {
@@ -6046,7 +6141,7 @@ public class BackendConfigurationCalendarService(
                         // bucket as its anchor. This keeps all-days and mixed
                         // Wed+Sun multi-day sets together under every-Nth-week
                         // cadences instead of splitting the Sunday off (#922).
-                        var candidateWeekStart = candidate.AddDays(-(((int)candidate.DayOfWeek + 6) % 7));
+                        var candidateWeekStart = MondayOf(candidate);
                         var weeksFromAnchor = (candidateWeekStart - anchorWeekStart).Days / 7;
                         if (weeksFromAnchor >= 0 && weeksFromAnchor % repeatEvery == 0)
                             occurrences.Add(candidate);
