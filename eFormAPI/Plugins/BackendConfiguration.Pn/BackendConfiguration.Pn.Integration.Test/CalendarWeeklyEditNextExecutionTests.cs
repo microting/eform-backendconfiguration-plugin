@@ -285,6 +285,35 @@ public class CalendarWeeklyEditNextExecutionTests : TestBaseSetup
     }
 
     [Test]
+    public async Task UpdateTask_FieldOnlyEditOfAConvertedRule_KeepsTheListedWeekday()
+    {
+        // The converted shape: the series starts on a Monday (2026-08-31) but the rule
+        // draws Thursdays (its weekday list, from the legacy cadence). A field-only edit that
+        // sends the series start (as the task list does) must not reset the weekday to Monday.
+        var (arpId, planningId) = await SeedWeeklySeriesAsync();
+        var mondayStart = Utc(2026, 8, 31);
+        await BackendConfigurationPnDbContext!.AreaRulePlannings.Where(x => x.Id == arpId)
+            .ExecuteUpdateAsync(u => u.SetProperty(x => x.StartDate, mondayStart));
+        await ItemsPlanningPnDbContext!.Plannings.Where(x => x.Id == planningId)
+            .ExecuteUpdateAsync(u => u.SetProperty(x => x.StartDate, mondayStart));
+        BackendConfigurationPnDbContext.ChangeTracker.Clear();
+        ItemsPlanningPnDbContext.ChangeTracker.Clear();
+
+        var result = await _service.UpdateTask(Edit(arpId, "all", mondayStart, mondayStart, "4"));
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var arp = await BackendConfigurationPnDbContext.AreaRulePlannings.AsNoTracking().SingleAsync(x => x.Id == arpId);
+        var planning = await PlanningAsync(planningId);
+        Assert.Multiple(() =>
+        {
+            Assert.That(arp.DayOfWeek, Is.EqualTo((int)DayOfWeek.Thursday), "the rule's listed weekday");
+            Assert.That(arp.RepeatWeekdaysCsv, Is.EqualTo("4"));
+            Assert.That(planning.DayOfWeek, Is.EqualTo(DayOfWeek.Thursday), "mirrored");
+            Assert.That(planning.NextExecutionTime, Is.EqualTo(NextRun), "already on the rule");
+        });
+    }
+
+    [Test]
     public void NextWeeklyOccurrenceOnOrAfter_FollowsTheMondayAlignedStride()
     {
         // Every 2nd week from the week of Mon 2026-01-05: the week of 2026-10-05 is week 39 (off),

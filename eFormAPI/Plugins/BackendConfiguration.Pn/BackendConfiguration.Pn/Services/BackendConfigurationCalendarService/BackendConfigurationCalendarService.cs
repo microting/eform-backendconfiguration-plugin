@@ -5344,7 +5344,12 @@ public class BackendConfigurationCalendarService(
         }
         if (repeatType == (int)Infrastructure.Enums.RepeatType.Week)
         {
-            arp.DayOfWeek = (int)startDate.DayOfWeek;
+            // #1375 — the weekday the rule draws: its single weekday-list day, which since
+            // the cadence-based conversion may differ from StartDate's; StartDate's weekday
+            // only for the legacy no-list shape (and multi-day lists, as before).
+            arp.DayOfWeek = ParseWeekdaysCsv(arp.RepeatWeekdaysCsv) is [var listed]
+                ? listed
+                : (int)startDate.DayOfWeek;
             return true;
         }
         return false;
