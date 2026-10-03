@@ -36,10 +36,11 @@ namespace BackendConfiguration.Pn.Services.TaskTranslation;
 ///
 /// <para>
 /// Per instance (transient: one per consuming service), a translation is asked for once per
-/// (text, target), successful or not, and after a call THROWS no more are attempted: a
-/// translator that is unreachable then costs one failure per save, not one per field and
-/// event. An unsuccessful answer is per language (e.g. an unsupported pair) and does not
-/// stop the other languages.
+/// (text, target), successful or not. No more are attempted after a call THROWS, or after
+/// <see cref="MaxConsecutiveFailures"/> unsuccessful answers in a row: the host turns a
+/// timeout into an unsuccessful answer, so a translator that is down then costs at most two
+/// timeouts per filler, not one per field and event. A success resets the count, so one
+/// unsupported language does not stop the others.
 /// </para>
 /// </remarks>
 public class TaskTranslationFiller(
@@ -57,7 +58,10 @@ public class TaskTranslationFiller(
     private sealed record TargetLanguage(int Id, string Code);
 
     private readonly Dictionary<(string Text, string Target), string?> _translated = new();
+    private const int MaxConsecutiveFailures = 2;
+
     private bool _translatorFailed;
+    private int _consecutiveFailures;
 
     public async Task<bool> FillMissingAsync(
         List<CommonTranslationsModel> translates,
@@ -285,11 +289,13 @@ public class TaskTranslationFiller(
             if (result is { Success: true } && !Blank(result.Model))
             {
                 translated = result.Model;
+                _consecutiveFailures = 0;
             }
             else
             {
                 logger.LogWarning("TaskTranslationFiller: translation to {Code} failed: {Message}",
                     target.Code, result?.Message);
+                _translatorFailed = ++_consecutiveFailures >= MaxConsecutiveFailures;
             }
         }
         catch (Exception e)

@@ -113,7 +113,8 @@ public class TaskServerSideTranslationTests : TestBaseSetup
     /// can also stand for a configured-but-failing or an unconfigured host translator.
     /// </summary>
     private sealed class FakeTranslator(
-        TranslatorBehaviour behaviour = TranslatorBehaviour.Translates, bool configured = true) : ITranslationService
+        TranslatorBehaviour behaviour = TranslatorBehaviour.Translates, bool configured = true,
+        string? failOnlyText = null) : ITranslationService
     {
         public List<(string Text, string Target)> Calls { get; } = [];
 
@@ -123,6 +124,13 @@ public class TaskServerSideTranslationTests : TestBaseSetup
             string targetLanguageCode)
         {
             Calls.Add((sourceText, targetLanguageCode));
+            if (failOnlyText != null)
+            {
+                return Task.FromResult(sourceText == failOnlyText
+                    ? new OperationDataResult<string>(false, "Translate failed (400)")
+                    : new OperationDataResult<string>(true, "", $"[{targetLanguageCode}] {sourceText}"));
+            }
+
             return behaviour switch
             {
                 TranslatorBehaviour.Throws => throw new HttpRequestException("translator is down"),
@@ -594,12 +602,11 @@ public class TaskServerSideTranslationTests : TestBaseSetup
 
     /// <summary>
     /// A configured translator that answers unsuccessfully or throws: the save still
-    /// succeeds in Danish, the calendar result carries the notice, and after the first
-    /// failed call no further call is made in that save.
+    /// succeeds in Danish and the calendar result carries the notice. A failure is asked for
+    /// once per (text, target), so the reconcile after the wizard does not repeat it (this
+    /// fixture shares one filler between the two). One unsuccessful answer still lets the
+    /// description be tried, the second in a row stops the filler; a throw stops it at once.
     /// </summary>
-    // A failure is asked for once per (text, target), so the reconcile after the wizard does
-    // not repeat it (this fixture shares one filler between the two). An unsuccessful answer
-    // is per language: the description is still tried. A throw stops everything after it.
     [TestCase(TranslatorBehaviour.ReturnsFailure, 2)]
     [TestCase(TranslatorBehaviour.Throws, 1)]
     public async Task CalendarCreate_WithAFailingTranslator_SavesDanishOnly_WithTheNotice(
@@ -688,6 +695,57 @@ public class TaskServerSideTranslationTests : TestBaseSetup
         await services.Reconciliation.ReconcileEventsForWorkerTagsAsync([teamB.Id]);
 
         await AssertEnglishFilled(s, arpId);
+    }
+
+    /// <summary>
+    /// The cap binds: with an English and a German worker and a translator that always answers
+    /// unsuccessfully, the filler stops after two failures in a row (the English title and
+    /// description). Without the cap it would make four calls.
+    /// </summary>
+    [Test]
+    public async Task CalendarCreate_TwoLanguagesAndAFailingTranslator_StopsAfterTwoFailuresInARow()
+    {
+        var s = await SeedScenario();
+        var germanId = await EnsureLanguage("Deutsch", "de-DE");
+        var germanWorker = await SeedWorker("Worker D", germanId, s.PropertyId, teamId: null);
+        var translator = new FakeTranslator(TranslatorBehaviour.ReturnsFailure);
+        var services = await BuildServices(translator);
+
+        var result = await services.Calendar.CreateTask(
+            BuildCreate(s, sites: [s.EnglishWorker, germanWorker], teams: [], DanishOnly(s)));
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(result.Message, Does.Contain(Notice));
+        Assert.That(translator.Calls, Has.Count.EqualTo(2));
+    }
+
+    /// <summary>
+    /// A success resets the count: when only the title fails, every language's description
+    /// is still translated. Without the reset the second failed title would stop the filler
+    /// before the second description.
+    /// </summary>
+    [Test]
+    public async Task CalendarCreate_ASuccessBetweenFailures_KeepsTranslatingTheOtherTexts()
+    {
+        var s = await SeedScenario();
+        var germanId = await EnsureLanguage("Deutsch", "de-DE");
+        var germanWorker = await SeedWorker("Worker D", germanId, s.PropertyId, teamId: null);
+        var translator = new FakeTranslator(failOnlyText: DanishTitle);
+        var services = await BuildServices(translator);
+
+        var result = await services.Calendar.CreateTask(
+            BuildCreate(s, sites: [s.EnglishWorker, germanWorker], teams: [], DanishOnly(s)));
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(result.Message, Does.Contain(Notice), "the titles stayed Danish");
+        Assert.That(translator.Calls, Has.Count.EqualTo(4));
+        var (english, _) = await TranslationOf(result.Model, s.EnglishId);
+        var (german, _) = await TranslationOf(result.Model, germanId);
+        Assert.Multiple(() =>
+        {
+            Assert.That(english?.Description, Is.EqualTo($"[en-US] {DanishDescription}"));
+            Assert.That(german?.Description, Is.EqualTo($"[de-DE] {DanishDescription}"));
+        });
     }
 
     private async Task<(Site Site, string Email, IUserService UserService,
