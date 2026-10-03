@@ -143,15 +143,20 @@ export class AdhocContainerComponent implements OnInit, OnDestroy {
   }
 
   updateTable(): Subscription {
-    this.getTasksSub$ = this.adhocStateService.getTasks().subscribe((data) => {
-      if (data && data.success && data.model) {
-        this.tasks = data.model.entities;
-        this.counts = {
-          open: data.model.openCount,
-          completed: data.model.completedCount,
-          archived: data.model.archivedCount,
-        };
-      }
+    this.getTasksSub$ = this.adhocStateService.getTasks().subscribe({
+      next: (data) => {
+        if (data && data.success && data.model) {
+          this.tasks = data.model.entities;
+          this.counts = {
+            open: data.model.openCount,
+            completed: data.model.completedCount,
+            archived: data.model.archivedCount,
+          };
+        }
+      },
+      // HttpErrorInterceptor already shows the failure to the user; handled here
+      // so it does not also reach RxJS's unhandled-error path.
+      error: () => undefined,
     });
     return this.getTasksSub$;
   }
