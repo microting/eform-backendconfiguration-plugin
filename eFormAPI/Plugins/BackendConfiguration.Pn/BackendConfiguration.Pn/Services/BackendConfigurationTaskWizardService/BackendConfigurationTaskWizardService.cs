@@ -20,6 +20,7 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
+using TaskTranslation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -40,6 +41,9 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
     // re-anchor path (#1122) has to reach the exact same code.
     private readonly ICalendarOccurrenceRetractionService _occurrenceRetractionService;
     private readonly ILogger<BackendConfigurationTaskWizardService> _logger;
+    // #1384 — fills the assignees' missing languages before a save. Optional so the
+    // fixtures that build the wizard by hand keep working; null means no translation.
+    private readonly ITaskTranslationFiller _taskTranslationFiller;
 
     public BackendConfigurationTaskWizardService(
         IBackendConfigurationLocalizationService localizationService,
@@ -49,7 +53,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         ItemsPlanningPnDbContext itemsPlanningPnDbContext,
         IEventDeployService eventDeployService,
         ICalendarOccurrenceRetractionService occurrenceRetractionService,
-        ILogger<BackendConfigurationTaskWizardService> logger)
+        ILogger<BackendConfigurationTaskWizardService> logger,
+        ITaskTranslationFiller taskTranslationFiller = null)
     {
         _localizationService = localizationService;
         _userService = userService;
@@ -59,6 +64,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         _eventDeployService = eventDeployService;
         _occurrenceRetractionService = occurrenceRetractionService;
         _logger = logger;
+        _taskTranslationFiller = taskTranslationFiller;
     }
 
 
@@ -398,6 +404,10 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 .RemapCommonTranslationLanguageIdsAsync(createModel.Translates, sdkDbContext, _logger)
                 .ConfigureAwait(false);
 
+            // #1384 — before anything is persisted, so the planning name and the area
+            // rule both carry the filled languages.
+            await FillMissingTranslationsAsync(createModel, []).ConfigureAwait(false);
+
             var eformName = sdkDbContext.CheckListTranslations
                 .Where(x => x.CheckListId == createModel.EformId)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -625,7 +635,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             // With defects A and B fixed, EventDeployService is the single owner
             // of the SDK case lifecycle for newly-created tasks.
 
-            return new OperationResult(true, _localizationService.GetString("TaskCreatedSuccessful"));
+            return new OperationResult(true, SavedMessage("TaskCreatedSuccessful", createModel));
         }
         catch (Exception e)
         {
@@ -811,6 +821,11 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 return new OperationResult(false,
                     _localizationService.GetString("TaskNotFound"));
             }
+
+            // #1384 — before the upserts below. A language the request leaves out keeps
+            // its stored text; only a language empty in both is translated.
+            await FillMissingTranslationsAsync(updateModel, areaRulePlanning.AreaRule.AreaRuleTranslations.ToList())
+                .ConfigureAwait(false);
 
             // Same rule as CreateTask: only a task with neither sites nor a team
             // is downgraded (#1322).
@@ -1423,7 +1438,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     .ConfigureAwait(false);
             }
 
-            return new OperationResult(true, _localizationService.GetString("TaskUpdatedSuccessful"));
+            return new OperationResult(true, SavedMessage("TaskUpdatedSuccessful", updateModel));
         }
         catch (Exception e)
         {
@@ -1794,6 +1809,39 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 _localizationService.GetString("ErrorWhileDeletingTask"));
         }
     }
+
+    /// <summary>
+    /// #1384 — machine-translates the Danish title and description into every language of
+    /// the task's explicit sites that is still empty. Never fails the save: a missing or
+    /// failing translator leaves the task in Danish and sets
+    /// <see cref="TaskWizardCreateModel.TranslationsIncomplete"/>, which the result reports
+    /// as a notice. Teams are filled after their links are written, by the reconciliation
+    /// that every team-assigning path runs.
+    /// </summary>
+    private async Task FillMissingTranslationsAsync(TaskWizardCreateModel model,
+        IReadOnlyCollection<AreaRuleTranslation> existing)
+    {
+        if (_taskTranslationFiller == null)
+        {
+            return;
+        }
+
+        try
+        {
+            model.TranslationsIncomplete = !await _taskTranslationFiller
+                .FillMissingAsync(model.Translates, model.Sites, existing)
+                .ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            _logger.LogWarning(e, "Could not fill missing task translations; saving the sent texts only");
+            model.TranslationsIncomplete = true;
+        }
+    }
+
+    private string SavedMessage(string key, TaskWizardCreateModel model) =>
+        TaskTranslationNotice.Append(_localizationService, _localizationService.GetString(key),
+            model.TranslationsIncomplete);
 
     private async Task<int> GetLogBooksAreaId()
     {
