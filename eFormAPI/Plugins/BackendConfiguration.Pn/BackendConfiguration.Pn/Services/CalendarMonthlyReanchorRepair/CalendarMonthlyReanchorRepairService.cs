@@ -73,12 +73,11 @@ public class CalendarMonthlyReanchorRepairService(
     /// </summary>
     public const string MarkerName = "BackendConfigurationBaseSettings:MonthlyReanchorRepaired";
 
-    public const string MarkerRunning = "running";
-    public const string MarkerDone = "done";
-    public const string MarkerPartial = "partial";
+    public const string MarkerRunning = CalendarRepairRunMarker.Running;
+    public const string MarkerDone = CalendarRepairRunMarker.Done;
+    public const string MarkerPartial = CalendarRepairRunMarker.Partial;
 
-    /// <summary>A <c>running</c> marker older than this belongs to a crashed run and may be re-claimed.</summary>
-    internal static readonly TimeSpan AbandonedRunAfter = TimeSpan.FromHours(1);
+    private readonly CalendarRepairRunMarker _marker = new(dbContext, MarkerName);
 
     private const int MonthRepeatType = 3;
     private const int CompletedStatus = 100;
@@ -114,8 +113,8 @@ public class CalendarMonthlyReanchorRepairService(
         try
         {
             var work = await ComputeAsync(cancellationToken).ConfigureAwait(false);
-            var marker = await ReadMarkerAsync(cancellationToken).ConfigureAwait(false);
-            work.Model.MarkerState = MarkerStateOf(marker?.Value);
+            var marker = await _marker.ReadAsync(cancellationToken).ConfigureAwait(false);
+            work.Model.MarkerState = CalendarRepairRunMarker.StateOf(marker?.Value);
             work.Model.AlreadyExecuted = marker?.Value == MarkerDone;
             LogPlan(work.Model, isRun: false);
             return new OperationDataResult<MonthlyReanchorRepairPlanModel>(true, work.Model);
@@ -139,10 +138,10 @@ public class CalendarMonthlyReanchorRepairService(
         string claimToken = null;
         try
         {
-            var marker = await ReadMarkerAsync(cancellationToken).ConfigureAwait(false);
-            if (marker != null && !IsClaimable(marker.Value, marker.UpdatedAt))
+            var marker = await _marker.ReadAsync(cancellationToken).ConfigureAwait(false);
+            if (marker != null && !CalendarRepairRunMarker.IsClaimable(marker))
             {
-                return Refused(IsRunning(marker.Value)
+                return Refused(CalendarRepairRunMarker.IsRunning(marker.Value)
                     ? "A monthly re-anchor run is already in progress."
                     : "The monthly re-anchor repair has already been executed on this installation.");
             }
@@ -163,7 +162,7 @@ public class CalendarMonthlyReanchorRepairService(
                 return Refused("The plan has nothing to write; the repair was not started.");
             }
 
-            claimToken = await ClaimMarkerAsync(marker != null).ConfigureAwait(false);
+            claimToken = await _marker.ClaimAsync(marker != null).ConfigureAwait(false);
             if (claimToken == null)
             {
                 return Refused("Another monthly re-anchor run claimed the repair first.");
@@ -196,7 +195,7 @@ public class CalendarMonthlyReanchorRepairService(
                 var state = result.Failures.Count == 0 && result.Skipped.Count == 0 && result.ArrivedDuringRun.Count == 0
                     ? MarkerDone
                     : MarkerPartial;
-                if (!await FinishMarkerAsync(claimToken, state).ConfigureAwait(false))
+                if (!await _marker.FinishAsync(claimToken, state).ConfigureAwait(false))
                 {
                     RecordClaimLost(result);
                 }
@@ -214,7 +213,7 @@ public class CalendarMonthlyReanchorRepairService(
             {
                 try
                 {
-                    await FinishMarkerAsync(claimToken, MarkerPartial).ConfigureAwait(false);
+                    await _marker.FinishAsync(claimToken, MarkerPartial).ConfigureAwait(false);
                 }
                 catch (Exception markerError)
                 {
@@ -231,63 +230,6 @@ public class CalendarMonthlyReanchorRepairService(
 
     // ── Marker ──────────────────────────────────────────────────────────────
 
-    private sealed record MarkerRow(string Value, DateTime? UpdatedAt);
-
-    private Task<MarkerRow> ReadMarkerAsync(CancellationToken ct)
-        => dbContext.PluginConfigurationValues
-            .AsNoTracking()
-            .Where(x => x.Name == MarkerName)
-            .Select(x => new MarkerRow(x.Value, x.UpdatedAt))
-            .FirstOrDefaultAsync(ct);
-
-    /// <summary>A running marker holds the owning run's claim id, as running:{id} (a new Guid per run).</summary>
-    private static bool IsRunning(string value)
-        => value != null && value.StartsWith(MarkerRunning, StringComparison.Ordinal);
-
-    /// <summary>The marker's state without the claim token.</summary>
-    private static string MarkerStateOf(string value) => IsRunning(value) ? MarkerRunning : value;
-
-    private static bool IsClaimable(string value, DateTime? updatedAt)
-        => value == MarkerPartial
-           || (IsRunning(value) && updatedAt < DateTime.UtcNow - AbandonedRunAfter);
-
-    /// <summary>
-    /// Atomic claim, one statement each way, so two concurrent requests can never both
-    /// run: INSERT … WHERE NOT EXISTS when there is no marker (same statement shape as
-    /// <c>CalendarConfigurationBackfillService.RepairLegacyMidnightConfigurationsAsync</c>,
-    /// which explains why a unique index is not an option), or a conditional UPDATE of a
-    /// <c>partial</c> / abandoned <c>running</c> marker. Exactly one caller gets a row.
-    ///
-    /// The marker value becomes running:{id} with an id only this run knows;
-    /// the final write (<see cref="FinishMarkerAsync"/>) is conditional on it, so a run
-    /// whose abandoned claim was re-claimed by another run can never overwrite that run's
-    /// marker. Returns the token, or null when another caller won.
-    /// </summary>
-    private async Task<string> ClaimMarkerAsync(bool markerExists)
-    {
-        var now = DateTime.UtcNow;
-        var token = $"{MarkerRunning}:{Guid.NewGuid():N}";
-        var affected = markerExists
-            ? await dbContext.Database.ExecuteSqlRawAsync(
-                @"UPDATE `PluginConfigurationValues`
-                     SET `Value` = {1}, `UpdatedAt` = {2}, `Version` = `Version` + 1
-                   WHERE `Name` = {0}
-                     AND (`Value` = {3} OR (`Value` LIKE {4} AND `UpdatedAt` < {5}))",
-                [MarkerName, token, now, MarkerPartial, MarkerRunning + "%", now - AbandonedRunAfter],
-                CancellationToken.None).ConfigureAwait(false)
-            : await dbContext.Database.ExecuteSqlRawAsync(
-                @"INSERT INTO `PluginConfigurationValues`
-                      (`Name`, `Value`, `CreatedAt`, `UpdatedAt`, `Version`,
-                       `WorkflowState`, `CreatedByUserId`, `UpdatedByUserId`)
-                  SELECT {0}, {1}, {2}, {2}, 1, {3}, 1, 0 FROM DUAL
-                  WHERE NOT EXISTS (
-                      SELECT 1 FROM `PluginConfigurationValues` `existing`
-                      WHERE `existing`.`Name` = {0})",
-                [MarkerName, token, now, Constants.WorkflowStates.Created],
-                CancellationToken.None).ConfigureAwait(false);
-        return affected == 1 ? token : null;
-    }
-
     private const string ClaimLostMessage =
         "this run's claim was taken over by another run (abandoned-run reclaim); it stopped writing and left the marker to that run";
 
@@ -296,18 +238,6 @@ public class CalendarMonthlyReanchorRepairService(
         logger.LogError("CalendarMonthlyReanchorRepair: {ClaimLost}", ClaimLostMessage);
         result.Failures.Add(ClaimLostMessage);
     }
-
-    /// <summary>
-    /// Renews this run's lease (the marker's UpdatedAt) while it still holds the claim, so a
-    /// long run is never taken for abandoned. False when the claim was taken over.
-    /// </summary>
-    private async Task<bool> RenewClaimAsync(string claimToken)
-        => await dbContext.Database.ExecuteSqlRawAsync(
-            @"UPDATE `PluginConfigurationValues`
-                 SET `UpdatedAt` = {2}
-               WHERE `Name` = {0} AND `Value` = {1}",
-            [MarkerName, claimToken, DateTime.UtcNow],
-            CancellationToken.None).ConfigureAwait(false) == 1;
 
     /// <summary>The writes a plan makes, as stable keys (rule / planning / compliance ids).</summary>
     private static HashSet<string> WriteKeys(MonthlyReanchorRepairPlanModel plan)
@@ -339,18 +269,6 @@ public class CalendarMonthlyReanchorRepairService(
         }
         return arrived;
     }
-
-    /// <summary>
-    /// Ends this run's claim — only while the marker still holds THIS run's token. False
-    /// when another run re-claimed it (this run was taken for abandoned).
-    /// </summary>
-    private async Task<bool> FinishMarkerAsync(string claimToken, string state)
-        => await dbContext.Database.ExecuteSqlRawAsync(
-            @"UPDATE `PluginConfigurationValues`
-                 SET `Value` = {1}, `UpdatedAt` = {2}, `Version` = `Version` + 1
-               WHERE `Name` = {0} AND `Value` = {3}",
-            [MarkerName, state, DateTime.UtcNow, claimToken],
-            CancellationToken.None).ConfigureAwait(false) == 1;
 
     // ── Plan ────────────────────────────────────────────────────────────────
 
@@ -922,7 +840,7 @@ public class CalendarMonthlyReanchorRepairService(
 
                 // The lease is renewed after every planning and every RenewLeaseEvery
                 // compliance moves; a lost claim stops this run before its next write.
-                if (index > 0 && !await RenewClaimAsync(claimToken).ConfigureAwait(false))
+                if (index > 0 && !await _marker.RenewAsync(claimToken).ConfigureAwait(false))
                 {
                     RecordClaimLost(result);
                     ReportNotAttemptedAfterClaimLost(result, work.Plannings.Skip(index));
@@ -995,7 +913,7 @@ public class CalendarMonthlyReanchorRepairService(
                     if (++writesSinceRenewal >= RenewLeaseEvery)
                     {
                         writesSinceRenewal = 0;
-                        if (!await RenewClaimAsync(claimToken).ConfigureAwait(false))
+                        if (!await _marker.RenewAsync(claimToken).ConfigureAwait(false))
                         {
                             RecordClaimLost(result);
                             foreach (var dropped in pw.Moves.Skip(moveIndex))
@@ -1032,7 +950,7 @@ public class CalendarMonthlyReanchorRepairService(
 
             // The last planning's writes are done; one more renewal confirms the claim
             // was held throughout before the run reports success.
-            if (!await RenewClaimAsync(claimToken).ConfigureAwait(false))
+            if (!await _marker.RenewAsync(claimToken).ConfigureAwait(false))
             {
                 RecordClaimLost(result);
                 return (result, true);
