@@ -22,11 +22,11 @@
                 tabindex="1"
                 cdkFocusInitial>
               <mat-error *ngIf="form.get('userFirstName').hasError('required')">
-                Required
+                {{ 'Required' | translate }}
               </mat-error>
             </mat-form-field>
             <mat-form-field>
-              <mat-label>{{ 'e-mail' | translate }}</mat-label>
+              <mat-label>{{ 'Email' | translate }}</mat-label>
               <input
                 matInput
                 formControlName="workerEmail"
@@ -45,10 +45,10 @@
                 <mat-icon>autorenew</mat-icon>
               </button>
               <mat-error *ngIf="form.get('workerEmail').hasError('invalidEmail')">
-                Invalid email address
+                {{ 'Invalid email address' | translate }}
               </mat-error>
               <mat-error *ngIf="form.get('workerEmail').hasError('required')">
-                Required
+                {{ 'Required' | translate }}
               </mat-error>
             </mat-form-field>
             <mat-form-field>
@@ -90,11 +90,11 @@
                 required
                 tabindex="2">
               <mat-error *ngIf="form.get('userLastName').hasError('required')">
-                Required
+                {{ 'Required' | translate }}
               </mat-error>
             </mat-form-field>
             <mat-form-field>
-              <mat-label>{{ 'Phone' | translate }}</mat-label>
+              <mat-label>{{ 'Phone number' | translate }}</mat-label>
               <input
                 matInput
                 formControlName="phoneNumber"
@@ -558,7 +558,7 @@
             <div class="modal-columns">
               <div class="d-flex flex-column" id="workingHoursColumn">
                 <h4>{{ 'Working Hours Configuration' | translate }}</h4>
-                <p class="text-muted">{{ 'Configure the start time, end time, and break duration for each day of the week. Times are in minutes from midnight (0-1440).' | translate }}</p>
+                <p class="text-muted">{{ 'Configure the start time, end time, and break duration for each day of the week.' | translate }}</p>
 
             <!-- Monday -->
             <div class="day-row">
