@@ -61,7 +61,9 @@ public class BackendConfigurationAssignmentWorkerService(
     CaseTemplatePnDbContext caseTemplatePnDbContext,
     BaseDbContext baseDbContext,
     ILogger<BackendConfigurationAssignmentWorkerService> logger,
-    Services.CalendarAssignmentReconciliation.ICalendarAssignmentReconciliationService reconciliationService)
+    Services.CalendarAssignmentReconciliation.ICalendarAssignmentReconciliationService reconciliationService,
+    // #1384 — optional so the fixtures that build this by hand keep working.
+    Services.TaskTranslation.ITaskTranslationFiller taskTranslationFiller = null)
     : IBackendConfigurationAssignmentWorkerService
 {
 
@@ -739,7 +741,8 @@ public class BackendConfigurationAssignmentWorkerService(
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(deviceUserModel, core,
             userService.UserId, userService, userManager, backendConfigurationPnDbContext,
-            timePlanningDbContext, baseDbContext, logger, itemsPlanningPnDbContext, reconciliationService);
+            timePlanningDbContext, baseDbContext, logger, itemsPlanningPnDbContext, reconciliationService,
+            taskTranslationFiller);
 
         return new OperationResult(result.Success, backendConfigurationLocalizationService.GetString(result.Message));
     }
