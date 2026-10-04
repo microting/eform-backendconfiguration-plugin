@@ -3,3 +3,7 @@ export * from './files-table/files-table.component';
 export * from './files-filters/files-filters.component';
 export * from './file-tags/file-tags.component';
 export * from './files-actions';
+export * from './archive-section-nav/archive-section-nav.component';
+export * from './inbox-container/inbox-container.component';
+export * from './inbox-review-dialog/inbox-review-dialog.component';
+export * from './inbox-settings/inbox-settings.component';

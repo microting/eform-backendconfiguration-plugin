@@ -298,8 +298,9 @@ public class InboxService(BackendConfigurationPnDbContext dbContext, IArchiveSto
             FileName = d.FileName,
             Subject = d.Subject,
             FromAddress = d.FromAddress,
-            ReceivedAt = d.ReceivedAt,
-            ReadyBy = d.ReadyBy,
+            // Stored as UTC but read back as Unspecified; mark it so JSON carries the "Z".
+            ReceivedAt = DateTime.SpecifyKind(d.ReceivedAt, DateTimeKind.Utc),
+            ReadyBy = d.ReadyBy.HasValue ? DateTime.SpecifyKind(d.ReadyBy.Value, DateTimeKind.Utc) : null,
             Status = (int)d.Status,
             FailureReason = d.FailureReason,
             ReviewedByMicroting = d.ReviewedByMicroting,

@@ -1,0 +1,112 @@
+<mat-card class="eform-sub-header d-flex flex-column gap-12 mb-3 p-3" style="align-items: stretch;">
+  <app-archive-section-nav></app-archive-section-nav>
+  <h2 style="margin: 0">{{ 'Inbox' | translate }}</h2>
+  <p class="mb-0">{{ 'PDFs sent or forwarded to your archive address. Property and tags are suggested from the document; you approve before anything is filed.' | translate }}</p>
+  <div class="d-flex flex-row flex-wrap align-items-end gap-12">
+    <mat-form-field>
+      <mat-label>{{ 'Status' | translate }}</mat-label>
+      <mat-select id="inboxStatusFilter" [(ngModel)]="statusFilter" (selectionChange)="load()">
+        <mat-option [value]="null">{{ 'Open and recently filed' | translate }}</mat-option>
+        <mat-option *ngFor="let status of statusOptions" [value]="status">{{ statusLabels[status] | translate }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{ 'Search' | translate }}</mat-label>
+      <input
+        matInput
+        id="inboxSearch"
+        [(ngModel)]="search"
+        (keyup.enter)="load()"
+        [placeholder]="'PDF name, sender …' | translate"
+      />
+    </mat-form-field>
+  </div>
+</mat-card>
+
+<table id="inboxTable" class="table">
+  <thead>
+    <tr>
+      <th>{{ 'PDF / subject' | translate }}</th>
+      <th>{{ 'Sender' | translate }}</th>
+      <th>{{ 'Received' | translate }}</th>
+      <th>{{ 'Property' | translate }}</th>
+      <th>{{ 'Tags' | translate }}</th>
+      <th>{{ 'Status' | translate }}</th>
+      <th>{{ 'Action' | translate }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let d of documents" class="inbox-row" [attr.data-inbox-id]="d.id" [attr.data-status]="d.status">
+      <td>
+        <strong>{{ d.subject || d.fileName }}</strong>
+        <div *ngIf="d.subject"><small>{{ d.fileName }}</small></div>
+      </td>
+      <td>{{ d.fromAddress }}</td>
+      <td>{{ d.receivedAt | date: 'dd.MM.yyyy HH:mm' }}</td>
+      <td>
+        <ng-container *ngTemplateOutlet="chips; context: {$implicit: suggested(d, Kind.Property)}"></ng-container>
+      </td>
+      <td>
+        <ng-container *ngTemplateOutlet="chips; context: {$implicit: suggested(d, Kind.Tag)}"></ng-container>
+      </td>
+      <td>
+        <span [class]="statusChipClass(d.status)">{{ statusLabels[d.status] | translate }}</span>
+        <div *ngIf="d.status === Status.Preparing && d.readyBy">
+          <small>{{ 'Ready by' | translate }} {{ d.readyBy | date: 'HH:mm' }}</small>
+        </div>
+        <div *ngIf="d.reviewedByMicroting"><small>{{ 'Checked by Microting' | translate }}</small></div>
+        <div *ngIf="d.status === Status.Failed && d.failureReason"><small>{{ d.failureReason }}</small></div>
+      </td>
+      <td>
+        <div class="d-flex flex-row flex-wrap gap-4">
+          <button
+            *ngIf="d.status === Status.Ready"
+            class="btn-primary"
+            [id]="'inboxReviewBtn-' + d.id"
+            (click)="review(d)"
+          >{{ 'Review' | translate }}</button>
+          <ng-container *ngIf="d.status === Status.SenderPending">
+            <button
+              class="btn-primary"
+              [id]="'inboxApproveSenderBtn-' + d.id"
+              (click)="approveSender(d)"
+            >{{ 'Approve sender' | translate }}</button>
+            <button
+              class="btn-quiet"
+              [id]="'inboxRejectSenderBtn-' + d.id"
+              (click)="rejectSender(d, false)"
+            >{{ 'Reject' | translate }}</button>
+            <button
+              class="btn-quiet"
+              [id]="'inboxBlockSenderBtn-' + d.id"
+              (click)="rejectSender(d, true)"
+            >{{ 'Block sender' | translate }}</button>
+          </ng-container>
+          <button
+            *ngIf="d.status === Status.Failed"
+            class="btn-quiet"
+            [id]="'inboxRejectDocumentBtn-' + d.id"
+            (click)="reject(d)"
+          >{{ 'Reject document' | translate }}</button>
+        </div>
+      </td>
+    </tr>
+    <tr *ngIf="loaded && documents.length === 0" id="inboxEmpty">
+      <td colspan="7">{{ 'No documents waiting. Forward a mail with a PDF to your archive address to get started.' | translate }}</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Suggestion chips with confidence dots, for the Ejendom and Tags cells. -->
+<ng-template #chips let-suggestions>
+  <div class="ejendom-chips">
+    <span *ngFor="let s of suggestions" class="ejendom-chip d-inline-flex align-items-center gap-4">
+      <span
+        [class]="confidence(s.confidence).dotClass"
+        role="img"
+        [attr.aria-label]="confidence(s.confidence).label | translate"
+        [attr.title]="confidence(s.confidence).label | translate"
+      ></span>{{ s.targetName }}
+    </span>
+  </div>
+</ng-template>

@@ -1,4 +1,5 @@
 <mat-card class="eform-sub-header d-flex flex-column gap-12 mb-3 p-3" style="align-items: stretch;">
+  <app-archive-section-nav></app-archive-section-nav>
   <h2 style="margin: 0">{{ pageTitle | translate }}</h2>
   <div class="d-flex flex-row flex-wrap align-items-end justify-content-end gap-12">
     <app-files-filters [availableTags]="availableTags" (updateTable)="updateTable()"></app-files-filters>

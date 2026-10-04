@@ -1,0 +1,104 @@
+<h3 mat-dialog-title>{{ 'Review and file' | translate }}</h3>
+<div mat-dialog-content>
+  <p class="mb-2">{{ data.subject || data.fileName }} · {{ data.fromAddress }} · {{ data.receivedAt | date: 'dd.MM.yyyy HH:mm' }}</p>
+  <p *ngIf="data.reviewedByMicroting" class="mb-2 d-flex align-items-center gap-4">
+    <mat-icon>verified</mat-icon>{{ 'Microting checked these suggestions before they reached you.' | translate }}
+  </p>
+  <div class="d-flex flex-row flex-wrap gap-24">
+    <div id="inboxPdf" style="flex: 1 1 420px; min-width: 0; height: 65vh; min-height: 320px">
+      <p *ngIf="pdfFailed">{{ 'The PDF could not be shown.' | translate }}</p>
+      <pdf-viewer
+        *ngIf="pdfBytes"
+        [src]="pdfBytes"
+        [show-all]="true"
+        [original-size]="false"
+        [render-text]="true"
+        style="display: block; width: 100%; height: 100%"
+      ></pdf-viewer>
+    </div>
+
+    <div class="d-flex flex-column gap-12" style="flex: 1 1 320px; min-width: 0">
+      <mat-form-field>
+        <mat-label>{{ 'Property' | translate }}</mat-label>
+        <mtx-select
+          id="inboxPropertySelect"
+          [items]="availableProperties"
+          bindLabel="name"
+          bindValue="id"
+          [(ngModel)]="selectedPropertyIds"
+          [multiple]="true"
+          [disabled]="filed"
+          appendTo="body"
+        ></mtx-select>
+      </mat-form-field>
+      <ng-container *ngTemplateOutlet="suggestionList; context: {$implicit: propertySuggestions, kind: 'property'}"></ng-container>
+      <p *ngIf="!filed && selectedPropertyIds.length === 0" id="inboxPropertyRequired" class="mb-0">
+        <small>{{ 'Choose at least one property' | translate }}</small>
+      </p>
+
+      <mat-form-field>
+        <mat-label>{{ 'Tags' | translate }}</mat-label>
+        <mtx-select
+          id="inboxTagSelect"
+          [items]="availableTags"
+          bindLabel="name"
+          bindValue="id"
+          [(ngModel)]="selectedTagIds"
+          [multiple]="true"
+          [clearable]="true"
+          [disabled]="filed"
+          appendTo="body"
+        ></mtx-select>
+      </mat-form-field>
+      <ng-container *ngTemplateOutlet="suggestionList; context: {$implicit: tagSuggestions, kind: 'tag'}"></ng-container>
+
+      <mat-form-field>
+        <mat-label>{{ 'File name in the archive' | translate }}</mat-label>
+        <input matInput id="inboxFileName" [(ngModel)]="name" [disabled]="filed" />
+      </mat-form-field>
+    </div>
+  </div>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end align-items-center gap-12">
+  <button class="btn-cancel" id="inboxCloseBtn" (click)="close()">{{ 'Close' | translate }}</button>
+  <ng-container *ngIf="!filed; else undoAction">
+    <button class="btn-delete" id="inboxRejectBtn" [disabled]="busy" (click)="reject()">{{ 'Reject document' | translate }}</button>
+    <button class="btn-primary" id="inboxFileBtn" [disabled]="!canFile" (click)="fileIt()">{{ 'File in archive' | translate }}</button>
+  </ng-container>
+  <ng-template #undoAction>
+    <button class="btn-primary" id="inboxUndoBtn" [disabled]="busy" (click)="undo()">{{ 'Undo' | translate }}</button>
+  </ng-template>
+</div>
+
+<!-- Suggestions as toggles sharing the picker's selection, each with why it was suggested. -->
+<ng-template #suggestionList let-suggestions let-kind="kind">
+  <div *ngIf="suggestions.length" class="d-flex flex-column gap-4">
+    <small>{{ 'Suggestions' | translate }}</small>
+    <div *ngFor="let s of suggestions" class="d-flex flex-column gap-4">
+      <button
+        type="button"
+        class="inbox-choice align-self-start"
+        [class.btn-primary]="isSelected(s)"
+        [class.btn-secondary]="!isSelected(s)"
+        [attr.data-kind]="kind"
+        [attr.data-target-id]="s.targetId"
+        [attr.aria-pressed]="isSelected(s)"
+        [disabled]="filed"
+        (click)="toggle(s)"
+      >
+        <span
+          [class]="confidence(s.confidence).dotClass"
+          role="img"
+          [attr.aria-label]="confidence(s.confidence).label | translate"
+          [attr.title]="confidence(s.confidence).label | translate"
+        ></span>
+        <mat-icon *ngIf="isSelected(s)">check</mat-icon>{{ s.targetName }}
+      </button>
+      <small *ngIf="s.reason || s.evidence" class="inbox-evidence">
+        {{ s.reason }}
+        <ng-container *ngIf="s.evidence">“{{ s.evidence }}”</ng-container>
+        <ng-container *ngIf="s.page"> ({{ 'page' | translate }} {{ s.page }})</ng-container>
+      </small>
+    </div>
+  </div>
+</ng-template>

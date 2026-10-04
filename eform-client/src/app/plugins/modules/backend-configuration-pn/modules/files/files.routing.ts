@@ -2,6 +2,8 @@ import {RouterModule, Routes} from '@angular/router';
 import {
   FilesContainerComponent,
   FileCreateComponent,
+  InboxContainerComponent,
+  InboxSettingsComponent,
 } from './components';
 import {NgModule} from '@angular/core';
 
@@ -13,6 +15,14 @@ export const routes: Routes = [
   {
     path: 'create',
     component: FileCreateComponent,
+  },
+  {
+    path: 'inbox',
+    component: InboxContainerComponent,
+  },
+  {
+    path: 'settings',
+    component: InboxSettingsComponent,
   },
 ];
 
