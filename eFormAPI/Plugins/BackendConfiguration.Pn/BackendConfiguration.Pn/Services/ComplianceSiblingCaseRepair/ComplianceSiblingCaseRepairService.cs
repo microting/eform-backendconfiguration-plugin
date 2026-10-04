@@ -48,6 +48,12 @@ public class ComplianceSiblingCaseRepairService(
     /// <summary>Case ids per batched SDK / items-planning lookup, well under the placeholder ceiling.</summary>
     internal const int BatchSize = 1000;
 
+    /// <summary>
+    /// Test seam: runs before each row of the real run is re-checked, with that row's
+    /// plan entry — the window in which a concurrent change can land.
+    /// </summary>
+    internal Func<ComplianceSiblingCaseRepointModel, Task> OnBeforeRowCheck { get; set; } = _ => Task.CompletedTask;
+
     public async Task<OperationDataResult<ComplianceSiblingCaseRepairPlanModel>> DryRunAsync(
         CancellationToken cancellationToken = default)
     {
@@ -180,12 +186,17 @@ public class ComplianceSiblingCaseRepairService(
         ComplianceSiblingCaseRepairRunResultModel result)
     {
         var what = $"compliance {repoint.ComplianceId}";
+        await OnBeforeRowCheck(repoint).ConfigureAwait(false);
+        // Every field the reviewed plan (and its hash) carries must still hold.
         var compliance = await dbContext.Compliances
             .FirstOrDefaultAsync(x => x.Id == repoint.ComplianceId)
             .ConfigureAwait(false);
         if (compliance == null
             || compliance.WorkflowState != Constants.WorkflowStates.Removed
-            || compliance.MicrotingSdkCaseId != repoint.OldSdkCaseId)
+            || compliance.MicrotingSdkCaseId != repoint.OldSdkCaseId
+            || compliance.PlanningId != repoint.PlanningId
+            || compliance.PropertyId != repoint.PropertyId
+            || compliance.Deadline != repoint.Deadline)
         {
             logger.LogInformation(
                 "ComplianceSiblingCaseRepair: {What} skipped: it changed since the dry run", what);

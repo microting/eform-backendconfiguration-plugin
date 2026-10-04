@@ -762,6 +762,40 @@ public class ComplianceSiblingCompletedCaseTests : TestBaseSetup
     }
 
     /// <summary>
+    /// A reviewed row that moves to another date AFTER the run validated the plan hash but
+    /// before that row is written is skipped as changed, not repointed.
+    /// </summary>
+    [Test]
+    public async Task Repair_Run_RowMovedDuringTheRun_IsSkipped()
+    {
+        var core = await SharedCore();
+        var series = await SeedSeries("Repair row moved during run");
+        var occ = await SeedTwoWorkerOccurrence(series, PastMonday());
+        var service = BuildRepairService(core);
+        var dryRun = await service.DryRunAsync();
+        Assert.That(dryRun.Model.Repoints, Has.Count.EqualTo(1), "premise: the row is planned");
+
+        service.OnBeforeRowCheck = async _ =>
+        {
+            var row = await BackendConfigurationPnDbContext!.Compliances.SingleAsync(x => x.Id == occ.ComplianceId);
+            row.Deadline = row.Deadline.AddDays(1);
+            await BackendConfigurationPnDbContext.SaveChangesAsync();
+            BackendConfigurationPnDbContext.ChangeTracker.Clear();
+        };
+        var run = await service.RunAsync(dryRun.Model.PlanHash);
+        ClearTrackers();
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(run.Model.Repointed, Is.EqualTo(0));
+            Assert.That(run.Model.Skipped, Has.Count.EqualTo(1));
+            Assert.That(run.Model.Skipped[0], Does.Contain("changed since the dry run"));
+            Assert.That((await StoredCompliance(occ.ComplianceId)).MicrotingSdkCaseId, Is.EqualTo(occ.OwnCaseId),
+                "the moved row is not repointed");
+        });
+    }
+
+    /// <summary>
     /// The compliance's OWN case is completed — later than a sibling's. It is an ordinary
     /// completed log and keeps its case: the helper never repoints a completed case.
     /// </summary>
