@@ -171,6 +171,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<IBackendConfigurationTaskTrackerService, BackendConfigurationTaskTrackerService>();
         services.AddTransient<IBackendConfigurationPropertiesService, BackendConfigurationPropertiesService>();
         services.AddTransient<IBackendConfigurationTaskWizardService, BackendConfigurationTaskWizardService>();
+        services.AddTransient<Services.TaskTranslation.ITaskTranslationFiller, Services.TaskTranslation.TaskTranslationFiller>();
         services.AddTransient<IBackendConfigurationTaskListService, BackendConfigurationTaskListService>();
         services.AddTransient<IBackendConfigurationAreaRulesService, BackendConfigurationAreaRulesService>();
         services.AddTransient<IBackendConfigurationDocumentService, BackendConfigurationDocumentService>();
