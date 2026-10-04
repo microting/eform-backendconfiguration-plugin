@@ -110,12 +110,13 @@ public class InboxService(BackendConfigurationPnDbContext dbContext, IArchiveSto
         if (liveProperties != propertyIds.Count || liveTags != tagIds.Count)
             return new OperationResult(false, localization.GetString("InboxUnknownPropertyOrTag"));
 
-        await using var pdf = await storage.GetAsync(FileArchiver.ObjectName(md5, "pdf"));
-        if (pdf == null) return new OperationResult(false, localization.GetString("InboxDocumentNotReady"));
-
         var name = string.IsNullOrWhiteSpace(req.Name) ? Path.GetFileNameWithoutExtension(doc.FileName) : req.Name.Trim();
         try
         {
+            // Inside the try: a storage failure is logged and answered, not a bare 500.
+            await using var pdf = await storage.GetAsync(FileArchiver.ObjectName(md5, "pdf"));
+            if (pdf == null) return new OperationResult(false, localization.GetString("InboxDocumentNotReady"));
+
             // The inbox state commits in the archiver's own transaction, so the archive rows and the
             // Filed status can never disagree. The callback may run again on a retry: it reloads what it changes.
             await archiver.ArchiveAsync(pdf, name, "pdf", propertyIds, tagIds, userId, async fileId =>

@@ -1,10 +1,13 @@
 #nullable enable
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Inbox;
 using BackendConfiguration.Pn.Services.InboundMail;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.EformBackendConfigurationBase.Infrastructure.Const;
@@ -13,7 +16,8 @@ namespace BackendConfiguration.Pn.Controllers;
 
 [Authorize(Policy = BackendConfigurationClaims.EnableInbox)]
 [Route("api/backend-configuration-pn/inbox")]
-public class InboxController(IInboxService inbox, IInboxSettingsService settings, IUserService userService) : Controller
+public class InboxController(IInboxService inbox, IInboxSettingsService settings, IUserService userService,
+    ILogger<InboxController> logger) : Controller
 {
     [HttpGet]
     public Task<OperationDataResult<List<InboxListItem>>> List([FromQuery] int? status, [FromQuery] string? search) =>
@@ -25,8 +29,17 @@ public class InboxController(IInboxService inbox, IInboxSettingsService settings
     [HttpGet("{id:int}/file")]
     public async Task<IActionResult> Pdf(int id)
     {
-        var stream = await inbox.GetPdfAsync(id);
-        return stream == null ? NotFound() : File(stream, "application/pdf");
+        try
+        {
+            var stream = await inbox.GetPdfAsync(id);
+            return stream == null ? NotFound() : File(stream, "application/pdf");
+        }
+        catch (Exception e)
+        {
+            // Storage misconfigured or unreachable: still a 500, but with the cause in the log.
+            logger.LogError(e, "Inbox PDF {Id}: the stored file could not be read", id);
+            return Problem(statusCode: StatusCodes.Status500InternalServerError, title: "The PDF could not be read.");
+        }
     }
 
     [HttpPost("{id:int}/file")]
