@@ -638,6 +638,76 @@ public class CalendarOrphanComplianceRepairTests : TestBaseSetup
     }
 
     /// <summary>
+    /// After the last overdue orphan is closed, another task on the property that hides
+    /// its missed occurrences still has an open past row. It is neither overdue nor due
+    /// soon, so the 30-day light goes to 0, not 1.
+    /// </summary>
+    [Test]
+    public async Task Run_AHiddenMissedRowOfAnotherTask_DoesNotCountAsDueSoon()
+    {
+        var rule = await SeedMonthlyRuleAsync();
+        await SeedComplianceAsync(rule, D(2026, 6, 7), (await SeedRemovedCaseAsync()).Id);
+        var hiding = await SeedMonthlyRuleAsync();
+        await BackendConfigurationPnDbContext!.AreaRulePlannings.Where(x => x.Id == hiding.ArpId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.PropertyId, rule.PropertyId)
+                .SetProperty(x => x.ComplianceEnabled, false));
+        await SeedComplianceAsync(hiding with { PropertyId = rule.PropertyId }, D(2026, 8, 7), (await SeedCaseAsync()).Id);
+        await BackendConfigurationPnDbContext.Properties.Where(x => x.Id == rule.PropertyId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.ComplianceStatus, 2).SetProperty(x => x.ComplianceStatusThirty, 2));
+        BackendConfigurationPnDbContext.ChangeTracker.Clear();
+
+        var result = await RunAsync();
+
+        var property = await BackendConfigurationPnDbContext.Properties.AsNoTracking()
+            .SingleAsync(x => x.Id == rule.PropertyId);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.ClosedCompliances, Is.EqualTo(1));
+            Assert.That(property.ComplianceStatus, Is.EqualTo(0));
+            Assert.That(property.ComplianceStatusThirty, Is.EqualTo(0),
+                "the hidden 7 August row is not due soon and nothing else is open");
+        });
+    }
+
+    /// <summary>
+    /// The event deploy gives each site its own PlanningCase per rotation and keeps only the
+    /// first site's compliance, so another site's case is referenced by no compliance and
+    /// cannot be dated. While such a case is open on a device, the planning's orphans are
+    /// kept: closing one could hide an occurrence that site still owes.
+    /// </summary>
+    [Test]
+    public async Task OpenDeploymentWithoutACompliance_KeepsThePlanningsOrphans()
+    {
+        var rule = await SeedMonthlyRuleAsync();
+        var june = await SeedComplianceAsync(rule, D(2026, 6, 7), (await SeedRemovedCaseAsync()).Id);
+        var otherSiteCase = await SeedCaseAsync();
+        var planningCase = new PlanningCase
+        {
+            PlanningId = rule.PlanningId, Status = 66, MicrotingSdkeFormId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await ItemsPlanningPnDbContext!.PlanningCases.AddAsync(planningCase);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+        await ItemsPlanningPnDbContext.PlanningCaseSites.AddAsync(new PlanningCaseSite
+        {
+            PlanningId = rule.PlanningId, PlanningCaseId = planningCase.Id, MicrotingSdkSiteId = _site.Id,
+            MicrotingSdkeFormId = 0, MicrotingSdkCaseId = otherSiteCase.Id, Status = 66,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        });
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        var plan = await DryRunAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(plan.Closures, Is.Empty);
+            Assert.That(plan.Kept.Single().ComplianceId, Is.EqualTo(june.Id));
+            Assert.That(plan.Kept.Single().Reasons,
+                Is.EqualTo(new[] { CalendarOrphanComplianceRepairService.ReasonUnlinkedOpenDeployment }));
+        });
+    }
+
+    /// <summary>
     /// "Delete this and following" from Wed 3 June sets Planning.RepeatUntil to 2 June, so
     /// the week view paints nothing on the pattern in June. The earlier Mon 1 June row is
     /// then the month's only tile and must stay — the month must not become empty.
@@ -756,6 +826,39 @@ public class CalendarOrphanComplianceRepairTests : TestBaseSetup
             Assert.That((await ComplianceAsync(june.Id)).WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created),
                 "its case is live again: not an orphan any more");
             Assert.That((await ComplianceAsync(july.Id)).WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+        });
+    }
+
+    /// <summary>
+    /// A row repointed at a new case AFTER its planning was re-evaluated — an eForm swap
+    /// finishing between the recheck and the write — is skipped, not closed: the row as
+    /// fetched for the write must still carry the reviewed case.
+    /// </summary>
+    [Test]
+    public async Task RowRepointedAfterThePlanningRecheck_IsSkipped()
+    {
+        var rule = await SeedMonthlyRuleAsync();
+        var june = await SeedComplianceAsync(rule, D(2026, 6, 7), (await SeedRemovedCaseAsync()).Id);
+        var replacement = await SeedCaseAsync();
+        var plan = await DryRunAsync();
+        Assert.That(plan.Closures.Single().ComplianceId, Is.EqualTo(june.Id));
+
+        _sut.BeforeRowFetch = async _ =>
+        {
+            await BackendConfigurationPnDbContext!.Compliances.Where(x => x.Id == june.Id)
+                .ExecuteUpdateAsync(s => s.SetProperty(x => x.MicrotingSdkCaseId, replacement.Id));
+            // The fixture shares the repair's context and still tracks the seeded row;
+            // forget it so the write's fetch reads the database, as in production.
+            BackendConfigurationPnDbContext.ChangeTracker.Clear();
+        };
+        var result = await _sut.RunAsync(plan.PlanHash);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        await Assert.MultipleAsync(async () =>
+        {
+            Assert.That(result.Model.ClosedCompliances, Is.Zero);
+            Assert.That(result.Model.Skipped.Single(), Does.StartWith($"compliance {june.Id}:"));
+            Assert.That((await ComplianceAsync(june.Id)).WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
         });
     }
 }

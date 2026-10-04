@@ -75,6 +75,7 @@ public class CalendarOrphanComplianceRepairService(
     internal const string ReasonOpenElsewhere = "OccurrenceStillOpenElsewhere";
     internal const string ReasonNoPlanningCaseLink = "NoPlanningCaseLink";
     internal const string ReasonPlanningCaseLinkMismatch = "PlanningCaseLinkMismatch";
+    internal const string ReasonUnlinkedOpenDeployment = "PlanningHasOpenDeploymentWithoutCompliance";
 
     /// <summary>Clock seam for "today in Copenhagen" (same shape as the #1294 repair's).</summary>
     internal Func<DateTime> UtcNow { get; set; } = () => DateTime.UtcNow;
@@ -84,6 +85,9 @@ public class CalendarOrphanComplianceRepairService(
     /// planning, i.e. after the plan-hash check and before its writes.
     /// </summary>
     internal Func<int, Task> BeforePlanningRecheck { get; set; } = _ => Task.CompletedTask;
+
+    /// <summary>Test seam: runs with the compliance id right before that row is fetched for its write.</summary>
+    internal Func<int, Task> BeforeRowFetch { get; set; } = _ => Task.CompletedTask;
 
     public async Task<OperationDataResult<OrphanOffPatternComplianceRepairPlanModel>> DryRunAsync(
         CancellationToken cancellationToken = default)
@@ -317,6 +321,17 @@ public class CalendarOrphanComplianceRepairService(
             sitesByPlanningCase.Values.SelectMany(x => x).Select(x => x.MicrotingSdkCaseId).Where(id => id > 0), ct)
             .ConfigureAwait(false);
 
+        // The event deploy (EventDeployService.DeployForRotationAsync) gives every site its
+        // own PlanningCase per rotation, and only the first site's Compliance insert survives
+        // the (planning, deadline) key. The other sites' cases are referenced by no
+        // compliance, and nothing stored ties them to a date, so they cannot be matched to
+        // an occurrence. A planning with such a case still open on a device is kept whole:
+        // closing its orphan could hide an occurrence another site still owes.
+        var candidatePlanningIds = offPattern.Select(x => x.Compliance.PlanningId).Distinct().ToList();
+        var planningsWithUnlinkedOpenDeployment =
+            await PlanningsWithUnlinkedOpenDeploymentAsync(sdkDbContext, candidatePlanningIds, ct)
+                .ConfigureAwait(false);
+
         foreach (var (compliance, ownCase, onPatternDate) in offPattern)
         {
             var rules = rulesByPlanning[compliance.PlanningId];
@@ -371,6 +386,10 @@ public class CalendarOrphanComplianceRepairService(
             {
                 reasons.Add(ReasonOpenElsewhere);
             }
+            if (planningsWithUnlinkedOpenDeployment.Contains(compliance.PlanningId))
+            {
+                reasons.Add(ReasonUnlinkedOpenDeployment);
+            }
 
             if (reasons.Count > 0)
             {
@@ -402,6 +421,46 @@ public class CalendarOrphanComplianceRepairService(
         int PlanningCaseSiteId);
 
     private static (int Year, int Month) MonthOf(DateTime date) => (date.Year, date.Month);
+
+    /// <summary>
+    /// The plannings among <paramref name="planningIds"/> with an open, live SDK case on a
+    /// single-site PlanningCase (the event deploy's per-site shape) that no compliance row,
+    /// in any state, references.
+    /// </summary>
+    private async Task<HashSet<int>> PlanningsWithUnlinkedOpenDeploymentAsync(
+        Microting.eForm.Infrastructure.MicrotingDbContext sdkDbContext, List<int> planningIds, CancellationToken ct)
+    {
+        var singleSiteDeployments = (await itemsPlanningPnDbContext.PlanningCaseSites
+                .AsNoTracking()
+                .Where(x => planningIds.Contains(x.PlanningId) && x.PlanningCaseId > 0 && x.MicrotingSdkCaseId > 0)
+                // A removed site link does not make its PlanningCase multi-site; leaving it
+                // out can only keep more orphans, never close more.
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Select(x => new { x.PlanningId, x.PlanningCaseId, x.MicrotingSdkCaseId })
+                .ToListAsync(ct).ConfigureAwait(false))
+            .GroupBy(x => x.PlanningCaseId)
+            .Where(g => g.Count() == 1)
+            .Select(g => g.Single())
+            .ToList();
+        if (singleSiteDeployments.Count == 0)
+        {
+            return [];
+        }
+
+        var referencedCaseIds = (await dbContext.Compliances
+                .AsNoTracking()
+                .Where(c => planningIds.Contains(c.PlanningId) && c.MicrotingSdkCaseId > 0)
+                .Select(c => c.MicrotingSdkCaseId)
+                .ToListAsync(ct).ConfigureAwait(false))
+            .ToHashSet();
+        var unlinked = singleSiteDeployments.Where(x => !referencedCaseIds.Contains(x.MicrotingSdkCaseId)).ToList();
+        var cases = await LoadSdkCasesAsync(sdkDbContext, unlinked.Select(x => x.MicrotingSdkCaseId), ct)
+            .ConfigureAwait(false);
+        return unlinked
+            .Where(x => cases.TryGetValue(x.MicrotingSdkCaseId, out var c) && c.IsLive && !c.IsCompleted)
+            .Select(x => x.PlanningId)
+            .ToHashSet();
+    }
 
     private static async Task<Dictionary<int, SdkCaseInfo>> LoadSdkCasesAsync(
         Microting.eForm.Infrastructure.MicrotingDbContext sdkDbContext, IEnumerable<int> caseIds, CancellationToken ct)
@@ -474,8 +533,23 @@ public class CalendarOrphanComplianceRepairService(
 
                 try
                 {
+                    await BeforeRowFetch(closure.ComplianceId).ConfigureAwait(false);
                     var row = await dbContext.Compliances.FirstAsync(x => x.Id == closure.ComplianceId)
                         .ConfigureAwait(false);
+                    // The row itself, as fetched for the write, must still be the reviewed
+                    // one: a concurrent eForm swap repoints MicrotingSdkCaseId at its
+                    // replacement case, and that live compliance must not be closed.
+                    if (row.WorkflowState == Constants.WorkflowStates.Removed
+                        || row.MicrotingSdkCaseId != closure.SdkCaseId
+                        || row.Deadline != closure.Deadline)
+                    {
+                        dbContext.ChangeTracker.Clear();
+                        logger.LogInformation(
+                            "CalendarOrphanComplianceRepair: {What} skipped: it changed after its planning was re-evaluated",
+                            what);
+                        result.Skipped.Add($"{what}: changed after its planning was re-evaluated");
+                        continue;
+                    }
                     await row.Delete(dbContext).ConfigureAwait(false);
                     result.ClosedCompliances++;
                     closedPropertyIds.Add(closure.PropertyId);
@@ -534,7 +608,8 @@ public class CalendarOrphanComplianceRepairService(
             return;
         }
 
-        var dueWithinThirtyDays = await dbContext.Compliances.AsNoTracking()
+        // Hidden missed occurrences of a task that does not report them are not "due soon".
+        var dueWithinThirtyDays = await HiddenOverdueRule.ExcludeHiddenOverdue(dbContext.Compliances.AsNoTracking(), dbContext, utcNow)
             .AnyAsync(x => x.Deadline < utcNow.AddDays(30) && x.PropertyId == propertyId
                            && x.WorkflowState != Constants.WorkflowStates.Removed).ConfigureAwait(false);
         property.ComplianceStatusThirty = dueWithinThirtyDays ? 1 : 0;
