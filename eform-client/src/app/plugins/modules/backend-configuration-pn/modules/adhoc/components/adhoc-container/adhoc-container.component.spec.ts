@@ -1,4 +1,4 @@
-import {of} from 'rxjs';
+import {of, Subject} from 'rxjs';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {By} from '@angular/platform-browser';
@@ -12,6 +12,7 @@ import {AppMenuStateService} from 'src/app/common/store';
 import {BackendConfigurationPnAdhocService} from '../../../../services';
 import {AdhocStateService} from '../store';
 import {AdhocContainerComponent, AdhocViewMode} from './adhoc-container.component';
+import {AdhocHistoryComponent} from '../adhoc-history/adhoc-history.component';
 
 /**
  * Spy-provider unit test for `AdhocContainerComponent`. Authored, not run -
@@ -107,6 +108,85 @@ describe('AdhocContainerComponent', () => {
     const drawerArgs = dialogSpy.open.mock.calls[1];
     expect(drawerArgs[1].data.mode).toBe('edit');
     expect(drawerArgs[1].data.task).toBe(copied);
+  });
+
+  // #1379 refresh button.
+  describe('refresh', () => {
+    const indexResult = (openCount: number) =>
+      ({success: true, model: {entities: [{id: 7}], openCount, completedCount: 2, archivedCount: 3}});
+
+    const landOnHistory = (): void => {
+      // The stub's snapshot is a plain object, so the route can be moved in place.
+      (TestBed.inject(ActivatedRoute) as any).snapshot.firstChild = {routeConfig: {path: 'history'}};
+    };
+
+    const historyStub = (updateTable: () => any): AdhocHistoryComponent => {
+      const history = Object.create(AdhocHistoryComponent.prototype) as AdhocHistoryComponent;
+      history.updateTable = jest.fn(updateTable);
+      return history;
+    };
+
+    it('on Overblik re-fetches the list and updates rows and status counts', () => {
+      adhocStateServiceSpy.getTasks.mockReturnValue(of(indexResult(5)));
+
+      component.refresh();
+
+      expect(adhocStateServiceSpy.getTasks).toHaveBeenCalledTimes(1);
+      expect(component.tasks).toEqual([{id: 7}]);
+      expect(component.counts).toEqual({open: 5, completed: 2, archived: 3});
+      expect(component.refreshing).toBe(false);
+    });
+
+    it('is disabled while the request is in flight and ignores a second click', () => {
+      const response$ = new Subject<any>();
+      adhocStateServiceSpy.getTasks.mockReturnValue(response$);
+
+      component.refresh();
+      expect(component.refreshing).toBe(true);
+      component.refresh();
+      expect(adhocStateServiceSpy.getTasks).toHaveBeenCalledTimes(1);
+
+      response$.next(indexResult(1));
+      response$.complete();
+      expect(component.refreshing).toBe(false);
+    });
+
+    it('re-enables when the request fails', () => {
+      const response$ = new Subject<any>();
+      adhocStateServiceSpy.getTasks.mockReturnValue(response$);
+
+      component.refresh();
+      response$.error(new Error('network'));
+
+      expect(component.refreshing).toBe(false);
+    });
+
+    it('on Historik reloads the routed history component, not the list', () => {
+      landOnHistory();
+      const history$ = new Subject<any>();
+      const history = historyStub(() => history$.subscribe());
+      component.onOutletActivate(history);
+
+      component.refresh();
+
+      expect(history.updateTable).toHaveBeenCalledTimes(1);
+      expect(adhocStateServiceSpy.getTasks).not.toHaveBeenCalled();
+      expect(component.refreshing).toBe(true);
+      history$.complete();
+      expect(component.refreshing).toBe(false);
+    });
+
+    it('does nothing on Historik once the history component is deactivated', () => {
+      landOnHistory();
+      const history = historyStub(() => of(null).subscribe());
+      component.onOutletActivate(history);
+      component.onOutletDeactivate();
+
+      component.refresh();
+
+      expect(history.updateTable).not.toHaveBeenCalled();
+      expect(component.refreshing).toBe(false);
+    });
   });
 });
 
