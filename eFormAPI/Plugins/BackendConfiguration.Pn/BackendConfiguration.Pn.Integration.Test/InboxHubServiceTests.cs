@@ -120,6 +120,19 @@ public class InboxHubServiceTests : TestBaseSetup
     }
 
     [Test]
+    public async Task Arrived_Replay_OfRejectedDocumentFromAllowedSender_IsAllowed()
+    {
+        var doc = await ArrivedDocumentAsync(InboxSenderRuleKind.Allow);
+        doc.Status = InboxDocumentStatus.Rejected;
+        await doc.Update(BackendConfigurationPnDbContext!);
+
+        var replay = await _service.ArrivedAsync(Arrived("post@example.net", doc.HubDocumentId));
+
+        Assert.That(replay.SenderVerdict, Is.EqualTo(SenderVerdict.Allowed));
+        Assert.That(await BackendConfigurationPnDbContext!.InboxDocuments.CountAsync(), Is.EqualTo(1));
+    }
+
+    [Test]
     public async Task Verdict_DomainAllowRule_Allowed_ButBlockRuleWins()
     {
         await new InboxSenderRule { Pattern = "@example.net", Kind = InboxSenderRuleKind.Allow, CreatedByUserId = 1, UpdatedByUserId = 1 }

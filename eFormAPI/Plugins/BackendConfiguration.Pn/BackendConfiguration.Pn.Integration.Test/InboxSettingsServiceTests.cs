@@ -327,6 +327,38 @@ public class InboxSettingsServiceTests : TestBaseSetup
     }
 
     [Test]
+    public async Task ApproveSender_ExistingBlockRule_IsReplacedByAllow()
+    {
+        await new InboxSenderRule { Pattern = "post@example.net", Kind = InboxSenderRuleKind.Block, CreatedByUserId = 1, UpdatedByUserId = 1 }
+            .Create(BackendConfigurationPnDbContext!);
+        var doc = await SenderPendingDocumentAsync();
+
+        var res = await _service.ApproveSenderAsync(doc.Id, 1);
+
+        Assert.That(res.Success, Is.True);
+        var live = await LiveRulesAsync();
+        Assert.That(live, Has.Count.EqualTo(1));
+        Assert.That(live[0].Pattern, Is.EqualTo("post@example.net"));
+        Assert.That(live[0].Kind, Is.EqualTo(InboxSenderRuleKind.Allow));
+    }
+
+    [Test]
+    public async Task RejectSender_WithBlock_ExistingAllowRule_IsReplacedByBlock()
+    {
+        await new InboxSenderRule { Pattern = "post@example.net", Kind = InboxSenderRuleKind.Allow, CreatedByUserId = 1, UpdatedByUserId = 1 }
+            .Create(BackendConfigurationPnDbContext!);
+        var doc = await SenderPendingDocumentAsync();
+
+        var res = await _service.RejectSenderAsync(doc.Id, true, 1);
+
+        Assert.That(res.Success, Is.True);
+        var live = await LiveRulesAsync();
+        Assert.That(live, Has.Count.EqualTo(1));
+        Assert.That(live[0].Pattern, Is.EqualTo("post@example.net"));
+        Assert.That(live[0].Kind, Is.EqualTo(InboxSenderRuleKind.Block));
+    }
+
+    [Test]
     public async Task ApproveSender_UnknownSenderPlaceholder_AddsNoRule()
     {
         var doc = await SenderPendingDocumentAsync(InboxHubService.UnknownSender);

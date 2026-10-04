@@ -301,7 +301,16 @@ public partial class InboxSettingsService(BackendConfigurationPnDbContext dbCont
             return;
         }
 
-        if (!await LiveRules().AnyAsync(r => r.Kind == kind && r.Pattern.ToLower() == pattern))
+        var samePattern = await LiveRules().Where(r => r.Pattern.ToLower() == pattern).ToListAsync();
+
+        // One pattern never holds both Allow and Block (UpdateAsync rejects that state): the new decision replaces the opposite rule.
+        foreach (var opposite in samePattern.Where(r => r.Kind != kind))
+        {
+            opposite.UpdatedByUserId = userId;
+            await opposite.Delete(dbContext);
+        }
+
+        if (!samePattern.Any(r => r.Kind == kind))
             await NewRule(pattern, kind, userId).Create(dbContext);
     }
 

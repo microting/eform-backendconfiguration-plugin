@@ -53,9 +53,10 @@ public class InboxHubService(BackendConfigurationPnDbContext dbContext, IArchive
             return new ArrivedResponse(existing.Status switch
             {
                 InboxDocumentStatus.SenderPending => SenderVerdict.Unknown,
-                InboxDocumentStatus.Rejected => SenderVerdict.Blocked,
                 // Failed before delivery: it may have been held, so the status no longer tells. Ask again.
+                // Rejected: a manager rejecting a document is not a sender block, so ask again as well.
                 InboxDocumentStatus.Failed when existing.DeliveredAt == null => await verdicts.ResolveAsync(existing.FromAddress),
+                InboxDocumentStatus.Rejected => await verdicts.ResolveAsync(existing.FromAddress),
                 _ => SenderVerdict.Allowed
             });
         }
