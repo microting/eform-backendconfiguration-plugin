@@ -180,6 +180,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         // Singletons: the verifier holds the replay store, the provider caches the customer number.
         services.AddSingleton<Services.InboundMail.InboundMailRequestVerifier>();
         services.AddSingleton<Services.InboundMail.ICustomerNoProvider, Services.InboundMail.CustomerNoProvider>();
+        services.AddTransient<Services.FileArchive.IArchiveStorage, Services.FileArchive.CoreArchiveStorage>();
+        services.AddTransient<Services.FileArchive.IFileArchiver, Services.FileArchive.FileArchiver>();
         services.AddTransient<IBackendConfigurationStatsService, BackendConfigurationStatsService>();
         services.AddTransient<IBackendConfigurationCalendarService, BackendConfigurationCalendarService>();
         services.AddTransient<IBackendConfigurationCaseService, BackendConfigurationCaseService>();

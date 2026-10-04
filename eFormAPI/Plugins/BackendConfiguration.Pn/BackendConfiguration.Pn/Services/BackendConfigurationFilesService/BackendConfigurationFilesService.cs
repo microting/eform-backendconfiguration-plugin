@@ -23,7 +23,6 @@ SOFTWARE.
 */
 
 using System.Collections.Generic;
-using System.Security.Cryptography;
 using Microting.EformAngularFrontendBase.Infrastructure.Data;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationFilesService;
@@ -34,6 +33,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using BackendConfigurationFileTagsService;
 using BackendConfigurationLocalizationService;
+using FileArchive;
 using Infrastructure.Models.Files;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -54,19 +54,19 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 	private readonly BackendConfigurationPnDbContext _dbContext;
 	private readonly BaseDbContext _baseDbContext;
 	private readonly IUserService _userService;
-	private readonly IEFormCoreService _coreHelper;
+	private readonly IFileArchiver _fileArchiver;
 
 	public BackendConfigurationFilesService(
 		ILogger<BackendConfigurationTagsService> logger,
 		IBackendConfigurationLocalizationService localizationService,
 		BackendConfigurationPnDbContext dbContext,
-		IUserService userService, IEFormCoreService coreHelper, BaseDbContext baseDbContext)
+		IUserService userService, IFileArchiver fileArchiver, BaseDbContext baseDbContext)
 	{
 		_logger = logger;
 		_localizationService = localizationService;
 		_dbContext = dbContext;
 		_userService = userService;
-		_coreHelper = coreHelper;
+		_fileArchiver = fileArchiver;
 		_baseDbContext = baseDbContext;
 	}
 
@@ -321,81 +321,13 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 	{
 		try
 		{
-			var core = await _coreHelper.GetCore();
 			foreach (var fileCreate in model.Where(x => x.File != null))
 			{
-				// Extract the file extension
 				var fileExtension = Path.GetExtension(fileCreate.File.FileName).TrimStart('.').ToLower();
 				var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileCreate.File.FileName);
-
-				// create file in db
-				var fileForDb = new File
-				{
-					CreatedByUserId = _userService.UserId,
-					FileName = fileNameWithoutExtension, // save only filename, without extension
-					UpdatedByUserId = _userService.UserId
-				};
-				await fileForDb.Create(_dbContext);
-
-				// add file to property
-				foreach (var propertyFile in fileCreate.PropertyIds.Select(x => new PropertyFile
-				         {
-					         FileId = fileForDb.Id,
-					         PropertyId = x,
-					         CreatedByUserId = _userService.UserId,
-					         UpdatedByUserId = _userService.UserId
-				         }))
-				{
-					await propertyFile.Create(_dbContext);
-				}
-
-				// add tags to file
-				foreach (var fileTag in fileCreate.TagIds.Select(tagId => new FileTags
-				         {
-					         CreatedByUserId = _userService.UserId,
-					         FileId = fileForDb.Id,
-					         FileTagId = tagId,
-					         UpdatedByUserId = _userService.UserId
-				         }))
-				{
-					await fileTag.Create(_dbContext);
-				}
-
-				// upload file and save in db file info
-				var folder = Path.Combine(Path.GetTempPath(), "backend-configuration-files");
-				Directory.CreateDirectory(folder);
-				var fileName = $"{DateTime.Now.Ticks}_{DateTime.Now.Microsecond}";
-				var filePath = Path.Combine(folder, $"{fileName}.{fileExtension}");
-
-				// if you replace using to await using - stream not start copy until it goes beyond the current block
-				await using (var stream = new FileStream(filePath, FileMode.Create))
-				{
-					await fileCreate.File.CopyToAsync(stream);
-				}
-
-				string checkSum;
-				using (var md5 = MD5.Create())
-				{
-					await using (var stream = System.IO.File.OpenRead(filePath))
-					{
-						byte[] grr = await md5.ComputeHashAsync(stream);
-						checkSum = BitConverter.ToString(grr).Replace("-", "").ToLower();
-					}
-				}
-
-				await core.PutFileToStorageSystem(filePath, $"{checkSum}.{fileExtension}");
-
-				var uploadedData = new UploadedData
-				{
-					Extension = fileExtension,
-					FileName = fileName,
-					Checksum = checkSum,
-					CreatedByUserId = _userService.UserId,
-					UpdatedByUserId = _userService.UserId,
-					FileLocation = filePath,
-					FileId = fileForDb.Id
-				};
-				await uploadedData.Create(_dbContext);
+				await using var stream = fileCreate.File.OpenReadStream();
+				await _fileArchiver.ArchiveAsync(stream, fileNameWithoutExtension, fileExtension,
+					fileCreate.PropertyIds, fileCreate.TagIds, _userService.UserId);
 			}
 
 			return new OperationResult(true);
