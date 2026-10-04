@@ -5,11 +5,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Services.CalendarChangeNotification;
 using BackendConfiguration.Pn.Services.EventDeployService;
+using BackendConfiguration.Pn.Services.TaskTranslation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using SdkCore = eFormCore.Core;
 using SdkDbContext = Microting.eForm.Infrastructure.MicrotingDbContext;
@@ -33,16 +35,46 @@ public class CalendarAssignmentReconciliationService(
     IEventDeployService eventDeployService,
     ICalendarAssignmentResolver resolver,
     ICalendarChangeNotifier changeNotifier,
-    ILogger<CalendarAssignmentReconciliationService> logger)
+    ILogger<CalendarAssignmentReconciliationService> logger,
+    // #1384 — optional so the fixtures that build this by hand keep working.
+    ITaskTranslationFiller taskTranslationFiller = null)
     : ICalendarAssignmentReconciliationService
 {
     private const int CompletedStatus = 100;
 
-    public async Task ReconcileEventAsync(int areaRulePlanningId, CancellationToken ct = default)
+    /// <summary>
+    /// #1384 — translation is a side task here: a missing or failing translator leaves
+    /// the event in Danish and never stops the reconcile.
+    /// </summary>
+    /// <returns>True when a recipient language keeps the Danish text only.</returns>
+    private async Task<bool> FillMissingTranslationsAsync(
+        AreaRulePlanning arp, IReadOnlyCollection<int> recipientSiteIds, CancellationToken ct)
+    {
+        if (taskTranslationFiller == null)
+        {
+            return false;
+        }
+
+        try
+        {
+            return !await taskTranslationFiller
+                .FillMissingForEventAsync(arp.AreaRuleId, arp.ItemPlanningId, recipientSiteIds, ct)
+                .ConfigureAwait(false);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            logger.LogWarning(e, "ReconcileEventAsync: could not fill translations for event {AreaRulePlanningId}",
+                arp.Id);
+            return true;
+        }
+    }
+
+    public async Task<bool> ReconcileEventAsync(int areaRulePlanningId, CancellationToken ct = default)
     {
         var changes = new CalendarChangeBatch();
-        await ReconcileEventAsync(areaRulePlanningId, changes, ct).ConfigureAwait(false);
+        var translationsIncomplete = await ReconcileEventAsync(areaRulePlanningId, changes, ct).ConfigureAwait(false);
         changeNotifier.NotifyInBackground(changes);
+        return translationsIncomplete;
     }
 
     /// <summary>
@@ -56,7 +88,7 @@ public class CalendarAssignmentReconciliationService(
     /// once per occurrence, which is what the per-occurrence loop below would
     /// otherwise produce.
     /// </summary>
-    private async Task ReconcileEventAsync(
+    private async Task<bool> ReconcileEventAsync(
         int areaRulePlanningId, CalendarChangeBatch changes, CancellationToken ct)
     {
         // 1. Load the AreaRulePlanning (not removed). Skip if missing or inactive.
@@ -67,7 +99,7 @@ public class CalendarAssignmentReconciliationService(
 
         if (arp == null || !arp.Status)
         {
-            return;
+            return false;
         }
 
         var planningId = arp.ItemPlanningId;
@@ -75,6 +107,12 @@ public class CalendarAssignmentReconciliationService(
         // 2. Effective recipient set.
         var desired = await resolver.ResolveEffectiveSiteIdsAsync(areaRulePlanningId, ct)
             .ConfigureAwait(false);
+
+        // #1384 — fill the recipients' missing languages BEFORE anything is deployed
+        // below. This is the step that knows the team members: the calendar writes a
+        // task's team links after the wizard saved it, and a member who joins a team
+        // later, or whose language changes, reaches the event only through here.
+        var translationsIncomplete = await FillMissingTranslationsAsync(arp, desired, ct).ConfigureAwait(false);
 
         // 3. SDK core + db context (needed for case status reads and CaseDelete).
         var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
@@ -96,7 +134,7 @@ public class CalendarAssignmentReconciliationService(
 
         if (occurrenceDates.Count == 0)
         {
-            return;
+            return translationsIncomplete;
         }
 
         // 5. Active per-occurrence exception dates to skip.
@@ -308,6 +346,8 @@ public class CalendarAssignmentReconciliationService(
                 }
             }
         }
+
+        return translationsIncomplete;
     }
 
     public async Task ReconcileEventsForWorkerTagsAsync(
