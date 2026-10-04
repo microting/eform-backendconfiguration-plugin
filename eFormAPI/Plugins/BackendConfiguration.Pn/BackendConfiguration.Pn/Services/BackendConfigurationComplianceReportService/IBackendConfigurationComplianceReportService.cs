@@ -51,14 +51,15 @@ public interface IBackendConfigurationComplianceReportService
     ///
     /// <para>
     /// Compliance is measured only over what has FALLEN DUE:
-    /// <c>DueTotal</c> counts every row NOT strictly after today
-    /// (<c>!(startOfDay(taskDate) &gt; today)</c> — a date that cannot be read counts as due),
+    /// <c>DueTotal</c> counts every row dated STRICTLY before today, plus a row dated
+    /// today only once it is completed (#1374 — a task due today is not a failure until
+    /// the day is over; a date that cannot be read counts as due),
     /// <c>DueDone</c> those also completed, and <c>CompliancePct</c> is
     /// <c>round(DueDone / DueTotal * 100)</c> — <c>null</c>, never 0, when
-    /// <c>DueTotal</c> is 0. Future tasks never drag the number down.
+    /// <c>DueTotal</c> is 0. Future tasks never drag the number down, so 0 overdue
+    /// means 100 % (or no percentage).
     /// <c>Overdue</c> is not-completed AND STRICTLY before today.
-    /// "Today" is <c>DateTime.UtcNow.Date</c>; see the implementation's doc
-    /// comment for the timezone consequence.
+    /// "Today" is the Copenhagen date (the #1300 boundary).
     /// </para>
     /// </summary>
     Task<OperationDataResult<ComplianceReportOverviewModel>> Overview(

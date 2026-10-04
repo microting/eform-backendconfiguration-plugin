@@ -95,8 +95,10 @@ public class BackendConfigurationComplianceReportService(
             var userLanguageId = (await userService.GetCurrentUserLanguage()).Id;
             var dateFrom = requestModel.DateFrom.Date;
             var dateTo = EndOfDay(requestModel.DateTo);
-            // One read of the clock for the whole request.
-            var utcNow = UtcNow();
+            // One read of the clock for the whole request, as the Copenhagen date —
+            // the same "today" Overview uses (#1374), so the #1325 hidden-overdue rule
+            // agrees between Detaljer and Oversigt across midnight.
+            var today = ComplianceFutureTaskGuard.TodayInCopenhagen(UtcNow());
 
             var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
             // NOTE: this context stays alive for the whole method — phase E reads
@@ -123,8 +125,8 @@ public class BackendConfigurationComplianceReportService(
                     // not-yet-deployed occurrences after today. Index is the ONLY
                     // caller that may set this; see CandidateFilter.IncludeProjected.
                     IncludeProjected = requestModel.IncludeProjected,
-                    Today = utcNow.Date,
-                    ProjectionToday = ComplianceFutureTaskGuard.TodayInCopenhagen(utcNow)
+                    Today = today,
+                    ProjectionToday = today
                 },
                 sdkDbContext);
 
@@ -812,7 +814,8 @@ public class BackendConfigurationComplianceReportService(
     /// a UTC "tomorrow" would be the local today. Today's occurrence is never projected:
     /// the scheduler dates the CURRENT cycle's compliance with the NEXT occurrence's date
     /// (<c>Planning.NextExecutionTime</c>), so a planned row for today would count the
-    /// running cycle twice. Phase C keeps its UTC <see cref="CandidateFilter.Today"/>.</para>
+    /// running cycle twice. Phase C's <see cref="CandidateFilter.Today"/> is the same
+    /// Copenhagen date (#1374).</para>
     ///
     /// <para><b>Which series:</b> the lowest-Id live ARP per planning (the pin phase C
     /// uses), active (<c>Status</c> true — an inactive task deploys nothing, and its
@@ -1063,21 +1066,14 @@ public class BackendConfigurationComplianceReportService(
     /// </para>
     ///
     /// <para>
-    /// <b>"Today" is <c>DateTime.UtcNow.Date</c></b>, evaluated ONCE at the top of
-    /// this method and passed down, so that two rows can never be classified
-    /// against different "todays" across a midnight boundary. UTC — not local, not
-    /// user-local — because the whole compliance/calendar path already compares
-    /// against <c>DateTime.UtcNow</c> exclusively (there is not one
-    /// <c>DateTime.Now</c> in <c>BackendConfigurationCalendarService</c>), and
-    /// deviating would make this the single local-time comparison in the path.
-    /// </para>
-    ///
-    /// <para>
-    /// <b>Consequence, accepted deliberately:</b> for a user in UTC+2 between 00:00
-    /// and 02:00 local, the server's "today" is still yesterday — so a task dated
-    /// today is not yet due, and a task dated yesterday is not yet overdue. Every
-    /// threshold below hangs off this one value. If user-local boundaries are ever
-    /// wanted, the fix is an explicit offset on the request model; do not guess one.
+    /// <b>"Today" is the Copenhagen date</b> (<c>ComplianceFutureTaskGuard.TodayInCopenhagen</c>,
+    /// the #1300 future-task boundary), read ONCE from the <see cref="UtcNow"/> seam at
+    /// the top of this method and passed down, so that two rows can never be classified
+    /// against different "todays" across a midnight boundary. #1374 moved it off the UTC
+    /// date: with UTC, between 00:00 and 01:00/02:00 Danish time a task dated today
+    /// would still be in the future and one dated yesterday not yet overdue. Every
+    /// threshold below — due, overdue and the #1325 hidden-overdue rule — hangs off
+    /// this one value.
     /// </para>
     /// </summary>
     public async Task<OperationDataResult<ComplianceReportOverviewModel>> Overview(
@@ -1088,7 +1084,8 @@ public class BackendConfigurationComplianceReportService(
             // Hoisted: ONE read of the clock per request, before any I/O, so no
             // two rows in one response can be classified against different
             // "todays" across a midnight boundary. Passed down to Aggregate.
-            var today = DateTime.UtcNow.Date;
+            // The Danish date (#1374), consistent with the #1300 boundary.
+            var today = ComplianceFutureTaskGuard.TodayInCopenhagen(UtcNow());
 
             var dateFrom = requestModel.DateFrom.Date;
             var dateTo = EndOfDay(requestModel.DateTo);
@@ -1162,7 +1159,7 @@ public class BackendConfigurationComplianceReportService(
     ///
     /// <para>
     /// <paramref name="today"/> is passed in, never read from the clock here: the
-    /// caller hoists <c>DateTime.UtcNow.Date</c> so every row in one response is
+    /// caller hoists the Copenhagen date so every row in one response is
     /// classified against one value.
     /// </para>
     /// </summary>
@@ -1211,13 +1208,19 @@ public class BackendConfigurationComplianceReportService(
                 DateTimeStyles.None, out var taskDate);
             DateTime? taskDay = parsed ? taskDate.Date : null;
 
-            // NOTE THE NEGATION: !(taskDate > today), not (taskDate <= today).
-            // The two differ exactly on an unparseable date — the prototype's NaN
-            // (compliance-overview.js:15-20, :50) — where !(NaN > x) is TRUE. A row
-            // whose date cannot be read must NOT silently vanish out of the
-            // denominator, so it counts as DUE. It is deliberately NOT overdue
-            // below (NaN < x is false); keep the asymmetry.
-            var isDue = taskDay is null || !(taskDay.Value > today);
+            // DUE = in the compliance denominator. #1374: a task dated TODAY is not a
+            // failure until the day is over, so it is due only once it is completed —
+            // an open task dated today is in neither DueTotal nor Overdue. Hence
+            // 0 overdue gives 100 % (or no percentage when nothing has fallen due).
+            //
+            // A row whose date cannot be read — the prototype's NaN
+            // (compliance-overview.js:15-20, :50) — must NOT silently vanish out of the
+            // denominator, so it counts as DUE. It is deliberately NOT overdue below;
+            // keep the asymmetry.
+            var datedBeforeToday = taskDay < today;   // false for an unreadable date
+            var isDue = taskDay is null
+                        || datedBeforeToday
+                        || (taskDay == today && candidate.Completed);
 
             row.Total++;
             if (isDue)
@@ -1230,9 +1233,9 @@ public class BackendConfigurationComplianceReportService(
             {
                 row.Done++;
             }
-            // STRICTLY before today: a task due TODAY and not done raises DueTotal
-            // (so it lowers the percentage) but is not overdue.
-            else if (taskDay is not null && taskDay.Value < today)
+            // STRICTLY before today: a task due TODAY and not done is not overdue
+            // (and, per isDue above, not in the denominator either).
+            else if (datedBeforeToday)
             {
                 row.Overdue++;
             }
@@ -1361,7 +1364,8 @@ public class BackendConfigurationComplianceReportService(
                     DateTo = dateTo,
                     Status = requestModel.Status,
                     // DoneAt is the "Udført dato" column, so the display fields are on.
-                    ComputeDisplayFields = true
+                    ComputeDisplayFields = true,
+                    Today = ComplianceFutureTaskGuard.TodayInCopenhagen(UtcNow())
                 },
                 sdkDbContext);
 
@@ -1764,10 +1768,13 @@ public class BackendConfigurationComplianceReportService(
         public bool ComputeDisplayFields { get; init; } = true;
 
         /// <summary>
-        /// "Today" for the #1325 hidden-overdue rule. Overview passes the value it
-        /// classifies overdue rows against, so the two can never disagree across midnight.
+        /// "Today" for the #1325 hidden-overdue rule: the Copenhagen date
+        /// (<c>ComplianceFutureTaskGuard.TodayInCopenhagen</c>), read once per request.
+        /// Required, so every view states it and Oversigt, Detaljer and Rapport hide the
+        /// same missed occurrences across midnight (#1374). Overview passes the value it
+        /// classifies overdue rows against, so the two can never disagree.
         /// </summary>
-        public DateTime Today { get; init; } = DateTime.UtcNow.Date;
+        public required DateTime Today { get; init; }
 
         /// <summary>
         /// #1332 — add the planned, not-yet-deployed occurrences after <see cref="Today"/>

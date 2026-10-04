@@ -17,6 +17,7 @@ copies or substantial portions of the Software.
 namespace BackendConfiguration.Pn.Integration.Test;
 
 using System.Globalization;
+using BackendConfiguration.Pn.Infrastructure.Helpers;
 using eFormCore;
 using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
@@ -1554,7 +1555,11 @@ public class ComplianceReportIndexTests : TestBaseSetup
     public async Task ComplianceReportIndex_ComplianceDisabledTask_HidesMissedOpenRowButKeepsTodayAndCompletedHistory()
     {
         var core = await GetCore();
-        var today = DateTime.UtcNow.Date;
+        // The clock is pinned and "today" is the Copenhagen date the service hides missed
+        // occurrences against (#1374) — unpinned, the open row seeded on the UTC date would
+        // be the Danish yesterday between Copenhagen and UTC midnight, and hidden.
+        var utcNow = DateTime.SpecifyKind(DateTime.UtcNow.Date.AddHours(12), DateTimeKind.Utc);
+        var today = ComplianceFutureTaskGuard.TodayInCopenhagen(utcNow);
         var (arpId, propertyId, planningId, areaId, _) = await SeedSeries(
             "Property A", "Hidden Overdue Title", today.AddDays(-30), complianceEnabled: false);
         await SeedCalendarConfig(arpId);
@@ -1569,6 +1574,7 @@ public class ComplianceReportIndexTests : TestBaseSetup
             await SeedSdkCase(status: 100, doneAt: today.AddDays(-2)), removed: true);
 
         var service = BuildService(core);
+        service.UtcNow = () => utcNow;
         var from = today.AddDays(-7);
         var to = today.AddDays(7);
 
