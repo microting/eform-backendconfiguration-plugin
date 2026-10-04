@@ -234,14 +234,17 @@ public class CalendarConfigurationBackfillService(
     }
 
     // Normalizes recurrence to the calendar encoding. All ARP writes are
-    // unconditional re-derivations from Planning.StartDate/RepeatType/RepeatEvery,
-    // so any interrupted pass converges to the same final state on the next run.
+    // unconditional re-derivations from the Planning (StartDate/RepeatType/RepeatEvery,
+    // and for weekly rules its cadence, NextExecutionTime/LastExecutedTime), so any
+    // interrupted pass converges to the same final state on the next run.
     //
     // #1294 — only the RULE is fixed here (deterministic, derived from the Planning).
     // Data the legacy rule already produced — the open compliance of the running
-    // period and NextExecutionTime, both on the legacy day — is deliberately NOT moved
-    // at startup: moving customer data needs a reviewed dry run, so it is left to the
-    // admin repair (CalendarMonthlyReanchorRepairService), whose dry run lists it.
+    // period, and for monthly rules NextExecutionTime, both on the legacy day — is
+    // deliberately NOT moved at startup: moving customer data needs a reviewed dry
+    // run, so it is left to the admin repair (CalendarMonthlyReanchorRepairService),
+    // whose dry run lists it. Weekly rules (#1375) take the cadence's weekday instead,
+    // so their deployed data already agrees with the rule.
     private async Task NormalizeRecurrence(AreaRulePlanning arp, Planning planning)
     {
         // "Altid" (RepeatType 0) and legacy (Day, 0) both become daily.
@@ -257,8 +260,6 @@ public class CalendarConfigurationBackfillService(
             return;
         }
 
-        var dow = (int)planning.StartDate.DayOfWeek;
-
         switch (planning.RepeatType)
         {
             case RepeatType.Day:
@@ -267,21 +268,40 @@ public class CalendarConfigurationBackfillService(
                 await arp.Update(dbContext);
                 break;
             case RepeatType.Week:
-                // #1294 — the scheduler (SearchListJob) snaps with the planning's
-                // weekday, so it must equal the ARP's; the legacy value is stale.
+            {
+                // #1375 — the weekday is the legacy CADENCE's, not StartDate's: the
+                // scheduler stepped NextExecutionTime by whole weeks without snapping,
+                // so it can sit on any weekday, and the open compliance it deployed
+                // carries that weekday as its deadline. Taking StartDate's weekday drew
+                // the task twice a week (rule + open compliance). Planning.DayOfWeek
+                // mirrors the rule's weekday, its single source of truth (#1294).
+                var weekday = ConvertedWeekday(planning);
+                planning.DayOfWeek = weekday;
+                // When the cadence is off the rule's every-N-weeks stride (see
+                // ConvertedWeekday) — whether or not it already sits on the rule's
+                // weekday — move the next run forward onto the rule; on the stride
+                // this leaves it unchanged. Any open compliance stays where it is (no
+                // data moves here, see above); the week view draws that week once.
+                if (planning.NextExecutionTime is { } next)
+                {
+                    planning.NextExecutionTime = CalendarService.NextWeeklyOccurrenceOnOrAfter(
+                        planning.StartDate, planning.RepeatEvery, weekday,
+                        next < planning.StartDate ? planning.StartDate : next);
+                }
                 // The planning is written FIRST and the ARP LAST: the ARP's
                 // still-unnormalized shape is what re-selects the row on the next
                 // startup, so an interrupted pass must not leave the ARP done and
-                // the planning behind.
-                planning.DayOfWeek = (DayOfWeek)dow;
+                // the planning behind. A re-run derives the same weekday, because
+                // the next run is then on it.
                 await planning.Update(itemsPlanningPnDbContext);
 
                 arp.RepeatType = 2;
                 arp.RepeatEvery = planning.RepeatEvery;
-                arp.DayOfWeek = dow;
-                arp.RepeatWeekdaysCsv = dow.ToString();
+                arp.DayOfWeek = (int)weekday;
+                arp.RepeatWeekdaysCsv = ((int)weekday).ToString();
                 await arp.Update(dbContext);
                 break;
+            }
             case RepeatType.Month:
             {
                 // #1294 — the WEEK of the legacy day, not a hardcoded 1st: "on the
@@ -292,12 +312,12 @@ public class CalendarConfigurationBackfillService(
                 var ordinal = CalendarService.OrdinalWeekOf(planning.StartDate);
                 // Planning first, ARP last — see the Week branch.
                 planning.RepeatOrdinalWeek = ordinal;
-                planning.DayOfWeek = (DayOfWeek)dow; // #1294 — see the Week branch
+                planning.DayOfWeek = planning.StartDate.DayOfWeek; // #1294 — the scheduler snaps to it
                 await planning.Update(itemsPlanningPnDbContext);
 
                 arp.RepeatType = 3;
                 arp.RepeatEvery = planning.RepeatEvery;
-                arp.DayOfWeek = dow;
+                arp.DayOfWeek = (int)planning.StartDate.DayOfWeek;
                 arp.RepeatOrdinalWeek = ordinal;
                 arp.DayOfMonth = 0;
                 await arp.Update(dbContext);
@@ -305,5 +325,32 @@ public class CalendarConfigurationBackfillService(
             }
             // Year/unknown: not wizard-producible — pass through untouched.
         }
+    }
+
+    /// <summary>
+    /// #1375 — the weekday a legacy weekly planning converts to: that of its cadence
+    /// (<c>NextExecutionTime</c>, else <c>LastExecutedTime</c>, else <c>StartDate</c>),
+    /// which is the weekday its deployed cases and open compliance already carry.
+    /// <para>
+    /// The calendar draws an every-N-weeks rule in the weeks N apart from
+    /// <c>StartDate</c>'s Monday-aligned week. When the cadence has drifted into the
+    /// other weeks (only possible for N &gt; 1), its weekday would draw the rule in weeks
+    /// the scheduler never deploys, so <c>StartDate</c>'s weekday is kept instead and
+    /// the caller moves the next run onto it.
+    /// </para>
+    /// </summary>
+    internal static DayOfWeek ConvertedWeekday(Planning planning)
+    {
+        var cadence = planning.NextExecutionTime ?? planning.LastExecutedTime;
+        if (cadence == null)
+        {
+            return planning.StartDate.DayOfWeek;
+        }
+
+        var repeatEvery = Math.Max(planning.RepeatEvery, 1);
+        var weeksFromStart = (CalendarService.MondayOf(cadence.Value) - CalendarService.MondayOf(planning.StartDate)).Days / 7;
+        return weeksFromStart % repeatEvery == 0
+            ? cadence.Value.DayOfWeek
+            : planning.StartDate.DayOfWeek;
     }
 }

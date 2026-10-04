@@ -781,6 +781,10 @@ export const etET = {
   'Not registered': 'Registreerimata',
   Model: 'Mudel',
   'OS version': 'OS-i versioon',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Määra sildid',
+  'Assign tags to the selected employees': 'Määra sildid valitud töötajatele',
+  'Selected employees': 'Valitud töötajad',
   // #1378 Medarbejdere dialog labels
   '1st shift': '1. vahetus',
   'Auto break calculation settings': 'Automaatse pausiarvestuse sätted',

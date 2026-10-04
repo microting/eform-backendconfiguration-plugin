@@ -122,4 +122,16 @@ public class AssignmentWorkerController : Controller
     {
         return await _backendConfigurationAssignmentWorkerService.UpdateSimplifiedDeviceUser(deviceUserModel).ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// #1380 — adds or removes worker tags on several workers at once. Same policy as
+    /// editing one worker's tags in the edit dialog (update-device-user).
+    /// </summary>
+    [HttpPut]
+    [Route("bulk-tags")]
+    [Authorize(Policy = AuthConsts.EformPolicies.DeviceUsers.Update)]
+    public async Task<OperationResult> BulkUpdateWorkerTags([FromBody] WorkerTagsBulkUpdateModel model)
+    {
+        return await _backendConfigurationAssignmentWorkerService.BulkUpdateWorkerTags(model).ConfigureAwait(false);
+    }
 }

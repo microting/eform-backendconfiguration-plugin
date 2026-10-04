@@ -534,6 +534,30 @@ public class BackendConfigurationComplianceReportService(
             && casesById.TryGetValue(c.MicrotingSdkCaseId, out var sdk)
             && sdk.Status == 100;
 
+        // #1371 — an occurrence completed by ANOTHER assigned worker: the removed
+        // compliance still holds its own (retracted) case. Repoint the candidate at the
+        // case that was completed, so done-ness, DoneAt, "Udført af" and the eForm
+        // columns all read the completed case. Candidates are a projection; nothing is
+        // written.
+        var completedSiblings = await CompletedSiblingCases.FindAsync(
+            itemsPlanningPnDbContext, sdkDbContext,
+            candidates.Where(c => c.WorkflowState == Constants.WorkflowStates.Removed && !IsDone(c))
+                .Select(c => c.MicrotingSdkCaseId));
+        foreach (var candidate in candidates)
+        {
+            if (!completedSiblings.TryGetValue(candidate.MicrotingSdkCaseId, out var sibling)) continue;
+            candidate.MicrotingSdkCaseId = sibling.Id;
+            casesById.TryAdd(sibling.Id, new SdkCaseInfo
+            {
+                Id = sibling.Id,
+                Status = sibling.Status,
+                DoneAt = sibling.DoneAt,
+                DoneAtUserModifiable = sibling.DoneAtUserModifiable,
+                CheckListId = sibling.CheckListId,
+                SiteId = sibling.SiteId
+            });
+        }
+
         // ==========================================================
         // Phase C — in-memory filters. Everything here is either
         // cross-database or a coalesce over rows that must be in memory
@@ -1034,7 +1058,7 @@ public class BackendConfigurationComplianceReportService(
                     .Where(x => keyedPlanningIds.Contains(x.PlanningId))
                     .Where(x => x.MicrotingSdkCaseId > 0)
                     .Where(x => x.Deadline >= rangeStart && x.Deadline < rangeEnd)
-                    .Select(x => new { x.PlanningId, x.Deadline, x.MicrotingSdkCaseId })
+                    .Select(x => new { x.PlanningId, x.Deadline, x.MicrotingSdkCaseId, x.WorkflowState })
                     .ToListAsync())
                 // Each series only cares about its OWN periods.
                 .Where(x => x.Deadline >= periodRangeByPlanningId[x.PlanningId].Start
@@ -1048,6 +1072,13 @@ public class BackendConfigurationComplianceReportService(
                     .Select(c => c.Id)
                     .ToListAsync()).ToHashSet()
                 : [];
+            // #1371 — a period another assigned worker completed is completed too.
+            completedCaseIds.UnionWith((await CompletedSiblingCases.FindAsync(
+                    itemsPlanningPnDbContext, sdkDbContext,
+                    periodRows.Where(x => x.WorkflowState == Constants.WorkflowStates.Removed
+                                          && !completedCaseIds.Contains(x.MicrotingSdkCaseId))
+                        .Select(x => x.MicrotingSdkCaseId)))
+                .Keys);
 
             var seriesByPlanningId = series.ToDictionary(x => x.Planning.Id);
             foreach (var c in periodRows.Where(x => completedCaseIds.Contains(x.MicrotingSdkCaseId)))

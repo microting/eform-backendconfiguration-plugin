@@ -781,6 +781,10 @@ export const nlNL = {
   'Not registered': 'Niet geregistreerd',
   Model: 'Model',
   'OS version': 'OS-versie',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Labels toewijzen',
+  'Assign tags to the selected employees': 'Labels toewijzen aan de geselecteerde medewerkers',
+  'Selected employees': 'Geselecteerde medewerkers',
   // #1378 Medarbejdere dialog labels
   '1st shift': '1e dienst',
   'Auto break calculation settings': 'Instellingen voor automatische pauzeberekening',

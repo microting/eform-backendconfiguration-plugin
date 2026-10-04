@@ -780,6 +780,10 @@ export const frFR = {
   'Not registered': 'Non enregistré',
   Model: 'Modèle',
   'OS version': 'Version du système',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Attribuer des étiquettes',
+  'Assign tags to the selected employees': 'Attribuer des étiquettes aux employés sélectionnés',
+  'Selected employees': 'Employés sélectionnés',
   // #1378 Medarbejdere dialog labels
   '1st shift': '1re équipe',
   'Auto break calculation settings': 'Paramètres du calcul automatique des pauses',

@@ -57,7 +57,11 @@ public class CalendarConfigurationBackfillTest : TestBaseSetup
     {
         // FK-safe clean of the rows this fixture writes, mirroring
         // CalendarTaskListIndexTest's ordering (children before parents).
-        BackendConfigurationPnDbContext!.CalendarConfigurations.RemoveRange(
+        BackendConfigurationPnDbContext!.Compliances.RemoveRange(
+            BackendConfigurationPnDbContext.Compliances);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        BackendConfigurationPnDbContext.CalendarConfigurations.RemoveRange(
             BackendConfigurationPnDbContext.CalendarConfigurations);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
@@ -657,6 +661,143 @@ public class CalendarConfigurationBackfillTest : TestBaseSetup
         Assert.That(updatedPlanning.RepeatEvery, Is.EqualTo(2));
 
         AssertNineToTenOnDefaultBoard(GetSingleConfiguration(arp.Id), property.Id);
+    }
+
+    // --- #1375: a weekly rule takes the legacy cadence's weekday ---
+    // 2026-01-05 is a Monday; 2026-01-29 and 2026-02-05 are Thursdays.
+
+    private async Task SetCadence(Planning planning, DateTime? nextExecutionTime, DateTime? lastExecutedTime)
+    {
+        planning.NextExecutionTime = nextExecutionTime;
+        planning.LastExecutedTime = lastExecutedTime;
+        await ItemsPlanningPnDbContext!.SaveChangesAsync();
+    }
+
+    private void AssertWeeklyOn(int arpId, int planningId, DayOfWeek weekday, DateTime? nextExecutionTime)
+    {
+        var updatedArp = BackendConfigurationPnDbContext!.AreaRulePlannings.Single(x => x.Id == arpId);
+        var updatedPlanning = ItemsPlanningPnDbContext!.Plannings.Single(x => x.Id == planningId);
+        Assert.Multiple(() =>
+        {
+            Assert.That(updatedArp.RepeatType, Is.EqualTo(2));
+            Assert.That(updatedArp.DayOfWeek, Is.EqualTo((int)weekday), "ARP weekday");
+            Assert.That(updatedArp.RepeatWeekdaysCsv, Is.EqualTo(((int)weekday).ToString()), "ARP weekday list");
+            Assert.That(updatedPlanning.DayOfWeek, Is.EqualTo(weekday), "planning weekday mirrors the rule");
+            Assert.That(updatedPlanning.NextExecutionTime, Is.EqualTo(nextExecutionTime), "next run");
+        });
+    }
+
+    [Test]
+    public async Task RunIfNeededAsync_WeeklyWhoseCadenceDriftedToThursday_TakesTheCadencesWeekdayEverywhere()
+    {
+        var property = await SeedProperty();
+        var area = await SeedArea();
+        // Started on a Monday, but the legacy scheduler's cadence sits on Thursdays and
+        // the running week's open compliance was deployed with Thursday's deadline.
+        var (arp, planning) = await SeedWizardTask(
+            property.Id, area.Id, repeatType: (int)RepeatType.Week, repeatEvery: 1,
+            startDate: new DateTime(2026, 1, 5));
+        var thursday = new DateTime(2026, 2, 5);
+        await SetCadence(planning, nextExecutionTime: thursday, lastExecutedTime: new DateTime(2026, 1, 29));
+        var openCompliance = new Compliance
+        {
+            PlanningId = planning.Id, PropertyId = property.Id, AreaId = area.Id,
+            Deadline = thursday, StartDate = new DateTime(2026, 1, 29),
+            MicrotingSdkCaseId = 1, MicrotingSdkeFormId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext!.Compliances.AddAsync(openCompliance);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        await _sut.RunIfNeededAsync();
+
+        // One weekday on the rule, the planning and the next run; nothing moved.
+        AssertWeeklyOn(arp.Id, planning.Id, DayOfWeek.Thursday, thursday);
+        var compliance = BackendConfigurationPnDbContext.Compliances.Single(x => x.Id == openCompliance.Id);
+        Assert.That(compliance.Deadline, Is.EqualTo(thursday),
+            "the open compliance is already on the rule's weekday and stays where it is");
+        Assert.That(BackendConfigurationPnDbContext.Compliances
+                .Where(x => x.PlanningId == planning.Id && x.WorkflowState != Constants.WorkflowStates.Removed)
+                .AsEnumerable()
+                .Where(x => x.Deadline.DayOfWeek != DayOfWeek.Thursday), Is.Empty,
+            "no open compliance on another weekday than the rule's");
+        AssertNineToTenOnDefaultBoard(GetSingleConfiguration(arp.Id), property.Id);
+    }
+
+    [Test]
+    public async Task RunIfNeededAsync_WeeklyWithoutNextRun_TakesTheLastRunsWeekday()
+    {
+        var property = await SeedProperty();
+        var area = await SeedArea();
+        var (arp, planning) = await SeedWizardTask(
+            property.Id, area.Id, repeatType: (int)RepeatType.Week, repeatEvery: 1,
+            startDate: new DateTime(2026, 1, 5));
+        await SetCadence(planning, nextExecutionTime: null, lastExecutedTime: new DateTime(2026, 1, 29));
+
+        await _sut.RunIfNeededAsync();
+
+        AssertWeeklyOn(arp.Id, planning.Id, DayOfWeek.Thursday, null);
+    }
+
+    [Test]
+    public async Task RunIfNeededAsync_EveryOtherWeekWithCadenceOnTheRulesWeeks_TakesTheCadencesWeekday()
+    {
+        var property = await SeedProperty();
+        var area = await SeedArea();
+        // Week of Mon 2026-01-05 is the anchor week; Thu 2026-01-22 is two weeks on.
+        var (arp, planning) = await SeedWizardTask(
+            property.Id, area.Id, repeatType: (int)RepeatType.Week, repeatEvery: 2,
+            startDate: new DateTime(2026, 1, 5));
+        await SetCadence(planning, nextExecutionTime: new DateTime(2026, 1, 22), lastExecutedTime: null);
+
+        await _sut.RunIfNeededAsync();
+
+        AssertWeeklyOn(arp.Id, planning.Id, DayOfWeek.Thursday, new DateTime(2026, 1, 22));
+    }
+
+    [Test]
+    public async Task RunIfNeededAsync_EveryOtherWeekWithCadenceInTheOffWeeks_KeepsStartWeekdayAndMovesNextRunOntoTheRule()
+    {
+        var property = await SeedProperty();
+        var area = await SeedArea();
+        // Thu 2026-01-15 is in the week of Mon 2026-01-12, one week after the anchor
+        // week: its weekday would draw the rule in weeks the cadence never deploys.
+        var (arp, planning) = await SeedWizardTask(
+            property.Id, area.Id, repeatType: (int)RepeatType.Week, repeatEvery: 2,
+            startDate: new DateTime(2026, 1, 5));
+        await SetCadence(planning, nextExecutionTime: new DateTime(2026, 1, 15), lastExecutedTime: null);
+
+        await _sut.RunIfNeededAsync();
+
+        // StartDate's Monday, and the next run moved forward to the rule's next
+        // occurrence: Mon 2026-01-19, two weeks after the anchor week.
+        AssertWeeklyOn(arp.Id, planning.Id, DayOfWeek.Monday, new DateTime(2026, 1, 19));
+
+        // A resumed pass (marker lost) derives the same state from the moved next run.
+        BackendConfigurationPnDbContext!.CalendarConfigurations.Remove(GetSingleConfiguration(arp.Id));
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        await _sut.RunIfNeededAsync();
+
+        AssertWeeklyOn(arp.Id, planning.Id, DayOfWeek.Monday, new DateTime(2026, 1, 19));
+    }
+
+    [Test]
+    public async Task RunIfNeededAsync_EveryOtherWeekWithCadenceInTheOffWeeksOnTheStartWeekday_MovesNextRunOntoTheRule()
+    {
+        var property = await SeedProperty();
+        var area = await SeedArea();
+        // Mon 2026-01-12 already has StartDate's weekday, but sits one week after the
+        // anchor week: the scheduler would keep deploying in weeks the rule never draws.
+        var (arp, planning) = await SeedWizardTask(
+            property.Id, area.Id, repeatType: (int)RepeatType.Week, repeatEvery: 2,
+            startDate: new DateTime(2026, 1, 5));
+        await SetCadence(planning, nextExecutionTime: new DateTime(2026, 1, 12), lastExecutedTime: null);
+
+        await _sut.RunIfNeededAsync();
+
+        // Mon 2026-01-19, two weeks after the anchor week.
+        AssertWeeklyOn(arp.Id, planning.Id, DayOfWeek.Monday, new DateTime(2026, 1, 19));
     }
 
     [Test]

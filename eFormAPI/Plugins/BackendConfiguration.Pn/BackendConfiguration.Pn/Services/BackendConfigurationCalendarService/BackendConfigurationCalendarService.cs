@@ -185,6 +185,10 @@ public class BackendConfigurationCalendarService(
             //   emitted to the worker because the corresponding write handlers ("complete",
             //   "comment", etc.) have nothing to bind to and will fail.
             List<Compliance> compliancesInWeek;
+            // #1371 — own (not-done) case id → the case a sibling worker completed for the
+            // same occurrence. Filled by whichever branch below loads the week's cases, and
+            // applied again where the compliance loop reloads them.
+            var weekCompletedSiblings = new Dictionary<int, Microting.eForm.Infrastructure.Data.Entities.Case>();
             // Bug A fix side-dict — see ActionableOnly branch below for rationale.
             // Empty for non-ActionableOnly callers (angular admin REST + CalendarGrpcService);
             // the recurrence-emit lookup below tolerates that as a no-op.
@@ -242,6 +246,9 @@ public class BackendConfigurationCalendarService(
                     loadedCases = await sdkDbContextForPrefilter.Cases
                         .Where(c => loadedCaseIds.Contains(c.Id))
                         .ToDictionaryAsync(c => c.Id);
+                    weekCompletedSiblings = await FindCompletedSiblingsAsync(
+                        sdkDbContextForPrefilter, loadedCompliances, loadedCases);
+                    ApplyCompletedSiblings(loadedCases, weekCompletedSiblings);
                 }
 
                 compliancesInWeek = loadedCompliances
@@ -346,6 +353,9 @@ public class BackendConfigurationCalendarService(
                 var sdkCasesById = await sdkDbContextForCalendar.Cases
                     .Where(c => complianceSdkCaseIds.Contains(c.Id))
                     .ToDictionaryAsync(c => c.Id);
+                weekCompletedSiblings = await FindCompletedSiblingsAsync(
+                    sdkDbContextForCalendar, compliancesInWeekAll, sdkCasesById);
+                ApplyCompletedSiblings(sdkCasesById, weekCompletedSiblings);
 
                 bool IsComplianceActionable(Compliance compliance)
                 {
@@ -470,11 +480,25 @@ public class BackendConfigurationCalendarService(
             // includes MicrotingSdkCaseId == 0 rows) and a no-op in the ActionableOnly
             // branch — placement at the union point is intentional for single-source-of-truth
             // semantics.
+            var dedupCompliances = compliancesForDedup
+                .Where(c => c.WorkflowState == Constants.WorkflowStates.Removed
+                            || c.MicrotingSdkCaseId > 0)
+                .ToList();
             var complianceDateSet = new HashSet<string>(
-                compliancesForDedup
-                    .Where(c => c.WorkflowState == Constants.WorkflowStates.Removed
-                                || c.MicrotingSdkCaseId > 0)
+                dedupCompliances
                     .Select(c => $"{c.PlanningId}:{c.Deadline.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}"));
+
+            // #1375 — the same rows bucketed by Monday-aligned week. A single-weekday
+            // weekly rule has one occurrence per week, so a compliance row of that
+            // planning anywhere in the week already IS this week's occurrence, even
+            // when its deadline sits on another weekday than the rule's (a converted
+            // legacy cadence, or a deploy made before the rule's weekday changed).
+            // Without this the week rendered twice: the compliance on its deadline and
+            // the rule on its weekday. Only single-weekday weekly rules can match: they
+            // are the one kind CompletedPeriodKey gives a "W:" key.
+            var complianceWeekSet = new HashSet<string>(
+                dedupCompliances
+                    .Select(c => $"{c.PlanningId}:{CompletedPeriodKey(Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Week, null, c.Deadline)}"));
 
             // 1. Query AreaRulePlannings (future/active and inactive tasks).
             // Inactive (Status=false) plannings are included so the calendar can
@@ -534,7 +558,7 @@ public class BackendConfigurationCalendarService(
                     .Where(x => x.MicrotingSdkCaseId > 0)
                     .Where(x => planningIds.Contains(x.PlanningId))
                     .Where(x => x.Deadline >= periodWindowStart && x.Deadline <= periodWindowEnd)
-                    .Select(x => new { x.PlanningId, x.Deadline, x.MicrotingSdkCaseId })
+                    .Select(x => new { x.PlanningId, x.Deadline, x.MicrotingSdkCaseId, x.WorkflowState })
                     .ToListAsync();
                 var periodCaseIds = periodCompliances.Select(x => x.MicrotingSdkCaseId).Distinct().ToList();
                 if (periodCaseIds.Count > 0)
@@ -545,6 +569,13 @@ public class BackendConfigurationCalendarService(
                         .Where(c => periodCaseIds.Contains(c.Id) && c.Status == 100)
                         .Select(c => c.Id)
                         .ToListAsync()).ToHashSet();
+                    // #1371 — a period another assigned worker completed is completed too.
+                    completedCaseIds.UnionWith((await CompletedSiblingCases.FindAsync(
+                            itemsPlanningPnDbContext, sdkDbContextForPeriods,
+                            periodCompliances.Where(x => x.WorkflowState == Constants.WorkflowStates.Removed
+                                                         && !completedCaseIds.Contains(x.MicrotingSdkCaseId))
+                                .Select(x => x.MicrotingSdkCaseId)))
+                        .Keys);
 
                     // Per-planning RepeatType + weekday CSV drive the period
                     // granularity; use the same planning the emit loop uses.
@@ -786,6 +817,13 @@ public class BackendConfigurationCalendarService(
                     var completedPeriodKey = CompletedPeriodKey(planning.RepeatType, arp.RepeatWeekdaysCsv, occurrenceDate);
                     if (completedPeriodKey != null
                         && completedPeriodSet.Contains($"{arp.ItemPlanningId}:{completedPeriodKey}"))
+                        continue;
+
+                    // #1375 — a single-weekday weekly rule whose week already holds a
+                    // compliance row of the planning, on any weekday, renders once: the
+                    // compliance loop owns that week.
+                    if (completedPeriodKey != null
+                        && complianceWeekSet.Contains($"{arp.ItemPlanningId}:{completedPeriodKey}"))
                         continue;
 
                     CalendarOccurrenceException exception = null;
@@ -1219,6 +1257,7 @@ public class BackendConfigurationCalendarService(
                     .Where(c => weekComplianceCaseIds.Contains(c.Id))
                     .ToDictionaryAsync(c => c.Id);
             }
+            ApplyCompletedSiblings(weekComplianceCasesById, weekCompletedSiblings);
 
             foreach (var compliance in compliances)
             {
@@ -1347,7 +1386,8 @@ public class BackendConfigurationCalendarService(
                     PlanningId = compliance.PlanningId,
                     IsAllDay = compIsAllDay,
                     EformId = arp?.AreaRule?.EformId,
-                    SdkCaseId = compliance.MicrotingSdkCaseId,
+                    // #1371 — the completed sibling's case when another worker completed it.
+                    SdkCaseId = compSdkCase?.Id ?? compliance.MicrotingSdkCaseId,
                     ItemPlanningTagId = arp?.ItemPlanningTagId,
                     DescriptionHtml = compliancePlanningsDict.TryGetValue(compliance.PlanningId, out var cp)
                         ? cp.Description
@@ -1468,6 +1508,27 @@ public class BackendConfigurationCalendarService(
             }
 
             var areaRulePlannings = await query.ToListAsync();
+
+            // #1376 — an ACTIVE row needs a live items-planning Planning to be a task:
+            // without one it cannot be opened (UpdateTask answers TaskNotFound) and
+            // never deploys. Legacy area rules leave such rows behind (ItemPlanningId
+            // 0, or pointing at a removed or missing Planning), and they showed up as
+            // "Aktiv" tasks with no eForm. Inactive rows stay listed: deactivation
+            // keeps or clears the Planning, so a missing one is normal there.
+            var activePlanningIds = areaRulePlannings
+                .Where(x => x.Status && x.ItemPlanningId > 0)
+                .Select(x => x.ItemPlanningId)
+                .Distinct().ToList();
+            var livePlanningIds = (await itemsPlanningPnDbContext.Plannings
+                    .Where(x => activePlanningIds.Contains(x.Id))
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(x => x.Id)
+                    .ToListAsync())
+                .ToHashSet();
+            areaRulePlannings = areaRulePlannings
+                .Where(x => !x.Status || livePlanningIds.Contains(x.ItemPlanningId))
+                .ToList();
+
             var arpIds = areaRulePlannings.Select(x => x.Id).ToList();
 
             var calConfigsList = await backendConfigurationPnDbContext.CalendarConfigurations
@@ -1820,6 +1881,7 @@ public class BackendConfigurationCalendarService(
                     {
                         planning.DayOfWeek = (DayOfWeek)latestArp.DayOfWeek;
                     }
+                    SnapWeeklyNextExecutionToRule(planning, latestArp); // #1375
                     planning.UpdatedByUserId = userService.UserId;
                     await planning.Update(itemsPlanningPnDbContext);
                 }
@@ -2219,6 +2281,7 @@ public class BackendConfigurationCalendarService(
                     {
                         ResnapNextExecutionTimeToRule(planning, arp);
                     }
+                    SnapWeeklyNextExecutionToRule(planning, arp); // #1375
                     planning.UpdatedByUserId = userService.UserId;
                     await planning.Update(itemsPlanningPnDbContext);
 
@@ -2846,6 +2909,7 @@ public class BackendConfigurationCalendarService(
             {
                 ResnapNextExecutionTimeToRule(planning, arp);
             }
+            SnapWeeklyNextExecutionToRule(planning, arp); // #1375
             planning.UpdatedByUserId = userService.UserId;
             await planning.Update(itemsPlanningPnDbContext);
         }
@@ -3327,14 +3391,18 @@ public class BackendConfigurationCalendarService(
     ///
     /// Ordering: the wizard delete runs FIRST, the calendar-side rows
     /// (CalendarConfiguration, CalendarOccurrenceExceptions,
-    /// AreaRulePlanningWorkerTags) afterwards. The wizard delete reads none of
-    /// those three tables, so on the success path the order is immaterial; on
-    /// the failure path it is not. If the wizard fails we return before touching
-    /// any calendar-side row, so the calendar still points at the series and the
-    /// caller can simply retry it. With the calendar rows removed first, a wizard
-    /// failure would instead leave the AreaRulePlanning alive but no longer
-    /// reachable from the calendar (it is looked up through
-    /// CalendarConfiguration).
+    /// AreaRulePlanningWorkerTags) afterwards. Since #1376 the wizard itself also
+    /// soft-deletes the series' CalendarConfiguration (and its tag links), but only
+    /// as part of its last writes — after the device retraction, next to the
+    /// AreaRule and AreaRulePlanning — so the CalendarConfiguration lookup below
+    /// simply finds nothing left on the success path. On the failure path the order
+    /// matters: if the wizard fails we return before touching any calendar-side row,
+    /// and a wizard that failed before its last writes (a CaseDelete that throws,
+    /// for instance) has left the CalendarConfiguration live, so the calendar still
+    /// points at the series and the caller can simply retry it. With the calendar
+    /// rows removed first, a wizard failure would instead leave the
+    /// AreaRulePlanning alive but no longer reachable from the calendar (it is
+    /// looked up through CalendarConfiguration).
     ///
     /// That guarantee covers the CALENDAR-side rows only. The wizard itself has
     /// no transaction — PnBase.Delete calls SaveChangesAsync per entity — so a
@@ -3344,15 +3412,15 @@ public class BackendConfigurationCalendarService(
     /// had already soft-deleted soft-deleted. Several of its failure modes ARE
     /// genuinely no-op — among them a throw from its opening _coreHelper.GetCore()
     /// call, a throw from the AreaRulePlannings lookup that follows it, the
-    /// TaskNotFound early return, and a throw from its Plannings.First lookup — all
-    /// of which precede its first write.
+    /// TaskNotFound early return — all of which precede its first write. (Since
+    /// #1376 a missing or removed Planning no longer throws: the wizard skips it.)
     ///
-    /// Already-deleted series: an AreaRulePlanning can be removed by paths that
-    /// do not clear its CalendarConfiguration — the task-list batch delete
-    /// (BackendConfigurationTaskListService.Delete) and
-    /// DELETE /task-wizard/{id} both do exactly that — which leaves a live
-    /// CalendarConfiguration pointing at a Removed AreaRulePlanning. Nothing
-    /// else reaps those rows. So when the AreaRulePlanning is ALREADY gone we
+    /// Already-deleted series: an AreaRulePlanning can have been removed without
+    /// its CalendarConfiguration — before #1376 the task-list batch delete
+    /// (BackendConfigurationTaskListService.Delete) and DELETE /task-wizard/{id}
+    /// both did exactly that, and the rows they left are still in the data — which
+    /// leaves a live CalendarConfiguration pointing at a Removed AreaRulePlanning.
+    /// Nothing else reaps those rows. So when the AreaRulePlanning is ALREADY gone we
     /// skip the wizard (it would only answer TaskNotFound) and go straight to
     /// removing the calendar-side rows: there is no planning left to orphan, and
     /// without this the stale row is undeletable — it would fail the same way on
@@ -3508,7 +3576,8 @@ public class BackendConfigurationCalendarService(
         // Soft-delete the event's worker-tag links so they don't linger after the
         // series is gone. The wizard delete above already retracts every case
         // (core.CaseDelete, inline or deferred) and soft-deletes
-        // Planning/PlanningSites/ARP/Compliances, so reconciliation is not needed
+        // Planning/PlanningSites/tag links/CalendarConfiguration/ARP/Compliances,
+        // so reconciliation is not needed
         // here (and would early-return anyway once the event is removed/inactive).
         var workerTagLinks = await backendConfigurationPnDbContext.AreaRulePlanningWorkerTags
             .Where(x => x.AreaRulePlanningId == arpId)
@@ -3713,7 +3782,7 @@ public class BackendConfigurationCalendarService(
                 // DayOfWeek is stored .NET/JS-style (Sun=0..Sat=6).
                 int targetDow = arp.DayOfWeek;
                 // Monday-aligned week containing oldDeadline, projected onto targetDow.
-                var monday = oldDeadline.Date.AddDays(-(((int)oldDeadline.DayOfWeek + 6) % 7));
+                var monday = MondayOf(oldDeadline);
                 return monday.AddDays((targetDow + 6) % 7);
             }
             case 3: // Month
@@ -4129,6 +4198,7 @@ public class BackendConfigurationCalendarService(
                     {
                         oldPlanning.DayOfMonth = newDate.Day;
                     }
+                    SnapWeeklyNextExecutionToRule(oldPlanning, arp); // #1375
                     oldPlanning.UpdatedByUserId = userService.UserId;
                     await oldPlanning.Update(itemsPlanningPnDbContext);
                 }
@@ -4211,6 +4281,7 @@ public class BackendConfigurationCalendarService(
                     {
                         planning.DayOfMonth = newDate.Day;
                     }
+                    SnapWeeklyNextExecutionToRule(planning, arp); // #1375
                     planning.UpdatedByUserId = userService.UserId;
                     await planning.Update(itemsPlanningPnDbContext);
                 }
@@ -5367,8 +5438,7 @@ public class BackendConfigurationCalendarService(
             case 2: // Week
                 if (ParseWeekdaysCsv(repeatWeekdaysCsv).Length > 1) return null;
                 // Monday of the date's week (ISO Mon=0..Sun=6).
-                var monday = date.Date.AddDays(-(((int)date.DayOfWeek + 6) % 7));
-                return "W:" + monday.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+                return "W:" + MondayOf(date).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             case 3: // Month
                 return $"M:{date.Year:D4}-{date.Month:D2}";
             case 4: // Year (enum has no member; cast used throughout this file)
@@ -5391,6 +5461,76 @@ public class BackendConfigurationCalendarService(
     /// (<c>Math.ceil(dom / 7)</c>, the same function).
     /// </summary>
     internal static int OrdinalWeekOf(DateTime d) => (d.Day - 1) / 7 + 1;
+
+    /// <summary>
+    /// Midnight of the Monday of <paramref name="date"/>'s week. Weekly rules stride, bucket
+    /// and relocate by Monday-aligned weeks throughout this service.
+    /// </summary>
+    internal static DateTime MondayOf(DateTime date) => date.Date.AddDays(-(((int)date.DayOfWeek + 6) % 7));
+
+    /// <summary>
+    /// #1375 — the first date on or after <paramref name="from"/> on <paramref name="weekday"/>
+    /// in a week a weekly rule draws: every <paramref name="repeatEvery"/>th Monday-aligned
+    /// week from the week of <paramref name="startDate"/>, the stride GetOccurrencesInWeek
+    /// uses. Keeps the time of day of <paramref name="from"/>.
+    /// </summary>
+    internal static DateTime NextWeeklyOccurrenceOnOrAfter(DateTime startDate, int repeatEvery, DayOfWeek weekday,
+        DateTime from)
+    {
+        var every = Math.Max(repeatEvery, 1);
+        var startMonday = MondayOf(startDate);
+        var candidate = from.AddDays(((int)weekday - (int)from.DayOfWeek + 7) % 7);
+        while (((MondayOf(candidate) - startMonday).Days / 7 % every + every) % every != 0)
+        {
+            candidate = candidate.AddDays(7);
+        }
+        return candidate;
+    }
+
+    /// <summary>
+    /// #1375 — after an edit gave a single-weekday weekly rule another weekday or anchor,
+    /// moves <c>Planning.NextExecutionTime</c> onto the rule: the first rule occurrence on or
+    /// after the later of the series start and the Monday of the next run's week. The items-planning
+    /// scheduler only ever adds <c>RepeatEvery * 7</c> days, so the weekday the next run is
+    /// on is the weekday it deploys on from then on; left on the old weekday, the calendar
+    /// drew the task twice a week. Projecting within the next run's week keeps it in step
+    /// with the open compliance (its deadline is that next run), which the relocation moves
+    /// within the same Monday-aligned week. Multi-day rules have no single weekday and are
+    /// left alone; so is a planning without a next run. Call after StartDate is final.
+    /// </summary>
+    private void SnapWeeklyNextExecutionToRule(
+        Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning, AreaRulePlanning arp)
+    {
+        if (planning.RepeatType != Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Week
+            || planning.NextExecutionTime is not { } next)
+        {
+            return;
+        }
+        var csv = ParseWeekdaysCsv(arp.RepeatWeekdaysCsv);
+        if (csv.Length > 1)
+        {
+            return;
+        }
+        // The weekday the week view draws: the single CSV day, else (legacy single-day
+        // path) StartDate's weekday — MoveTask does not rewrite arp.DayOfWeek for those.
+        var weekday = csv.Length == 1 ? (DayOfWeek)csv[0] : planning.StartDate.DayOfWeek;
+        // Not before the series start (the rule draws nothing earlier). Deliberately NOT
+        // floored at today: when the new weekday of the old next run's week has already
+        // passed, a next run on it lets the scheduler deploy that week on its next pass
+        // instead of skipping a whole week.
+        var mondayOfNext = MondayOf(next);
+        var from = mondayOfNext > planning.StartDate.Date ? mondayOfNext : planning.StartDate.Date;
+        var snapped = NextWeeklyOccurrenceOnOrAfter(planning.StartDate, planning.RepeatEvery, weekday, from);
+        var newNext = DateTime.SpecifyKind(snapped.Date, next.Kind).Add(next.TimeOfDay);
+        if (newNext == next)
+        {
+            return;
+        }
+        logger.LogInformation(
+            "Calendar edit: weekly planning {PlanningId} NextExecutionTime {OldNext:yyyy-MM-dd} -> {NewNext:yyyy-MM-dd} (rule weekday {Weekday})",
+            planning.Id, next, newNext, weekday);
+        planning.NextExecutionTime = newNext;
+    }
 
     /// <summary>
     /// #1294 — the weekday an Nth-weekday-of-month rule recurs on. The dialog
@@ -5438,7 +5578,12 @@ public class BackendConfigurationCalendarService(
         }
         if (repeatType == (int)Infrastructure.Enums.RepeatType.Week)
         {
-            arp.DayOfWeek = (int)startDate.DayOfWeek;
+            // #1375 — the weekday the rule draws: its single weekday-list day, which since
+            // the cadence-based conversion may differ from StartDate's; StartDate's weekday
+            // only for the legacy no-list shape (and multi-day lists, as before).
+            arp.DayOfWeek = ParseWeekdaysCsv(arp.RepeatWeekdaysCsv) is [var listed]
+                ? listed
+                : (int)startDate.DayOfWeek;
             return true;
         }
         return false;
@@ -6219,7 +6364,7 @@ public class BackendConfigurationCalendarService(
                     // getDay() Sun=0..Sat=6), so candidates land in
                     // [weekStart, weekStart+6]; only the stride bucketing is
                     // Monday-aligned.
-                    var anchorWeekStart = startDate.AddDays(-(((int)startDate.DayOfWeek + 6) % 7));
+                    var anchorWeekStart = MondayOf(startDate);
                     var weekStartDow = (int)weekStart.Date.DayOfWeek;
                     foreach (var wd in weekdays)
                     {
@@ -6235,7 +6380,7 @@ public class BackendConfigurationCalendarService(
                         // bucket as its anchor. This keeps all-days and mixed
                         // Wed+Sun multi-day sets together under every-Nth-week
                         // cadences instead of splitting the Sunday off (#922).
-                        var candidateWeekStart = candidate.AddDays(-(((int)candidate.DayOfWeek + 6) % 7));
+                        var candidateWeekStart = MondayOf(candidate);
                         var weeksFromAnchor = (candidateWeekStart - anchorWeekStart).Days / 7;
                         if (weeksFromAnchor >= 0 && weeksFromAnchor % repeatEvery == 0)
                             occurrences.Add(candidate);
@@ -6430,6 +6575,36 @@ public class BackendConfigurationCalendarService(
         var isRepeatAlways = arp is { RepeatType: 1 } && (arp.RepeatEvery ?? 0) == 0;
         var hasNonAlwaysRepeat = arp is { RepeatType: > 0 } && !isRepeatAlways;
         return !hasNonAlwaysRepeat;
+    }
+
+    /// <summary>
+    /// #1371 — for each REMOVED compliance whose own case is not completed in
+    /// <paramref name="loadedCases"/>, the case another assigned worker completed for the
+    /// same occurrence, keyed by the compliance's own case id (see
+    /// <see cref="CompletedSiblingCases"/>).
+    /// </summary>
+    private Task<Dictionary<int, Microting.eForm.Infrastructure.Data.Entities.Case>> FindCompletedSiblingsAsync(
+        Microting.eForm.Infrastructure.MicrotingDbContext sdkDbContext,
+        IEnumerable<Compliance> compliances,
+        Dictionary<int, Microting.eForm.Infrastructure.Data.Entities.Case> loadedCases)
+        => CompletedSiblingCases.FindAsync(itemsPlanningPnDbContext, sdkDbContext,
+            compliances.Where(c => c.WorkflowState == Constants.WorkflowStates.Removed
+                                   && loadedCases.GetValueOrDefault(c.MicrotingSdkCaseId)?.Status != 100)
+                .Select(c => c.MicrotingSdkCaseId));
+
+    /// <summary>
+    /// #1371 — makes a compliance's own case id resolve to the case a sibling worker
+    /// completed, so every done-ness check, DoneAt and "Udført af" read below follows it
+    /// without touching the (tracked) Compliance entity.
+    /// </summary>
+    private static void ApplyCompletedSiblings(
+        Dictionary<int, Microting.eForm.Infrastructure.Data.Entities.Case> cases,
+        Dictionary<int, Microting.eForm.Infrastructure.Data.Entities.Case> completedSiblings)
+    {
+        foreach (var (ownCaseId, sibling) in completedSiblings)
+        {
+            cases[ownCaseId] = sibling;
+        }
     }
 
     private static bool ComputeTaskIsExpired(

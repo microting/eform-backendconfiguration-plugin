@@ -781,6 +781,10 @@ export const ukUA = {
   'Not registered': 'Не зареєстровано',
   Model: 'Модель',
   'OS version': 'Версія ОС',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Призначити теги',
+  'Assign tags to the selected employees': 'Призначити теги вибраним працівникам',
+  'Selected employees': 'Вибрані працівники',
   // #1378 Medarbejdere dialog labels
   '1st shift': '1-ша зміна',
   'Auto break calculation settings': 'Налаштування автоматичного розрахунку перерв',

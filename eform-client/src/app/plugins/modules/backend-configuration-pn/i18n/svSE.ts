@@ -781,6 +781,10 @@ export const svSE = {
   'Not registered': 'Inte registrerad',
   Model: 'Modell',
   'OS version': 'OS-version',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Tilldela taggar',
+  'Assign tags to the selected employees': 'Tilldela taggar till de valda medarbetarna',
+  'Selected employees': 'Valda medarbetare',
   // #1378 Medarbejdere dialog labels
   '1st shift': '1:a skiftet',
   'Auto break calculation settings': 'Inställningar för automatisk rastberäkning',

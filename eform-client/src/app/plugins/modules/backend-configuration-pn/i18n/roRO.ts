@@ -781,6 +781,10 @@ export const roRO = {
   'Not registered': 'Neînregistrat',
   Model: 'Model',
   'OS version': 'Versiune SO',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Atribuie etichete',
+  'Assign tags to the selected employees': 'Atribuie etichete angajaților selectați',
+  'Selected employees': 'Angajați selectați',
   // #1378 Medarbejdere dialog labels
   '1st shift': 'Tura 1',
   'Auto break calculation settings': 'Setări pentru calculul automat al pauzelor',

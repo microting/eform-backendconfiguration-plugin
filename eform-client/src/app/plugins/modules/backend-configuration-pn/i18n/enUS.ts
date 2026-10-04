@@ -902,6 +902,10 @@ export const enUS= {
   'Not registered': 'Not registered',
   Model: 'Model',
   'OS version': 'OS version',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Assign tags',
+  'Assign tags to the selected employees': 'Assign tags to the selected employees',
+  'Selected employees': 'Selected employees',
   // #1378 Medarbejdere dialog labels
   '1st shift': '1st shift',
   'Auto break calculation settings': 'Auto break calculation settings',

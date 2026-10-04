@@ -781,6 +781,10 @@ export const plPL = {
   'Not registered': 'Nie zarejestrowano',
   Model: 'Model',
   'OS version': 'Wersja systemu',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Przypisz tagi',
+  'Assign tags to the selected employees': 'Przypisz tagi wybranym pracownikom',
+  'Selected employees': 'Wybrani pracownicy',
   // #1378 Medarbejdere dialog labels
   '1st shift': '1. zmiana',
   'Auto break calculation settings': 'Ustawienia automatycznego obliczania przerw',
