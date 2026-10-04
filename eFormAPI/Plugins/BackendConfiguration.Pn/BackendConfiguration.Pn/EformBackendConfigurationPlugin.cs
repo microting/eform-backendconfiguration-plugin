@@ -189,6 +189,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             Services.CalendarMonthlyReanchorRepair.CalendarMonthlyReanchorRepairService>();
         services.AddTransient<Services.TaskListActiveWithoutPlanningRepair.ITaskListActiveWithoutPlanningRepairService,
             Services.TaskListActiveWithoutPlanningRepair.TaskListActiveWithoutPlanningRepairService>();
+        services.AddTransient<Services.DuplicatePlanningSiteRepair.IDuplicatePlanningSiteRepairService,
+            Services.DuplicatePlanningSiteRepair.DuplicatePlanningSiteRepairService>();
         services.AddTransient<AreaRulePlanningTagPurgeService>();
         services.AddTransient<SecurityGroupBackfillService>();
         services.AddTransient<Services.LegacyChemicalCleanupService.ILegacyChemicalSdkOperations,

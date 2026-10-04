@@ -1,4 +1,5 @@
-import {mapRepeatType, mapResponseToCalendarTask} from './calendar-task.mapper';
+import {assigneeDisplayNames, mapRepeatType, mapResponseToCalendarTask} from './calendar-task.mapper';
+import {CalendarTaskModel} from '../../../models/calendar';
 
 // Regression-pinning for the repeat-type wire encoding → CalendarRepeatRule
 // classification. The backend conversion persists (repeatType, repeatEvery)
@@ -89,5 +90,24 @@ describe('mapResponseToCalendarTask', () => {
     expect(task.title).toBe('x');
     expect(task.repeatOrdinalWeek).toBe(1);
     expect(task.repeatRule).toBe('custom');
+  });
+});
+
+// #1385 — the task list's "Assigned to" column: workers, then teams.
+describe('assigneeDisplayNames', () => {
+  const task = (workerNames?: string[], workerTagNames?: string[]) =>
+    ({workerNames, workerTagNames} as CalendarTaskModel);
+
+  it('shows the team of a team-only task instead of nothing', () => {
+    expect(assigneeDisplayNames(task([], ['Service team']))).toEqual(['Service team']);
+  });
+
+  it('lists the workers first, then the teams', () => {
+    expect(assigneeDisplayNames(task(['Jane Doe'], ['Service team']))).toEqual(['Jane Doe', 'Service team']);
+  });
+
+  it('drops a team the server could not name and tolerates missing lists', () => {
+    expect(assigneeDisplayNames(task(['Jane Doe'], ['', 'Night shift']))).toEqual(['Jane Doe', 'Night shift']);
+    expect(assigneeDisplayNames(task())).toEqual([]);
   });
 });

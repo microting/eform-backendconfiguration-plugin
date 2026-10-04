@@ -414,6 +414,9 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 .Select(x => x.Name)
                 .FirstOrDefault();
 
+            // #1385 — one PlanningSites row per site, even if the client repeats an id.
+            createModel.Sites = createModel.Sites.Distinct().ToList();
+
             // A task nobody can perform is saved inactive. A team is an assignee
             // too: its members are expanded at deploy time (#1295), so a
             // team-only calendar task keeps the status the user chose (#1322),
@@ -530,18 +533,6 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                          }))
             {
                 await planningNameTranslation.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
-            }
-
-            foreach (var planningSite in createModel.Sites.Select(assignedSite =>
-                         new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
-                         {
-                             SiteId = assignedSite,
-                             PlanningId = planning.Id,
-                             CreatedByUserId = _userService.UserId,
-                             UpdatedByUserId = _userService.UserId
-                         }))
-            {
-                await planningSite.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
             }
 
             var areaId = await GetLogBooksAreaId();

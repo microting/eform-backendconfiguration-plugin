@@ -27,8 +27,22 @@
       </mat-button-toggle>
     </mat-button-toggle-group>
     <app-adhoc-filters *ngIf="!isHistoryView" [counts]="counts"></app-adhoc-filters>
+    <!-- Refresh (#1379, same as the task list's #taskListRefreshBtn): reloads
+         the active view with its current filters; disabled while in flight. -->
     <button
-      class="btn-primary btn-primary--icon-left ml-auto"
+      mat-icon-button
+      color="primary"
+      class="ml-auto"
+      id="backend-configuration-pn-adhoc-refresh"
+      [matTooltip]="'Refresh table' | translate"
+      [attr.aria-label]="'Refresh table' | translate"
+      [disabled]="refreshing"
+      (click)="refresh()"
+    >
+      <mat-icon>refresh</mat-icon>
+    </button>
+    <button
+      class="btn-primary btn-primary--icon-left"
       id="backend-configuration-pn-adhoc-new-task"
       (click)="openCreateTask()"
     >
@@ -55,4 +69,4 @@
   ></eform-pagination>
 </div>
 
-<router-outlet></router-outlet>
+<router-outlet (activate)="onOutletActivate($event)" (deactivate)="onOutletDeactivate()"></router-outlet>

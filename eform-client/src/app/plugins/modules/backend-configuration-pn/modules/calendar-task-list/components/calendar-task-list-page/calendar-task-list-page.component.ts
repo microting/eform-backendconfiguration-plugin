@@ -19,7 +19,7 @@ import {
 } from '../../../../services';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
 import {CalendarRepeatService} from '../../../calendar/services/calendar-repeat.service';
-import {mapResponseToCalendarTask} from '../../../calendar/services/calendar-task.mapper';
+import {assigneeDisplayNames, mapResponseToCalendarTask} from '../../../calendar/services/calendar-task.mapper';
 import {findLogboegerFolderId} from '../../../calendar/services/logboeger-folder.util';
 import {formatRepeatText} from '../../calendar-task-list-repeat.util';
 import {
@@ -80,9 +80,9 @@ export class CalendarTaskListPageComponent implements OnInit {
   // is only the edit modal's `workerTags`, which since #1295 is a NAME fallback — the
   // modal loads its own property-scoped teams for the picker, and names a task's
   // team from here when that property no longer offers it (`withRetainedTeams`).
-  // Rows of this list carry no `workerTagNames`, so this is the only source of that
-  // name; scoping it (to one of possibly several filtered properties) would render
-  // such a team as a bare id.
+  // Rows name their teams in `workerTagNames` (#1385), but this list stays the
+  // fallback for a tag a row could not name; scoping it (to one of possibly several
+  // filtered properties) would render such a team as a bare id.
   loadWorkerTags() {
     this.workerTagsService.getWorkerTags().subscribe(res => {
       if (res && res.success) {
@@ -267,7 +267,7 @@ export class CalendarTaskListPageComponent implements OnInit {
       this.tags.find(x => x.id === t.itemPlanningTagId)?.name ?? '',
       t.title ?? '',
       this.eforms.find(e => e.id === t.eformId)?.label ?? '',
-      (t.workerNames ?? []).join(', '),
+      assigneeDisplayNames(t).join(', '),
       (t.tags ?? []).join(', '),
       this.formatStartDate(t.taskDate),
       this.repeatTextForCsv(t),

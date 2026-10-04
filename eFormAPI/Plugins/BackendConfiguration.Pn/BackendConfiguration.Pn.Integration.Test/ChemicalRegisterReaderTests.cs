@@ -114,10 +114,10 @@ public class ChemicalRegisterReaderTests : ChemicalTestBase
     public async Task LookupBarcode_UpcAAndEan13FormsMatch()
     {
         // Stored as 13-digit EAN-13 ("0" + UPC-A, the central register's form), scanned as 12-digit UPC-A.
-        var upcA = ChemicalRegisterSeed.RandomDigits(12);
+        var upcA = ChemicalRegisterSeed.RandomGtin(12);
         var curatedAsEan13 = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Curated EAN-13", "3-333", barcode: "0" + upcA);
         // Stored as 12-digit UPC-A, scanned as its 13-digit EAN-13 form.
-        var upcA2 = ChemicalRegisterSeed.RandomDigits(12);
+        var upcA2 = ChemicalRegisterSeed.RandomGtin(12);
         var curatedAsUpcA = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Curated UPC-A", "3-334", barcode: upcA2);
 
         var byUpcA = await CreateSut().LookupBarcodeAsync(upcA);
@@ -132,16 +132,88 @@ public class ChemicalRegisterReaderTests : ChemicalTestBase
     }
 
     [Test]
+    public async Task LookupAndSearch_Gs1Scans_FindTheProductStoredAsEan13()
+    {
+        // GS1 Sunrise 2027: the pack carries a Digital Link QR or a DataMatrix; the register stores the EAN-13.
+        var ean13 = ChemicalRegisterSeed.RandomGtin(13);
+        var seeded = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Curated QR", "3-335", barcode: ean13);
+
+        foreach (var scanned in new[]
+                 {
+                     $"https://id.gs1.org/01/0{ean13}/10/LOT1?17=271231",
+                     $"(01)0{ean13}(10)LOT1",
+                     $"\u001d010{ean13}\u001d10LOT1",
+                     $"0{ean13}",
+                 })
+        {
+            var byLookup = await CreateSut().LookupBarcodeAsync(scanned);
+            var bySearch = await CreateSut().SearchAsync(scanned, page: 0, pageSize: 0);
+
+            Assert.That(byLookup.Select(e => e.ChemicalId), Is.EqualTo(new[] { seeded.ChemicalId }), scanned);
+            Assert.That(bySearch.Entries.Select(e => e.ChemicalId), Is.EqualTo(new[] { seeded.ChemicalId }), scanned);
+        }
+    }
+
+    [Test]
+    public async Task LookupBarcode_StoredAsGtin14_IsFoundByItsEan13()
+    {
+        var ean13 = ChemicalRegisterSeed.RandomGtin(13);
+        var seeded = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Curated GTIN-14", "3-336", barcode: "0" + ean13);
+
+        Assert.That((await CreateSut().LookupBarcodeAsync(ean13)).Select(e => e.ChemicalId), Is.EqualTo(new[] { seeded.ChemicalId }));
+    }
+
+    [Test]
+    public async Task LookupAndSearch_StoredUnderABadCheckDigit_IsFoundByItsExactDigitsOnly()
+    {
+        // The register is curated by hand: a typo'd check digit must stay findable by the printed digits.
+        var valid = ChemicalRegisterSeed.RandomGtin(13);
+        var bad = valid[..^1] + (char)('0' + (valid[^1] - '0' + 1) % 10);
+        var seeded = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Typo'd barcode", "3-337", barcode: bad);
+
+        Assert.That((await CreateSut().LookupBarcodeAsync(bad)).Select(e => e.ChemicalId), Is.EqualTo(new[] { seeded.ChemicalId }));
+        Assert.That((await CreateSut().SearchAsync(bad, page: 0, pageSize: 0)).Entries.Select(e => e.ChemicalId),
+            Is.EqualTo(new[] { seeded.ChemicalId }));
+        // Literal only: no GTIN-14 / UPC-A expansion, and the corrected GTIN is a different code.
+        Assert.That(await CreateSut().LookupBarcodeAsync("0" + bad), Is.Empty);
+        Assert.That(await CreateSut().LookupBarcodeAsync(valid), Is.Empty);
+    }
+
+    [Test]
+    public async Task LookupBarcode_StoredAsRawUpcE_IsFoundLiterally()
+    {
+        var upcE = "0" + ChemicalRegisterSeed.RandomDigits(6);
+        var seeded = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Raw UPC-E", "3-338", barcode: upcE);
+
+        Assert.That((await CreateSut().LookupBarcodeAsync(upcE)).Select(e => e.ChemicalId), Is.EqualTo(new[] { seeded.ChemicalId }));
+    }
+
+    [Test]
+    public async Task LookupBarcode_AllZeroPlaceholder_IsRejected()
+    {
+        await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Placeholder", "3-339", barcode: "0000000000000");
+
+        Assert.That(async () => await CreateSut().LookupBarcodeAsync("0000000000000"), Throws.InstanceOf<ArgumentException>());
+    }
+
+    [Test]
+    public void LookupAndSearch_JunkQr_Throws()
+    {
+        Assert.That(async () => await CreateSut().LookupBarcodeAsync("https://example.com/promo"), Throws.InstanceOf<ArgumentException>());
+        Assert.That(async () => await CreateSut().SearchAsync("https://example.com/promo", 0, 25), Throws.InstanceOf<ArgumentException>());
+    }
+
+    [Test]
     public async Task LookupBarcode_UnknownOrRemoved_IsEmpty_InvalidThrows()
     {
-        var barcode = ChemicalRegisterSeed.RandomDigits(13);
+        var barcode = ChemicalRegisterSeed.RandomGtin(13);
         var seeded = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Removed", "4-444", barcode: barcode);
         var chemical = await ChemicalsDbContext!.Chemicals.SingleAsync(c => c.Id == seeded.ChemicalId);
         chemical.WorkflowState = "removed";
         await ChemicalsDbContext.SaveChangesAsync();
 
         Assert.That(await CreateSut().LookupBarcodeAsync(barcode), Is.Empty);
-        Assert.That(await CreateSut().LookupBarcodeAsync(ChemicalRegisterSeed.RandomDigits(13)), Is.Empty);
+        Assert.That(await CreateSut().LookupBarcodeAsync(ChemicalRegisterSeed.RandomGtin(13)), Is.Empty);
         Assert.That(async () => await CreateSut().LookupBarcodeAsync("abc"), Throws.InstanceOf<ArgumentException>());
     }
 
@@ -149,7 +221,7 @@ public class ChemicalRegisterReaderTests : ChemicalTestBase
     public async Task Search_MatchesNameRegNoAndBarcode_Paged()
     {
         var token = $"Zq{Guid.NewGuid():N}"[..12];
-        var barcode = ChemicalRegisterSeed.RandomDigits(13);
+        var barcode = ChemicalRegisterSeed.RandomGtin(13);
         var regNo = $"R{Guid.NewGuid():N}"[..10];
         await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, $"{token} A", "5-001");
         await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, $"{token} B", "5-002");
