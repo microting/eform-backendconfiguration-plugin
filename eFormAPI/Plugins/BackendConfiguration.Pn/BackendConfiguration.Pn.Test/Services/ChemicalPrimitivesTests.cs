@@ -208,7 +208,7 @@ public class ChemicalPrimitivesTests
     [TestCase("123456789012345")]
     [TestCase("57012A4567892")]
     [TestCase("5701 234567892")]
-    [TestCase("5701234567892")]
+    [TestCase("00000000")]
     public void Normalize_RejectsNonBarcodes(string raw)
     {
         Assert.That(() => ChemicalBarcode.Normalize(raw), Throws.InstanceOf<ArgumentException>());

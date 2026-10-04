@@ -61,6 +61,11 @@ public class Gs1Tests
         new object[] { Fnc1 + "0105701234567899" + Fnc1 + "10ABC", "5701234567899" },
         new object[] { "]d20105701234567899", "5701234567899" },
         new object[] { "]Q30115701234567896", "15701234567896" },
+        new object[] { "]C10105701234567899" + Fnc1 + "10ABC", "5701234567899" },
+        // AIM symbology identifiers a hardware scanner prefixes to a plain EAN/UPC
+        new object[] { "]E05701234567899", "5701234567899" },
+        new object[] { "]E0012345678905", "012345678905" },
+        new object[] { "]E496385074", "96385074" },
     ];
 
     [TestCaseSource(nameof(Valid))]
@@ -95,6 +100,20 @@ public class Gs1Tests
         "0105701234567892",
         "01057012345678",                                 // truncated element string
         "WIFI:S:guest;T:WPA;P:secret;;",
+        // all-zero GTINs (GS1 forbids them; register placeholders must not match)
+        "00000000",
+        "000000000000",
+        "0000000000000",
+        "00000000000000",
+        "https://id.gs1.org/01/00000000000000",
+        "(01)00000000000000",
+        "]E00000000000000",
+        // symbology identifiers: unknown ones, or a known one with a bad payload
+        "]X05701234567899",
+        "]e05701234567899",
+        "]E05701234567892",
+        "]E4",
+        "]d2",
         new string('1', 5000),
     ];
 
@@ -144,11 +163,27 @@ public class Gs1Tests
     }
 
     [TestCase("https://example.com/hello")]
-    [TestCase("5701234567892")]
+    [TestCase("(01)05701234567892")]
     [TestCase("abc")]
+    [TestCase("12345")]
+    [TestCase("0000000000000")]
+    [TestCase("000000")]
     public void Candidates_Junk_Throws(string scanned)
     {
         Assert.That(() => ChemicalBarcode.Candidates(scanned), Throws.InstanceOf<ArgumentException>());
+    }
+
+    // Curated rows may carry a typo'd check digit or a raw UPC-E: digits-only input that
+    // is no valid GTIN is matched literally, never GTIN-normalised or expanded.
+    [TestCase("5701234567892")]
+    [TestCase("05701234567892")]
+    [TestCase("0123456")]
+    [TestCase("01234566")]
+    [TestCase("123456")]
+    public void Candidates_DigitsThatAreNoValidGtin_MatchOnlyLiterally(string stored)
+    {
+        Assert.That(ChemicalBarcode.Candidates($" {stored} "), Is.EqualTo(new[] { stored }));
+        Assert.That(ChemicalBarcode.Normalize(stored), Is.EqualTo(stored));
     }
 
     [TestCase(" 05701234567899 ", "5701234567899")]

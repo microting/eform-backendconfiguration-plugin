@@ -405,4 +405,15 @@ public class ChemicalsGrpcServiceMappingTests
             await sut.LookupBarcode(new ChemicalLookupBarcodeRequest { Barcode = "https://example.com/promo" }, Context()));
         Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.Unauthenticated));
     }
+
+    [Test]
+    public async Task LookupBarcode_DigitsWithABadCheckDigit_AreForwardedLiterally()
+    {
+        var sut = CreateSut();
+        _inventory.LookupBarcodeAsync(Caller, "5701234567892").Returns([StoredEntry()]);
+
+        var response = await sut.LookupBarcode(new ChemicalLookupBarcodeRequest { Barcode = " 5701234567892 " }, Context());
+
+        Assert.That(response.Entries.Single().ChemicalId, Is.EqualTo(11));
+    }
 }

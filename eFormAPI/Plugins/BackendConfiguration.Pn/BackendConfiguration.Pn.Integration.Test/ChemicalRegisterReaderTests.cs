@@ -164,6 +164,39 @@ public class ChemicalRegisterReaderTests : ChemicalTestBase
     }
 
     [Test]
+    public async Task LookupAndSearch_StoredUnderABadCheckDigit_IsFoundByItsExactDigitsOnly()
+    {
+        // The register is curated by hand: a typo'd check digit must stay findable by the printed digits.
+        var valid = ChemicalRegisterSeed.RandomGtin(13);
+        var bad = valid[..^1] + (char)('0' + (valid[^1] - '0' + 1) % 10);
+        var seeded = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Typo'd barcode", "3-337", barcode: bad);
+
+        Assert.That((await CreateSut().LookupBarcodeAsync(bad)).Select(e => e.ChemicalId), Is.EqualTo(new[] { seeded.ChemicalId }));
+        Assert.That((await CreateSut().SearchAsync(bad, page: 0, pageSize: 0)).Entries.Select(e => e.ChemicalId),
+            Is.EqualTo(new[] { seeded.ChemicalId }));
+        // Literal only: no GTIN-14 / UPC-A expansion, and the corrected GTIN is a different code.
+        Assert.That(await CreateSut().LookupBarcodeAsync("0" + bad), Is.Empty);
+        Assert.That(await CreateSut().LookupBarcodeAsync(valid), Is.Empty);
+    }
+
+    [Test]
+    public async Task LookupBarcode_StoredAsRawUpcE_IsFoundLiterally()
+    {
+        var upcE = "0" + ChemicalRegisterSeed.RandomDigits(6);
+        var seeded = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Raw UPC-E", "3-338", barcode: upcE);
+
+        Assert.That((await CreateSut().LookupBarcodeAsync(upcE)).Select(e => e.ChemicalId), Is.EqualTo(new[] { seeded.ChemicalId }));
+    }
+
+    [Test]
+    public async Task LookupBarcode_AllZeroPlaceholder_IsRejected()
+    {
+        await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Placeholder", "3-339", barcode: "0000000000000");
+
+        Assert.That(async () => await CreateSut().LookupBarcodeAsync("0000000000000"), Throws.InstanceOf<ArgumentException>());
+    }
+
+    [Test]
     public void LookupAndSearch_JunkQr_Throws()
     {
         Assert.That(async () => await CreateSut().LookupBarcodeAsync("https://example.com/promo"), Throws.InstanceOf<ArgumentException>());

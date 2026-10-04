@@ -419,4 +419,16 @@ public class ChemicalsControllerTests
         Assert.That(lookup.Message, Does.StartWith("ErrorWhileSearchingChemicalRegister"));
         Assert.That(_inventory.ReceivedCalls(), Is.Empty);
     }
+
+    [Test]
+    public async Task LookupBarcode_DigitsWithABadCheckDigit_AreForwardedLiterally()
+    {
+        var sut = CreateSut();
+        _inventory.LookupBarcodeAsync(Web, "5701234567892").Returns([StoredEntry()]);
+
+        var result = await sut.LookupBarcode("5701234567892");
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(result.Model.Single().ChemicalId, Is.EqualTo(11));
+    }
 }
