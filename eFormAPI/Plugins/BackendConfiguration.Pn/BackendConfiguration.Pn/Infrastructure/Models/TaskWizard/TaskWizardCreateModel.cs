@@ -31,5 +31,13 @@ public class TaskWizardCreateModel
     [JsonIgnore]
     public bool HasWorkerTags { get; set; }
 
+    /// <summary>
+    /// Output, set by the wizard's CreateTask/UpdateTask (#1384): true when a language of
+    /// the task's sites keeps the Danish text only, because translation was unavailable.
+    /// The calendar passes it on as a notice. Never read from the request body.
+    /// </summary>
+    [JsonIgnore]
+    public bool TranslationsIncomplete { get; set; }
+
     public bool ComplianceEnabled { get; set; }
 }

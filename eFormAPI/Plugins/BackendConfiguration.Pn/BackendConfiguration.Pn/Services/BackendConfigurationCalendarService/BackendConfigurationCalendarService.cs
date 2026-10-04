@@ -17,6 +17,7 @@ using CalendarChangeNotification;
 using CalendarOccurrenceRetraction;
 using CalendarPastSeriesBackfill;
 using WorkerTagMembership;
+using TaskTranslation;
 using EventDeployService;
 using Infrastructure.Models.Calendar;
 using Infrastructure.Models.TaskWizard;
@@ -1781,6 +1782,10 @@ public class BackendConfigurationCalendarService(
                 return new OperationDataResult<int>(false, result.Message);
             }
 
+            // #1384 — the wizard filled the explicit sites' languages; the reconcile
+            // below fills the teams'. Either one missing a translation is a notice.
+            var translationsIncomplete = wizardModel.TranslationsIncomplete;
+
             // Find the AreaRulePlanning created by TaskWizard for this specific task
             var latestArp = await backendConfigurationPnDbContext.AreaRulePlannings
                 .Where(x => x.PropertyId == createModel.PropertyId)
@@ -1874,7 +1879,7 @@ public class BackendConfigurationCalendarService(
                 // Reconcile the new event so an already-deployed current week
                 // picks up the effective recipient set (explicit PlanningSites ∪
                 // live worker-tag members). Idempotent; no-op if removed/inactive.
-                await reconciliationService.ReconcileEventAsync(latestArp.Id);
+                translationsIncomplete |= await reconciliationService.ReconcileEventAsync(latestArp.Id);
             }
 
             // latestArp may be null in the rare edge case where TaskWizard
@@ -1882,7 +1887,8 @@ public class BackendConfigurationCalendarService(
             // EformId resolution skew). Return success with id=0 — frontend
             // treats 0 as "no id, skip post-save uploads".
             return new OperationDataResult<int>(true,
-                localizationService.GetString("CalendarTaskCreatedSuccessfully"),
+                TaskTranslationNotice.Append(localizationService,
+                    localizationService.GetString("CalendarTaskCreatedSuccessfully"), translationsIncomplete),
                 latestArp?.Id ?? 0);
         }
         catch (Exception e)
@@ -2167,6 +2173,9 @@ public class BackendConfigurationCalendarService(
                 return wizardResult;
             }
 
+            // #1384 — as in CreateTask: the wizard's sites, then the reconcile's teams.
+            var translationsIncomplete = wizardModel.TranslationsIncomplete;
+
             // Persist description on the linked Planning row (not on ARP),
             // plus the repeat-end + multi-day-weekday CSV fields on the ARP.
             // CSV is written unconditionally so switching from a custom
@@ -2432,7 +2441,7 @@ public class BackendConfigurationCalendarService(
                 // worker-tag links) is mutated, pick up/retract cases for future
                 // already-deployed occurrences. Idempotent; no-op if removed/inactive.
                 // Only the "all" scope reaches here — this/thisAndFollowing return earlier.
-                await reconciliationService.ReconcileEventAsync(updateModel.Id);
+                translationsIncomplete |= await reconciliationService.ReconcileEventAsync(updateModel.Id);
             }
 
             // Update or create CalendarConfiguration for calendar-specific fields
@@ -2466,7 +2475,8 @@ public class BackendConfigurationCalendarService(
             }
 
             return new OperationResult(true,
-                localizationService.GetString("CalendarTaskUpdatedSuccessfully"));
+                TaskTranslationNotice.Append(localizationService,
+                    localizationService.GetString("CalendarTaskUpdatedSuccessfully"), translationsIncomplete));
         }
         catch (Exception e)
         {
@@ -2969,7 +2979,8 @@ public class BackendConfigurationCalendarService(
         }
 
         return new OperationResult(true,
-            localizationService.GetString("CalendarTaskUpdatedSuccessfully"));
+            TaskTranslationNotice.Append(localizationService,
+                localizationService.GetString("CalendarTaskUpdatedSuccessfully"), wizardModel.TranslationsIncomplete));
     }
 
     // #1297 — rejects an UpdateTask whose BoardId is a calendar of a DIFFERENT

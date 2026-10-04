@@ -682,6 +682,58 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             }
         }
 
+        /// <summary>
+        /// Calendar follow-up of a device-user edit. Events carrying a tag the worker joined or
+        /// left are reconciled (deploy/retract plus translation). A language change (#1384)
+        /// deploys nothing: it only fills the missing title/description translations, in the new
+        /// language, of the events this worker receives - assigned explicitly, or through a team
+        /// on a property the worker is linked to (the resolver's property scope).
+        /// </summary>
+        /// <param name="newLanguage">The worker's new language when it changed, else null.</param>
+        private static async Task SyncCalendarAfterDeviceUserUpdateAsync(
+            Services.CalendarAssignmentReconciliation.ICalendarAssignmentReconciliationService? reconciliationService,
+            Services.TaskTranslation.ITaskTranslationFiller? translationFiller,
+            BackendConfigurationPnDbContext backendConfigurationPnDbContext,
+            int siteId,
+            List<int> changedTagIds,
+            List<int> currentTagIds,
+            Language? newLanguage)
+        {
+            if (changedTagIds.Count > 0 && reconciliationService != null)
+            {
+                await reconciliationService.ReconcileEventsForWorkerTagsAsync(changedTagIds).ConfigureAwait(false);
+            }
+
+            // Danish is the source language and an inactive language is never a target.
+            if (translationFiller == null || newLanguage is not { IsActive: true }
+                || string.Equals((newLanguage.LanguageCode ?? "").Split('-')[0], "da", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            var propertyIds = await backendConfigurationPnDbContext.PropertyWorkers
+                .Where(x => x.WorkerId == siteId && x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Select(x => x.PropertyId)
+                .ToListAsync().ConfigureAwait(false);
+
+            var events = await backendConfigurationPnDbContext.AreaRulePlannings
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed && x.Status)
+                .Where(x =>
+                    x.PlanningSites.Any(y => y.WorkflowState != Constants.WorkflowStates.Removed && y.SiteId == siteId)
+                    || (propertyIds.Contains(x.PropertyId)
+                        && x.AreaRulePlanningWorkerTags.Any(wt => wt.WorkflowState != Constants.WorkflowStates.Removed
+                                                                  && currentTagIds.Contains(wt.TagId))))
+                .Select(x => new { x.AreaRuleId, x.ItemPlanningId })
+                .ToListAsync().ConfigureAwait(false);
+
+            // One filler for all events: once the translator fails, the rest are not attempted.
+            foreach (var evt in events)
+            {
+                await translationFiller.FillMissingForEventAsync(evt.AreaRuleId, evt.ItemPlanningId, [siteId])
+                    .ConfigureAwait(false);
+            }
+        }
+
         public static async Task<OperationResult> UpdateDeviceUser(DeviceUserModel deviceUserModel, Core core,
             int userId,
             IUserService userService,
@@ -691,7 +743,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             BaseDbContext baseDbContext,
             ILogger logger,
             ItemsPlanningPnDbContext itemsPlanningPnDbContext,
-            Services.CalendarAssignmentReconciliation.ICalendarAssignmentReconciliationService? reconciliationService = null)
+            Services.CalendarAssignmentReconciliation.ICalendarAssignmentReconciliationService? reconciliationService = null,
+            Services.TaskTranslation.ITaskTranslationFiller? translationFiller = null)
         {
             deviceUserModel.UserFirstName = deviceUserModel.UserFirstName.Trim();
             deviceUserModel.UserLastName = deviceUserModel.UserLastName.Trim();
@@ -891,15 +944,12 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             await siteTag.Create(sdkDbContext);
                         }
 
-                        // Reconcile already-deployed future occurrences of any event referencing a changed worker tag
-                        var changedTagIds = forRemove.Concat(forCreate).Distinct().ToList();
-                        if (changedTagIds.Count > 0 && reconciliationService != null)
-                        {
-                            await reconciliationService.ReconcileEventsForWorkerTagsAsync(changedTagIds);
-                        }
+                        // Read before SiteUpdate writes the new language.
+                        var languageChanged = site.LanguageId != language.Id;
 
                         var isUpdated = await core.SiteUpdate(deviceUserModel.SiteMicrotingUid, fullName, deviceUserModel.UserFirstName,
                             deviceUserModel.UserLastName, deviceUserModel.WorkerEmail, deviceUserModel.LanguageCode).ConfigureAwait(false);
+
 
                         if (deviceUserModel.PinCode != "****") {
                             worker.PinCode = deviceUserModel.PinCode;
@@ -1021,6 +1071,33 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                         $"[UpdateDeviceUser] CreateAsync failed for email={deviceUserModel.WorkerEmail} errors={string.Join(",", result.Errors.Select(e => e.Description))}");
                                     user = null;
                                 }
+                            }
+                        }
+
+                        // The calendar follow-up of this save: reconcile the events of a changed worker tag
+                        // and, when the language changed, fill this worker's missing task translations
+                        // (#1384). The LAST step of every successful path - after SiteUpdate, so the
+                        // filler reads the new language, and after the login writes, so a failure here
+                        // cannot leave them half done. It never fails the save. A failure is NOT retried
+                        // by this worker's next save (the tags and language are stored by then, so that
+                        // save sees no change); the affected events catch up when they are next
+                        // reconciled - a calendar save of the event or a later tag change of its team.
+                        // Before #1384 a throwing reconcile failed the save after the tags were written,
+                        // with the same gap.
+                        var changedTagIds = forRemove.Concat(forCreate).Distinct().ToList();
+                        async Task SyncCalendarAsync()
+                        {
+                            try
+                            {
+                                await SyncCalendarAfterDeviceUserUpdateAsync(reconciliationService, translationFiller,
+                                    backendConfigurationPnDbContext, site.Id, changedTagIds, deviceUserModel.Tags,
+                                    languageChanged ? language : null).ConfigureAwait(false);
+                            }
+                            catch (Exception e)
+                            {
+                                logger.LogWarning(e,
+                                    "[UpdateDeviceUser] calendar follow-up failed for site {SiteId}; its events catch up on their next reconcile",
+                                    site.Id);
                             }
                         }
 
@@ -1303,6 +1380,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                     {
                                         await EnsureFallbackSecurityGroupAsync(baseDbContext, user.Id).ConfigureAwait(false);
                                     }
+                                    await SyncCalendarAsync().ConfigureAwait(false);
                                     return new OperationDataResult<int>(true, siteDto.SiteId);
                                 }
 
@@ -1442,6 +1520,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                     {
                                         await EnsureFallbackSecurityGroupAsync(baseDbContext, user.Id).ConfigureAwait(false);
                                     }
+                                    await SyncCalendarAsync().ConfigureAwait(false);
                                     return new OperationDataResult<int>(true, siteDto.SiteId);
                                 }
                                 catch (Exception e)
@@ -1458,6 +1537,11 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         if (user != null)
                         {
                             await EnsureFallbackSecurityGroupAsync(baseDbContext, user.Id).ConfigureAwait(false);
+                        }
+
+                        if (isUpdated)
+                        {
+                            await SyncCalendarAsync().ConfigureAwait(false);
                         }
 
                         return isUpdated
