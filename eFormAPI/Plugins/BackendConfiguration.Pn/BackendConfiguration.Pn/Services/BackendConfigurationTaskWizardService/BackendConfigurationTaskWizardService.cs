@@ -1628,20 +1628,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 .ToListAsync().ConfigureAwait(false);
             foreach (var planningCaseSite in planningCaseSites)
             {
-                var result =
-                    await sdkDbContext.Cases.SingleOrDefaultAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId)
-                        .ConfigureAwait(false);
-                if (result is { MicrotingUid: { } })
-                {
-                    await retractCase!((int)result.MicrotingUid).ConfigureAwait(false);
-                }
-                else
-                {
-                    var clSites = await sdkDbContext.CheckListSites.SingleAsync(x =>
-                        x.Id == planningCaseSite.MicrotingCheckListSitId).ConfigureAwait(false);
-
-                    await retractCase!(clSites.MicrotingUid).ConfigureAwait(false);
-                }
+                await retractCase!(await RetractionUidOfAsync(planningCaseSite, sdkDbContext).ConfigureAwait(false))
+                    .ConfigureAwait(false);
             }
         }
 
@@ -1687,6 +1675,42 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         {
             await compliance.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>
+    /// The MicrotingUid a task delete retracts for one deployment. The legacy Type9 shape
+    /// (MicrotingSdkCaseId holds the CheckListSite's MicrotingUid, not a Cases.Id) is
+    /// recognised first, as <c>BackendConfigurationPropertyAreasServiceHelper.ResolvePlannedCaseUidAsync</c>
+    /// does, so its uid is never read as the id of an unrelated case. Otherwise the case's
+    /// uid, falling back to the CheckListSite's; a CheckListSite that does not exist
+    /// throws, which fails the delete before the calendar-side rows go.
+    /// </summary>
+    internal static async Task<int> RetractionUidOfAsync(
+        Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningCaseSite planningCaseSite,
+        Microting.eForm.Infrastructure.MicrotingDbContext sdkDbContext)
+    {
+        if (planningCaseSite.MicrotingCheckListSitId != 0)
+        {
+            var checkListSiteUid = await sdkDbContext.CheckListSites.AsNoTracking()
+                .Where(x => x.Id == planningCaseSite.MicrotingCheckListSitId)
+                .Select(x => (int?)x.MicrotingUid)
+                .FirstOrDefaultAsync().ConfigureAwait(false);
+            if (checkListSiteUid == planningCaseSite.MicrotingSdkCaseId)
+            {
+                return checkListSiteUid.Value;
+            }
+        }
+
+        var sdkCase = await sdkDbContext.Cases.SingleOrDefaultAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId)
+            .ConfigureAwait(false);
+        if (sdkCase is { MicrotingUid: { } uid })
+        {
+            return uid;
+        }
+
+        var checkListSite = await sdkDbContext.CheckListSites.SingleAsync(x =>
+            x.Id == planningCaseSite.MicrotingCheckListSitId).ConfigureAwait(false);
+        return checkListSite.MicrotingUid;
     }
 
     /// <summary>

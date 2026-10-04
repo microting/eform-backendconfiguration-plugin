@@ -29,6 +29,10 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using NSubstitute;
 using BcPlanningSite = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.PlanningSite;
+using PlanningCaseSite = Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningCaseSite;
+using SdkCase = Microting.eForm.Infrastructure.Data.Entities.Case;
+using SdkCheckListSite = Microting.eForm.Infrastructure.Data.Entities.CheckListSite;
+using SdkSite = Microting.eForm.Infrastructure.Data.Entities.Site;
 
 /// <summary>
 /// #1376 — <see cref="BackendConfigurationTaskWizardService.DeleteTaskDeferredRetraction"/>
@@ -240,6 +244,77 @@ public class TaskWizardDeleteWithoutPlanningTests : TestBaseSetup
             Assert.That(await StateOf(db.AreaRulePlanningTags, tag.Id), Is.Not.EqualTo(Constants.WorkflowStates.Removed));
             Assert.That(await StateOf(db.AreaRulePlannings, arp.Id), Is.Not.EqualTo(Constants.WorkflowStates.Removed));
         });
+    }
+
+    /// <summary>
+    /// The legacy Type9 link stores the CheckListSite's MicrotingUid in MicrotingSdkCaseId.
+    /// Here that uid equals the id of an unrelated live case: the delete retracts the
+    /// CheckListSite's uid, never the unrelated case's.
+    /// </summary>
+    [Test]
+    public async Task RetractionUid_LegacyLinkWhoseUidCollidesWithACaseId_IsTheCheckListSites()
+    {
+        var siteId = await SeedSdkSite();
+        var unrelatedCase = new SdkCase
+        {
+            SiteId = siteId, Status = 66, MicrotingUid = Random.Shared.Next(100_000, 900_000),
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext!.Cases.AddAsync(unrelatedCase);
+        await MicrotingDbContext.SaveChangesAsync();
+        var checkListSite = new SdkCheckListSite
+        {
+            SiteId = siteId, MicrotingUid = unrelatedCase.Id, WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext.CheckListSites.AddAsync(checkListSite);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        var uid = await BackendConfigurationTaskWizardService.RetractionUidOfAsync(
+            new PlanningCaseSite { MicrotingSdkCaseId = unrelatedCase.Id, MicrotingCheckListSitId = checkListSite.Id },
+            MicrotingDbContext);
+
+        Assert.That(uid, Is.EqualTo(checkListSite.MicrotingUid));
+        Assert.That(uid, Is.Not.EqualTo(unrelatedCase.MicrotingUid));
+    }
+
+    /// <summary>An items-planning link (MicrotingSdkCaseId is a Cases.Id) retracts the case's uid.</summary>
+    [Test]
+    public async Task RetractionUid_CaseLink_IsTheCasesUid()
+    {
+        var siteId = await SeedSdkSite();
+        var sdkCase = new SdkCase
+        {
+            SiteId = siteId, Status = 66, MicrotingUid = Random.Shared.Next(100_000, 900_000),
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext!.Cases.AddAsync(sdkCase);
+        await MicrotingDbContext.SaveChangesAsync();
+        var checkListSite = new SdkCheckListSite
+        {
+            SiteId = siteId, MicrotingUid = sdkCase.MicrotingUid!.Value + 1,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext.CheckListSites.AddAsync(checkListSite);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        var uid = await BackendConfigurationTaskWizardService.RetractionUidOfAsync(
+            new PlanningCaseSite { MicrotingSdkCaseId = sdkCase.Id, MicrotingCheckListSitId = checkListSite.Id },
+            MicrotingDbContext);
+
+        Assert.That(uid, Is.EqualTo(sdkCase.MicrotingUid));
+    }
+
+    private async Task<int> SeedSdkSite()
+    {
+        var language = await MicrotingDbContext!.Languages.FirstAsync();
+        var site = new SdkSite
+        {
+            Name = $"wizard-delete-site-{Guid.NewGuid()}", MicrotingUid = null,
+            LanguageId = language.Id, WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext.Sites.AddAsync(site);
+        await MicrotingDbContext.SaveChangesAsync();
+        return site.Id;
     }
 
     private static Task<string> StateOf<T>(IQueryable<T> set, int id) where T : PnBase
