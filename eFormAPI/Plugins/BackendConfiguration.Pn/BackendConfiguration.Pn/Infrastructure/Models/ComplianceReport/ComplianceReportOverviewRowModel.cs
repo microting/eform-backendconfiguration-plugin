@@ -37,12 +37,14 @@ public class ComplianceReportOverviewRowModel
 
     /// <summary>
     /// Not completed AND dated STRICTLY BEFORE today. A task due <i>today</i> and
-    /// not done raises <see cref="DueTotal"/> (and so lowers the percentage) but is
-    /// NOT overdue.
+    /// not done is NOT overdue, and is not in <see cref="DueTotal"/> either (#1374).
     /// </summary>
     public int Overdue { get; set; }
 
-    /// <summary>Rows that have fallen due: <c>!(startOfDay(taskDate) &gt; today)</c>.</summary>
+    /// <summary>
+    /// Rows that have fallen due: dated strictly before today, or dated today and
+    /// completed (#1374). An open task dated today does not lower the percentage.
+    /// </summary>
     public int DueTotal { get; set; }
 
     /// <summary>Due rows that are also completed — the numerator of <see cref="CompliancePct"/>.</summary>

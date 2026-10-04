@@ -13,6 +13,7 @@
           required
           matInput
           [matDatepicker]="pickerDoneAt"
+          [max]="maxDate"
           [value]="replyElement.doneAt"
           (dateChange)="replyElement.doneAt = $event.value"
           (click)="pickerDoneAt.open()"

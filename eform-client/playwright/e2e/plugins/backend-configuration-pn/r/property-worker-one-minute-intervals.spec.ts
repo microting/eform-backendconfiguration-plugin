@@ -1,4 +1,4 @@
-import { expect, Page, Response, test } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
 import {
@@ -9,7 +9,6 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
-import { customerDatabase, runMariadbSql } from '../db-helpers';
 import { ActionMenuItem, openRowActionMenu } from '../row-action-menu';
 import {
   API_TIMEOUT,
@@ -20,27 +19,19 @@ import {
   waitForApiResponse,
 } from '../wait-helpers';
 
-// "Use 1-minute intervals" (#useOneMinuteIntervals) in the property-worker
-// create/edit modal — Advanced settings on the Timeregistration tab.
+// Every worker registers in 1-minute intervals (eform-angular-timeplanning-plugin
+// #1740), so the property-worker create/edit modal no longer offers a
+// "Use 1-minute intervals" checkbox, nor the "Advanced settings" section that
+// held only it.
 //
-// WHAT THIS PROTECTS: the server hardcodes UseOneMinuteIntervals = true on
-// every AssignedSite row it creates (BackendConfigurationAssignmentWorkerServiceHelper,
+// WHAT THIS PROTECTS: the server hardcodes UseOneMinuteIntervals = true on every
+// AssignedSite row it creates (BackendConfigurationAssignmentWorkerServiceHelper,
 // both CreateDeviceUser and the UpdateDeviceUser path that mints a row when time
-// registration is switched on for the first time). DeviceUserModel.UseOneMinuteIntervals
-// is accepted for wire compatibility but read by no server path.
-//
-// WHY IT MATTERS: an editable checkbox over a hardcoded server value is a lie. An
-// admin who left it unticked would be told the worker registers in 5-minute steps
-// while the row was saved in one-minute mode, and the flag is ONE-WAY — the server
-// never turns it back off — so the mistake is not correctable afterwards. The UI
-// must therefore show the outcome (ticked) and refuse the choice (disabled)
-// whenever the worker has no saved AssignedSite yet, which is exactly what
-// PropertyWorkerCreateEditModalComponent.applyOneMinuteIntervalsRule() does by
-// locking the control while `!selectedAssignedSite.id`.
-//
-// The first three tests below are the three ways a user reaches that state. The
-// ones after them pin what the edit dialog shows while its own requests are
-// still in flight, by holding those requests with page.route.
+// registration is switched on for the first time), and the flag can no longer be
+// changed from the UI. A checkbox over a value nobody can choose is a lie, so the
+// tests below assert it is gone on each way a user reaches the Timeregistration
+// tab, and that the created row really is in one-minute mode. The last test pins
+// what the edit dialog shows while its languages request is still in flight.
 
 const TIME_REGISTRATION_TAB = 'Timeregistrering';
 
@@ -86,107 +77,47 @@ function dialog(page: Page) {
   return page.locator('mat-dialog-container');
 }
 
-function oneMinuteIntervalsCheckbox(page: Page) {
-  return dialog(page).locator('#useOneMinuteIntervals');
-}
-
-/** The native input mat-checkbox renders — the element that actually carries checked/disabled. */
-function oneMinuteIntervalsInput(page: Page) {
-  return oneMinuteIntervalsCheckbox(page).locator('input[type="checkbox"]');
-}
-
 /**
- * Selects the modal's Timeregistration tab. Its nested "General" sub-tab (which
- * holds Advanced settings) is the sub-group's default, so no second click is
- * needed. The label is unique across every tab in the dialog on purpose: a
- * `.first()` here could silently land on a nested sub-tab instead.
- *
- * `via: 'keyboard'` is for while a request is held: the app's LoaderInterceptor
- * puts a full-screen spinner overlay over everything while ANY request is
- * pending, so a pointer click would never reach the tab. Focusing the tab and
- * pressing Enter is the keyboard path mat-tab-group supports for every user.
+ * Selects the modal's Timeregistration tab. Its nested "General" sub-tab is the
+ * sub-group's default, so no second click is needed. The label is unique across
+ * every tab in the dialog on purpose: a `.first()` here could silently land on a
+ * nested sub-tab instead.
  */
-async function openTimeRegistrationTab(page: Page, via: 'pointer' | 'keyboard' = 'pointer'): Promise<void> {
+async function openTimeRegistrationTab(page: Page): Promise<void> {
   const tab = dialog(page).locator('.mat-mdc-tab').filter({ hasText: TIME_REGISTRATION_TAB });
-  if (via === 'keyboard') {
-    await tab.press('Enter', { timeout: UI_TIMEOUT });
-  } else {
-    await tab.click({ timeout: UI_TIMEOUT });
-  }
+  await tab.click({ timeout: UI_TIMEOUT });
   await expect(tab, 'Timeregistration tab must become the selected tab').toHaveAttribute(
     'aria-selected',
     'true',
     { timeout: UI_TIMEOUT }
   );
-  // Post-condition of the tab switch: the Advanced-settings checkbox is on screen.
-  // It only renders for a non-resigned worker when the current user is admin, so
-  // this also proves the admin gate is satisfied rather than assuming it.
+  // Post-condition of the tab switch: the General sub-tab's last section is on
+  // screen. The 1-minute checkbox used to sit right below it, so the absence
+  // checks that follow look at a rendered tab, not one still switching.
   await expect(
-    oneMinuteIntervalsCheckbox(page),
-    'Advanced settings / "Use 1-minute intervals" must render for an admin'
+    dialog(page).locator('#isManager'),
+    'the Timeregistration General sub-tab must render ("Is manager")'
   ).toBeVisible({ timeout: UI_TIMEOUT });
 }
 
 /**
- * Both halves of the invariant, asserted separately: ticked (the state the server
- * will save) AND disabled (no choice offered). Neither is inferred from the other —
- * a locked-but-unticked box and an editable-but-ticked box are different defects.
- * Ticked also means NOT indeterminate: the native input keeps its `checked` flag
- * underneath a mixed display, so `toBeChecked()` alone would not notice a box
- * still showing "unknown".
+ * The 1-minute choice is gone from the open dialog: no checkbox, no label, no
+ * section. The CI user's UI is Danish, so the texts are the da.ts translations of
+ * 'Use 1-minute intervals' and 'Advanced settings'.
  */
-async function expectCheckedAndLocked(page: Page, context: string): Promise<void> {
-  const input = oneMinuteIntervalsInput(page);
-  await expect(input, `${context}: "Use 1-minute intervals" must be checked`).toBeChecked({
-    timeout: UI_TIMEOUT,
-  });
-  await expect(input, `${context}: "Use 1-minute intervals" must not be indeterminate`).not.toBeChecked({
-    indeterminate: true,
-    timeout: UI_TIMEOUT,
-  });
-  await expect(input, `${context}: "Use 1-minute intervals" must be disabled`).toBeDisabled({
-    timeout: UI_TIMEOUT,
-  });
-}
-
-const ASSIGNED_SITES_PATH = '/api/time-planning-pn/settings/assigned-sites';
-
-/** The edit dialog's saved-row GET — not the singular `assigned-site` PUT that saves it. */
-function isAssignedSiteGet(r: Response): boolean {
-  return new URL(r.url()).pathname.endsWith(ASSIGNED_SITES_PATH) && r.request().method() === 'GET';
-}
-
-/**
- * Puts a saved AssignedSite back into 5-minute mode, straight in the CI database.
- *
- * No API can do this any more, which is the point of the PR: every create path
- * hardcodes UseOneMinuteIntervals = true, and TimePlanning's updateAssignedSite
- * ORs the incoming flag into the stored one (one-way). Yet every site set up
- * before one-minute intervals became the default still looks exactly like this in
- * production, and the edit dialog has to handle it.
- *
- * Runs through runMariadbSql (../db-helpers.ts), which documents how the spec
- * reaches CI's MariaDB container. The schema is the time-planning plugin's, under
- * the customer number the database-configuration step sets up. Tests run in CI
- * only (CLAUDE.md).
- */
-async function setSavedOneMinuteIntervalsToFalse(assignedSiteId: number): Promise<void> {
-  if (!Number.isInteger(assignedSiteId) || assignedSiteId <= 0) {
-    throw new Error(`Refusing to build SQL for AssignedSite id ${String(assignedSiteId)}`);
-  }
-  const database = customerDatabase('eform-angular-time-planning-plugin');
-  const sql =
-    `UPDATE AssignedSites SET UseOneMinuteIntervals = 0 ` +
-    `WHERE Id = ${assignedSiteId} AND WorkflowState <> 'removed'; SELECT ROW_COUNT();`;
-  const stdout = await runMariadbSql(
-    sql,
-    `put AssignedSite ${assignedSiteId} back into 5-minute mode`,
-    database
-  );
-  expect(
-    stdout.trim(),
-    `exactly one active AssignedSite row (id ${assignedSiteId}) must have been switched to 5-minute mode`
-  ).toBe('1');
+async function expectNoOneMinuteChoice(page: Page, context: string): Promise<void> {
+  await expect(
+    dialog(page).locator('#useOneMinuteIntervals'),
+    `${context}: the "Use 1-minute intervals" checkbox must not render`
+  ).toHaveCount(0, { timeout: UI_TIMEOUT });
+  await expect(
+    dialog(page).getByText('Brug 1-minutters intervaller'),
+    `${context}: no "Use 1-minute intervals" label may remain`
+  ).toHaveCount(0, { timeout: UI_TIMEOUT });
+  await expect(
+    dialog(page).getByText('Avancerede indstillinger'),
+    `${context}: the "Advanced settings" section held only the checkbox and must be gone`
+  ).toHaveCount(0, { timeout: UI_TIMEOUT });
 }
 
 /**
@@ -199,14 +130,14 @@ async function cancelEditModal(workersPage: BackendConfigurationPropertyWorkersP
   await cancelBtn.waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
 }
 
-test.describe.serial('Property-worker 1-minute intervals are locked on', () => {
+test.describe.serial('Property-worker modal offers no 1-minute intervals choice', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('http://localhost:4200');
     // login() already waits for #newEFormBtn, so the app is loaded when it returns.
     await new LoginPage(page).login();
   });
 
-  test('the create modal shows it checked and locked, and sends exactly that', async ({ page }) => {
+  test('the create modal offers no 1-minute choice', async ({ page }) => {
     // 5 min: login (up to 2 min on a cold app), one property create, and one
     // device-user create — the SDK provisioning call alone gets SLOW_API_TIMEOUT
     // (60s), followed by the assignment POST and the list refresh (30s each).
@@ -224,33 +155,9 @@ test.describe.serial('Property-worker 1-minute intervals are locked on', () => {
     // property — everything except pressing Create.
     await workersPage.openCreateModal(timeRegWorker);
     await openTimeRegistrationTab(page);
-    await expectCheckedAndLocked(page, 'create modal');
-
-    // The payload must carry exactly what the checkbox shows: true. It used to say
-    // false while the box showed checked — the component mirrors form valueChanges
-    // into the model, one such emission captured the control's default false before
-    // the rule ticked and locked it, and a disabled control is absent from
-    // form.value, so nothing overwrote the stale value. The server overrules it
-    // today (create hardcodes true), but a payload contradicting the UI is the same
-    // lie this spec exists to catch, and it would persist the day that changes.
-    const createRequest = waitForApiResponse(
-      page,
-      'PUT /api/backend-configuration-pn/properties/assignment/create-device-user (create payload)',
-      r =>
-        r.url().includes('/api/backend-configuration-pn/properties/assignment/create-device-user') &&
-        r.request().method() === 'PUT',
-      SLOW_API_TIMEOUT
-    );
-    // Awaited after closeCreateModal() below, which can itself throw first.
-    ignoreUnhandledRejections(createRequest);
+    await expectNoOneMinuteChoice(page, 'create modal');
 
     await workersPage.closeCreateModal();
-
-    const createBody = JSON.parse((await createRequest).request().postData() || '{}');
-    expect(
-      createBody.useOneMinuteIntervals,
-      'the create payload must say what the checked, locked box shows: useOneMinuteIntervals = true'
-    ).toBe(true);
 
     await expect(
       page.locator('.mat-mdc-row').filter({ hasText: timeRegWorkerFullName }),
@@ -258,7 +165,7 @@ test.describe.serial('Property-worker 1-minute intervals are locked on', () => {
     ).toHaveCount(1, { timeout: UI_TIMEOUT });
   });
 
-  test('reopening the created worker shows one-minute mode locked, and saving sends exactly that', async ({ page }) => {
+  test('the created worker is saved in one-minute mode and its edit modal offers no choice', async ({ page }) => {
     // 4 min: login, one edit-modal round trip (row action menu, the modal's
     // assigned-site GET, form-ready), then one save: update-device-user (SDK-backed,
     // SLOW_API_TIMEOUT), the assigned-site PUT and the list refresh.
@@ -273,7 +180,7 @@ test.describe.serial('Property-worker 1-minute intervals are locked on', () => {
       page,
       'GET /api/time-planning-pn/settings/assigned-sites (edit modal loads the saved AssignedSite)',
       r =>
-        r.url().includes('/api/time-planning-pn/settings/assigned-sites') &&
+        new URL(r.url()).pathname.endsWith('/api/time-planning-pn/settings/assigned-sites') &&
         r.request().method() === 'GET',
       API_TIMEOUT
     );
@@ -282,9 +189,8 @@ test.describe.serial('Property-worker 1-minute intervals are locked on', () => {
 
     await workersPage.openEditModalFor(timeRegWorkerFullName);
 
-    // What the UI was handed: a real, saved row that is in one-minute mode. This
-    // rules out the alternative reading of a locked checkbox — that no row exists
-    // yet — so the lock below can only be the one-way rule on a saved `true`.
+    // With the checkbox gone, the saved row is the only place the mode shows:
+    // creating the worker must have saved it in one-minute mode.
     const assignedSiteResponse = await assignedSiteRequest;
     expect(assignedSiteResponse.status(), 'assigned-sites GET status').toBe(200);
     const assignedSiteBody = await assignedSiteResponse.json();
@@ -296,14 +202,10 @@ test.describe.serial('Property-worker 1-minute intervals are locked on', () => {
     ).toBe(true);
 
     await openTimeRegistrationTab(page);
-    await expectCheckedAndLocked(page, 'edit modal for a worker whose AssignedSite is saved in one-minute mode');
+    await expectNoOneMinuteChoice(page, 'edit modal for a worker with a saved AssignedSite');
 
-    // Saving from the edit dialog sends the flag twice — on the device user and on
-    // the assigned site — and both must say what the locked box shows. The device-
-    // user payload used to say false here: the component mirrors form valueChanges
-    // into the model, one emission captured the control's default false during
-    // init, and a disabled control is absent from form.value, so nothing replaced
-    // it. updateSingle() now reads the control itself (oneMinuteIntervalsForPayload).
+    // Saving still works without the control, and the device-user payload no
+    // longer claims a 1-minute value the dialog does not show.
     const updateDeviceUserRequest = waitForApiResponse(
       page,
       'POST /api/backend-configuration-pn/properties/assignment/update-device-user (edit save)',
@@ -341,19 +243,14 @@ test.describe.serial('Property-worker 1-minute intervals are locked on', () => {
     expect(updateResult?.success, `update-device-user success (${updateResult?.message ?? ''})`).toBe(true);
     const updateBody = JSON.parse(updateResponse.request().postData() || '{}');
     expect(
-      updateBody.useOneMinuteIntervals,
-      'the update-device-user payload must say what the checked, locked box shows'
-    ).toBe(true);
+      'useOneMinuteIntervals' in updateBody,
+      'the update-device-user payload must not carry a 1-minute value'
+    ).toBe(false);
 
     const putResponse = await assignedSitePut;
     const putResult = await putResponse.json().catch(() => null);
     expect(putResponse.status(), `assigned-site PUT status (${JSON.stringify(putResult)})`).toBe(200);
     expect(putResult?.success, `assigned-site PUT success (${putResult?.message ?? ''})`).toBe(true);
-    const putBody = JSON.parse(putResponse.request().postData() || '{}');
-    expect(
-      putBody.useOneMinuteIntervals,
-      'the assigned-site PUT payload must say what the checked, locked box shows'
-    ).toBe(true);
 
     // The save closes the dialog and refreshes the list; wait for both before the
     // next test touches the row.
@@ -362,7 +259,7 @@ test.describe.serial('Property-worker 1-minute intervals are locked on', () => {
     await workersPage.newDeviceUserBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   });
 
-  test('switching time registration on for an existing worker locks it too', async ({ page }) => {
+  test('switching time registration on for an existing worker offers no 1-minute choice either', async ({ page }) => {
     // 5 min: login plus one more device-user create (SDK provisioning again),
     // then a single edit-modal round trip with no save.
     test.setTimeout(300000);
@@ -394,7 +291,7 @@ test.describe.serial('Property-worker 1-minute intervals are locked on', () => {
     ).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
 
     await openTimeRegistrationTab(page);
-    await expectCheckedAndLocked(page, 'edit modal switching time registration on for the first time');
+    await expectNoOneMinuteChoice(page, 'edit modal switching time registration on for the first time');
 
     // Nothing to save — the assertion is about what the modal offers, and leaving
     // the worker untouched keeps the row usable for whatever runs next.
@@ -458,112 +355,6 @@ test.describe.serial('Property-worker 1-minute intervals are locked on', () => {
     });
     await expect(dialog(page).locator('#saveCreateBtn')).toHaveCount(0, { timeout: UI_TIMEOUT });
 
-    await cancelEditModal(workersPage);
-  });
-
-  // Runs LAST: it leaves timeRegWorker's saved row in 5-minute mode.
-  test('the edit dialog claims no 1-minute state until the saved row has loaded', async ({ page }) => {
-    // 3 min: login, two edit-modal round trips (one to read the AssignedSite id,
-    // one with its GET held) and one SQL statement. No device-user provisioning.
-    test.setTimeout(180000);
-
-    // WHAT THIS PROTECTS: the checkbox rule used to run from ngOnInit before the
-    // getAssignedSite GET landed, saw no saved row yet, and forced the box checked
-    // and locked — for a worker whose saved row is in 5-minute mode. formReady is
-    // not gated on that GET, so the dialog showed "one-minute mode, locked" without
-    // knowing. While the GET is in flight the box must be locked and INDETERMINATE —
-    // unknown shown as unknown, neither mode claimed; once it lands the saved state
-    // rules.
-    const workersPage = new BackendConfigurationPropertyWorkersPage(page);
-    await workersPage.goToPropertyWorkers();
-
-    // --- Arrange: timeRegWorker's saved row, switched back to 5-minute mode ---
-    const firstLoad = waitForApiResponse(
-      page,
-      'GET /api/time-planning-pn/settings/assigned-sites (reads the saved AssignedSite id)',
-      isAssignedSiteGet,
-      API_TIMEOUT
-    );
-    // openEditModalFor() can fail before we reach the await below.
-    ignoreUnhandledRejections(firstLoad);
-    await workersPage.openEditModalFor(timeRegWorkerFullName);
-    const firstBody = await (await firstLoad).json();
-    expect(firstBody?.success, `assigned-sites GET (${firstBody?.message ?? ''})`).toBe(true);
-    const assignedSiteId = firstBody?.model?.id;
-    expect(typeof assignedSiteId, 'the worker must have a saved AssignedSite row').toBe('number');
-    await cancelEditModal(workersPage);
-
-    await setSavedOneMinuteIntervalsToFalse(assignedSiteId);
-
-    // --- Act: reopen with the saved-row GET held -----------------------------
-    const menuItem = await openWorkerRowMenu(page, timeRegWorkerFullName);
-
-    // TimePlanningPnSettingsService.getAssignedSite() -> GET
-    // api/time-planning-pn/settings/assigned-sites?siteId=..., fired from the
-    // dialog's ngOnInit for a worker with time registration on.
-    const assignedSite = await holdApiGetRequests(
-      page,
-      'GET /api/time-planning-pn/settings/assigned-sites (edit dialog loads the saved AssignedSite)',
-      ASSIGNED_SITES_PATH,
-      UI_TIMEOUT
-    );
-    try {
-      await menuItem('editDeviceUserBtn').click({ timeout: UI_TIMEOUT });
-      await assignedSite.held;
-
-      // Precondition, not a contract: the rest of the dialog has settled, so what
-      // follows is the checkbox's in-flight state and not a half-initialised form.
-      // Today formReady only waits for languages; if it is ever made to wait for
-      // this GET as well, this wait is what must change — nothing here depends on
-      // the user being able to act (the spinner overlay blocks pointer input anyway).
-      await expect(
-        dialog(page).locator('form[data-form-ready]'),
-        'precondition: the dialog must have settled apart from the held saved-row GET'
-      ).toHaveAttribute('data-form-ready', 'true', { timeout: API_TIMEOUT });
-
-      await openTimeRegistrationTab(page, 'keyboard');
-      const input = oneMinuteIntervalsInput(page);
-      await expect(input, 'while the saved row is loading the checkbox must be locked').toBeDisabled({
-        timeout: UI_TIMEOUT,
-      });
-      // The assertion the old code fails: it forced the box checked here, and an
-      // unforced plain box would read unchecked — 5-minute mode — just as wrongly.
-      await expect(
-        input,
-        'while the saved row is loading the checkbox must show indeterminate — the dialog does not know the mode yet'
-      ).toBeChecked({ indeterminate: true, timeout: UI_TIMEOUT });
-
-      // Registered before the release; the held response cannot arrive earlier.
-      const heldResponse = waitForApiResponse(
-        page,
-        'GET /api/time-planning-pn/settings/assigned-sites (the released saved-row GET)',
-        isAssignedSiteGet,
-        API_TIMEOUT
-      );
-      ignoreUnhandledRejections(heldResponse);
-      await assignedSite.release();
-
-      // What the dialog was handed: the real saved row, in 5-minute mode.
-      const response = await heldResponse;
-      expect(response.status(), 'assigned-sites GET status').toBe(200);
-      const body = await response.json();
-      expect(body?.success, `assigned-sites GET (${body?.message ?? ''})`).toBe(true);
-      expect(body?.model?.id, 'the GET must return the row arranged above').toBe(assignedSiteId);
-      expect(body?.model?.useOneMinuteIntervals, 'precondition: the saved row is in 5-minute mode').toBe(false);
-    } finally {
-      await assignedSite.release();
-    }
-
-    // --- Assert: the saved state now rules -----------------------------------
-    const input = oneMinuteIntervalsInput(page);
-    await expect(input, 'a saved 5-minute row is editable once loaded').toBeEnabled({ timeout: UI_TIMEOUT });
-    await expect(input, 'once loaded the checkbox is no longer indeterminate').not.toBeChecked({
-      indeterminate: true,
-      timeout: UI_TIMEOUT,
-    });
-    await expect(input, 'a saved 5-minute row shows unchecked once loaded').not.toBeChecked({ timeout: UI_TIMEOUT });
-
-    // Nothing to save — the assertions are about what the dialog shows.
     await cancelEditModal(workersPage);
   });
 });

@@ -632,6 +632,51 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
             "today's occurrence is not missed yet and must still be listed");
     }
 
+    /// <summary>
+    /// #1382 — the compliance list shows a calendar occurrence on its own date; a legacy row
+    /// (no CalendarConfiguration) keeps the Deadline − 1 day display. Both carry the stored
+    /// Deadline for the #1300 future-task guard.
+    /// </summary>
+    [TestCase(true, 0)]
+    [TestCase(false, -1)]
+    public async Task Index_Deadline_IsTheOccurrenceDateForACalendarTask_DeadlineMinusOneForLegacy(
+        bool calendarTask, int expectedOffsetDays)
+    {
+        await GetCore();
+        var today = DateTime.UtcNow.Date;
+        var (propertyId, complianceId) =
+            await SeedTaskWithCompliance("Property A", complianceEnabled: true, today);
+        var planningId = await BackendConfigurationPnDbContext!.Compliances
+            .Where(x => x.Id == complianceId).Select(x => x.PlanningId).SingleAsync();
+        var arpId = await BackendConfigurationPnDbContext.AreaRulePlannings
+            .Where(x => x.ItemPlanningId == planningId).Select(x => x.Id).SingleAsync();
+        // CalendarConfigurations is in no seed file, so the per-test reset keeps its rows
+        // while AreaRulePlannings restarts its ids: an earlier test's row would make this
+        // ARP a calendar task.
+        await BackendConfigurationPnDbContext.CalendarConfigurations
+            .Where(x => x.AreaRulePlanningId == arpId)
+            .ExecuteDeleteAsync();
+        if (calendarTask)
+        {
+            await BackendConfigurationPnDbContext.CalendarConfigurations.AddAsync(new CalendarConfiguration
+            {
+                AreaRulePlanningId = arpId, StartHour = 9.0, Duration = 1.0,
+                WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+            });
+            await BackendConfigurationPnDbContext.SaveChangesAsync();
+        }
+
+        var result = await BuildCompliancesService().Index(new CompliancesRequestModel { PropertyId = propertyId });
+
+        Assert.That(result.Success, Is.True, result.Message);
+        var row = result.Model.Entities.Single(x => x.Id == complianceId);
+        Assert.Multiple(() =>
+        {
+            Assert.That(row.Deadline, Is.EqualTo(today.AddDays(expectedOffsetDays)));
+            Assert.That(row.ComplianceDeadline, Is.EqualTo(today));
+        });
+    }
+
     [Test]
     public async Task ComplianceStatus_OnlyOpenRowIsHiddenOverdue_ReturnsZero_ComplianceEnabledTwinReturnsOne()
     {
