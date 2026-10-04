@@ -781,6 +781,10 @@ export const esES = {
   'Not registered': 'No registrado',
   Model: 'Modelo',
   'OS version': 'Versión del SO',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Asignar etiquetas',
+  'Assign tags to the selected employees': 'Asignar etiquetas a los empleados seleccionados',
+  'Selected employees': 'Empleados seleccionados',
   // #1378 Medarbejdere dialog labels
   '1st shift': '1.er turno',
   'Auto break calculation settings': 'Ajustes del cálculo automático de pausas',

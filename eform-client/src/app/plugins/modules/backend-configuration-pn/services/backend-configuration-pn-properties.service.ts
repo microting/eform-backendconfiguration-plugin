@@ -15,6 +15,7 @@ import {
   PropertyAreaModel,
   PropertyAreasUpdateModel, DeviceUserModel,
   PropertyAssignWorkersModel, ResultModel, ChrResultModel, PropertyFolderModel,
+  WorkerTagsBulkUpdateModel,
 } from '../models';
 import { ApiBaseService } from 'src/app/common/services';
 
@@ -37,6 +38,7 @@ export let BackendConfigurationPnPropertiesMethods = {
   CreateEntityList: 'api/backend-configuration-pn/property-areas/create-entity-list/',
   CreateDeviceUser: 'api/backend-configuration-pn/properties/assignment/create-device-user',
   GetAll: 'api/backend-configuration-pn/properties/assignment/index-device-user',
+  BulkWorkerTags: 'api/backend-configuration-pn/properties/assignment/bulk-tags',
   GetCompanyType: 'api/backend-configuration-pn/properties/get-company-type',
   GetChrInformation: 'api/backend-configuration-pn/properties/get-chr-information',
   DictionaryProperties: 'api/backend-configuration-pn/properties/dictionary',
@@ -181,6 +183,14 @@ export class BackendConfigurationPnPropertiesService {
   updateSingleDeviceUser(model: DeviceUserModel): Observable<OperationResult> {
     return this.apiBaseService.post<DeviceUserModel>(
       BackendConfigurationPnPropertiesMethods.UpdateDeviceUser,
+      model
+    );
+  }
+
+  /** #1380 — adds or removes tags on several workers at once. */
+  bulkUpdateWorkerTags(model: WorkerTagsBulkUpdateModel): Observable<OperationResult> {
+    return this.apiBaseService.put(
+      BackendConfigurationPnPropertiesMethods.BulkWorkerTags,
       model
     );
   }

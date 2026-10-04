@@ -59,6 +59,17 @@
       <span>{{ 'Tags' | translate }}</span>
     </button>
     <button
+      class="btn-secondary btn-secondary--icon-left"
+      id="bulkWorkerTagsBtn"
+      *ngIf="selectCurrentUserClaimsDeviceUsersUpdate$ | async"
+      [disabled]="selectedWorkers.length === 0"
+      (click)="openBulkTagsModal()"
+      matTooltip="{{ 'Assign tags to the selected employees' | translate }}"
+    >
+      <mat-icon>sell</mat-icon>
+      <span>{{ 'Assign tags' | translate }} ({{ selectedWorkers.length }})</span>
+    </button>
+    <button
       class="btn-primary btn-primary--icon-left"
       (click)="exportCsv()"
       matTooltip="{{ 'Export CSV' | translate }}"
@@ -91,6 +102,7 @@
   [availableTags]="availableTags"
   [alreadyUsedEmails]="alreadyUsedEmails"
   [highlightedSiteId]="highlightedSiteId"
+  (selectionChanged)="selectedWorkers = $event"
 >
 </app-property-worker-table>
 

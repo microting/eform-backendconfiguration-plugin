@@ -803,4 +803,13 @@ public class BackendConfigurationAssignmentWorkerService(
 
         return new OperationResult(result.Success, backendConfigurationLocalizationService.GetString(result.Message));
     }
+
+    public async Task<OperationResult> BulkUpdateWorkerTags(WorkerTagsBulkUpdateModel model)
+    {
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        var result = await WorkerTagsBulkUpdateHelper.BulkUpdate(model, core.DbContextHelper.GetDbContext(),
+            reconciliationService, logger).ConfigureAwait(false);
+
+        return new OperationResult(result.Success, backendConfigurationLocalizationService.GetString(result.Message));
+    }
 }

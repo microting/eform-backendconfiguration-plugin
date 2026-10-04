@@ -781,6 +781,10 @@ export const csCZ = {
   'Not registered': 'Neregistrováno',
   Model: 'Model',
   'OS version': 'Verze OS',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Přiřadit štítky',
+  'Assign tags to the selected employees': 'Přiřadit štítky vybraným zaměstnancům',
+  'Selected employees': 'Vybraní zaměstnanci',
   // #1378 Medarbejdere dialog labels
   '1st shift': '1. směna',
   'Auto break calculation settings': 'Nastavení automatického výpočtu přestávek',

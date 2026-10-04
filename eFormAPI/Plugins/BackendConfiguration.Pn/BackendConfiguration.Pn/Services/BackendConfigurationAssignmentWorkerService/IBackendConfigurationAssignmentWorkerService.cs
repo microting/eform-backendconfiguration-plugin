@@ -48,4 +48,7 @@ public interface IBackendConfigurationAssignmentWorkerService
         
     Task<OperationDataResult<int>> CreateDeviceUser(DeviceUserModel deviceUserModel);
     Task<OperationResult> UpdateSimplifiedDeviceUser(SimpleDeviceUserModel deviceUserModel);
+
+    /// <summary>#1380 — adds or removes the given worker tags on every given worker.</summary>
+    Task<OperationResult> BulkUpdateWorkerTags(WorkerTagsBulkUpdateModel model);
 }

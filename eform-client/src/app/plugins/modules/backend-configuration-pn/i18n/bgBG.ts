@@ -781,6 +781,10 @@ export const bgBG = {
   'Not registered': 'Не е регистрирано',
   Model: 'Модел',
   'OS version': 'Версия на ОС',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Задаване на етикети',
+  'Assign tags to the selected employees': 'Задаване на етикети на избраните служители',
+  'Selected employees': 'Избрани служители',
   // #1378 Medarbejdere dialog labels
   '1st shift': '1-ва смяна',
   'Auto break calculation settings': 'Настройки за автоматично изчисляване на почивките',

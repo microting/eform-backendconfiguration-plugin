@@ -781,6 +781,10 @@ export const noNO = {
   'Not registered': 'Ikke registrert',
   Model: 'Modell',
   'OS version': 'OS-versjon',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Tildel merker',
+  'Assign tags to the selected employees': 'Tildel merker til de valgte medarbeiderne',
+  'Selected employees': 'Valgte medarbeidere',
   // #1378 Medarbejdere dialog labels
   '1st shift': '1. skift',
   'Auto break calculation settings': 'Innstillinger for automatisk pauseberegning',

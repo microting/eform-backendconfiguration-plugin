@@ -36,6 +36,7 @@ public class AssignmentWorkerControllerTests
         ["UpdateDeviceUser(DeviceUserModel)"] = AuthConsts.EformPolicies.DeviceUsers.Update,
         ["Create(DeviceUserModel)"] = AuthConsts.EformPolicies.DeviceUsers.Create,
         ["UpdateSimplifiedDeviceUser(SimpleDeviceUserModel)"] = AuthConsts.EformPolicies.DeviceUsers.Update,
+        ["BulkUpdateWorkerTags(WorkerTagsBulkUpdateModel)"] = AuthConsts.EformPolicies.DeviceUsers.Update,
     };
 
     private static IEnumerable<MethodInfo> PublicActions() =>

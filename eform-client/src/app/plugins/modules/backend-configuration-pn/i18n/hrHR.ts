@@ -781,6 +781,10 @@ export const hrHR = {
   'Not registered': 'Nije registrirano',
   Model: 'Model',
   'OS version': 'Verzija OS-a',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Dodijeli oznake',
+  'Assign tags to the selected employees': 'Dodijeli oznake odabranim zaposlenicima',
+  'Selected employees': 'Odabrani zaposlenici',
   // #1378 Medarbejdere dialog labels
   '1st shift': '1. smjena',
   'Auto break calculation settings': 'Postavke automatskog izračuna pauze',

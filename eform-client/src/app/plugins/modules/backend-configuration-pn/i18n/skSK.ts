@@ -781,6 +781,10 @@ export const skSK = {
   'Not registered': 'Neregistrované',
   Model: 'Model',
   'OS version': 'Verzia OS',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Priradiť štítky',
+  'Assign tags to the selected employees': 'Priradiť štítky vybraným zamestnancom',
+  'Selected employees': 'Vybraní zamestnanci',
   // #1378 Medarbejdere dialog labels
   '1st shift': '1. zmena',
   'Auto break calculation settings': 'Nastavenia automatického výpočtu prestávok',

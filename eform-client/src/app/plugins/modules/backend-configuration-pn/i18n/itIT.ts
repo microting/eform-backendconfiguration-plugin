@@ -781,6 +781,10 @@ export const itIT = {
   'Not registered': 'Non registrato',
   Model: 'Modello',
   'OS version': 'Versione del SO',
+  // #1380 Medarbejdere bulk tags
+  'Assign tags': 'Assegna tag',
+  'Assign tags to the selected employees': 'Assegna tag ai dipendenti selezionati',
+  'Selected employees': 'Dipendenti selezionati',
   // #1378 Medarbejdere dialog labels
   '1st shift': '1° turno',
   'Auto break calculation settings': 'Impostazioni del calcolo automatico delle pause',
