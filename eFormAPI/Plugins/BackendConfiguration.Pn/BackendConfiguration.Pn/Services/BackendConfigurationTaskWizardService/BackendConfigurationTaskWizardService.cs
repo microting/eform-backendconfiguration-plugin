@@ -1569,78 +1569,11 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     _localizationService.GetString("TaskNotFound"));
             }
 
-            if (areaRulePlanning.ItemPlanningId != 0)
-            {
-                var planning = _itemsPlanningPnDbContext.Plannings
-                    .First(x => x.Id == areaRulePlanning.ItemPlanningId);
-
-                planning.UpdatedByUserId = _userService.UserId;
-                await planning.Delete(_itemsPlanningPnDbContext);
-            }
-
-            // delete area rule planning and linked object
-            foreach (var areaRuleAreaRuleTranslation in areaRulePlanning.AreaRule.AreaRuleTranslations)
-            {
-                areaRuleAreaRuleTranslation.UpdatedByUserId = _userService.UserId;
-                await areaRuleAreaRuleTranslation.Delete(_backendConfigurationPnDbContext);
-            }
-
-            foreach (var planningSite in areaRulePlanning.PlanningSites)
-            {
-                planningSite.UpdatedByUserId = _userService.UserId;
-                await planningSite.Delete(_backendConfigurationPnDbContext);
-            }
-
-            var planningCases = await _itemsPlanningPnDbContext.PlanningCases
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => x.PlanningId == areaRulePlanning.ItemPlanningId)
-                .ToListAsync().ConfigureAwait(false);
-
-            foreach (var planningCase in planningCases)
-            {
-                var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
-                    .Where(x => x.PlanningCaseId == planningCase.Id)
-                    .Where(planningCaseSite => planningCaseSite.MicrotingSdkCaseId != 0 ||
-                                               planningCaseSite.MicrotingCheckListSitId != 0)
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .ToListAsync().ConfigureAwait(false);
-                foreach (var planningCaseSite in planningCaseSites)
-                {
-                    var result =
-                        await sdkDbContext.Cases.SingleOrDefaultAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId)
-                            .ConfigureAwait(false);
-                    if (result is { MicrotingUid: { } })
-                    {
-                        await core.CaseDelete((int)result.MicrotingUid).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        var clSites = await sdkDbContext.CheckListSites.SingleAsync(x =>
-                            x.Id == planningCaseSite.MicrotingCheckListSitId).ConfigureAwait(false);
-
-                        await core.CaseDelete(clSites.MicrotingUid).ConfigureAwait(false);
-                    }
-                }
-            }
-
-            areaRulePlanning.AreaRule.UpdatedByUserId = _userService.UserId;
-            await areaRulePlanning.AreaRule.Delete(_backendConfigurationPnDbContext);
-
-            areaRulePlanning.UpdatedByUserId = _userService.UserId;
-            await areaRulePlanning.Delete(_backendConfigurationPnDbContext);
-
-            var complianceList = await _backendConfigurationPnDbContext.Compliances
-                .Where(x => x.PlanningId == areaRulePlanning.ItemPlanningId
-                            && x.WorkflowState != Constants.WorkflowStates.Removed)
-                .ToListAsync().ConfigureAwait(false);
-            foreach (var compliance in complianceList)
-            {
-                if (compliance != null)
-                {
-                    await compliance.Delete(_backendConfigurationPnDbContext)
-                        .ConfigureAwait(false);
-                }
-            }
+            // Retracts inline, at the point the rows are walked (the order this
+            // method always had); a CaseDelete that throws stops the delete before
+            // the AreaRule and AreaRulePlanning are removed.
+            await SoftDeleteTaskRowsAsync(areaRulePlanning, sdkDbContext,
+                uid => core.CaseDelete(uid)).ConfigureAwait(false);
 
             return new OperationResult(true, _localizationService.GetString("TaskDeletedSuccessful"));
         }
@@ -1652,6 +1585,168 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             return new OperationResult(false,
                 _localizationService.GetString("ErrorWhileDeletingTask"));
         }
+    }
+
+    /// <summary>
+    /// The DB soft-deletes of a task delete, shared by <see cref="DeleteTask"/> and
+    /// <see cref="DeleteTaskDeferredRetraction"/>: the Planning, the PlanningSites, the
+    /// tag links and calendar configuration, the AreaRule with its translations, the
+    /// AreaRulePlanning and the planning's Compliances. Every deployed SDK case of the
+    /// planning is handed to <paramref name="retractCase"/> (its MicrotingUid) at the
+    /// point the cases are walked; null skips the walk.
+    ///
+    /// <para>#1376 — legacy rows: a row without a Planning (ItemPlanningId 0) or on a
+    /// missing or removed one is still deleted; with ItemPlanningId 0 the PlanningCase
+    /// and Compliance sweeps are skipped, because <c>PlanningId == 0</c> would match
+    /// unrelated rows. Legacy area types (type 6, slurry tanks, pools) hang several
+    /// plannings off ONE AreaRule, so the rule and its translations are only removed
+    /// when no other live AreaRulePlanning uses it.</para>
+    /// </summary>
+    private async Task SoftDeleteTaskRowsAsync(AreaRulePlanning areaRulePlanning,
+        Microting.eForm.Infrastructure.MicrotingDbContext sdkDbContext, Func<int, Task> retractCase)
+    {
+        var hasPlanning = areaRulePlanning.ItemPlanningId != 0;
+        if (hasPlanning)
+        {
+            var planning = await _itemsPlanningPnDbContext.Plannings
+                .FirstOrDefaultAsync(x => x.Id == areaRulePlanning.ItemPlanningId
+                                          && x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ConfigureAwait(false);
+            if (planning != null)
+            {
+                planning.UpdatedByUserId = _userService.UserId;
+                await planning.Delete(_itemsPlanningPnDbContext);
+            }
+        }
+
+        var areaRuleSharedWithLiveSibling = await _backendConfigurationPnDbContext.AreaRulePlannings
+            .Where(x => x.AreaRuleId == areaRulePlanning.AreaRuleId && x.Id != areaRulePlanning.Id)
+            .AnyAsync(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .ConfigureAwait(false);
+
+        if (!areaRuleSharedWithLiveSibling)
+        {
+            foreach (var areaRuleAreaRuleTranslation in areaRulePlanning.AreaRule.AreaRuleTranslations)
+            {
+                areaRuleAreaRuleTranslation.UpdatedByUserId = _userService.UserId;
+                await areaRuleAreaRuleTranslation.Delete(_backendConfigurationPnDbContext);
+            }
+        }
+
+        foreach (var planningSite in areaRulePlanning.PlanningSites
+                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+        {
+            planningSite.UpdatedByUserId = _userService.UserId;
+            await planningSite.Delete(_backendConfigurationPnDbContext);
+        }
+
+        var planningCases = hasPlanning && retractCase != null
+            ? await _itemsPlanningPnDbContext.PlanningCases
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.PlanningId == areaRulePlanning.ItemPlanningId)
+                .ToListAsync().ConfigureAwait(false)
+            : [];
+
+        foreach (var planningCase in planningCases)
+        {
+            var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
+                .Where(x => x.PlanningCaseId == planningCase.Id)
+                .Where(planningCaseSite => planningCaseSite.MicrotingSdkCaseId != 0 ||
+                                           planningCaseSite.MicrotingCheckListSitId != 0)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToListAsync().ConfigureAwait(false);
+            foreach (var planningCaseSite in planningCaseSites)
+            {
+                await retractCase!(await RetractionUidOfAsync(planningCaseSite, sdkDbContext).ConfigureAwait(false))
+                    .ConfigureAwait(false);
+            }
+        }
+
+        // #1376 — the row's own tag links and calendar configuration go with it, so
+        // nothing keeps pointing at a removed task. After the retraction above: a
+        // CaseDelete that throws leaves them live, so the delete can be retried.
+        var arpTags = await _backendConfigurationPnDbContext.AreaRulePlanningTags
+            .Where(x => x.AreaRulePlanningId == areaRulePlanning.Id
+                        && x.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync().ConfigureAwait(false);
+        foreach (var arpTag in arpTags)
+        {
+            arpTag.UpdatedByUserId = _userService.UserId;
+            await arpTag.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+        }
+
+        var calendarConfigurations = await _backendConfigurationPnDbContext.CalendarConfigurations
+            .Where(x => x.AreaRulePlanningId == areaRulePlanning.Id
+                        && x.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync().ConfigureAwait(false);
+        foreach (var calendarConfiguration in calendarConfigurations)
+        {
+            calendarConfiguration.UpdatedByUserId = _userService.UserId;
+            await calendarConfiguration.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+        }
+
+        if (!areaRuleSharedWithLiveSibling)
+        {
+            areaRulePlanning.AreaRule.UpdatedByUserId = _userService.UserId;
+            await areaRulePlanning.AreaRule.Delete(_backendConfigurationPnDbContext);
+        }
+
+        areaRulePlanning.UpdatedByUserId = _userService.UserId;
+        await areaRulePlanning.Delete(_backendConfigurationPnDbContext);
+
+        var complianceList = hasPlanning
+            ? await _backendConfigurationPnDbContext.Compliances
+                .Where(x => x.PlanningId == areaRulePlanning.ItemPlanningId
+                            && x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToListAsync().ConfigureAwait(false)
+            : [];
+        foreach (var compliance in complianceList)
+        {
+            await compliance.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// The MicrotingUid a task delete retracts for one deployment. The legacy Type9 shape
+    /// (MicrotingSdkCaseId holds the CheckListSite's MicrotingUid, not a Cases.Id) is
+    /// recognised first, as <c>BackendConfigurationPropertyAreasServiceHelper.ResolvePlannedCaseUidAsync</c>
+    /// does, so its uid is never read as the id of an unrelated case. Otherwise the case's
+    /// uid, falling back to the CheckListSite's. A linked CheckListSite that does not exist
+    /// throws before any Cases lookup — the link is ambiguous, and its MicrotingSdkCaseId
+    /// may be a legacy uid that names an unrelated case — which fails the delete before
+    /// the calendar-side rows go.
+    /// </summary>
+    internal static async Task<int> RetractionUidOfAsync(
+        Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningCaseSite planningCaseSite,
+        Microting.eForm.Infrastructure.MicrotingDbContext sdkDbContext)
+    {
+        if (planningCaseSite.MicrotingCheckListSitId != 0)
+        {
+            var checkListSiteUid = await sdkDbContext.CheckListSites.AsNoTracking()
+                .Where(x => x.Id == planningCaseSite.MicrotingCheckListSitId)
+                .Select(x => (int?)x.MicrotingUid)
+                .FirstOrDefaultAsync().ConfigureAwait(false);
+            if (checkListSiteUid == null)
+            {
+                throw new InvalidOperationException(
+                    $"CheckListSite {planningCaseSite.MicrotingCheckListSitId} of the deployment does not exist; its link cannot be resolved safely");
+            }
+            if (checkListSiteUid == planningCaseSite.MicrotingSdkCaseId)
+            {
+                return checkListSiteUid.Value;
+            }
+        }
+
+        var sdkCase = await sdkDbContext.Cases.SingleOrDefaultAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId)
+            .ConfigureAwait(false);
+        if (sdkCase is { MicrotingUid: { } uid })
+        {
+            return uid;
+        }
+
+        var checkListSite = await sdkDbContext.CheckListSites.SingleAsync(x =>
+            x.Id == planningCaseSite.MicrotingCheckListSitId).ConfigureAwait(false);
+        return checkListSite.MicrotingUid;
     }
 
     /// <summary>
@@ -1670,7 +1765,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
     /// tasks/index straight away (all rows are already soft-deleted), and the
     /// SDK cases are retracted in the background.
     /// </summary>
-    public async Task<OperationResult> DeleteTaskDeferredRetraction(int id)
+    public async Task<OperationResult> DeleteTaskDeferredRetraction(int id, bool retractDeviceCases = true)
     {
         try
         {
@@ -1689,85 +1784,19 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     _localizationService.GetString("TaskNotFound"));
             }
 
-            if (areaRulePlanning.ItemPlanningId != 0)
-            {
-                var planning = _itemsPlanningPnDbContext.Plannings
-                    .First(x => x.Id == areaRulePlanning.ItemPlanningId);
-
-                planning.UpdatedByUserId = _userService.UserId;
-                await planning.Delete(_itemsPlanningPnDbContext);
-            }
-
-            // delete area rule planning and linked object
-            foreach (var areaRuleAreaRuleTranslation in areaRulePlanning.AreaRule.AreaRuleTranslations)
-            {
-                areaRuleAreaRuleTranslation.UpdatedByUserId = _userService.UserId;
-                await areaRuleAreaRuleTranslation.Delete(_backendConfigurationPnDbContext);
-            }
-
-            foreach (var planningSite in areaRulePlanning.PlanningSites)
-            {
-                planningSite.UpdatedByUserId = _userService.UserId;
-                await planningSite.Delete(_backendConfigurationPnDbContext);
-            }
-
             // Resolve the SDK case uids to retract SYNCHRONOUSLY (cheap local DB
             // reads), but do NOT call core.CaseDelete inline — that is the part
             // that blocks. Collect the uids and fire them off after all DB
-            // soft-deletes below. This loop has no DB side effects in the
-            // original DeleteTask either (it only calls CaseDelete), so
-            // collecting instead of deleting keeps DB state identical.
+            // soft-deletes. The DB writes are the ones DeleteTask makes.
             var microtingUidsToRetract = new List<int>();
-            var planningCases = await _itemsPlanningPnDbContext.PlanningCases
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => x.PlanningId == areaRulePlanning.ItemPlanningId)
-                .ToListAsync().ConfigureAwait(false);
-
-            foreach (var planningCase in planningCases)
-            {
-                var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
-                    .Where(x => x.PlanningCaseId == planningCase.Id)
-                    .Where(planningCaseSite => planningCaseSite.MicrotingSdkCaseId != 0 ||
-                                               planningCaseSite.MicrotingCheckListSitId != 0)
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .ToListAsync().ConfigureAwait(false);
-                foreach (var planningCaseSite in planningCaseSites)
-                {
-                    var result =
-                        await sdkDbContext.Cases.SingleOrDefaultAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId)
-                            .ConfigureAwait(false);
-                    if (result is { MicrotingUid: { } })
+            await SoftDeleteTaskRowsAsync(areaRulePlanning, sdkDbContext,
+                retractDeviceCases
+                    ? uid =>
                     {
-                        microtingUidsToRetract.Add((int)result.MicrotingUid);
+                        microtingUidsToRetract.Add(uid);
+                        return Task.CompletedTask;
                     }
-                    else
-                    {
-                        var clSites = await sdkDbContext.CheckListSites.SingleAsync(x =>
-                            x.Id == planningCaseSite.MicrotingCheckListSitId).ConfigureAwait(false);
-
-                        microtingUidsToRetract.Add(clSites.MicrotingUid);
-                    }
-                }
-            }
-
-            areaRulePlanning.AreaRule.UpdatedByUserId = _userService.UserId;
-            await areaRulePlanning.AreaRule.Delete(_backendConfigurationPnDbContext);
-
-            areaRulePlanning.UpdatedByUserId = _userService.UserId;
-            await areaRulePlanning.Delete(_backendConfigurationPnDbContext);
-
-            var complianceList = await _backendConfigurationPnDbContext.Compliances
-                .Where(x => x.PlanningId == areaRulePlanning.ItemPlanningId
-                            && x.WorkflowState != Constants.WorkflowStates.Removed)
-                .ToListAsync().ConfigureAwait(false);
-            foreach (var compliance in complianceList)
-            {
-                if (compliance != null)
-                {
-                    await compliance.Delete(_backendConfigurationPnDbContext)
-                        .ConfigureAwait(false);
-                }
-            }
+                    : null).ConfigureAwait(false);
 
             // Every DB row is now soft-deleted; the task no longer appears in
             // tasks/index. Retract the SDK cases fire-and-forget with a fresh

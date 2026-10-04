@@ -481,7 +481,8 @@ public static class BackendConfigurationPropertyAreasServiceHelper
         return checkListSite != null && IsLive(checkListSite.WorkflowState) ? checkListSite.MicrotingUid : null;
     }
 
-    private static bool IsLive(string? workflowState) =>
+    /// <summary>A Cases or CheckListSites row still on the device: neither removed nor retracted.</summary>
+    internal static bool IsLive(string? workflowState) =>
         workflowState is not (Constants.WorkflowStates.Removed or Constants.WorkflowStates.Retracted);
 
     private static async Task SeedTailBite(string propertyName, Core core, MicrotingDbContext sdkDbContext,
