@@ -283,7 +283,10 @@ export interface ComplianceReportCaseModel {
   propertyName: string;
   /** The task title — the prototype's `Område` column. */
   title: string;
-  /** yyyy-MM-dd, occurrence exception NewDate already applied. */
+  /**
+   * yyyy-MM-dd — the date the row is placed on: a completed log's done date (#1370),
+   * otherwise the occurrence date with an exception's NewDate applied.
+   */
   taskDate: string;
   completed: boolean;
   /**
@@ -298,6 +301,15 @@ export interface ComplianceReportCaseModel {
   doneAt: string | null;
   /** "Udført af": the one worker who completed the case (#1333); empty when unknown. */
   workerNames: string[];
+  /** The SDK site behind `workerNames` — kept as the completer by the edit dialog (#1373). */
+  completedBySiteId?: number | null;
+  /**
+   * The task the row belongs to and its assignment, as on `ComplianceReportRowModel`:
+   * Rapport opens the Detaljer dialog with them (#1373).
+   */
+  areaRulePlanningId?: number | null;
+  workerSiteIds?: number[];
+  teamAssigneeIds?: number[];
   /**
    * Answers keyed by `ComplianceReportColumnModel.key`. A MISSING key means
    * unanswered — there is no empty-string placeholder and no positional slot,

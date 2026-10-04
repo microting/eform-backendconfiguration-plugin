@@ -86,8 +86,9 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
 
     /// <summary>
     /// The occurrence's date as the compliance pages show it — the SAME resolution
-    /// <c>BackendConfigurationComplianceReportService.BuildCandidateSet</c> uses for
-    /// <c>taskDate</c>: a live "this"-scope <c>CalendarOccurrenceException</c> of the
+    /// <c>BackendConfigurationComplianceReportService.BuildCandidateSet</c> uses for an
+    /// OPEN occurrence's <c>taskDate</c> (a completed log is placed on its done date, #1370;
+    /// the #1300 guard only ever judges open ones): a live "this"-scope <c>CalendarOccurrenceException</c> of the
     /// planning's lowest-Id live AreaRulePlanning, keyed on the Deadline date, moves it to
     /// its <c>NewDate</c>; otherwise it is <c>Deadline.Date</c>. Resolving it here keeps the
     /// server's #1300 guard in step with what Detaljer/Rapport gate on (a moved occurrence
