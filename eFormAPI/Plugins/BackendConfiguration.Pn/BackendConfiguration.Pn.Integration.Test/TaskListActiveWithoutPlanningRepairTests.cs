@@ -283,6 +283,189 @@ public class TaskListActiveWithoutPlanningRepairTests : TestBaseSetup
         });
     }
 
+    /// <summary>
+    /// The legacy Type9 link stores the CheckListSite's MicrotingUid in MicrotingSdkCaseId.
+    /// Here that uid equals the id of an unrelated open case: the plan must retract the
+    /// CheckListSite, never the unrelated case.
+    /// </summary>
+    [Test]
+    public async Task DryRun_LegacyLinkWhoseUidCollidesWithACaseId_ResolvesTheCheckListSite()
+    {
+        var (property, area) = await SeedPropertyAndArea();
+        var planningId = await SeedPlanning(Constants.WorkflowStates.Removed);
+        var arpId = await SeedArp(await SeedAreaRule(property.Id, area.Id), planningId, status: true);
+        var siteId = await SeedSdkSite();
+        var unrelatedUid = Random.Shared.Next(100_000, 900_000);
+
+        var unrelatedCase = new SdkCase
+        {
+            SiteId = siteId, Status = 66, MicrotingUid = unrelatedUid, WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext!.Cases.AddAsync(unrelatedCase);
+        await MicrotingDbContext.SaveChangesAsync();
+        var checkListSiteId = await SeedCheckListSite(siteId, microtingUid: unrelatedCase.Id);
+        await SeedPlanningCaseSite(planningId, siteId, status: 66, sdkCaseId: unrelatedCase.Id,
+            checkListSiteId: checkListSiteId);
+
+        var deletion = (await _repair.DryRunAsync()).Model.Deletions.Single(x => x.AreaRulePlanningId == arpId);
+
+        var retract = deletion.CasesToRetract.Single();
+        Assert.Multiple(() =>
+        {
+            Assert.That(retract.CheckListSiteId, Is.EqualTo(checkListSiteId));
+            Assert.That(retract.SdkCaseId, Is.Zero);
+            Assert.That(retract.MicrotingUid, Is.EqualTo(unrelatedCase.Id));
+        });
+    }
+
+    /// <summary>
+    /// A CheckListSite-only deployment whose uid has a single completed Cases row:
+    /// <c>core.CaseDelete</c> would remove that completed record, so it is not retracted.
+    /// </summary>
+    [Test]
+    public async Task DryRun_CheckListSiteWhoseUidIsACompletedRecord_IsNotRetracted()
+    {
+        var (property, area) = await SeedPropertyAndArea();
+        var planningId = await SeedPlanning(Constants.WorkflowStates.Removed);
+        var arpId = await SeedArp(await SeedAreaRule(property.Id, area.Id), planningId, status: true);
+        var siteId = await SeedSdkSite();
+        var uid = Random.Shared.Next(100_000, 900_000);
+
+        await SeedCheckListSiteDeployment(planningId, siteId, microtingUid: uid);
+        await MicrotingDbContext!.Cases.AddAsync(new SdkCase
+        {
+            SiteId = siteId, Status = 100, DoneAt = DateTime.UtcNow.AddDays(-1), MicrotingUid = uid,
+            WorkflowState = Constants.WorkflowStates.Created
+        });
+        await MicrotingDbContext.SaveChangesAsync();
+
+        var deletion = (await _repair.DryRunAsync()).Model.Deletions.Single(x => x.AreaRulePlanningId == arpId);
+
+        Assert.That(deletion.CasesToRetract, Is.Empty);
+    }
+
+    /// <summary>
+    /// An existing Cases row decides its link, even without a MicrotingUid: the link's
+    /// CheckListSite is not a fallback then, so nothing is retracted (as the task delete's
+    /// <c>ResolvePlannedCaseUidAsync</c> resolves it).
+    /// </summary>
+    [Test]
+    public async Task DryRun_ExistingCaseWithoutUid_DoesNotFallBackToTheCheckListSite()
+    {
+        var (property, area) = await SeedPropertyAndArea();
+        var planningId = await SeedPlanning(Constants.WorkflowStates.Removed);
+        var arpId = await SeedArp(await SeedAreaRule(property.Id, area.Id), planningId, status: true);
+        var siteId = await SeedSdkSite();
+
+        var caseWithoutUid = new SdkCase
+        {
+            SiteId = siteId, Status = 66, MicrotingUid = null, WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext!.Cases.AddAsync(caseWithoutUid);
+        await MicrotingDbContext.SaveChangesAsync();
+        // A uid that is not the case's id, so the link is not the legacy shape.
+        var checkListSiteId = await SeedCheckListSite(siteId, microtingUid: caseWithoutUid.Id + 1_000_000);
+        await SeedPlanningCaseSite(planningId, siteId, status: 66, sdkCaseId: caseWithoutUid.Id,
+            checkListSiteId: checkListSiteId);
+
+        var deletion = (await _repair.DryRunAsync()).Model.Deletions.Single(x => x.AreaRulePlanningId == arpId);
+
+        Assert.That(deletion.CasesToRetract, Is.Empty);
+    }
+
+    /// <summary>
+    /// A case or CheckListSite already retracted is gone from the device and is not
+    /// retracted again: Retracted counts as not live, like Removed.
+    /// </summary>
+    [Test]
+    public async Task DryRun_AlreadyRetractedCaseAndCheckListSite_AreNotRetractedAgain()
+    {
+        var (property, area) = await SeedPropertyAndArea();
+        var planningId = await SeedPlanning(Constants.WorkflowStates.Removed);
+        var arpId = await SeedArp(await SeedAreaRule(property.Id, area.Id), planningId, status: true);
+        var siteId = await SeedSdkSite();
+
+        var retractedCase = await SeedCaseDeployment(planningId, siteId, status: 66, doneAt: null,
+            microtingUid: Random.Shared.Next(100_000, 900_000));
+        var retractedCheckListSite = await SeedCheckListSiteDeployment(planningId, siteId,
+            microtingUid: Random.Shared.Next(100_000, 900_000));
+        await MicrotingDbContext!.Cases.Where(x => x.Id == retractedCase)
+            .ExecuteUpdateAsync(x => x.SetProperty(y => y.WorkflowState, Constants.WorkflowStates.Retracted));
+        await MicrotingDbContext.CheckListSites.Where(x => x.Id == retractedCheckListSite)
+            .ExecuteUpdateAsync(x => x.SetProperty(y => y.WorkflowState, Constants.WorkflowStates.Retracted));
+
+        var deletion = (await _repair.DryRunAsync()).Model.Deletions.Single(x => x.AreaRulePlanningId == arpId);
+
+        Assert.That(deletion.CasesToRetract, Is.Empty);
+    }
+
+    /// <summary>
+    /// A planned case completed between the plan and its row's write is not retracted:
+    /// the row is skipped as changed and stays.
+    /// </summary>
+    [Test]
+    public async Task Run_PlannedCaseCompletedBeforeItsWrite_IsSkippedAndNotRetracted()
+    {
+        var (property, area) = await SeedPropertyAndArea();
+        var planningId = await SeedPlanning(Constants.WorkflowStates.Removed);
+        var arpId = await SeedArp(await SeedAreaRule(property.Id, area.Id), planningId, status: true);
+        var siteId = await SeedSdkSite();
+        var openCase = await SeedCaseDeployment(planningId, siteId, status: 66, doneAt: null,
+            microtingUid: Random.Shared.Next(100_000, 900_000));
+        var planHash = (await _repair.DryRunAsync()).Model.PlanHash;
+
+        _repair.OnBeforeWrite = _ => MicrotingDbContext!.Cases.Where(x => x.Id == openCase)
+            .ExecuteUpdateAsync(x => x.SetProperty(y => y.Status, 100).SetProperty(y => y.DoneAt, DateTime.UtcNow));
+        var retracted = new System.Collections.Generic.List<int>();
+        _repair.RetractDeployment = uid =>
+        {
+            retracted.Add(uid);
+            return Task.FromResult(true);
+        };
+        var result = await _repair.RunAsync(planHash);
+
+        Assert.That(result.Success, Is.True, result.Message + string.Join("; ", result.Model?.Failures ?? []));
+        Assert.Multiple(async () =>
+        {
+            Assert.That(retracted, Is.Empty);
+            Assert.That(result.Model.SkippedAsChanged.Single(), Does.Contain("open device deployments changed"));
+            Assert.That(await LiveArpIds(), Does.Contain(arpId));
+        });
+    }
+
+    /// <summary>
+    /// A row deactivated while its deployments are being retracted is not deleted: the
+    /// row is re-read after the retractions and skipped as changed.
+    /// </summary>
+    [Test]
+    public async Task Run_RowDeactivatedDuringRetraction_IsNotDeleted()
+    {
+        var (property, area) = await SeedPropertyAndArea();
+        var planningId = await SeedPlanning(Constants.WorkflowStates.Removed);
+        var arpId = await SeedArp(await SeedAreaRule(property.Id, area.Id), planningId, status: true);
+        var siteId = await SeedSdkSite();
+        await SeedCaseDeployment(planningId, siteId, status: 66, doneAt: null,
+            microtingUid: Random.Shared.Next(100_000, 900_000));
+        var planHash = (await _repair.DryRunAsync()).Model.PlanHash;
+
+        _repair.RetractDeployment = async _ =>
+        {
+            await BackendConfigurationPnDbContext!.AreaRulePlannings
+                .Where(x => x.Id == arpId)
+                .ExecuteUpdateAsync(x => x.SetProperty(y => y.Status, false));
+            return true;
+        };
+        var result = await _repair.RunAsync(planHash);
+
+        Assert.That(result.Success, Is.True, result.Message + string.Join("; ", result.Model?.Failures ?? []));
+        Assert.Multiple(async () =>
+        {
+            Assert.That(result.Model.DeletedAreaRulePlanningIds, Is.Empty);
+            Assert.That(result.Model.SkippedAsChanged.Single(), Does.Contain("after its open deployments were retracted"));
+            Assert.That(await LiveArpIds(), Does.Contain(arpId));
+        });
+    }
+
     // ── Seed ────────────────────────────────────────────────────────────────
 
     private async Task<Seed> SeedAll()
@@ -335,14 +518,19 @@ public class TaskListActiveWithoutPlanningRepairTests : TestBaseSetup
     /// <summary>A repeated deployment that exists only as a CheckListSite; returns its id.</summary>
     private async Task<int> SeedCheckListSiteDeployment(int planningId, int siteId, int microtingUid)
     {
+        var checkListSiteId = await SeedCheckListSite(siteId, microtingUid);
+        await SeedPlanningCaseSite(planningId, siteId, status: 66, sdkCaseId: 0, checkListSiteId: checkListSiteId);
+        return checkListSiteId;
+    }
+
+    private async Task<int> SeedCheckListSite(int siteId, int microtingUid)
+    {
         var checkListSite = new SdkCheckListSite
         {
             SiteId = siteId, MicrotingUid = microtingUid, WorkflowState = Constants.WorkflowStates.Created
         };
         await MicrotingDbContext!.CheckListSites.AddAsync(checkListSite);
         await MicrotingDbContext.SaveChangesAsync();
-
-        await SeedPlanningCaseSite(planningId, siteId, status: 66, sdkCaseId: 0, checkListSiteId: checkListSite.Id);
         return checkListSite.Id;
     }
 

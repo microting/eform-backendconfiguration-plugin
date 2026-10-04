@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models.TaskList;
 using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +15,7 @@ using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
+using LegacyCleanup = BackendConfiguration.Pn.Services.LegacyChemicalCleanupService.LegacyChemicalCleanupService;
 
 namespace BackendConfiguration.Pn.Services.TaskListActiveWithoutPlanningRepair;
 
@@ -37,7 +39,8 @@ namespace BackendConfiguration.Pn.Services.TaskListActiveWithoutPlanningRepair;
 /// <para>Opt-in and reviewed, like the #1294 repair: nothing runs at startup; the GET
 /// dry run writes nothing and returns a plan hash; the POST run recomputes the plan,
 /// refuses unless the hash matches and the plan has something to delete, and re-reads
-/// every row right before writing it, skipping one that changed. Re-running is safe:
+/// every row and its open deployments right before writing it, and the row again after
+/// its retractions, skipping one that changed. Re-running is safe:
 /// deleted rows drop out of the plan, so a finished cleanup has an empty plan and a
 /// second run is refused.</para>
 /// </summary>
@@ -218,10 +221,17 @@ public class TaskListActiveWithoutPlanningRepairService(
 
     /// <summary>
     /// The open device deployments of a planning, through the same PlanningCase →
-    /// PlanningCaseSite link and the same case-or-CheckListSite resolution the task delete
-    /// uses. A case counts when it is not removed, not completed (Status 100 or DoneAt set
-    /// — those are records and are kept) and has a MicrotingUid. Without such a case the
-    /// site's CheckListSite (a repeated deployment) counts when it is not removed.
+    /// PlanningCaseSite link the task delete uses, each resolved as
+    /// <c>BackendConfigurationPropertyAreasServiceHelper.ResolvePlannedCaseUidAsync</c>
+    /// does: the legacy Type9 shape (MicrotingSdkCaseId holds the CheckListSite's
+    /// MicrotingUid) is recognised first, so its uid is never read as a Cases.Id; a link
+    /// whose CheckListSite row is gone is ambiguous and skipped. An existing Cases row
+    /// decides its link — the CheckListSite fallback applies only when it does not exist.
+    /// A case counts when it is live (not removed or retracted), not completed (Status 100
+    /// or DoneAt set — those are records and are kept) and has a MicrotingUid. A
+    /// CheckListSite counts when it is live and its uid is not a completed record:
+    /// <c>core.CaseDelete</c> removes the Cases row when it is the only one with that uid
+    /// (see <c>LegacyChemicalCleanupService.CompletedRecordUids</c>).
     /// </summary>
     private async Task<List<ActiveWithoutPlanningCaseModel>> OpenCasesOfAsync(int planningId, CancellationToken ct)
     {
@@ -248,35 +258,60 @@ public class TaskListActiveWithoutPlanningRepairService(
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         await using var sdkDbContext = core.DbContextHelper.GetDbContext();
 
-        var caseIds = deployments.Select(x => x.MicrotingSdkCaseId).Where(x => x != 0).Distinct().ToList();
+        var linkedCheckListSiteIds = deployments.Select(x => x.MicrotingCheckListSitId).Where(x => x != 0).Distinct().ToList();
+        var checkListSitesById = await sdkDbContext.CheckListSites
+            .AsNoTracking()
+            .Where(x => linkedCheckListSiteIds.Contains(x.Id))
+            .Select(x => new { x.Id, x.MicrotingUid, x.WorkflowState })
+            .ToDictionaryAsync(x => x.Id, ct).ConfigureAwait(false);
+
+        // Drop links whose CheckListSite row is gone, then split off the legacy shape.
+        var resolvable = deployments
+            .Where(x => x.MicrotingCheckListSitId == 0 || checkListSitesById.ContainsKey(x.MicrotingCheckListSitId))
+            .ToList();
+        bool IsLegacy(int checkListSiteId, int sdkCaseId) =>
+            checkListSiteId != 0 && checkListSitesById[checkListSiteId].MicrotingUid == sdkCaseId;
+
+        var caseIds = resolvable
+            .Where(x => x.MicrotingSdkCaseId != 0 && !IsLegacy(x.MicrotingCheckListSitId, x.MicrotingSdkCaseId))
+            .Select(x => x.MicrotingSdkCaseId).Distinct().ToList();
+        // Every existing Cases row, whatever its uid: an existing row decides the link, so
+        // the CheckListSite fallback is only for a link whose Cases row does not exist.
         var casesById = await sdkDbContext.Cases
             .AsNoTracking()
-            .Where(x => caseIds.Contains(x.Id) && x.MicrotingUid != null)
+            .Where(x => caseIds.Contains(x.Id))
             .Select(x => new { x.Id, x.MicrotingUid, x.WorkflowState, x.Status, x.DoneAt })
             .ToDictionaryAsync(x => x.Id, ct).ConfigureAwait(false);
 
-        var checkListSiteIds = deployments
-            .Where(x => !casesById.ContainsKey(x.MicrotingSdkCaseId) && x.MicrotingCheckListSitId != 0)
-            .Select(x => x.MicrotingCheckListSitId).Distinct().ToList();
-        var openCheckListSites = await sdkDbContext.CheckListSites
-            .AsNoTracking()
-            .Where(x => checkListSiteIds.Contains(x.Id) && x.WorkflowState != Constants.WorkflowStates.Removed)
-            .Select(x => new { x.Id, x.MicrotingUid })
-            .ToListAsync(ct).ConfigureAwait(false);
+        var openCheckListSites = resolvable
+            .Where(x => x.MicrotingCheckListSitId != 0
+                        && (IsLegacy(x.MicrotingCheckListSitId, x.MicrotingSdkCaseId)
+                            || !casesById.ContainsKey(x.MicrotingSdkCaseId)))
+            .Select(x => checkListSitesById[x.MicrotingCheckListSitId])
+            .Where(x => BackendConfigurationPropertyAreasServiceHelper.IsLive(x.WorkflowState))
+            .DistinctBy(x => x.Id)
+            .ToList();
+        var checkListSiteUids = openCheckListSites.Select(x => x.MicrotingUid).Distinct().ToList();
+        var completedRecordUids = (await LegacyCleanup.CompletedRecordUids(sdkDbContext, checkListSiteUids)
+            .ToListAsync(ct).ConfigureAwait(false)).ToHashSet();
 
         return casesById.Values
-            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
+            .Where(x => x.MicrotingUid != null
+                        && BackendConfigurationPropertyAreasServiceHelper.IsLive(x.WorkflowState)
                         && x.Status != CompletedStatus && x.DoneAt == null)
             .Select(x => new ActiveWithoutPlanningCaseModel { SdkCaseId = x.Id, MicrotingUid = x.MicrotingUid!.Value })
-            .Concat(openCheckListSites.Select(x => new ActiveWithoutPlanningCaseModel
-            {
-                CheckListSiteId = x.Id, MicrotingUid = x.MicrotingUid
-            }))
+            .Concat(openCheckListSites
+                .Where(x => !completedRecordUids.Contains(x.MicrotingUid))
+                .Select(x => new ActiveWithoutPlanningCaseModel { CheckListSiteId = x.Id, MicrotingUid = x.MicrotingUid }))
             .GroupBy(x => x.MicrotingUid)
             .Select(g => g.First())
             .OrderBy(x => x.SdkCaseId).ThenBy(x => x.CheckListSiteId).ThenBy(x => x.MicrotingUid)
             .ToList();
     }
+
+    /// <summary>The identity of a deployment, as the plan hash and the pre-write recheck compare it.</summary>
+    private static string KeyOf(ActiveWithoutPlanningCaseModel deployment)
+        => $"{deployment.SdkCaseId}:{deployment.CheckListSiteId}:{deployment.MicrotingUid}";
 
     private static string HashOf(ActiveWithoutPlanningRepairPlanModel plan)
     {
@@ -284,9 +319,10 @@ public class TaskListActiveWithoutPlanningRepairService(
         foreach (var row in plan.Deletions.Concat(plan.Skipped))
         {
             sb.Append(row.AreaRulePlanningId).Append('|').Append(row.AreaRuleId).Append('|')
+                .Append(row.PropertyId).Append('|').Append(row.AreaId).Append('|').Append(row.AreaType).Append('|')
                 .Append(row.ItemPlanningId).Append('|').Append(row.PlanningState).Append('|')
                 .Append(row.SkipReason ?? "delete").Append('|')
-                .Append(string.Join(',', row.CasesToRetract.Select(c => $"{c.SdkCaseId}:{c.CheckListSiteId}:{c.MicrotingUid}")))
+                .Append(string.Join(',', row.CasesToRetract.Select(KeyOf)))
                 .Append('\n');
         }
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(sb.ToString())));
@@ -303,9 +339,17 @@ public class TaskListActiveWithoutPlanningRepairService(
             var reason = await ChangedSincePlanAsync(row).ConfigureAwait(false);
             if (reason != null)
             {
-                logger.LogWarning("TaskListActiveWithoutPlanningRepair: {What} skipped: {Reason} (the next dry run re-evaluates it)",
-                    what, reason);
-                result.SkippedAsChanged.Add($"{what}: {reason}");
+                SkipAsChanged(row, result, reason);
+                return;
+            }
+
+            // The plan was computed for the whole run; a case completed since then must not
+            // be retracted, so the deployments are re-read and must still be the planned ones.
+            var currentDeployments = await OpenCasesOfAsync(row.ItemPlanningId, CancellationToken.None)
+                .ConfigureAwait(false);
+            if (!currentDeployments.Select(KeyOf).Order().SequenceEqual(row.CasesToRetract.Select(KeyOf).Order()))
+            {
+                SkipAsChanged(row, result, "its open device deployments changed");
                 return;
             }
 
@@ -328,6 +372,14 @@ public class TaskListActiveWithoutPlanningRepairService(
                     logger.LogInformation(
                         "TaskListActiveWithoutPlanningRepair: {What} retracted SDK case {SdkCaseId} / CheckListSite {CheckListSiteId} (MicrotingUid {MicrotingUid})",
                         what, sdkCase.SdkCaseId, sdkCase.CheckListSiteId, sdkCase.MicrotingUid);
+                }
+
+                // The retractions are remote calls; the row may have changed meanwhile.
+                reason = await ChangedSincePlanAsync(row).ConfigureAwait(false);
+                if (reason != null)
+                {
+                    SkipAsChanged(row, result, $"{reason} (after its open deployments were retracted)");
+                    return;
                 }
             }
 
@@ -353,6 +405,15 @@ public class TaskListActiveWithoutPlanningRepairService(
         }
     }
 
+    private void SkipAsChanged(ActiveWithoutPlanningRowModel row, ActiveWithoutPlanningRepairRunResultModel result,
+        string reason)
+    {
+        var what = $"AreaRulePlanning {row.AreaRulePlanningId}";
+        logger.LogWarning("TaskListActiveWithoutPlanningRepair: {What} skipped: {Reason} (the next dry run re-evaluates it)",
+            what, reason);
+        result.SkippedAsChanged.Add($"{what}: {reason}");
+    }
+
     /// <summary>Re-reads the row right before its write; null when it is still what the plan saw.</summary>
     private async Task<string> ChangedSincePlanAsync(ActiveWithoutPlanningRowModel row)
     {
@@ -376,11 +437,13 @@ public class TaskListActiveWithoutPlanningRepairService(
 
         if (current.ItemPlanningId != 0)
         {
-            var planningState = await itemsPlanningPnDbContext.Plannings.AsNoTracking()
+            // An object projection, so a row with a null WorkflowState (live, as
+            // PlanningStateOf reads it) is not mistaken for a missing planning.
+            var planning = await itemsPlanningPnDbContext.Plannings.AsNoTracking()
                 .Where(x => x.Id == current.ItemPlanningId)
-                .Select(x => x.WorkflowState)
+                .Select(x => new { x.WorkflowState })
                 .SingleOrDefaultAsync().ConfigureAwait(false);
-            if (planningState != null && planningState != Constants.WorkflowStates.Removed)
+            if (planning != null && planning.WorkflowState != Constants.WorkflowStates.Removed)
             {
                 return "the row's planning is live again";
             }
