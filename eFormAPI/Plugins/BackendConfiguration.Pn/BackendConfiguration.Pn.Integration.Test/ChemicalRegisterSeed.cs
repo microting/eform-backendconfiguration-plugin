@@ -84,6 +84,19 @@ public static class ChemicalRegisterSeed
         return new SeededChemical(chemical.Id, chemical.Products.Single().Id, chemical.RemoteId);
     }
 
+    /// <summary>A random GTIN of <paramref name="length"/> digits (8, 12, 13 or 14) with a valid GS1 check digit.</summary>
+    public static string RandomGtin(int length)
+    {
+        if (length is not (8 or 12 or 13 or 14))
+        {
+            throw new ArgumentOutOfRangeException(nameof(length), length, "A GTIN is 8, 12, 13 or 14 digits.");
+        }
+
+        var payload = RandomDigits(length - 1);
+        var sum = payload.Reverse().Select((c, i) => (c - '0') * (i % 2 == 0 ? 3 : 1)).Sum();
+        return payload + (char)('0' + (10 - sum % 10) % 10);
+    }
+
     public static string RandomDigits(int length) =>
         string.Concat(Enumerable.Range(0, length).Select(i => i == 0 ? Random.Shared.Next(1, 10) : Random.Shared.Next(0, 10)));
 }

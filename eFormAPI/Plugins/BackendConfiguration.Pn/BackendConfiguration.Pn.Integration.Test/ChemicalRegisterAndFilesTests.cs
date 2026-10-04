@@ -53,7 +53,7 @@ public class ChemicalRegisterAndFilesTests : ChemicalTestBase
     public async Task LookupAndSearch_ReturnRegisterEntries()
     {
         var caller = await WorkerAsync(view: true);
-        var barcode = ChemicalRegisterSeed.RandomDigits(13);
+        var barcode = ChemicalRegisterSeed.RandomGtin(13);
         var seeded = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, $"Lookup {Guid.NewGuid():N}", "4-567", barcode: barcode);
         var sut = CreateInventoryService();
 

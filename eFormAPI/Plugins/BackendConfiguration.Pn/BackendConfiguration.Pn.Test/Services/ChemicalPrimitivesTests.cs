@@ -195,22 +195,12 @@ public class ChemicalPrimitivesTests
 
     // ---- barcodes (Review Focus 5) ----
 
-    [Test]
-    public void Candidates_UpcA_AlsoMatchesItsEan13Form()
-    {
-        Assert.That(ChemicalBarcode.Candidates("012345678905"), Is.EquivalentTo(new[] { "012345678905", "0012345678905" }));
-    }
-
-    [Test]
-    public void Candidates_Ean13WithLeadingZero_AlsoMatchesItsUpcAForm()
-    {
-        Assert.That(ChemicalBarcode.Candidates("0012345678905"), Is.EquivalentTo(new[] { "0012345678905", "012345678905" }));
-    }
+    // Candidates and GS1 spellings: Gs1Tests.
 
     [Test]
     public void Normalize_TrimsWhitespace()
     {
-        Assert.That(ChemicalBarcode.Normalize(" 5701234567892 "), Is.EqualTo("5701234567892"));
+        Assert.That(ChemicalBarcode.Normalize(" 5701234567899 "), Is.EqualTo("5701234567899"));
     }
 
     [TestCase("")]
@@ -218,6 +208,7 @@ public class ChemicalPrimitivesTests
     [TestCase("123456789012345")]
     [TestCase("57012A4567892")]
     [TestCase("5701 234567892")]
+    [TestCase("00000000")]
     public void Normalize_RejectsNonBarcodes(string raw)
     {
         Assert.That(() => ChemicalBarcode.Normalize(raw), Throws.InstanceOf<ArgumentException>());
