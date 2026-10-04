@@ -143,9 +143,10 @@ public class DeviceUserModel
     public List<int> ManagingTagIds { get; set; } = [];
     public int? PayRuleSetId { get; set; }
     /// <summary>
-    /// Accepted for wire compatibility but NOT read by any server path: create hardcodes
-    /// UseOneMinuteIntervals to true, and for an existing AssignedSite the flag is owned by
-    /// TimePlanning's updateAssignedSite PUT. Do not wire this back up.
+    /// Accepted for wire compatibility with older clients but NOT read by any server path:
+    /// create hardcodes UseOneMinuteIntervals to true, and every site runs on 1-minute
+    /// intervals, so the web modal no longer offers or sends it
+    /// (eform-angular-timeplanning-plugin #1740). Do not wire this back up.
     /// </summary>
     public bool? UseOneMinuteIntervals { get; set; }
 
