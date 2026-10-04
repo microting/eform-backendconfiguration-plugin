@@ -748,6 +748,47 @@ public class TaskServerSideTranslationTests : TestBaseSetup
         });
     }
 
+    /// <summary>
+    /// Reactivating an inactive task through the wizard (inactive -> active branch) for an
+    /// English worker: the filled English title also gets its PlanningNameTranslation, which
+    /// the device label reads - that branch used to update existing name rows only.
+    /// </summary>
+    [Test]
+    public async Task WizardUpdate_ReactivatingForAnEnglishWorker_CreatesTheEnglishPlanningName()
+    {
+        var s = await SeedScenario();
+        var services = await BuildServices(_translator);
+        // A future start: PairItemWithSiteHelper.Pair then takes its "series has not started
+        // yet" short-circuit instead of deploying to the fixture's sites.
+        var start = DateTime.SpecifyKind(DateTime.UtcNow.Date.AddDays(30), DateTimeKind.Utc);
+        TaskWizardCreateModel Model(int id, int site, TaskWizardStatuses status) => new()
+        {
+            Id = id,
+            PropertyId = s.PropertyId,
+            FolderId = s.FolderId,
+            EformId = s.EformId,
+            StartDate = start,
+            RepeatType = RepeatType.Week,
+            RepeatEvery = 1,
+            Status = status,
+            Sites = [site],
+            Translates = DanishOnly(s)
+        };
+
+        var created = await services.Wizard.CreateTask(Model(0, s.DanishWorker, TaskWizardStatuses.NotActive));
+        Assert.That(created.Success, Is.True, created.Message);
+        var arpId = await BackendConfigurationPnDbContext!.AreaRulePlannings
+            .Where(x => x.PropertyId == s.PropertyId)
+            .OrderByDescending(x => x.Id)
+            .Select(x => x.Id)
+            .FirstAsync();
+
+        var updated = await services.Wizard.UpdateTask(Model(arpId, s.EnglishWorker, TaskWizardStatuses.Active));
+
+        Assert.That(updated.Success, Is.True, updated.Message);
+        await AssertEnglishFilled(s, arpId);
+    }
+
     private async Task<(Site Site, string Email, string LastName, IUserService UserService,
         Microsoft.AspNetCore.Identity.UserManager<Microting.eFormApi.BasePn.Infrastructure.Database.Entities.EformUser> UserManager)>
         CreateDanishDeviceUser()

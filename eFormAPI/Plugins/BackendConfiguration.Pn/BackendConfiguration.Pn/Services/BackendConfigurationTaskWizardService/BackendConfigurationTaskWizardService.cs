@@ -1147,6 +1147,29 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         }
                     }
 
+                    // #1384 — a language this save added (typed, or filled by the translation
+                    // step) has no PlanningNameTranslation yet, and the loop above only updates
+                    // existing rows. The device label reads it, so create it before Pair deploys.
+                    var nameLanguageIds = planning.NameTranslations
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Select(x => x.LanguageId)
+                        .ToHashSet();
+                    foreach (var areaRuleTranslation in areaRulePlanning.AreaRule.AreaRuleTranslations
+                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
+                                             && !string.IsNullOrWhiteSpace(x.Name)
+                                             && !nameLanguageIds.Contains(x.LanguageId)))
+                    {
+                        await new PlanningNameTranslation
+                        {
+                            Name = areaRuleTranslation.Name,
+                            LanguageId = areaRuleTranslation.LanguageId,
+                            PlanningId = planning.Id,
+                            CreatedByUserId = _userService.UserId,
+                            UpdatedByUserId = _userService.UserId
+                        }.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                        nameLanguageIds.Add(areaRuleTranslation.LanguageId);
+                    }
+
                     await PairItemWithSiteHelper.Pair(
                             areaRulePlanning.PlanningSites
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
