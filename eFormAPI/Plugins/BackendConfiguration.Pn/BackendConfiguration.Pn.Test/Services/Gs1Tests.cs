@@ -39,6 +39,8 @@ public class Gs1Tests
         // plain GTINs
         new object[] { "5701234567899", "5701234567899" },
         new object[] { " 5701234567899\n", "5701234567899" },
+        new object[] { "\uFEFF5701234567899\u00A0", "5701234567899" },   // BOM and Unicode White_Space are trimmed
+        new object[] { "\u30005701234567899\u2028", "5701234567899" },
         new object[] { "96385074", "96385074" },
         new object[] { "012345678905", "0012345678905" },              // UPC-A → its EAN-13 form
         new object[] { "05701234567899", "5701234567899" },
@@ -53,6 +55,7 @@ public class Gs1Tests
         new object[] { "https://id.gs1.org/01/15701234567896/21/XYZ", "15701234567896" },
         // GS1 element strings (human-readable)
         new object[] { "(01)05701234567899", "5701234567899" },
+        new object[] { "(01)05701234567899junk", "5701234567899" },      // content after AI 01 + 14 digits is ignored
         new object[] { "(01)05701234567899(10)ABC(17)261231", "5701234567899" },
         // raw / FNC1-separated element strings (DataMatrix, GS1 QR)
         new object[] { "0105701234567899", "5701234567899" },
@@ -122,48 +125,6 @@ public class Gs1Tests
         "]d2",
         new string('1', 5000),
     ];
-
-    /// <summary>
-    /// The shared vector table of the binding cross-repo GS1 grammar ruling (2026-10-04):
-    /// the app, this backend and chemicalbase must agree on every row. Keep it identical.
-    /// </summary>
-    private static readonly object[] SharedGrammarVectors =
-    [
-        new object[] { "5711111111114", "5711111111114" },
-        new object[] { "05711111111114", "5711111111114" },
-        new object[] { "042100005264", "0042100005264" },
-        new object[] { "96385074", "96385074" },
-        new object[] { "00000096385074", "96385074" },
-        new object[] { "(01)05711111111114", "5711111111114" },
-        new object[] { "(01)05711111111114(10)LOT1", "5711111111114" },
-        new object[] { "0105711111111114\u001D10LOT1", "5711111111114" },
-        new object[] { "]E05711111111114", "5711111111114" },
-        new object[] { "]d20105711111111114", "5711111111114" },
-        new object[] { "]Q3https://id.gs1.org/01/05711111111114", "5711111111114" },
-        new object[] { "https://id.gs1.org/01/05711111111114", "5711111111114" },
-        new object[] { "https://example.com/gtin/05711111111114/10/LOT?17=261231", "5711111111114" },
-        new object[] { "https://example.com/01/%30%35711111111114", "5711111111114" },
-        new object[] { "]X15711111111114", null },
-        new object[] { "5711111111115", null },
-        new object[] { "0000000000000", null },
-        new object[] { "(01)057111111111145", null },
-        new object[] { "(10)LOT(01)05711111111114", null },
-        new object[] { "foo(01)05711111111114", null },
-        new object[] { "https://example.com/01/%FF", null },
-        new object[] { "WIFI:S:x;T:WPA;P:y;;", null },
-        new object[] { "https://example.com/product/123", null },
-        new object[] { "", null },
-        new object[] { "   ", null },
-        new object[] { new string('5', 3000), null },
-    ];
-
-    [TestCaseSource(nameof(SharedGrammarVectors))]
-    public void TryExtractGtin_FollowsTheSharedGrammarVectors(string input, string expected)
-    {
-        Assert.That(() => Gs1.TryExtractGtin(input, out _), Throws.Nothing);
-        Assert.That(Gs1.TryExtractGtin(input, out var gtin), Is.EqualTo(expected != null), input);
-        Assert.That(gtin, Is.EqualTo(expected));
-    }
 
     [TestCaseSource(nameof(Invalid))]
     public void TryExtractGtin_RejectsJunk(string input)

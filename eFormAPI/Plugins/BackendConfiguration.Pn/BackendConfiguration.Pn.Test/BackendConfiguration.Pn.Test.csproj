@@ -21,6 +21,11 @@
     </ItemGroup>
 
     <ItemGroup>
+      <!-- Binding cross-repo GS1 grammar vectors: keep byte-identical with the app and chemicalbase. -->
+      <None Include="TestData\gs1-vectors.json" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+    <ItemGroup>
       <ProjectReference Include="..\BackendConfiguration.Pn\BackendConfiguration.Pn.csproj" />
     </ItemGroup>
 
