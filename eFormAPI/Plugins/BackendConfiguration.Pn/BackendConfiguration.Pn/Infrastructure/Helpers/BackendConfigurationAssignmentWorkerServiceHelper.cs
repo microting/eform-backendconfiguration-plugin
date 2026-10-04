@@ -1078,8 +1078,12 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         // and, when the language changed, fill this worker's missing task translations
                         // (#1384). The LAST step of every successful path - after SiteUpdate, so the
                         // filler reads the new language, and after the login writes, so a failure here
-                        // cannot leave them half done. It never fails the save: both steps are
-                        // idempotent and the next save retries.
+                        // cannot leave them half done. It never fails the save. A failure is NOT retried
+                        // by this worker's next save (the tags and language are stored by then, so that
+                        // save sees no change); the affected events catch up when they are next
+                        // reconciled - a calendar save of the event or a later tag change of its team.
+                        // Before #1384 a throwing reconcile failed the save after the tags were written,
+                        // with the same gap.
                         var changedTagIds = forRemove.Concat(forCreate).Distinct().ToList();
                         async Task SyncCalendarAsync()
                         {
@@ -1092,7 +1096,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             catch (Exception e)
                             {
                                 logger.LogWarning(e,
-                                    "[UpdateDeviceUser] calendar follow-up failed for site {SiteId}; the next save retries it",
+                                    "[UpdateDeviceUser] calendar follow-up failed for site {SiteId}; its events catch up on their next reconcile",
                                     site.Id);
                             }
                         }
