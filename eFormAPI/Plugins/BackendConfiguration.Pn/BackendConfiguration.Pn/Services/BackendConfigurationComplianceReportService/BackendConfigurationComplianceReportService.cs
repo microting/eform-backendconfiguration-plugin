@@ -29,8 +29,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationComplianceReportS
 /// restructured into five phases so that paging, sorting and per-row enrichment
 /// have somewhere to live:
 ///
-///   A — one SQL query in the BC context: date window, the soft-removed rule,
-///       PropertyId, TagIds and SiteIds. Projected, not materialised as entities.
+///   A — SQL in the BC context: date window, the soft-removed rule, PropertyId,
+///       TagIds and SiteIds. Projected, not materialised as entities. Completed logs
+///       done in the window but dated outside it join by SDK case id (#1370).
 ///   B — one SQL query in the SDK context: the backing cases for the candidates.
 ///   C — in memory: occurrence-exception delete/move, effective board + BoardIds,
 ///       and the status filter.
@@ -95,8 +96,10 @@ public class BackendConfigurationComplianceReportService(
             var userLanguageId = (await userService.GetCurrentUserLanguage()).Id;
             var dateFrom = requestModel.DateFrom.Date;
             var dateTo = EndOfDay(requestModel.DateTo);
-            // One read of the clock for the whole request.
-            var utcNow = UtcNow();
+            // One read of the clock for the whole request, as the Copenhagen date —
+            // the same "today" Overview uses (#1374), so the #1325 hidden-overdue rule
+            // agrees between Detaljer and Oversigt across midnight.
+            var today = ComplianceFutureTaskGuard.TodayInCopenhagen(UtcNow());
 
             var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
             // NOTE: this context stays alive for the whole method — phase E reads
@@ -123,8 +126,8 @@ public class BackendConfigurationComplianceReportService(
                     // not-yet-deployed occurrences after today. Index is the ONLY
                     // caller that may set this; see CandidateFilter.IncludeProjected.
                     IncludeProjected = requestModel.IncludeProjected,
-                    Today = utcNow.Date,
-                    ProjectionToday = ComplianceFutureTaskGuard.TodayInCopenhagen(utcNow)
+                    Today = today,
+                    ProjectionToday = today
                 },
                 sdkDbContext);
 
@@ -373,10 +376,11 @@ public class BackendConfigurationComplianceReportService(
         var dateTo = filter.DateTo;
 
         // ==========================================================
-        // Phase A — one SQL query, BC context.
+        // Phase A — BC context (plus the SDK lookup of the done half, #1370).
         // ==========================================================
+        // The date window is applied at the END of phase A (see "Two date rules" below);
+        // every other filter is built once on this query and shared by both halves.
         var complianceQuery = backendConfigurationPnDbContext.Compliances
-            .Where(x => x.Deadline >= dateFrom && x.Deadline <= dateTo)
             // Keep soft-removed rows that ever deployed a case: completed
             // occurrences are soft-removed but retain MicrotingSdkCaseId
             // (same shape as GetTasksForWeek's default branch).
@@ -459,20 +463,47 @@ public class BackendConfigurationComplianceReportService(
             complianceQuery = complianceQuery.Where(c => siteScopedPlanningIds.Contains(c.PlanningId));
         }
 
-        // Project rather than materialise entities: nothing downstream writes
-        // a Compliance, and the seven columns below are all that is read.
-        var candidates = await complianceQuery
-            .Select(x => new CandidateRow
+        // Two date rules (#1370 / #1373 option B). An OPEN occurrence belongs to its task
+        // date, a COMPLETED log to the day it was done (CompletedLogPlacement). The deadline
+        // half loads every row dated in the window — a completed one among them is dropped
+        // in phase C when its done date lies outside. The done half adds the completed logs
+        // whose deadline lies OUTSIDE the window but whose done date may lie inside: the
+        // scheduler dates a cycle with the NEXT execution, so a log done early carries a
+        // deadline up to one repeat interval later, and a late one an earlier deadline.
+        // The done half is led from THIS side: the in-scope rows with a case and a deadline
+        // near the window (CompletedLogPlacement.DeadlineReach), whose cases are then checked
+        // in the SDK database by primary key. Phase C applies the exact Danish-date check.
+        var candidates = await ProjectCandidates(
+            complianceQuery.Where(x => x.Deadline >= dateFrom && x.Deadline <= dateTo));
+
+        if (filter.Status is "done" or "all")
+        {
+            var outsideWindow = complianceQuery
+                .Where(x => x.MicrotingSdkCaseId > 0)
+                .Where(x => !(x.Deadline >= dateFrom && x.Deadline <= dateTo));
+            var (reachFrom, reachTo) = CompletedLogPlacement.DeadlineReach(dateFrom, dateTo);
+            var outside = await ProjectCandidates(outsideWindow
+                .Where(x => x.Deadline >= reachFrom && x.Deadline < reachTo));
+            // Tasks repeating less often than the default reach covers get their own,
+            // wider one — only over their own plannings.
+            var (longPlanningIds, longReachDays) = await CompletedLogPlacement
+                .LoadLongIntervalPlanningsAsync(itemsPlanningPnDbContext)
+                .ConfigureAwait(false);
+            if (longPlanningIds.Count > 0)
             {
-                ComplianceId = x.Id,
-                ItemName = x.ItemName,
-                PlanningId = x.PlanningId,
-                PropertyId = x.PropertyId,
-                Deadline = x.Deadline,
-                MicrotingSdkCaseId = x.MicrotingSdkCaseId,
-                WorkflowState = x.WorkflowState
-            })
-            .ToListAsync();
+                var (longFrom, longTo) = CompletedLogPlacement.DeadlineReach(dateFrom, dateTo, longReachDays);
+                var seen = outside.Select(x => x.ComplianceId).ToHashSet();
+                outside.AddRange((await ProjectCandidates(outsideWindow
+                        .Where(x => longPlanningIds.Contains(x.PlanningId))
+                        .Where(x => x.Deadline >= longFrom && x.Deadline < longTo)))
+                    .Where(x => !seen.Contains(x.ComplianceId)));
+            }
+            var doneCaseIds = await CompletedLogPlacement
+                .FilterCaseIdsDoneBetweenAsync(
+                    sdkDbContext, outside.Select(x => x.MicrotingSdkCaseId).ToList(), dateFrom, dateTo)
+                .ConfigureAwait(false);
+            candidates.AddRange(outside.Where(x => doneCaseIds.Contains(x.MicrotingSdkCaseId)));
+        }
 
         // ==========================================================
         // Phase B — one SQL query, SDK context (a DIFFERENT database).
@@ -664,8 +695,19 @@ public class BackendConfigurationComplianceReportService(
             //    included, while the completed history must stay in the report.
             if (exception?.IsDeleted == true) continue;
 
-            var effectiveTaskDate = exception?.NewDate?.Date ?? candidate.Deadline.Date;
-            // A moved occurrence can land outside the requested window.
+            var done = IsDone(candidate);
+            var sdkCase = candidate.MicrotingSdkCaseId > 0
+                ? casesById.GetValueOrDefault(candidate.MicrotingSdkCaseId)
+                : null;
+
+            // #1370 / #1373: a completed log is placed on its done date (see phase A's
+            // "Two date rules"); an open one on its task date. The exception is still
+            // looked up by Deadline — it identifies the occurrence, not its placement.
+            var effectiveTaskDate =
+                (done ? CompletedLogPlacement.DoneDate(sdkCase?.DoneAtUserModifiable, sdkCase?.DoneAt) : null)
+                ?? exception?.NewDate?.Date
+                ?? candidate.Deadline.Date;
+            // A moved occurrence, or a log done outside the window, lands outside it.
             if (effectiveTaskDate < dateFrom || effectiveTaskDate > dateTo) continue;
 
             // BOARD FILTER — deliberately NOT pushed into SQL. The effective
@@ -679,7 +721,6 @@ public class BackendConfigurationComplianceReportService(
             var effectiveBoardId = EffectiveBoardIdOf(exception, calConfig, candidate.PropertyId);
             if (FailsBoardFilter(effectiveBoardId)) continue;
 
-            var done = IsDone(candidate);
             // STATUS FILTER — structurally impossible in SQL. Done-ness is
             // sdkCase.Status == 100 and Cases lives in the SDK database behind
             // a different DbContext; EF cannot join across two contexts.
@@ -705,10 +746,6 @@ public class BackendConfigurationComplianceReportService(
                 }
                 if (!wantOpen) continue;
             }
-
-            var sdkCase = candidate.MicrotingSdkCaseId > 0
-                ? casesById.GetValueOrDefault(candidate.MicrotingSdkCaseId)
-                : null;
 
             matched.Add(CreateRow(candidate, arp, calConfig, exception, effectiveTaskDate,
                 effectiveBoardId, done, sdkCase, isProjected: false));
@@ -793,6 +830,24 @@ public class BackendConfigurationComplianceReportService(
     }
 
     /// <summary>
+    /// Phase A's projection. Rather than materialised entities: nothing downstream writes a
+    /// Compliance, and these seven columns are all that is read.
+    /// </summary>
+    private static Task<List<CandidateRow>> ProjectCandidates(IQueryable<Compliance> query) =>
+        query
+            .Select(x => new CandidateRow
+            {
+                ComplianceId = x.Id,
+                ItemName = x.ItemName,
+                PlanningId = x.PlanningId,
+                PropertyId = x.PropertyId,
+                Deadline = x.Deadline,
+                MicrotingSdkCaseId = x.MicrotingSdkCaseId,
+                WorkflowState = x.WorkflowState
+            })
+            .ToListAsync();
+
+    /// <summary>
     /// The furthest ahead the #1332 projection enumerates, counted from today. The
     /// largest period preset is "År til dato + 1 år"; a hand-picked "Sæt periode"
     /// range reaching further is projected up to this horizon only (logged), so a
@@ -812,7 +867,8 @@ public class BackendConfigurationComplianceReportService(
     /// a UTC "tomorrow" would be the local today. Today's occurrence is never projected:
     /// the scheduler dates the CURRENT cycle's compliance with the NEXT occurrence's date
     /// (<c>Planning.NextExecutionTime</c>), so a planned row for today would count the
-    /// running cycle twice. Phase C keeps its UTC <see cref="CandidateFilter.Today"/>.</para>
+    /// running cycle twice. Phase C's <see cref="CandidateFilter.Today"/> is the same
+    /// Copenhagen date (#1374).</para>
     ///
     /// <para><b>Which series:</b> the lowest-Id live ARP per planning (the pin phase C
     /// uses), active (<c>Status</c> true — an inactive task deploys nothing, and its
@@ -1063,21 +1119,14 @@ public class BackendConfigurationComplianceReportService(
     /// </para>
     ///
     /// <para>
-    /// <b>"Today" is <c>DateTime.UtcNow.Date</c></b>, evaluated ONCE at the top of
-    /// this method and passed down, so that two rows can never be classified
-    /// against different "todays" across a midnight boundary. UTC — not local, not
-    /// user-local — because the whole compliance/calendar path already compares
-    /// against <c>DateTime.UtcNow</c> exclusively (there is not one
-    /// <c>DateTime.Now</c> in <c>BackendConfigurationCalendarService</c>), and
-    /// deviating would make this the single local-time comparison in the path.
-    /// </para>
-    ///
-    /// <para>
-    /// <b>Consequence, accepted deliberately:</b> for a user in UTC+2 between 00:00
-    /// and 02:00 local, the server's "today" is still yesterday — so a task dated
-    /// today is not yet due, and a task dated yesterday is not yet overdue. Every
-    /// threshold below hangs off this one value. If user-local boundaries are ever
-    /// wanted, the fix is an explicit offset on the request model; do not guess one.
+    /// <b>"Today" is the Copenhagen date</b> (<c>ComplianceFutureTaskGuard.TodayInCopenhagen</c>,
+    /// the #1300 future-task boundary), read ONCE from the <see cref="UtcNow"/> seam at
+    /// the top of this method and passed down, so that two rows can never be classified
+    /// against different "todays" across a midnight boundary. #1374 moved it off the UTC
+    /// date: with UTC, between 00:00 and 01:00/02:00 Danish time a task dated today
+    /// would still be in the future and one dated yesterday not yet overdue. Every
+    /// threshold below — due, overdue and the #1325 hidden-overdue rule — hangs off
+    /// this one value.
     /// </para>
     /// </summary>
     public async Task<OperationDataResult<ComplianceReportOverviewModel>> Overview(
@@ -1088,7 +1137,8 @@ public class BackendConfigurationComplianceReportService(
             // Hoisted: ONE read of the clock per request, before any I/O, so no
             // two rows in one response can be classified against different
             // "todays" across a midnight boundary. Passed down to Aggregate.
-            var today = DateTime.UtcNow.Date;
+            // The Danish date (#1374), consistent with the #1300 boundary.
+            var today = ComplianceFutureTaskGuard.TodayInCopenhagen(UtcNow());
 
             var dateFrom = requestModel.DateFrom.Date;
             var dateTo = EndOfDay(requestModel.DateTo);
@@ -1162,7 +1212,7 @@ public class BackendConfigurationComplianceReportService(
     ///
     /// <para>
     /// <paramref name="today"/> is passed in, never read from the clock here: the
-    /// caller hoists <c>DateTime.UtcNow.Date</c> so every row in one response is
+    /// caller hoists the Copenhagen date so every row in one response is
     /// classified against one value.
     /// </para>
     /// </summary>
@@ -1211,13 +1261,19 @@ public class BackendConfigurationComplianceReportService(
                 DateTimeStyles.None, out var taskDate);
             DateTime? taskDay = parsed ? taskDate.Date : null;
 
-            // NOTE THE NEGATION: !(taskDate > today), not (taskDate <= today).
-            // The two differ exactly on an unparseable date — the prototype's NaN
-            // (compliance-overview.js:15-20, :50) — where !(NaN > x) is TRUE. A row
-            // whose date cannot be read must NOT silently vanish out of the
-            // denominator, so it counts as DUE. It is deliberately NOT overdue
-            // below (NaN < x is false); keep the asymmetry.
-            var isDue = taskDay is null || !(taskDay.Value > today);
+            // DUE = in the compliance denominator. #1374: a task dated TODAY is not a
+            // failure until the day is over, so it is due only once it is completed —
+            // an open task dated today is in neither DueTotal nor Overdue. Hence
+            // 0 overdue gives 100 % (or no percentage when nothing has fallen due).
+            //
+            // A row whose date cannot be read — the prototype's NaN
+            // (compliance-overview.js:15-20, :50) — must NOT silently vanish out of the
+            // denominator, so it counts as DUE. It is deliberately NOT overdue below;
+            // keep the asymmetry.
+            var datedBeforeToday = taskDay < today;   // false for an unreadable date
+            var isDue = taskDay is null
+                        || datedBeforeToday
+                        || (taskDay == today && candidate.Completed);
 
             row.Total++;
             if (isDue)
@@ -1230,9 +1286,9 @@ public class BackendConfigurationComplianceReportService(
             {
                 row.Done++;
             }
-            // STRICTLY before today: a task due TODAY and not done raises DueTotal
-            // (so it lowers the percentage) but is not overdue.
-            else if (taskDay is not null && taskDay.Value < today)
+            // STRICTLY before today: a task due TODAY and not done is not overdue
+            // (and, per isDue above, not in the denominator either).
+            else if (datedBeforeToday)
             {
                 row.Overdue++;
             }
@@ -1361,7 +1417,8 @@ public class BackendConfigurationComplianceReportService(
                     DateTo = dateTo,
                     Status = requestModel.Status,
                     // DoneAt is the "Udført dato" column, so the display fields are on.
-                    ComputeDisplayFields = true
+                    ComputeDisplayFields = true,
+                    Today = ComplianceFutureTaskGuard.TodayInCopenhagen(UtcNow())
                 },
                 sdkDbContext);
 
@@ -1491,6 +1548,10 @@ public class BackendConfigurationComplianceReportService(
             // assignees — an open row has no performer and shows nobody.
             var completerNames = await LoadCompleterNames(answered, sdkDbContext);
 
+            // #1373 — Rapport opens the Detaljer dialog for a row, which groups and
+            // pre-selects workers off the task's assignment exactly as Detaljer does.
+            var siteSetsByArpId = await ResolveWorkerSiteIdsByArpId(arpIds, arpDetailsById);
+
             // ==========================================================
             // Column schemas, answers and images — ONCE per template, never
             // per case, and every bulk query led by FieldId (#1160 finding 2).
@@ -1543,6 +1604,8 @@ public class BackendConfigurationComplianceReportService(
                 var headlineTagId = HeadlineTagIdOf(row.Arp).Value;
 
                 var images = projection.ImagesByCaseId.GetValueOrDefault(sdkCaseId, []);
+                // row.Arp is never null here: a row without one has no headline.
+                var rowSiteSets = siteSetsByArpId.GetValueOrDefault(row.Arp.Id, WorkerSiteSets.Empty);
 
                 // The row's tags, read per PLANNING over every live ARP (see the
                 // tag lookup above), EXCLUDING the headline id. The exclusion is
@@ -1590,6 +1653,10 @@ public class BackendConfigurationComplianceReportService(
                     // field (#1160 finding 7).
                     DoneAt = row.DoneAt,
                     WorkerNames = CompleterNameOf(row, completerNames),
+                    CompletedBySiteId = row.Completed ? row.SdkCase?.SiteId : null,
+                    AreaRulePlanningId = row.Arp?.Id,
+                    WorkerSiteIds = rowSiteSets.PlanningSiteIds.ToList(),
+                    TeamAssigneeIds = rowSiteSets.TeamSiteIds.ToList(),
                     Tags = rowTagNames,
                     Cells = projection.CellsByCaseId.GetValueOrDefault(sdkCaseId, new Dictionary<string, string>()),
                     ImagesCount = images.Count,
@@ -1764,10 +1831,13 @@ public class BackendConfigurationComplianceReportService(
         public bool ComputeDisplayFields { get; init; } = true;
 
         /// <summary>
-        /// "Today" for the #1325 hidden-overdue rule. Overview passes the value it
-        /// classifies overdue rows against, so the two can never disagree across midnight.
+        /// "Today" for the #1325 hidden-overdue rule: the Copenhagen date
+        /// (<c>ComplianceFutureTaskGuard.TodayInCopenhagen</c>), read once per request.
+        /// Required, so every view states it and Oversigt, Detaljer and Rapport hide the
+        /// same missed occurrences across midnight (#1374). Overview passes the value it
+        /// classifies overdue rows against, so the two can never disagree.
         /// </summary>
-        public DateTime Today { get; init; } = DateTime.UtcNow.Date;
+        public required DateTime Today { get; init; }
 
         /// <summary>
         /// #1332 — add the planned, not-yet-deployed occurrences after <see cref="Today"/>

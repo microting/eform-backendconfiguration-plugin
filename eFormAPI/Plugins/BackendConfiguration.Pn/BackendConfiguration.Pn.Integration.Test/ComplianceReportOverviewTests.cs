@@ -17,6 +17,8 @@ copies or substantial portions of the Software.
 namespace BackendConfiguration.Pn.Integration.Test;
 
 using eFormCore;
+using System.Globalization;
+using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.WorkerTagMembership;
@@ -47,13 +49,14 @@ using NSubstitute;
 /// </para>
 ///
 /// <para>
-/// Eleven cases have no prototype counterpart and are added here: the rounding MIDPOINT
+/// The other cases have no prototype counterpart and are added here: the rounding MIDPOINT
 /// (which the prototype cannot express, because JS has only one rounding mode), the
 /// unparseable-date branch, "status is genuinely ignored", the two soft-removed
 /// asymmetries, occurrence-exception flow-through, filter parity with
-/// <c>Index</c>, the board/tag/site filters, and #1278's three: a filter suppresses
+/// <c>Index</c>, the board/tag/site filters, #1278's three (a filter suppresses
 /// the listed-anyway rows, the property filter keeps its own property, and a
-/// soft-removed property is never listed.
+/// soft-removed property is never listed), #1325's hidden missed occurrences, and
+/// #1374's "a task due today is not a failure yet" with the Copenhagen "today".
 /// </para>
 ///
 /// <para>
@@ -167,6 +170,19 @@ public class ComplianceReportOverviewTests : TestBaseSetup
             new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext));
     }
 
+    /// <summary>
+    /// The real service with its clock pinned to <paramref name="utcNow"/>, plus the
+    /// Copenhagen date the service classifies against at that instant (#1374) — so a
+    /// test seeds "today" on the same date the service reads, even across midnight.
+    /// </summary>
+    private (BackendConfigurationComplianceReportService Service, DateTime Today)
+        BuildServiceWithPinnedClock(Core core, DateTime utcNow)
+    {
+        var service = BuildService(core);
+        service.UtcNow = () => utcNow;
+        return (service, ComplianceFutureTaskGuard.TodayInCopenhagen(utcNow));
+    }
+
     // ------------------------------------------------------------------
     // Seeding helpers
     // ------------------------------------------------------------------
@@ -241,7 +257,17 @@ public class ComplianceReportOverviewTests : TestBaseSetup
         string propertyName, string title, DateTime startDate, bool complianceEnabled = true)
     {
         var (areaId, propertyId) = await SeedAreaAndProperty(propertyName);
+        return await SeedSeriesOnProperty(areaId, propertyId, title, startDate, complianceEnabled);
+    }
 
+    /// <summary>
+    /// The AreaRule→Planning→AreaRulePlanning half of <see cref="SeedSeries"/> on an
+    /// EXISTING area/property — the only way to put two rows on one property on the
+    /// same date (see <see cref="SeedCompliance"/>).
+    /// </summary>
+    private async Task<(int ArpId, int PropertyId, int PlanningId, int AreaId, int AreaRuleId)> SeedSeriesOnProperty(
+        int areaId, int propertyId, string title, DateTime startDate, bool complianceEnabled = true)
+    {
         var areaRule = new AreaRule
         {
             AreaId = areaId, PropertyId = propertyId, EformId = 0,
@@ -762,18 +788,19 @@ public class ComplianceReportOverviewTests : TestBaseSetup
     }
 
     /// <summary>
-    /// Prototype <c>:43</c> — "overdue counts only incomplete cases dated before today".
-    /// Four rows on one property: not-done yesterday (OVERDUE), not-done tomorrow (not due
-    /// at all), not-done TODAY (due, so it lowers the percentage, but NOT overdue), and
+    /// Prototype <c>:43</c> — "overdue counts only incomplete cases dated before today",
+    /// with #1374's change to the denominator. Four rows on one property: not-done
+    /// yesterday (OVERDUE), not-done tomorrow (not due at all), not-done TODAY (neither
+    /// overdue NOR due — a task due today is not a failure until the day is over), and
     /// done the day before yesterday. All four sit on the same planning, so all four need
-    /// distinct deadlines (see <see cref="SeedCompliance"/>) — the done row is the one moved
-    /// off yesterday, and "strictly before today" is all its classification depends on.
+    /// distinct deadlines (see <see cref="SeedCompliance"/>). The clock is pinned and
+    /// "today" is the Copenhagen date the service classifies against.
     /// </summary>
     [Test]
     public async Task ComplianceReportOverview_OverdueCountsOnlyIncompleteCasesDatedBeforeToday()
     {
         var core = await GetCore();
-        var today = DateTime.UtcNow.Date;
+        var (service, today) = BuildServiceWithPinnedClock(core, DateTime.UtcNow);
 
         var p = await SeedSeries("Ejendom 1", "T", today.AddDays(-30));
         await SeedCalendarConfig(p.ArpId);
@@ -786,7 +813,6 @@ public class ComplianceReportOverviewTests : TestBaseSetup
         await SeedCompliance(p.PlanningId, p.PropertyId, p.AreaId, today.AddDays(-2),
             await SeedSdkCase(100));
 
-        var service = BuildService(core);
         var result = await service.Overview(Request(today.AddDays(-30), today.AddDays(30)));
 
         Assert.That(result.Success, Is.True, result.Message);
@@ -796,12 +822,11 @@ public class ComplianceReportOverviewTests : TestBaseSetup
             Assert.That(row.Total, Is.EqualTo(4));
             Assert.That(row.Overdue, Is.EqualTo(1),
                 "only the not-done row dated STRICTLY before today is overdue");
-            Assert.That(row.DueTotal, Is.EqualTo(3),
-                "yesterday, the day before and today are due; tomorrow is not");
+            Assert.That(row.DueTotal, Is.EqualTo(2),
+                "yesterday and the day before are due; the open row today and tomorrow are not");
             Assert.That(row.DueDone, Is.EqualTo(1));
             Assert.That(row.Done, Is.EqualTo(1));
-            // The not-done row dated TODAY is in the denominator (33 %) but not in Overdue.
-            Assert.That(row.CompliancePct, Is.EqualTo(33));
+            Assert.That(row.CompliancePct, Is.EqualTo(50));
         });
     }
 
@@ -1490,6 +1515,263 @@ public class ComplianceReportOverviewTests : TestBaseSetup
             Assert.That(reportedRow.CompliancePct, Is.Zero);
             Assert.That(result.Model.Totals.Overdue, Is.EqualTo(1), "only the twin reaches the totals");
             Assert.That(result.Model.Totals.DueTotal, Is.EqualTo(1));
+        });
+    }
+
+    // ==================================================================
+    // #1374 — 0 OVERDUE IS 100 %: a task due today is not a failure yet
+    // ==================================================================
+
+    private static BackendConfigurationComplianceReportService.OverviewCandidate Candidate(
+        int propertyId, DateTime taskDate, bool completed)
+        => new()
+        {
+            PropertyId = propertyId,
+            PropertyName = $"Ejendom {propertyId}",
+            TaskDate = taskDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            Completed = completed
+        };
+
+    /// <summary>
+    /// #1374, the customer's case through the database: 5 past tasks all completed and
+    /// 2 tasks due today not yet completed. Overskredet 0 must give 100 %, not 71 %.
+    /// The five past rows share a planning (distinct deadlines); the two open rows dated
+    /// today need a second and third planning on the same property, because the unique
+    /// index is on (PlanningId, Deadline) — see <see cref="SeedCompliance"/>.
+    /// </summary>
+    [Test]
+    public async Task ComplianceReportOverview_ZeroOverdueWithOpenTasksDueToday_IsHundredPercent()
+    {
+        var core = await GetCore();
+        var (service, today) = BuildServiceWithPinnedClock(core, DateTime.UtcNow);
+
+        var p = await SeedSeries("Ejendom A", "T", today.AddDays(-60));
+        await SeedCalendarConfig(p.ArpId);
+        for (var i = 0; i < 5; i++)
+        {
+            await SeedCompliance(p.PlanningId, p.PropertyId, p.AreaId, today.AddDays(-1 - i),
+                await SeedSdkCase(100));
+        }
+
+        for (var i = 0; i < 2; i++)
+        {
+            var dueToday = await SeedSeriesOnProperty(p.AreaId, p.PropertyId, $"T{i + 2}", today.AddDays(-60));
+            await SeedCalendarConfig(dueToday.ArpId);
+            await SeedCompliance(dueToday.PlanningId, p.PropertyId, p.AreaId, today, await SeedSdkCase(50));
+        }
+
+        var result = await service.Overview(Request(today.AddDays(-60), today.AddDays(30)));
+
+        Assert.That(result.Success, Is.True, result.Message);
+        var row = result.Model!.Rows.Single(r => r.PropertyId == p.PropertyId);
+        Assert.Multiple(() =>
+        {
+            Assert.That(row.Total, Is.EqualTo(7), "the two open tasks today are still in Total");
+            Assert.That(row.Overdue, Is.Zero);
+            Assert.That(row.DueTotal, Is.EqualTo(5), "but not in the denominator");
+            Assert.That(row.DueDone, Is.EqualTo(5));
+            Assert.That(row.CompliancePct, Is.EqualTo(100), "0 overdue gives 100 %");
+            Assert.That(result.Model.Totals.CompliancePct, Is.EqualTo(100));
+        });
+    }
+
+    /// <summary>
+    /// #1374 + the Copenhagen "today": at 23:30 UTC it is already the next day in
+    /// Copenhagen (00:30 or 01:30). An open task dated the Danish today is not due and
+    /// not overdue; an open task dated the UTC date — the Danish yesterday — IS overdue.
+    /// Under the old UTC "today" both answers were the other way round.
+    /// </summary>
+    [Test]
+    public async Task ComplianceReportOverview_TodayIsTheCopenhagenDate_AcrossUtcMidnight()
+    {
+        var core = await GetCore();
+        var utcNow = DateTime.SpecifyKind(DateTime.UtcNow.Date.AddHours(23).AddMinutes(30), DateTimeKind.Utc);
+        var (service, today) = BuildServiceWithPinnedClock(core, utcNow);
+        Assert.That(today, Is.EqualTo(utcNow.Date.AddDays(1)),
+            "precondition: Copenhagen is already on the next date at 23:30 UTC");
+
+        var p = await SeedSeries("Ejendom A", "T", today.AddDays(-30));
+        await SeedCalendarConfig(p.ArpId);
+        await SeedCompliance(p.PlanningId, p.PropertyId, p.AreaId, today, await SeedSdkCase(50));
+        await SeedCompliance(p.PlanningId, p.PropertyId, p.AreaId, utcNow.Date, await SeedSdkCase(50));
+        await SeedCompliance(p.PlanningId, p.PropertyId, p.AreaId, today.AddDays(-2), await SeedSdkCase(100));
+
+        var result = await service.Overview(Request(today.AddDays(-30), today.AddDays(30)));
+
+        Assert.That(result.Success, Is.True, result.Message);
+        var row = result.Model!.Rows.Single(r => r.PropertyId == p.PropertyId);
+        Assert.Multiple(() =>
+        {
+            Assert.That(row.Total, Is.EqualTo(3));
+            Assert.That(row.Overdue, Is.EqualTo(1), "the UTC-dated row is the Danish yesterday: overdue");
+            Assert.That(row.DueTotal, Is.EqualTo(2), "the open row dated the Danish today is not due");
+            Assert.That(row.DueDone, Is.EqualTo(1));
+            Assert.That(row.CompliancePct, Is.EqualTo(50));
+        });
+    }
+
+    /// <summary>
+    /// #1374 + #1325: Oversigt and Detaljer hide the SAME missed occurrences across UTC
+    /// midnight. At 23:30 UTC an open row dated the UTC date is the Danish yesterday, so a
+    /// task that hides missed occurrences hides it in both views. Before #1374 Detaljer
+    /// used the UTC date and still listed it while Oversigt did not.
+    /// </summary>
+    [Test]
+    public async Task ComplianceReportOverview_HiddenOverdueAcrossUtcMidnight_AgreesWithIndex()
+    {
+        var core = await GetCore();
+        var utcNow = DateTime.SpecifyKind(DateTime.UtcNow.Date.AddHours(23).AddMinutes(30), DateTimeKind.Utc);
+        var (service, today) = BuildServiceWithPinnedClock(core, utcNow);
+
+        var hidden = await SeedSeries("Ejendom A", "T", today.AddDays(-30), complianceEnabled: false);
+        await SeedCalendarConfig(hidden.ArpId);
+        await SeedCompliance(hidden.PlanningId, hidden.PropertyId, hidden.AreaId,
+            utcNow.Date, await SeedSdkCase(50));
+        var reported = await SeedSeries("Ejendom B", "T", today.AddDays(-30));
+        await SeedCalendarConfig(reported.ArpId);
+        var keptId = await SeedCompliance(reported.PlanningId, reported.PropertyId, reported.AreaId,
+            utcNow.Date, await SeedSdkCase(50));
+
+        var from = today.AddDays(-30);
+        var to = today.AddDays(30);
+        var overview = await service.Overview(Request(from, to));
+        var index = await service.Index(new ComplianceReportRequestModel
+        {
+            DateFrom = from, DateTo = to, Status = "all",
+            BoardIds = [], TagIds = [], SiteIds = [],
+            PageIndex = 0, PageSize = 0
+        });
+
+        Assert.That(overview.Success, Is.True, overview.Message);
+        Assert.That(index.Success, Is.True, index.Message);
+        Assert.Multiple(() =>
+        {
+            Assert.That(index.Model!.Entities.Select(e => e.ComplianceId),
+                Is.EqualTo(new[] { keptId }), "Detaljer hides the Danish-yesterday row of the hiding task");
+            Assert.That(overview.Model!.Totals.Total, Is.EqualTo(index.Model.Total),
+                "Oversigt and Detaljer count the same rows across UTC midnight");
+            Assert.That(overview.Model.Totals.Overdue, Is.EqualTo(1),
+                "the reporting task's row is the Danish yesterday: overdue");
+        });
+    }
+
+    /// <summary>
+    /// #1374, the rule on the pure aggregation: a task dated today counts in the
+    /// denominator only once it is completed.
+    /// </summary>
+    [Test]
+    public void ComplianceReportOverview_Aggregate_CompletedTodayCountsOpenTodayDoesNot()
+    {
+        var today = new DateTime(2026, 8, 11, 0, 0, 0, DateTimeKind.Utc);
+
+        var model = BackendConfigurationComplianceReportService.Aggregate(
+        [
+            Candidate(1, today.AddDays(-1), completed: true),
+            Candidate(1, today, completed: true),
+            Candidate(1, today, completed: false)
+        ], today);
+
+        var row = model.Rows.Single();
+        Assert.Multiple(() =>
+        {
+            Assert.That(row.Total, Is.EqualTo(3));
+            Assert.That(row.Done, Is.EqualTo(2));
+            Assert.That(row.DueTotal, Is.EqualTo(2), "the completed task today counts; the open one does not");
+            Assert.That(row.DueDone, Is.EqualTo(2));
+            Assert.That(row.Overdue, Is.Zero);
+            Assert.That(row.CompliancePct, Is.EqualTo(100));
+        });
+    }
+
+    /// <summary>
+    /// #1374: with something overdue the percentage still drops — only the open task
+    /// dated today is left out. 3 done + 1 overdue in the past, 1 open today: 3 of 4.
+    /// </summary>
+    [Test]
+    public void ComplianceReportOverview_Aggregate_SomeOverdue_OpenTodayStaysOutOfTheDenominator()
+    {
+        var today = new DateTime(2026, 8, 11, 0, 0, 0, DateTimeKind.Utc);
+
+        var model = BackendConfigurationComplianceReportService.Aggregate(
+        [
+            Candidate(1, today.AddDays(-1), completed: true),
+            Candidate(1, today.AddDays(-2), completed: true),
+            Candidate(1, today.AddDays(-3), completed: true),
+            Candidate(1, today.AddDays(-4), completed: false),
+            Candidate(1, today, completed: false)
+        ], today);
+
+        var row = model.Rows.Single();
+        Assert.Multiple(() =>
+        {
+            Assert.That(row.Overdue, Is.EqualTo(1));
+            Assert.That(row.DueTotal, Is.EqualTo(4));
+            Assert.That(row.DueDone, Is.EqualTo(3));
+            Assert.That(row.CompliancePct, Is.EqualTo(75));
+        });
+    }
+
+    /// <summary>
+    /// #1374 edge cases where nothing has fallen due: a property with no tasks at all,
+    /// and one whose only task is open and dated today. Both have no percentage —
+    /// <c>null</c>, rendered "–" — never 0 %.
+    /// </summary>
+    [Test]
+    public void ComplianceReportOverview_Aggregate_NothingDue_HasNoPercentage()
+    {
+        var today = new DateTime(2026, 8, 11, 0, 0, 0, DateTimeKind.Utc);
+
+        var model = BackendConfigurationComplianceReportService.Aggregate(
+            [Candidate(2, today, completed: false)], today,
+            new Dictionary<int, string> { [1] = "Ejendom 1", [2] = "Ejendom 2" });
+
+        var noTasks = model.Rows.Single(r => r.PropertyId == 1);
+        var openToday = model.Rows.Single(r => r.PropertyId == 2);
+        Assert.Multiple(() =>
+        {
+            Assert.That(noTasks.Total, Is.Zero);
+            Assert.That(noTasks.CompliancePct, Is.Null, "no tasks at all: no percentage");
+            Assert.That(openToday.Total, Is.EqualTo(1));
+            Assert.That(openToday.Overdue, Is.Zero);
+            Assert.That(openToday.DueTotal, Is.Zero);
+            Assert.That(openToday.CompliancePct, Is.Null, "an open task today is not due yet");
+            Assert.That(model.Totals.CompliancePct, Is.Null);
+        });
+    }
+
+    /// <summary>
+    /// #1374: the totals row stays WEIGHTED under the new rule. Property 1 is the
+    /// customer's case (5 done in the past, 2 open today → 5/5); property 2 has 1 done
+    /// and 1 overdue in the past plus 1 open today (→ 1/2). Totals: 6 of 7 = 86 %, not
+    /// the average of 100 % and 50 %.
+    /// </summary>
+    [Test]
+    public void ComplianceReportOverview_Aggregate_TotalsStayWeighted()
+    {
+        var today = new DateTime(2026, 8, 11, 0, 0, 0, DateTimeKind.Utc);
+
+        var candidates = Enumerable.Range(1, 5)
+            .Select(i => Candidate(1, today.AddDays(-i), completed: true))
+            .Concat(
+            [
+                Candidate(1, today, completed: false),
+                Candidate(1, today, completed: false),
+                Candidate(2, today.AddDays(-1), completed: true),
+                Candidate(2, today.AddDays(-2), completed: false),
+                Candidate(2, today, completed: false)
+            ]);
+
+        var model = BackendConfigurationComplianceReportService.Aggregate(candidates, today);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(model.Rows.Single(r => r.PropertyId == 1).CompliancePct, Is.EqualTo(100));
+            Assert.That(model.Rows.Single(r => r.PropertyId == 2).CompliancePct, Is.EqualTo(50));
+            Assert.That(model.Totals.Total, Is.EqualTo(10));
+            Assert.That(model.Totals.Overdue, Is.EqualTo(1));
+            Assert.That(model.Totals.DueTotal, Is.EqualTo(7));
+            Assert.That(model.Totals.DueDone, Is.EqualTo(6));
+            Assert.That(model.Totals.CompliancePct, Is.EqualTo(86), "weighted, not (100 + 50) / 2");
         });
     }
 }

@@ -34,10 +34,16 @@ public interface IChemicalRegisterReader
     /// <summary>The ids among <paramref name="chemicalIds"/> whose chemical or products changed after <paramref name="sinceUtc"/>.</summary>
     Task<IReadOnlyList<int>> ChangedSinceAsync(IReadOnlyCollection<int> chemicalIds, DateTime sinceUtc);
 
-    /// <summary>Active chemicals with a product carrying the barcode (UPC-A/EAN-13 forms match). Throws ArgumentException on a non-barcode.</summary>
+    /// <summary>
+    /// Active chemicals with a product carrying the barcode: any GS1 spelling (Digital Link,
+    /// element string, GTIN-14/EAN-13/UPC-A forms) matches. Throws ArgumentException on a non-barcode.
+    /// </summary>
     Task<IReadOnlyList<ChemicalRegisterEntryModel>> LookupBarcodeAsync(string barcode);
 
-    /// <summary>Active chemicals whose name or reg.nr contains the query, or whose product barcode equals it; ordered by name.</summary>
+    /// <summary>
+    /// Active chemicals whose name or reg.nr contains the query, or whose product barcode equals it
+    /// (a GS1 scan is searched as its GTIN; a junk scan throws ArgumentException); ordered by name.
+    /// </summary>
     Task<ChemicalRegisterPageModel> SearchAsync(string query, int page, int pageSize);
 
     /// <summary>

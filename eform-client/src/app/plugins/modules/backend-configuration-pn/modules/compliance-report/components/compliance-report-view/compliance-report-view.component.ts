@@ -1,7 +1,6 @@
 import {Overlay} from '@angular/cdk/overlay';
 import {Component, ElementRef, Input, NgZone, OnDestroy, OnInit, TemplateRef, ViewChild} from '@angular/core';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
-import {Router} from '@angular/router';
 import {TranslateService} from '@ngx-translate/core';
 import {MtxGridColumn, MtxGridRowClassFormatter} from '@ng-matero/extensions/grid';
 import {Subject, merge, of} from 'rxjs';
@@ -22,6 +21,10 @@ import {
   CalendarImageLightboxComponent,
   CalendarImageLightboxData,
 } from '../../../calendar/modals';
+import {
+  CalendarCompleteEventModalComponent,
+  CalendarCompleteEventModalData,
+} from '../../../calendar/modals/calendar-complete-event-modal/calendar-complete-event-modal.component';
 import {
   CalendarBoardModel,
   ComplianceReportCaseModel,
@@ -116,8 +119,15 @@ interface ComplianceReportRowVm {
    * a case the server sent without one, which `canEdit` rejects.
    */
   checkListId: number;
+  propertyId: number;
   propertyName: string;
   doneBy: string;
+  /** The SDK site that completed the case, kept by the edit dialog (#1373). */
+  completedBySiteId: number | null;
+  /** The task and its assignment — what the Detaljer dialog is opened with (#1373). */
+  areaRulePlanningId: number | null;
+  workerSiteIds: number[];
+  teamAssigneeIds: number[];
   /** `DoneAtUserModifiable ?? DoneAt`. Case metadata (#1160 finding 7). */
   doneAt: string | Date | null;
   /** The task title — the prototype's `Område`. */
@@ -221,7 +231,7 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
   /** The employee filter's options, keyed by `siteId` like the filter bar's (#1329). */
   private employees: CommonDictionaryModel[] = [];
   private destroy$ = new Subject<void>();
-  /** Refreshes that are NOT a user gesture: after a delete. */
+  /** Refreshes that are NOT a user gesture: after a delete or an edit. */
   private refresh$ = new Subject<void>();
   private deleteDialogRef: MatDialogRef<unknown> | null = null;
   private pendingDeleteId: number | null = null;
@@ -229,7 +239,7 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
   private pendingDeleteRow: ComplianceReportRowVm | null = null;
 
   /**
-   * The row currently carrying `row-highlight-flash` (#1290/#1291), or null.
+   * The row currently carrying `row-highlight-flash` (#1290/#1373), or null.
    * Only ever changed through `setHighlightedRow`, which also swaps
    * `rowClassFormatter` — changing this field alone does NOT reach the DOM.
    */
@@ -260,7 +270,6 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
     private translate: TranslateService,
     private dialog: MatDialog,
     private overlay: Overlay,
-    private router: Router,
     private host: ElementRef<HTMLElement>,
     private zone: NgZone,
   ) {}
@@ -407,8 +416,13 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
       // The CASE's own template. Since #1276 it equals the table's, but the
       // route is built from the case, not from how the case was grouped.
       checkListId: caseModel.checkListId ?? 0,
+      propertyId: caseModel.propertyId,
       propertyName: caseModel.propertyName,
       doneBy: complianceWorkerNames(caseModel.workerNames),
+      completedBySiteId: caseModel.completedBySiteId ?? null,
+      areaRulePlanningId: caseModel.areaRulePlanningId ?? null,
+      workerSiteIds: caseModel.workerSiteIds ?? [],
+      teamAssigneeIds: caseModel.teamAssigneeIds ?? [],
       doneAt: caseModel.doneAt,
       title: caseModel.title,
       imagesCount: caseModel.imagesCount ?? 0,
@@ -676,7 +690,7 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
   }
 
   // -------------------------------------------------------------------
-  // Landing on a row after a re-fetch (#1290 delete, reused by #1291 edit)
+  // Landing on a row after a re-fetch (#1290 delete, reused by #1373 edit)
   // -------------------------------------------------------------------
 
   /** Every row of every table of every section, in the order they render. */
@@ -895,60 +909,61 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
 
   /**
    * `Rediger`. Only completed cases have anything to edit (compliance.js:1645),
-   * and only a row that knows its OWN template can be routed to the editor —
-   * `checkListId` is read off the case (#1188), not off its table.
+   * and only a row that knows its OWN template can be opened — `checkListId` is
+   * read off the case (#1188), not off its table.
    */
   canEdit(row: ComplianceReportRowVm): boolean {
     return row.completed && row.sdkCaseId > 0 && row.checkListId > 0;
   }
 
   /**
-   * Opens the real eForm editor for THAT case, by navigating to the case route
-   * the sibling reports page already uses for exactly this job
-   * (`report-container.component.ts:205-207`).
+   * Opens the log in the Detaljer dialog (`CalendarCompleteEventModalComponent`)
+   * in its EDIT mode (#1373): the existing case with its answers, its done date
+   * and its completer, saved through `PUT .../cases` — the case is updated, not
+   * completed again. The dialog groups the worker list off the task's assignment
+   * exactly as Detaljer does (`workerSiteIds` + `teamAssigneeIds`).
    *
-   * DELIBERATELY NOT `ComplianceCaseModalComponent`, which #1167 §7 recommends.
-   * (That component no longer exists — #1205 deleted it as dead code; the
-   * reasoning below is why it was never wired up here in the first place.)
-   * That modal wrote `replyRequest.siteId = data.workerId` on save and PUT it
-   * through the client's `updateCase()` to `compliances/cases`, whose C# handler
-   * `BackendConfigurationCompliancesService.Update(ReplyRequest)` assigns it
-   * straight to `foundCase.SiteId` — so opening it without a real worker id
-   * RE-HOMES the SDK case to site 0. #1166's `ComplianceReportCaseModel` carries worker NAMES and
-   * no site ids (the same gap #1165 hit on `assigneeIds`), and the only producer
-   * of that id is the calendar's `prepare-complete`, which needs an
-   * `areaRulePlanningId` this DTO does not carry either. The case route takes
-   * `sdkCaseId / templateId / planningId`, writes no site id, and its third
-   * segment is read into a field the page never uses — so the compliance id is
-   * passed there, giving the URL a meaningful value rather than a filler. The
-   * template segment is the ROW's own `checkListId` — the case's fact, which
-   * since #1276 also equals its table's.
-   *
-   * A full navigation destroys this view and its fetched result; the filters
-   * survive (the state service lives on the cached lazy module ref). What
-   * brings the user back to the SAME result after `Gem` (#1291) is the return
-   * context stored here: the mode, page and `showAll` on screen, and this
-   * row's key. The case page, on a successful save, navigates to
-   * `reverseRoute` with `?highlightId={sdkCaseId}`; `enterPage()` sees both,
-   * re-fetches without resetting the page, and this view — recreated —
-   * lands on the row after the response renders (`landOnRow`: expand its
-   * table if the row budget collapsed it, scroll it into view, highlight it
-   * ~3 s). Back WITHOUT saving carries no `highlightId`, so it lands on the
-   * un-fetched placeholder exactly as before. Going back to a modal is no
-   * longer a flag flip: #1205 deleted the component, so it would have to be
-   * re-created — and only once the row DTO carries a real site id.
+   * The view stays mounted, so the return is the delete flow's: on a save the
+   * report is re-fetched and the edited row is landed on and highlighted (a
+   * changed done date can move it within, or out of, the period). A cancel
+   * re-fetches nothing.
    */
   onEdit(row: ComplianceReportRowVm): void {
     if (!this.canEdit(row)) {
       return;
     }
-    this.state.setReturnContext(row.sdkCaseId, complianceReportRowKey(row));
-    this.router
-      .navigate(
-        ['/plugins/backend-configuration-pn/case', row.sdkCaseId, row.checkListId, row.complianceId],
-        {queryParams: {reverseRoute: this.router.url}},
-      )
-      .then();
+    const ref = this.dialog.open(CalendarCompleteEventModalComponent, {
+      data: {
+        taskId: row.areaRulePlanningId ?? 0,
+        complianceId: row.complianceId,
+        occurrenceDate: row.taskDate,
+        propertyId: row.propertyId,
+        assigneeIds: row.workerSiteIds,
+        teamAssigneeIds: row.teamAssigneeIds,
+        taskTitle: row.title,
+        edit: {
+          sdkCaseId: row.sdkCaseId,
+          checkListId: row.checkListId,
+          completedBySiteId: row.completedBySiteId,
+          completedByName: row.doneBy,
+        },
+      } as CalendarCompleteEventModalData,
+      // Detaljer's sizing: one section wide; the dialog widens itself for more.
+      width: 'min(90vw, 900px)',
+      maxWidth: '95vw',
+      autoFocus: false,
+      restoreFocus: false,
+    });
+    ref
+      .afterClosed()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((result?: {saved?: boolean}) => {
+        if (!result?.saved) {
+          return;
+        }
+        this.state.setPendingRowHighlight(complianceReportRowKey(row));
+        this.refresh$.next();
+      });
   }
 
   /**

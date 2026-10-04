@@ -42,8 +42,9 @@ public class ComplianceReportCaseModel
     public string PropertyName { get; set; }
     public string Title { get; set; }
 
-    /// <summary>Effective occurrence date, <c>yyyy-MM-dd</c> (exception
-    /// <c>NewDate</c> applied), formatted with the invariant culture.</summary>
+    /// <summary>The date the row is placed on, <c>yyyy-MM-dd</c>, formatted with the
+    /// invariant culture: for a completed log its done date (#1370), otherwise the
+    /// occurrence date with an exception's <c>NewDate</c> applied.</summary>
     public string TaskDate { get; set; }
 
     public bool Completed { get; set; }
@@ -60,6 +61,23 @@ public class ComplianceReportCaseModel
     /// #1333) — never the assignees. Empty when the case is open or no completer is
     /// known.</summary>
     public List<string> WorkerNames { get; set; } = [];
+
+    /// <summary>The SDK site that completed the case (<c>Case.SiteId</c>) — the id behind
+    /// <see cref="WorkerNames"/>. Rapport's edit dialog (#1373) keeps it as the completer.</summary>
+    public int? CompletedBySiteId { get; set; }
+
+    /// <summary>The task (lowest-Id live ARP) the row belongs to — what the Detaljer dialog
+    /// is opened for (#1373). <c>null</c> never reaches Rapport: a row without a live ARP has
+    /// no report headline and is excluded.</summary>
+    public int? AreaRulePlanningId { get; set; }
+
+    /// <summary>The task's explicit assignees, the same NARROW set as
+    /// <see cref="ComplianceReportRowModel.WorkerSiteIds"/> (#1373).</summary>
+    public List<int> WorkerSiteIds { get; set; } = [];
+
+    /// <summary>The task's team assignees, as
+    /// <see cref="ComplianceReportRowModel.TeamAssigneeIds"/> (#1373).</summary>
+    public List<int> TeamAssigneeIds { get; set; } = [];
 
     /// <summary>
     /// Answers, keyed by <see cref="ComplianceReportColumnModel.Key"/>.

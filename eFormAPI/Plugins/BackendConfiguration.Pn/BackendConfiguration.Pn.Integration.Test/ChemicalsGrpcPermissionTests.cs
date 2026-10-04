@@ -127,7 +127,7 @@ public class ChemicalsGrpcPermissionTests : ChemicalTestBase
         var location = await CreateLocationAsync(property.Id, sortOrder: 1);
         var empty = await CreateLocationAsync(property.Id, sortOrder: 2);
         var sds = Guid.NewGuid().ToString("N");
-        var barcode = ChemicalRegisterSeed.RandomDigits(13);
+        var barcode = ChemicalRegisterSeed.RandomGtin(13);
         var chemical = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Matrix", "8-888", barcode: barcode, sdsFileName: sds);
         var placement = await CreatePlacementAsync(location.Id, chemical.ChemicalId);
         await new ChemicalStockEntry

@@ -1,6 +1,5 @@
 import {Component, OnDestroy, OnInit} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
-import {ActivatedRoute, Router} from '@angular/router';
 import {TranslateService} from '@ngx-translate/core';
 import {Store} from '@ngrx/store';
 import {Observable, Subject} from 'rxjs';
@@ -56,16 +55,11 @@ export class ComplianceReportPageComponent implements OnInit, OnDestroy {
   /** Deleting a log is admin-only; Detaljer and Rapport show the action to an admin. */
   isAdmin$: Observable<boolean>;
 
-  /** The deferred removal of `?highlightId=` from the URL — see `ngOnInit`. */
-  private clearHighlightTimer: ReturnType<typeof setTimeout> | null = null;
-
   constructor(
     public state: ComplianceReportStateService,
     private complianceReportService: BackendConfigurationPnComplianceReportService,
     private dialog: MatDialog,
     private translate: TranslateService,
-    private route: ActivatedRoute,
-    private router: Router,
     private store: Store,
   ) {
     this.isAdmin$ = this.store.select(selectAuthIsAdmin);
@@ -93,45 +87,16 @@ export class ComplianceReportPageComponent implements OnInit, OnDestroy {
     // fetch below already queries it. The store emits synchronously on
     // subscribe; `take(1)` because a later auth change must not rewrite the
     // filters mid-visit (the next visit's call handles a user switch).
-    //
-    // `?highlightId=` is what the shared case page appends after SAVING an
-    // edit (#1291). It only means something together with the return context
-    // the Rapport view stored before it navigated there — `enterPage()` checks
-    // both — and it is dropped from the URL right after entry (replaceUrl, so Back
-    // does not revisit it): the row to land on is already held by the service,
-    // and a reload or a copied link must not carry a stale highlight.
-    const highlightParam = this.route.snapshot.queryParamMap.get('highlightId');
-    const highlightId = highlightParam !== null && /^\d+$/.test(highlightParam) ? +highlightParam : null;
     this.store
       .select(selectAuthUser)
       .pipe(take(1), takeUntil(this.destroy$))
       .subscribe((user) => {
         this.state.restoreSavedPeriod((user as {id?: number} | null | undefined)?.id);
       });
-    this.state.enterPage(highlightId);
-    if (highlightParam !== null) {
-      // Deferred a macrotask, as task-tracker's own cleanup is: navigating
-      // from inside the activation of the navigation that is still landing
-      // here would supersede it mid-flight.
-      this.clearHighlightTimer = setTimeout(() => {
-        this.clearHighlightTimer = null;
-        this.router
-          .navigate([], {
-            relativeTo: this.route,
-            queryParams: {highlightId: null},
-            queryParamsHandling: 'merge',
-            replaceUrl: true,
-          })
-          .then();
-      });
-    }
+    this.state.enterPage();
   }
 
   ngOnDestroy(): void {
-    if (this.clearHighlightTimer !== null) {
-      clearTimeout(this.clearHighlightTimer);
-      this.clearHighlightTimer = null;
-    }
     this.destroy$.next();
     this.destroy$.complete();
   }

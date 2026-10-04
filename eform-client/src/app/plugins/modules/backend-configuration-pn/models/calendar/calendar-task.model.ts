@@ -35,8 +35,9 @@ export interface CalendarTaskModel {
   teamAssigneeIds?: number[];
   workerNames: string[];
   // Worker-tag assignment (distinct from the item-planning `tags` above).
-  // Backend CalendarTaskResponseModel.WorkerTagIds — ids only; the container
-  // resolves them to display names (workerTagNames) using its `teams` list.
+  // Backend CalendarTaskResponseModel.WorkerTagIds / WorkerTagNames. The task list
+  // index sends the names (#1385); for the week view the calendar container
+  // resolves them from its `teams` list.
   workerTagIds?: number[];
   workerTagNames?: string[];
   boardId: number;
