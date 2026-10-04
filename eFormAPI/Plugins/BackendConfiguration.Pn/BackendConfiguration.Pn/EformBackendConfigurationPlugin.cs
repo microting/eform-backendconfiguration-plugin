@@ -177,6 +177,9 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<IBackendConfigurationDocumentService, BackendConfigurationDocumentService>();
         services.AddTransient<IBackendConfigurationReportService, BackendConfigurationReportService>();
         services.AddTransient<IBackendConfigurationFilesService, BackendConfigurationFilesService>();
+        // Singletons: the verifier holds the replay store, the provider caches the customer number.
+        services.AddSingleton<Services.InboundMail.InboundMailRequestVerifier>();
+        services.AddSingleton<Services.InboundMail.ICustomerNoProvider, Services.InboundMail.CustomerNoProvider>();
         services.AddTransient<IBackendConfigurationStatsService, BackendConfigurationStatsService>();
         services.AddTransient<IBackendConfigurationCalendarService, BackendConfigurationCalendarService>();
         services.AddTransient<IBackendConfigurationCaseService, BackendConfigurationCaseService>();
@@ -257,6 +260,9 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddOptions<Infrastructure.Models.Settings.GoogleDriveOptions>()
             .Bind(configuration.GetSection("GoogleDrive"))
             .ValidateDataAnnotations();
+
+        services.AddOptions<Infrastructure.Models.Settings.InboundMailHubOptions>()
+            .Bind(configuration.GetSection("InboundMailHub"));
 
         services.AddChemicalBaseOptions(configuration);
     }
