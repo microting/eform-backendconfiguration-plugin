@@ -39,7 +39,7 @@ public static class ChemicalBarcode
             return gtin;
         }
 
-        var text = raw?.Trim() ?? string.Empty;
+        var text = Gs1.Trim(raw) ?? string.Empty;
         return IsLiteralBarcode(text) ? text : throw NotAGtin();
     }
 
@@ -65,7 +65,7 @@ public static class ChemicalBarcode
 
     /// <summary>The barcode spellings a register search text may match; empty when the text is no barcode.</summary>
     public static IReadOnlyList<string> SearchCandidates(string text) =>
-        Gs1.TryExtractGtin(text, out _) || IsLiteralBarcode(text?.Trim() ?? string.Empty) ? Candidates(text) : [];
+        Gs1.TryExtractGtin(text, out _) || IsLiteralBarcode(Gs1.Trim(text) ?? string.Empty) ? Candidates(text) : [];
 
     /// <summary>
     /// A register search query: a scan is searched as its GTIN; free text passes
@@ -73,7 +73,7 @@ public static class ChemicalBarcode
     /// </summary>
     public static string NormalizeSearchQuery(string query)
     {
-        var text = query?.Trim();
+        var text = Gs1.Trim(query);
         if (Gs1.TryExtractGtin(text, out var gtin))
         {
             return gtin;
