@@ -5,6 +5,8 @@ export class ComplianceModel {
   controlArea: string;
   itemName: string;
   deadline: Date;
+  /** The compliance's own stored deadline; `deadline` is the displayed date (#1382). */
+  complianceDeadline: Date;
   createdAt: Date;
   responsible: Array<ResponsibleModel>;
   compliance: PropertyCompliancesColorBadgesEnum;

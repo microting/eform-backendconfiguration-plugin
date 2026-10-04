@@ -116,8 +116,8 @@ describe('TaskListPageComponent — Logbøger folder resolution', () => {
   });
 
   // #1256: the page has no team filter; `teams` is only the edit modal's team-NAME
-  // fallback (the modal loads its own property-scoped teams for the picker, and these
-  // rows carry no workerTagNames), so it is the installation-wide list on purpose.
+  // fallback (the modal loads its own property-scoped teams for the picker, and a row
+  // may hold a team it cannot name), so it is the installation-wide list on purpose.
   it('hands the edit modal the installation-wide teams list as its name fallback', () => {
     const workerTags = TestBed.inject(BackendConfigurationPnWorkerTagsService) as any;
     expect(workerTags.getWorkerTags).toHaveBeenCalledTimes(1);

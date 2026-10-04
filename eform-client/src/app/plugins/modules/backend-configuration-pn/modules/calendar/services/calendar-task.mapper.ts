@@ -29,3 +29,13 @@ export function mapResponseToCalendarTask(dto: any): CalendarTaskModel {
     repeatRule: mapRepeatType(dto.repeatType ?? 0, dto.repeatEvery ?? 1),
   };
 }
+
+/**
+ * #1385 — the names a task-list row shows as "Assigned to": the individual
+ * workers, then the teams (worker tags). A team-only task used to read `--`.
+ * `workerTagNames` is index-parallel to `workerTagIds` and holds '' for a tag
+ * the server could not name, so blanks are dropped.
+ */
+export function assigneeDisplayNames(task: CalendarTaskModel): string[] {
+  return [...(task.workerNames ?? []), ...(task.workerTagNames ?? []).filter(name => !!name)];
+}

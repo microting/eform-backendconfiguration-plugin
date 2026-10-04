@@ -5,6 +5,7 @@ import {CommonDictionaryModel, SharedTagModel} from 'src/app/common/models';
 import {CalendarBoardModel, CalendarTaskModel} from '../../../../models/calendar';
 import {CalendarRepeatService} from '../../../calendar/services/calendar-repeat.service';
 import {formatRepeatText} from '../../../calendar-task-list/calendar-task-list-repeat.util';
+import {assigneeDisplayNames} from '../../../calendar/services/calendar-task.mapper';
 
 /**
  * One grid row (#1193). The grid sorts client-side over `data[sortHeaderId]`,
@@ -253,7 +254,7 @@ export class TaskListTableComponent implements OnChanges {
     },
     {
       field: 'assignedTo', header: this.translate.stream('Assigned to'),
-      formatter: (t: CalendarTaskModel) => (t.workerNames ?? []).join('<br/>'),
+      formatter: (t: CalendarTaskModel) => assigneeDisplayNames(t).join('<br/>'),
     },
     {
       field: 'tags', header: this.translate.stream('Tags'),

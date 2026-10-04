@@ -525,4 +525,73 @@ public class CalendarTeamOnlyTaskStatusTests : TestBaseSetup
         Assert.That(result.Success, Is.False);
         Assert.That((await StatusOf(arpId)).ArpStatus, Is.True, "the rejected edit changed nothing");
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // #1385
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private async Task<List<int>> LiveItemsPlanningSiteIdsOf(int arpId)
+    {
+        var planningId = await BackendConfigurationPnDbContext!.AreaRulePlannings
+            .Where(x => x.Id == arpId).Select(x => x.ItemPlanningId).SingleAsync();
+        return await ItemsPlanningPnDbContext!.PlanningSites
+            .AsNoTracking()
+            .Where(x => x.PlanningId == planningId && x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Select(x => x.SiteId)
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// #1385 — the wizard's create path inserted every items-planning PlanningSites row
+    /// twice (A, B, A, B), and a repeated id from the client doubled its row too.
+    /// <b>Fails on the old code.</b> An edit keeps one row per site.
+    /// </summary>
+    [Test]
+    public async Task CreateAndUpdateTask_WriteExactlyOnePlanningSitesRowPerSite()
+    {
+        var s = await SeedScenario();
+
+        // WorkerA is sent twice: a repeated id must not double its row either.
+        var arpId = await CreateViaCalendar(BuildCreate(s, sites: [s.WorkerA, s.WorkerB, s.WorkerA], teams: []));
+        Assert.That(await LiveItemsPlanningSiteIdsOf(arpId), Is.EquivalentTo(new[] { s.WorkerA, s.WorkerB }),
+            "create: one row per site");
+
+        var result = await _calendarService.UpdateTask(
+            BuildEdit(s, arpId, "all", SeriesStart(), sites: [s.WorkerA, s.WorkerB], teams: []));
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(await LiveItemsPlanningSiteIdsOf(arpId), Is.EquivalentTo(new[] { s.WorkerA, s.WorkerB }),
+            "update: still one row per site");
+    }
+
+    /// <summary>
+    /// #1385 — the task list's "Assigned to" column showed `--` for a team-only task:
+    /// Index returned the team's id but no name. It now names the team, and a task with
+    /// a worker and a team carries both.
+    /// </summary>
+    [Test]
+    public async Task Index_NamesTheTeamOfATeamOnlyTask()
+    {
+        var s = await SeedScenario();
+        var teamName = await MicrotingDbContext!.Tags
+            .Where(x => x.Id == s.TeamId).Select(x => x.Name).SingleAsync();
+        var teamOnlyId = await CreateViaCalendar(BuildCreate(s, sites: [], teams: [s.TeamId]));
+        var mixedId = await CreateViaCalendar(BuildCreate(s, sites: [s.WorkerA], teams: [s.TeamId]));
+
+        var result = await _calendarService.Index(new CalendarTaskIndexRequestModel
+        {
+            Filters = new CalendarTaskListFiltrationModel { PropertyIds = [s.PropertyId] }
+        });
+
+        Assert.That(result.Success, Is.True, result.Message);
+        var teamOnly = result.Model.Single(x => x.Id == teamOnlyId);
+        var mixed = result.Model.Single(x => x.Id == mixedId);
+        Assert.Multiple(() =>
+        {
+            Assert.That(teamOnly.WorkerNames, Is.Empty);
+            Assert.That(teamOnly.WorkerTagIds, Is.EqualTo(new[] { s.TeamId }));
+            Assert.That(teamOnly.WorkerTagNames, Is.EqualTo(new[] { teamName }));
+            Assert.That(mixed.WorkerNames, Has.Count.EqualTo(1));
+            Assert.That(mixed.WorkerTagNames, Is.EqualTo(new[] { teamName }));
+        });
+    }
 }

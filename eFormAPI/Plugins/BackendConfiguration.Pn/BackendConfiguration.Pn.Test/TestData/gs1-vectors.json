@@ -1,0 +1,31 @@
+{
+  "_comment": "Binding cross-repo GS1 grammar vectors (controller ruling 2026-10-04). Identical in the app, the tenant backend and chemicalbase. Read by gs1.spec.ts (client) and Gs1VectorTests.cs (server). gtin null = reject. Check digits verified.",
+  "vectors": [
+    {"input": "5711111111114", "gtin": "5711111111114"},
+    {"input": "05711111111114", "gtin": "5711111111114"},
+    {"input": "042100005264", "gtin": "0042100005264"},
+    {"input": "96385074", "gtin": "96385074"},
+    {"input": "00000096385074", "gtin": "96385074"},
+    {"input": "(01)05711111111114", "gtin": "5711111111114"},
+    {"input": "(01)05711111111114(10)LOT1", "gtin": "5711111111114"},
+    {"input": "0105711111111114\u001d10LOT1", "gtin": "5711111111114"},
+    {"input": "]E05711111111114", "gtin": "5711111111114"},
+    {"input": "]d20105711111111114", "gtin": "5711111111114"},
+    {"input": "]Q3https://id.gs1.org/01/05711111111114", "gtin": "5711111111114"},
+    {"input": "https://id.gs1.org/01/05711111111114", "gtin": "5711111111114"},
+    {"input": "https://example.com/gtin/05711111111114/10/LOT?17=261231", "gtin": "5711111111114"},
+    {"input": "https://example.com/01/%30%35711111111114", "gtin": "5711111111114"},
+    {"input": "]X15711111111114", "gtin": null},
+    {"input": "5711111111115", "gtin": null},
+    {"input": "0000000000000", "gtin": null},
+    {"input": "(01)057111111111145", "gtin": null},
+    {"input": "(10)LOT(01)05711111111114", "gtin": null},
+    {"input": "foo(01)05711111111114", "gtin": null},
+    {"input": "https://example.com/01/%FF", "gtin": null},
+    {"input": "WIFI:S:x;T:WPA;P:y;;", "gtin": null},
+    {"input": "https://example.com/product/123", "gtin": null},
+    {"input": "", "gtin": null},
+    {"input": "   ", "gtin": null},
+    {"repeat": {"text": "5", "count": 3000}, "gtin": null}
+  ]
+}

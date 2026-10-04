@@ -80,6 +80,12 @@ public class TaskTrackerModel
 	public DateTime DeadlineTask { get; set; }
 
 	/// <summary>
+	/// The compliance's own stored <c>Deadline</c>, which the #1300 future-task guard judges.
+	/// <see cref="DeadlineTask"/> is the displayed date and is a day earlier for legacy rows (#1382).
+	/// </summary>
+	public DateTime ComplianceDeadline { get; set; }
+
+	/// <summary>
 	/// Gets or sets the next execution time of the task tracker model.
 	/// </summary>
 	public DateTime? NextExecutionTime { get; set; }

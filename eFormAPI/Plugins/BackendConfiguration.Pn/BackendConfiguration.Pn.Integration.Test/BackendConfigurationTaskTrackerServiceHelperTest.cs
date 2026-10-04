@@ -969,4 +969,73 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		Assert.That(result.Model[0].ComplianceId, Is.EqualTo(complianceId));
 		Assert.That(result.Model[0].NextExecutionTime, Is.Null);
 	}
+
+	/// <summary>
+	/// #1382 — a calendar task stores the occurrence date itself as Deadline, so an occurrence
+	/// on D is shown with D, not D − 1. A legacy row (no CalendarConfiguration) stores the end
+	/// of its period and keeps its Deadline − 1 day display. Both carry the stored Deadline
+	/// for the #1300 future-task guard.
+	/// </summary>
+	[TestCase(true, 0)]
+	[TestCase(false, -1)]
+	public async Task Index_DeadlineTask_IsTheOccurrenceDateForACalendarTask_DeadlineMinusOneForLegacy(
+		bool calendarTask, int expectedOffsetDays)
+	{
+		var core = await GetCore();
+		var today = DateTime.UtcNow.Date;
+		var (propertyId, planningId) = await SeedTaskWithoutCompliances(
+			complianceEnabled: true, nextExecutionTime: null);
+		if (calendarTask)
+		{
+			await SeedCalendarConfiguration(planningId);
+		}
+		var complianceId = await SeedOpenCompliance(propertyId, planningId, today);
+
+		var result = await BackendConfigurationTaskTrackerHelper.Index(
+			new TaskTrackerFiltrationModel { PropertyIds = [propertyId], TagIds = [], WorkerIds = [] },
+			BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!, WorkerTagMembership(core));
+
+		Assert.That(result.Success, Is.True, result.Message);
+		var row = result.Model.Single(x => x.ComplianceId == complianceId);
+		Assert.Multiple(() =>
+		{
+			Assert.That(row.DeadlineTask, Is.EqualTo(today.AddDays(expectedOffsetDays)));
+			Assert.That(row.ComplianceDeadline, Is.EqualTo(today));
+		});
+	}
+
+	/// <summary>#1382 — a removed CalendarConfiguration does not make a task a calendar task.</summary>
+	[Test]
+	public async Task Index_RemovedCalendarConfiguration_KeepsTheLegacyDisplay()
+	{
+		var core = await GetCore();
+		var today = DateTime.UtcNow.Date;
+		var (propertyId, planningId) = await SeedTaskWithoutCompliances(
+			complianceEnabled: true, nextExecutionTime: null);
+		await SeedCalendarConfiguration(planningId, Constants.WorkflowStates.Removed);
+		var complianceId = await SeedOpenCompliance(propertyId, planningId, today.AddDays(3));
+
+		var result = await BackendConfigurationTaskTrackerHelper.Index(
+			new TaskTrackerFiltrationModel { PropertyIds = [propertyId], TagIds = [], WorkerIds = [] },
+			BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!, WorkerTagMembership(core));
+
+		Assert.That(result.Success, Is.True, result.Message);
+		Assert.That(result.Model.Single(x => x.ComplianceId == complianceId).DeadlineTask,
+			Is.EqualTo(today.AddDays(2)));
+	}
+
+	private async Task SeedCalendarConfiguration(
+		int planningId, string workflowState = Constants.WorkflowStates.Created)
+	{
+		var arpId = await BackendConfigurationPnDbContext!.AreaRulePlannings
+			.Where(x => x.ItemPlanningId == planningId)
+			.Select(x => x.Id)
+			.SingleAsync();
+		await BackendConfigurationPnDbContext.CalendarConfigurations.AddAsync(new CalendarConfiguration
+		{
+			AreaRulePlanningId = arpId, StartHour = 9.0, Duration = 1.0,
+			WorkflowState = workflowState, CreatedByUserId = 1, UpdatedByUserId = 1
+		});
+		await BackendConfigurationPnDbContext.SaveChangesAsync();
+	}
 }

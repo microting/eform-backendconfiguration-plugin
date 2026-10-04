@@ -11,6 +11,8 @@ export interface TaskModel {
   repeatEvery: number;
   repeatType: RepeatTypeEnum;
   deadlineTask: Date,
+  /** The compliance's own stored deadline; `deadlineTask` is the displayed date (#1382). */
+  complianceDeadline: Date;
   nextExecutionTime: string | null;
   taskIsExpired: boolean;
   sdkCaseId: number;
