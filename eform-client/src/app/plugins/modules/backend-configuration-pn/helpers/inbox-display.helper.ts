@@ -10,6 +10,14 @@ export const INBOX_STATUS_LABELS: Record<InboxDocumentStatus, string> = {
   [InboxDocumentStatus.Rejected]: 'Rejected',
 };
 
+/** FromAddress the API uses when the sender was never reported (InboxHubService.UnknownSender). */
+const INBOX_UNKNOWN_SENDER = 'ukendt';
+
+/** True for the API's placeholder sender, which the UI shows as the 'Unknown sender' translation. */
+export function inboxIsUnknownSender(fromAddress: string): boolean {
+  return fromAddress === INBOX_UNKNOWN_SENDER;
+}
+
 /** Suggestions at or above this confidence are shown in the list and preselected in the review dialog. */
 export const INBOX_PRESELECT_CONFIDENCE = 0.5;
 

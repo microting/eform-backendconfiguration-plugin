@@ -41,7 +41,7 @@
         <strong>{{ d.subject || d.fileName }}</strong>
         <div *ngIf="d.subject"><small>{{ d.fileName }}</small></div>
       </td>
-      <td>{{ d.fromAddress }}</td>
+      <td>{{ isUnknownSender(d.fromAddress) ? ('Unknown sender' | translate) : d.fromAddress }}</td>
       <td>{{ d.receivedAt | date: 'dd.MM.yyyy HH:mm' }}</td>
       <td>
         <ng-container *ngTemplateOutlet="chips; context: {$implicit: suggested(d, Kind.Property)}"></ng-container>
@@ -83,7 +83,7 @@
             >{{ 'Block sender' | translate }}</button>
           </ng-container>
           <button
-            *ngIf="d.status === Status.Failed"
+            *ngIf="d.status === Status.Failed || d.status === Status.Preparing"
             class="btn-quiet"
             [id]="'inboxRejectDocumentBtn-' + d.id"
             (click)="reject(d)"

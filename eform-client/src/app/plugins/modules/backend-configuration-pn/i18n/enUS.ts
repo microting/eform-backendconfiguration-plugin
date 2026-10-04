@@ -961,6 +961,7 @@ export const enUS= {
   Reject: 'Reject',
   'Block sender': 'Block sender',
   'Reject document': 'Reject document',
+  'Unknown sender': 'Unknown sender',
   'No documents waiting. Forward a mail with a PDF to your archive address to get started.': 'No documents waiting. Forward a mail with a PDF to your archive address to get started.',
   'High confidence': 'High confidence',
   'Medium confidence': 'Medium confidence',

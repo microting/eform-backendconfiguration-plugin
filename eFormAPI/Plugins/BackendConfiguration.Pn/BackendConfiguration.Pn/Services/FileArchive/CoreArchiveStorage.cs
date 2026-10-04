@@ -27,8 +27,11 @@ public class CoreArchiveStorage(IEFormCoreService coreService) : IArchiveStorage
             return;
         }
 
+        // PutFileToS3Storage directly (as S3AdhocPhotoStorage does): PutFileToStorageSystem would make its own
+        // S3/local choice, and the decision must be UseS3Async's alone so PutAsync and GetAsync always agree.
         var core = await coreService.GetCore();
-        await core.PutFileToStorageSystem(localPath, objectName);
+        await using var content = File.OpenRead(localPath);
+        await core.PutFileToS3Storage(content, objectName).ConfigureAwait(false);
     }
 
     public async Task<Stream?> GetAsync(string objectName)

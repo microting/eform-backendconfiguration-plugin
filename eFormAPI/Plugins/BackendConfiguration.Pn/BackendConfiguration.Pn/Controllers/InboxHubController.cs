@@ -86,12 +86,16 @@ public class InboxHubController(IInboxHubService service, InboundMailRequestVeri
 
     /// <summary>
     /// The whole raw body (no cap of its own: the endpoint's request size limit applies), or null
-    /// when the signature does not verify. The body stays readable for form parsing afterwards.
+    /// when the signature headers are missing/stale or the signature does not verify. The body stays readable for form parsing afterwards.
     /// </summary>
     private async Task<byte[]?> ReadVerifiedBodyAsync()
     {
         var tenant = await customerNo.GetAsync();
         if (tenant <= 0) return null; // customer number unknown: nothing can be verified
+
+        // Cheap reject of unsigned or stale requests before buffering up to 30 MiB; Verify repeats these
+        // checks and verifies the signature once the body is read.
+        if (!verifier.HeadersPlausible(Request.Headers, tenant, DateTime.UtcNow)) return null;
 
         Request.EnableBuffering();
         // Sized from Content-Length (bounded by the endpoint's size limit) so that, when it is exact, the

@@ -1,6 +1,5 @@
 import {Injectable} from '@angular/core';
 import {Observable} from 'rxjs';
-import {map} from 'rxjs/operators';
 import {OperationDataResult, OperationResult} from 'src/app/common/models';
 import {ApiBaseService} from 'src/app/common/services';
 import {
@@ -15,17 +14,6 @@ export const BackendConfigurationPnInboxMethods = {
   Settings: 'api/backend-configuration-pn/inbox/settings',
 };
 
-/**
- * The API stores UTC but serialises the DateTime without an offset, which the `date` pipe would read
- * as local time. Mark such values as UTC; leave values that already carry an offset alone.
- */
-export function inboxAsUtc(value: string | null): string | null {
-  if (!value || /([zZ]|[+-]\d{2}:?\d{2})$/.test(value)) {
-    return value;
-  }
-  return `${value}Z`;
-}
-
 /** The Indbakke: PDFs mailed to the tenant's archive address, reviewed and filed by a person. */
 @Injectable({
   providedIn: 'root',
@@ -35,19 +23,10 @@ export class BackendConfigurationPnInboxService {
 
   /** `status` null = the server's default view (open documents plus the last week's filed ones). */
   list(status: number | null, search: string): Observable<OperationDataResult<InboxListItemModel[]>> {
-    return this.apiBaseService
-      .get<InboxListItemModel[]>(BackendConfigurationPnInboxMethods.Inbox, {
-        status,
-        search: search?.trim() || null,
-      })
-      .pipe(
-        map((res: OperationDataResult<InboxListItemModel[]>) => {
-          if (res?.model) {
-            res.model = res.model.map(d => ({...d, receivedAt: inboxAsUtc(d.receivedAt), readyBy: inboxAsUtc(d.readyBy)}));
-          }
-          return res;
-        })
-      );
+    return this.apiBaseService.get<InboxListItemModel[]>(BackendConfigurationPnInboxMethods.Inbox, {
+      status,
+      search: search?.trim() || null,
+    });
   }
 
   getPdf(id: number): Observable<Blob> {

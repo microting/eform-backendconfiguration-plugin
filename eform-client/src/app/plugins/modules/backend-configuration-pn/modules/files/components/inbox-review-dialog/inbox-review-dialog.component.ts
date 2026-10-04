@@ -8,7 +8,7 @@ import {
   BackendConfigurationPnPropertiesService,
 } from '../../../../services';
 import {InboxListItemModel, InboxSuggestionKind, InboxSuggestionModel} from '../../../../models';
-import {INBOX_PRESELECT_CONFIDENCE, inboxConfidence} from '../../../../helpers';
+import {INBOX_PRESELECT_CONFIDENCE, inboxConfidence, inboxIsUnknownSender} from '../../../../helpers';
 
 /**
  * Review and file one Ready document: the PDF on the left; on the right pickers over every live
@@ -30,6 +30,7 @@ export class InboxReviewDialogComponent implements OnInit {
   private fileTagsService = inject(BackendConfigurationPnFileTagsService);
 
   readonly Kind = InboxSuggestionKind;
+  readonly isUnknownSender = inboxIsUnknownSender;
   readonly confidence = inboxConfidence;
   readonly propertySuggestions = this.suggestionsOf(InboxSuggestionKind.Property);
   readonly tagSuggestions = this.suggestionsOf(InboxSuggestionKind.Tag);

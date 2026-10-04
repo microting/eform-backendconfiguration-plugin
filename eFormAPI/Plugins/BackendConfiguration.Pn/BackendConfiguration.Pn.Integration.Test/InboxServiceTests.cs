@@ -212,4 +212,17 @@ public class InboxServiceTests : TestBaseSetup
         Assert.That(await BackendConfigurationPnDbContext.InboxDocumentVersions.AsNoTracking()
             .AnyAsync(v => v.InboxDocumentId == doc.Id && v.Status == InboxDocumentStatus.Rejected), Is.True);
     }
+
+    [Test]
+    public async Task Reject_Preparing_SetsRejected()
+    {
+        // A document stuck in Preparing (the hub never delivers) must still be rejectable.
+        var doc = await InboxTestData.ReadyDocumentAsync(BackendConfigurationPnDbContext!);
+        doc.Status = InboxDocumentStatus.Preparing;
+        await doc.Update(BackendConfigurationPnDbContext!);
+
+        Assert.That((await _service.RejectAsync(doc.Id, 7)).Success, Is.True);
+        await BackendConfigurationPnDbContext!.Entry(doc).ReloadAsync();
+        Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.Rejected));
+    }
 }

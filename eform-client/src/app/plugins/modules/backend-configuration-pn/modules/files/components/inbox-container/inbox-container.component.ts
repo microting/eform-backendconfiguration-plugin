@@ -9,7 +9,7 @@ import {
   InboxSuggestionKind,
   InboxSuggestionModel,
 } from '../../../../models';
-import {INBOX_PRESELECT_CONFIDENCE, INBOX_STATUS_LABELS, inboxConfidence} from '../../../../helpers';
+import {INBOX_PRESELECT_CONFIDENCE, INBOX_STATUS_LABELS, inboxConfidence, inboxIsUnknownSender} from '../../../../helpers';
 import {InboxReviewDialogComponent} from '../inbox-review-dialog/inbox-review-dialog.component';
 
 @Component({
@@ -24,6 +24,7 @@ export class InboxContainerComponent implements OnInit {
 
   readonly Status = InboxDocumentStatus;
   readonly Kind = InboxSuggestionKind;
+  readonly isUnknownSender = inboxIsUnknownSender;
   readonly statusLabels = INBOX_STATUS_LABELS;
   readonly confidence = inboxConfidence;
   /** Status filter choices after the default (null) view, in display order. */

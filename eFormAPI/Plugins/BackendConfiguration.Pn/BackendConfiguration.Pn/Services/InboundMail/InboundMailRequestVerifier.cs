@@ -35,23 +35,33 @@ public class InboundMailRequestVerifier(IOptions<InboundMailHubOptions> options)
     // "{customerNo}:{requestId}" -> expiry. TryAdd makes the replay check atomic.
     private readonly ConcurrentDictionary<string, DateTime> _seen = new();
 
+    /// <summary>
+    /// The checks that need no body: a signing key is configured, the headers are present and well-formed,
+    /// the customer number matches and the Date is within the allowed skew. Lets the controller refuse an
+    /// unsigned request before buffering its body; <see cref="Verify"/> repeats them.
+    /// </summary>
+    public bool HeadersPlausible(IHeaderDictionary headers, int customerNo, DateTime nowUtc) =>
+        HeadersPlausible(headers, customerNo.ToString(CultureInfo.InvariantCulture), nowUtc);
+
+    private bool HeadersPlausible(IHeaderDictionary headers, string customerNoText, DateTime nowUtc) =>
+        !string.IsNullOrEmpty(options.Value.TenantSigningKey)
+        && headers["Authorization"].ToString().StartsWith(InboundMailSignature.Scheme, StringComparison.Ordinal)
+        && Guid.TryParse(headers["X-Request-Id"].ToString(), out _)
+        && headers["X-Customer-No"].ToString() == customerNoText
+        && DateTime.TryParseExact(headers["Date"].ToString(), "R", CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var sent)
+        && (nowUtc - sent).Duration() <= MaxSkew;
+
     public bool Verify(string method, string path, IHeaderDictionary headers, byte[] body, int customerNo, DateTime nowUtc)
     {
         var customerNoText = customerNo.ToString(CultureInfo.InvariantCulture);
+        if (!HeadersPlausible(headers, customerNoText, nowUtc))
+            return false;
+
         var key = options.Value.TenantSigningKey;
         var auth = headers["Authorization"].ToString();
         var date = headers["Date"].ToString();
         var requestId = headers["X-Request-Id"].ToString();
-        if (string.IsNullOrEmpty(key) || !auth.StartsWith(InboundMailSignature.Scheme, StringComparison.Ordinal)
-            || !Guid.TryParse(requestId, out _)
-            || headers["X-Customer-No"].ToString() != customerNoText)
-            return false;
-
-        if (!DateTime.TryParseExact(date, "R", CultureInfo.InvariantCulture,
-                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var sent)
-            || (nowUtc - sent).Duration() > MaxSkew)
-            return false;
-
         var expected = InboundMailSignature.Sign(key, InboundMailSignature.Canonical(method, path, customerNo,
             requestId, date, InboundMailSignature.BodyHash(body)));
         if (!InboundMailSignature.FixedTimeEquals(expected, auth[InboundMailSignature.Scheme.Length..].Trim()))

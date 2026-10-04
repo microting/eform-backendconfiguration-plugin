@@ -886,6 +886,7 @@ export const deDE = {
   Reject: 'Ablehnen',
   'Block sender': 'Absender blockieren',
   'Reject document': 'Dokument ablehnen',
+  'Unknown sender': 'Unbekannter Absender',
   'No documents waiting. Forward a mail with a PDF to your archive address to get started.': 'Keine Dokumente warten. Leiten Sie eine E-Mail mit einer PDF an Ihre Archivadresse weiter, um loszulegen.',
   'High confidence': 'Hohe Sicherheit',
   'Medium confidence': 'Mittlere Sicherheit',

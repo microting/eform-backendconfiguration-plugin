@@ -18,10 +18,15 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Settings;
 
 /// <summary>
 /// Connection to the central inbound mail service. Empty TenantSigningKey: every
-/// inbound hub call is refused (401). Empty HubUrl: outbound calls are skipped.
+/// inbound hub call is refused (401). Empty HubUrl (or TenantSigningKey): outbound calls
+/// fail and the settings endpoints answer InboxNotConfigured.
 /// </summary>
 public class InboundMailHubOptions
 {
+    /// <summary>
+    /// Scheme and host, optionally with a port (e.g. <c>https://hub.example.com:8443</c>), with no path:
+    /// request signatures cover only the API path, so a path prefix here would break verification at the hub.
+    /// </summary>
     public string HubUrl { get; set; } = "";
     public string TenantSigningKey { get; set; } = "";
     public string MailDomain { get; set; } = "indbakke.microting.dk";

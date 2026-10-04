@@ -2,7 +2,6 @@ import {of} from 'rxjs';
 import {
   BackendConfigurationPnInboxMethods,
   BackendConfigurationPnInboxService,
-  inboxAsUtc,
 } from './backend-configuration-pn-inbox.service';
 import {InboxDocumentStatus, InboxSenderRuleKind} from '../models';
 
@@ -47,26 +46,6 @@ describe('BackendConfigurationPnInboxService', () => {
       service.list(null, '').subscribe();
       expect(apiBaseServiceSpy.get.mock.lastCall[1]).toEqual({status: null, search: null});
     });
-
-    it('marks the offset-less UTC dates as UTC', (done) => {
-      apiBaseServiceSpy.get.mockReturnValue(of({
-        success: true,
-        model: [{id: 1, receivedAt: '2026-10-04T08:15:00', readyBy: null, suggestions: []}],
-      }));
-
-      service.list(null, '').subscribe(res => {
-        expect(res.model[0].receivedAt).toBe('2026-10-04T08:15:00Z');
-        expect(res.model[0].readyBy).toBeNull();
-        done();
-      });
-    });
-  });
-
-  it('inboxAsUtc leaves values that already carry an offset alone', () => {
-    expect(inboxAsUtc('2026-10-04T08:15:00Z')).toBe('2026-10-04T08:15:00Z');
-    expect(inboxAsUtc('2026-10-04T08:15:00+02:00')).toBe('2026-10-04T08:15:00+02:00');
-    expect(inboxAsUtc('2026-10-04T08:15:00.1234567')).toBe('2026-10-04T08:15:00.1234567Z');
-    expect(inboxAsUtc(null)).toBeNull();
   });
 
   it('getPdf GETs the PDF as a blob', () => {

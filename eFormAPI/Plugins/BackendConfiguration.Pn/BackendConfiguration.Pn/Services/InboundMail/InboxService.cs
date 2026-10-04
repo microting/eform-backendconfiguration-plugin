@@ -258,7 +258,8 @@ public class InboxService(BackendConfigurationPnDbContext dbContext, IArchiveSto
                 // Conditional claim, so a concurrent filing is never turned into Rejected.
                 var claimed = await dbContext.InboxDocuments
                     .Where(d => d.Id == id && d.WorkflowState != Constants.WorkflowStates.Removed
-                                && (d.Status == InboxDocumentStatus.Ready || d.Status == InboxDocumentStatus.Failed))
+                                && (d.Status == InboxDocumentStatus.Preparing || d.Status == InboxDocumentStatus.Ready
+                                    || d.Status == InboxDocumentStatus.Failed))
                     .ExecuteUpdateAsync(s => s.SetProperty(d => d.UpdatedAt, DateTime.UtcNow));
                 if (claimed == 0) throw new InboxStateException("InboxDocumentNotReady");
 

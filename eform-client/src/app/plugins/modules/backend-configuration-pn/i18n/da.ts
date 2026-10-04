@@ -861,6 +861,7 @@ export const da = {
   Reject: 'Afvis',
   'Block sender': 'Bloker afsender',
   'Reject document': 'Afvis dokument',
+  'Unknown sender': 'Ukendt afsender',
   'No documents waiting. Forward a mail with a PDF to your archive address to get started.': 'Ingen dokumenter venter. Videresend en mail med en PDF til jeres arkiv-adresse for at komme i gang.',
   'High confidence': 'Høj sikkerhed',
   'Medium confidence': 'Middel sikkerhed',

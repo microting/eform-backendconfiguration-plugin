@@ -1,6 +1,6 @@
 <h3 mat-dialog-title>{{ 'Review and file' | translate }}</h3>
 <div mat-dialog-content>
-  <p class="mb-2">{{ data.subject || data.fileName }} · {{ data.fromAddress }} · {{ data.receivedAt | date: 'dd.MM.yyyy HH:mm' }}</p>
+  <p class="mb-2">{{ data.subject || data.fileName }} · {{ isUnknownSender(data.fromAddress) ? ('Unknown sender' | translate) : data.fromAddress }} · {{ data.receivedAt | date: 'dd.MM.yyyy HH:mm' }}</p>
   <p *ngIf="data.reviewedByMicroting" class="mb-2 d-flex align-items-center gap-4">
     <mat-icon>verified</mat-icon>{{ 'Microting checked these suggestions before they reached you.' | translate }}
   </p>

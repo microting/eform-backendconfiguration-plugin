@@ -303,6 +303,8 @@ public partial class InboxSettingsService(BackendConfigurationPnDbContext dbCont
     /// <summary>
     /// Insert-if-missing as one statement, then update. A duplicate PluginConfigurationValues name makes
     /// BasePn's configuration provider throw on load (see CalendarConfigurationBackfillService).
+    /// Raw insert/ExecuteUpdate and no version row on purpose: the tracked Create/Update pattern could let
+    /// concurrent hosts each insert a row, and duplicate PluginConfigurationValues rows must never exist.
     /// </summary>
     private async Task UpsertPolicyAsync(string policy, int userId)
     {
