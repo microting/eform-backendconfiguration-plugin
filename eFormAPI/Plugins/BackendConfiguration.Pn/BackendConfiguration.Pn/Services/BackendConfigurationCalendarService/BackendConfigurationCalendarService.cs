@@ -185,6 +185,10 @@ public class BackendConfigurationCalendarService(
             //   emitted to the worker because the corresponding write handlers ("complete",
             //   "comment", etc.) have nothing to bind to and will fail.
             List<Compliance> compliancesInWeek;
+            // #1371 — own (not-done) case id → the case a sibling worker completed for the
+            // same occurrence. Filled by whichever branch below loads the week's cases, and
+            // applied again where the compliance loop reloads them.
+            var weekCompletedSiblings = new Dictionary<int, Microting.eForm.Infrastructure.Data.Entities.Case>();
             // Bug A fix side-dict — see ActionableOnly branch below for rationale.
             // Empty for non-ActionableOnly callers (angular admin REST + CalendarGrpcService);
             // the recurrence-emit lookup below tolerates that as a no-op.
@@ -242,6 +246,9 @@ public class BackendConfigurationCalendarService(
                     loadedCases = await sdkDbContextForPrefilter.Cases
                         .Where(c => loadedCaseIds.Contains(c.Id))
                         .ToDictionaryAsync(c => c.Id);
+                    weekCompletedSiblings = await FindCompletedSiblingsAsync(
+                        sdkDbContextForPrefilter, loadedCompliances, loadedCases);
+                    ApplyCompletedSiblings(loadedCases, weekCompletedSiblings);
                 }
 
                 compliancesInWeek = loadedCompliances
@@ -346,6 +353,9 @@ public class BackendConfigurationCalendarService(
                 var sdkCasesById = await sdkDbContextForCalendar.Cases
                     .Where(c => complianceSdkCaseIds.Contains(c.Id))
                     .ToDictionaryAsync(c => c.Id);
+                weekCompletedSiblings = await FindCompletedSiblingsAsync(
+                    sdkDbContextForCalendar, compliancesInWeekAll, sdkCasesById);
+                ApplyCompletedSiblings(sdkCasesById, weekCompletedSiblings);
 
                 bool IsComplianceActionable(Compliance compliance)
                 {
@@ -548,7 +558,7 @@ public class BackendConfigurationCalendarService(
                     .Where(x => x.MicrotingSdkCaseId > 0)
                     .Where(x => planningIds.Contains(x.PlanningId))
                     .Where(x => x.Deadline >= periodWindowStart && x.Deadline <= periodWindowEnd)
-                    .Select(x => new { x.PlanningId, x.Deadline, x.MicrotingSdkCaseId })
+                    .Select(x => new { x.PlanningId, x.Deadline, x.MicrotingSdkCaseId, x.WorkflowState })
                     .ToListAsync();
                 var periodCaseIds = periodCompliances.Select(x => x.MicrotingSdkCaseId).Distinct().ToList();
                 if (periodCaseIds.Count > 0)
@@ -559,6 +569,13 @@ public class BackendConfigurationCalendarService(
                         .Where(c => periodCaseIds.Contains(c.Id) && c.Status == 100)
                         .Select(c => c.Id)
                         .ToListAsync()).ToHashSet();
+                    // #1371 — a period another assigned worker completed is completed too.
+                    completedCaseIds.UnionWith((await CompletedSiblingCases.FindAsync(
+                            itemsPlanningPnDbContext, sdkDbContextForPeriods,
+                            periodCompliances.Where(x => x.WorkflowState == Constants.WorkflowStates.Removed
+                                                         && !completedCaseIds.Contains(x.MicrotingSdkCaseId))
+                                .Select(x => x.MicrotingSdkCaseId)))
+                        .Keys);
 
                     // Per-planning RepeatType + weekday CSV drive the period
                     // granularity; use the same planning the emit loop uses.
@@ -1240,6 +1257,7 @@ public class BackendConfigurationCalendarService(
                     .Where(c => weekComplianceCaseIds.Contains(c.Id))
                     .ToDictionaryAsync(c => c.Id);
             }
+            ApplyCompletedSiblings(weekComplianceCasesById, weekCompletedSiblings);
 
             foreach (var compliance in compliances)
             {
@@ -1368,7 +1386,8 @@ public class BackendConfigurationCalendarService(
                     PlanningId = compliance.PlanningId,
                     IsAllDay = compIsAllDay,
                     EformId = arp?.AreaRule?.EformId,
-                    SdkCaseId = compliance.MicrotingSdkCaseId,
+                    // #1371 — the completed sibling's case when another worker completed it.
+                    SdkCaseId = compSdkCase?.Id ?? compliance.MicrotingSdkCaseId,
                     ItemPlanningTagId = arp?.ItemPlanningTagId,
                     DescriptionHtml = compliancePlanningsDict.TryGetValue(compliance.PlanningId, out var cp)
                         ? cp.Description
@@ -1489,6 +1508,27 @@ public class BackendConfigurationCalendarService(
             }
 
             var areaRulePlannings = await query.ToListAsync();
+
+            // #1376 — an ACTIVE row needs a live items-planning Planning to be a task:
+            // without one it cannot be opened (UpdateTask answers TaskNotFound) and
+            // never deploys. Legacy area rules leave such rows behind (ItemPlanningId
+            // 0, or pointing at a removed or missing Planning), and they showed up as
+            // "Aktiv" tasks with no eForm. Inactive rows stay listed: deactivation
+            // keeps or clears the Planning, so a missing one is normal there.
+            var activePlanningIds = areaRulePlannings
+                .Where(x => x.Status && x.ItemPlanningId > 0)
+                .Select(x => x.ItemPlanningId)
+                .Distinct().ToList();
+            var livePlanningIds = (await itemsPlanningPnDbContext.Plannings
+                    .Where(x => activePlanningIds.Contains(x.Id))
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(x => x.Id)
+                    .ToListAsync())
+                .ToHashSet();
+            areaRulePlannings = areaRulePlannings
+                .Where(x => !x.Status || livePlanningIds.Contains(x.ItemPlanningId))
+                .ToList();
+
             var arpIds = areaRulePlannings.Select(x => x.Id).ToList();
 
             var calConfigsList = await backendConfigurationPnDbContext.CalendarConfigurations
@@ -3351,14 +3391,18 @@ public class BackendConfigurationCalendarService(
     ///
     /// Ordering: the wizard delete runs FIRST, the calendar-side rows
     /// (CalendarConfiguration, CalendarOccurrenceExceptions,
-    /// AreaRulePlanningWorkerTags) afterwards. The wizard delete reads none of
-    /// those three tables, so on the success path the order is immaterial; on
-    /// the failure path it is not. If the wizard fails we return before touching
-    /// any calendar-side row, so the calendar still points at the series and the
-    /// caller can simply retry it. With the calendar rows removed first, a wizard
-    /// failure would instead leave the AreaRulePlanning alive but no longer
-    /// reachable from the calendar (it is looked up through
-    /// CalendarConfiguration).
+    /// AreaRulePlanningWorkerTags) afterwards. Since #1376 the wizard itself also
+    /// soft-deletes the series' CalendarConfiguration (and its tag links), but only
+    /// as part of its last writes — after the device retraction, next to the
+    /// AreaRule and AreaRulePlanning — so the CalendarConfiguration lookup below
+    /// simply finds nothing left on the success path. On the failure path the order
+    /// matters: if the wizard fails we return before touching any calendar-side row,
+    /// and a wizard that failed before its last writes (a CaseDelete that throws,
+    /// for instance) has left the CalendarConfiguration live, so the calendar still
+    /// points at the series and the caller can simply retry it. With the calendar
+    /// rows removed first, a wizard failure would instead leave the
+    /// AreaRulePlanning alive but no longer reachable from the calendar (it is
+    /// looked up through CalendarConfiguration).
     ///
     /// That guarantee covers the CALENDAR-side rows only. The wizard itself has
     /// no transaction — PnBase.Delete calls SaveChangesAsync per entity — so a
@@ -3368,15 +3412,15 @@ public class BackendConfigurationCalendarService(
     /// had already soft-deleted soft-deleted. Several of its failure modes ARE
     /// genuinely no-op — among them a throw from its opening _coreHelper.GetCore()
     /// call, a throw from the AreaRulePlannings lookup that follows it, the
-    /// TaskNotFound early return, and a throw from its Plannings.First lookup — all
-    /// of which precede its first write.
+    /// TaskNotFound early return — all of which precede its first write. (Since
+    /// #1376 a missing or removed Planning no longer throws: the wizard skips it.)
     ///
-    /// Already-deleted series: an AreaRulePlanning can be removed by paths that
-    /// do not clear its CalendarConfiguration — the task-list batch delete
-    /// (BackendConfigurationTaskListService.Delete) and
-    /// DELETE /task-wizard/{id} both do exactly that — which leaves a live
-    /// CalendarConfiguration pointing at a Removed AreaRulePlanning. Nothing
-    /// else reaps those rows. So when the AreaRulePlanning is ALREADY gone we
+    /// Already-deleted series: an AreaRulePlanning can have been removed without
+    /// its CalendarConfiguration — before #1376 the task-list batch delete
+    /// (BackendConfigurationTaskListService.Delete) and DELETE /task-wizard/{id}
+    /// both did exactly that, and the rows they left are still in the data — which
+    /// leaves a live CalendarConfiguration pointing at a Removed AreaRulePlanning.
+    /// Nothing else reaps those rows. So when the AreaRulePlanning is ALREADY gone we
     /// skip the wizard (it would only answer TaskNotFound) and go straight to
     /// removing the calendar-side rows: there is no planning left to orphan, and
     /// without this the stale row is undeletable — it would fail the same way on
@@ -3532,7 +3576,8 @@ public class BackendConfigurationCalendarService(
         // Soft-delete the event's worker-tag links so they don't linger after the
         // series is gone. The wizard delete above already retracts every case
         // (core.CaseDelete, inline or deferred) and soft-deletes
-        // Planning/PlanningSites/ARP/Compliances, so reconciliation is not needed
+        // Planning/PlanningSites/tag links/CalendarConfiguration/ARP/Compliances,
+        // so reconciliation is not needed
         // here (and would early-return anyway once the event is removed/inactive).
         var workerTagLinks = await backendConfigurationPnDbContext.AreaRulePlanningWorkerTags
             .Where(x => x.AreaRulePlanningId == arpId)
@@ -6530,6 +6575,36 @@ public class BackendConfigurationCalendarService(
         var isRepeatAlways = arp is { RepeatType: 1 } && (arp.RepeatEvery ?? 0) == 0;
         var hasNonAlwaysRepeat = arp is { RepeatType: > 0 } && !isRepeatAlways;
         return !hasNonAlwaysRepeat;
+    }
+
+    /// <summary>
+    /// #1371 — for each REMOVED compliance whose own case is not completed in
+    /// <paramref name="loadedCases"/>, the case another assigned worker completed for the
+    /// same occurrence, keyed by the compliance's own case id (see
+    /// <see cref="CompletedSiblingCases"/>).
+    /// </summary>
+    private Task<Dictionary<int, Microting.eForm.Infrastructure.Data.Entities.Case>> FindCompletedSiblingsAsync(
+        Microting.eForm.Infrastructure.MicrotingDbContext sdkDbContext,
+        IEnumerable<Compliance> compliances,
+        Dictionary<int, Microting.eForm.Infrastructure.Data.Entities.Case> loadedCases)
+        => CompletedSiblingCases.FindAsync(itemsPlanningPnDbContext, sdkDbContext,
+            compliances.Where(c => c.WorkflowState == Constants.WorkflowStates.Removed
+                                   && loadedCases.GetValueOrDefault(c.MicrotingSdkCaseId)?.Status != 100)
+                .Select(c => c.MicrotingSdkCaseId));
+
+    /// <summary>
+    /// #1371 — makes a compliance's own case id resolve to the case a sibling worker
+    /// completed, so every done-ness check, DoneAt and "Udført af" read below follows it
+    /// without touching the (tracked) Compliance entity.
+    /// </summary>
+    private static void ApplyCompletedSiblings(
+        Dictionary<int, Microting.eForm.Infrastructure.Data.Entities.Case> cases,
+        Dictionary<int, Microting.eForm.Infrastructure.Data.Entities.Case> completedSiblings)
+    {
+        foreach (var (ownCaseId, sibling) in completedSiblings)
+        {
+            cases[ownCaseId] = sibling;
+        }
     }
 
     private static bool ComputeTaskIsExpired(

@@ -283,18 +283,58 @@ public class BackendConfigurationAssignmentWorkerService(
                 .Where(x => x.Id == deviceUserId)
                 .SingleOrDefaultAsync().ConfigureAwait(false);
 
+            // Authoritative backend block, checked before any write: the same rule as the
+            // resign refusal and the UI lock (IsLocked). A worker named on an active event of any
+            // property the cleanup below touches (every property link, removed ones included), or
+            // reached by a live worker tag on an active event of a property they are still linked
+            // to, cannot be deleted.
+            var touchedPropertyIds = propertyWorkers.Select(x => x.PropertyId).Distinct().ToList();
+            var linkedPropertyIds = propertyWorkers
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Select(x => x.PropertyId)
+                .ToList();
+            var workerTagIds = await sdkDbContext.SiteTags
+                .Where(x => x.SiteId == deviceUserId && x.TagId != null)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.Tag.WorkflowState != Constants.WorkflowStates.Removed)
+                .Select(x => (int)x.TagId!)
+                .ToListAsync().ConfigureAwait(false);
+            var stillAssigned =
+                await BackendConfigurationAssignmentWorkerServiceHelper
+                    .ActiveEventsAssignedTo(backendConfigurationPnDbContext, deviceUserId, [])
+                    .AnyAsync(x => touchedPropertyIds.Contains(x.PropertyId)).ConfigureAwait(false)
+                || await BackendConfigurationAssignmentWorkerServiceHelper
+                    .ActiveEventsAssignedTo(backendConfigurationPnDbContext, deviceUserId, workerTagIds)
+                    .AnyAsync(x => linkedPropertyIds.Contains(x.PropertyId)).ConfigureAwait(false);
+            if (stillAssigned)
+            {
+                logger.LogWarning(
+                    "Delete: refused worker delete for deviceUserId {DeviceUserId}: still assigned to active events",
+                    deviceUserId);
+                return new OperationResult(false,
+                    backendConfigurationLocalizationService.GetString(
+                        BackendConfigurationAssignmentWorkerServiceHelper.WorkerStillAssignedToEventsCannotDeleteKey));
+            }
+
             foreach (var propertyAssignment in propertyWorkers)
             {
+                var property = await backendConfigurationPnDbContext.Properties
+                    .Where(x => x.Id == propertyAssignment.PropertyId)
+                    .SingleOrDefaultAsync().ConfigureAwait(false);
+
+                // Clean up first, unlink after: a cleanup that throws must leave the worker
+                // linked to the property, not unlinked with half its assignments left (#1376).
+                await BackendConfigurationAssignmentWorkerServiceHelper
+                    .DeleteAllEntriesForPropertyAssignment(propertyAssignment, core, property, sdkDbContext,
+                        caseTemplatePnDbContext, backendConfigurationPnDbContext, itemsPlanningPnDbContext)
+                    .ConfigureAwait(false);
+
                 propertyAssignment.UpdatedByUserId = userService.UserId;
                 await propertyAssignment.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
                 if (propertyAssignment.EntityItemId != null)
                 {
                     await core.EntityItemDelete((int)propertyAssignment.EntityItemId).ConfigureAwait(false);
                 }
-
-                var property = await backendConfigurationPnDbContext.Properties
-                    .Where(x => x.Id == propertyAssignment.PropertyId)
-                    .SingleOrDefaultAsync().ConfigureAwait(false);
 
                 var entityItems = await sdkDbContext.EntityItems
                     .Where(x => x.EntityGroupId == property.EntitySelectListDeviceUsers)
@@ -310,10 +350,6 @@ public class BackendConfigurationAssignmentWorkerService(
                         entity.EntityItemUid, entityItemIncrementer).ConfigureAwait(false);
                     entityItemIncrementer++;
                 }
-                await BackendConfigurationAssignmentWorkerServiceHelper
-                    .DeleteAllEntriesForPropertyAssignment(propertyAssignment, core, property, sdkDbContext,
-                        caseTemplatePnDbContext, backendConfigurationPnDbContext, itemsPlanningPnDbContext)
-                    .ConfigureAwait(false);
             }
 
             await WorkOrderHelper.RetractEform(propertyWorkers, true, core, userService.UserId, backendConfigurationPnDbContext).ConfigureAwait(false);

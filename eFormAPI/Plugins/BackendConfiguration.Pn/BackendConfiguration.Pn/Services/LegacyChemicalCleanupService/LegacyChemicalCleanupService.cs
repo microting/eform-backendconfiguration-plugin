@@ -368,7 +368,7 @@ public class LegacyChemicalCleanupService(
     /// <c>Status == 100 || DoneAt.HasValue</c>, the codebase's predicate for a completed
     /// case (CalendarOccurrenceRetractionService, invariant R2).
     /// </summary>
-    private static IQueryable<int> CompletedRecordUids(MicrotingDbContext sdkDbContext, IReadOnlyCollection<int> uids) =>
+    internal static IQueryable<int> CompletedRecordUids(MicrotingDbContext sdkDbContext, IReadOnlyCollection<int> uids) =>
         sdkDbContext.Cases
             .Where(x => x.MicrotingUid != null && uids.Contains(x.MicrotingUid.Value))
             .GroupBy(x => x.MicrotingUid!.Value)
