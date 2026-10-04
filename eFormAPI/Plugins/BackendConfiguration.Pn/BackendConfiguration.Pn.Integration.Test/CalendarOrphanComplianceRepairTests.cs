@@ -611,6 +611,33 @@ public class CalendarOrphanComplianceRepairTests : TestBaseSetup
     }
 
     /// <summary>
+    /// The closed orphan was the property's only overdue compliance, but the on-pattern
+    /// 7 October row is due within 30 days of the pinned today: the 30-day light is
+    /// recomputed to 1 (due soon), not left at the stale 2 the orphan caused.
+    /// </summary>
+    [Test]
+    public async Task Run_WithAComplianceDueWithinThirtyDays_SetsTheThirtyDayStatusToDueSoon()
+    {
+        var rule = await SeedMonthlyRuleAsync();
+        await SeedComplianceAsync(rule, D(2026, 6, 7), (await SeedRemovedCaseAsync()).Id);
+        await SeedComplianceAsync(rule, D(2026, 10, 7), (await SeedCaseAsync()).Id);
+        await BackendConfigurationPnDbContext!.Properties.Where(x => x.Id == rule.PropertyId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.ComplianceStatus, 2).SetProperty(x => x.ComplianceStatusThirty, 2));
+        BackendConfigurationPnDbContext.ChangeTracker.Clear();
+
+        var result = await RunAsync();
+
+        var property = await BackendConfigurationPnDbContext.Properties.AsNoTracking()
+            .SingleAsync(x => x.Id == rule.PropertyId);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.ClosedCompliances, Is.EqualTo(1));
+            Assert.That(property.ComplianceStatus, Is.EqualTo(0), "no overdue compliance is left");
+            Assert.That(property.ComplianceStatusThirty, Is.EqualTo(1), "the 7 October row is due within 30 days");
+        });
+    }
+
+    /// <summary>
     /// "Delete this and following" from Wed 3 June sets Planning.RepeatUntil to 2 June, so
     /// the week view paints nothing on the pattern in June. The earlier Mon 1 June row is
     /// then the month's only tile and must stay — the month must not become empty.

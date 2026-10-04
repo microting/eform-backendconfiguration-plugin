@@ -514,8 +514,11 @@ public class CalendarOrphanComplianceRepairService(
 
     /// <summary>
     /// A closed orphan was an overdue compliance of its property, so the property's
-    /// traffic light (ComplianceStatus / ComplianceStatusThirty) is recomputed exactly as
-    /// <c>BackendConfigurationCompliancesService</c> does after a compliance is completed.
+    /// traffic light (ComplianceStatus / ComplianceStatusThirty) is recomputed as
+    /// <c>BackendConfigurationCompliancesService</c> does after a compliance is completed,
+    /// except that ComplianceStatusThirty is always set from current data: the closed orphan
+    /// left it at 2, and with a compliance still due within 30 days it becomes 1 (as the
+    /// service plugin's periodic recompute sets it), not a stale 2.
     /// </summary>
     private async Task RecomputePropertyComplianceStatusAsync(int propertyId)
     {
@@ -531,12 +534,10 @@ public class CalendarOrphanComplianceRepairService(
             return;
         }
 
-        if (!await dbContext.Compliances.AsNoTracking()
-                .AnyAsync(x => x.Deadline < utcNow.AddDays(30) && x.PropertyId == propertyId
-                               && x.WorkflowState != Constants.WorkflowStates.Removed).ConfigureAwait(false))
-        {
-            property.ComplianceStatusThirty = 0;
-        }
+        var dueWithinThirtyDays = await dbContext.Compliances.AsNoTracking()
+            .AnyAsync(x => x.Deadline < utcNow.AddDays(30) && x.PropertyId == propertyId
+                           && x.WorkflowState != Constants.WorkflowStates.Removed).ConfigureAwait(false);
+        property.ComplianceStatusThirty = dueWithinThirtyDays ? 1 : 0;
         // No overdue compliance is left (the check above), so the property is not red.
         property.ComplianceStatus = 0;
         await property.Update(dbContext).ConfigureAwait(false);
