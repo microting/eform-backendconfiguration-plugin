@@ -52,6 +52,20 @@ public class FileArchiverTests : TestBaseSetup
     }
 
     [Test]
+    public async Task Archive_KeepsOnlyLettersAndDigitsInTheExtension()
+    {
+        var property = new Property { Name = "Nordvej 12", ItemPlanningTagId = 0, CreatedByUserId = 1, UpdatedByUserId = 1 };
+        await property.Create(BackendConfigurationPnDbContext!);
+
+        // On Linux a client file name "x.a\\..\\..\\evil" yields this extension from Path.GetExtension.
+        var fileId = await _archiver.ArchiveAsync(Pdf(), "x", "A\\..\\..\\Evil", [property.Id], [], 7);
+
+        var uploaded = await BackendConfigurationPnDbContext!.UploadedDatas.AsNoTracking().SingleAsync(x => x.FileId == fileId);
+        Assert.That(uploaded.Extension, Is.EqualTo("aevil"));
+        await _storage.Received(1).PutAsync(Arg.Any<string>(), FileArchiver.ObjectName(uploaded.Checksum, "aevil"));
+    }
+
+    [Test]
     public async Task Archive_UploadFails_CreatesNoRows()
     {
         _storage.PutAsync(Arg.Any<string>(), Arg.Any<string>()).ThrowsAsync(new IOException("storage down"));

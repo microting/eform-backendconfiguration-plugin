@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
@@ -39,7 +40,8 @@ public class FileArchiver(BackendConfigurationPnDbContext dbContext, IArchiveSto
         IReadOnlyCollection<int> propertyIds, IReadOnlyCollection<int> tagIds, int userId,
         Func<int, Task>? inTransaction = null)
     {
-        extension = extension.TrimStart('.').ToLowerInvariant();
+        // Letters and digits only: the extension ends up in storage keys, content types and zip entry names.
+        extension = new string(extension.Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
         var staged = await StagedUpload.StageAsync(content, extension);
 
         await storage.PutAsync(staged.TempPath, ObjectName(staged.Md5, extension));

@@ -34,6 +34,7 @@ using Services.FileArchive;
 using System.IO;
 using System.IO.Compression;
 using System.Threading.Tasks;
+using System.Linq;
 
 [Authorize]
 [Route("api/backend-configuration-pn/files")]
@@ -132,6 +133,23 @@ public class FilesController : Controller
 		return new NotFoundResult();
 	}
 
+	/// <summary>
+	/// A zip entry name from a user-editable file name: only its last path segment, with no characters that
+	/// a Windows or Unix extractor reads as a path, drive or device ("../x", "a\\b", "C:x"), and an extension
+	/// of letters and digits only. So no entry can be written outside the folder the zip is extracted into.
+	/// </summary>
+	public static string ZipEntryName(string fileName, string extension)
+	{
+		var lastSegment = (fileName ?? "").Replace('\\', '/').Split('/').Last();
+		var name = new string(lastSegment.Where(c => !char.IsControl(c) && !UnsafeNameChars.Contains(c)).ToArray())
+			.Replace("..", "").Trim();
+		var ext = new string((extension ?? "").Where(char.IsLetterOrDigit).ToArray());
+		if (name.Length == 0) name = "file";
+		return ext.Length == 0 ? name : $"{name}.{ext}";
+	}
+
+	private const string UnsafeNameChars = "\\/:*?\"<>|";
+
 	[HttpPost]
 	[Route("get-files")]
 	public async Task<IActionResult> GetArchiveFiles([FromBody] BackendConfigurationArchiveFile model)
@@ -152,8 +170,8 @@ public class FilesController : Controller
 					}
 
 					var operationDataResult = await _backendConfigurationFilesService.GetById(fileId);
-					var zipArchiveEntry = archive.CreateEntry($"{operationDataResult.Model.FileName}.{uploadedData.Extension}",
-						CompressionLevel.Fastest);
+					var zipArchiveEntry = archive.CreateEntry(
+						ZipEntryName(operationDataResult.Model.FileName, uploadedData.Extension), CompressionLevel.Fastest);
 					await using var zipStream = zipArchiveEntry.Open();
 					await stream.CopyToAsync(zipStream);
 				}
