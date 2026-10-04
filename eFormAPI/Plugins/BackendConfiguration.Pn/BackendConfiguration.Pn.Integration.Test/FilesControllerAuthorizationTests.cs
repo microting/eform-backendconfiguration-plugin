@@ -33,6 +33,8 @@ public class FilesControllerAuthorizationTests
     public void Controller_RequiresAnAuthenticatedUser()
     {
         Assert.That(typeof(FilesController).GetCustomAttributes<AuthorizeAttribute>(true), Is.Not.Empty);
+        // A class-level [AllowAnonymous] would open every action despite the [Authorize] beside it.
+        Assert.That(typeof(FilesController).GetCustomAttributes<AllowAnonymousAttribute>(true), Is.Empty);
     }
 
     [Test]
