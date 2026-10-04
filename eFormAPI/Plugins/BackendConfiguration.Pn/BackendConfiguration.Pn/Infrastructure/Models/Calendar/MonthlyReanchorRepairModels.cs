@@ -102,7 +102,10 @@ public class MonthlyReanchorReviewItemModel
     public List<string> Reasons { get; set; } = [];
 }
 
-/// <summary>A live compliance whose SDK case is removed or completed — #1325's cleanup, not this repair's.</summary>
+/// <summary>
+/// A live compliance whose SDK case is removed or completed — not this repair's. An off-pattern
+/// one is closed by the #1383 orphan repair (CalendarOrphanComplianceRepairService).
+/// </summary>
 public class MonthlyReanchorSkippedOrphanModel
 {
     public int ComplianceId { get; set; }

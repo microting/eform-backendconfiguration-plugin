@@ -185,6 +185,10 @@ public class BackendConfigurationCalendarService(
             //   emitted to the worker because the corresponding write handlers ("complete",
             //   "comment", etc.) have nothing to bind to and will fail.
             List<Compliance> compliancesInWeek;
+            // #1371 — own (not-done) case id → the case a sibling worker completed for the
+            // same occurrence. Filled by whichever branch below loads the week's cases, and
+            // applied again where the compliance loop reloads them.
+            var weekCompletedSiblings = new Dictionary<int, Microting.eForm.Infrastructure.Data.Entities.Case>();
             // Bug A fix side-dict — see ActionableOnly branch below for rationale.
             // Empty for non-ActionableOnly callers (angular admin REST + CalendarGrpcService);
             // the recurrence-emit lookup below tolerates that as a no-op.
@@ -242,6 +246,9 @@ public class BackendConfigurationCalendarService(
                     loadedCases = await sdkDbContextForPrefilter.Cases
                         .Where(c => loadedCaseIds.Contains(c.Id))
                         .ToDictionaryAsync(c => c.Id);
+                    weekCompletedSiblings = await FindCompletedSiblingsAsync(
+                        sdkDbContextForPrefilter, loadedCompliances, loadedCases);
+                    ApplyCompletedSiblings(loadedCases, weekCompletedSiblings);
                 }
 
                 compliancesInWeek = loadedCompliances
@@ -346,6 +353,9 @@ public class BackendConfigurationCalendarService(
                 var sdkCasesById = await sdkDbContextForCalendar.Cases
                     .Where(c => complianceSdkCaseIds.Contains(c.Id))
                     .ToDictionaryAsync(c => c.Id);
+                weekCompletedSiblings = await FindCompletedSiblingsAsync(
+                    sdkDbContextForCalendar, compliancesInWeekAll, sdkCasesById);
+                ApplyCompletedSiblings(sdkCasesById, weekCompletedSiblings);
 
                 bool IsComplianceActionable(Compliance compliance)
                 {
@@ -534,7 +544,7 @@ public class BackendConfigurationCalendarService(
                     .Where(x => x.MicrotingSdkCaseId > 0)
                     .Where(x => planningIds.Contains(x.PlanningId))
                     .Where(x => x.Deadline >= periodWindowStart && x.Deadline <= periodWindowEnd)
-                    .Select(x => new { x.PlanningId, x.Deadline, x.MicrotingSdkCaseId })
+                    .Select(x => new { x.PlanningId, x.Deadline, x.MicrotingSdkCaseId, x.WorkflowState })
                     .ToListAsync();
                 var periodCaseIds = periodCompliances.Select(x => x.MicrotingSdkCaseId).Distinct().ToList();
                 if (periodCaseIds.Count > 0)
@@ -545,6 +555,13 @@ public class BackendConfigurationCalendarService(
                         .Where(c => periodCaseIds.Contains(c.Id) && c.Status == 100)
                         .Select(c => c.Id)
                         .ToListAsync()).ToHashSet();
+                    // #1371 — a period another assigned worker completed is completed too.
+                    completedCaseIds.UnionWith((await CompletedSiblingCases.FindAsync(
+                            itemsPlanningPnDbContext, sdkDbContextForPeriods,
+                            periodCompliances.Where(x => x.WorkflowState == Constants.WorkflowStates.Removed
+                                                         && !completedCaseIds.Contains(x.MicrotingSdkCaseId))
+                                .Select(x => x.MicrotingSdkCaseId)))
+                        .Keys);
 
                     // Per-planning RepeatType + weekday CSV drive the period
                     // granularity; use the same planning the emit loop uses.
@@ -1219,6 +1236,7 @@ public class BackendConfigurationCalendarService(
                     .Where(c => weekComplianceCaseIds.Contains(c.Id))
                     .ToDictionaryAsync(c => c.Id);
             }
+            ApplyCompletedSiblings(weekComplianceCasesById, weekCompletedSiblings);
 
             foreach (var compliance in compliances)
             {
@@ -1347,7 +1365,8 @@ public class BackendConfigurationCalendarService(
                     PlanningId = compliance.PlanningId,
                     IsAllDay = compIsAllDay,
                     EformId = arp?.AreaRule?.EformId,
-                    SdkCaseId = compliance.MicrotingSdkCaseId,
+                    // #1371 — the completed sibling's case when another worker completed it.
+                    SdkCaseId = compSdkCase?.Id ?? compliance.MicrotingSdkCaseId,
                     ItemPlanningTagId = arp?.ItemPlanningTagId,
                     DescriptionHtml = compliancePlanningsDict.TryGetValue(compliance.PlanningId, out var cp)
                         ? cp.Description
@@ -6456,6 +6475,36 @@ public class BackendConfigurationCalendarService(
         var isRepeatAlways = arp is { RepeatType: 1 } && (arp.RepeatEvery ?? 0) == 0;
         var hasNonAlwaysRepeat = arp is { RepeatType: > 0 } && !isRepeatAlways;
         return !hasNonAlwaysRepeat;
+    }
+
+    /// <summary>
+    /// #1371 — for each REMOVED compliance whose own case is not completed in
+    /// <paramref name="loadedCases"/>, the case another assigned worker completed for the
+    /// same occurrence, keyed by the compliance's own case id (see
+    /// <see cref="CompletedSiblingCases"/>).
+    /// </summary>
+    private Task<Dictionary<int, Microting.eForm.Infrastructure.Data.Entities.Case>> FindCompletedSiblingsAsync(
+        Microting.eForm.Infrastructure.MicrotingDbContext sdkDbContext,
+        IEnumerable<Compliance> compliances,
+        Dictionary<int, Microting.eForm.Infrastructure.Data.Entities.Case> loadedCases)
+        => CompletedSiblingCases.FindAsync(itemsPlanningPnDbContext, sdkDbContext,
+            compliances.Where(c => c.WorkflowState == Constants.WorkflowStates.Removed
+                                   && loadedCases.GetValueOrDefault(c.MicrotingSdkCaseId)?.Status != 100)
+                .Select(c => c.MicrotingSdkCaseId));
+
+    /// <summary>
+    /// #1371 — makes a compliance's own case id resolve to the case a sibling worker
+    /// completed, so every done-ness check, DoneAt and "Udført af" read below follows it
+    /// without touching the (tracked) Compliance entity.
+    /// </summary>
+    private static void ApplyCompletedSiblings(
+        Dictionary<int, Microting.eForm.Infrastructure.Data.Entities.Case> cases,
+        Dictionary<int, Microting.eForm.Infrastructure.Data.Entities.Case> completedSiblings)
+    {
+        foreach (var (ownCaseId, sibling) in completedSiblings)
+        {
+            cases[ownCaseId] = sibling;
+        }
     }
 
     private static bool ComputeTaskIsExpired(
