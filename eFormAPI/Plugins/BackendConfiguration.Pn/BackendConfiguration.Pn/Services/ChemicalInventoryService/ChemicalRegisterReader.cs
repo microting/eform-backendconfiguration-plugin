@@ -100,7 +100,8 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
             throw new ArgumentException($"page must be between 0 and {int.MaxValue / size}.");
         }
 
-        var withBarcode = ChemicalIdsWithBarcode(Gs1.TryExtractGtin(text, out var gtin) ? ChemicalBarcode.Candidates(gtin) : []);
+        // A GTIN in all its spellings, or the literal digits of a code that is no valid GTIN.
+        var withBarcode = ChemicalIdsWithBarcode(ChemicalBarcode.SearchCandidates(text));
 
         var matches = chemicalsDbContext.Chemicals.AsNoTracking()
             .Where(IsActiveChemical)

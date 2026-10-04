@@ -36,20 +36,28 @@ public static class Gs1
 
     private const char Fnc1 = '\u001d';
 
-    // "(01)" + 14 digits anywhere in a human-readable element string.
-    private static readonly Regex ElementStringGtin = new(@"\(01\)(\d{14})(?!\d)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    /// <summary>
+    /// The AIM symbology identifiers stripped before parsing (case-sensitive):
+    /// EAN-13/UPC-A, EAN-8, GS1 DataMatrix, GS1 QR and GS1-128.
+    /// </summary>
+    private static readonly string[] AimSymbologyIdentifiers = ["]E0", "]E4", "]d2", "]Q3", "]C1"];
 
-    // A symbology identifier a scanner may prefix: "]d2" (DataMatrix), "]Q3" (QR), "]C1" (GS1-128), "]e0" (DataBar).
+    // "(01)" + 14 digits anywhere in a human-readable element string.
+    private static readonly Regex ElementStringGtin = new(@"\(01\)([0-9]{14})(?![0-9])", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+    // Any AIM-style symbology identifier: marks the input as a scan, even when it is not one we strip.
     private static readonly Regex SymbologyIdentifier = new(@"^\][A-Za-z][0-9A-Za-z]", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-    private static readonly Regex ElementStringStart = new(@"^\(\d{2,4}\)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    private static readonly Regex ElementStringStart = new(@"^\([0-9]{2,4}\)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     /// <summary>
     /// The GTIN in <paramref name="input"/>, check digit verified: a plain EAN-8,
     /// UPC-A, EAN-13 or GTIN-14; a GS1 Digital Link URI (any http(s) domain, path
     /// segment <c>01</c> or <c>gtin</c> followed by 8, 12, 13 or 14 digits); or a
     /// GS1 element string, either <c>(01)…</c> or raw / FNC1-separated <c>01…</c>.
-    /// A GTIN-14 with a leading 0 is returned as its GTIN-13; other lengths as given.
+    /// A leading AIM symbology identifier (<c>]E0 ]E4 ]d2 ]Q3 ]C1</c>) is stripped first.
+    /// An all-zero GTIN is refused. A GTIN-14 with a leading 0 is returned as its
+    /// GTIN-13; other lengths as given.
     /// </summary>
     public static bool TryExtractGtin(string input, out string gtin)
     {
@@ -60,8 +68,10 @@ public static class Gs1
             return false;
         }
 
+        text = WithoutSymbologyIdentifier(text);
         var candidate = FromDigitalLink(text) ?? FromElementString(text) ?? text;
-        if (!IsGtinLength(candidate.Length) || !candidate.All(char.IsAsciiDigit) || !HasValidCheckDigit(candidate))
+        if (!IsGtinLength(candidate.Length) || !candidate.All(char.IsAsciiDigit) || IsAllZeros(candidate)
+            || !HasValidCheckDigit(candidate))
         {
             return false;
         }
@@ -84,6 +94,9 @@ public static class Gs1
                || text.Contains(Fnc1);
     }
 
+    /// <summary>GS1 forbids an all-zero GTIN; register placeholder rows use one.</summary>
+    internal static bool IsAllZeros(string digits) => digits.All(c => c == '0');
+
     /// <summary>The 14-digit form of a GTIN (left-padded with zeros).</summary>
     internal static string ToGtin14(string gtin) => gtin.PadLeft(14, '0');
 
@@ -101,7 +114,16 @@ public static class Gs1
         return (10 - sum % 10) % 10 == digits[^1] - '0';
     }
 
-    /// <summary>The value after the first <c>01</c> / <c>gtin</c> path segment of an http(s) URI; "" when it is a URI without one.</summary>
+    // FromDigitalLink / FromElementString: null = the input is not that syntax;
+    // "" = it is, but carries no usable GTIN (so the input is refused, not read as a plain GTIN).
+
+    private static string WithoutSymbologyIdentifier(string text)
+    {
+        var prefix = AimSymbologyIdentifiers.FirstOrDefault(p => text.StartsWith(p, StringComparison.Ordinal));
+        return prefix == null ? text : text[prefix.Length..];
+    }
+
+    /// <summary>The value after the first <c>01</c> / <c>gtin</c> path segment of an http(s) URI.</summary>
     private static string FromDigitalLink(string text)
     {
         if (!Uri.TryCreate(text, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
@@ -121,7 +143,7 @@ public static class Gs1
         return string.Empty;
     }
 
-    /// <summary>The 14 digits of AI 01 in an element string; "" when it is one without a usable AI 01; null when it is no element string.</summary>
+    /// <summary>The 14 digits of AI 01 in a bracketed, raw or FNC1-prefixed element string.</summary>
     private static string FromElementString(string text)
     {
         if (ElementStringStart.IsMatch(text))
@@ -130,16 +152,14 @@ public static class Gs1
             return match.Success ? match.Groups[1].Value : string.Empty;
         }
 
-        var raw = SymbologyIdentifier.IsMatch(text) ? text[3..] : text;
-        raw = raw.TrimStart(Fnc1);
-        if (raw.Length == text.Length && raw.Length < 16)
+        var raw = text.TrimStart(Fnc1);
+        var fnc1Prefixed = raw.Length != text.Length;
+        if (raw.Length < 16 || !raw.StartsWith("01", StringComparison.Ordinal) || !raw[2..16].All(char.IsAsciiDigit))
         {
-            // No prefix and too short for "01" + 14 digits: a plain GTIN (or junk).
-            return null;
+            // Unprefixed: maybe a plain GTIN (an unprefixed 16+ character string then fails the length check).
+            return fnc1Prefixed ? string.Empty : null;
         }
 
-        return raw.Length >= 16 && raw.StartsWith("01", StringComparison.Ordinal) && raw[2..16].All(char.IsAsciiDigit)
-            ? raw[2..16]
-            : string.Empty;
+        return raw[2..16];
     }
 }
