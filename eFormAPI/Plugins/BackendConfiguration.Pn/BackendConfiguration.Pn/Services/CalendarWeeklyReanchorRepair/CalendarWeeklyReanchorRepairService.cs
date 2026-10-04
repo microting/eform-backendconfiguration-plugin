@@ -283,11 +283,19 @@ public class CalendarWeeklyReanchorRepairService(
             // A next run already in the past (typically a deactivated task) is left as it is,
             // as in the monthly repair: the scheduler skips it, and reactivation takes its
             // dates from the dialog.
-            var next = planning.NextExecutionTime;
-            DateTime? newNext = next is { } n && n.DayOfWeek != target && n.Date >= today
-                ? CalendarService.NextWeeklyOccurrenceOnOrAfter(planning.StartDate, planning.RepeatEvery, target,
-                    n < planning.StartDate ? planning.StartDate : n)
-                : null;
+            // The aligned run is compared with the current one, not just its weekday: an
+            // every-N-weeks cadence can sit on the target weekday in the weeks the rule does
+            // not draw.
+            DateTime? newNext = null;
+            if (planning.NextExecutionTime is { } n && n.Date >= today)
+            {
+                var aligned = CalendarService.NextWeeklyOccurrenceOnOrAfter(planning.StartDate, planning.RepeatEvery,
+                    target, n < planning.StartDate ? planning.StartDate : n);
+                if (aligned != n)
+                {
+                    newNext = aligned;
+                }
+            }
             var targetCsv = ((int)target).ToString(CultureInfo.InvariantCulture);
             if (arp.DayOfWeek == (int)target && arp.RepeatWeekdaysCsv == targetCsv
                 && planning.DayOfWeek == target && newNext == null)

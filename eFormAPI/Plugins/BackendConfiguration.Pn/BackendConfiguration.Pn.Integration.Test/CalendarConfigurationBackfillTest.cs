@@ -783,6 +783,24 @@ public class CalendarConfigurationBackfillTest : TestBaseSetup
     }
 
     [Test]
+    public async Task RunIfNeededAsync_EveryOtherWeekWithCadenceInTheOffWeeksOnTheStartWeekday_MovesNextRunOntoTheRule()
+    {
+        var property = await SeedProperty();
+        var area = await SeedArea();
+        // Mon 2026-01-12 already has StartDate's weekday, but sits one week after the
+        // anchor week: the scheduler would keep deploying in weeks the rule never draws.
+        var (arp, planning) = await SeedWizardTask(
+            property.Id, area.Id, repeatType: (int)RepeatType.Week, repeatEvery: 2,
+            startDate: new DateTime(2026, 1, 5));
+        await SetCadence(planning, nextExecutionTime: new DateTime(2026, 1, 12), lastExecutedTime: null);
+
+        await _sut.RunIfNeededAsync();
+
+        // Mon 2026-01-19, two weeks after the anchor week.
+        AssertWeeklyOn(arp.Id, planning.Id, DayOfWeek.Monday, new DateTime(2026, 1, 19));
+    }
+
+    [Test]
     public async Task RunIfNeededAsync_MonthlyEveryOneStartingDay31_WritesFifthOrdinalWeekday()
     {
         var property = await SeedProperty();

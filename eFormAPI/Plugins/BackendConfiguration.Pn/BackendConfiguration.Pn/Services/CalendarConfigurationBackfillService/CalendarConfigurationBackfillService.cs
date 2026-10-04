@@ -277,11 +277,12 @@ public class CalendarConfigurationBackfillService(
                 // mirrors the rule's weekday, its single source of truth (#1294).
                 var weekday = ConvertedWeekday(planning);
                 planning.DayOfWeek = weekday;
-                // Only off the cadence's weekday when the cadence is off the rule's
-                // every-N-weeks stride (see ConvertedWeekday): move the next run
-                // forward onto the rule. Any open compliance stays where it is (no
+                // When the cadence is off the rule's every-N-weeks stride (see
+                // ConvertedWeekday) — whether or not it already sits on the rule's
+                // weekday — move the next run forward onto the rule; on the stride
+                // this leaves it unchanged. Any open compliance stays where it is (no
                 // data moves here, see above); the week view draws that week once.
-                if (planning.NextExecutionTime is { } next && next.DayOfWeek != weekday)
+                if (planning.NextExecutionTime is { } next)
                 {
                     planning.NextExecutionTime = CalendarService.NextWeeklyOccurrenceOnOrAfter(
                         planning.StartDate, planning.RepeatEvery, weekday,

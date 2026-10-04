@@ -374,6 +374,28 @@ public class CalendarWeeklyReanchorRepairTests : TestBaseSetup
     }
 
     [Test]
+    public async Task Run_EveryOtherWeekWithCadenceInTheOffWeeksOnTheRulesWeekday_MovesTheNextRunOntoTheRule()
+    {
+        // Mon 2026-10-05 is already on the rule's weekday, but 39 weeks after the anchor
+        // week: the rule (every 2nd week from the week of 2026-01-05) does not draw it.
+        var (arpId, planningId) = await SeedLegacyWeeklyTaskAsync(repeatEvery: 2);
+        await ConvertThenSetCadenceAsync(planningId, D(2026, 10, 5));
+
+        var plan = await DryRunAsync();
+        var result = await _sut.RunAsync(plan.PlanHash);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        var update = plan.RuleUpdates.Single();
+        Assert.Multiple(() =>
+        {
+            Assert.That(update.NewDayOfWeek, Is.EqualTo((int)DayOfWeek.Monday));
+            Assert.That(update.NewNextExecutionTime, Is.EqualTo(D(2026, 10, 12)), "the rule's next Monday");
+        });
+        await AssertRuleAndPlanningOnMonday(arpId, planningId);
+        Assert.That((await PlanningAsync(planningId)).NextExecutionTime, Is.EqualTo(D(2026, 10, 12)));
+    }
+
+    [Test]
     public async Task DryRun_OpenComplianceOnAnotherWeekdayThanTheCadence_GoesOnTheReviewList()
     {
         var (arpId, planningId) = await SeedLegacyWeeklyTaskAsync();
