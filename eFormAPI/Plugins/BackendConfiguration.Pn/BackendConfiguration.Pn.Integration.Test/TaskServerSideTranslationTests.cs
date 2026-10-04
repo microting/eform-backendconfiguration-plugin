@@ -748,23 +748,25 @@ public class TaskServerSideTranslationTests : TestBaseSetup
         });
     }
 
-    private async Task<(Site Site, string Email, IUserService UserService,
+    private async Task<(Site Site, string Email, string LastName, IUserService UserService,
         Microsoft.AspNetCore.Identity.UserManager<Microting.eFormApi.BasePn.Infrastructure.Database.Entities.EformUser> UserManager)>
         CreateDanishDeviceUser()
     {
         var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
         var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
         var email = $"{Guid.NewGuid()}@example.com";
+        // Unique per test: the SDK refuses a second worker with the same name in this fixture's database.
+        var lastName = $"Doe {Guid.NewGuid():N}";
         var created = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(new DeviceUserModel
         {
             LanguageCode = "da",
             UserFirstName = "Jane",
-            UserLastName = "Doe",
+            UserLastName = lastName,
             WorkerEmail = email
         }, _core, 1, TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
         Assert.That(created.Success, Is.True, created.Message);
         var site = await MicrotingDbContext!.Sites.AsNoTracking().OrderByDescending(x => x.Id).FirstAsync();
-        return (site, email, userService, userManager);
+        return (site, email, lastName, userService, userManager);
     }
 
     /// <summary>
@@ -777,7 +779,7 @@ public class TaskServerSideTranslationTests : TestBaseSetup
     {
         var s = await SeedScenario();
         var services = await BuildServices(_translator);
-        var (site, email, userService, userManager) = await CreateDanishDeviceUser();
+        var (site, email, lastName, userService, userManager) = await CreateDanishDeviceUser();
 
         var janesEvent = await CreateViaCalendar(services,
             BuildCreate(s, sites: [site.Id], teams: [], DanishOnly(s)));
@@ -792,7 +794,7 @@ public class TaskServerSideTranslationTests : TestBaseSetup
                 SiteMicrotingUid = (int)site.MicrotingUid!,
                 LanguageCode = "en-US",
                 UserFirstName = "Jane",
-                UserLastName = "Doe",
+                UserLastName = lastName,
                 WorkerEmail = email
             }, _core, 1, userService, userManager, BackendConfigurationPnDbContext!,
             TimePlanningPnDbContext!, BaseDbContext!, Substitute.For<ILogger>(), ItemsPlanningPnDbContext!,
@@ -816,7 +818,7 @@ public class TaskServerSideTranslationTests : TestBaseSetup
     public async Task UpdateDeviceUser_WhenTheReconcileThrows_StillSucceeds()
     {
         await SeedScenario();
-        var (site, email, userService, userManager) = await CreateDanishDeviceUser();
+        var (site, email, lastName, userService, userManager) = await CreateDanishDeviceUser();
         var team = new Tag { Name = $"Team C {Guid.NewGuid()}", WorkflowState = Constants.WorkflowStates.Created };
         await MicrotingDbContext!.Tags.AddAsync(team);
         await MicrotingDbContext.SaveChangesAsync();
@@ -829,7 +831,7 @@ public class TaskServerSideTranslationTests : TestBaseSetup
                 SiteMicrotingUid = (int)site.MicrotingUid!,
                 LanguageCode = "da",
                 UserFirstName = "Jane",
-                UserLastName = "Doe",
+                UserLastName = lastName,
                 WorkerEmail = email,
                 Tags = [team.Id]
             }, _core, 1, userService, userManager, BackendConfigurationPnDbContext!,
