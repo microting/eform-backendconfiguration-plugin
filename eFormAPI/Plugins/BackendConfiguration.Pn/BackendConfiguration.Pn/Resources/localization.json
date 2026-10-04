@@ -7285,6 +7285,37 @@
     }
   },
   {
+    "Key": "DoneDateCannotBeInTheFuture",
+    "LocalizedValue": {
+      "da": "Udført dato kan ikke ligge efter i dag",
+      "de": "Das Erledigungsdatum darf nicht nach heute liegen",
+      "en-US": "The done date cannot be later than today",
+      "uk-UA": "Дата виконання не може бути пізнішою за сьогодні",
+      "pl-PL": "Data wykonania nie może być późniejsza niż dzisiaj",
+      "no-NO": "Utført dato kan ikke være etter i dag",
+      "sv-SE": "Utfört datum kan inte vara senare än i dag",
+      "es-ES": "La fecha de realización no puede ser posterior a hoy",
+      "fr-FR": "La date de réalisation ne peut pas être postérieure à aujourd'hui",
+      "it-IT": "La data di esecuzione non può essere successiva a oggi",
+      "nl-NL": "De uitvoeringsdatum kan niet later zijn dan vandaag",
+      "pt-BR": "A data de conclusão não pode ser posterior a hoje",
+      "pt-PT": "A data de conclusão não pode ser posterior a hoje",
+      "fi-FI": "Suorituspäivä ei voi olla tämän päivän jälkeen",
+      "et-ET": "Täitmise kuupäev ei saa olla hilisem kui täna",
+      "lv-LV": "Izpildes datums nevar būt vēlāks par šodienu",
+      "lt-LT": "Atlikimo data negali būti vėlesnė nei šiandien",
+      "ro-RO": "Data efectuării nu poate fi după ziua de azi",
+      "hr-HR": "Datum izvršenja ne može biti nakon današnjeg dana",
+      "sl-SL": "Datum izvedbe ne sme biti poznejši od današnjega",
+      "cs-CZ": "Datum provedení nemůže být pozdější než dnes",
+      "sk-SK": "Dátum vykonania nemôže byť neskorší ako dnes",
+      "hu-HU": "Az elvégzés dátuma nem lehet későbbi a mai napnál",
+      "bg-BG": "Датата на изпълнение не може да е по-късна от днес",
+      "el-GR": "Η ημερομηνία ολοκλήρωσης δεν μπορεί να είναι μεταγενέστερη από σήμερα",
+      "is-IS": "Dagsetning framkvæmdar getur ekki verið síðar en í dag"
+    }
+  },
+  {
     "Key": "Employees",
     "LocalizedValue": {
       "da": "Medarbejdere",

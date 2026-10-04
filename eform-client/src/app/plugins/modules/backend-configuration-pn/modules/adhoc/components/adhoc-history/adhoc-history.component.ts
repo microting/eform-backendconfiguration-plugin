@@ -235,7 +235,7 @@ export class AdhocHistoryComponent implements OnInit, OnDestroy {
   // Data fetch
   // -----------------------------------------------------------------
 
-  updateTable(): void {
+  updateTable(): Subscription {
     const range = this.resolveRange();
     const model: AdhocHistoryFiltersModel = {
       dateFrom: format(range.from, PARSING_DATE_FORMAT),
@@ -246,12 +246,18 @@ export class AdhocHistoryComponent implements OnInit, OnDestroy {
       pageNumber: this.pageIndex + 1,
       pageSize: this.pageSize,
     };
-    this.getHistorySub$ = this.adhocService.getHistory(model).subscribe((res) => {
-      if (res && res.success && res.model) {
-        this.rows = res.model.entities;
-        this.total = res.model.total;
-      }
+    this.getHistorySub$ = this.adhocService.getHistory(model).subscribe({
+      next: (res) => {
+        if (res && res.success && res.model) {
+          this.rows = res.model.entities;
+          this.total = res.model.total;
+        }
+      },
+      // HttpErrorInterceptor already shows the failure to the user; handled here
+      // so it does not also reach RxJS's unhandled-error path.
+      error: () => undefined,
     });
+    return this.getHistorySub$;
   }
 
   /**
