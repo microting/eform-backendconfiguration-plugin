@@ -38,6 +38,9 @@ public interface IBackendConfigurationTaskWizardService
     /// cases fire-and-forget so the call returns immediately even when
     /// core.CaseDelete blocks (dev has no eform-core consumer). Used by the
     /// task-list batch delete.
+    /// <para><paramref name="retractDeviceCases"/> false skips the retraction
+    /// entirely, for a caller that has already retracted the cases itself
+    /// (the #1376 repair retracts first and keeps completed cases).</para>
     /// </summary>
-    Task<OperationResult> DeleteTaskDeferredRetraction(int id);
+    Task<OperationResult> DeleteTaskDeferredRetraction(int id, bool retractDeviceCases = true);
 }
