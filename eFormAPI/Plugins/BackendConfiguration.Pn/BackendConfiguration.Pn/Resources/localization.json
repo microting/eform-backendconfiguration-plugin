@@ -3007,6 +3007,37 @@
     }
   },
   {
+    "Key": "TaskSavedWithoutTranslation",
+    "LocalizedValue": {
+      "da": "Oversættelse er ikke tilgængelig, så titel og beskrivelse er kun gemt på dansk.",
+      "de": "Übersetzung ist nicht verfügbar, daher wurden Titel und Beschreibung nur auf Dänisch gespeichert.",
+      "en-US": "Translation is unavailable, so the title and description were saved in Danish only.",
+      "uk-UA": "Переклад недоступний, тому назву та опис збережено лише данською.",
+      "pl-PL": "Tłumaczenie jest niedostępne, więc tytuł i opis zapisano tylko po duńsku.",
+      "no-NO": "Oversettelse er ikke tilgjengelig, så tittel og beskrivelse er bare lagret på dansk.",
+      "sv-SE": "Översättning är inte tillgänglig, så titel och beskrivning sparades endast på danska.",
+      "es-ES": "La traducción no está disponible, por lo que el título y la descripción se guardaron solo en danés.",
+      "fr-FR": "La traduction n'est pas disponible : le titre et la description ont été enregistrés uniquement en danois.",
+      "it-IT": "La traduzione non è disponibile, quindi titolo e descrizione sono stati salvati solo in danese.",
+      "nl-NL": "Vertaling is niet beschikbaar, dus titel en beschrijving zijn alleen in het Deens opgeslagen.",
+      "pt-BR": "A tradução não está disponível, então o título e a descrição foram salvos apenas em dinamarquês.",
+      "pt-PT": "A tradução não está disponível, pelo que o título e a descrição foram guardados apenas em dinamarquês.",
+      "fi-FI": "Käännös ei ole käytettävissä, joten otsikko ja kuvaus tallennettiin vain tanskaksi.",
+      "et-ET": "Tõlge pole saadaval, seega salvestati pealkiri ja kirjeldus ainult taani keeles.",
+      "lv-LV": "Tulkojums nav pieejams, tāpēc nosaukums un apraksts saglabāts tikai dāņu valodā.",
+      "lt-LT": "Vertimas nepasiekiamas, todėl pavadinimas ir aprašymas išsaugoti tik danų kalba.",
+      "ro-RO": "Traducerea nu este disponibilă, așa că titlul și descrierea au fost salvate doar în daneză.",
+      "hr-HR": "Prijevod nije dostupan pa su naslov i opis spremljeni samo na danskom.",
+      "sl-SL": "Prevod ni na voljo, zato sta naslov in opis shranjena samo v danščini.",
+      "cs-CZ": "Překlad není k dispozici, proto byly název a popis uloženy pouze v dánštině.",
+      "sk-SK": "Preklad nie je k dispozícii, preto boli názov a popis uložené iba v dánčine.",
+      "hu-HU": "A fordítás nem érhető el, ezért a cím és a leírás csak dánul lett mentve.",
+      "bg-BG": "Преводът не е наличен, затова заглавието и описанието са запазени само на датски.",
+      "el-GR": "Η μετάφραση δεν είναι διαθέσιμη, επομένως ο τίτλος και η περιγραφή αποθηκεύτηκαν μόνο στα δανικά.",
+      "is-IS": "Þýðing er ekki tiltæk, svo titill og lýsing voru aðeins vistuð á dönsku."
+    }
+  },
+  {
     "Key": "TaskUpdatedSuccessful",
     "LocalizedValue": {
       "da": "Opgaven er blevet opdateret",
