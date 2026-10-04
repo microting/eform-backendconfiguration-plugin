@@ -190,6 +190,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             Services.CalendarMonthlyReanchorRepair.CalendarMonthlyReanchorRepairService>();
         services.AddTransient<Services.CalendarOrphanComplianceRepair.ICalendarOrphanComplianceRepairService,
             Services.CalendarOrphanComplianceRepair.CalendarOrphanComplianceRepairService>();
+        services.AddTransient<Services.ComplianceSiblingCaseRepair.IComplianceSiblingCaseRepairService,
+            Services.ComplianceSiblingCaseRepair.ComplianceSiblingCaseRepairService>();
         services.AddTransient<Services.DuplicatePlanningSiteRepair.IDuplicatePlanningSiteRepairService,
             Services.DuplicatePlanningSiteRepair.DuplicatePlanningSiteRepairService>();
         services.AddTransient<AreaRulePlanningTagPurgeService>();
