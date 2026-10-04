@@ -546,10 +546,10 @@ public class ComplianceCompletionCalendarAndReportTests : TestBaseSetup
             .AsNoTracking().FirstAsync(x => x.Id == s.ComplianceId);
 
         // DoneAtUserModifiable = the model's DATE with the original DoneAt's
-        // TIME-of-day grafted on (BackendConfigurationCaseService.cs:62-66).
-        var expectedUserModifiable = new DateTime(
-            newDoneAtDay.Year, newDoneAtDay.Month, newDoneAtDay.Day,
-            s.SeededDoneAt.Hour, s.SeededDoneAt.Minute, s.SeededDoneAt.Second);
+        // TIME-of-day grafted on — both in DANISH time since #1373, so the stored
+        // instant falls on the picked Danish day. Seeded 07:08:09 UTC on 4 March (CET)
+        // is 08:08:09 Danish; 08:08:09 Danish on 17 June (CEST) is 06:08:09 UTC.
+        var expectedUserModifiable = new DateTime(2025, 6, 17, 6, 8, 9);
 
         Assert.Multiple(() =>
         {

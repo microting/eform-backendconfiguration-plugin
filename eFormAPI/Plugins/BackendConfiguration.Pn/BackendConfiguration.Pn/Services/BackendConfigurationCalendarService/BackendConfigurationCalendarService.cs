@@ -200,6 +200,9 @@ public class BackendConfigurationCalendarService(
             // setting Status=100, so without this suppression the
             // recurrence-expansion loop happily re-emits the date).
             List<Compliance> compliancesForDedup;
+            // #1373 — completed logs dated in ANOTHER week but done in this one. Filled by
+            // the default branch only; the mobile worker never sees completed rows.
+            var completedElsewhereDoneInWeek = new List<Compliance>();
             if (!requestModel.ActionableOnly)
             {
                 // Load both:
@@ -247,6 +250,64 @@ public class BackendConfigurationCalendarService(
                 // Default branch already includes removed-completed rows in
                 // compliancesInWeek (filter above), so the dedup set is identical.
                 compliancesForDedup = compliancesInWeek;
+
+                // #1373 option B — a completed log is rendered on the day it was DONE
+                // (CompletedLogPlacement), so a log whose deadline lies in another week but
+                // which was done in this one belongs here too. It renders only; it never
+                // joins the dedup set, which stays keyed by Deadline: the occurrence it
+                // completed is suppressed in ITS week, wherever the log is shown.
+                //
+                // Led from the BC side (the property's rows with a case and a deadline near
+                // the week, CompletedLogPlacement.DeadlineReach), then checked in the SDK by
+                // primary key. Same `coreHelper != null` guard as the site-name lookup below:
+                // the fixtures that construct this service without a core never seed a case.
+                if (coreHelper != null)
+                {
+                    var outsideWeek = backendConfigurationPnDbContext.Compliances
+                        .Where(x => x.PropertyId == requestModel.PropertyId)
+                        .Where(x => x.MicrotingSdkCaseId > 0)
+                        .Where(x => !(x.Deadline >= weekStart && x.Deadline <= weekEnd));
+                    var (reachFrom, reachTo) = CompletedLogPlacement.DeadlineReach(weekStart, weekEnd);
+                    var nearby = await outsideWeek
+                        .Where(x => x.Deadline >= reachFrom && x.Deadline < reachTo)
+                        .Select(x => new { x.Id, x.MicrotingSdkCaseId })
+                        .ToListAsync();
+                    // Tasks repeating less often than the default reach covers get their
+                    // own, wider one — only over their own plannings.
+                    var (longPlanningIds, longReachDays) = await CompletedLogPlacement
+                        .LoadLongIntervalPlanningsAsync(itemsPlanningPnDbContext)
+                        .ConfigureAwait(false);
+                    if (longPlanningIds.Count > 0)
+                    {
+                        var (longFrom, longTo) = CompletedLogPlacement.DeadlineReach(weekStart, weekEnd, longReachDays);
+                        var seen = nearby.Select(x => x.Id).ToHashSet();
+                        nearby.AddRange((await outsideWeek
+                                .Where(x => longPlanningIds.Contains(x.PlanningId))
+                                .Where(x => x.Deadline >= longFrom && x.Deadline < longTo)
+                                .Select(x => new { x.Id, x.MicrotingSdkCaseId })
+                                .ToListAsync())
+                            .Where(x => !seen.Contains(x.Id)));
+                    }
+                    if (nearby.Count > 0)
+                    {
+                        var sdkCoreForDone = await coreHelper.GetCore().ConfigureAwait(false);
+                        await using var sdkDbContextForDone = sdkCoreForDone.DbContextHelper.GetDbContext();
+                        var doneCaseIds = await CompletedLogPlacement
+                            .FilterCaseIdsDoneBetweenAsync(sdkDbContextForDone,
+                                nearby.Select(x => x.MicrotingSdkCaseId).ToList(), weekStart, weekEnd)
+                            .ConfigureAwait(false);
+                        var doneComplianceIds = nearby
+                            .Where(x => doneCaseIds.Contains(x.MicrotingSdkCaseId))
+                            .Select(x => x.Id)
+                            .ToList();
+                        if (doneComplianceIds.Count > 0)
+                        {
+                            completedElsewhereDoneInWeek = await backendConfigurationPnDbContext.Compliances
+                                .Where(x => doneComplianceIds.Contains(x.Id))
+                                .ToListAsync();
+                        }
+                    }
+                }
             }
             else
             {
@@ -935,12 +996,27 @@ public class BackendConfigurationCalendarService(
                 }
             }
 
+            // #1373 — an occurrence moved ("this" scope) and then COMPLETED keeps its
+            // Compliance on the ORIGINAL date, and the compliance loop shows the log on its
+            // done date. Re-emitting the move here would add an open tile beside it, so a
+            // moved-in occurrence whose (planning, original date) compliance is completed is
+            // skipped.
+            var completedMovedInKeys = await CompletedOccurrenceKeysAsync(
+                movedInExceptions
+                    .Select(x => areaRulePlannings.FirstOrDefault(a => a.Id == x.AreaRulePlanningId) is { } a
+                        ? (a.ItemPlanningId, x.OriginalDate.Date)
+                        : ((int, DateTime)?)null)
+                    .Where(x => x.HasValue)
+                    .Select(x => x!.Value)
+                    .ToList());
+
             // Add occurrences that were moved INTO this week from outside
             foreach (var movedIn in movedInExceptions)
             {
                 var arp = areaRulePlannings.FirstOrDefault(a => a.Id == movedIn.AreaRulePlanningId);
                 if (arp == null) continue;
                 if (!planningsDict.TryGetValue(arp.ItemPlanningId, out var movedPlanning)) continue;
+                if (completedMovedInKeys.Contains((arp.ItemPlanningId, movedIn.OriginalDate.Date))) continue;
 
                 calConfigsDict.TryGetValue(arp.Id, out var movedCalConfig);
                 var isAllDay = ComputeIsAllDay(arp, movedCalConfig);
@@ -1024,7 +1100,7 @@ public class BackendConfigurationCalendarService(
             }
 
             // 2. Query Compliances (past/historical tasks) — reuse pre-loaded data
-            var compliances = compliancesInWeek;
+            var compliances = compliancesInWeek.Concat(completedElsewhereDoneInWeek).ToList();
 
             // Batch-load AreaRulePlannings for compliances
             var compliancePlanningIds = compliances.Select(x => x.PlanningId).Distinct().ToList();
@@ -1037,7 +1113,11 @@ public class BackendConfigurationCalendarService(
                 .Include(x => x.AreaRulePlanningFiles)
                     .ThenInclude(f => f.GoogleOAuthToken)
                 .ToListAsync();
-            var complianceArpDict = complianceArps.ToDictionary(x => x.ItemPlanningId);
+            // Lowest-Id live ARP per planning, the report service's pin: nothing makes
+            // (ItemPlanningId, non-removed) unique, and ToDictionary would fail the week.
+            var complianceArpDict = complianceArps
+                .GroupBy(x => x.ItemPlanningId)
+                .ToDictionary(g => g.Key, g => g.OrderBy(a => a.Id).First());
 
             // Batch-load calendar configs for compliance ARPs
             var complianceArpIds = complianceArps.Select(x => x.Id).ToList();
@@ -1086,6 +1166,38 @@ public class BackendConfigurationCalendarService(
                         exceptionsByArp[ex.AreaRulePlanningId] = perArpDict;
                     }
                     perArpDict[ex.OriginalDate.Date] = ex;
+                }
+            }
+
+            // #1373 — the logs dated in another week carry their occurrence exception (an
+            // IsDeleted marker in particular) on THAT week's date, which the in-week load
+            // above did not read.
+            if (completedElsewhereDoneInWeek.Count > 0)
+            {
+                var elsewhereArpIds = completedElsewhereDoneInWeek
+                    .Select(c => complianceArpDict.GetValueOrDefault(c.PlanningId)?.Id)
+                    .Where(id => id.HasValue)
+                    .Select(id => id!.Value)
+                    .Distinct()
+                    .ToList();
+                var elsewhereDates = completedElsewhereDoneInWeek
+                    .Select(c => c.Deadline.Date)
+                    .Distinct()
+                    .ToList();
+                var elsewhereExceptions = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                    .Where(x => elsewhereArpIds.Contains(x.AreaRulePlanningId))
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => elsewhereDates.Contains(x.OriginalDate.Date))
+                    .Include(x => x.ExceptionSites)
+                    .ToListAsync();
+                foreach (var ex in elsewhereExceptions)
+                {
+                    if (!exceptionsByArp.TryGetValue(ex.AreaRulePlanningId, out var perArpDict))
+                    {
+                        perArpDict = new Dictionary<DateTime, CalendarOccurrenceException>();
+                        exceptionsByArp[ex.AreaRulePlanningId] = perArpDict;
+                    }
+                    perArpDict.TryAdd(ex.OriginalDate.Date, ex);
                 }
             }
 
@@ -1175,21 +1287,35 @@ public class BackendConfigurationCalendarService(
                 // Soft-deleted occurrence: hide it.
                 if (complianceException?.IsDeleted == true) continue;
 
-                // Moved out of the current week: hide it here (the destination week's
-                // movedInExceptions pass at line ~387 renders it).
-                if (complianceException?.NewDate is { } movedDate
-                    && (movedDate < weekStart || movedDate > weekEnd))
-                {
-                    continue;
-                }
-
-                var effectiveTaskDate = complianceException?.NewDate?.Date ?? compliance.Deadline.Date;
-                var effectiveStartHour = complianceException?.StartHour ?? calConfig?.StartHour ?? 9.0;
-                var effectiveDuration = complianceException?.Duration ?? calConfig?.Duration ?? 1.0;
-
                 var compSdkCase = compliance.MicrotingSdkCaseId > 0
                     ? weekComplianceCasesById.GetValueOrDefault(compliance.MicrotingSdkCaseId)
                     : null;
+
+                DateTime effectiveTaskDate;
+                if (complianceCompleted
+                    && CompletedLogPlacement.DoneDate(compSdkCase?.DoneAtUserModifiable, compSdkCase?.DoneAt)
+                        is { } doneDate)
+                {
+                    // #1373 option B: a completed log is shown on the day it was done — in
+                    // this week or not at all (the week holding the done date renders it).
+                    if (doneDate < weekStart.Date || doneDate > weekEnd.Date) continue;
+                    effectiveTaskDate = doneDate;
+                }
+                else
+                {
+                    // Moved out of the current week: hide it here (the destination week's
+                    // movedInExceptions pass at line ~387 renders it).
+                    if (complianceException?.NewDate is { } movedDate
+                        && (movedDate < weekStart || movedDate > weekEnd))
+                    {
+                        continue;
+                    }
+
+                    effectiveTaskDate = complianceException?.NewDate?.Date ?? compliance.Deadline.Date;
+                }
+
+                var effectiveStartHour = complianceException?.StartHour ?? calConfig?.StartHour ?? 9.0;
+                var effectiveDuration = complianceException?.Duration ?? calConfig?.Duration ?? 1.0;
                 var compTaskIsExpired = ComputeTaskIsExpired(compSdkCase, effectiveTaskDate, dateTimeNow);
 
                 var model = new CalendarTaskResponseModel
@@ -1418,6 +1544,16 @@ public class BackendConfigurationCalendarService(
                 .Where(s => siteIds.Contains((int)s.Id))
                 .ToDictionaryAsync(s => (int)s.Id, s => s.Name ?? string.Empty);
 
+            // #1385 — team names for the "Assigned to" column, so a team-only task does
+            // not read as unassigned.
+            var workerTagIds = workerTagIdsByArpId.Values.SelectMany(x => x).Distinct().ToList();
+            var workerTagNamesById = workerTagIds.Count == 0
+                ? new Dictionary<int, string>()
+                : await sdkDbContext.Tags
+                    .AsNoTracking()
+                    .Where(t => workerTagIds.Contains(t.Id) && t.WorkflowState != Constants.WorkflowStates.Removed)
+                    .ToDictionaryAsync(t => t.Id, t => t.Name ?? string.Empty);
+
             // #1302 / #1140 — upcoming occurrences per recurring series. TaskDate
             // below is the SERIES START, so opening the edit modal on it made
             // every series that started in the past read-only. The dates come
@@ -1537,6 +1673,9 @@ public class BackendConfigurationCalendarService(
                     DescriptionHtml = description,
                     Translations = translations,
                     WorkerTagIds = arpWorkerTagIds,
+                    WorkerTagNames = arpWorkerTagIds
+                        .Select(id => workerTagNamesById.GetValueOrDefault(id, string.Empty))
+                        .ToList(),
                     // #1236 — the team half of the assignment, beside AssigneeIds. This
                     // list feeds the complete modal's "assigned to this event" group;
                     // AssigneeIds alone still drives its pre-select.
@@ -2893,6 +3032,45 @@ public class BackendConfigurationCalendarService(
         return board.PropertyId != updateModel.PropertyId
             ? new OperationResult(false, localizationService.GetString("SelectedBoardDoesNotBelongToTaskProperty"))
             : null;
+    }
+
+    /// <summary>
+    /// Of the given (planning, occurrence date) keys, those whose Compliance on that date is
+    /// backed by a completed SDK case (<c>Status == 100</c>). Empty without a core (the
+    /// fixtures that construct this service without one never seed a case).
+    /// </summary>
+    private async Task<HashSet<(int PlanningId, DateTime Date)>> CompletedOccurrenceKeysAsync(
+        List<(int PlanningId, DateTime Date)> keys)
+    {
+        var completed = new HashSet<(int PlanningId, DateTime Date)>();
+        if (keys.Count == 0 || coreHelper == null) return completed;
+
+        var planningIds = keys.Select(k => k.PlanningId).Distinct().ToList();
+        var dates = keys.Select(k => k.Date).Distinct().ToList();
+        var wanted = keys.ToHashSet();
+        var rows = (await backendConfigurationPnDbContext.Compliances
+                .Where(x => planningIds.Contains(x.PlanningId))
+                .Where(x => dates.Contains(x.Deadline.Date))
+                .Where(x => x.MicrotingSdkCaseId > 0)
+                .Select(x => new { x.PlanningId, x.Deadline, x.MicrotingSdkCaseId })
+                .ToListAsync())
+            .Where(x => wanted.Contains((x.PlanningId, x.Deadline.Date)))
+            .ToList();
+        if (rows.Count == 0) return completed;
+
+        var caseIds = rows.Select(x => x.MicrotingSdkCaseId).Distinct().ToList();
+        var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
+        await using var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
+        var completedCaseIds = (await sdkDbContext.Cases
+            .Where(c => caseIds.Contains(c.Id) && c.Status == 100)
+            .Select(c => c.Id)
+            .ToListAsync()).ToHashSet();
+
+        foreach (var row in rows.Where(x => completedCaseIds.Contains(x.MicrotingSdkCaseId)))
+        {
+            completed.Add((row.PlanningId, row.Deadline.Date));
+        }
+        return completed;
     }
 
     // Overlay a per-occurrence exception's field overrides (#885) onto a

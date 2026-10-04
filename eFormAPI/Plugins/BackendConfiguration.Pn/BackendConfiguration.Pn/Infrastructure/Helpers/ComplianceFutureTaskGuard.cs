@@ -51,17 +51,41 @@ public static class ComplianceFutureTaskGuard
         => string.Equals(source?.Trim(), ComplianceSource, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>The Danish calendar date at <paramref name="utcNow"/>.</summary>
-    public static DateTime TodayInCopenhagen(DateTime utcNow)
+    public static DateTime TodayInCopenhagen(DateTime utcNow) => DateInCopenhagen(utcNow);
+
+    /// <summary>
+    /// The Danish calendar date of a stored UTC instant — e.g. a case's
+    /// <c>DoneAtUserModifiable ?? DoneAt</c>, which the browser renders as "Udført dato" in
+    /// Danish time (#1370). An Unspecified instant is treated as UTC (that is how the
+    /// database hands every timestamp back); a Local one is converted first.
+    /// </summary>
+    public static DateTime DateInCopenhagen(DateTime utcInstant) => CopenhagenTimeOf(utcInstant).Date;
+
+    /// <summary>The Danish wall-clock time of a stored UTC instant (same Kind rules as
+    /// <see cref="DateInCopenhagen"/>).</summary>
+    public static DateTime CopenhagenTimeOf(DateTime utcInstant)
     {
-        // An Unspecified instant is treated as UTC (that is what every caller passes);
-        // a Local one is converted first.
-        var utc = utcNow.Kind switch
+        var utc = utcInstant.Kind switch
         {
-            DateTimeKind.Utc => utcNow,
-            DateTimeKind.Local => utcNow.ToUniversalTime(),
-            _ => DateTime.SpecifyKind(utcNow, DateTimeKind.Utc)
+            DateTimeKind.Utc => utcInstant,
+            DateTimeKind.Local => utcInstant.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(utcInstant, DateTimeKind.Utc)
         };
-        return TimeZoneInfo.ConvertTimeFromUtc(utc, Copenhagen.Value).Date;
+        return TimeZoneInfo.ConvertTimeFromUtc(utc, Copenhagen.Value);
+    }
+
+    /// <summary>
+    /// The UTC instant of a Danish wall-clock time. A time that does not exist (the spring
+    /// DST gap) is moved an hour forward rather than throwing.
+    /// </summary>
+    public static DateTime UtcFromCopenhagen(DateTime copenhagenTime)
+    {
+        var local = DateTime.SpecifyKind(copenhagenTime, DateTimeKind.Unspecified);
+        if (Copenhagen.Value.IsInvalidTime(local))
+        {
+            local = local.AddHours(1);
+        }
+        return TimeZoneInfo.ConvertTimeToUtc(local, Copenhagen.Value);
     }
 
     /// <summary>

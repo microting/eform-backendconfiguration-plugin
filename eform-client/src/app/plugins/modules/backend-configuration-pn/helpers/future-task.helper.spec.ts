@@ -1,6 +1,5 @@
 import {
   copenhagenDateKey,
-  isFutureLegacyDeadline,
   isFutureTask,
   taskDateKey,
 } from './future-task.helper';
@@ -98,29 +97,6 @@ describe('future-task.helper (#1300)', () => {
     it('never treats an unreadable date as future', () => {
       expect(isFutureTask(null, noon)).toBe(false);
       expect(isFutureTask('garbage', noon)).toBe(false);
-    });
-  });
-
-  describe('isFutureLegacyDeadline (displayed = Compliance.Deadline − 1 day)', () => {
-    const noon = new Date('2026-09-18T10:00:00Z');
-
-    it.each([
-      ['displayed yesterday → task today', '2026-09-17T00:00:00Z', false],
-      ['displayed the day before yesterday → task yesterday', '2026-09-16T00:00:00Z', false],
-      ['displayed today → task tomorrow', '2026-09-18T00:00:00Z', true],
-      ['displayed tomorrow → task in two days', '2026-09-19T00:00:00Z', true],
-    ])('%s', (_label, displayed, expected) => {
-      expect(isFutureLegacyDeadline(new Date(displayed as string), noon)).toBe(expected);
-    });
-
-    it('rolls over month and year ends', () => {
-      // displayed 31 Dec → task 1 Jan
-      expect(isFutureLegacyDeadline(new Date('2026-12-31T00:00:00Z'), new Date('2026-12-31T12:00:00Z'))).toBe(true);
-      expect(isFutureLegacyDeadline(new Date('2026-12-31T00:00:00Z'), new Date('2027-01-01T12:00:00Z'))).toBe(false);
-    });
-
-    it('is false for a missing deadline', () => {
-      expect(isFutureLegacyDeadline(null, noon)).toBe(false);
     });
   });
 });
