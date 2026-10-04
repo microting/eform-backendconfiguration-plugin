@@ -1,0 +1,58 @@
+#nullable enable
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using BackendConfiguration.Pn.Infrastructure.Models.Inbox;
+using BackendConfiguration.Pn.Services.InboundMail;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microting.eFormApi.BasePn.Abstractions;
+using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+using Microting.EformBackendConfigurationBase.Infrastructure.Const;
+
+namespace BackendConfiguration.Pn.Controllers;
+
+[Authorize(Policy = BackendConfigurationClaims.EnableInbox)]
+[Route("api/backend-configuration-pn/inbox")]
+public class InboxController(IInboxService inbox, IInboxSettingsService settings, IUserService userService) : Controller
+{
+    [HttpGet]
+    public Task<OperationDataResult<List<InboxListItem>>> List([FromQuery] int? status, [FromQuery] string? search) =>
+        inbox.ListAsync(status, search);
+
+    [HttpGet("{id:int}")]
+    public Task<OperationDataResult<InboxListItem>> Get(int id) => inbox.GetAsync(id);
+
+    [HttpGet("{id:int}/file")]
+    public async Task<IActionResult> Pdf(int id)
+    {
+        var stream = await inbox.GetPdfAsync(id);
+        return stream == null ? NotFound() : File(stream, "application/pdf");
+    }
+
+    [HttpPost("{id:int}/file")]
+    public Task<OperationResult> FileDocument(int id, [FromBody] FileInboxDocumentRequest req) =>
+        inbox.FileAsync(id, req, userService.UserId);
+
+    [HttpPost("{id:int}/undo")]
+    public Task<OperationResult> Undo(int id) => inbox.UndoAsync(id, userService.UserId);
+
+    [HttpPost("{id:int}/reject")]
+    public Task<OperationResult> Reject(int id) => inbox.RejectAsync(id, userService.UserId);
+
+    [HttpPost("{id:int}/approve-sender")]
+    public Task<OperationResult> ApproveSender(int id) => settings.ApproveSenderAsync(id, userService.UserId);
+
+    [HttpPost("{id:int}/reject-sender")]
+    public Task<OperationResult> RejectSender(int id, [FromQuery] bool block) =>
+        settings.RejectSenderAsync(id, block, userService.UserId);
+
+    [HttpGet("settings")]
+    public Task<OperationDataResult<InboxSettingsModel>> GetSettings() => settings.GetAsync(userService.UserId);
+
+    [HttpPut("settings")]
+    public Task<OperationResult> PutSettings([FromBody] InboxSettingsModel model) =>
+        settings.UpdateAsync(model, userService.UserId);
+
+    [HttpPost("settings/rotate-address")]
+    public Task<OperationDataResult<InboxSettingsModel>> Rotate() => settings.RotateAddressAsync(userService.UserId);
+}

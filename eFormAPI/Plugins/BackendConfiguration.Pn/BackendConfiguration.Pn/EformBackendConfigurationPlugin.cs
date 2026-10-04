@@ -184,6 +184,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<Services.FileArchive.IFileArchiver, Services.FileArchive.FileArchiver>();
         services.AddTransient<Services.InboundMail.SenderVerdictResolver>();
         services.AddTransient<Services.InboundMail.IInboxHubService, Services.InboundMail.InboxHubService>();
+        services.AddTransient<Services.InboundMail.IInboxService, Services.InboundMail.InboxService>();
+        services.AddTransient<Services.InboundMail.IInboxSettingsService, Services.InboundMail.InboxSettingsService>();
         services.AddTransient<IBackendConfigurationStatsService, BackendConfigurationStatsService>();
         services.AddTransient<IBackendConfigurationCalendarService, BackendConfigurationCalendarService>();
         services.AddTransient<IBackendConfigurationCaseService, BackendConfigurationCaseService>();
