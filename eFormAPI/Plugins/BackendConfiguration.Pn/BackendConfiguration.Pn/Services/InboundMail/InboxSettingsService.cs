@@ -39,8 +39,8 @@ public partial class InboxSettingsService(BackendConfigurationPnDbContext dbCont
     private const string PolicyHold = "hold";
     private const string PolicyRefuse = "refuse";
     /// <summary>MySQL named lock: address creation and rotation never interleave (there is no unique index to lean on).</summary>
-    private const string AddressLockSql = "SELECT GET_LOCK('inbox-address-create', 15)";
-    private const string AddressUnlockSql = "SELECT RELEASE_LOCK('inbox-address-create')";
+    private const string AddressLockSql = "SELECT GET_LOCK(CONCAT('inbox-address-create:', DATABASE()), 15)";
+    private const string AddressUnlockSql = "SELECT RELEASE_LOCK(CONCAT('inbox-address-create:', DATABASE()))";
     private static readonly TimeSpan Grace = TimeSpan.FromDays(7);
 
     /// <summary>An exact address or "@domain" (the shapes SenderVerdictResolver matches), lower-cased.</summary>
@@ -112,7 +112,7 @@ public partial class InboxSettingsService(BackendConfigurationPnDbContext dbCont
 
     public async Task<OperationResult> UpdateAsync(InboxSettingsModel model, int userId)
     {
-        if (model.UnknownSenderPolicy is not (PolicyHold or PolicyRefuse))
+        if (model?.UnknownSenderPolicy is not (PolicyHold or PolicyRefuse))
             return new OperationResult(false, localization.GetString("InboxInvalidUnknownSenderPolicy"));
 
         var wanted = (model.SenderRules ?? [])

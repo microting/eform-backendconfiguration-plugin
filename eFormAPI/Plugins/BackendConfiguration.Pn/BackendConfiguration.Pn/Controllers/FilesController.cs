@@ -139,7 +139,6 @@ public class FilesController : Controller
 		if (model.FileIds is { Count: > 0 })
 		{
 			using var archiveStream = new MemoryStream();
-			var filesAdded = 0;
 			using (var archive = new ZipArchive(archiveStream, ZipArchiveMode.Create, true))
 			{
 				foreach (var fileId in model.FileIds)
@@ -148,8 +147,8 @@ public class FilesController : Controller
 					await using var stream = await _archiveStorage.GetAsync(FileArchiver.ObjectName(uploadedData.Checksum, uploadedData.Extension));
 					if (stream == null)
 					{
-						_logger.LogWarning("Archive file {FileId} is missing from storage; left out of the zip", fileId);
-						continue;
+						_logger.LogWarning("Archive file {FileId} is missing from storage; no partial zip is returned", fileId);
+						return new NotFoundResult();
 					}
 
 					var operationDataResult = await _backendConfigurationFilesService.GetById(fileId);
@@ -157,13 +156,7 @@ public class FilesController : Controller
 						CompressionLevel.Fastest);
 					await using var zipStream = zipArchiveEntry.Open();
 					await stream.CopyToAsync(zipStream);
-					filesAdded++;
 				}
-			}
-
-			if (filesAdded == 0)
-			{
-				return new NotFoundResult();
 			}
 
 			return File(archiveStream.ToArray(), "application/zip", model.ArchiveName);

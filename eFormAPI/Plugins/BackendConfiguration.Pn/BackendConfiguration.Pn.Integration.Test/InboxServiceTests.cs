@@ -121,6 +121,20 @@ public class InboxServiceTests : TestBaseSetup
     }
 
     [Test]
+    public async Task File_NullLists_FailsWithoutThrowing()
+    {
+        var doc = await InboxTestData.ReadyDocumentAsync(BackendConfigurationPnDbContext!);
+        var p = await InboxTestData.PropertyAsync(BackendConfigurationPnDbContext!);
+
+        var noProperties = await _service.FileAsync(doc.Id, new FileInboxDocumentRequest { Name = "x", PropertyIds = null!, TagIds = null! }, 7);
+        Assert.That(noProperties.Success, Is.False);
+        Assert.That(noProperties.Message, Is.EqualTo("InboxChooseAtLeastOneProperty"));
+
+        var noTags = await _service.FileAsync(doc.Id, new FileInboxDocumentRequest { Name = "x", PropertyIds = [p.Id], TagIds = null! }, 7);
+        Assert.That(noTags.Success, Is.True);
+    }
+
+    [Test]
     public async Task File_Twice_SecondIsRejectedAndLeavesOneFile()
     {
         var doc = await InboxTestData.ReadyDocumentAsync(BackendConfigurationPnDbContext!);

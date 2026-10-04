@@ -98,8 +98,8 @@ public class InboxService(BackendConfigurationPnDbContext dbContext, IArchiveSto
         if (doc is not { Status: InboxDocumentStatus.Ready, Md5: { } md5 })
             return new OperationResult(false, localization.GetString("InboxDocumentNotReady"));
 
-        var propertyIds = req.PropertyIds.Distinct().ToList();
-        var tagIds = req.TagIds.Distinct().ToList();
+        var propertyIds = (req?.PropertyIds ?? []).Distinct().ToList();
+        var tagIds = (req?.TagIds ?? []).Distinct().ToList();
         if (propertyIds.Count == 0)
             return new OperationResult(false, localization.GetString("InboxChooseAtLeastOneProperty"));
 
@@ -110,7 +110,7 @@ public class InboxService(BackendConfigurationPnDbContext dbContext, IArchiveSto
         if (liveProperties != propertyIds.Count || liveTags != tagIds.Count)
             return new OperationResult(false, localization.GetString("InboxUnknownPropertyOrTag"));
 
-        var name = string.IsNullOrWhiteSpace(req.Name) ? Path.GetFileNameWithoutExtension(doc.FileName) : req.Name.Trim();
+        var name = string.IsNullOrWhiteSpace(req!.Name) ? Path.GetFileNameWithoutExtension(doc.FileName) : req.Name.Trim();
         try
         {
             // Inside the try: a storage failure is logged and answered, not a bare 500.

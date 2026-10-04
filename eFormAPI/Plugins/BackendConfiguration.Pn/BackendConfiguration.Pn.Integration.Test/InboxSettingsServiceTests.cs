@@ -232,6 +232,17 @@ public class InboxSettingsServiceTests : TestBaseSetup
     }
 
     [Test]
+    public async Task Update_NullRulesOrBody_DoesNotThrow()
+    {
+        var ok = await _service.UpdateAsync(new InboxSettingsModel { UnknownSenderPolicy = "hold", SenderRules = null! }, 1);
+        Assert.That(ok.Success, Is.True);
+
+        var nullBody = await _service.UpdateAsync(null!, 1);
+        Assert.That(nullBody.Success, Is.False);
+        Assert.That(nullBody.Message, Is.EqualTo("InboxInvalidUnknownSenderPolicy"));
+    }
+
+    [Test]
     public async Task Update_InvalidPattern_IsRejected()
     {
         var res = await _service.UpdateAsync(new InboxSettingsModel { SenderRules = [new() { Pattern = "not an address", Kind = 0 }] }, 1);

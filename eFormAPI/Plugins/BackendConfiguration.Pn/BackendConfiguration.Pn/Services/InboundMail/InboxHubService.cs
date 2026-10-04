@@ -124,16 +124,34 @@ public class InboxHubService(BackendConfigurationPnDbContext dbContext, IArchive
 
     public async Task FailedAsync(FailedRequest r)
     {
-        var doc = await dbContext.InboxDocuments.FirstOrDefaultAsync(d => d.HubDocumentId == r.HubDocumentId);
-        if (doc is not { DeliveredAt: null, Status: InboxDocumentStatus.Preparing or InboxDocumentStatus.SenderPending })
+        var strategy = dbContext.Database.CreateExecutionStrategy();
+        var attempt = 0;
+        await strategy.ExecuteAsync(async () =>
         {
-            return;
-        }
+            if (attempt++ > 0)
+            {
+                dbContext.ChangeTracker.Clear();
+            }
 
-        doc.Status = InboxDocumentStatus.Failed;
-        doc.FailureReason = Cut(r.Reason, 500);
-        doc.UpdatedByUserId = SystemUserId;
-        await doc.Update(dbContext);
+            await using var tx = await dbContext.Database.BeginTransactionAsync();
+
+            // Conditional claim, so a delivery that lands concurrently is never turned into Failed.
+            var claimed = await dbContext.InboxDocuments
+                .Where(d => d.HubDocumentId == r.HubDocumentId && d.DeliveredAt == null
+                            && (d.Status == InboxDocumentStatus.Preparing || d.Status == InboxDocumentStatus.SenderPending))
+                .ExecuteUpdateAsync(s => s.SetProperty(d => d.UpdatedAt, DateTime.UtcNow));
+            if (claimed == 0)
+            {
+                return;
+            }
+
+            var doc = await dbContext.InboxDocuments.SingleAsync(d => d.HubDocumentId == r.HubDocumentId);
+            doc.Status = InboxDocumentStatus.Failed;
+            doc.FailureReason = Cut(r.Reason, 500);
+            doc.UpdatedByUserId = SystemUserId;
+            await doc.Update(dbContext);
+            await tx.CommitAsync();
+        });
     }
 
     /// <summary>
