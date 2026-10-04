@@ -277,6 +277,29 @@ public class TaskWizardDeleteWithoutPlanningTests : TestBaseSetup
         Assert.That(uid, Is.Not.EqualTo(unrelatedCase.MicrotingUid));
     }
 
+    /// <summary>
+    /// A link whose CheckListSite row is gone is ambiguous: its MicrotingSdkCaseId may be a
+    /// legacy uid that happens to equal an unrelated live case's id. The lookup throws
+    /// rather than retract that case.
+    /// </summary>
+    [Test]
+    public async Task RetractionUid_MissingCheckListSiteWithACollidingCaseId_Throws()
+    {
+        var siteId = await SeedSdkSite();
+        var unrelatedCase = new SdkCase
+        {
+            SiteId = siteId, Status = 66, MicrotingUid = Random.Shared.Next(100_000, 900_000),
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext!.Cases.AddAsync(unrelatedCase);
+        await MicrotingDbContext.SaveChangesAsync();
+        const int missingCheckListSiteId = int.MaxValue;
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => BackendConfigurationTaskWizardService.RetractionUidOfAsync(
+            new PlanningCaseSite { MicrotingSdkCaseId = unrelatedCase.Id, MicrotingCheckListSitId = missingCheckListSiteId },
+            MicrotingDbContext));
+    }
+
     /// <summary>An items-planning link (MicrotingSdkCaseId is a Cases.Id) retracts the case's uid.</summary>
     [Test]
     public async Task RetractionUid_CaseLink_IsTheCasesUid()

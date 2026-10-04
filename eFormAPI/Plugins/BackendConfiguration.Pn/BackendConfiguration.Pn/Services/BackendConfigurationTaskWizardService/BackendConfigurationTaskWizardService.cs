@@ -1682,8 +1682,10 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
     /// (MicrotingSdkCaseId holds the CheckListSite's MicrotingUid, not a Cases.Id) is
     /// recognised first, as <c>BackendConfigurationPropertyAreasServiceHelper.ResolvePlannedCaseUidAsync</c>
     /// does, so its uid is never read as the id of an unrelated case. Otherwise the case's
-    /// uid, falling back to the CheckListSite's; a CheckListSite that does not exist
-    /// throws, which fails the delete before the calendar-side rows go.
+    /// uid, falling back to the CheckListSite's. A linked CheckListSite that does not exist
+    /// throws before any Cases lookup — the link is ambiguous, and its MicrotingSdkCaseId
+    /// may be a legacy uid that names an unrelated case — which fails the delete before
+    /// the calendar-side rows go.
     /// </summary>
     internal static async Task<int> RetractionUidOfAsync(
         Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningCaseSite planningCaseSite,
@@ -1695,6 +1697,11 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 .Where(x => x.Id == planningCaseSite.MicrotingCheckListSitId)
                 .Select(x => (int?)x.MicrotingUid)
                 .FirstOrDefaultAsync().ConfigureAwait(false);
+            if (checkListSiteUid == null)
+            {
+                throw new InvalidOperationException(
+                    $"CheckListSite {planningCaseSite.MicrotingCheckListSitId} of the deployment does not exist; its link cannot be resolved safely");
+            }
             if (checkListSiteUid == planningCaseSite.MicrotingSdkCaseId)
             {
                 return checkListSiteUid.Value;
