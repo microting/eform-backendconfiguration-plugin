@@ -59,7 +59,12 @@ public partial class InboxSettingsService(BackendConfigurationPnDbContext dbCont
         {
             var address = await ActiveAddressAsync();
             if (address != null)
-                return new OperationDataResult<InboxSettingsModel>(true, await ModelAsync(address.Address));
+            {
+                // The address still shows, but without hub settings nothing reaches it: say so.
+                return hub.IsConfigured
+                    ? new OperationDataResult<InboxSettingsModel>(true, await ModelAsync(address.Address))
+                    : await FailureAsync("InboxNotConfigured", address.Address);
+            }
 
             var n = await customerNo.GetAsync();
             if (n == 0)

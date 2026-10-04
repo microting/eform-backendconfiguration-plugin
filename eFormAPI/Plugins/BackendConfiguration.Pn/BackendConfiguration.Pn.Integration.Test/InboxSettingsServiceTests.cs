@@ -112,6 +112,19 @@ public class InboxSettingsServiceTests : TestBaseSetup
     }
 
     [Test]
+    public async Task Get_ExistingAddress_HubNotConfigured_ShowsAddressWithNotConfiguredMessage()
+    {
+        var first = (await _service.GetAsync(1)).Model.Address;
+        _hub.IsConfigured.Returns(false);
+
+        var res = await _service.GetAsync(1);
+
+        Assert.That(res.Success, Is.False);
+        Assert.That(res.Message, Is.EqualTo("InboxNotConfigured"));
+        Assert.That(res.Model.Address, Is.EqualTo(first));
+    }
+
+    [Test]
     public async Task Get_FirstTime_HubDown_NoAddressRowAndFailureMessage()
     {
         _hub.RegisterAddressAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<DateTime?>())
