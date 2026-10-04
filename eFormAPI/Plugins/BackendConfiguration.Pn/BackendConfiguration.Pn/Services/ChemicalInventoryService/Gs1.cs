@@ -200,8 +200,9 @@ public static class Gs1
         var end = rest.IndexOfAny(['?', '#']);
         var hostAndPath = end < 0 ? rest : rest[..end];
         var slash = hostAndPath.IndexOf('/');
-        if (slash < 0)
+        if (slash <= 0)
         {
+            // No path, or an empty host ("https:///01/…"): refused, as in the app and chemicalbase.
             return null;
         }
 
