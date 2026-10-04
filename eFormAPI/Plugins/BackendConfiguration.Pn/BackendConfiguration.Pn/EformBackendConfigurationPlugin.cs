@@ -186,6 +186,9 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<Services.InboundMail.IInboxHubService, Services.InboundMail.InboxHubService>();
         services.AddTransient<Services.InboundMail.IInboxService, Services.InboundMail.InboxService>();
         services.AddTransient<Services.InboundMail.IInboxSettingsService, Services.InboundMail.InboxSettingsService>();
+        // Signed outbound calls to the central inbound mail service; the manager waits on them.
+        services.AddHttpClient<Services.InboundMail.IInboundMailHubClient, Services.InboundMail.InboundMailHubClient>(
+            http => http.Timeout = TimeSpan.FromSeconds(15));
         services.AddTransient<IBackendConfigurationStatsService, BackendConfigurationStatsService>();
         services.AddTransient<IBackendConfigurationCalendarService, BackendConfigurationCalendarService>();
         services.AddTransient<IBackendConfigurationCaseService, BackendConfigurationCaseService>();
