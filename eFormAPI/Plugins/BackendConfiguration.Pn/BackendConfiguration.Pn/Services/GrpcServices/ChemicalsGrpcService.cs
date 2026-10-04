@@ -73,13 +73,15 @@ public class ChemicalsGrpcService(
 
     public override async Task<ChemicalRegisterSearchResponse> LookupBarcode(ChemicalLookupBarcodeRequest request, ServerCallContext context)
     {
-        var entries = await RunAsync(caller => inventory.LookupBarcodeAsync(caller, request.Barcode)).ConfigureAwait(false);
+        // GS1 Digital Link / element string / GTIN-14 → GTIN; a junk scan is INVALID_ARGUMENT (inside RunAsync).
+        var entries = await RunAsync(caller => inventory.LookupBarcodeAsync(caller, ChemicalBarcode.Normalize(request.Barcode)))
+            .ConfigureAwait(false);
         return ToProto(new ChemicalRegisterPageModel(entries, entries.Count));
     }
 
     public override async Task<ChemicalRegisterSearchResponse> SearchRegister(ChemicalSearchRegisterRequest request, ServerCallContext context) =>
-        ToProto(await RunAsync(caller => inventory.SearchRegisterAsync(caller, request.Query, request.Page, request.PageSize))
-            .ConfigureAwait(false));
+        ToProto(await RunAsync(caller => inventory.SearchRegisterAsync(caller, ChemicalBarcode.NormalizeSearchQuery(request.Query),
+            request.Page, request.PageSize)).ConfigureAwait(false));
 
     // Commands are built inside RunAsync: a malformed timestamp or amount is an
     // ArgumentException there, and so INVALID_ARGUMENT rather than UNKNOWN.

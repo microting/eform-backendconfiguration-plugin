@@ -1364,9 +1364,10 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                     assignments.First().FourthShiftActive = deviceUserModel.FourthShiftActive ?? false;
                                     assignments.First().FifthShiftActive = deviceUserModel.FifthShiftActive ?? false;
                                     assignments.First().IsManager = deviceUserModel.IsManager ?? false;
-                                    // PayRuleSetId/UseOneMinuteIntervals intentionally not updated here —
-                                    // for existing sites they are owned by TimePlanning's updateAssignedSite PUT
-                                    // (UseOneMinuteIntervals is one-way there and must never be reset from this path)
+                                    // PayRuleSetId intentionally not updated here — for existing sites it is owned
+                                    // by TimePlanning's updateAssignedSite PUT. UseOneMinuteIntervals is never changed
+                                    // from a settings save — create forces it on, the ops switch sets it with a
+                                    // cut-over date (eform-angular-timeplanning-plugin #1740).
                                     // assignments.First().// ManagingTagIds = deviceUserModel.ManagingTagIds ?? [] // TODO: Handle ManagingTagIds separately; // TODO: Handle ManagingTagIds separately
                                     await assignments.First().Update(timePlanningDbContext).ConfigureAwait(false);
                                     // Runs after every flag-driven group sync above, so it sees the
@@ -2086,14 +2087,17 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
             foreach (var planningSite in planningSites)
             {
+                // Every live row, not SingleOrDefault: plannings created before #1385 carry
+                // two rows per site, which made SingleOrDefault throw and left one behind.
                 var itemPlanningSites = await itemsPlanningPnDbContext.PlanningSites
-                    .SingleOrDefaultAsync(x => x.SiteId == propertyAssignment.WorkerId
-                                               && x.PlanningId == planningSite.ItemPlanningId
-                                               && x.WorkflowState != Constants.WorkflowStates.Removed).ConfigureAwait(false);
+                    .Where(x => x.SiteId == propertyAssignment.WorkerId
+                                && x.PlanningId == planningSite.ItemPlanningId
+                                && x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .ToListAsync().ConfigureAwait(false);
 
-                if (itemPlanningSites != null)
+                foreach (var itemPlanningSite in itemPlanningSites)
                 {
-                    await itemPlanningSites.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
+                    await itemPlanningSite.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
                 }
 
                 var itemPlanningCaseSites = await itemsPlanningPnDbContext.PlanningCaseSites

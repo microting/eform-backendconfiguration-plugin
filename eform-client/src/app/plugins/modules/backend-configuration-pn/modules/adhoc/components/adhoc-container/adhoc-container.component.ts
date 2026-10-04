@@ -16,6 +16,7 @@ import {AdhocTaskDrawerComponent, AdhocTaskDrawerCloseResult, AdhocTaskDrawerDat
 import {AdhocDeleteModalComponent} from '../adhoc-delete-modal/adhoc-delete-modal.component';
 import {AdhocCopyModalComponent} from '../adhoc-copy-modal/adhoc-copy-modal.component';
 import {AdhocCompleteModalComponent} from '../adhoc-complete-modal/adhoc-complete-modal.component';
+import {AdhocHistoryComponent} from '../adhoc-history/adhoc-history.component';
 
 export type AdhocViewMode = 'list' | 'history';
 
@@ -52,6 +53,12 @@ export class AdhocContainerComponent implements OnInit, OnDestroy {
 
   tasks: AdhocTaskModel[] = [];
   counts = {open: 0, completed: 0, archived: 0};
+
+  /** True while a refresh-button reload is in flight; disables the button (#1379). */
+  refreshing = false;
+
+  /** The routed Historik component while it is active, so refresh can reload it. */
+  private historyComponent?: AdhocHistoryComponent;
 
   private selectAdhocFilters$ = this.store.select(selectAdhocFilters);
 
@@ -107,17 +114,51 @@ export class AdhocContainerComponent implements OnInit, OnDestroy {
     this.router.navigate(mode === 'history' ? ['history'] : ['./'], {relativeTo: this.route});
   }
 
-  updateTable(): void {
-    this.getTasksSub$ = this.adhocStateService.getTasks().subscribe((data) => {
-      if (data && data.success && data.model) {
-        this.tasks = data.model.entities;
-        this.counts = {
-          open: data.model.openCount,
-          completed: data.model.completedCount,
-          archived: data.model.archivedCount,
-        };
-      }
+  /**
+   * Refresh button (#1379): re-fetches the active view with its current
+   * filters, pagination and status tab - Overblik through `updateTable()`
+   * (which also refreshes the status counts), Historik through the routed
+   * component's own `updateTable()`. Ignored while a refresh is in flight.
+   */
+  refresh(): void {
+    if (this.refreshing) {
+      return;
+    }
+    const reload = this.isHistoryView ? this.historyComponent?.updateTable() : this.updateTable();
+    if (!reload) {
+      return;
+    }
+    this.refreshing = true;
+    // Runs on completion, error or unsubscribe - and immediately when the
+    // request already finished synchronously.
+    reload.add(() => (this.refreshing = false));
+  }
+
+  onOutletActivate(component: unknown): void {
+    this.historyComponent = component instanceof AdhocHistoryComponent ? component : undefined;
+  }
+
+  onOutletDeactivate(): void {
+    this.historyComponent = undefined;
+  }
+
+  updateTable(): Subscription {
+    this.getTasksSub$ = this.adhocStateService.getTasks().subscribe({
+      next: (data) => {
+        if (data && data.success && data.model) {
+          this.tasks = data.model.entities;
+          this.counts = {
+            open: data.model.openCount,
+            completed: data.model.completedCount,
+            archived: data.model.archivedCount,
+          };
+        }
+      },
+      // HttpErrorInterceptor already shows the failure to the user; handled here
+      // so it does not also reach RxJS's unhandled-error path.
+      error: () => undefined,
     });
+    return this.getTasksSub$;
   }
 
   onPaginationChanged(pagination: PaginationModel): void {
