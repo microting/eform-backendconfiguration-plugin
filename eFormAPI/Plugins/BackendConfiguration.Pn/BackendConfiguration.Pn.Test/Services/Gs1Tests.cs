@@ -53,6 +53,7 @@ public class Gs1Tests
         new object[] { "https://id.gs1.org/01/012345678905", "0012345678905" },
         new object[] { "https://id.gs1.org/01/96385074", "96385074" },
         new object[] { "https://id.gs1.org/01/15701234567896/21/XYZ", "15701234567896" },
+        new object[] { "https://brand.dk/produkter/rengøring/01/05711111111114", "5711111111114" }, // non-ASCII path kept as-is
         // GS1 element strings (human-readable)
         new object[] { "(01)05701234567899", "5701234567899" },
         new object[] { "(01)05701234567899junk", "5701234567899" },      // content after AI 01 + 14 digits is ignored
@@ -107,6 +108,9 @@ public class Gs1Tests
         "\u001d\u001d0105701234567899",
         "https://id.gs1.org/01//05701234567899",
         "https://shop.example.dk/GTIN/05701234567899",
+        "https:///01/05711111111114",                     // empty host (parity with app + chemicalbase)
+        "http:///01/05711111111114",
+        "https://example.com/%EF%BB%BF01/05711111111114", // a percent-encoded BOM is not stripped
         "5701234567899\u0000",
         "(01)05701234567899\u0007",
         // all-zero GTINs (GS1 forbids them; register placeholders must not match)
