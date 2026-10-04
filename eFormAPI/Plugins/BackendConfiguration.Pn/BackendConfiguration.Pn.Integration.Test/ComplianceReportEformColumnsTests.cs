@@ -978,6 +978,32 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         Assert.That(template.Cases.Single().Cells[$"f{fixture.FieldIds[0]}"], Is.EqualTo("svar fra appen"));
     }
 
+    /// <summary>
+    /// #1372: the editor CLEARED an answer. The cleared row was written later than the
+    /// duplicate that still holds the old value (which also has the higher Id), so the
+    /// latest <c>UpdatedAt</c> must win over the "a value beats an empty row" tie-break:
+    /// the cell is absent, not the stale answer.
+    /// </summary>
+    [Test]
+    public async Task EformColumns_DuplicateFieldValues_ANewerClearedAnswerHidesTheOlderValue()
+    {
+        var core = await GetCore();
+        var da = await Danish();
+        var fixture = await SeedOneCase("Duplicate cleared", da.Id, (Constants.FieldTypes.Comment, "Bemærkning"));
+
+        var insertedAt = DateTime.UtcNow.AddHours(-1);
+        var cleared = await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, null);
+        var stale = await SeedFieldValue(fixture.CaseId, fixture.FieldIds[0], fixture.ChildId, null);
+        Assert.That(stale, Is.GreaterThan(cleared));
+        await SetFieldValueWritten(cleared, insertedAt, insertedAt.AddMinutes(5), null, version: 3);
+        await SetFieldValueWritten(stale, insertedAt, insertedAt, "gammelt svar", version: 1);
+
+        var (from, to) = Window();
+        var template = OnlyTemplateTable(await Run(core, da, from, to));
+
+        Assert.That(template.Cases.Single().Cells.ContainsKey($"f{fixture.FieldIds[0]}"), Is.False);
+    }
+
     // ==================================================================
     // PER-TYPE RENDERING
     // ==================================================================
