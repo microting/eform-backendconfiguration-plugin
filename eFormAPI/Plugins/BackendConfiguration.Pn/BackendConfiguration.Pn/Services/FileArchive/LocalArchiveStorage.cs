@@ -23,7 +23,19 @@ public class LocalArchiveStorage(string rootDirectory) : IArchiveStorage
     {
         var path = ResolvePath(objectName);
         Directory.CreateDirectory(rootDirectory);
-        File.Copy(localPath, path, overwrite: true);
+        // Copy beside the target, then rename over it: a rename replaces the file even while a reader
+        // (a PDF download) still has the old one open, and a half-written copy never carries the real name.
+        var temp = $"{path}.{Guid.NewGuid():N}.tmp";
+        try
+        {
+            File.Copy(localPath, temp);
+            File.Move(temp, path, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(temp)) File.Delete(temp);
+        }
+
         return Task.CompletedTask;
     }
 

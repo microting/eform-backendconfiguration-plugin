@@ -51,7 +51,7 @@ public class InboundMailSignatureTests
     private static HeaderDictionary Headers(string requestId = RequestId, string customerNo = "4711", string sig = ValidSignature) => new()
     {
         ["Authorization"] = InboundMailSignature.Scheme + sig,
-        ["DateHeader"] = DateHeader,
+        ["Date"] = DateHeader,
         ["X-Request-Id"] = requestId,
         ["X-Customer-No"] = customerNo
     };

@@ -72,6 +72,25 @@ public class LocalArchiveStorageTests
     }
 
     [Test]
+    public async Task Put_ReplacesAnObjectWhileItIsOpenForReading()
+    {
+        var sut = new LocalArchiveStorage(_root);
+        await File.WriteAllBytesAsync(_source, Encoding.UTF8.GetBytes("%PDF-1.4 first"));
+        await sut.PutAsync(_source, "0123abcd.pdf");
+        await File.WriteAllBytesAsync(_source, Encoding.UTF8.GetBytes("%PDF-1.4 second"));
+
+        // A download still holds the stored file open.
+        await using var reader = await sut.GetAsync("0123abcd.pdf");
+        await sut.PutAsync(_source, "0123abcd.pdf");
+
+        await using var content = await sut.GetAsync("0123abcd.pdf");
+        using var ms = new MemoryStream();
+        await content!.CopyToAsync(ms);
+        Assert.That(Encoding.UTF8.GetString(ms.ToArray()), Is.EqualTo("%PDF-1.4 second"));
+        Assert.That(Directory.GetFiles(_root), Has.Length.EqualTo(1), "no temp file is left behind");
+    }
+
+    [Test]
     public async Task Get_ReturnsNull_ForMissingObject()
     {
         var sut = new LocalArchiveStorage(_root);

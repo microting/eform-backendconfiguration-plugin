@@ -1,4 +1,5 @@
 #nullable enable
+using System.Security.Cryptography;
 using System.Text;
 using BackendConfiguration.Pn.Infrastructure.Models.Inbox;
 using BackendConfiguration.Pn.Services.FileArchive;
@@ -84,6 +85,39 @@ public class InboxServiceTests : TestBaseSetup
             .ToDictionaryAsync(s => s.TargetId, s => s.Accepted);
         Assert.That(accepted[t.Id], Is.True);
         Assert.That(accepted[other.Id], Is.False);
+    }
+
+    [Test]
+    public async Task File_WithLocalStorage_ArchivesUnderTheSameObjectName()
+    {
+        // Installs without S3: the inbox PDF and the archive file share one content-derived object name.
+        var root = Path.Combine(Path.GetTempPath(), "inbox-file-test-" + Guid.NewGuid().ToString("N"));
+        var staged = Path.Combine(Path.GetTempPath(), $"inbox-file-test-{Guid.NewGuid():N}.pdf");
+        try
+        {
+            var storage = new LocalArchiveStorage(root);
+            var bytes = Encoding.ASCII.GetBytes("%PDF-1.7 local storage");
+            var md5 = Convert.ToHexString(MD5.HashData(bytes)).ToLowerInvariant();
+            await System.IO.File.WriteAllBytesAsync(staged, bytes);
+            await storage.PutAsync(staged, FileArchiver.ObjectName(md5, "pdf"));
+            var doc = await InboxTestData.ReadyDocumentAsync(BackendConfigurationPnDbContext!, md5);
+            var p = await InboxTestData.PropertyAsync(BackendConfigurationPnDbContext!);
+            var service = new InboxService(BackendConfigurationPnDbContext!, storage,
+                new FileArchiver(BackendConfigurationPnDbContext!, storage), new BackendConfigurationLocalizationService(),
+                NullLogger<InboxService>.Instance);
+
+            var res = await service.FileAsync(doc.Id,
+                new FileInboxDocumentRequest { Name = "Lokal", PropertyIds = [p.Id], TagIds = [] }, 7);
+
+            Assert.That(res.Success, Is.True, res.Message);
+            await using var archived = await storage.GetAsync(FileArchiver.ObjectName(md5, "pdf"));
+            Assert.That(archived, Is.Not.Null);
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, true);
+            if (System.IO.File.Exists(staged)) System.IO.File.Delete(staged);
+        }
     }
 
     [Test]

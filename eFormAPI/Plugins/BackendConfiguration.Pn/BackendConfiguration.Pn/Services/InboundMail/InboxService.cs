@@ -114,8 +114,16 @@ public class InboxService(BackendConfigurationPnDbContext dbContext, IArchiveSto
         try
         {
             // Inside the try: a storage failure is logged and answered, not a bare 500.
-            await using var pdf = await storage.GetAsync(FileArchiver.ObjectName(md5, "pdf"));
-            if (pdf == null) return new OperationResult(false, localization.GetString("InboxDocumentNotReady"));
+            // Copied to memory and the stored object closed first: the archive object gets the same
+            // content-derived name, and local storage cannot overwrite a file that is still open.
+            using var pdf = new MemoryStream();
+            await using (var stored = await storage.GetAsync(FileArchiver.ObjectName(md5, "pdf")))
+            {
+                if (stored == null) return new OperationResult(false, localization.GetString("InboxDocumentNotReady"));
+                await stored.CopyToAsync(pdf);
+            }
+
+            pdf.Position = 0;
 
             // The inbox state commits in the archiver's own transaction, so the archive rows and the
             // Filed status can never disagree. The callback may run again on a retry: it reloads what it changes.

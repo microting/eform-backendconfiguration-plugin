@@ -468,7 +468,8 @@ public class InboxSettingsServiceTests : TestBaseSetup
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
-            var headers = request.Headers.ToDictionary(h => h.Key, h => string.Join(",", h.Value));
+            // HttpClient normalises known header names (X-Request-Id becomes X-Request-ID); HTTP header names are case-insensitive.
+            var headers = request.Headers.ToDictionary(h => h.Key, h => string.Join(",", h.Value), StringComparer.OrdinalIgnoreCase);
             var body = request.Content == null ? [] : await request.Content.ReadAsByteArrayAsync(ct);
             Requests.Add(new CapturedRequest(request.Method.Method, request.RequestUri!, headers, body));
             return respond(request);
