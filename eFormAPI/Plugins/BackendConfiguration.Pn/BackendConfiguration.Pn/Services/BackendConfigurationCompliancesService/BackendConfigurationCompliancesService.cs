@@ -157,6 +157,12 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
             .OrderBy(x => x.Deadline)
             .ToListAsync().ConfigureAwait(false);
 
+        // #1382 — calendar tasks store the occurrence date as Deadline; legacy rows the period end.
+        var planningIds = theList.Select(x => x.PlanningId).Distinct().ToList();
+        var calendarPlanningIds = await ComplianceDisplayDeadline
+            .LoadCalendarPlanningIdsAsync(_backendConfigurationPnDbContext, planningIds)
+            .ConfigureAwait(false);
+
         foreach (var compliance in theList)
         {
             var planningNameTranslation = await _itemsPlanningPnDbContext.PlanningNameTranslation
@@ -189,7 +195,9 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
             {
                 CaseId = compliance.MicrotingSdkCaseId,
                 CreatedAt = compliance.CreatedAt,
-                Deadline = compliance.Deadline.AddDays(-1),
+                Deadline = ComplianceDisplayDeadline.For(
+                    compliance.Deadline, calendarPlanningIds.Contains(compliance.PlanningId)),
+                ComplianceDeadline = compliance.Deadline,
                 ComplianceTypeId = null,
                 ControlArea = areaTranslation.Name,
                 EformId = compliance.MicrotingSdkeFormId,

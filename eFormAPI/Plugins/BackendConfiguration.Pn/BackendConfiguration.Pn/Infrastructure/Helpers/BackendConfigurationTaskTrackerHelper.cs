@@ -174,6 +174,11 @@ public static class BackendConfigurationTaskTrackerHelper
 				.LoadReportingPlanningIdsAsync(backendConfigurationPnDbContext, compliancePlanningIds)
 				.ConfigureAwait(false);
 
+			// #1382 — calendar tasks store the occurrence date as Deadline; legacy rows the period end.
+			var calendarPlanningIds = await ComplianceDisplayDeadline
+				.LoadCalendarPlanningIdsAsync(backendConfigurationPnDbContext, compliancePlanningIds)
+				.ConfigureAwait(false);
+
 			// Loaded with each event's PropertyId (#1256): a team is expanded — and
 			// matched by the Workers filter — only against the event's own property.
 			var workerTagLinks = compliancePlanningIds.Count > 0
@@ -232,7 +237,8 @@ public static class BackendConfigurationTaskTrackerHelper
 				{
 					continue;
 				}
-				var deadlineDate = compliance.Deadline.AddDays(-1);
+				var deadlineDate = ComplianceDisplayDeadline.For(
+					compliance.Deadline, calendarPlanningIds.Contains(compliance.PlanningId));
 
 				var areaRulePlanningQuery = backendConfigurationPnDbContext.AreaRulePlannings
 					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -413,6 +419,7 @@ public static class BackendConfigurationTaskTrackerHelper
 						Property = propertyName,
 						Tags = itemPlanningTags.OrderBy(x => x.Name).ToList(), //planning.PlanningsTags.Select(x => new CommonTagModel{Id = x.PlanningTag.Id, Name = x.PlanningTag.Name}).ToList(),
 						DeadlineTask = deadlineDate,
+						ComplianceDeadline = compliance.Deadline,
 						WorkerNames = workerNames,
 						WorkerIds = workerIds,
 						StartTask = startDate,
