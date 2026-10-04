@@ -10,6 +10,7 @@ using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
 using BackendConfiguration.Pn.Services.CalendarOccurrenceRetraction;
 using BackendConfiguration.Pn.Services.CalendarPastSeriesBackfill;
+using BackendConfiguration.Pn.Services.TaskTranslation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure.Constants;
@@ -1033,13 +1034,18 @@ public class BackendConfigurationTaskListService(
     {
         var ok = results.Count(r => r.Ok);
         var failed = results.Where(r => !r.Ok).ToList();
+        // #1384 — a successful task's message is otherwise dropped; keep its notice
+        // that some language was saved in Danish only.
+        var translationsIncomplete = results.Any(r => r.Ok && TaskTranslationNotice.IsIn(localizationService, r.Error));
         if (failed.Count == 0)
         {
-            return new OperationResult(true, localizationService.GetString(successKey));
+            return new OperationResult(true, TaskTranslationNotice.Append(localizationService,
+                localizationService.GetString(successKey), translationsIncomplete));
         }
         var errors = string.Join("; ", failed.Select(f => $"#{f.Id}: {f.Error}"));
-        return new OperationResult(ok > 0,
-            $"{localizationService.GetString("PartiallyCompleted")} {ok}/{results.Count}. {errors}");
+        return new OperationResult(ok > 0, TaskTranslationNotice.Append(localizationService,
+            $"{localizationService.GetString("PartiallyCompleted")} {ok}/{results.Count}. {errors}",
+            translationsIncomplete));
     }
 
     private async Task<OperationResult> RunPerTask(
