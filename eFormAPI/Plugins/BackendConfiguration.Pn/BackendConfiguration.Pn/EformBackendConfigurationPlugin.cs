@@ -177,6 +177,18 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<IBackendConfigurationDocumentService, BackendConfigurationDocumentService>();
         services.AddTransient<IBackendConfigurationReportService, BackendConfigurationReportService>();
         services.AddTransient<IBackendConfigurationFilesService, BackendConfigurationFilesService>();
+        // Singletons: the verifier holds the replay store, the provider caches the customer number.
+        services.AddSingleton<Services.InboundMail.InboundMailRequestVerifier>();
+        services.AddSingleton<Services.InboundMail.ICustomerNoProvider, Services.InboundMail.CustomerNoProvider>();
+        services.AddTransient<Services.FileArchive.IArchiveStorage, Services.FileArchive.CoreArchiveStorage>();
+        services.AddTransient<Services.FileArchive.IFileArchiver, Services.FileArchive.FileArchiver>();
+        services.AddTransient<Services.InboundMail.SenderVerdictResolver>();
+        services.AddTransient<Services.InboundMail.IInboxHubService, Services.InboundMail.InboxHubService>();
+        services.AddTransient<Services.InboundMail.IInboxService, Services.InboundMail.InboxService>();
+        services.AddTransient<Services.InboundMail.IInboxSettingsService, Services.InboundMail.InboxSettingsService>();
+        // Signed outbound calls to the central inbound mail service; the manager waits on them.
+        services.AddHttpClient<Services.InboundMail.IInboundMailHubClient, Services.InboundMail.InboundMailHubClient>(
+            http => http.Timeout = TimeSpan.FromSeconds(15));
         services.AddTransient<IBackendConfigurationStatsService, BackendConfigurationStatsService>();
         services.AddTransient<IBackendConfigurationCalendarService, BackendConfigurationCalendarService>();
         services.AddTransient<IBackendConfigurationCaseService, BackendConfigurationCaseService>();
@@ -267,6 +279,9 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddOptions<Infrastructure.Models.Settings.GoogleDriveOptions>()
             .Bind(configuration.GetSection("GoogleDrive"))
             .ValidateDataAnnotations();
+
+        services.AddOptions<Infrastructure.Models.Settings.InboundMailHubOptions>()
+            .Bind(configuration.GetSection("InboundMailHub"));
 
         services.AddChemicalBaseOptions(configuration);
     }

@@ -17,6 +17,10 @@ import {
   FileCreateEditFileComponent,
   DownloadFilesNameArchiveComponent,
   FileCreateZoomPageComponent,
+  ArchiveSectionNavComponent,
+  InboxContainerComponent,
+  InboxReviewDialogComponent,
+  InboxSettingsComponent,
 } from './components';
 import {FilesRouting} from './files.routing';
 import {MatButtonModule} from '@angular/material/button';
@@ -37,6 +41,8 @@ import {DragulaModule} from 'ng2-dragula';
 import {MtxProgressModule} from '@ng-matero/extensions/progress';
 import {MatDatepickerModule} from '@angular/material/datepicker';
 import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
+import {MatSelectModule} from '@angular/material/select';
+import {MatRadioModule} from '@angular/material/radio';
 
 @NgModule({
   declarations: [
@@ -51,6 +57,10 @@ import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
     FileCreateEditFileComponent,
     DownloadFilesNameArchiveComponent,
     FileCreateZoomPageComponent,
+    ArchiveSectionNavComponent,
+    InboxContainerComponent,
+    InboxReviewDialogComponent,
+    InboxSettingsComponent,
   ],
   imports: [
     CommonModule,
@@ -81,6 +91,8 @@ import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
     MatMenuTrigger,
     MatMenu,
     MatMenuItem,
+    MatSelectModule,
+    MatRadioModule,
   ],
 })
 

@@ -1,0 +1,63 @@
+<mat-card class="eform-sub-header d-flex flex-column gap-12 mb-3 p-3" style="align-items: stretch;">
+  <app-archive-section-nav></app-archive-section-nav>
+  <h2 style="margin: 0">{{ 'Email settings' | translate }}</h2>
+</mat-card>
+
+<mat-card *ngIf="loaded" class="d-flex flex-column gap-24 p-3">
+  <section class="d-flex flex-column gap-12">
+    <h3 class="mb-0">{{ 'Address for the inbox' | translate }}</h3>
+    <p class="mb-0">{{ 'PDFs in emails sent or forwarded to this address arrive in the Inbox. Emails without a PDF are ignored; several PDFs in one email are fine.' | translate }}</p>
+    <p *ngIf="addressMessage && rulesLoaded" id="inboxAddressMessage" class="alert alert--warning mb-0">{{ addressMessage }}</p>
+    <div class="d-flex flex-row flex-wrap align-items-center gap-12">
+      <mat-form-field class="flex-grow-1">
+        <mat-label>{{ 'Archive email' | translate }}</mat-label>
+        <input matInput id="inboxAddress" readonly [value]="address ?? ''" />
+      </mat-form-field>
+      <button class="btn-secondary" id="inboxCopyBtn" [disabled]="!address" (click)="copy()">
+        <mat-icon>content_copy</mat-icon>{{ (copied ? 'Copied' : 'Copy address') | translate }}
+      </button>
+      <button class="btn-quiet" id="inboxRotateBtn" [disabled]="busy" (click)="rotate()">
+        <mat-icon>autorenew</mat-icon>{{ 'Create new address' | translate }}
+      </button>
+    </div>
+  </section>
+
+  <section *ngIf="rulesLoaded; else rulesUnavailable" class="d-flex flex-column gap-12">
+    <h3 class="mb-0">{{ 'Who can send' | translate }}</h3>
+    <p class="mb-0">{{ 'Everyone with a user in this account can send. Also allow (addresses or domains, separated by commas):' | translate }}</p>
+    <mat-form-field>
+      <mat-label>{{ 'Allowed senders' | translate }}</mat-label>
+      <textarea
+        matInput
+        id="inboxRulesInput"
+        rows="3"
+        [(ngModel)]="allowList"
+        placeholder="@example-supplier.dk, scanner@example.org"
+      ></textarea>
+    </mat-form-field>
+    <mat-radio-group [(ngModel)]="unknownSenderPolicy" class="d-flex flex-column gap-12" [attr.aria-label]="'Who can send' | translate">
+      <mat-radio-button id="inboxPolicyHold" value="hold">{{ 'Hold documents from other senders in the Inbox until someone approves the sender' | translate }}</mat-radio-button>
+      <mat-radio-button id="inboxPolicyRefuse" value="refuse">{{ 'Refuse documents from other senders' | translate }}</mat-radio-button>
+    </mat-radio-group>
+    <p class="mb-0">{{ 'Documents from these addresses or domains are always refused:' | translate }}</p>
+    <mat-form-field>
+      <mat-label>{{ 'Blocked senders' | translate }}</mat-label>
+      <textarea matInput id="inboxBlockedInput" rows="2" [(ngModel)]="blockList"></textarea>
+    </mat-form-field>
+  </section>
+
+  <ng-template #rulesUnavailable>
+    <p id="inboxRulesUnavailable" class="alert alert--warning mb-0">
+      {{ addressMessage || ('The email settings could not be loaded. Try again later.' | translate) }}
+    </p>
+  </ng-template>
+
+  <section class="d-flex flex-column gap-12">
+    <h3 class="mb-0">{{ 'Suggestions and filing' | translate }}</h3>
+    <p class="mb-0">{{ 'New documents automatically get suggestions for property and tags. Microting may check the suggestions before the document reaches your Inbox. A person always decides what is filed, and filed documents stay in the archive like any other uploaded PDF.' | translate }}</p>
+  </section>
+
+  <div *ngIf="rulesLoaded" class="d-flex flex-row justify-content-end">
+    <button class="btn-primary" id="inboxSaveBtn" [disabled]="busy" (click)="save()">{{ 'Save' | translate }}</button>
+  </div>
+</mat-card>

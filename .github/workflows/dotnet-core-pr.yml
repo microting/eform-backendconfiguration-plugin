@@ -170,7 +170,8 @@ jobs:
       run: sleep 15
     - name: Start the newly build Docker container
       id: docker-run
-      run: docker run --name my-container -p 4200:5000 --network data -e ALLOW_FAKE_TRANSLATE=true microtingas/work-items-planning-container:latest "/ConnectionString=host=mariadbtest;Database=420_Angular;user=root;password=secretpassword;port=3306;Convert Zero Datetime = true;SslMode=none;" "/api-key=FAKE_TRANSLATE_E2E" > docker_run_log 2>&1 &
+      # InboundMailHub__HubUrl: the stub hub runs only during shard i (inbox.spec.ts beforeAll); other shards get "hub unavailable" from the Indbakke settings.
+      run: docker run --name my-container -p 4200:5000 --network data --add-host=host.docker.internal:host-gateway -e ALLOW_FAKE_TRANSLATE=true -e InboundMailHub__TenantSigningKey=ci-only-inbox-signing-key-0123456789abcdef -e InboundMailHub__HubUrl=http://host.docker.internal:4399 microtingas/work-items-planning-container:latest "/ConnectionString=host=mariadbtest;Database=420_Angular;user=root;password=secretpassword;port=3306;Convert Zero Datetime = true;SslMode=none;" "/api-key=FAKE_TRANSLATE_E2E" > docker_run_log 2>&1 &
     - name: Use Node.js
       uses: actions/setup-node@v3
       with:

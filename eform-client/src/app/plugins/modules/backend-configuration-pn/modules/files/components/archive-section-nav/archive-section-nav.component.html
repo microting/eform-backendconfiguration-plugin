@@ -1,0 +1,30 @@
+<nav *ngIf="canUseInbox" class="d-flex flex-row flex-wrap gap-12" [attr.aria-label]="'Archive sections' | translate">
+  <a
+    id="archiveNavInbox"
+    routerLink="/plugins/backend-configuration-pn/files/inbox"
+    routerLinkActive
+    #inboxLink="routerLinkActive"
+    ariaCurrentWhenActive="page"
+    [class.btn-primary]="inboxLink.isActive"
+    [class.btn-secondary]="!inboxLink.isActive"
+  >{{ 'Inbox' | translate }}</a>
+  <a
+    id="archiveNavArchive"
+    routerLink="/plugins/backend-configuration-pn/files"
+    routerLinkActive
+    #archiveLink="routerLinkActive"
+    [routerLinkActiveOptions]="{exact: true}"
+    ariaCurrentWhenActive="page"
+    [class.btn-primary]="archiveLink.isActive"
+    [class.btn-secondary]="!archiveLink.isActive"
+  >{{ 'Archive' | translate }}</a>
+  <a
+    id="archiveNavSettings"
+    routerLink="/plugins/backend-configuration-pn/files/settings"
+    routerLinkActive
+    #settingsLink="routerLinkActive"
+    ariaCurrentWhenActive="page"
+    [class.btn-primary]="settingsLink.isActive"
+    [class.btn-secondary]="!settingsLink.isActive"
+  >{{ 'Email settings' | translate }}</a>
+</nav>

@@ -24,14 +24,17 @@ using Infrastructure.Helpers;
 using Infrastructure.Models.Files;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 using Services.BackendConfigurationFilesService;
 using Services.BackendConfigurationLocalizationService;
+using Services.FileArchive;
 using System.IO;
 using System.IO.Compression;
 using System.Threading.Tasks;
+using System.Linq;
 
 [Authorize]
 [Route("api/backend-configuration-pn/files")]
@@ -39,19 +42,19 @@ public class FilesController : Controller
 {
 	private readonly IBackendConfigurationFilesService _backendConfigurationFilesService;
 	private readonly IBackendConfigurationLocalizationService _localizationService;
-	//private ILogger<FilesController> logger;
-	private readonly IEFormCoreService _coreHelper;
+	private readonly ILogger<FilesController> _logger;
+	private readonly IArchiveStorage _archiveStorage;
 
 	public FilesController(
 		IBackendConfigurationFilesService backendConfigurationFilesService,
 		IBackendConfigurationLocalizationService localizationService,
-		/*ILogger<FilesController> logger,*/
-		IEFormCoreService coreHelper)
+		ILogger<FilesController> logger,
+		IArchiveStorage archiveStorage)
 	{
 		_backendConfigurationFilesService = backendConfigurationFilesService;
 		_localizationService = localizationService;
-		//this.logger = logger;
-		_coreHelper = coreHelper;
+		_logger = logger;
+		_archiveStorage = archiveStorage;
 	}
 
 	[HttpPost]
@@ -111,28 +114,45 @@ public class FilesController : Controller
 	[Route("get-file/{id}")]
 	public async Task<IActionResult> GetLoginPageImage(int id)
 	{
-		var core = await _coreHelper.GetCore();
 		var uploadedData = await _backendConfigurationFilesService.GetUploadedDataByFileId(id);
 
-		var ss = await core.GetFileFromS3Storage($"{uploadedData.Checksum}.{uploadedData.Extension}");
+		// IArchiveStorage reads S3 or local storage per the SDK s3Enabled setting; the object name is the
+		// same "{checksum}.{extension}" key the S3-only read used.
+		var stream = await _archiveStorage.GetAsync(FileArchiver.ObjectName(uploadedData.Checksum, uploadedData.Extension));
 
-		if (ss != null)
+		if (stream != null)
 		{
 			if (uploadedData.Extension == "pdf")
 			{
-				return File(ss.ResponseStream, "application/pdf", uploadedData.FileName);
+				return File(stream, "application/pdf", uploadedData.FileName);
 			}
 
-			return File(ss.ResponseStream, $"image/{uploadedData.Extension}", uploadedData.FileName);
+			return File(stream, $"image/{uploadedData.Extension}", uploadedData.FileName);
 		}
 		return new NotFoundResult();
 	}
+
+	/// <summary>
+	/// A zip entry name from a user-editable file name: only its last path segment, with no characters that
+	/// a Windows or Unix extractor reads as a path, drive or device ("../x", "a\\b", "C:x"), and an extension
+	/// of letters and digits only. So no entry can be written outside the folder the zip is extracted into.
+	/// </summary>
+	public static string ZipEntryName(string fileName, string extension)
+	{
+		var lastSegment = (fileName ?? "").Replace('\\', '/').Split('/').Last();
+		var name = new string(lastSegment.Where(c => !char.IsControl(c) && !UnsafeNameChars.Contains(c)).ToArray())
+			.Replace("..", "").Trim();
+		var ext = new string((extension ?? "").Where(char.IsLetterOrDigit).ToArray());
+		if (name.Length == 0) name = "file";
+		return ext.Length == 0 ? name : $"{name}.{ext}";
+	}
+
+	private const string UnsafeNameChars = "\\/:*?\"<>|";
 
 	[HttpPost]
 	[Route("get-files")]
 	public async Task<IActionResult> GetArchiveFiles([FromBody] BackendConfigurationArchiveFile model)
 	{
-		var core = await _coreHelper.GetCore();
 		if (model.FileIds is { Count: > 0 })
 		{
 			using var archiveStream = new MemoryStream();
@@ -141,12 +161,18 @@ public class FilesController : Controller
 				foreach (var fileId in model.FileIds)
 				{
 					var uploadedData = await _backendConfigurationFilesService.GetUploadedDataByFileId(fileId);
-					var ss = await core.GetFileFromS3Storage($"{uploadedData.Checksum}.{uploadedData.Extension}");
+					await using var stream = await _archiveStorage.GetAsync(FileArchiver.ObjectName(uploadedData.Checksum, uploadedData.Extension));
+					if (stream == null)
+					{
+						_logger.LogWarning("Archive file {FileId} is missing from storage; no partial zip is returned", fileId);
+						return new NotFoundResult();
+					}
+
 					var operationDataResult = await _backendConfigurationFilesService.GetById(fileId);
-					var zipArchiveEntry = archive.CreateEntry($"{operationDataResult.Model.FileName}.{uploadedData.Extension}",
-						CompressionLevel.Fastest);
+					var zipArchiveEntry = archive.CreateEntry(
+						ZipEntryName(operationDataResult.Model.FileName, uploadedData.Extension), CompressionLevel.Fastest);
 					await using var zipStream = zipArchiveEntry.Open();
-					await ss.ResponseStream.CopyToAsync(zipStream);
+					await stream.CopyToAsync(zipStream);
 				}
 			}
 

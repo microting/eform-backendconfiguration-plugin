@@ -102,6 +102,11 @@ public static class BackendConfigurationPermissionsSeedData
             // status - see the plan's P1 "Claim const placement" note. Plain string literal
             // used here instead, matching PluginPermission.ClaimName's plain-string contract.
             ClaimName = "adhoc_enable"
+        },
+        new PluginPermission
+        {
+            PermissionName = "Enable inbox",
+            ClaimName = BackendConfigurationClaims.EnableInbox
         }
     };
 }
