@@ -93,4 +93,25 @@ public class TailBiteSnapshotLoaderTests : TailBiteTestBase
         Assert.That(snap.OpenOutbreaks.Select(o => o.OutbreakId), Is.EqualTo(new[] { open.Id }));
         Assert.That(snap.Rows.Single().LinkedToClosed, Is.False);
     }
+
+    [Test]
+    public async Task LoadAsync_RemovedLinkToClosedOutbreak_DoesNotConsumeRow()
+    {
+        await SeedTreeAsync();
+        var t = Clock.GetUtcNow().UtcDateTime;
+        var (reg, rows) = await SeedRegistrationAsync(t.AddDays(-2), false, (Pen309Id, 2, 0), (Pen310Id, 1, 0));
+        var closed = new TailBiteOutbreak { PropertyId = PropertyId, LocationId = StableAId, RuleId = RuleId, RuleVersion = 1,
+            OpenedAt = t.AddDays(-2), OpenedByRegistrationId = reg.Id, ClosedAt = t.AddDays(-1), ClosedBySiteId = 7 };
+        await closed.Create(Db);
+        var removedLink = new TailBiteOutbreakLink { OutbreakId = closed.Id, RegistrationLocationId = rows[0] };
+        await removedLink.Create(Db);
+        await removedLink.Delete(Db);
+        await new TailBiteOutbreakLink { OutbreakId = closed.Id, RegistrationLocationId = rows[1] }.Create(Db);
+
+        var snap = await new TailBiteSnapshotLoader(Db).LoadAsync(PropertyId, t.AddDays(-7), t);
+
+        var byId = snap.Rows.ToDictionary(r => r.RowId);
+        Assert.That(byId[rows[0]].LinkedToClosed, Is.False);
+        Assert.That(byId[rows[1]].LinkedToClosed, Is.True);
+    }
 }

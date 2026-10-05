@@ -44,7 +44,8 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 ///
 /// <see cref="TailBiteException"/> subclasses map to RPC status codes: Forbidden -&gt; PermissionDenied, NotFound -&gt;
 /// NotFound, Validation -&gt; InvalidArgument, Conflict -&gt; FailedPrecondition. An <see cref="RpcException"/> is
-/// rethrown unchanged; anything else is logged and surfaces as Internal with a generic message.
+/// rethrown unchanged; a cancellation after the client cancelled the call surfaces as Cancelled and is not logged;
+/// anything else is logged and surfaces as Internal with a generic message.
 ///
 /// Ids are decimal strings (empty = unset), photo and registration identities are UUIDs, times are UTC Timestamps.
 /// <c>UploadPhoto</c>/<c>GetPhoto</c> follow <see cref="AdhocGrpcService"/>: meta first, then only chunks, a 20 MB cap,
@@ -66,7 +67,7 @@ public class TailBiteGrpcService(
     // Worker RPCs
     // ---------------------------------------------------------------------
 
-    public override Task<TbCurrentWorker> GetCurrentWorker(TbGetCurrentWorkerRequest request, ServerCallContext context) => RunAsSiteAsync(async site =>
+    public override Task<TbCurrentWorker> GetCurrentWorker(TbGetCurrentWorkerRequest request, ServerCallContext context) => RunAsSiteAsync(context, async site =>
     {
         var displayName = await siteResolver.GetDisplayNameAsync(site).ConfigureAwait(false);
         var properties = await setup.ListEnabledPropertiesAsync(site).ConfigureAwait(false);
@@ -78,10 +79,10 @@ public class TailBiteGrpcService(
         return response;
     });
 
-    public override Task<TbLocationTree> GetLocationTree(TbGetLocationTreeRequest request, ServerCallContext context) => RunAsSiteAsync(async site =>
+    public override Task<TbLocationTree> GetLocationTree(TbGetLocationTreeRequest request, ServerCallContext context) => RunAsSiteAsync(context, async site =>
         MapTree(await setup.GetTreeAsync(site, Id(request.PropertyId, "property_id")).ConfigureAwait(false)));
 
-    public override Task<TbCreateRegistrationResponse> CreateRegistration(TbCreateRegistrationRequest request, ServerCallContext context) => RunAsSiteAsync(async site =>
+    public override Task<TbCreateRegistrationResponse> CreateRegistration(TbCreateRegistrationRequest request, ServerCallContext context) => RunAsSiteAsync(context, async site =>
     {
         var command = new CreateRegistrationCommand(
             Uuid(request.ClientUuid, "client_uuid"),
@@ -100,7 +101,7 @@ public class TailBiteGrpcService(
     /// Receives a photo as a stream: the first message MUST be <c>meta</c>, every later one MUST be <c>chunk</c> bytes.
     /// The meta is validated before the caller is resolved, so this RPC does not use <see cref="RunAsSiteAsync{T}"/>.
     /// </summary>
-    public override Task<TbUploadPhotoResponse> UploadPhoto(IAsyncStreamReader<TbUploadPhotoChunk> requestStream, ServerCallContext context) => RunAsync(async () =>
+    public override Task<TbUploadPhotoResponse> UploadPhoto(IAsyncStreamReader<TbUploadPhotoChunk> requestStream, ServerCallContext context) => RunAsync(context, async () =>
     {
         if (!await requestStream.MoveNext(context.CancellationToken).ConfigureAwait(false))
         {
@@ -156,7 +157,7 @@ public class TailBiteGrpcService(
     /// <summary>Streams a photo back: the content type first, then <see cref="PhotoChunkSize"/>-sized chunks.</summary>
     public override async Task GetPhoto(TbGetPhotoRequest request, IServerStreamWriter<TbPhotoChunk> responseStream, ServerCallContext context)
     {
-        var (content, contentType) = await RunAsSiteAsync(site =>
+        var (content, contentType) = await RunAsSiteAsync(context, site =>
             registrations.GetPhotoAsync(site, Uuid(request.PhotoUuid, "photo_uuid"))).ConfigureAwait(false);
 
         await using (content.ConfigureAwait(false))
@@ -174,7 +175,7 @@ public class TailBiteGrpcService(
         }
     }
 
-    public override Task<TbListRecentResponse> ListMyRecentRegistrations(TbListRecentRequest request, ServerCallContext context) => RunAsSiteAsync(async site =>
+    public override Task<TbListRecentResponse> ListMyRecentRegistrations(TbListRecentRequest request, ServerCallContext context) => RunAsSiteAsync(context, async site =>
     {
         var propertyId = Id(request.PropertyId, "property_id");
         // `since` is optional: unset means "everything the service's own recent-limit allows".
@@ -189,7 +190,7 @@ public class TailBiteGrpcService(
     // Manager RPCs
     // ---------------------------------------------------------------------
 
-    public override Task<TbListOutbreaksResponse> ListOutbreaks(TbListOutbreaksRequest request, ServerCallContext context) => RunAsSiteAsync(async site =>
+    public override Task<TbListOutbreaksResponse> ListOutbreaks(TbListOutbreaksRequest request, ServerCallContext context) => RunAsSiteAsync(context, async site =>
     {
         var rows = await outbreaks.ListAsync(site, Id(request.PropertyId, "property_id"), request.OpenOnly).ConfigureAwait(false);
         var response = new TbListOutbreaksResponse();
@@ -197,10 +198,10 @@ public class TailBiteGrpcService(
         return response;
     });
 
-    public override Task<TbOutbreakDetail> GetOutbreak(TbGetOutbreakRequest request, ServerCallContext context) => RunAsSiteAsync(site =>
+    public override Task<TbOutbreakDetail> GetOutbreak(TbGetOutbreakRequest request, ServerCallContext context) => RunAsSiteAsync(context, site =>
         DetailAsync(site, Id(request.OutbreakId, "outbreak_id")));
 
-    public override Task<TbOutbreakDetail> SaveRiskAssessment(TbSaveRiskAssessmentRequest request, ServerCallContext context) => RunAsSiteAsync(async site =>
+    public override Task<TbOutbreakDetail> SaveRiskAssessment(TbSaveRiskAssessmentRequest request, ServerCallContext context) => RunAsSiteAsync(context, async site =>
     {
         var outbreakId = Id(request.OutbreakId, "outbreak_id");
         var wire = request.Answers ?? throw Invalid("answers is required.");
@@ -214,21 +215,21 @@ public class TailBiteGrpcService(
         return await DetailAsync(site, outbreakId).ConfigureAwait(false);
     });
 
-    public override Task<TbOutbreakDetail> SetActionDone(TbSetActionDoneRequest request, ServerCallContext context) => RunAsSiteAsync(async site =>
+    public override Task<TbOutbreakDetail> SetActionDone(TbSetActionDoneRequest request, ServerCallContext context) => RunAsSiteAsync(context, async site =>
     {
         var actionId = Id(request.ActionId, "action_id");
         await outbreaks.SetActionDoneAsync(site, actionId, request.Done).ConfigureAwait(false);
         return await DetailForActionAsync(site, actionId).ConfigureAwait(false);
     });
 
-    public override Task<TbOutbreakDetail> WithdrawAction(TbWithdrawActionRequest request, ServerCallContext context) => RunAsSiteAsync(async site =>
+    public override Task<TbOutbreakDetail> WithdrawAction(TbWithdrawActionRequest request, ServerCallContext context) => RunAsSiteAsync(context, async site =>
     {
         var actionId = Id(request.ActionId, "action_id");
         await outbreaks.WithdrawActionAsync(site, actionId, request.Reason).ConfigureAwait(false);
         return await DetailForActionAsync(site, actionId).ConfigureAwait(false);
     });
 
-    public override Task<TbOutbreakDetail> ReassignAction(TbReassignActionRequest request, ServerCallContext context) => RunAsSiteAsync(async site =>
+    public override Task<TbOutbreakDetail> ReassignAction(TbReassignActionRequest request, ServerCallContext context) => RunAsSiteAsync(context, async site =>
     {
         var actionId = Id(request.ActionId, "action_id");
         var responsibleSiteId = Id(request.ResponsibleSiteId, "responsible_site_id");
@@ -236,14 +237,14 @@ public class TailBiteGrpcService(
         return await DetailForActionAsync(site, actionId).ConfigureAwait(false);
     });
 
-    public override Task<TbOutbreakDetail> CloseOutbreak(TbCloseOutbreakRequest request, ServerCallContext context) => RunAsSiteAsync(async site =>
+    public override Task<TbOutbreakDetail> CloseOutbreak(TbCloseOutbreakRequest request, ServerCallContext context) => RunAsSiteAsync(context, async site =>
     {
         var outbreakId = Id(request.OutbreakId, "outbreak_id");
         await outbreaks.CloseAsync(site, outbreakId).ConfigureAwait(false);
         return await DetailAsync(site, outbreakId).ConfigureAwait(false);
     });
 
-    public override Task<TbEmpty> CancelRegistration(TbCancelRegistrationRequest request, ServerCallContext context) => RunAsSiteAsync(async site =>
+    public override Task<TbEmpty> CancelRegistration(TbCancelRegistrationRequest request, ServerCallContext context) => RunAsSiteAsync(context, async site =>
     {
         await outbreaks.CancelRegistrationAsync(site, Id(request.RegistrationId, "registration_id"), request.Reason).ConfigureAwait(false);
         return new TbEmpty();
@@ -254,7 +255,7 @@ public class TailBiteGrpcService(
     // ---------------------------------------------------------------------
 
     // Resolves the caller's site, then runs the work with the TailBite exception mapping applied.
-    private Task<T> RunAsSiteAsync<T>(Func<int, Task<T>> work) => RunAsync(async () =>
+    private Task<T> RunAsSiteAsync<T>(ServerCallContext context, Func<int, Task<T>> work) => RunAsync(context, async () =>
         await work(await access.RequireCallerSiteAsync().ConfigureAwait(false)).ConfigureAwait(false));
 
     private async Task<TbOutbreakDetail> DetailAsync(int site, int outbreakId)
@@ -263,11 +264,17 @@ public class TailBiteGrpcService(
     private async Task<TbOutbreakDetail> DetailForActionAsync(int site, int actionId)
         => MapDetail(await outbreaks.GetForActionAsync(site, actionId).ConfigureAwait(false));
 
-    private async Task<T> RunAsync<T>(Func<Task<T>> work)
+    private async Task<T> RunAsync<T>(ServerCallContext context, Func<Task<T>> work)
     {
         try
         {
             return await work().ConfigureAwait(false);
+        }
+        catch (Exception e) when (context.CancellationToken.IsCancellationRequested
+                                  && e is OperationCanceledException or RpcException { StatusCode: StatusCode.Cancelled })
+        {
+            // The client went away; that is not a server error, so it is neither logged nor reported as Internal.
+            throw new RpcException(new Status(StatusCode.Cancelled, "The call was cancelled."));
         }
         catch (RpcException)
         {

@@ -36,6 +36,9 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 /// Entities loaded before RunLockedAsync are detached when it starts (the change tracker is cleared).
 /// Inside <c>work</c>, re-query every entity you check or mutate; do not Reload or mutate a pre-lock
 /// instance, because PnBase.Update on a detached entity saves nothing.
+/// A failure before the commit may be retried by the execution strategy, which runs <c>work</c> again on a clean
+/// tracker. Once the commit has started its outcome is unknown, so <c>work</c> is never re-run: any failure from
+/// then on surfaces as a <see cref="TailBiteConflictException"/> telling the caller to refresh before retrying.
 /// </remarks>
 public interface ITailBitePropertyLock
 {
@@ -54,10 +57,10 @@ public class TailBitePropertyLock(BackendConfigurationPnDbContext db) : ITailBit
         return strategy.ExecuteAsync(async () =>
         {
             // Detach anything a failed earlier attempt left pending, so a retry cannot insert it twice.
-            // A CommitAsync with unknown outcome re-runs `work`; the ClientUuid/OpenKey unique indexes are the backstop.
             db.ChangeTracker.Clear();
             // READ COMMITTED: every statement after the lock sees all rows committed before the lock was granted.
             await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted);
+            var committing = false;
             try
             {
                 // First statement of the transaction (§6.2). A plain statement rather than SqlQuery/FromSql, as in
@@ -68,8 +71,16 @@ public class TailBitePropertyLock(BackendConfigurationPnDbContext db) : ITailBit
                 if (!await db.TailBiteProperties.AnyAsync(p => p.PropertyId == propertyId))
                     throw new TailBiteNotFoundException($"Tail bite is not set up for property {propertyId}.");
                 var result = await work();
+                committing = true;
                 await tx.CommitAsync();
                 return result;
+            }
+            catch (Exception e) when (committing)
+            {
+                // The commit may have landed, so re-running `work` could apply it twice. Even a transient failure is
+                // wrapped in an exception the execution strategy does not retry.
+                db.ChangeTracker.Clear();
+                throw new TailBiteConflictException("The change may have been saved; refresh and check before retrying.", e);
             }
             catch
             {

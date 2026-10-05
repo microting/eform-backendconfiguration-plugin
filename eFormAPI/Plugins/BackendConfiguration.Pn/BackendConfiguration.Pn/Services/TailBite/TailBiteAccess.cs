@@ -61,14 +61,11 @@ public class TailBiteAccess(BackendConfigurationPnDbContext db, IGrpcSiteResolve
         => await ActiveWorkers(siteId, propertyId).FirstOrDefaultAsync()
            ?? throw new TailBiteForbiddenException("Caller is not a worker on this property.");
 
+    // A worker can hold several rows on a property; any active row with the flag qualifies. The refusal carries the same
+    // message as a missing id in the manager methods, so they cannot be used to probe which ids exist.
     public async Task<PropertyWorker> RequireManagerAsync(int siteId, int propertyId)
-    {
-        // A worker can hold several rows on a property; any active row with the flag qualifies.
-        var manager = await ActiveWorkers(siteId, propertyId).FirstOrDefaultAsync(pw => pw.TailBiteManager);
-        if (manager != null) return manager;
-        await RequireWorkerAsync(siteId, propertyId);
-        throw new TailBiteForbiddenException("Caller is not a tail-bite manager on this property.");
-    }
+        => await ActiveWorkers(siteId, propertyId).FirstOrDefaultAsync(pw => pw.TailBiteManager)
+           ?? throw TailBiteForbiddenException.NoAccess();
 
     public async Task<bool> IsManagerAsync(int siteId, int propertyId)
         => await ActiveWorkers(siteId, propertyId).AnyAsync(pw => pw.TailBiteManager);

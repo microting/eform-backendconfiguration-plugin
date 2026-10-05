@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using BackendConfiguration.Pn.Services.GrpcServices;
 using BackendConfiguration.Pn.Services.TailBite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Time.Testing;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
@@ -41,6 +43,31 @@ public abstract class TailBiteTestBase : TestBaseSetup
         var p = new Property { Name = "Ejendom Test" };
         await p.Create(db);
         PropertyId = p.Id;
+    }
+
+    // A manager method refuses a missing id exactly like a foreign one, so it cannot be used to probe which ids exist.
+    protected static async Task AssertRefusedAlike(Func<Task> missing, Func<Task> foreign)
+    {
+        var a = await Assert.ThrowsAsync<TailBiteForbiddenException>(() => missing());
+        var b = await Assert.ThrowsAsync<TailBiteForbiddenException>(() => foreign());
+        Assert.That(a!.Message, Is.EqualTo(TailBiteForbiddenException.NotFoundOrNoAccess));
+        Assert.That(b!.Message, Is.EqualTo(a.Message));
+    }
+
+    /// <summary>A plugin context of its own on the fixture database, with the given execution strategy (default: retry on failure) and interceptors.</summary>
+    protected BackendConfigurationPnDbContext NewContext(Func<ExecutionStrategyDependencies, IExecutionStrategy>? strategy = null,
+        params IInterceptor[] interceptors)
+    {
+        var connectionString = Db.Database.GetConnectionString()!;
+        var options = new DbContextOptionsBuilder<BackendConfigurationPnDbContext>()
+            .UseMySql(connectionString, new MariaDbServerVersion(ServerVersion.AutoDetect(connectionString)), builder =>
+            {
+                if (strategy is null) builder.EnableRetryOnFailure();
+                else builder.ExecutionStrategy(strategy);
+            })
+            .AddInterceptors(interceptors)
+            .Options;
+        return new BackendConfigurationPnDbContext(options);
     }
 
     protected TailBiteAccess NewAccess(BackendConfigurationPnDbContext? db = null)

@@ -282,7 +282,35 @@ public class TailBiteOutbreakServiceTests : TailBiteTestBase
         Assert.That(detail.Summary.Id, Is.EqualTo(outbreakId));
         Assert.That(detail.Actions.Single().Id, Is.EqualTo(actionId));
         await Assert.ThrowsAsync<TailBiteForbiddenException>(() => sut.GetForActionAsync(8, actionId));
-        await Assert.ThrowsAsync<TailBiteNotFoundException>(() => sut.GetForActionAsync(7, actionId + 999));
+        await Assert.ThrowsAsync<TailBiteForbiddenException>(() => sut.GetForActionAsync(7, actionId + 999));
+    }
+
+    [Test]
+    public async Task MissingIds_RefusedLikeForeignIds()
+    {
+        await SeedTreeAsync(); await SeedWorkerAsync(7, manager: true); await SeedWorkerAsync(8);
+        var sut = Sut();
+        var foreign = await NewForeignOutbreakAsync();
+        var foreignAssessment = new TailBiteRiskAssessment { OutbreakId = foreign.Id, Climate = true, AssessedBySiteId = 9, AssessedAt = Now };
+        await foreignAssessment.Create(BackendConfigurationPnDbContext!);
+        var foreignAction = new TailBiteAssessmentAction { AssessmentId = foreignAssessment.Id, Factor = TailBiteFactor.Climate,
+            Description = "Tjek ventil 4", ResponsibleSiteId = 9, FollowUpDate = Now.AddDays(3) };
+        await foreignAction.Create(BackendConfigurationPnDbContext!);
+        var foreignRegistration = await NewRegistrationAsync(PropertyId + 1000);
+        const int missing = int.MaxValue;
+
+        await AssertRefusedAlike(() => sut.GetAsync(7, missing), () => sut.GetAsync(7, foreign.Id));
+        await AssertRefusedAlike(() => sut.SaveAssessmentAsync(7, missing, AllNo, []), () => sut.SaveAssessmentAsync(7, foreign.Id, AllNo, []));
+        await AssertRefusedAlike(() => sut.CloseAsync(7, missing), () => sut.CloseAsync(7, foreign.Id));
+        await AssertRefusedAlike(() => sut.GetForActionAsync(7, missing), () => sut.GetForActionAsync(7, foreignAction.Id));
+        await AssertRefusedAlike(() => sut.SetActionDoneAsync(7, missing, true), () => sut.SetActionDoneAsync(7, foreignAction.Id, true));
+        await AssertRefusedAlike(() => sut.WithdrawActionAsync(7, missing, "Dublet"), () => sut.WithdrawActionAsync(7, foreignAction.Id, "Dublet"));
+        await AssertRefusedAlike(() => sut.ReassignActionAsync(7, missing, 8), () => sut.ReassignActionAsync(7, foreignAction.Id, 8));
+        await AssertRefusedAlike(() => sut.CancelRegistrationAsync(7, missing, "Forkert"),
+            () => sut.CancelRegistrationAsync(7, foreignRegistration.Id, "Forkert"));
+        // A plain worker on the property gets the same refusal for an id that does exist there.
+        var own = await OpenOutbreakAsync();
+        await AssertRefusedAlike(() => sut.GetAsync(8, missing), () => sut.GetAsync(8, own));
     }
 
     [Test]

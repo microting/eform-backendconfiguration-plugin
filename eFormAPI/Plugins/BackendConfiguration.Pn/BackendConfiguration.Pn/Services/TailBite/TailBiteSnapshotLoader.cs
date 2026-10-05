@@ -51,10 +51,11 @@ public class TailBiteSnapshotLoader(BackendConfigurationPnDbContext db) : ITailB
     public async Task<EvaluationSnapshot> LoadAsync(int propertyId, DateTime from, DateTime to)
     {
         var (locations, rules, open) = await LoadTreePartsAsync(propertyId);
-        // A soft-deleted outbreak does not consume its rows.
+        // A soft-deleted outbreak, or a soft-deleted link to a closed one, does not consume its rows.
         var closedRowIds = from link in db.TailBiteOutbreakLinks
                            join o in db.TailBiteOutbreaks on link.OutbreakId equals o.Id
                            where o.PropertyId == propertyId && o.ClosedAt != null && o.WorkflowState != Constants.WorkflowStates.Removed
+                                 && link.WorkflowState != Constants.WorkflowStates.Removed
                            select link.RegistrationLocationId;
         var rows = await (from row in db.TailBiteRegistrationLocations
                           join reg in db.TailBiteRegistrations on row.RegistrationId equals reg.Id

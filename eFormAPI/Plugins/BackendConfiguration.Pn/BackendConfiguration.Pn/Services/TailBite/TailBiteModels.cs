@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using Microting.eForm.Infrastructure.Constants;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 
 public static class TailBiteDefaults
@@ -84,14 +85,45 @@ public sealed record OutbreakActionDetail(int Id, TailBiteFactor Factor, string 
 public sealed record OutbreakDetail(OutbreakSummary Summary, int RuleId, int RuleVersion, IReadOnlyList<int> RegistrationIds,
     FactorAnswers? Answers, IReadOnlyList<OutbreakActionDetail> Actions);
 
-// A photo belongs to a registration only when the uuid, the property AND the uploading site all match (Global Constraints).
-// Every query that joins photos to registrations goes through this; Task 13 inlines the same predicate.
+// A photo belongs to a registration only when the uuid, the property AND the uploading site all match (Global Constraints),
+// and only once its bytes are stored. Every query that joins photos to registrations goes through this; Task 13 inlines
+// the same predicate.
 public static class TailBitePhotoOwnership
 {
+    /// <summary>The bytes are stored: a row with SdkUploadedDataId 0 is only a reservation of the photo uuid.</summary>
+    public static readonly Expression<Func<TailBiteRegistrationPhoto, bool>> IsStored = p => p.SdkUploadedDataId != 0;
+
+    /// <summary>A reservation released because storing its bytes failed; a retry of the same photo may claim it again.</summary>
+    public static readonly Expression<Func<TailBiteRegistrationPhoto, bool>> FailedReservation
+        = p => p.SdkUploadedDataId == 0 && p.WorkflowState == Constants.WorkflowStates.Removed;
+
+    public static readonly Func<TailBiteRegistrationPhoto, bool> IsStoredFunc = IsStored.Compile();
+    public static readonly Func<TailBiteRegistrationPhoto, bool> FailedReservationFunc = FailedReservation.Compile();
+
     public static Expression<Func<TailBiteRegistrationPhoto, bool>> BelongsTo(TailBiteRegistration reg)
     {
         var (clientUuid, propertyId, siteId) = (reg.ClientUuid, reg.PropertyId, reg.SiteId);
-        return p => p.RegistrationClientUuid == clientUuid && p.PropertyId == propertyId && p.UploadedBySiteId == siteId;
+        Expression<Func<TailBiteRegistrationPhoto, bool>> owner
+            = p => p.RegistrationClientUuid == clientUuid && p.PropertyId == propertyId && p.UploadedBySiteId == siteId;
+        var stored = new Rebind(IsStored.Parameters[0], owner.Parameters[0]).Visit(IsStored.Body);
+        return Expression.Lambda<Func<TailBiteRegistrationPhoto, bool>>(Expression.AndAlso(owner.Body, stored), owner.Parameters);
+    }
+
+    /// <summary>
+    /// The reservation is still held by the upload that wrote <paramref name="stamp"/> into UpdatedAt, or by nobody
+    /// (a failed reservation), so that upload may record its stored bytes.
+    /// </summary>
+    public static Expression<Func<TailBiteRegistrationPhoto, bool>> HeldByOrFree(DateTime stamp)
+    {
+        Expression<Func<TailBiteRegistrationPhoto, bool>> held = p => p.UpdatedAt == stamp;
+        var free = new Rebind(FailedReservation.Parameters[0], held.Parameters[0]).Visit(FailedReservation.Body);
+        return Expression.Lambda<Func<TailBiteRegistrationPhoto, bool>>(Expression.OrElse(held.Body, free), held.Parameters);
+    }
+
+    // Points one lambda's body at another lambda's parameter, so the two bodies can be combined.
+    private sealed class Rebind(ParameterExpression from, ParameterExpression to) : ExpressionVisitor
+    {
+        protected override Expression VisitParameter(ParameterExpression node) => node == from ? to : node;
     }
 }
 

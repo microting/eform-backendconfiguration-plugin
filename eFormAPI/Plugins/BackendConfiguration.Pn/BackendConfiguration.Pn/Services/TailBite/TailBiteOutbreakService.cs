@@ -56,7 +56,9 @@ public interface ITailBiteOutbreakService
 
 /// <remarks>
 /// Every write runs under the property lock, which clears the change tracker: entities are re-queried inside the
-/// locked work, never carried in from before it. Before the lock only the owning property id is read.
+/// locked work, never carried in from before it. Before the lock only the owning property id is read; a missing id
+/// there is refused exactly like a foreign one (<see cref="TailBiteForbiddenException.NotFoundOrNoAccess"/>), so ids
+/// cannot be probed. Once the caller is proven a manager of the property, a missing entity is NotFound.
 /// </remarks>
 public class TailBiteOutbreakService(BackendConfigurationPnDbContext db, ITailBitePropertyLock propertyLock, ITailBiteAccess access,
     TimeProvider clock) : ITailBiteOutbreakService
@@ -119,7 +121,7 @@ public class TailBiteOutbreakService(BackendConfigurationPnDbContext db, ITailBi
                                 join s in db.TailBiteRiskAssessments on a.AssessmentId equals s.Id
                                 where a.Id == actionId && a.WorkflowState != Removed && s.WorkflowState != Removed
                                 select (int?)s.OutbreakId).SingleOrDefaultAsync()
-                         ?? throw new TailBiteNotFoundException("Action not found.");
+                         ?? throw TailBiteForbiddenException.NoAccess();
         return await GetAsync(callerSiteId, outbreakId);
     }
 
@@ -247,7 +249,7 @@ public class TailBiteOutbreakService(BackendConfigurationPnDbContext db, ITailBi
     {
         var propertyId = await db.TailBiteRegistrations.AsNoTracking().Where(r => r.Id == registrationId && r.WorkflowState != Removed)
             .Select(r => (int?)r.PropertyId).SingleOrDefaultAsync()
-            ?? throw new TailBiteNotFoundException("Registration not found.");
+            ?? throw TailBiteForbiddenException.NoAccess();
         await ManagerLockedAsync(callerSiteId, propertyId, async () =>
         {
             var trimmed = ValidReason(reason);
@@ -292,7 +294,7 @@ public class TailBiteOutbreakService(BackendConfigurationPnDbContext db, ITailBi
     private async Task<int> PropertyOfOutbreakAsync(int outbreakId)
         => await db.TailBiteOutbreaks.AsNoTracking().Where(o => o.Id == outbreakId && o.WorkflowState != Removed)
                .Select(o => (int?)o.PropertyId).SingleOrDefaultAsync()
-           ?? throw new TailBiteNotFoundException("Outbreak not found.");
+           ?? throw TailBiteForbiddenException.NoAccess();
 
     private async Task<int> PropertyOfActionAsync(int actionId)
         => await (from a in db.TailBiteAssessmentActions.AsNoTracking()
@@ -300,7 +302,7 @@ public class TailBiteOutbreakService(BackendConfigurationPnDbContext db, ITailBi
                   join o in db.TailBiteOutbreaks on s.OutbreakId equals o.Id
                   where a.Id == actionId && a.WorkflowState != Removed && s.WorkflowState != Removed && o.WorkflowState != Removed
                   select (int?)o.PropertyId).SingleOrDefaultAsync()
-           ?? throw new TailBiteNotFoundException("Action not found.");
+           ?? throw TailBiteForbiddenException.NoAccess();
 
     private async Task<TailBiteOutbreak> LiveOutbreakAsync(int outbreakId)
         => await db.TailBiteOutbreaks.SingleOrDefaultAsync(o => o.Id == outbreakId && o.WorkflowState != Removed)

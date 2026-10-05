@@ -67,7 +67,9 @@ public interface ITailBiteSetupService
 
 /// <remarks>
 /// Every write runs under the property lock, which clears the change tracker: entities are (re-)queried inside the
-/// locked work, never carried in from before it.
+/// locked work, never carried in from before it. The owning property of an id is looked up before the manager check;
+/// a missing id there is refused exactly like a foreign one (<see cref="TailBiteForbiddenException.NotFoundOrNoAccess"/>),
+/// so ids cannot be probed. Once the caller is proven a manager of the property, a missing entity is NotFound.
 /// </remarks>
 public class TailBiteSetupService(BackendConfigurationPnDbContext db, ITailBitePropertyLock propertyLock, ITailBiteAccess access,
     ITailBiteSnapshotLoader loader, TimeProvider clock) : ITailBiteSetupService
@@ -437,19 +439,19 @@ public class TailBiteSetupService(BackendConfigurationPnDbContext db, ITailBiteP
     private async Task<int> PropertyOfLocationAsync(int locationId)
         => await db.TailBiteLocations.Where(l => l.Id == locationId && l.WorkflowState != Removed)
                .Select(l => (int?)l.PropertyId).SingleOrDefaultAsync()
-           ?? throw new TailBiteNotFoundException("Location not found.");
+           ?? throw TailBiteForbiddenException.NoAccess();
 
     private async Task<int> PropertyOfRuleAsync(int ruleId)
         => await (from r in db.TailBiteRules
                   join l in db.TailBiteLocations on r.LocationId equals l.Id
                   where r.Id == ruleId && r.WorkflowState != Removed
                   select (int?)l.PropertyId).SingleOrDefaultAsync()
-           ?? throw new TailBiteNotFoundException("Rule not found.");
+           ?? throw TailBiteForbiddenException.NoAccess();
 
     private async Task<int> PropertyOfActionTypeAsync(int actionTypeId)
         => await db.TailBiteActionTypes.Where(a => a.Id == actionTypeId && a.WorkflowState != Removed)
                .Select(a => (int?)a.PropertyId).SingleOrDefaultAsync()
-           ?? throw new TailBiteNotFoundException("Action type not found.");
+           ?? throw TailBiteForbiddenException.NoAccess();
 
     private async Task<TailBiteLocation> LiveLocationAsync(int locationId)
         => await db.TailBiteLocations.SingleOrDefaultAsync(l => l.Id == locationId && l.WorkflowState != Removed)

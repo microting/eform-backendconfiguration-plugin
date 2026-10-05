@@ -28,8 +28,24 @@ namespace BackendConfiguration.Pn.Services.TailBite;
 
 using System;
 
-public abstract class TailBiteException(string m) : Exception(m);
+public abstract class TailBiteException(string m, Exception? inner = null) : Exception(m, inner);
 public class TailBiteNotFoundException(string m) : TailBiteException(m);
-public class TailBiteForbiddenException(string m) : TailBiteException(m);
+
+public class TailBiteForbiddenException(string m) : TailBiteException(m)
+{
+    /// <summary>
+    /// The one message for a missing id and for an id the caller may not use, so a manager method cannot be used to
+    /// probe which ids exist.
+    /// </summary>
+    public const string NotFoundOrNoAccess = "Not found or no access.";
+
+    public static TailBiteForbiddenException NoAccess() => new(NotFoundOrNoAccess);
+}
+
 public class TailBiteValidationException(string m) : TailBiteException(m);
-public class TailBiteConflictException(string m) : TailBiteException(m);
+
+public class TailBiteConflictException : TailBiteException
+{
+    public TailBiteConflictException(string m) : base(m) { }
+    public TailBiteConflictException(string m, Exception inner) : base(m, inner) { }
+}

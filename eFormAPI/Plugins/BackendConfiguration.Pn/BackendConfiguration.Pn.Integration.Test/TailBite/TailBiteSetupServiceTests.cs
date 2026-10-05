@@ -379,4 +379,41 @@ public class TailBiteSetupServiceTests : TailBiteTestBase
         Assert.That((await sut.ListActionTypesAsync(WorkerSite, PropertyId)).Single().Id, Is.EqualTo(id));
         await Assert.ThrowsAsync<TailBiteForbiddenException>(() => sut.ListActionTypesAsync(9, PropertyId));
     }
+
+    // ---------- id probing ----------
+
+    [Test]
+    public async Task MissingIds_RefusedLikeForeignIds()
+    {
+        await SeedManagerAsync();
+        var other = new Property { Name = "Ejendom Anden" };
+        await other.Create(Db);
+        var foreignLocation = new TailBiteLocation { PropertyId = other.Id, Name = "Stald X", QrCode = TailBiteDefaults.NewQrCode() };
+        await foreignLocation.Create(Db);
+        var foreignRule = TailBiteDefaults.DefaultRule(foreignLocation.Id);
+        await foreignRule.Create(Db);
+        var foreignType = new TailBiteActionType { PropertyId = other.Id, Code = "HALM", Name = "Halm" };
+        await foreignType.Create(Db);
+        var sut = Sut();
+        const int missing = int.MaxValue;
+        var foreignId = foreignLocation.Id;
+
+        await AssertRefusedAlike(() => sut.CreateLocationAsync(ManagerSite, missing, "Sti 1"), () => sut.CreateLocationAsync(ManagerSite, foreignId, "Sti 1"));
+        await AssertRefusedAlike(() => sut.CreatePenRangeAsync(ManagerSite, missing, "Sti", 1, 2), () => sut.CreatePenRangeAsync(ManagerSite, foreignId, "Sti", 1, 2));
+        await AssertRefusedAlike(() => sut.RenameLocationAsync(ManagerSite, missing, "Ny"), () => sut.RenameLocationAsync(ManagerSite, foreignId, "Ny"));
+        await AssertRefusedAlike(() => sut.MoveLocationAsync(ManagerSite, missing, RootId), () => sut.MoveLocationAsync(ManagerSite, foreignId, RootId));
+        await AssertRefusedAlike(() => sut.DeleteLocationAsync(ManagerSite, missing), () => sut.DeleteLocationAsync(ManagerSite, foreignId));
+        await AssertRefusedAlike(() => sut.SetOccupancyAsync(ManagerSite, missing, 10, Clock.GetUtcNow().UtcDateTime),
+            () => sut.SetOccupancyAsync(ManagerSite, foreignId, 10, Clock.GetUtcNow().UtcDateTime));
+        await AssertRefusedAlike(() => sut.CreateRuleAsync(ManagerSite, new RuleInput(missing, 3, null, 7, 1)),
+            () => sut.CreateRuleAsync(ManagerSite, new RuleInput(foreignId, 3, null, 7, 1)));
+        await AssertRefusedAlike(() => sut.PreviewRuleAsync(ManagerSite, new RuleInput(missing, 3, null, 7, 1)),
+            () => sut.PreviewRuleAsync(ManagerSite, new RuleInput(foreignId, 3, null, 7, 1)));
+        await AssertRefusedAlike(() => sut.UpdateRuleAsync(ManagerSite, missing, new RuleInput(foreignId, 3, null, 7, 1)),
+            () => sut.UpdateRuleAsync(ManagerSite, foreignRule.Id, new RuleInput(foreignId, 3, null, 7, 1)));
+        await AssertRefusedAlike(() => sut.DeleteRuleAsync(ManagerSite, missing), () => sut.DeleteRuleAsync(ManagerSite, foreignRule.Id));
+        await AssertRefusedAlike(() => sut.RenameActionTypeAsync(ManagerSite, missing, "Reb"), () => sut.RenameActionTypeAsync(ManagerSite, foreignType.Id, "Reb"));
+        await AssertRefusedAlike(() => sut.DeleteActionTypeAsync(ManagerSite, missing), () => sut.DeleteActionTypeAsync(ManagerSite, foreignType.Id));
+        await AssertRefusedAlike(() => sut.CreateActionTypeAsync(ManagerSite, missing, "Reb"), () => sut.CreateActionTypeAsync(ManagerSite, other.Id, "Reb"));
+    }
 }

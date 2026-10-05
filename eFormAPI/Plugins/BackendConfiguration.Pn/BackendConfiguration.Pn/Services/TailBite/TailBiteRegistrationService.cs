@@ -48,7 +48,10 @@ public interface ITailBiteRegistrationService
     /// </summary>
     Task<CreateRegistrationResult> CreateAsync(int callerSiteId, CreateRegistrationCommand cmd);
 
-    /// <summary>Stores a photo (idempotent per photo uuid); it attaches to the registration once TailBitePhotoOwnership matches.</summary>
+    /// <summary>
+    /// Stores a photo (idempotent per photo uuid for the same property, worker and registration uuid; any other reuse
+    /// of the uuid is a conflict). It attaches to the registration once TailBitePhotoOwnership matches.
+    /// </summary>
     Task<Guid> SavePhotoAsync(int callerSiteId, int propertyId, Guid photoUuid, Guid registrationClientUuid, byte[] bytes, string contentType);
 
     /// <summary>Opens a photo for a worker of the photo's property.</summary>
@@ -205,40 +208,177 @@ public class TailBiteRegistrationService(
         return new CreateRegistrationResult(reg.Id, outcomes);
     }
 
-    private Task<bool> PhotoExistsAsync(Guid photoUuid) => db.TailBiteRegistrationPhotos.AnyAsync(p => p.PhotoUuid == photoUuid);
+    // A reservation older than this is taken to be abandoned by an upload that died before storing its bytes.
+    private static readonly TimeSpan AbandonedReservationAge = TimeSpan.FromMinutes(5);
+
+    private Task<TailBiteRegistrationPhoto?> PhotoByUuidAsync(Guid photoUuid)
+        => db.TailBiteRegistrationPhotos.AsNoTracking().FirstOrDefaultAsync(p => p.PhotoUuid == photoUuid);
+
+    // A photo uuid is replayed only by the upload that claimed it: same property, same worker, same registration.
+    private static void RequireReplayOf(TailBiteRegistrationPhoto photo, int propertyId, int siteId, Guid registrationClientUuid)
+    {
+        if (photo.PropertyId != propertyId || photo.UploadedBySiteId != siteId || photo.RegistrationClientUuid != registrationClientUuid)
+            throw new TailBiteConflictException("This photo id is already in use.");
+    }
+
+    // Retriable: another upload of the same photo holds the reservation, and success is never reported before the bytes are stored.
+    private static TailBiteConflictException UploadInProgress() => new("Photo upload in progress; retry shortly.");
 
     public async Task<Guid> SavePhotoAsync(int callerSiteId, int propertyId, Guid photoUuid, Guid registrationClientUuid, byte[] bytes, string contentType)
     {
         await access.RequireWorkerAsync(callerSiteId, propertyId);
-        if (await PhotoExistsAsync(photoUuid)) return photoUuid; // idempotent
+        var existing = await PhotoByUuidAsync(photoUuid);
+        if (existing is not null)
+        {
+            RequireReplayOf(existing, propertyId, callerSiteId, registrationClientUuid);
+            if (TailBitePhotoOwnership.IsStoredFunc(existing)) return photoUuid; // idempotent
+            if (!TailBitePhotoOwnership.FailedReservationFunc(existing)
+                && clock.GetUtcNow().UtcDateTime - (existing.UpdatedAt ?? DateTime.MinValue) < AbandonedReservationAge)
+                throw UploadInProgress();
+        }
         var linkedReg = await db.TailBiteRegistrations.AsNoTracking().FirstOrDefaultAsync(r => r.ClientUuid == registrationClientUuid);
         if (linkedReg is not null && (linkedReg.PropertyId != propertyId || linkedReg.SiteId != callerSiteId))
             throw new TailBiteForbiddenException("Photo does not belong to that registration.");
         // Before the registration exists a mismatching photo cannot be refused; it is simply never attached,
         // because TailBitePhotoOwnership also matches PropertyId and UploadedBySiteId.
-        var uploadedDataId = await photoStorage.StoreAsync(bytes, contentType);
+
+        // Reserve the uuid before storing anything, so a concurrent upload of the same photo stores no bytes.
+        var claim = existing is null
+            ? await ReservePhotoAsync(callerSiteId, propertyId, photoUuid, registrationClientUuid)
+            : await ClaimReservationAsync(existing);
+        if (claim is null) return photoUuid; // a concurrent upload of the same photo had already stored it
+
         try
         {
-            await new TailBiteRegistrationPhoto
-            {
-                PhotoUuid = photoUuid, PropertyId = propertyId, UploadedBySiteId = callerSiteId,
-                RegistrationClientUuid = registrationClientUuid, SdkUploadedDataId = uploadedDataId
-            }.Create(db);
+            var uploadedDataId = await photoStorage.StoreAsync(bytes, contentType);
+            if (await CompleteReservationAsync(claim, uploadedDataId)) return photoUuid;
+        }
+        catch
+        {
+            await ReleaseReservationAsync(claim);
+            throw;
+        }
+        // Another upload of this photo took the reservation over while this one stored its bytes; its outcome stands.
+        var current = await PhotoByUuidAsync(photoUuid);
+        if (current is not null && TailBitePhotoOwnership.IsStoredFunc(current)) return photoUuid;
+        throw UploadInProgress();
+    }
+
+    // Who holds a photo reservation: the row id and the UpdatedAt stamp the holder wrote. Every later write is
+    // conditional on that stamp, so an upload whose reservation was taken over cannot overwrite the new holder's work.
+    private sealed record PhotoClaim(int Id, DateTime Stamp);
+
+    // A fresh stamp at the column's microsecond precision, later than the one it replaces, so it is never mistaken for it.
+    private static DateTime NewStamp(DateTime? replaces)
+    {
+        var now = DateTime.UtcNow;
+        var stamp = new DateTime(now.Ticks - now.Ticks % 10, DateTimeKind.Utc);
+        return replaces is { } previous && stamp <= previous ? previous.AddTicks(10) : stamp;
+    }
+
+    // Null when a concurrent upload of the same photo won the unique PhotoUuid index and has stored its bytes.
+    private async Task<PhotoClaim?> ReservePhotoAsync(int siteId, int propertyId, Guid photoUuid, Guid registrationClientUuid)
+    {
+        var photo = new TailBiteRegistrationPhoto
+        {
+            PhotoUuid = photoUuid, PropertyId = propertyId, UploadedBySiteId = siteId,
+            RegistrationClientUuid = registrationClientUuid, SdkUploadedDataId = 0
+        };
+        try
+        {
+            await photo.Create(db);
         }
         catch (DbUpdateException)
         {
-            // A concurrent retry of the same photo won the unique PhotoUuid index. Its row is the answer; the
-            // UploadedData row this call stored stays behind.
             db.ChangeTracker.Clear();
-            if (await PhotoExistsAsync(photoUuid)) return photoUuid;
-            throw;
+            var winner = await PhotoByUuidAsync(photoUuid);
+            if (winner is null) throw; // not the duplicate-key race
+            RequireReplayOf(winner, propertyId, siteId, registrationClientUuid);
+            if (!TailBitePhotoOwnership.IsStoredFunc(winner)) throw UploadInProgress();
+            return null;
         }
-        return photoUuid;
+        // Every later write to the row is a conditional update; a tracked copy would only go stale.
+        db.Entry(photo).State = EntityState.Detached;
+        // The stamp as the column holds it; PnBase.Create wrote it with sub-microsecond ticks.
+        var stamp = await db.TailBiteRegistrationPhotos.AsNoTracking().Where(p => p.Id == photo.Id).Select(p => p.UpdatedAt).SingleAsync();
+        return new PhotoClaim(photo.Id, stamp!.Value);
+    }
+
+    // Takes over a released or abandoned reservation. The update is conditional on the row being unchanged since it
+    // was read (every write moves UpdatedAt), so exactly one concurrent retry wins; the others are told to retry.
+    private async Task<PhotoClaim> ClaimReservationAsync(TailBiteRegistrationPhoto seen)
+    {
+        var (seenAt, stamp) = (seen.UpdatedAt, NewStamp(seen.UpdatedAt));
+        var claimed = await db.TailBiteRegistrationPhotos
+            .Where(p => p.Id == seen.Id && p.UpdatedAt == seenAt)
+            .ExecuteUpdateAsync(x => x
+                .SetProperty(p => p.WorkflowState, Constants.WorkflowStates.Created)
+                .SetProperty(p => p.UpdatedAt, stamp)
+                .SetProperty(p => p.Version, p => p.Version + 1));
+        if (claimed == 0) throw UploadInProgress();
+        await AddVersionAsync(seen.Id);
+        return new PhotoClaim(seen.Id, stamp);
+    }
+
+    // Records the stored bytes, while this upload still holds the reservation or nobody does (a reservation released
+    // by an upload that took it over and then failed). False when another upload holds it now.
+    private async Task<bool> CompleteReservationAsync(PhotoClaim claim, int uploadedDataId)
+    {
+        var stamp = NewStamp(claim.Stamp);
+        var completed = await db.TailBiteRegistrationPhotos
+            .Where(p => p.Id == claim.Id)
+            .Where(TailBitePhotoOwnership.HeldByOrFree(claim.Stamp))
+            .ExecuteUpdateAsync(x => x
+                .SetProperty(p => p.SdkUploadedDataId, uploadedDataId)
+                .SetProperty(p => p.WorkflowState, Constants.WorkflowStates.Created)
+                .SetProperty(p => p.UpdatedAt, stamp)
+                .SetProperty(p => p.Version, p => p.Version + 1));
+        if (completed == 0) return false;
+        await AddVersionAsync(claim.Id);
+        return true;
+    }
+
+    // With no bytes behind it the reservation must not stay live, but only the holder may release it: once another
+    // upload took it over, this does nothing. A failed cleanup must not replace the real error.
+    private async Task ReleaseReservationAsync(PhotoClaim claim)
+    {
+        try
+        {
+            var stamp = NewStamp(claim.Stamp);
+            var released = await db.TailBiteRegistrationPhotos
+                .Where(p => p.Id == claim.Id && p.UpdatedAt == claim.Stamp)
+                .ExecuteUpdateAsync(x => x
+                    .SetProperty(p => p.SdkUploadedDataId, 0)
+                    .SetProperty(p => p.WorkflowState, Constants.WorkflowStates.Removed)
+                    .SetProperty(p => p.UpdatedAt, stamp)
+                    .SetProperty(p => p.Version, p => p.Version + 1));
+            if (released == 1) await AddVersionAsync(claim.Id);
+        }
+        catch (Exception cleanupException)
+        {
+            SentrySdk.CaptureException(cleanupException);
+            logger?.LogWarning(cleanupException, "Releasing the reservation of photo row {PhotoId} failed", claim.Id);
+        }
+    }
+
+    // The conditional updates bypass PnBase, so the version row PnBase.Update would add is written here, from the
+    // row as it now stands and with the same field mapping as PnBase.MapVersion.
+    private async Task AddVersionAsync(int photoId)
+    {
+        var p = await db.TailBiteRegistrationPhotos.AsNoTracking().SingleAsync(x => x.Id == photoId);
+        await db.TailBiteRegistrationPhotoVersions.AddAsync(new TailBiteRegistrationPhotoVersion
+        {
+            TailBiteRegistrationPhotoId = p.Id, PhotoUuid = p.PhotoUuid, PropertyId = p.PropertyId, UploadedBySiteId = p.UploadedBySiteId,
+            RegistrationClientUuid = p.RegistrationClientUuid, SdkUploadedDataId = p.SdkUploadedDataId,
+            CreatedAt = p.CreatedAt, UpdatedAt = p.UpdatedAt, WorkflowState = p.WorkflowState, Version = p.Version,
+            CreatedByUserId = p.CreatedByUserId, UpdatedByUserId = p.UpdatedByUserId
+        });
+        await db.SaveChangesAsync();
     }
 
     public async Task<(Stream Content, string ContentType)> GetPhotoAsync(int callerSiteId, Guid photoUuid)
     {
-        var photo = await db.TailBiteRegistrationPhotos.AsNoTracking()
+        var photo = await db.TailBiteRegistrationPhotos.AsNoTracking().Where(TailBitePhotoOwnership.IsStored)
                         .FirstOrDefaultAsync(p => p.PhotoUuid == photoUuid && p.WorkflowState != Constants.WorkflowStates.Removed)
                     ?? throw new TailBiteNotFoundException("Photo not found.");
         await access.RequireWorkerAsync(callerSiteId, photo.PropertyId);
