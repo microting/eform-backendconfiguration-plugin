@@ -88,7 +88,7 @@ public partial class ChemicalInventoryService
     {
         var ids = await InTransactionAsync(async () =>
         {
-            var (source, propertyId) = await LoadOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Register)
+            var (source, propertyId) = await LockOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Register)
                 .ConfigureAwait(false);
             var target = await LoadActiveLocationAsync(command.TargetLocationId).ConfigureAwait(false);
             if (target.PropertyId != propertyId)
@@ -168,7 +168,7 @@ public partial class ChemicalInventoryService
 
         var placementId = await InTransactionAsync(async () =>
         {
-            var (placement, _) = await LoadOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Remove)
+            var (placement, _) = await LockOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Remove)
                 .ConfigureAwait(false);
             var removedAt = ResolveEntryTime(command.RemovedAt, UtcNow());
             if (removedAt < placement.RegisteredAt)
@@ -212,7 +212,7 @@ public partial class ChemicalInventoryService
 
         var placementId = await InTransactionAsync(async () =>
         {
-            var (placement, propertyId) = await LoadOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Stock)
+            var (placement, propertyId) = await LockOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Stock)
                 .ConfigureAwait(false);
             await RequireStockEnabledAsync(propertyId).ConfigureAwait(false);
 
@@ -437,6 +437,26 @@ public partial class ChemicalInventoryService
         }
 
         return (row.Placement, row.PropertyId);
+    }
+
+    /// <summary>
+    /// LoadOpenPlacementAsync for a write that reads the balance (stock entry, move,
+    /// removal), serialised per placement. The placement row is written first, before
+    /// anything is read: the UPDATE waits for a concurrent writer of the same
+    /// placement to commit and opens no read view, so the balance read afterwards
+    /// includes that writer's entries (two consumptions can no longer both pass the
+    /// balance check). Writing the row, not just locking it, gives Galera a writeset
+    /// key, so the same race across two nodes fails certification on COMMIT and the
+    /// execution strategy retries the loser from current rows.
+    /// </summary>
+    private async Task<(ChemicalPlacement Placement, int PropertyId)> LockOpenPlacementAsync(
+        ChemicalCaller caller, int placementId, ChemicalPermission permission)
+    {
+        var touchedAt = DateTime.UtcNow;
+        await dbContext.ChemicalPlacements
+            .Where(p => p.Id == placementId)
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.UpdatedAt, touchedAt)).ConfigureAwait(false);
+        return await LoadOpenPlacementAsync(caller, placementId, permission).ConfigureAwait(false);
     }
 
     /// <summary>The placements' stock entries that count (not soft-deleted).</summary>
