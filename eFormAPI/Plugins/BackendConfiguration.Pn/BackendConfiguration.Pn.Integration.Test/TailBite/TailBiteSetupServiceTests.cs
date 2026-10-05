@@ -323,7 +323,7 @@ public class TailBiteSetupServiceTests : TailBiteTestBase
 
         var id = await sut.CreateActionTypeAsync(ManagerSite, PropertyId, "  Vand tjekket ");
         var created = (await sut.ListActionTypesAsync(ManagerSite, PropertyId)).Single(a => a.Id == id);
-        Assert.That(created, Is.EqualTo((id, $"CUSTOM_{id}", "Vand tjekket", 5)));
+        Assert.That(created, Is.EqualTo(new ActionTypeDto(id, $"CUSTOM_{id}", "Vand tjekket", 5)));
 
         await sut.RenameActionTypeAsync(ManagerSite, id, "Vandtryk tjekket");
         Assert.That((await sut.ListActionTypesAsync(ManagerSite, PropertyId)).Single(a => a.Id == id).Name, Is.EqualTo("Vandtryk tjekket"));

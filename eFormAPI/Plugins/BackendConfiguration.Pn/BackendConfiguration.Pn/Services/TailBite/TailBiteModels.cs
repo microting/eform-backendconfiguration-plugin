@@ -61,7 +61,8 @@ public sealed record RecentRegistration(int Id, DateTime EffectiveAt, IReadOnlyL
 
 // Setup (Task 8). Depth is the absolute distance from the root (root = 0); Removed nodes stay in the tree for history.
 public sealed record LocationNode(int Id, int? ParentId, string Name, int SortOrder, string QrCode, int Depth, bool Removed);
-public sealed record LocationTree(int PropertyId, long TreeVersion, IReadOnlyList<LocationNode> Locations, IReadOnlyList<(int Id, string Code, string Name)> ActionTypes);
+public sealed record ActionTypeDto(int Id, string Code, string Name, int SortOrder);
+public sealed record LocationTree(int PropertyId, long TreeVersion, IReadOnlyList<LocationNode> Locations, IReadOnlyList<ActionTypeDto> ActionTypes);
 public sealed record RuleInput(int LocationId, int? MinBittenPigs, int? MinSevere, int WindowDays, int CountDepth);
 public sealed record RulePreview(int OutbreaksWouldOpen, IReadOnlyDictionary<int, int> PerSummingLocation);
 

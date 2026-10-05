@@ -51,7 +51,7 @@ public interface ITailBiteSetupService
     Task MoveLocationAsync(int callerSiteId, int locationId, int newParentId);
     Task DeleteLocationAsync(int callerSiteId, int locationId);
     Task SetOccupancyAsync(int callerSiteId, int locationId, int pigCount, DateTime validFromUtc);
-    Task<IReadOnlyList<(int Id, string Code, string Name, int SortOrder)>> ListActionTypesAsync(int callerSiteId, int propertyId);
+    Task<IReadOnlyList<ActionTypeDto>> ListActionTypesAsync(int callerSiteId, int propertyId);
     Task<int> CreateActionTypeAsync(int callerSiteId, int propertyId, string name);
     Task RenameActionTypeAsync(int callerSiteId, int actionTypeId, string name);
     /// <summary>Soft delete; registrations that used the type keep their link.</summary>
@@ -142,7 +142,7 @@ public class TailBiteSetupService(BackendConfigurationPnDbContext db, ITailBiteP
         var locIds = locations.Select(l => l.Id).ToList();
         var ruleStamps = await db.TailBiteRules.Where(r => locIds.Contains(r.LocationId)).Select(r => r.UpdatedAt).ToListAsync();
         var actionTypeStamps = await db.TailBiteActionTypes.Where(a => a.PropertyId == propertyId).Select(a => a.UpdatedAt).ToListAsync();
-        var actionTypes = await OrderedLiveActionTypes(propertyId).Select(a => new { a.Id, a.Code, a.Name }).ToListAsync();
+        var actionTypes = await OrderedLiveActionTypes(propertyId).Select(a => new ActionTypeDto(a.Id, a.Code, a.Name, a.SortOrder)).ToListAsync();
 
         var shape = new EvaluationSnapshot(locations.ToDictionary(l => l.Id, l => new EvalLocation(l.Id, l.ParentId)), [], [], []);
         var nodes = locations.OrderBy(l => l.SortOrder).ThenBy(l => l.Name)
@@ -151,7 +151,7 @@ public class TailBiteSetupService(BackendConfigurationPnDbContext db, ITailBiteP
         // Removed rows keep their UpdatedAt, so a delete moves the version too.
         var treeVersion = locations.Select(l => l.UpdatedAt).Concat(ruleStamps).Concat(actionTypeStamps)
             .Select(d => d?.Ticks ?? 0L).DefaultIfEmpty(0L).Max();
-        return new LocationTree(propertyId, treeVersion, nodes, actionTypes.Select(a => (a.Id, a.Code, a.Name)).ToList());
+        return new LocationTree(propertyId, treeVersion, nodes, actionTypes);
     }
 
     public async Task<int> CreateLocationAsync(int callerSiteId, int parentId, string name)
@@ -273,11 +273,10 @@ public class TailBiteSetupService(BackendConfigurationPnDbContext db, ITailBiteP
 
     // ---------- action types ----------
 
-    public async Task<IReadOnlyList<(int Id, string Code, string Name, int SortOrder)>> ListActionTypesAsync(int callerSiteId, int propertyId)
+    public async Task<IReadOnlyList<ActionTypeDto>> ListActionTypesAsync(int callerSiteId, int propertyId)
     {
         await access.RequireWorkerAsync(callerSiteId, propertyId);
-        var rows = await OrderedLiveActionTypes(propertyId).Select(a => new { a.Id, a.Code, a.Name, a.SortOrder }).ToListAsync();
-        return rows.Select(a => (a.Id, a.Code, a.Name, a.SortOrder)).ToList();
+        return await OrderedLiveActionTypes(propertyId).Select(a => new ActionTypeDto(a.Id, a.Code, a.Name, a.SortOrder)).ToListAsync();
     }
 
     public async Task<int> CreateActionTypeAsync(int callerSiteId, int propertyId, string name)

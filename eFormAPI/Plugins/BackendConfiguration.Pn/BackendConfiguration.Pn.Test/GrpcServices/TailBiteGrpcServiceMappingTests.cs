@@ -154,7 +154,7 @@ public class TailBiteGrpcServiceMappingTests
     {
         _setup.GetTreeAsync(7, 1).Returns(new LocationTree(1, 42,
             [new LocationNode(10, null, "Stald 1", 0, "qr-root", 0, false), new LocationNode(11, 10, "Sti 309", 2, "qr-pen", 1, true)],
-            [(5, "HALM", "Halm")]));
+            [new ActionTypeDto(5, "HALM", "Halm", 1)]));
         var resp = await Sut().GetLocationTree(new TbGetLocationTreeRequest { PropertyId = "1" }, Ctx());
         Assert.That(resp.PropertyId, Is.EqualTo("1"));
         Assert.That(resp.TreeVersion, Is.EqualTo(42));
