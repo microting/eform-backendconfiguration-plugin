@@ -27,7 +27,10 @@ SOFTWARE.
 namespace BackendConfiguration.Pn.Services.TailBite;
 
 using System;
+using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 
 public static class TailBiteDefaults
@@ -48,3 +51,24 @@ public static class TailBiteDefaults
     public static string NewQrCode()
         => Convert.ToBase64String(RandomNumberGenerator.GetBytes(16)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 }
+
+public sealed record RegistrationLocationInput(int LocationId, int Minor, int Severe);
+public sealed record CreateRegistrationCommand(Guid ClientUuid, int PropertyId, DateTime RegisteredAtUtc,
+    IReadOnlyList<RegistrationLocationInput> Locations, IReadOnlyList<int> ActionTypeIds, string? Comment);
+public sealed record OutbreakOutcome(int OutbreakId, bool Opened);
+public sealed record CreateRegistrationResult(int RegistrationId, IReadOnlyList<OutbreakOutcome> Outbreaks);
+public sealed record RecentRegistration(int Id, DateTime EffectiveAt, IReadOnlyList<RegistrationLocationInput> Locations, bool Cancelled);
+
+// A photo belongs to a registration only when the uuid, the property AND the uploading site all match (Global Constraints).
+// Every query that joins photos to registrations goes through this; Task 13 inlines the same predicate.
+public static class TailBitePhotoOwnership
+{
+    public static Expression<Func<TailBiteRegistrationPhoto, bool>> BelongsTo(TailBiteRegistration reg)
+    {
+        var (clientUuid, propertyId, siteId) = (reg.ClientUuid, reg.PropertyId, reg.SiteId);
+        return p => p.RegistrationClientUuid == clientUuid && p.PropertyId == propertyId && p.UploadedBySiteId == siteId;
+    }
+}
+
+// Declared here, implemented in Task 12. The registration service calls it after commit when it is registered.
+public interface ITailBiteOutbreakNotifier { Task NotifyOpenedAsync(int propertyId, IReadOnlyList<OutbreakOutcome> outcomes); }
