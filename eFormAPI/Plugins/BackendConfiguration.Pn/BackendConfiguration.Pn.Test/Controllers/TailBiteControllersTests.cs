@@ -9,6 +9,7 @@ using BackendConfiguration.Pn.Services.TailBite;
 using Microsoft.AspNetCore.Authorization;
 using Microting.EformBackendConfigurationBase.Infrastructure.Const;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using NUnit.Framework;
@@ -158,6 +159,58 @@ public class TailBiteControllersTests
         var res = await new TailBiteOutbreaksController(AccessWithSite(), svc).SaveAssessment(5, new SaveAssessmentRequest(null, null));
         Assert.That(res.Success, Is.False);
         await svc.DidNotReceiveWithAnyArgs().SaveAssessmentAsync(default, default, default!, default!);
+    }
+
+    [Test]
+    public async Task NullBody_Setup_ReturnsFailedResult_ServiceNotCalled()
+    {
+        var access = AccessWithSite();
+        var setup = Substitute.For<ITailBiteSetupService>();
+        var sut = new TailBiteSetupController(access, setup);
+        var plain = await sut.SetManager(4, null!);
+        var data = await sut.CreateLocation(null!);
+        Assert.That(plain.Success, Is.False);
+        Assert.That(plain.Message, Is.EqualTo("Request body is required."));
+        Assert.That(data.Success, Is.False);
+        Assert.That(data.Message, Is.EqualTo("Request body is required."));
+        Assert.That(setup.ReceivedCalls(), Is.Empty);
+    }
+
+    [Test]
+    public async Task NullBody_EverySetupBodyAction_ReturnsFailedResult_ServiceNotCalled()
+    {
+        var setup = Substitute.For<ITailBiteSetupService>();
+        var sut = new TailBiteSetupController(AccessWithSite(), setup);
+        OperationResult[] plain =
+        [
+            await sut.SetManager(4, null!), await sut.RenameLocation(1, null!), await sut.MoveLocation(1, null!),
+            await sut.SetOccupancy(1, null!), await sut.RenameActionType(1, null!), await sut.UpdateRule(1, null!)
+        ];
+        OperationResult[] data =
+        [
+            await sut.CreateLocation(null!), await sut.CreatePenRange(null!), await sut.CreateActionType(1, null!),
+            await sut.CreateRule(null!), await sut.PreviewRule(null!)
+        ];
+        foreach (var res in plain.Concat(data))
+        {
+            Assert.That(res.Success, Is.False);
+            Assert.That(res.Message, Is.EqualTo("Request body is required."));
+        }
+        Assert.That(setup.ReceivedCalls(), Is.Empty);
+    }
+
+    [Test]
+    public async Task NullBody_Outbreaks_ReturnsFailedResult_ServiceNotCalled()
+    {
+        var svc = Substitute.For<ITailBiteOutbreakService>();
+        var sut = new TailBiteOutbreaksController(AccessWithSite(), svc);
+        foreach (var res in new[] { await sut.SaveAssessment(5, null!), await sut.SetActionDone(5, null!),
+                     await sut.WithdrawAction(5, null!), await sut.ReassignAction(5, null!), await sut.CancelRegistration(5, null!) })
+        {
+            Assert.That(res.Success, Is.False);
+            Assert.That(res.Message, Is.EqualTo("Request body is required."));
+        }
+        Assert.That(svc.ReceivedCalls(), Is.Empty);
     }
 
     [Test]

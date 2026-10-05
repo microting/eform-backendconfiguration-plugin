@@ -56,6 +56,15 @@ internal static class TailBiteRunner
         catch (TailBiteException e) { return new OperationDataResult<T>(false, e.Message); }
     }
 
+    // These controllers are not [ApiController], so an empty or malformed body binds to null instead of a 400.
+    private const string BodyRequired = "Request body is required.";
+
+    internal static Task<OperationResult> WithBody<TBody>(TBody? body, Func<TBody, Task<OperationResult>> next) where TBody : class
+        => body is null ? Task.FromResult(new OperationResult(false, BodyRequired)) : next(body);
+
+    internal static Task<OperationDataResult<T>> WithBodyData<TBody, T>(TBody? body, Func<TBody, Task<OperationDataResult<T>>> next) where TBody : class
+        => body is null ? Task.FromResult(new OperationDataResult<T>(false, BodyRequired)) : next(body);
+
     internal static Task<OperationDataResult<T>> Run<T>(ITailBiteAccess access, Func<int, Task<T>> work)
         => Run(async () => await work(await access.RequireCallerSiteAsync()));
 }

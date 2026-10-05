@@ -54,9 +54,10 @@ public class TailBiteSetupController(ITailBiteAccess access, ITailBiteSetupServi
     [HttpPut("property-workers/{id:int}/manager")]
     [Authorize(Policy = BackendConfigurationClaims.AccessBackendConfigurationPlugin)]
     public Task<OperationResult> SetManager(int id, [FromBody] SetManagerRequest request)
-        => request.IsManager is { } isManager
+        => WithBody(request, r =>
+            r.IsManager is { } isManager
             ? Run(() => setup.SetManagerAsync(id, isManager))
-            : Task.FromResult(new OperationResult(false, "isManager is required"));
+            : Task.FromResult(new OperationResult(false, "isManager is required")));
 
     [HttpGet("properties/{propertyId:int}/tree")]
     public Task<OperationDataResult<LocationTree>> GetTree(int propertyId)
@@ -64,26 +65,31 @@ public class TailBiteSetupController(ITailBiteAccess access, ITailBiteSetupServi
 
     [HttpPost("locations")]
     public Task<OperationDataResult<int>> CreateLocation([FromBody] CreateLocationRequest request)
-        => Run(access, site => setup.CreateLocationAsync(site, request.ParentId, request.Name));
+        => WithBodyData(request, r =>
+            Run(access, site => setup.CreateLocationAsync(site, r.ParentId, r.Name)));
 
     [HttpPost("locations/range")]
     public Task<OperationDataResult<IReadOnlyList<int>>> CreatePenRange([FromBody] CreatePenRangeRequest request)
-        => Run(access, site => setup.CreatePenRangeAsync(site, request.ParentId, request.Prefix, request.From, request.To));
+        => WithBodyData(request, r =>
+            Run(access, site => setup.CreatePenRangeAsync(site, r.ParentId, r.Prefix, r.From, r.To)));
 
     [HttpPut("locations/{id:int}")]
     public Task<OperationResult> RenameLocation(int id, [FromBody] NameRequest request)
-        => Run(access, site => setup.RenameLocationAsync(site, id, request.Name));
+        => WithBody(request, r =>
+            Run(access, site => setup.RenameLocationAsync(site, id, r.Name)));
 
     [HttpPut("locations/{id:int}/move")]
     public Task<OperationResult> MoveLocation(int id, [FromBody] MoveLocationRequest request)
-        => Run(access, site => setup.MoveLocationAsync(site, id, request.NewParentId));
+        => WithBody(request, r =>
+            Run(access, site => setup.MoveLocationAsync(site, id, r.NewParentId)));
 
     [HttpDelete("locations/{id:int}")]
     public Task<OperationResult> DeleteLocation(int id) => Run(access, site => setup.DeleteLocationAsync(site, id));
 
     [HttpPut("locations/{id:int}/occupancy")]
     public Task<OperationResult> SetOccupancy(int id, [FromBody] OccupancyRequest request)
-        => Run(access, site => setup.SetOccupancyAsync(site, id, request.PigCount, request.ValidFromUtc));
+        => WithBody(request, r =>
+            Run(access, site => setup.SetOccupancyAsync(site, id, r.PigCount, r.ValidFromUtc)));
 
     [HttpGet("properties/{propertyId:int}/action-types")]
     public Task<OperationDataResult<IReadOnlyList<ActionTypeDto>>> ListActionTypes(int propertyId)
@@ -91,27 +97,32 @@ public class TailBiteSetupController(ITailBiteAccess access, ITailBiteSetupServi
 
     [HttpPost("properties/{propertyId:int}/action-types")]
     public Task<OperationDataResult<int>> CreateActionType(int propertyId, [FromBody] NameRequest request)
-        => Run(access, site => setup.CreateActionTypeAsync(site, propertyId, request.Name));
+        => WithBodyData(request, r =>
+            Run(access, site => setup.CreateActionTypeAsync(site, propertyId, r.Name)));
 
     [HttpPut("action-types/{id:int}")]
     public Task<OperationResult> RenameActionType(int id, [FromBody] NameRequest request)
-        => Run(access, site => setup.RenameActionTypeAsync(site, id, request.Name));
+        => WithBody(request, r =>
+            Run(access, site => setup.RenameActionTypeAsync(site, id, r.Name)));
 
     [HttpDelete("action-types/{id:int}")]
     public Task<OperationResult> DeleteActionType(int id) => Run(access, site => setup.DeleteActionTypeAsync(site, id));
 
     [HttpPost("rules")]
     public Task<OperationDataResult<int>> CreateRule([FromBody] RuleInput input)
-        => Run(access, site => setup.CreateRuleAsync(site, input));
+        => WithBodyData(input, r =>
+            Run(access, site => setup.CreateRuleAsync(site, r)));
 
     [HttpPut("rules/{id:int}")]
     public Task<OperationResult> UpdateRule(int id, [FromBody] RuleInput input)
-        => Run(access, site => setup.UpdateRuleAsync(site, id, input));
+        => WithBody(input, r =>
+            Run(access, site => setup.UpdateRuleAsync(site, id, r)));
 
     [HttpDelete("rules/{id:int}")]
     public Task<OperationResult> DeleteRule(int id) => Run(access, site => setup.DeleteRuleAsync(site, id));
 
     [HttpPost("rules/preview")]
     public Task<OperationDataResult<RulePreview>> PreviewRule([FromBody] RuleInput input)
-        => Run(access, site => setup.PreviewRuleAsync(site, input, PreviewDays));
+        => WithBodyData(input, r =>
+            Run(access, site => setup.PreviewRuleAsync(site, r, PreviewDays)));
 }

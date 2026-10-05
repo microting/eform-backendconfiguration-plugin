@@ -52,38 +52,43 @@ public class TailBiteOutbreaksController(ITailBiteAccess access, ITailBiteOutbre
 
     [HttpPut("outbreaks/{id:int}/assessment")]
     public Task<OperationResult> SaveAssessment(int id, [FromBody] SaveAssessmentRequest request)
-    {
-        if (request.Answers is not { } answers)
-            return Task.FromResult(new OperationResult(false, "answers is required"));
-        var newActions = new List<ActionInput>();
-        foreach (var action in request.NewActions ?? [])
+        => WithBody(request, r =>
         {
-            if (action?.Factor is not { } factor || !Enum.IsDefined(factor))
-                return Task.FromResult(new OperationResult(false, "factor is required and must be a known factor"));
-            newActions.Add(new ActionInput(factor, action.Description, action.ResponsibleSiteId, action.FollowUpDate));
-        }
+            if (r.Answers is not { } answers)
+                return Task.FromResult(new OperationResult(false, "answers is required"));
+            var newActions = new List<ActionInput>();
+            foreach (var action in r.NewActions ?? [])
+            {
+                if (action?.Factor is not { } factor || !Enum.IsDefined(factor))
+                    return Task.FromResult(new OperationResult(false, "factor is required and must be a known factor"));
+                newActions.Add(new ActionInput(factor, action.Description, action.ResponsibleSiteId, action.FollowUpDate));
+            }
 
-        return Run(access, site => outbreaks.SaveAssessmentAsync(site, id, answers, newActions));
-    }
+            return Run(access, site => outbreaks.SaveAssessmentAsync(site, id, answers, newActions));
+        });
 
     [HttpPut("actions/{id:int}/done")]
     public Task<OperationResult> SetActionDone(int id, [FromBody] ActionDoneRequest request)
-        => request.Done is { } done
+        => WithBody(request, r =>
+            r.Done is { } done
             ? Run(access, site => outbreaks.SetActionDoneAsync(site, id, done))
-            : Task.FromResult(new OperationResult(false, "done is required"));
+            : Task.FromResult(new OperationResult(false, "done is required")));
 
     [HttpPut("actions/{id:int}/withdraw")]
     public Task<OperationResult> WithdrawAction(int id, [FromBody] ReasonRequest request)
-        => Run(access, site => outbreaks.WithdrawActionAsync(site, id, request.Reason));
+        => WithBody(request, r =>
+            Run(access, site => outbreaks.WithdrawActionAsync(site, id, r.Reason)));
 
     [HttpPut("actions/{id:int}/reassign")]
     public Task<OperationResult> ReassignAction(int id, [FromBody] ReassignRequest request)
-        => Run(access, site => outbreaks.ReassignActionAsync(site, id, request.ResponsibleSiteId));
+        => WithBody(request, r =>
+            Run(access, site => outbreaks.ReassignActionAsync(site, id, r.ResponsibleSiteId)));
 
     [HttpPut("outbreaks/{id:int}/close")]
     public Task<OperationResult> Close(int id) => Run(access, site => outbreaks.CloseAsync(site, id));
 
     [HttpPut("registrations/{id:int}/cancel")]
     public Task<OperationResult> CancelRegistration(int id, [FromBody] ReasonRequest request)
-        => Run(access, site => outbreaks.CancelRegistrationAsync(site, id, request.Reason));
+        => WithBody(request, r =>
+            Run(access, site => outbreaks.CancelRegistrationAsync(site, id, r.Reason)));
 }
