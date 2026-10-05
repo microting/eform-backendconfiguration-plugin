@@ -88,7 +88,7 @@ public partial class ChemicalInventoryService
     {
         var ids = await InTransactionAsync(async () =>
         {
-            var (source, propertyId) = await LockOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Register)
+            var (source, propertyId) = await LoadOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Register)
                 .ConfigureAwait(false);
             var target = await LoadActiveLocationAsync(command.TargetLocationId).ConfigureAwait(false);
             if (target.PropertyId != propertyId)
@@ -168,7 +168,7 @@ public partial class ChemicalInventoryService
 
         var placementId = await InTransactionAsync(async () =>
         {
-            var (placement, _) = await LockOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Remove)
+            var (placement, _) = await LoadOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Remove)
                 .ConfigureAwait(false);
             var removedAt = ResolveEntryTime(command.RemovedAt, UtcNow());
             if (removedAt < placement.RegisteredAt)

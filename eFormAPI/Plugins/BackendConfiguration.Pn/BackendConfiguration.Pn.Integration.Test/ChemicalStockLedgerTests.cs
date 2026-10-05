@@ -42,7 +42,11 @@ public class ChemicalStockLedgerTests : ChemicalTestBase
     private sealed record Arranged(int PropertyId, int LocationId, int OtherLocationId, int ThirdLocationId,
         ChemicalCaller Caller, SeededChemical Chemical, FixedTimeProvider Clock);
 
-    private async Task<Arranged> ArrangeAsync()
+    /// <param name="subSecondTicks">
+    /// 0 = a whole-second clock. Otherwise the clock carries these 100 ns ticks past the second, which
+    /// datetime(6) cannot keep: the links must then survive MariaDB dropping the seventh digit.
+    /// </param>
+    private async Task<Arranged> ArrangeAsync(long subSecondTicks = 0)
     {
         var property = await CreatePropertyAsync();
         var worker = await AddWorkerAsync(property.Id);
@@ -52,9 +56,9 @@ public class ChemicalStockLedgerTests : ChemicalTestBase
         var other = await CreateLocationAsync(property.Id, "Lade", 2);
         var third = await CreateLocationAsync(property.Id, "Værksted", 3);
         var chemical = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Ledger product", "4-567");
-        // Whole seconds: datetime(6) keeps microseconds, DateTime ticks are 100 ns.
+        // Whole seconds by default: datetime(6) keeps microseconds, DateTime ticks are 100 ns.
         var now = DateTime.UtcNow;
-        var clock = new FixedTimeProvider(new DateTime(now.Ticks - now.Ticks % TimeSpan.TicksPerSecond, DateTimeKind.Utc));
+        var clock = new FixedTimeProvider(new DateTime(now.Ticks - now.Ticks % TimeSpan.TicksPerSecond + subSecondTicks, DateTimeKind.Utc));
         return new Arranged(property.Id, location.Id, other.Id, third.Id, ChemicalCaller.App(TestUserId, worker), chemical, clock);
     }
 
@@ -218,6 +222,60 @@ public class ChemicalStockLedgerTests : ChemicalTestBase
         Assert.That(removedNoStock.StockEntries, Is.Empty);
     }
 
+    /// <summary>.1234567 s: six digits datetime(6) keeps, and a seventh (100 ns) it must drop.</summary>
+    private const long SubSecondTicks = 1_234_567;
+
+    [Test]
+    public async Task Links_SurviveMicrosecondTruncation_OfASubSecondClock()
+    {
+        var a = await ArrangeAsync(SubSecondTicks);
+        var source = await RegisterWithStockAsync(a, 2m);
+        var removedId = await RegisterWithStockAsync(a, 1m);
+        var sut = CreateInventoryService(a.Clock);
+
+        await sut.MovePlacementAsync(a.Caller, new ChemicalMovePlacementCommand(source, a.OtherLocationId, "", 0.5m));
+        await sut.RemovePlacementAsync(a.Caller, new ChemicalRemovePlacementCommand(removedId, ChemicalRemovalReasonEnum.Disposed, null, ""));
+
+        // A fresh read: every timestamp below comes back from MariaDB.
+        var inventory = await CreateInventoryService(a.Clock).GetInventoryAsync(a.Caller, "");
+        var target = inventory.Placements.Single(p => p.MovedFromPlacementId == source);
+        var removed = inventory.Placements.Single(p => p.Id == removedId);
+        Assert.That(target.RegisteredAt, Is.Not.EqualTo(a.Clock.UtcNow), "the stored instant lost the 100 ns digit");
+        Assert.That(target.RegisteredAt.Ticks % TimeSpan.TicksPerSecond, Is.Not.Zero, "the stored instant kept its microseconds");
+        Assert.That(removed.RemovedAt!.Value.Ticks % TimeSpan.TicksPerSecond, Is.Not.Zero);
+
+        var movedOut = inventory.StockEntries.Single(e => e.Kind == ChemicalStockEntryKindEnum.MovedOut);
+        var movedIn = inventory.StockEntries.Single(e => e.Kind == ChemicalStockEntryKindEnum.MovedIn);
+        Assert.That((movedOut.PlacementId, movedOut.CounterpartPlacementId), Is.EqualTo((source, (int?)target.Id)));
+        Assert.That((movedIn.PlacementId, movedIn.CounterpartPlacementId), Is.EqualTo((target.Id, (int?)source)));
+
+        var writeOff = inventory.StockEntries.Where(e => e.PlacementId == removedId).MaxBy(e => e.Id)!;
+        Assert.That(removed.WriteOffEntryId, Is.EqualTo(writeOff.Id));
+        Assert.That((writeOff.Kind, writeOff.Amount, writeOff.Origin),
+            Is.EqualTo((ChemicalStockEntryKindEnum.Adjusted, -1m, ChemicalStockEntryOriginEnum.RemovalWriteOff)));
+    }
+
+    /// <summary>
+    /// The documented edge of the derived write-off link (proto comment on write_off_entry_id): a hand-written
+    /// entry of the write-off kind that zeroed the balance at exactly the removal instant is indistinguishable
+    /// from a write-off, so it is reported as one. A stored link (base-package follow-up) would flip this test.
+    /// </summary>
+    [Test]
+    public async Task Remove_AfterAZeroingEntryAtTheSameInstant_ReportsThatEntryAsTheWriteOff_DocumentedEdge()
+    {
+        var a = await ArrangeAsync(SubSecondTicks);
+        var id = await RegisterWithStockAsync(a, 2m);
+        var sut = CreateInventoryService(a.Clock);
+        var consumed = await sut.AddStockEntryAsync(a.Caller, new ChemicalAddStockEntryCommand(id, ChemicalStockEntryKindEnum.Consumed, Liters(2m)));
+        var zeroing = NewestEntry(consumed, id);
+
+        var removed = await sut.RemovePlacementAsync(a.Caller, new ChemicalRemovePlacementCommand(id, ChemicalRemovalReasonEnum.Used, null, ""));
+
+        Assert.That(removed.StockEntries, Has.Count.EqualTo(2), "the removal wrote no entry: the balance was already 0");
+        Assert.That(removed.Placements.Single().WriteOffEntryId, Is.EqualTo(zeroing.Id));
+        Assert.That(removed.StockEntries.Single(e => e.Id == zeroing.Id).Origin, Is.EqualTo(ChemicalStockEntryOriginEnum.RemovalWriteOff));
+    }
+
     [Test]
     public async Task Sync_RowsWrittenBeforeThisChange_CarryBalanceAfterAndLinks_InTheAppAndTheWebInventory()
     {
@@ -253,8 +311,24 @@ public class ChemicalStockLedgerTests : ChemicalTestBase
         }
     }
 
-    [Test]
-    public async Task AddStockEntry_WhileAnotherWriterHoldsThePlacement_WaitsAndChecksTheCommittedBalance()
+    public enum ConcurrentWrite
+    {
+        Consume,
+        PartialMove,
+        Remove,
+    }
+
+    /// <summary>
+    /// Every balance-dependent write takes the placement lock (LockOpenPlacementAsync) before it reads the
+    /// balance. Another writer consumes the whole 2 L and holds its transaction open; the write under test must
+    /// wait for that commit and then see a balance of 0. Reverting any one call site to LoadOpenPlacementAsync
+    /// makes its case validate against the stale 2 L: the consumption and the move are accepted, and the
+    /// removal writes a stale -2 L write-off.
+    /// </summary>
+    [TestCase(ConcurrentWrite.Consume)]
+    [TestCase(ConcurrentWrite.PartialMove)]
+    [TestCase(ConcurrentWrite.Remove)]
+    public async Task BalanceDependentWrite_WhileAnotherWriterHoldsThePlacement_WaitsAndUsesTheCommittedBalance(ConcurrentWrite write)
     {
         var a = await ArrangeAsync();
         var id = await RegisterWithStockAsync(a, 2m);
@@ -263,40 +337,57 @@ public class ChemicalStockLedgerTests : ChemicalTestBase
         await using var other = new BackendConfigurationPnDbContext(new DbContextOptionsBuilder<BackendConfigurationPnDbContext>()
             .UseMySql(connectionString, new MariaDbServerVersion(ServerVersion.AutoDetect(connectionString))).Options);
 
-        // Another writer of the same placement: touches the row like LockOpenPlacementAsync, consumes everything, holds its transaction open.
+        // Another writer of the same placement: touches the row like LockOpenPlacementAsync, consumes everything
+        // (dated before the removal so it is never mistaken for the write-off), and holds its transaction open.
         await using var held = await other.Database.BeginTransactionAsync();
         await other.ChemicalPlacements.Where(p => p.Id == id).ExecuteUpdateAsync(s => s.SetProperty(p => p.UpdatedAt, DateTime.UtcNow));
-        await SeedEntryAsync(other, id, ChemicalStockEntryKindEnum.Consumed, -2m, a.Clock.UtcNow);
+        var consumedElsewhere = await SeedEntryAsync(other, id, ChemicalStockEntryKindEnum.Consumed, -2m, a.Clock.UtcNow.AddMinutes(-10));
 
         await db.Database.OpenConnectionAsync();
         try
         {
             var connectionId = (await db.Database.SqlQuery<long>($"SELECT CONNECTION_ID() AS `Value`").ToListAsync()).Single();
-            var consume = CreateInventoryService(a.Clock).AddStockEntryAsync(a.Caller,
-                new ChemicalAddStockEntryCommand(id, ChemicalStockEntryKindEnum.Consumed, Liters(1.5m)));
+            var sut = CreateInventoryService(a.Clock);
+            Task<ChemicalPlacementChangeModel> pending = write switch
+            {
+                ConcurrentWrite.Consume => sut.AddStockEntryAsync(a.Caller,
+                    new ChemicalAddStockEntryCommand(id, ChemicalStockEntryKindEnum.Consumed, Liters(1.5m))),
+                ConcurrentWrite.PartialMove => sut.MovePlacementAsync(a.Caller,
+                    new ChemicalMovePlacementCommand(id, a.OtherLocationId, "", 1.5m)),
+                _ => sut.RemovePlacementAsync(a.Caller, new ChemicalRemovePlacementCommand(id, ChemicalRemovalReasonEnum.Used, null, "")),
+            };
 
-            // Bounded: the write must queue behind the held row lock, not read the uncommitted-elsewhere balance of 2 L.
+            // A bounded poll on a condition (the write is queued behind the held lock), not a settle-sleep.
             var deadline = DateTime.UtcNow.AddSeconds(20);
             while (!await IsWaitingForALockAsync(other, connectionId))
             {
-                Assert.That(consume.IsCompleted, Is.False, "the consumption finished without waiting for the other writer");
-                Assert.That(DateTime.UtcNow, Is.LessThan(deadline), "the consumption never waited for the placement lock");
+                Assert.That(pending.IsCompleted, Is.False, "the write finished without waiting for the other writer");
+                Assert.That(DateTime.UtcNow, Is.LessThan(deadline), "the write never waited for the placement lock");
                 await Task.Delay(50);
             }
 
             await held.CommitAsync();
 
-            Assert.That(async () => await consume, Throws.InstanceOf<ArgumentException>(),
-                "after the other writer's commit the balance is 0, so consuming 1.5 L exceeds it");
+            if (write == ConcurrentWrite.Remove)
+            {
+                var removed = await pending;
+                Assert.That(removed.Placements.Single().WriteOffEntryId, Is.Null, "the balance was already 0, so nothing is written off");
+            }
+            else
+            {
+                Assert.That(async () => await pending, Throws.InstanceOf<ArgumentException>(),
+                    "after the other writer's commit the balance is 0, so 1.5 L exceeds it");
+            }
         }
         finally
         {
             await db.Database.CloseConnectionAsync();
         }
 
-        var balanceAfter = (await CreateInventoryService(a.Clock).GetInventoryAsync(a.Caller, "")).StockEntries
-            .Where(e => e.PlacementId == id).OrderBy(e => e.Id).Select(e => e.BalanceAfter);
-        Assert.That(balanceAfter, Is.EqualTo(new[] { 2m, 0m }));
+        var ledger = (await CreateInventoryService(a.Clock).GetInventoryAsync(a.Caller, "")).StockEntries
+            .Where(e => e.PlacementId == id).OrderBy(e => e.Id).Select(e => (e.Id, e.BalanceAfter)).ToList();
+        Assert.That(ledger.Select(e => e.BalanceAfter), Is.EqualTo(new[] { 2m, 0m }), "no write landed on the stale balance");
+        Assert.That(ledger[^1].Id, Is.EqualTo(consumedElsewhere.Id));
     }
 
     private static async Task<bool> IsWaitingForALockAsync(BackendConfigurationPnDbContext observer, long connectionId) =>

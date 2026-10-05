@@ -217,10 +217,12 @@ public class ChemicalsGrpcPermissionTests : ChemicalTestBase
     }
 
     [Test]
-    public async Task ReorderLocations_IncompleteOrDuplicateOrForeignIds_AreInvalidArgument_AndChangeNothing()
+    public async Task ReorderLocations_IncompleteDuplicateForeignOrArchivedIds_AreInvalidArgument_AndChangeNothing()
     {
         var s = await ArrangeAsync(Only(ChemicalPermission.ManageLocations));
         var foreign = await CreateLocationAsync((await CreatePropertyAsync()).Id);
+        var archived = await CreateLocationAsync(s.PropertyId, sortOrder: 3);
+        await archived.Delete(BackendConfigurationPnDbContext!);
         var sut = CreateSut(s.WorkerId);
         int[][] bad =
         [
@@ -228,6 +230,8 @@ public class ChemicalsGrpcPermissionTests : ChemicalTestBase
             [s.EmptyLocationId, s.EmptyLocationId],
             [s.EmptyLocationId, foreign.Id],
             [s.EmptyLocationId, s.LocationId, foreign.Id],
+            [s.EmptyLocationId, s.LocationId, archived.Id],
+            [s.EmptyLocationId, archived.Id],
         ];
 
         foreach (var ids in bad)
@@ -240,7 +244,7 @@ public class ChemicalsGrpcPermissionTests : ChemicalTestBase
 
         var stored = BackendConfigurationPnDbContext!.ChemicalLocations.AsNoTracking()
             .Where(l => l.PropertyId == s.PropertyId).OrderBy(l => l.SortOrder).Select(l => l.Id).ToList();
-        Assert.That(stored, Is.EqualTo(new[] { s.LocationId, s.EmptyLocationId }));
+        Assert.That(stored, Is.EqualTo(new[] { s.LocationId, s.EmptyLocationId, archived.Id }));
     }
 
     [Test]
