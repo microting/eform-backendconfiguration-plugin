@@ -65,6 +65,24 @@ public sealed record LocationTree(int PropertyId, long TreeVersion, IReadOnlyLis
 public sealed record RuleInput(int LocationId, int? MinBittenPigs, int? MinSevere, int WindowDays, int CountDepth);
 public sealed record RulePreview(int OutbreaksWouldOpen, IReadOnlyDictionary<int, int> PerSummingLocation);
 
+// Outbreaks (Task 9).
+public sealed record FactorAnswers(bool Water, bool Feed, bool ActivityMaterial, bool Climate, bool Health, bool Management)
+{
+    public IReadOnlyDictionary<TailBiteFactor, bool> ToDictionary() => new Dictionary<TailBiteFactor, bool>
+    {
+        [TailBiteFactor.Water] = Water, [TailBiteFactor.Feed] = Feed, [TailBiteFactor.ActivityMaterial] = ActivityMaterial,
+        [TailBiteFactor.Climate] = Climate, [TailBiteFactor.Health] = Health, [TailBiteFactor.Management] = Management
+    };
+
+    public static FactorAnswers FromAssessment(TailBiteRiskAssessment a) => new(a.Water, a.Feed, a.ActivityMaterial, a.Climate, a.Health, a.Management);
+}
+public sealed record ActionInput(TailBiteFactor Factor, string Description, int ResponsibleSiteId, DateTime FollowUpDate);
+public sealed record OutbreakSummary(int Id, int LocationId, DateTime OpenedAt, bool Assessed, int OpenActions, bool Closed);
+public sealed record OutbreakActionDetail(int Id, TailBiteFactor Factor, string Description, int ResponsibleSiteId, DateTime FollowUpDate,
+    DateTime? DoneAt, DateTime? WithdrawnAt);
+public sealed record OutbreakDetail(OutbreakSummary Summary, int RuleId, int RuleVersion, IReadOnlyList<int> RegistrationIds,
+    FactorAnswers? Answers, IReadOnlyList<OutbreakActionDetail> Actions);
+
 // A photo belongs to a registration only when the uuid, the property AND the uploading site all match (Global Constraints).
 // Every query that joins photos to registrations goes through this; Task 13 inlines the same predicate.
 public static class TailBitePhotoOwnership

@@ -409,18 +409,10 @@ public class TailBiteSetupService(BackendConfigurationPnDbContext db, ITailBiteP
     // ---------- helpers ----------
 
     private Task ManagerLockedAsync(int callerSiteId, int propertyId, Func<Task> work)
-        => ManagerLockedAsync(callerSiteId, propertyId, async () => { await work(); return true; });
+        => TailBiteManagerLock.RunAsync(propertyLock, access, callerSiteId, propertyId, work);
 
-    private async Task<T> ManagerLockedAsync<T>(int callerSiteId, int propertyId, Func<Task<T>> work)
-    {
-        await access.RequireManagerAsync(callerSiteId, propertyId);
-        return await propertyLock.RunLockedAsync(propertyId, async () =>
-        {
-            // The pre-lock check may be stale by the time the lock is granted; repeat it on committed state.
-            await access.RequireManagerAsync(callerSiteId, propertyId);
-            return await work();
-        });
-    }
+    private Task<T> ManagerLockedAsync<T>(int callerSiteId, int propertyId, Func<Task<T>> work)
+        => TailBiteManagerLock.RunAsync(propertyLock, access, callerSiteId, propertyId, work);
 
     // Tree + rules + open outbreaks, each open outbreak with its rule and the rule's location (§5, §6.4).
     private async Task<(EvaluationSnapshot Snap, List<OpenOutbreakRef> Open)> OpenContextAsync(int propertyId)
