@@ -109,7 +109,7 @@ public class ChemicalPermissionService(BackendConfigurationPnDbContext dbContext
             .OrderBy(r => r.Name)
             .Select(r => new ChemicalPropertyAccessRow(
                 new ChemicalPropertyAccessModel(
-                    r.Id, r.Name, ToFlags(r.Permission).Effective(), stockEnabled.GetValueOrDefault(r.Id), null),
+                    r.Id, r.Name, ToFlags(r.Permission).Effective(), stockEnabled.GetValueOrDefault(r.Id), workerId),
                 Later(r.Permission.UpdatedAt, r.WorkerUpdatedAt)))
             .ToList();
     }

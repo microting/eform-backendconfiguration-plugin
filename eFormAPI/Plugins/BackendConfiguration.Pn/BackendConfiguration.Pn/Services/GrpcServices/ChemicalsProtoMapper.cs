@@ -70,6 +70,7 @@ internal static class ChemicalsProtoMapper
     public static ChemicalPropertyAccess ToProto(ChemicalPropertyAccessModel model) => new()
     {
         PropertyId = model.PropertyId, Name = model.Name, Permissions = ToProto(model.Permissions), StockEnabled = model.StockEnabled,
+        CallerWorkerId = model.CallerWorkerId ?? 0,
     };
 
     public static ChemicalPermissionFlags ToProto(ChemicalPermissionFlagsModel flags) => new()
