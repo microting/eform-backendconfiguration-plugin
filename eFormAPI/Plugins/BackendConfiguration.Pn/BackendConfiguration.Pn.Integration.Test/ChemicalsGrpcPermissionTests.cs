@@ -248,6 +248,24 @@ public class ChemicalsGrpcPermissionTests : ChemicalTestBase
     }
 
     [Test]
+    public async Task GetMyInventory_CarriesTheCallersOwnWorkerIdOnEveryProperty()
+    {
+        var s = await ArrangeAsync(Only(ChemicalPermission.View));
+        var second = await CreatePropertyAsync();
+        await AddWorkerAsync(second.Id, s.WorkerId);
+        await GrantAsync(second.Id, s.WorkerId, Only(ChemicalPermission.View));
+        await GrantAsync(s.PropertyId, s.OtherWorkerId, Only(ChemicalPermission.View));
+
+        var mine = await CreateSut(s.WorkerId).GetMyInventory(new ChemicalInventoryRequest(), Context());
+        var theirs = await CreateSut(s.OtherWorkerId).GetMyInventory(new ChemicalInventoryRequest(), Context());
+
+        Assert.That(mine.Properties.Select(p => (p.PropertyId, p.CallerWorkerId)),
+            Is.EquivalentTo(new[] { (s.PropertyId, s.WorkerId), (second.Id, s.WorkerId) }));
+        Assert.That(theirs.Properties.Select(p => (p.PropertyId, p.CallerWorkerId)),
+            Is.EqualTo(new[] { (s.PropertyId, s.OtherWorkerId) }), "each caller gets its own worker id on a shared property");
+    }
+
+    [Test]
     public async Task AllFlagsOnOneProperty_GrantNothingOnAnother()
     {
         var mine = await ArrangeAsync(ChemicalPermissionFlagsModel.All);

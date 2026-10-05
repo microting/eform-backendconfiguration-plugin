@@ -150,6 +150,10 @@ message ChemicalPropertyAccess {
   string name = 2;
   ChemicalPermissionFlags permissions = 3;  // effective: admin already expanded
   bool stock_enabled = 4;
+  // The caller's own SDK worker id on this property (the id GrpcSiteResolver
+  // resolves for the calling app user; worker ids elsewhere in this file use
+  // the same space). 0 = none (an older server).
+  int32 caller_worker_id = 5;
 }
 
 message ChemicalLocationItem {

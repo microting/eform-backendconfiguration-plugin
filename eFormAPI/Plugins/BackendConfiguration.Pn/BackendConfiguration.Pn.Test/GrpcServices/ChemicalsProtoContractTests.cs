@@ -145,6 +145,18 @@ public class ChemicalsProtoContractTests
     }
 
     [Test]
+    public void PropertyAccess_KeepsItsFields_AndAddsTheCallerWorkerId()
+    {
+        var fields = ChemicalPropertyAccess.Descriptor.Fields.InFieldNumberOrder().Select(f => (f.FieldNumber, f.Name, f.FieldType));
+
+        Assert.That(fields, Is.EqualTo(new[]
+        {
+            (1, "property_id", FieldType.Int32), (2, "name", FieldType.String), (3, "permissions", FieldType.Message),
+            (4, "stock_enabled", FieldType.Bool), (5, "caller_worker_id", FieldType.Int32),
+        }));
+    }
+
+    [Test]
     public void StockEntryOrigin_HasTheAgreedNumbers()
     {
         var values = ChemicalsReflection.Descriptor.EnumTypes.Single(e => e.Name == "ChemicalStockEntryOrigin").Values.Select(v => (v.Number, v.Name));

@@ -24,9 +24,12 @@ using System;
 using System.Collections.Generic;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 
-/// <summary>A property the caller may see, with EFFECTIVE flags (Admin expanded).</summary>
+/// <summary>
+/// A property the caller may see, with EFFECTIVE flags (Admin expanded). CallerWorkerId is the
+/// app caller's SDK worker id on the property; null for a web admin.
+/// </summary>
 public sealed record ChemicalPropertyAccessModel(
-    int PropertyId, string Name, ChemicalPermissionFlagsModel Permissions, bool StockEnabled);
+    int PropertyId, string Name, ChemicalPermissionFlagsModel Permissions, bool StockEnabled, int? CallerWorkerId);
 
 public sealed record ChemicalLocationModel(
     int Id, int PropertyId, string Name, string Description, string PhotoFileName,

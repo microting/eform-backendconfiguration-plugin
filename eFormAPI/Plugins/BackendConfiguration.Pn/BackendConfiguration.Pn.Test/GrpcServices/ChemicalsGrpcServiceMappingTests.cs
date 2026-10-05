@@ -93,7 +93,7 @@ public class ChemicalsGrpcServiceMappingTests
     {
         var sut = CreateSut();
         _inventory.GetInventoryAsync(Caller, "v1:123").Returns(new ChemicalInventoryModel(
-            [new ChemicalPropertyAccessModel(1, "Gården", ChemicalPermissionFlagsModel.All, true)],
+            [new ChemicalPropertyAccessModel(1, "Gården", ChemicalPermissionFlagsModel.All, true, WorkerId)],
             [], [Placement()], [], [], "v1:456", false));
 
         var response = await sut.GetMyInventory(new ChemicalInventoryRequest { Since = "v1:123" }, Context());
@@ -101,12 +101,25 @@ public class ChemicalsGrpcServiceMappingTests
         Assert.That(response.SyncToken, Is.EqualTo("v1:456"));
         Assert.That(response.Full, Is.False);
         Assert.That(response.Properties.Single().Permissions.Admin, Is.True);
+        Assert.That(response.Properties.Single().CallerWorkerId, Is.EqualTo(WorkerId));
         var placement = response.Placements.Single();
         Assert.That(placement.BalanceMilli, Is.EqualTo(2500));
         Assert.That(placement.Unit, Is.EqualTo(ChemicalStockUnit.L));
         Assert.That(placement.ProductId, Is.EqualTo(0));
         Assert.That(placement.RemovedAt, Is.Null);
         Assert.That(placement.RemovalReason, Is.EqualTo(ChemicalRemovalReason.Unspecified));
+    }
+
+    [Test]
+    public async Task PropertyAccess_WithoutACallerWorker_SendsZero()
+    {
+        var sut = CreateSut();
+        _inventory.GetInventoryAsync(Caller, "").Returns(new ChemicalInventoryModel(
+            [new ChemicalPropertyAccessModel(1, "Gården", ChemicalPermissionFlagsModel.All, true, null)], [], [], [], [], "v1:1", true));
+
+        var response = await sut.GetMyInventory(new ChemicalInventoryRequest(), Context());
+
+        Assert.That(response.Properties.Single().CallerWorkerId, Is.EqualTo(0));
     }
 
     [Test]
