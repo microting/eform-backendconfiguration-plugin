@@ -109,6 +109,7 @@ internal static class ChemicalsProtoMapper
         BalanceMilli = ChemicalQuantity.ToMilli(model.Balance),
         Unit = ToProto(model.Unit),
         UpdatedAt = Ts(model.UpdatedAt),
+        WriteOffEntryId = model.WriteOffEntryId ?? 0,
     };
 
     public static ChemicalStockEntryItem ToProto(ChemicalStockEntryModel model) => new()
@@ -125,6 +126,9 @@ internal static class ChemicalsProtoMapper
         ByUserId = model.ByUserId,
         ByName = model.ByName,
         At = Ts(model.At),
+        BalanceAfterMilli = ChemicalQuantity.ToMilli(model.BalanceAfter),
+        Origin = ToProto(model.Origin),
+        CounterpartPlacementId = model.CounterpartPlacementId ?? 0,
     };
 
     public static ChemicalRegisterEntry ToProto(ChemicalRegisterEntryModel model)
@@ -214,6 +218,8 @@ internal static class ChemicalsProtoMapper
     private static ChemicalRemovalReason ToProto(ChemicalRemovalReasonEnum? reason) => (ChemicalRemovalReason)(int)(reason ?? 0);
 
     private static ChemicalStockEntryKind ToProto(ChemicalStockEntryKindEnum kind) => (ChemicalStockEntryKind)(int)kind;
+
+    private static ChemicalStockEntryOrigin ToProto(ChemicalStockEntryOriginEnum origin) => (ChemicalStockEntryOrigin)(int)origin;
 
     private static ChemicalStockUnit ToProto(ChemicalStockUnitEnum? unit) => (ChemicalStockUnit)(int)(unit ?? 0);
 
