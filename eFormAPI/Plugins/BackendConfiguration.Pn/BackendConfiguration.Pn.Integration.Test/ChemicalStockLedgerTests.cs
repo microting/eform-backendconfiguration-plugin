@@ -360,7 +360,7 @@ public class ChemicalStockLedgerTests : ChemicalTestBase
         {
             // A bounded poll on a condition (the write is queued behind the held row lock), not a settle-sleep.
             var deadline = DateTime.UtcNow.AddSeconds(20);
-            while (!await IsWaitingForALockAsync(other, connectionId))
+            while (!await IsBlockedInAStatementAsync(other, connectionId))
             {
                 Assert.That(pending.IsCompleted, Is.False, "the write finished without waiting for the placement lock");
                 Assert.That(DateTime.UtcNow, Is.LessThan(deadline), "the write never waited for the placement lock");
@@ -402,9 +402,14 @@ public class ChemicalStockLedgerTests : ChemicalTestBase
             .UseMySql(connectionString, new MariaDbServerVersion(ServerVersion.AutoDetect(connectionString))).Options);
     }
 
-    private static async Task<bool> IsWaitingForALockAsync(BackendConfigurationPnDbContext observer, long connectionId) =>
+    /// <summary>
+    /// The writer's connection has been inside one statement for at least 200 ms: it is
+    /// blocked behind the held transaction. PROCESSLIST is read live; INNODB_TRX is a
+    /// cached view that missed some waits on CI.
+    /// </summary>
+    private static async Task<bool> IsBlockedInAStatementAsync(BackendConfigurationPnDbContext observer, long connectionId) =>
         (await observer.Database.SqlQuery<long>(
-                $"SELECT COUNT(*) AS `Value` FROM information_schema.INNODB_TRX WHERE trx_mysql_thread_id = {connectionId} AND trx_state = 'LOCK WAIT'")
+                $"SELECT COUNT(*) AS `Value` FROM information_schema.PROCESSLIST WHERE ID = {connectionId} AND COMMAND = 'Query' AND TIME_MS >= 200")
             .ToListAsync()).Single() > 0;
 
     private async Task<ChemicalPlacement> SeedPlacementAsync(int locationId, int chemicalId, DateTime registeredAt,
