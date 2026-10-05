@@ -96,6 +96,16 @@ public partial class ChemicalInventoryService
         // locations are loaded inside it so a retry starts from current rows.
         return await InTransactionAsync(async () =>
         {
+            // Written before anything is read, like LockOpenPlacementAsync: a concurrent
+            // reorder of the same property waits here for the other to commit, and the
+            // rows read afterwards are current (rows already in place are skipped below,
+            // so a stale snapshot would leave duplicate sort orders). On Galera the
+            // written rows conflict at certification and the loser is retried. A refused
+            // caller rolls the touch back.
+            var touchedAt = DateTime.UtcNow;
+            await dbContext.ChemicalLocations
+                .Where(l => l.PropertyId == propertyId && l.WorkflowState != Removed)
+                .ExecuteUpdateAsync(s => s.SetProperty(l => l.UpdatedAt, touchedAt)).ConfigureAwait(false);
             await permissions.RequireAsync(caller, propertyId, ChemicalPermission.ManageLocations).ConfigureAwait(false);
             var locations = await dbContext.ChemicalLocations
                 .Where(l => l.PropertyId == propertyId && l.WorkflowState != Removed)
@@ -106,8 +116,7 @@ public partial class ChemicalInventoryService
                 throw new ArgumentException("The order must list every active location of the property exactly once.");
             }
 
-            // Rows are updated in id order, not the client's order: two concurrent
-            // reorders then lock the rows in the same order and cannot deadlock.
+            // Rows are updated in id order, not the client's order (a stable write order).
             var position = orderedLocationIds.Select((id, index) => (id, index)).ToDictionary(x => x.id, x => x.index + 1);
             foreach (var location in locations.OrderBy(l => l.Id))
             {
