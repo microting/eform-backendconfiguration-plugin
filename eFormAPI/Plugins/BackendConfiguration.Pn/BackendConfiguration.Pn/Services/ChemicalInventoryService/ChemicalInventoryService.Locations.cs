@@ -106,15 +106,17 @@ public partial class ChemicalInventoryService
                 throw new ArgumentException("The order must list every active location of the property exactly once.");
             }
 
-            for (var index = 0; index < orderedLocationIds.Count; index++)
+            // Rows are updated in id order, not the client's order: two concurrent
+            // reorders then lock the rows in the same order and cannot deadlock.
+            var position = orderedLocationIds.Select((id, index) => (id, index)).ToDictionary(x => x.id, x => x.index + 1);
+            foreach (var location in locations.OrderBy(l => l.Id))
             {
-                var location = locations.Single(l => l.Id == orderedLocationIds[index]);
-                if (location.SortOrder == index + 1)
+                if (location.SortOrder == position[location.Id])
                 {
                     continue;
                 }
 
-                location.SortOrder = index + 1;
+                location.SortOrder = position[location.Id];
                 location.UpdatedByUserId = caller.UserId;
                 await location.Update(dbContext).ConfigureAwait(false);
             }

@@ -88,7 +88,7 @@ public partial class ChemicalInventoryService
     {
         var ids = await InTransactionAsync(async () =>
         {
-            var (source, propertyId) = await LoadOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Register)
+            var (source, propertyId) = await LockOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Register)
                 .ConfigureAwait(false);
             var target = await LoadActiveLocationAsync(command.TargetLocationId).ConfigureAwait(false);
             if (target.PropertyId != propertyId)
@@ -168,7 +168,7 @@ public partial class ChemicalInventoryService
 
         var placementId = await InTransactionAsync(async () =>
         {
-            var (placement, _) = await LoadOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Remove)
+            var (placement, _) = await LockOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Remove)
                 .ConfigureAwait(false);
             var removedAt = ResolveEntryTime(command.RemovedAt, UtcNow());
             if (removedAt < placement.RegisteredAt)
@@ -320,7 +320,7 @@ public partial class ChemicalInventoryService
         var placements = rows.Select(r =>
         {
             var p = r.Placement;
-            var ledger = entriesByPlacement[p.Id].ToList();
+            var last = entriesByPlacement[p.Id].LastOrDefault();
             return new ChemicalPlacementModel(
                 p.Id, p.LocationId, r.PropertyId, p.ChemicalId, p.ProductId, p.PlacementNote ?? string.Empty,
                 p.RegisteredByUserId, userNames.GetValueOrDefault(p.RegisteredByUserId, string.Empty), Utc(p.RegisteredAt),
@@ -328,11 +328,16 @@ public partial class ChemicalInventoryService
                 p.RemovedByUserId is { } removedBy ? userNames.GetValueOrDefault(removedBy, string.Empty) : string.Empty,
                 p.RemovedAt.HasValue ? Utc(p.RemovedAt) : null,
                 p.RemovalReason, p.RemovalNote ?? string.Empty, p.MovedFromPlacementId,
-                ledger.Sum(e => e.Amount),
-                ledger.Count > 0 ? ledger[^1].Unit : null,
+                last == null ? 0m : balanceAfter[last.Id],
+                last?.Unit,
                 Utc(p.UpdatedAt),
                 writeOffs.TryGetValue(p.Id, out var writeOff) ? writeOff : null);
         }).ToList();
+
+        ChemicalStockEntryOriginEnum OriginOf(ChemicalStockEntry e) =>
+            e.Kind is ChemicalStockEntryKindEnum.MovedOut or ChemicalStockEntryKindEnum.MovedIn ? ChemicalStockEntryOriginEnum.Move
+            : writeOffEntryIds.Contains(e.Id) ? ChemicalStockEntryOriginEnum.RemovalWriteOff
+            : ChemicalStockEntryOriginEnum.Manual;
 
         var entryModels = entries
             .OrderBy(e => e.At).ThenBy(e => e.Id)
@@ -341,9 +346,7 @@ public partial class ChemicalInventoryService
                 e.BatchLot ?? string.Empty, e.Note ?? string.Empty, e.ByUserId,
                 userNames.GetValueOrDefault(e.ByUserId, string.Empty), Utc(e.At),
                 balanceAfter[e.Id],
-                e.Kind is ChemicalStockEntryKindEnum.MovedOut or ChemicalStockEntryKindEnum.MovedIn
-                    ? ChemicalStockEntryOriginEnum.Move
-                    : writeOffEntryIds.Contains(e.Id) ? ChemicalStockEntryOriginEnum.RemovalWriteOff : ChemicalStockEntryOriginEnum.Manual,
+                OriginOf(e),
                 counterparts.TryGetValue(e.Id, out var counterpart) ? counterpart : null))
             .ToList();
 
@@ -448,6 +451,14 @@ public partial class ChemicalInventoryService
     /// balance check). Writing the row, not just locking it, gives Galera a writeset
     /// key, so the same race across two nodes fails certification on COMMIT and the
     /// execution strategy retries the loser from current rows.
+    /// The touch runs before the permission and existence checks; a refused or
+    /// unknown id rolls it back with the transaction (an unknown id briefly holds a
+    /// key-gap lock). touchedAt is taken before any wait, so after a wait it may be
+    /// older than the previous writer's stamp, and it bypasses PnBase versioning (no
+    /// Version bump, no version row). Neither matters: the same transaction always
+    /// writes fresher rows (the new entry, or the closed placement via PnBase.Update),
+    /// and the app does not keep placement updated_at. It must stay a real change, or
+    /// Galera gets no writeset key.
     /// </summary>
     private async Task<(ChemicalPlacement Placement, int PropertyId)> LockOpenPlacementAsync(
         ChemicalCaller caller, int placementId, ChemicalPermission permission)
@@ -468,16 +479,22 @@ public partial class ChemicalInventoryService
     }
 
     /// <summary>
-    /// Balance (sum of the live entries) and unit of one placement; the unit is that
-    /// of the latest written entry (highest id), null without entries.
+    /// Balance (sum of the live entries, in SQL) and unit of one placement; the unit is
+    /// that of the latest written entry (highest id), null without entries.
     /// </summary>
     private async Task<(decimal Balance, ChemicalStockUnitEnum? Unit)> StockStateAsync(int placementId)
     {
-        var entries = await LiveEntries([placementId])
-            .OrderBy(e => e.Id)
-            .Select(e => new { e.Amount, e.Unit })
-            .ToListAsync().ConfigureAwait(false);
-        return entries.Count == 0 ? (0m, null) : (entries.Sum(e => e.Amount), entries[^1].Unit);
+        var unit = await LiveEntries([placementId])
+            .OrderByDescending(e => e.Id)
+            .Select(e => (ChemicalStockUnitEnum?)e.Unit)
+            .FirstOrDefaultAsync().ConfigureAwait(false);
+        if (unit is null)
+        {
+            return (0m, null);
+        }
+
+        var balance = await LiveEntries([placementId]).SumAsync(e => e.Amount).ConfigureAwait(false);
+        return (balance, unit);
     }
 
     private async Task ClosePlacementAsync(ChemicalPlacement placement, ChemicalRemovalReasonEnum reason, DateTime at,
