@@ -297,7 +297,8 @@ public partial class ChemicalInventoryService
                 p.RemovalReason, p.RemovalNote ?? string.Empty, p.MovedFromPlacementId,
                 hasStock ? s.Balance : 0m,
                 hasStock ? s.Unit : null,
-                Utc(p.UpdatedAt));
+                Utc(p.UpdatedAt),
+                null);
         }).ToList();
     }
 
@@ -310,7 +311,8 @@ public partial class ChemicalInventoryService
         return entries.Select(e => new ChemicalStockEntryModel(
                 e.Id, e.PlacementId, e.Kind, e.ContainerSize, e.Unit, e.Amount, e.ContainerCount,
                 e.BatchLot ?? string.Empty, e.Note ?? string.Empty, e.ByUserId,
-                userNames.GetValueOrDefault(e.ByUserId, string.Empty), Utc(e.At)))
+                userNames.GetValueOrDefault(e.ByUserId, string.Empty), Utc(e.At),
+                0m, ChemicalStockEntryOriginEnum.Manual, null))
             .ToList();
     }
 

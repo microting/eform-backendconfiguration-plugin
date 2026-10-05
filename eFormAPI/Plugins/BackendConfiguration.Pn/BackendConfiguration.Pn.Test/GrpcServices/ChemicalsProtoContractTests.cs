@@ -49,6 +49,7 @@ public class ChemicalsProtoContractTests
         ("CreateLocation", false, false),
         ("UpdateLocation", false, false),
         ("ArchiveLocation", false, false),
+        ("ReorderLocations", false, false),
         ("UploadLocationPhoto", true, false),
         ("SuggestBarcode", true, false),
         ("ListWorkerPermissions", false, false),
@@ -105,6 +106,68 @@ public class ChemicalsProtoContractTests
         Assert.That(amount.FindFieldByName("container_size_milli").FieldType, Is.EqualTo(FieldType.Int64));
         Assert.That(ChemicalPlacementItem.Descriptor.FindFieldByName("balance_milli").FieldType,
             Is.EqualTo(FieldType.Int64));
+    }
+
+    // The 2026-10-05 additive change: older apps keep working because nothing
+    // existing was renamed or renumbered, and the new fields use new numbers.
+
+    [Test]
+    public void StockEntryItem_KeepsItsFields_AndAddsBalanceOriginAndCounterpart()
+    {
+        var fields = ChemicalStockEntryItem.Descriptor.Fields.InFieldNumberOrder().Select(f => (f.FieldNumber, f.Name));
+
+        Assert.That(fields, Is.EqualTo(new[]
+        {
+            (1, "id"), (2, "placement_id"), (3, "kind"), (4, "container_size_milli"), (5, "unit"), (6, "amount_milli"),
+            (7, "container_count"), (8, "batch_lot"), (9, "note"), (10, "by_user_id"), (11, "by_name"), (12, "at"),
+            (13, "balance_after_milli"), (14, "origin"), (15, "counterpart_placement_id"),
+        }));
+        var balanceAfter = ChemicalStockEntryItem.Descriptor.FindFieldByName("balance_after_milli");
+        Assert.That(balanceAfter.FieldType, Is.EqualTo(FieldType.Int64));
+        Assert.That(balanceAfter.HasPresence, Is.True, "unset tells the app it talks to an older server");
+        Assert.That(ChemicalStockEntryItem.Descriptor.FindFieldByName("origin").EnumType.Name, Is.EqualTo("ChemicalStockEntryOrigin"));
+        Assert.That(ChemicalStockEntryItem.Descriptor.FindFieldByName("counterpart_placement_id").FieldType, Is.EqualTo(FieldType.Int32));
+    }
+
+    [Test]
+    public void PlacementItem_KeepsItsFields_AndAddsTheWriteOffEntryId()
+    {
+        var fields = ChemicalPlacementItem.Descriptor.Fields.InFieldNumberOrder().Select(f => (f.FieldNumber, f.Name));
+
+        Assert.That(fields, Is.EqualTo(new[]
+        {
+            (1, "id"), (2, "location_id"), (3, "property_id"), (4, "chemical_id"), (5, "product_id"), (6, "placement_note"),
+            (7, "registered_by_user_id"), (8, "registered_by_name"), (9, "registered_at"), (10, "removed_by_user_id"),
+            (11, "removed_by_name"), (12, "removed_at"), (13, "removal_reason"), (14, "removal_note"),
+            (15, "moved_from_placement_id"), (16, "balance_milli"), (17, "unit"), (18, "updated_at"), (19, "write_off_entry_id"),
+        }));
+        Assert.That(ChemicalPlacementItem.Descriptor.FindFieldByName("write_off_entry_id").FieldType, Is.EqualTo(FieldType.Int32));
+    }
+
+    [Test]
+    public void StockEntryOrigin_HasTheAgreedNumbers()
+    {
+        var values = ChemicalsReflection.Descriptor.EnumTypes.Single(e => e.Name == "ChemicalStockEntryOrigin").Values.Select(v => (v.Number, v.Name));
+
+        Assert.That(values, Is.EqualTo(new[]
+        {
+            (0, "CHEMICAL_STOCK_ENTRY_ORIGIN_UNSPECIFIED"), (1, "CHEMICAL_STOCK_ENTRY_ORIGIN_MANUAL"),
+            (2, "CHEMICAL_STOCK_ENTRY_ORIGIN_REMOVAL_WRITE_OFF"), (3, "CHEMICAL_STOCK_ENTRY_ORIGIN_MOVE"),
+        }));
+    }
+
+    [Test]
+    public void ReorderLocations_TakesThePropertyAndTheOrderedIds_AndReturnsLocations()
+    {
+        var method = ChemicalsGrpc.Descriptor.FindMethodByName("ReorderLocations");
+        var request = method.InputType;
+
+        Assert.That(request.Name, Is.EqualTo("ChemicalReorderLocationsRequest"));
+        Assert.That(request.Fields.InFieldNumberOrder().Select(f => (f.FieldNumber, f.Name, f.IsRepeated)),
+            Is.EqualTo(new[] { (1, "property_id", false), (2, "location_ids", true) }));
+        var locations = method.OutputType.FindFieldByNumber(1);
+        Assert.That((method.OutputType.Name, locations.Name, locations.IsRepeated, locations.MessageType.Name),
+            Is.EqualTo(("ChemicalReorderLocationsResponse", "locations", true, "ChemicalLocationItem")));
     }
 
     [Test]

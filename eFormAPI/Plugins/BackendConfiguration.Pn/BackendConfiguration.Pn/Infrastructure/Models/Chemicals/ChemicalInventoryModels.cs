@@ -37,11 +37,29 @@ public sealed record ChemicalPlacementModel(
     int RegisteredByUserId, string RegisteredByName, DateTime RegisteredAt,
     int? RemovedByUserId, string RemovedByName, DateTime? RemovedAt,
     ChemicalRemovalReasonEnum? RemovalReason, string RemovalNote, int? MovedFromPlacementId,
-    decimal Balance, ChemicalStockUnitEnum? Unit, DateTime UpdatedAt);
+    decimal Balance, ChemicalStockUnitEnum? Unit, DateTime UpdatedAt, int? WriteOffEntryId);
 
+/// <summary>
+/// BalanceAfter: the placement's balance right after this entry, in write (id) order.
+/// CounterpartPlacementId: the other placement of a move (MovedOut → created, MovedIn → source).
+/// </summary>
 public sealed record ChemicalStockEntryModel(
     int Id, int PlacementId, ChemicalStockEntryKindEnum Kind, decimal? ContainerSize, ChemicalStockUnitEnum Unit,
-    decimal Amount, int? ContainerCount, string BatchLot, string Note, int ByUserId, string ByName, DateTime At);
+    decimal Amount, int? ContainerCount, string BatchLot, string Note, int ByUserId, string ByName, DateTime At,
+    decimal BalanceAfter, ChemicalStockEntryOriginEnum Origin, int? CounterpartPlacementId);
+
+/// <summary>Why the server wrote a stock entry; numbers match chemicals.proto ChemicalStockEntryOrigin.</summary>
+public enum ChemicalStockEntryOriginEnum
+{
+    /// <summary>AddStockEntry, or initial stock on RegisterPlacement.</summary>
+    Manual = 1,
+
+    /// <summary>RemovePlacement zeroing the balance.</summary>
+    RemovalWriteOff = 2,
+
+    /// <summary>MovePlacement (MovedOut / MovedIn).</summary>
+    Move = 3,
+}
 
 /// <summary>What a write returns: the touched placements, all their entries, their chemicals.</summary>
 public sealed record ChemicalPlacementChangeModel(
