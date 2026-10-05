@@ -995,6 +995,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             endpoints.MapGrpcService<Services.GrpcServices.AdhocGrpcService>();
             endpoints.MapGrpcService<Services.GrpcServices.SettingsGrpcService>();
             endpoints.MapGrpcService<Services.GrpcServices.ChemicalsGrpcService>();
+            endpoints.MapGrpcService<Services.GrpcServices.TailBiteGrpcService>();
         });
     }
 

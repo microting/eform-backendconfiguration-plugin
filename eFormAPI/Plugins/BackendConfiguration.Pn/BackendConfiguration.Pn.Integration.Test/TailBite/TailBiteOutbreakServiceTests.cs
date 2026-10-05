@@ -273,6 +273,19 @@ public class TailBiteOutbreakServiceTests : TailBiteTestBase
     }
 
     [Test]
+    public async Task GetForAction_ReturnsOwningOutbreak_NonManagerForbidden_UnknownNotFound()
+    {
+        await SeedTreeAsync(); await SeedWorkerAsync(7, manager: true); await SeedWorkerAsync(8);
+        var sut = Sut();
+        var (outbreakId, actionId) = await AssessedWithActionAsync(sut);
+        var detail = await sut.GetForActionAsync(7, actionId);
+        Assert.That(detail.Summary.Id, Is.EqualTo(outbreakId));
+        Assert.That(detail.Actions.Single().Id, Is.EqualTo(actionId));
+        await Assert.ThrowsAsync<TailBiteForbiddenException>(() => sut.GetForActionAsync(8, actionId));
+        await Assert.ThrowsAsync<TailBiteNotFoundException>(() => sut.GetForActionAsync(7, actionId + 999));
+    }
+
+    [Test]
     public async Task Done_SetsAndClears()
     {
         await SeedTreeAsync(); await SeedWorkerAsync(7, manager: true); await SeedWorkerAsync(8);

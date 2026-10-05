@@ -44,6 +44,8 @@ public interface ITailBiteOutbreakService
 {
     Task<IReadOnlyList<OutbreakSummary>> ListAsync(int callerSiteId, int propertyId, bool openOnly);
     Task<OutbreakDetail> GetAsync(int callerSiteId, int outbreakId);
+    // The detail of the outbreak an action belongs to (manager-checked); the action RPCs carry no outbreak id.
+    Task<OutbreakDetail> GetForActionAsync(int callerSiteId, int actionId);
     Task SaveAssessmentAsync(int callerSiteId, int outbreakId, FactorAnswers answers, IReadOnlyList<ActionInput> newActions);
     Task SetActionDoneAsync(int callerSiteId, int actionId, bool done);
     Task WithdrawActionAsync(int callerSiteId, int actionId, string reason);
@@ -109,6 +111,16 @@ public class TailBiteOutbreakService(BackendConfigurationPnDbContext db, ITailBi
             assessment is null ? null : FactorAnswers.FromAssessment(assessment),
             actions.Select(a => new OutbreakActionDetail(a.Id, a.Factor, a.Description, a.ResponsibleSiteId, a.FollowUpDate,
                 a.DoneAt, a.WithdrawnAt)).ToList());
+    }
+
+    public async Task<OutbreakDetail> GetForActionAsync(int callerSiteId, int actionId)
+    {
+        var outbreakId = await (from a in db.TailBiteAssessmentActions.AsNoTracking()
+                                join s in db.TailBiteRiskAssessments on a.AssessmentId equals s.Id
+                                where a.Id == actionId && a.WorkflowState != Removed && s.WorkflowState != Removed
+                                select (int?)s.OutbreakId).SingleOrDefaultAsync()
+                         ?? throw new TailBiteNotFoundException("Action not found.");
+        return await GetAsync(callerSiteId, outbreakId);
     }
 
     private static OutbreakSummary Summary(TailBiteOutbreak o, bool assessed, int openActions)
