@@ -185,6 +185,10 @@ message ChemicalPlacementItem {
   google.protobuf.Timestamp updated_at = 18;
   // The entry RemovePlacement wrote to zero the balance (its origin is
   // REMOVAL_WRITE_OFF). 0 = none: open, moved, or removed with a zero balance.
+  // Derived from the ledger, not stored: the newest entry of the write-off kind
+  // (USED: CONSUMED, DISPOSED: ADJUSTED) dated exactly removed_at that took the
+  // balance to 0. A hand-written entry that zeroed the balance and carries
+  // removed_at to the microsecond is indistinguishable and is reported as such.
   int32 write_off_entry_id = 19;
 }
 

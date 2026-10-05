@@ -20,6 +20,8 @@ SOFTWARE.
 
 using BackendConfiguration.Pn.Infrastructure.Models.Chemicals;
 using BackendConfiguration.Pn.Services.ChemicalInventoryService;
+using Microsoft.EntityFrameworkCore;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 
@@ -251,6 +253,57 @@ public class ChemicalStockLedgerTests : ChemicalTestBase
         }
     }
 
+    [Test]
+    public async Task AddStockEntry_WhileAnotherWriterHoldsThePlacement_WaitsAndChecksTheCommittedBalance()
+    {
+        var a = await ArrangeAsync();
+        var id = await RegisterWithStockAsync(a, 2m);
+        var db = BackendConfigurationPnDbContext!;
+        var connectionString = db.Database.GetConnectionString()!;
+        await using var other = new BackendConfigurationPnDbContext(new DbContextOptionsBuilder<BackendConfigurationPnDbContext>()
+            .UseMySql(connectionString, new MariaDbServerVersion(ServerVersion.AutoDetect(connectionString))).Options);
+
+        // Another writer of the same placement: touches the row like LockOpenPlacementAsync, consumes everything, holds its transaction open.
+        await using var held = await other.Database.BeginTransactionAsync();
+        await other.ChemicalPlacements.Where(p => p.Id == id).ExecuteUpdateAsync(s => s.SetProperty(p => p.UpdatedAt, DateTime.UtcNow));
+        await SeedEntryAsync(other, id, ChemicalStockEntryKindEnum.Consumed, -2m, a.Clock.UtcNow);
+
+        await db.Database.OpenConnectionAsync();
+        try
+        {
+            var connectionId = (await db.Database.SqlQuery<long>($"SELECT CONNECTION_ID() AS `Value`").ToListAsync()).Single();
+            var consume = CreateInventoryService(a.Clock).AddStockEntryAsync(a.Caller,
+                new ChemicalAddStockEntryCommand(id, ChemicalStockEntryKindEnum.Consumed, Liters(1.5m)));
+
+            // Bounded: the write must queue behind the held row lock, not read the uncommitted-elsewhere balance of 2 L.
+            var deadline = DateTime.UtcNow.AddSeconds(20);
+            while (!await IsWaitingForALockAsync(other, connectionId))
+            {
+                Assert.That(consume.IsCompleted, Is.False, "the consumption finished without waiting for the other writer");
+                Assert.That(DateTime.UtcNow, Is.LessThan(deadline), "the consumption never waited for the placement lock");
+                await Task.Delay(50);
+            }
+
+            await held.CommitAsync();
+
+            Assert.That(async () => await consume, Throws.InstanceOf<ArgumentException>(),
+                "after the other writer's commit the balance is 0, so consuming 1.5 L exceeds it");
+        }
+        finally
+        {
+            await db.Database.CloseConnectionAsync();
+        }
+
+        var balanceAfter = (await CreateInventoryService(a.Clock).GetInventoryAsync(a.Caller, "")).StockEntries
+            .Where(e => e.PlacementId == id).OrderBy(e => e.Id).Select(e => e.BalanceAfter);
+        Assert.That(balanceAfter, Is.EqualTo(new[] { 2m, 0m }));
+    }
+
+    private static async Task<bool> IsWaitingForALockAsync(BackendConfigurationPnDbContext observer, long connectionId) =>
+        (await observer.Database.SqlQuery<long>(
+                $"SELECT COUNT(*) AS `Value` FROM information_schema.INNODB_TRX WHERE trx_mysql_thread_id = {connectionId} AND trx_state = 'LOCK WAIT'")
+            .ToListAsync()).Single() > 0;
+
     private async Task<ChemicalPlacement> SeedPlacementAsync(int locationId, int chemicalId, DateTime registeredAt,
         DateTime? removedAt = null, ChemicalRemovalReasonEnum? reason = null, int? movedFrom = null)
     {
@@ -265,14 +318,18 @@ public class ChemicalStockLedgerTests : ChemicalTestBase
         return placement;
     }
 
-    private async Task<ChemicalStockEntry> SeedEntryAsync(int placementId, ChemicalStockEntryKindEnum kind, decimal amount, DateTime at)
+    private Task<ChemicalStockEntry> SeedEntryAsync(int placementId, ChemicalStockEntryKindEnum kind, decimal amount, DateTime at) =>
+        SeedEntryAsync(BackendConfigurationPnDbContext!, placementId, kind, amount, at);
+
+    private static async Task<ChemicalStockEntry> SeedEntryAsync(BackendConfigurationPnDbContext db, int placementId,
+        ChemicalStockEntryKindEnum kind, decimal amount, DateTime at)
     {
         var entry = new ChemicalStockEntry
         {
             PlacementId = placementId, Kind = kind, Unit = ChemicalStockUnitEnum.L, Amount = amount, ByUserId = TestUserId, At = at,
             CreatedByUserId = TestUserId, UpdatedByUserId = TestUserId,
         };
-        await entry.Create(BackendConfigurationPnDbContext!);
+        await entry.Create(db);
         return entry;
     }
 }
