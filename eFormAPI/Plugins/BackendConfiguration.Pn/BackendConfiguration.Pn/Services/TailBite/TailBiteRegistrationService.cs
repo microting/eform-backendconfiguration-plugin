@@ -162,9 +162,11 @@ public class TailBiteRegistrationService(
         var locIds = cmd.Locations.Select(l => l.LocationId).ToList();
         if (await db.TailBiteLocations.CountAsync(l => locIds.Contains(l.Id) && l.PropertyId == cmd.PropertyId) != locIds.Count)
             throw new TailBiteValidationException("A location does not belong to this property.");
+        // Unlike locations, a deleted action type is not accepted: the farm removed it from the list, so nothing new may use it.
         var actionIds = cmd.ActionTypeIds.Distinct().ToList();
-        if (await db.TailBiteActionTypes.CountAsync(a => actionIds.Contains(a.Id) && a.PropertyId == cmd.PropertyId) != actionIds.Count)
-            throw new TailBiteValidationException("An action type does not belong to this property.");
+        if (await db.TailBiteActionTypes.CountAsync(a => actionIds.Contains(a.Id) && a.PropertyId == cmd.PropertyId
+                                                         && a.WorkflowState != Constants.WorkflowStates.Removed) != actionIds.Count)
+            throw new TailBiteValidationException("An action type does not belong to this property or has been deleted.");
     }
 
     // Loaded and reduced in memory: an empty Max over a translated join is not portable across providers.

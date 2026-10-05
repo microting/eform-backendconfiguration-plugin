@@ -59,6 +59,12 @@ public sealed record OutbreakOutcome(int OutbreakId, bool Opened);
 public sealed record CreateRegistrationResult(int RegistrationId, IReadOnlyList<OutbreakOutcome> Outbreaks);
 public sealed record RecentRegistration(int Id, DateTime EffectiveAt, IReadOnlyList<RegistrationLocationInput> Locations, bool Cancelled);
 
+// Setup (Task 8). Depth is the absolute distance from the root (root = 0); Removed nodes stay in the tree for history.
+public sealed record LocationNode(int Id, int? ParentId, string Name, int SortOrder, string QrCode, int Depth, bool Removed);
+public sealed record LocationTree(int PropertyId, long TreeVersion, IReadOnlyList<LocationNode> Locations, IReadOnlyList<(int Id, string Code, string Name)> ActionTypes);
+public sealed record RuleInput(int LocationId, int? MinBittenPigs, int? MinSevere, int WindowDays, int CountDepth);
+public sealed record RulePreview(int OutbreaksWouldOpen, IReadOnlyDictionary<int, int> PerSummingLocation);
+
 // A photo belongs to a registration only when the uuid, the property AND the uploading site all match (Global Constraints).
 // Every query that joins photos to registrations goes through this; Task 13 inlines the same predicate.
 public static class TailBitePhotoOwnership

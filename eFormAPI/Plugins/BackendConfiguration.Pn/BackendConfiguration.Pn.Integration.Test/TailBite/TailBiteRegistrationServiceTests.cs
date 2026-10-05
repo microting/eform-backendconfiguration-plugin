@@ -128,6 +128,18 @@ public class TailBiteRegistrationServiceTests : TailBiteTestBase
     }
 
     [Test]
+    public async Task Create_WithDeletedActionType_Rejected()
+    {
+        var type = new TailBiteActionType { PropertyId = PropertyId, Code = "HALM", Name = "Halm" };
+        await type.Create(Db);
+        await type.Delete(Db);
+        Db.ChangeTracker.Clear();
+        var cmd = Cmd() with { ActionTypeIds = [type.Id] };
+        await Assert.ThrowsAsync<TailBiteValidationException>(() => NewSut().CreateAsync(WorkerSiteId, cmd));
+        Assert.That(Db.TailBiteRegistrations.Count(), Is.EqualTo(0));
+    }
+
+    [Test]
     public async Task Create_OnSoftDeletedLocation_Accepted()
     {
         var loc = await Db.TailBiteLocations.SingleAsync(l => l.Id == Pen309Id);
