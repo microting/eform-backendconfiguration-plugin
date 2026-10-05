@@ -106,8 +106,7 @@ public partial class ChemicalInventoryService
             .Where(x => x.Changed || fullIds.Contains(x.PropertyId))
             .Select(x => x.Id)
             .ToList();
-        var placements = await LoadPlacementModelsAsync(changedPlacementIds).ConfigureAwait(false);
-        var entries = await LoadEntryModelsAsync(changedPlacementIds).ConfigureAwait(false);
+        var (placements, entries) = await LoadPlacementsAndEntriesAsync(changedPlacementIds).ConfigureAwait(false);
 
         // Register entries travel with resent placements, plus any held chemical the nightly sync changed.
         var chemicalIds = placements.Select(p => p.ChemicalId).ToHashSet();

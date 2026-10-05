@@ -88,7 +88,7 @@ public partial class ChemicalInventoryService
     {
         var ids = await InTransactionAsync(async () =>
         {
-            var (source, propertyId) = await LoadOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Register)
+            var (source, propertyId) = await LockOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Register)
                 .ConfigureAwait(false);
             var target = await LoadActiveLocationAsync(command.TargetLocationId).ConfigureAwait(false);
             if (target.PropertyId != propertyId)
@@ -168,7 +168,7 @@ public partial class ChemicalInventoryService
 
         var placementId = await InTransactionAsync(async () =>
         {
-            var (placement, _) = await LoadOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Remove)
+            var (placement, _) = await LockOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Remove)
                 .ConfigureAwait(false);
             var removedAt = ResolveEntryTime(command.RemovedAt, UtcNow());
             if (removedAt < placement.RegisteredAt)
@@ -181,10 +181,9 @@ public partial class ChemicalInventoryService
 
             if (balance != 0 && unit is { } stockUnit)
             {
-                var writeOff = command.Reason == ChemicalRemovalReasonEnum.Used
-                    ? ChemicalStockEntryKindEnum.Consumed
-                    : ChemicalStockEntryKindEnum.Adjusted;
-                await AddEntryAsync(placement.Id, writeOff, -balance, stockUnit, caller, removedAt).ConfigureAwait(false);
+                // FindWriteOff recognises this entry by its kind, removedAt and the zero balance after it.
+                await AddEntryAsync(placement.Id, WriteOffKind(command.Reason), -balance, stockUnit, caller, removedAt)
+                    .ConfigureAwait(false);
             }
 
             await ClosePlacementAsync(placement, command.Reason, removedAt, note, caller).ConfigureAwait(false);
@@ -213,7 +212,7 @@ public partial class ChemicalInventoryService
 
         var placementId = await InTransactionAsync(async () =>
         {
-            var (placement, propertyId) = await LoadOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Stock)
+            var (placement, propertyId) = await LockOpenPlacementAsync(caller, command.PlacementId, ChemicalPermission.Stock)
                 .ConfigureAwait(false);
             await RequireStockEnabledAsync(propertyId).ConfigureAwait(false);
 
@@ -262,14 +261,27 @@ public partial class ChemicalInventoryService
 
     private async Task<ChemicalPlacementChangeModel> ChangeResultAsync(IReadOnlyCollection<int> placementIds)
     {
-        var placements = await LoadPlacementModelsAsync(placementIds).ConfigureAwait(false);
-        var entries = await LoadEntryModelsAsync(placementIds).ConfigureAwait(false);
+        var (placements, entries) = await LoadPlacementsAndEntriesAsync(placementIds).ConfigureAwait(false);
         var registerEntries = await register.GetByIdsAsync(placements.Select(p => p.ChemicalId).Distinct().ToList())
             .ConfigureAwait(false);
         return new ChemicalPlacementChangeModel(placements, entries, registerEntries);
     }
 
-    private async Task<List<ChemicalPlacementModel>> LoadPlacementModelsAsync(IReadOnlyCollection<int> placementIds)
+    /// <summary>
+    /// The placements and all their live entries (listed by At, then Id), with the
+    /// ledger facts derived from those entries rather than stored, so rows written
+    /// before the facts existed carry them too:
+    /// <list type="bullet">
+    /// <item>BalanceAfter: the running sum in id (write) order, the order each write
+    /// was validated in. ADJUSTED therefore shows the counted balance, and the last
+    /// value equals the placement's Balance.</item>
+    /// <item>CounterpartPlacementId: MovedIn → the placement's MovedFromPlacementId;
+    /// MovedOut → the placement that move created (see MoveCounterpartsAsync).</item>
+    /// <item>WriteOffEntryId / Origin RemovalWriteOff: see FindWriteOff.</item>
+    /// </list>
+    /// </summary>
+    private async Task<(List<ChemicalPlacementModel> Placements, List<ChemicalStockEntryModel> Entries)>
+        LoadPlacementsAndEntriesAsync(IReadOnlyCollection<int> placementIds)
     {
         var ids = placementIds.Distinct().ToArray();
         var rows = await (
@@ -279,15 +291,36 @@ public partial class ChemicalInventoryService
                 orderby placement.Id
                 select new { Placement = placement, location.PropertyId })
             .ToListAsync().ConfigureAwait(false);
-        var stockByPlacement = await StockBalancesAsync(ids).ConfigureAwait(false);
-        var userNames = await names.UserNamesAsync(
-                rows.SelectMany(r => new[] { r.Placement.RegisteredByUserId, r.Placement.RemovedByUserId ?? 0 }))
+        var entries = await LiveEntries(ids).OrderBy(e => e.Id).ToListAsync().ConfigureAwait(false);
+        var entriesByPlacement = entries.ToLookup(e => e.PlacementId);
+
+        var balanceAfter = new Dictionary<int, decimal>();
+        foreach (var ledger in entriesByPlacement)
+        {
+            var balance = 0m;
+            foreach (var entry in ledger)
+            {
+                balance += entry.Amount;
+                balanceAfter[entry.Id] = balance;
+            }
+        }
+
+        var writeOffs = rows
+            .Select(r => (r.Placement.Id, EntryId: FindWriteOff(r.Placement, entriesByPlacement[r.Placement.Id], balanceAfter)))
+            .Where(w => w.EntryId != null)
+            .ToDictionary(w => w.Id, w => w.EntryId.Value);
+        var writeOffEntryIds = writeOffs.Values.ToHashSet();
+        var counterparts = await MoveCounterpartsAsync(entries, rows.Select(r => r.Placement)).ConfigureAwait(false);
+
+        var userNames = await names.UserNamesAsync(rows
+                .SelectMany(r => new[] { r.Placement.RegisteredByUserId, r.Placement.RemovedByUserId ?? 0 })
+                .Concat(entries.Select(e => e.ByUserId)))
             .ConfigureAwait(false);
 
-        return rows.Select(r =>
+        var placements = rows.Select(r =>
         {
             var p = r.Placement;
-            var hasStock = stockByPlacement.TryGetValue(p.Id, out var s);
+            var last = entriesByPlacement[p.Id].LastOrDefault();
             return new ChemicalPlacementModel(
                 p.Id, p.LocationId, r.PropertyId, p.ChemicalId, p.ProductId, p.PlacementNote ?? string.Empty,
                 p.RegisteredByUserId, userNames.GetValueOrDefault(p.RegisteredByUserId, string.Empty), Utc(p.RegisteredAt),
@@ -295,23 +328,93 @@ public partial class ChemicalInventoryService
                 p.RemovedByUserId is { } removedBy ? userNames.GetValueOrDefault(removedBy, string.Empty) : string.Empty,
                 p.RemovedAt.HasValue ? Utc(p.RemovedAt) : null,
                 p.RemovalReason, p.RemovalNote ?? string.Empty, p.MovedFromPlacementId,
-                hasStock ? s.Balance : 0m,
-                hasStock ? s.Unit : null,
-                Utc(p.UpdatedAt));
+                last == null ? 0m : balanceAfter[last.Id],
+                last?.Unit,
+                Utc(p.UpdatedAt),
+                writeOffs.TryGetValue(p.Id, out var writeOff) ? writeOff : null);
         }).ToList();
-    }
 
-    private async Task<List<ChemicalStockEntryModel>> LoadEntryModelsAsync(IReadOnlyCollection<int> placementIds)
-    {
-        var entries = await LiveEntries(placementIds)
+        ChemicalStockEntryOriginEnum OriginOf(ChemicalStockEntry e) =>
+            e.Kind is ChemicalStockEntryKindEnum.MovedOut or ChemicalStockEntryKindEnum.MovedIn ? ChemicalStockEntryOriginEnum.Move
+            : writeOffEntryIds.Contains(e.Id) ? ChemicalStockEntryOriginEnum.RemovalWriteOff
+            : ChemicalStockEntryOriginEnum.Manual;
+
+        var entryModels = entries
             .OrderBy(e => e.At).ThenBy(e => e.Id)
-            .ToListAsync().ConfigureAwait(false);
-        var userNames = await names.UserNamesAsync(entries.Select(e => e.ByUserId)).ConfigureAwait(false);
-        return entries.Select(e => new ChemicalStockEntryModel(
+            .Select(e => new ChemicalStockEntryModel(
                 e.Id, e.PlacementId, e.Kind, e.ContainerSize, e.Unit, e.Amount, e.ContainerCount,
                 e.BatchLot ?? string.Empty, e.Note ?? string.Empty, e.ByUserId,
-                userNames.GetValueOrDefault(e.ByUserId, string.Empty), Utc(e.At)))
+                userNames.GetValueOrDefault(e.ByUserId, string.Empty), Utc(e.At),
+                balanceAfter[e.Id],
+                OriginOf(e),
+                counterparts.TryGetValue(e.Id, out var counterpart) ? counterpart : null))
             .ToList();
+
+        return (placements, entryModels);
+    }
+
+    /// <summary>
+    /// The entry RemovePlacementAsync wrote to zero the balance of a placement
+    /// removed as Used or Disposed: the newest entry of the write-off kind dated
+    /// exactly RemovedAt (both are written from one value) that took the balance
+    /// down to zero. Null for an open or moved placement, or one removed with a
+    /// zero balance. A hand-written entry is indistinguishable only if it has the
+    /// write-off's kind, zeroed the balance and carries the removal's timestamp to
+    /// the microsecond.
+    /// </summary>
+    private static int? FindWriteOff(ChemicalPlacement placement, IEnumerable<ChemicalStockEntry> ledger,
+        IReadOnlyDictionary<int, decimal> balanceAfter)
+    {
+        if (placement.RemovedAt is not { } removedAt
+            || placement.RemovalReason is not (ChemicalRemovalReasonEnum.Used or ChemicalRemovalReasonEnum.Disposed))
+        {
+            return null;
+        }
+
+        var kind = WriteOffKind(placement.RemovalReason.Value);
+        return ledger.LastOrDefault(e => e.Kind == kind && e.At == removedAt && e.Amount < 0 && balanceAfter[e.Id] == 0)?.Id;
+    }
+
+    /// <summary>
+    /// Entry id → the other placement of its move. A MovedIn entry belongs to the
+    /// placement the move created, so its counterpart is MovedFromPlacementId. A
+    /// MovedOut entry's counterpart is the placement created from its source at its
+    /// instant: MovePlacementAsync writes the entry's At and that placement's
+    /// RegisteredAt from one value. Several moves from one source at one instant are
+    /// paired in id order (a move without stock writes no entry, but it closes the
+    /// source, so it is always the last of them). The created placements may lie
+    /// outside the loaded set, so they are looked up.
+    /// </summary>
+    private async Task<Dictionary<int, int>> MoveCounterpartsAsync(IReadOnlyList<ChemicalStockEntry> entries,
+        IEnumerable<ChemicalPlacement> placements)
+    {
+        var movedFrom = placements.ToDictionary(p => p.Id, p => p.MovedFromPlacementId);
+        var counterparts = entries
+            .Where(e => e.Kind == ChemicalStockEntryKindEnum.MovedIn && movedFrom.GetValueOrDefault(e.PlacementId) != null)
+            .ToDictionary(e => e.Id, e => movedFrom[e.PlacementId]!.Value);
+
+        var movedOut = entries.Where(e => e.Kind == ChemicalStockEntryKindEnum.MovedOut).ToList();
+        if (movedOut.Count == 0)
+        {
+            return counterparts;
+        }
+
+        var sourceIds = movedOut.Select(e => e.PlacementId).Distinct().ToArray();
+        var created = (await dbContext.ChemicalPlacements.AsNoTracking()
+                .Where(p => p.MovedFromPlacementId != null && sourceIds.Contains(p.MovedFromPlacementId.Value))
+                .OrderBy(p => p.Id)
+                .Select(p => new { p.Id, SourceId = p.MovedFromPlacementId.Value, p.RegisteredAt })
+                .ToListAsync().ConfigureAwait(false))
+            .ToLookup(p => (p.SourceId, p.RegisteredAt));
+        foreach (var move in movedOut.GroupBy(e => (e.PlacementId, e.At)))
+        {
+            foreach (var (entry, target) in move.Zip(created[move.Key]))
+            {
+                counterparts[entry.Id] = target.Id;
+            }
+        }
+
+        return counterparts;
     }
 
     // ---- private helpers ----
@@ -339,6 +442,31 @@ public partial class ChemicalInventoryService
         return (row.Placement, row.PropertyId);
     }
 
+    /// <summary>
+    /// LoadOpenPlacementAsync for a write that reads the balance (stock entry, move,
+    /// removal), serialised per placement. The placement row is written first, before
+    /// anything is read: the UPDATE waits for a concurrent writer of the same
+    /// placement to commit and opens no read view, so the balance read afterwards
+    /// includes that writer's entries (two consumptions can no longer both pass the
+    /// balance check). Writing the row, not just locking it, gives Galera a writeset
+    /// key, so the same race across two nodes fails certification on COMMIT and the
+    /// execution strategy retries the loser from current rows.
+    /// The write bumps Version (a real change that never goes backwards) rather than
+    /// stamping UpdatedAt with a time taken before the wait; the rows this transaction
+    /// writes afterwards (the entry, the closed placement) carry the fresh stamps that
+    /// drive the sync. It runs before the permission and existence checks; a refused or
+    /// unknown id rolls it back with the transaction (an unknown id briefly holds a
+    /// key-gap lock).
+    /// </summary>
+    private async Task<(ChemicalPlacement Placement, int PropertyId)> LockOpenPlacementAsync(
+        ChemicalCaller caller, int placementId, ChemicalPermission permission)
+    {
+        await dbContext.ChemicalPlacements
+            .Where(p => p.Id == placementId)
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.Version, p => p.Version + 1)).ConfigureAwait(false);
+        return await LoadOpenPlacementAsync(caller, placementId, permission).ConfigureAwait(false);
+    }
+
     /// <summary>The placements' stock entries that count (not soft-deleted).</summary>
     private IQueryable<ChemicalStockEntry> LiveEntries(IReadOnlyCollection<int> placementIds)
     {
@@ -348,24 +476,22 @@ public partial class ChemicalInventoryService
     }
 
     /// <summary>
-    /// Balance (sum of the live entries) and unit per placement that has entries.
-    /// The unit is that of the latest written entry (highest id).
+    /// Balance (sum of the live entries, in SQL) and unit of one placement; the unit is
+    /// that of the latest written entry (highest id), null without entries.
     /// </summary>
-    private async Task<Dictionary<int, (decimal Balance, ChemicalStockUnitEnum Unit)>> StockBalancesAsync(
-        IReadOnlyCollection<int> placementIds)
-    {
-        var entries = await LiveEntries(placementIds)
-            .Select(e => new { e.Id, e.PlacementId, e.Amount, e.Unit })
-            .ToListAsync().ConfigureAwait(false);
-        return entries
-            .GroupBy(e => e.PlacementId)
-            .ToDictionary(g => g.Key, g => (g.Sum(e => e.Amount), g.MaxBy(e => e.Id).Unit));
-    }
-
     private async Task<(decimal Balance, ChemicalStockUnitEnum? Unit)> StockStateAsync(int placementId)
     {
-        var balances = await StockBalancesAsync([placementId]).ConfigureAwait(false);
-        return balances.TryGetValue(placementId, out var s) ? (s.Balance, s.Unit) : (0m, null);
+        var unit = await LiveEntries([placementId])
+            .OrderByDescending(e => e.Id)
+            .Select(e => (ChemicalStockUnitEnum?)e.Unit)
+            .FirstOrDefaultAsync().ConfigureAwait(false);
+        if (unit is null)
+        {
+            return (0m, null);
+        }
+
+        var balance = await LiveEntries([placementId]).SumAsync(e => e.Amount).ConfigureAwait(false);
+        return (balance, unit);
     }
 
     private async Task ClosePlacementAsync(ChemicalPlacement placement, ChemicalRemovalReasonEnum reason, DateTime at,
@@ -403,6 +529,10 @@ public partial class ChemicalInventoryService
         CreatedByUserId = caller.UserId,
         UpdatedByUserId = caller.UserId,
     };
+
+    /// <summary>The kind of the entry that writes off the balance on removal: Used consumes it, Disposed adjusts it away.</summary>
+    private static ChemicalStockEntryKindEnum WriteOffKind(ChemicalRemovalReasonEnum reason) =>
+        reason == ChemicalRemovalReasonEnum.Used ? ChemicalStockEntryKindEnum.Consumed : ChemicalStockEntryKindEnum.Adjusted;
 
     private static DateTime ResolveEntryTime(DateTime? requested, DateTime now)
     {

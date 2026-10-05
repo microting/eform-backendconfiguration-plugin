@@ -79,7 +79,7 @@ public class ChemicalPermissionService(BackendConfigurationPnDbContext dbContext
                 .Select(p => new { p.Id, p.Name })
                 .ToListAsync().ConfigureAwait(false);
             return all.Select(p => new ChemicalPropertyAccessRow(
-                    new ChemicalPropertyAccessModel(p.Id, p.Name, ChemicalPermissionFlagsModel.All, stockEnabled.GetValueOrDefault(p.Id)),
+                    new ChemicalPropertyAccessModel(p.Id, p.Name, ChemicalPermissionFlagsModel.All, stockEnabled.GetValueOrDefault(p.Id), null),
                     NeverChanged))
                 .ToList();
         }
@@ -109,7 +109,7 @@ public class ChemicalPermissionService(BackendConfigurationPnDbContext dbContext
             .OrderBy(r => r.Name)
             .Select(r => new ChemicalPropertyAccessRow(
                 new ChemicalPropertyAccessModel(
-                    r.Id, r.Name, ToFlags(r.Permission).Effective(), stockEnabled.GetValueOrDefault(r.Id)),
+                    r.Id, r.Name, ToFlags(r.Permission).Effective(), stockEnabled.GetValueOrDefault(r.Id), workerId),
                 Later(r.Permission.UpdatedAt, r.WorkerUpdatedAt)))
             .ToList();
     }

@@ -67,11 +67,16 @@ public class ChemicalsGrpcServiceMappingTests
 
     private static ChemicalCaller Caller => ChemicalCaller.App(UserId, WorkerId);
 
-    private static ChemicalPlacementModel Placement(int id = 7, DateTime? removedAt = null) => new(
+    private static ChemicalPlacementModel Placement(int id = 7, DateTime? removedAt = null, int? writeOffEntryId = null) => new(
         id, 11, 1, 5, null, "Hylde 2", UserId, "User", new DateTime(2026, 9, 1, 8, 0, 0, DateTimeKind.Utc),
         removedAt.HasValue ? UserId : null, removedAt.HasValue ? "User" : "", removedAt,
         removedAt.HasValue ? ChemicalRemovalReasonEnum.Used : null, "", null, 2.5m, ChemicalStockUnitEnum.L,
-        new DateTime(2026, 9, 2, 8, 0, 0, DateTimeKind.Utc));
+        new DateTime(2026, 9, 2, 8, 0, 0, DateTimeKind.Utc), writeOffEntryId);
+
+    private static ChemicalStockEntryModel Entry(int id, ChemicalStockEntryKindEnum kind, decimal amount, decimal balanceAfter,
+        ChemicalStockEntryOriginEnum origin, int? counterpart = null) => new(
+        id, 7, kind, null, ChemicalStockUnitEnum.L, amount, null, "", "", UserId, "User",
+        new DateTime(2026, 9, 3, 8, 0, 0, DateTimeKind.Utc), balanceAfter, origin, counterpart);
 
     private static ChemicalPlacementChangeModel Change(params ChemicalPlacementModel[] placements) => new(placements, [], []);
 
@@ -88,7 +93,7 @@ public class ChemicalsGrpcServiceMappingTests
     {
         var sut = CreateSut();
         _inventory.GetInventoryAsync(Caller, "v1:123").Returns(new ChemicalInventoryModel(
-            [new ChemicalPropertyAccessModel(1, "Gården", ChemicalPermissionFlagsModel.All, true)],
+            [new ChemicalPropertyAccessModel(1, "Gården", ChemicalPermissionFlagsModel.All, true, WorkerId)],
             [], [Placement()], [], [], "v1:456", false));
 
         var response = await sut.GetMyInventory(new ChemicalInventoryRequest { Since = "v1:123" }, Context());
@@ -96,12 +101,98 @@ public class ChemicalsGrpcServiceMappingTests
         Assert.That(response.SyncToken, Is.EqualTo("v1:456"));
         Assert.That(response.Full, Is.False);
         Assert.That(response.Properties.Single().Permissions.Admin, Is.True);
+        Assert.That(response.Properties.Single().CallerWorkerId, Is.EqualTo(WorkerId));
         var placement = response.Placements.Single();
         Assert.That(placement.BalanceMilli, Is.EqualTo(2500));
         Assert.That(placement.Unit, Is.EqualTo(ChemicalStockUnit.L));
         Assert.That(placement.ProductId, Is.EqualTo(0));
         Assert.That(placement.RemovedAt, Is.Null);
         Assert.That(placement.RemovalReason, Is.EqualTo(ChemicalRemovalReason.Unspecified));
+    }
+
+    [Test]
+    public async Task PropertyAccess_WithoutACallerWorker_SendsZero()
+    {
+        var sut = CreateSut();
+        _inventory.GetInventoryAsync(Caller, "").Returns(new ChemicalInventoryModel(
+            [new ChemicalPropertyAccessModel(1, "Gården", ChemicalPermissionFlagsModel.All, true, null)], [], [], [], [], "v1:1", true));
+
+        var response = await sut.GetMyInventory(new ChemicalInventoryRequest(), Context());
+
+        Assert.That(response.Properties.Single().CallerWorkerId, Is.EqualTo(0));
+    }
+
+    [Test]
+    public async Task StockEntries_CarryBalanceAfterOriginAndCounterpart()
+    {
+        var sut = CreateSut();
+        _inventory.GetInventoryAsync(Caller, "").Returns(new ChemicalInventoryModel([], [], [], [
+            Entry(30, ChemicalStockEntryKindEnum.Received, 2m, 2m, ChemicalStockEntryOriginEnum.Manual),
+            Entry(31, ChemicalStockEntryKindEnum.MovedOut, -0.75m, 1.25m, ChemicalStockEntryOriginEnum.Move, counterpart: 9),
+            Entry(32, ChemicalStockEntryKindEnum.Consumed, -1.25m, 0m, ChemicalStockEntryOriginEnum.RemovalWriteOff),
+        ], [], "v1:1", true));
+
+        var entries = (await sut.GetMyInventory(new ChemicalInventoryRequest(), Context())).StockEntries;
+
+        Assert.That(entries.Select(e => (e.HasBalanceAfterMilli, e.BalanceAfterMilli)),
+            Is.EqualTo(new[] { (true, 2000L), (true, 1250L), (true, 0L) }), "a zero balance is still sent (presence)");
+        Assert.That(entries.Select(e => e.Origin), Is.EqualTo(new[]
+        {
+            ChemicalStockEntryOrigin.Manual, ChemicalStockEntryOrigin.Move, ChemicalStockEntryOrigin.RemovalWriteOff,
+        }));
+        Assert.That(entries.Select(e => e.CounterpartPlacementId), Is.EqualTo(new[] { 0, 9, 0 }));
+    }
+
+    [Test]
+    public async Task Placements_CarryTheWriteOffEntryId_ZeroForNone()
+    {
+        var sut = CreateSut();
+        var removedAt = new DateTime(2026, 9, 4, 8, 0, 0, DateTimeKind.Utc);
+        _inventory.RemovePlacementAsync(Caller, Arg.Any<ChemicalRemovePlacementCommand>())
+            .Returns(Change(Placement(7, removedAt, writeOffEntryId: 32), Placement(8)));
+
+        var response = await sut.RemovePlacement(new ChemicalRemovePlacementRequest { PlacementId = 7, Reason = ChemicalRemovalReason.Used }, Context());
+
+        Assert.That(response.Placements.Select(p => (p.Id, p.WriteOffEntryId)), Is.EqualTo(new[] { (7, 32), (8, 0) }));
+    }
+
+    [Test]
+    public async Task ReorderLocations_ForwardsPropertyAndOrder_AndReturnsTheLocations()
+    {
+        var sut = CreateSut();
+        var at = new DateTime(2026, 9, 5, 8, 0, 0, DateTimeKind.Utc);
+        _inventory.ReorderLocationsAsync(Caller, 1, Arg.Any<IReadOnlyList<int>>()).Returns([
+            new ChemicalLocationModel(12, 1, "Lade", "Bag døren", "", 1, false, at),
+            new ChemicalLocationModel(11, 1, "Kemirum", "", "p.jpg", 2, false, at),
+        ]);
+
+        var response = await sut.ReorderLocations(new ChemicalReorderLocationsRequest { PropertyId = 1, LocationIds = { 12, 11 } }, Context());
+
+        await _inventory.Received(1).ReorderLocationsAsync(Caller, 1, Arg.Is<IReadOnlyList<int>>(ids => ids.SequenceEqual(new[] { 12, 11 })));
+        Assert.That(response.Locations.Select(l => (l.Id, l.SortOrder, l.Name, l.Description)),
+            Is.EqualTo(new[] { (12, 1, "Lade", "Bag døren"), (11, 2, "Kemirum", "") }));
+        Assert.That(response.Locations[1].PhotoFileName, Is.EqualTo("p.jpg"));
+    }
+
+    [Test]
+    public async Task ReorderLocations_RefusalsMapLikeEveryOtherRpc()
+    {
+        var sut = CreateSut();
+        _inventory.ReorderLocationsAsync(Caller, 1, Arg.Any<IReadOnlyList<int>>())
+            .ThrowsAsync(new ArgumentException("The order must list every active location of the property exactly once."));
+        _inventory.ReorderLocationsAsync(Caller, 2, Arg.Any<IReadOnlyList<int>>())
+            .ThrowsAsync(new ChemicalPermissionDeniedException("no"));
+
+        var invalid = await Assert.ThrowsAsync<RpcException>(async () =>
+            await sut.ReorderLocations(new ChemicalReorderLocationsRequest { PropertyId = 1, LocationIds = { 11 } }, Context()));
+        var denied = await Assert.ThrowsAsync<RpcException>(async () =>
+            await sut.ReorderLocations(new ChemicalReorderLocationsRequest { PropertyId = 2, LocationIds = { 11 } }, Context()));
+        var anonymous = await Assert.ThrowsAsync<RpcException>(async () =>
+            await CreateSut(workerId: 0).ReorderLocations(new ChemicalReorderLocationsRequest { PropertyId = 1 }, Context()));
+
+        Assert.That(invalid!.StatusCode, Is.EqualTo(StatusCode.InvalidArgument));
+        Assert.That(denied!.StatusCode, Is.EqualTo(StatusCode.PermissionDenied));
+        Assert.That(anonymous!.StatusCode, Is.EqualTo(StatusCode.Unauthenticated));
     }
 
     private static IEnumerable<TestCaseData> Failures()

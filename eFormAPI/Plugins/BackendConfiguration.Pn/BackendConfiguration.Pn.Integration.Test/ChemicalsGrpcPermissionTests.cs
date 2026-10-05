@@ -24,6 +24,7 @@ using BackendConfiguration.Pn.Infrastructure.Models.Chemicals;
 using BackendConfiguration.Pn.Services.GrpcServices;
 using Google.Protobuf;
 using Grpc.Core;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
@@ -79,6 +80,11 @@ public class ChemicalsGrpcPermissionTests : ChemicalTestBase
             sut.UpdateLocation(new ChemicalUpdateLocationRequest { LocationId = s.EmptyLocationId, Name = Guid.NewGuid().ToString("N") }, Context())),
         ["ArchiveLocation"] = (ChemicalPermission.ManageLocations, (sut, s) =>
             sut.ArchiveLocation(new ChemicalArchiveLocationRequest { LocationId = s.EmptyLocationId }, Context())),
+        ["ReorderLocations"] = (ChemicalPermission.ManageLocations, (sut, s) =>
+            sut.ReorderLocations(new ChemicalReorderLocationsRequest
+            {
+                PropertyId = s.PropertyId, LocationIds = { s.EmptyLocationId, s.LocationId },
+            }, Context())),
         ["UploadLocationPhoto"] = (ChemicalPermission.ManageLocations, (sut, s) =>
             sut.UploadLocationPhoto(new FakeAsyncStreamReader<ChemicalLocationPhotoUploadChunk>([
                 new() { Meta = new ChemicalLocationPhotoMeta { LocationId = s.EmptyLocationId, ContentType = "image/png" } },
@@ -190,6 +196,76 @@ public class ChemicalsGrpcPermissionTests : ChemicalTestBase
     }
 
     [Test]
+    public async Task ReorderLocations_WithManageLocations_StoresTheOrder_AndKeepsNamesAndDescriptions()
+    {
+        var s = await ArrangeAsync(Only(ChemicalPermission.ManageLocations));
+        var before = BackendConfigurationPnDbContext!.ChemicalLocations.AsNoTracking()
+            .Where(l => l.PropertyId == s.PropertyId).ToList()
+            .ToDictionary(l => l.Id, l => (l.Name, l.Description ?? "", l.PhotoFileName ?? ""));
+
+        var response = await CreateSut(s.WorkerId).ReorderLocations(new ChemicalReorderLocationsRequest
+        {
+            PropertyId = s.PropertyId, LocationIds = { s.EmptyLocationId, s.LocationId },
+        }, Context());
+
+        Assert.That(response.Locations.Select(l => (l.Id, l.SortOrder)),
+            Is.EqualTo(new[] { (s.EmptyLocationId, 1), (s.LocationId, 2) }));
+        Assert.That(response.Locations.ToDictionary(l => l.Id, l => (l.Name, l.Description, l.PhotoFileName)), Is.EqualTo(before));
+        var stored = BackendConfigurationPnDbContext.ChemicalLocations.AsNoTracking()
+            .Where(l => l.PropertyId == s.PropertyId).OrderBy(l => l.SortOrder).Select(l => l.Id).ToList();
+        Assert.That(stored, Is.EqualTo(new[] { s.EmptyLocationId, s.LocationId }));
+    }
+
+    [Test]
+    public async Task ReorderLocations_IncompleteDuplicateForeignOrArchivedIds_AreInvalidArgument_AndChangeNothing()
+    {
+        var s = await ArrangeAsync(Only(ChemicalPermission.ManageLocations));
+        var foreign = await CreateLocationAsync((await CreatePropertyAsync()).Id);
+        var archived = await CreateLocationAsync(s.PropertyId, sortOrder: 3);
+        await archived.Delete(BackendConfigurationPnDbContext!);
+        var sut = CreateSut(s.WorkerId);
+        int[][] bad =
+        [
+            [s.LocationId],
+            [s.EmptyLocationId, s.EmptyLocationId],
+            [s.EmptyLocationId, foreign.Id],
+            [s.EmptyLocationId, s.LocationId, foreign.Id],
+            [s.EmptyLocationId, s.LocationId, archived.Id],
+            [s.EmptyLocationId, archived.Id],
+        ];
+
+        foreach (var ids in bad)
+        {
+            var request = new ChemicalReorderLocationsRequest { PropertyId = s.PropertyId };
+            request.LocationIds.AddRange(ids);
+            var ex = await Assert.ThrowsAsync<RpcException>(async () => await sut.ReorderLocations(request, Context()));
+            Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.InvalidArgument), string.Join(",", ids));
+        }
+
+        var stored = BackendConfigurationPnDbContext!.ChemicalLocations.AsNoTracking()
+            .Where(l => l.PropertyId == s.PropertyId).OrderBy(l => l.SortOrder).Select(l => l.Id).ToList();
+        Assert.That(stored, Is.EqualTo(new[] { s.LocationId, s.EmptyLocationId, archived.Id }));
+    }
+
+    [Test]
+    public async Task GetMyInventory_CarriesTheCallersOwnWorkerIdOnEveryProperty()
+    {
+        var s = await ArrangeAsync(Only(ChemicalPermission.View));
+        var second = await CreatePropertyAsync();
+        await AddWorkerAsync(second.Id, s.WorkerId);
+        await GrantAsync(second.Id, s.WorkerId, Only(ChemicalPermission.View));
+        await GrantAsync(s.PropertyId, s.OtherWorkerId, Only(ChemicalPermission.View));
+
+        var mine = await CreateSut(s.WorkerId).GetMyInventory(new ChemicalInventoryRequest(), Context());
+        var theirs = await CreateSut(s.OtherWorkerId).GetMyInventory(new ChemicalInventoryRequest(), Context());
+
+        Assert.That(mine.Properties.Select(p => (p.PropertyId, p.CallerWorkerId)),
+            Is.EquivalentTo(new[] { (s.PropertyId, s.WorkerId), (second.Id, s.WorkerId) }));
+        Assert.That(theirs.Properties.Select(p => (p.PropertyId, p.CallerWorkerId)),
+            Is.EqualTo(new[] { (s.PropertyId, s.OtherWorkerId) }), "each caller gets its own worker id on a shared property");
+    }
+
+    [Test]
     public async Task AllFlagsOnOneProperty_GrantNothingOnAnother()
     {
         var mine = await ArrangeAsync(ChemicalPermissionFlagsModel.All);
@@ -200,6 +276,10 @@ public class ChemicalsGrpcPermissionTests : ChemicalTestBase
         [
             () => sut.RemovePlacement(new ChemicalRemovePlacementRequest { PlacementId = theirs.PlacementId, Reason = ChemicalRemovalReason.Used }, Context()),
             () => sut.ArchiveLocation(new ChemicalArchiveLocationRequest { LocationId = theirs.EmptyLocationId }, Context()),
+            () => sut.ReorderLocations(new ChemicalReorderLocationsRequest
+            {
+                PropertyId = theirs.PropertyId, LocationIds = { theirs.EmptyLocationId, theirs.LocationId },
+            }, Context()),
             () => sut.SetPropertySettings(new ChemicalSetPropertySettingsRequest { PropertyId = theirs.PropertyId, StockEnabled = false }, Context()),
         ];
 

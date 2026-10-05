@@ -61,6 +61,11 @@ service ChemicalsGrpc {
   rpc UpdateLocation(ChemicalUpdateLocationRequest) returns (ChemicalLocationResponse);
   // Needs: manage_locations. FAILED_PRECONDITION while open placements exist.
   rpc ArchiveLocation(ChemicalArchiveLocationRequest) returns (ChemicalLocationResponse);
+  // Needs: manage_locations. Sets sort_order 1..n in the given order in one
+  // transaction; names and descriptions are never touched. location_ids must
+  // list every active location of the property exactly once (INVALID_ARGUMENT
+  // otherwise). Same rule as the web's PUT properties/{id}/locations/order.
+  rpc ReorderLocations(ChemicalReorderLocationsRequest) returns (ChemicalReorderLocationsResponse);
   // Needs: manage_locations. Meta first, then photo bytes.
   rpc UploadLocationPhoto(stream ChemicalLocationPhotoUploadChunk) returns (ChemicalLocationResponse);
   // Needs: view on any property. Meta first, then optional label-photo bytes;
@@ -92,6 +97,14 @@ enum ChemicalStockEntryKind {
   CHEMICAL_STOCK_ENTRY_KIND_ADJUSTED = 3;
   CHEMICAL_STOCK_ENTRY_KIND_MOVED_OUT = 4;
   CHEMICAL_STOCK_ENTRY_KIND_MOVED_IN = 5;
+}
+
+// Why the server wrote a stock entry. UNSPECIFIED = sent by an older server.
+enum ChemicalStockEntryOrigin {
+  CHEMICAL_STOCK_ENTRY_ORIGIN_UNSPECIFIED = 0;
+  CHEMICAL_STOCK_ENTRY_ORIGIN_MANUAL = 1;             // AddStockEntry, or initial stock on RegisterPlacement
+  CHEMICAL_STOCK_ENTRY_ORIGIN_REMOVAL_WRITE_OFF = 2;  // RemovePlacement zeroing the balance
+  CHEMICAL_STOCK_ENTRY_ORIGIN_MOVE = 3;               // MovePlacement (MOVED_OUT / MOVED_IN)
 }
 
 enum ChemicalStockUnit {
@@ -137,6 +150,10 @@ message ChemicalPropertyAccess {
   string name = 2;
   ChemicalPermissionFlags permissions = 3;  // effective: admin already expanded
   bool stock_enabled = 4;
+  // The caller's own SDK worker id on this property (the id GrpcSiteResolver
+  // resolves for the calling app user; worker ids elsewhere in this file use
+  // the same space). 0 = none (an older server).
+  int32 caller_worker_id = 5;
 }
 
 message ChemicalLocationItem {
@@ -170,6 +187,13 @@ message ChemicalPlacementItem {
   int64 balance_milli = 16;                 // sum of the placement's stock entries
   ChemicalStockUnit unit = 17;              // UNSPECIFIED = no stock entries yet
   google.protobuf.Timestamp updated_at = 18;
+  // The entry RemovePlacement wrote to zero the balance (its origin is
+  // REMOVAL_WRITE_OFF). 0 = none: open, moved, or removed with a zero balance.
+  // Derived from the ledger, not stored: the newest entry of the write-off kind
+  // (USED: CONSUMED, DISPOSED: ADJUSTED) dated exactly removed_at that took the
+  // balance to 0. A hand-written entry that zeroed the balance and carries
+  // removed_at to the microsecond is indistinguishable and is reported as such.
+  int32 write_off_entry_id = 19;
 }
 
 message ChemicalStockEntryItem {
@@ -185,6 +209,17 @@ message ChemicalStockEntryItem {
   int32 by_user_id = 10;
   string by_name = 11;
   google.protobuf.Timestamp at = 12;
+  // The placement's balance right after this entry: the sum of the
+  // placement's entries up to and including this one in write (id) order,
+  // the order the server validated them in. For ADJUSTED it is the counted
+  // balance. A backdated entry therefore carries the balance as of when it
+  // was written, which may look out of step in a list sorted by `at`.
+  // Unset = older server; show no balance then.
+  optional int64 balance_after_milli = 13;
+  ChemicalStockEntryOrigin origin = 14;
+  // The other placement of a move: on MOVED_OUT the placement the move
+  // created, on MOVED_IN the source. 0 = none (every other kind).
+  int32 counterpart_placement_id = 15;
 }
 
 message ChemicalHazardStatement {
@@ -389,6 +424,15 @@ message ChemicalArchiveLocationRequest {
 
 message ChemicalLocationResponse {
   ChemicalLocationItem location = 1;
+}
+
+message ChemicalReorderLocationsRequest {
+  int32 property_id = 1;
+  repeated int32 location_ids = 2;          // the new order: the first gets sort_order 1
+}
+
+message ChemicalReorderLocationsResponse {
+  repeated ChemicalLocationItem locations = 1;  // the property's active locations, in the new order
 }
 
 message ChemicalLocationPhotoUploadChunk {

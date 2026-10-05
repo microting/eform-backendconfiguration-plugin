@@ -120,6 +120,16 @@ public class ChemicalsGrpcService(
     public override async Task<ChemicalLocationResponse> ArchiveLocation(ChemicalArchiveLocationRequest request, ServerCallContext context) =>
         ToLocationResponse(await RunAsync(caller => inventory.ArchiveLocationAsync(caller, request.LocationId)).ConfigureAwait(false));
 
+    public override async Task<ChemicalReorderLocationsResponse> ReorderLocations(ChemicalReorderLocationsRequest request,
+        ServerCallContext context)
+    {
+        var locations = await RunAsync(caller => inventory.ReorderLocationsAsync(caller, request.PropertyId, request.LocationIds.ToList()))
+            .ConfigureAwait(false);
+        var response = new ChemicalReorderLocationsResponse();
+        response.Locations.AddRange(locations.Select(ToProto));
+        return response;
+    }
+
     public override async Task<ChemicalLocationResponse> UploadLocationPhoto(IAsyncStreamReader<ChemicalLocationPhotoUploadChunk> requestStream,
         ServerCallContext context) =>
         ToLocationResponse(await RunAsync(async caller =>
