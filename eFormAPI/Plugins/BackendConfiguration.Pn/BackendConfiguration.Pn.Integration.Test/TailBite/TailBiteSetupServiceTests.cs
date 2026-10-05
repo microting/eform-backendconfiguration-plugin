@@ -178,6 +178,25 @@ public class TailBiteSetupServiceTests : TailBiteTestBase
     }
 
     [Test]
+    public async Task Move_DeepeningSubtreeBelowRuleCountDepth_Conflict_ShallowEnoughRuleAllowed()
+    {
+        await SeedManagerAsync();
+        var sut = Sut();
+        await new TailBiteRule { LocationId = Pen501Id, MinBittenPigs = 3, WindowDays = 7, CountDepth = 2 }.Create(Db);
+        // Sti 501 sits at depth 2; under Sektion 4 it would be depth 3, above which its rule (CountDepth 2) must not sum.
+        await Assert.ThrowsAsync<TailBiteConflictException>(() => sut.MoveLocationAsync(ManagerSite, Pen501Id, SectionId));
+        Db.ChangeTracker.Clear();
+        Assert.That(Db.TailBiteLocations.Single(l => l.Id == Pen501Id).ParentId, Is.EqualTo(StableBId));
+
+        var rule = Db.TailBiteRules.Single(r => r.LocationId == Pen501Id);
+        rule.CountDepth = 3;
+        await rule.Update(Db);
+        await Assert.DoesNotThrowAsync(() => sut.MoveLocationAsync(ManagerSite, Pen501Id, SectionId));
+        Db.ChangeTracker.Clear();
+        Assert.That(Db.TailBiteLocations.Single(l => l.Id == Pen501Id).ParentId, Is.EqualTo(SectionId));
+    }
+
+    [Test]
     public async Task AddRuleInsideOpenSubtree_Refused_ElsewhereAllowed()
     {
         await SeedManagerAsync(); await OpenOutbreakAsync(StableAId);

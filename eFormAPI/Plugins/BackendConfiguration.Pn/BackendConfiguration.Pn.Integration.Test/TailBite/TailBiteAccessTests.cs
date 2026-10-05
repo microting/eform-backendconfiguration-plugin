@@ -31,4 +31,14 @@ public class TailBiteAccessTests : TailBiteTestBase
         await Assert.DoesNotThrowAsync(() => sut.RequireWorkerAsync(7, PropertyId));
         await Assert.ThrowsAsync<TailBiteForbiddenException>(() => sut.RequireManagerAsync(7, PropertyId));
     }
+
+    [Test]
+    public async Task Manager_AnyActiveRowWithFlag_Succeeds_EvenWhenFirstRowIsNot()
+    {
+        await SeedTreeAsync();
+        await SeedWorkerAsync(7, manager: false);
+        await SeedWorkerAsync(7, manager: true);
+        var pw = await Sut(7).RequireManagerAsync(7, PropertyId);
+        Assert.That(pw.TailBiteManager, Is.True);
+    }
 }

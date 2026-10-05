@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2007 - 2022 Microting A/S
+Copyright (c) 2007 - 2026 Microting A/S
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -65,13 +65,14 @@ public class TailBitePushSender : ITailBitePushSender
 
     private readonly BackendConfigurationPnDbContext _dbContext;
     private readonly ILogger<TailBitePushSender> _logger;
-    private readonly FirebaseApp? _firebaseApp;
+    private readonly object _resolveLock = new();
+    private bool _resolved;
+    private FirebaseApp? _firebaseApp;
 
     public TailBitePushSender(BackendConfigurationPnDbContext dbContext, ILogger<TailBitePushSender> logger)
     {
         _dbContext = dbContext;
         _logger = logger;
-        _firebaseApp = ResolveFirebaseApp(dbContext, logger);
     }
 
     // INVARIANT (as in PushNotificationService): always carries the AppId equality predicate, the leading column of
@@ -83,7 +84,8 @@ public class TailBitePushSender : ITailBitePushSender
 
     public async Task SendToSiteAsync(int targetSdkSiteId, string title, string body, Dictionary<string, string> data)
     {
-        if (_firebaseApp == null)
+        var firebaseApp = GetFirebaseApp();
+        if (firebaseApp == null)
         {
             _logger.LogInformation(
                 "Push notification skipped (halebid Firebase push disabled, {ConfigurationKey} not set): "
@@ -94,7 +96,7 @@ public class TailBitePushSender : ITailBitePushSender
 
         try
         {
-            var messaging = FirebaseMessaging.GetMessaging(_firebaseApp);
+            var messaging = FirebaseMessaging.GetMessaging(firebaseApp);
             await SendAndPruneAsync(
                 targetSdkSiteId,
                 device => messaging.SendAsync(
@@ -105,6 +107,21 @@ public class TailBitePushSender : ITailBitePushSender
         {
             // A push never fails the request that triggered it.
             _logger.LogError(ex, "Error sending halebid push notifications to SdkSiteId {SdkSiteId}", targetSdkSiteId);
+        }
+    }
+
+    // Resolved once, on first use: the constructor must not touch the database or Firebase. ResolveFirebaseApp never throws.
+    private FirebaseApp? GetFirebaseApp()
+    {
+        lock (_resolveLock)
+        {
+            if (!_resolved)
+            {
+                _firebaseApp = ResolveFirebaseApp(_dbContext, _logger);
+                _resolved = true;
+            }
+
+            return _firebaseApp;
         }
     }
 

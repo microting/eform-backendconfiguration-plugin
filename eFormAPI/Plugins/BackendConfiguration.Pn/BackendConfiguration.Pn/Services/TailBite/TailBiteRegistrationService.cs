@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2007 - 2022 Microting A/S
+Copyright (c) 2007 - 2026 Microting A/S
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -112,10 +112,20 @@ public class TailBiteRegistrationService(
         }
     }
 
+    private const int MaxCountPerLocation = 10000;
+    private const int MaxCommentLength = 2000; // the Comment column limit
+
     private static void Validate(CreateRegistrationCommand cmd)
     {
-        if (cmd.Locations.Count == 0 || cmd.Locations.Any(l => l.Minor < 0 || l.Severe < 0) || cmd.Locations.Sum(l => l.Minor + l.Severe) == 0)
+        if (cmd.Locations.Count > 0 && cmd.Locations.Any(l => l.Minor < 0 || l.Severe < 0))
             throw new TailBiteValidationException("Count at least one bitten pig; counts cannot be negative.");
+        // Bounded before any summing, so the totals below and the evaluator's cannot overflow.
+        if (cmd.Locations.Any(l => l.Minor > MaxCountPerLocation || l.Severe > MaxCountPerLocation))
+            throw new TailBiteValidationException($"A count cannot exceed {MaxCountPerLocation} pigs per location.");
+        if (cmd.Locations.Count == 0 || cmd.Locations.Sum(l => (long)l.Minor + l.Severe) == 0)
+            throw new TailBiteValidationException("Count at least one bitten pig; counts cannot be negative.");
+        if (cmd.Comment is { Length: > MaxCommentLength })
+            throw new TailBiteValidationException($"A comment cannot exceed {MaxCommentLength} characters.");
         if (cmd.Locations.Select(l => l.LocationId).Distinct().Count() != cmd.Locations.Count)
             throw new TailBiteValidationException("A location can only be listed once per registration.");
     }

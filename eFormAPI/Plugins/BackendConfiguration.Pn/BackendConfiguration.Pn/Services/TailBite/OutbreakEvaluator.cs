@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2007 - 2022 Microting A/S
+Copyright (c) 2007 - 2026 Microting A/S
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -79,8 +79,8 @@ public static class OutbreakEvaluator
             foreach (var windowEnd in ends)
             {
                 var inWindow = eligible.Where(r => r.EffectiveAt > windowEnd - window && r.EffectiveAt <= windowEnd).ToList();
-                var bitten = inWindow.Sum(r => r.Minor + r.Severe);
-                var severe = inWindow.Sum(r => r.Severe);
+                var bitten = inWindow.Sum(r => (long)r.Minor + r.Severe);
+                var severe = inWindow.Sum(r => (long)r.Severe);
                 var fires = (rule.MinBittenPigs is { } mb && bitten >= mb) || (rule.MinSevere is { } ms && severe >= ms);
                 if (!fires) continue;
 

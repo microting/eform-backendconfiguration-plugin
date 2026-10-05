@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2007 - 2022 Microting A/S
+Copyright (c) 2007 - 2026 Microting A/S
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -223,6 +223,12 @@ public class TailBiteSetupService(BackendConfigurationPnDbContext db, ITailBiteP
             if (HasOpenOutbreakAtOrUnder(snap, open, locationId)
                 || open.Any(o => OutbreakEvaluator.IsDescendantOrSelf(snap, locationId, o.Node) || OutbreakEvaluator.IsDescendantOrSelf(snap, newParentId, o.Node)))
                 throw new TailBiteConflictException("A location with an open outbreak, or inside one, cannot be moved. Close the outbreak first.");
+            // §5: a rule never sums above its own node, so a move that deepens the subtree must leave every rule in it deep enough.
+            var depthChange = OutbreakEvaluator.Depth(snap, newParentId) + 1 - OutbreakEvaluator.Depth(snap, locationId);
+            if (depthChange > 0 && snap.Rules.Any(r => OutbreakEvaluator.IsDescendantOrSelf(snap, r.LocationId, locationId)
+                    && r.CountDepth < OutbreakEvaluator.Depth(snap, r.LocationId) + depthChange))
+                throw new TailBiteConflictException(
+                    "A rule under this location would sum above its own location after the move. Raise the rule's count depth first.");
             await RequireFreeLocationNamesAsync(propertyId, newParentId, [loc.Name], exceptId: loc.Id);
             loc.ParentId = newParentId;
             loc.SortOrder = await NextSortOrderAsync(newParentId);

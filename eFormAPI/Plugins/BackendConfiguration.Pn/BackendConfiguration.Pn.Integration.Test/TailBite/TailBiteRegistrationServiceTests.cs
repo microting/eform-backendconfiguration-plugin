@@ -159,6 +159,22 @@ public class TailBiteRegistrationServiceTests : TailBiteTestBase
     }
 
     [Test]
+    public async Task Create_CountAbove10000_Rejected_NothingStored()
+    {
+        await Assert.ThrowsAsync<TailBiteValidationException>(() => NewSut().CreateAsync(WorkerSiteId, Cmd(minor: int.MaxValue)));
+        await Assert.ThrowsAsync<TailBiteValidationException>(() => NewSut().CreateAsync(WorkerSiteId, Cmd(minor: 0, severe: 10001)));
+        Assert.That(Db.TailBiteRegistrations.Count(), Is.EqualTo(0));
+    }
+
+    [Test]
+    public async Task Create_CommentLongerThan2000_Rejected_2000Allowed()
+    {
+        await Assert.ThrowsAsync<TailBiteValidationException>(() => NewSut().CreateAsync(WorkerSiteId, Cmd() with { Comment = new string('x', 2001) }));
+        Assert.That(Db.TailBiteRegistrations.Count(), Is.EqualTo(0));
+        await Assert.DoesNotThrowAsync(() => NewSut().CreateAsync(WorkerSiteId, Cmd() with { Comment = new string('x', 2000) }));
+    }
+
+    [Test]
     public async Task Create_AllZeroCounts_Rejected()
     {
         await Assert.ThrowsAsync<TailBiteValidationException>(() => NewSut().CreateAsync(WorkerSiteId, Cmd(minor: 0, severe: 0)));

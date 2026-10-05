@@ -45,6 +45,15 @@ public class OutbreakEvaluatorTests
     }
 
     [Test]
+    public void MaxCounts_SumWithoutOverflow_AndCompareCorrectly()
+    {
+        var s = Snap([RootRule(minBitten: 40000, minSevere: null)], [Row(1, 4, 0, 10000, 10000), Row(2, 4, 0, 10000, 10000)]);
+        Assert.That(OutbreakEvaluator.Evaluate(s, D0, [2]).Single(), Is.TypeOf<OpenNewOutbreak>());
+        var above = Snap([RootRule(minBitten: 40001, minSevere: null)], [Row(1, 4, 0, 10000, 10000), Row(2, 4, 0, 10000, 10000)]);
+        Assert.That(OutbreakEvaluator.Evaluate(above, D0, [2]), Is.Empty);
+    }
+
+    [Test]
     public void MinSevere_FiresOnOneSevere()
     {
         var s = Snap([RootRule(minBitten: 99, minSevere: 1)], [Row(1, 4, 0, 0, 1)]);

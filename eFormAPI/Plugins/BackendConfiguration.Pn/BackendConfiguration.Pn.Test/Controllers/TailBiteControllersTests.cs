@@ -8,6 +8,7 @@ using BackendConfiguration.Pn.Controllers;
 using BackendConfiguration.Pn.Services.TailBite;
 using Microsoft.AspNetCore.Authorization;
 using Microting.EformBackendConfigurationBase.Infrastructure.Const;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using NUnit.Framework;
@@ -114,6 +115,49 @@ public class TailBiteControllersTests
         var res = await new TailBiteOutbreaksController(access, svc).SaveAssessment(5, new SaveAssessmentRequest(answers, null));
         Assert.That(res.Success, Is.True);
         await svc.Received().SaveAssessmentAsync(7, 5, answers, Arg.Is<IReadOnlyList<ActionInput>>(l => l.Count == 0));
+    }
+
+    private static readonly FactorAnswers SomeAnswers = new(true, false, false, false, false, false);
+
+    [Test]
+    public async Task SaveAssessment_ValidAction_MapsToActionInput()
+    {
+        var svc = Substitute.For<ITailBiteOutbreakService>();
+        var due = new DateTime(2026, 10, 12, 0, 0, 0, DateTimeKind.Utc);
+        var res = await new TailBiteOutbreaksController(AccessWithSite(), svc).SaveAssessment(5,
+            new SaveAssessmentRequest(SomeAnswers, [new NewActionRequest(TailBiteFactor.Feed, "Check feed", 9, due)]));
+        Assert.That(res.Success, Is.True);
+        await svc.Received().SaveAssessmentAsync(7, 5, SomeAnswers,
+            Arg.Is<IReadOnlyList<ActionInput>>(l => l.Count == 1 && l[0].Factor == TailBiteFactor.Feed && l[0].ResponsibleSiteId == 9));
+    }
+
+    [Test]
+    public async Task SaveAssessment_MissingFactor_ReturnsFailedResult_NotWater()
+    {
+        var svc = Substitute.For<ITailBiteOutbreakService>();
+        var res = await new TailBiteOutbreaksController(AccessWithSite(), svc).SaveAssessment(5,
+            new SaveAssessmentRequest(SomeAnswers, [new NewActionRequest(null, "x", 9, DateTime.UtcNow)]));
+        Assert.That(res.Success, Is.False);
+        await svc.DidNotReceiveWithAnyArgs().SaveAssessmentAsync(default, default, default!, default!);
+    }
+
+    [Test]
+    public async Task SaveAssessment_OutOfRangeFactor_ReturnsFailedResult()
+    {
+        var svc = Substitute.For<ITailBiteOutbreakService>();
+        var res = await new TailBiteOutbreaksController(AccessWithSite(), svc).SaveAssessment(5,
+            new SaveAssessmentRequest(SomeAnswers, [new NewActionRequest((TailBiteFactor)99, "x", 9, DateTime.UtcNow)]));
+        Assert.That(res.Success, Is.False);
+        await svc.DidNotReceiveWithAnyArgs().SaveAssessmentAsync(default, default, default!, default!);
+    }
+
+    [Test]
+    public async Task SaveAssessment_NullAnswers_ReturnsFailedResult()
+    {
+        var svc = Substitute.For<ITailBiteOutbreakService>();
+        var res = await new TailBiteOutbreaksController(AccessWithSite(), svc).SaveAssessment(5, new SaveAssessmentRequest(null, null));
+        Assert.That(res.Success, Is.False);
+        await svc.DidNotReceiveWithAnyArgs().SaveAssessmentAsync(default, default, default!, default!);
     }
 
     [Test]

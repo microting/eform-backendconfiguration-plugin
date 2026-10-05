@@ -26,6 +26,7 @@ SOFTWARE.
 
 namespace BackendConfiguration.Pn.Controllers;
 
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -51,7 +52,19 @@ public class TailBiteOutbreaksController(ITailBiteAccess access, ITailBiteOutbre
 
     [HttpPut("outbreaks/{id:int}/assessment")]
     public Task<OperationResult> SaveAssessment(int id, [FromBody] SaveAssessmentRequest request)
-        => Run(access, site => outbreaks.SaveAssessmentAsync(site, id, request.Answers, request.NewActions ?? []));
+    {
+        if (request.Answers is not { } answers)
+            return Task.FromResult(new OperationResult(false, "answers is required"));
+        var newActions = new List<ActionInput>();
+        foreach (var action in request.NewActions ?? [])
+        {
+            if (action?.Factor is not { } factor || !Enum.IsDefined(factor))
+                return Task.FromResult(new OperationResult(false, "factor is required and must be a known factor"));
+            newActions.Add(new ActionInput(factor, action.Description, action.ResponsibleSiteId, action.FollowUpDate));
+        }
+
+        return Run(access, site => outbreaks.SaveAssessmentAsync(site, id, answers, newActions));
+    }
 
     [HttpPut("actions/{id:int}/done")]
     public Task<OperationResult> SetActionDone(int id, [FromBody] ActionDoneRequest request)

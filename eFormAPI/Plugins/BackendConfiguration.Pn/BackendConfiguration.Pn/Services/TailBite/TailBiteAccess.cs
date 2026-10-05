@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2007 - 2022 Microting A/S
+Copyright (c) 2007 - 2026 Microting A/S
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -63,8 +63,11 @@ public class TailBiteAccess(BackendConfigurationPnDbContext db, IGrpcSiteResolve
 
     public async Task<PropertyWorker> RequireManagerAsync(int siteId, int propertyId)
     {
-        var pw = await RequireWorkerAsync(siteId, propertyId);
-        return pw.TailBiteManager ? pw : throw new TailBiteForbiddenException("Caller is not a tail-bite manager on this property.");
+        // A worker can hold several rows on a property; any active row with the flag qualifies.
+        var manager = await ActiveWorkers(siteId, propertyId).FirstOrDefaultAsync(pw => pw.TailBiteManager);
+        if (manager != null) return manager;
+        await RequireWorkerAsync(siteId, propertyId);
+        throw new TailBiteForbiddenException("Caller is not a tail-bite manager on this property.");
     }
 
     public async Task<bool> IsManagerAsync(int siteId, int propertyId)

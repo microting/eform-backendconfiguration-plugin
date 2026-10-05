@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Services.TailBite;
 
 /// <summary>
@@ -66,7 +67,9 @@ public sealed record CreatePenRangeRequest(int ParentId, string Prefix, int From
 public sealed record NameRequest(string Name);
 public sealed record MoveLocationRequest(int NewParentId);
 public sealed record OccupancyRequest(int PigCount, DateTime ValidFromUtc);
-public sealed record SaveAssessmentRequest(FactorAnswers Answers, IReadOnlyList<ActionInput>? NewActions);
+// REST-only action shape: Factor is nullable so a missing property is told apart from Water (enum 0).
+public sealed record NewActionRequest(TailBiteFactor? Factor, string Description, int ResponsibleSiteId, DateTime FollowUpDate);
+public sealed record SaveAssessmentRequest(FactorAnswers? Answers, IReadOnlyList<NewActionRequest>? NewActions);
 public sealed record ActionDoneRequest(bool? Done);
 public sealed record ReasonRequest(string Reason);
 public sealed record ReassignRequest(int ResponsibleSiteId);
