@@ -451,22 +451,19 @@ public partial class ChemicalInventoryService
     /// balance check). Writing the row, not just locking it, gives Galera a writeset
     /// key, so the same race across two nodes fails certification on COMMIT and the
     /// execution strategy retries the loser from current rows.
-    /// The touch runs before the permission and existence checks; a refused or
+    /// The write bumps Version (a real change that never goes backwards) rather than
+    /// stamping UpdatedAt with a time taken before the wait; the rows this transaction
+    /// writes afterwards (the entry, the closed placement) carry the fresh stamps that
+    /// drive the sync. It runs before the permission and existence checks; a refused or
     /// unknown id rolls it back with the transaction (an unknown id briefly holds a
-    /// key-gap lock). touchedAt is taken before any wait, so after a wait it may be
-    /// older than the previous writer's stamp, and it bypasses PnBase versioning (no
-    /// Version bump, no version row). Neither matters: the same transaction always
-    /// writes fresher rows (the new entry, or the closed placement via PnBase.Update),
-    /// and the app does not keep placement updated_at. It must stay a real change, or
-    /// Galera gets no writeset key.
+    /// key-gap lock).
     /// </summary>
     private async Task<(ChemicalPlacement Placement, int PropertyId)> LockOpenPlacementAsync(
         ChemicalCaller caller, int placementId, ChemicalPermission permission)
     {
-        var touchedAt = DateTime.UtcNow;
         await dbContext.ChemicalPlacements
             .Where(p => p.Id == placementId)
-            .ExecuteUpdateAsync(s => s.SetProperty(p => p.UpdatedAt, touchedAt)).ConfigureAwait(false);
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.Version, p => p.Version + 1)).ConfigureAwait(false);
         return await LoadOpenPlacementAsync(caller, placementId, permission).ConfigureAwait(false);
     }
 

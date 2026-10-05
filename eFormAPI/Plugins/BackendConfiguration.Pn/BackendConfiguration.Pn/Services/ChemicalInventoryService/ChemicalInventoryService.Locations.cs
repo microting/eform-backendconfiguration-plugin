@@ -101,11 +101,12 @@ public partial class ChemicalInventoryService
             // rows read afterwards are current (rows already in place are skipped below,
             // so a stale snapshot would leave duplicate sort orders). On Galera the
             // written rows conflict at certification and the loser is retried. A refused
-            // caller rolls the touch back.
-            var touchedAt = DateTime.UtcNow;
+            // caller rolls the write back. It bumps Version, not UpdatedAt: a timestamp
+            // taken before the wait could move a skipped row's UpdatedAt backwards and
+            // hide it from a delta sync.
             await dbContext.ChemicalLocations
                 .Where(l => l.PropertyId == propertyId && l.WorkflowState != Removed)
-                .ExecuteUpdateAsync(s => s.SetProperty(l => l.UpdatedAt, touchedAt)).ConfigureAwait(false);
+                .ExecuteUpdateAsync(s => s.SetProperty(l => l.Version, l => l.Version + 1)).ConfigureAwait(false);
             await permissions.RequireAsync(caller, propertyId, ChemicalPermission.ManageLocations).ConfigureAwait(false);
             var locations = await dbContext.ChemicalLocations
                 .Where(l => l.PropertyId == propertyId && l.WorkflowState != Removed)
