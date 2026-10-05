@@ -111,7 +111,6 @@ public class FilesController : Controller
 	}
 
 	[HttpGet]
-	[AllowAnonymous]
 	[Route("get-file/{id}")]
 	public async Task<IActionResult> GetLoginPageImage(int id)
 	{
