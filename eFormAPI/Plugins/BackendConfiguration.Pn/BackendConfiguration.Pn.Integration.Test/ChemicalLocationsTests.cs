@@ -206,6 +206,56 @@ public class ChemicalLocationsTests : ChemicalTestBase
             "the waiting reorder wins in full, with no duplicate positions");
     }
 
+    /// <summary>
+    /// Copilot on #1409: the reorder's lock statement must not move UpdatedAt backwards. A
+    /// row the waiting reorder leaves in place keeps the newer stamp the other writer
+    /// committed, so a delta sync taken in between cannot miss that row.
+    /// </summary>
+    [Test]
+    public async Task Reorder_AfterWaiting_NeverMovesASkippedRowsUpdatedAtBackwards()
+    {
+        var (propertyId, _, caller) = await WorkerWith(Locations);
+        var a = await CreateLocationAsync(propertyId, sortOrder: 1);
+        var b = await CreateLocationAsync(propertyId, sortOrder: 2);
+        var c = await CreateLocationAsync(propertyId, sortOrder: 3);
+        await using var other = NewContext();
+        await using var writerDb = NewContext();
+        await writerDb.Database.OpenConnectionAsync();
+        var connectionId = (await writerDb.Database.SqlQuery<long>($"SELECT CONNECTION_ID() AS `Value`").ToListAsync()).Single();
+
+        // Another writer stamps every active location after the reorder below has started, and holds.
+        var held = await other.Database.BeginTransactionAsync();
+        var newer = new DateTime(DateTime.UtcNow.AddHours(1).Ticks / TimeSpan.TicksPerSecond * TimeSpan.TicksPerSecond, DateTimeKind.Utc);
+        await other.ChemicalLocations.Where(l => l.PropertyId == propertyId)
+            .ExecuteUpdateAsync(s => s.SetProperty(l => l.UpdatedAt, newer));
+
+        var pending = CreateInventoryService(writerDb, null).ReorderLocationsAsync(caller, propertyId, [b.Id, a.Id, c.Id]);
+        try
+        {
+            // A bounded poll on a condition (the reorder is queued behind the held rows), not a settle-sleep.
+            var deadline = DateTime.UtcNow.AddSeconds(20);
+            while (!await IsBlockedInAStatementAsync(other, connectionId))
+            {
+                Assert.That(pending.IsCompleted, Is.False, "the reorder finished without waiting for the other writer");
+                Assert.That(DateTime.UtcNow, Is.LessThan(deadline), "the reorder never waited for the other writer");
+                await Task.Delay(50);
+            }
+
+            await held.CommitAsync();
+            await pending;
+        }
+        finally
+        {
+            await held.DisposeAsync();
+            await Task.WhenAny(pending, Task.Delay(TimeSpan.FromSeconds(60)));
+            _ = pending.Exception;
+        }
+
+        var skipped = await BackendConfigurationPnDbContext!.ChemicalLocations.AsNoTracking().SingleAsync(l => l.Id == c.Id);
+        Assert.That(skipped.SortOrder, Is.EqualTo(3), "C was already in place, so the reorder left it");
+        Assert.That(skipped.UpdatedAt, Is.EqualTo(newer), "C keeps the newer stamp the other writer committed");
+    }
+
     [Test]
     public async Task Photo_UploadThenRead_RoundTrips_ReadNeedsOnlyView()
     {
