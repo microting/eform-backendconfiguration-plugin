@@ -332,36 +332,37 @@ public class ChemicalStockLedgerTests : ChemicalTestBase
     {
         var a = await ArrangeAsync();
         var id = await RegisterWithStockAsync(a, 2m);
-        var db = BackendConfigurationPnDbContext!;
-        var connectionString = db.Database.GetConnectionString()!;
-        await using var other = new BackendConfigurationPnDbContext(new DbContextOptionsBuilder<BackendConfigurationPnDbContext>()
-            .UseMySql(connectionString, new MariaDbServerVersion(ServerVersion.AutoDetect(connectionString))).Options);
+
+        // Both writers get their own connection, so a failing case cannot leave a busy
+        // or broken connection behind for the fixture's context or the next test.
+        await using var other = NewContext();
+        await using var writerDb = NewContext();
+        await writerDb.Database.OpenConnectionAsync();
+        var connectionId = (await writerDb.Database.SqlQuery<long>($"SELECT CONNECTION_ID() AS `Value`").ToListAsync()).Single();
+        var sut = new ChemicalInventoryService(writerDb, new ChemicalPermissionService(writerDb),
+            new ChemicalRegisterReader(ChemicalsDbContext!), Names, PhotoStorage, ChemicalBase, a.Clock);
 
         // Another writer of the same placement: touches the row like LockOpenPlacementAsync, consumes everything
         // (dated before the removal so it is never mistaken for the write-off), and holds its transaction open.
-        await using var held = await other.Database.BeginTransactionAsync();
+        var held = await other.Database.BeginTransactionAsync();
         await other.ChemicalPlacements.Where(p => p.Id == id).ExecuteUpdateAsync(s => s.SetProperty(p => p.UpdatedAt, DateTime.UtcNow));
         var consumedElsewhere = await SeedEntryAsync(other, id, ChemicalStockEntryKindEnum.Consumed, -2m, a.Clock.UtcNow.AddMinutes(-10));
 
-        await db.Database.OpenConnectionAsync();
+        Task<ChemicalPlacementChangeModel> pending = write switch
+        {
+            ConcurrentWrite.Consume => sut.AddStockEntryAsync(a.Caller,
+                new ChemicalAddStockEntryCommand(id, ChemicalStockEntryKindEnum.Consumed, Liters(1.5m))),
+            ConcurrentWrite.PartialMove => sut.MovePlacementAsync(a.Caller,
+                new ChemicalMovePlacementCommand(id, a.OtherLocationId, "", 1.5m)),
+            _ => sut.RemovePlacementAsync(a.Caller, new ChemicalRemovePlacementCommand(id, ChemicalRemovalReasonEnum.Used, null, "")),
+        };
         try
         {
-            var connectionId = (await db.Database.SqlQuery<long>($"SELECT CONNECTION_ID() AS `Value`").ToListAsync()).Single();
-            var sut = CreateInventoryService(a.Clock);
-            Task<ChemicalPlacementChangeModel> pending = write switch
-            {
-                ConcurrentWrite.Consume => sut.AddStockEntryAsync(a.Caller,
-                    new ChemicalAddStockEntryCommand(id, ChemicalStockEntryKindEnum.Consumed, Liters(1.5m))),
-                ConcurrentWrite.PartialMove => sut.MovePlacementAsync(a.Caller,
-                    new ChemicalMovePlacementCommand(id, a.OtherLocationId, "", 1.5m)),
-                _ => sut.RemovePlacementAsync(a.Caller, new ChemicalRemovePlacementCommand(id, ChemicalRemovalReasonEnum.Used, null, "")),
-            };
-
-            // A bounded poll on a condition (the write is queued behind the held lock), not a settle-sleep.
+            // A bounded poll on a condition (the write is queued behind the held row lock), not a settle-sleep.
             var deadline = DateTime.UtcNow.AddSeconds(20);
             while (!await IsWaitingForALockAsync(other, connectionId))
             {
-                Assert.That(pending.IsCompleted, Is.False, "the write finished without waiting for the other writer");
+                Assert.That(pending.IsCompleted, Is.False, "the write finished without waiting for the placement lock");
                 Assert.That(DateTime.UtcNow, Is.LessThan(deadline), "the write never waited for the placement lock");
                 await Task.Delay(50);
             }
@@ -381,13 +382,24 @@ public class ChemicalStockLedgerTests : ChemicalTestBase
         }
         finally
         {
-            await db.Database.CloseConnectionAsync();
+            // Release the other writer (a no-op after the commit) and let the write under test finish
+            // before its connection is disposed; bounded by the server's lock-wait timeout.
+            await held.DisposeAsync();
+            await Task.WhenAny(pending, Task.Delay(TimeSpan.FromSeconds(60)));
+            _ = pending.Exception;
         }
 
         var ledger = (await CreateInventoryService(a.Clock).GetInventoryAsync(a.Caller, "")).StockEntries
             .Where(e => e.PlacementId == id).OrderBy(e => e.Id).Select(e => (e.Id, e.BalanceAfter)).ToList();
         Assert.That(ledger.Select(e => e.BalanceAfter), Is.EqualTo(new[] { 2m, 0m }), "no write landed on the stale balance");
         Assert.That(ledger[^1].Id, Is.EqualTo(consumedElsewhere.Id));
+    }
+
+    private BackendConfigurationPnDbContext NewContext()
+    {
+        var connectionString = BackendConfigurationPnDbContext!.Database.GetConnectionString()!;
+        return new BackendConfigurationPnDbContext(new DbContextOptionsBuilder<BackendConfigurationPnDbContext>()
+            .UseMySql(connectionString, new MariaDbServerVersion(ServerVersion.AutoDetect(connectionString))).Options);
     }
 
     private static async Task<bool> IsWaitingForALockAsync(BackendConfigurationPnDbContext observer, long connectionId) =>
