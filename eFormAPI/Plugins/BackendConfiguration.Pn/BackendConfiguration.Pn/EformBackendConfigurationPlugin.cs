@@ -52,6 +52,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn;
@@ -127,6 +128,12 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             Services.BackendConfigurationAdhocService.BackendConfigurationAdhocService>();
         services.AddTransient<Services.BackendConfigurationAdhocService.IAdhocPhotoStorage,
             Services.BackendConfigurationAdhocService.AdhocPhotoStorage>();
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddTransient<Services.TailBite.ITailBitePropertyLock, Services.TailBite.TailBitePropertyLock>();
+        services.AddTransient<Services.TailBite.ITailBiteSnapshotLoader, Services.TailBite.TailBiteSnapshotLoader>();
+        services.AddTransient<Services.TailBite.ITailBiteDecisionWriter, Services.TailBite.TailBiteDecisionWriter>();
+        services.AddTransient<Services.TailBite.ITailBiteWorkerEmailCounter, Services.TailBite.TailBiteWorkerEmailCounter>();
+        services.AddTransient<Services.TailBite.ITailBiteAccess, Services.TailBite.TailBiteAccess>();
         // flutter-chemistry: the inventory service, its readers and the chemicalbase client.
         services.AddChemicalInventory();
         services.AddTransient<Services.EventDeployService.IEventDeployService,

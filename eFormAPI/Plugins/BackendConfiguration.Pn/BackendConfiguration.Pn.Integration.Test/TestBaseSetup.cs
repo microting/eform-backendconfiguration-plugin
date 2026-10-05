@@ -54,6 +54,16 @@ public abstract class TestBaseSetup
         .Build();
 
     protected BackendConfigurationPnDbContext? BackendConfigurationPnDbContext;
+    private string _connectionStr = "";
+
+    /// <summary>A second, independent plugin context on the same database (same options, new instance).</summary>
+    protected BackendConfigurationPnDbContext CreateFreshBackendConfigurationDbContext()
+    {
+        var context = new BackendConfigurationPnDbContext(
+            BuildOptions<BackendConfigurationPnDbContext>(_connectionStr, "420_eform-backend-configuration-plugin"));
+        context.Database.SetCommandTimeout(CommandTimeoutSeconds);
+        return context;
+    }
     protected ItemsPlanningPnDbContext? ItemsPlanningPnDbContext;
     protected TimePlanningPnDbContext? TimePlanningPnDbContext;
     protected MicrotingDbContext? MicrotingDbContext;
@@ -195,6 +205,7 @@ public abstract class TestBaseSetup
         _schemaBootstrapped = true;
 
         var connectionStr = _mariadbTestcontainer.GetConnectionString();
+        _connectionStr = connectionStr;
 
         BackendConfigurationPnDbContext = CreateSeededContext<BackendConfigurationPnDbContext>(
             connectionStr, "420_eform-backend-configuration-plugin", bootstrapSchema, options => new(options));
