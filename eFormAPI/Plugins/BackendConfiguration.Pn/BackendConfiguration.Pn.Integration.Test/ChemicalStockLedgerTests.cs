@@ -339,8 +339,7 @@ public class ChemicalStockLedgerTests : ChemicalTestBase
         await using var writerDb = NewContext();
         await writerDb.Database.OpenConnectionAsync();
         var connectionId = (await writerDb.Database.SqlQuery<long>($"SELECT CONNECTION_ID() AS `Value`").ToListAsync()).Single();
-        var sut = new ChemicalInventoryService(writerDb, new ChemicalPermissionService(writerDb),
-            new ChemicalRegisterReader(ChemicalsDbContext!), Names, PhotoStorage, ChemicalBase, a.Clock);
+        var sut = CreateInventoryService(writerDb, a.Clock);
 
         // Another writer of the same placement: touches the row like LockOpenPlacementAsync, consumes everything
         // (dated before the removal so it is never mistaken for the write-off), and holds its transaction open.
@@ -394,23 +393,6 @@ public class ChemicalStockLedgerTests : ChemicalTestBase
         Assert.That(ledger.Select(e => e.BalanceAfter), Is.EqualTo(new[] { 2m, 0m }), "no write landed on the stale balance");
         Assert.That(ledger[^1].Id, Is.EqualTo(consumedElsewhere.Id));
     }
-
-    private BackendConfigurationPnDbContext NewContext()
-    {
-        var connectionString = BackendConfigurationPnDbContext!.Database.GetConnectionString()!;
-        return new BackendConfigurationPnDbContext(new DbContextOptionsBuilder<BackendConfigurationPnDbContext>()
-            .UseMySql(connectionString, new MariaDbServerVersion(ServerVersion.AutoDetect(connectionString))).Options);
-    }
-
-    /// <summary>
-    /// The writer's connection has been inside one statement for at least 200 ms: it is
-    /// blocked behind the held transaction. PROCESSLIST is read live; INNODB_TRX is a
-    /// cached view that missed some waits on CI.
-    /// </summary>
-    private static async Task<bool> IsBlockedInAStatementAsync(BackendConfigurationPnDbContext observer, long connectionId) =>
-        (await observer.Database.SqlQuery<long>(
-                $"SELECT COUNT(*) AS `Value` FROM information_schema.PROCESSLIST WHERE ID = {connectionId} AND COMMAND = 'Query' AND TIME_MS >= 200")
-            .ToListAsync()).Single() > 0;
 
     private async Task<ChemicalPlacement> SeedPlacementAsync(int locationId, int chemicalId, DateTime registeredAt,
         DateTime? removedAt = null, ChemicalRemovalReasonEnum? reason = null, int? movedFrom = null)

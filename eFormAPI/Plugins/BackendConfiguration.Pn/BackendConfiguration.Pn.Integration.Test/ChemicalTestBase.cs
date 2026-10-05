@@ -25,7 +25,9 @@ SOFTWARE.
 using BackendConfiguration.Pn.Infrastructure.Models.Chemicals;
 using BackendConfiguration.Pn.Services.BackendConfigurationAdhocService;
 using BackendConfiguration.Pn.Services.ChemicalInventoryService;
+using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using NSubstitute;
@@ -46,9 +48,13 @@ public abstract class ChemicalTestBase : TestBaseSetup
     protected IChemicalBaseClient ChemicalBase = Substitute.For<IChemicalBaseClient>();
 
     /// <summary>Real permission service and register reader over the fixture databases.</summary>
-    protected ChemicalInventoryService CreateInventoryService(TimeProvider? time = null) => new(
-        BackendConfigurationPnDbContext!,
-        new ChemicalPermissionService(BackendConfigurationPnDbContext!),
+    protected ChemicalInventoryService CreateInventoryService(TimeProvider? time = null) =>
+        CreateInventoryService(BackendConfigurationPnDbContext!, time);
+
+    /// <summary>The same service over another context, e.g. one with its own connection (see NewContext).</summary>
+    protected ChemicalInventoryService CreateInventoryService(BackendConfigurationPnDbContext db, TimeProvider? time) => new(
+        db,
+        new ChemicalPermissionService(db),
         new ChemicalRegisterReader(ChemicalsDbContext!),
         Names,
         PhotoStorage,
@@ -156,4 +162,24 @@ public abstract class ChemicalTestBase : TestBaseSetup
         await placement.Create(BackendConfigurationPnDbContext!);
         return placement;
     }
+
+    // ---- concurrency helpers: a second writer on its own connection ----
+
+    /// <summary>A plugin context on its own connection to the fixture database (dispose it).</summary>
+    protected BackendConfigurationPnDbContext NewContext()
+    {
+        var connectionString = BackendConfigurationPnDbContext!.Database.GetConnectionString()!;
+        return new BackendConfigurationPnDbContext(new DbContextOptionsBuilder<BackendConfigurationPnDbContext>()
+            .UseMySql(connectionString, new MariaDbServerVersion(ServerVersion.AutoDetect(connectionString))).Options);
+    }
+
+    /// <summary>
+    /// The writer's connection has been inside one statement for at least 200 ms: it is
+    /// blocked behind the held transaction. PROCESSLIST is read live; INNODB_TRX is a
+    /// cached view that missed some waits on CI.
+    /// </summary>
+    protected static async Task<bool> IsBlockedInAStatementAsync(BackendConfigurationPnDbContext observer, long connectionId) =>
+        (await observer.Database.SqlQuery<long>(
+                $"SELECT COUNT(*) AS `Value` FROM information_schema.PROCESSLIST WHERE ID = {connectionId} AND COMMAND = 'Query' AND TIME_MS >= 200")
+            .ToListAsync()).Single() > 0;
 }

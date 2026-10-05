@@ -20,6 +20,7 @@ SOFTWARE.
 
 using BackendConfiguration.Pn.Infrastructure.Models.Chemicals;
 using BackendConfiguration.Pn.Services.ChemicalInventoryService;
+using Microsoft.EntityFrameworkCore;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
@@ -152,6 +153,57 @@ public class ChemicalLocationsTests : ChemicalTestBase
         Assert.That(ordered.Select(l => (l.Id, l.SortOrder)), Is.EqualTo(new[] { (c.Id, 1), (a.Id, 2), (b.Id, 3) }));
         Assert.That(async () => await sut.ReorderLocationsAsync(caller, propertyId, [c.Id, a.Id]), Throws.InstanceOf<ArgumentException>());
         Assert.That(async () => await sut.ReorderLocationsAsync(caller, propertyId, [c.Id, c.Id, a.Id]), Throws.InstanceOf<ArgumentException>());
+    }
+
+    /// <summary>
+    /// Copilot on #1409: a reorder skips rows already at their position, so without a
+    /// lock taken before anything is read, a reorder that waited for a concurrent one
+    /// continues from its stale snapshot and leaves duplicate sort orders. The property's
+    /// active locations are locked first, so the waiting reorder sees the committed order.
+    /// </summary>
+    [Test]
+    public async Task Reorder_WhileAnotherReorderHoldsTheLocations_WaitsAndLeavesDistinctSortOrders()
+    {
+        var (propertyId, _, caller) = await WorkerWith(Locations);
+        var a = await CreateLocationAsync(propertyId, sortOrder: 1);
+        var b = await CreateLocationAsync(propertyId, sortOrder: 2);
+        var c = await CreateLocationAsync(propertyId, sortOrder: 3);
+        await using var other = NewContext();
+        await using var writerDb = NewContext();
+        await writerDb.Database.OpenConnectionAsync();
+        var connectionId = (await writerDb.Database.SqlQuery<long>($"SELECT CONNECTION_ID() AS `Value`").ToListAsync()).Single();
+
+        // Another reorder to [A, C, B], holding its transaction open after writing every active location.
+        var held = await other.Database.BeginTransactionAsync();
+        await other.ChemicalLocations.Where(l => l.PropertyId == propertyId)
+            .ExecuteUpdateAsync(s => s.SetProperty(l => l.SortOrder, l => l.Id == c.Id ? 2 : l.Id == b.Id ? 3 : 1));
+
+        var pending = CreateInventoryService(writerDb, null).ReorderLocationsAsync(caller, propertyId, [b.Id, a.Id, c.Id]);
+        try
+        {
+            // A bounded poll on a condition (the reorder is queued behind the held rows), not a settle-sleep.
+            var deadline = DateTime.UtcNow.AddSeconds(20);
+            while (!await IsBlockedInAStatementAsync(other, connectionId))
+            {
+                Assert.That(pending.IsCompleted, Is.False, "the reorder finished without waiting for the other one");
+                Assert.That(DateTime.UtcNow, Is.LessThan(deadline), "the reorder never waited for the other one");
+                await Task.Delay(50);
+            }
+
+            await held.CommitAsync();
+            await pending;
+        }
+        finally
+        {
+            await held.DisposeAsync();
+            await Task.WhenAny(pending, Task.Delay(TimeSpan.FromSeconds(60)));
+            _ = pending.Exception;
+        }
+
+        var stored = await BackendConfigurationPnDbContext!.ChemicalLocations.AsNoTracking()
+            .Where(l => l.PropertyId == propertyId).OrderBy(l => l.SortOrder).Select(l => new { l.Id, l.SortOrder }).ToListAsync();
+        Assert.That(stored.Select(l => (l.Id, l.SortOrder)), Is.EqualTo(new[] { (b.Id, 1), (a.Id, 2), (c.Id, 3) }),
+            "the waiting reorder wins in full, with no duplicate positions");
     }
 
     [Test]
