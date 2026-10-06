@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+// Wire contract for the tail-bite (halebid) app. Spec:
+// docs/superpowers/specs/2026-10-04-halebid-app-design.md (workspace repo), §7.2.
+// Ids are decimal strings; empty string = unset. Times are UTC Timestamps.
+
+package backend_configuration;
+
+option csharp_namespace = "BackendConfiguration.Pn.Grpc.TailBite";
+
+import "google/protobuf/timestamp.proto";
+
+service TailBiteGrpc {
+  rpc GetCurrentWorker(TbGetCurrentWorkerRequest) returns (TbCurrentWorker);
+  rpc GetLocationTree(TbGetLocationTreeRequest) returns (TbLocationTree);
+  rpc CreateRegistration(TbCreateRegistrationRequest) returns (TbCreateRegistrationResponse);
+  rpc UploadPhoto(stream TbUploadPhotoChunk) returns (TbUploadPhotoResponse);
+  rpc GetPhoto(TbGetPhotoRequest) returns (stream TbPhotoChunk);
+  rpc ListMyRecentRegistrations(TbListRecentRequest) returns (TbListRecentResponse);
+
+  rpc ListOutbreaks(TbListOutbreaksRequest) returns (TbListOutbreaksResponse);
+  rpc GetOutbreak(TbGetOutbreakRequest) returns (TbOutbreakDetail);
+  rpc SaveRiskAssessment(TbSaveRiskAssessmentRequest) returns (TbOutbreakDetail);
+  rpc SetActionDone(TbSetActionDoneRequest) returns (TbOutbreakDetail);
+  rpc WithdrawAction(TbWithdrawActionRequest) returns (TbOutbreakDetail);
+  rpc ReassignAction(TbReassignActionRequest) returns (TbOutbreakDetail);
+  rpc CloseOutbreak(TbCloseOutbreakRequest) returns (TbOutbreakDetail);
+  rpc CancelRegistration(TbCancelRegistrationRequest) returns (TbEmpty);
+}
+
+message TbEmpty {}
+message TbGetCurrentWorkerRequest {}
+message TbProperty { string property_id = 1; string name = 2; bool is_manager = 3; }
+message TbCurrentWorker { string site_id = 1; string display_name = 2; repeated TbProperty properties = 3; }
+
+message TbGetLocationTreeRequest { string property_id = 1; }
+message TbLocation { string id = 1; string parent_id = 2; string name = 3; int32 sort_order = 4; string qr_code = 5; int32 depth = 6; bool removed = 7; }
+message TbActionType { string id = 1; string code = 2; string name = 3; }
+message TbLocationTree { string property_id = 1; int64 tree_version = 2; repeated TbLocation locations = 3; repeated TbActionType action_types = 4; }
+
+message TbRegistrationLocation { string location_id = 1; int32 minor = 2; int32 severe = 3; }
+message TbCreateRegistrationRequest {
+  string client_uuid = 1; string property_id = 2; google.protobuf.Timestamp registered_at = 3;
+  repeated TbRegistrationLocation locations = 4; repeated string action_type_ids = 5; string comment = 6;
+}
+message TbOutbreakOutcome { string outbreak_id = 1; bool opened = 2; }
+message TbCreateRegistrationResponse { string registration_id = 1; repeated TbOutbreakOutcome outbreaks = 2; }
+
+message TbPhotoMeta { string photo_uuid = 1; string property_id = 2; string registration_client_uuid = 3; string content_type = 4; }
+message TbUploadPhotoChunk { oneof kind { TbPhotoMeta meta = 1; bytes chunk = 2; } }
+message TbUploadPhotoResponse { string photo_uuid = 1; }
+message TbGetPhotoRequest { string photo_uuid = 1; }
+message TbPhotoChunk { oneof kind { string content_type = 1; bytes chunk = 2; } }
+
+message TbListRecentRequest { string property_id = 1; google.protobuf.Timestamp since = 2; }
+message TbRecentRegistration { string id = 1; google.protobuf.Timestamp effective_at = 2; repeated TbRegistrationLocation locations = 3; bool cancelled = 4; }
+message TbListRecentResponse { repeated TbRecentRegistration registrations = 1; }
+
+message TbListOutbreaksRequest { string property_id = 1; bool open_only = 2; }
+message TbOutbreakSummary { string id = 1; string location_id = 2; google.protobuf.Timestamp opened_at = 3; bool assessed = 4; int32 open_actions = 5; bool closed = 6; }
+message TbListOutbreaksResponse { repeated TbOutbreakSummary outbreaks = 1; }
+message TbGetOutbreakRequest { string outbreak_id = 1; }
+
+// 0 is the proto3 default for an unset field, so it must never mean a real factor: requests with UNSPECIFIED are
+// rejected, responses never carry it.
+enum TbFactor {
+  TB_FACTOR_UNSPECIFIED = 0; TB_FACTOR_WATER = 1; TB_FACTOR_FEED = 2; TB_FACTOR_ACTIVITY_MATERIAL = 3;
+  TB_FACTOR_CLIMATE = 4; TB_FACTOR_HEALTH = 5; TB_FACTOR_MANAGEMENT = 6;
+}
+message TbAnswers { bool water = 1; bool feed = 2; bool activity_material = 3; bool climate = 4; bool health = 5; bool management = 6; }
+message TbAction {
+  string id = 1; TbFactor factor = 2; string description = 3; string responsible_site_id = 4;
+  google.protobuf.Timestamp follow_up_date = 5; google.protobuf.Timestamp done_at = 6; google.protobuf.Timestamp withdrawn_at = 7;
+}
+message TbOutbreakDetail {
+  TbOutbreakSummary summary = 1; string rule_id = 2; int32 rule_version = 3; repeated string registration_ids = 4;
+  bool has_answers = 5; TbAnswers answers = 6; repeated TbAction actions = 7;
+}
+message TbNewAction { TbFactor factor = 1; string description = 2; string responsible_site_id = 3; google.protobuf.Timestamp follow_up_date = 4; }
+message TbSaveRiskAssessmentRequest { string outbreak_id = 1; TbAnswers answers = 2; repeated TbNewAction new_actions = 3; }
+message TbSetActionDoneRequest { string action_id = 1; bool done = 2; }
+message TbWithdrawActionRequest { string action_id = 1; string reason = 2; }
+message TbReassignActionRequest { string action_id = 1; string responsible_site_id = 2; }
+message TbCloseOutbreakRequest { string outbreak_id = 1; }
+message TbCancelRegistrationRequest { string registration_id = 1; string reason = 2; }
