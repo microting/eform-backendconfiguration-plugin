@@ -26,6 +26,7 @@ service TailBiteGrpc {
   rpc ReassignAction(TbReassignActionRequest) returns (TbOutbreakDetail);
   rpc CloseOutbreak(TbCloseOutbreakRequest) returns (TbOutbreakDetail);
   rpc CancelRegistration(TbCancelRegistrationRequest) returns (TbEmpty);
+  rpc ListWorkers(TbListWorkersRequest) returns (TbListWorkersResponse);
 }
 
 message TbEmpty {}
@@ -43,7 +44,8 @@ message TbCreateRegistrationRequest {
   string client_uuid = 1; string property_id = 2; google.protobuf.Timestamp registered_at = 3;
   repeated TbRegistrationLocation locations = 4; repeated string action_type_ids = 5; string comment = 6;
 }
-message TbOutbreakOutcome { string outbreak_id = 1; bool opened = 2; }
+// location_name: the summing location's name, so the registering worker (who may not read outbreaks) can be told where.
+message TbOutbreakOutcome { string outbreak_id = 1; bool opened = 2; string location_name = 3; }
 message TbCreateRegistrationResponse { string registration_id = 1; repeated TbOutbreakOutcome outbreaks = 2; }
 
 message TbPhotoMeta { string photo_uuid = 1; string property_id = 2; string registration_client_uuid = 3; string content_type = 4; }
@@ -57,7 +59,8 @@ message TbRecentRegistration { string id = 1; google.protobuf.Timestamp effectiv
 message TbListRecentResponse { repeated TbRecentRegistration registrations = 1; }
 
 message TbListOutbreaksRequest { string property_id = 1; bool open_only = 2; }
-message TbOutbreakSummary { string id = 1; string location_id = 2; google.protobuf.Timestamp opened_at = 3; bool assessed = 4; int32 open_actions = 5; bool closed = 6; }
+// bitten_pigs (minor + severe) and severe_pigs: sums over the outbreak's links to rows of non-cancelled registrations.
+message TbOutbreakSummary { string id = 1; string location_id = 2; google.protobuf.Timestamp opened_at = 3; bool assessed = 4; int32 open_actions = 5; bool closed = 6; int32 bitten_pigs = 7; int32 severe_pigs = 8; }
 message TbListOutbreaksResponse { repeated TbOutbreakSummary outbreaks = 1; }
 message TbGetOutbreakRequest { string outbreak_id = 1; }
 
@@ -83,3 +86,8 @@ message TbWithdrawActionRequest { string action_id = 1; string reason = 2; }
 message TbReassignActionRequest { string action_id = 1; string responsible_site_id = 2; }
 message TbCloseOutbreakRequest { string outbreak_id = 1; }
 message TbCancelRegistrationRequest { string registration_id = 1; string reason = 2; }
+
+// Manager-only: the property's active workers, for the "responsible" picker of follow-up actions.
+message TbListWorkersRequest { string property_id = 1; }
+message TbWorker { string site_id = 1; string display_name = 2; }
+message TbListWorkersResponse { repeated TbWorker workers = 1; }

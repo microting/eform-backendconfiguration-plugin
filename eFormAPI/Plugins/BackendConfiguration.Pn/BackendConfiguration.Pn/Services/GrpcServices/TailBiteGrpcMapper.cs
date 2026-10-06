@@ -122,7 +122,8 @@ internal static class TailBiteGrpcMapper
     public static TbOutbreakSummary MapSummary(OutbreakSummary s) => new()
     {
         Id = S(s.Id), LocationId = S(s.LocationId), OpenedAt = Ts(s.OpenedAt), Assessed = s.Assessed,
-        OpenActions = s.OpenActions, Closed = s.Closed
+        OpenActions = s.OpenActions, Closed = s.Closed,
+        BittenPigs = s.BittenPigs, SeverePigs = s.SeverePigs
     };
 
     public static TbOutbreakDetail MapDetail(OutbreakDetail d)

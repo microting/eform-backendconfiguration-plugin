@@ -405,4 +405,40 @@ public class TailBiteOutbreakServiceTests : TailBiteTestBase
         Assert.That(detail.Answers!.Climate, Is.True);
         Assert.That(detail.Actions.Single().Description, Is.EqualTo("Tjek ventil 4"));
     }
+
+    [Test]
+    public async Task ListAndGet_SumBittenAndSeverePigs_OverNonCancelledLinkedRows()
+    {
+        var id = await SetUpManagerWithOutbreakAsync();
+        var (_, live) = await SeedRegistrationAsync(Now, false, (Pen309Id, 2, 1), (Pen310Id, 3, 0));
+        var (_, cancelled) = await SeedRegistrationAsync(Now, true, (Pen309Id, 4, 4));
+        await SeedRegistrationAsync(Now, false, (Pen501Id, 9, 9)); // not linked: never counted
+        foreach (var rowId in live.Concat(cancelled))
+            await new TailBiteOutbreakLink { OutbreakId = id, RegistrationLocationId = rowId }.Create(BackendConfigurationPnDbContext!);
+        BackendConfigurationPnDbContext!.ChangeTracker.Clear();
+
+        var summary = (await Sut().ListAsync(7, PropertyId, openOnly: true)).Single();
+        Assert.That((summary.BittenPigs, summary.SeverePigs), Is.EqualTo((6, 1)));
+        var detail = await Sut().GetAsync(7, id);
+        Assert.That((detail.Summary.BittenPigs, detail.Summary.SeverePigs), Is.EqualTo((6, 1)));
+    }
+
+    [Test]
+    public async Task ListWorkerSiteIds_ManagerGetsTheActiveWorkersOfTheProperty()
+    {
+        await SeedTreeAsync(); await SeedWorkerAsync(7, manager: true); await SeedWorkerAsync(8);
+        var left = await SeedWorkerAsync(9);
+        await left.Delete(BackendConfigurationPnDbContext!);
+        BackendConfigurationPnDbContext!.ChangeTracker.Clear();
+        Assert.That(await Sut().ListWorkerSiteIdsAsync(7, PropertyId), Is.EqualTo(new[] { 7, 8 }));
+    }
+
+    [Test]
+    public async Task ListWorkerSiteIds_NonManagerAndForeignProperty_RefusedAlike()
+    {
+        await SeedTreeAsync(); await SeedWorkerAsync(7);
+        await AssertRefusedAlike(
+            () => Sut().ListWorkerSiteIdsAsync(7, PropertyId),
+            () => Sut().ListWorkerSiteIdsAsync(7, PropertyId + 1000));
+    }
 }

@@ -44,6 +44,8 @@ public interface ITailBiteOutbreakService
 {
     Task<IReadOnlyList<OutbreakSummary>> ListAsync(int callerSiteId, int propertyId, bool openOnly);
     Task<OutbreakDetail> GetAsync(int callerSiteId, int outbreakId);
+    // The property's active workers (manager-only), for the responsible picker.
+    Task<IReadOnlyList<int>> ListWorkerSiteIdsAsync(int callerSiteId, int propertyId);
     // The detail of the outbreak an action belongs to (manager-checked); the action RPCs carry no outbreak id.
     Task<OutbreakDetail> GetForActionAsync(int callerSiteId, int actionId);
     Task SaveAssessmentAsync(int callerSiteId, int outbreakId, FactorAnswers answers, IReadOnlyList<ActionInput> newActions);
@@ -75,6 +77,7 @@ public class TailBiteOutbreakService(BackendConfigurationPnDbContext db, ITailBi
             .Where(o => o.PropertyId == propertyId && o.WorkflowState != Removed && (!openOnly || o.ClosedAt == null))
             .OrderByDescending(o => o.OpenedAt).ThenByDescending(o => o.Id).ToListAsync();
         var ids = outbreaks.Select(o => o.Id).ToList();
+        var counts = await PigCountsAsync(ids);
         var assessments = await db.TailBiteRiskAssessments.AsNoTracking()
             .Where(a => ids.Contains(a.OutbreakId) && a.WorkflowState != Removed)
             .Select(a => new { a.Id, a.OutbreakId }).ToListAsync();
@@ -87,7 +90,7 @@ public class TailBiteOutbreakService(BackendConfigurationPnDbContext db, ITailBi
         return outbreaks.Select(o =>
         {
             var assessed = assessmentOf.TryGetValue(o.Id, out var assessmentId);
-            return Summary(o, assessed, assessed ? openByAssessment.GetValueOrDefault(assessmentId) : 0);
+            return Summary(o, assessed, assessed ? openByAssessment.GetValueOrDefault(assessmentId) : 0, counts.GetValueOrDefault(o.Id));
         }).ToList();
     }
 
@@ -108,7 +111,8 @@ public class TailBiteOutbreakService(BackendConfigurationPnDbContext db, ITailBi
                                      where link.OutbreakId == outbreakId && link.WorkflowState != Removed
                                      orderby row.RegistrationId
                                      select row.RegistrationId).Distinct().ToListAsync();
-        var summary = Summary(o, assessment is not null, actions.Count(IsOpenFunc));
+        var counts = await PigCountsAsync([outbreakId]);
+        var summary = Summary(o, assessment is not null, actions.Count(IsOpenFunc), counts.GetValueOrDefault(outbreakId));
         return new OutbreakDetail(summary, o.RuleId, o.RuleVersion, registrationIds,
             assessment is null ? null : FactorAnswers.FromAssessment(assessment),
             actions.Select(a => new OutbreakActionDetail(a.Id, a.Factor, a.Description, a.ResponsibleSiteId, a.FollowUpDate,
@@ -125,8 +129,29 @@ public class TailBiteOutbreakService(BackendConfigurationPnDbContext db, ITailBi
         return await GetAsync(callerSiteId, outbreakId);
     }
 
-    private static OutbreakSummary Summary(TailBiteOutbreak o, bool assessed, int openActions)
-        => new(o.Id, o.LocationId, o.OpenedAt, assessed, openActions, o.ClosedAt != null);
+    private static OutbreakSummary Summary(TailBiteOutbreak o, bool assessed, int openActions, (int Bitten, int Severe) pigs)
+        => new(o.Id, o.LocationId, o.OpenedAt, assessed, openActions, o.ClosedAt != null, pigs.Bitten, pigs.Severe);
+
+    // Bitten = minor + severe (spec §5). Cancelled registrations stay linked for the audit trail but are not counted.
+    private async Task<Dictionary<int, (int Bitten, int Severe)>> PigCountsAsync(IReadOnlyCollection<int> outbreakIds)
+    {
+        var rows = await (from link in db.TailBiteOutbreakLinks.AsNoTracking()
+                          join row in db.TailBiteRegistrationLocations.AsNoTracking() on link.RegistrationLocationId equals row.Id
+                          join reg in db.TailBiteRegistrations.AsNoTracking() on row.RegistrationId equals reg.Id
+                          where outbreakIds.Contains(link.OutbreakId) && link.WorkflowState != Removed
+                                && row.WorkflowState != Removed && reg.WorkflowState != Removed && reg.CancelledAt == null
+                          select new { link.OutbreakId, row.MinorCount, row.SevereCount }).ToListAsync();
+        return rows.GroupBy(r => r.OutbreakId)
+            .ToDictionary(g => g.Key, g => (g.Sum(r => r.MinorCount + r.SevereCount), g.Sum(r => r.SevereCount)));
+    }
+
+    public async Task<IReadOnlyList<int>> ListWorkerSiteIdsAsync(int callerSiteId, int propertyId)
+    {
+        await access.RequireManagerAsync(callerSiteId, propertyId);
+        return await db.PropertyWorkers.AsNoTracking()
+            .Where(pw => pw.PropertyId == propertyId && pw.WorkflowState != Removed)
+            .Select(pw => pw.WorkerId).Distinct().OrderBy(id => id).ToListAsync();
+    }
 
     // ---------- assessment ----------
 

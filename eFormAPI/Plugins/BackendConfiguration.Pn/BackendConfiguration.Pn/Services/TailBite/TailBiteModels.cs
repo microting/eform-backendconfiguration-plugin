@@ -56,7 +56,8 @@ public static class TailBiteDefaults
 public sealed record RegistrationLocationInput(int LocationId, int Minor, int Severe);
 public sealed record CreateRegistrationCommand(Guid ClientUuid, int PropertyId, DateTime RegisteredAtUtc,
     IReadOnlyList<RegistrationLocationInput> Locations, IReadOnlyList<int> ActionTypeIds, string? Comment);
-public sealed record OutbreakOutcome(int OutbreakId, bool Opened);
+// LocationName: the outbreak's summing location, filled by the registration service after evaluation and on replay.
+public sealed record OutbreakOutcome(int OutbreakId, bool Opened, string LocationName = "");
 public sealed record CreateRegistrationResult(int RegistrationId, IReadOnlyList<OutbreakOutcome> Outbreaks);
 public sealed record RecentRegistration(int Id, DateTime EffectiveAt, IReadOnlyList<RegistrationLocationInput> Locations, bool Cancelled);
 
@@ -79,7 +80,8 @@ public sealed record FactorAnswers(bool Water, bool Feed, bool ActivityMaterial,
     public static FactorAnswers FromAssessment(TailBiteRiskAssessment a) => new(a.Water, a.Feed, a.ActivityMaterial, a.Climate, a.Health, a.Management);
 }
 public sealed record ActionInput(TailBiteFactor Factor, string Description, int ResponsibleSiteId, DateTime FollowUpDate);
-public sealed record OutbreakSummary(int Id, int LocationId, DateTime OpenedAt, bool Assessed, int OpenActions, bool Closed);
+public sealed record OutbreakSummary(int Id, int LocationId, DateTime OpenedAt, bool Assessed, int OpenActions, bool Closed,
+    int BittenPigs = 0, int SeverePigs = 0);
 public sealed record OutbreakActionDetail(int Id, TailBiteFactor Factor, string Description, int ResponsibleSiteId, DateTime FollowUpDate,
     DateTime? DoneAt, DateTime? WithdrawnAt);
 public sealed record OutbreakDetail(OutbreakSummary Summary, int RuleId, int RuleVersion, IReadOnlyList<int> RegistrationIds,
