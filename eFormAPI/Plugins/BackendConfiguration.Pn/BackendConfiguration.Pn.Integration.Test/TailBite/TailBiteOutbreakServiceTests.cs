@@ -3,6 +3,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Services.TailBite;
 using Microsoft.EntityFrameworkCore;
+using Microting.eForm.Infrastructure;
+using Microting.eForm.Infrastructure.Constants;
+using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using NUnit.Framework;
@@ -17,7 +20,7 @@ public class TailBiteOutbreakServiceTests : TailBiteTestBase
     private TailBiteOutbreakService Sut()
     {
         var db = BackendConfigurationPnDbContext!;
-        return new TailBiteOutbreakService(db, new TailBitePropertyLock(db), NewAccess(), Clock);
+        return new TailBiteOutbreakService(db, new TailBitePropertyLock(db), NewAccess(), Clock, CoreHelper());
     }
 
     private DateTime Now => Clock.GetUtcNow().UtcDateTime;
@@ -186,7 +189,7 @@ public class TailBiteOutbreakServiceTests : TailBiteTestBase
         var id = await SetUpManagerWithOutbreakAsync();
         var (db1, db2) = (CreateFreshBackendConfigurationDbContext(), CreateFreshBackendConfigurationDbContext());
         TailBiteOutbreakService Fresh(BackendConfigurationPnDbContext db)
-            => new(db, new TailBitePropertyLock(db), NewAccess(db), Clock);
+            => new(db, new TailBitePropertyLock(db), NewAccess(db), Clock, CoreHelper());
         var answers = AllNo with { Climate = true };
         await Task.WhenAll(
             Fresh(db1).SaveAssessmentAsync(7, id, answers, [new ActionInput(TailBiteFactor.Climate, "Tjek ventil", 7, Now.AddDays(1))]),
@@ -431,6 +434,38 @@ public class TailBiteOutbreakServiceTests : TailBiteTestBase
         await left.Delete(BackendConfigurationPnDbContext!);
         BackendConfigurationPnDbContext!.ChangeTracker.Clear();
         Assert.That(await Sut().ListWorkerSiteIdsAsync(7, PropertyId), Is.EqualTo(new[] { 7, 8 }));
+    }
+
+    [Test]
+    public async Task ListWorkerSiteIds_ResignedWorkerIsNotListed()
+    {
+        var core = await GetCore();
+        var sdk = core.DbContextHelper.GetDbContext();
+        var active = await SeedSdkSiteWithWorkerAsync(sdk, resigned: false);
+        var gone = await SeedSdkSiteWithWorkerAsync(sdk, resigned: true);
+        await SeedTreeAsync(); await SeedWorkerAsync(7, manager: true);
+        await SeedWorkerAsync(active); await SeedWorkerAsync(gone);
+        BackendConfigurationPnDbContext!.ChangeTracker.Clear();
+        Assert.That(await Sut().ListWorkerSiteIdsAsync(7, PropertyId), Is.EqualTo(new[] { 7, active }.OrderBy(i => i)));
+    }
+
+    // The SDK site + worker + site-worker triple device-user creation leaves behind; seeded through a post-migration SDK context.
+    private static async Task<int> SeedSdkSiteWithWorkerAsync(MicrotingDbContext sdk, bool resigned)
+    {
+        var language = await sdk.Languages.FirstAsync();
+        var site = new Site { Name = $"site-{Guid.NewGuid()}", LanguageId = language.Id, WorkflowState = Constants.WorkflowStates.Created };
+        await sdk.Sites.AddAsync(site);
+        await sdk.SaveChangesAsync();
+        var worker = new Worker
+        {
+            FirstName = "Jane", LastName = "Doe", Email = $"{Guid.NewGuid():N}@example.test", Resigned = resigned,
+            ResignedAtDate = resigned ? DateTime.UtcNow.AddDays(-1) : default, WorkflowState = Constants.WorkflowStates.Created
+        };
+        await sdk.Workers.AddAsync(worker);
+        await sdk.SaveChangesAsync();
+        await sdk.SiteWorkers.AddAsync(new SiteWorker { SiteId = site.Id, WorkerId = worker.Id, WorkflowState = Constants.WorkflowStates.Created });
+        await sdk.SaveChangesAsync();
+        return site.Id;
     }
 
     [Test]

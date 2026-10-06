@@ -34,6 +34,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
+using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 
 /// <summary>
@@ -63,7 +64,7 @@ public interface ITailBiteOutbreakService
 /// cannot be probed. Once the caller is proven a manager of the property, a missing entity is NotFound.
 /// </remarks>
 public class TailBiteOutbreakService(BackendConfigurationPnDbContext db, ITailBitePropertyLock propertyLock, ITailBiteAccess access,
-    TimeProvider clock) : ITailBiteOutbreakService
+    TimeProvider clock, IEFormCoreService coreHelper) : ITailBiteOutbreakService
 {
     private const int MaxTextLength = 1000; // the Description / WithdrawnReason / CancelReason columns
     private const string Removed = Constants.WorkflowStates.Removed;
@@ -148,9 +149,18 @@ public class TailBiteOutbreakService(BackendConfigurationPnDbContext db, ITailBi
     public async Task<IReadOnlyList<int>> ListWorkerSiteIdsAsync(int callerSiteId, int propertyId)
     {
         await access.RequireManagerAsync(callerSiteId, propertyId);
-        return await db.PropertyWorkers.AsNoTracking()
+        var siteIds = await db.PropertyWorkers.AsNoTracking()
             .Where(pw => pw.PropertyId == propertyId && pw.WorkflowState != Removed)
             .Select(pw => pw.WorkerId).Distinct().OrderBy(id => id).ToListAsync();
+        if (siteIds.Count == 0) return siteIds;
+
+        // Resigning never removes the PropertyWorker row; the flag lives on the SDK Worker (same filter as the adhoc pickers, #1184).
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDb = core.DbContextHelper.GetDbContext();
+        var resigned = await sdkDb.SiteWorkers
+            .Where(sw => sw.SiteId != null && siteIds.Contains(sw.SiteId.Value) && sw.Worker.Resigned)
+            .Select(sw => sw.SiteId!.Value).ToListAsync();
+        return siteIds.Except(resigned).ToList();
     }
 
     // ---------- assessment ----------
