@@ -117,9 +117,14 @@ public class TailBiteRegistrationService(
 
     private const int MaxCountPerLocation = 10000;
     private const int MaxCommentLength = 2000; // the Comment column limit
+    // A broken device clock can send year 0001; the evaluation window subtracted from such a time would underflow.
+    private static readonly DateTime EarliestRegisteredAt = new(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
     private static void Validate(CreateRegistrationCommand cmd)
     {
+        // Ticks, so an Unspecified kind from the wire compares as UTC. Future times are clamped later, not refused.
+        if (cmd.RegisteredAtUtc.Ticks < EarliestRegisteredAt.Ticks)
+            throw new TailBiteValidationException("registered_at is out of range.");
         if (cmd.Locations.Count > 0 && cmd.Locations.Any(l => l.Minor < 0 || l.Severe < 0))
             throw new TailBiteValidationException("Count at least one bitten pig; counts cannot be negative.");
         // Bounded before any summing, so the totals below and the evaluator's cannot overflow.

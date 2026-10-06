@@ -289,6 +289,23 @@ public class TailBiteRegistrationServiceTests : TailBiteTestBase
     }
 
     [Test]
+    public async Task Create_RegisteredAtBefore2000_ValidationError()
+    {
+        var ex = await Assert.ThrowsAsync<TailBiteValidationException>(
+            () => NewSut().CreateAsync(WorkerSiteId, Cmd(at: new DateTime(1, 1, 1, 0, 0, 0, DateTimeKind.Utc))));
+        Assert.That(ex!.Message, Is.EqualTo("registered_at is out of range."));
+        Assert.That(Db.TailBiteRegistrations.Count(), Is.Zero);
+    }
+
+    [Test]
+    public async Task Create_RegisteredAtExactly2000_Accepted()
+    {
+        var at = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var r = await NewSut().CreateAsync(WorkerSiteId, Cmd(at: at));
+        Assert.That(Db.TailBiteRegistrations.Single(x => x.Id == r.RegistrationId).RegisteredAt, Is.EqualTo(at));
+    }
+
+    [Test]
     public async Task Create_FutureClock_ClampsEffectiveAt()
     {
         var r = await NewSut().CreateAsync(WorkerSiteId, Cmd(at: Clock.GetUtcNow().UtcDateTime.AddHours(5)));
