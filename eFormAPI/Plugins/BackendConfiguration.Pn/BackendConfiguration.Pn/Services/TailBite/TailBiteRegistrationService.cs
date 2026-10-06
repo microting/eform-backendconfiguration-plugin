@@ -84,7 +84,7 @@ public class TailBiteRegistrationService(
         {
             bool created;
             (result, created) = await propertyLock.RunLockedAsync(cmd.PropertyId, () => CreateLockedAsync(callerSiteId, cmd));
-            if (!created) return result; // a replay must not re-send the push
+            if (!created) return await WithLocationNamesAsync(result); // a replay must not re-send the push
         }
         catch (DbUpdateException)
         {
@@ -93,15 +93,41 @@ public class TailBiteRegistrationService(
             db.ChangeTracker.Clear();
             var replay = await ExistingAsync(callerSiteId, cmd);
             if (replay is null) throw;
-            return replay;
+            return await WithLocationNamesAsync(replay);
         }
 
+        // The push must not depend on the presentation-only name lookup, so it goes first (§7.4).
         if (notifier is not null && result.Outbreaks.Any(o => o.Opened))
-            await NotifySafelyAsync(cmd.PropertyId, result.Outbreaks); // after commit (§7.4)
-        return result;
+            await NotifySafelyAsync(cmd.PropertyId, result.Outbreaks); // after commit
+        return await WithLocationNamesAsync(result);
     }
 
     // The registration is committed by now; a failing push must not turn the request into an error.
+    // Outside the property lock: names are presentation only. A soft-deleted summing location still reports its name.
+    private async Task<CreateRegistrationResult> WithLocationNamesAsync(CreateRegistrationResult result)
+    {
+        if (result.Outbreaks.Count == 0) return result;
+        var ids = result.Outbreaks.Select(o => o.OutbreakId).ToList();
+        Dictionary<int, string> names;
+        try
+        {
+            names = await (from o in db.TailBiteOutbreaks.AsNoTracking()
+                           join l in db.TailBiteLocations.AsNoTracking() on o.LocationId equals l.Id
+                           where ids.Contains(o.Id)
+                           select new { o.Id, l.Name }).ToDictionaryAsync(x => x.Id, x => x.Name);
+        }
+        catch (Exception e)
+        {
+            // The registration is committed; a failed lookup must not fail the request. Empty names instead.
+            SentrySdk.CaptureException(e);
+            names = new Dictionary<int, string>();
+        }
+        return result with
+        {
+            Outbreaks = result.Outbreaks.Select(o => o with { LocationName = names.GetValueOrDefault(o.OutbreakId) ?? string.Empty }).ToList()
+        };
+    }
+
     private async Task NotifySafelyAsync(int propertyId, IReadOnlyList<OutbreakOutcome> outcomes)
     {
         try

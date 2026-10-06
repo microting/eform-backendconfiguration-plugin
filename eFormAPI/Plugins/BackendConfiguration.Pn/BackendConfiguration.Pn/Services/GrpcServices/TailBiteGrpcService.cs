@@ -24,6 +24,8 @@ SOFTWARE.
 
 #nullable enable
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -93,7 +95,7 @@ public class TailBiteGrpcService(
             string.IsNullOrWhiteSpace(request.Comment) ? null : request.Comment);
         var result = await registrations.CreateAsync(site, command).ConfigureAwait(false);
         var response = new TbCreateRegistrationResponse { RegistrationId = S(result.RegistrationId) };
-        response.Outbreaks.AddRange(result.Outbreaks.Select(o => new TbOutbreakOutcome { OutbreakId = S(o.OutbreakId), Opened = o.Opened }));
+        response.Outbreaks.AddRange(result.Outbreaks.Select(o => new TbOutbreakOutcome { OutbreakId = S(o.OutbreakId), Opened = o.Opened, LocationName = o.LocationName }));
         return response;
     });
 
@@ -248,6 +250,21 @@ public class TailBiteGrpcService(
     {
         await outbreaks.CancelRegistrationAsync(site, Id(request.RegistrationId, "registration_id"), request.Reason).ConfigureAwait(false);
         return new TbEmpty();
+    });
+
+    // Manager-only (enforced by the service). Names come from the SDK site, as for GetCurrentWorker.
+    public override Task<TbListWorkersResponse> ListWorkers(TbListWorkersRequest request, ServerCallContext context) => RunAsSiteAsync(context, async site =>
+    {
+        var siteIds = await outbreaks.ListWorkerSiteIdsAsync(site, Id(request.PropertyId, "property_id")).ConfigureAwait(false);
+        var workers = new List<TbWorker>();
+        foreach (var id in siteIds) // one resolver call per worker: fine for property-sized lists; batching needs a resolver API
+        {
+            var name = await siteResolver.GetDisplayNameAsync(id).ConfigureAwait(false);
+            workers.Add(new TbWorker { SiteId = S(id), DisplayName = name ?? string.Empty });
+        }
+        var response = new TbListWorkersResponse();
+        response.Workers.AddRange(workers.OrderBy(w => w.DisplayName, StringComparer.Create(CultureInfo.GetCultureInfo("da-DK"), ignoreCase: true)));
+        return response;
     });
 
     // ---------------------------------------------------------------------

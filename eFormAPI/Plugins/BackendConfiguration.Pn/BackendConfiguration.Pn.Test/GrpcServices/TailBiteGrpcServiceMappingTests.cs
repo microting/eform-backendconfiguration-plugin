@@ -363,4 +363,47 @@ public class TailBiteGrpcServiceMappingTests
         Assert.That(writer.Written[0].ContentType, Is.EqualTo("image/png"));
         Assert.That(writer.Written.Skip(1).Select(w => w.Chunk.Length), Is.EqualTo(new[] { 64 * 1024, 10 }));
     }
+
+    [Test]
+    public async Task CreateRegistration_MapsOutcomeLocationName()
+    {
+        _regs.CreateAsync(7, Arg.Any<CreateRegistrationCommand>())
+            .Returns(new CreateRegistrationResult(11, [new OutbreakOutcome(3, true, "Stald A")]));
+        var resp = await Sut().CreateRegistration(new TbCreateRegistrationRequest
+        {
+            ClientUuid = Guid.NewGuid().ToString(), PropertyId = "1", RegisteredAt = Ts(1),
+            Locations = { new TbRegistrationLocation { LocationId = "4", Minor = 1 } }
+        }, Ctx());
+        Assert.That(resp.Outbreaks.Single().LocationName, Is.EqualTo("Stald A"));
+    }
+
+    [Test]
+    public async Task ListOutbreaks_MapsPigCounts()
+    {
+        _outbreaks.ListAsync(7, 1, true).Returns([new OutbreakSummary(3, 4, Ts(1).ToDateTime(), true, 2, false, 7, 1)]);
+        var s = (await Sut().ListOutbreaks(new TbListOutbreaksRequest { PropertyId = "1", OpenOnly = true }, Ctx())).Outbreaks.Single();
+        Assert.That((s.BittenPigs, s.SeverePigs), Is.EqualTo((7, 1)));
+    }
+
+    [Test]
+    public async Task ListWorkers_ResolvesDisplayNamesAndSortsByName()
+    {
+        _outbreaks.ListWorkerSiteIdsAsync(7, 1).Returns([8, 9]);
+        _resolver.GetDisplayNameAsync(8).Returns("John Roe");
+        _resolver.GetDisplayNameAsync(9).Returns("Jane Doe");
+        var resp = await Sut().ListWorkers(new TbListWorkersRequest { PropertyId = "1" }, Ctx());
+        Assert.That(resp.Workers.Select(w => (w.SiteId, w.DisplayName)), Is.EqualTo(new[] { ("9", "Jane Doe"), ("8", "John Roe") }));
+    }
+
+    [Test]
+    public async Task ListWorkers_NotManager_PermissionDeniedWithTheUniformMessage()
+    {
+        _outbreaks.ListWorkerSiteIdsAsync(7, 1).Throws(TailBiteForbiddenException.NoAccess());
+        var ex = await AssertRpc(StatusCode.PermissionDenied, () => Sut().ListWorkers(new TbListWorkersRequest { PropertyId = "1" }, Ctx()));
+        Assert.That(ex.Status.Detail, Is.EqualTo(TailBiteForbiddenException.NotFoundOrNoAccess));
+    }
+
+    [Test]
+    public async Task ListWorkers_BadPropertyId_InvalidArgument()
+        => await AssertRpc(StatusCode.InvalidArgument, () => Sut().ListWorkers(new TbListWorkersRequest { PropertyId = "x" }, Ctx()));
 }

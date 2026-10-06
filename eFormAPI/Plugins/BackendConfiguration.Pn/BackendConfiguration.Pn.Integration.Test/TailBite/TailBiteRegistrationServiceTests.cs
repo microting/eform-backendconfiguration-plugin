@@ -157,6 +157,30 @@ public class TailBiteRegistrationServiceTests : TailBiteTestBase
     }
 
     [Test]
+    public async Task Create_OutbreakOutcome_CarriesSummingLocationName_AlsoOnReplay()
+    {
+        var uuid = Guid.NewGuid();
+        var created = await NewSut().CreateAsync(WorkerSiteId, Cmd(uuid, minor: 0, severe: 1));
+        Assert.That(created.Outbreaks.Single().LocationName, Is.EqualTo("Stald A"));
+        var replay = await NewSut().CreateAsync(WorkerSiteId, Cmd(uuid, minor: 0, severe: 1));
+        Assert.That(replay.Outbreaks.Single().LocationName, Is.EqualTo("Stald A"));
+    }
+
+    [Test]
+    public async Task Create_LocationNameLookupFails_StillNotifiesAndReturnsResultWithEmptyName()
+    {
+        var db = CreateFreshBackendConfigurationDbContext();
+        var notifier = Substitute.For<ITailBiteOutbreakNotifier>();
+        // Runs after commit and before the name lookup: disposing the context makes the lookup throw.
+        notifier.NotifyOpenedAsync(Arg.Any<int>(), Arg.Any<IReadOnlyList<OutbreakOutcome>>())
+            .Returns(_ => { db.Dispose(); return Task.CompletedTask; });
+        var r = await NewSut(notifier, db).CreateAsync(WorkerSiteId, Cmd(minor: 0, severe: 1));
+        Assert.That(r.Outbreaks.Single().Opened, Is.True);
+        Assert.That(r.Outbreaks.Single().LocationName, Is.EqualTo(string.Empty));
+        await notifier.Received(1).NotifyOpenedAsync(PropertyId, Arg.Any<IReadOnlyList<OutbreakOutcome>>());
+    }
+
+    [Test]
     public async Task Create_ReplaySameUuid_NotifiesOnce()
     {
         var notifier = Substitute.For<ITailBiteOutbreakNotifier>();
