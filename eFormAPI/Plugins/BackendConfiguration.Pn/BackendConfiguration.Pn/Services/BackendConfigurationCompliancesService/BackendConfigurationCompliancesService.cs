@@ -133,85 +133,122 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
 
     public async Task<OperationDataResult<Paged<CompliancesModel>>> Index(CompliancesRequestModel request)
     {
-        var language = await _userService.GetCurrentUserLanguage().ConfigureAwait(false);
-        var result = new Paged<CompliancesModel>
+        try
         {
-            Entities = []
-        };
-
-        var core = await _coreHelper.GetCore().ConfigureAwait(false);
-        var sdkDbContext = core.DbContextHelper.GetDbContext();
-
-        // #1325 — missed occurrences of a task with "Overskredet opgave vises ikke i app"
-        // are not open work; ComplianceStatus reads this list too.
-        var complianceList = HiddenOverdueRule.ExcludeHiddenOverdue(
-                _backendConfigurationPnDbContext.Compliances, _backendConfigurationPnDbContext, UtcNow())
-            .Where(x => x.PropertyId == request.PropertyId)
-            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
-
-        if (request.Days > 0)
-        {
-            complianceList = complianceList.Where(x => x.Deadline <= DateTime.Now.AddDays(request.Days));
-        }
-
-        var theList = await complianceList.AsNoTracking()
-            .OrderBy(x => x.Deadline)
-            .ToListAsync().ConfigureAwait(false);
-
-        // #1382 — calendar tasks store the occurrence date as Deadline; legacy rows the period end.
-        var planningIds = theList.Select(x => x.PlanningId).Distinct().ToList();
-        var calendarPlanningIds = await ComplianceDisplayDeadline
-            .LoadCalendarPlanningIdsAsync(_backendConfigurationPnDbContext, planningIds)
-            .ConfigureAwait(false);
-
-        foreach (var compliance in theList)
-        {
-            var planningNameTranslation = await _itemsPlanningPnDbContext.PlanningNameTranslation
-                .SingleOrDefaultAsync(x => x.PlanningId == compliance.PlanningId && x.LanguageId == language.Id).ConfigureAwait(false);
-
-            if (planningNameTranslation == null)
+            var language = await _userService.GetCurrentUserLanguage().ConfigureAwait(false);
+            var result = new Paged<CompliancesModel>
             {
-                continue;
-            }
-            var areaTranslation = await _backendConfigurationPnDbContext.AreaTranslations
-                .SingleOrDefaultAsync(x => x.AreaId == compliance.AreaId && x.LanguageId == language.Id).ConfigureAwait(false);
-
-            if (areaTranslation == null)
-            {
-                continue;
-            }
-
-            var planningSites = await _itemsPlanningPnDbContext.PlanningSites
-                .Where(x => x.PlanningId == compliance.PlanningId)
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Select(x => x.SiteId)
-                .Distinct()
-                .ToListAsync().ConfigureAwait(false);
-
-            var sitesList = await sdkDbContext.Sites.Where(x => planningSites.Contains(x.Id)).ToListAsync().ConfigureAwait(false);
-
-            var responsible = sitesList.Select(site => new KeyValuePair<int, string>(site.Id, site.Name)).ToList();
-
-            var complianceModel = new CompliancesModel
-            {
-                CaseId = compliance.MicrotingSdkCaseId,
-                CreatedAt = compliance.CreatedAt,
-                Deadline = ComplianceDisplayDeadline.For(
-                    compliance.Deadline, calendarPlanningIds.Contains(compliance.PlanningId)),
-                ComplianceDeadline = compliance.Deadline,
-                ComplianceTypeId = null,
-                ControlArea = areaTranslation.Name,
-                EformId = compliance.MicrotingSdkeFormId,
-                Id = compliance.Id,
-                ItemName = planningNameTranslation.Name,
-                PlanningId = compliance.PlanningId,
-                Responsible = responsible
+                Entities = []
             };
 
-            result.Entities.Add(complianceModel);
-        }
+            var core = await _coreHelper.GetCore().ConfigureAwait(false);
+            var sdkDbContext = core.DbContextHelper.GetDbContext();
 
-        return new OperationDataResult<Paged<CompliancesModel>>(true, result);
+            // #1325 — missed occurrences of a task with "Overskredet opgave vises ikke i app"
+            // are not open work; ComplianceStatus reads this list too.
+            var complianceList = HiddenOverdueRule.ExcludeHiddenOverdue(
+                    _backendConfigurationPnDbContext.Compliances, _backendConfigurationPnDbContext, UtcNow())
+                .Where(x => x.PropertyId == request.PropertyId)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+
+            if (request.Days > 0)
+            {
+                complianceList = complianceList.Where(x => x.Deadline <= DateTime.Now.AddDays(request.Days));
+            }
+
+            var theList = await complianceList.AsNoTracking()
+                .OrderBy(x => x.Deadline)
+                .ToListAsync().ConfigureAwait(false);
+
+            // #1382 — calendar tasks store the occurrence date as Deadline; legacy rows the period end.
+            var planningIds = theList.Select(x => x.PlanningId).Distinct().ToList();
+            var calendarPlanningIds = await ComplianceDisplayDeadline
+                .LoadCalendarPlanningIdsAsync(_backendConfigurationPnDbContext, planningIds)
+                .ConfigureAwait(false);
+
+            // #1413 — the names are resolved for the whole list at once. Neither translation
+            // table is unique on (owner, language), and duplicate live rows exist, so a per-row
+            // SingleOrDefault threw "Sequence contains more than one element". The lowest-Id
+            // live translation wins.
+            var planningNames = (await _itemsPlanningPnDbContext.PlanningNameTranslation
+                    .AsNoTracking()
+                    .Where(x => planningIds.Contains(x.PlanningId)
+                                && x.LanguageId == language.Id
+                                && x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(x => new { x.Id, x.PlanningId, x.Name })
+                    .ToListAsync().ConfigureAwait(false))
+                .GroupBy(x => x.PlanningId)
+                .ToDictionary(g => g.Key, g => g.MinBy(x => x.Id)!.Name);
+
+            var areaIds = theList.Select(x => x.AreaId).Distinct().ToList();
+            var areaNames = (await _backendConfigurationPnDbContext.AreaTranslations
+                    .AsNoTracking()
+                    .Where(x => areaIds.Contains(x.AreaId)
+                                && x.LanguageId == language.Id
+                                && x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(x => new { x.Id, x.AreaId, x.Name })
+                    .ToListAsync().ConfigureAwait(false))
+                .GroupBy(x => x.AreaId)
+                .ToDictionary(g => g.Key, g => g.MinBy(x => x.Id)!.Name);
+
+            var siteIdsByPlanning = (await _itemsPlanningPnDbContext.PlanningSites
+                    .AsNoTracking()
+                    .Where(x => planningIds.Contains(x.PlanningId)
+                                && x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(x => new { x.PlanningId, x.SiteId })
+                    .ToListAsync().ConfigureAwait(false))
+                .GroupBy(x => x.PlanningId)
+                .ToDictionary(g => g.Key, g => g.Select(x => x.SiteId).ToHashSet());
+
+            var siteIds = siteIdsByPlanning.Values.SelectMany(x => x).Distinct().ToList();
+            var sites = await sdkDbContext.Sites
+                .AsNoTracking()
+                .Where(x => siteIds.Contains(x.Id))
+                .OrderBy(x => x.Id)
+                .Select(x => new { x.Id, x.Name })
+                .ToListAsync().ConfigureAwait(false);
+
+            foreach (var compliance in theList)
+            {
+                if (!planningNames.TryGetValue(compliance.PlanningId, out var itemName)
+                    || !areaNames.TryGetValue(compliance.AreaId, out var controlArea))
+                {
+                    continue;
+                }
+
+                var planningSiteIds = siteIdsByPlanning.GetValueOrDefault(compliance.PlanningId);
+                var responsible = planningSiteIds == null
+                    ? new List<KeyValuePair<int, string>>()
+                    : sites.Where(site => planningSiteIds.Contains(site.Id))
+                        .Select(site => new KeyValuePair<int, string>(site.Id, site.Name))
+                        .ToList();
+
+                result.Entities.Add(new CompliancesModel
+                {
+                    CaseId = compliance.MicrotingSdkCaseId,
+                    CreatedAt = compliance.CreatedAt,
+                    Deadline = ComplianceDisplayDeadline.For(
+                        compliance.Deadline, calendarPlanningIds.Contains(compliance.PlanningId)),
+                    ComplianceDeadline = compliance.Deadline,
+                    ComplianceTypeId = null,
+                    ControlArea = controlArea,
+                    EformId = compliance.MicrotingSdkeFormId,
+                    Id = compliance.Id,
+                    ItemName = itemName,
+                    PlanningId = compliance.PlanningId,
+                    Responsible = responsible
+                });
+            }
+
+            return new OperationDataResult<Paged<CompliancesModel>>(true, result);
+        }
+        catch (Exception ex)
+        {
+            Log.LogException(ex.Message);
+            Log.LogException(ex.StackTrace);
+            return new OperationDataResult<Paged<CompliancesModel>>(false,
+                _localizationService.GetString("ErrorWhileObtainingTasks"));
+        }
     }
 
     public async Task<OperationDataResult<int>> ComplianceStatus(int propertyId)
@@ -220,6 +257,11 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
         {
             PropertyId = propertyId
         }).ConfigureAwait(false);
+
+        if (!compliance.Success)
+        {
+            return new OperationDataResult<int>(false, compliance.Message);
+        }
 
         return new OperationDataResult<int>(true, compliance.Model.Entities.Count == 0 ? 0 : 1);
     }

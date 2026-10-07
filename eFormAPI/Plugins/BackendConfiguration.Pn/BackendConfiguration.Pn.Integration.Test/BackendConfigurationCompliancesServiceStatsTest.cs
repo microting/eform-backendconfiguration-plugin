@@ -785,6 +785,96 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         });
     }
 
+    // ------------------------------------------------------------------
+    // #1413 — duplicate live translations for one (planning|area, language) made Index
+    // throw "Sequence contains more than one element" (an empty HTTP 500). The lowest-Id
+    // live translation is the one shown.
+    // ------------------------------------------------------------------
+
+    [Test]
+    public async Task Index_DuplicatePlanningNameTranslations_Succeeds_ShowsLowerIdName()
+    {
+        await GetCore();
+        var (propertyId, complianceId) =
+            await SeedTaskWithCompliance("Property A", complianceEnabled: true, DateTime.UtcNow.Date);
+        var planningId = await PlanningIdOf(complianceId);
+        await AddPlanningNameTranslation(planningId, "Task A duplicate");
+
+        var result = await BuildCompliancesService().Index(new CompliancesRequestModel { PropertyId = propertyId });
+
+        Assert.That(result.Success, Is.True, result.Message);
+        var row = result.Model.Entities.Single(x => x.Id == complianceId);
+        Assert.That(row.ItemName, Is.EqualTo("Task A"),
+            "the lower-Id live translation is the one shown");
+    }
+
+    [Test]
+    public async Task Index_DuplicateAreaTranslations_Succeeds_ShowsLowerIdName()
+    {
+        await GetCore();
+        var (propertyId, complianceId) =
+            await SeedTaskWithCompliance("Property A", complianceEnabled: true, DateTime.UtcNow.Date);
+        var areaId = await BackendConfigurationPnDbContext!.Compliances
+            .Where(x => x.Id == complianceId).Select(x => x.AreaId).SingleAsync();
+        await BackendConfigurationPnDbContext.AreaTranslations.AddAsync(new AreaTranslation
+        {
+            AreaId = areaId,
+            LanguageId = 1,
+            Name = "Area A duplicate",
+            Description = "",
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var result = await BuildCompliancesService().Index(new CompliancesRequestModel { PropertyId = propertyId });
+
+        Assert.That(result.Success, Is.True, result.Message);
+        var row = result.Model.Entities.Single(x => x.Id == complianceId);
+        Assert.That(row.ControlArea, Is.EqualTo("Area A"),
+            "the lower-Id live translation is the one shown");
+    }
+
+    [Test]
+    public async Task Index_RemovedAndLivePlanningNameTranslation_ShowsTheLiveOne()
+    {
+        await GetCore();
+        var (propertyId, complianceId) =
+            await SeedTaskWithCompliance("Property A", complianceEnabled: true, DateTime.UtcNow.Date);
+        var planningId = await PlanningIdOf(complianceId);
+        // The seeded (lower-Id) translation is removed; a newer live one replaces it.
+        await ItemsPlanningPnDbContext!.PlanningNameTranslation
+            .Where(x => x.PlanningId == planningId)
+            .ExecuteUpdateAsync(x => x.SetProperty(t => t.WorkflowState, Constants.WorkflowStates.Removed));
+        await AddPlanningNameTranslation(planningId, "Task A renamed");
+
+        var result = await BuildCompliancesService().Index(new CompliancesRequestModel { PropertyId = propertyId });
+
+        Assert.That(result.Success, Is.True, result.Message);
+        var row = result.Model.Entities.Single(x => x.Id == complianceId);
+        Assert.That(row.ItemName, Is.EqualTo("Task A renamed"),
+            "a removed translation is never shown while a live one exists");
+    }
+
+    private Task<int> PlanningIdOf(int complianceId)
+        => BackendConfigurationPnDbContext!.Compliances
+            .Where(x => x.Id == complianceId).Select(x => x.PlanningId).SingleAsync();
+
+    private async Task AddPlanningNameTranslation(int planningId, string name)
+    {
+        await ItemsPlanningPnDbContext!.PlanningNameTranslation.AddAsync(new PlanningNameTranslation
+        {
+            PlanningId = planningId,
+            LanguageId = 1,
+            Name = name,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        });
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+    }
+
     private BackendConfigurationStatsService BuildStatsService()
         => new(
             BackendConfigurationPnDbContext!,
