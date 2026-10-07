@@ -65,29 +65,19 @@
             [id]="'inboxReviewBtn-' + d.id"
             (click)="review(d)"
           >{{ 'Review' | translate }}</button>
-          <ng-container *ngIf="d.status === Status.SenderPending">
-            <button
-              class="btn-primary"
-              [id]="'inboxApproveSenderBtn-' + d.id"
-              (click)="approveSender(d)"
-            >{{ 'Approve sender' | translate }}</button>
+          <ng-container *ngIf="rejectableInList(d.status)">
             <button
               class="btn-quiet"
-              [id]="'inboxRejectSenderBtn-' + d.id"
-              (click)="rejectSender(d, false)"
-            >{{ 'Reject' | translate }}</button>
+              [id]="'inboxRejectDocumentBtn-' + d.id"
+              (click)="reject(d, false)"
+            >{{ 'Reject document' | translate }}</button>
             <button
+              *ngIf="!isUnknownSender(d.fromAddress)"
               class="btn-quiet"
-              [id]="'inboxBlockSenderBtn-' + d.id"
-              (click)="rejectSender(d, true)"
-            >{{ 'Block sender' | translate }}</button>
+              [id]="'inboxRejectBlockBtn-' + d.id"
+              (click)="reject(d, true)"
+            >{{ 'Reject and block sender' | translate }}</button>
           </ng-container>
-          <button
-            *ngIf="d.status === Status.Failed || d.status === Status.Preparing"
-            class="btn-quiet"
-            [id]="'inboxRejectDocumentBtn-' + d.id"
-            (click)="reject(d)"
-          >{{ 'Reject document' | translate }}</button>
         </div>
       </td>
     </tr>

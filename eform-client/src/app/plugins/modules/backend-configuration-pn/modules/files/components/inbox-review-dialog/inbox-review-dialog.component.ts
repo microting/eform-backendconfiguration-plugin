@@ -106,8 +106,9 @@ export class InboxReviewDialogComponent implements OnInit {
     this.run(this.inboxService.undo(this.data.id), () => (this.filed = false));
   }
 
-  reject(): void {
-    this.run(this.inboxService.reject(this.data.id), () => this.dialogRef.close(true));
+  /** `block` also adds a Block rule, so later mail from this sender is refused. */
+  reject(block: boolean): void {
+    this.run(this.inboxService.reject(this.data.id, block), () => this.dialogRef.close(true));
   }
 
   close(): void {

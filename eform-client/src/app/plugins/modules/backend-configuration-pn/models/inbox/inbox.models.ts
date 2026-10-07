@@ -1,6 +1,7 @@
 /** Mirrors Microting.EformBackendConfigurationBase InboxDocumentStatus. */
 export enum InboxDocumentStatus {
   Preparing = 0,
+  /** Legacy: held under the removed unknown-sender policy. Nothing produces it any more; it can only be rejected. */
   SenderPending = 1,
   Ready = 2,
   Failed = 3,
@@ -14,13 +15,14 @@ export enum InboxSuggestionKind {
   Tag = 1,
 }
 
-/** Mirrors Microting.EformBackendConfigurationBase InboxSenderRuleKind. */
+/**
+ * Mirrors Microting.EformBackendConfigurationBase InboxSenderRuleKind. Only Block is used: every sender is
+ * accepted unless blocked, and the API refuses to save an Allow rule.
+ */
 export enum InboxSenderRuleKind {
   Allow = 0,
   Block = 1,
 }
-
-export type InboxUnknownSenderPolicy = 'hold' | 'refuse';
 
 export interface InboxSuggestionModel {
   id: number;
@@ -63,12 +65,11 @@ export interface InboxSenderRuleModel {
 
 export interface InboxSettingsModel {
   address: string | null;
-  unknownSenderPolicy: InboxUnknownSenderPolicy;
+  /** The blocked senders. */
   senderRules: InboxSenderRuleModel[];
 }
 
-/** PUT settings body: a full replace of the policy and the rules. */
+/** PUT settings body: a full replace of the blocked senders. */
 export interface InboxSettingsUpdateModel {
-  unknownSenderPolicy: InboxUnknownSenderPolicy;
   senderRules: { pattern: string; kind: InboxSenderRuleKind }[];
 }

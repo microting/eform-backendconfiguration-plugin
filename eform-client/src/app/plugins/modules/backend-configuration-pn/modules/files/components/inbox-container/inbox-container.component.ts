@@ -31,7 +31,6 @@ export class InboxContainerComponent implements OnInit {
   readonly statusOptions: InboxDocumentStatus[] = [
     InboxDocumentStatus.Ready,
     InboxDocumentStatus.Preparing,
-    InboxDocumentStatus.SenderPending,
     InboxDocumentStatus.Failed,
     InboxDocumentStatus.Filed,
     InboxDocumentStatus.Rejected,
@@ -83,17 +82,16 @@ export class InboxContainerComponent implements OnInit {
       });
   }
 
-  approveSender(d: InboxListItemModel): void {
-    this.inboxService.approveSender(d.id).subscribe(res => this.reloadOnSuccess(res?.success));
+  /** Rejected from the list: documents with nothing to review (Ready ones are rejected in the review dialog). */
+  rejectableInList(status: InboxDocumentStatus): boolean {
+    return status === InboxDocumentStatus.Preparing
+      || status === InboxDocumentStatus.Failed
+      || status === InboxDocumentStatus.SenderPending;
   }
 
   /** `block` also adds a Block rule, so later mail from this address is refused. */
-  rejectSender(d: InboxListItemModel, block: boolean): void {
-    this.inboxService.rejectSender(d.id, block).subscribe(res => this.reloadOnSuccess(res?.success));
-  }
-
-  reject(d: InboxListItemModel): void {
-    this.inboxService.reject(d.id).subscribe(res => this.reloadOnSuccess(res?.success));
+  reject(d: InboxListItemModel, block: boolean): void {
+    this.inboxService.reject(d.id, block).subscribe(res => this.reloadOnSuccess(res?.success));
   }
 
   private reloadOnSuccess(success: boolean | undefined): void {

@@ -5,7 +5,9 @@ using BackendConfiguration.Pn.Infrastructure.Models.Inbox;
 using BackendConfiguration.Pn.Services.FileArchive;
 using BackendConfiguration.Pn.Services.InboundMail;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microting.eForm.Infrastructure.Constants;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -202,7 +204,7 @@ public class InboxServiceTests : TestBaseSetup
     public async Task File_NotReady_IsRejected()
     {
         var doc = await InboxTestData.ReadyDocumentAsync(BackendConfigurationPnDbContext!);
-        doc.Status = InboxDocumentStatus.SenderPending;
+        doc.Status = InboxDocumentStatus.Preparing;
         await doc.Update(BackendConfigurationPnDbContext!);
         var p = await InboxTestData.PropertyAsync(BackendConfigurationPnDbContext!);
 
@@ -254,9 +256,10 @@ public class InboxServiceTests : TestBaseSetup
     public async Task Reject_SetsRejected()
     {
         var doc = await InboxTestData.ReadyDocumentAsync(BackendConfigurationPnDbContext!);
-        Assert.That((await _service.RejectAsync(doc.Id, 7)).Success, Is.True);
+        Assert.That((await _service.RejectAsync(doc.Id, false, 7)).Success, Is.True);
         await BackendConfigurationPnDbContext!.Entry(doc).ReloadAsync();
         Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.Rejected));
+        Assert.That(await LiveRulesAsync(), Is.Empty, "a plain reject blocks nobody");
         Assert.That(await BackendConfigurationPnDbContext.InboxDocumentVersions.AsNoTracking()
             .AnyAsync(v => v.InboxDocumentId == doc.Id && v.Status == InboxDocumentStatus.Rejected), Is.True);
     }
@@ -269,8 +272,125 @@ public class InboxServiceTests : TestBaseSetup
         doc.Status = InboxDocumentStatus.Preparing;
         await doc.Update(BackendConfigurationPnDbContext!);
 
-        Assert.That((await _service.RejectAsync(doc.Id, 7)).Success, Is.True);
+        Assert.That((await _service.RejectAsync(doc.Id, false, 7)).Success, Is.True);
         await BackendConfigurationPnDbContext!.Entry(doc).ReloadAsync();
         Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.Rejected));
+    }
+
+    private Task<List<InboxSenderRule>> LiveRulesAsync() => BackendConfigurationPnDbContext!.InboxSenderRules
+        .AsNoTracking().Where(r => r.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+
+    private async Task<InboxDocument> DocumentFromAsync(string fromAddress)
+    {
+        var doc = await InboxTestData.ReadyDocumentAsync(BackendConfigurationPnDbContext!);
+        doc.FromAddress = fromAddress;
+        await doc.Update(BackendConfigurationPnDbContext!);
+        return doc;
+    }
+
+    [Test]
+    public async Task Reject_WithBlock_AddsOneNormalizedBlockRule()
+    {
+        var doc = await DocumentFromAsync("Post@Example.net");
+
+        var res = await _service.RejectAsync(doc.Id, true, 7);
+
+        Assert.That(res.Success, Is.True);
+        await BackendConfigurationPnDbContext!.Entry(doc).ReloadAsync();
+        Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.Rejected));
+        var rule = (await LiveRulesAsync()).Single();
+        Assert.That(rule.Pattern, Is.EqualTo("post@example.net"));
+        Assert.That(rule.Kind, Is.EqualTo(InboxSenderRuleKind.Block));
+        Assert.That(rule.CreatedByUserId, Is.EqualTo(7));
+    }
+
+    [Test]
+    public async Task Reject_WithBlock_Twice_AddsTheRuleOnceAndThenSkipsIt()
+    {
+        var first = await DocumentFromAsync("post@example.net");
+        var second = await DocumentFromAsync("POST@example.net");
+
+        Assert.That((await _service.RejectAsync(first.Id, true, 7)).Success, Is.True);
+        Assert.That(await LiveRulesAsync(), Has.Count.EqualTo(1), "the first reject adds the rule");
+
+        Assert.That((await _service.RejectAsync(second.Id, true, 7)).Success, Is.True);
+        Assert.That(await LiveRulesAsync(), Has.Count.EqualTo(1), "the second reject finds it and adds none");
+    }
+
+    [Test]
+    public async Task Reject_WithBlock_ConcurrentRejectsOfTheSameSender_AddOneRule()
+    {
+        // Two requests, each with its own context and connection, as two web requests would be. Without the
+        // sender-rules lock both could check "no rule yet" before either commits and insert one each.
+        var first = await DocumentFromAsync("post@example.net");
+        var second = await DocumentFromAsync("Post@Example.net");
+        var options = (DbContextOptions<BackendConfigurationPnDbContext>)BackendConfigurationPnDbContext!
+            .GetService<IDbContextOptions>();
+        await using var db1 = new BackendConfigurationPnDbContext(options);
+        await using var db2 = new BackendConfigurationPnDbContext(options);
+        InboxService NewService(BackendConfigurationPnDbContext db) => new(db, _storage, new FileArchiver(db, _storage),
+            new BackendConfigurationLocalizationService(), NullLogger<InboxService>.Instance);
+
+        var results = await Task.WhenAll(NewService(db1).RejectAsync(first.Id, true, 7),
+            NewService(db2).RejectAsync(second.Id, true, 8));
+
+        Assert.That(results.All(r => r.Success), Is.True, string.Join(" | ", results.Select(r => r.Message)));
+        var rule = (await LiveRulesAsync()).Single();
+        Assert.That(rule.Pattern, Is.EqualTo("post@example.net"));
+        Assert.That(rule.Kind, Is.EqualTo(InboxSenderRuleKind.Block));
+    }
+
+    [Test]
+    public async Task Reject_WithBlock_LegacyAllowRowForTheSender_GetsABlockRuleBesideIt()
+    {
+        // The verdict ignores Allow rows, so the new Block rule alone decides.
+        await new InboxSenderRule { Pattern = "post@example.net", Kind = InboxSenderRuleKind.Allow, CreatedByUserId = 1, UpdatedByUserId = 1 }
+            .Create(BackendConfigurationPnDbContext!);
+        var doc = await DocumentFromAsync("post@example.net");
+
+        Assert.That((await _service.RejectAsync(doc.Id, true, 7)).Success, Is.True);
+
+        Assert.That((await LiveRulesAsync()).Select(r => r.Kind),
+            Is.EquivalentTo(new[] { InboxSenderRuleKind.Allow, InboxSenderRuleKind.Block }));
+    }
+
+    [Test]
+    public async Task Reject_WithBlock_UnknownSenderPlaceholder_RejectsWithoutRule()
+    {
+        var doc = await DocumentFromAsync(InboxHubService.UnknownSender);
+
+        Assert.That((await _service.RejectAsync(doc.Id, true, 7)).Success, Is.True);
+
+        await BackendConfigurationPnDbContext!.Entry(doc).ReloadAsync();
+        Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.Rejected));
+        Assert.That(await LiveRulesAsync(), Is.Empty);
+    }
+
+    [Test]
+    public async Task Reject_WithBlock_AlreadyFiled_IsRefused_NoRule()
+    {
+        var doc = await DocumentFromAsync("post@example.net");
+        doc.Status = InboxDocumentStatus.Filed;
+        await doc.Update(BackendConfigurationPnDbContext!);
+
+        var res = await _service.RejectAsync(doc.Id, true, 7);
+
+        Assert.That(res.Success, Is.False);
+        Assert.That(await LiveRulesAsync(), Is.Empty);
+    }
+
+    [Test]
+    public async Task Reject_LegacySenderPendingRow_CanBeRejectedAndBlocked()
+    {
+        // Nothing produces SenderPending any more; a row held before the change must still be closable.
+        var doc = await DocumentFromAsync("post@example.net");
+        doc.Status = InboxDocumentStatus.SenderPending;
+        await doc.Update(BackendConfigurationPnDbContext!);
+
+        Assert.That((await _service.RejectAsync(doc.Id, true, 7)).Success, Is.True);
+
+        await BackendConfigurationPnDbContext!.Entry(doc).ReloadAsync();
+        Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.Rejected));
+        Assert.That((await LiveRulesAsync()).Single().Pattern, Is.EqualTo("post@example.net"));
     }
 }

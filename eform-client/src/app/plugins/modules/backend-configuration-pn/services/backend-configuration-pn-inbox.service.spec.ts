@@ -59,21 +59,17 @@ describe('BackendConfigurationPnInboxService', () => {
     expect(apiBaseServiceSpy.post).toHaveBeenCalledWith('api/backend-configuration-pn/inbox/7/file', body);
   });
 
-  it.each([
-    ['undo', 'undo'],
-    ['reject', 'reject'],
-    ['approveSender', 'approve-sender'],
-  ])('%s POSTs to {id}/%s with an empty body', (method, segment) => {
-    (service as any)[method](7).subscribe();
-    expect(apiBaseServiceSpy.post).toHaveBeenCalledWith(`api/backend-configuration-pn/inbox/7/${segment}`, {});
+  it('undo POSTs to {id}/undo with an empty body', () => {
+    service.undo(7).subscribe();
+    expect(apiBaseServiceSpy.post).toHaveBeenCalledWith('api/backend-configuration-pn/inbox/7/undo', {});
   });
 
-  it('rejectSender carries the block flag in the query string', () => {
-    service.rejectSender(7, true).subscribe();
-    expect(apiBaseServiceSpy.post).toHaveBeenLastCalledWith('api/backend-configuration-pn/inbox/7/reject-sender?block=true', {});
+  it('reject carries the block flag in the query string, false by default', () => {
+    service.reject(7).subscribe();
+    expect(apiBaseServiceSpy.post).toHaveBeenLastCalledWith('api/backend-configuration-pn/inbox/7/reject?block=false', {});
 
-    service.rejectSender(7, false).subscribe();
-    expect(apiBaseServiceSpy.post).toHaveBeenLastCalledWith('api/backend-configuration-pn/inbox/7/reject-sender?block=false', {});
+    service.reject(7, true).subscribe();
+    expect(apiBaseServiceSpy.post).toHaveBeenLastCalledWith('api/backend-configuration-pn/inbox/7/reject?block=true', {});
   });
 
   it('getSettings GETs the settings route without a toast (the page shows failures inline)', () => {
@@ -83,11 +79,10 @@ describe('BackendConfigurationPnInboxService', () => {
     expect(BackendConfigurationPnInboxMethods.Settings).toBe('api/backend-configuration-pn/inbox/settings');
   });
 
-  it('updateSettings PUTs the policy and the full rule list', () => {
+  it('updateSettings PUTs the full list of blocked senders', () => {
     const body = {
-      unknownSenderPolicy: 'refuse' as const,
       senderRules: [
-        {pattern: '@example.org', kind: InboxSenderRuleKind.Allow},
+        {pattern: '@example.org', kind: InboxSenderRuleKind.Block},
         {pattern: 'spam@example.com', kind: InboxSenderRuleKind.Block},
       ],
     };

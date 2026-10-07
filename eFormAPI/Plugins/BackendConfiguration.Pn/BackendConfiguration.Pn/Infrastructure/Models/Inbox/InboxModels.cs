@@ -42,14 +42,13 @@ public class InboxSenderRuleModel
 {
     public int? Id { get; set; }
     public string Pattern { get; set; } = "";
-    /// <summary>0 = Allow, 1 = Block.</summary>
+    /// <summary>InboxSenderRuleKind: always 1 = Block. Allow (0) rules no longer exist; saving one is refused.</summary>
     public int Kind { get; set; }
 }
 
 public class InboxSettingsModel
 {
     public string? Address { get; set; }
-    /// <summary>"hold" or "refuse".</summary>
-    public string UnknownSenderPolicy { get; set; } = "hold";
+    /// <summary>The blocked senders. Every other sender is accepted.</summary>
     public List<InboxSenderRuleModel> SenderRules { get; set; } = new();
 }

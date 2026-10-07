@@ -18,29 +18,18 @@ public class InboxHubServiceTests : TestBaseSetup
     private IArchiveStorage _storage = null!;
     private InboxHubService _service = null!;
 
+    /// <summary>The removed unknown-sender policy's setting; existing rows stay in tenants but are not read.</summary>
+    private const string LegacyPolicyName = "BackendConfigurationSettings:InboxUnknownSenderPolicy";
+
     [SetUp]
     public async Task SetUpService()
     {
-        await IdentityTestUtils.ReserveEformUserId1Async(BaseDbContext!);
         await InboxTestData.ClearAsync(BackendConfigurationPnDbContext!);
-        BaseDbContext!.Users.RemoveRange(BaseDbContext.Users.Where(u => u.Email!.EndsWith("@example.org")));
-        await BaseDbContext.SaveChangesAsync();
-        await SetPolicyAsync("hold");
+        await BackendConfigurationPnDbContext!.PluginConfigurationValues
+            .Where(x => x.Name == LegacyPolicyName).ExecuteDeleteAsync();
         _storage = Substitute.For<IArchiveStorage>();
         _service = new InboxHubService(BackendConfigurationPnDbContext!, _storage,
-            new SenderVerdictResolver(BackendConfigurationPnDbContext!, BaseDbContext!),
-            NullLogger<InboxHubService>.Instance);
-    }
-
-    private async Task SetPolicyAsync(string value)
-    {
-        var row = await BackendConfigurationPnDbContext!.PluginConfigurationValues
-            .SingleOrDefaultAsync(x => x.Name == SenderVerdictResolver.PolicyName);
-        if (row == null)
-            BackendConfigurationPnDbContext.PluginConfigurationValues.Add(
-                new PluginConfigurationValue { Name = SenderVerdictResolver.PolicyName, Value = value });
-        else row.Value = value;
-        await BackendConfigurationPnDbContext.SaveChangesAsync();
+            new SenderVerdictResolver(BackendConfigurationPnDbContext!), NullLogger<InboxHubService>.Instance);
     }
 
     private static ArrivedRequest Arrived(string from = "post@example.net", string? id = null) => new(
@@ -49,80 +38,117 @@ public class InboxHubServiceTests : TestBaseSetup
 
     private static MemoryStream Pdf() => new(Encoding.ASCII.GetBytes("%PDF-1.7 x"));
 
+    private Task RuleAsync(string pattern, InboxSenderRuleKind kind) =>
+        new InboxSenderRule { Pattern = pattern, Kind = kind, CreatedByUserId = 1, UpdatedByUserId = 1 }
+            .Create(BackendConfigurationPnDbContext!);
+
+    // ---- Verdict: block list only ----
+
     [Test]
-    public async Task Verdict_UnknownSender_HoldPolicy_CreatesSenderPending()
+    public async Task Verdict_UnknownSender_IsAllowed_CreatesPreparing()
     {
         var res = await _service.ArrivedAsync(Arrived());
-
-        Assert.That(res.SenderVerdict, Is.EqualTo(SenderVerdict.Unknown));
-        var doc = await BackendConfigurationPnDbContext!.InboxDocuments.AsNoTracking().SingleAsync();
-        Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.SenderPending));
-    }
-
-    [Test]
-    public async Task Verdict_UnknownSender_RefusePolicy_BlockedNoRow()
-    {
-        await SetPolicyAsync("refuse");
-
-        var res = await _service.ArrivedAsync(Arrived());
-
-        Assert.That(res.SenderVerdict, Is.EqualTo(SenderVerdict.Blocked));
-        Assert.That(await BackendConfigurationPnDbContext!.InboxDocuments.CountAsync(), Is.EqualTo(0));
-    }
-
-    [Test]
-    public async Task Verdict_UserEmail_CaseInsensitive()
-    {
-        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
-        var created = await userManager.CreateAsync(new EformUser
-        {
-            UserName = "jane.doe@example.org", Email = "jane.doe@example.org", FirstName = "Jane", LastName = "Doe",
-            Locale = "da", EmailConfirmed = true, TimeZone = "Europe/Copenhagen", Formats = "de-DE"
-        });
-        Assert.That(created.Succeeded, Is.True, string.Join(",", created.Errors.Select(e => e.Description)));
-
-        var res = await _service.ArrivedAsync(Arrived("Jane.Doe@example.org"));
 
         Assert.That(res.SenderVerdict, Is.EqualTo(SenderVerdict.Allowed));
-        Assert.That((await BackendConfigurationPnDbContext!.InboxDocuments.AsNoTracking().SingleAsync()).Status,
-            Is.EqualTo(InboxDocumentStatus.Preparing));
+        var doc = await BackendConfigurationPnDbContext!.InboxDocuments.AsNoTracking().SingleAsync();
+        Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.Preparing));
     }
 
     [Test]
-    public async Task Verdict_InactiveUserEmail_Unknown()
+    public async Task Verdict_LegacyRefusePolicyRow_IsIgnored()
     {
-        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
-        var created = await userManager.CreateAsync(new EformUser
-        {
-            UserName = "john.roe@example.org", Email = "john.roe@example.org", FirstName = "John", LastName = "Roe",
-            Locale = "da", EmailConfirmed = true, TimeZone = "Europe/Copenhagen", Formats = "de-DE", IsActive = false
-        });
-        Assert.That(created.Succeeded, Is.True, string.Join(",", created.Errors.Select(e => e.Description)));
+        BackendConfigurationPnDbContext!.PluginConfigurationValues.Add(
+            new PluginConfigurationValue { Name = LegacyPolicyName, Value = "refuse" });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
 
-        var res = await _service.ArrivedAsync(Arrived("john.roe@example.org"));
+        var res = await _service.ArrivedAsync(Arrived());
 
-        Assert.That(res.SenderVerdict, Is.EqualTo(SenderVerdict.Unknown));
-        Assert.That((await BackendConfigurationPnDbContext!.InboxDocuments.AsNoTracking().SingleAsync()).Status,
-            Is.EqualTo(InboxDocumentStatus.SenderPending));
-    }
-
-    [Test]
-    public async Task Arrived_Replay_OfHeldDocumentThatFailed_StaysUnknown()
-    {
-        var req = Arrived();
-        await _service.ArrivedAsync(req);
-        await _service.FailedAsync(new FailedRequest(req.HubDocumentId, "PDF-filen kunne ikke læses."));
-
-        var replay = await _service.ArrivedAsync(req);
-
-        Assert.That(replay.SenderVerdict, Is.EqualTo(SenderVerdict.Unknown));
+        Assert.That(res.SenderVerdict, Is.EqualTo(SenderVerdict.Allowed));
         Assert.That(await BackendConfigurationPnDbContext!.InboxDocuments.CountAsync(), Is.EqualTo(1));
     }
 
     [Test]
-    public async Task Arrived_Replay_OfRejectedDocumentFromAllowedSender_IsAllowed()
+    public async Task Verdict_BlockRule_ExactAddress_CaseInsensitive_BlockedNoRow()
     {
-        var doc = await ArrivedDocumentAsync(InboxSenderRuleKind.Allow);
+        await RuleAsync("spam@example.net", InboxSenderRuleKind.Block);
+
+        var blocked = await _service.ArrivedAsync(Arrived("Spam@Example.NET"));
+        var other = await _service.ArrivedAsync(Arrived("post@example.net"));
+
+        Assert.That(blocked.SenderVerdict, Is.EqualTo(SenderVerdict.Blocked));
+        Assert.That(other.SenderVerdict, Is.EqualTo(SenderVerdict.Allowed));
+        var rows = await BackendConfigurationPnDbContext!.InboxDocuments.AsNoTracking().ToListAsync();
+        Assert.That(rows.Select(d => d.FromAddress), Is.EquivalentTo(new[] { "post@example.net" }));
+    }
+
+    [Test]
+    public async Task Verdict_BlockRule_Domain_BlocksEveryAddressInIt()
+    {
+        await RuleAsync("@example.net", InboxSenderRuleKind.Block);
+
+        Assert.That((await _service.ArrivedAsync(Arrived("post@example.net"))).SenderVerdict, Is.EqualTo(SenderVerdict.Blocked));
+        Assert.That((await _service.ArrivedAsync(Arrived("faktura@example.net"))).SenderVerdict, Is.EqualTo(SenderVerdict.Blocked));
+        Assert.That((await _service.ArrivedAsync(Arrived("post@example.org"))).SenderVerdict, Is.EqualTo(SenderVerdict.Allowed));
+    }
+
+    [Test]
+    public async Task Verdict_RemovedBlockRule_NoLongerBlocks()
+    {
+        var rule = new InboxSenderRule
+        {
+            Pattern = "spam@example.net", Kind = InboxSenderRuleKind.Block, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await rule.Create(BackendConfigurationPnDbContext!);
+        await rule.Delete(BackendConfigurationPnDbContext!);
+
+        Assert.That((await _service.ArrivedAsync(Arrived("spam@example.net"))).SenderVerdict, Is.EqualTo(SenderVerdict.Allowed));
+    }
+
+    [Test]
+    public async Task Verdict_LegacyAllowRules_HaveNoEffect()
+    {
+        // An Allow row neither overrides a Block rule nor changes anything for its own sender.
+        await RuleAsync("spam@example.net", InboxSenderRuleKind.Allow);
+        await RuleAsync("@example.net", InboxSenderRuleKind.Block);
+        await RuleAsync("@example.org", InboxSenderRuleKind.Allow);
+
+        Assert.That((await _service.ArrivedAsync(Arrived("spam@example.net"))).SenderVerdict, Is.EqualTo(SenderVerdict.Blocked));
+        Assert.That((await _service.ArrivedAsync(Arrived("post@example.org"))).SenderVerdict, Is.EqualTo(SenderVerdict.Allowed));
+        var doc = await BackendConfigurationPnDbContext!.InboxDocuments.AsNoTracking().SingleAsync();
+        Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.Preparing));
+    }
+
+    // ---- Arrived replays ----
+
+    [Test]
+    public async Task Arrived_Twice_SameRow()
+    {
+        var req = Arrived();
+        await _service.ArrivedAsync(req);
+        var second = await _service.ArrivedAsync(req);
+
+        Assert.That(second.SenderVerdict, Is.EqualTo(SenderVerdict.Allowed));
+        Assert.That(await BackendConfigurationPnDbContext!.InboxDocuments.CountAsync(), Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task Arrived_Replay_OfDocumentThatFailedBeforeDelivery_AnswersTheCurrentBlockList()
+    {
+        var req = Arrived();
+        await _service.ArrivedAsync(req);
+        await _service.FailedAsync(new FailedRequest(req.HubDocumentId, "PDF-filen kunne ikke læses."));
+        Assert.That((await _service.ArrivedAsync(req)).SenderVerdict, Is.EqualTo(SenderVerdict.Allowed));
+
+        await RuleAsync("post@example.net", InboxSenderRuleKind.Block);
+
+        Assert.That((await _service.ArrivedAsync(req)).SenderVerdict, Is.EqualTo(SenderVerdict.Blocked));
+        Assert.That(await BackendConfigurationPnDbContext!.InboxDocuments.CountAsync(), Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task Arrived_Replay_OfRejectedDocument_IsAllowedUnlessBlocked()
+    {
+        var doc = await PreparingAsync();
         doc.Status = InboxDocumentStatus.Rejected;
         await doc.Update(BackendConfigurationPnDbContext!);
 
@@ -133,26 +159,16 @@ public class InboxHubServiceTests : TestBaseSetup
     }
 
     [Test]
-    public async Task Verdict_DomainAllowRule_Allowed_ButBlockRuleWins()
+    public async Task Arrived_Replay_OfLegacySenderPendingRow_IsAllowed_RowUnchanged()
     {
-        await new InboxSenderRule { Pattern = "@example.net", Kind = InboxSenderRuleKind.Allow, CreatedByUserId = 1, UpdatedByUserId = 1 }
-            .Create(BackendConfigurationPnDbContext!);
-        Assert.That((await _service.ArrivedAsync(Arrived("post@example.net"))).SenderVerdict, Is.EqualTo(SenderVerdict.Allowed));
+        var doc = await LegacySenderPendingAsync();
 
-        await new InboxSenderRule { Pattern = "spam@example.net", Kind = InboxSenderRuleKind.Block, CreatedByUserId = 1, UpdatedByUserId = 1 }
-            .Create(BackendConfigurationPnDbContext!);
-        Assert.That((await _service.ArrivedAsync(Arrived("spam@example.net"))).SenderVerdict, Is.EqualTo(SenderVerdict.Blocked));
-    }
+        var replay = await _service.ArrivedAsync(Arrived("post@example.net", doc.HubDocumentId));
 
-    [Test]
-    public async Task Arrived_Twice_SameRow()
-    {
-        var req = Arrived();
-        await _service.ArrivedAsync(req);
-        var second = await _service.ArrivedAsync(req);
-
-        Assert.That(second.SenderVerdict, Is.EqualTo(SenderVerdict.Unknown));
-        Assert.That(await BackendConfigurationPnDbContext!.InboxDocuments.CountAsync(), Is.EqualTo(1));
+        Assert.That(replay.SenderVerdict, Is.EqualTo(SenderVerdict.Allowed));
+        await BackendConfigurationPnDbContext!.Entry(doc).ReloadAsync();
+        Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.SenderPending));
+        Assert.That(await BackendConfigurationPnDbContext.InboxDocuments.CountAsync(), Is.EqualTo(1));
     }
 
     [Test]
@@ -175,20 +191,21 @@ public class InboxHubServiceTests : TestBaseSetup
         Assert.That(catalog.Tags.Select(x => x.Id), Is.EquivalentTo(new[] { t.Id }));
     }
 
-    private async Task<InboxDocument> ArrivedDocumentAsync(InboxSenderRuleKind? rule)
+    private async Task<InboxDocument> PreparingAsync()
     {
         var req = Arrived("post@example.net");
-        if (rule != null)
-        {
-            await new InboxSenderRule { Pattern = "post@example.net", Kind = rule.Value, CreatedByUserId = 1, UpdatedByUserId = 1 }
-                .Create(BackendConfigurationPnDbContext!);
-        }
-
         await _service.ArrivedAsync(req);
         return await BackendConfigurationPnDbContext!.InboxDocuments.SingleAsync(d => d.HubDocumentId == req.HubDocumentId);
     }
 
-    private Task<InboxDocument> PreparingAsync() => ArrivedDocumentAsync(InboxSenderRuleKind.Allow);
+    /// <summary>A row held under the removed unknown-sender policy: nothing produces SenderPending any more.</summary>
+    private async Task<InboxDocument> LegacySenderPendingAsync()
+    {
+        var doc = await PreparingAsync();
+        doc.Status = InboxDocumentStatus.SenderPending;
+        await doc.Update(BackendConfigurationPnDbContext!);
+        return doc;
+    }
 
     [Test]
     public async Task Deliver_StoresPdfAndSuggestions_Ready()
@@ -238,17 +255,16 @@ public class InboxHubServiceTests : TestBaseSetup
     }
 
     [Test]
-    public async Task Deliver_SenderPending_StoresButStaysSenderPending()
+    public async Task Deliver_LegacySenderPendingRow_StoresAndBecomesReady()
     {
-        var doc = await ArrivedDocumentAsync(null);
-        Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.SenderPending));
+        var doc = await LegacySenderPendingAsync();
         var p = await InboxTestData.PropertyAsync(BackendConfigurationPnDbContext!);
 
         await _service.DeliverAsync(new DeliverMetadata(doc.HubDocumentId, 1, false,
             [new("property", p.Id, "textMatch", 0.5, null, 1, null)]), Pdf(), "a.pdf");
 
         await BackendConfigurationPnDbContext!.Entry(doc).ReloadAsync();
-        Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.SenderPending));
+        Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.Ready));
         Assert.That(doc.Md5, Has.Length.EqualTo(32));
         Assert.That(doc.DeliveredAt, Is.Not.Null);
         Assert.That(await BackendConfigurationPnDbContext.InboxSuggestions.CountAsync(s => s.InboxDocumentId == doc.Id),
@@ -286,15 +302,15 @@ public class InboxHubServiceTests : TestBaseSetup
     }
 
     [Test]
-    public async Task Deliver_UnknownHubDocument_CreatesSenderPendingRow()
+    public async Task Deliver_UnknownHubDocument_CreatesReadyRow()
     {
         var id = Guid.NewGuid().ToString();
 
         await _service.DeliverAsync(new DeliverMetadata(id, 1, false, []), Pdf(), "lost.pdf");
 
-        // The sender was never checked, so the document waits for approve-sender.
+        // The sender is unknown, so no Block rule can match it: nothing holds the document back.
         var doc = await BackendConfigurationPnDbContext!.InboxDocuments.AsNoTracking().SingleAsync(d => d.HubDocumentId == id);
-        Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.SenderPending));
+        Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.Ready));
         Assert.That(doc.FromAddress, Is.EqualTo(InboxHubService.UnknownSender));
         Assert.That(doc.DeliveredAt, Is.Not.Null);
         Assert.That(doc.FileName, Is.EqualTo("lost.pdf"));
@@ -314,20 +330,22 @@ public class InboxHubServiceTests : TestBaseSetup
     }
 
     [Test]
-    public async Task Deliver_AfterFailedForHeldSender_StaysSenderPending()
+    public async Task Deliver_LegacySenderPendingRowThatFailed_IsReady()
     {
-        var doc = await ArrivedDocumentAsync(null);
+        var doc = await LegacySenderPendingAsync();
         await _service.FailedAsync(new FailedRequest(doc.HubDocumentId, "Dokumentet kunne ikke behandles automatisk."));
+        await BackendConfigurationPnDbContext!.Entry(doc).ReloadAsync();
+        Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.Failed));
 
         await _service.DeliverAsync(new DeliverMetadata(doc.HubDocumentId, 1, false, []), Pdf(), "a.pdf");
 
-        await BackendConfigurationPnDbContext!.Entry(doc).ReloadAsync();
-        Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.SenderPending));
+        await BackendConfigurationPnDbContext.Entry(doc).ReloadAsync();
+        Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.Ready));
         Assert.That(doc.DeliveredAt, Is.Not.Null);
     }
 
     [Test]
-    public async Task Deliver_AfterFailedForAllowedSender_IsReady()
+    public async Task Deliver_AfterFailed_IsReady()
     {
         var doc = await PreparingAsync();
         await _service.FailedAsync(new FailedRequest(doc.HubDocumentId, "Dokumentet kunne ikke behandles automatisk."));

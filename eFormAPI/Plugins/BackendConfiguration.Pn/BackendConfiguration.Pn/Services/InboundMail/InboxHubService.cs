@@ -18,7 +18,7 @@ namespace BackendConfiguration.Pn.Services.InboundMail;
 /// <summary>What the central inbound mail service calls; the controller has verified the signature.</summary>
 public interface IInboxHubService
 {
-    /// <summary>Creates the document (Preparing, or SenderPending for an unknown sender) unless the sender is blocked.</summary>
+    /// <summary>Creates the document (Preparing) unless the sender is blocked.</summary>
     Task<ArrivedResponse> ArrivedAsync(ArrivedRequest r);
 
     /// <summary>Live properties and file tags, for the central service's suggestions.</summary>
@@ -52,11 +52,11 @@ public class InboxHubService(BackendConfigurationPnDbContext dbContext, IArchive
             // The central service retried after a timeout: answer what the first call decided.
             return new ArrivedResponse(existing.Status switch
             {
-                InboxDocumentStatus.SenderPending => SenderVerdict.Unknown,
-                // Failed before delivery: it may have been held, so the status no longer tells. Ask again.
-                // Rejected: a manager rejecting a document is not a sender block, so ask again as well.
+                // Rejected (the sender may have been blocked with it), failed before delivery, or legacy:
+                // the current block list answers. The row is left as it is; a delivery makes it Ready.
+                InboxDocumentStatus.Rejected or InboxLegacy.SenderPending
+                    => await verdicts.ResolveAsync(existing.FromAddress),
                 InboxDocumentStatus.Failed when existing.DeliveredAt == null => await verdicts.ResolveAsync(existing.FromAddress),
-                InboxDocumentStatus.Rejected => await verdicts.ResolveAsync(existing.FromAddress),
                 _ => SenderVerdict.Allowed
             });
         }
@@ -78,7 +78,7 @@ public class InboxHubService(BackendConfigurationPnDbContext dbContext, IArchive
             SizeBytes = r.SizeBytes,
             SpfResult = Cut(r.SpfResult, 20),
             DkimResult = Cut(r.DkimResult, 20),
-            Status = verdict == SenderVerdict.Unknown ? InboxDocumentStatus.SenderPending : InboxDocumentStatus.Preparing,
+            Status = InboxDocumentStatus.Preparing,
             CreatedByUserId = SystemUserId,
             UpdatedByUserId = SystemUserId
         }.Create(dbContext);
@@ -139,7 +139,7 @@ public class InboxHubService(BackendConfigurationPnDbContext dbContext, IArchive
             // Conditional claim, so a delivery that lands concurrently is never turned into Failed.
             var claimed = await dbContext.InboxDocuments
                 .Where(d => d.HubDocumentId == r.HubDocumentId && d.DeliveredAt == null
-                            && (d.Status == InboxDocumentStatus.Preparing || d.Status == InboxDocumentStatus.SenderPending))
+                            && (d.Status == InboxDocumentStatus.Preparing || d.Status == InboxLegacy.SenderPending))
                 .ExecuteUpdateAsync(s => s.SetProperty(d => d.UpdatedAt, DateTime.UtcNow));
             if (claimed == 0)
             {
@@ -185,14 +185,15 @@ public class InboxHubService(BackendConfigurationPnDbContext dbContext, IArchive
                     return; // delivered (or closed) by another request meanwhile
                 }
 
-                // "arrived" never reached us, so the sender was never checked: hold it for approval.
+                // "arrived" never reached us, so the sender is unknown. Without an address no Block rule can
+                // match, and every other sender is accepted: the document is ready like any other.
                 doc = new InboxDocument
                 {
                     HubDocumentId = meta.HubDocumentId,
                     FromAddress = UnknownSender,
                     ReceivedAt = now,
                     FileName = Cut(fileName, 250),
-                    Status = InboxDocumentStatus.SenderPending,
+                    Status = InboxDocumentStatus.Ready,
                     CreatedByUserId = SystemUserId,
                     UpdatedByUserId = SystemUserId
                 };
@@ -210,17 +211,8 @@ public class InboxHubService(BackendConfigurationPnDbContext dbContext, IArchive
             doc.ReviewedByMicroting = meta.ReviewedByMicroting;
             doc.DeliveredAt = now;
             doc.FailureReason = null;
-            // An unknown sender stays SenderPending: only approve-sender may make the document Ready. A document
-            // that failed before delivery may have been held, so its sender is checked again.
-            if (doc.Status == InboxDocumentStatus.Failed
-                && await verdicts.ResolveAsync(doc.FromAddress) != SenderVerdict.Allowed)
-            {
-                doc.Status = InboxDocumentStatus.SenderPending;
-            }
-            else if (doc.Status != InboxDocumentStatus.SenderPending)
-            {
-                doc.Status = InboxDocumentStatus.Ready;
-            }
+            // The hub delivers only what "arrived" allowed, and nothing is held: every open status becomes Ready.
+            doc.Status = InboxDocumentStatus.Ready;
 
             await doc.Update(dbContext);
             await tx.CommitAsync();

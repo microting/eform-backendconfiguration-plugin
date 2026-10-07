@@ -19,9 +19,6 @@ public interface IInboundMailHubClient
 
     /// <exception cref="InboundMailHubException">The hub did not accept the registration.</exception>
     Task RegisterAddressAsync(string tokenHash, string? previousTokenHash, DateTime? graceUntil);
-
-    /// <exception cref="InboundMailHubException">The hub did not accept the decision.</exception>
-    Task SenderDecisionAsync(string hubDocumentId, bool approve);
 }
 
 public enum InboundMailHubFailure
@@ -53,14 +50,6 @@ public class InboundMailHubClient(HttpClient http, IOptions<InboundMailHubOption
         // No tenant display name exists in the SDK or plugin settings; the hub shows the customer number.
         await SendAsync(HttpMethod.Put, $"/api/tenants/{n}/address", n,
             new { tokenHash, previousTokenHash, graceUntil, tenantName = $"Kunde {n}" });
-    }
-
-    public async Task SenderDecisionAsync(string hubDocumentId, bool approve)
-    {
-        var n = await CustomerNoAsync();
-        await SendAsync(HttpMethod.Post,
-            $"/api/tenants/{n}/documents/{Uri.EscapeDataString(hubDocumentId)}/sender-decision", n,
-            new { decision = approve ? "approve" : "reject" });
     }
 
     private async Task<int> CustomerNoAsync()

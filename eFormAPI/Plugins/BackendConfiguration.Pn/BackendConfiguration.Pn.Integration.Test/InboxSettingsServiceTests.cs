@@ -1,7 +1,6 @@
 #nullable enable
 using System.Globalization;
 using System.Net;
-using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using BackendConfiguration.Pn.Infrastructure.Models.Inbox;
@@ -34,9 +33,6 @@ public class InboxSettingsServiceTests : TestBaseSetup
     public async Task SetUpService()
     {
         await InboxTestData.ClearAsync(BackendConfigurationPnDbContext!);
-        // No seeded policy row: the default (hold) is the missing row.
-        await BackendConfigurationPnDbContext!.PluginConfigurationValues
-            .Where(x => x.Name == SenderVerdictResolver.PolicyName).ExecuteDeleteAsync();
         _hub = Substitute.For<IInboundMailHubClient>();
         _hub.IsConfigured.Returns(true);
         _customerNo = Substitute.For<ICustomerNoProvider>();
@@ -52,20 +48,6 @@ public class InboxSettingsServiceTests : TestBaseSetup
     private InboundMailHubClient RealClient(FakeHubHandler handler) =>
         new(new HttpClient(handler), Options.Create(new InboundMailHubOptions { HubUrl = HubUrl, TenantSigningKey = SigningKey }),
             _customerNo);
-
-    private async Task<InboxDocument> SenderPendingDocumentAsync(string fromAddress = "post@example.net", bool delivered = false)
-    {
-        var doc = await InboxTestData.ReadyDocumentAsync(BackendConfigurationPnDbContext!);
-        doc.Status = InboxDocumentStatus.SenderPending;
-        doc.FromAddress = fromAddress;
-        if (!delivered)
-        {
-            doc.DeliveredAt = null;
-            doc.Md5 = null;
-        }
-        await doc.Update(BackendConfigurationPnDbContext!);
-        return doc;
-    }
 
     private Task<List<InboxSenderRule>> LiveRulesAsync() =>
         BackendConfigurationPnDbContext!.InboxSenderRules.Where(r => r.WorkflowState != "removed").ToListAsync();
@@ -92,7 +74,6 @@ public class InboxSettingsServiceTests : TestBaseSetup
 
         Assert.That(res.Success, Is.True);
         Assert.That(res.Model.Address, Does.StartWith("4711-"));
-        Assert.That(res.Model.UnknownSenderPolicy, Is.EqualTo("hold"));
         var row = await BackendConfigurationPnDbContext!.InboxAddresses.SingleAsync();
         Assert.That(row.Active, Is.True);
         Assert.That(row.Address, Is.EqualTo(res.Model.Address));
@@ -207,254 +188,75 @@ public class InboxSettingsServiceTests : TestBaseSetup
         Assert.That(row.GraceUntil, Is.Null);
     }
 
-    // ---- Settings: rules and policy ----
+    // ---- Settings: blocked senders ----
+
+    private static InboxSenderRuleModel Block(string pattern) => new() { Pattern = pattern, Kind = (int)InboxSenderRuleKind.Block };
 
     [Test]
-    public async Task Update_ReplacesRulesAndPolicy()
+    public async Task Update_ReplacesBlockedSenders()
     {
-        await _service.UpdateAsync(new InboxSettingsModel
-        {
-            UnknownSenderPolicy = "refuse",
-            SenderRules = [new() { Pattern = "@example.org", Kind = 0 }, new() { Pattern = "spam@example.net", Kind = 1 }]
-        }, 1);
-        var res = await _service.UpdateAsync(new InboxSettingsModel
-        {
-            UnknownSenderPolicy = "refuse", SenderRules = [new() { Pattern = " @Example.org ", Kind = 0 }]
-        }, 1);
+        await _service.UpdateAsync(new InboxSettingsModel { SenderRules = [Block("@example.org"), Block("spam@example.net")] }, 1);
+
+        var res = await _service.UpdateAsync(new InboxSettingsModel { SenderRules = [Block(" @Example.org "), Block("@example.com")] }, 1);
 
         Assert.That(res.Success, Is.True);
         var live = await LiveRulesAsync();
-        Assert.That(live.Select(r => r.Pattern), Is.EquivalentTo(new[] { "@example.org" }));
-        var policy = await BackendConfigurationPnDbContext!.PluginConfigurationValues.AsNoTracking()
-            .SingleAsync(x => x.Name == SenderVerdictResolver.PolicyName);
-        Assert.That(policy.Value, Is.EqualTo("refuse"));
+        Assert.That(live.Select(r => r.Pattern), Is.EquivalentTo(new[] { "@example.org", "@example.com" }));
+        Assert.That(live.All(r => r.Kind == InboxSenderRuleKind.Block), Is.True);
+        // The unchanged rule kept its row.
+        Assert.That(await BackendConfigurationPnDbContext!.InboxSenderRules.CountAsync(r => r.Pattern == "@example.org"),
+            Is.EqualTo(1));
     }
 
     [Test]
-    public async Task Update_MissingPolicyRow_IsCreatedOnce_AndReportedByGet()
+    public async Task Update_AllowKindRule_IsRefused_NothingWritten()
     {
-        await _service.UpdateAsync(new InboxSettingsModel { UnknownSenderPolicy = "refuse" }, 1);
-        await _service.UpdateAsync(new InboxSettingsModel { UnknownSenderPolicy = "hold" }, 1);
-        await _service.UpdateAsync(new InboxSettingsModel { UnknownSenderPolicy = "refuse" }, 1);
+        var res = await _service.UpdateAsync(new InboxSettingsModel
+        {
+            SenderRules = [new() { Pattern = "@example.org", Kind = (int)InboxSenderRuleKind.Allow }, Block("spam@example.net")]
+        }, 1);
 
-        var rows = await BackendConfigurationPnDbContext!.PluginConfigurationValues.AsNoTracking()
-            .Where(x => x.Name == SenderVerdictResolver.PolicyName).ToListAsync();
-        Assert.That(rows, Has.Count.EqualTo(1));
-        Assert.That(rows[0].Value, Is.EqualTo("refuse"));
-        Assert.That((await _service.GetAsync(1)).Model.UnknownSenderPolicy, Is.EqualTo("refuse"));
+        Assert.That(res.Success, Is.False);
+        Assert.That(res.Message, Is.EqualTo("InboxInvalidSenderRule"));
+        Assert.That(await LiveRulesAsync(), Is.Empty);
+    }
+
+    [Test]
+    public async Task Update_LeavesLegacyAllowRowsAlone_AndGetShowsOnlyBlockedSenders()
+    {
+        await new InboxSenderRule { Pattern = "@example.org", Kind = InboxSenderRuleKind.Allow, CreatedByUserId = 1, UpdatedByUserId = 1 }
+            .Create(BackendConfigurationPnDbContext!);
+
+        var res = await _service.UpdateAsync(new InboxSettingsModel { SenderRules = [Block("spam@example.net")] }, 1);
+
+        Assert.That(res.Success, Is.True);
+        var live = await LiveRulesAsync();
+        Assert.That(live.Select(r => (r.Pattern, r.Kind)), Is.EquivalentTo(new[]
+        {
+            ("@example.org", InboxSenderRuleKind.Allow), ("spam@example.net", InboxSenderRuleKind.Block)
+        }));
+        var model = (await _service.GetAsync(1)).Model;
+        Assert.That(model.SenderRules.Select(r => (r.Pattern, r.Kind)),
+            Is.EqualTo(new[] { ("spam@example.net", (int)InboxSenderRuleKind.Block) }));
     }
 
     [Test]
     public async Task Update_NullRulesOrBody_DoesNotThrow()
     {
-        var ok = await _service.UpdateAsync(new InboxSettingsModel { UnknownSenderPolicy = "hold", SenderRules = null! }, 1);
+        var ok = await _service.UpdateAsync(new InboxSettingsModel { SenderRules = null! }, 1);
         Assert.That(ok.Success, Is.True);
 
         var nullBody = await _service.UpdateAsync(null!, 1);
         Assert.That(nullBody.Success, Is.False);
-        Assert.That(nullBody.Message, Is.EqualTo("InboxInvalidUnknownSenderPolicy"));
+        Assert.That(nullBody.Message, Is.EqualTo("InboxInvalidSenderRule"));
     }
 
     [Test]
     public async Task Update_InvalidPattern_IsRejected()
     {
-        var res = await _service.UpdateAsync(new InboxSettingsModel { SenderRules = [new() { Pattern = "not an address", Kind = 0 }] }, 1);
+        var res = await _service.UpdateAsync(new InboxSettingsModel { SenderRules = [Block("not an address")] }, 1);
         Assert.That(res.Success, Is.False);
         Assert.That(res.Message, Is.EqualTo("InboxInvalidSenderRule"));
-        Assert.That(await LiveRulesAsync(), Is.Empty);
-    }
-
-    [Test]
-    public async Task Update_SamePatternAllowAndBlock_IsRejected()
-    {
-        var res = await _service.UpdateAsync(new InboxSettingsModel
-        {
-            SenderRules = [new() { Pattern = "post@example.net", Kind = 0 }, new() { Pattern = "Post@Example.net", Kind = 1 }]
-        }, 1);
-        Assert.That(res.Success, Is.False);
-        Assert.That(res.Message, Is.EqualTo("InboxInvalidSenderRule"));
-        Assert.That(await LiveRulesAsync(), Is.Empty);
-    }
-
-    [Test]
-    public async Task Update_InvalidPolicy_IsRejected()
-    {
-        var res = await _service.UpdateAsync(new InboxSettingsModel { UnknownSenderPolicy = "drop" }, 1);
-        Assert.That(res.Success, Is.False);
-        Assert.That(res.Message, Is.EqualTo("InboxInvalidUnknownSenderPolicy"));
-        Assert.That(await BackendConfigurationPnDbContext!.PluginConfigurationValues
-            .AnyAsync(x => x.Name == SenderVerdictResolver.PolicyName), Is.False);
-    }
-
-    // ---- Sender decisions ----
-
-    [Test]
-    public async Task ApproveSender_AddsAllowRule_TellsHub_StaysPreparing()
-    {
-        var doc = await SenderPendingDocumentAsync();
-
-        var res = await _service.ApproveSenderAsync(doc.Id, 1);
-
-        Assert.That(res.Success, Is.True);
-        await BackendConfigurationPnDbContext!.Entry(doc).ReloadAsync();
-        Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.Preparing));
-        Assert.That(await BackendConfigurationPnDbContext.InboxSenderRules.AnyAsync(r => r.Pattern == "post@example.net" && r.Kind == InboxSenderRuleKind.Allow), Is.True);
-        await _hub.Received(1).SenderDecisionAsync(doc.HubDocumentId, true);
-    }
-
-    [Test]
-    public async Task ApproveSender_AlreadyDelivered_BecomesReady()
-    {
-        var doc = await SenderPendingDocumentAsync(delivered: true);
-
-        var res = await _service.ApproveSenderAsync(doc.Id, 1);
-
-        Assert.That(res.Success, Is.True);
-        await BackendConfigurationPnDbContext!.Entry(doc).ReloadAsync();
-        Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.Ready));
-    }
-
-    [Test]
-    public async Task ApproveSender_ExistingAllowRule_IsNotDuplicated()
-    {
-        await new InboxSenderRule { Pattern = "Post@Example.net", Kind = InboxSenderRuleKind.Allow, CreatedByUserId = 1, UpdatedByUserId = 1 }
-            .Create(BackendConfigurationPnDbContext!);
-        var doc = await SenderPendingDocumentAsync();
-
-        await _service.ApproveSenderAsync(doc.Id, 1);
-
-        Assert.That(await LiveRulesAsync(), Has.Count.EqualTo(1));
-    }
-
-    [Test]
-    public async Task ApproveSender_ExistingBlockRule_IsReplacedByAllow()
-    {
-        await new InboxSenderRule { Pattern = "post@example.net", Kind = InboxSenderRuleKind.Block, CreatedByUserId = 1, UpdatedByUserId = 1 }
-            .Create(BackendConfigurationPnDbContext!);
-        var doc = await SenderPendingDocumentAsync();
-
-        var res = await _service.ApproveSenderAsync(doc.Id, 1);
-
-        Assert.That(res.Success, Is.True);
-        var live = await LiveRulesAsync();
-        Assert.That(live, Has.Count.EqualTo(1));
-        Assert.That(live[0].Pattern, Is.EqualTo("post@example.net"));
-        Assert.That(live[0].Kind, Is.EqualTo(InboxSenderRuleKind.Allow));
-    }
-
-    [Test]
-    public async Task RejectSender_WithBlock_ExistingAllowRule_IsReplacedByBlock()
-    {
-        await new InboxSenderRule { Pattern = "post@example.net", Kind = InboxSenderRuleKind.Allow, CreatedByUserId = 1, UpdatedByUserId = 1 }
-            .Create(BackendConfigurationPnDbContext!);
-        var doc = await SenderPendingDocumentAsync();
-
-        var res = await _service.RejectSenderAsync(doc.Id, true, 1);
-
-        Assert.That(res.Success, Is.True);
-        var live = await LiveRulesAsync();
-        Assert.That(live, Has.Count.EqualTo(1));
-        Assert.That(live[0].Pattern, Is.EqualTo("post@example.net"));
-        Assert.That(live[0].Kind, Is.EqualTo(InboxSenderRuleKind.Block));
-    }
-
-    [Test]
-    public async Task ApproveSender_UnknownSenderPlaceholder_AddsNoRule()
-    {
-        var doc = await SenderPendingDocumentAsync(InboxHubService.UnknownSender);
-
-        var res = await _service.ApproveSenderAsync(doc.Id, 1);
-
-        Assert.That(res.Success, Is.True);
-        Assert.That(await LiveRulesAsync(), Is.Empty);
-        await BackendConfigurationPnDbContext!.Entry(doc).ReloadAsync();
-        Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.Preparing));
-    }
-
-    [Test]
-    public async Task ApproveSender_NotSenderPending_IsRefused_HubNotCalled()
-    {
-        var doc = await InboxTestData.ReadyDocumentAsync(BackendConfigurationPnDbContext!);
-
-        var res = await _service.ApproveSenderAsync(doc.Id, 1);
-
-        Assert.That(res.Success, Is.False);
-        Assert.That(res.Message, Is.EqualTo("InboxSenderAlreadyDecided"));
-        await _hub.DidNotReceiveWithAnyArgs().SenderDecisionAsync(default!, default);
-    }
-
-    [Test]
-    public async Task RejectSender_WithBlock_AddsBlockRule_Rejected()
-    {
-        var doc = await SenderPendingDocumentAsync();
-
-        var res = await _service.RejectSenderAsync(doc.Id, true, 1);
-
-        Assert.That(res.Success, Is.True);
-        await BackendConfigurationPnDbContext!.Entry(doc).ReloadAsync();
-        Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.Rejected));
-        Assert.That(await BackendConfigurationPnDbContext.InboxSenderRules.AnyAsync(r => r.Pattern == "post@example.net" && r.Kind == InboxSenderRuleKind.Block), Is.True);
-        await _hub.Received(1).SenderDecisionAsync(doc.HubDocumentId, false);
-    }
-
-    [Test]
-    public async Task RejectSender_WithoutBlock_AddsNoRule()
-    {
-        var doc = await SenderPendingDocumentAsync();
-
-        await _service.RejectSenderAsync(doc.Id, false, 1);
-
-        await BackendConfigurationPnDbContext!.Entry(doc).ReloadAsync();
-        Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.Rejected));
-        Assert.That(await LiveRulesAsync(), Is.Empty);
-    }
-
-    [Test]
-    public async Task ApproveSender_Hub409_TryAgainShortly_NothingWritten()
-    {
-        var handler = new FakeHubHandler(_ => new HttpResponseMessage(HttpStatusCode.Conflict));
-        var service = NewService(RealClient(handler));
-        var doc = await SenderPendingDocumentAsync();
-
-        var res = await service.ApproveSenderAsync(doc.Id, 1);
-
-        Assert.That(res.Success, Is.False);
-        Assert.That(res.Message, Is.EqualTo("InboxTryAgainShortly"));
-        Assert.That(handler.Requests, Has.Count.EqualTo(1));
-        await BackendConfigurationPnDbContext!.Entry(doc).ReloadAsync();
-        Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.SenderPending));
-        Assert.That(await LiveRulesAsync(), Is.Empty);
-    }
-
-    [Test]
-    public async Task RejectSender_Hub409_TryAgainShortly_NothingWritten()
-    {
-        var handler = new FakeHubHandler(_ => new HttpResponseMessage(HttpStatusCode.Conflict));
-        var service = NewService(RealClient(handler));
-        var doc = await SenderPendingDocumentAsync();
-
-        var res = await service.RejectSenderAsync(doc.Id, true, 1);
-
-        Assert.That(res.Success, Is.False);
-        Assert.That(res.Message, Is.EqualTo("InboxTryAgainShortly"));
-        await BackendConfigurationPnDbContext!.Entry(doc).ReloadAsync();
-        Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.SenderPending));
-        Assert.That(await LiveRulesAsync(), Is.Empty);
-    }
-
-    [Test]
-    public async Task RejectSender_HubDown_FailureMessage_NothingWritten()
-    {
-        var handler = new FakeHubHandler(_ => throw new HttpRequestException("connection refused"));
-        var service = NewService(RealClient(handler));
-        var doc = await SenderPendingDocumentAsync();
-
-        var res = await service.RejectSenderAsync(doc.Id, true, 1);
-
-        Assert.That(res.Success, Is.False);
-        Assert.That(res.Message, Is.EqualTo("InboxHubUnavailable"));
-        await BackendConfigurationPnDbContext!.Entry(doc).ReloadAsync();
-        Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.SenderPending));
         Assert.That(await LiveRulesAsync(), Is.Empty);
     }
 
@@ -489,27 +291,13 @@ public class InboxSettingsServiceTests : TestBaseSetup
     }
 
     [Test]
-    public async Task HubClient_SenderDecision_PostsDecision()
-    {
-        var handler = new FakeHubHandler(_ => new HttpResponseMessage(HttpStatusCode.NoContent));
-
-        await RealClient(handler).SenderDecisionAsync("0f8fad5b-d9cb-469f-a165-70867728950e", false);
-
-        var req = handler.Requests.Single();
-        Assert.That(req.Method, Is.EqualTo("POST"));
-        Assert.That(req.Uri.AbsolutePath,
-            Is.EqualTo("/api/tenants/4711/documents/0f8fad5b-d9cb-469f-a165-70867728950e/sender-decision"));
-        Assert.That(Encoding.UTF8.GetString(req.Body), Is.EqualTo("{\"decision\":\"reject\"}"));
-    }
-
-    [Test]
     public async Task HubClient_NotConfigured_Throws_WithoutCallingHub()
     {
         var handler = new FakeHubHandler(_ => new HttpResponseMessage(HttpStatusCode.NoContent));
         var client = new InboundMailHubClient(new HttpClient(handler),
             Options.Create(new InboundMailHubOptions { HubUrl = HubUrl }), _customerNo);
 
-        var e = await Assert.ThrowsAsync<InboundMailHubException>(() => client.SenderDecisionAsync("x", true));
+        var e = await Assert.ThrowsAsync<InboundMailHubException>(() => client.RegisterAddressAsync("x", null, null));
 
         Assert.That(e!.Failure, Is.EqualTo(InboundMailHubFailure.NotConfigured));
         Assert.That(client.IsConfigured, Is.False);

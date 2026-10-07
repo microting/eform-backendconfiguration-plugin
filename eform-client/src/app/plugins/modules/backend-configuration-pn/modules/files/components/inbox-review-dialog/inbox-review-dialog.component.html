@@ -62,7 +62,14 @@
 <div mat-dialog-actions class="d-flex flex-row justify-content-end align-items-center gap-12">
   <button class="btn-cancel" id="inboxCloseBtn" [disabled]="busy" (click)="close()">{{ 'Close' | translate }}</button>
   <ng-container *ngIf="!filed; else undoAction">
-    <button class="btn-delete" id="inboxRejectBtn" [disabled]="busy" (click)="reject()">{{ 'Reject document' | translate }}</button>
+    <button class="btn-delete" id="inboxRejectBtn" [disabled]="busy" (click)="reject(false)">{{ 'Reject document' | translate }}</button>
+    <button
+      *ngIf="!isUnknownSender(data.fromAddress)"
+      class="btn-quiet"
+      id="inboxRejectBlockBtn"
+      [disabled]="busy"
+      (click)="reject(true)"
+    >{{ 'Reject and block sender' | translate }}</button>
     <button class="btn-primary" id="inboxFileBtn" [disabled]="!canFile" (click)="fileIt()">{{ 'File in archive' | translate }}</button>
   </ng-container>
   <ng-template #undoAction>

@@ -14,11 +14,13 @@ public record ArrivedRequest(string HubDocumentId, string FromAddress, string? S
 /// <summary><c>SenderVerdict</c> is one of the <see cref="Inbox.SenderVerdict"/> values.</summary>
 public record ArrivedResponse(string SenderVerdict);
 
-/// <summary>The sender verdict values on the wire.</summary>
+/// <summary>
+/// The sender verdict values on the wire. The protocol also knows "unknown" (the removed hold for unknown
+/// senders); this tenant no longer answers it: every sender is allowed unless a Block rule matches.
+/// </summary>
 public static class SenderVerdict
 {
     public const string Allowed = "allowed";
-    public const string Unknown = "unknown";
     public const string Blocked = "blocked";
 }
 
