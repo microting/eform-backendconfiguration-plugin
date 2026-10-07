@@ -33,7 +33,7 @@ const Status = { Ready: '2', Filed: '4' } as const;
  * I3 a document without suggestions cannot be filed without a property, and is rejected.
  * I4 the blocked senders are listed, saved and survive a reload; the address is rotated.
  *
- * The admin has every plugin permission, inbox_enable included, so the archive section tabs must show.
+ * The admin sees the archive section tabs (the inbox is admin-only).
  * It is also the tenant's first user (lowest AspNetUsers Id), the only one who may rotate the address.
  */
 test.describe.serial('Indbakke', () => {

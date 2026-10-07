@@ -1,4 +1,4 @@
-<nav *ngIf="canUseInbox" class="d-flex flex-row flex-wrap gap-12" [attr.aria-label]="'Archive sections' | translate">
+<nav *ngIf="canUseInbox$ | async" class="d-flex flex-row flex-wrap gap-12" [attr.aria-label]="'Archive sections' | translate">
   <a
     id="archiveNavInbox"
     routerLink="/plugins/backend-configuration-pn/files/inbox"
