@@ -2,7 +2,6 @@
 using System;
 using System.Data;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Inbox;
 using BackendConfiguration.Pn.Infrastructure.Models.Settings;
@@ -23,29 +22,22 @@ public interface IInboxSettingsService
     Task<OperationDataResult<InboxSettingsModel>> GetAsync(int userId);
     Task<OperationResult> UpdateAsync(InboxSettingsModel model, int userId);
     Task<OperationDataResult<InboxSettingsModel>> RotateAddressAsync(int userId);
-    Task<OperationResult> ApproveSenderAsync(int inboxDocumentId, int userId);
-    Task<OperationResult> RejectSenderAsync(int inboxDocumentId, bool block, int userId);
 }
 
 /// <summary>
-/// Inbox settings (address, sender rules, unknown-sender policy) and the manager's decision on a
-/// SenderPending document. Every hub call happens before anything is written, so a hub that says no
-/// (or is down) leaves the tenant exactly as it was.
+/// Inbox settings: the archive address and the blocked senders. Every sender is accepted unless a Block
+/// rule matches, so Block is the only rule kind this service reads or writes; legacy Allow rows are left
+/// alone and ignored. Every hub call happens before anything is written, so a hub that says no (or is
+/// down) leaves the tenant exactly as it was.
 /// </summary>
-public partial class InboxSettingsService(BackendConfigurationPnDbContext dbContext, IInboundMailHubClient hub,
+public class InboxSettingsService(BackendConfigurationPnDbContext dbContext, IInboundMailHubClient hub,
     ICustomerNoProvider customerNo, IOptions<InboundMailHubOptions> options,
     IBackendConfigurationLocalizationService localization, ILogger<InboxSettingsService> logger) : IInboxSettingsService
 {
-    private const string PolicyHold = "hold";
-    private const string PolicyRefuse = "refuse";
     /// <summary>MySQL named lock: address creation and rotation never interleave (there is no unique index to lean on).</summary>
     private const string AddressLockSql = "SELECT GET_LOCK(CONCAT('inbox-address-create:', DATABASE()), 15)";
     private const string AddressUnlockSql = "SELECT RELEASE_LOCK(CONCAT('inbox-address-create:', DATABASE()))";
     private static readonly TimeSpan Grace = TimeSpan.FromDays(7);
-
-    /// <summary>An exact address or "@domain" (the shapes SenderVerdictResolver matches), lower-cased.</summary>
-    [GeneratedRegex(@"^(@[a-z0-9.-]+\.[a-z]{2,}|[^@\s]+@[a-z0-9.-]+\.[a-z]{2,})$")]
-    private static partial Regex PatternRegex();
 
     /// <summary>The row is no longer in the state the operation needs (a concurrent request won).</summary>
     private sealed class InboxStateException(string messageKey) : Exception(messageKey)
@@ -115,38 +107,36 @@ public partial class InboxSettingsService(BackendConfigurationPnDbContext dbCont
         return new OperationDataResult<InboxSettingsModel>(true, await ModelAsync(value));
     }
 
+    /// <summary>
+    /// Full replace of the blocked senders. Any other rule kind is refused rather than dropped, so a client
+    /// still sending Allow rules learns that they no longer exist.
+    /// </summary>
     public async Task<OperationResult> UpdateAsync(InboxSettingsModel model, int userId)
     {
-        if (model?.UnknownSenderPolicy is not (PolicyHold or PolicyRefuse))
-            return new OperationResult(false, localization.GetString("InboxInvalidUnknownSenderPolicy"));
-
-        var wanted = (model.SenderRules ?? [])
-            .Select(r => (Pattern: Normalize(r.Pattern), r.Kind))
-            .Distinct()
-            .ToList();
-        var invalid = wanted.Any(r => !IsValidPattern(r.Pattern) || !Enum.IsDefined(typeof(InboxSenderRuleKind), r.Kind))
-                      || wanted.GroupBy(r => r.Pattern).Any(g => g.Count() > 1); // both Allow and Block
-        if (invalid)
+        var rules = model?.SenderRules ?? [];
+        // Only Block rules exist now; a null entry (malformed request body) is refused like any invalid rule.
+        if (model == null || rules.Any(r => r == null || r.Kind != (int)InboxSenderRuleKind.Block))
+            return new OperationResult(false, localization.GetString("InboxInvalidSenderRule"));
+        var wanted = rules.Select(r => InboxSenderPattern.Normalize(r.Pattern)).Distinct().ToList();
+        if (!wanted.All(InboxSenderPattern.IsValid))
             return new OperationResult(false, localization.GetString("InboxInvalidSenderRule"));
 
         try
         {
             await InTransactionAsync(async () =>
             {
-                var existing = await LiveRules().ToListAsync();
-                foreach (var rule in existing.Where(r => !wanted.Contains((Normalize(r.Pattern), (int)r.Kind))))
+                var existing = await dbContext.InboxSenderRules.LiveBlockRules().ToListAsync();
+                foreach (var rule in existing.Where(r => !wanted.Contains(InboxSenderPattern.Normalize(r.Pattern))))
                 {
                     rule.UpdatedByUserId = userId;
                     await rule.Delete(dbContext);
                 }
 
-                foreach (var (pattern, kind) in wanted.Where(w =>
-                             !existing.Any(r => Normalize(r.Pattern) == w.Pattern && (int)r.Kind == w.Kind)))
+                foreach (var pattern in wanted.Where(w =>
+                             !existing.Any(r => InboxSenderPattern.Normalize(r.Pattern) == w)))
                 {
-                    await NewRule(pattern, (InboxSenderRuleKind)kind, userId).Create(dbContext);
+                    await InboxBlockRules.New(pattern, userId).Create(dbContext);
                 }
-
-                await UpsertPolicyAsync(model.UnknownSenderPolicy, userId);
             });
         }
         catch (Exception e)
@@ -214,130 +204,6 @@ public partial class InboxSettingsService(BackendConfigurationPnDbContext dbCont
             await NewAddress(value, hash, userId).Create(dbContext);
         });
         return new OperationDataResult<InboxSettingsModel>(true, await ModelAsync(value));
-    }
-
-    public Task<OperationResult> ApproveSenderAsync(int inboxDocumentId, int userId) =>
-        DecideSenderAsync(inboxDocumentId, approve: true, block: false, userId);
-
-    public Task<OperationResult> RejectSenderAsync(int inboxDocumentId, bool block, int userId) =>
-        DecideSenderAsync(inboxDocumentId, approve: false, block, userId);
-
-    private async Task<OperationResult> DecideSenderAsync(int id, bool approve, bool block, int userId)
-    {
-        var operation = approve ? "approve sender" : "reject sender";
-        try
-        {
-            var doc = await dbContext.InboxDocuments.AsNoTracking()
-                .Where(d => d.Id == id && d.WorkflowState != Constants.WorkflowStates.Removed)
-                .Select(d => new { d.Status, d.HubDocumentId }).FirstOrDefaultAsync();
-            if (doc is not { Status: InboxDocumentStatus.SenderPending })
-                return new OperationResult(false, localization.GetString("InboxSenderAlreadyDecided"));
-
-            // The hub decides first: a 409 or an outage must leave no rule and no status change behind.
-            try
-            {
-                await hub.SenderDecisionAsync(doc.HubDocumentId, approve);
-            }
-            catch (InboundMailHubException e)
-            {
-                return new OperationResult(false, localization.GetString(HubFailureKey(e, operation)));
-            }
-
-            await InTransactionAsync(async () =>
-            {
-                // Conditional claim, so two managers deciding at once cannot both win.
-                var claimed = await dbContext.InboxDocuments
-                    .Where(d => d.Id == id && d.Status == InboxDocumentStatus.SenderPending
-                                && d.WorkflowState != Constants.WorkflowStates.Removed)
-                    .ExecuteUpdateAsync(s => s.SetProperty(d => d.UpdatedAt, DateTime.UtcNow));
-                if (claimed == 0)
-                {
-                    logger.LogWarning(
-                        "Inbox {Operation}: the hub accepted {Decision} for {HubDocumentId}, but a concurrent decision won locally",
-                        operation, approve ? "approve" : "reject", doc.HubDocumentId);
-                    throw new InboxStateException("InboxSenderAlreadyDecided");
-                }
-
-                var tracked = await dbContext.InboxDocuments.SingleAsync(d => d.Id == id);
-                tracked.Status = DecidedStatus(approve, tracked.DeliveredAt != null);
-                tracked.UpdatedByUserId = userId;
-                await tracked.Update(dbContext);
-
-                if (approve || block)
-                    await AddRuleIfMissingAsync(tracked.FromAddress,
-                        approve ? InboxSenderRuleKind.Allow : InboxSenderRuleKind.Block, userId);
-            });
-        }
-        catch (InboxStateException e)
-        {
-            return new OperationResult(false, StateMessage(e));
-        }
-        catch (Exception e)
-        {
-            return new OperationResult(false, UnexpectedMessage(e, operation));
-        }
-
-        return new OperationResult(true,
-            localization.GetString(approve ? "InboxSenderApproved" : "InboxDocumentRejected"));
-    }
-
-    /// <summary>Approved: Ready when the PDF already arrived, otherwise it is still being prepared.</summary>
-    private static InboxDocumentStatus DecidedStatus(bool approve, bool delivered)
-    {
-        if (!approve) return InboxDocumentStatus.Rejected;
-        return delivered ? InboxDocumentStatus.Ready : InboxDocumentStatus.Preparing;
-    }
-
-    /// <summary>
-    /// No rule for the unknown-sender placeholder or anything else a rule cannot hold (it would make the
-    /// settings page fail its own validation on the next save), and no duplicate of a live rule.
-    /// </summary>
-    private async Task AddRuleIfMissingAsync(string fromAddress, InboxSenderRuleKind kind, int userId)
-    {
-        var pattern = Normalize(fromAddress);
-        if (fromAddress == InboxHubService.UnknownSender || !IsValidPattern(pattern))
-        {
-            logger.LogWarning("Inbox: no {Kind} rule added for a sender address that is not a valid rule pattern", kind);
-            return;
-        }
-
-        var samePattern = await LiveRules().Where(r => r.Pattern.ToLower() == pattern).ToListAsync();
-
-        // One pattern never holds both Allow and Block (UpdateAsync rejects that state): the new decision replaces the opposite rule.
-        foreach (var opposite in samePattern.Where(r => r.Kind != kind))
-        {
-            opposite.UpdatedByUserId = userId;
-            await opposite.Delete(dbContext);
-        }
-
-        if (!samePattern.Any(r => r.Kind == kind))
-            await NewRule(pattern, kind, userId).Create(dbContext);
-    }
-
-    /// <summary>
-    /// Insert-if-missing as one statement, then update. A duplicate PluginConfigurationValues name makes
-    /// BasePn's configuration provider throw on load (see CalendarConfigurationBackfillService).
-    /// Raw insert/ExecuteUpdate and no version row on purpose: the tracked Create/Update pattern could let
-    /// concurrent hosts each insert a row, and duplicate PluginConfigurationValues rows must never exist.
-    /// </summary>
-    private async Task UpsertPolicyAsync(string policy, int userId)
-    {
-        var now = DateTime.UtcNow;
-        await dbContext.Database.ExecuteSqlRawAsync(
-            @"INSERT INTO `PluginConfigurationValues`
-                  (`Name`, `Value`, `CreatedAt`, `UpdatedAt`, `Version`,
-                   `WorkflowState`, `CreatedByUserId`, `UpdatedByUserId`)
-              SELECT {0}, {1}, {2}, {2}, 1, {3}, {4}, {4} FROM DUAL
-              WHERE NOT EXISTS (
-                  SELECT 1 FROM `PluginConfigurationValues` `existing`
-                  WHERE `existing`.`Name` = {0})",
-            SenderVerdictResolver.PolicyName, policy, now, Constants.WorkflowStates.Created, userId);
-        await dbContext.PluginConfigurationValues
-            .Where(x => x.Name == SenderVerdictResolver.PolicyName)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(x => x.Value, policy)
-                .SetProperty(x => x.UpdatedAt, now)
-                .SetProperty(x => x.UpdatedByUserId, userId));
     }
 
     /// <summary>One retry-safe transaction: the work may run again on a transient failure.</summary>
@@ -435,13 +301,6 @@ public partial class InboxSettingsService(BackendConfigurationPnDbContext dbCont
         return localization.GetString("InboxUnexpectedError");
     }
 
-    private static string Normalize(string? pattern) => (pattern ?? "").Trim().ToLowerInvariant();
-
-    private static bool IsValidPattern(string pattern) => pattern.Length <= 254 && PatternRegex().IsMatch(pattern);
-
-    private IQueryable<InboxSenderRule> LiveRules() =>
-        dbContext.InboxSenderRules.Where(r => r.WorkflowState != Constants.WorkflowStates.Removed);
-
     private Task<InboxAddress?> ActiveAddressAsync() =>
         dbContext.InboxAddresses.AsNoTracking().OrderByDescending(a => a.Id)
             .FirstOrDefaultAsync(a => a.Active && a.WorkflowState != Constants.WorkflowStates.Removed);
@@ -451,18 +310,10 @@ public partial class InboxSettingsService(BackendConfigurationPnDbContext dbCont
         Address = address, TokenHash = tokenHash, Active = true, CreatedByUserId = userId, UpdatedByUserId = userId
     };
 
-    private static InboxSenderRule NewRule(string pattern, InboxSenderRuleKind kind, int userId) => new()
-    {
-        Pattern = pattern, Kind = kind, CreatedByUserId = userId, UpdatedByUserId = userId
-    };
-
     private async Task<InboxSettingsModel> ModelAsync(string? address) => new()
     {
         Address = address,
-        UnknownSenderPolicy = await dbContext.PluginConfigurationValues
-            .Where(x => x.Name == SenderVerdictResolver.PolicyName)
-            .Select(x => x.Value).FirstOrDefaultAsync() == PolicyRefuse ? PolicyRefuse : PolicyHold,
-        SenderRules = await LiveRules().OrderBy(r => r.Pattern)
+        SenderRules = await dbContext.InboxSenderRules.LiveBlockRules().OrderBy(r => r.Pattern)
             .Select(r => new InboxSenderRuleModel { Id = r.Id, Pattern = r.Pattern, Kind = (int)r.Kind })
             .ToListAsync()
     };

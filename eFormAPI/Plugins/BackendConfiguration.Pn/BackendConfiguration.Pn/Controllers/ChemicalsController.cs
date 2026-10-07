@@ -45,7 +45,10 @@ using Services.ChemicalInventoryService;
 /// errors: they reach the client with their message and never go to Sentry.
 /// </summary>
 [Authorize(Policy = BackendConfigurationClaims.AccessBackendConfigurationPlugin)]
-[ChemistryFirstUserOnly] // TODO(chemistry-GA): remove with ChemistryFirstUserOnlyAttribute.
+// TODO(chemistry-GA): remove this gate (and ChemicalsControllerFirstUserGateTests) when chemistry goes GA.
+// Until then the Kemi web routes are first-user only; the app's gRPC service is not gated, as
+// per-worker chemical permissions (default none) already bound it.
+[FirstUserOnly]
 [Route("api/backend-configuration-pn/chemicals")]
 public class ChemicalsController(
     IChemicalInventoryService inventory,

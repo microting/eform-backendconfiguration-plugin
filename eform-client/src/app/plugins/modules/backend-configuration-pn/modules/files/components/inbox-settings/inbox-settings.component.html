@@ -16,7 +16,7 @@
       <button class="btn-secondary" id="inboxCopyBtn" [disabled]="!address" (click)="copy()">
         <mat-icon>content_copy</mat-icon>{{ (copied ? 'Copied' : 'Copy address') | translate }}
       </button>
-      <button class="btn-quiet" id="inboxRotateBtn" [disabled]="busy" (click)="rotate()">
+      <button *ngIf="isFirstUser$ | async" class="btn-quiet" id="inboxRotateBtn" [disabled]="busy" (click)="rotate()">
         <mat-icon>autorenew</mat-icon>{{ 'Create new address' | translate }}
       </button>
     </div>
@@ -24,25 +24,16 @@
 
   <section *ngIf="rulesLoaded; else rulesUnavailable" class="d-flex flex-column gap-12">
     <h3 class="mb-0">{{ 'Who can send' | translate }}</h3>
-    <p class="mb-0">{{ 'Everyone with a user in this account can send. Also allow (addresses or domains, separated by commas):' | translate }}</p>
-    <mat-form-field>
-      <mat-label>{{ 'Allowed senders' | translate }}</mat-label>
-      <textarea
-        matInput
-        id="inboxRulesInput"
-        rows="3"
-        [(ngModel)]="allowList"
-        placeholder="@example-supplier.dk, scanner@example.org"
-      ></textarea>
-    </mat-form-field>
-    <mat-radio-group [(ngModel)]="unknownSenderPolicy" class="d-flex flex-column gap-12" [attr.aria-label]="'Who can send' | translate">
-      <mat-radio-button id="inboxPolicyHold" value="hold">{{ 'Hold documents from other senders in the Inbox until someone approves the sender' | translate }}</mat-radio-button>
-      <mat-radio-button id="inboxPolicyRefuse" value="refuse">{{ 'Refuse documents from other senders' | translate }}</mat-radio-button>
-    </mat-radio-group>
-    <p class="mb-0">{{ 'Documents from these addresses or domains are always refused:' | translate }}</p>
+    <p class="mb-0">{{ 'Everyone can send to the address. Documents from these addresses or domains are refused (separated by commas):' | translate }}</p>
     <mat-form-field>
       <mat-label>{{ 'Blocked senders' | translate }}</mat-label>
-      <textarea matInput id="inboxBlockedInput" rows="2" [(ngModel)]="blockList"></textarea>
+      <textarea
+        matInput
+        id="inboxBlockedInput"
+        rows="3"
+        [(ngModel)]="blockList"
+        placeholder="@spam.example.com, noreply@example.org"
+      ></textarea>
     </mat-form-field>
   </section>
 

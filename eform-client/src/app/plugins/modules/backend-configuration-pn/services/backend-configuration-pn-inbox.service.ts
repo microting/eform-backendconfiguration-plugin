@@ -41,20 +41,9 @@ export class BackendConfigurationPnInboxService {
     return this.apiBaseService.post(`${BackendConfigurationPnInboxMethods.Inbox}/${id}/undo`, {});
   }
 
-  reject(id: number): Observable<OperationResult> {
-    return this.apiBaseService.post(`${BackendConfigurationPnInboxMethods.Inbox}/${id}/reject`, {});
-  }
-
-  approveSender(id: number): Observable<OperationResult> {
-    return this.apiBaseService.post(`${BackendConfigurationPnInboxMethods.Inbox}/${id}/approve-sender`, {});
-  }
-
-  /** `block` also adds a Block rule for the sender's address. */
-  rejectSender(id: number, block: boolean): Observable<OperationResult> {
-    return this.apiBaseService.post(
-      `${BackendConfigurationPnInboxMethods.Inbox}/${id}/reject-sender?block=${block}`,
-      {}
-    );
+  /** `block` also adds a Block rule for the sender's address, so later mail from it is refused. */
+  reject(id: number, block = false): Observable<OperationResult> {
+    return this.apiBaseService.post(`${BackendConfigurationPnInboxMethods.Inbox}/${id}/reject?block=${block}`, {});
   }
 
   /** No toast: the settings page shows a failure (hub down, not configured) inline instead. */
@@ -62,11 +51,12 @@ export class BackendConfigurationPnInboxService {
     return this.apiBaseService.getNoToast<InboxSettingsModel>(BackendConfigurationPnInboxMethods.Settings);
   }
 
-  /** Full replace of the unknown-sender policy and the sender rules. */
+  /** Full replace of the blocked senders. */
   updateSettings(model: InboxSettingsUpdateModel): Observable<OperationResult> {
     return this.apiBaseService.put(BackendConfigurationPnInboxMethods.Settings, model);
   }
 
+  /** Only the tenant's first user may rotate; anyone else gets 403. */
   rotateAddress(): Observable<OperationDataResult<InboxSettingsModel>> {
     return this.apiBaseService.post<InboxSettingsModel>(
       `${BackendConfigurationPnInboxMethods.Settings}/rotate-address`,

@@ -49,15 +49,10 @@ public class InboxController(IInboxService inbox, IInboxSettingsService settings
     [HttpPost("{id:int}/undo")]
     public Task<OperationResult> Undo(int id) => inbox.UndoAsync(id, userService.UserId);
 
+    /// <summary><paramref name="block"/> also adds a Block rule for the sender, so later mail from it is refused.</summary>
     [HttpPost("{id:int}/reject")]
-    public Task<OperationResult> Reject(int id) => inbox.RejectAsync(id, userService.UserId);
-
-    [HttpPost("{id:int}/approve-sender")]
-    public Task<OperationResult> ApproveSender(int id) => settings.ApproveSenderAsync(id, userService.UserId);
-
-    [HttpPost("{id:int}/reject-sender")]
-    public Task<OperationResult> RejectSender(int id, [FromQuery] bool block) =>
-        settings.RejectSenderAsync(id, block, userService.UserId);
+    public Task<OperationResult> Reject(int id, [FromQuery] bool block = false) =>
+        inbox.RejectAsync(id, block, userService.UserId);
 
     [HttpGet("settings")]
     public Task<OperationDataResult<InboxSettingsModel>> GetSettings() => settings.GetAsync(userService.UserId);
@@ -66,6 +61,8 @@ public class InboxController(IInboxService inbox, IInboxSettingsService settings
     public Task<OperationResult> PutSettings([FromBody] InboxSettingsModel model) =>
         settings.UpdateAsync(model, userService.UserId);
 
+    /// <summary>The address is fixed: only the tenant's first user may replace it.</summary>
+    [FirstUserOnly]
     [HttpPost("settings/rotate-address")]
     public Task<OperationDataResult<InboxSettingsModel>> Rotate() => settings.RotateAddressAsync(userService.UserId);
 }

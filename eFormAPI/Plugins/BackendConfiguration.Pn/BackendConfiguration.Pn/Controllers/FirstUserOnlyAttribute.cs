@@ -29,16 +29,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microting.eFormApi.BasePn.Abstractions;
 
 /// <summary>
-/// TODO(chemistry-GA): remove this file and its single use on ChemicalsController
-/// (plus ChemicalsControllerFirstUserGateTests) when chemistry goes GA.
-/// Until then the Kemi web routes answer 403 to everyone but the tenant's first
-/// user: the account with the lowest AspNetUsers Id, the eForm host's
-/// IsFirstUser convention. It is an authorization filter so a refused request is
-/// stopped before model binding reads its body. The app's gRPC service is not
-/// gated; per-worker chemical permissions (default none) already bound it.
+/// Answers 403 to everyone but the tenant's first user: the account with the lowest
+/// AspNetUsers Id, the eForm host's IsFirstUser convention. Admins are not exempt.
+/// It is an authorization filter so a refused request is stopped before model binding
+/// reads its body. Put it on a controller to gate every route, or on one action.
 /// </summary>
-[AttributeUsage(AttributeTargets.Class)]
-public sealed class ChemistryFirstUserOnlyAttribute : Attribute, IAsyncAuthorizationFilter
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
+public sealed class FirstUserOnlyAttribute : Attribute, IAsyncAuthorizationFilter
 {
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {

@@ -6,9 +6,9 @@
  * service does: canonical = `METHOD\npath\ncustomerNo\nrequestId\nDate\nsha256hex(body)`,
  * `Authorization: HMAC-SHA256 hex(HMAC_SHA256(key, canonical))`.
  *
- * Outbound (tenant → hub): creating or rotating the archive address and deciding on a sender call the
- * hub first, and refuse to change anything when it does not answer. {@link startHubStub} stands in for
- * it on the CI runner host; the app container reaches it through InboundMailHub__HubUrl.
+ * Outbound (tenant → hub): creating or rotating the archive address calls the hub first and changes
+ * nothing when the hub does not answer. {@link startHubStub} stands in for the hub on the CI runner host;
+ * the app container reaches it through InboundMailHub__HubUrl.
  *
  * Both depend on .github/workflows/dotnet-core-pr.yml / dotnet-core-master.yml, step "Start the newly
  * build Docker container": InboundMailHub__TenantSigningKey must equal {@link CI_INBOX_SIGNING_KEY} and
@@ -114,28 +114,42 @@ export interface SeedOptions {
   fileName: string;
   /** Property and tag ids to suggest; sent with confidence 0.5, the review dialog's preselect threshold. */
   suggestions?: Suggestion[];
-  /** false: only "arrived" — the PDF is still being prepared. Deliver it later with {@link deliverInboxDocument}. */
-  deliver?: boolean;
 }
 
-/** POST arrived, then (unless `deliver: false`) POST deliver. Returns the hub document id. */
-export async function seedInboxDocument(request: APIRequestContext, opts: SeedOptions): Promise<string> {
+/** What the tenant answered to "arrived": "allowed", or "blocked" when a Block rule matches (then no row exists). */
+export interface Arrival {
+  hubDocumentId: string;
+  senderVerdict: string;
+}
+
+/** POST arrived only, as the central service announces a mail before the PDF is ready. */
+export async function announceInboxDocument(request: APIRequestContext, fromAddress: string,
+  fileName: string): Promise<Arrival> {
   const hubDocumentId = randomUUID();
   const arrived = Buffer.from(JSON.stringify({
     hubDocumentId,
-    fromAddress: opts.fromAddress,
+    fromAddress,
     subject: null,
     receivedAt: new Date().toISOString(),
-    fileName: opts.fileName,
+    fileName,
     sizeBytes: 1000,
     spfResult: 'not-checked',
     dkimResult: 'not-checked',
     readyBy: null,
   }));
-  await signedCall(request, 'POST', 'arrived', `arrived for ${opts.fileName}`, arrived, 'application/json');
-  if (opts.deliver !== false) {
-    await deliverInboxDocument(request, hubDocumentId, opts.fileName, opts.suggestions ?? []);
-  }
+  const res = await signedCall(request, 'POST', 'arrived', `arrived for ${fileName}`, arrived, 'application/json');
+  const { senderVerdict } = await res.json();
+  return { hubDocumentId, senderVerdict };
+}
+
+/**
+ * POST arrived, then POST deliver. Returns the hub document id. The sender must
+ * not be blocked: a blocked sender gets no row, so there would be nothing to seed.
+ */
+export async function seedInboxDocument(request: APIRequestContext, opts: SeedOptions): Promise<string> {
+  const { hubDocumentId, senderVerdict } = await announceInboxDocument(request, opts.fromAddress, opts.fileName);
+  expect(senderVerdict, `"arrived" for ${opts.fileName} from ${opts.fromAddress}`).toBe('allowed');
+  await deliverInboxDocument(request, hubDocumentId, opts.fileName, opts.suggestions ?? []);
   return hubDocumentId;
 }
 
@@ -192,7 +206,7 @@ function readBody(req: IncomingMessage): Promise<Buffer> {
 }
 
 /**
- * The central service's tenant API (PUT /api/tenants/{n}/address, POST .../sender-decision): records each
+ * The central service's tenant API (PUT /api/tenants/{n}/address): records each
  * call, checks its signature, and answers 204 — the hub accepted. A call is recorded before it is
  * answered, so once the app's own response reaches the browser the call is already in `calls`.
  */

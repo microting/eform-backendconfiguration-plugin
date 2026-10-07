@@ -3,7 +3,7 @@ import {InboxDocumentStatus} from '../models';
 /** Translation keys per InboxDocumentStatus. */
 export const INBOX_STATUS_LABELS: Record<InboxDocumentStatus, string> = {
   [InboxDocumentStatus.Preparing]: 'Being prepared',
-  [InboxDocumentStatus.SenderPending]: 'Approve sender',
+  [InboxDocumentStatus.SenderPending]: 'Being prepared',
   [InboxDocumentStatus.Ready]: 'Ready to file',
   [InboxDocumentStatus.Failed]: 'Could not be read',
   [InboxDocumentStatus.Filed]: 'Filed',

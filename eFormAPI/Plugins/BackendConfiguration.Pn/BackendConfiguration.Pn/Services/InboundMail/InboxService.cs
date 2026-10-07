@@ -24,7 +24,9 @@ public interface IInboxService
     Task<Stream?> GetPdfAsync(int id);
     Task<OperationResult> FileAsync(int id, FileInboxDocumentRequest req, int userId);
     Task<OperationResult> UndoAsync(int id, int userId);
-    Task<OperationResult> RejectAsync(int id, int userId);
+
+    /// <summary>Rejects the document; <paramref name="block"/> also adds a Block rule for its sender (once).</summary>
+    Task<OperationResult> RejectAsync(int id, bool block, int userId);
 }
 
 public class InboxService(BackendConfigurationPnDbContext dbContext, IArchiveStorage storage, IFileArchiver archiver,
@@ -252,7 +254,7 @@ public class InboxService(BackendConfigurationPnDbContext dbContext, IArchiveSto
         return new OperationResult(true, localization.GetString("InboxDocumentUndone"));
     }
 
-    public async Task<OperationResult> RejectAsync(int id, int userId)
+    public async Task<OperationResult> RejectAsync(int id, bool block, int userId)
     {
         try
         {
@@ -267,7 +269,8 @@ public class InboxService(BackendConfigurationPnDbContext dbContext, IArchiveSto
                 var claimed = await dbContext.InboxDocuments
                     .Where(d => d.Id == id && d.WorkflowState != Constants.WorkflowStates.Removed
                                 && (d.Status == InboxDocumentStatus.Preparing || d.Status == InboxDocumentStatus.Ready
-                                    || d.Status == InboxDocumentStatus.Failed))
+                                    || d.Status == InboxDocumentStatus.Failed
+                                    || d.Status == InboxLegacy.SenderPending))
                     .ExecuteUpdateAsync(s => s.SetProperty(d => d.UpdatedAt, DateTime.UtcNow));
                 if (claimed == 0) throw new InboxStateException("InboxDocumentNotReady");
 
@@ -275,6 +278,8 @@ public class InboxService(BackendConfigurationPnDbContext dbContext, IArchiveSto
                 doc.Status = InboxDocumentStatus.Rejected;
                 doc.UpdatedByUserId = userId;
                 await doc.Update(dbContext);
+                if (block)
+                    await AddBlockRuleIfMissingAsync(doc.FromAddress, userId);
                 await tx.CommitAsync();
             });
         }
@@ -289,6 +294,26 @@ public class InboxService(BackendConfigurationPnDbContext dbContext, IArchiveSto
         }
 
         return new OperationResult(true, localization.GetString("InboxDocumentRejected"));
+    }
+
+    /// <summary>
+    /// No rule for the unknown-sender placeholder or anything else a rule cannot hold (it would make the
+    /// settings page fail its own validation on the next save), and no duplicate of a live Block rule.
+    /// A legacy Allow row for the same pattern is left alone: the verdict ignores it.
+    /// </summary>
+    private async Task AddBlockRuleIfMissingAsync(string fromAddress, int userId)
+    {
+        var pattern = InboxSenderPattern.Normalize(fromAddress);
+        if (fromAddress == InboxHubService.UnknownSender || !InboxSenderPattern.IsValid(pattern))
+        {
+            logger.LogWarning("Inbox reject: no Block rule added for a sender address that is not a valid rule pattern");
+            return;
+        }
+
+        if (await dbContext.InboxSenderRules.LiveBlockRules().AnyAsync(r => r.Pattern.ToLower() == pattern))
+            return;
+
+        await InboxBlockRules.New(pattern, userId).Create(dbContext);
     }
 
     private async Task<List<InboxListItem>> MapAsync(List<InboxDocument> docs)

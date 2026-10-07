@@ -42,7 +42,6 @@ import {MtxProgressModule} from '@ng-matero/extensions/progress';
 import {MatDatepickerModule} from '@angular/material/datepicker';
 import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
 import {MatSelectModule} from '@angular/material/select';
-import {MatRadioModule} from '@angular/material/radio';
 
 @NgModule({
   declarations: [
@@ -92,7 +91,6 @@ import {MatRadioModule} from '@angular/material/radio';
     MatMenu,
     MatMenuItem,
     MatSelectModule,
-    MatRadioModule,
   ],
 })
 

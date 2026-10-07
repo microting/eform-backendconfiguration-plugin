@@ -24,9 +24,8 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Controllers;
-using BackendConfiguration.Pn.Infrastructure.Models.Chemicals;
-using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
-using BackendConfiguration.Pn.Services.ChemicalInventoryService;
+using BackendConfiguration.Pn.Infrastructure.Models.Inbox;
+using BackendConfiguration.Pn.Services.InboundMail;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
@@ -34,26 +33,26 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eFormApi.BasePn.Abstractions;
+using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using NSubstitute;
 using NUnit.Framework;
 
 namespace BackendConfiguration.Pn.Test.Controllers;
 
 /// <summary>
-/// TODO(chemistry-GA): remove with the [FirstUserOnly] on ChemicalsController. Until chemistry goes GA every Kemi web route is reachable only by the tenant's
-/// first user (lowest AspNetUsers Id, the eForm host's IsFirstUser convention).
-/// The table runs the controller's authorization filters for every routed action,
-/// so a new route that escapes the gate fails here.
+/// The Indbakke address is fixed: only the tenant's first user (lowest AspNetUsers Id) may rotate it
+/// ("Lav ny adresse"). Every other inbox route stays open to everyone the class policy lets in.
 /// </summary>
 [TestFixture]
-public class ChemicalsControllerFirstUserGateTests
+public class InboxControllerFirstUserGateTests
 {
     private const int FirstUserId = 1;
     private const int OtherAdminId = 7;
 
-    private static IEnumerable<string> RoutedActions() => typeof(ChemicalsController).GetMethods()
-        .Where(m => m.GetCustomAttributes<HttpMethodAttribute>().Any())
+    private static IEnumerable<string> UngatedActions() => typeof(InboxController).GetMethods()
+        .Where(m => m.GetCustomAttributes<HttpMethodAttribute>().Any() && m.Name != nameof(InboxController.Rotate))
         .Select(m => m.Name)
         .OrderBy(n => n, StringComparer.Ordinal);
 
@@ -71,20 +70,20 @@ public class ChemicalsControllerFirstUserGateTests
     /// </summary>
     private static async Task<IActionResult> AuthorizeAsync(string actionName, IUserService userService)
     {
-        var action = typeof(ChemicalsController).GetMethod(actionName)!;
+        var action = typeof(InboxController).GetMethod(actionName)!;
         var services = new ServiceCollection().AddSingleton(userService).BuildServiceProvider();
         var descriptor = new ControllerActionDescriptor
         {
-            ControllerTypeInfo = typeof(ChemicalsController).GetTypeInfo(),
+            ControllerTypeInfo = typeof(InboxController).GetTypeInfo(),
             MethodInfo = action,
             ActionName = action.Name,
-            ControllerName = "Chemicals",
+            ControllerName = "Inbox",
         };
         var context = new AuthorizationFilterContext(
             new ActionContext(new DefaultHttpContext { RequestServices = services }, new RouteData(), descriptor),
             new List<IFilterMetadata>());
 
-        var filters = typeof(ChemicalsController).GetCustomAttributes(true)
+        var filters = typeof(InboxController).GetCustomAttributes(true)
             .Concat(action.GetCustomAttributes(true))
             .OfType<IAsyncAuthorizationFilter>();
 
@@ -105,45 +104,41 @@ public class ChemicalsControllerFirstUserGateTests
             .With.Property(nameof(StatusCodeResult.StatusCode)).EqualTo(StatusCodes.Status403Forbidden));
 
     [Test]
-    public void TheTableCoversEveryRoute()
+    public async Task Rotate_AnAdminWhoIsNotTheFirstUser_IsForbidden()
     {
-        Assert.That(RoutedActions().Count(), Is.EqualTo(19),
-            "add the new route to the gate review, then bump this");
-    }
-
-    [TestCaseSource(nameof(RoutedActions))]
-    public async Task AnAdminWhoIsNotTheFirstUser_IsForbiddenOnEveryRoute(string actionName)
-    {
-        var result = await AuthorizeAsync(actionName, Caller(OtherAdminId));
-
-        AssertForbidden(result);
+        AssertForbidden(await AuthorizeAsync(nameof(InboxController.Rotate), Caller(OtherAdminId)));
     }
 
     [Test]
-    public async Task ACallerWithoutAUserId_IsForbiddenEvenWhenTheUsersTableIsEmpty()
+    public async Task Rotate_ACallerWithoutAUserId_IsForbiddenEvenWhenTheUsersTableIsEmpty()
     {
-        var result = await AuthorizeAsync(nameof(ChemicalsController.GetPropertyInventory), Caller(0, firstUserId: 0));
-
-        AssertForbidden(result);
+        AssertForbidden(await AuthorizeAsync(nameof(InboxController.Rotate), Caller(0, firstUserId: 0)));
     }
 
     [Test]
-    public async Task TheFirstUser_PassesTheGateAndGetsTheInventory()
+    public async Task Rotate_TheFirstUser_PassesTheGateAndRotates()
     {
         var userService = Caller(FirstUserId);
 
-        var gate = await AuthorizeAsync(nameof(ChemicalsController.GetPropertyInventory), userService);
+        var gate = await AuthorizeAsync(nameof(InboxController.Rotate), userService);
 
         Assert.That(gate, Is.Null);
 
-        var inventory = Substitute.For<IChemicalInventoryService>();
-        inventory.GetPropertyInventoryAsync(ChemicalCaller.Web(FirstUserId), 1)
-            .Returns(new ChemicalInventoryModel([], [], [], [], [], "", true));
-        var localization = Substitute.For<IBackendConfigurationLocalizationService>();
-        var sut = new ChemicalsController(inventory, userService, localization);
+        var settings = Substitute.For<IInboxSettingsService>();
+        settings.RotateAddressAsync(FirstUserId).Returns(
+            new OperationDataResult<InboxSettingsModel>(true, new InboxSettingsModel { Address = "4711-abc@example.net" }));
+        var sut = new InboxController(Substitute.For<IInboxService>(), settings, userService,
+            NullLogger<InboxController>.Instance);
 
-        var result = await sut.GetPropertyInventory(1);
+        var result = await sut.Rotate();
 
         Assert.That(result.Success, Is.True);
+        await settings.Received(1).RotateAddressAsync(FirstUserId);
+    }
+
+    [TestCaseSource(nameof(UngatedActions))]
+    public async Task EveryOtherRoute_IsOpenToAnAdminWhoIsNotTheFirstUser(string actionName)
+    {
+        Assert.That(await AuthorizeAsync(actionName, Caller(OtherAdminId)), Is.Null);
     }
 }

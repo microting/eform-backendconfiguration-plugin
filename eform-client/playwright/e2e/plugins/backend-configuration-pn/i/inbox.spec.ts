@@ -5,8 +5,8 @@ import DatabaseConfigurationConstants from '../../../Constants/DatabaseConfigura
 import { BackendConfigurationPropertiesPage, PropertyCreateUpdate } from '../BackendConfigurationProperties.page';
 import {
   addressTokenHash,
+  announceInboxDocument,
   CUSTOMER_NO,
-  deliverInboxDocument,
   expectSigned,
   fetchCatalog,
   HubStub,
@@ -15,27 +15,26 @@ import {
 } from '../inbox-hub-seed';
 import { API_TIMEOUT, UI_TIMEOUT, ignoreUnhandledRejections, waitForApiResponse } from '../wait-helpers';
 
-/**
- * The CI admin's e-mail. The database-configuration step creates the admin with it, so a mail from it
- * counts as an allowed sender (every active user may send) without any sender rule.
- */
+/** The CI admin's e-mail, used as an ordinary sender: every sender is accepted unless blocked. */
 const ADMIN_EMAIL: string = DatabaseConfigurationConstants.email;
 
 /** InboxDocumentStatus, as the list renders it in `data-status`. */
-const Status = { Preparing: '0', SenderPending: '1', Ready: '2', Filed: '4' } as const;
+const Status = { Ready: '2', Filed: '4' } as const;
 
 /**
  * Indbakke (inbound mail inbox), tenant side (shard i). Documents are seeded through the signed hub
  * endpoints with the CI-only key, exactly as the central service would; the central service's own API
- * is a stub on the runner host (see inbox-hub-seed.ts), so address creation, rotation and sender
- * decisions really go out and are checked for their signature.
+ * is a stub on the runner host (see inbox-hub-seed.ts), so address creation and rotation really go out
+ * and are checked for their signature.
  *
  * I1 a delivered document with a property suggestion is filed and shows in Arkiv.
- * I2 an unknown sender is approved; the PDF delivered afterwards makes the document Ready.
+ * I2 a document from a sender nobody configured is Ready; it is rejected and its sender blocked, so the
+ *    sender's next mail is refused.
  * I3 a document without suggestions cannot be filed without a property, and is rejected.
- * I4 the allowed senders are saved and survive a reload; the address is rotated.
+ * I4 the blocked senders are listed, saved and survive a reload; the address is rotated.
  *
  * The admin has every plugin permission, inbox_enable included, so the archive section tabs must show.
+ * It is also the tenant's first user (lowest AspNetUsers Id), the only one who may rotate the address.
  */
 test.describe.serial('Indbakke', () => {
   let page: Page;
@@ -47,6 +46,8 @@ test.describe.serial('Indbakke', () => {
     cvrNumber: '1111111',
   };
   let propertyId = 0;
+  /** Blocked in I2 and expected on the settings page in I4. */
+  const blockedSender = `scanner-${generateRandmString(4).toLowerCase()}@example.net`;
 
   test.beforeAll(async ({ browser }) => {
     // Login (up to ~2 min on a cold app, see LoginPage.login) plus one property create and one catalog call.
@@ -159,29 +160,29 @@ test.describe.serial('Indbakke', () => {
     await expect(archived).toContainText(property.name!, { timeout: UI_TIMEOUT });
   });
 
-  test('I2 approve an unknown sender', async () => {
-    // Arrived, approve (one stub hub round-trip), deliver and two page loads, each bounded by API_TIMEOUT.
+  test('I2 reject a document and block its sender', async () => {
+    // Two signed seeding calls, two page loads, the reject call and one more "arrived", each bounded by API_TIMEOUT.
     test.setTimeout(120000);
     const fileName = `scan_${generateRandmString(4)}.pdf`;
-    const hubDocumentId = await seedInboxDocument(page.request, {
-      fromAddress: `scanner-${generateRandmString(4)}@example.net`, fileName, deliver: false,
-    });
+    // Nobody configured this sender: it is accepted all the same.
+    await seedInboxDocument(page.request, { fromAddress: blockedSender, fileName });
     await openInbox();
-    const id = await rowId(fileName, Status.SenderPending);
+    const id = await rowId(fileName, Status.Ready);
+    await openReview(id);
 
-    await clickAndExpectSuccess(page.locator(`#inboxApproveSenderBtn-${id}`), 'POST', `/inbox/${id}/approve-sender`,
-      'approving the sender');
-    // The PDF has not arrived yet, so the approved document is still being prepared.
-    await expect(rowFor(fileName)).toHaveAttribute('data-status', Status.Preparing, { timeout: UI_TIMEOUT });
+    const rejected = waitForInbox('rejecting the document and blocking its sender', 'POST', `/inbox/${id}/reject`);
+    await dialog().locator('#inboxRejectBlockBtn').click();
+    await expectSuccess(rejected, 'rejecting the document and blocking its sender');
+    expect(new URL((await rejected).url()).searchParams.get('block'), 'the reject asked for the block').toBe('true');
+    await expect(dialog()).toBeHidden({ timeout: UI_TIMEOUT });
+    await expect(rowFor(fileName)).toHaveCount(0, { timeout: UI_TIMEOUT });
 
-    const decision = hub.callsTo('POST', `/api/tenants/${CUSTOMER_NO}/documents/${hubDocumentId}/sender-decision`);
-    expect(decision, 'the hub was told the decision exactly once').toHaveLength(1);
-    expect(decision[0].body).toEqual({ decision: 'approve' });
-    expectSigned(decision[0], 'the sender decision');
-
-    await deliverInboxDocument(page.request, hubDocumentId, fileName);
+    // The sender's next mail is refused (any letter case) and never reaches the list.
+    const nextFileName = `scan_${generateRandmString(4)}.pdf`;
+    const next = await announceInboxDocument(page.request, blockedSender.toUpperCase(), nextFileName);
+    expect(next.senderVerdict, 'the blocked sender is refused').toBe('blocked');
     await openInbox();
-    await rowId(fileName, Status.Ready);
+    await expect(rowFor(nextFileName)).toHaveCount(0, { timeout: UI_TIMEOUT });
   });
 
   test('I3 reject a document', async () => {
@@ -203,14 +204,14 @@ test.describe.serial('Indbakke', () => {
     await expect(rowFor(fileName)).toHaveCount(0, { timeout: UI_TIMEOUT });
   });
 
-  test('I4 settings: save allowed senders and rotate the address', async () => {
+  test('I4 settings: save blocked senders and rotate the address', async () => {
     // Three settings loads (the first registers the address with the stub hub), save and rotate.
     test.setTimeout(120000);
     await openInbox();
     await clickAndExpectSuccess(page.locator('#archiveNavSettings'), 'GET', '/inbox/settings', 'loading the inbox settings');
 
     const address = page.locator('#inboxAddress');
-    const rulesInput = page.locator('#inboxRulesInput');
+    const blockedInput = page.locator('#inboxBlockedInput');
     const addressPath = `/api/tenants/${CUSTOMER_NO}/address`;
     const shape = new RegExp(`^${CUSTOMER_NO}-[a-z2-7]{10}@indbakke\\.microting\\.dk$`);
     await expect(address).toHaveValue(shape, { timeout: UI_TIMEOUT });
@@ -220,17 +221,21 @@ test.describe.serial('Indbakke', () => {
     expect(registered[0].body.tokenHash).toBe(addressTokenHash(first));
     expectSigned(registered[0], 'the address registration');
 
-    await rulesInput.fill('@example.org');
+    // The sender blocked with the rejection in I2 is listed; there is nothing to allow any more.
+    await expect(blockedInput).toHaveValue(blockedSender, { timeout: UI_TIMEOUT });
+    await expect(page.locator('#inboxRulesInput')).toHaveCount(0);
+    await blockedInput.fill('@example.org');
     await clickAndExpectSuccess(page.locator('#inboxSaveBtn'), 'PUT', '/inbox/settings', 'saving the inbox settings');
 
     const reloaded = waitForInbox('inbox settings after reload', 'GET', '/inbox/settings');
     await page.reload();
     await expectSuccess(reloaded, 'reloading the inbox settings');
-    // The save is a full replace: the sender approved in I2 is gone, only the new rule is left.
-    await expect(rulesInput).toHaveValue('@example.org', { timeout: UI_TIMEOUT });
+    // The save is a full replace: the sender blocked in I2 is gone, only the new rule is left.
+    await expect(blockedInput).toHaveValue('@example.org', { timeout: UI_TIMEOUT });
     await expect(address).toHaveValue(first, { timeout: UI_TIMEOUT });
 
-    // Rotating asks first (window.confirm) because the old address stops after the grace period.
+    // Only the first user (this login) sees "Lav ny adresse". Rotating asks first (window.confirm)
+    // because the old address stops after the grace period.
     page.once('dialog', d => d.accept());
     await clickAndExpectSuccess(page.locator('#inboxRotateBtn'), 'POST', '/inbox/settings/rotate-address',
       'rotating the address');
