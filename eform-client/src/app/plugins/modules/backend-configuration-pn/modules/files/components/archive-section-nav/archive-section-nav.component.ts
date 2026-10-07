@@ -1,10 +1,10 @@
 import {Component, inject} from '@angular/core';
-import {AuthStateService} from 'src/app/common/store';
-import {BackendConfigurationPnClaims} from '../../../../enums';
+import {Store} from '@ngrx/store';
+import {selectCurrentUserIsAdmin} from 'src/app/state';
 
 /**
- * Indbakke | Arkiv | Indstillinger e-mail. The inbox tabs show only with the inbox_enable permission;
- * the API enforces the same permission on every inbox route.
+ * Indbakke | Arkiv | Indstillinger e-mail. The inbox tabs show only to an admin;
+ * the API enforces the same admin role on every inbox route.
  */
 @Component({
   selector: 'app-archive-section-nav',
@@ -12,9 +12,7 @@ import {BackendConfigurationPnClaims} from '../../../../enums';
   standalone: false,
 })
 export class ArchiveSectionNavComponent {
-  private authStateService = inject(AuthStateService);
+  private store = inject(Store);
 
-  get canUseInbox(): boolean {
-    return this.authStateService.checkClaim(BackendConfigurationPnClaims.enableInbox);
-  }
+  readonly canUseInbox$ = this.store.select(selectCurrentUserIsAdmin);
 }

@@ -10,11 +10,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
-using Microting.EformBackendConfigurationBase.Infrastructure.Const;
+using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 
 namespace BackendConfiguration.Pn.Controllers;
 
-[Authorize(Policy = BackendConfigurationClaims.EnableInbox)]
+[Authorize(Roles = EformRole.Admin)]
 [Route("api/backend-configuration-pn/inbox")]
 public class InboxController(IInboxService inbox, IInboxSettingsService settings, IUserService userService,
     ILogger<InboxController> logger) : Controller

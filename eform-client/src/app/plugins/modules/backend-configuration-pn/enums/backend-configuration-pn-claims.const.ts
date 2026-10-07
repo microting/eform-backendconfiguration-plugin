@@ -21,5 +21,4 @@ export const BackendConfigurationPnClaims = {
   enableTimeRegistration: 'time_registration_enable',
   assignProperties: 'properties_assign',
   enableFilesManagement: 'files_management_enable',
-  enableInbox: 'inbox_enable',
 };
