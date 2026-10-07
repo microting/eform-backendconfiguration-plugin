@@ -1,6 +1,6 @@
 #nullable enable
 using System;
-using System.Data;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Inbox;
@@ -34,9 +34,6 @@ public class InboxSettingsService(BackendConfigurationPnDbContext dbContext, IIn
     ICustomerNoProvider customerNo, IOptions<InboundMailHubOptions> options,
     IBackendConfigurationLocalizationService localization, ILogger<InboxSettingsService> logger) : IInboxSettingsService
 {
-    /// <summary>MySQL named lock: address creation and rotation never interleave (there is no unique index to lean on).</summary>
-    private const string AddressLockSql = "SELECT GET_LOCK(CONCAT('inbox-address-create:', DATABASE()), 15)";
-    private const string AddressUnlockSql = "SELECT RELEASE_LOCK(CONCAT('inbox-address-create:', DATABASE()))";
     private static readonly TimeSpan Grace = TimeSpan.FromDays(7);
 
     /// <summary>The row is no longer in the state the operation needs (a concurrent request won).</summary>
@@ -123,27 +120,34 @@ public class InboxSettingsService(BackendConfigurationPnDbContext dbContext, IIn
 
         try
         {
-            await InTransactionAsync(async () =>
-            {
-                var existing = await dbContext.InboxSenderRules.LiveBlockRules().ToListAsync();
-                foreach (var rule in existing.Where(r => !wanted.Contains(InboxSenderPattern.Normalize(r.Pattern))))
-                {
-                    rule.UpdatedByUserId = userId;
-                    await rule.Delete(dbContext);
-                }
-
-                foreach (var pattern in wanted.Where(w =>
-                             !existing.Any(r => InboxSenderPattern.Normalize(r.Pattern) == w)))
-                {
-                    await InboxBlockRules.New(pattern, userId).Create(dbContext);
-                }
-            });
+            // Under the sender-rules lock, so a concurrent reject-and-block cannot insert beside this replace.
+            return await InboxNamedLock.RunAsync(dbContext, InboxNamedLock.SenderRules,
+                () => ReplaceBlockRulesAsync(wanted, userId),
+                () => Task.FromResult(new OperationResult(false, localization.GetString("InboxTryAgainShortly"))), logger);
         }
         catch (Exception e)
         {
             return new OperationResult(false, UnexpectedMessage(e, "update settings"));
         }
+    }
 
+    private async Task<OperationResult> ReplaceBlockRulesAsync(List<string> wanted, int userId)
+    {
+        await InTransactionAsync(async () =>
+        {
+            var existing = await dbContext.InboxSenderRules.LiveBlockRules().ToListAsync();
+            foreach (var rule in existing.Where(r => !wanted.Contains(InboxSenderPattern.Normalize(r.Pattern))))
+            {
+                rule.UpdatedByUserId = userId;
+                await rule.Delete(dbContext);
+            }
+
+            foreach (var pattern in wanted.Where(w =>
+                         !existing.Any(r => InboxSenderPattern.Normalize(r.Pattern) == w)))
+            {
+                await InboxBlockRules.New(pattern, userId).Create(dbContext);
+            }
+        });
         return new OperationResult(true);
     }
 
@@ -220,54 +224,8 @@ public class InboxSettingsService(BackendConfigurationPnDbContext dbContext, IIn
         });
     }
 
-    /// <summary>
-    /// Runs <paramref name="work"/> holding the address named lock on this context's connection.
-    /// The lock is per connection, so the connection stays open until it is released.
-    /// </summary>
-    private async Task<T> WithAddressLockAsync<T>(Func<Task<T>> work, Func<Task<T>> lockUnavailable)
-    {
-        var database = dbContext.Database;
-        var connection = database.GetDbConnection();
-        var opened = connection.State != ConnectionState.Open;
-        if (opened) await database.OpenConnectionAsync();
-        try
-        {
-            if (!await ScalarIsOneAsync(connection, AddressLockSql))
-            {
-                logger.LogWarning("Inbox: the address lock was not granted within 15 seconds");
-                return await lockUnavailable();
-            }
-
-            try
-            {
-                return await work();
-            }
-            finally
-            {
-                try
-                {
-                    await ScalarIsOneAsync(connection, AddressUnlockSql);
-                }
-                catch (Exception e)
-                {
-                    // MySQL releases a named lock when its connection closes, which happens just below.
-                    logger.LogWarning(e, "Inbox: releasing the address lock failed");
-                }
-            }
-        }
-        finally
-        {
-            if (opened) await database.CloseConnectionAsync();
-        }
-    }
-
-    private static async Task<bool> ScalarIsOneAsync(System.Data.Common.DbConnection connection, string sql)
-    {
-        await using var command = connection.CreateCommand();
-        command.CommandText = sql;
-        var result = await command.ExecuteScalarAsync();
-        return result is not (null or DBNull) && Convert.ToInt64(result) == 1;
-    }
+    private Task<T> WithAddressLockAsync<T>(Func<Task<T>> work, Func<Task<T>> lockUnavailable) =>
+        InboxNamedLock.RunAsync(dbContext, InboxNamedLock.Address, work, lockUnavailable, logger);
 
     private async Task<OperationDataResult<InboxSettingsModel>> FailureAsync(string messageKey, string? address) =>
         new(false, localization.GetString(messageKey), await ModelAsync(address));

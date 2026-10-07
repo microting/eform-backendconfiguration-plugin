@@ -5,7 +5,9 @@ using BackendConfiguration.Pn.Infrastructure.Models.Inbox;
 using BackendConfiguration.Pn.Services.FileArchive;
 using BackendConfiguration.Pn.Services.InboundMail;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microting.eForm.Infrastructure.Constants;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -313,6 +315,29 @@ public class InboxServiceTests : TestBaseSetup
 
         Assert.That((await _service.RejectAsync(second.Id, true, 7)).Success, Is.True);
         Assert.That(await LiveRulesAsync(), Has.Count.EqualTo(1), "the second reject finds it and adds none");
+    }
+
+    [Test]
+    public async Task Reject_WithBlock_ConcurrentRejectsOfTheSameSender_AddOneRule()
+    {
+        // Two requests, each with its own context and connection, as two web requests would be. Without the
+        // sender-rules lock both could check "no rule yet" before either commits and insert one each.
+        var first = await DocumentFromAsync("post@example.net");
+        var second = await DocumentFromAsync("Post@Example.net");
+        var options = (DbContextOptions<BackendConfigurationPnDbContext>)BackendConfigurationPnDbContext!
+            .GetService<IDbContextOptions>();
+        await using var db1 = new BackendConfigurationPnDbContext(options);
+        await using var db2 = new BackendConfigurationPnDbContext(options);
+        InboxService NewService(BackendConfigurationPnDbContext db) => new(db, _storage, new FileArchiver(db, _storage),
+            new BackendConfigurationLocalizationService(), NullLogger<InboxService>.Instance);
+
+        var results = await Task.WhenAll(NewService(db1).RejectAsync(first.Id, true, 7),
+            NewService(db2).RejectAsync(second.Id, true, 8));
+
+        Assert.That(results.All(r => r.Success), Is.True, string.Join(" | ", results.Select(r => r.Message)));
+        var rule = (await LiveRulesAsync()).Single();
+        Assert.That(rule.Pattern, Is.EqualTo("post@example.net"));
+        Assert.That(rule.Kind, Is.EqualTo(InboxSenderRuleKind.Block));
     }
 
     [Test]
