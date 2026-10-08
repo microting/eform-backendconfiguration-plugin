@@ -52,7 +52,7 @@
           {{ 'Delete' | translate }}
         </button>
       </div>
-      <mat-form-field *ngIf="row.node.parentId !== null" class="mt-3 w-100">
+      <mat-form-field *ngIf="row.node.parentId !== null" class="mt-3 w-100" floatLabel="always">
         <mat-label>{{ 'Move to' | translate }}</mat-label>
         <mtx-select id="tailBiteMoveSelect" [items]="moveOptions" bindLabel="name" bindValue="id" appendTo="body"
                     [(ngModel)]="moveTarget" (ngModelChange)="move($event)" [disabled]="busy"></mtx-select>

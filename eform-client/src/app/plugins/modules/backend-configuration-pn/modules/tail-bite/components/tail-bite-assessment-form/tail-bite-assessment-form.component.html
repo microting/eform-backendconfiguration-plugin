@@ -31,7 +31,7 @@
         <input matInput maxlength="1000" [id]="'tailBiteNewAction-' + f.factor + '-' + i + '-description'"
                [(ngModel)]="a.description" (ngModelChange)="refresh()" />
       </mat-form-field>
-      <mat-form-field style="flex: 1 1 180px">
+      <mat-form-field floatLabel="always" style="flex: 1 1 180px">
         <mat-label>{{ 'Responsible' | translate }}</mat-label>
         <mtx-select [id]="'tailBiteNewAction-' + f.factor + '-' + i + '-responsible'" [items]="workers" bindLabel="name"
                     bindValue="siteId" appendTo="body" [(ngModel)]="a.responsibleSiteId" (ngModelChange)="refresh()"></mtx-select>

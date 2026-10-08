@@ -43,9 +43,10 @@ export class TailBitePage {
 
   /** Opens an mtx-select by id and picks the option whose text is exactly `text`. */
   async pick(selectId: string, text: string): Promise<void> {
-    await this.page.locator(`#${selectId}`).click();
-    const option = this.page.locator('.ng-dropdown-panel .ng-option').filter({ hasText: exactText(text) });
-    await option.first().click({ timeout: UI_TIMEOUT });
+    await this.page.locator(`#${selectId}`).click({ timeout: UI_TIMEOUT });
+    const panel = this.page.locator('.ng-dropdown-panel');
+    await panel.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    await panel.locator('.ng-option').filter({ hasText: exactText(text) }).first().click({ timeout: UI_TIMEOUT });
   }
 
   locationRow(name: string): Locator {
