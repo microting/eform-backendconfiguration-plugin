@@ -37,6 +37,8 @@ export class TailBiteActionTypesPageComponent implements OnInit, OnDestroy {
   busy = false;
   private propertyId: number | null = null;
   private sub?: Subscription;
+  private request?: Subscription;
+  private requestSeq = 0;
 
   ngOnInit(): void {
     this.sub = propertyIdParam(this.route).subscribe((id) => {
@@ -48,6 +50,7 @@ export class TailBiteActionTypesPageComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.sub?.unsubscribe();
+    this.request?.unsubscribe();
   }
 
   /** Forgets everything shown for the previous property so nothing stale is visible while the next one loads. */
@@ -62,9 +65,11 @@ export class TailBiteActionTypesPageComponent implements OnInit, OnDestroy {
     if (propertyId === null) {
       return;
     }
-    this.service.getActionTypes(propertyId).subscribe({
+    const seq = ++this.requestSeq;
+    this.request?.unsubscribe();
+    this.request = this.service.getActionTypes(propertyId).subscribe({
       next: (res) => {
-        if (propertyId === this.propertyId && res?.success) {
+        if (seq === this.requestSeq && res?.success) {
           this.actionTypes = res.model;
         }
       },

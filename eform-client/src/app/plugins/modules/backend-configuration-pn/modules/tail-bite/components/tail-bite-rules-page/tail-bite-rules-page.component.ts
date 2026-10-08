@@ -70,6 +70,8 @@ export class TailBiteRulesPageComponent implements OnInit, OnDestroy {
   private previewGeneration = 0;
   private preview$ = new Subject<PreviewRequest>();
   private subs = new Subscription();
+  private request?: Subscription;
+  private requestSeq = 0;
 
   ngOnInit(): void {
     this.subs.add(
@@ -105,6 +107,7 @@ export class TailBiteRulesPageComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subs.unsubscribe();
+    this.request?.unsubscribe();
   }
 
   /** Forgets everything shown for the previous property so nothing stale is visible while the next one loads. */
@@ -132,10 +135,12 @@ export class TailBiteRulesPageComponent implements OnInit, OnDestroy {
     if (propertyId === null) {
       return;
     }
-    forkJoin({tree: this.service.getTree(propertyId), rules: this.service.getRules(propertyId)}).subscribe({
+    const seq = ++this.requestSeq;
+    this.request?.unsubscribe();
+    this.request = forkJoin({tree: this.service.getTree(propertyId), rules: this.service.getRules(propertyId)}).subscribe({
       next: ({tree, rules}) => {
         // A refused refresh keeps what is shown (and the editor); only a first load, which starts empty, stays empty.
-        if (propertyId === this.propertyId && tree?.success && rules?.success) {
+        if (seq === this.requestSeq && tree?.success && rules?.success) {
           this.refresh(tree.model, rules.model);
           this.reselect(selectRuleId);
         }

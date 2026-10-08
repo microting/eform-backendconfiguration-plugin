@@ -62,6 +62,8 @@ export class TailBiteLocationsPageComponent implements OnInit, OnDestroy {
   busy = false;
   private propertyId: number | null = null;
   private sub?: Subscription;
+  private request?: Subscription;
+  private requestSeq = 0;
 
   ngOnInit(): void {
     this.penPrefix = this.translate.instant('Pen');
@@ -74,6 +76,7 @@ export class TailBiteLocationsPageComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.sub?.unsubscribe();
+    this.request?.unsubscribe();
   }
 
   /** Forgets everything shown for the previous property so nothing stale is visible while the next one loads. */
@@ -94,31 +97,30 @@ export class TailBiteLocationsPageComponent implements OnInit, OnDestroy {
     if (propertyId === null) {
       return;
     }
-    forkJoin({
+    const seq = ++this.requestSeq;
+    this.request?.unsubscribe();
+    this.request = forkJoin({
       tree: this.service.getTree(propertyId),
       rules: this.service.getRules(propertyId),
       occupancy: this.service.getOccupancy(propertyId),
     }).subscribe({
       next: ({tree, rules, occupancy}) => {
-      if (propertyId !== this.propertyId) {
-        return;
-      }
-      this.tree = tree?.success ? tree.model : null;
-      this.rows = buildTreeRows(this.tree, rules?.success ? rules.model : [], occupancy?.success ? occupancy.model : []);
-      const ids = new Set(this.rows.map((r) => r.node.id));
-      this.checked = new Set([...this.checked].filter((id) => ids.has(id)));
-      const keep = this.rows.find((r) => r.node.id === this.selectedId) ?? this.rows[0];
-      if (keep) {
-        this.select(keep);
-      } else {
-        this.selectedId = null;
-      }
-      },
-      error: () => {
-        if (propertyId === this.propertyId) {
-          this.clearPage();
+        // A refused or failed refresh keeps what is shown (selection and checks included); only a first load starts empty.
+        if (seq === this.requestSeq && tree?.success && rules?.success && occupancy?.success) {
+          this.tree = tree.model;
+          this.rows = buildTreeRows(this.tree, rules.model, occupancy.model);
+          const ids = new Set(this.rows.map((r) => r.node.id));
+          this.checked = new Set([...this.checked].filter((id) => ids.has(id)));
+          const keep = this.rows.find((r) => r.node.id === this.selectedId) ?? this.rows[0];
+          if (keep) {
+            this.select(keep);
+          } else {
+            this.selectedId = null;
+          }
         }
       },
+      // The API service already toasts the error.
+      error: () => undefined,
     });
   }
 

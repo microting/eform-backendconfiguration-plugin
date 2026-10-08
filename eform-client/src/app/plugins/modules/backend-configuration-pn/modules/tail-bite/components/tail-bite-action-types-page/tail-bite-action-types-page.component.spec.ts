@@ -173,4 +173,13 @@ describe('TailBiteActionTypesPageComponent', () => {
     expect(service.getActionTypes).toHaveBeenCalledTimes(2);
     expect(component.busy).toBe(false);
   });
+
+  it('keeps the newest answer when an older load answers last', () => {
+    const older = new Subject<unknown>();
+    service.getActionTypes.mockReturnValueOnce(older).mockReturnValueOnce(of(listOf('Reb')));
+    component.load();
+    component.load();
+    older.next(listOf('Old'));
+    expect(component.actionTypes.map((a) => a.name)).toEqual(['Reb']);
+  });
 });

@@ -64,7 +64,8 @@ export class TailBiteManagersDialogComponent implements OnInit {
             this.loadProperties(id);
           }
         },
-        error: () => undefined,
+        // A failed enable may still have gone through on the server: show the truth.
+        error: () => this.loadProperties(id),
       });
   }
 
@@ -90,23 +91,33 @@ export class TailBiteManagersDialogComponent implements OnInit {
   }
 
   private loadProperties(preselect: number | null): void {
-    this.service.getProperties().subscribe((res) => {
-      this.properties = res?.success ? res.model : [];
-      const selected = this.properties.find((p) => p.propertyId === preselect) ?? this.properties[0];
-      this.onPropertyChange(selected?.propertyId ?? null);
+    this.service.getProperties().subscribe({
+      next: (res) => {
+        this.properties = res?.success ? res.model : [];
+        const selected = this.properties.find((p) => p.propertyId === preselect) ?? this.properties[0];
+        this.onPropertyChange(selected?.propertyId ?? null);
+      },
+      error: () => {
+        this.properties = [];
+        this.onPropertyChange(null);
+      },
     });
   }
 
   private loadWorkers(): void {
     const id = this.propertyId;
+    // The previous property's workers must not stay toggleable while the new list loads, or if it fails.
+    this.workers = [];
     if (id === null) {
-      this.workers = [];
       return;
     }
-    this.service.getWorkers(id).subscribe((res) => {
-      if (id === this.propertyId) {
-        this.workers = res?.success ? res.model : [];
-      }
+    this.service.getWorkers(id).subscribe({
+      next: (res) => {
+        if (id === this.propertyId) {
+          this.workers = res?.success ? res.model : [];
+        }
+      },
+      error: () => undefined,
     });
   }
 }

@@ -270,4 +270,16 @@ describe('TailBiteRulesPageComponent', () => {
     expect(component.draft!.minBittenPigs).toBe(4);
     expect(component.busy).toBe(false);
   });
+
+  it('keeps the newest answer when an older load answers last', () => {
+    const olderRules = new Subject<unknown>();
+    service.getRules.mockReturnValueOnce(olderRules);
+    component.load();
+    service.getRules.mockReturnValueOnce(of({success: true, model: [rootRule]}));
+    component.load();
+    expect(component.items.length).toBe(1);
+    olderRules.next({success: true, model: [stableRule, rootRule]});
+    olderRules.complete();
+    expect(component.items.length).toBe(1);
+  });
 });

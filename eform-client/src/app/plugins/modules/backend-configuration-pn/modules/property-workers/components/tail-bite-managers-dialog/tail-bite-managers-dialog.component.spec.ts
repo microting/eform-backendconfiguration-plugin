@@ -1,6 +1,6 @@
 import {TestBed} from '@angular/core/testing';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
-import {of, throwError} from 'rxjs';
+import {Subject, of, throwError} from 'rxjs';
 import {BackendConfigurationPnTailBiteService} from '../../../../services';
 import {TailBiteManagersDialogComponent} from './tail-bite-managers-dialog.component';
 
@@ -72,6 +72,50 @@ describe('TailBiteManagersDialogComponent', () => {
     service.setManager.mockReturnValue(throwError(() => new Error('refused')));
     component.setManager(component.workers[0], true);
     expect(service.getWorkers).toHaveBeenCalledWith(1);
+    expect(component.busy).toBe(false);
+  });
+
+  it('does not toggle the previous property\'s workers while the next list is pending', () => {
+    create(1);
+    const pending = new Subject<unknown>();
+    service.getWorkers.mockReturnValueOnce(pending);
+    component.onPropertyChange(2);
+    expect(component.workers).toEqual([]);
+    expect(service.setManager).not.toHaveBeenCalled();
+    pending.next({success: true, model: [{siteId: 8, name: 'John Doe', isManager: false, propertyWorkerIds: [41]}]});
+    expect(component.workers.map((w) => w.siteId)).toEqual([8]);
+  });
+
+  it('drops a late workers answer for a property that is no longer selected', () => {
+    create(1);
+    const late = new Subject<unknown>();
+    service.getWorkers.mockReturnValueOnce(late);
+    component.onPropertyChange(2);
+    component.onPropertyChange(1);
+    late.next({success: true, model: [{siteId: 8, name: 'John Doe', isManager: false, propertyWorkerIds: [41]}]});
+    expect(component.workers.map((w) => w.siteId)).toEqual([7]);
+  });
+
+  it('shows no workers when the list fails to load', () => {
+    create(1);
+    service.getWorkers.mockReturnValueOnce(throwError(() => new Error('500')));
+    component.onPropertyChange(2);
+    expect(component.workers).toEqual([]);
+  });
+
+  it('survives a failing property list', () => {
+    service.getProperties.mockReturnValueOnce(throwError(() => new Error('500')));
+    create(1);
+    expect(component.properties).toEqual([]);
+    expect(component.propertyId).toBeNull();
+  });
+
+  it('reloads the properties after a failed enable', () => {
+    create(2);
+    service.getProperties.mockClear();
+    service.enable.mockReturnValueOnce(throwError(() => new Error('500')));
+    component.enable();
+    expect(service.getProperties).toHaveBeenCalledTimes(1);
     expect(component.busy).toBe(false);
   });
 });

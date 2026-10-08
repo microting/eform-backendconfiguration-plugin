@@ -4,7 +4,7 @@ import {Overlay} from '@angular/cdk/overlay';
 import {EventEmitter} from '@angular/core';
 import {ActivatedRoute, convertToParamMap} from '@angular/router';
 import {TranslateService} from '@ngx-translate/core';
-import {BehaviorSubject, NEVER, of, throwError} from 'rxjs';
+import {BehaviorSubject, NEVER, Subject, of, throwError} from 'rxjs';
 import {ToastrService} from 'ngx-toastr';
 import {BackendConfigurationPnTailBiteService} from '../../../../services';
 import {TailBiteLocationsPageComponent} from './tail-bite-locations-page.component';
@@ -256,5 +256,44 @@ describe('TailBiteLocationsPageComponent', () => {
     component.validFrom = new Date(2026, 0, 2);
     component.select(component.rows[1]);
     expect(component.validFrom.toDateString()).toBe(new Date().toDateString());
+  });
+
+  it('keeps the previous rows when a refresh has the rules call refused', () => {
+    service['getRules'].mockReturnValueOnce(of({success: false, message: 'no'}));
+    component.load();
+    expect(component.rows.map((r) => r.node.name)).toEqual(['Ejendom', 'Stald A', 'Sektion 4']);
+    expect(component.ruleLabel(component.rows[0])).toContain('Own rule');
+  });
+
+  it('keeps the previous rows when a refresh has the pig counts or the tree refused', () => {
+    service['getOccupancy'].mockReturnValueOnce(of({success: false, message: 'no'}));
+    component.load();
+    service['getTree'].mockReturnValueOnce(of({success: false, message: 'no'}));
+    component.load();
+    expect(component.tree).not.toBeNull();
+    expect(component.rows.length).toBe(3);
+    expect(component.rows[2].pigs).toBe(360);
+  });
+
+  it('keeps the selection and the checked rows when a refresh fails with an error', () => {
+    component.select(component.rows[1]);
+    component.setChecked(3, true);
+    service['getTree'].mockReturnValueOnce(throwError(() => new Error('500')));
+    component.load();
+    expect(component.rows.length).toBe(3);
+    expect(component.selectedId).toBe(2);
+    expect(component.isChecked(3)).toBe(true);
+  });
+
+  it('keeps the newest answer when an older load answers last', () => {
+    const olderTree = new Subject<unknown>();
+    service['getTree'].mockReturnValueOnce(olderTree);
+    component.load();
+    service['getTree'].mockReturnValueOnce(of({success: true, model: {...tree, locations: tree.locations.slice(0, 2)}}));
+    component.load();
+    expect(component.rows.length).toBe(2);
+    olderTree.next({success: true, model: tree});
+    olderTree.complete();
+    expect(component.rows.length).toBe(2);
   });
 });

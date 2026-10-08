@@ -17,6 +17,9 @@ import {TAIL_BITE_BASE, parseTailBiteUrl} from '../../shared/tail-bite-route';
  * (`tail-bite/<propertyId>/<tab>`); the picker navigates, the pages read the route. The bare `tail-bite` URL
  * opens the first property with tail biting enabled.
  */
+/** An outbreak page URL (…/outbreaks/<id>), whose property the page itself owns. */
+const OUTBREAK_DETAIL = /\/outbreaks\/\d+(?=[/?#;]|$)/;
+
 @Component({
   selector: 'app-tail-bite-shell',
   templateUrl: './tail-bite-shell.component.html',
@@ -41,9 +44,16 @@ export class TailBiteShellComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.sub = this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe(() => this.syncFromUrl());
     this.syncFromUrl();
-    this.service.getProperties().subscribe((res) => {
-      this.properties = res?.success ? res.model.filter((p) => p.enabled) : [];
-      this.syncFromUrl();
+    this.service.getProperties().subscribe({
+      next: (res) => {
+        this.properties = res?.success ? res.model.filter((p) => p.enabled) : [];
+        this.syncFromUrl();
+      },
+      // A failed call shows the empty state instead of a blank page.
+      error: () => {
+        this.properties = [];
+        this.syncFromUrl();
+      },
     });
   }
 
@@ -68,9 +78,15 @@ export class TailBiteShellComponent implements OnInit, OnDestroy {
     if (this.properties.length === 0) {
       // Nothing to show: no tabs and no page, only the empty state.
       this.propertyId = null;
-    } else if (this.propertyId === null || !this.properties.some((p) => p.propertyId === this.propertyId)) {
-      // Bare URL or a property that is not offered (disabled, unknown): open the first one on the same tab.
-      this.router.navigate([this.base, this.properties[0].propertyId, fromUrl.tab ?? 'outbreaks'], {replaceUrl: true});
+    } else if (this.propertyId === null) {
+      // Bare URL: open the first property on the outbreaks tab.
+      this.router.navigate([this.base, this.properties[0].propertyId, 'outbreaks'], {replaceUrl: true});
+    } else if (!this.properties.some((p) => p.propertyId === this.propertyId) && !OUTBREAK_DETAIL.test(this.router.url)) {
+      // A property that is not offered (disabled, unknown): swap only the property segment, so the tab, the query and the
+      // fragment survive. An outbreak page is left alone: it corrects the URL to the outbreak's own property itself, and
+      // two corrections would chase each other when that property is not offered here.
+      const first = this.properties[0].propertyId;
+      this.router.navigateByUrl(this.router.url.replace(/\/tail-bite\/\d+/, `/tail-bite/${first}`), {replaceUrl: true});
     }
   }
 }

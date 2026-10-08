@@ -1,17 +1,17 @@
 import {TestBed} from '@angular/core/testing';
 import {NavigationEnd, Router} from '@angular/router';
-import {Subject, of} from 'rxjs';
+import {Subject, of, throwError} from 'rxjs';
 import {BackendConfigurationPnTailBiteService} from '../../../../services';
 import {TailBiteShellComponent} from './tail-bite-shell.component';
 
 describe('TailBiteShellComponent', () => {
   const base = '/plugins/backend-configuration-pn/tail-bite';
-  let router: {url: string; events: Subject<unknown>; navigate: jest.Mock};
+  let router: {url: string; events: Subject<unknown>; navigate: jest.Mock; navigateByUrl: jest.Mock};
   let getProperties: jest.Mock;
   let component: TailBiteShellComponent;
 
   const create = (url: string) => {
-    router = {url, events: new Subject(), navigate: jest.fn()};
+    router = {url, events: new Subject(), navigate: jest.fn(), navigateByUrl: jest.fn()};
     TestBed.configureTestingModule({
       providers: [
         {provide: Router, useValue: router},
@@ -58,7 +58,25 @@ describe('TailBiteShellComponent', () => {
 
   it('redirects an unknown or disabled property to the first one, keeping the tab', () => {
     create(`${base}/2/rules`);
-    expect(router.navigate).toHaveBeenCalledWith([base, 1, 'rules'], {replaceUrl: true});
+    expect(router.navigateByUrl).toHaveBeenCalledWith(`${base}/1/rules`, {replaceUrl: true});
+  });
+
+  it('redirects an unknown property keeping the rest of the path, the query and the fragment', () => {
+    create(`${base}/9/locations?x=1#top`);
+    expect(router.navigateByUrl).toHaveBeenCalledWith(`${base}/1/locations?x=1#top`, {replaceUrl: true});
+  });
+
+  it('leaves an outbreak page to correct its own property, so the two never chase each other', () => {
+    create(`${base}/9/outbreaks/12`);
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('shows the empty state when the properties cannot be loaded', () => {
+    getProperties.mockReturnValue(throwError(() => new Error('500')));
+    create(`${base}/3/rules`);
+    expect(component.properties).toEqual([]);
+    expect(component.propertyId).toBeNull();
   });
 
   it('shows the empty state when nothing is enabled or the call fails', () => {
