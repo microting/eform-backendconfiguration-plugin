@@ -48,6 +48,7 @@ public interface ITailBiteWebQueryService
     Task<IReadOnlyList<RuleDto>> ListRulesAsync(int callerSiteId, int propertyId);
     Task<IReadOnlyList<RuleVersionDto>> RuleHistoryAsync(int callerSiteId, int ruleId);
     Task<IReadOnlyList<OccupancyDto>> CurrentOccupancyAsync(int callerSiteId, int propertyId);
+    Task<OutbreakRegistrations> OutbreakRegistrationsAsync(int callerSiteId, int outbreakId);
 }
 
 public class TailBiteWebQueryService(BackendConfigurationPnDbContext db, ITailBiteAccess access, IGrpcSiteResolver siteResolver,
@@ -122,6 +123,39 @@ public class TailBiteWebQueryService(BackendConfigurationPnDbContext db, ITailBi
             .OrderBy(o => o.LocationId)
             .Select(o => new OccupancyDto(o.LocationId, o.PigCount, o.Source, Utc(o.ValidFrom)))
             .ToList();
+    }
+
+    public async Task<OutbreakRegistrations> OutbreakRegistrationsAsync(int callerSiteId, int outbreakId)
+    {
+        var propertyId = await db.TailBiteOutbreaks.AsNoTracking().Where(o => o.Id == outbreakId && o.WorkflowState != Removed)
+                             .Select(o => (int?)o.PropertyId).SingleOrDefaultAsync()
+                         ?? throw TailBiteForbiddenException.NoAccess();
+        await access.RequireManagerAsync(callerSiteId, propertyId);
+        var rows = await (from link in db.TailBiteOutbreakLinks.AsNoTracking()
+                          join row in db.TailBiteRegistrationLocations on link.RegistrationLocationId equals row.Id
+                          join reg in db.TailBiteRegistrations on row.RegistrationId equals reg.Id
+                          where link.OutbreakId == outbreakId && link.WorkflowState != Removed
+                          orderby reg.EffectiveAt, row.Id
+                          select new { row, reg }).ToListAsync();
+        var registrationIds = rows.Select(x => x.reg.Id).Distinct().ToList();
+        var actionTypes = (await db.TailBiteRegistrationActions.AsNoTracking()
+                .Where(a => registrationIds.Contains(a.RegistrationId) && a.WorkflowState != Removed)
+                .Select(a => new { a.RegistrationId, a.ActionTypeId }).ToListAsync())
+            .ToLookup(a => a.RegistrationId, a => a.ActionTypeId);
+        // BelongsTo builds a predicate for one registration, which does not fit a batch over many; this applies the same rule
+        // in two steps: IsStored and the property in the query, uuid and uploading site in the lookup key. Removed photos are not counted.
+        var clientUuids = rows.Select(x => x.reg.ClientUuid).Distinct().ToList();
+        var photos = (await db.TailBiteRegistrationPhotos.AsNoTracking()
+            .Where(p => p.PropertyId == propertyId && clientUuids.Contains(p.RegistrationClientUuid) && p.WorkflowState != Removed)
+            .Where(TailBitePhotoOwnership.IsStored)
+            .Select(p => new { p.RegistrationClientUuid, p.UploadedBySiteId }).ToListAsync())
+            .ToLookup(p => (p.RegistrationClientUuid, p.UploadedBySiteId));
+        var names = await DisplayNamesAsync(rows.Select(x => x.reg.SiteId));
+        return new OutbreakRegistrations(propertyId, rows.Select(x => new OutbreakRegistrationRow(
+            x.reg.Id, x.row.Id, x.row.LocationId, Utc(x.reg.EffectiveAt), x.row.MinorCount, x.row.SevereCount,
+            actionTypes[x.reg.Id].Order().ToList(), x.reg.SiteId, names[x.reg.SiteId],
+            x.reg.CancelledAt != null, x.reg.CancelReason,
+            photos[(x.reg.ClientUuid, x.reg.SiteId)].Count())).ToList());
     }
 
     // The name the app shows for a site (TailBiteGrpcService uses the same lookup), so web and app agree; "#id" when unknown.

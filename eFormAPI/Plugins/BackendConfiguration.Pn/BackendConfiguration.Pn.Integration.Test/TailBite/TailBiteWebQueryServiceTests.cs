@@ -1,10 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Services.GrpcServices;
 using BackendConfiguration.Pn.Services.TailBite;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microting.EformBackendConfigurationBase.Infrastructure.Const;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using NSubstitute;
 using NUnit.Framework;
@@ -153,4 +157,93 @@ public class TailBiteWebQueryServiceTests : TailBiteTestBase
         await Assert.ThrowsAsync<TailBiteForbiddenException>(() => Sut().CurrentOccupancyAsync(ForeignSite, PropertyId));
     }
 
+    // ---------- outbreak registrations ----------
+
+    private async Task<TailBiteOutbreak> OutbreakWithLinksAsync(int locationId, params int[] rowIds)
+    {
+        var outbreak = new TailBiteOutbreak
+        {
+            PropertyId = PropertyId, LocationId = locationId, RuleId = RuleId, RuleVersion = 1,
+            OpenedAt = Clock.GetUtcNow().UtcDateTime, OpenedByRegistrationId = 1
+        };
+        await outbreak.Create(Db);
+        foreach (var rowId in rowIds)
+            await new TailBiteOutbreakLink { OutbreakId = outbreak.Id, RegistrationLocationId = rowId }.Create(Db);
+        return outbreak;
+    }
+
+    private async Task PhotoAsync(TailBiteRegistration reg, int uploadedBySiteId, int sdkUploadedDataId, bool removed = false)
+    {
+        var photo = new TailBiteRegistrationPhoto
+        {
+            PhotoUuid = Guid.NewGuid(), PropertyId = PropertyId, UploadedBySiteId = uploadedBySiteId,
+            RegistrationClientUuid = reg.ClientUuid, SdkUploadedDataId = sdkUploadedDataId
+        };
+        await photo.Create(Db);
+        if (removed) await photo.Delete(Db);
+    }
+
+    [Test]
+    public async Task OutbreakRegistrations_LinkedRowsInTimeOrder_WithActionsPhotosNamesAndCancellation()
+    {
+        await SeedTreeAsync();
+        await SeedWorkerAsync(ManagerSite, manager: true);
+        var now = Clock.GetUtcNow().UtcDateTime;
+        var (late, lateRows) = await SeedRegistrationAsync(now.AddHours(-1), false, (Pen310Id, 1, 0));
+        var (early, earlyRows) = await SeedRegistrationAsync(now.AddDays(-2), true, (Pen309Id, 2, 1), (Pen501Id, 4, 0));
+        var halm = new TailBiteActionType { PropertyId = PropertyId, Code = "HALM", Name = "Halm" };
+        await halm.Create(Db);
+        await new TailBiteRegistrationAction { RegistrationId = late.Id, ActionTypeId = halm.Id }.Create(Db);
+        await PhotoAsync(late, uploadedBySiteId: 7, sdkUploadedDataId: 55);
+        await PhotoAsync(late, uploadedBySiteId: 7, sdkUploadedDataId: 0);   // a reservation, bytes not stored
+        await PhotoAsync(late, uploadedBySiteId: 8, sdkUploadedDataId: 56);  // someone else's upload with the same uuid
+        await PhotoAsync(late, uploadedBySiteId: 7, sdkUploadedDataId: 57, removed: true);
+        // Sti 501 belongs to Stald B: only the Stald A rows are linked to this outbreak.
+        var outbreak = await OutbreakWithLinksAsync(StableAId, lateRows[0], earlyRows[0]);
+
+        var result = await Sut().OutbreakRegistrationsAsync(ManagerSite, outbreak.Id);
+
+        Assert.That(result.PropertyId, Is.EqualTo(PropertyId));
+        Assert.That(result.Rows.Select(r => (r.RegistrationId, r.LocationId, r.Minor, r.Severe, r.Cancelled)), Is.EqualTo(new[]
+        {
+            (early.Id, Pen309Id, 2, 1, true), (late.Id, Pen310Id, 1, 0, false),
+        }));
+        var lateRow = result.Rows[1];
+        Assert.That(lateRow.ActionTypeIds, Is.EqualTo(new[] { halm.Id }));
+        Assert.That(lateRow.PhotoCount, Is.EqualTo(1));
+        Assert.That(lateRow.SiteName, Is.EqualTo("Jane Doe"));
+        Assert.That(lateRow.EffectiveAt.Kind, Is.EqualTo(DateTimeKind.Utc));
+        Assert.That(result.Rows[0].CancelReason, Is.EqualTo("Registreret på forkert sti"));
+    }
+
+    [Test]
+    public async Task OutbreakRegistrations_NeedsAManager_MissingAndForeignIdsRefusedAlike()
+    {
+        await SeedTreeAsync();
+        await SeedWorkerAsync(WorkerSite);
+        var outbreak = await OutbreakWithLinksAsync(StableAId);
+        await AssertRefusedAlike(
+            () => Sut().OutbreakRegistrationsAsync(WorkerSite, int.MaxValue),
+            () => Sut().OutbreakRegistrationsAsync(WorkerSite, outbreak.Id));
+    }
+
+    // ListProperties / ListWorkers have no caller check in the service: any route that exposes them must be plugin-admin only.
+    [Test]
+    public void RoutesExposingPropertyAndWorkerLists_CarryThePluginAdminPolicy()
+    {
+        var exposing = typeof(TailBiteWebQueryService).Assembly.GetTypes()
+            .Where(t => typeof(ControllerBase).IsAssignableFrom(t))
+            .Where(t => t.GetConstructors().Any(c => c.GetParameters().Any(p => p.ParameterType == typeof(ITailBiteWebQueryService))))
+            .SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.Instance
+                                          | BindingFlags.DeclaredOnly))
+            .Where(m => m.Name.Contains("Properties") || m.Name.Contains("Workers"))
+            .ToList();
+        foreach (var action in exposing)
+        {
+            var policies = action.GetCustomAttributes(typeof(AuthorizeAttribute), true)
+                .Cast<AuthorizeAttribute>().Select(a => a.Policy);
+            Assert.That(policies, Does.Contain(BackendConfigurationClaims.AccessBackendConfigurationPlugin),
+                $"{action.DeclaringType!.Name}.{action.Name} must be plugin-admin only");
+        }
+    }
 }
