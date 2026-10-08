@@ -119,7 +119,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z]
+        test: [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,za]
     steps:
     - uses: actions/checkout@v3
       with:
@@ -293,6 +293,14 @@ jobs:
         name: playwright-report-${{ matrix.test }}
         path: eform-angular-frontend/eform-client/playwright-report/
         retention-days: 2
+    - name: Archive tail-bite screenshots
+      if: always() && matrix.test == 'za'
+      uses: actions/upload-artifact@v4
+      with:
+        name: tail-bite-screenshots
+        path: eform-angular-frontend/eform-client/playwright-results/tail-bite/
+        retention-days: 7
+        if-no-files-found: ignore
   test-dotnet:
     runs-on: ubuntu-latest
     steps:
