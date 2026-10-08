@@ -224,6 +224,148 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             "no SecurityGroupUser row should ever be written against a non-existent user");
     }
 
+    // An address pasted with an invisible left-to-right mark (U+200E) in front
+    // used to be refused by Identity as a user name, so the worker got no login.
+    // The mark is now removed before the address is stored or used.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_CreateDeviceUser_InvisibleCharacterInEmail_StoresCleanAddressAndCreatesLogin()
+    {
+        // Arrange
+        var core = await GetCore();
+        var cleanEmail = $"{Guid.NewGuid():N}@example.com";
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"\u200E{cleanEmail}\u200B"
+        };
+
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(await MicrotingDbContext!.Workers.AnyAsync(x => x.Email == cleanEmail), Is.True,
+            "the worker must be stored with the visible address only");
+        var login = await BaseDbContext!.Users.SingleOrDefaultAsync(x => x.Email == cleanEmail);
+        Assert.That(login, Is.Not.Null, "the worker must get a login for the clean address");
+        Assert.That(login!.UserName, Is.EqualTo(cleanEmail));
+    }
+
+    // A worker saved before the cleanup existed can still carry the mark and have
+    // no login. Saving the worker again (the form sends the stored address back
+    // unchanged) must clean the address and create the missing login.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_StoredAddressWithInvisibleCharacter_IsCleanedAndGetsLogin()
+    {
+        // Arrange — a worker without a login, its stored address carrying U+200E.
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+
+        await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(new DeviceUserModel
+        {
+            CustomerNo = 0,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = ""
+        }, core, 1, TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+
+        var site = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var worker = await MicrotingDbContext.Workers.SingleAsync(x => x.Email == "");
+        var cleanEmail = $"{Guid.NewGuid():N}@example.com";
+        var dirtyEmail = $"\u200E{cleanEmail}";
+        worker.Email = dirtyEmail;
+        await worker.Update(MicrotingDbContext);
+
+        // Act — the edit dialog sends the stored address back as it was loaded.
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)site.MicrotingUid!,
+            CustomerNo = 0,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = worker.FirstName,
+            UserLastName = worker.LastName,
+            WorkerEmail = dirtyEmail
+        }, core, 1, userService, userManager,
+            BackendConfigurationPnDbContext!, TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+        await MicrotingDbContext.Entry(worker).ReloadAsync();
+        Assert.That(worker.Email, Is.EqualTo(cleanEmail), "saving must store the visible address only");
+        Assert.That(await BaseDbContext!.Users.AnyAsync(x => x.Email == cleanEmail && x.UserName == cleanEmail), Is.True,
+            "saving must create the login the invisible character had blocked");
+    }
+
+    // Same stored address with an invisible character, but a login for the visible
+    // address already exists (e.g. created by hand while the worker had none).
+    // Saving must link to that login, not refuse the clean address as in use.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_StoredAddressWithInvisibleCharacter_LinksExistingCleanLogin()
+    {
+        // Arrange — a worker with a login for the clean address, then its stored
+        // address gets the invisible character back (the pre-cleanup state).
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
+        var cleanEmail = $"{Guid.NewGuid():N}@example.com";
+
+        var created = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(new DeviceUserModel
+        {
+            CustomerNo = 0,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = cleanEmail
+        }, core, 1, TimePlanningPnDbContext!, BaseDbContext!, userService, userManager);
+        Assert.That(created.Success, Is.True, created.Message);
+        var loginId = (await BaseDbContext!.Users.SingleAsync(x => x.Email == cleanEmail)).Id;
+
+        var site = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var worker = await MicrotingDbContext.Workers.SingleAsync(x => x.Email == cleanEmail);
+        var dirtyEmail = $"\u200E{cleanEmail}";
+        worker.Email = dirtyEmail;
+        await worker.Update(MicrotingDbContext);
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)site.MicrotingUid!,
+            CustomerNo = 0,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = worker.FirstName,
+            UserLastName = worker.LastName,
+            WorkerEmail = dirtyEmail
+        }, core, 1, userService, userManager,
+            BackendConfigurationPnDbContext!, TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert
+        Assert.That(result.Success, Is.True, result.Message);
+        await MicrotingDbContext.Entry(worker).ReloadAsync();
+        Assert.That(worker.Email, Is.EqualTo(cleanEmail));
+        var logins = await BaseDbContext.Users.Where(x => x.Email == cleanEmail).Select(x => x.Id).ToListAsync();
+        Assert.That(logins, Is.EqualTo(new[] { loginId }), "the existing login must be kept, not duplicated");
+    }
+
     // Update-side twin of CreateDeviceUser_IdentityRejectsEmail_
     // KeepsWorkerAndCreatesNoUser. UpdateDeviceUser resolves the worker's
     // existing login and validates the target address with Identity's own
