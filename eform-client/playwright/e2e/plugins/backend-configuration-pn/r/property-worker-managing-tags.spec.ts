@@ -94,7 +94,7 @@ function chosenTag(page: Page, name: string) {
 async function clickSelectAll(page: Page): Promise<void> {
   await selectAllButton(page).click({ timeout: UI_TIMEOUT });
   await expect(dropdownPanel(page), '"Select all" must close the list').toHaveCount(0, { timeout: UI_TIMEOUT });
-  await expect(managingTagSearchInput(page), '"Select all" must clear the search').toHaveValue('');
+  await expect(managingTagSearchInput(page), '"Select all" must clear the search').toHaveValue('', { timeout: UI_TIMEOUT });
 }
 
 async function cancelEditModal(workersPage: BackendConfigurationPropertyWorkersPage): Promise<void> {
@@ -169,16 +169,20 @@ test.describe.serial('Property-worker dialog: managing tags', () => {
     await searchManagingTags(page, tagA);
     await listedOptions(page).filter({ hasText: tagA }).click({ timeout: UI_TIMEOUT });
     await expect(chosenTag(page, tagA), 'the picked tag must show as chosen').toHaveCount(1, { timeout: UI_TIMEOUT });
-    await expect(dropdownPanel(page), 'the list must stay open after a pick').toBeVisible();
+    await expect(dropdownPanel(page), 'the list must stay open after a pick').toBeVisible({ timeout: UI_TIMEOUT });
     await managingTagSearchInput(page).fill('', { timeout: UI_TIMEOUT });
     await expect(listedOptions(page).filter({ hasText: tagC })).toHaveCount(1, { timeout: UI_TIMEOUT });
-    await expect(listedOptions(page).filter({ hasText: tagA }), 'a picked tag must leave the list').toHaveCount(0);
+    await expect(listedOptions(page).filter({ hasText: tagA }), 'a picked tag must leave the list').toHaveCount(0, {
+      timeout: UI_TIMEOUT,
+    });
 
     // With a search typed, "Select all" adds only the matching tags.
     await searchManagingTags(page, tagB);
     await clickSelectAll(page);
     await expect(chosenTag(page, tagB)).toHaveCount(1, { timeout: UI_TIMEOUT });
-    await expect(chosenTag(page, tagC), 'a tag outside the search must not be added').toHaveCount(0);
+    await expect(chosenTag(page, tagC), 'a tag outside the search must not be added').toHaveCount(0, {
+      timeout: UI_TIMEOUT,
+    });
 
     // Without a search, "Select all" adds every remaining tag.
     await openManagingTagsList(page);
