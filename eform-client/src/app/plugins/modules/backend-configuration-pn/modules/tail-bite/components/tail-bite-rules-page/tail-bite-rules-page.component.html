@@ -1,0 +1,77 @@
+<div class="d-flex flex-row flex-wrap align-items-start gap-24">
+  <mat-card class="p-3" style="flex: 1 1 360px">
+    <p class="mt-0">{{ 'A rule belongs to a location and applies to everything below it until a location further down has its own.' | translate }}</p>
+    <div *ngFor="let item of items" class="card d-flex flex-column gap-4 mb-2" [id]="'tailBiteRuleItem-' + item.rule.id"
+         style="cursor: pointer" (click)="edit(item.rule)">
+      <strong>{{ item.location }}</strong>
+      <span>{{ item.text }}</span>
+      <span>
+        <ng-container *ngIf="item.isRoot">{{ 'Default rule' | translate }} · </ng-container>{{ 'Version {{version}}' | translate: {version: item.rule.version} }}
+        <ng-container *ngIf="item.changedAt"> · {{ 'Changed {{date}}' | translate: {date: (item.changedAt | date: 'dd.MM.yyyy')} }}</ng-container>
+      </span>
+    </div>
+    <button id="tailBiteAddRuleBtn" class="btn-secondary mt-2" [disabled]="busy" (click)="newRule()">{{ 'Add rule on a location' | translate }}</button>
+  </mat-card>
+
+  <mat-card class="p-3" style="flex: 2 1 480px" *ngIf="draft">
+    <mat-form-field *ngIf="draft.ruleId === null" class="w-100">
+      <mat-label>{{ 'Location for the new rule' | translate }}</mat-label>
+      <mtx-select id="tailBiteRuleLocation" [items]="freeLocations" bindLabel="name" bindValue="id" appendTo="body"
+                  [ngModel]="draft.locationId" (ngModelChange)="chooseLocation($event)"></mtx-select>
+    </mat-form-field>
+    <div class="d-flex flex-row flex-wrap gap-12">
+      <mat-form-field style="flex: 1 1 160px">
+        <mat-label>{{ 'Bitten pigs (minor + severe)' | translate }}</mat-label>
+        <input matInput id="tailBiteRuleMinPigs" type="number" min="1" [(ngModel)]="draft.minBittenPigs" (ngModelChange)="requestPreview()" />
+      </mat-form-field>
+      <mat-form-field style="flex: 1 1 120px">
+        <mat-label>{{ 'Severe bites' | translate }}</mat-label>
+        <input matInput id="tailBiteRuleMinSevere" type="number" min="1" [(ngModel)]="draft.minSevere" (ngModelChange)="requestPreview()" />
+      </mat-form-field>
+      <mat-form-field style="flex: 1 1 120px">
+        <mat-label>{{ 'Within days' | translate }}</mat-label>
+        <input matInput id="tailBiteRuleWindow" type="number" min="1" max="90" [(ngModel)]="draft.windowDays" (ngModelChange)="requestPreview()" />
+      </mat-form-field>
+      <mat-form-field style="flex: 1 1 200px">
+        <mat-label>{{ 'Counted per' | translate }}</mat-label>
+        <mtx-select id="tailBiteRuleDepth" [items]="levels" bindValue="depth" appendTo="body" [clearable]="false"
+                    [(ngModel)]="draft.countDepth" (ngModelChange)="requestPreview()">
+          <ng-template ng-label-tmp ng-option-tmp let-item="item">
+            {{ 'Level {{depth}} (e.g. {{example}})' | translate: {depth: item.depth, example: item.example} }}
+          </ng-template>
+        </mtx-select>
+      </mat-form-field>
+    </div>
+    <p *ngIf="draftText" id="tailBiteRuleSentence">{{ draftText }}</p>
+    <p *ngIf="saveHint" id="tailBiteRuleHint" role="alert">{{ saveHint }}</p>
+
+    <div class="card mb-3 d-flex flex-column gap-4" id="tailBiteRulePreview">
+      <strong>{{ 'If the rule had applied for the last 90 days' | translate }}</strong>
+      <div *ngIf="preview" id="tailBiteRulePreviewCount">
+        {{ '{{count}} outbreaks would have started.' | translate: {count: preview.outbreaksWouldOpen} }}
+      </div>
+      <div *ngFor="let line of previewLines">{{ line.location }}: {{ line.count }}</div>
+      <div *ngIf="previewError" role="alert">{{ previewError }}</div>
+      <div>{{ 'Calculated from your own registrations, so you can see whether the rule is too strict or too loose before you save.' | translate }}</div>
+    </div>
+
+    <div class="d-flex flex-row flex-wrap align-items-center gap-12">
+      <button id="tailBiteRuleSaveBtn" class="btn-primary" [disabled]="!canSave" (click)="save()">{{ saveLabel }}</button>
+      <ng-container *ngIf="editedItem as item">
+        <button *ngIf="!item.isRoot" id="tailBiteRuleDeleteBtn" class="btn-delete" [disabled]="busy" (click)="remove(item)">
+          {{ 'Delete outbreak rule' | translate }}
+        </button>
+      </ng-container>
+      <span>{{ 'Outbreaks that have already started keep the version that started them.' | translate }}</span>
+    </div>
+
+    <div *ngIf="history.length" class="mt-3" id="tailBiteRuleHistory">
+      <h4 class="m-0">{{ 'History' | translate }}</h4>
+      <div *ngFor="let v of history" class="d-flex flex-row flex-wrap gap-12 py-1" [id]="'tailBiteRuleVersion-' + v.version">
+        <strong>{{ 'Version {{version}}' | translate: {version: v.version} }}</strong>
+        <span>{{ v.changedAt | date: 'dd.MM.yyyy' }}</span>
+        <span>{{ v.text }}</span>
+      </div>
+    </div>
+  </mat-card>
+</div>

@@ -26,9 +26,15 @@ describe('TailBiteRouting', () => {
   it('lets a page resolve the property id of the componentless :propertyId route', async () => {
     @Component({template: '<router-outlet></router-outlet>', imports: [RouterOutlet]})
     class HostStub {}
+    @Component({template: ''})
+    class PageStub {}
+    // The real pages inject the server-facing services; this test is about route parameters only.
+    const pages = routes[0].children!.map((r) => r.path === ':propertyId'
+      ? {...r, children: r.children!.map((page) => (page.loadComponent ? {...page, loadComponent: () => PageStub} : page))}
+      : r);
     // Same nesting as the real table (shell > :propertyId > page), with the shell swapped for a stub.
     TestBed.configureTestingModule({
-      providers: [provideRouter([{path: 'tail-bite', children: [{path: '', component: HostStub, children: routes[0].children}]}])],
+      providers: [provideRouter([{path: 'tail-bite', children: [{path: '', component: HostStub, children: pages}]}])],
     });
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl('/tail-bite/7/rules');

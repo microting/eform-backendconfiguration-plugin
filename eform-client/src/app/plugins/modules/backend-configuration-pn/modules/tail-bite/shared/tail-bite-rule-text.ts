@@ -31,27 +31,35 @@ export interface TailBiteRuleDraft {
   version: number;
 }
 
-const isWhole = (v: number | null, min: number, max = Number.MAX_SAFE_INTEGER): boolean =>
+export const isWhole = (v: number | null, min: number, max = Number.MAX_SAFE_INTEGER): boolean =>
   v !== null && Number.isInteger(v) && v >= min && v <= max;
 
-/**
- * The request for a draft, or null while it cannot be valid. Mirrors the server's checks
- * (TailBiteSetupService.ValidateRule): a location, at least one threshold, thresholds >= 1,
- * a 1–90 day window. The "not above its own location" check is left to the server; the
- * form only offers levels at or below the location.
- */
-export function ruleInputFromDraft(d: TailBiteRuleDraft): TailBiteRuleInput | null {
-  if (d.locationId === null || (d.minBittenPigs === null && d.minSevere === null)) {
-    return null;
+/** What stops a draft from being saved; null when it is valid. Mirrors the server's checks. */
+export type TailBiteDraftProblem = 'location' | 'threshold-missing' | 'threshold-invalid' | 'window';
+
+export function draftProblem(d: TailBiteRuleDraft): TailBiteDraftProblem | null {
+  if (d.locationId === null) {
+    return 'location';
+  }
+  if (d.minBittenPigs === null && d.minSevere === null) {
+    return 'threshold-missing';
   }
   if ((d.minBittenPigs !== null && !isWhole(d.minBittenPigs, 1)) || (d.minSevere !== null && !isWhole(d.minSevere, 1))) {
-    return null;
+    return 'threshold-invalid';
   }
-  if (!isWhole(d.windowDays, 1, 90)) {
+  return isWhole(d.windowDays, 1, 90) ? null : 'window';
+}
+
+/**
+ * The request for a draft, or null while it cannot be valid (see draftProblem). The "not above its own
+ * location" check is left to the server; the form only offers levels at or below the location.
+ */
+export function ruleInputFromDraft(d: TailBiteRuleDraft): TailBiteRuleInput | null {
+  if (draftProblem(d) !== null) {
     return null;
   }
   return {
-    locationId: d.locationId,
+    locationId: d.locationId!,
     minBittenPigs: d.minBittenPigs,
     minSevere: d.minSevere,
     windowDays: d.windowDays!,

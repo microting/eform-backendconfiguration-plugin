@@ -136,4 +136,25 @@ test.describe.serial('Tail biting web admin', () => {
     const bytes = fs.readFileSync(await pdf.path());
     expect(bytes.subarray(0, 5).toString('latin1')).toBe('%PDF-');
   });
+
+  test('rules: the default rule, a new rule with its dry run, and a second version', async ({ page }) => {
+    test.setTimeout(300000);
+    const tailBite = new TailBitePage(page);
+    await tailBite.goto('rules', property.name);
+    // Enabling seeded the default rule on the root.
+    await expect(page.locator('[id^="tailBiteRuleItem-"]')).toHaveCount(1, { timeout: API_TIMEOUT });
+
+    await page.locator('#tailBiteAddRuleBtn').click();
+    await tailBite.pick('tailBiteRuleLocation', 'Stald A');
+    await page.locator('#tailBiteRuleMinPigs').fill('3');
+    // No registrations yet, so the 90-day dry run opens nothing - but it answers.
+    await expect(page.locator('#tailBiteRulePreviewCount')).toContainText('0', { timeout: API_TIMEOUT });
+    await tailBite.expectApi('POST', /^\/rules$/, () => page.locator('#tailBiteRuleSaveBtn').click());
+    await expect(page.locator('[id^="tailBiteRuleItem-"]')).toHaveCount(2, { timeout: API_TIMEOUT });
+
+    await page.locator('#tailBiteRuleMinPigs').fill('4');
+    await tailBite.expectApi('PUT', /^\/rules\/\d+$/, () => page.locator('#tailBiteRuleSaveBtn').click());
+    await expect(page.locator('#tailBiteRuleHistory [id^="tailBiteRuleVersion-"]')).toHaveCount(2, { timeout: API_TIMEOUT });
+    await tailBite.screenshot('rules');
+  });
 });
