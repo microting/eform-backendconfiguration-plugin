@@ -18,6 +18,7 @@ import {parseServerUtc} from '../../shared/tail-bite-dates';
 import {propertyIdParam} from '../../shared/tail-bite-route';
 import {TailBiteRuleDraft, describeRule, draftProblem, ruleInputFromDraft} from '../../shared/tail-bite-rule-text';
 import {levelOptions, liveNodes, locationTitle, nodeMap, orderedNodes} from '../../shared/tail-bite-tree';
+import {memoize} from '../../shared/tail-bite-memo';
 
 export interface TailBiteRuleListItem {
   rule: TailBiteRule;
@@ -195,6 +196,14 @@ export class TailBiteRulesPageComponent implements OnInit, OnDestroy {
     this.requestPreview();
   }
 
+  // Lists bound to mtx-selects keep their reference until their inputs change (see memoize).
+  private readonly freeLocationsOf = memoize((items: TailBiteRuleListItem[], nodes: TailBiteLocationNode[]) => {
+    const taken = new Set(items.map((i) => i.rule.locationId));
+    return nodes.filter((n) => !taken.has(n.id));
+  });
+  private readonly levelsOf = memoize((nodes: TailBiteLocationNode[], locationId: number | null) =>
+    levelOptions(nodes, nodes.find((n) => n.id === locationId)?.depth ?? 0));
+
   newRule(): void {
     this.closeEditor();
     this.draft = {ruleId: null, locationId: null, minBittenPigs: 5, minSevere: 1, windowDays: 7, countDepth: 1, version: 0};
@@ -202,14 +211,12 @@ export class TailBiteRulesPageComponent implements OnInit, OnDestroy {
 
   /** Locations that do not have a rule yet; a new rule is attached to one of them. */
   get freeLocations(): TailBiteLocationNode[] {
-    const taken = new Set(this.items.map((i) => i.rule.locationId));
-    return this.nodes.filter((n) => !taken.has(n.id));
+    return this.freeLocationsOf(this.items, this.nodes);
   }
 
   /** Summing levels at or below the rule's own location (a rule never sums above it). */
   get levels(): {depth: number; example: string}[] {
-    const depth = this.nodes.find((n) => n.id === this.draft?.locationId)?.depth ?? 0;
-    return levelOptions(this.nodes, depth);
+    return this.levelsOf(this.nodes, this.draft?.locationId ?? null);
   }
 
   chooseLocation(locationId: number | null): void {

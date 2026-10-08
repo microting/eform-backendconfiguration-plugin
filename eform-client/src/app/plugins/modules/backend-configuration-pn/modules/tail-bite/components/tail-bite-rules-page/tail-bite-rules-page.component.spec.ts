@@ -101,6 +101,9 @@ describe('TailBiteRulesPageComponent', () => {
     component.chooseLocation(3);
     expect(component.draft!.countDepth).toBe(2);
     expect(component.levels.map((l) => l.depth)).toEqual([2]);
+    // Bound to mtx-selects: the same list until an input changes, or a click on an option is lost.
+    expect(component.freeLocations).toBe(component.freeLocations);
+    expect(component.levels).toBe(component.levels);
     component.save();
     expect(service.createRule).toHaveBeenCalledWith({locationId: 3, minBittenPigs: 5, minSevere: 1, windowDays: 7, countDepth: 2});
   });

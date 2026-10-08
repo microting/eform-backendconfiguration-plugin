@@ -23,6 +23,7 @@ import {occupancyValidFrom, toDateOnly} from '../../shared/tail-bite-dates';
 import {propertyIdParam} from '../../shared/tail-bite-route';
 import {describeRule} from '../../shared/tail-bite-rule-text';
 import {TailBiteTreeRow, buildTreeRows, liveNodes, moveTargets} from '../../shared/tail-bite-tree';
+import {memoize} from '../../shared/tail-bite-memo';
 import {askText} from '../tail-bite-text-dialog/tail-bite-text-dialog.component';
 import {buildQrSheetPdf, qrLabels} from './tail-bite-qr-pdf';
 
@@ -196,8 +197,12 @@ export class TailBiteLocationsPageComponent implements OnInit, OnDestroy {
   // ---------- editing the tree ----------
 
   get moveOptions(): TailBiteLocationNode[] {
-    return this.selectedId === null ? [] : moveTargets(liveNodes(this.tree), this.selectedId);
+    return this.moveOptionsOf(this.tree, this.selectedId);
   }
+
+  // Bound to an mtx-select: keeps its reference until the tree or the selection changes (see memoize).
+  private readonly moveOptionsOf = memoize((tree: TailBiteLocationTree | null, selectedId: number | null) =>
+    selectedId === null ? [] : moveTargets(liveNodes(tree), selectedId));
 
   addChild(): void {
     const row = this.selected;
