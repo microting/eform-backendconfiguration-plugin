@@ -21,6 +21,7 @@ describe('BackendConfigurationPnTailBiteService', () => {
     ['getProperties', () => service.getProperties(), `${base}/properties`],
     ['getMyProperties', () => service.getMyProperties(), `${base}/my-properties`],
     ['getWorkers', () => service.getWorkers(3), `${base}/properties/3/workers`],
+    ['getAssignableWorkers', () => service.getAssignableWorkers(3), `${base}/properties/3/assignable-workers`],
     ['getTree', () => service.getTree(3), `${base}/properties/3/tree`],
     ['getOccupancy', () => service.getOccupancy(3), `${base}/properties/3/occupancy`],
     ['getActionTypes', () => service.getActionTypes(3), `${base}/properties/3/action-types`],

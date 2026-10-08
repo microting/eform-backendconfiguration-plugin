@@ -36,7 +36,9 @@ describe('TailBiteOutbreakDetailComponent', () => {
       getOutbreak: jest.fn().mockReturnValue(detail()),
       getOutbreakRegistrations: jest.fn().mockReturnValue(of({success: true, model: {propertyId: 3, actionTypes: [], rows: [regRow]}})),
       getTree: jest.fn().mockReturnValue(of({success: true, model: tree})),
-      getWorkers: jest.fn().mockReturnValue(of({success: true, model: [{siteId: 7, name: 'Jane Doe', isManager: true, propertyWorkerIds: [1]}]})),
+      // The managers dialog's admin list: the outbreak page must never call it (a manager may lack DeviceUsers.Update).
+      getWorkers: jest.fn(),
+      getAssignableWorkers: jest.fn().mockReturnValue(of({success: true, model: [{siteId: 7, name: 'Jane Doe', assignable: true}]})),
       getOccupancy: jest.fn().mockReturnValue(of({success: true, model: []})),
       getRuleHistory: jest.fn().mockReturnValue(of({success: true, model: []})),
       closeOutbreak: jest.fn().mockReturnValue(of({success: true})),
@@ -64,7 +66,8 @@ describe('TailBiteOutbreakDetailComponent', () => {
   describe('loading', () => {
     it('loads the outbreak, then the data of its property', () => {
       expect(service.getTree).toHaveBeenCalledWith(3);
-      expect(service.getWorkers).toHaveBeenCalledWith(3);
+      expect(service.getAssignableWorkers).toHaveBeenCalledWith(3);
+      expect(service.getWorkers).not.toHaveBeenCalled();
       expect(service.getRuleHistory).toHaveBeenCalledWith(9);
       expect(component.view!.title).toBe('Stald A');
       expect(component.view!.bittenPigs).toBe(3);
@@ -108,7 +111,7 @@ describe('TailBiteOutbreakDetailComponent', () => {
     });
 
     it('still shows the page when the workers, occupancy or rule history cannot be reached', () => {
-      service.getWorkers.mockReturnValue(throwError(() => new Error('down')));
+      service.getAssignableWorkers.mockReturnValue(throwError(() => new Error('down')));
       service.getOccupancy.mockReturnValue(throwError(() => new Error('down')));
       service.getRuleHistory.mockReturnValue(throwError(() => new Error('down')));
       params.next(convertToParamMap({propertyId: '3', id: '6'}));
@@ -124,7 +127,7 @@ describe('TailBiteOutbreakDetailComponent', () => {
         {version: 1, locationId: 1, minBittenPigs: 5, minSevere: 1, windowDays: 7, countDepth: 1, changedAt: null}]}));
       component.load();
       expect(component.view!.pigs).toBe(30);
-      service.getWorkers.mockReturnValue(throwError(() => new Error('down')));
+      service.getAssignableWorkers.mockReturnValue(throwError(() => new Error('down')));
       service.getOccupancy.mockReturnValue(of({success: false, message: 'no'}));
       service.getRuleHistory.mockReturnValue(throwError(() => new Error('down')));
       component.load();

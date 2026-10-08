@@ -8,7 +8,7 @@ import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {TranslateModule, TranslateService} from '@ngx-translate/core';
 import {Observable, finalize} from 'rxjs';
 import {OperationResult} from 'src/app/common/models';
-import {TAIL_BITE_FACTORS, TailBiteFactor, TailBiteOutbreakAction, TailBiteOutbreakDetail, TailBiteWorker} from '../../../../models';
+import {TAIL_BITE_FACTORS, TailBiteAssignableWorker, TailBiteFactor, TailBiteOutbreakAction, TailBiteOutbreakDetail} from '../../../../models';
 import {BackendConfigurationPnTailBiteService} from '../../../../services';
 import {whenRefused} from '../../shared/tail-bite-confirm';
 import {dateOnlyToLocal, isOverdue, serverDay} from '../../shared/tail-bite-dates';
@@ -16,7 +16,7 @@ import {memoize} from '../../shared/tail-bite-memo';
 import {askText} from '../tail-bite-text-dialog/tail-bite-text-dialog.component';
 
 /** A select item: a worker, or the responsible person who left (disabled). */
-export type TailBiteWorkerItem = TailBiteWorker & {disabled?: boolean};
+export type TailBiteWorkerItem = TailBiteAssignableWorker & {disabled?: boolean};
 
 export type TailBiteActionState = 'done' | 'withdrawn' | 'overdue' | 'open';
 
@@ -54,7 +54,7 @@ export class TailBiteFollowUpsComponent implements OnChanges {
   private translate = inject(TranslateService);
 
   @Input({required: true}) detail!: TailBiteOutbreakDetail;
-  @Input() workers: TailBiteWorker[] = [];
+  @Input() workers: TailBiteAssignableWorker[] = [];
   @Output() changed = new EventEmitter<void>();
 
   today = new Date();
@@ -73,11 +73,11 @@ export class TailBiteFollowUpsComponent implements OnChanges {
 
   /** Per-action select items, rebuilt only when the detail or the workers are another object. */
   private itemsCache = new Map<number, TailBiteWorkerItem[]>();
-  private itemsFor?: {detail: TailBiteOutbreakDetail; workers: TailBiteWorker[]};
+  private itemsFor?: {detail: TailBiteOutbreakDetail; workers: TailBiteAssignableWorker[]};
 
   /**
-   * The workers on the property, plus the responsible person if they have left (disabled, so the select still names
-   * them but they cannot be picked again). The left worker's name is not known here, so it shows as #id.
+   * The workers who can be made responsible, plus the responsible person if they cannot (resigned or left the property):
+   * disabled, so the select still names them but they cannot be picked again. A worker who left shows as #id.
    */
   itemsOf(a: TailBiteOutbreakAction): TailBiteWorkerItem[] {
     if (this.itemsFor?.detail !== this.detail || this.itemsFor?.workers !== this.workers) {
@@ -86,9 +86,10 @@ export class TailBiteFollowUpsComponent implements OnChanges {
     }
     let items = this.itemsCache.get(a.id);
     if (!items) {
-      items = this.isOnProperty(a.responsibleSiteId)
-        ? this.workers
-        : [...this.workers, {siteId: a.responsibleSiteId, name: this.workerName(a.responsibleSiteId), isManager: false, propertyWorkerIds: [], disabled: true}];
+      const assignable = this.workers.filter((w) => w.assignable);
+      items = this.isAssignable(a.responsibleSiteId)
+        ? assignable
+        : [...assignable, {siteId: a.responsibleSiteId, name: this.workerName(a.responsibleSiteId), assignable: false, disabled: true}];
       this.itemsCache.set(a.id, items);
     }
     return items;
@@ -114,8 +115,9 @@ export class TailBiteFollowUpsComponent implements OnChanges {
     return dateOnlyToLocal(a.followUpDate);
   }
 
-  isOnProperty(siteId: number): boolean {
-    return this.workers.some((w) => w.siteId === siteId);
+  /** Can still be made responsible: on the property and not resigned. */
+  isAssignable(siteId: number): boolean {
+    return this.workers.some((w) => w.siteId === siteId && w.assignable);
   }
 
   workerName(siteId: number): string {

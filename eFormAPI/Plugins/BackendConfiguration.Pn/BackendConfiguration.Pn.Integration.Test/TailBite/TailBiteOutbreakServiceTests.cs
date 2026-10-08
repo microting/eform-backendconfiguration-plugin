@@ -449,25 +449,6 @@ public class TailBiteOutbreakServiceTests : TailBiteTestBase
         Assert.That(await Sut().ListWorkerSiteIdsAsync(7, PropertyId), Is.EqualTo(new[] { 7, active }.OrderBy(i => i)));
     }
 
-    // The SDK site + worker + site-worker triple device-user creation leaves behind; seeded through a post-migration SDK context.
-    private static async Task<int> SeedSdkSiteWithWorkerAsync(MicrotingDbContext sdk, bool resigned)
-    {
-        var language = await sdk.Languages.FirstAsync();
-        var site = new Site { Name = $"site-{Guid.NewGuid()}", LanguageId = language.Id, WorkflowState = Constants.WorkflowStates.Created };
-        await sdk.Sites.AddAsync(site);
-        await sdk.SaveChangesAsync();
-        var worker = new Worker
-        {
-            FirstName = "Jane", LastName = "Doe", Email = $"{Guid.NewGuid():N}@example.test", Resigned = resigned,
-            ResignedAtDate = resigned ? DateTime.UtcNow.AddDays(-1) : default, WorkflowState = Constants.WorkflowStates.Created
-        };
-        await sdk.Workers.AddAsync(worker);
-        await sdk.SaveChangesAsync();
-        await sdk.SiteWorkers.AddAsync(new SiteWorker { SiteId = site.Id, WorkerId = worker.Id, WorkflowState = Constants.WorkflowStates.Created });
-        await sdk.SaveChangesAsync();
-        return site.Id;
-    }
-
     [Test]
     public async Task ListWorkerSiteIds_NonManagerAndForeignProperty_RefusedAlike()
     {

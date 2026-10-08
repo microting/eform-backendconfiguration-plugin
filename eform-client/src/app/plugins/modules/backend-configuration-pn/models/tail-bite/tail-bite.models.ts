@@ -28,6 +28,16 @@ export interface TailBitePropertyStatus {
   enabled: boolean;
 }
 
+/**
+ * A worker on the property for the outbreak page: site id and name. A resigned worker is listed so a past responsible
+ * person keeps a name, with `assignable` false: the pickers do not offer them.
+ */
+export interface TailBiteAssignableWorker {
+  siteId: number;
+  name: string;
+  assignable: boolean;
+}
+
 /** One worker on a property. A worker can hold several PropertyWorker rows; the toggle sets all of them. */
 export interface TailBiteWorker {
   siteId: number;

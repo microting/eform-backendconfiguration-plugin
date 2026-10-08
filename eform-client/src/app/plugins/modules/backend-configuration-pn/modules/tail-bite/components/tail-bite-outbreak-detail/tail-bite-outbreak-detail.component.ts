@@ -10,7 +10,7 @@ import {MatTooltipModule} from '@angular/material/tooltip';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {TranslateModule, TranslateService} from '@ngx-translate/core';
 import {Subscription, catchError, finalize, forkJoin, map, of, switchMap, tap} from 'rxjs';
-import {TailBiteOccupancy, TailBiteOutbreakDetail, TailBiteRuleVersion, TailBiteWorker} from '../../../../models';
+import {TailBiteAssignableWorker, TailBiteOccupancy, TailBiteOutbreakDetail, TailBiteRuleVersion} from '../../../../models';
 import {BackendConfigurationPnTailBiteService} from '../../../../services';
 import {openConfirm, whenRefused} from '../../shared/tail-bite-confirm';
 import {OUTBREAK_STATUS_BADGE, OUTBREAK_STATUS_LABEL} from '../../shared/tail-bite-outbreak-status';
@@ -47,7 +47,7 @@ export class TailBiteOutbreakDetailComponent implements OnInit, OnDestroy {
   propertyId: number | null = null;
   detail: TailBiteOutbreakDetail | null = null;
   view: TailBiteOutbreakView | null = null;
-  workers: TailBiteWorker[] = [];
+  workers: TailBiteAssignableWorker[] = [];
   /** The optional enrichments of the last load; a refused or failed refresh of one keeps these. */
   private occupancy: TailBiteOccupancy[] = [];
   private history: TailBiteRuleVersion[] = [];
@@ -121,7 +121,8 @@ export class TailBiteOutbreakDetailComponent implements OnInit, OnDestroy {
           return forkJoin({
             tree: this.service.getTree(propertyId),
             // The rest only enriches the page: a failed call is treated like a refused one.
-            workers: this.service.getWorkers(propertyId).pipe(catchError(() => of(null))),
+            // Manager-checked, names only; not getWorkers, which needs the worker-update permission a manager may lack.
+            workers: this.service.getAssignableWorkers(propertyId).pipe(catchError(() => of(null))),
             occupancy: this.service.getOccupancy(propertyId).pipe(catchError(() => of(null))),
             history: this.service.getRuleHistory(detail.model.ruleId).pipe(catchError(() => of(null))),
           }).pipe(map((rest) => ({detail: detail.model, regs: regs.model, ...rest})));

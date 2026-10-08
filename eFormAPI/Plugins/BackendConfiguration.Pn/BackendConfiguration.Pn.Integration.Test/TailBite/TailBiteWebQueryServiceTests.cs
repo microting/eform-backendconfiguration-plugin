@@ -23,20 +23,27 @@ public class TailBiteWebQueryServiceTests : TailBiteTestBase
     private const int WorkerSite = 8;
     private const int ForeignSite = 9;
 
-    // Display names come from IGrpcSiteResolver (the lookup the app's gRPC service uses); the fake knows 7 and 8 only.
-    private static IGrpcSiteResolver Resolver()
+    // Display names come from IGrpcSiteResolver (the lookup the app's gRPC service uses); the fake knows 7 and 8, plus the
+    // sites a test adds to extraNames.
+    private readonly Dictionary<int, string> extraNames = new();
+
+    private IGrpcSiteResolver Resolver()
     {
         var resolver = Substitute.For<IGrpcSiteResolver>();
         resolver.GetDisplayNameAsync(Arg.Any<int>()).Returns(call => call.Arg<int>() switch
         {
             ManagerSite => "Jane Doe",
             WorkerSite => "John Doe",
-            _ => ""
+            var id => extraNames.GetValueOrDefault(id, "")
         });
         return resolver;
     }
 
-    private TailBiteWebQueryService Sut() => new(Db, NewAccess(), Resolver(), Clock);
+    private TailBiteWebQueryService Sut()
+    {
+        var access = NewAccess();
+        return new(Db, access, Resolver(), Clock, new TailBiteOutbreakService(Db, new TailBitePropertyLock(Db), access, Clock, CoreHelper()));
+    }
 
     // ---------- properties and workers ----------
 
@@ -111,6 +118,70 @@ public class TailBiteWebQueryServiceTests : TailBiteTestBase
             (ForeignSite, "#9", false), (ManagerSite, "Jane Doe", true), (WorkerSite, "John Doe", false),
         }));
         Assert.That(workers.Single(w => w.SiteId == ManagerSite).PropertyWorkerIds, Is.EqualTo(new[] { first.Id, second.Id }));
+    }
+
+    // ---------- assignable workers (outbreak page) ----------
+
+    [Test]
+    public async Task ListAssignableWorkers_ManagerGetsActiveWorkersWithNamesOnly()
+    {
+        await SeedTreeAsync();
+        await SeedWorkerAsync(ManagerSite, manager: true);
+        await SeedWorkerAsync(ManagerSite);   // a second row lists the worker once
+        await SeedWorkerAsync(WorkerSite);
+        var left = await SeedWorkerAsync(42);
+        await left.Delete(Db);
+        Db.ChangeTracker.Clear();
+
+        var workers = await Sut().ListAssignableWorkersAsync(ManagerSite, PropertyId);
+
+        Assert.That(workers, Is.EqualTo(new[]
+        {
+            new TailBiteAssignableWorker(ManagerSite, "Jane Doe", true), new TailBiteAssignableWorker(WorkerSite, "John Doe", true),
+        }));
+        // Site id, name and the assignable flag only: nothing of the managers dialog's admin data (PropertyWorker ids, manager flags).
+        Assert.That(typeof(TailBiteAssignableWorker).GetProperties().Select(p => p.Name).OrderBy(n => n),
+            Is.EqualTo(new[] { "Assignable", "Name", "SiteId" }));
+    }
+
+    // A resigned worker keeps the PropertyWorker row; a follow-up they are responsible for must still name them.
+    [Test]
+    public async Task ListAssignableWorkers_ResignedResponsibleIsListedByNameButNotAssignable()
+    {
+        var sdk = (await GetCore()).DbContextHelper.GetDbContext();
+        var gone = await SeedSdkSiteWithWorkerAsync(sdk, resigned: true);
+        extraNames[gone] = "Jane Roe";
+        await SeedTreeAsync();
+        await SeedWorkerAsync(ManagerSite, manager: true);
+        await SeedWorkerAsync(gone);
+        var outbreak = await OutbreakWithLinksAsync(StableAId);
+        var assessment = new TailBiteRiskAssessment { OutbreakId = outbreak.Id, AssessedBySiteId = ManagerSite, AssessedAt = Clock.GetUtcNow().UtcDateTime };
+        await assessment.Create(Db);
+        await new TailBiteAssessmentAction
+        {
+            AssessmentId = assessment.Id, Factor = TailBiteFactor.Feed, Description = "Mere halm", ResponsibleSiteId = gone,
+            FollowUpDate = Clock.GetUtcNow().UtcDateTime.Date.AddDays(3)
+        }.Create(Db);
+        Db.ChangeTracker.Clear();
+
+        var workers = await Sut().ListAssignableWorkersAsync(ManagerSite, PropertyId);
+
+        Assert.That(workers.Single(w => w.SiteId == gone), Is.EqualTo(new TailBiteAssignableWorker(gone, "Jane Roe", false)));
+        Assert.That(workers.Single(w => w.SiteId == ManagerSite).Assignable, Is.True);
+    }
+
+    [Test]
+    public async Task ListAssignableWorkers_NonManagerMissingAndForeignPropertiesRefusedAlike()
+    {
+        await SeedTreeAsync();
+        await SeedWorkerAsync(ManagerSite, manager: true);
+        await SeedWorkerAsync(WorkerSite);
+        await AssertRefusedAlike(
+            () => Sut().ListAssignableWorkersAsync(ManagerSite, int.MaxValue),
+            () => Sut().ListAssignableWorkersAsync(WorkerSite, PropertyId));
+        await AssertRefusedAlike(
+            () => Sut().ListAssignableWorkersAsync(ManagerSite, int.MaxValue),
+            () => Sut().ListAssignableWorkersAsync(ForeignSite, PropertyId));
     }
 
     // ---------- rules ----------
@@ -336,6 +407,8 @@ public class TailBiteWebQueryServiceTests : TailBiteTestBase
             .Where(m => m.Name.Contains("Properties") || m.Name.Contains("Workers"))
             // Caller-checked: it lists only the enabled properties the resolved caller works on.
             .Where(m => m.Name != nameof(BackendConfiguration.Pn.Controllers.TailBiteWebController.MyProperties))
+            // Caller-checked: a tail-bite manager of the property, names only (the outbreak page).
+            .Where(m => m.Name != nameof(BackendConfiguration.Pn.Controllers.TailBiteWebController.AssignableWorkers))
             .ToList();
         Assert.That(exposing, Is.Not.Empty, "no controller action exposing the property or worker lists was found; the test would pass vacuously");
         foreach (var action in exposing)

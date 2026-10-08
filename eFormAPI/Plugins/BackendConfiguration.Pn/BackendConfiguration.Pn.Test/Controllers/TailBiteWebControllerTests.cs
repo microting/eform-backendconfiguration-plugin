@@ -73,12 +73,14 @@ public class TailBiteWebControllerTests
         var sut = new TailBiteWebController(AccessWithSite(), queries);
 
         await sut.MyProperties();
+        await sut.AssignableWorkers(3);
         await sut.ListRules(3);
         await sut.RuleHistory(9);
         await sut.CurrentOccupancy(3);
         await sut.OutbreakRegistrations(5);
 
         await queries.Received().ListCallerPropertiesAsync(7);
+        await queries.Received().ListAssignableWorkersAsync(7, 3);
         await queries.Received().ListRulesAsync(7, 3);
         await queries.Received().RuleHistoryAsync(7, 9);
         await queries.Received().CurrentOccupancyAsync(7, 3);
@@ -128,6 +130,14 @@ public class TailBiteWebControllerTests
             .Where(m => m.GetCustomAttributes<AuthorizeAttribute>().Any(a => a.Policy == AuthConsts.EformPolicies.DeviceUsers.Update))
             .Select(m => m.Name).OrderBy(n => n);
         Assert.That(withPolicy, Is.EqualTo(new[] { "ListProperties", "ListWorkers" }));
+    }
+
+    [Test]
+    // Regression guard: a tail-bite manager need not hold DeviceUsers.Update, and the outbreak page needs this list.
+    public void AssignableWorkers_CarriesNoPolicy_TheServiceChecksForAManager()
+    {
+        var action = typeof(TailBiteWebController).GetMethod(nameof(TailBiteWebController.AssignableWorkers))!;
+        Assert.That(action.GetCustomAttributes<AuthorizeAttribute>(), Is.Empty);
     }
 
     [Test]

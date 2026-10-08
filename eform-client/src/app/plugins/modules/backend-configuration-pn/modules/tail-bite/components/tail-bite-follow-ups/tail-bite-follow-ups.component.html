@@ -24,7 +24,7 @@
         </mat-form-field>
       </ng-container>
       <ng-template #responsibleText>{{ workerName(a.responsibleSiteId) }}</ng-template>
-      <div *ngIf="!isOnProperty(a.responsibleSiteId)" class="badge badge-warning" [id]="'tailBiteActionLeft-' + a.id">
+      <div *ngIf="!isAssignable(a.responsibleSiteId)" class="badge badge-warning" [id]="'tailBiteActionLeft-' + a.id">
         {{ 'No longer on the property' | translate }}
       </div>
     </td>

@@ -39,10 +39,12 @@ using static TailBiteRunner;
 /// <summary>
 /// Read endpoints the tail-bite web admin needs beyond the setup and outbreak controllers: the property list with
 /// the enabled flag and a property's workers (the managers dialog), the caller's own enabled properties (the area's
-/// picker), and rules, rule history, current pig counts and an outbreak's registration rows (caller-checked by the service).
+/// picker), the workers a manager can make responsible (the outbreak page), and rules, rule history, current pig counts
+/// and an outbreak's registration rows (caller-checked by the service).
 /// The managers dialog's two lists are management routes like enable and the manager toggle: they expose every property
 /// and the PropertyWorker ids the toggle takes, so they need plugin access plus the worker-update permission
-/// (DeviceUsers.Update, as for editing a property worker).
+/// (DeviceUsers.Update, as for editing a property worker). The outbreak page must not use them: a tail-bite manager need
+/// not hold that permission, so it has its own manager-checked list with names only.
 /// </summary>
 [Authorize]
 [Route("api/backend-configuration-pn/tail-bite")]
@@ -64,6 +66,11 @@ public class TailBiteWebController(ITailBiteAccess access, ITailBiteWebQueryServ
     [Authorize(Policy = AuthConsts.EformPolicies.DeviceUsers.Update)]
     public Task<OperationDataResult<IReadOnlyList<TailBiteWorker>>> ListWorkers(int propertyId)
         => Run(() => queries.ListWorkersAsync(propertyId));
+
+    // Caller-checked (a tail-bite manager of the property), for the outbreak page's responsible-person pickers.
+    [HttpGet("properties/{propertyId:int}/assignable-workers")]
+    public Task<OperationDataResult<IReadOnlyList<TailBiteAssignableWorker>>> AssignableWorkers(int propertyId)
+        => Run(access, site => queries.ListAssignableWorkersAsync(site, propertyId));
 
     [HttpGet("properties/{propertyId:int}/rules")]
     public Task<OperationDataResult<IReadOnlyList<RuleDto>>> ListRules(int propertyId)

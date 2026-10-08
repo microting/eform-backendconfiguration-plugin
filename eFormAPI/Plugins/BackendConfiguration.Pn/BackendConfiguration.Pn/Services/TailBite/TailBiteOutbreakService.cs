@@ -47,6 +47,8 @@ public interface ITailBiteOutbreakService
     Task<OutbreakDetail> GetAsync(int callerSiteId, int outbreakId);
     // The property's active workers (manager-only), for the responsible picker.
     Task<IReadOnlyList<int>> ListWorkerSiteIdsAsync(int callerSiteId, int propertyId);
+    // The same workers with the resigned ones kept and flagged (manager-only): names for past responsibles on the web.
+    Task<IReadOnlyList<TailBiteWorkerSite>> ListWorkerSitesAsync(int callerSiteId, int propertyId);
     // The detail of the outbreak an action belongs to (manager-checked); the action RPCs carry no outbreak id.
     Task<OutbreakDetail> GetForActionAsync(int callerSiteId, int actionId);
     Task SaveAssessmentAsync(int callerSiteId, int outbreakId, FactorAnswers answers, IReadOnlyList<ActionInput> newActions);
@@ -147,20 +149,23 @@ public class TailBiteOutbreakService(BackendConfigurationPnDbContext db, ITailBi
     }
 
     public async Task<IReadOnlyList<int>> ListWorkerSiteIdsAsync(int callerSiteId, int propertyId)
+        => (await ListWorkerSitesAsync(callerSiteId, propertyId)).Where(w => !w.Resigned).Select(w => w.SiteId).ToList();
+
+    public async Task<IReadOnlyList<TailBiteWorkerSite>> ListWorkerSitesAsync(int callerSiteId, int propertyId)
     {
         await access.RequireManagerAsync(callerSiteId, propertyId);
         var siteIds = await db.PropertyWorkers.AsNoTracking()
             .Where(pw => pw.PropertyId == propertyId && pw.WorkflowState != Removed)
             .Select(pw => pw.WorkerId).Distinct().OrderBy(id => id).ToListAsync();
-        if (siteIds.Count == 0) return siteIds;
+        if (siteIds.Count == 0) return [];
 
         // Resigning never removes the PropertyWorker row; the flag lives on the SDK Worker (same filter as the adhoc pickers, #1184).
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var sdkDb = core.DbContextHelper.GetDbContext();
-        var resigned = await sdkDb.SiteWorkers
+        var resigned = (await sdkDb.SiteWorkers
             .Where(sw => sw.SiteId != null && siteIds.Contains(sw.SiteId.Value) && sw.Worker.Resigned)
-            .Select(sw => sw.SiteId!.Value).ToListAsync();
-        return siteIds.Except(resigned).ToList();
+            .Select(sw => sw.SiteId!.Value).ToListAsync()).ToHashSet();
+        return siteIds.Select(id => new TailBiteWorkerSite(id, resigned.Contains(id))).ToList();
     }
 
     // ---------- assessment ----------

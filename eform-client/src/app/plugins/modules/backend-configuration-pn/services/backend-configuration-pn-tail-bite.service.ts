@@ -4,6 +4,7 @@ import {OperationDataResult, OperationResult} from 'src/app/common/models';
 import {ApiBaseService} from 'src/app/common/services';
 import {
   TailBiteActionType,
+  TailBiteAssignableWorker,
   TailBiteLocationTree,
   TailBiteOccupancy,
   TailBiteOutbreakDetail,
@@ -47,6 +48,15 @@ export class BackendConfigurationPnTailBiteService {
     return this.apiBaseService.get(this.url('my-properties'));
   }
 
+  /**
+   * The workers the outbreak page can make responsible: for a tail-bite manager of the property, names only. The
+   * outbreak page must use this, not getWorkers (the managers dialog's list needs the worker-update permission).
+   */
+  getAssignableWorkers(propertyId: number): Observable<OperationDataResult<TailBiteAssignableWorker[]>> {
+    return this.apiBaseService.get(this.url(`properties/${propertyId}/assignable-workers`));
+  }
+
+  /** Every worker with PropertyWorker ids and manager flags: the managers dialog's list (needs DeviceUsers.Update). */
   getWorkers(propertyId: number): Observable<OperationDataResult<TailBiteWorker[]>> {
     return this.apiBaseService.get(this.url(`properties/${propertyId}/workers`));
   }

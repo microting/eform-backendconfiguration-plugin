@@ -100,6 +100,32 @@ public abstract class TailBiteTestBase : TestBaseSetup
         RuleId = rule.Id;
     }
 
+    // The SDK site + worker + site-worker triple device-user creation leaves behind; seeded through a post-migration SDK context.
+    protected static async Task<int> SeedSdkSiteWithWorkerAsync(Microting.eForm.Infrastructure.MicrotingDbContext sdk, bool resigned)
+    {
+        var language = await sdk.Languages.FirstAsync();
+        var site = new Microting.eForm.Infrastructure.Data.Entities.Site
+        {
+            Name = $"site-{Guid.NewGuid()}", LanguageId = language.Id, WorkflowState = Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Created
+        };
+        await sdk.Sites.AddAsync(site);
+        await sdk.SaveChangesAsync();
+        var worker = new Microting.eForm.Infrastructure.Data.Entities.Worker
+        {
+            FirstName = "Jane", LastName = "Doe", Email = $"{Guid.NewGuid():N}@example.test", Resigned = resigned,
+            ResignedAtDate = resigned ? DateTime.UtcNow.AddDays(-1) : default,
+            WorkflowState = Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Created
+        };
+        await sdk.Workers.AddAsync(worker);
+        await sdk.SaveChangesAsync();
+        await sdk.SiteWorkers.AddAsync(new Microting.eForm.Infrastructure.Data.Entities.SiteWorker
+        {
+            SiteId = site.Id, WorkerId = worker.Id, WorkflowState = Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Created
+        });
+        await sdk.SaveChangesAsync();
+        return site.Id;
+    }
+
     protected async Task<PropertyWorker> SeedWorkerAsync(int siteId, bool manager = false)
     {
         var pw = new PropertyWorker { PropertyId = PropertyId, WorkerId = siteId, TailBiteManager = manager };

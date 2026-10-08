@@ -45,7 +45,7 @@ describe('TailBiteOutbreakDetailComponent behind the host DateInterceptor', () =
     {id: 1, parentId: null, name: 'Farm', depth: 0, sortOrder: 0, qrCode: 'a', removed: false},
     {id: 2, parentId: 1, name: 'Barn A', depth: 1, sortOrder: 0, qrCode: 'b', removed: false},
   ]};
-  const workers = [{siteId: 7, name: 'Jane Doe', isManager: true, propertyWorkerIds: [1]}];
+  const workers = [{siteId: 7, name: 'Jane Doe', assignable: true}];
   const occupancy = [{locationId: 2, pigCount: 30, source: 0, validFrom: '2026-09-15T00:00:00Z'}];
   const history = [{version: 1, locationId: 2, minBittenPigs: 3, minSevere: null, windowDays: 7, countDepth: 1,
     changedAt: '2026-08-12T10:00:00Z'}];
@@ -65,7 +65,7 @@ describe('TailBiteOutbreakDetailComponent behind the host DateInterceptor', () =
           getOutbreak: () => served(detail),
           getOutbreakRegistrations: () => served(registrations),
           getTree: () => served(tree),
-          getWorkers: () => served(workers),
+          getAssignableWorkers: () => served(workers),
           getOccupancy: () => served(occupancy),
           getRuleHistory: () => served(history),
         }},

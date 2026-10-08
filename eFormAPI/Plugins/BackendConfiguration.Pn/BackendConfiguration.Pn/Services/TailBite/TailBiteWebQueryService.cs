@@ -46,6 +46,7 @@ public interface ITailBiteWebQueryService
     Task<IReadOnlyList<TailBitePropertyStatus>> ListPropertiesAsync();
     Task<IReadOnlyList<TailBitePropertyStatus>> ListCallerPropertiesAsync(int callerSiteId);
     Task<IReadOnlyList<TailBiteWorker>> ListWorkersAsync(int propertyId);
+    Task<IReadOnlyList<TailBiteAssignableWorker>> ListAssignableWorkersAsync(int callerSiteId, int propertyId);
     Task<IReadOnlyList<RuleDto>> ListRulesAsync(int callerSiteId, int propertyId);
     Task<IReadOnlyList<RuleVersionDto>> RuleHistoryAsync(int callerSiteId, int ruleId);
     Task<IReadOnlyList<OccupancyDto>> CurrentOccupancyAsync(int callerSiteId, int propertyId);
@@ -53,7 +54,7 @@ public interface ITailBiteWebQueryService
 }
 
 public class TailBiteWebQueryService(BackendConfigurationPnDbContext db, ITailBiteAccess access, IGrpcSiteResolver siteResolver,
-    TimeProvider clock) : ITailBiteWebQueryService
+    TimeProvider clock, ITailBiteOutbreakService outbreaks) : ITailBiteWebQueryService
 {
     private const string Removed = Constants.WorkflowStates.Removed;
 
@@ -90,6 +91,18 @@ public class TailBiteWebQueryService(BackendConfigurationPnDbContext db, ITailBi
         return rows.GroupBy(r => r.WorkerId)
             .Select(g => new TailBiteWorker(g.Key, names[g.Key], g.Any(r => r.TailBiteManager),
                 g.Select(r => r.Id).Order().ToList()))
+            .OrderBy(w => w.Name, StringComparer.CurrentCultureIgnoreCase).ThenBy(w => w.SiteId)
+            .ToList();
+    }
+
+    // The outbreak page's workers, for a tail-bite manager of the property: the same workers and refusal as the app's outbreak
+    // ListWorkerSiteIds, with names, plus the resigned ones flagged not assignable (so past responsibles keep their names);
+    // no PropertyWorker ids or manager flags.
+    public async Task<IReadOnlyList<TailBiteAssignableWorker>> ListAssignableWorkersAsync(int callerSiteId, int propertyId)
+    {
+        var sites = await outbreaks.ListWorkerSitesAsync(callerSiteId, propertyId);
+        var names = await DisplayNamesAsync(sites.Select(s => s.SiteId));
+        return sites.Select(s => new TailBiteAssignableWorker(s.SiteId, names[s.SiteId], !s.Resigned))
             .OrderBy(w => w.Name, StringComparer.CurrentCultureIgnoreCase).ThenBy(w => w.SiteId)
             .ToList();
     }

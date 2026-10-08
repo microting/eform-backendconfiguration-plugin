@@ -12,13 +12,14 @@ import {TranslateModule} from '@ngx-translate/core';
 import {finalize} from 'rxjs';
 import {
   TAIL_BITE_FACTORS,
+  TailBiteAssignableWorker,
   TailBiteFactor,
   TailBiteOutbreakAction,
   TailBiteOutbreakDetail,
-  TailBiteWorker,
 } from '../../../../models';
 import {BackendConfigurationPnTailBiteService} from '../../../../services';
 import {dateOnlyToLocal, openedDay} from '../../shared/tail-bite-dates';
+import {memoize} from '../../shared/tail-bite-memo';
 import {
   TailBiteFactorDraft,
   TailBiteFactorError,
@@ -51,7 +52,7 @@ export class TailBiteAssessmentFormComponent implements OnChanges {
   private service = inject(BackendConfigurationPnTailBiteService);
 
   @Input({required: true}) detail!: TailBiteOutbreakDetail;
-  @Input() workers: TailBiteWorker[] = [];
+  @Input() workers: TailBiteAssignableWorker[] = [];
   @Output() saved = new EventEmitter<void>();
 
   readonly factors = TAIL_BITE_FACTORS;
@@ -125,6 +126,14 @@ export class TailBiteAssessmentFormComponent implements OnChanges {
   withdrawsOnNo(factor: TailBiteFactor): boolean {
     return this.draft(factor).answer === false && this.existing(factor).some((a) => a.doneAt === null);
   }
+
+  /** The responsible-person choices: resigned workers are listed for their names only. */
+  get assignableWorkers(): TailBiteAssignableWorker[] {
+    return this.assignableOf(this.workers);
+  }
+
+  // Bound to mtx-selects: the same array until the workers change (see memoize).
+  private readonly assignableOf = memoize((workers: TailBiteAssignableWorker[]) => workers.filter((w) => w.assignable));
 
   workerName(siteId: number): string {
     return this.workers.find((w) => w.siteId === siteId)?.name ?? `#${siteId}`;

@@ -76,8 +76,8 @@ describe('TailBiteFollowUpsComponent', () => {
       ruleId: 9, ruleVersion: 1, registrationIds: [], answers: null,
       actions: [action(2, {followUpDate: '2026-10-08T00:00:00'}), action(1)],
     };
-    component.workers = [{siteId: 7, name: 'Jane Doe', isManager: true, propertyWorkerIds: [1]},
-      {siteId: 8, name: 'John Doe', isManager: false, propertyWorkerIds: [2]}];
+    component.workers = [{siteId: 7, name: 'Jane Doe', assignable: true},
+      {siteId: 8, name: 'John Doe', assignable: true}];
     component.today = new Date(2026, 9, 7);
     changed = jest.fn();
     component.changed.subscribe(changed);
@@ -244,8 +244,8 @@ describe('TailBiteFollowUpsComponent', () => {
   });
 
   it('flags a responsible person who has left the property', () => {
-    expect(component.isOnProperty(7)).toBe(true);
-    expect(component.isOnProperty(99)).toBe(false);
+    expect(component.isAssignable(7)).toBe(true);
+    expect(component.isAssignable(99)).toBe(false);
     expect(component.workerName(99)).toBe('#99');
   });
 
@@ -275,6 +275,19 @@ describe('TailBiteFollowUpsComponent', () => {
     component.workers = [...component.workers];
     expect(component.itemsOf(a)).not.toBe(items);
   });
+
+  it('names a resigned responsible person, flags them, and offers them only as the disabled current choice', () => {
+    component.workers = [...component.workers, {siteId: 9, name: 'Jane Roe', assignable: false}];
+    const a = action(1, {responsibleSiteId: 9});
+    expect(component.workerName(9)).toBe('Jane Roe');
+    expect(component.isAssignable(9)).toBe(false);
+    expect(component.itemsOf(a)).toEqual([
+      {siteId: 7, name: 'Jane Doe', assignable: true}, {siteId: 8, name: 'John Doe', assignable: true},
+      {siteId: 9, name: 'Jane Roe', assignable: false, disabled: true},
+    ]);
+    // Another action's picker does not offer the resigned worker at all.
+    expect(component.itemsOf(action(2)).map((w) => w.siteId)).toEqual([7, 8]);
+  });
 });
 
 describe('TailBiteFollowUpsComponent rendering', () => {
@@ -294,7 +307,7 @@ describe('TailBiteFollowUpsComponent rendering', () => {
       summary: {id: 5, locationId: 2, openedAt: '2026-10-01T06:12:00', assessed: true, openActions: 1, closed, bittenPigs: 3, severePigs: 1},
       ruleId: 9, ruleVersion: 1, registrationIds: [], answers: null, actions,
     };
-    c.workers = [{siteId: 7, name: 'Jane Doe', isManager: true, propertyWorkerIds: [1]}];
+    c.workers = [{siteId: 7, name: 'Jane Doe', assignable: true}];
     fixture.detectChanges();
     return fixture.nativeElement as HTMLElement;
   };

@@ -239,7 +239,8 @@ test.describe.serial('Tail biting web admin', () => {
     const idOf = (name: string) => int(tree.locations.find((l) => l.name === name && !l.removed)?.id, `location ${name}`);
     const rules = await apiGet<{ id: number; locationId: number; version: number }[]>(page, `properties/${propertyId}/rules`);
     const stableRule = rules.find((r) => r.locationId === idOf('Stald A'));
-    const workers = await apiGet<{ siteId: number; name: string }[]>(page, `properties/${propertyId}/workers`);
+    // The outbreak page's manager-checked list (the admin login is a manager since the managers test).
+    const workers = await apiGet<{ siteId: number; name: string }[]>(page, `properties/${propertyId}/assignable-workers`);
     const siteId = int(workers.find((w) => w.name === managerName)?.siteId, 'manager site id');
     const [ruleId, ruleVersion, stald, pen301, pen302] =
       [int(stableRule?.id, 'rule id'), int(stableRule?.version, 'rule version'), idOf('Stald A'), idOf('Sti 301'), idOf('Sti 302')];

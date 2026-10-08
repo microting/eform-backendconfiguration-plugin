@@ -37,6 +37,10 @@ public sealed record TailBitePropertyStatus(int PropertyId, string Name, bool En
 // A worker can hold more than one PropertyWorker row on a property; the manager toggle sets every one of them.
 public sealed record TailBiteWorker(int SiteId, string Name, bool IsManager, IReadOnlyList<int> PropertyWorkerIds);
 
+// A worker on the property for the outbreak page: the SDK site id the actions take and the display name. A resigned worker
+// is listed (so a past responsible person keeps a name) but not Assignable: the pickers do not offer them.
+public sealed record TailBiteAssignableWorker(int SiteId, string Name, bool Assignable);
+
 public sealed record RuleDto(int Id, int LocationId, int? MinBittenPigs, int? MinSevere, int WindowDays, int CountDepth, int Version,
     DateTime? UpdatedAt);
 

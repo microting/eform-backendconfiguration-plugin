@@ -33,6 +33,16 @@ describe('TailBiteAssessmentFormComponent', () => {
       {description: 'Tjek foderautomat', responsibleSiteId: 7, followUpDate: new Date(2026, 9, 6)});
   };
 
+  it('names a resigned worker but does not offer them as responsible', () => {
+    create(detail());
+    const workers = [{siteId: 7, name: 'Jane Doe', assignable: true}, {siteId: 9, name: 'Jane Roe', assignable: false}];
+    component.workers = workers;
+    expect(component.workerName(9)).toBe('Jane Roe');
+    expect(component.assignableWorkers.map((w) => w.siteId)).toEqual([7]);
+    // Bound to an mtx-select: the same array until the workers change.
+    expect(component.assignableWorkers).toBe(component.assignableWorkers);
+  });
+
   it('does not save until every factor is answered', () => {
     create(detail());
     component.save();
