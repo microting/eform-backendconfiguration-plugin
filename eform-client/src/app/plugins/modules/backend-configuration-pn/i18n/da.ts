@@ -997,4 +997,11 @@ export const da = {
   'Answering no withdraws the open follow-ups of this factor.': 'Et nej trækker faktorens åbne opfølgninger tilbage.',
   'Complete every factor above before saving.': 'Udfyld alle faktorer ovenfor, før du gemmer.',
   'The risk assessment could not be saved. Everything you entered is kept.': 'Risikovurderingen kunne ikke gemmes. Alt, du har indtastet, er bevaret.',
+  'Reason': 'Begrundelse',
+  'Follow-ups': 'Opfølgninger',
+  'Mark done': 'Markér udført',
+  'Mark not done': 'Markér ikke udført',
+  'Withdraw': 'Træk tilbage',
+  'Withdrawn': 'Trukket tilbage',
+  'No longer on the property': 'Ikke længere på ejendommen',
 };

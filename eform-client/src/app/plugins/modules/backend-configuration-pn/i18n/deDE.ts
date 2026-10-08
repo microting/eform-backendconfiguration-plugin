@@ -1022,4 +1022,11 @@ export const deDE = {
   'Answering no withdraws the open follow-ups of this factor.': 'Ein Nein zieht die offenen Nachverfolgungen dieses Faktors zurück.',
   'Complete every factor above before saving.': 'Füllen Sie vor dem Speichern alle Faktoren oben aus.',
   'The risk assessment could not be saved. Everything you entered is kept.': 'Die Risikobewertung konnte nicht gespeichert werden. Alle Ihre Eingaben bleiben erhalten.',
+  'Reason': 'Begründung',
+  'Follow-ups': 'Nachverfolgungen',
+  'Mark done': 'Als erledigt markieren',
+  'Mark not done': 'Als nicht erledigt markieren',
+  'Withdraw': 'Zurückziehen',
+  'Withdrawn': 'Zurückgezogen',
+  'No longer on the property': 'Nicht mehr auf der Immobilie',
 };

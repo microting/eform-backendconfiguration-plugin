@@ -921,4 +921,11 @@ export const itIT = {
   'Answering no withdraws the open follow-ups of this factor.': 'Answering no withdraws the open follow-ups of this factor.',
   'Complete every factor above before saving.': 'Complete every factor above before saving.',
   'The risk assessment could not be saved. Everything you entered is kept.': 'The risk assessment could not be saved. Everything you entered is kept.',
+  'Reason': 'Reason',
+  'Follow-ups': 'Follow-ups',
+  'Mark done': 'Mark done',
+  'Mark not done': 'Mark not done',
+  'Withdraw': 'Withdraw',
+  'Withdrawn': 'Withdrawn',
+  'No longer on the property': 'No longer on the property',
 };
