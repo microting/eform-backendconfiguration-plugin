@@ -18,7 +18,7 @@ import {
   TailBiteWorker,
 } from '../../../../models';
 import {BackendConfigurationPnTailBiteService} from '../../../../services';
-import {dateOnlyToLocal, parseServerUtc} from '../../shared/tail-bite-dates';
+import {dateOnlyToLocal, openedDay} from '../../shared/tail-bite-dates';
 import {
   TailBiteFactorDraft,
   TailBiteFactorError,
@@ -33,6 +33,7 @@ const ERROR_TEXT: Record<TailBiteFactorError, string> = {
   unanswered: 'Answer this factor.',
   needsAction: 'A yes needs at least one action with a description, a responsible person and a follow-up date.',
   incompleteAction: 'A yes needs at least one action with a description, a responsible person and a follow-up date.',
+  followUpBeforeOpened: 'A follow-up date cannot be before the day the outbreak opened.',
 };
 
 /**
@@ -78,7 +79,7 @@ export class TailBiteAssessmentFormComponent implements OnChanges {
     const previous: TailBiteOutbreakDetail | undefined = changes['detail'].previousValue;
     const reset = this.justSaved || !previous || previous.summary.id !== this.detail.summary.id || this.drafts.length === 0;
     // The server compares the picked day with OpenedAt.Date, the UTC day; the picker needs that day as a local date.
-    const opened = parseServerUtc(this.detail.summary.openedAt);
+    const opened = openedDay(this.detail.summary.openedAt);
     this.minFollowUp = opened ? dateOnlyToLocal(opened) : null;
     if (reset) {
       this.drafts = draftFromDetail(this.detail);

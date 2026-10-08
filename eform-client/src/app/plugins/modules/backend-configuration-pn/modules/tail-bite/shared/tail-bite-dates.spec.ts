@@ -1,5 +1,5 @@
 import {parseJSON} from 'date-fns';
-import {dateOnlyToLocal, isOverdue, occupancyValidFrom, parseServerUtc, serverDay, toDateOnly, toUtcMidnightIso} from './tail-bite-dates';
+import {dateOnlyToLocal, isOverdue, occupancyValidFrom, openedDay, parseServerUtc, serverDay, toDateOnly, toUtcMidnightIso} from './tail-bite-dates';
 
 // What the host app's DateInterceptor hands the code for a server value: date-fns parseJSON, offset-less read as UTC.
 const intercepted = (value: string) => parseJSON(value);
@@ -82,5 +82,12 @@ describe('tail-bite dates', () => {
       const d = dateOnlyToLocal(value);
       expect([d.getFullYear(), d.getMonth(), d.getDate(), d.getHours()]).toEqual([2026, 9, 6, 0]);
     }
+  });
+
+  it('gives the UTC day an outbreak opened, from a string with or without an offset or an intercepted Date', () => {
+    expect(openedDay('2026-09-30T23:30:00')).toBe('2026-09-30');
+    expect(openedDay('2026-09-30T23:30:00Z')).toBe('2026-09-30');
+    expect(openedDay(intercepted('2026-10-01T00:30:00'))).toBe('2026-10-01');
+    expect(openedDay(null)).toBeNull();
   });
 });

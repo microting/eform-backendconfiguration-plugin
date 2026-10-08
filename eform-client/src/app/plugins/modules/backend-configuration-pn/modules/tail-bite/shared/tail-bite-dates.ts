@@ -54,6 +54,15 @@ export function occupancyValidFrom(day: Date, now: Date = new Date()): string {
   return Date.parse(midnight) > now.getTime() ? now.toISOString() : midnight;
 }
 
+/**
+ * The day ("yyyy-MM-dd") an outbreak opened as the server checks follow-up dates against it: OpenedAt.Date, the UTC day.
+ * A picked day (toDateOnly) earlier than this is refused.
+ */
+export function openedDay(openedAt: ServerDate | null | undefined): string | null {
+  const opened = parseServerUtc(openedAt);
+  return opened ? serverDay(opened) : null;
+}
+
 /** A follow-up date ("yyyy-MM-dd…") lies before `today` (local calendar day). */
 export function isOverdue(followUpDate: ServerDate, today: Date): boolean {
   return serverDay(followUpDate) < toDateOnly(today);

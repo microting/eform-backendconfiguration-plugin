@@ -96,7 +96,7 @@ public class TailBiteWebQueryService(BackendConfigurationPnDbContext db, ITailBi
 
     public async Task<IReadOnlyList<RuleDto>> ListRulesAsync(int callerSiteId, int propertyId)
     {
-        await access.RequireWorkerAsync(callerSiteId, propertyId);
+        await RequireWorkerOrNoAccessAsync(callerSiteId, propertyId);
         var rules = await (from r in db.TailBiteRules.AsNoTracking()
                            join l in db.TailBiteLocations on r.LocationId equals l.Id
                            where l.PropertyId == propertyId && r.WorkflowState != Removed && l.WorkflowState != Removed
@@ -126,7 +126,7 @@ public class TailBiteWebQueryService(BackendConfigurationPnDbContext db, ITailBi
     // The count valid now per location: the newest ValidFrom that is not in the future.
     public async Task<IReadOnlyList<OccupancyDto>> CurrentOccupancyAsync(int callerSiteId, int propertyId)
     {
-        await access.RequireWorkerAsync(callerSiteId, propertyId);
+        await RequireWorkerOrNoAccessAsync(callerSiteId, propertyId);
         var now = clock.GetUtcNow().UtcDateTime;
         var rows = await (from o in db.TailBiteOccupancies.AsNoTracking()
                           join l in db.TailBiteLocations on o.LocationId equals l.Id
@@ -189,7 +189,7 @@ public class TailBiteWebQueryService(BackendConfigurationPnDbContext db, ITailBi
         return names;
     }
 
-    // For lookups by entity id: "not a worker on that property" must read exactly like "no such id".
+    // "Not a worker on that property" reads exactly like "no such id" (or no such property).
     private async Task RequireWorkerOrNoAccessAsync(int callerSiteId, int propertyId)
     {
         try { await access.RequireWorkerAsync(callerSiteId, propertyId); }

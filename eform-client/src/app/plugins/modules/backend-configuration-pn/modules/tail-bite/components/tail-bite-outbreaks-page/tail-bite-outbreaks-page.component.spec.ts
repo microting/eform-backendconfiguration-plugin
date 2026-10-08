@@ -55,11 +55,53 @@ describe('TailBiteOutbreaksPageComponent', () => {
     expect(component.loaded).toBe(false);
   });
 
-  it('clears the page at once when the toggle flips', () => {
-    service.getOutbreaks.mockReturnValue(new Subject());
+  it('keeps the rows while the toggle\'s list loads, then shows the new list', () => {
+    const pending = new Subject<unknown>();
+    service.getOutbreaks.mockReturnValue(pending);
+    component.setShowClosed(true);
+    expect(component.showClosed).toBe(true);
+    expect(component.rows).toHaveLength(1);
+    pending.next({success: true, model: []});
+    pending.complete();
+    expect(component.rows).toEqual([]);
+    expect(component.loaded).toBe(true);
+  });
+
+  it('turns the toggle back to the value the shown rows were loaded with when the second of two quick flips fails', () => {
+    // Rows loaded with the toggle off; on (pending), off again (refused): the toggle must match the rows (off).
+    const first = new Subject<unknown>();
+    service.getOutbreaks.mockReturnValueOnce(first).mockReturnValueOnce(of({success: false, message: 'no'}));
+    component.setShowClosed(true);
+    component.setShowClosed(false);
+    expect(component.showClosed).toBe(false);
+    expect(component.rows).toHaveLength(1);
+    first.next({success: true, model: []});
+    first.complete();
+    expect(component.rows).toHaveLength(1);
+    expect(component.showClosed).toBe(false);
+  });
+
+  it('does the same the other way round: rows loaded with the toggle on, off (pending), on again (fails)', () => {
+    service.getOutbreaks.mockReturnValueOnce(of({success: true, model: []}));
     component.setShowClosed(true);
     expect(component.rows).toEqual([]);
-    expect(component.loaded).toBe(false);
+    const pending = new Subject<unknown>();
+    service.getOutbreaks.mockReturnValueOnce(pending).mockReturnValueOnce(throwError(() => new Error('offline')));
+    component.setShowClosed(false);
+    component.setShowClosed(true);
+    expect(component.showClosed).toBe(true);
+    expect(component.rows).toEqual([]);
+  });
+
+  it('keeps the rows and turns the toggle back when the toggle\'s list is refused or fails', () => {
+    service.getOutbreaks.mockReturnValue(of({success: false, message: 'Not found or no access.'}));
+    component.setShowClosed(true);
+    expect(component.rows).toHaveLength(1);
+    expect(component.showClosed).toBe(false);
+    service.getOutbreaks.mockReturnValue(throwError(() => new Error('offline')));
+    component.setShowClosed(true);
+    expect(component.rows).toHaveLength(1);
+    expect(component.showClosed).toBe(false);
   });
 
   it('shows nothing, and no "no outbreaks" claim, when the first load is refused', () => {

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using BackendConfiguration.Pn.Controllers;
 using BackendConfiguration.Pn.Services.TailBite;
 using Microsoft.AspNetCore.Authorization;
+using Microting.EformAngularFrontendBase.Infrastructure.Const;
 using Microting.EformBackendConfigurationBase.Infrastructure.Const;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
@@ -230,6 +231,16 @@ public class TailBiteControllersTests
     {
         var withPolicy = typeof(TailBiteSetupController).GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
             .Where(m => m.GetCustomAttributes<AuthorizeAttribute>().Any(a => a.Policy == BackendConfigurationClaims.AccessBackendConfigurationPlugin))
+            .Select(m => m.Name).OrderBy(n => n).ToList();
+        Assert.That(withPolicy, Is.EqualTo(new[] { "Enable", "SetManager" }));
+    }
+
+    // Making someone a tail-bite manager grants rights: it needs the worker-update permission, like editing a property worker.
+    [Test]
+    public void OnlyEnableAndSetManager_RequireTheWorkerUpdatePolicy()
+    {
+        var withPolicy = typeof(TailBiteSetupController).GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Where(m => m.GetCustomAttributes<AuthorizeAttribute>().Any(a => a.Policy == AuthConsts.EformPolicies.DeviceUsers.Update))
             .Select(m => m.Name).OrderBy(n => n).ToList();
         Assert.That(withPolicy, Is.EqualTo(new[] { "Enable", "SetManager" }));
     }

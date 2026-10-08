@@ -31,15 +31,18 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+using Microting.EformAngularFrontendBase.Infrastructure.Const;
 using Microting.EformBackendConfigurationBase.Infrastructure.Const;
 using Services.TailBite;
 using static TailBiteRunner;
 
 /// <summary>
 /// Read endpoints the tail-bite web admin needs beyond the setup and outbreak controllers: the property list with
-/// the enabled flag and a property's workers (plugin-admin, next to enable and the manager toggle), the caller's own
-/// enabled properties (the area's picker), and rules,
-/// rule history, current pig counts and an outbreak's registration rows (caller-checked by the service).
+/// the enabled flag and a property's workers (the managers dialog), the caller's own enabled properties (the area's
+/// picker), and rules, rule history, current pig counts and an outbreak's registration rows (caller-checked by the service).
+/// The managers dialog's two lists are management routes like enable and the manager toggle: they expose every property
+/// and the PropertyWorker ids the toggle takes, so they need plugin access plus the worker-update permission
+/// (DeviceUsers.Update, as for editing a property worker).
 /// </summary>
 [Authorize]
 [Route("api/backend-configuration-pn/tail-bite")]
@@ -47,6 +50,7 @@ public class TailBiteWebController(ITailBiteAccess access, ITailBiteWebQueryServ
 {
     [HttpGet("properties")]
     [Authorize(Policy = BackendConfigurationClaims.AccessBackendConfigurationPlugin)]
+    [Authorize(Policy = AuthConsts.EformPolicies.DeviceUsers.Update)]
     public Task<OperationDataResult<IReadOnlyList<TailBitePropertyStatus>>> ListProperties()
         => Run(() => queries.ListPropertiesAsync());
 
@@ -57,6 +61,7 @@ public class TailBiteWebController(ITailBiteAccess access, ITailBiteWebQueryServ
 
     [HttpGet("properties/{propertyId:int}/workers")]
     [Authorize(Policy = BackendConfigurationClaims.AccessBackendConfigurationPlugin)]
+    [Authorize(Policy = AuthConsts.EformPolicies.DeviceUsers.Update)]
     public Task<OperationDataResult<IReadOnlyList<TailBiteWorker>>> ListWorkers(int propertyId)
         => Run(() => queries.ListWorkersAsync(propertyId));
 

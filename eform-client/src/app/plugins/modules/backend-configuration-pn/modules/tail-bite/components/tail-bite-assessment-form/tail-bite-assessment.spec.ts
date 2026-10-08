@@ -53,6 +53,29 @@ describe('tail-bite assessment form', () => {
     expect(assessmentErrors(draftFromDetail(withdrawn), withdrawn).get(TailBiteFactor.Feed)).toBe('needsAction');
   });
 
+  it('refuses a follow-up day before the UTC day the outbreak opened, as the server does; the opening day itself is fine', () => {
+    const feedYes = (opened: string | Date, followUpDate: Date) => {
+      const d = {...detail(null), summary: {...detail(null).summary, openedAt: opened}};
+      const drafts = draftFromDetail(d);
+      answerAll(drafts, [TailBiteFactor.Feed]);
+      drafts[1].newActions.push({description: 'Mere halm', responsibleSiteId: 7, followUpDate});
+      return assessmentErrors(drafts, d).get(TailBiteFactor.Feed);
+    };
+    expect(feedYes('2026-10-01T06:12:00', new Date(2026, 8, 30))).toBe('followUpBeforeOpened');
+    expect(feedYes('2026-10-01T06:12:00', new Date(2026, 9, 1))).toBeUndefined();
+    // Already a Date (host DateInterceptor): 23:30 UTC on October 1 is October 2 east of UTC, but the server's day is October 1.
+    expect(feedYes(new Date(Date.UTC(2026, 9, 1, 23, 30)), new Date(2026, 8, 30))).toBe('followUpBeforeOpened');
+    expect(feedYes(new Date(Date.UTC(2026, 9, 1, 23, 30)), new Date(2026, 9, 1))).toBeUndefined();
+  });
+
+  it('ignores an early date on a factor answered no (its actions are not sent)', () => {
+    const d = detail(null);
+    const drafts = draftFromDetail(d);
+    answerAll(drafts);
+    drafts[1].newActions.push({description: 'Mere halm', responsibleSiteId: 7, followUpDate: new Date(2026, 0, 1)});
+    expect(assessmentErrors(drafts, d).size).toBe(0);
+  });
+
   it('builds the request with trimmed, date-only actions and drops actions on factors answered no', () => {
     const d = detail(null);
     const drafts = draftFromDetail(d);

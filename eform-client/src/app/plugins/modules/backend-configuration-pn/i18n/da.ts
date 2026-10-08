@@ -1019,4 +1019,5 @@ export const da = {
   'Deleted location': 'Slettet lokation',
   'Save the risk assessment before closing.': 'Gem risikovurderingen, før udbruddet lukkes.',
   'Outbreak not found or no access.': 'Udbrud ikke fundet, eller du har ikke adgang.',
+  'A follow-up date cannot be before the day the outbreak opened.': 'En opfølgningsdato kan ikke ligge før den dag, udbruddet startede.',
 };

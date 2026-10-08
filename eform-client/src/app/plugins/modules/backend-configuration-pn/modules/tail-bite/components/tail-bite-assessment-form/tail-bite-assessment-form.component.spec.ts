@@ -118,6 +118,16 @@ describe('TailBiteAssessmentFormComponent', () => {
     });
   });
 
+  it('does not save a typed follow-up date before the day the outbreak opened, and says why', () => {
+    create(detail());
+    fillFeedYes();
+    component.draft(TailBiteFactor.Feed).newActions[0].followUpDate = new Date(2026, 8, 30);
+    component.save();
+    expect(saveAssessment).not.toHaveBeenCalled();
+    expect(component.errorText(component.errors.get(TailBiteFactor.Feed)!))
+      .toBe('A follow-up date cannot be before the day the outbreak opened.');
+  });
+
   it('keeps everything entered and says so when the server refuses the save', () => {
     saveAssessment.mockReturnValue(of({success: false, message: 'nope'}));
     create(detail());

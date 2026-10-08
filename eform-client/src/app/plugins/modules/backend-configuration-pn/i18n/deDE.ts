@@ -1044,4 +1044,5 @@ export const deDE = {
   'Deleted location': 'Gelöschter Standort',
   'Save the risk assessment before closing.': 'Speichern Sie die Risikobewertung, bevor der Ausbruch geschlossen wird.',
   'Outbreak not found or no access.': 'Ausbruch nicht gefunden oder kein Zugriff.',
+  'A follow-up date cannot be before the day the outbreak opened.': 'Ein Nachverfolgungsdatum darf nicht vor dem Tag liegen, an dem der Ausbruch begann.',
 };

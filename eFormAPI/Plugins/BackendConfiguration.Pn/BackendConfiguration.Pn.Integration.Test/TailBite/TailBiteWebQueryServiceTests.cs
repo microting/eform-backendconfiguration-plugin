@@ -8,6 +8,7 @@ using BackendConfiguration.Pn.Services.TailBite;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microting.EformAngularFrontendBase.Infrastructure.Const;
 using Microting.EformBackendConfigurationBase.Infrastructure.Const;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using NSubstitute;
@@ -135,6 +136,16 @@ public class TailBiteWebQueryServiceTests : TailBiteTestBase
     }
 
     [Test]
+    public async Task ListRules_MissingAndForeignPropertiesAreRefusedAlike()
+    {
+        await SeedTreeAsync();
+        await SeedWorkerAsync(WorkerSite);
+        await AssertRefusedAlike(
+            () => Sut().ListRulesAsync(WorkerSite, int.MaxValue),
+            () => Sut().ListRulesAsync(ForeignSite, PropertyId));
+    }
+
+    [Test]
     public async Task RuleHistory_NewestFirst_WithoutTheDeleteRow_EvenForADeletedRule()
     {
         await SeedTreeAsync();
@@ -189,6 +200,16 @@ public class TailBiteWebQueryServiceTests : TailBiteTestBase
         Assert.That(occupancy.Select(o => (o.LocationId, o.PigCount)), Is.EqualTo(new[] { (SectionId, 360) }));
         Assert.That(occupancy[0].ValidFrom.Kind, Is.EqualTo(DateTimeKind.Utc));
         await Assert.ThrowsAsync<TailBiteForbiddenException>(() => Sut().CurrentOccupancyAsync(ForeignSite, PropertyId));
+    }
+
+    [Test]
+    public async Task CurrentOccupancy_MissingAndForeignPropertiesAreRefusedAlike()
+    {
+        await SeedTreeAsync();
+        await SeedWorkerAsync(WorkerSite);
+        await AssertRefusedAlike(
+            () => Sut().CurrentOccupancyAsync(WorkerSite, int.MaxValue),
+            () => Sut().CurrentOccupancyAsync(ForeignSite, PropertyId));
     }
 
     // ---------- outbreak registrations ----------
@@ -323,6 +344,8 @@ public class TailBiteWebQueryServiceTests : TailBiteTestBase
                 .Cast<AuthorizeAttribute>().Select(a => a.Policy);
             Assert.That(policies, Does.Contain(BackendConfigurationClaims.AccessBackendConfigurationPlugin),
                 $"{action.DeclaringType!.Name}.{action.Name} must be plugin-admin only");
+            Assert.That(policies, Does.Contain(AuthConsts.EformPolicies.DeviceUsers.Update),
+                $"{action.DeclaringType!.Name}.{action.Name} must need the worker-update permission");
         }
     }
 }

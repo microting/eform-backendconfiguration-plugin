@@ -93,7 +93,10 @@ test.describe.serial('Tail biting web admin', () => {
   });
 
   test('seed: property, a worker on it, and the admin login mapped to that worker', async ({ page }) => {
-    test.setTimeout(600000);
+    // Budget: one property create and one SDK-backed worker create (each wait bounded by API_TIMEOUT /
+    // SLOW_API_TIMEOUT in the page objects) plus two SQL statements. CI ran the whole za suite in under a minute
+    // (seed ~15 s), so 3 minutes covers a slow SDK round-trip with room to spare and still fails fast on a hang.
+    test.setTimeout(180000);
     const propertiesPage = new BackendConfigurationPropertiesPage(page);
     await propertiesPage.goToProperties();
     await propertiesPage.createProperty(property);

@@ -32,6 +32,7 @@ using BackendConfiguration.Pn.Controllers;
 using BackendConfiguration.Pn.Services.TailBite;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microting.EformAngularFrontendBase.Infrastructure.Const;
 using Microting.EformBackendConfigurationBase.Infrastructure.Const;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -115,6 +116,16 @@ public class TailBiteWebControllerTests
     {
         var withPolicy = typeof(TailBiteWebController).GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
             .Where(m => m.GetCustomAttributes<AuthorizeAttribute>().Any(a => a.Policy == BackendConfigurationClaims.AccessBackendConfigurationPlugin))
+            .Select(m => m.Name).OrderBy(n => n);
+        Assert.That(withPolicy, Is.EqualTo(new[] { "ListProperties", "ListWorkers" }));
+    }
+
+    [Test]
+    // The managers dialog's lists expose every property and the PropertyWorker ids the manager toggle takes.
+    public void OnlyThePropertyAndWorkerLists_RequireTheWorkerUpdatePolicy()
+    {
+        var withPolicy = typeof(TailBiteWebController).GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Where(m => m.GetCustomAttributes<AuthorizeAttribute>().Any(a => a.Policy == AuthConsts.EformPolicies.DeviceUsers.Update))
             .Select(m => m.Name).OrderBy(n => n);
         Assert.That(withPolicy, Is.EqualTo(new[] { "ListProperties", "ListWorkers" }));
     }

@@ -27,6 +27,8 @@ export class TailBiteOutbreaksPageComponent implements OnInit, OnDestroy {
   readonly columns = ['title', 'openedAt', 'status', 'openActions'];
   rows: TailBiteOutbreakListRow[] = [];
   showClosed = false;
+  /** The toggle value the shown rows were loaded with; a failed toggle load turns the toggle back to it. */
+  private rowsShowClosed = false;
   /** True once a list for the current property and toggle has arrived; "no outbreaks" is only said then. */
   loaded = false;
   private propertyId: number | null = null;
@@ -51,10 +53,15 @@ export class TailBiteOutbreaksPageComponent implements OnInit, OnDestroy {
     this.subs.unsubscribe();
   }
 
+  /**
+   * Reloads for the new toggle value. The shown rows stay until the new list arrives; a refused or failed load keeps them
+   * and turns the toggle back, so the toggle always matches the rows.
+   */
   setShowClosed(show: boolean): void {
     this.showClosed = show;
-    this.clearPage();
-    this.load();
+    this.load(() => {
+      this.showClosed = this.rowsShowClosed;
+    });
   }
 
   /** Forgets the list so nothing stale is visible while the next one loads. */
@@ -63,23 +70,37 @@ export class TailBiteOutbreaksPageComponent implements OnInit, OnDestroy {
     this.loaded = false;
   }
 
-  /** Refreshes the list. A refused or failed refresh keeps what is shown; only the first load starts (and stays) empty. */
-  load(): void {
+  /**
+   * Refreshes the list. A refused or failed refresh keeps what is shown (and runs `onFailed`, if this is still the latest
+   * request); only the first load starts (and stays) empty.
+   */
+  load(onFailed?: () => void): void {
     const propertyId = this.propertyId;
     if (propertyId === null) {
       return;
     }
     const seq = ++this.requestSeq;
+    const showClosed = this.showClosed;
     this.request?.unsubscribe();
-    this.request = forkJoin([this.service.getOutbreaks(propertyId, !this.showClosed), this.service.getTree(propertyId)]).subscribe({
+    this.request = forkJoin([this.service.getOutbreaks(propertyId, !showClosed), this.service.getTree(propertyId)]).subscribe({
       next: ([outbreaks, tree]) => {
-        if (seq === this.requestSeq && outbreaks?.success && tree?.success) {
+        if (seq !== this.requestSeq) {
+          return;
+        }
+        if (outbreaks?.success && tree?.success) {
           this.rows = outbreakRows(outbreaks.model, tree.model.locations);
+          this.rowsShowClosed = showClosed;
           this.loaded = true;
+        } else {
+          onFailed?.();
         }
       },
       // A failed refresh keeps what is shown; the API service already toasts the error.
-      error: () => undefined,
+      error: () => {
+        if (seq === this.requestSeq) {
+          onFailed?.();
+        }
+      },
     });
   }
 }
