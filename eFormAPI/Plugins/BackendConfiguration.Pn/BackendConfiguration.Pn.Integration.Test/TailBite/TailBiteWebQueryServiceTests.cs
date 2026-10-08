@@ -238,6 +238,7 @@ public class TailBiteWebQueryServiceTests : TailBiteTestBase
                                           | BindingFlags.DeclaredOnly))
             .Where(m => m.Name.Contains("Properties") || m.Name.Contains("Workers"))
             .ToList();
+        Assert.That(exposing, Is.Not.Empty, "no controller action exposing the property or worker lists was found; the test would pass vacuously");
         foreach (var action in exposing)
         {
             var policies = action.GetCustomAttributes(typeof(AuthorizeAttribute), true)

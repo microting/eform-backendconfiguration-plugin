@@ -140,6 +140,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<Services.TailBite.ITailBiteOutbreakService, Services.TailBite.TailBiteOutbreakService>();
         services.AddTransient<Services.TailBite.ITailBitePushSender, Services.TailBite.TailBitePushSender>();
         services.AddTransient<Services.TailBite.ITailBiteOutbreakNotifier, Services.TailBite.TailBiteOutbreakNotifier>();
+        services.AddTransient<Services.TailBite.ITailBiteWebQueryService, Services.TailBite.TailBiteWebQueryService>();
         // flutter-chemistry: the inventory service, its readers and the chemicalbase client.
         services.AddChemicalInventory();
         services.AddTransient<Services.EventDeployService.IEventDeployService,
