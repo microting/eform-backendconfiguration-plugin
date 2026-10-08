@@ -17,6 +17,7 @@ public class WorkerEmailSanitizerTests
     [TestCase("jane.\u200Bdoe@exam\u200Dple.com", "jane.doe@example.com", TestName = "Clean_ZeroWidthCharactersInside_AreRemoved")]
     [TestCase("\uFEFFjane.doe@example.com", "jane.doe@example.com", TestName = "Clean_ByteOrderMark_IsRemoved")]
     [TestCase("jane.doe@example.com\u2060", "jane.doe@example.com", TestName = "Clean_WordJoiner_IsRemoved")]
+    [TestCase("jane.doe@example.com\U000E0001", "jane.doe@example.com", TestName = "Clean_FormatCharacterOutsideBmp_IsRemoved")]
     [TestCase("jane.doe@example.com\t\r\n", "jane.doe@example.com", TestName = "Clean_ControlCharacters_AreRemoved")]
     [TestCase("  jane.doe@example.com\u00A0", "jane.doe@example.com", TestName = "Clean_SurroundingSpacesAndNbsp_AreTrimmed")]
     [TestCase("\u00A0\u200E jane.doe@example.com", "jane.doe@example.com", TestName = "Clean_MixedLeadingJunk_IsRemoved")]

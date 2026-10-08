@@ -18,7 +18,7 @@ copies or substantial portions of the Software.
 namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 
 using System.Globalization;
-using System.Linq;
+using System.Text;
 
 /// <summary>
 /// Removes characters a person cannot see from a worker's e-mail address before it
@@ -40,12 +40,18 @@ public static class WorkerEmailSanitizer
             return email;
         }
 
-        var visible = new string(email.Where(c =>
+        // Runes, not chars: a format character outside the BMP (e.g. U+E0001) is two
+        // surrogate chars whose own category is Surrogate, not Format.
+        var visible = new StringBuilder(email.Length);
+        foreach (var rune in email.EnumerateRunes())
         {
-            var category = char.GetUnicodeCategory(c);
-            return category != UnicodeCategory.Format && category != UnicodeCategory.Control;
-        }).ToArray());
+            var category = Rune.GetUnicodeCategory(rune);
+            if (category != UnicodeCategory.Format && category != UnicodeCategory.Control)
+            {
+                visible.Append(rune.ToString());
+            }
+        }
 
-        return visible.Trim();
+        return visible.ToString().Trim();
     }
 }

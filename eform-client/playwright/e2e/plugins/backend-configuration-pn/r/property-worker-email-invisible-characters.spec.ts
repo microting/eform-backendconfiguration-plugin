@@ -9,7 +9,7 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
-import { UI_TIMEOUT } from '../wait-helpers';
+import { API_TIMEOUT, ignoreUnhandledRejections, UI_TIMEOUT, waitForApiResponse } from '../wait-helpers';
 
 // An e-mail copied from a mail client or phone can carry invisible characters,
 // e.g. U+200E (left-to-right mark) in front of the address. The address doubles as
@@ -28,12 +28,15 @@ const property: PropertyCreateUpdate = {
   cvrNumber: '1111111',
 };
 
+const markedEmail = `\u200E${cleanEmail}\u200B`;
+
+// The e-mail is typed below, on the General tab: openCreateModal ends on the
+// Properties tab, where the e-mail field is not rendered.
 const worker: PropertyWorker = {
   name: `Eml${rand}`,
   surname: 'Mark',
   language: 'Dansk',
   properties: [property.name],
-  workerEmail: `\u200E${cleanEmail}\u200B`,
 };
 const workerFullName = `${worker.name} ${worker.surname}`;
 
@@ -56,8 +59,11 @@ test.describe.serial('Property-worker dialog: invisible characters in the e-mail
     const workersPage = new BackendConfigurationPropertyWorkersPage(page);
     await workersPage.goToPropertyWorkers();
 
-    // openCreateModal fills the e-mail with the marks around it.
     await workersPage.openCreateModal(worker);
+    const generalTab = page.locator('mat-dialog-container .mat-mdc-tab').first();
+    await generalTab.click({ timeout: UI_TIMEOUT });
+    await expect(generalTab).toHaveAttribute('aria-selected', 'true', { timeout: UI_TIMEOUT });
+    await workersPage.createEmailInput().fill(markedEmail, { timeout: UI_TIMEOUT });
     await expect(workersPage.createEmailInput(), 'the field must hold the visible address only').toHaveValue(
       cleanEmail,
       { timeout: UI_TIMEOUT }
@@ -69,12 +75,15 @@ test.describe.serial('Property-worker dialog: invisible characters in the e-mail
 
     // What the server stored: the worker list it sends back after a reload. The
     // dialog cleans the field when it opens, so it cannot show a dirty stored value.
-    const listResponse = page.waitForResponse(
+    const listResponse = waitForApiResponse(
+      page,
+      'POST /api/backend-configuration-pn/properties/assignment/index-device-user (list after reload)',
       r =>
         r.url().includes('/api/backend-configuration-pn/properties/assignment/index-device-user') &&
         r.request().method() === 'POST',
-      { timeout: UI_TIMEOUT }
+      API_TIMEOUT
     );
+    ignoreUnhandledRejections(listResponse);
     await page.reload();
     const listBody = await (await listResponse).text();
     expect(listBody, 'the stored address must be listed').toContain(cleanEmail);
