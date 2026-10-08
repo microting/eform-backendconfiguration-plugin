@@ -1,4 +1,4 @@
-import { expect, Page, Response, test } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
 import {
@@ -82,7 +82,7 @@ async function openManagingTagsList(page: Page): Promise<void> {
 }
 
 async function searchManagingTags(page: Page, term: string): Promise<void> {
-  await managingTagSearchInput(page).fill(term);
+  await managingTagSearchInput(page).fill(term, { timeout: UI_TIMEOUT });
   await expect(listedOptions(page).first()).toBeVisible({ timeout: UI_TIMEOUT });
 }
 
@@ -92,7 +92,7 @@ function chosenTag(page: Page, name: string) {
 
 /** "Select all" closes the list and clears the search, so nothing stale is left. */
 async function clickSelectAll(page: Page): Promise<void> {
-  await selectAllButton(page).click();
+  await selectAllButton(page).click({ timeout: UI_TIMEOUT });
   await expect(dropdownPanel(page), '"Select all" must close the list').toHaveCount(0, { timeout: UI_TIMEOUT });
   await expect(managingTagSearchInput(page), '"Select all" must clear the search').toHaveValue('');
 }
@@ -103,8 +103,8 @@ async function cancelEditModal(workersPage: BackendConfigurationPropertyWorkersP
   await cancelBtn.waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
 }
 
-/** Saves the edit dialog and returns the managing-tags PUT; asserts it succeeded. */
-async function saveEdit(page: Page, context: string): Promise<Response> {
+/** Saves the edit dialog and asserts the managing-tags PUT succeeded. */
+async function saveEdit(page: Page, context: string): Promise<void> {
   const put = waitForApiResponse(
     page,
     `PUT /api/time-planning-pn/settings/assigned-site (${context})`,
@@ -122,7 +122,6 @@ async function saveEdit(page: Page, context: string): Promise<Response> {
   expect(response.status(), `${context}: assigned-site PUT status (${JSON.stringify(result)})`).toBe(200);
   expect(result?.success, `${context}: assigned-site PUT success (${result?.message ?? ''})`).toBe(true);
   await saveBtn.waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
-  return response;
 }
 
 test.describe.serial('Property-worker dialog: managing tags', () => {
@@ -151,16 +150,16 @@ test.describe.serial('Property-worker dialog: managing tags', () => {
 
     await workersPage.openEditModalFor(workerFullName);
     await openTimeRegistrationTab(page);
-    await dialog(page).locator('#isManager').click();
+    await dialog(page).locator('#isManager').click({ timeout: UI_TIMEOUT });
     await expect(dialog(page).locator('#isManager input[type="checkbox"]')).toBeChecked({ timeout: UI_TIMEOUT });
 
     // A picked tag leaves the list, and the list stays open for the next pick.
     await openManagingTagsList(page);
     await searchManagingTags(page, tagA);
-    await listedOptions(page).filter({ hasText: tagA }).click();
+    await listedOptions(page).filter({ hasText: tagA }).click({ timeout: UI_TIMEOUT });
     await expect(chosenTag(page, tagA), 'the picked tag must show as chosen').toHaveCount(1, { timeout: UI_TIMEOUT });
     await expect(dropdownPanel(page), 'the list must stay open after a pick').toBeVisible();
-    await managingTagSearchInput(page).fill('');
+    await managingTagSearchInput(page).fill('', { timeout: UI_TIMEOUT });
     await expect(listedOptions(page).filter({ hasText: tagC })).toHaveCount(1, { timeout: UI_TIMEOUT });
     await expect(listedOptions(page).filter({ hasText: tagA }), 'a picked tag must leave the list').toHaveCount(0);
 
@@ -181,9 +180,7 @@ test.describe.serial('Property-worker dialog: managing tags', () => {
       timeout: UI_TIMEOUT,
     });
 
-    const put = await saveEdit(page, 'first save with all tags');
-    const body = JSON.parse(put.request().postData() || '{}');
-    expect(body.managingTagIds?.length, 'every tag in the system must be sent as managing tag').toBeGreaterThanOrEqual(3);
+    await saveEdit(page, 'first save with all tags');
   });
 
   test('a removed managing tag can be given back and saved', async ({ page }) => {
@@ -193,11 +190,15 @@ test.describe.serial('Property-worker dialog: managing tags', () => {
     const workersPage = new BackendConfigurationPropertyWorkersPage(page);
     await workersPage.goToPropertyWorkers();
 
-    // Remove tag A and save.
+    // The first save stored all three tags.
     await workersPage.openEditModalFor(workerFullName);
     await openTimeRegistrationTab(page);
-    await expect(chosenTag(page, tagA)).toHaveCount(1, { timeout: UI_TIMEOUT });
-    await chosenTag(page, tagA).locator('.ng-value-icon').click();
+    for (const tag of [tagA, tagB, tagC]) {
+      await expect(chosenTag(page, tag), `${tag} must be saved as managing tag`).toHaveCount(1, { timeout: UI_TIMEOUT });
+    }
+
+    // Remove tag A and save.
+    await chosenTag(page, tagA).locator('.ng-value-icon').click({ timeout: UI_TIMEOUT });
     await expect(chosenTag(page, tagA)).toHaveCount(0, { timeout: UI_TIMEOUT });
     await saveEdit(page, 'save without tag A');
 
