@@ -970,4 +970,8 @@ export const da = {
   'New action type': 'Ny handlingstype',
   'Rename action type': 'Omdøb handlingstype',
   'Delete action type': 'Slet handlingstype',
+  'Show closed outbreaks': 'Vis lukkede udbrud',
+  'Started': 'Startet',
+  'Open follow-ups': 'Åbne opfølgninger',
+  'No outbreaks': 'Ingen udbrud',
 };

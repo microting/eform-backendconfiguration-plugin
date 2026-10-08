@@ -893,4 +893,8 @@ export const frFR = {
   'New action type': 'New action type',
   'Rename action type': 'Rename action type',
   'Delete action type': 'Delete action type',
+  'Show closed outbreaks': 'Show closed outbreaks',
+  'Started': 'Started',
+  'Open follow-ups': 'Open follow-ups',
+  'No outbreaks': 'No outbreaks',
 };

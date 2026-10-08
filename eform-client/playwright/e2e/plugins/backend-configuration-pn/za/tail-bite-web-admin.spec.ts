@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
 import * as fs from 'fs';
 import LoginConstants from '../../../Constants/LoginConstants';
 import { generateRandmString } from '../../../helper-functions';
@@ -38,6 +38,36 @@ const manager: PropertyWorker = {
   workerEmail: `jane.doe.${rand}@example.org`,
 };
 const managerName = `${manager.name} ${manager.surname}`;
+const API = `${BASE_URL}/api/backend-configuration-pn/tail-bite`;
+
+// Set by the outbreak seed test, read by the outbreak tests after it (serial suite, one worker).
+let outbreakId = 0;
+let seededPropertyId = 0;
+const registrationIds: number[] = [0, 0];
+
+async function apiToken(page: Page): Promise<string> {
+  const res = await page.request.post(`${BASE_URL}/api/auth/token`, {
+    form: { username: LoginConstants.username, password: LoginConstants.password, grant_type: 'password' },
+  });
+  return (await res.json())?.model?.accessToken ?? '';
+}
+
+async function apiGet<T>(page: Page, path: string): Promise<T> {
+  const res = await page.request.get(`${API}/${path}`, { headers: { Authorization: `Bearer ${await apiToken(page)}` } });
+  const body = await res.json();
+  expect(body.success, `GET ${path} -> ${body.message}`).toBe(true);
+  return body.model as T;
+}
+
+function int(value: unknown, what: string): number {
+  expect(Number.isInteger(value), `${what} is an integer`).toBe(true);
+  return value as number;
+}
+
+async function tailBitePropertyId(page: Page): Promise<number> {
+  const properties = await apiGet<{ propertyId: number; name: string }[]>(page, 'properties');
+  return int(properties.find((p) => p.name === property.name)?.propertyId, 'property id');
+}
 
 test.describe.serial('Tail biting web admin', () => {
   test.beforeEach(async ({ page }) => {
@@ -179,5 +209,49 @@ test.describe.serial('Tail biting web admin', () => {
     await renamed.locator('[id^="tailBiteActionTypeDelete-"]').click();
     await tailBite.expectApi('DELETE', /^\/action-types\/\d+$/, () => tailBite.confirm('tailBiteActionTypeDeleteConfirm'));
     await expect(rows).toHaveCount(7, { timeout: API_TIMEOUT });
+  });
+
+  test('outbreaks: a seeded outbreak is listed as needing an assessment', async ({ page }) => {
+    test.setTimeout(300000);
+    const propertyId = await tailBitePropertyId(page);
+    seededPropertyId = propertyId;
+    const tree = await apiGet<{ locations: { id: number; name: string; removed: boolean }[] }>(page, `properties/${propertyId}/tree`);
+    const idOf = (name: string) => int(tree.locations.find((l) => l.name === name && !l.removed)?.id, `location ${name}`);
+    const rules = await apiGet<{ id: number; locationId: number; version: number }[]>(page, `properties/${propertyId}/rules`);
+    const stableRule = rules.find((r) => r.locationId === idOf('Stald A'));
+    const workers = await apiGet<{ siteId: number; name: string }[]>(page, `properties/${propertyId}/workers`);
+    const siteId = int(workers.find((w) => w.name === managerName)?.siteId, 'manager site id');
+    const [ruleId, ruleVersion, stald, pen301, pen302] =
+      [int(stableRule?.id, 'rule id'), int(stableRule?.version, 'rule version'), idOf('Stald A'), idOf('Sti 301'), idOf('Sti 302')];
+
+    // Two registrations in Stald A, linked to one open outbreak summed at Stald A (the rule from the rules test).
+    const base = "@now, @now, 'created', 0, 0, 1";
+    const out = await runMariadbSql(`
+      SET @now = UTC_TIMESTAMP(6);
+      INSERT INTO TailBiteRegistrations (PropertyId, SiteId, RegisteredAt, ReceivedAt, EffectiveAt, ClientUuid, CreatedAt, UpdatedAt, WorkflowState, CreatedByUserId, UpdatedByUserId, Version)
+        VALUES (${propertyId}, ${siteId}, @now - INTERVAL 2 DAY, @now - INTERVAL 2 DAY, @now - INTERVAL 2 DAY, UUID(), ${base});
+      SET @r1 = LAST_INSERT_ID();
+      INSERT INTO TailBiteRegistrationLocations (RegistrationId, LocationId, MinorCount, SevereCount, CountUnknown, CreatedAt, UpdatedAt, WorkflowState, CreatedByUserId, UpdatedByUserId, Version)
+        VALUES (@r1, ${pen301}, 2, 0, 0, ${base});
+      SET @l1 = LAST_INSERT_ID();
+      INSERT INTO TailBiteRegistrations (PropertyId, SiteId, RegisteredAt, ReceivedAt, EffectiveAt, ClientUuid, CreatedAt, UpdatedAt, WorkflowState, CreatedByUserId, UpdatedByUserId, Version)
+        VALUES (${propertyId}, ${siteId}, @now - INTERVAL 1 HOUR, @now - INTERVAL 1 HOUR, @now - INTERVAL 1 HOUR, UUID(), ${base});
+      SET @r2 = LAST_INSERT_ID();
+      INSERT INTO TailBiteRegistrationLocations (RegistrationId, LocationId, MinorCount, SevereCount, CountUnknown, CreatedAt, UpdatedAt, WorkflowState, CreatedByUserId, UpdatedByUserId, Version)
+        VALUES (@r2, ${pen302}, 2, 1, 0, ${base});
+      SET @l2 = LAST_INSERT_ID();
+      INSERT INTO TailBiteOutbreaks (PropertyId, LocationId, RuleId, RuleVersion, OpenedAt, OpenedByRegistrationId, CreatedAt, UpdatedAt, WorkflowState, CreatedByUserId, UpdatedByUserId, Version)
+        VALUES (${propertyId}, ${stald}, ${ruleId}, ${ruleVersion}, @now - INTERVAL 1 HOUR, @r2, ${base});
+      SET @o = LAST_INSERT_ID();
+      INSERT INTO TailBiteOutbreakLinks (OutbreakId, RegistrationLocationId, CreatedAt, UpdatedAt, WorkflowState, CreatedByUserId, UpdatedByUserId, Version)
+        VALUES (@o, @l1, ${base}), (@o, @l2, ${base});
+      SELECT @o, @r1, @r2;`, 'seed two registrations and an open outbreak', customerDatabase('eform-backend-configuration-plugin'));
+    [outbreakId, registrationIds[0], registrationIds[1]] = out.trim().split('\t').map((v) => int(Number(v), 'seeded id'));
+
+    const tailBite = new TailBitePage(page);
+    await tailBite.goto('outbreaks', property.name);
+    await expect(page.locator(`#tailBiteOutbreakRow-${outbreakId}`)).toContainText('Stald A', { timeout: API_TIMEOUT });
+    await expect(page.locator(`#tailBiteOutbreakStatus-${outbreakId}`)).toHaveClass(/badge-error/);
+    await tailBite.screenshot('outbreaks');
   });
 });

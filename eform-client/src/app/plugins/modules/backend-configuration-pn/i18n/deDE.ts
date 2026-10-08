@@ -995,4 +995,8 @@ export const deDE = {
   'New action type': 'Neue Maßnahmenart',
   'Rename action type': 'Maßnahmenart umbenennen',
   'Delete action type': 'Maßnahmenart löschen',
+  'Show closed outbreaks': 'Geschlossene Ausbrüche anzeigen',
+  'Started': 'Begonnen',
+  'Open follow-ups': 'Offene Nachverfolgungen',
+  'No outbreaks': 'Keine Ausbrüche',
 };
