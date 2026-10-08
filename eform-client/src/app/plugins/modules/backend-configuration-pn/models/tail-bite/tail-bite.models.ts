@@ -2,6 +2,8 @@
  * Tail biting (halebid) web admin. Mirrors the C# records in
  * BackendConfiguration.Pn/Services/TailBite/TailBiteModels.cs and TailBiteWebModels.cs
  * as Newtonsoft writes them: camelCase, enums as numbers, DateTime as an ISO string.
+ * Every server date is typed `string | Date`: the host app's DateInterceptor turns ISO date-time strings in a response
+ * into Dates before this code sees them (see ServerDate and serverDay in modules/tail-bite/shared/tail-bite-dates.ts).
  */
 
 /** TailBiteFactor in the base: the six risk-assessment factors, stored as codes. */
@@ -71,13 +73,13 @@ export interface TailBiteRule extends TailBiteRuleSettings {
   id: number;
   locationId: number;
   version: number;
-  updatedAt: string | null;
+  updatedAt: string | Date | null;
 }
 
 export interface TailBiteRuleVersion extends TailBiteRuleSettings {
   version: number;
   locationId: number;
-  changedAt: string | null;
+  changedAt: string | Date | null;
 }
 
 export interface TailBiteRuleInput extends TailBiteRuleSettings {
@@ -94,13 +96,13 @@ export interface TailBiteOccupancy {
   locationId: number;
   pigCount: number;
   source: TailBiteOccupancySource;
-  validFrom: string;
+  validFrom: string | Date;
 }
 
 export interface TailBiteOutbreakSummary {
   id: number;
   locationId: number;
-  openedAt: string;
+  openedAt: string | Date;
   assessed: boolean;
   openActions: number;
   closed: boolean;
@@ -122,9 +124,9 @@ export interface TailBiteOutbreakAction {
   factor: TailBiteFactor;
   description: string;
   responsibleSiteId: number;
-  followUpDate: string;
-  doneAt: string | null;
-  withdrawnAt: string | null;
+  followUpDate: string | Date;
+  doneAt: string | Date | null;
+  withdrawnAt: string | Date | null;
 }
 
 export interface TailBiteOutbreakDetail {
@@ -140,7 +142,7 @@ export interface TailBiteOutbreakRegistrationRow {
   registrationId: number;
   rowId: number;
   locationId: number;
-  effectiveAt: string;
+  effectiveAt: string | Date;
   minor: number;
   severe: number;
   actionTypeIds: number[];

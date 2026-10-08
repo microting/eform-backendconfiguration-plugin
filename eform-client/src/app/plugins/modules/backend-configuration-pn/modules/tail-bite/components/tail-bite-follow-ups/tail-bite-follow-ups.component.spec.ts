@@ -84,6 +84,18 @@ describe('TailBiteFollowUpsComponent', () => {
     expect(component.state(action(4, {withdrawnAt: '2026-10-02T07:00:00'}))).toBe('withdrawn');
   });
 
+  it('sorts and states actions whose dates the host DateInterceptor turned into Dates (midnight UTC)', () => {
+    component.detail = {...component.detail, actions: [
+      action(2, {followUpDate: new Date(Date.UTC(2026, 9, 8))}),
+      action(1, {followUpDate: new Date(Date.UTC(2026, 9, 6))}),
+      action(3, {followUpDate: new Date(Date.UTC(2026, 9, 7))}),
+    ]};
+    expect(component.actions.map((a) => a.id)).toEqual([1, 3, 2]);
+    expect(component.actions.map((a) => component.state(a))).toEqual(['overdue', 'open', 'open']);
+    const due = component.followUpDate(component.actions[1]);
+    expect([due.getFullYear(), due.getMonth(), due.getDate()]).toEqual([2026, 9, 7]);
+  });
+
   it('marks done and undoes done, telling the parent to reload', () => {
     component.toggleDone(action(1));
     expect(service.setActionDone).toHaveBeenLastCalledWith(1, true);

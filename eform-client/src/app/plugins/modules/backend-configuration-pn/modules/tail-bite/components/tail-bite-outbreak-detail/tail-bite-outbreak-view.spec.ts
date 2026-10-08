@@ -48,6 +48,16 @@ describe('buildOutbreakView', () => {
     expect(view.ratePer100).toBe(10);
   });
 
+  it('reads every server date the same when the host DateInterceptor already turned it into a Date', () => {
+    const served = {...detail, summary: {...detail.summary, openedAt: new Date(Date.UTC(2026, 9, 1, 6, 12))}};
+    const regs = {propertyId: 3, rows: [{...row(21, 3, 2, 1), effectiveAt: new Date(Date.UTC(2026, 8, 30, 5, 58))}]};
+    const counts = occupancy.map((o) => ({...o, validFrom: new Date(o.validFrom)}));
+    const view = buildOutbreakView(served, regs, tree, counts, history, 'Deleted location');
+    expect(view.openedAt!.toISOString()).toBe('2026-10-01T06:12:00.000Z');
+    expect(view.rows[0].effectiveAt!.toISOString()).toBe('2026-09-30T05:58:00.000Z');
+    expect(view.pigsFrom!.toISOString()).toBe('2026-09-15T00:00:00.000Z');
+  });
+
   it('has no rate without a pig count, and labels unknown locations', () => {
     const view = buildOutbreakView(detail, {propertyId: 3, rows: [row(21, 77, 1, 0)]}, tree, [], [], 'Deleted location');
     expect([view.pigs, view.ratePer100, view.rule]).toEqual([null, null, null]);

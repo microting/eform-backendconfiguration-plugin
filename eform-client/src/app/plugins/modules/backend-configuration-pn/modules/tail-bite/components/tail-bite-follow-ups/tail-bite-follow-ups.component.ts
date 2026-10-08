@@ -10,7 +10,7 @@ import {Observable, finalize, switchMap} from 'rxjs';
 import {OperationResult} from 'src/app/common/models';
 import {TAIL_BITE_FACTORS, TailBiteFactor, TailBiteOutbreakAction, TailBiteOutbreakDetail, TailBiteWorker} from '../../../../models';
 import {BackendConfigurationPnTailBiteService} from '../../../../services';
-import {dateOnlyToLocal, isOverdue} from '../../shared/tail-bite-dates';
+import {dateOnlyToLocal, isOverdue, serverDay} from '../../shared/tail-bite-dates';
 import {memoize} from '../../shared/tail-bite-memo';
 import {askText} from '../tail-bite-text-dialog/tail-bite-text-dialog.component';
 
@@ -99,7 +99,7 @@ export class TailBiteFollowUpsComponent implements OnChanges {
 
   // The rows keep their array until the server sends another action list (see memoize).
   private readonly sortedActions = memoize((actions: TailBiteOutbreakAction[]) =>
-    [...actions].sort((a, b) => a.followUpDate.localeCompare(b.followUpDate) || a.id - b.id));
+    [...actions].sort((a, b) => serverDay(a.followUpDate).localeCompare(serverDay(b.followUpDate)) || a.id - b.id));
 
   get editable(): boolean {
     return !this.detail.summary.closed;

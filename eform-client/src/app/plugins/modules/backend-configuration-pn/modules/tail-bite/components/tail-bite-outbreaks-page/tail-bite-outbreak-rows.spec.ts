@@ -18,6 +18,11 @@ describe('outbreakRows', () => {
     expect(row.status).toBe('followUp');
   });
 
+  it('takes an openedAt the host DateInterceptor already turned into a Date', () => {
+    const [row] = outbreakRows([summary({openedAt: new Date(Date.UTC(2026, 9, 1, 6, 12))})], nodes);
+    expect(row.openedAt!.toISOString()).toBe('2026-10-01T06:12:00.000Z');
+  });
+
   it('falls back to the id when the location is unknown', () => {
     expect(outbreakRows([summary({locationId: 99})], nodes)[0].title).toBe('#99');
   });
