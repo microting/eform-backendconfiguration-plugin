@@ -3,6 +3,7 @@ import {
   EventEmitter,
   OnDestroy,
   OnInit, Output,
+  ViewChild,
   inject
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
@@ -13,6 +14,7 @@ import {BackendConfigurationPnPropertiesService} from '../../../../services';
 import {AuthStateService} from 'src/app/common/store';
 import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
+import {MtxSelect} from '@ng-matero/extensions/select';
 import {TranslateService} from '@ngx-translate/core';
 import {debounceTime, filter, first, startWith, switchMap, tap} from 'rxjs/operators';
 import {AppSettingsStateService} from 'src/app/modules/application-settings/components/store';
@@ -65,6 +67,10 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   taskManagementEnabled: boolean = false;
   timeRegistrationEnabled: boolean = false;
   availableTags: CommonDictionaryModel[] = [];
+  // ng-select's own search result while a search is typed (selected tags are
+  // hidden from it), so "Select all" adds exactly what the list shows.
+  managingTagSearch: {term: string; items: CommonDictionaryModel[]} | null = null;
+  @ViewChild('managingTagSelect') managingTagSelect?: MtxSelect;
   alreadyUsedEmails: string[] = [];
   availablePayRuleSets: PayRuleSetSimpleModel[] = [];
   @Output() userUpdated: EventEmitter<void> = new EventEmitter<void>();
@@ -393,6 +399,21 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       .subscribe(() => {
         this.formReady = true;
       });
+  }
+
+  // Managing tags the open list shows: not yet chosen, and matching the search.
+  get selectableManagingTags(): CommonDictionaryModel[] {
+    const selected = new Set<number>(this.form.get('managingTagIds')?.value ?? []);
+    const shown = this.managingTagSearch?.term ? this.managingTagSearch.items : this.availableTags;
+    return shown.filter(tag => !selected.has(tag.id));
+  }
+
+  selectAllManagingTags() {
+    const control = this.form.get('managingTagIds');
+    control.setValue([...(control.value ?? []), ...this.selectableManagingTags.map(tag => tag.id)]);
+    control.markAsDirty();
+    // Closing clears ng-select's search text, which setValue leaves behind.
+    this.managingTagSelect?.close();
   }
 
   hide(result: boolean | number = false) {

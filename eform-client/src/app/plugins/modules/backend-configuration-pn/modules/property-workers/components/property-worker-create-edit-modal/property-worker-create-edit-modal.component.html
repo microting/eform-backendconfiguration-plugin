@@ -435,12 +435,27 @@
                   <mat-form-field class="p-1 w-100">
                     <mat-label>{{ 'Managing tags' | translate }}</mat-label>
                     <mtx-select
+                      #managingTagSelect
                       [items]="availableTags"
                       bindLabel="name"
                       bindValue="id"
                       [multiple]="true"
+                      [hideSelected]="true"
+                      [closeOnSelect]="false"
                       [placeholder]="'Select tags' | translate"
+                      (search)="managingTagSearch = $event"
+                      (close)="managingTagSearch = null"
                       formControlName="managingTagIds">
+                      <ng-template ng-header-tmp>
+                        <button
+                          *ngIf="selectableManagingTags.length"
+                          mat-button
+                          type="button"
+                          id="managingTagsSelectAll"
+                          (click)="selectAllManagingTags()">
+                          {{ 'Select all' | translate }} ({{ selectableManagingTags.length }})
+                        </button>
+                      </ng-template>
                     </mtx-select>
                     <mat-hint>{{ 'Select tags that this manager is responsible for' | translate }}</mat-hint>
                   </mat-form-field>

@@ -213,6 +213,10 @@ export class BackendConfigurationPropertyWorkersPage {
             for (const tag of propertyWorker.managingTags) {
               await selectValueInNgSelector(this.page, 'mtx-select[formControlName="managingTagIds"]', tag);
             }
+            // The managing-tags list stays open after a pick; close it with an outside
+            // click (Escape would close the whole dialog).
+            await this.page.locator('mat-dialog-container [mat-dialog-title]').click();
+            await expect(this.page.locator('ng-dropdown-panel')).toHaveCount(0, { timeout: UI_TIMEOUT });
           }
         }
       }
