@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import * as fs from 'fs';
 import LoginConstants from '../../../Constants/LoginConstants';
 import { generateRandmString } from '../../../helper-functions';
 import { LoginPage } from '../../../Page objects/Login.page';
@@ -83,5 +84,56 @@ test.describe.serial('Tail biting web admin', () => {
     await expect(row.locator('mat-slide-toggle button[role="switch"]')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
     await tailBite.screenshot('managers-dialog');
     await page.locator('#tailBiteManagersCloseBtn').click();
+  });
+
+  test('locations: build the tree, a pen range and a pig count, rename, delete and print QR labels', async ({ page }) => {
+    test.setTimeout(300000);
+    const tailBite = new TailBitePage(page);
+    await tailBite.goto('locations', property.name);
+    // Enabling created the root, named after the property.
+    await expect(tailBite.locationRow(property.name)).toHaveCount(1, { timeout: API_TIMEOUT });
+
+    await tailBite.selectLocation(property.name);
+    await page.locator('#tailBiteAddChildBtn').click();
+    await tailBite.expectApi('POST', /^\/locations$/, () => tailBite.answerTextDialog('Stald A'));
+    await tailBite.selectLocation('Stald A');
+    await page.locator('#tailBiteAddChildBtn').click();
+    await tailBite.expectApi('POST', /^\/locations$/, () => tailBite.answerTextDialog('Sektion 4'));
+
+    await tailBite.selectLocation('Sektion 4');
+    await page.locator('#tailBitePenPrefix').fill('Sti');
+    await page.locator('#tailBitePenFrom').fill('301');
+    await page.locator('#tailBitePenTo').fill('312');
+    await expect(page.locator('#tailBitePenSummary')).toContainText('12');
+    await tailBite.expectApi('POST', /^\/locations\/range$/, () => page.locator('#tailBiteCreatePensBtn').click());
+    await expect(tailBite.locationRow('Sti 301')).toHaveCount(1, { timeout: API_TIMEOUT });
+    await expect(tailBite.locationRow('Sti 312')).toHaveCount(1);
+
+    await tailBite.selectLocation('Sektion 4');
+    await page.locator('#tailBitePigCount').fill('360');
+    await tailBite.expectApi('PUT', /^\/locations\/\d+\/occupancy$/, () => page.locator('#tailBiteSavePigsBtn').click());
+    await expect(tailBite.locationRow('Sektion 4').locator('td.mat-column-pigs')).toContainText('360', { timeout: API_TIMEOUT });
+    // Stald A has no count of its own: it shows the sum below it.
+    await expect(tailBite.locationRow('Stald A').locator('td.mat-column-pigs')).toContainText('360');
+
+    await tailBite.selectLocation('Sti 312');
+    await page.locator('#tailBiteRenameBtn').click();
+    await tailBite.expectApi('PUT', /^\/locations\/\d+$/, () => tailBite.answerTextDialog('Sti 312A'));
+    await expect(tailBite.locationRow('Sti 312A')).toHaveCount(1, { timeout: API_TIMEOUT });
+    await tailBite.selectLocation('Sti 312A');
+    await page.locator('#tailBiteDeleteBtn').click();
+    await tailBite.expectApi('DELETE', /^\/locations\/\d+$/, () => tailBite.confirm('tailBiteDeleteLocationConfirm'));
+    await expect(tailBite.locationRow('Sti 312A')).toHaveCount(0, { timeout: API_TIMEOUT });
+
+    for (const pen of ['Sti 301', 'Sti 302', 'Sti 303']) {
+      await tailBite.locationRow(pen).locator('mat-checkbox input[type="checkbox"]').check();
+    }
+    await tailBite.screenshot('locations');
+    const download = page.waitForEvent('download', { timeout: API_TIMEOUT });
+    await page.locator('#tailBitePrintQrBtn').click();
+    const pdf = await download;
+    expect(pdf.suggestedFilename()).toMatch(/^halebid-qr-\d{4}-\d{2}-\d{2}\.pdf$/);
+    const bytes = fs.readFileSync(await pdf.path());
+    expect(bytes.subarray(0, 5).toString('latin1')).toBe('%PDF-');
   });
 });
