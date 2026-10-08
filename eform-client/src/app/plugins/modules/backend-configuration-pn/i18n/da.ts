@@ -903,4 +903,10 @@ export const da = {
   '{{pigs}} bitten pigs within {{days}} days': '{{pigs}} bidte grise inden for {{days}} dage',
   '{{severe}} severe within {{days}} days': '{{severe}} alvorlige inden for {{days}} dage',
   'counted per level {{depth}}': 'talt pr. niveau {{depth}}',
+  'Tail biting': 'Halebid',
+  'Outbreaks': 'Udbrud',
+  'Locations and QR': 'Lokationer og QR',
+  'Outbreak rules': 'Udbrudsregler',
+  'Action types': 'Handlingstyper',
+  'No property has tail biting enabled. Enable it from Property workers, Tail-bite managers.': 'Ingen ejendom har halebid slået til. Slå det til under Medarbejdere, Halebid-ansvarlige.',
 };

@@ -827,4 +827,10 @@ export const ukUA = {
   '{{pigs}} bitten pigs within {{days}} days': '{{pigs}} bitten pigs within {{days}} days',
   '{{severe}} severe within {{days}} days': '{{severe}} severe within {{days}} days',
   'counted per level {{depth}}': 'counted per level {{depth}}',
+  'Tail biting': 'Tail biting',
+  'Outbreaks': 'Outbreaks',
+  'Locations and QR': 'Locations and QR',
+  'Outbreak rules': 'Outbreak rules',
+  'Action types': 'Action types',
+  'No property has tail biting enabled. Enable it from Property workers, Tail-bite managers.': 'No property has tail biting enabled. Enable it from Property workers, Tail-bite managers.',
 };

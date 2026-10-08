@@ -162,4 +162,20 @@ describe('BackendConfigurationPnRouting', () => {
       'backend_configuration_plugin_access'
     );
   });
+
+  describe('tail-bite route', () => {
+    // Halebid web admin (spec 2026-10-04-halebid-app-design, sub-project 3). Open to every logged-in plugin user;
+    // every tail-bite endpoint checks worker/manager access per property server-side (spec §7.1).
+    it('is a lazy direct child of the plugin root route', () => {
+      const rootRoute = findRoute(routes, '');
+      const route = (rootRoute.children ?? []).filter((r) => r.path === 'tail-bite');
+
+      expect(route.length).toBe(1);
+      expect(route[0].loadChildren).toBeDefined();
+    });
+
+    it('is guarded by AuthGuard only', () => {
+      expect(findRoute(routes, 'tail-bite').canActivate).toEqual([AuthGuard]);
+    });
+  });
 });

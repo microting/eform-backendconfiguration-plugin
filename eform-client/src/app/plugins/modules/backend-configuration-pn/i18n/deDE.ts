@@ -928,4 +928,10 @@ export const deDE = {
   '{{pigs}} bitten pigs within {{days}} days': '{{pigs}} gebissene Schweine innerhalb von {{days}} Tagen',
   '{{severe}} severe within {{days}} days': '{{severe}} schwere innerhalb von {{days}} Tagen',
   'counted per level {{depth}}': 'gezählt pro Ebene {{depth}}',
+  'Tail biting': 'Schwanzbeißen',
+  'Outbreaks': 'Ausbrüche',
+  'Locations and QR': 'Standorte und QR',
+  'Outbreak rules': 'Ausbruchsregeln',
+  'Action types': 'Maßnahmenarten',
+  'No property has tail biting enabled. Enable it from Property workers, Tail-bite managers.': 'Für keine Immobilie ist Schwanzbeißen aktiviert. Aktivieren Sie es unter Mitarbeiter, Schwanzbeiß-Verantwortliche.',
 };

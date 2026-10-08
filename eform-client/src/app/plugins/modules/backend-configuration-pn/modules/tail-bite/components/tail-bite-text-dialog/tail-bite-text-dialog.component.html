@@ -1,0 +1,18 @@
+<h3 mat-dialog-title>{{ data.title }}</h3>
+<div mat-dialog-content>
+  <mat-form-field style="width: 100%">
+    <mat-label>{{ data.label | translate }}</mat-label>
+    <input
+      matInput
+      id="tailBiteTextDialogInput"
+      [(ngModel)]="text"
+      [attr.maxlength]="data.maxLength ?? 240"
+      (keyup.enter)="save()"
+      cdkFocusInitial
+    />
+  </mat-form-field>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button id="tailBiteTextDialogCancel" class="btn-cancel" (click)="cancel()">{{ 'Cancel' | translate }}</button>
+  <button id="tailBiteTextDialogSave" class="btn-primary" [disabled]="!valid" (click)="save()">{{ 'Save' | translate }}</button>
+</div>
