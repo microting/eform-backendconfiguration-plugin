@@ -30,6 +30,15 @@ import validator from 'validator';
 import {AssignedSiteModel, GlobalAutoBreakSettingsModel, PayRuleSetSimpleModel} from 'src/app/plugins/modules/time-planning-pn/models';
 import {PayRuleSetsViewModalComponent} from 'src/app/plugins/modules/time-planning-pn/modules/pay-rule-sets/components/pay-rule-sets-view-modal/pay-rule-sets-view-modal.component';
 
+// Invisible formatting and control characters (U+200E left-to-right mark,
+// zero-width spaces, byte-order marks, ...) that copy-paste brings along. In an
+// e-mail they break the login, which uses the address as its user name.
+const INVISIBLE_CHARACTERS = /[\p{Cf}\p{Cc}]/gu;
+
+export function cleanWorkerEmail(email: string | null | undefined): string {
+  return (email ?? '').replace(INVISIBLE_CHARACTERS, '').trim();
+}
+
 @AutoUnsubscribe()
 @Component({
     selector: 'app-property-worker-create-edit-modal',
@@ -173,7 +182,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     this.form = this.fb.group({
       userFirstName: [this.selectedDeviceUser.userFirstName || '', Validators.required],
       userLastName: [this.selectedDeviceUser.userLastName || '', Validators.required],
-      workerEmail: [this.selectedDeviceUser.workerEmail || '', [
+      workerEmail: [cleanWorkerEmail(this.selectedDeviceUser.workerEmail), [
         Validators.required,
         (control) => validator.isEmail(control.value) ? null : {invalidEmail: true}
       ]],
@@ -331,6 +340,16 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
 
     this.form.valueChanges.subscribe(formValue => {
       Object.assign(this.selectedDeviceUser, formValue);
+    });
+
+    // Strip invisible characters as soon as they are typed or pasted, so the field
+    // shows, validates and saves exactly the visible address.
+    const workerEmailControl = this.form.get('workerEmail');
+    workerEmailControl?.valueChanges.subscribe(email => {
+      const cleaned = cleanWorkerEmail(email);
+      if (cleaned !== (email ?? '')) {
+        workerEmailControl.setValue(cleaned);
+      }
     });
 
     this.form.get('enableMobileAccess')?.valueChanges.pipe(debounceTime(50)).subscribe(enabled => {

@@ -215,6 +215,18 @@ public class SecurityGroupBackfillService(
             }
 
             lastWorkerId = workers[^1].Id;
+            // Taken before the cleaning below drops rows: only a short FETCHED page
+            // means there are no more workers.
+            var isLastPage = workers.Count < BatchSize;
+
+            // A login uses the visible address only: Identity refuses a user name with
+            // invisible characters (e.g. U+200E from copy-paste), so such a worker would
+            // otherwise be retried and refused on every sweep. Cleaned after the keyset
+            // position is taken, so an address that cleans to nothing cannot end the loop early.
+            workers = workers
+                .Select(x => x with { Email = WorkerEmailSanitizer.Clean(x.Email) })
+                .Where(x => !string.IsNullOrEmpty(x.Email))
+                .ToList();
 
             // One round trip per batch to find which of these emails already have an
             // account, instead of pulling every worker email and every user email
@@ -279,7 +291,7 @@ public class SecurityGroupBackfillService(
                 created++;
             }
 
-            if (workers.Count < BatchSize)
+            if (isLastPage)
             {
                 break;
             }

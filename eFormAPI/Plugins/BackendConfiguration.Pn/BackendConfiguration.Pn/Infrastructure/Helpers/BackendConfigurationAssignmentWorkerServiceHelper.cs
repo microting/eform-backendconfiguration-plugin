@@ -764,6 +764,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
         {
             deviceUserModel.UserFirstName = deviceUserModel.UserFirstName.Trim();
             deviceUserModel.UserLastName = deviceUserModel.UserLastName.Trim();
+            deviceUserModel.WorkerEmail = WorkerEmailSanitizer.Clean(deviceUserModel.WorkerEmail);
             try
             {
                 if (deviceUserModel.SiteMicrotingUid == 0)
@@ -826,6 +827,15 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         // never happen ahead of the checks below finding a reason to
                         // refuse the whole save either way.
                         var user = await FindLoginWithoutSideEffectsAsync(userManager, oldEmail).ConfigureAwait(false);
+                        // A worker stored before the e-mail cleanup can still carry invisible
+                        // characters while its login (created by hand, or by an earlier save)
+                        // uses the visible address. Look that login up too, so the save links
+                        // to it instead of refusing the clean address as already in use.
+                        var cleanOldEmail = WorkerEmailSanitizer.Clean(oldEmail);
+                        if (user == null && !string.Equals(cleanOldEmail, oldEmail, StringComparison.Ordinal))
+                        {
+                            user = await FindLoginWithoutSideEffectsAsync(userManager, cleanOldEmail).ConfigureAwait(false);
+                        }
 
                         // `user` is nulled below whenever login work is skipped - for a
                         // login this plugin does not manage, and for one whose address is
@@ -1583,6 +1593,10 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             logger ??= NullLogger.Instance;
             var sdkDbContext = core.DbContextHelper.GetDbContext();
             string siteName = null;
+            if (deviceUserModel != null)
+            {
+                deviceUserModel.WorkerEmail = WorkerEmailSanitizer.Clean(deviceUserModel.WorkerEmail);
+            }
             // Null-safe so a missing request body reaches the try below and is reported as DeviceUserCouldNotBeCreated.
             var hasWorkerEmail = !string.IsNullOrEmpty(deviceUserModel?.WorkerEmail);
 
