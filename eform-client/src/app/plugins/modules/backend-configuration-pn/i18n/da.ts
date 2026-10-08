@@ -909,4 +909,10 @@ export const da = {
   'Outbreak rules': 'Udbrudsregler',
   'Action types': 'Handlingstyper',
   'No property has tail biting enabled. Enable it from Property workers, Tail-bite managers.': 'Ingen ejendom har halebid slået til. Slå det til under Medarbejdere, Halebid-ansvarlige.',
+  'Tail-bite managers': 'Halebid-ansvarlige',
+  'Tail-bite manager': 'Halebid-ansvarlig',
+  'Tail biting is not enabled for this property.': 'Halebid er ikke slået til for denne ejendom.',
+  'Enable tail biting': 'Slå halebid til',
+  'Managers handle outbreaks: they assess, act and close.': 'Ansvarlige håndterer udbrud: de vurderer, handler og lukker.',
+  'No workers on this property.': 'Ingen medarbejdere på denne ejendom.',
 };

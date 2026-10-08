@@ -833,4 +833,10 @@ export const ukUA = {
   'Outbreak rules': 'Outbreak rules',
   'Action types': 'Action types',
   'No property has tail biting enabled. Enable it from Property workers, Tail-bite managers.': 'No property has tail biting enabled. Enable it from Property workers, Tail-bite managers.',
+  'Tail-bite managers': 'Tail-bite managers',
+  'Tail-bite manager': 'Tail-bite manager',
+  'Tail biting is not enabled for this property.': 'Tail biting is not enabled for this property.',
+  'Enable tail biting': 'Enable tail biting',
+  'Managers handle outbreaks: they assess, act and close.': 'Managers handle outbreaks: they assess, act and close.',
+  'No workers on this property.': 'No workers on this property.',
 };

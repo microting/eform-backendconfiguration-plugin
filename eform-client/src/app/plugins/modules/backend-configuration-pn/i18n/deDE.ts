@@ -934,4 +934,10 @@ export const deDE = {
   'Outbreak rules': 'Ausbruchsregeln',
   'Action types': 'Maßnahmenarten',
   'No property has tail biting enabled. Enable it from Property workers, Tail-bite managers.': 'Für keine Immobilie ist Schwanzbeißen aktiviert. Aktivieren Sie es unter Mitarbeiter, Schwanzbeiß-Verantwortliche.',
+  'Tail-bite managers': 'Schwanzbeiß-Verantwortliche',
+  'Tail-bite manager': 'Schwanzbeiß-Verantwortlicher',
+  'Tail biting is not enabled for this property.': 'Schwanzbeißen ist für diese Immobilie nicht aktiviert.',
+  'Enable tail biting': 'Schwanzbeißen aktivieren',
+  'Managers handle outbreaks: they assess, act and close.': 'Verantwortliche bearbeiten Ausbrüche: Sie bewerten, handeln und schließen.',
+  'No workers on this property.': 'Keine Mitarbeiter auf dieser Immobilie.',
 };

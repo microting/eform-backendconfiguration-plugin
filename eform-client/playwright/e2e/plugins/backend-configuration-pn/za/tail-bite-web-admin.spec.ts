@@ -5,6 +5,8 @@ import { LoginPage } from '../../../Page objects/Login.page';
 import { BackendConfigurationPropertiesPage, PropertyCreateUpdate } from '../BackendConfigurationProperties.page';
 import { BackendConfigurationPropertyWorkersPage, PropertyWorker } from '../BackendConfigurationPropertyWorkers.page';
 import { customerDatabase, runMariadbSql } from '../db-helpers';
+import { API_TIMEOUT, UI_TIMEOUT } from '../wait-helpers';
+import { TailBitePage } from './tail-bite.page';
 
 /**
  * Tail biting (halebid) web admin, sub-project 3 of spec 2026-10-04-halebid-app-design.
@@ -63,5 +65,23 @@ test.describe.serial('Tail biting web admin', () => {
       'count workers with the admin email', sdk);
     // More than one would make every tail-bite call refuse the caller as ambiguous (spec §7.1).
     expect(count.trim()).toBe('1');
+  });
+
+  test('managers: enable tail biting on the property and make the worker a manager', async ({ page }) => {
+    test.setTimeout(300000);
+    const tailBite = new TailBitePage(page);
+    const workersPage = new BackendConfigurationPropertyWorkersPage(page);
+    await workersPage.goToPropertyWorkers();
+    await page.locator('#tailBiteManagersBtn').click();
+    await tailBite.pick('tailBiteManagersProperty', property.name);
+    await expect(page.locator('#tailBiteNotEnabled')).toBeVisible({ timeout: UI_TIMEOUT });
+    await tailBite.expectApi('POST', /^\/properties\/\d+\/enable$/, () => page.locator('#tailBiteEnableBtn').click());
+
+    const row = page.locator('[id^="tailBiteManagerRow-"]').filter({ hasText: managerName });
+    await expect(row).toHaveCount(1, { timeout: API_TIMEOUT });
+    await tailBite.expectApi('PUT', /^\/property-workers\/\d+\/manager$/, () => row.locator('mat-slide-toggle button').click());
+    await expect(row.locator('mat-slide-toggle button[role="switch"]')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
+    await tailBite.screenshot('managers-dialog');
+    await page.locator('#tailBiteManagersCloseBtn').click();
   });
 });

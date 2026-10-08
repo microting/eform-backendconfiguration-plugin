@@ -5,3 +5,4 @@ export * from './property-worker-create-edit-modal/property-worker-create-edit-m
 export * from './property-worker-table/property-worker-table.component';
 export * from './property-worker-qr-modal/property-worker-qr-modal.component';
 export * from './property-worker-bulk-tags-modal/property-worker-bulk-tags-modal.component';
+export * from './tail-bite-managers-dialog/tail-bite-managers-dialog.component';
