@@ -60,7 +60,9 @@ test.describe.serial('Property-worker dialog: invisible characters in the e-mail
     await workersPage.goToPropertyWorkers();
 
     await workersPage.openCreateModal(worker);
-    const generalTab = page.locator('mat-dialog-container .mat-mdc-tab').first();
+    // Unique here: the Timeregistration tab, which has its own "Generelt" sub-tab, is
+    // only rendered when time registration is on, and this worker has it off.
+    const generalTab = page.locator('mat-dialog-container').getByRole('tab', { name: 'Generelt', exact: true });
     await generalTab.click({ timeout: UI_TIMEOUT });
     await expect(generalTab).toHaveAttribute('aria-selected', 'true', { timeout: UI_TIMEOUT });
     await workersPage.createEmailInput().fill(markedEmail, { timeout: UI_TIMEOUT });

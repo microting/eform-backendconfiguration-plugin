@@ -171,6 +171,38 @@ public class SecurityGroupBackfillServiceTest : TestBaseSetup
             "the sweep must go on past the invisible-only address");
     }
 
+    // The sweep reads workers in pages of 200 and stops at a short page. An address
+    // that cleans to nothing is dropped from its page after fetching; that must not
+    // make a full page look short and end the sweep before the workers after it.
+    [Test]
+    public async Task SecurityGroupBackfillService_InvisibleOnlyAddressInAFullPage_DoesNotEndTheSweep()
+    {
+        // Arrange — the invisible-only worker first, then more than a page of ordinary
+        // ones, so its page is full and later workers sit on the next page.
+        var core = await GetCore();
+        await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+        await SeedSdkWorkerAsync(sdkDbContext, "\u200E\u200B");
+        var emails = Enumerable.Range(0, 250).Select(_ => $"{Guid.NewGuid():N}@example.test").ToList();
+        await sdkDbContext.Workers.AddRangeAsync(emails.Select(email => new Worker
+        {
+            FirstName = $"backfill-{Guid.NewGuid():N}",
+            LastName = "Worker",
+            Email = email,
+            WorkflowState = Constants.WorkflowStates.Created
+        }));
+        await sdkDbContext.SaveChangesAsync();
+
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+        var sut = BuildSut(userManager, core);
+
+        // Act
+        await sut.RunIfNeededAsync();
+
+        // Assert
+        var withLogin = await BaseDbContext!.Users.CountAsync(x => emails.Contains(x.Email!));
+        Assert.That(withLogin, Is.EqualTo(emails.Count), "every ordinary worker, also on the later page, must get a login");
+    }
+
     // Pins the invariant the whole backfill exists for, not just the single
     // worker the test above covers: every state a worker can be in must be
     // swept correctly in ONE pass. Without this, a change that broke e.g. "removed
