@@ -70,9 +70,26 @@ async function tailBitePropertyId(page: Page): Promise<number> {
 }
 
 test.describe.serial('Tail biting web admin', () => {
+  // Browser errors are printed when a test fails, so a broken page shows its cause in the CI log.
+  let browserErrors: string[] = [];
+
   test.beforeEach(async ({ page }) => {
+    browserErrors = [];
+    page.on('pageerror', (error) => browserErrors.push(`pageerror: ${error.message}`));
+    page.on('console', (message) => {
+      if (message.type() === 'error') {
+        browserErrors.push(`console: ${message.text()}`);
+      }
+    });
     await page.goto(BASE_URL);
     await new LoginPage(page).login();
+  });
+
+  test.afterEach(async ({}, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus && browserErrors.length > 0) {
+      console.log(`Browser errors in "${testInfo.title}":\n${browserErrors.join('\n')}`);
+      await testInfo.attach('browser-errors', { body: browserErrors.join('\n'), contentType: 'text/plain' });
+    }
   });
 
   test('seed: property, a worker on it, and the admin login mapped to that worker', async ({ page }) => {
