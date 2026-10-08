@@ -1,6 +1,6 @@
 import {Overlay} from '@angular/cdk/overlay';
 import {MatDialog} from '@angular/material/dialog';
-import {Observable, exhaustMap, filter, map, take, takeUntil, tap} from 'rxjs';
+import {EMPTY, Observable, catchError, exhaustMap, filter, map, take, takeUntil, tap} from 'rxjs';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {DeleteModalSettingModel, OperationResult} from 'src/app/common/models';
 import {DeleteModalComponent} from 'src/app/common/modules/eform-shared/components';
@@ -18,7 +18,8 @@ export interface TailBiteConfirm {
 /**
  * Asks with the platform's DeleteModalComponent and runs `action` on confirm. Emits once, after the action
  * succeeded and the dialog closed; completes without emitting when the user cancels. A refused action leaves
- * the dialog open (the toast shows the server's message) so the user can cancel or retry.
+ * the dialog open (the toast shows the server's message) so the user can cancel or retry; so does a failed
+ * request, whose error is absorbed here so the confirm button keeps working.
  */
 export function openConfirm(dialog: MatDialog, overlay: Overlay, c: TailBiteConfirm,
   action: () => Observable<OperationResult>): Observable<void> {
@@ -35,7 +36,7 @@ export function openConfirm(dialog: MatDialog, overlay: Overlay, c: TailBiteConf
   const ref = dialog.open(DeleteModalComponent, dialogConfigHelper(overlay, settings));
   return ref.componentInstance.delete.pipe(
     takeUntil(ref.afterClosed()),
-    exhaustMap(() => action()),
+    exhaustMap(() => action().pipe(catchError(() => EMPTY))),
     filter((res) => !!res?.success),
     take(1),
     tap(() => ref.close()),

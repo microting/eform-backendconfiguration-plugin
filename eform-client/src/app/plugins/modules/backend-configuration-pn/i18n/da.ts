@@ -966,4 +966,8 @@ export const da = {
   'The number of days must be a whole number from 1 to 90.': 'Antal dage skal være et helt tal fra 1 til 90.',
   'Could not calculate the preview': 'Forhåndsvisningen kunne ikke beregnes',
   'Choose a location.': 'Vælg en lokation.',
+  'The actions workers can tick when they register bites.': 'De handlinger, medarbejderne kan sætte flueben ved, når de registrerer bid.',
+  'New action type': 'Ny handlingstype',
+  'Rename action type': 'Omdøb handlingstype',
+  'Delete action type': 'Slet handlingstype',
 };

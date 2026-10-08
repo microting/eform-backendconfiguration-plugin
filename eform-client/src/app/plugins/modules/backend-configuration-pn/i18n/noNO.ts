@@ -890,4 +890,8 @@ export const noNO = {
   'The number of days must be a whole number from 1 to 90.': 'The number of days must be a whole number from 1 to 90.',
   'Could not calculate the preview': 'Could not calculate the preview',
   'Choose a location.': 'Choose a location.',
+  'The actions workers can tick when they register bites.': 'The actions workers can tick when they register bites.',
+  'New action type': 'New action type',
+  'Rename action type': 'Rename action type',
+  'Delete action type': 'Delete action type',
 };

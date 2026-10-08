@@ -157,4 +157,27 @@ test.describe.serial('Tail biting web admin', () => {
     await expect(page.locator('#tailBiteRuleHistory [id^="tailBiteRuleVersion-"]')).toHaveCount(2, { timeout: API_TIMEOUT });
     await tailBite.screenshot('rules');
   });
+
+  test('action types: add, rename and delete', async ({ page }) => {
+    test.setTimeout(300000);
+    const tailBite = new TailBitePage(page);
+    await tailBite.goto('action-types', property.name);
+    const rows = page.locator('[id^="tailBiteActionTypeRow-"]');
+    // Enabling seeded the default list (TailBiteDefaults.ActionTypes).
+    await expect(rows).toHaveCount(7, { timeout: API_TIMEOUT });
+
+    await page.locator('#tailBiteNewActionTypeName').fill('Ekstra rodemateriale');
+    await tailBite.expectApi('POST', /^\/properties\/\d+\/action-types$/, () => page.locator('#tailBiteAddActionTypeBtn').click());
+    await expect(rows).toHaveCount(8, { timeout: API_TIMEOUT });
+
+    const added = rows.filter({ hasText: 'Ekstra rodemateriale' });
+    await added.locator('[id^="tailBiteActionTypeRename-"]').click();
+    await tailBite.expectApi('PUT', /^\/action-types\/\d+$/, () => tailBite.answerTextDialog('Ekstra halm og reb'));
+    const renamed = rows.filter({ hasText: 'Ekstra halm og reb' });
+    await expect(renamed).toHaveCount(1, { timeout: API_TIMEOUT });
+
+    await renamed.locator('[id^="tailBiteActionTypeDelete-"]').click();
+    await tailBite.expectApi('DELETE', /^\/action-types\/\d+$/, () => tailBite.confirm('tailBiteActionTypeDeleteConfirm'));
+    await expect(rows).toHaveCount(7, { timeout: API_TIMEOUT });
+  });
 });

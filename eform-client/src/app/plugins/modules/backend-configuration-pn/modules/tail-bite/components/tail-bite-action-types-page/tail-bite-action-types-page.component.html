@@ -1,0 +1,25 @@
+<mat-card class="p-3 w-100" style="max-width: 720px">
+  <h3 class="m-0">{{ 'Action types' | translate }}</h3>
+  <p class="mt-2">{{ 'The actions workers can tick when they register bites.' | translate }}</p>
+  <div *ngFor="let a of actionTypes" class="d-flex flex-row align-items-center justify-content-between py-2"
+       [id]="'tailBiteActionTypeRow-' + a.id">
+    <span>{{ a.name }}</span>
+    <span>
+      <button mat-icon-button [id]="'tailBiteActionTypeRename-' + a.id" [disabled]="busy" [matTooltip]="'Rename' | translate" (click)="rename(a)">
+        <mat-icon>edit</mat-icon>
+      </button>
+      <button mat-icon-button [id]="'tailBiteActionTypeDelete-' + a.id" [disabled]="busy" [matTooltip]="'Delete' | translate" (click)="remove(a)">
+        <mat-icon>delete</mat-icon>
+      </button>
+    </span>
+  </div>
+  <div class="d-flex flex-row flex-wrap align-items-center gap-12 mt-3">
+    <mat-form-field style="flex: 1 1 240px">
+      <mat-label>{{ 'New action type' | translate }}</mat-label>
+      <input matInput id="tailBiteNewActionTypeName" maxlength="240" [(ngModel)]="newName" (keyup.enter)="add()" />
+    </mat-form-field>
+    <button id="tailBiteAddActionTypeBtn" class="btn-primary" [disabled]="busy || !newName.trim()" (click)="add()">
+      {{ 'Add' | translate }}
+    </button>
+  </div>
+</mat-card>

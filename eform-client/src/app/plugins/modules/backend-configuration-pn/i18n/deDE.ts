@@ -991,4 +991,8 @@ export const deDE = {
   'The number of days must be a whole number from 1 to 90.': 'Die Anzahl der Tage muss eine ganze Zahl von 1 bis 90 sein.',
   'Could not calculate the preview': 'Die Vorschau konnte nicht berechnet werden',
   'Choose a location.': 'Wählen Sie einen Standort.',
+  'The actions workers can tick when they register bites.': 'Die Maßnahmen, die Mitarbeiter bei der Registrierung von Bissen ankreuzen können.',
+  'New action type': 'Neue Maßnahmenart',
+  'Rename action type': 'Maßnahmenart umbenennen',
+  'Delete action type': 'Maßnahmenart löschen',
 };

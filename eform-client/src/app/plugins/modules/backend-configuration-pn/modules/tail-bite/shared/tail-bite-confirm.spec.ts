@@ -1,7 +1,7 @@
 import {EventEmitter} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
-import {Subject, of} from 'rxjs';
+import {Subject, of, throwError} from 'rxjs';
 import {DeleteModalComponent} from 'src/app/common/modules/eform-shared/components';
 import {openConfirm} from './tail-bite-confirm';
 
@@ -47,6 +47,21 @@ describe('openConfirm', () => {
     expect(ref.close).not.toHaveBeenCalled();
     deleteClicks.emit({});
     expect(done).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the dialog working after a failed request, so the user can retry', () => {
+    const action = jest.fn()
+      .mockReturnValueOnce(throwError(() => new Error('down')))
+      .mockReturnValueOnce(of({success: true}));
+    const done = jest.fn();
+    const failed = jest.fn();
+    openConfirm(dialog as unknown as MatDialog, overlay, confirm, action).subscribe({next: done, error: failed});
+    deleteClicks.emit({});
+    expect(ref.close).not.toHaveBeenCalled();
+    deleteClicks.emit({});
+    expect(action).toHaveBeenCalledTimes(2);
+    expect(done).toHaveBeenCalledTimes(1);
+    expect(failed).not.toHaveBeenCalled();
   });
 
   it('does nothing when cancelled', () => {
