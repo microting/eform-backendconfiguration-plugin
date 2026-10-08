@@ -921,4 +921,11 @@ export const deDE = {
   'Suggestions and filing': 'Vorschläge und Ablage',
   'New documents automatically get suggestions for property and tags. Microting may check the suggestions before the document reaches your Inbox. A person always decides what is filed, and filed documents stay in the archive like any other uploaded PDF.': 'Neue Dokumente erhalten automatisch Vorschläge für Immobilie und Tags. Microting kann die Vorschläge prüfen, bevor das Dokument Ihren Posteingang erreicht. Eine Person entscheidet immer, was abgelegt wird, und abgelegte Dokumente bleiben wie jede andere hochgeladene PDF im Archiv.',
   Saved: 'Gespeichert',
+  'Needs assessment': 'Bewertung fehlt',
+  'Follow-up': 'Nachverfolgung',
+  'Ready to close': 'Bereit zum Schließen',
+  '{{pigs}} bitten pigs or {{severe}} severe within {{days}} days': '{{pigs}} gebissene Schweine oder {{severe}} schwere innerhalb von {{days}} Tagen',
+  '{{pigs}} bitten pigs within {{days}} days': '{{pigs}} gebissene Schweine innerhalb von {{days}} Tagen',
+  '{{severe}} severe within {{days}} days': '{{severe}} schwere innerhalb von {{days}} Tagen',
+  'counted per level {{depth}}': 'gezählt pro Ebene {{depth}}',
 };

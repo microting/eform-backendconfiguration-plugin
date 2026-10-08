@@ -820,4 +820,11 @@ export const svSE = {
   'Show QR Code': 'Visa QR-kod',
   Required: 'Obligatoriskt',
   'Invalid email address': 'Ogiltig e-postadress',
+  'Needs assessment': 'Needs assessment',
+  'Follow-up': 'Follow-up',
+  'Ready to close': 'Ready to close',
+  '{{pigs}} bitten pigs or {{severe}} severe within {{days}} days': '{{pigs}} bitten pigs or {{severe}} severe within {{days}} days',
+  '{{pigs}} bitten pigs within {{days}} days': '{{pigs}} bitten pigs within {{days}} days',
+  '{{severe}} severe within {{days}} days': '{{severe}} severe within {{days}} days',
+  'counted per level {{depth}}': 'counted per level {{depth}}',
 };

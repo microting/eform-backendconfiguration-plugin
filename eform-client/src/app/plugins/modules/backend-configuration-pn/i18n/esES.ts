@@ -820,4 +820,11 @@ export const esES = {
   'Show QR Code': 'Mostrar código QR',
   Required: 'Obligatorio',
   'Invalid email address': 'Dirección de correo electrónico no válida',
+  'Needs assessment': 'Needs assessment',
+  'Follow-up': 'Follow-up',
+  'Ready to close': 'Ready to close',
+  '{{pigs}} bitten pigs or {{severe}} severe within {{days}} days': '{{pigs}} bitten pigs or {{severe}} severe within {{days}} days',
+  '{{pigs}} bitten pigs within {{days}} days': '{{pigs}} bitten pigs within {{days}} days',
+  '{{severe}} severe within {{days}} days': '{{severe}} severe within {{days}} days',
+  'counted per level {{depth}}': 'counted per level {{depth}}',
 };

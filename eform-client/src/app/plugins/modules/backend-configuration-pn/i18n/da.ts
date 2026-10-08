@@ -896,4 +896,11 @@ export const da = {
   'Suggestions and filing': 'Forslag og arkivering',
   'New documents automatically get suggestions for property and tags. Microting may check the suggestions before the document reaches your Inbox. A person always decides what is filed, and filed documents stay in the archive like any other uploaded PDF.': 'Nye dokumenter får automatisk forslag til ejendom og tags. Microting kan kontrollere forslagene, før dokumentet kommer i Indbakken. En person bestemmer altid, hvad der arkiveres, og arkiverede dokumenter ligger i arkivet som enhver anden uploadet PDF.',
   Saved: 'Gemt',
+  'Needs assessment': 'Mangler vurdering',
+  'Follow-up': 'Opfølgning',
+  'Ready to close': 'Klar til lukning',
+  '{{pigs}} bitten pigs or {{severe}} severe within {{days}} days': '{{pigs}} bidte grise eller {{severe}} alvorlige inden for {{days}} dage',
+  '{{pigs}} bitten pigs within {{days}} days': '{{pigs}} bidte grise inden for {{days}} dage',
+  '{{severe}} severe within {{days}} days': '{{severe}} alvorlige inden for {{days}} dage',
+  'counted per level {{depth}}': 'talt pr. niveau {{depth}}',
 };

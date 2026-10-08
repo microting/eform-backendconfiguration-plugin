@@ -996,4 +996,11 @@ export const enUS= {
   'Suggestions and filing': 'Suggestions and filing',
   'New documents automatically get suggestions for property and tags. Microting may check the suggestions before the document reaches your Inbox. A person always decides what is filed, and filed documents stay in the archive like any other uploaded PDF.': 'New documents automatically get suggestions for property and tags. Microting may check the suggestions before the document reaches your Inbox. A person always decides what is filed, and filed documents stay in the archive like any other uploaded PDF.',
   Saved: 'Saved',
+  'Needs assessment': 'Needs assessment',
+  'Follow-up': 'Follow-up',
+  'Ready to close': 'Ready to close',
+  '{{pigs}} bitten pigs or {{severe}} severe within {{days}} days': '{{pigs}} bitten pigs or {{severe}} severe within {{days}} days',
+  '{{pigs}} bitten pigs within {{days}} days': '{{pigs}} bitten pigs within {{days}} days',
+  '{{severe}} severe within {{days}} days': '{{severe}} severe within {{days}} days',
+  'counted per level {{depth}}': 'counted per level {{depth}}',
 };

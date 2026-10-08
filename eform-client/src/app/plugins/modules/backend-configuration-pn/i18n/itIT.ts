@@ -820,4 +820,11 @@ export const itIT = {
   'Show QR Code': 'Mostra codice QR',
   Required: 'Obbligatorio',
   'Invalid email address': 'Indirizzo e-mail non valido',
+  'Needs assessment': 'Needs assessment',
+  'Follow-up': 'Follow-up',
+  'Ready to close': 'Ready to close',
+  '{{pigs}} bitten pigs or {{severe}} severe within {{days}} days': '{{pigs}} bitten pigs or {{severe}} severe within {{days}} days',
+  '{{pigs}} bitten pigs within {{days}} days': '{{pigs}} bitten pigs within {{days}} days',
+  '{{severe}} severe within {{days}} days': '{{severe}} severe within {{days}} days',
+  'counted per level {{depth}}': 'counted per level {{depth}}',
 };
