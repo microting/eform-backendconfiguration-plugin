@@ -216,6 +216,26 @@ public class TailBiteWebQueryServiceTests : TailBiteTestBase
         Assert.That(result.Rows[0].CancelReason, Is.EqualTo("Registreret på forkert sti"));
     }
 
+    // The pig counts of the outbreak page and of the outbreak summary must agree: soft-removed rows and registrations count in neither.
+    [Test]
+    public async Task OutbreakRegistrations_SoftRemovedRegistrationAndRow_AreExcluded()
+    {
+        await SeedTreeAsync();
+        await SeedWorkerAsync(ManagerSite, manager: true);
+        var now = Clock.GetUtcNow().UtcDateTime;
+        var (kept, keptRows) = await SeedRegistrationAsync(now.AddHours(-1), false, (Pen310Id, 1, 0));
+        var (removedReg, removedRegRows) = await SeedRegistrationAsync(now.AddHours(-2), false, (Pen310Id, 2, 0));
+        var (rowGone, rowGoneRows) = await SeedRegistrationAsync(now.AddHours(-3), false, (Pen309Id, 4, 0), (Pen310Id, 8, 0));
+        var outbreak = await OutbreakWithLinksAsync(StableAId, keptRows[0], removedRegRows[0], rowGoneRows[0], rowGoneRows[1]);
+        await removedReg.Delete(Db);
+        var removedRow = await Db.TailBiteRegistrationLocations.SingleAsync(x => x.Id == rowGoneRows[0]);
+        await removedRow.Delete(Db);
+
+        var result = await Sut().OutbreakRegistrationsAsync(ManagerSite, outbreak.Id);
+
+        Assert.That(result.Rows.Select(r => (r.RegistrationId, r.Minor)), Is.EqualTo(new[] { (rowGone.Id, 8), (kept.Id, 1) }));
+    }
+
     [Test]
     public async Task OutbreakRegistrations_NeedsAManager_MissingAndForeignIdsRefusedAlike()
     {

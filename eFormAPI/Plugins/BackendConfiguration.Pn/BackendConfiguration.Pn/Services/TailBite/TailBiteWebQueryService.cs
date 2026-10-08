@@ -134,7 +134,7 @@ public class TailBiteWebQueryService(BackendConfigurationPnDbContext db, ITailBi
         var rows = await (from link in db.TailBiteOutbreakLinks.AsNoTracking()
                           join row in db.TailBiteRegistrationLocations on link.RegistrationLocationId equals row.Id
                           join reg in db.TailBiteRegistrations on row.RegistrationId equals reg.Id
-                          where link.OutbreakId == outbreakId && link.WorkflowState != Removed
+                          where link.OutbreakId == outbreakId && link.WorkflowState != Removed && row.WorkflowState != Removed && reg.WorkflowState != Removed
                           orderby reg.EffectiveAt, row.Id
                           select new { row, reg }).ToListAsync();
         var registrationIds = rows.Select(x => x.reg.Id).Distinct().ToList();

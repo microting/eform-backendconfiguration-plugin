@@ -254,4 +254,74 @@ test.describe.serial('Tail biting web admin', () => {
     await expect(page.locator(`#tailBiteOutbreakStatus-${outbreakId}`)).toHaveClass(/badge-error/);
     await tailBite.screenshot('outbreaks');
   });
+
+  test('outbreak: the registrations behind it, and cancelling one with a reason', async ({ page }) => {
+    test.setTimeout(300000);
+    const tailBite = new TailBitePage(page);
+    await tailBite.goto('outbreaks', property.name);
+    await page.locator(`#tailBiteOutbreakLink-${outbreakId}`).click();
+    await expect(page.locator('#tailBiteOutbreakTitle')).toHaveText('Stald A', { timeout: API_TIMEOUT });
+    await expect(page.locator('#tailBiteRegistrationsTable tr[id^="tailBiteRegRow-"]')).toHaveCount(2);
+    await expect(page.locator('#tailBiteOutbreakSummaryLine')).toContainText(/5 (bitten pigs|bidte grise)/);
+    await expect(page.locator('#tailBiteRegistrationsTable')).toContainText(managerName);
+
+    await page.locator(`#tailBiteCancelReg-${registrationIds[0]}`).click();
+    await tailBite.expectApi('PUT', /^\/registrations\/\d+\/cancel$/, () => tailBite.answerTextDialog('Registreret på forkert sti'));
+    await expect(page.locator(`#tailBiteRegCancelled-${registrationIds[0]}`)).toBeVisible({ timeout: API_TIMEOUT });
+    // The cancelled registration (2 minor) no longer counts: 3 bitten pigs remain.
+    await expect(page.locator('#tailBiteOutbreakSummaryLine')).toContainText(/3 (bitten pigs|bidte grise)/, { timeout: API_TIMEOUT });
+  });
+
+  test('outbreak: the risk assessment needs all six answers and an action for every yes', async ({ page }) => {
+    test.setTimeout(300000);
+    const tailBite = new TailBitePage(page);
+    // A link that names another property id is corrected to the outbreak's own property.
+    await page.goto(`${BASE_URL}/plugins/backend-configuration-pn/tail-bite/${seededPropertyId + 1000}/outbreaks/${outbreakId}`);
+    await expect(page.locator('#tailBiteOutbreakTitle')).toHaveText('Stald A', { timeout: API_TIMEOUT });
+    await expect(page).toHaveURL(new RegExp(`/tail-bite/${seededPropertyId}/outbreaks/${outbreakId}$`));
+
+    // Before the assessment the close button is disabled, and says why.
+    await expect(page.locator('#tailBiteCloseBtn')).toBeDisabled();
+    await expect(page.locator('#tailBiteCloseReason')).toBeVisible();
+
+    // Feed (factor 1) yes, the other five no.
+    await page.locator('#tailBiteFactor-1-yes').click();
+    for (const factor of [0, 2, 3, 4, 5]) {
+      await page.locator(`#tailBiteFactor-${factor}-no`).click();
+    }
+    let assessmentSent = false;
+    page.on('request', (r) => { if (r.method() === 'PUT' && r.url().includes('/assessment')) assessmentSent = true; });
+    await page.locator('#tailBiteSaveAssessmentBtn').click();
+    await expect(page.locator('#tailBiteAssessmentError-1')).toBeVisible({ timeout: UI_TIMEOUT });
+    expect(assessmentSent).toBe(false);
+
+    await page.locator('#tailBiteNewAction-1-0-description').fill('Kontrollér foderautomaten');
+    await tailBite.pick('tailBiteNewAction-1-0-responsible', managerName);
+    await page.locator('#tailBiteNewAction-1-0-dateToggle button').click();
+    await page.locator('.mat-calendar-body-today').click();
+    await tailBite.expectApi('PUT', /^\/outbreaks\/\d+\/assessment$/, () => page.locator('#tailBiteSaveAssessmentBtn').click());
+    await expect(page.locator('#tailBiteOutbreakDetailStatus')).toHaveClass(/badge-warning/, { timeout: API_TIMEOUT });
+    await expect(page.locator('#tailBiteCloseBtn')).toBeDisabled();
+    await tailBite.screenshot('outbreak-detail');
+  });
+
+  test('outbreak: marking the follow-up done allows closing; the closed outbreak leaves the open list', async ({ page }) => {
+    test.setTimeout(300000);
+    const tailBite = new TailBitePage(page);
+    await page.goto(`${BASE_URL}/plugins/backend-configuration-pn/tail-bite/${seededPropertyId}/outbreaks/${outbreakId}`);
+    const actionRow = page.locator('#tailBiteFollowUpsTable tr[id^="tailBiteActionRow-"]');
+    await expect(actionRow).toHaveCount(1, { timeout: API_TIMEOUT });
+
+    await tailBite.expectApi('PUT', /^\/actions\/\d+\/done$/, () => actionRow.locator('[id^="tailBiteActionDone-"]').click());
+    await expect(actionRow.locator('[id^="tailBiteActionState-"]')).toHaveClass(/badge-success/, { timeout: API_TIMEOUT });
+    await expect(page.locator('#tailBiteCloseBtn')).toBeEnabled();
+    await page.locator('#tailBiteCloseBtn').click();
+    await tailBite.expectApi('PUT', /^\/outbreaks\/\d+\/close$/, () => tailBite.confirm('tailBiteCloseConfirm'));
+    await expect(page.locator('#tailBiteOutbreakDetailStatus')).toHaveClass(/badge-success/, { timeout: API_TIMEOUT });
+
+    await page.locator('#tailBiteBackToOutbreaks').click();
+    await expect(page.locator(`#tailBiteOutbreakRow-${outbreakId}`)).toHaveCount(0, { timeout: API_TIMEOUT });
+    await page.locator('#tailBiteShowClosed button').click();
+    await expect(page.locator(`#tailBiteOutbreakStatus-${outbreakId}`)).toHaveClass(/badge-success/, { timeout: API_TIMEOUT });
+  });
 });
