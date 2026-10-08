@@ -103,7 +103,7 @@ async function cancelEditModal(workersPage: BackendConfigurationPropertyWorkersP
   await cancelBtn.waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
 }
 
-/** Saves the edit dialog and asserts the managing-tags PUT succeeded. */
+/** Saves the edit dialog, asserts the managing-tags PUT succeeded and waits for the list to reload. */
 async function saveEdit(page: Page, context: string): Promise<void> {
   const put = waitForApiResponse(
     page,
@@ -113,7 +113,17 @@ async function saveEdit(page: Page, context: string): Promise<void> {
       r.request().method() === 'PUT',
     SLOW_API_TIMEOUT
   );
-  ignoreUnhandledRejections(put);
+  // After a save the dialog closes and the worker list reloads; reopening a row
+  // before that reload lands would click a row that is about to be replaced.
+  const listRefresh = waitForApiResponse(
+    page,
+    `POST /api/backend-configuration-pn/properties/assignment/index-device-user (list refresh after ${context})`,
+    r =>
+      r.url().includes('/api/backend-configuration-pn/properties/assignment/index-device-user') &&
+      r.request().method() === 'POST',
+    SLOW_API_TIMEOUT
+  );
+  ignoreUnhandledRejections(put, listRefresh);
   const saveBtn = dialog(page).locator('#saveEditBtn');
   await expect(saveBtn).toBeEnabled({ timeout: UI_TIMEOUT });
   await saveBtn.click({ timeout: UI_TIMEOUT });
@@ -122,6 +132,7 @@ async function saveEdit(page: Page, context: string): Promise<void> {
   expect(response.status(), `${context}: assigned-site PUT status (${JSON.stringify(result)})`).toBe(200);
   expect(result?.success, `${context}: assigned-site PUT success (${result?.message ?? ''})`).toBe(true);
   await saveBtn.waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
+  await listRefresh;
 }
 
 test.describe.serial('Property-worker dialog: managing tags', () => {
