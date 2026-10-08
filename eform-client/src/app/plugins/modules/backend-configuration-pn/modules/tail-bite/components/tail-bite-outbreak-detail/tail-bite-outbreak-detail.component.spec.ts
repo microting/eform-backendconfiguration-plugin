@@ -34,7 +34,7 @@ describe('TailBiteOutbreakDetailComponent', () => {
   beforeEach(() => {
     service = {
       getOutbreak: jest.fn().mockReturnValue(detail()),
-      getOutbreakRegistrations: jest.fn().mockReturnValue(of({success: true, model: {propertyId: 3, rows: [regRow]}})),
+      getOutbreakRegistrations: jest.fn().mockReturnValue(of({success: true, model: {propertyId: 3, actionTypes: [], rows: [regRow]}})),
       getTree: jest.fn().mockReturnValue(of({success: true, model: tree})),
       getWorkers: jest.fn().mockReturnValue(of({success: true, model: [{siteId: 7, name: 'Jane Doe', isManager: true, propertyWorkerIds: [1]}]})),
       getOccupancy: jest.fn().mockReturnValue(of({success: true, model: []})),
@@ -118,6 +118,21 @@ describe('TailBiteOutbreakDetailComponent', () => {
       expect(component.view!.pigs).toBeNull();
     });
 
+    it('keeps the workers, pig counts and rule of the shown page when a refresh cannot load them', () => {
+      service.getOccupancy.mockReturnValue(of({success: true, model: [{locationId: 2, pigCount: 30, source: 0, validFrom: '2026-09-15T00:00:00Z'}]}));
+      service.getRuleHistory.mockReturnValue(of({success: true, model: [
+        {version: 1, locationId: 1, minBittenPigs: 5, minSevere: 1, windowDays: 7, countDepth: 1, changedAt: null}]}));
+      component.load();
+      expect(component.view!.pigs).toBe(30);
+      service.getWorkers.mockReturnValue(throwError(() => new Error('down')));
+      service.getOccupancy.mockReturnValue(of({success: false, message: 'no'}));
+      service.getRuleHistory.mockReturnValue(throwError(() => new Error('down')));
+      component.load();
+      expect(component.workers.map((w) => w.name)).toEqual(['Jane Doe']);
+      expect(component.view!.pigs).toBe(30);
+      expect(component.view!.rule!.version).toBe(1);
+    });
+
     it('keeps the page when a refresh is refused', () => {
       service.getOutbreak.mockReturnValue(of({success: false, message: 'Not found or no access.'}));
       component.load();
@@ -128,7 +143,7 @@ describe('TailBiteOutbreakDetailComponent', () => {
       service.getOutbreakRegistrations.mockReturnValue(throwError(() => new Error('down')));
       component.load();
       expect(component.view!.title).toBe('Stald A');
-      service.getOutbreakRegistrations.mockReturnValue(of({success: true, model: {propertyId: 3, rows: [regRow]}}));
+      service.getOutbreakRegistrations.mockReturnValue(of({success: true, model: {propertyId: 3, actionTypes: [], rows: [regRow]}}));
       service.getTree.mockReturnValue(of({success: false, message: 'no'}));
       component.load();
       expect(component.view!.title).toBe('Stald A');
@@ -241,44 +256,68 @@ describe('TailBiteOutbreakDetailComponent', () => {
   });
 
   describe('cancelling a registration', () => {
+    /** The next text dialog: `save(text)` presses Save with that text, `cancel()` closes it; `close` is the ref's close. */
+    const textDialog = () => {
+      const saved = new Subject<string>();
+      const closed = new Subject<void>();
+      const close = jest.fn(() => closed.next());
+      dialogOpen.mockReturnValueOnce({componentInstance: {saved}, close, afterClosed: () => closed});
+      return {save: (text: string) => saved.next(text), cancel: () => closed.next(), close};
+    };
+
     it('does nothing when the reason dialog is dismissed, and frees the page', () => {
-      dialogOpen.mockReturnValueOnce({afterClosed: () => of(undefined)});
+      const dialog = textDialog();
       component.cancelRegistration(component.view!.rows[0]);
+      dialog.cancel();
       expect(service.cancelRegistration).not.toHaveBeenCalled();
       expect(component.busy).toBe(false);
     });
 
     it('cancels with the reason from the text dialog, then reloads', () => {
-      dialogOpen.mockReturnValueOnce({afterClosed: () => of('Registreret på forkert sti')});
+      const dialog = textDialog();
       component.cancelRegistration(component.view!.rows[0]);
+      dialog.save('Registreret på forkert sti');
+      expect(dialog.close).toHaveBeenCalled();
       expect(service.cancelRegistration).toHaveBeenCalledWith(21, 'Registreret på forkert sti');
       expect(service.getOutbreak).toHaveBeenCalledTimes(2);
       expect(component.busy).toBe(false);
     });
 
-    it('reloads when the server refuses the cancel', () => {
+    it('reloads when the server refuses the cancel, and keeps the dialog open with the reason', () => {
       service.cancelRegistration.mockReturnValue(of({success: false, message: 'Registration not found.'}));
-      dialogOpen.mockReturnValueOnce({afterClosed: () => of('Fejl')});
+      const dialog = textDialog();
       component.cancelRegistration(component.view!.rows[0]);
+      dialog.save('Fejl');
       expect(service.getOutbreak).toHaveBeenCalledTimes(2);
+      expect(dialog.close).not.toHaveBeenCalled();
+      expect(component.busy).toBe(true);
+      dialog.cancel();
       expect(component.busy).toBe(false);
     });
 
-    it('reloads and frees the page when the cancel request fails', () => {
-      service.cancelRegistration.mockReturnValue(throwError(() => new Error('down')));
-      dialogOpen.mockReturnValueOnce({afterClosed: () => of('Fejl')});
+    it('reloads when the cancel request fails, and lets the user retry from the open dialog', () => {
+      service.cancelRegistration.mockReturnValueOnce(throwError(() => new Error('down')));
+      const dialog = textDialog();
       component.cancelRegistration(component.view!.rows[0]);
+      dialog.save('Fejl');
       expect(service.getOutbreak).toHaveBeenCalledTimes(2);
+      expect(dialog.close).not.toHaveBeenCalled();
+      dialog.save('Fejl');
+      expect(service.cancelRegistration).toHaveBeenCalledTimes(2);
+      expect(dialog.close).toHaveBeenCalled();
       expect(component.busy).toBe(false);
     });
 
     it('is single-flight: a second cancel while one is running is ignored', () => {
       const running = new Subject<unknown>();
       service.cancelRegistration.mockReturnValue(running);
-      dialogOpen.mockReturnValue({afterClosed: () => of('Fejl')});
+      const dialog = textDialog();
       component.cancelRegistration(component.view!.rows[0]);
+      dialog.save('Fejl');
       expect(component.busy).toBe(true);
       component.cancelRegistration(component.view!.rows[0]);
+      dialog.save('Fejl');
+      expect(dialogOpen).toHaveBeenCalledTimes(1);
       expect(service.cancelRegistration).toHaveBeenCalledTimes(1);
       running.next({success: true});
       running.complete();

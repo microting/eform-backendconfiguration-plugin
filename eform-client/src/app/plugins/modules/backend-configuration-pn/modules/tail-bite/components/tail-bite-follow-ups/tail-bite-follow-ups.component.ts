@@ -6,10 +6,11 @@ import {MatDialog} from '@angular/material/dialog';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {TranslateModule, TranslateService} from '@ngx-translate/core';
-import {Observable, finalize, switchMap} from 'rxjs';
+import {Observable, finalize} from 'rxjs';
 import {OperationResult} from 'src/app/common/models';
 import {TAIL_BITE_FACTORS, TailBiteFactor, TailBiteOutbreakAction, TailBiteOutbreakDetail, TailBiteWorker} from '../../../../models';
 import {BackendConfigurationPnTailBiteService} from '../../../../services';
+import {whenRefused} from '../../shared/tail-bite-confirm';
 import {dateOnlyToLocal, isOverdue, serverDay} from '../../shared/tail-bite-dates';
 import {memoize} from '../../shared/tail-bite-memo';
 import {askText} from '../tail-bite-text-dialog/tail-bite-text-dialog.component';
@@ -168,8 +169,12 @@ export class TailBiteFollowUpsComponent implements OnChanges {
     if (this.busy || !this.canChange(a)) {
       return;
     }
-    const reason$ = askText(this.dialog, this.overlay, {title: this.translate.instant('Withdraw'), label: 'Reason', maxLength: 1000});
-    this.run(reason$.pipe(switchMap((reason) => this.service.withdrawAction(a.id, reason))));
+    // A refusal refreshes the outbreak underneath and keeps the dialog open with the typed reason.
+    this.busy = true;
+    askText(this.dialog, this.overlay, {title: this.translate.instant('Withdraw'), label: 'Reason', maxLength: 1000},
+      (reason) => this.service.withdrawAction(a.id, reason).pipe(whenRefused(() => this.changed.emit())))
+      .pipe(finalize(() => (this.busy = false)))
+      .subscribe(() => this.changed.emit());
   }
 
   private run(call: Observable<OperationResult>, onRefused?: () => void): void {

@@ -97,7 +97,7 @@ describe('TailBiteRulesPageComponent', () => {
 
   it('creates a rule on a free location, never summing above it', () => {
     component.newRule();
-    expect(component.freeLocations.map((n) => n.name)).toEqual(['Sektion 4']);
+    expect(component.freeLocations.map((n) => n.path)).toEqual(['Stald A › Sektion 4']);
     component.chooseLocation(3);
     expect(component.draft!.countDepth).toBe(2);
     expect(component.levels.map((l) => l.depth)).toEqual([2]);

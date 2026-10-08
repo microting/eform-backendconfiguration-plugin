@@ -1,12 +1,12 @@
 import {NgFor, NgIf} from '@angular/common';
-import {Component, OnInit, inject} from '@angular/core';
+import {Component, OnDestroy, OnInit, inject} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {MAT_DIALOG_DATA, MatDialogModule, MatDialogRef} from '@angular/material/dialog';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatSlideToggleModule} from '@angular/material/slide-toggle';
 import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {TranslateModule} from '@ngx-translate/core';
-import {forkJoin} from 'rxjs';
+import {Subscription, forkJoin} from 'rxjs';
 import {finalize} from 'rxjs/operators';
 import {TailBitePropertyStatus, TailBiteWorker} from '../../../../models';
 import {BackendConfigurationPnTailBiteService} from '../../../../services';
@@ -26,7 +26,7 @@ export interface TailBiteManagersDialogData {
   templateUrl: './tail-bite-managers-dialog.component.html',
   imports: [NgFor, NgIf, FormsModule, MatDialogModule, MatFormFieldModule, MatSlideToggleModule, MtxSelectModule, TranslateModule],
 })
-export class TailBiteManagersDialogComponent implements OnInit {
+export class TailBiteManagersDialogComponent implements OnInit, OnDestroy {
   private service = inject(BackendConfigurationPnTailBiteService);
   private dialogRef = inject(MatDialogRef<TailBiteManagersDialogComponent>);
   public data = inject<TailBiteManagersDialogData>(MAT_DIALOG_DATA);
@@ -35,9 +35,17 @@ export class TailBiteManagersDialogComponent implements OnInit {
   propertyId: number | null = null;
   workers: TailBiteWorker[] = [];
   busy = false;
+  /** Bumped by every workers request; an answer carrying an older number (property 1 → 2 → 1) is dropped. */
+  private workersSeq = 0;
+  private workersRequest?: Subscription;
 
   ngOnInit(): void {
     this.loadProperties(this.data?.propertyId ?? null);
+  }
+
+  ngOnDestroy(): void {
+    this.workersSeq++;
+    this.workersRequest?.unsubscribe();
   }
 
   get selectedProperty(): TailBitePropertyStatus | null {
@@ -106,14 +114,16 @@ export class TailBiteManagersDialogComponent implements OnInit {
 
   private loadWorkers(): void {
     const id = this.propertyId;
+    const seq = ++this.workersSeq;
+    this.workersRequest?.unsubscribe();
     // The previous property's workers must not stay toggleable while the new list loads, or if it fails.
     this.workers = [];
     if (id === null) {
       return;
     }
-    this.service.getWorkers(id).subscribe({
+    this.workersRequest = this.service.getWorkers(id).subscribe({
       next: (res) => {
-        if (id === this.propertyId) {
+        if (seq === this.workersSeq) {
           this.workers = res?.success ? res.model : [];
         }
       },

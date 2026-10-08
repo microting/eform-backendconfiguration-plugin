@@ -11,10 +11,10 @@ import {MatInputModule} from '@angular/material/input';
 import {MatTooltipModule} from '@angular/material/tooltip';
 import {ActivatedRoute} from '@angular/router';
 import {TranslateModule, TranslateService} from '@ngx-translate/core';
-import {Subscription, finalize, switchMap, tap} from 'rxjs';
+import {Subscription, finalize, tap} from 'rxjs';
 import {TailBiteActionType} from '../../../../models';
 import {BackendConfigurationPnTailBiteService} from '../../../../services';
-import {openConfirm} from '../../shared/tail-bite-confirm';
+import {openConfirm, whenRefused} from '../../shared/tail-bite-confirm';
 import {propertyIdParam} from '../../shared/tail-bite-route';
 import {askText} from '../tail-bite-text-dialog/tail-bite-text-dialog.component';
 
@@ -101,9 +101,10 @@ export class TailBiteActionTypesPageComponent implements OnInit, OnDestroy {
       return;
     }
     this.busy = true;
-    askText(this.dialog, this.overlay, {title: this.translate.instant('Rename action type'), label: 'Name', value: a.name})
-      .pipe(switchMap((name) => this.service.renameActionType(a.id, name)), finalize(() => (this.busy = false)))
-      .subscribe({next: () => this.load(), error: () => this.load()});
+    askText(this.dialog, this.overlay, {title: this.translate.instant('Rename action type'), label: 'Name', value: a.name},
+      (name) => this.service.renameActionType(a.id, name).pipe(whenRefused(() => this.load())))
+      .pipe(finalize(() => (this.busy = false)))
+      .subscribe(() => this.load());
   }
 
   remove(a: TailBiteActionType): void {

@@ -71,11 +71,13 @@ public class TailBiteWebControllerTests
         var queries = Substitute.For<ITailBiteWebQueryService>();
         var sut = new TailBiteWebController(AccessWithSite(), queries);
 
+        await sut.MyProperties();
         await sut.ListRules(3);
         await sut.RuleHistory(9);
         await sut.CurrentOccupancy(3);
         await sut.OutbreakRegistrations(5);
 
+        await queries.Received().ListCallerPropertiesAsync(7);
         await queries.Received().ListRulesAsync(7, 3);
         await queries.Received().RuleHistoryAsync(7, 9);
         await queries.Received().CurrentOccupancyAsync(7, 3);

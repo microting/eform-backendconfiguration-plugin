@@ -6,7 +6,7 @@ import {TranslateModule, TranslateService} from '@ngx-translate/core';
 import {NgModel} from '@angular/forms';
 import {By} from '@angular/platform-browser';
 import {MtxSelect} from '@ng-matero/extensions/select';
-import {NEVER, of, throwError} from 'rxjs';
+import {NEVER, Subject, of, throwError} from 'rxjs';
 import {TailBiteFactor, TailBiteOutbreakAction} from '../../../../models';
 import {BackendConfigurationPnTailBiteService} from '../../../../services';
 import {TailBiteFollowUpsComponent, actionState, canChangeAction} from './tail-bite-follow-ups.component';
@@ -46,7 +46,14 @@ describe('TailBiteFollowUpsComponent', () => {
   let component: TailBiteFollowUpsComponent;
   let changed: jest.Mock;
 
-  const answerDialog = (reason: string | undefined) => dialogOpen.mockReturnValueOnce({afterClosed: () => of(reason)});
+  /** The next text dialog: `save(text)` presses Save with that text, `cancel()` closes it; `close` is the ref's close. */
+  const textDialog = () => {
+    const saved = new Subject<string>();
+    const closed = new Subject<void>();
+    const close = jest.fn(() => closed.next());
+    dialogOpen.mockReturnValueOnce({componentInstance: {saved}, close, afterClosed: () => closed});
+    return {save: (text: string) => saved.next(text), cancel: () => closed.next(), close};
+  };
 
   beforeEach(() => {
     service = {
@@ -122,7 +129,7 @@ describe('TailBiteFollowUpsComponent', () => {
     expect(component.busy).toBe(true);
     component.toggleDone(action(2));
     component.reassign(action(1), 8);
-    answerDialog('Grund');
+    textDialog();
     component.withdraw(action(1));
     expect(service.setActionDone).toHaveBeenCalledTimes(1);
     expect(service.reassignAction).not.toHaveBeenCalled();
@@ -130,16 +137,19 @@ describe('TailBiteFollowUpsComponent', () => {
   });
 
   it('withdraws with the reason from the dialog', () => {
-    answerDialog('Ikke længere relevant');
+    const dialog = textDialog();
     component.withdraw(action(1));
+    dialog.save('Ikke længere relevant');
     expect(service.withdrawAction).toHaveBeenCalledWith(1, 'Ikke længere relevant');
+    expect(dialog.close).toHaveBeenCalled();
     expect(changed).toHaveBeenCalledTimes(1);
     expect(component.busy).toBe(false);
   });
 
   it('does nothing and stays usable when the reason dialog is dismissed', () => {
-    answerDialog(undefined);
+    const dialog = textDialog();
     component.withdraw(action(1));
+    dialog.cancel();
     expect(service.withdrawAction).not.toHaveBeenCalled();
     expect(changed).not.toHaveBeenCalled();
     expect(component.busy).toBe(false);
@@ -148,21 +158,24 @@ describe('TailBiteFollowUpsComponent', () => {
   });
 
   it('is busy while the reason dialog is open', () => {
-    dialogOpen.mockReturnValueOnce({afterClosed: () => NEVER});
+    textDialog();
     component.withdraw(action(1));
     expect(component.busy).toBe(true);
   });
 
-  it('reloads and frees the page when a withdrawal is refused or fails', () => {
+  it('reloads and keeps the reason dialog open when a withdrawal is refused or fails; closing it frees the page', () => {
     service.withdrawAction.mockReturnValueOnce(of({success: false, message: 'The action is already done.'}));
-    answerDialog('Grund');
+    const dialog = textDialog();
     component.withdraw(action(1));
+    dialog.save('Grund');
     expect(changed).toHaveBeenCalledTimes(1);
-    expect(component.busy).toBe(false);
+    expect(dialog.close).not.toHaveBeenCalled();
+    expect(component.busy).toBe(true);
     service.withdrawAction.mockReturnValueOnce(throwError(() => new Error('boom')));
-    answerDialog('Grund');
-    component.withdraw(action(1));
+    dialog.save('Grund');
     expect(changed).toHaveBeenCalledTimes(2);
+    expect(dialog.close).not.toHaveBeenCalled();
+    dialog.cancel();
     expect(component.busy).toBe(false);
   });
 

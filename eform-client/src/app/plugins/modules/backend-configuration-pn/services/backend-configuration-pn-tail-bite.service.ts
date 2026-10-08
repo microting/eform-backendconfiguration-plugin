@@ -37,8 +37,14 @@ export class BackendConfigurationPnTailBiteService {
 
   // ---------- properties, workers, managers ----------
 
+  /** Every property with its enabled flag (plugin-admin list, for the managers dialog). */
   getProperties(): Observable<OperationDataResult<TailBitePropertyStatus[]>> {
     return this.apiBaseService.get(this.url('properties'));
+  }
+
+  /** The enabled properties the caller is a worker on: the ones the tail-bite area can open for them. */
+  getMyProperties(): Observable<OperationDataResult<TailBitePropertyStatus[]>> {
+    return this.apiBaseService.get(this.url('my-properties'));
   }
 
   getWorkers(propertyId: number): Observable<OperationDataResult<TailBiteWorker[]>> {

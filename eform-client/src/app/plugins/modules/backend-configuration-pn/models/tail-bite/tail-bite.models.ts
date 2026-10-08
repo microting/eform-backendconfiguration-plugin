@@ -153,9 +153,17 @@ export interface TailBiteOutbreakRegistrationRow {
   photoCount: number;
 }
 
+/** An action type a registration names; deleted types included, since a registration keeps its links to them. */
+export interface TailBiteActionTypeName {
+  id: number;
+  name: string;
+}
+
 export interface TailBiteOutbreakRegistrations {
   propertyId: number;
   rows: TailBiteOutbreakRegistrationRow[];
+  /** Names for every action type the rows name (the tree lists live types only). */
+  actionTypes: TailBiteActionTypeName[];
 }
 
 /** followUpDate is a date-only "yyyy-MM-dd" string, so the picked day never shifts across a UTC offset. */

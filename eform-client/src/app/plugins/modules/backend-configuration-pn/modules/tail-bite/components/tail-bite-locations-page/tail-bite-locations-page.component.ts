@@ -14,15 +14,15 @@ import {ActivatedRoute} from '@angular/router';
 import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {TranslateModule, TranslateService} from '@ngx-translate/core';
 import {ToastrService} from 'ngx-toastr';
-import {Observable, Subscription, finalize, forkJoin, switchMap, tap} from 'rxjs';
+import {Observable, Subscription, finalize, forkJoin, tap} from 'rxjs';
 import {OperationResult} from 'src/app/common/models';
-import {TailBiteLocationNode, TailBiteLocationTree} from '../../../../models';
+import {TailBiteLocationTree} from '../../../../models';
 import {BackendConfigurationPnTailBiteService} from '../../../../services';
-import {openConfirm} from '../../shared/tail-bite-confirm';
+import {openConfirm, whenRefused} from '../../shared/tail-bite-confirm';
 import {occupancyValidFrom, toDateOnly} from '../../shared/tail-bite-dates';
 import {propertyIdParam} from '../../shared/tail-bite-route';
 import {describeRule} from '../../shared/tail-bite-rule-text';
-import {TailBiteTreeRow, buildTreeRows, liveNodes, moveTargets} from '../../shared/tail-bite-tree';
+import {TailBiteLocationOption, TailBiteTreeRow, buildTreeRows, liveNodes, moveTargets, pathOptions} from '../../shared/tail-bite-tree';
 import {memoize} from '../../shared/tail-bite-memo';
 import {askText} from '../tail-bite-text-dialog/tail-bite-text-dialog.component';
 import {buildQrSheetPdf, qrLabels} from './tail-bite-qr-pdf';
@@ -196,13 +196,19 @@ export class TailBiteLocationsPageComponent implements OnInit, OnDestroy {
 
   // ---------- editing the tree ----------
 
-  get moveOptions(): TailBiteLocationNode[] {
+  /** Labelled with full paths: a "Sektion 1" may exist under several parents. */
+  get moveOptions(): TailBiteLocationOption[] {
     return this.moveOptionsOf(this.tree, this.selectedId);
   }
 
   // Bound to an mtx-select: keeps its reference until the tree or the selection changes (see memoize).
-  private readonly moveOptionsOf = memoize((tree: TailBiteLocationTree | null, selectedId: number | null) =>
-    selectedId === null ? [] : moveTargets(liveNodes(tree), selectedId));
+  private readonly moveOptionsOf = memoize((tree: TailBiteLocationTree | null, selectedId: number | null) => {
+    if (selectedId === null) {
+      return [];
+    }
+    const nodes = liveNodes(tree);
+    return pathOptions(moveTargets(nodes, selectedId), nodes);
+  });
 
   addChild(): void {
     const row = this.selected;
@@ -287,10 +293,11 @@ export class TailBiteLocationsPageComponent implements OnInit, OnDestroy {
     if (this.busy) {
       return;
     }
+    // The dialog keeps the page busy and stays open with the typed name until the server accepts it.
     this.busy = true;
-    askText(this.dialog, this.overlay, {title, label: 'Name', value})
-      .pipe(switchMap(call), finalize(() => (this.busy = false)))
-      .subscribe({next: () => this.load(), error: () => this.load()});
+    askText(this.dialog, this.overlay, {title, label: 'Name', value}, (name) => call(name).pipe(whenRefused(() => this.load())))
+      .pipe(finalize(() => (this.busy = false)))
+      .subscribe(() => this.load());
   }
 
   /** Runs one server call at a time and reloads afterwards whatever the outcome, so a conflict never leaves stale data. */

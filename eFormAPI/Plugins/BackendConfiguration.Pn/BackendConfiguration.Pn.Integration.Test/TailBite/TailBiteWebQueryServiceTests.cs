@@ -59,6 +59,40 @@ public class TailBiteWebQueryServiceTests : TailBiteTestBase
     }
 
     [Test]
+    public async Task ListCallerProperties_OnlyEnabledPropertiesWithAnActiveWorkerRowOfTheCaller()
+    {
+        await SeedTreeAsync(enabled: true);
+        await SeedWorkerAsync(WorkerSite);
+        await SeedWorkerAsync(WorkerSite);   // a second row on the same property lists it once
+        async Task<Property> OtherAsync(string name, bool enabled, bool worker, bool workerLeft = false)
+        {
+            var p = new Property { Name = name };
+            await p.Create(Db);
+            await new TailBiteProperty { PropertyId = p.Id, Enabled = enabled, EnabledAt = Clock.GetUtcNow().UtcDateTime }.Create(Db);
+            if (worker)
+            {
+                var pw = new PropertyWorker { PropertyId = p.Id, WorkerId = WorkerSite };
+                await pw.Create(Db);
+                if (workerLeft) await pw.Delete(Db);
+            }
+            return p;
+        }
+        var other = await OtherAsync("Ejendom Anden", enabled: true, worker: true);
+        await OtherAsync("Ejendom Fremmed", enabled: true, worker: false);
+        await OtherAsync("Ejendom Slukket", enabled: false, worker: true);
+        await OtherAsync("Ejendom Forladt", enabled: true, worker: true, workerLeft: true);
+
+        var list = await Sut().ListCallerPropertiesAsync(WorkerSite);
+
+        Assert.That(list, Is.EqualTo(new[]
+        {
+            new TailBitePropertyStatus(other.Id, "Ejendom Anden", true),
+            new TailBitePropertyStatus(PropertyId, "Ejendom Test", true),
+        }));
+        Assert.That(await Sut().ListCallerPropertiesAsync(ForeignSite), Is.Empty);
+    }
+
+    [Test]
     public async Task ListWorkers_GroupsRowsPerSite_ManagerIfAnyRow_NamesFromSdk()
     {
         await SeedTreeAsync();
@@ -214,6 +248,28 @@ public class TailBiteWebQueryServiceTests : TailBiteTestBase
         Assert.That(lateRow.SiteName, Is.EqualTo("Jane Doe"));
         Assert.That(lateRow.EffectiveAt.Kind, Is.EqualTo(DateTimeKind.Utc));
         Assert.That(result.Rows[0].CancelReason, Is.EqualTo("Registreret på forkert sti"));
+        Assert.That(result.ActionTypes, Is.EqualTo(new[] { new ActionTypeName(halm.Id, "Halm") }));
+    }
+
+    // A registration keeps its links to an action type deleted later; the page must still name it.
+    [Test]
+    public async Task OutbreakRegistrations_NamesDeletedActionTypes_ButOnlyThoseTheRowsUse()
+    {
+        await SeedTreeAsync();
+        await SeedWorkerAsync(ManagerSite, manager: true);
+        var (reg, rows) = await SeedRegistrationAsync(Clock.GetUtcNow().UtcDateTime.AddHours(-1), false, (Pen310Id, 1, 0));
+        var gone = new TailBiteActionType { PropertyId = PropertyId, Code = "GONE", Name = "Kæder" };
+        await gone.Create(Db);
+        var unused = new TailBiteActionType { PropertyId = PropertyId, Code = "UNUSED", Name = "Reb" };
+        await unused.Create(Db);
+        await new TailBiteRegistrationAction { RegistrationId = reg.Id, ActionTypeId = gone.Id }.Create(Db);
+        await gone.Delete(Db);
+        var outbreak = await OutbreakWithLinksAsync(StableAId, rows[0]);
+
+        var result = await Sut().OutbreakRegistrationsAsync(ManagerSite, outbreak.Id);
+
+        Assert.That(result.Rows.Single().ActionTypeIds, Is.EqualTo(new[] { gone.Id }));
+        Assert.That(result.ActionTypes, Is.EqualTo(new[] { new ActionTypeName(gone.Id, "Kæder") }));
     }
 
     // The pig counts of the outbreak page and of the outbreak summary must agree: soft-removed rows and registrations count in neither.
@@ -257,6 +313,8 @@ public class TailBiteWebQueryServiceTests : TailBiteTestBase
             .SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.Instance
                                           | BindingFlags.DeclaredOnly))
             .Where(m => m.Name.Contains("Properties") || m.Name.Contains("Workers"))
+            // Caller-checked: it lists only the enabled properties the resolved caller works on.
+            .Where(m => m.Name != nameof(BackendConfiguration.Pn.Controllers.TailBiteWebController.MyProperties))
             .ToList();
         Assert.That(exposing, Is.Not.Empty, "no controller action exposing the property or worker lists was found; the test would pass vacuously");
         foreach (var action in exposing)

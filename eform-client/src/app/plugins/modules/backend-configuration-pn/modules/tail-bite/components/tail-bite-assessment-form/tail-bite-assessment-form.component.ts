@@ -61,7 +61,7 @@ export class TailBiteAssessmentFormComponent implements OnChanges {
   busy = false;
   /** The last save was refused or failed; everything entered is kept. */
   saveFailed = false;
-  /** Follow-up dates may not be before the day the outbreak opened (the server's rule). */
+  /** Earliest pickable follow-up date. */
   minFollowUp: Date | null = null;
 
   /** The previous save succeeded, so the next detail is its result and the form starts over from it. */
@@ -77,8 +77,9 @@ export class TailBiteAssessmentFormComponent implements OnChanges {
     }
     const previous: TailBiteOutbreakDetail | undefined = changes['detail'].previousValue;
     const reset = this.justSaved || !previous || previous.summary.id !== this.detail.summary.id || this.drafts.length === 0;
+    // The server compares the picked day with OpenedAt.Date, the UTC day; the picker needs that day as a local date.
     const opened = parseServerUtc(this.detail.summary.openedAt);
-    this.minFollowUp = opened ? new Date(opened.getFullYear(), opened.getMonth(), opened.getDate()) : null;
+    this.minFollowUp = opened ? dateOnlyToLocal(opened) : null;
     if (reset) {
       this.drafts = draftFromDetail(this.detail);
       this.submitted = false;

@@ -44,6 +44,7 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 public interface ITailBiteWebQueryService
 {
     Task<IReadOnlyList<TailBitePropertyStatus>> ListPropertiesAsync();
+    Task<IReadOnlyList<TailBitePropertyStatus>> ListCallerPropertiesAsync(int callerSiteId);
     Task<IReadOnlyList<TailBiteWorker>> ListWorkersAsync(int propertyId);
     Task<IReadOnlyList<RuleDto>> ListRulesAsync(int callerSiteId, int propertyId);
     Task<IReadOnlyList<RuleVersionDto>> RuleHistoryAsync(int callerSiteId, int ruleId);
@@ -65,6 +66,19 @@ public class TailBiteWebQueryService(BackendConfigurationPnDbContext db, ITailBi
         var properties = await db.Properties.AsNoTracking().Where(p => p.WorkflowState != Removed)
             .OrderBy(p => p.Name).ThenBy(p => p.Id).Select(p => new { p.Id, p.Name }).ToListAsync();
         return properties.Select(p => new TailBitePropertyStatus(p.Id, p.Name ?? "", enabled.Contains(p.Id))).ToList();
+    }
+
+    // The properties the caller can open in the web admin: tail biting enabled and the caller an active worker there.
+    public async Task<IReadOnlyList<TailBitePropertyStatus>> ListCallerPropertiesAsync(int callerSiteId)
+    {
+        var properties = await (from p in db.Properties.AsNoTracking()
+                                join t in db.TailBiteProperties on p.Id equals t.PropertyId
+                                where t.Enabled && p.WorkflowState != Removed
+                                      && db.PropertyWorkers.Any(pw => pw.PropertyId == p.Id && pw.WorkerId == callerSiteId
+                                                                      && pw.WorkflowState != Removed)
+                                orderby p.Name, p.Id
+                                select new { p.Id, p.Name }).ToListAsync();
+        return properties.Select(p => new TailBitePropertyStatus(p.Id, p.Name ?? "", true)).ToList();
     }
 
     public async Task<IReadOnlyList<TailBiteWorker>> ListWorkersAsync(int propertyId)
@@ -142,6 +156,11 @@ public class TailBiteWebQueryService(BackendConfigurationPnDbContext db, ITailBi
                 .Where(a => registrationIds.Contains(a.RegistrationId) && a.WorkflowState != Removed)
                 .Select(a => new { a.RegistrationId, a.ActionTypeId }).ToListAsync())
             .ToLookup(a => a.RegistrationId, a => a.ActionTypeId);
+        // Names for every type the rows name, deleted ones included: the tree lists live types only.
+        var actionTypeIds = actionTypes.SelectMany(g => g).Distinct().ToList();
+        var actionTypeNames = await db.TailBiteActionTypes.AsNoTracking()
+            .Where(a => a.PropertyId == propertyId && actionTypeIds.Contains(a.Id))
+            .OrderBy(a => a.Id).Select(a => new ActionTypeName(a.Id, a.Name)).ToListAsync();
         // BelongsTo builds a predicate for one registration, which does not fit a batch over many; this applies the same rule
         // in two steps: IsStored and the property in the query, uuid and uploading site in the lookup key. Removed photos are not counted.
         var clientUuids = rows.Select(x => x.reg.ClientUuid).Distinct().ToList();
@@ -155,7 +174,7 @@ public class TailBiteWebQueryService(BackendConfigurationPnDbContext db, ITailBi
             x.reg.Id, x.row.Id, x.row.LocationId, Utc(x.reg.EffectiveAt), x.row.MinorCount, x.row.SevereCount,
             actionTypes[x.reg.Id].Order().ToList(), x.reg.SiteId, names[x.reg.SiteId],
             x.reg.CancelledAt != null, x.reg.CancelReason,
-            photos[(x.reg.ClientUuid, x.reg.SiteId)].Count())).ToList());
+            photos[(x.reg.ClientUuid, x.reg.SiteId)].Count())).ToList(), actionTypeNames);
     }
 
     // The name the app shows for a site (TailBiteGrpcService uses the same lookup), so web and app agree; "#id" when unknown.

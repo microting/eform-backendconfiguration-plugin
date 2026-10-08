@@ -48,5 +48,9 @@ public sealed record OccupancyDto(int LocationId, int PigCount, TailBiteOccupanc
 public sealed record OutbreakRegistrationRow(int RegistrationId, int RowId, int LocationId, DateTime EffectiveAt, int Minor, int Severe,
     IReadOnlyList<int> ActionTypeIds, int SiteId, string SiteName, bool Cancelled, string? CancelReason, int PhotoCount);
 
+// The id and name of an action type a registration names; deleted types included, since a registration keeps its links to them.
+public sealed record ActionTypeName(int Id, string Name);
+
 // The outbreak's property travels with its rows, so the page can load the tree, workers and pig counts it needs.
-public sealed record OutbreakRegistrations(int PropertyId, IReadOnlyList<OutbreakRegistrationRow> Rows);
+public sealed record OutbreakRegistrations(int PropertyId, IReadOnlyList<OutbreakRegistrationRow> Rows,
+    IReadOnlyList<ActionTypeName> ActionTypes);

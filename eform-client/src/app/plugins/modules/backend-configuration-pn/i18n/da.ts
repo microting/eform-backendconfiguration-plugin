@@ -908,7 +908,7 @@ export const da = {
   'Locations and QR': 'Lokationer og QR',
   'Outbreak rules': 'Udbrudsregler',
   'Action types': 'Handlingstyper',
-  'No property has tail biting enabled. Enable it from Property workers, Tail-bite managers.': 'Ingen ejendom har halebid slået til. Slå det til under Medarbejdere, Halebid-ansvarlige.',
+  'No property is available to you. Tail biting must be enabled on the property, and you must be one of its workers (Property workers, Tail-bite managers).': 'Ingen ejendom er tilgængelig for dig. Halebid skal være slået til på ejendommen, og du skal være en af dens medarbejdere (Medarbejdere, Halebid-ansvarlige).',
   'Tail-bite managers': 'Halebid-ansvarlige',
   'Tail-bite manager': 'Halebid-ansvarlig',
   'Tail biting is not enabled for this property.': 'Halebid er ikke slået til for denne ejendom.',

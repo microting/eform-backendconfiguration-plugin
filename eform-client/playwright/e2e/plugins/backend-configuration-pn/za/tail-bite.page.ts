@@ -41,12 +41,12 @@ export class TailBitePage {
     return res;
   }
 
-  /** Opens an mtx-select by id and picks the option whose text is exactly `text`. */
+  /** Opens an mtx-select by id and picks the option whose text is exactly `text`. No .first(): duplicate option text should fail on strictness. */
   async pick(selectId: string, text: string): Promise<void> {
     await this.page.locator(`#${selectId}`).click({ timeout: UI_TIMEOUT });
     const panel = this.page.locator('.ng-dropdown-panel');
     await panel.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
-    await panel.locator('.ng-option').filter({ hasText: exactText(text) }).first().click({ timeout: UI_TIMEOUT });
+    await panel.locator('.ng-option').filter({ hasText: exactText(text) }).click({ timeout: UI_TIMEOUT });
   }
 
   locationRow(name: string): Locator {

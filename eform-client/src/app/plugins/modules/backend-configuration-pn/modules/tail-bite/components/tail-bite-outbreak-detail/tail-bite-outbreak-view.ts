@@ -7,7 +7,7 @@ import {
 } from '../../../../models';
 import {parseServerUtc} from '../../shared/tail-bite-dates';
 import {TailBiteOutbreakStatus, outbreakStatus} from '../../shared/tail-bite-outbreak-status';
-import {buildTreeRows, isDescendantOrSelf, liveNodes, locationTitle, nodeMap} from '../../shared/tail-bite-tree';
+import {buildTreeRows, countingOccupancy, locationTitle, nodeMap} from '../../shared/tail-bite-tree';
 
 export interface TailBiteOutbreakRowView {
   registrationId: number;
@@ -36,7 +36,7 @@ export interface TailBiteOutbreakView {
   /** Minor + severe, as the server counts them (cancelled registrations excluded). */
   bittenPigs: number;
   locationCount: number;
-  /** Pig count of the summing location (own, else the sum below it) and the newest "valid from" behind it. */
+  /** Pig count of the summing location (own, else the sum below it) and the newest "valid from" of the counts it is made of. */
   pigs: number | null;
   pigsFrom: Date | null;
   ratePer100: number | null;
@@ -53,7 +53,8 @@ export function buildOutbreakView(
 ): TailBiteOutbreakView {
   const byId = nodeMap(tree.locations);
   const name = (id: number) => (byId.has(id) ? locationTitle(id, byId) : deletedLocationLabel);
-  const actionName = new Map(tree.actionTypes.map((a) => [a.id, a.name]));
+  // The registrations' own list names deleted types too; the tree's live list covers the rest.
+  const actionName = new Map([...tree.actionTypes, ...registrations.actionTypes].map((a) => [a.id, a.name]));
   const rows = registrations.rows.map((r, index) => ({
     registrationId: r.registrationId,
     firstOfRegistration: registrations.rows.findIndex((x) => x.registrationId === r.registrationId) === index,
@@ -72,9 +73,7 @@ export function buildOutbreakView(
   const bittenPigs = detail.summary.bittenPigs;
   const summing = detail.summary.locationId;
   const pigs = buildTreeRows(tree, [], occupancy).find((r) => r.node.id === summing)?.pigs ?? null;
-  const live = nodeMap(liveNodes(tree));
-  const behind = occupancy
-    .filter((o) => live.has(o.locationId) && isDescendantOrSelf(o.locationId, summing, live))
+  const behind = countingOccupancy(tree, occupancy, summing)
     .map((o) => parseServerUtc(o.validFrom))
     .filter((d): d is Date => d !== null)
     .sort((a, b) => b.getTime() - a.getTime());

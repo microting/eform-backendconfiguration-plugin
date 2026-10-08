@@ -66,6 +66,19 @@ export function locationTitle(id: number, byId: Map<number, TailBiteLocationNode
   return (belowRoot.length ? belowRoot : chain).map((n) => n.name).join(' › ');
 }
 
+/** A location as a select option. Names are unique only among siblings, so the label is the path. */
+export interface TailBiteLocationOption {
+  id: number;
+  /** As locationTitle: "Stald A › Sektion 4", the root by its own name. */
+  path: string;
+}
+
+/** `options` as select options, each labelled with its path among `nodes`. */
+export function pathOptions(options: TailBiteLocationNode[], nodes: TailBiteLocationNode[]): TailBiteLocationOption[] {
+  const byId = nodeMap(nodes);
+  return options.map((n) => ({id: n.id, path: locationTitle(n.id, byId)}));
+}
+
 export function isDescendantOrSelf(id: number, ancestorId: number, byId: Map<number, TailBiteLocationNode>): boolean {
   return ancestorsAndSelf(id, byId).some((n) => n.id === ancestorId);
 }
@@ -125,6 +138,21 @@ export function buildTreeRows(
       governingRuleLocation: governing?.location ?? null,
     };
   });
+}
+
+/**
+ * The pig-count records behind a node's count as buildTreeRows computes it: the node's own record, else the records
+ * behind each child. A count below a node with its own count is overridden by it and is not returned.
+ */
+export function countingOccupancy(tree: TailBiteLocationTree | null, occupancy: TailBiteOccupancy[], id: number): TailBiteOccupancy[] {
+  const nodes = liveNodes(tree);
+  const children = childrenByParent(nodes);
+  const own = new Map(occupancy.map((o) => [o.locationId, o]));
+  const behind = (nodeId: number): TailBiteOccupancy[] => {
+    const record = own.get(nodeId);
+    return record ? [record] : (children.get(nodeId) ?? []).flatMap((c) => behind(c.id));
+  };
+  return nodes.some((n) => n.id === id) ? behind(id) : [];
 }
 
 /** Where a node may move: anywhere except into its own subtree, and not to its current parent. */

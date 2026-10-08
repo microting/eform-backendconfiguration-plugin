@@ -96,6 +96,21 @@ describe('TailBiteManagersDialogComponent', () => {
     expect(component.workers.map((w) => w.siteId)).toEqual([7]);
   });
 
+  it('drops a late answer for the same property asked for again in between (1 → 2 → 1)', () => {
+    create(2);
+    const late = new Subject<unknown>();
+    service.getWorkers
+      .mockReturnValueOnce(late)
+      .mockReturnValueOnce(of({success: true, model: []}))
+      .mockReturnValueOnce(of({success: true, model: [{siteId: 9, name: 'Jane Roe', isManager: true, propertyWorkerIds: [51]}]}));
+    component.onPropertyChange(1);
+    component.onPropertyChange(2);
+    component.onPropertyChange(1);
+    expect(late.observed).toBe(false);
+    late.next({success: true, model: [{siteId: 8, name: 'John Doe', isManager: false, propertyWorkerIds: [41]}]});
+    expect(component.workers.map((w) => w.siteId)).toEqual([9]);
+  });
+
   it('shows no workers when the list fails to load', () => {
     create(1);
     service.getWorkers.mockReturnValueOnce(throwError(() => new Error('500')));

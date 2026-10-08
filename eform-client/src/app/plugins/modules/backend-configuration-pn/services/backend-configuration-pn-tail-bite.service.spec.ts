@@ -19,6 +19,7 @@ describe('BackendConfigurationPnTailBiteService', () => {
 
   it.each([
     ['getProperties', () => service.getProperties(), `${base}/properties`],
+    ['getMyProperties', () => service.getMyProperties(), `${base}/my-properties`],
     ['getWorkers', () => service.getWorkers(3), `${base}/properties/3/workers`],
     ['getTree', () => service.getTree(3), `${base}/properties/3/tree`],
     ['getOccupancy', () => service.getOccupancy(3), `${base}/properties/3/occupancy`],

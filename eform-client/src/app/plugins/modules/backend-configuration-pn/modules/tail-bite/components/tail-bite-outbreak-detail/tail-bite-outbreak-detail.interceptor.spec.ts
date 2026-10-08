@@ -38,7 +38,7 @@ describe('TailBiteOutbreakDetailComponent behind the host DateInterceptor', () =
     actions: [{id: 41, factor: 3, description: 'Check the vent', responsibleSiteId: 7, followUpDate: `${today}T00:00:00`,
       doneAt: null, withdrawnAt: null}],
   };
-  const registrations = {propertyId: 3, rows: [{registrationId: 21, rowId: 210, locationId: 2,
+  const registrations = {propertyId: 3, actionTypes: [], rows: [{registrationId: 21, rowId: 210, locationId: 2,
     effectiveAt: '2026-09-30T05:58:00Z', minor: 2, severe: 1, actionTypeIds: [], siteId: 7, siteName: 'Jane Doe',
     cancelled: false, cancelReason: null, photoCount: 0}]};
   const tree = {propertyId: 3, treeVersion: 1, actionTypes: [], locations: [

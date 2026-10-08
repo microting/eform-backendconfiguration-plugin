@@ -57,8 +57,15 @@ describe('TailBiteLocationsPageComponent', () => {
 
   afterEach(() => component.ngOnDestroy());
 
-  // The text dialog closes with the typed text (or nothing); the delete modal emits `delete` on confirm.
-  const answer = (text: string | null) => dialogOpen.mockReturnValueOnce({afterClosed: () => of(text ?? undefined)});
+  // The text dialog emits `saved` and is closed by askText on success; the delete modal emits `delete` on confirm.
+  /** The next text dialog: `save(text)` presses Save with that text, `cancel()` closes it; `close` is the ref's close. */
+  const textDialog = () => {
+    const saved = new Subject<string>();
+    const closed = new Subject<void>();
+    const close = jest.fn(() => closed.next());
+    dialogOpen.mockReturnValueOnce({componentInstance: {saved}, close, afterClosed: () => closed});
+    return {save: (text: string) => saved.next(text), cancel: () => closed.next(), close};
+  };
   const confirmDialog = () => {
     const clicks = new EventEmitter<unknown>();
     dialogOpen.mockReturnValueOnce({componentInstance: {delete: clicks}, close: jest.fn(), afterClosed: () => NEVER});
@@ -82,18 +89,21 @@ describe('TailBiteLocationsPageComponent', () => {
 
   it('adds a child under the selected location with the typed name', () => {
     component.select(component.rows[2]);
-    answer('Sti 309');
+    const dialog = textDialog();
     component.addChild();
+    dialog.save('Sti 309');
     expect(service.createLocation).toHaveBeenCalledWith(3, 'Sti 309');
     expect(service.getTree).toHaveBeenCalledTimes(2);
   });
 
   it('renames and moves the selected location', () => {
     component.select(component.rows[2]);
-    answer('Sektion 5');
+    const dialog = textDialog();
     component.rename();
+    dialog.save('Sektion 5');
     expect(service.renameLocation).toHaveBeenCalledWith(3, 'Sektion 5');
-    expect(component.moveOptions.map((n) => n.name)).toEqual(['Ejendom']);
+    expect(dialog.close).toHaveBeenCalled();
+    expect(component.moveOptions.map((n) => n.path)).toEqual(['Ejendom']);
     component.move(1);
     expect(service.moveLocation).toHaveBeenCalledWith(3, 1);
   });
@@ -158,7 +168,7 @@ describe('TailBiteLocationsPageComponent', () => {
 
   it('sends one request when rename is clicked twice while busy', () => {
     component.select(component.rows[2]);
-    dialogOpen.mockReturnValueOnce({afterClosed: () => NEVER});
+    textDialog();
     component.rename();
     component.rename();
     expect(dialogOpen).toHaveBeenCalledTimes(1);
@@ -167,8 +177,9 @@ describe('TailBiteLocationsPageComponent', () => {
 
   it('frees the page when the rename dialog is cancelled', () => {
     component.select(component.rows[2]);
-    answer(null);
+    const dialog = textDialog();
     component.rename();
+    dialog.cancel();
     expect(service['renameLocation']).not.toHaveBeenCalled();
     expect(component.busy).toBe(false);
   });
@@ -183,12 +194,35 @@ describe('TailBiteLocationsPageComponent', () => {
     expect(component.busy).toBe(false);
   });
 
-  it('reloads the tree and frees the page when a rename is refused', () => {
+  it('reloads the tree and keeps the dialog open with the typed name when a rename is refused or fails', () => {
+    service['renameLocation']
+      .mockReturnValueOnce(of({success: false}))
+      .mockReturnValueOnce(throwError(() => new Error('down')))
+      .mockReturnValueOnce(of({success: true}));
+    component.select(component.rows[2]);
+    const dialog = textDialog();
+    component.rename();
+    dialog.save('Sektion 5');
+    expect(service.getTree).toHaveBeenCalledTimes(2);
+    expect(dialog.close).not.toHaveBeenCalled();
+    expect(component.busy).toBe(true);
+    dialog.save('Sektion 5');
+    expect(service.getTree).toHaveBeenCalledTimes(3);
+    expect(dialog.close).not.toHaveBeenCalled();
+    dialog.save('Sektion 6');
+    expect(service['renameLocation']).toHaveBeenLastCalledWith(3, 'Sektion 6');
+    expect(dialog.close).toHaveBeenCalled();
+    expect(service.getTree).toHaveBeenCalledTimes(4);
+    expect(component.busy).toBe(false);
+  });
+
+  it('frees the page when a refused rename dialog is then cancelled', () => {
     service['renameLocation'].mockReturnValue(of({success: false}));
     component.select(component.rows[2]);
-    answer('Sektion 5');
+    const dialog = textDialog();
     component.rename();
-    expect(service.getTree).toHaveBeenCalledTimes(2);
+    dialog.save('Sektion 5');
+    dialog.cancel();
     expect(component.busy).toBe(false);
   });
 

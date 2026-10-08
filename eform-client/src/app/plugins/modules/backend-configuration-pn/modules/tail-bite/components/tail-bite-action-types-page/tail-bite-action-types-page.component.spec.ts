@@ -120,31 +120,47 @@ describe('TailBiteActionTypesPageComponent', () => {
     expect(service.createActionType).toHaveBeenCalledTimes(1);
   });
 
-  it('renames through the text dialog and reloads', () => {
-    dialogOpen.mockReturnValueOnce({afterClosed: () => of('Halm i hækken')});
+  /** The next text dialog: `save(text)` presses Save with that text, `cancel()` closes it; `close` is the ref's close. */
+  const textDialog = () => {
+    const saved = new Subject<string>();
+    const closed = new Subject<void>();
+    const close = jest.fn(() => closed.next());
+    dialogOpen.mockReturnValueOnce({componentInstance: {saved}, close, afterClosed: () => closed});
+    return {save: (text: string) => saved.next(text), cancel: () => closed.next(), close};
+  };
+
+  it('renames through the text dialog, closes it and reloads', () => {
+    const dialog = textDialog();
     component.rename(component.actionTypes[0]);
+    dialog.save('Halm i hækken');
     expect(service.renameActionType).toHaveBeenCalledWith(6, 'Halm i hækken');
+    expect(dialog.close).toHaveBeenCalled();
     expect(component.busy).toBe(false);
     expect(service.getActionTypes).toHaveBeenCalledTimes(2);
   });
 
   it('a cancelled rename dialog calls nothing and resets busy', () => {
-    dialogOpen.mockReturnValueOnce({afterClosed: () => of(undefined)});
+    const dialog = textDialog();
     component.rename(component.actionTypes[0]);
+    dialog.cancel();
     expect(service.renameActionType).not.toHaveBeenCalled();
     expect(component.busy).toBe(false);
   });
 
-  it('a refused or failed rename reloads and resets busy', () => {
-    dialogOpen.mockReturnValue({afterClosed: () => of('Reb')});
+  it('a refused or failed rename reloads and keeps the dialog open for a retry; closing it resets busy', () => {
+    const dialog = textDialog();
     service.renameActionType.mockReturnValueOnce(of({success: false, message: 'exists'}));
     component.rename(component.actionTypes[0]);
-    expect(component.busy).toBe(false);
+    dialog.save('Reb');
     expect(service.getActionTypes).toHaveBeenCalledTimes(2);
+    expect(dialog.close).not.toHaveBeenCalled();
+    expect(component.busy).toBe(true);
     service.renameActionType.mockReturnValueOnce(throwError(() => new Error('boom')));
-    component.rename(component.actionTypes[0]);
-    expect(component.busy).toBe(false);
+    dialog.save('Reb');
     expect(service.getActionTypes).toHaveBeenCalledTimes(3);
+    expect(dialog.close).not.toHaveBeenCalled();
+    dialog.cancel();
+    expect(component.busy).toBe(false);
   });
 
   it('deletes after confirming in the platform delete modal', () => {

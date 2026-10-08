@@ -10,9 +10,9 @@ import {MatTooltipModule} from '@angular/material/tooltip';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {TranslateModule, TranslateService} from '@ngx-translate/core';
 import {Subscription, catchError, finalize, forkJoin, map, of, switchMap, tap} from 'rxjs';
-import {TailBiteOutbreakDetail, TailBiteWorker} from '../../../../models';
+import {TailBiteOccupancy, TailBiteOutbreakDetail, TailBiteRuleVersion, TailBiteWorker} from '../../../../models';
 import {BackendConfigurationPnTailBiteService} from '../../../../services';
-import {openConfirm} from '../../shared/tail-bite-confirm';
+import {openConfirm, whenRefused} from '../../shared/tail-bite-confirm';
 import {OUTBREAK_STATUS_BADGE, OUTBREAK_STATUS_LABEL} from '../../shared/tail-bite-outbreak-status';
 import {TAIL_BITE_BASE} from '../../shared/tail-bite-route';
 import {describeRule} from '../../shared/tail-bite-rule-text';
@@ -48,6 +48,9 @@ export class TailBiteOutbreakDetailComponent implements OnInit, OnDestroy {
   detail: TailBiteOutbreakDetail | null = null;
   view: TailBiteOutbreakView | null = null;
   workers: TailBiteWorker[] = [];
+  /** The optional enrichments of the last load; a refused or failed refresh of one keeps these. */
+  private occupancy: TailBiteOccupancy[] = [];
+  private history: TailBiteRuleVersion[] = [];
   /** Single-flight: set while a cancel (with its reason dialog) or a close is running. */
   busy = false;
   /** True when the first load of this outbreak was refused or failed: the page says so instead of staying blank. */
@@ -81,6 +84,8 @@ export class TailBiteOutbreakDetailComponent implements OnInit, OnDestroy {
     this.detail = null;
     this.view = null;
     this.workers = [];
+    this.occupancy = [];
+    this.history = [];
     this.notFound = false;
   }
 
@@ -133,15 +138,19 @@ export class TailBiteOutbreakDetailComponent implements OnInit, OnDestroy {
           }
           this.notFound = false;
           this.detail = data.detail;
-          this.workers = data.workers?.success ? data.workers.model : [];
-          this.view = buildOutbreakView(
-            data.detail,
-            data.regs,
-            data.tree.model,
-            data.occupancy?.success ? data.occupancy.model : [],
-            data.history?.success ? data.history.model : [],
-            this.translate.instant('Deleted location'),
-          );
+          // An enrichment that is refused or fails keeps what is shown (nothing on a first load), so known
+          // responsible people are not turned into "#id" or "No longer on the property" by a hiccup.
+          if (data.workers?.success) {
+            this.workers = data.workers.model;
+          }
+          if (data.occupancy?.success) {
+            this.occupancy = data.occupancy.model;
+          }
+          if (data.history?.success) {
+            this.history = data.history.model;
+          }
+          this.view = buildOutbreakView(data.detail, data.regs, data.tree.model, this.occupancy, this.history,
+            this.translate.instant('Deleted location'));
         },
         // A failed refresh keeps what is shown; the API service already toasts the error.
         error: () => this.loadFailed(seq),
@@ -194,17 +203,18 @@ export class TailBiteOutbreakDetailComponent implements OnInit, OnDestroy {
     }).subscribe({next: () => this.load(), error: () => undefined});
   }
 
-  /** The reason dialog keeps the page busy; dismissing it completes without a value, which only frees the page. */
+  /**
+   * The reason dialog keeps the page busy; dismissing it completes without a value, which only frees the page. A refusal
+   * reloads underneath and keeps the dialog open with the typed reason.
+   */
   cancelRegistration(row: TailBiteOutbreakRowView): void {
     if (this.busy) {
       return;
     }
     this.busy = true;
-    askText(this.dialog, this.overlay, {title: this.translate.instant('Cancel registration'), label: 'Reason', maxLength: 1000})
-      .pipe(
-        switchMap((reason) => this.service.cancelRegistration(row.registrationId, reason)),
-        finalize(() => (this.busy = false)),
-      )
-      .subscribe({next: () => this.load(), error: () => this.load()});
+    askText(this.dialog, this.overlay, {title: this.translate.instant('Cancel registration'), label: 'Reason', maxLength: 1000},
+      (reason) => this.service.cancelRegistration(row.registrationId, reason).pipe(whenRefused(() => this.load())))
+      .pipe(finalize(() => (this.busy = false)))
+      .subscribe(() => this.load());
   }
 }

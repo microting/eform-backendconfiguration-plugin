@@ -832,7 +832,7 @@ export const noNO = {
   'Locations and QR': 'Locations and QR',
   'Outbreak rules': 'Outbreak rules',
   'Action types': 'Action types',
-  'No property has tail biting enabled. Enable it from Property workers, Tail-bite managers.': 'No property has tail biting enabled. Enable it from Property workers, Tail-bite managers.',
+  'No property is available to you. Tail biting must be enabled on the property, and you must be one of its workers (Property workers, Tail-bite managers).': 'No property is available to you. Tail biting must be enabled on the property, and you must be one of its workers (Property workers, Tail-bite managers).',
   'Tail-bite managers': 'Tail-bite managers',
   'Tail-bite manager': 'Tail-bite manager',
   'Tail biting is not enabled for this property.': 'Tail biting is not enabled for this property.',

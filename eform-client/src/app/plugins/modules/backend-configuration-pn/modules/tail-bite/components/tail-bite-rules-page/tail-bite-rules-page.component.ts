@@ -17,7 +17,7 @@ import {openConfirm} from '../../shared/tail-bite-confirm';
 import {parseServerUtc} from '../../shared/tail-bite-dates';
 import {propertyIdParam} from '../../shared/tail-bite-route';
 import {TailBiteRuleDraft, describeRule, draftProblem, ruleInputFromDraft} from '../../shared/tail-bite-rule-text';
-import {levelOptions, liveNodes, locationTitle, nodeMap, orderedNodes} from '../../shared/tail-bite-tree';
+import {TailBiteLocationOption, levelOptions, liveNodes, locationTitle, nodeMap, orderedNodes, pathOptions} from '../../shared/tail-bite-tree';
 import {memoize} from '../../shared/tail-bite-memo';
 
 export interface TailBiteRuleListItem {
@@ -199,7 +199,7 @@ export class TailBiteRulesPageComponent implements OnInit, OnDestroy {
   // Lists bound to mtx-selects keep their reference until their inputs change (see memoize).
   private readonly freeLocationsOf = memoize((items: TailBiteRuleListItem[], nodes: TailBiteLocationNode[]) => {
     const taken = new Set(items.map((i) => i.rule.locationId));
-    return nodes.filter((n) => !taken.has(n.id));
+    return pathOptions(nodes.filter((n) => !taken.has(n.id)), nodes);
   });
   private readonly levelsOf = memoize((nodes: TailBiteLocationNode[], locationId: number | null) =>
     levelOptions(nodes, nodes.find((n) => n.id === locationId)?.depth ?? 0));
@@ -209,8 +209,8 @@ export class TailBiteRulesPageComponent implements OnInit, OnDestroy {
     this.draft = {ruleId: null, locationId: null, minBittenPigs: 5, minSevere: 1, windowDays: 7, countDepth: 1, version: 0};
   }
 
-  /** Locations that do not have a rule yet; a new rule is attached to one of them. */
-  get freeLocations(): TailBiteLocationNode[] {
+  /** Locations that do not have a rule yet, labelled with full paths; a new rule is attached to one of them. */
+  get freeLocations(): TailBiteLocationOption[] {
     return this.freeLocationsOf(this.items, this.nodes);
   }
 

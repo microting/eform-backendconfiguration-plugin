@@ -7,7 +7,7 @@ import {TailBiteShellComponent} from './tail-bite-shell.component';
 describe('TailBiteShellComponent', () => {
   const base = '/plugins/backend-configuration-pn/tail-bite';
   let router: {url: string; events: Subject<unknown>; navigate: jest.Mock; navigateByUrl: jest.Mock};
-  let getProperties: jest.Mock;
+  let getMyProperties: jest.Mock;
   let component: TailBiteShellComponent;
 
   const create = (url: string) => {
@@ -15,7 +15,7 @@ describe('TailBiteShellComponent', () => {
     TestBed.configureTestingModule({
       providers: [
         {provide: Router, useValue: router},
-        {provide: BackendConfigurationPnTailBiteService, useValue: {getProperties}},
+        {provide: BackendConfigurationPnTailBiteService, useValue: {getMyProperties}},
       ],
     });
     component = TestBed.runInInjectionContext(() => new TailBiteShellComponent());
@@ -23,16 +23,16 @@ describe('TailBiteShellComponent', () => {
   };
 
   beforeEach(() => {
-    getProperties = jest.fn().mockReturnValue(of({success: true, model: [
+    // The caller's properties: the server returns only enabled ones where the caller is a worker (not 2 here).
+    getMyProperties = jest.fn().mockReturnValue(of({success: true, model: [
       {propertyId: 1, name: 'Ejendom Nord', enabled: true},
-      {propertyId: 2, name: 'Ejendom Syd', enabled: false},
       {propertyId: 3, name: 'Ejendom Vest', enabled: true},
     ]}));
   });
 
   afterEach(() => component.ngOnDestroy());
 
-  it('offers only enabled properties and opens the first one from the bare URL', () => {
+  it('offers the caller\'s properties and opens the first one from the bare URL', () => {
     create(base);
     expect(component.properties!.map((p) => p.propertyId)).toEqual([1, 3]);
     expect(router.navigate).toHaveBeenCalledWith([base, 1, 'outbreaks'], {replaceUrl: true});
@@ -56,7 +56,7 @@ describe('TailBiteShellComponent', () => {
     expect(router.navigate).toHaveBeenLastCalledWith([base, 1, 'outbreaks']);
   });
 
-  it('redirects an unknown or disabled property to the first one, keeping the tab', () => {
+  it('redirects a property the caller cannot open to the first one, keeping the tab', () => {
     create(`${base}/2/rules`);
     expect(router.navigateByUrl).toHaveBeenCalledWith(`${base}/1/rules`, {replaceUrl: true});
   });
@@ -73,21 +73,21 @@ describe('TailBiteShellComponent', () => {
   });
 
   it('shows the empty state when the properties cannot be loaded', () => {
-    getProperties.mockReturnValue(throwError(() => new Error('500')));
+    getMyProperties.mockReturnValue(throwError(() => new Error('500')));
     create(`${base}/3/rules`);
     expect(component.properties).toEqual([]);
     expect(component.propertyId).toBeNull();
   });
 
-  it('shows the empty state when nothing is enabled or the call fails', () => {
-    getProperties.mockReturnValue(of({success: false, message: 'x'}));
+  it('shows the empty state when the call is refused', () => {
+    getMyProperties.mockReturnValue(of({success: false, message: 'x'}));
     create(base);
     expect(component.properties).toEqual([]);
     expect(router.navigate).not.toHaveBeenCalled();
   });
 
-  it('shows only the empty state when the URL names a property but none is enabled', () => {
-    getProperties.mockReturnValue(of({success: true, model: [{propertyId: 2, name: 'Ejendom Syd', enabled: false}]}));
+  it('shows only the empty state when the URL names a property but the caller has none', () => {
+    getMyProperties.mockReturnValue(of({success: true, model: []}));
     create(`${base}/2/rules`);
     expect(component.propertyId).toBeNull();
     expect(router.navigate).not.toHaveBeenCalled();

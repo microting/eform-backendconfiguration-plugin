@@ -86,6 +86,38 @@ describe('TailBiteAssessmentFormComponent', () => {
     expect([min.getHours(), min.getMinutes()]).toEqual([0, 0]);
   });
 
+  describe('the minimum follow-up day', () => {
+    // The server compares with OpenedAt.Date (UTC). Jest cannot switch the process time zone mid-run, so a browser zone
+    // is emulated through the local calendar getters, the ones that read the wrong day: the test fails on code that
+    // takes the day from local getters whatever zone the runner is in, UTC included.
+    let spies: jest.SpyInstance[] = [];
+    const emulateZone = (offsetHours: number) => {
+      const shifted = (d: Date) => new Date(d.getTime() + offsetHours * 3600000);
+      spies = [
+        jest.spyOn(Date.prototype, 'getFullYear').mockImplementation(function (this: Date) { return shifted(this).getUTCFullYear(); }),
+        jest.spyOn(Date.prototype, 'getMonth').mockImplementation(function (this: Date) { return shifted(this).getUTCMonth(); }),
+        jest.spyOn(Date.prototype, 'getDate').mockImplementation(function (this: Date) { return shifted(this).getUTCDate(); }),
+      ];
+    };
+    afterEach(() => spies.forEach((s) => s.mockRestore()));
+    const openedAt = (value: string | Date) =>
+      detail({summary: {id: 5, locationId: 2, openedAt: value, assessed: false, openActions: 0, bittenPigs: 0, severePigs: 0, closed: false}});
+
+    it('is the UTC day east of UTC, where the local day is already the next one', () => {
+      emulateZone(9);
+      create(openedAt('2026-09-30T23:30:00Z'));
+      expect(component.minFollowUp).toEqual(new Date(2026, 8, 30));
+    });
+
+    it('is the UTC day west of UTC, also for a Date the host DateInterceptor already parsed', () => {
+      emulateZone(-4);
+      create(openedAt(new Date(Date.UTC(2026, 9, 1, 0, 30))));
+      expect(component.minFollowUp).toEqual(new Date(2026, 9, 1));
+      create(openedAt('2026-10-01T00:30:00Z'));
+      expect(component.minFollowUp).toEqual(new Date(2026, 9, 1));
+    });
+  });
+
   it('keeps everything entered and says so when the server refuses the save', () => {
     saveAssessment.mockReturnValue(of({success: false, message: 'nope'}));
     create(detail());

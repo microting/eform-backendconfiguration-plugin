@@ -16,7 +16,7 @@
   <mat-card class="p-3" style="flex: 2 1 480px" *ngIf="draft">
     <mat-form-field *ngIf="draft.ruleId === null" class="w-100" floatLabel="always">
       <mat-label>{{ 'Location for the new rule' | translate }}</mat-label>
-      <mtx-select id="tailBiteRuleLocation" [items]="freeLocations" bindLabel="name" bindValue="id" appendTo="body"
+      <mtx-select id="tailBiteRuleLocation" [items]="freeLocations" bindLabel="path" bindValue="id" appendTo="body"
                   [ngModel]="draft.locationId" (ngModelChange)="chooseLocation($event)"></mtx-select>
     </mat-form-field>
     <div class="d-flex flex-row flex-wrap gap-12">

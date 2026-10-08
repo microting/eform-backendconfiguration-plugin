@@ -12,14 +12,15 @@ import {TailBitePropertyStatus} from '../../../../models';
 import {BackendConfigurationPnTailBiteService} from '../../../../services';
 import {TAIL_BITE_BASE, parseTailBiteUrl} from '../../shared/tail-bite-route';
 
-/**
- * The tail-bite area: property picker, the four tabs and the page below them. The property lives in the URL
- * (`tail-bite/<propertyId>/<tab>`); the picker navigates, the pages read the route. The bare `tail-bite` URL
- * opens the first property with tail biting enabled.
- */
 /** An outbreak page URL (…/outbreaks/<id>), whose property the page itself owns. */
 const OUTBREAK_DETAIL = /\/outbreaks\/\d+(?=[/?#;]|$)/;
 
+/**
+ * The tail-bite area: property picker, the four tabs and the page below them. The property lives in the URL
+ * (`tail-bite/<propertyId>/<tab>`); the picker navigates, the pages read the route. The picker offers only the
+ * properties with tail biting enabled where the caller is a worker (every page call is refused elsewhere); the bare
+ * `tail-bite` URL opens the first of them.
+ */
 @Component({
   selector: 'app-tail-bite-shell',
   templateUrl: './tail-bite-shell.component.html',
@@ -36,7 +37,7 @@ export class TailBiteShellComponent implements OnInit, OnDestroy {
     {path: 'rules', id: 'tailBiteTabRules', label: 'Outbreak rules'},
     {path: 'action-types', id: 'tailBiteTabActionTypes', label: 'Action types'},
   ];
-  /** null until loaded; then the properties with tail biting enabled, possibly none. */
+  /** null until loaded; then the caller's properties with tail biting enabled, possibly none. */
   properties: TailBitePropertyStatus[] | null = null;
   propertyId: number | null = null;
   private sub?: Subscription;
@@ -44,9 +45,9 @@ export class TailBiteShellComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.sub = this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe(() => this.syncFromUrl());
     this.syncFromUrl();
-    this.service.getProperties().subscribe({
+    this.service.getMyProperties().subscribe({
       next: (res) => {
-        this.properties = res?.success ? res.model.filter((p) => p.enabled) : [];
+        this.properties = res?.success ? res.model : [];
         this.syncFromUrl();
       },
       // A failed call shows the empty state instead of a blank page.

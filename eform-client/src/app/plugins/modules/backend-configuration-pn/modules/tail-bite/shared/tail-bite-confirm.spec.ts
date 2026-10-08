@@ -3,7 +3,7 @@ import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {Subject, of, throwError} from 'rxjs';
 import {DeleteModalComponent} from 'src/app/common/modules/eform-shared/components';
-import {openConfirm} from './tail-bite-confirm';
+import {openConfirm, whenRefused} from './tail-bite-confirm';
 
 describe('openConfirm', () => {
   const overlay = {scrollStrategies: {reposition: () => ({})}} as unknown as Overlay;
@@ -72,5 +72,21 @@ describe('openConfirm', () => {
     deleteClicks.emit({});
     expect(action).not.toHaveBeenCalled();
     expect(done).not.toHaveBeenCalled();
+  });
+});
+
+describe('whenRefused', () => {
+  it('runs the callback on a refusal or a failed request, not on success, and passes the outcome through', () => {
+    const refused = jest.fn();
+    const seen: unknown[] = [];
+    of({success: true} as any).pipe(whenRefused(refused)).subscribe((r) => seen.push(r));
+    expect(refused).not.toHaveBeenCalled();
+    of({success: false} as any).pipe(whenRefused(refused)).subscribe((r) => seen.push(r));
+    expect(refused).toHaveBeenCalledTimes(1);
+    const failed = jest.fn();
+    throwError(() => new Error('down')).pipe(whenRefused(refused)).subscribe({error: failed});
+    expect(refused).toHaveBeenCalledTimes(2);
+    expect(failed).toHaveBeenCalled();
+    expect(seen).toEqual([{success: true}, {success: false}]);
   });
 });

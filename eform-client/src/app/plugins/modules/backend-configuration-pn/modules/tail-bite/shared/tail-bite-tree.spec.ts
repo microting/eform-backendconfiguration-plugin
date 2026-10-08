@@ -2,12 +2,14 @@ import {TailBiteLocationNode, TailBiteLocationTree, TailBiteOccupancySource, Tai
 import {
   ancestorsAndSelf,
   buildTreeRows,
+  countingOccupancy,
   levelOptions,
   locationTitle,
   moveTargets,
   nearestRule,
   nodeMap,
   orderedNodes,
+  pathOptions,
 } from './tail-bite-tree';
 
 // Ejendom > Stald A > Sektion 4 > Sti 10, Sti 9 ; Ejendom > Stald B ; a removed "Gammel stald".
@@ -77,5 +79,24 @@ describe('tail-bite tree helpers', () => {
       {depth: 0, example: 'Ejendom'}, {depth: 1, example: 'Stald A'}, {depth: 2, example: 'Sektion 4'}, {depth: 3, example: 'Sti 9'},
     ]);
     expect(levelOptions(live, 2).map((o) => o.depth)).toEqual([2, 3]);
+  });
+
+  it('labels select options with their path, so equal names under different parents can be told apart', () => {
+    const twins = [...nodes, node(8, 6, 'Sektion 4', 2)];
+    expect(pathOptions([twins[0], twins[2], twins[7]], twins)).toEqual([
+      {id: 1, path: 'Ejendom'},
+      {id: 3, path: 'Stald A › Sektion 4'},
+      {id: 8, path: 'Stald B › Sektion 4'},
+    ]);
+  });
+
+  it('returns the pig-count records a node\'s count is made of, leaving out counts an own count overrides', () => {
+    const count = (locationId: number) =>
+      ({locationId, pigCount: 10, source: TailBiteOccupancySource.Manual, validFrom: '2026-09-01T00:00:00Z'});
+    // Sektion 4 has its own count, so Sti 9's below it does not count; the removed stable is not in the tree.
+    const occupancy = [count(3), count(4), count(6), count(7)];
+    expect(countingOccupancy(tree, occupancy, 1).map((o) => o.locationId)).toEqual([3, 6]);
+    expect(countingOccupancy(tree, occupancy, 5)).toEqual([]);
+    expect(countingOccupancy(tree, occupancy, 7)).toEqual([]);
   });
 });

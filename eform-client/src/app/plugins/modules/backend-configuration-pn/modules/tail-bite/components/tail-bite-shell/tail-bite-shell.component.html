@@ -28,7 +28,7 @@
 </mat-card>
 <mat-tab-nav-panel #tabPanel>
   <p *ngIf="properties?.length === 0" id="tailBiteNoProperty" class="p-3">
-    {{ 'No property has tail biting enabled. Enable it from Property workers, Tail-bite managers.' | translate }}
+    {{ 'No property is available to you. Tail biting must be enabled on the property, and you must be one of its workers (Property workers, Tail-bite managers).' | translate }}
   </p>
   <router-outlet *ngIf="propertyId !== null"></router-outlet>
 </mat-tab-nav-panel>

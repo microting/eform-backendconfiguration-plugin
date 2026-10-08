@@ -37,7 +37,8 @@ using static TailBiteRunner;
 
 /// <summary>
 /// Read endpoints the tail-bite web admin needs beyond the setup and outbreak controllers: the property list with
-/// the enabled flag and a property's workers (plugin-admin, next to enable and the manager toggle), and rules,
+/// the enabled flag and a property's workers (plugin-admin, next to enable and the manager toggle), the caller's own
+/// enabled properties (the area's picker), and rules,
 /// rule history, current pig counts and an outbreak's registration rows (caller-checked by the service).
 /// </summary>
 [Authorize]
@@ -48,6 +49,11 @@ public class TailBiteWebController(ITailBiteAccess access, ITailBiteWebQueryServ
     [Authorize(Policy = BackendConfigurationClaims.AccessBackendConfigurationPlugin)]
     public Task<OperationDataResult<IReadOnlyList<TailBitePropertyStatus>>> ListProperties()
         => Run(() => queries.ListPropertiesAsync());
+
+    // Caller-scoped, for the tail-bite area's property picker: only the enabled properties the caller works on.
+    [HttpGet("my-properties")]
+    public Task<OperationDataResult<IReadOnlyList<TailBitePropertyStatus>>> MyProperties()
+        => Run(access, site => queries.ListCallerPropertiesAsync(site));
 
     [HttpGet("properties/{propertyId:int}/workers")]
     [Authorize(Policy = BackendConfigurationClaims.AccessBackendConfigurationPlugin)]

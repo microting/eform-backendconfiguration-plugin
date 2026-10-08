@@ -933,7 +933,7 @@ export const deDE = {
   'Locations and QR': 'Standorte und QR',
   'Outbreak rules': 'Ausbruchsregeln',
   'Action types': 'Maßnahmenarten',
-  'No property has tail biting enabled. Enable it from Property workers, Tail-bite managers.': 'Für keine Immobilie ist Schwanzbeißen aktiviert. Aktivieren Sie es unter Mitarbeiter, Schwanzbeiß-Verantwortliche.',
+  'No property is available to you. Tail biting must be enabled on the property, and you must be one of its workers (Property workers, Tail-bite managers).': 'Ihnen steht keine Immobilie zur Verfügung. Schwanzbeißen muss für die Immobilie aktiviert sein, und Sie müssen einer ihrer Mitarbeiter sein (Mitarbeiter, Schwanzbeiß-Verantwortliche).',
   'Tail-bite managers': 'Schwanzbeiß-Verantwortliche',
   'Tail-bite manager': 'Schwanzbeiß-Verantwortlicher',
   'Tail biting is not enabled for this property.': 'Schwanzbeißen ist für diese Immobilie nicht aktiviert.',
