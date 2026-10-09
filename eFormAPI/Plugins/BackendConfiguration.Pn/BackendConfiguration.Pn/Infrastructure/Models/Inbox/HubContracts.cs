@@ -28,7 +28,14 @@ public record CatalogProperty(int Id, string Name, string? Address);
 
 public record CatalogTag(int Id, string Name);
 
-public record CatalogResponse(List<CatalogProperty> Properties, List<CatalogTag> Tags);
+/// <summary><c>CanCreateTags</c>: this tenant answers <c>POST …/inbox/hub/tags</c>. Older tenants leave it out.</summary>
+public record CatalogResponse(List<CatalogProperty> Properties, List<CatalogTag> Tags, bool CanCreateTags);
+
+/// <summary>The tag name as staff typed it; the tenant trims it and removes a leading '#'.</summary>
+public record CreateTagRequest(string? Name);
+
+/// <summary><c>Created</c> is false when an existing tag was returned or a removed one restored.</summary>
+public record CreateTagResponse(int Id, string Name, bool Created);
 
 /// <summary><c>Kind</c> is "property" or "tag"; <c>Source</c> is "textMatch", "ai" or "reviewer".</summary>
 public record DeliverSuggestion(string Kind, int TargetId, string Source, double Confidence, string? Evidence,

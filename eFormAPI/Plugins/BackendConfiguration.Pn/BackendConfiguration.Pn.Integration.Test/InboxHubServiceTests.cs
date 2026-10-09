@@ -1,10 +1,15 @@
 using System.Text;
 using BackendConfiguration.Pn.Infrastructure.Models.Inbox;
+using BackendConfiguration.Pn.Services.BackendConfigurationFileTagsService;
 using BackendConfiguration.Pn.Services.FileArchive;
 using BackendConfiguration.Pn.Services.InboundMail;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microting.eForm.Infrastructure.Constants;
+using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using NSubstitute;
@@ -189,6 +194,7 @@ public class InboxHubServiceTests : TestBaseSetup
         Assert.That(ids, Does.Not.Contain(removed.Id));
         Assert.That(catalog.Properties.Single(x => x.Id == p.Id).Address, Is.EqualTo("Nordvej 12, 8000 Aarhus C"));
         Assert.That(catalog.Tags.Select(x => x.Id), Is.EquivalentTo(new[] { t.Id }));
+        Assert.That(catalog.CanCreateTags, Is.True);
     }
 
     private async Task<InboxDocument> PreparingAsync()
@@ -367,5 +373,136 @@ public class InboxHubServiceTests : TestBaseSetup
         await BackendConfigurationPnDbContext!.Entry(doc).ReloadAsync();
         Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.Ready));
         Assert.That(doc.FailureReason, Is.Null);
+    }
+
+    // ---- Tag creation ----
+
+    private Task<List<FileTag>> TagRowsAsync(string name) =>
+        BackendConfigurationPnDbContext!.FileTags.AsNoTracking().Where(t => t.Name == name).OrderBy(t => t.Id).ToListAsync();
+
+    [Test]
+    public async Task CreateTagAsync_NewName_CreatesBySystemUser()
+    {
+        var res = await _service.CreateTagAsync("Skadedyr");
+
+        var row = (await TagRowsAsync("Skadedyr")).Single();
+        Assert.That(res, Is.EqualTo(new CreateTagResponse(row.Id, "Skadedyr", true)));
+        Assert.That(row.CreatedByUserId, Is.EqualTo(0));
+        Assert.That(row.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed));
+    }
+
+    [Test]
+    public async Task CreateTagAsync_SameNameTwice_SecondAnswersExisting()
+    {
+        var first = await _service.CreateTagAsync("Skadedyr");
+        var second = await _service.CreateTagAsync("Skadedyr");
+
+        Assert.That(first, Is.Not.Null);
+        Assert.That(second, Is.EqualTo(first! with { Created = false }));
+        Assert.That(await TagRowsAsync("Skadedyr"), Has.Count.EqualTo(1));
+    }
+
+    [Test]
+    public async Task CreateTagAsync_OtherCase_ReturnsExistingWithStoredName()
+    {
+        var existing = await InboxTestData.TagAsync(BackendConfigurationPnDbContext!, "Skadedyr");
+
+        var res = await _service.CreateTagAsync("skadedyr");
+
+        Assert.That(res, Is.EqualTo(new CreateTagResponse(existing.Id, "Skadedyr", false)));
+        Assert.That(await BackendConfigurationPnDbContext!.FileTags.CountAsync(), Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task CreateTagAsync_OnlyRemovedTag_RestoresIt_NotCreated()
+    {
+        var removed = await InboxTestData.TagAsync(BackendConfigurationPnDbContext!, "Skadedyr");
+        await removed.Delete(BackendConfigurationPnDbContext!);
+
+        var res = await _service.CreateTagAsync("Skadedyr");
+
+        Assert.That(res, Is.EqualTo(new CreateTagResponse(removed.Id, "Skadedyr", false)));
+        var row = (await TagRowsAsync("Skadedyr")).Single();
+        Assert.That(row.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(row.UpdatedByUserId, Is.EqualTo(0));
+        Assert.That((await _service.CatalogAsync()).Tags.Select(t => t.Id), Does.Contain(removed.Id));
+    }
+
+    [Test]
+    public async Task CreateTagAsync_LiveAndRemovedDuplicate_ReturnsLive_RestoresNothing()
+    {
+        var removed = await InboxTestData.TagAsync(BackendConfigurationPnDbContext!, "Skadedyr");
+        await removed.Delete(BackendConfigurationPnDbContext!);
+        var live = await InboxTestData.TagAsync(BackendConfigurationPnDbContext!, "Skadedyr");
+
+        var res = await _service.CreateTagAsync("Skadedyr");
+
+        Assert.That(res, Is.EqualTo(new CreateTagResponse(live.Id, "Skadedyr", false)));
+        var rows = await TagRowsAsync("Skadedyr");
+        Assert.That(rows.Single(t => t.Id == removed.Id).WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+    }
+
+    [Test]
+    public async Task CreateTagAsync_TwoConcurrentCalls_SameName_OneTag()
+    {
+        await using var db1 = CreateFreshBackendConfigurationDbContext();
+        await using var db2 = CreateFreshBackendConfigurationDbContext();
+        InboxHubService NewService(BackendConfigurationPnDbContext db) => new(db, _storage,
+            new SenderVerdictResolver(db), NullLogger<InboxHubService>.Instance);
+
+        var results = await Task.WhenAll(NewService(db1).CreateTagAsync("Skadedyr"),
+            NewService(db2).CreateTagAsync("Skadedyr"));
+
+        Assert.That(results.Select(r => r!.Id).Distinct().Count(), Is.EqualTo(1));
+        Assert.That(results.Count(r => r!.Created), Is.EqualTo(1));
+        Assert.That(await TagRowsAsync("Skadedyr"), Has.Count.EqualTo(1));
+    }
+
+    [Test]
+    public async Task HubAndArchiveConcurrent_SameName_OneTag()
+    {
+        await using var db1 = CreateFreshBackendConfigurationDbContext();
+        await using var db2 = CreateFreshBackendConfigurationDbContext();
+        var user = Substitute.For<IUserService>();
+        user.UserId.Returns(5);
+        var archive = new BackendConfigurationTagsService(
+            new BackendConfigurationLocalizationService(),
+            NullLogger<BackendConfigurationTagsService>.Instance,
+            db2, user);
+
+        var hubTask = new InboxHubService(db1, _storage, new SenderVerdictResolver(db1), NullLogger<InboxHubService>.Instance)
+            .CreateTagAsync("Skadedyr");
+        var archiveTask = archive.CreateTag(new CommonTagModel { Name = "Skadedyr" });
+        await Task.WhenAll(hubTask, archiveTask);
+
+        var hub = await hubTask;
+        var archiveResult = await archiveTask;
+        Assert.That(archiveResult.Success, Is.True, archiveResult.Message);
+        var row = (await TagRowsAsync("Skadedyr")).Single();
+        Assert.That(hub!.Id, Is.EqualTo(row.Id));
+    }
+
+    [TestCase("Skadedyr", "Skadedyr")]
+    [TestCase("  #Skadedyr  ", "Skadedyr")]
+    [TestCase("# Skadedyr", "Skadedyr")]
+    [TestCase("##x", "#x")]
+    [TestCase("Æbletræ øst", "Æbletræ øst")]
+    [TestCase("Skadedyr\n", "Skadedyr")]
+    [TestCase("", null)]
+    [TestCase("   ", null)]
+    [TestCase("#", null)]
+    [TestCase(" # ", null)]
+    [TestCase("a\tb", null)]
+    [TestCase("a\u0007b", null)]
+    [TestCase(null, null)]
+    public void NormalizeTagName_Cases(string? raw, string? expected) =>
+        Assert.That(InboxHubService.NormalizeTagName(raw), Is.EqualTo(expected));
+
+    [Test]
+    public void NormalizeTagName_LengthLimit()
+    {
+        Assert.That(InboxHubService.NormalizeTagName(new string('a', 100)), Is.EqualTo(new string('a', 100)));
+        Assert.That(InboxHubService.NormalizeTagName("#" + new string('a', 100)), Is.EqualTo(new string('a', 100)));
+        Assert.That(InboxHubService.NormalizeTagName(new string('a', 101)), Is.Null);
     }
 }

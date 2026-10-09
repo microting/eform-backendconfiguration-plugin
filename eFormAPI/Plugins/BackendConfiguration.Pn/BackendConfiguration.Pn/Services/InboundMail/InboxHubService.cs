@@ -5,6 +5,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Inbox;
+using BackendConfiguration.Pn.Services.BackendConfigurationFileTagsService;
 using BackendConfiguration.Pn.Services.FileArchive;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -24,6 +25,12 @@ public interface IInboxHubService
     /// <summary>Live properties and file tags, for the central service's suggestions.</summary>
     Task<CatalogResponse> CatalogAsync();
 
+    /// <summary>
+    /// The live tag named <paramref name="name"/> (already normalised), a restored removed one, or a new one.
+    /// Null when the tag lock was not granted in time.
+    /// </summary>
+    Task<CreateTagResponse?> CreateTagAsync(string name);
+
     /// <summary>Stores the PDF and its suggestions. Idempotent on <see cref="DeliverMetadata.HubDocumentId"/>.</summary>
     Task DeliverAsync(DeliverMetadata meta, Stream pdf, string fileName);
 
@@ -35,6 +42,9 @@ public class InboxHubService(BackendConfigurationPnDbContext dbContext, IArchive
     SenderVerdictResolver verdicts, ILogger<InboxHubService> logger) : IInboxHubService
 {
     private const int SystemUserId = 0;
+
+    /// <summary>The longest tag name the tenant accepts.</summary>
+    public const int MaxTagNameLength = 100;
 
     /// <summary>FromAddress of a document delivered without a prior "arrived": the sender was never seen.</summary>
     public const string UnknownSender = "ukendt";
@@ -97,7 +107,32 @@ public class InboxHubService(BackendConfigurationPnDbContext dbContext, IArchive
             .OrderBy(t => t.Id)
             .Select(t => new CatalogTag(t.Id, t.Name))
             .ToListAsync();
-        return new CatalogResponse(properties, tags);
+        return new CatalogResponse(properties, tags, CanCreateTags: true);
+    }
+
+    public Task<CreateTagResponse?> CreateTagAsync(string name) =>
+        // Same lock as the archive's own tag creation, so neither creates a name twice.
+        InboxNamedLock.RunAsync<CreateTagResponse?>(dbContext, InboxNamedLock.TagCreate,
+            async () =>
+            {
+                var (tag, created) = await FileTagStore.FindOrCreateAsync(dbContext, name, SystemUserId);
+                return new CreateTagResponse(tag.Id, tag.Name, created);
+            },
+            () => Task.FromResult<CreateTagResponse?>(null), logger);
+
+    /// <summary>
+    /// Trimmed, with one leading '#' removed; null when the result is empty, longer than
+    /// <see cref="MaxTagNameLength"/> or contains a control character.
+    /// </summary>
+    public static string? NormalizeTagName(string? raw)
+    {
+        var name = raw?.Trim();
+        if (name != null && name.StartsWith('#'))
+        {
+            name = name[1..].TrimStart();
+        }
+
+        return name is { Length: > 0 and <= MaxTagNameLength } && !name.Any(char.IsControl) ? name : null;
     }
 
     public async Task DeliverAsync(DeliverMetadata meta, Stream pdf, string fileName)
