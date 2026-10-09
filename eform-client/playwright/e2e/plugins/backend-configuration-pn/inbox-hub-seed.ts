@@ -114,6 +114,8 @@ export interface SeedOptions {
   fileName: string;
   /** Property and tag ids to suggest; sent with confidence 0.5, the review dialog's preselect threshold. */
   suggestions?: Suggestion[];
+  /** The hub's "staff reviewed the suggestions" flag; the tenant stores it but shows no marker for it. */
+  reviewedByMicroting?: boolean;
 }
 
 /** What the tenant answered to "arrived": "allowed", or "blocked" when a Block rule matches (then no row exists). */
@@ -149,18 +151,18 @@ export async function announceInboxDocument(request: APIRequestContext, fromAddr
 export async function seedInboxDocument(request: APIRequestContext, opts: SeedOptions): Promise<string> {
   const { hubDocumentId, senderVerdict } = await announceInboxDocument(request, opts.fromAddress, opts.fileName);
   expect(senderVerdict, `"arrived" for ${opts.fileName} from ${opts.fromAddress}`).toBe('allowed');
-  await deliverInboxDocument(request, hubDocumentId, opts.fileName, opts.suggestions ?? []);
+  await deliverInboxDocument(request, hubDocumentId, opts.fileName, opts);
   return hubDocumentId;
 }
 
 /** POST deliver (multipart: `metadata` JSON + `file` PDF) for a document announced earlier. */
 export async function deliverInboxDocument(request: APIRequestContext, hubDocumentId: string, fileName: string,
-  suggestions: Suggestion[] = []): Promise<void> {
+  { suggestions = [], reviewedByMicroting = false }: Pick<SeedOptions, 'suggestions' | 'reviewedByMicroting'> = {}): Promise<void> {
   const boundary = `----inbox${hubDocumentId}`;
   const metadata = JSON.stringify({
     hubDocumentId,
     pageCount: 1,
-    reviewedByMicroting: false,
+    reviewedByMicroting,
     suggestions: suggestions.map(s => ({
       ...s, source: 'textMatch', confidence: 0.5, evidence: 'Nordvej 12', page: 1, reason: 'Adressen står i dokumentet.',
     })),

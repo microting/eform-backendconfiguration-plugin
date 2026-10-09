@@ -249,4 +249,20 @@ test.describe.serial('Indbakke', () => {
     expect(rotation[1].body.previousTokenHash).toBe(addressTokenHash(first));
     expectSigned(rotation[1], 'the address rotation');
   });
+
+  test('I5 a document reviewed by Microting shows no "checked by Microting" marker', async () => {
+    // Two signed seeding calls and one page load, each bounded by API_TIMEOUT.
+    test.setTimeout(120000);
+    const fileName = `Servicerapport ${generateRandmString(4)}.pdf`;
+    await seedInboxDocument(page.request, { fromAddress: ADMIN_EMAIL, fileName, reviewedByMicroting: true });
+    // The removed texts in Danish and English (the e2e UI language).
+    await openInbox();
+    const id = await rowId(fileName, Status.Ready);
+    await expect(rowFor(fileName).getByText(/Kontrolleret af Microting|Checked by Microting/)).toHaveCount(0, { timeout: UI_TIMEOUT });
+
+    await openReview(id);
+    // The dialog body has rendered (its file button is there) before checking what it does not show.
+    await expect(dialog().locator('#inboxFileBtn')).toBeVisible({ timeout: UI_TIMEOUT });
+    await expect(dialog().getByText(/Microting har kontrolleret|Microting checked these suggestions/)).toHaveCount(0, { timeout: UI_TIMEOUT });
+  });
 });
