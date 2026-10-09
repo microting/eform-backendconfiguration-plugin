@@ -19,3 +19,4 @@ export * from './common-tag.model';
 export * from './calendar';
 export * from './compliance-report';
 export * from './inbox/inbox.models';
+export * from './tail-bite';

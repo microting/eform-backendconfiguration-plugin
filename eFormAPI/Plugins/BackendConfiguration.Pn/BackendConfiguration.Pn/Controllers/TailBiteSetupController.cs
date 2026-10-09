@@ -31,6 +31,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+using Microting.EformAngularFrontendBase.Infrastructure.Const;
 using Microting.EformBackendConfigurationBase.Infrastructure.Const;
 using Services.TailBite;
 using static TailBiteRunner;
@@ -38,7 +39,8 @@ using static TailBiteRunner;
 /// <summary>
 /// Tail-bite (halebid) setup for the web: location tree, occupancy, action types, rules and the manager toggle.
 /// Authorization beyond being signed in is the service's (worker or manager on the entity's property); only
-/// enabling a property and the manager toggle are plugin-admin routes.
+/// enabling a property and the manager toggle are management routes: plugin access plus the worker-update permission
+/// (DeviceUsers.Update, the same as editing a property worker), since a manager gains tail-bite manager rights.
 /// </summary>
 [Authorize]
 [Route("api/backend-configuration-pn/tail-bite")]
@@ -49,10 +51,12 @@ public class TailBiteSetupController(ITailBiteAccess access, ITailBiteSetupServi
 
     [HttpPost("properties/{propertyId:int}/enable")]
     [Authorize(Policy = BackendConfigurationClaims.AccessBackendConfigurationPlugin)]
+    [Authorize(Policy = AuthConsts.EformPolicies.DeviceUsers.Update)]
     public Task<OperationResult> Enable(int propertyId) => Run(() => setup.EnableAsync(0, propertyId));
 
     [HttpPut("property-workers/{id:int}/manager")]
     [Authorize(Policy = BackendConfigurationClaims.AccessBackendConfigurationPlugin)]
+    [Authorize(Policy = AuthConsts.EformPolicies.DeviceUsers.Update)]
     public Task<OperationResult> SetManager(int id, [FromBody] SetManagerRequest request)
         => WithBody(request, r =>
             r.IsManager is { } isManager

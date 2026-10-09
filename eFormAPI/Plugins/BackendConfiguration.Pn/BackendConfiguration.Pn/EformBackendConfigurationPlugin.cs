@@ -140,6 +140,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<Services.TailBite.ITailBiteOutbreakService, Services.TailBite.TailBiteOutbreakService>();
         services.AddTransient<Services.TailBite.ITailBitePushSender, Services.TailBite.TailBitePushSender>();
         services.AddTransient<Services.TailBite.ITailBiteOutbreakNotifier, Services.TailBite.TailBiteOutbreakNotifier>();
+        services.AddTransient<Services.TailBite.ITailBiteWebQueryService, Services.TailBite.TailBiteWebQueryService>();
         // flutter-chemistry: the inventory service, its readers and the chemicalbase client.
         services.AddChemicalInventory();
         services.AddTransient<Services.EventDeployService.IEventDeployService,
@@ -2149,11 +2150,39 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                         Language = LanguageNames.Ukrainian
                     }
                 ]
+            },
+            new()
+            {
+                // Tail biting (halebid) web admin, sub-project 3 of spec 2026-10-04-halebid-app-design. Open to every
+                // plugin user; the tail-bite endpoints check worker/manager access per property. Same first-install
+                // menu seeding limitation as the Compliance entry above.
+                Name = "Tail biting",
+                E2EId = "backend-configuration-pn-tail-bite",
+                Link = "/plugins/backend-configuration-pn/tail-bite",
+                Type = MenuItemTypeEnum.Link,
+                Position = 14,
+                MenuTemplate = new PluginMenuTemplateModel
+                {
+                    Name = "Tail biting",
+                    E2EId = "backend-configuration-pn-tail-bite",
+                    DefaultLink = "/plugins/backend-configuration-pn/tail-bite",
+                    Permissions = [],
+                    Translations = TailBiteMenuTranslations()
+                },
+                Translations = TailBiteMenuTranslations()
             }
         };
 
         return pluginMenu;
     }
+
+    private static List<PluginMenuTranslationModel> TailBiteMenuTranslations() =>
+    [
+        new() { LocaleName = LocaleNames.English, Name = "Tail biting", Language = LanguageNames.English },
+        new() { LocaleName = LocaleNames.German, Name = "Schwanzbeißen", Language = LanguageNames.German },
+        new() { LocaleName = LocaleNames.Danish, Name = "Halebid", Language = LanguageNames.Danish },
+        new() { LocaleName = LocaleNames.Ukrainian, Name = "Кусання хвостів", Language = LanguageNames.Ukrainian }
+    ];
 
     public MenuModel HeaderMenu(IServiceProvider serviceProvider)
     {

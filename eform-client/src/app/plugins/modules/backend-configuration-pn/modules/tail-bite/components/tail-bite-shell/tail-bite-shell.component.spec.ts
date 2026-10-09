@@ -1,0 +1,95 @@
+import {TestBed} from '@angular/core/testing';
+import {NavigationEnd, Router} from '@angular/router';
+import {Subject, of, throwError} from 'rxjs';
+import {BackendConfigurationPnTailBiteService} from '../../../../services';
+import {TailBiteShellComponent} from './tail-bite-shell.component';
+
+describe('TailBiteShellComponent', () => {
+  const base = '/plugins/backend-configuration-pn/tail-bite';
+  let router: {url: string; events: Subject<unknown>; navigate: jest.Mock; navigateByUrl: jest.Mock};
+  let getMyProperties: jest.Mock;
+  let component: TailBiteShellComponent;
+
+  const create = (url: string) => {
+    router = {url, events: new Subject(), navigate: jest.fn(), navigateByUrl: jest.fn()};
+    TestBed.configureTestingModule({
+      providers: [
+        {provide: Router, useValue: router},
+        {provide: BackendConfigurationPnTailBiteService, useValue: {getMyProperties}},
+      ],
+    });
+    component = TestBed.runInInjectionContext(() => new TailBiteShellComponent());
+    component.ngOnInit();
+  };
+
+  beforeEach(() => {
+    // The caller's properties: the server returns only enabled ones where the caller is a worker (not 2 here).
+    getMyProperties = jest.fn().mockReturnValue(of({success: true, model: [
+      {propertyId: 1, name: 'Ejendom Nord', enabled: true},
+      {propertyId: 3, name: 'Ejendom Vest', enabled: true},
+    ]}));
+  });
+
+  afterEach(() => component.ngOnDestroy());
+
+  it('offers the caller\'s properties and opens the first one from the bare URL', () => {
+    create(base);
+    expect(component.properties!.map((p) => p.propertyId)).toEqual([1, 3]);
+    expect(router.navigate).toHaveBeenCalledWith([base, 1, 'outbreaks'], {replaceUrl: true});
+  });
+
+  it('takes the property from the URL and follows later navigations', () => {
+    create(`${base}/3/rules`);
+    expect(component.propertyId).toBe(3);
+    expect(router.navigate).not.toHaveBeenCalled();
+    router.url = `${base}/1/rules`;
+    router.events.next(new NavigationEnd(1, router.url, router.url));
+    expect(component.propertyId).toBe(1);
+  });
+
+  it('switches property on the same tab, and from an outbreak page to the new list', () => {
+    create(`${base}/3/locations`);
+    component.select(1);
+    expect(router.navigate).toHaveBeenLastCalledWith([base, 1, 'locations']);
+    router.url = `${base}/3/outbreaks/12`;
+    component.select(1);
+    expect(router.navigate).toHaveBeenLastCalledWith([base, 1, 'outbreaks']);
+  });
+
+  it('redirects a property the caller cannot open to the first one, keeping the tab', () => {
+    create(`${base}/2/rules`);
+    expect(router.navigateByUrl).toHaveBeenCalledWith(`${base}/1/rules`, {replaceUrl: true});
+  });
+
+  it('redirects an unknown property keeping the rest of the path, the query and the fragment', () => {
+    create(`${base}/9/locations?x=1#top`);
+    expect(router.navigateByUrl).toHaveBeenCalledWith(`${base}/1/locations?x=1#top`, {replaceUrl: true});
+  });
+
+  it('leaves an outbreak page to correct its own property, so the two never chase each other', () => {
+    create(`${base}/9/outbreaks/12`);
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('shows the empty state when the properties cannot be loaded', () => {
+    getMyProperties.mockReturnValue(throwError(() => new Error('500')));
+    create(`${base}/3/rules`);
+    expect(component.properties).toEqual([]);
+    expect(component.propertyId).toBeNull();
+  });
+
+  it('shows the empty state when the call is refused', () => {
+    getMyProperties.mockReturnValue(of({success: false, message: 'x'}));
+    create(base);
+    expect(component.properties).toEqual([]);
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('shows only the empty state when the URL names a property but the caller has none', () => {
+    getMyProperties.mockReturnValue(of({success: true, model: []}));
+    create(`${base}/2/rules`);
+    expect(component.propertyId).toBeNull();
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+});

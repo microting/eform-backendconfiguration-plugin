@@ -219,6 +219,17 @@ export const routes: Routes = [
           ),
       },
       {
+        // Tail biting (halebid) web admin, sub-project 3 of spec 2026-10-04-halebid-app-design.
+        // Open to every logged-in plugin user like calendar and compliances: the data is
+        // guarded server-side per property (worker or tail-bite manager, spec §7.1).
+        path: 'tail-bite',
+        canActivate: [AuthGuard],
+        loadChildren: () =>
+          import('./modules/tail-bite/tail-bite.module').then(
+            (m) => m.TailBiteModule
+          ),
+      },
+      {
         // Google OAuth popup landing route. The backend's
         // GoogleDriveController.OAuthFinish redirects here with either
         // ?gdrive_success=true or ?gdrive_err=<reason>. The component

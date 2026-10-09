@@ -60,6 +60,16 @@
     </button>
     <button
       class="btn-secondary btn-secondary--icon-left"
+      id="tailBiteManagersBtn"
+      *ngIf="selectCurrentUserClaimsDeviceUsersUpdate$ | async"
+      (click)="openTailBiteManagersDialog()"
+      matTooltip="{{ 'Tail-bite managers' | translate }}"
+    >
+      <mat-icon>pets</mat-icon>
+      <span>{{ 'Tail-bite managers' | translate }}</span>
+    </button>
+    <button
+      class="btn-secondary btn-secondary--icon-left"
       id="bulkWorkerTagsBtn"
       *ngIf="selectCurrentUserClaimsDeviceUsersUpdate$ | async"
       [disabled]="selectedWorkers.length === 0"

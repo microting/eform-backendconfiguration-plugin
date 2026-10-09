@@ -19,3 +19,4 @@ export * from './backend-configuration-pn-google-drive.service';
 export * from './backend-configuration-pn-compliance-report.service';
 export * from './backend-configuration-pn-worker-tags.service';
 export * from './backend-configuration-pn-inbox.service';
+export * from './backend-configuration-pn-tail-bite.service';

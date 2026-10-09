@@ -16,6 +16,10 @@ import {
   PropertyWorkerBulkTagsModalData,
   PropertyWorkerCreateEditModalComponent
 } from '../';
+import {
+  TailBiteManagersDialogComponent,
+  TailBiteManagersDialogData,
+} from '../tail-bite-managers-dialog/tail-bite-managers-dialog.component';
 import {PropertyWorkersStateService} from '../store';
 import {Sort} from '@angular/material/sort';
 import {TranslateService} from '@ngx-translate/core';
@@ -218,6 +222,13 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
 
   openEditTagsModal() {
     this.modalSiteTags.show();
+  }
+
+  /** Halebid-ansvarlige: preselects the property when the filter holds exactly one. */
+  openTailBiteManagersDialog() {
+    const propertyIds = this.filtersForm.get('propertyIds').value ?? [];
+    const data: TailBiteManagersDialogData = {propertyId: propertyIds.length === 1 ? propertyIds[0] : null};
+    this.dialog.open(TailBiteManagersDialogComponent, dialogConfigHelper(this.overlay, data));
   }
 
   getPropertiesDictionary() {

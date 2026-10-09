@@ -1,0 +1,47 @@
+<h3 class="m-0">{{ 'Follow-ups' | translate }}</h3>
+<table class="mt-2 w-100" id="tailBiteFollowUpsTable">
+  <thead>
+    <tr>
+      <th scope="col" class="py-2">{{ 'Action' | translate }}</th>
+      <th scope="col" class="py-2">{{ 'Responsible' | translate }}</th>
+      <th scope="col" class="py-2">{{ 'Follow-up date' | translate }}</th>
+      <th scope="col" class="py-2">{{ 'Status' | translate }}</th>
+      <th scope="col" class="py-2">{{ 'Actions' | translate }}</th>
+    </tr>
+  </thead>
+  <tr *ngFor="let a of actions" [id]="'tailBiteActionRow-' + a.id">
+    <td class="py-2">
+      <strong>{{ factorLabel(a.factor) | translate }}</strong>
+      <div>{{ a.description }}</div>
+    </td>
+    <td class="py-2">
+      <ng-container *ngIf="canChange(a); else responsibleText">
+        <mat-form-field>
+          <mat-label>{{ 'Responsible' | translate }}</mat-label>
+          <mtx-select [id]="'tailBiteActionResponsible-' + a.id" [items]="itemsOf(a)" bindLabel="name" bindValue="siteId"
+                      appendTo="body" [clearable]="false" [disabled]="busy" [ngModel]="selectedSite(a)"
+                      (ngModelChange)="reassign(a, $event)"></mtx-select>
+        </mat-form-field>
+      </ng-container>
+      <ng-template #responsibleText>{{ workerName(a.responsibleSiteId) }}</ng-template>
+      <div *ngIf="!isAssignable(a.responsibleSiteId)" class="badge badge-warning" [id]="'tailBiteActionLeft-' + a.id">
+        {{ 'No longer on the property' | translate }}
+      </div>
+    </td>
+    <td class="py-2">{{ followUpDate(a) | date: 'dd.MM.yyyy' }}</td>
+    <td class="py-2" [ngSwitch]="state(a)">
+      <span *ngSwitchCase="'done'" class="badge badge-success" [id]="'tailBiteActionState-' + a.id">{{ 'Done' | translate }}</span>
+      <span *ngSwitchCase="'withdrawn'" class="badge badge-neutral" [id]="'tailBiteActionState-' + a.id">{{ 'Withdrawn' | translate }}</span>
+      <span *ngSwitchCase="'overdue'" class="badge badge-error" [id]="'tailBiteActionState-' + a.id">{{ 'Overdue' | translate }}</span>
+      <span *ngSwitchDefault class="badge badge-warning" [id]="'tailBiteActionState-' + a.id">{{ 'Follow-up' | translate }}</span>
+    </td>
+    <td class="py-2">
+      <button *ngIf="canDone(a)" class="btn-secondary" [id]="'tailBiteActionDone-' + a.id" [disabled]="busy" (click)="toggleDone(a)">
+        {{ doneLabel(a) | translate }}
+      </button>
+      <button *ngIf="canChange(a)" class="btn-quiet ml-2" [id]="'tailBiteActionWithdraw-' + a.id" [disabled]="busy" (click)="withdraw(a)">
+        {{ 'Withdraw' | translate }}
+      </button>
+    </td>
+  </tr>
+</table>

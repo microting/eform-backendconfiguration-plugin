@@ -1,0 +1,72 @@
+<h3 class="m-0">{{ 'Risk assessment' | translate }}</h3>
+<p class="mt-2">{{ 'Answer all six. A yes needs an action, a responsible person and a follow-up date.' | translate }}</p>
+
+<div *ngFor="let f of factors" class="d-flex flex-column gap-12 py-3" [id]="'tailBiteFactorRow-' + f.factor">
+  <div class="d-flex flex-row flex-wrap align-items-center justify-content-between gap-12">
+    <div>
+      <strong>{{ f.label | translate }}</strong>
+      <div>{{ f.question | translate }}</div>
+    </div>
+    <mat-button-toggle-group
+      [attr.aria-label]="f.label | translate"
+      [disabled]="readOnly || busy"
+      [value]="draft(f.factor).answer"
+      (change)="setAnswer(f.factor, $event.value)"
+    >
+      <mat-button-toggle [id]="'tailBiteFactor-' + f.factor + '-yes'" [value]="true">{{ 'Yes' | translate }}</mat-button-toggle>
+      <mat-button-toggle [id]="'tailBiteFactor-' + f.factor + '-no'" [value]="false">{{ 'No' | translate }}</mat-button-toggle>
+    </mat-button-toggle-group>
+  </div>
+
+  <ul *ngIf="draft(f.factor).answer && existing(f.factor).length" class="m-0">
+    <li *ngFor="let a of existing(f.factor)">
+      {{ a.description }} · {{ workerName(a.responsibleSiteId) }} · {{ followUpDate(a) | date: 'dd.MM.yyyy' }}
+    </li>
+  </ul>
+
+  <ng-container *ngIf="draft(f.factor).answer && !readOnly">
+    <div *ngFor="let a of draft(f.factor).newActions; let i = index" class="d-flex flex-row flex-wrap align-items-end gap-12">
+      <mat-form-field style="flex: 2 1 240px">
+        <mat-label>{{ 'Describe the action' | translate }}</mat-label>
+        <input matInput maxlength="1000" [id]="'tailBiteNewAction-' + f.factor + '-' + i + '-description'"
+               [(ngModel)]="a.description" (ngModelChange)="refresh()" />
+      </mat-form-field>
+      <mat-form-field floatLabel="always" style="flex: 1 1 180px">
+        <mat-label>{{ 'Responsible' | translate }}</mat-label>
+        <mtx-select [id]="'tailBiteNewAction-' + f.factor + '-' + i + '-responsible'" [items]="assignableWorkers" bindLabel="name"
+                    bindValue="siteId" appendTo="body" [(ngModel)]="a.responsibleSiteId" (ngModelChange)="refresh()"></mtx-select>
+      </mat-form-field>
+      <mat-form-field style="flex: 1 1 160px">
+        <mat-label>{{ 'Follow-up date' | translate }}</mat-label>
+        <input matInput [matDatepicker]="picker" [min]="minFollowUp" [id]="'tailBiteNewAction-' + f.factor + '-' + i + '-date'"
+               [(ngModel)]="a.followUpDate" (ngModelChange)="refresh()" />
+        <mat-datepicker-toggle matIconSuffix [for]="picker" [aria-label]="'Follow-up date' | translate" [id]="'tailBiteNewAction-' + f.factor + '-' + i + '-dateToggle'"></mat-datepicker-toggle>
+        <mat-datepicker #picker></mat-datepicker>
+      </mat-form-field>
+      <button mat-icon-button [id]="'tailBiteNewAction-' + f.factor + '-' + i + '-remove'" [attr.aria-label]="'Delete' | translate"
+              [disabled]="busy" (click)="removeAction(f.factor, i)">
+        <mat-icon>delete</mat-icon>
+      </button>
+    </div>
+    <div>
+      <button class="btn-quiet" [id]="'tailBiteAddAction-' + f.factor" [disabled]="busy" (click)="addAction(f.factor)">{{ 'Add action' | translate }}</button>
+    </div>
+  </ng-container>
+
+  <p *ngIf="withdrawsOnNo(f.factor)" class="m-0">{{ 'Answering no withdraws the open follow-ups of this factor.' | translate }}</p>
+  <p *ngIf="submitted && errors.get(f.factor) as error" class="m-0" [id]="'tailBiteAssessmentError-' + f.factor" role="alert">
+    {{ errorText(error) | translate }}
+  </p>
+</div>
+
+<div *ngIf="!readOnly" class="d-flex flex-column gap-12">
+  <p *ngIf="hasErrors" id="tailBiteAssessmentHint" class="m-0">{{ 'Complete every factor above before saving.' | translate }}</p>
+  <p *ngIf="saveFailed" id="tailBiteAssessmentSaveFailed" class="m-0" role="alert">
+    {{ 'The risk assessment could not be saved. Everything you entered is kept.' | translate }}
+  </p>
+  <div>
+    <button id="tailBiteSaveAssessmentBtn" class="btn-primary" [disabled]="busy" (click)="save()">
+      {{ 'Save risk assessment' | translate }}
+    </button>
+  </div>
+</div>

@@ -1,0 +1,92 @@
+<div *ngIf="notFound && !view">
+  <a routerLink="../" id="tailBiteBackToOutbreaks">{{ 'Back to outbreaks' | translate }}</a>
+  <p class="mt-2" id="tailBiteOutbreakNotFound">{{ 'Outbreak not found or no access.' | translate }}</p>
+</div>
+
+<div *ngIf="view && detail" class="d-flex flex-column gap-12">
+  <div>
+    <a routerLink="../" id="tailBiteBackToOutbreaks">{{ 'Back to outbreaks' | translate }}</a>
+    <div class="d-flex flex-row flex-wrap align-items-center gap-12 mt-2">
+      <h2 class="m-0" id="tailBiteOutbreakTitle">{{ view.title }}</h2>
+      <span id="tailBiteOutbreakDetailStatus" [class]="statusBadge[view.status]">{{ statusLabel[view.status] | translate }}</span>
+    </div>
+    <p *ngIf="view.rule" class="mt-2" id="tailBiteOutbreakRuleLine">
+      {{ 'Started {{date}} by rule version {{version}} on {{location}}: {{rule}}.' | translate: {
+        date: (view.openedAt | date: 'dd.MM.yyyy HH:mm'), version: view.rule.version, location: view.ruleLocation, rule: ruleText
+      } }}
+    </p>
+  </div>
+
+  <mat-card class="p-3">
+    <h3 class="m-0">{{ 'Registrations behind the outbreak' | translate }}</h3>
+    <p class="mt-2" id="tailBiteOutbreakSummaryLine">
+      {{ '{{pigs}} bitten pigs in {{locations}} locations.' | translate: {pigs: view.bittenPigs, locations: view.locationCount} }}
+    </p>
+    <table mat-table [dataSource]="view.rows" id="tailBiteRegistrationsTable">
+      <ng-container matColumnDef="effectiveAt">
+        <th mat-header-cell *matHeaderCellDef>{{ 'Date' | translate }}</th>
+        <td mat-cell *matCellDef="let row">{{ row.effectiveAt | date: 'dd.MM HH:mm' }}</td>
+      </ng-container>
+      <ng-container matColumnDef="location">
+        <th mat-header-cell *matHeaderCellDef>{{ 'Location' | translate }}</th>
+        <td mat-cell *matCellDef="let row">{{ row.location }}</td>
+      </ng-container>
+      <ng-container matColumnDef="minor">
+        <th mat-header-cell *matHeaderCellDef>{{ 'Minor bites' | translate }}</th>
+        <td mat-cell *matCellDef="let row">{{ row.minor }}</td>
+      </ng-container>
+      <ng-container matColumnDef="severe">
+        <th mat-header-cell *matHeaderCellDef>{{ 'Severe bites' | translate }}</th>
+        <td mat-cell *matCellDef="let row">{{ row.severe }}</td>
+      </ng-container>
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>{{ 'Action' | translate }}</th>
+        <td mat-cell *matCellDef="let row">{{ row.actions }}</td>
+      </ng-container>
+      <ng-container matColumnDef="siteName">
+        <th mat-header-cell *matHeaderCellDef>{{ 'Registered by' | translate }}</th>
+        <td mat-cell *matCellDef="let row">{{ row.siteName }}</td>
+      </ng-container>
+      <ng-container matColumnDef="photos">
+        <th mat-header-cell *matHeaderCellDef>{{ 'Photos' | translate }}</th>
+        <td mat-cell *matCellDef="let row">{{ row.photoCount }}</td>
+      </ng-container>
+      <ng-container matColumnDef="cancel">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let row">
+          <span *ngIf="row.cancelled && row.firstOfRegistration" class="badge badge-neutral" [id]="'tailBiteRegCancelled-' + row.registrationId"
+                [matTooltip]="row.cancelReason">{{ 'Cancelled' | translate }}</span>
+          <button
+            *ngIf="!row.cancelled && row.firstOfRegistration && view.status !== 'closed'"
+            mat-icon-button
+            [id]="'tailBiteCancelReg-' + row.registrationId"
+            [matTooltip]="'Cancel registration' | translate"
+            [disabled]="busy"
+            (click)="cancelRegistration(row)"
+          >
+            <mat-icon>block</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+      <tr mat-header-row *matHeaderRowDef="columns"></tr>
+      <tr mat-row *matRowDef="let row; columns: columns" [id]="'tailBiteRegRow-' + row.rowId"></tr>
+    </table>
+    <p *ngIf="view.pigs" class="mt-2" id="tailBiteOutbreakPigsLine">
+      {{ 'Pig count for {{location}}: {{count}} (from {{date}}). That is {{rate}} bitten per 100 pigs.' | translate: {
+        location: view.title, count: view.pigs, date: (view.pigsFrom | date: 'dd.MM.yyyy'), rate: (view.ratePer100 | number: '1.1-1')
+      } }}
+    </p>
+  </mat-card>
+
+  <mat-card class="p-3">
+    <app-tail-bite-assessment-form [detail]="detail" [workers]="workers" (saved)="load()"></app-tail-bite-assessment-form>
+    <div class="d-flex flex-row flex-wrap align-items-center gap-12 mt-3">
+      <button id="tailBiteCloseBtn" class="btn-primary" [disabled]="!canClose || busy" (click)="close()">{{ 'Close outbreak' | translate }}</button>
+      <span *ngIf="closeBlockedReason" id="tailBiteCloseReason">{{ closeBlockedReason | translate }}</span>
+    </div>
+  </mat-card>
+
+  <mat-card class="p-3" *ngIf="detail.actions.length">
+    <app-tail-bite-follow-ups [detail]="detail" [workers]="workers" (changed)="load()"></app-tail-bite-follow-ups>
+  </mat-card>
+</div>

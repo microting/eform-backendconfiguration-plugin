@@ -53,6 +53,9 @@ public static class TailBiteDefaults
         => Convert.ToBase64String(RandomNumberGenerator.GetBytes(16)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 }
 
+// A worker on a property and whether the SDK worker has resigned (resigned workers keep their PropertyWorker row).
+public sealed record TailBiteWorkerSite(int SiteId, bool Resigned);
+
 public sealed record RegistrationLocationInput(int LocationId, int Minor, int Severe);
 public sealed record CreateRegistrationCommand(Guid ClientUuid, int PropertyId, DateTime RegisteredAtUtc,
     IReadOnlyList<RegistrationLocationInput> Locations, IReadOnlyList<int> ActionTypeIds, string? Comment);

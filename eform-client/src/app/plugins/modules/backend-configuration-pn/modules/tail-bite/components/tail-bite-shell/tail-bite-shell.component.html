@@ -1,0 +1,34 @@
+<mat-card class="eform-sub-header d-flex flex-column gap-12 mb-3 p-3">
+  <div class="d-flex flex-row flex-wrap align-items-center justify-content-between gap-12">
+    <h2 class="m-0">{{ 'Tail biting' | translate }}</h2>
+    <mat-form-field *ngIf="properties?.length">
+      <mat-label>{{ 'Property' | translate }}</mat-label>
+      <mtx-select
+        id="tailBitePropertySelect"
+        [items]="properties"
+        bindLabel="name"
+        bindValue="propertyId"
+        [clearable]="false"
+        [ngModel]="propertyId"
+        (ngModelChange)="select($event)"
+      ></mtx-select>
+    </mat-form-field>
+  </div>
+  <nav mat-tab-nav-bar [tabPanel]="tabPanel" *ngIf="propertyId !== null">
+    <a
+      mat-tab-link
+      *ngFor="let link of links"
+      [id]="link.id"
+      [routerLink]="[base, propertyId, link.path]"
+      routerLinkActive
+      #rla="routerLinkActive"
+      [active]="rla.isActive"
+    >{{ link.label | translate }}</a>
+  </nav>
+</mat-card>
+<mat-tab-nav-panel #tabPanel>
+  <p *ngIf="properties?.length === 0" id="tailBiteNoProperty" class="p-3">
+    {{ 'No property is available to you. Tail biting must be enabled on the property, and you must be one of its workers (Property workers, Tail-bite managers).' | translate }}
+  </p>
+  <router-outlet *ngIf="propertyId !== null"></router-outlet>
+</mat-tab-nav-panel>

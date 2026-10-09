@@ -1,0 +1,40 @@
+<h3 mat-dialog-title>{{ 'Tail-bite managers' | translate }}</h3>
+<div mat-dialog-content>
+  <p>{{ 'Managers handle outbreaks: they assess, act and close.' | translate }}</p>
+  <mat-form-field class="w-100">
+    <mat-label>{{ 'Property' | translate }}</mat-label>
+    <mtx-select
+      id="tailBiteManagersProperty"
+      [items]="properties"
+      bindLabel="name"
+      bindValue="propertyId"
+      appendTo="body"
+      [clearable]="false"
+      [ngModel]="propertyId"
+      (ngModelChange)="onPropertyChange($event)"
+    ></mtx-select>
+  </mat-form-field>
+
+  <ng-container *ngIf="selectedProperty as property">
+    <div *ngIf="!property.enabled" class="d-flex flex-row flex-wrap align-items-center gap-12 mb-2">
+      <span id="tailBiteNotEnabled">{{ 'Tail biting is not enabled for this property.' | translate }}</span>
+      <button id="tailBiteEnableBtn" class="btn-primary" [disabled]="busy" (click)="enable()">{{ 'Enable tail biting' | translate }}</button>
+    </div>
+    <ng-container *ngIf="property.enabled">
+      <div *ngFor="let w of workers" class="d-flex flex-row align-items-center justify-content-between py-1"
+           [id]="'tailBiteManagerRow-' + w.siteId">
+        <span>{{ w.name }}</span>
+        <mat-slide-toggle
+          [id]="'tailBiteManagerToggle-' + w.siteId"
+          [checked]="w.isManager"
+          [disabled]="busy"
+          (change)="setManager(w, $event.checked)"
+        >{{ 'Tail-bite manager' | translate }}</mat-slide-toggle>
+      </div>
+      <p *ngIf="workers.length === 0">{{ 'No workers on this property.' | translate }}</p>
+    </ng-container>
+  </ng-container>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button id="tailBiteManagersCloseBtn" class="btn-cancel" (click)="close()">{{ 'Close' | translate }}</button>
+</div>
