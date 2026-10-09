@@ -54,7 +54,6 @@
         <div *ngIf="d.status === Status.Preparing && d.readyBy">
           <small>{{ 'Ready by' | translate }} {{ d.readyBy | date: 'HH:mm' }}</small>
         </div>
-        <div *ngIf="d.reviewedByMicroting"><small>{{ 'Checked by Microting' | translate }}</small></div>
         <div *ngIf="d.status === Status.Failed && d.failureReason"><small>{{ d.failureReason }}</small></div>
       </td>
       <td>
