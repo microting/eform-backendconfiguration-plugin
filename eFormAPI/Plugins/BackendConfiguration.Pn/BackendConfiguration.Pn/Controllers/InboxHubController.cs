@@ -46,6 +46,19 @@ public class InboxHubController(IInboxHubService service, InboundMailRequestVeri
         return HubJsonResult(await service.CatalogAsync());
     }
 
+    [HttpPost("tags")]
+    [RequestSizeLimit(JsonSizeLimit)]
+    public async Task<IActionResult> Tags()
+    {
+        if (await ReadVerifiedBodyAsync() is not { } body) return Unauthorized();
+        var name = InboxHubService.NormalizeTagName(TryDeserialize<CreateTagRequest>(body)?.Name);
+        if (name == null) return BadRequest();
+        // Null: another tag creation held the lock too long. The caller may retry; a retry never creates twice.
+        return await service.CreateTagAsync(name) is { } tag
+            ? HubJsonResult(tag)
+            : StatusCode(StatusCodes.Status503ServiceUnavailable);
+    }
+
     [HttpPost("deliver")]
     [RequestSizeLimit(DeliverSizeLimit)]
     [RequestFormLimits(MultipartBodyLengthLimit = DeliverSizeLimit)]
