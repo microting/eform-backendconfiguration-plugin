@@ -29,6 +29,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Files;
+using BackendConfiguration.Pn.Services.InboundMail;
 using BackendConfigurationLocalizationService;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -153,34 +154,22 @@ public class BackendConfigurationTagsService : IBackendConfigurationTagsService
 		}
 	}
 
+	// Same lock as the central inbound mail service's tag creation, so neither creates a name twice.
+	private Task<OperationResult> RunUnderTagLock(Func<Task<OperationResult>> work) =>
+		InboxNamedLock.RunAsync(_dbContext, InboxNamedLock.TagCreate, work,
+			() => Task.FromResult(new OperationResult(false, _localizationService.GetString("InboxTryAgainShortly"))),
+			_logger);
+
 	public async Task<OperationResult> CreateTag(CommonTagModel requestModel)
 	{
-		var currentTag = await _dbContext.FileTags
-			.FirstOrDefaultAsync(x => x.Name == requestModel.Name);
-
-		if (currentTag != null)
-		{
-			if (currentTag.WorkflowState != Constants.WorkflowStates.Removed)
-			{
-				return new OperationResult(true, _localizationService.GetString("FileTagCreatedSuccessfully"));
-			}
-			currentTag.WorkflowState = Constants.WorkflowStates.Created;
-			currentTag.UpdatedByUserId = _userService.UserId;
-			await currentTag.Update(_dbContext);
-			return new OperationResult(true, _localizationService.GetString("FileTagCreatedSuccessfully"));
-		}
 		try
 		{
-			var tag = new FileTag
-			{
-				Name = requestModel.Name,
-				CreatedByUserId = _userService.UserId,
-				UpdatedByUserId = _userService.UserId
-			};
-
-			await tag.Create(_dbContext);
-
-			return new OperationResult(true, _localizationService.GetString("FileTagCreatedSuccessfully"));
+			return await RunUnderTagLock(
+				async () =>
+				{
+					await FileTagStore.FindOrCreateAsync(_dbContext, requestModel.Name, _userService.UserId);
+					return new OperationResult(true, _localizationService.GetString("FileTagCreatedSuccessfully"));
+				});
 		}
 		catch (Exception e)
 		{
@@ -227,27 +216,16 @@ public class BackendConfigurationTagsService : IBackendConfigurationTagsService
 	{
 		try
 		{
-			foreach (var tagName in requestModel.TagNames)
-			{
-				if (await _dbContext.FileTags.AnyAsync(x =>
-					    x.Name == tagName && x.WorkflowState != Constants.WorkflowStates.Removed))
+			return await RunUnderTagLock(
+				async () =>
 				{
-					continue; // skip replies
-				}
+					foreach (var tagName in requestModel.TagNames)
+					{
+						await FileTagStore.FindOrCreateAsync(_dbContext, tagName, _userService.UserId);
+					}
 
-				var itemsPlanningTag = new FileTag
-				{
-					Name = tagName,
-					CreatedByUserId = _userService.UserId,
-					UpdatedByUserId = _userService.UserId
-				};
-
-				await itemsPlanningTag.Create(_dbContext);
-			}
-
-			return new OperationResult(
-				true,
-				_localizationService.GetString("FileTagsCreatedSuccessfully"));
+					return new OperationResult(true, _localizationService.GetString("FileTagsCreatedSuccessfully"));
+				});
 		}
 		catch (Exception e)
 		{

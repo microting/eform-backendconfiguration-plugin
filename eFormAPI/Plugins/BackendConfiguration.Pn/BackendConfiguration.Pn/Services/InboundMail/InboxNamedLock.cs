@@ -20,6 +20,9 @@ public static class InboxNamedLock
     /// <summary>Block-rule writes (settings replace, reject with block) never interleave, so no pattern is inserted twice.</summary>
     public const string SenderRules = "inbox-sender-rules";
 
+    /// <summary>File tag creation (archive and central inbound mail service) never interleaves, so no name is created twice.</summary>
+    public const string TagCreate = "inbox-tag-create";
+
     private const int TimeoutSeconds = 15;
 
     /// <summary>
