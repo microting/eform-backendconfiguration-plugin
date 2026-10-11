@@ -49,12 +49,18 @@ public class TailBiteSetupController(ITailBiteAccess access, ITailBiteSetupServi
     // The rule dry run replays the last 90 days (the service default); the web page does not choose the window.
     private const int PreviewDays = 90;
 
+    // TEMPORARY (#1425): first user only until the owner opens tail-bite manager setup to other admins.
+    // Remove the [FirstUserOnly] here and the first-user check in TailBiteSetupControllerFirstUserGateTests then.
     [HttpPost("properties/{propertyId:int}/enable")]
+    [FirstUserOnly]
     [Authorize(Policy = BackendConfigurationClaims.AccessBackendConfigurationPlugin)]
     [Authorize(Policy = AuthConsts.EformPolicies.DeviceUsers.Update)]
     public Task<OperationResult> Enable(int propertyId) => Run(() => setup.EnableAsync(0, propertyId));
 
+    // TEMPORARY (#1425): first user only until the owner opens tail-bite manager setup to other admins.
+    // Remove the [FirstUserOnly] here and the first-user check in TailBiteSetupControllerFirstUserGateTests then.
     [HttpPut("property-workers/{id:int}/manager")]
+    [FirstUserOnly]
     [Authorize(Policy = BackendConfigurationClaims.AccessBackendConfigurationPlugin)]
     [Authorize(Policy = AuthConsts.EformPolicies.DeviceUsers.Update)]
     public Task<OperationResult> SetManager(int id, [FromBody] SetManagerRequest request)

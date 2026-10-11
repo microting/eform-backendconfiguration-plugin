@@ -4,7 +4,7 @@ import {
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {FormControl, FormGroup} from '@angular/forms';
-import {forkJoin, Subscription, take} from 'rxjs';
+import {combineLatest, forkJoin, Subscription, take} from 'rxjs';
 import {
   CommonDictionaryModel,
 } from 'src/app/common/models';
@@ -27,11 +27,12 @@ import {ActivatedRoute, Router} from '@angular/router';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
-import {tap} from 'rxjs/operators';
+import {map, tap} from 'rxjs/operators';
 import * as R from 'ramda';
 import {
   selectCurrentUserClaimsDeviceUsersCreate,
-  selectCurrentUserClaimsDeviceUsersUpdate
+  selectCurrentUserClaimsDeviceUsersUpdate,
+  selectCurrentUserIsFirstUser
 } from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
 import {
@@ -88,6 +89,12 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   selectedWorkers: DeviceUserModel[] = [];
   public selectCurrentUserClaimsDeviceUsersCreate$ = this.store.select(selectCurrentUserClaimsDeviceUsersCreate);
   public selectCurrentUserClaimsDeviceUsersUpdate$ = this.store.select(selectCurrentUserClaimsDeviceUsersUpdate);
+  // #1425 - TEMPORARY: tail-bite managers is first-user only until the owner opens it up (the API enforces it too,
+  // see TailBiteSetupController). Remove together with the [FirstUserOnly] attributes there.
+  public canManageTailBiteManagers$ = combineLatest([
+    this.store.select(selectCurrentUserIsFirstUser),
+    this.selectCurrentUserClaimsDeviceUsersUpdate$,
+  ]).pipe(map(([isFirstUser, deviceUsersUpdate]) => isFirstUser && deviceUsersUpdate));
   private selectPropertyWorkersFilters$ = this.store.select(selectPropertyWorkersFilters);
   public selectPropertyWorkersNameFilters$ = this.store.select(selectPropertyWorkersNameFilters);
 
