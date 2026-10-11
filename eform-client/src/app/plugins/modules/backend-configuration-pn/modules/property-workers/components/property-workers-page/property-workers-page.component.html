@@ -61,7 +61,7 @@
     <button
       class="btn-secondary btn-secondary--icon-left"
       id="tailBiteManagersBtn"
-      *ngIf="selectCurrentUserClaimsDeviceUsersUpdate$ | async"
+      *ngIf="canManageTailBiteManagers$ | async"
       (click)="openTailBiteManagersDialog()"
       matTooltip="{{ 'Tail-bite managers' | translate }}"
     >

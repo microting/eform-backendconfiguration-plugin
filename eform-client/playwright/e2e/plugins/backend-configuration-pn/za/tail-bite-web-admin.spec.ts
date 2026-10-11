@@ -39,6 +39,11 @@ const manager: PropertyWorker = {
 };
 const managerName = `${manager.name} ${manager.surname}`;
 const API = `${BASE_URL}/api/backend-configuration-pn/tail-bite`;
+// The same budget LoginPage.login() gives the app to bootstrap and land.
+const APP_LOAD_TIMEOUT = 120000;
+// Second admin for the #1425 first-user check. Password generated at runtime ("Aa1" satisfies the Identity policy).
+const secondAdminEmail = `second-admin-${rand}@example.org`;
+const secondAdminPassword = `Aa1${generateRandmString(12)}`;
 
 // Set by the outbreak seed test, read by the outbreak tests after it (serial suite, one worker).
 let outbreakId = 0;
@@ -83,6 +88,28 @@ test.describe.serial('Tail biting web admin', () => {
     });
     await page.goto(BASE_URL);
     await new LoginPage(page).login();
+  });
+
+  // Runs even when the second-admin test fails early; failures are logged, never thrown.
+  test.afterAll(async ({ browser }) => {
+    test.setTimeout(180000);
+    const page = await browser.newPage();
+    try {
+      await page.goto(BASE_URL, { timeout: APP_LOAD_TIMEOUT });
+      await new LoginPage(page).login();
+      const headers = { Authorization: `Bearer ${await apiToken(page)}`, 'Content-Type': 'application/json' };
+      const users = await page.request.post(`${BASE_URL}/api/admin/get-users`, {
+        headers, data: { sort: 'Id', isSortDsc: false, pageIndex: 0, pageSize: 1000, offset: 0 },
+      });
+      const created = ((await users.json().catch(() => null))?.model?.entities ?? []).find((u: any) => u.email === secondAdminEmail);
+      if (created) {
+        await page.request.get(`${BASE_URL}/api/admin/delete-user/${created.id}`, { headers });
+      }
+    } catch (err: any) {
+      console.log(`[tail-bite-web-admin] afterAll cleanup of ${secondAdminEmail} failed (non-fatal): ${err?.message ?? err}`);
+    } finally {
+      await page.close().catch(() => undefined);
+    }
   });
 
   test.afterEach(async ({}, testInfo) => {
@@ -134,6 +161,39 @@ test.describe.serial('Tail biting web admin', () => {
     await expect(row.locator('mat-slide-toggle button[role="switch"]')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
     await tailBite.screenshot('managers-dialog');
     await page.locator('#tailBiteManagersCloseBtn').click();
+  });
+
+  // #1425: the managers dialog is first-user only for now. A second admin holds DeviceUsers.Update but is not
+  // the first user, so the button must be absent while the property workers page itself is loaded.
+  test('managers: an admin who is not the first user is not offered Tail-bite managers', async ({ page, browser }) => {
+    test.setTimeout(300000);
+    const headers = { Authorization: `Bearer ${await apiToken(page)}`, 'Content-Type': 'application/json' };
+    const createRes = await page.request.post(`${BASE_URL}/api/admin/create-user`, {
+      headers,
+      data: {
+        id: 0, firstName: `Second${rand}`, lastName: 'NotFirst', userName: secondAdminEmail, email: secondAdminEmail,
+        password: secondAdminPassword, passwordConfimation: secondAdminPassword, role: 'admin', groupId: 0, isDeviceUser: false,
+      },
+    });
+    expect((await createRes.json().catch(() => null))?.success, 'creating the second admin must succeed').toBe(true);
+
+    const context = await browser.newContext();
+    try {
+      const secondPage = await context.newPage();
+      await secondPage.goto(BASE_URL);
+      await secondPage.locator('#loginBtn').waitFor({ state: 'visible', timeout: APP_LOAD_TIMEOUT });
+      await secondPage.locator('#username').fill(secondAdminEmail);
+      await secondPage.locator('#password').fill(secondAdminPassword);
+      await secondPage.locator('#loginBtn').click();
+      await secondPage.locator('#newEFormBtn').waitFor({ state: 'visible', timeout: APP_LOAD_TIMEOUT });
+
+      await new BackendConfigurationPropertyWorkersPage(secondPage).goToPropertyWorkers();
+      // Gated by the same Update claim as the managers button, so its presence proves the claims are loaded.
+      await expect(secondPage.locator('#bulkWorkerTagsBtn')).toBeVisible({ timeout: UI_TIMEOUT });
+      await expect(secondPage.locator('#tailBiteManagersBtn')).toHaveCount(0);
+    } finally {
+      await context.close();
+    }
   });
 
   test('locations: build the tree, a pen range and a pig count, rename, delete and print QR labels', async ({ page }) => {
