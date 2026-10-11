@@ -99,11 +99,20 @@ test.describe.serial('Tail biting web admin', () => {
       await new LoginPage(page).login();
       const headers = { Authorization: `Bearer ${await apiToken(page)}`, 'Content-Type': 'application/json' };
       const users = await page.request.post(`${BASE_URL}/api/admin/get-users`, {
-        headers, data: { sort: 'Id', isSortDsc: false, pageIndex: 0, pageSize: 1000, offset: 0 },
+        headers, data: { sort: 'Id', isSortDsc: false, pageIndex: 0, pageSize: 1000, offset: 0 }, timeout: API_TIMEOUT,
       });
-      const created = ((await users.json().catch(() => null))?.model?.entities ?? []).find((u: any) => u.email === secondAdminEmail);
+      const body = await users.json().catch(() => null);
+      // A failed lookup must not read as "the user is absent".
+      if (!users.ok() || !body?.success) {
+        throw new Error(`get-users failed (HTTP ${users.status()})`);
+      }
+      const created = (body.model?.entities ?? []).find((u: any) => u.email === secondAdminEmail);
       if (created) {
-        await page.request.get(`${BASE_URL}/api/admin/delete-user/${created.id}`, { headers });
+        const deleted = await page.request.get(`${BASE_URL}/api/admin/delete-user/${created.id}`, { headers, timeout: API_TIMEOUT });
+        // The API can answer HTTP 200 with success:false.
+        if (!deleted.ok() || !(await deleted.json().catch(() => null))?.success) {
+          throw new Error(`delete-user failed (HTTP ${deleted.status()})`);
+        }
       }
     } catch (err: any) {
       console.log(`[tail-bite-web-admin] afterAll cleanup of ${secondAdminEmail} failed (non-fatal): ${err?.message ?? err}`);
@@ -174,13 +183,14 @@ test.describe.serial('Tail biting web admin', () => {
         id: 0, firstName: `Second${rand}`, lastName: 'NotFirst', userName: secondAdminEmail, email: secondAdminEmail,
         password: secondAdminPassword, passwordConfimation: secondAdminPassword, role: 'admin', groupId: 0, isDeviceUser: false,
       },
+      timeout: API_TIMEOUT,
     });
     expect((await createRes.json().catch(() => null))?.success, 'creating the second admin must succeed').toBe(true);
 
     const context = await browser.newContext();
     try {
       const secondPage = await context.newPage();
-      await secondPage.goto(BASE_URL);
+      await secondPage.goto(BASE_URL, { timeout: APP_LOAD_TIMEOUT });
       await secondPage.locator('#loginBtn').waitFor({ state: 'visible', timeout: APP_LOAD_TIMEOUT });
       await secondPage.locator('#username').fill(secondAdminEmail);
       await secondPage.locator('#password').fill(secondAdminPassword);
@@ -190,7 +200,7 @@ test.describe.serial('Tail biting web admin', () => {
       await new BackendConfigurationPropertyWorkersPage(secondPage).goToPropertyWorkers();
       // Gated by the same Update claim as the managers button, so its presence proves the claims are loaded.
       await expect(secondPage.locator('#bulkWorkerTagsBtn')).toBeVisible({ timeout: UI_TIMEOUT });
-      await expect(secondPage.locator('#tailBiteManagersBtn')).toHaveCount(0);
+      await expect(secondPage.locator('#tailBiteManagersBtn')).toHaveCount(0, { timeout: UI_TIMEOUT });
     } finally {
       await context.close();
     }
