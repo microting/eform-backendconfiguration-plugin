@@ -272,20 +272,20 @@
     </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="ChemicalsBase" Version="10.0.19" />
+    <PackageReference Include="ChemicalsBase" Version="10.0.20" />
     <PackageReference Include="FirebaseAdmin" Version="3.7.0" />
-    <PackageReference Include="Google.Apis.Sheets.v4" Version="1.77.0.4281" />
+    <PackageReference Include="Google.Apis.Sheets.v4" Version="1.77.0.4290" />
     <PackageReference Include="Google.Protobuf" Version="3.36.2" />
     <PackageReference Include="Grpc.AspNetCore" Version="2.84.0" />
     <PackageReference Include="HtmlToOpenXml.dll" Version="3.5.0" />
     <PackageReference Include="Ical.Net" Version="5.2.3" />
-    <PackageReference Include="Microting.eForm" Version="10.0.41" />
-    <PackageReference Include="Microting.EformAngularFrontendBase" Version="10.0.40" />
-    <PackageReference Include="Microting.eFormApi.BasePn" Version="10.0.37" />
+    <PackageReference Include="Microting.eForm" Version="10.0.42" />
+    <PackageReference Include="Microting.EformAngularFrontendBase" Version="10.0.41" />
+    <PackageReference Include="Microting.eFormApi.BasePn" Version="10.0.38" />
     <PackageReference Include="McMaster.NETCore.Plugins" Version="2.0.0" />
-    <PackageReference Include="Microting.EformBackendConfigurationBase" Version="10.0.55" />
-    <PackageReference Include="Microting.eFormCaseTemplateBase" Version="10.0.38" />
-    <PackageReference Include="Microting.ItemsPlanningBase" Version="10.0.40" />
+    <PackageReference Include="Microting.EformBackendConfigurationBase" Version="10.0.56" />
+    <PackageReference Include="Microting.eFormCaseTemplateBase" Version="10.0.39" />
+    <PackageReference Include="Microting.ItemsPlanningBase" Version="10.0.41" />
     <PackageReference Include="Microting.TimePlanningBase" Version="10.0.66" />
     <PackageReference Include="QuestPDF" Version="2026.9.1" />
     <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.2.1.301" />
