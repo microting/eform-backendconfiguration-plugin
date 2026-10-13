@@ -69,11 +69,17 @@ public class PastOccurrenceCatchUpService(
     public async Task<PastOccurrenceCatchUpResult> CatchUpAsync(
         IReadOnlyCollection<int>? propertyIds, bool bypassThrottle, CancellationToken ct)
     {
+        var now = DateTime.UtcNow;
+        var today = now.Date;
+
+        // Cheapest exit first: a list read for properties caught up within the throttle
+        // window costs no SDK or database round trip at all.
+        if (!bypassThrottle && propertyIds is { Count: > 0 } && propertyIds.All(id => IsThrottled(id, now)))
+            return new PastOccurrenceCatchUpResult(0, 0, 0, 0);
+
         if (!await IsSkipCloudDeployOnAsync().ConfigureAwait(false))
             return new PastOccurrenceCatchUpResult(0, 0, 0, 0);
 
-        var now = DateTime.UtcNow;
-        var today = now.Date;
         var arpQuery = backendConfigurationPnDbContext.AreaRulePlannings
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
                         && x.Status && x.ComplianceEnabled && x.ItemPlanningId > 0);
@@ -93,9 +99,8 @@ public class PastOccurrenceCatchUpService(
         foreach (var group in arps.Where(a => ownedPlanningIds.Contains(a.ItemPlanningId))
                      .GroupBy(a => a.PropertyId))
         {
-            if (!bypassThrottle && LastRunUtc.TryGetValue(group.Key, out var last) && now - last < Throttle)
+            if (!bypassThrottle && IsThrottled(group.Key, now))
                 continue;
-            LastRunUtc[group.Key] = now;
             properties++;
 
             foreach (var arp in group)
@@ -137,6 +142,10 @@ public class PastOccurrenceCatchUpService(
                     }
                 }
             }
+
+            // Marked only once the property's series have all been processed, so a
+            // cancelled run does not leave a property looking caught up.
+            LastRunUtc[group.Key] = now;
         }
 
         if (created + failed > 0)
@@ -145,6 +154,9 @@ public class PastOccurrenceCatchUpService(
                 created, present, failed, properties);
         return new PastOccurrenceCatchUpResult(created, present, failed, properties);
     }
+
+    private static bool IsThrottled(int propertyId, DateTime now) =>
+        LastRunUtc.TryGetValue(propertyId, out var last) && now - last < Throttle;
 
     private async Task<bool> IsSkipCloudDeployOnAsync()
     {
