@@ -25,6 +25,7 @@ SOFTWARE.
 
 using BackendConfiguration.Pn.Controllers;
 using BackendConfiguration.Pn.Infrastructure.Helpers;
+using BackendConfiguration.Pn.Services.PastOccurrenceCatchUp;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.TimePlanningBase.Infrastructure.Data;
 
@@ -48,6 +49,7 @@ using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 public class BackendConfigurationCompliancesService : IBackendConfigurationCompliancesService
@@ -59,6 +61,7 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
     private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
     private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
     private readonly TimePlanningPnDbContext _timePlanningPnDbContext;
+    private readonly IPastOccurrenceCatchUpService? _pastOccurrenceCatchUpService;
 
     public BackendConfigurationCompliancesService(
         ItemsPlanningPnDbContext itemsPlanningPnDbContext,
@@ -66,7 +69,9 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
         IUserService userService,
         IBackendConfigurationLocalizationService localizationService,
         IEFormCoreService coreHelper,
-        TimePlanningPnDbContext timePlanningPnDbContext
+        TimePlanningPnDbContext timePlanningPnDbContext,
+        // Optional so fixtures that build this class directly need not supply it; DI always does.
+        IPastOccurrenceCatchUpService? pastOccurrenceCatchUpService = null
     )
     {
         _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
@@ -75,6 +80,7 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
         _localizationService = localizationService;
         _coreHelper = coreHelper;
         _timePlanningPnDbContext = timePlanningPnDbContext;
+        _pastOccurrenceCatchUpService = pastOccurrenceCatchUpService;
     }
 
     /// <summary>
@@ -135,6 +141,7 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
     {
         try
         {
+            await CatchUpPastOccurrencesAsync([request.PropertyId]);
             var language = await _userService.GetCurrentUserLanguage().ConfigureAwait(false);
             var result = new Paged<CompliancesModel>
             {
@@ -253,6 +260,7 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
 
     public async Task<OperationDataResult<int>> ComplianceStatus(int propertyId)
     {
+        await CatchUpPastOccurrencesAsync([propertyId]);
         var compliance = await Index(new CompliancesRequestModel
         {
             PropertyId = propertyId
@@ -1180,6 +1188,7 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
 
     public async Task<OperationDataResult<CompliancesStatsModel>> Stats()
     {
+        await CatchUpPastOccurrencesAsync(null);
         var envTag = await _itemsPlanningPnDbContext.PlanningTags.Where(x => x.Name == "Miljøtilsyn").FirstAsync();
         // #1325 — hidden missed occurrences count nowhere, the past-due buckets included.
         var complianceList = HiddenOverdueRule.ExcludeHiddenOverdue(
@@ -1351,5 +1360,20 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
         }
 
         return planningCase;
+    }
+
+    private async Task CatchUpPastOccurrencesAsync(IReadOnlyCollection<int>? propertyIds)
+    {
+        try
+        {
+            if (_pastOccurrenceCatchUpService == null) return;
+            await _pastOccurrenceCatchUpService.CatchUpAsync(propertyIds, bypassThrottle: false, CancellationToken.None)
+                .ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            // Never fail a list read because the catch-up failed; the list shows what exists.
+            Log.LogException($"Past-occurrence catch-up failed: {e.Message}");
+        }
     }
 }

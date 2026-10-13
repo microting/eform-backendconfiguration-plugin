@@ -29,8 +29,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationTaskTrackerServic
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using BackendConfigurationLocalizationService;
+using PastOccurrenceCatchUp;
 using WorkerTagMembership;
 using Infrastructure.Models.TaskTracker;
 using Microting.eFormApi.BasePn.Abstractions;
@@ -54,11 +56,14 @@ public class BackendConfigurationTaskTrackerService(
 	// #1231 — the Workers filter matches worker-tag ("team") assignment as well as
 	// explicit PlanningSites rows; this is the single owner of the membership rule,
 	// shared with the calendar week view and the compliance report.
-	IWorkerTagMembershipService workerTagMembershipService)
+	IWorkerTagMembershipService workerTagMembershipService,
+	// Optional so fixtures that build this class directly need not supply it; DI always does.
+	IPastOccurrenceCatchUpService? pastOccurrenceCatchUpService = null)
 	: IBackendConfigurationTaskTrackerService
 {
 	public async Task<OperationDataResult<List<TaskTrackerModel>>> Index(TaskTrackerFiltrationModel filtersModel)
 	{
+		await CatchUpPastOccurrencesAsync(filtersModel.PropertyIds);
 		var userLanguageId = (await userService.GetCurrentUserLanguage()).Id;
 		var result = await BackendConfigurationTaskTrackerHelper.Index(filtersModel, backendConfigurationPnDbContext,
 			await coreHelper.GetCore(), userLanguageId, itemsPlanningPnDbContext, workerTagMembershipService);
@@ -145,6 +150,7 @@ public class BackendConfigurationTaskTrackerService(
 	{
 		try
 		{
+			await CatchUpPastOccurrencesAsync(filtersModel.PropertyIds);
 			var userLanguageId = (await userService.GetCurrentUserLanguage()).Id;
 			var result = await BackendConfigurationTaskTrackerHelper.Index(filtersModel,
 				backendConfigurationPnDbContext, await coreHelper.GetCore(), userLanguageId, itemsPlanningPnDbContext,
@@ -171,6 +177,21 @@ public class BackendConfigurationTaskTrackerService(
 			Log.LogException(e.StackTrace);
 			return new OperationDataResult<Stream>(false,
 				$"{localizationService.GetString("ErrorWhileGeneratingReport")}: {e.Message}");
+		}
+	}
+
+	private async Task CatchUpPastOccurrencesAsync(IReadOnlyCollection<int>? propertyIds)
+	{
+		try
+		{
+			if (pastOccurrenceCatchUpService == null) return;
+            await pastOccurrenceCatchUpService.CatchUpAsync(propertyIds, bypassThrottle: false, CancellationToken.None)
+				.ConfigureAwait(false);
+		}
+		catch (Exception e)
+		{
+			// Never fail a list read because the catch-up failed; the list shows what exists.
+			Log.LogException($"Past-occurrence catch-up failed: {e.Message}");
 		}
 	}
 }

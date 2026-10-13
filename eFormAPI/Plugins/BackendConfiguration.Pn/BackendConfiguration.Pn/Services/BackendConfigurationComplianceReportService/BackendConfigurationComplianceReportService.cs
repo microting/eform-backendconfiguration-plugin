@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
+using BackendConfiguration.Pn.Services.PastOccurrenceCatchUp;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure.Constants;
@@ -60,7 +62,9 @@ public class BackendConfigurationComplianceReportService(
     // owner of the membership rule, shared with the calendar week view and the task
     // tracker. Required rather than optional: an optional one would make the tag
     // expansion opt-in per caller and let a fixture that omitted it pass vacuously.
-    WorkerTagMembership.IWorkerTagMembershipService workerTagMembershipService)
+    WorkerTagMembership.IWorkerTagMembershipService workerTagMembershipService,
+    // Optional so fixtures that build this class directly need not supply it; DI always does.
+    IPastOccurrenceCatchUpService? pastOccurrenceCatchUpService = null)
     : IBackendConfigurationComplianceReportService
 {
     /// <summary>
@@ -93,6 +97,7 @@ public class BackendConfigurationComplianceReportService(
     {
         try
         {
+            await CatchUpPastOccurrencesAsync(requestModel.PropertyId is { } p ? [p] : null);
             var userLanguageId = (await userService.GetCurrentUserLanguage()).Id;
             var dateFrom = requestModel.DateFrom.Date;
             var dateTo = EndOfDay(requestModel.DateTo);
@@ -1165,6 +1170,7 @@ public class BackendConfigurationComplianceReportService(
     {
         try
         {
+            await CatchUpPastOccurrencesAsync(requestModel.PropertyId is { } p ? [p] : null);
             // Hoisted: ONE read of the clock per request, before any I/O, so no
             // two rows in one response can be classified against different
             // "todays" across a midnight boundary. Passed down to Aggregate.
@@ -2417,5 +2423,20 @@ public class BackendConfigurationComplianceReportService(
         public string Title { get; set; }
         public string PropertyName { get; set; }
         public string BoardName { get; set; }
+    }
+
+    private async Task CatchUpPastOccurrencesAsync(IReadOnlyCollection<int>? propertyIds)
+    {
+        try
+        {
+            if (pastOccurrenceCatchUpService == null) return;
+            await pastOccurrenceCatchUpService.CatchUpAsync(propertyIds, bypassThrottle: false, CancellationToken.None)
+                .ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            // Never fail a list read because the catch-up failed; the list shows what exists.
+            logger.LogError(e, "Past-occurrence catch-up failed before a list read");
+        }
     }
 }
