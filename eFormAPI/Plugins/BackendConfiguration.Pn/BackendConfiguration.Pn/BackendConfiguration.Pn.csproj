@@ -290,7 +290,7 @@
     <PackageReference Include="QuestPDF" Version="2026.9.1" />
     <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.2.1.301" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.153.1" />
-    <PackageReference Include="Sentry" Version="6.12.0" />
+    <PackageReference Include="Sentry" Version="6.12.1" />
   </ItemGroup>
 
     <ItemGroup>
