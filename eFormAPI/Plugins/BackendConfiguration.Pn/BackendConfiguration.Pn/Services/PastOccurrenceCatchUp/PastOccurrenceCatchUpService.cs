@@ -38,6 +38,7 @@ using Microting.eForm.Dto;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 
 #nullable enable
@@ -65,6 +66,9 @@ public class PastOccurrenceCatchUpService(
 
     private static readonly TimeSpan Throttle = TimeSpan.FromMinutes(10);
     private static readonly ConcurrentDictionary<int, DateTime> LastRunUtc = new();
+    // Properties a catch-up is processing right now, so concurrent list reads for
+    // the same property do not each run the whole pass.
+    private static readonly ConcurrentDictionary<int, byte> InFlight = new();
 
     public async Task<PastOccurrenceCatchUpResult> CatchUpAsync(
         IReadOnlyCollection<int>? propertyIds, bool bypassThrottle, CancellationToken ct)
@@ -101,51 +105,62 @@ public class PastOccurrenceCatchUpService(
         {
             if (!bypassThrottle && IsThrottled(group.Key, now))
                 continue;
-            properties++;
-
-            foreach (var arp in group)
+            if (!InFlight.TryAdd(group.Key, 0))
+                continue;
+            try
             {
-                ct.ThrowIfCancellationRequested();
-                PastSeriesBackfillPlan plan;
-                try
-                {
-                    plan = await pastSeriesPlanner.PlanPastSeriesBackfillAsync(arp, null, ct).ConfigureAwait(false);
-                }
-                catch (Exception e)
-                {
-                    failed++;
-                    logger.LogError(e, "Past-occurrence catch-up could not plan AreaRulePlanning {ArpId}", arp.Id);
-                    continue;
-                }
-                if (!plan.ComplianceEnabled) continue;
+                properties++;
 
-                foreach (var occurrence in plan.PastOccurrences
-                             .Where(d => d.Date >= SkipCloudDeployGapStart && d.Date < today))
-                foreach (var sdkSiteId in plan.SiteIds)
+                foreach (var arp in group)
                 {
+                    ct.ThrowIfCancellationRequested();
+                    PastSeriesBackfillPlan plan;
                     try
                     {
-                        var ensured = await eventDeployService
-                            .EnsureComplianceForOccurrenceAsync(arp, occurrence, sdkSiteId, ct)
-                            .ConfigureAwait(false);
-                        if (ensured == null) failed++;
-                        else if (ensured.Created) created++;
-                        else present++;
+                        plan = await pastSeriesPlanner.PlanPastSeriesBackfillAsync(arp, null, ct).ConfigureAwait(false);
                     }
-                    catch (OperationCanceledException) { throw; }
                     catch (Exception e)
                     {
                         failed++;
-                        logger.LogError(e,
-                            "Past-occurrence catch-up failed for AreaRulePlanning {ArpId}, occurrence {Occurrence}, site {SiteId}",
-                            arp.Id, occurrence.ToString("yyyy-MM-dd"), sdkSiteId);
+                        logger.LogError(e, "Past-occurrence catch-up could not plan AreaRulePlanning {ArpId}", arp.Id);
+                        continue;
+                    }
+                    if (!plan.ComplianceEnabled) continue;
+
+                    var skippedDays = await DaysToLeaveAloneAsync(arp, ct).ConfigureAwait(false);
+                    foreach (var occurrence in plan.PastOccurrences
+                                 .Where(d => d.Date >= SkipCloudDeployGapStart && d.Date < today
+                                             && !skippedDays.Contains(d.Date)))
+                    foreach (var sdkSiteId in plan.SiteIds)
+                    {
+                        try
+                        {
+                            var ensured = await eventDeployService
+                                .EnsureComplianceForOccurrenceAsync(arp, occurrence, sdkSiteId, ct)
+                                .ConfigureAwait(false);
+                            if (ensured == null) failed++;
+                            else if (ensured.Created) created++;
+                            else present++;
+                        }
+                        catch (OperationCanceledException) { throw; }
+                        catch (Exception e)
+                        {
+                            failed++;
+                            logger.LogError(e,
+                                "Past-occurrence catch-up failed for AreaRulePlanning {ArpId}, occurrence {Occurrence}, site {SiteId}",
+                                arp.Id, occurrence.ToString("yyyy-MM-dd"), sdkSiteId);
+                        }
                     }
                 }
-            }
 
-            // Marked only once the property's series have all been processed, so a
-            // cancelled run does not leave a property looking caught up.
-            LastRunUtc[group.Key] = now;
+                // Marked only once the property's series have all been processed, so a
+                // cancelled run does not leave a property looking caught up.
+                LastRunUtc[group.Key] = now;
+            }
+            finally
+            {
+                InFlight.TryRemove(group.Key, out _);
+            }
         }
 
         if (created + failed > 0)
@@ -153,6 +168,36 @@ public class PastOccurrenceCatchUpService(
                 "Past-occurrence catch-up: {Created} created, {Present} already present, {Failed} failed over {Properties} propert(y/ies)",
                 created, present, failed, properties);
         return new PastOccurrenceCatchUpResult(created, present, failed, properties);
+    }
+
+    /// <summary>
+    /// Days since the gap start this pass must not deploy for the series:
+    /// <list type="bullet">
+    ///   <item><description>any Compliance row for the day, whatever its WorkflowState. A removed
+    ///   row is a completed or user-deleted occurrence, and IX_PlanningId_Deadline holds one row
+    ///   per occurrence, so a redeploy would create an SDK case that either revives the deleted
+    ///   task or is orphaned next to the completed one — on every run.</description></item>
+    ///   <item><description>a live deleted-occurrence exception (calendar delete, scope "this").</description></item>
+    /// </list>
+    /// Read once per series, before any site is deployed, so the first site's new row does not
+    /// hide the occurrence from the remaining sites.
+    /// </summary>
+    private async Task<HashSet<DateTime>> DaysToLeaveAloneAsync(
+        AreaRulePlanning arp,
+        CancellationToken ct)
+    {
+        var compliances = await backendConfigurationPnDbContext.Compliances.AsNoTracking()
+            .Where(c => c.PlanningId == arp.ItemPlanningId && c.Deadline >= SkipCloudDeployGapStart)
+            .Select(c => c.Deadline)
+            .ToListAsync(ct).ConfigureAwait(false);
+        var deleted = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions.AsNoTracking()
+            .Where(x => x.AreaRulePlanningId == arp.Id
+                        && x.IsDeleted
+                        && x.WorkflowState != Constants.WorkflowStates.Removed
+                        && x.OriginalDate >= SkipCloudDeployGapStart)
+            .Select(x => x.OriginalDate)
+            .ToListAsync(ct).ConfigureAwait(false);
+        return compliances.Concat(deleted).Select(d => d.Date).ToHashSet();
     }
 
     private static bool IsThrottled(int propertyId, DateTime now) =>

@@ -510,6 +510,84 @@ public class PastOccurrenceCatchUpServiceTests : TestBaseSetup
         Assert.That(result.AlreadyPresent, Is.EqualTo(1));
     }
 
+    // A day that already has a Compliance row in ANY state, or a live deleted-occurrence
+    // exception, is left alone: redeploying a completed or user-deleted occurrence would
+    // create an SDK case that revives the deleted task or is orphaned, on every run.
+    [TestCase("removedRow", false)]
+    [TestCase("liveRow", false)]
+    [TestCase("deletedException", false)]
+    [TestCase("removedDeletedException", true)]
+    [TestCase("movedException", true)]
+    public async Task CatchUp_DayWithRowOrDeletedException_IsNotDeployed(string variant, bool expectDeployed)
+    {
+        var seeded = await SeedEvent(Today.AddDays(-14), repeatType: (int)RepeatType.Week);
+        var site7 = await AddSite(seeded.Arp.Id, 7);
+        var day = Today.AddDays(-7);
+
+        switch (variant)
+        {
+            case "removedRow":
+            case "liveRow":
+                await BackendConfigurationPnDbContext!.Compliances.AddAsync(new Compliance
+                {
+                    Deadline = day, PlanningId = seeded.Planning.Id, PropertyId = seeded.Arp.PropertyId,
+                    StartDate = day.AddDays(-7), MicrotingSdkCaseId = 1,
+                    WorkflowState = variant == "removedRow"
+                        ? Constants.WorkflowStates.Removed
+                        : Constants.WorkflowStates.Created
+                });
+                break;
+            default:
+                await BackendConfigurationPnDbContext!.CalendarOccurrenceExceptions.AddAsync(new CalendarOccurrenceException
+                {
+                    AreaRulePlanningId = seeded.Arp.Id,
+                    OriginalDate = DateTime.SpecifyKind(day, DateTimeKind.Utc),
+                    IsDeleted = variant != "movedException",
+                    NewDate = variant == "movedException" ? DateTime.SpecifyKind(day.AddDays(1), DateTimeKind.Utc) : null,
+                    WorkflowState = variant == "removedDeletedException"
+                        ? Constants.WorkflowStates.Removed
+                        : Constants.WorkflowStates.Created,
+                    CreatedByUserId = 1, UpdatedByUserId = 1
+                });
+                break;
+        }
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var plan = new PastSeriesBackfillPlan(
+            seeded.Arp.StartDate ?? DateTime.UnixEpoch,
+            AnchorIsInThePast: true,
+            [Today.AddDays(-14), day],
+            [site7],
+            Today,
+            ComplianceEnabled: true);
+
+        var planner = Substitute.For<ICalendarPastSeriesBackfillService>();
+        planner.PlanPastSeriesBackfillAsync(Arg.Any<AreaRulePlanning>(), Arg.Any<DateTime?>(), Arg.Any<CancellationToken>())
+            .Returns(plan);
+
+        var deploy = Substitute.For<IEventDeployService>();
+        deploy.EnsureComplianceForOccurrenceAsync(
+                Arg.Any<AreaRulePlanning>(), Arg.Any<DateTime>(), Arg.Any<int>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new EnsureComplianceResult { Created = true, ComplianceId = 1, SdkCaseId = 1 })!);
+
+        var coreHelper = Substitute.For<IEFormCoreService>();
+        var core = await GetCore();
+        coreHelper.GetCore().Returns(Task.FromResult(core));
+        await core.SetSdkSetting(Microting.eForm.Dto.Settings.skipCloudDeploy, "true");
+
+        var service = await BuildService(planner, deploy, coreHelper);
+
+        await service.CatchUpAsync([seeded.Arp.PropertyId], bypassThrottle: true, CancellationToken.None);
+
+        await deploy.Received(1).EnsureComplianceForOccurrenceAsync(
+            Arg.Any<AreaRulePlanning>(), Arg.Is<DateTime>(d => d.Date == Today.AddDays(-14)), site7,
+            Arg.Any<CancellationToken>());
+        await deploy.Received(expectDeployed ? 1 : 0).EnsureComplianceForOccurrenceAsync(
+            Arg.Any<AreaRulePlanning>(), Arg.Is<DateTime>(d => d.Date == day), site7,
+            Arg.Any<CancellationToken>());
+    }
+
     [Test]
     public async Task CatchUp_SecondCallWithin10Minutes_IsThrottled_UnlessBypassed()
     {

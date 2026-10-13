@@ -4,7 +4,9 @@
 
 **Goal:** On `skipCloudDeploy` tenants, materialise every missed backend-configuration occurrence since 2026-09-17 so it shows as overdue in the app, the web task tracker and the compliance report, and can be completed from flutter-eform.
 
-**Architecture:** A new `PastOccurrenceCatchUpService` reuses the #1122 read-only planner (`ICalendarPastSeriesBackfillService.PlanPastSeriesBackfillAsync`) to enumerate past occurrences and effective sites per series, and the existing `IEventDeployService.EnsureComplianceForOccurrenceAsync` to create each (occurrence, site) idempotently. It is called before every list read (gRPC `ListTaskTracker`, web task tracker, compliance report, compliances list) with a 10-minute per-property throttle, and nightly by a `BackgroundService`.
+**Architecture:** A new `PastOccurrenceCatchUpService` reuses the #1122 read-only planner (`ICalendarPastSeriesBackfillService.PlanPastSeriesBackfillAsync`) to enumerate past occurrences and effective sites per series, and the existing `IEventDeployService.EnsureComplianceForOccurrenceAsync` to create each (occurrence, site) idempotently. It is called before every list read (gRPC `ListTaskTracker`, web task tracker, compliance report, compliances list) with a 10-minute per-property throttle.
+
+> **Superseded (2026-10-13):** Task 3 (nightly `BackgroundService`) was implemented and then removed — the frontend plugin runs no background jobs (spec §3). A scheduled catch-up belongs in the backend-configuration service plugin. Ignore Task 3 and the nightly references below.
 
 **Tech Stack:** C# / .NET, EF Core (MySQL), NUnit + NSubstitute, Testcontainers-based integration tests (`BackendConfiguration.Pn.Integration.Test`, run in CI only).
 
@@ -290,6 +292,8 @@ All paths below are relative to `eFormAPI/Plugins/BackendConfiguration.Pn/` unle
 ---
 
 ### Task 3: Nightly catch-up hosted service
+
+> **Superseded — do not implement.** See the note under Architecture.
 
 **Model:** haiku (one small class + registration + one test; complete code below).
 
