@@ -473,7 +473,7 @@ public class BackendConfigurationAssignmentWorkerService(
                     LanguageCode = sdkDbContext.Languages.Where(y => y.Id == x.LanguageId).Select(y => y.LanguageCode).SingleOrDefault() ?? "da",
                     IsLocked = x.IsLocked,
                     Resigned = x.Resigned,
-                    ResignedAtDate = x.ResignedAtDate,
+                    ResignedAtDate = x.ResignedAtDate ?? DateTime.MinValue,
                     Tags = x.SiteTags,
                     PinCode = x.PinCode
                 })

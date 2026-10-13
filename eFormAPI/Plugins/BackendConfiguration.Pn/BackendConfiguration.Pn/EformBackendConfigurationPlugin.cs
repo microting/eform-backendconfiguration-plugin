@@ -173,6 +173,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             Services.CalendarOccurrenceRetraction.CalendarOccurrenceRetractionService>();
         services.AddTransient<Services.CalendarPastSeriesBackfill.ICalendarPastSeriesBackfillService,
             Services.CalendarPastSeriesBackfill.CalendarPastSeriesBackfillService>();
+        services.AddTransient<Services.PastOccurrenceCatchUp.IPastOccurrenceCatchUpService,
+            Services.PastOccurrenceCatchUp.PastOccurrenceCatchUpService>();
         services.AddTransient<IBackendConfigurationAreaRulePlanningsService, BackendConfigurationAreaRulePlanningsService>();
         services.AddTransient<IBackendConfigurationAssignmentWorkerService, BackendConfigurationAssignmentWorkerService>();
         services.AddTransient<IBackendConfigurationTaskManagementService, BackendConfigurationTaskManagementService>();

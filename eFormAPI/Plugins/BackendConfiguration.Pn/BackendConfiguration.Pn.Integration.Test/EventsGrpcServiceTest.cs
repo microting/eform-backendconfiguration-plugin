@@ -34,6 +34,7 @@ using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
 using BackendConfiguration.Pn.Services.CalendarChangeNotification;
 using BackendConfiguration.Pn.Services.EventDeployService;
 using BackendConfiguration.Pn.Services.GrpcServices;
+using BackendConfiguration.Pn.Services.PastOccurrenceCatchUp;
 using BackendConfiguration.Pn.Services.UserPropertyAccess;
 using BackendConfiguration.Pn.Services.WorkerTagMembership;
 // Fully qualify Grpc.Core to avoid ambiguity with the
@@ -127,7 +128,8 @@ public class EventsGrpcServiceTest : TestBaseSetup
         IBackendConfigurationUserPropertyAccess access,
         IGrpcSiteResolver siteResolver,
         IEventDeployService deploy,
-        ILogger<EventsGrpcService>? logger = null)
+        ILogger<EventsGrpcService>? logger = null,
+        IPastOccurrenceCatchUpService? catchUp = null)
     {
         var properties = Substitute.For<IBackendConfigurationPropertiesService>();
         var coreHelper = Substitute.For<IEFormCoreService>();
@@ -140,7 +142,8 @@ public class EventsGrpcServiceTest : TestBaseSetup
             BackendConfigurationPnDbContext!,
             ItemsPlanningPnDbContext!,
             deploy,
-            logger ?? TestContextLogger<EventsGrpcService>.Instance);
+            logger ?? TestContextLogger<EventsGrpcService>.Instance,
+            catchUp);
     }
 
     /// <summary>
@@ -466,5 +469,47 @@ public class EventsGrpcServiceTest : TestBaseSetup
             Assert.That(response.Events[0].PlanDayKey, Is.EqualTo(today.ToString("yyyy-MM-dd")));
             Assert.That(response.Events[0].TaskIsExpired, Is.False);
         });
+    }
+    /// <summary>
+    /// The app's overdue list is the read the server must fill in first: missed
+    /// occurrences the calendar shows get their rows before the list is read.
+    /// </summary>
+    private EventsGrpcService MakeTaskTrackerService(IPastOccurrenceCatchUpService catchUp, int propertyId)
+    {
+        var calendar = Substitute.For<IBackendConfigurationCalendarService>();
+        calendar.GetTaskTrackerList(Arg.Any<int>(), Arg.Any<int?>(), Arg.Any<int?>())
+            .Returns(new OperationDataResult<System.Collections.Generic.List<CalendarTaskResponseModel>>(
+                true, new System.Collections.Generic.List<CalendarTaskResponseModel>()));
+        var siteResolver = Substitute.For<IGrpcSiteResolver>();
+        siteResolver.GetSdkSiteIdAsync().Returns(System.Threading.Tasks.Task.FromResult(SdkSiteId));
+        var access = Substitute.For<IBackendConfigurationUserPropertyAccess>();
+        access.HasAccessAsync(SdkSiteId, propertyId).Returns(System.Threading.Tasks.Task.FromResult(true));
+        return MakeService(calendar, access, siteResolver, Substitute.For<IEventDeployService>(), catchUp: catchUp);
+    }
+
+    [Test]
+    public async Task ListTaskTracker_CallsCatchUpForTheProperty()
+    {
+        var catchUp = Substitute.For<IPastOccurrenceCatchUpService>();
+        var service = MakeTaskTrackerService(catchUp, PropertyIdInt);
+
+        await service.ListTaskTracker(new ListTaskTrackerRequest { PropertyId = PropertyIdInt }, new TestServerCallContext());
+
+        await catchUp.Received(1).CatchUpAsync(
+            Arg.Is<System.Collections.Generic.IReadOnlyCollection<int>>(ids => ids.Count == 1 && ids.Contains(PropertyIdInt)),
+            false, Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task ListTaskTracker_CatchUpThrows_StillReturnsList()
+    {
+        var catchUp = Substitute.For<IPastOccurrenceCatchUpService>();
+        catchUp.CatchUpAsync(Arg.Any<System.Collections.Generic.IReadOnlyCollection<int>?>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            .Returns(System.Threading.Tasks.Task.FromException<PastOccurrenceCatchUpResult>(new System.InvalidOperationException("boom")));
+        var service = MakeTaskTrackerService(catchUp, PropertyIdInt);
+
+        var response = await service.ListTaskTracker(new ListTaskTrackerRequest { PropertyId = PropertyIdInt }, new TestServerCallContext());
+
+        Assert.That(response, Is.Not.Null, "a failing catch-up must never fail the overdue list");
     }
 }

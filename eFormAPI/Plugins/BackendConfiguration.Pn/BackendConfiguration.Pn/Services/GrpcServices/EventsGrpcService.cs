@@ -14,6 +14,7 @@ using BackendConfiguration.Pn.Infrastructure.Models.Calendar;
 using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService;
 using BackendConfiguration.Pn.Services.EventDeployService;
+using BackendConfiguration.Pn.Services.PastOccurrenceCatchUp;
 using BackendConfiguration.Pn.Services.UserPropertyAccess;
 using Google.Protobuf;
 using Grpc.Core;
@@ -114,7 +115,9 @@ public class EventsGrpcService(
     BackendConfigurationPnDbContext dbContext,
     ItemsPlanningPnDbContext itemsPlanningPnDbContext,
     IEventDeployService eventDeployService,
-    ILogger<EventsGrpcService> logger)
+    ILogger<EventsGrpcService> logger,
+    // Optional so fixtures that build this class directly need not supply it; DI always does.
+    IPastOccurrenceCatchUpService? pastOccurrenceCatchUpService = null)
     : Events.EventsBase
 {
     public override async Task<ListPropertiesResponse> ListProperties(
@@ -357,6 +360,8 @@ public class EventsGrpcService(
             throw new RpcException(new Status(StatusCode.PermissionDenied,
                 "Caller has no PropertyWorker access to the requested property."));
         }
+
+        await CatchUpPastOccurrencesAsync([propertyId]).ConfigureAwait(false);
 
         var result = await calendarService
             .GetTaskTrackerList(propertyId, (int)sdkSiteId, await siteResolver.GetSiteLanguageIdAsync((int)sdkSiteId))
@@ -3958,5 +3963,20 @@ public class EventsGrpcService(
         }
 
         return 0;
+    }
+
+    private async Task CatchUpPastOccurrencesAsync(IReadOnlyCollection<int>? propertyIds)
+    {
+        try
+        {
+            if (pastOccurrenceCatchUpService == null) return;
+            await pastOccurrenceCatchUpService.CatchUpAsync(propertyIds, bypassThrottle: false, CancellationToken.None)
+                .ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            // Never fail a list read because the catch-up failed; the list shows what exists.
+            logger.LogError(e, "Past-occurrence catch-up failed before a list read");
+        }
     }
 }
