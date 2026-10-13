@@ -34,7 +34,7 @@ namespace BackendConfiguration.Pn.Services.PastOccurrenceCatchUp;
 /// tenants with skipCloudDeploy enabled. Enumerates eligible series via the
 /// read-only planner and creates Compliance rows via the event deploy service,
 /// reusing existing idempotence logic. Called before every list read (gRPC,
-/// web task tracker, compliance report) and nightly by a background service.
+/// web task tracker, compliance report). The frontend plugin runs no background jobs.
 /// </summary>
 public interface IPastOccurrenceCatchUpService
 {

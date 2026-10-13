@@ -38,7 +38,7 @@ and every overdue occurrence can be completed from the flutter-eform app.
    `Compliance` row, for each site the occurrence is assigned to. It then appears as overdue
    (`Deadline < now`, not completed) in `ListTaskTracker`, the web task tracker and the compliance
    report, and completes through the existing `CompleteEvent` path.
-2. All tenants affected since 2026-09-17 are caught up after deploy, without anyone opening a list.
+2. All tenants affected since 2026-09-17 are caught up on the first list read after deploy.
 3. No duplicates: an occurrence that already has a row (live or removed/done) for a site is never
    deployed again.
 
@@ -97,13 +97,12 @@ problem.
 
 A failure in the catch-up is logged and never fails the read.
 
-### 3. Nightly catch-up
+### 3. No background job
 
-`PastOccurrenceCatchUpHostedService : BackgroundService`, registered with `AddHostedService` in the
-plugin's `ConfigureServices`: first run 5 minutes after start, then every 24 hours; each run creates a
-DI scope and calls `CatchUpAsync(null)` without the throttle, logging per property how many
-occurrences were created, already present and failed. Each tenant runs its own plugin process, so
-deploying the plugin catches up every affected tenant.
+The frontend plugin runs no background jobs (product rule). The catch-up happens only on the
+reads above: an affected tenant is caught up the first time the app's overdue list, the web task
+tracker or a compliance view is opened (compliance `Stats` covers every property). A scheduled
+catch-up, if wanted later, belongs in the backend-configuration service plugin.
 
 ## Testing
 
@@ -119,12 +118,12 @@ Integration tests (`BackendConfiguration.Pn.Integration.Test`, CI only):
 - Ineligible plannings are skipped: `Status = 0`, disabled, not backend-configuration-owned,
   `skipCloudDeploy` off, site not assigned.
 - The lower bound: occurrences before 2026-09-17 are not deployed.
-- The throttle: a second call within 10 minutes does nothing; the nightly run bypasses it.
+- The throttle: a second call within 10 minutes does nothing; `bypassThrottle: true` skips it.
 - Existing `EnsureDeployedAsync` and past-series backfill tests still pass unchanged.
 
 ## Rollout
 
 1. Read-only scan per tenant (done 2026-10-13): 1,182 occurrences missing since 2026-09-17 on 378
    plannings across 20 tenants.
-2. PR → CI → merge → deploy. The nightly pass catches up each tenant; the list paths keep it current.
+2. PR → CI → merge → deploy. The list reads catch up each tenant and keep it current.
 3. Re-run the scan: the gap since 2026-09-17 must be 0 on every tenant.
