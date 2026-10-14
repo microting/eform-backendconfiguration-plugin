@@ -54,9 +54,12 @@ using Microting.EformAngularFrontendBase.Infrastructure.Data.Entities.Permission
 /// IsInternalLink keeps the entity default (true) because the model's false default is
 /// one the host loaders ignore too.</para>
 ///
-/// <para>Not atomic across processes: two pods booting against one tenant database at
-/// the same moment can both add an entry. The cost is a duplicate menu row, which the
-/// admin removes in the menu editor; nothing reads menu rows with Single.</para>
+/// <para>Idempotent, not locked: each transaction re-checks the entry's template before
+/// writing, so a retried attempt never duplicates. Two pods committing the same entry in
+/// the same instant can still both add it (no lock: the database is Galera, which does not
+/// replicate GET_LOCK, and a rollout runs the sync from one new pod). The cost is a
+/// duplicate menu row the admin removes in the menu editor; nothing reads menu rows with
+/// Single.</para>
 /// </summary>
 public class PluginMenuSyncService(BaseDbContext dbContext)
 {
@@ -99,6 +102,11 @@ public class PluginMenuSyncService(BaseDbContext dbContext)
                 {
                     added.AddRange(InTransaction(() =>
                     {
+                        if (TemplateExists(item.MenuTemplate.E2EId, plugin.Id))
+                        {
+                            return [];
+                        }
+
                         AddLink(item, plugin.Id, null, NextRootPosition());
                         return [item.E2EId];
                     }));
@@ -132,6 +140,14 @@ public class PluginMenuSyncService(BaseDbContext dbContext)
     private List<string> AddChildren(PluginMenuItemModel group, List<PluginMenuItemModel> children, int pluginRowId,
         bool groupWasOffered)
     {
+        // Re-checked inside the transaction: the "missing" decision was made before it, and a
+        // retried attempt or a second process may have written some of these already.
+        children = children.Where(x => !TemplateExists(x.MenuTemplate.E2EId, pluginRowId)).ToList();
+        if (children.Count == 0)
+        {
+            return [];
+        }
+
         // Any parent: the admin may have moved the group.
         var groupId = dbContext.MenuItems
             .Where(x => x.E2EId == group.E2EId && x.Type == MenuItemTypeEnum.Dropdown)
@@ -172,6 +188,9 @@ public class PluginMenuSyncService(BaseDbContext dbContext)
 
         return written;
     }
+
+    private bool TemplateExists(string e2eId, int pluginRowId) =>
+        dbContext.MenuTemplates.Any(x => x.E2EId == e2eId && x.EformPluginId == pluginRowId);
 
     private void AddLink(PluginMenuItemModel item, int pluginRowId, int? parentId, int position)
     {

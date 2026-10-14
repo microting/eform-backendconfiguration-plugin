@@ -104,6 +104,11 @@ export class ChemicalPermissionsPageComponent implements OnInit, ChemicalUnsaved
       });
   }
 
+  /** A save or a copy is in flight: the matrix, Save and Undo are locked so a response cannot race an edit. */
+  get busy(): boolean {
+    return this.saving || this.copying;
+  }
+
   get otherProperties(): CommonDictionaryModel[] {
     return this.properties.filter((p) => p.id !== this.propertyId);
   }
@@ -166,7 +171,7 @@ export class ChemicalPermissionsPageComponent implements OnInit, ChemicalUnsaved
   save(): void {
     const propertyId = this.propertyId;
     const changes = changedPermissions(this.rows);
-    if (propertyId === null || !changes.length || this.saving) {
+    if (propertyId === null || !changes.length || this.busy) {
       return;
     }
     this.saving = true;

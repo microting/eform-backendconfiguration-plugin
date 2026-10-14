@@ -15,7 +15,7 @@
         class="btn-quiet ml-auto"
         id="chemicalPermissionsCopyBtn"
         [matMenuTriggerFor]="copyMenu"
-        [disabled]="!otherProperties.length || !rows.length || saving || copying"
+        [disabled]="!otherProperties.length || !rows.length || busy"
       >
         <mat-icon>content_copy</mat-icon>
         <span>{{ 'Chemicals: Copy from another property' | translate }}</span>
@@ -61,7 +61,7 @@
                 [id]="'chemicalPermission-' + key + '-' + row.workerId"
                 [class.flag-checkbox--implied]="isImplied(row, key)"
                 [checked]="isChecked(row, key)"
-                [disabled]="isImplied(row, key) || saving"
+                [disabled]="isImplied(row, key) || busy"
                 [aria-label]="checkboxLabel(row, key)"
                 (change)="toggle(row, key)"
               ></mat-checkbox>
@@ -87,10 +87,10 @@
         <mat-icon>error</mat-icon>
         <span>{{ saveError || ('Chemicals: Could not save permissions' | translate) }}</span>
       </span>
-      <button class="btn-cancel ml-auto" id="chemicalPermissionsUndoBtn" [disabled]="saving" (click)="undo()">
+      <button class="btn-cancel ml-auto" id="chemicalPermissionsUndoBtn" [disabled]="busy" (click)="undo()">
         {{ 'Chemicals: Undo' | translate }}
       </button>
-      <button class="btn-primary btn-primary--icon-left" id="chemicalPermissionsSaveBtn" [disabled]="saving" (click)="save()">
+      <button class="btn-primary btn-primary--icon-left" id="chemicalPermissionsSaveBtn" [disabled]="busy" (click)="save()">
         <mat-icon>save</mat-icon>
         <span>{{ 'Chemicals: Save permissions' | translate }}</span>
       </button>
