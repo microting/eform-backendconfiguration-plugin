@@ -47,7 +47,6 @@ describe('ChemicalsContainerComponent (picker)', () => {
   }
 
   beforeEach(async () => {
-    jest.useFakeTimers();
     selectedProperty$ = new BehaviorSubject<number | null>(null);
     const store = {
       select: jest.fn().mockImplementation((selector) =>
@@ -76,10 +75,7 @@ describe('ChemicalsContainerComponent (picker)', () => {
     await settle();
   });
 
-  afterEach(() => {
-    fixture?.destroy();
-    jest.useRealTimers();
-  });
+  afterEach(() => fixture?.destroy());
 
   it('starts on the first property', () => {
     expect(shown()).toBe('Hovedgaarden');
@@ -101,7 +97,6 @@ describe('ChemicalsContainerComponent (picker)', () => {
     component.onScreenActivate({confirmDiscardChanges: () => of(false)});
 
     await pick('Engvej 12');
-    jest.runAllTimers();
     await settle();
 
     expect(component.propertyId).toBe(7);
