@@ -235,6 +235,43 @@ public class PluginMenuSyncServiceTests : TestBaseSetup
         Assert.That(claims[0].Type, Is.EqualTo("Sync test type"));
     }
 
+    /// <summary>
+    /// Another process (or an earlier attempt of a retried execution) writes the same entry
+    /// between the "is it missing" check and the transaction: the work must not add it again.
+    /// </summary>
+    [Test]
+    public async Task ARowWrittenAfterTheMissingCheck_IsNotDuplicated_ForAMissingRootLink()
+    {
+        await InstallAsTheHostDoesAsync(Menu());
+        var menu = Menu();
+        menu.Add(Link("backend-configuration-pn-sync-test-link", 16));
+        var service = new PluginMenuSyncService(BaseDbContext)
+        {
+            BeforeTransaction = () => new PluginMenuSyncService(BaseDbContext).Run(PluginId, menu)
+        };
+
+        service.Run(PluginId, menu);
+
+        Assert.That(await BaseDbContext.MenuItems.CountAsync(x => x.E2EId == "backend-configuration-pn-sync-test-link"), Is.EqualTo(1));
+        Assert.That(await BaseDbContext.MenuTemplates.CountAsync(x => x.E2EId == "backend-configuration-pn-sync-test-link"), Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task ARowWrittenAfterTheMissingCheck_IsNotDuplicated_ForAGroupAndItsChild()
+    {
+        await InstallAsTheHostDoesAsync(WithoutChemicals(Menu()));
+        var service = new PluginMenuSyncService(BaseDbContext)
+        {
+            BeforeTransaction = () => new PluginMenuSyncService(BaseDbContext).Run(PluginId, Menu())
+        };
+
+        service.Run(PluginId, Menu());
+
+        Assert.That(await BaseDbContext.MenuItems.CountAsync(x => x.E2EId == GroupE2EId), Is.EqualTo(1));
+        Assert.That(await BaseDbContext.MenuItems.CountAsync(x => x.E2EId == PermissionsE2EId), Is.EqualTo(1));
+        Assert.That(await BaseDbContext.MenuTemplates.CountAsync(x => x.E2EId == PermissionsE2EId), Is.EqualTo(1));
+    }
+
     private int Run(IReadOnlyList<PluginMenuItemModel> menu) => new PluginMenuSyncService(BaseDbContext).Run(PluginId, menu);
 
     private static List<PluginMenuItemModel> Menu() => new EformBackendConfigurationPlugin().GetNavigationMenu(null!);

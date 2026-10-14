@@ -63,6 +63,24 @@ describe('ChemicalPermissionsPageComponent (template)', () => {
     expect(find('#chemicalPermissionRow-1')).toBe(before);
   });
 
+  it('locks the matrix, Save and Undo while a copy is in flight (Copilot C-2)', () => {
+    render([{id: 3, name: 'Hovedgården'}]);
+    component.toggle(component.rows[0], 'stock');
+    fixture.detectChanges();
+    const disabled = (selector: string) => (find(selector) as unknown as {disabled: boolean}).disabled;
+    expect(disabled('#chemicalPermission-view-1')).toBe(false);
+    expect(disabled('#chemicalPermissionsSaveBtn')).toBe(false);
+    expect(disabled('#chemicalPermissionsUndoBtn')).toBe(false);
+
+    component.copying = true;
+    fixture.detectChanges();
+
+    expect(disabled('#chemicalPermission-view-1')).toBe(true);
+    expect(disabled('#chemicalPermission-admin-1')).toBe(true);
+    expect(disabled('#chemicalPermissionsSaveBtn')).toBe(true);
+    expect(disabled('#chemicalPermissionsUndoBtn')).toBe(true);
+  });
+
   it('draws implied flags with the dashed "Følger af Admin" style (m-1)', () => {
     render([{id: 3, name: 'Hovedgården'}]);
     component.toggle(component.rows[0], 'admin');

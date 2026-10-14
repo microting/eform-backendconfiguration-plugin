@@ -60,6 +60,12 @@ using Microting.EformAngularFrontendBase.Infrastructure.Data.Entities.Permission
 /// </summary>
 public class PluginMenuSyncService(BaseDbContext dbContext)
 {
+    /// <summary>
+    /// Test seam: runs after the "is it missing" check and before the transaction, where a
+    /// second process (or a retried attempt) can write the same rows first.
+    /// </summary>
+    internal Action? BeforeTransaction { get; set; }
+
     /// <summary>eFormAPI.Web.Hosting.Enums.PluginStatus.Enabled (host enum, not referenceable).</summary>
     private const int EnabledStatus = 2;
 
@@ -229,8 +235,10 @@ public class PluginMenuSyncService(BaseDbContext dbContext)
     /// because BaseDbContextFactory enables retry on failure; the change tracker is
     /// cleared so a retried attempt starts from what the database holds.
     /// </summary>
-    private List<string> InTransaction(Func<List<string>> work) =>
-        dbContext.Database.CreateExecutionStrategy().Execute(() =>
+    private List<string> InTransaction(Func<List<string>> work)
+    {
+        BeforeTransaction?.Invoke();
+        return dbContext.Database.CreateExecutionStrategy().Execute(() =>
         {
             dbContext.ChangeTracker.Clear();
             using var transaction = dbContext.Database.BeginTransaction();
@@ -238,4 +246,5 @@ public class PluginMenuSyncService(BaseDbContext dbContext)
             transaction.Commit();
             return written;
         });
+    }
 }
