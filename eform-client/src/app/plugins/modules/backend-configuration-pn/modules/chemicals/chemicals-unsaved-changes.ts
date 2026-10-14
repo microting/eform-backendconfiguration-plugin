@@ -5,6 +5,8 @@ import {Observable, of} from 'rxjs';
 export interface ChemicalUnsavedChangesAware {
   /** Emits once: true when the screen may be left (nothing unsaved, or the user chose to discard). */
   confirmDiscardChanges(): Observable<boolean>;
+  /** True while a request the screen cannot cancel is in flight: the container locks the property picker. */
+  readonly busy?: boolean;
 }
 
 /** Asks `screen` when it holds unsaved edits; any other screen (or none) may be left at once. */

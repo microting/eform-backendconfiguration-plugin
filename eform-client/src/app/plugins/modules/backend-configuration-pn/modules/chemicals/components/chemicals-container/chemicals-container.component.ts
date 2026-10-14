@@ -7,7 +7,7 @@ import {CommonDictionaryModel} from 'src/app/common/models';
 import {selectCurrentUserIsFirstUser} from 'src/app/state';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
 import {chemicalsSelectProperty, chemicalsSetProperties, selectChemicalsPropertyId} from '../../../../state';
-import {confirmDiscardOf} from '../../chemicals-unsaved-changes';
+import {ChemicalUnsavedChangesAware, confirmDiscardOf} from '../../chemicals-unsaved-changes';
 
 const DEFAULT_TITLE_KEY = 'Chemicals: Title';
 
@@ -76,9 +76,16 @@ export class ChemicalsContainerComponent implements OnInit {
       if (discard) {
         this.applyProperty(propertyId);
       } else {
-        this.pickerValue = this.propertyId;
+        // Put back after the picker has been rendered with the pick: a synchronous revert
+        // leaves ngModel's binding unchanged, and the select would keep showing the pick.
+        setTimeout(() => (this.pickerValue = this.propertyId));
       }
     });
+  }
+
+  /** The active screen has an uncancellable request in flight; switching now would race it. */
+  get screenBusy(): boolean {
+    return (this.activeScreen as Partial<ChemicalUnsavedChangesAware> | null)?.busy === true;
   }
 
   onScreenActivate(screen: unknown): void {

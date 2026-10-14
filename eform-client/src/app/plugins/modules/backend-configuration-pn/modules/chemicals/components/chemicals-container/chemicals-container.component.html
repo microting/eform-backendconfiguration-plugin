@@ -11,6 +11,7 @@
         [clearable]="false"
         [placeholder]="'Chemicals: Select a property' | translate"
         [ngModel]="pickerValue"
+        [disabled]="screenBusy"
         (ngModelChange)="onPropertyChange($event)"
       ></mtx-select>
     </mat-form-field>
