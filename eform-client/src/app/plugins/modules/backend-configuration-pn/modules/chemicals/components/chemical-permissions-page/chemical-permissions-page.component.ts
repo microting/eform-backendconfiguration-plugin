@@ -8,8 +8,8 @@ import {ToastrService} from 'ngx-toastr';
 import {EMPTY, Observable, of} from 'rxjs';
 import {catchError, finalize, switchMap, tap} from 'rxjs/operators';
 import {CommonDictionaryModel} from 'src/app/common/models';
-import {BackendConfigurationPnChemicalsService, BackendConfigurationPnPropertiesService} from '../../../../services';
-import {selectChemicalsPropertyId} from '../../../../state';
+import {BackendConfigurationPnChemicalsService} from '../../../../services';
+import {selectChemicalsProperties, selectChemicalsPropertyId} from '../../../../state';
 import {ChemicalUnsavedChangesAware} from '../../chemicals-unsaved-changes';
 import {
   CHEMICAL_FLAG_KEYS,
@@ -60,7 +60,6 @@ export const CHEMICAL_FLAG_LABELS: Record<ChemicalFlagKey, {label: string; hint:
 export class ChemicalPermissionsPageComponent implements OnInit, ChemicalUnsavedChangesAware {
   private store = inject(Store);
   private chemicalsService = inject(BackendConfigurationPnChemicalsService);
-  private propertiesService = inject(BackendConfigurationPnPropertiesService);
   private destroyRef = inject(DestroyRef);
   private dialog = inject(MatDialog);
   private overlay = inject(Overlay);
@@ -84,9 +83,9 @@ export class ChemicalPermissionsPageComponent implements OnInit, ChemicalUnsaved
   saveError = '';
 
   ngOnInit(): void {
-    this.propertiesService.getAllPropertiesDictionary()
+    this.store.select(selectChemicalsProperties)
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((res) => (this.properties = (res && res.success && res.model) || []));
+      .subscribe((properties) => (this.properties = properties));
 
     this.store.select(selectChemicalsPropertyId)
       .pipe(

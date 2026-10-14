@@ -6,7 +6,7 @@ import {filter} from 'rxjs';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {selectCurrentUserIsFirstUser} from 'src/app/state';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
-import {chemicalsSelectProperty, selectChemicalsPropertyId} from '../../../../state';
+import {chemicalsSelectProperty, chemicalsSetProperties, selectChemicalsPropertyId} from '../../../../state';
 import {confirmDiscardOf} from '../../chemicals-unsaved-changes';
 
 const DEFAULT_TITLE_KEY = 'Chemicals: Title';
@@ -123,6 +123,7 @@ export class ChemicalsContainerComponent implements OnInit {
             return;
           }
           this.properties = res.model || [];
+          this.store.dispatch(chemicalsSetProperties({payload: this.properties}));
           this.applyProperty(this.initialPropertyId());
         },
         error: () => {

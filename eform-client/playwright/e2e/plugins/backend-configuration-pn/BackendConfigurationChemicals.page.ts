@@ -10,8 +10,9 @@ const BASE_URL = 'http://localhost:4200';
  *
  *   - Nav: the plugin dropdown `#backend-configuration-pn` holds the Kemi group
  *     `#backend-configuration-pn-chemicals`, which holds one child per shipped
- *     screen, e.g. `#backend-configuration-pn-chemicals-permissions` (all seeded
- *     by PluginMenuSyncService from EformBackendConfigurationPlugin).
+ *     screen, e.g. `#backend-configuration-pn-chemicals-permissions`. On a fresh
+ *     install (CI) the host's plugin loader seeds the menu from
+ *     EformBackendConfigurationPlugin; PluginMenuSyncService syncs it on existing tenants.
  *   - Shell: title `#chemicalsTitle`, property picker `#chemicalsPropertySelect`
  *     (mtx-select). E1 has no tab bar: each screen is a menu child.
  *   - W4: `#chemicalPermissionsPage`, rows `#chemicalPermissionRow-<workerId>`,
