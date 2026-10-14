@@ -956,7 +956,7 @@ export const ptBR = {
   'Chemicals: Flag register': 'Cadastrando-se',
   'Chemicals: Flag register hint': 'Adicionar locais',
   'Chemicals: Flag remove': 'Remover',
-  'Chemicals: Flag remove hint': 'Remover sem justificativa',
+  'Chemicals: Flag remove hint': 'Remover com um motivo',
   'Chemicals: Flag stock': 'Inventário',
   'Chemicals: Flag stock hint': 'Registre as alterações no nível de estoque.',
   'Chemicals: Flag manage locations': 'Locais',

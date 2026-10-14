@@ -977,7 +977,7 @@ export const esES = {
   'Chemicals: Save permissions': 'Guardar permisos',
   'Chemicals: No workers': 'En esta propiedad no hay ningún trabajador asignado.',
   'Chemicals: Could not load permissions': 'No se pudieron cargar los permisos.',
-  'Chemicals: Could not save permissions': 'No se pudieron guardar los permisos. Tus cambios se han guardado, así que puedes intentarlo de nuevo.',
+  'Chemicals: Could not save permissions': 'No se pudieron guardar los permisos. Tus cambios se conservan, así que puedes intentarlo de nuevo.',
   'Chemicals: Discard unsaved changes?': '¿Descartar los cambios no guardados?',
   'Chemicals: Changed workers': 'Trabajadores cambiados',
   'Chemicals: Discard changes': 'Descartar cambios',

@@ -3,6 +3,10 @@ import { API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from './wait-helpers';
 
 const BASE_URL = 'http://localhost:4200';
 
+/** Anchored, whitespace-tolerant regexp so an option must match the whole label (`Farm` never picks `Farm 2`). */
+const exactText = (text: string): RegExp =>
+  new RegExp(`^\\s*${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`);
+
 /**
  * Page object for the Kemi web screens (flutter-chemistry spec §11),
  * `/plugins/backend-configuration-pn/chemicals/<screen>`. DOM reference:
@@ -64,12 +68,12 @@ export class BackendConfigurationChemicalsPage {
     await this.permissionsPage().waitFor({ state: 'visible', timeout: API_TIMEOUT });
   }
 
-  /** Picks an option in an mtx-select by its visible text and waits for the panel to close. */
+  /** Picks an option in an mtx-select by its exact visible text (no substring match) and waits for the panel to close. */
   async selectMtxOption(selector: string, text: string): Promise<void> {
     await this.page.locator(selector).click({ timeout: UI_TIMEOUT });
     const panel = this.page.locator('.ng-dropdown-panel');
     await panel.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
-    await panel.locator('.ng-option').filter({ hasText: text }).first().click({ timeout: UI_TIMEOUT });
+    await panel.locator('.ng-option').filter({ hasText: exactText(text) }).click({ timeout: UI_TIMEOUT });
     await panel.waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
   }
 

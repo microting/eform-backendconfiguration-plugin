@@ -133,9 +133,9 @@ test.describe.serial('Kemi W4 - worker permissions', () => {
     await kemi.keepEditingButton().click({ timeout: UI_TIMEOUT });
     await kemi.keepEditingButton().waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
     await expect(kemi.propertySelect()).toContainText(main.name, { timeout: UI_TIMEOUT });
-    await expect(kemi.propertySelect()).not.toContainText(other.name);
+    await expect(kemi.propertySelect()).not.toContainText(other.name, { timeout: UI_TIMEOUT });
     await expect(kemi.permissionCheckbox('stock', workerName)).toBeChecked({ timeout: UI_TIMEOUT });
-    await expect(kemi.saveBar()).toBeVisible();
+    await expect(kemi.saveBar()).toBeVisible({ timeout: UI_TIMEOUT });
 
     // Discard: the switch goes through and the edit is gone.
     await kemi.pickProperty(other.name);
