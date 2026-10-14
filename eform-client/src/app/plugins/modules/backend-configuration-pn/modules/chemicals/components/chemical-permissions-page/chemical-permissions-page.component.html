@@ -1,0 +1,99 @@
+<div id="chemicalPermissionsPage" class="chemicals-page">
+  <ng-container *ngIf="propertyId !== null">
+    <div class="d-flex flex-row flex-wrap align-items-center gap-12 mb-2">
+      <mat-form-field class="chemicals-permissions-search">
+        <mat-label>{{ 'Search' | translate }}</mat-label>
+        <input matInput id="chemicalPermissionsSearch" [(ngModel)]="search" [placeholder]="'Chemicals: Worker' | translate">
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+      <div class="chemicals-legend d-flex flex-wrap align-items-center gap-12">
+        <span><span class="flag-dot flag-dot--given"></span>{{ 'Chemicals: Given' | translate }}</span>
+        <span><span class="flag-dot flag-dot--implied"></span>{{ 'Chemicals: Implied by Admin' | translate }}</span>
+        <span><span class="flag-dot flag-dot--changed"></span>{{ 'Chemicals: Not saved' | translate }}</span>
+      </div>
+      <button
+        class="btn-quiet ml-auto"
+        id="chemicalPermissionsCopyBtn"
+        [matMenuTriggerFor]="copyMenu"
+        [disabled]="!otherProperties.length || !rows.length || saving"
+      >
+        <mat-icon>content_copy</mat-icon>
+        <span>{{ 'Chemicals: Copy from another property' | translate }}</span>
+      </button>
+      <mat-menu #copyMenu="matMenu">
+        <div class="chemicals-menu-title">{{ 'Chemicals: Copy permissions from' | translate }}</div>
+        <button
+          mat-menu-item
+          *ngFor="let property of otherProperties"
+          [id]="'chemicalPermissionsCopyFrom-' + property.id"
+          (click)="copyFrom(property.id)"
+        >
+          <mat-icon>home_work</mat-icon>
+          <span>{{ property.name }}</span>
+        </button>
+        <div class="chemicals-menu-hint">{{ 'Chemicals: Copy hint' | translate }}</div>
+      </mat-menu>
+    </div>
+
+    <div *ngIf="loadFailed" class="chemicals-empty" id="chemicalPermissionsLoadFailed">
+      {{ 'Chemicals: Could not load permissions' | translate }}
+    </div>
+    <div *ngIf="!loading && !loadFailed && !rows.length" class="chemicals-empty" id="chemicalPermissionsEmpty">
+      {{ 'Chemicals: No workers' | translate }}
+    </div>
+
+    <div class="chemicals-permissions-scroll" *ngIf="rows.length">
+      <table class="chemicals-permissions-table">
+        <thead>
+          <tr>
+            <th>{{ 'Chemicals: Worker' | translate }}</th>
+            <th *ngFor="let key of flagKeys" [class.flag-admin]="key === 'admin'">
+              <div>{{ flagLabels[key].label | translate }}</div>
+              <small>{{ flagLabels[key].hint | translate }}</small>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of visibleRows" [id]="'chemicalPermissionRow-' + row.workerId">
+            <td class="worker-name">{{ row.workerName }}</td>
+            <td
+              *ngFor="let key of flagKeys"
+              [class.flag-cell--implied]="isImplied(row, key)"
+              [class.flag-cell--changed]="isChanged(row, key)"
+            >
+              <mat-checkbox
+                [id]="'chemicalPermission-' + key + '-' + row.workerId"
+                [checked]="isChecked(row, key)"
+                [disabled]="isImplied(row, key) || saving"
+                [attr.aria-label]="row.workerName + ': ' + (flagLabels[key].label | translate)"
+                (change)="toggle(row, key)"
+              ></mat-checkbox>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="chemicals-footnote">
+      {{ 'Chemicals: Permissions scope note' | translate: {property: propertyName} }}
+      {{ 'Chemicals: Push recipients note' | translate }}
+    </p>
+
+    <div class="chemicals-save-bar d-flex flex-wrap align-items-center gap-12" id="chemicalPermissionsSaveBar" *ngIf="changeCount > 0">
+      <span class="save-bar-dot"></span>
+      <span *ngIf="changeCount === 1">{{ 'Chemicals: One unsaved change' | translate }}</span>
+      <span *ngIf="changeCount > 1">{{ 'Chemicals: Unsaved changes' | translate: {count: changeCount} }}</span>
+      <span *ngIf="saveFailed" class="save-bar-error" id="chemicalPermissionsSaveError" role="alert">
+        <mat-icon>error</mat-icon>
+        <span>{{ saveError || ('Chemicals: Could not save permissions' | translate) }}</span>
+      </span>
+      <button class="btn-cancel ml-auto" id="chemicalPermissionsUndoBtn" [disabled]="saving" (click)="undo()">
+        {{ 'Chemicals: Undo' | translate }}
+      </button>
+      <button class="btn-primary btn-primary--icon-left" id="chemicalPermissionsSaveBtn" [disabled]="saving" (click)="save()">
+        <mat-icon>save</mat-icon>
+        <span>{{ 'Chemicals: Save permissions' | translate }}</span>
+      </button>
+    </div>
+  </ng-container>
+</div>

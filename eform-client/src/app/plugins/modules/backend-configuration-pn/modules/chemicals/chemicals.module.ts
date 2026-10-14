@@ -2,7 +2,11 @@ import {CommonModule} from '@angular/common';
 import {NgModule} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {MatCardModule} from '@angular/material/card';
+import {MatCheckboxModule} from '@angular/material/checkbox';
 import {MatFormFieldModule} from '@angular/material/form-field';
+import {MatIconModule} from '@angular/material/icon';
+import {MatInputModule} from '@angular/material/input';
+import {MatMenuModule} from '@angular/material/menu';
 import {RouterModule} from '@angular/router';
 import {TranslateModule} from '@ngx-translate/core';
 import {MtxSelectModule} from '@ng-matero/extensions/select';
@@ -25,7 +29,11 @@ import {ChemicalPermissionsPageComponent, ChemicalsContainerComponent} from './c
     ChemicalsRouting,
     FormsModule,
     MatCardModule,
+    MatCheckboxModule,
     MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatMenuModule,
     MtxSelectModule,
   ],
 })

@@ -74,6 +74,10 @@ export class ChemicalsContainerComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
+          // The flag was withdrawn while the request was in flight: nothing may reach the store.
+          if (!this.isFirstUser) {
+            return;
+          }
           this.loaded = true;
           if (!res || !res.success) {
             // The host already toasts the error; show the error state, not "no properties".
