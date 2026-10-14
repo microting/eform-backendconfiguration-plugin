@@ -1,7 +1,7 @@
 import {DestroyRef, Injector, runInInjectionContext} from '@angular/core';
 import {ActivatedRoute, convertToParamMap, NavigationEnd, Router} from '@angular/router';
 import {Store} from '@ngrx/store';
-import {BehaviorSubject, of, Subject} from 'rxjs';
+import {BehaviorSubject, of, Subject, throwError} from 'rxjs';
 import {selectCurrentUserIsFirstUser} from 'src/app/state';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
 import {chemicalsSelectProperty, selectChemicalsPropertyId} from '../../../../state';
@@ -17,13 +17,14 @@ describe('ChemicalsContainerComponent', () => {
   let properties: {getAllPropertiesDictionary: jest.Mock};
   let router: {navigate: jest.Mock; events: Subject<unknown>};
 
-  function build(list: Array<{id: number; name: string}>): ChemicalsContainerComponent {
+  function build(list: Array<{id: number; name: string}>, response?: unknown): ChemicalsContainerComponent {
     store = {
       select: jest.fn().mockImplementation((selector) =>
         selector === selectCurrentUserIsFirstUser ? isFirstUser$ : selectedProperty$),
-      dispatch: jest.fn(),
+      // The real store echoes a selection back through selectChemicalsPropertyId.
+      dispatch: jest.fn().mockImplementation((action: {payload: number | null}) => selectedProperty$.next(action.payload)),
     };
-    properties = {getAllPropertiesDictionary: jest.fn().mockReturnValue(of({success: true, model: list}))};
+    properties = {getAllPropertiesDictionary: jest.fn().mockReturnValue(response ?? of({success: true, model: list}))};
     router = {navigate: jest.fn().mockResolvedValue(true), events: routerEvents$};
     const route = {
       get snapshot() {
@@ -152,6 +153,81 @@ describe('ChemicalsContainerComponent', () => {
     expect(component.titleKey).toBe('Chemicals: Permissions title');
   });
 
+  it('adopts a different VALID ?propertyId= on a later navigation instead of reverting it (I-1)', () => {
+    queryParams = {propertyId: '7'};
+    const component = build([{id: 7, name: 'Hovedgården'}, {id: 8, name: 'Engvej 12'}]);
+    store.dispatch.mockClear();
+    router.navigate.mockClear();
+
+    queryParams = {propertyId: '8'};
+    routerEvents$.next(new NavigationEnd(4, '/a', '/a'));
+
+    expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectProperty({payload: 8}));
+    expect(component.propertyId).toBe(8);
+    expect(router.navigate).not.toHaveBeenCalled();
+
+    // A second NavigationEnd with the same URL changes nothing: no loop.
+    store.dispatch.mockClear();
+    routerEvents$.next(new NavigationEnd(5, '/a', '/a'));
+    expect(store.dispatch).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('still repairs an UNKNOWN ?propertyId= on a later navigation', () => {
+    queryParams = {propertyId: '7'};
+    build([{id: 7, name: 'Hovedgården'}]);
+    router.navigate.mockClear();
+    store.dispatch.mockClear();
+
+    queryParams = {propertyId: '99'};
+    routerEvents$.next(new NavigationEnd(4, '/a', '/a'));
+
+    expect(store.dispatch).not.toHaveBeenCalled();
+    expect(router.navigate).toHaveBeenCalledWith([], urlSync(7));
+  });
+
+  it('follows the first-user flag instead of freezing it (M-1)', () => {
+    isFirstUser$.next(false);
+    const component = build([{id: 7, name: 'Hovedgården'}]);
+    expect(properties.getAllPropertiesDictionary).not.toHaveBeenCalled();
+
+    isFirstUser$.next(true);
+
+    expect(component.isFirstUser).toBe(true);
+    expect(properties.getAllPropertiesDictionary).toHaveBeenCalledTimes(1);
+    expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectProperty({payload: 7}));
+  });
+
+  it('stops touching the URL when the first-user flag is withdrawn', () => {
+    queryParams = {propertyId: '7'};
+    build([{id: 7, name: 'Hovedgården'}]);
+    router.navigate.mockClear();
+    store.dispatch.mockClear();
+
+    isFirstUser$.next(false);
+    queryParams = {};
+    routerEvents$.next(new NavigationEnd(2, '/a', '/a'));
+
+    expect(router.navigate).not.toHaveBeenCalled();
+    expect(store.dispatch).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['an unsuccessful answer', of({success: false, model: null})],
+    ['a failed request', throwError(() => new Error('boom'))],
+  ])('shows an error state, not "no properties", after %s (M-2)', (_name, response) => {
+    const component = build([], response);
+
+    expect(component.loadFailed).toBe(true);
+    expect(component.properties).toEqual([]);
+    expect(store.dispatch).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('does not flag a successful empty list as a failure', () => {
+    expect(build([]).loadFailed).toBe(false);
+  });
+
   describe('for anyone but the first user (E-05, until GA)', () => {
     beforeEach(() => {
       isFirstUser$.next(false);
@@ -167,7 +243,6 @@ describe('ChemicalsContainerComponent', () => {
     });
 
     it('does not rewrite the URL on navigation either', () => {
-      queryParams = {};
       build([{id: 7, name: 'Hovedgården'}]);
 
       routerEvents$.next(new NavigationEnd(2, '/a', '/a'));

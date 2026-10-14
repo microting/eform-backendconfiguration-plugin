@@ -17,6 +17,7 @@ export const CHEMICAL_I18N_KEYS: string[] = [
   'Chemicals: No properties',
   'Chemicals: Select a property',
   'Chemicals: Not available yet',
-  // Task 4 - W4 page title (mockup: "Medarbejdere & rettigheder")
+  // Task 3 - W4 page title (mockup: "Medarbejdere & rettigheder")
   'Chemicals: Permissions title',
+  'Chemicals: Could not load properties',
 ];

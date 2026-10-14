@@ -32,10 +32,24 @@ describe('ChemicalsRouting', () => {
     expect(redirect?.redirectTo).toBe(CHEMICAL_SCREENS[0].path);
   });
 
-  it('gives every screen a unique path and menu E2EId that matches the plugin menu', () => {
+  it('gives every screen a component', () => {
+    const children = (routes[0].children ?? []).filter((r) => !r.redirectTo);
+
+    expect(CHEMICAL_SCREENS.every((s) => !!s.component)).toBe(true);
+    expect(children.every((r) => !!r.component)).toBe(true);
+  });
+
+  it('gives every screen a unique path and a Kemi title key', () => {
     expect(new Set(CHEMICAL_SCREENS.map((s) => s.path)).size).toBe(CHEMICAL_SCREENS.length);
-    expect(CHEMICAL_SCREENS.map((s) => s.menuE2EId))
-      .toEqual(CHEMICAL_SCREENS.map((s) => `backend-configuration-pn-chemicals-${s.path}`));
     expect(CHEMICAL_SCREENS.every((s) => s.titleKey.startsWith('Chemicals: '))).toBe(true);
+  });
+
+  it('pins the menu E2EIds to the literals the C# menu definition and ChemicalsMenuTests use', () => {
+    // EformBackendConfigurationPlugin.ChemicalsMenuChild builds
+    // `backend-configuration-pn-chemicals-{path}`; jest cannot read the C#, so the
+    // literals are pinned on both sides. Extend this list with each screen's menu child.
+    expect(CHEMICAL_SCREENS.map((s) => [s.path, s.menuE2EId])).toEqual([
+      ['permissions', 'backend-configuration-pn-chemicals-permissions'],
+    ]);
   });
 });
