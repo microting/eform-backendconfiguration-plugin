@@ -978,4 +978,12 @@ export const plPL = {
   'Chemicals: No workers': 'Do tej nieruchomości nie są przypisani żadni pracownicy.',
   'Chemicals: Could not load permissions': 'Nie udało się załadować uprawnień.',
   'Chemicals: Could not save permissions': 'Nie udało się zapisać uprawnień. Zmiany zostały zachowane, więc możesz spróbować ponownie.',
+  'Chemicals: Discard unsaved changes?': 'Odrzucić niezapisane zmiany?',
+  'Chemicals: Changed workers': 'Zmieniono pracowników',
+  'Chemicals: Discard changes': 'Odrzuć zmiany',
+  'Chemicals: Keep editing': 'Kontynuuj edycję',
+  'Chemicals: Copied permissions': 'Uprawnienia skopiowano z {{property}} (zmiana pracowników: {{count}}). Pamiętaj o zapisaniu.',
+  'Chemicals: Nothing to copy': 'Nic do kopiowania: żaden współdzielony pracownik nie ma innych uprawnień na {{property}}.',
+  'Chemicals: Could not copy permissions': 'Nie udało się skopiować uprawnień.',
+  'Chemicals: No workers match': 'Nie znaleziono pracowników odpowiadających wyszukiwaniu.',
 };

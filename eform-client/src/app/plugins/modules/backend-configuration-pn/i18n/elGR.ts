@@ -854,4 +854,12 @@ export const elGR = {
   'Chemicals: No workers': 'Δεν έχουν ανατεθεί εργάτες σε αυτό το ακίνητο.',
   'Chemicals: Could not load permissions': 'Δεν ήταν δυνατή η φόρτωση των δικαιωμάτων.',
   'Chemicals: Could not save permissions': 'Δεν ήταν δυνατή η αποθήκευση των δικαιωμάτων. Οι αλλαγές σας διατηρούνται, επομένως μπορείτε να προσπαθήσετε ξανά.',
+  'Chemicals: Discard unsaved changes?': 'Απόρριψη μη αποθηκευμένων αλλαγών;',
+  'Chemicals: Changed workers': 'Άλλαξαν οι εργαζόμενοι',
+  'Chemicals: Discard changes': 'Απόρριψη αλλαγών',
+  'Chemicals: Keep editing': 'Συνέχιση επεξεργασίας',
+  'Chemicals: Copied permissions': 'Τα δικαιώματα αντιγράφηκαν από {{property}} (οι εργαζόμενοι άλλαξαν: {{count}}). Μην ξεχάσετε να αποθηκεύσετε.',
+  'Chemicals: Nothing to copy': 'Δεν υπάρχει τίποτα προς αντιγραφή: κανένας κοινόχρηστος εργαζόμενος δεν έχει διαφορετικά δικαιώματα στο {{property}}.',
+  'Chemicals: Could not copy permissions': 'Δεν ήταν δυνατή η αντιγραφή των δικαιωμάτων.',
+  'Chemicals: No workers match': 'Δεν υπάρχουν εργαζόμενοι που να ταιριάζουν με την αναζήτηση.',
 };

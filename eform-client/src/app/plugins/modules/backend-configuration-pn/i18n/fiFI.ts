@@ -978,4 +978,12 @@ export const fiFI = {
   'Chemicals: No workers': 'Tälle kiinteistölle ei ole määrätty työntekijöitä.',
   'Chemicals: Could not load permissions': 'Käyttöoikeuksia ei voitu ladata.',
   'Chemicals: Could not save permissions': 'Käyttöoikeuksia ei voitu tallentaa. Muutoksesi säilytetään, joten voit yrittää uudelleen.',
+  'Chemicals: Discard unsaved changes?': 'Hylätäänkö tallentamattomat muutokset?',
+  'Chemicals: Changed workers': 'Vaihtuneet työntekijät',
+  'Chemicals: Discard changes': 'Hylkää muutokset',
+  'Chemicals: Keep editing': 'Jatka muokkaamista',
+  'Chemicals: Copied permissions': 'Käyttöoikeudet kopioitu osoitteesta {{property}} (työntekijät muutettu: {{count}}). Muista tallentaa.',
+  'Chemicals: Nothing to copy': 'Ei kopioitavaa: kenelläkään jaetulla työntekijällä ei ole eri käyttöoikeuksia kohteessa {{property}}.',
+  'Chemicals: Could not copy permissions': 'Käyttöoikeuksia ei voitu kopioida.',
+  'Chemicals: No workers match': 'Hakua vastaavia työntekijöitä ei löytynyt.',
 };

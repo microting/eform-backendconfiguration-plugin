@@ -978,4 +978,12 @@ export const esES = {
   'Chemicals: No workers': 'En esta propiedad no hay ningún trabajador asignado.',
   'Chemicals: Could not load permissions': 'No se pudieron cargar los permisos.',
   'Chemicals: Could not save permissions': 'No se pudieron guardar los permisos. Tus cambios se han guardado, así que puedes intentarlo de nuevo.',
+  'Chemicals: Discard unsaved changes?': '¿Descartar los cambios no guardados?',
+  'Chemicals: Changed workers': 'Trabajadores cambiados',
+  'Chemicals: Discard changes': 'Descartar cambios',
+  'Chemicals: Keep editing': 'Sigue editando',
+  'Chemicals: Copied permissions': 'Permisos copiados de {{property}} (trabajadores cambiados: {{count}}). Recuerda guardar.',
+  'Chemicals: Nothing to copy': 'Nada que copiar: ningún trabajador compartido tiene permisos diferentes en {{property}}.',
+  'Chemicals: Could not copy permissions': 'No se pudieron copiar los permisos.',
+  'Chemicals: No workers match': 'No se encontraron trabajadores que coincidan con la búsqueda.',
 };

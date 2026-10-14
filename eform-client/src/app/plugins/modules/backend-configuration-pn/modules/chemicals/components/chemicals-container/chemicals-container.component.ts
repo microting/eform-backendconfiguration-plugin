@@ -2,11 +2,12 @@ import {Component, DestroyRef, OnInit, inject} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {ActivatedRoute, NavigationEnd, Router} from '@angular/router';
 import {Store} from '@ngrx/store';
-import {filter} from 'rxjs';
+import {filter, take} from 'rxjs';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {selectCurrentUserIsFirstUser} from 'src/app/state';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
 import {chemicalsSelectProperty, selectChemicalsPropertyId} from '../../../../state';
+import {confirmDiscardOf} from '../../chemicals-unsaved-changes';
 
 const DEFAULT_TITLE_KEY = 'Chemicals: Title';
 
@@ -14,6 +15,8 @@ const DEFAULT_TITLE_KEY = 'Chemicals: Title';
  * Kemi page frame: the active screen's title, the property picker every screen shares
  * and the router outlet. The selected property lives in the chemicalsState slice AND in
  * the `?propertyId=` query parameter, so a reload (which empties the store) restores it.
+ * A switch the user starts (picker, a ?propertyId= from Back/Forward) first asks the
+ * active screen, so its unsaved edits are never dropped silently.
  *
  * TODO(chemistry-GA): the REST controllers are first-user-only until GA, so anyone else
  * gets a notice and no chemistry call is made. Remove the gate together with the
@@ -35,11 +38,15 @@ export class ChemicalsContainerComponent implements OnInit {
   properties: CommonDictionaryModel[] = [];
   /** Mirrors the store (chemicalsState.propertyId); only the store writes it. */
   propertyId: number | null = null;
+  /** What the picker shows: follows the store, and briefly the user's pick while the screen is asked. */
+  pickerValue: number | null = null;
   isFirstUser = false;
   loaded = false;
   loadFailed = false;
   titleKey = DEFAULT_TITLE_KEY;
   private started = false;
+  /** The routed screen, asked before a property switch drops its edits. */
+  private activeScreen: unknown = null;
 
   ngOnInit(): void {
     this.router.events
@@ -58,7 +65,35 @@ export class ChemicalsContainerComponent implements OnInit {
       });
   }
 
+  /** The picker's choice. On "keep editing" the property stays and the picker is put back. */
   onPropertyChange(propertyId: number | null): void {
+    this.pickerValue = propertyId;
+    if (propertyId === this.propertyId) {
+      this.syncUrl();
+      return;
+    }
+    this.askScreen((discard) => {
+      if (discard) {
+        this.applyProperty(propertyId);
+      } else {
+        this.pickerValue = this.propertyId;
+      }
+    });
+  }
+
+  onScreenActivate(screen: unknown): void {
+    this.activeScreen = screen;
+  }
+
+  onScreenDeactivate(): void {
+    this.activeScreen = null;
+  }
+
+  private askScreen(then: (discard: boolean) => void): void {
+    confirmDiscardOf(this.activeScreen).pipe(take(1)).subscribe(then);
+  }
+
+  private applyProperty(propertyId: number | null): void {
     if (propertyId !== this.propertyId) {
       this.store.dispatch(chemicalsSelectProperty({payload: propertyId}));
     }
@@ -68,7 +103,10 @@ export class ChemicalsContainerComponent implements OnInit {
   private loadProperties(): void {
     this.store.select(selectChemicalsPropertyId)
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((id) => (this.propertyId = id));
+      .subscribe((id) => {
+        this.propertyId = id;
+        this.pickerValue = id;
+      });
 
     this.propertiesService.getAllPropertiesDictionary()
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -85,7 +123,7 @@ export class ChemicalsContainerComponent implements OnInit {
             return;
           }
           this.properties = res.model || [];
-          this.onPropertyChange(this.initialPropertyId());
+          this.applyProperty(this.initialPropertyId());
         },
         error: () => {
           this.loaded = true;
@@ -108,8 +146,9 @@ export class ChemicalsContainerComponent implements OnInit {
 
   /**
    * A later navigation carrying another known ?propertyId= (screen links, Back/Forward,
-   * a deeplink) is adopted; anything else gets the URL repaired. No loop: adopting
-   * makes the store equal to the URL, so the repair that follows is a no-op.
+   * a deeplink) is adopted once the active screen agrees; anything else, or "keep
+   * editing", gets the URL repaired. No loop: adopting makes the store equal to the
+   * URL, so the repair that follows is a no-op.
    */
   private onNavigationEnd(): void {
     this.refreshTitle();
@@ -118,7 +157,7 @@ export class ChemicalsContainerComponent implements OnInit {
     }
     const fromUrl = this.propertyIdFromUrl();
     if (this.hasProperty(fromUrl) && fromUrl !== this.propertyId) {
-      this.onPropertyChange(fromUrl);
+      this.askScreen((discard) => (discard ? this.applyProperty(fromUrl) : this.syncUrl()));
     } else {
       this.syncUrl();
     }

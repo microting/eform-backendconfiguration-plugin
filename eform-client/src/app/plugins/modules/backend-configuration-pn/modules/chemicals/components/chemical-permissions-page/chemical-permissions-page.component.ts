@@ -1,21 +1,28 @@
-import {Component, DestroyRef, OnInit, inject} from '@angular/core';
+import {Overlay} from '@angular/cdk/overlay';
+import {Component, DestroyRef, HostListener, OnInit, inject} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {MatDialog} from '@angular/material/dialog';
 import {Store} from '@ngrx/store';
-import {EMPTY, of} from 'rxjs';
+import {TranslateService} from '@ngx-translate/core';
+import {ToastrService} from 'ngx-toastr';
+import {EMPTY, Observable, of} from 'rxjs';
 import {catchError, finalize, switchMap, tap} from 'rxjs/operators';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {BackendConfigurationPnChemicalsService, BackendConfigurationPnPropertiesService} from '../../../../services';
 import {selectChemicalsPropertyId} from '../../../../state';
+import {ChemicalUnsavedChangesAware} from '../../chemicals-unsaved-changes';
 import {
   CHEMICAL_FLAG_KEYS,
   ChemicalFlagKey,
   ChemicalPermissionRow,
   buildPermissionRows,
   changedPermissions,
+  confirmDiscard,
   copyPermissionsFrom,
   effectiveFlags,
   isImpliedFlag,
   resetPermissionRows,
+  sameFlags,
   toggleFlag,
 } from '../../helpers';
 
@@ -32,10 +39,12 @@ export const CHEMICAL_FLAG_LABELS: Record<ChemicalFlagKey, {label: string; hint:
 /**
  * W4 "Medarbejdere & rettigheder": the per-property worker × flag matrix. Edits
  * collect in a save bar and are saved as ONE PUT of only the changed workers
- * (Plan A Task 15). Admin locks the other flags as implied. "Kopiér fra anden
- * ejendom" is client-side and lands as unsaved changes (spec §8). Switching
- * property drops unsaved changes (Plan E decision 9), and an answer for a
- * property that is no longer selected is ignored.
+ * (Plan A Task 15). Admin locks the other flags as implied; unticking Admin keeps
+ * them ticked (app owner ruling I4). "Kopiér fra anden ejendom" is client-side
+ * and lands as unsaved changes (spec §8). Unsaved edits are never dropped
+ * silently: leaving the screen, switching property (the container asks through
+ * {@link confirmDiscardChanges}) and reloading the tab all ask first. An answer
+ * for a property that is no longer selected is ignored.
  *
  * No self-demotion ordering (cf. the app's Plan B B20) and no last-Admin guard:
  * the REST caller is a web admin (ChemicalCaller.Web), which passes every check
@@ -48,11 +57,15 @@ export const CHEMICAL_FLAG_LABELS: Record<ChemicalFlagKey, {label: string; hint:
   styleUrls: ['./chemical-permissions-page.component.scss'],
   standalone: false,
 })
-export class ChemicalPermissionsPageComponent implements OnInit {
+export class ChemicalPermissionsPageComponent implements OnInit, ChemicalUnsavedChangesAware {
   private store = inject(Store);
   private chemicalsService = inject(BackendConfigurationPnChemicalsService);
   private propertiesService = inject(BackendConfigurationPnPropertiesService);
   private destroyRef = inject(DestroyRef);
+  private dialog = inject(MatDialog);
+  private overlay = inject(Overlay);
+  private translate = inject(TranslateService);
+  private toastr = inject(ToastrService);
 
   readonly flagKeys = CHEMICAL_FLAG_KEYS;
   readonly flagLabels = CHEMICAL_FLAG_LABELS;
@@ -64,6 +77,7 @@ export class ChemicalPermissionsPageComponent implements OnInit {
   loading = false;
   loadFailed = false;
   saving = false;
+  copying = false;
   /** The last save was refused or failed; the edits are kept for a retry. */
   saveFailed = false;
   /** The server's reason for a refused save ('' when the request itself failed). */
@@ -96,7 +110,7 @@ export class ChemicalPermissionsPageComponent implements OnInit {
   }
 
   get propertyName(): string {
-    return this.properties.find((p) => p.id === this.propertyId)?.name ?? '';
+    return this.propertyNameOf(this.propertyId);
   }
 
   get visibleRows(): ChemicalPermissionRow[] {
@@ -106,6 +120,11 @@ export class ChemicalPermissionsPageComponent implements OnInit {
 
   get changeCount(): number {
     return changedPermissions(this.rows).length;
+  }
+
+  /** A toggle replaces the row object; tracking by worker keeps its DOM (and keyboard focus). */
+  trackByWorker(_index: number, row: ChemicalPermissionRow): number {
+    return row.workerId;
   }
 
   isChecked(row: ChemicalPermissionRow, key: ChemicalFlagKey): boolean {
@@ -118,6 +137,18 @@ export class ChemicalPermissionsPageComponent implements OnInit {
 
   isChanged(row: ChemicalPermissionRow, key: ChemicalFlagKey): boolean {
     return effectiveFlags(row.current)[key] !== effectiveFlags(row.stored)[key];
+  }
+
+  /** "Jens Hansen: Lager – Følger af Admin – Ikke gemt": the states the cell shows by style only. */
+  checkboxLabel(row: ChemicalPermissionRow, key: ChemicalFlagKey): string {
+    const parts = [`${row.workerName}: ${this.translate.instant(this.flagLabels[key].label)}`];
+    if (this.isImplied(row, key)) {
+      parts.push(this.translate.instant('Chemicals: Implied by Admin'));
+    }
+    if (this.isChanged(row, key)) {
+      parts.push(this.translate.instant('Chemicals: Not saved'));
+    }
+    return parts.join(' – ');
   }
 
   toggle(row: ChemicalPermissionRow, key: ChemicalFlagKey): void {
@@ -160,16 +191,68 @@ export class ChemicalPermissionsPageComponent implements OnInit {
       });
   }
 
+  /** Lands as unsaved changes and says how many workers changed. A refusal is toasted by the host. */
   copyFrom(sourcePropertyId: number): void {
     const propertyId = this.propertyId;
-    if (propertyId === null) {
+    if (propertyId === null || this.copying) {
       return;
     }
-    this.chemicalsService.getPermissions(sourcePropertyId).subscribe((res) => {
-      if (propertyId === this.propertyId && res && res.success) {
-        this.rows = copyPermissionsFrom(this.rows, res.model);
-      }
+    const property = this.propertyNameOf(sourcePropertyId);
+    this.copying = true;
+    this.chemicalsService.getPermissions(sourcePropertyId)
+      .pipe(finalize(() => (this.copying = false)), takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          if (propertyId !== this.propertyId || !res || !res.success) {
+            return;
+          }
+          const copied = copyPermissionsFrom(this.rows, res.model);
+          const count = copied.filter((r, i) => !sameFlags(effectiveFlags(r.current), effectiveFlags(this.rows[i].current))).length;
+          this.rows = copied;
+          if (count) {
+            this.toastr.success(this.translate.instant('Chemicals: Copied permissions', {property, count}));
+          } else {
+            this.toastr.info(this.translate.instant('Chemicals: Nothing to copy', {property}));
+          }
+        },
+        error: () => {
+          if (propertyId === this.propertyId) {
+            this.toastr.error(this.translate.instant('Chemicals: Could not copy permissions'));
+          }
+        },
+      });
+  }
+
+  /** Used by the route guard and the container's property switch. */
+  confirmDiscardChanges(): Observable<boolean> {
+    const count = this.changeCount;
+    if (!count) {
+      return of(true);
+    }
+    const t = (key: string) => this.translate.instant(key);
+    return confirmDiscard(this.dialog, this.overlay, {
+      headerText: t('Chemicals: Discard unsaved changes?'),
+      fields: [
+        {header: t('Property'), text: this.propertyName},
+        {header: t('Chemicals: Changed workers'), text: String(count)},
+      ],
+      discardText: t('Chemicals: Discard changes'),
+      keepText: t('Chemicals: Keep editing'),
+      confirmId: 'chemicalPermissionsDiscardConfirm',
     });
+  }
+
+  /** Reload or tab close with unsaved edits: the browser shows its own "leave site?" prompt. */
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (this.changeCount > 0) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  }
+
+  private propertyNameOf(id: number | null): string {
+    return this.properties.find((p) => p.id === id)?.name ?? '';
   }
 
   private selectProperty(id: number | null): void {

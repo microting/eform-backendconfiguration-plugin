@@ -36,8 +36,25 @@ $changed-background: #fff4c2;
   }
 }
 
-.flag-cell--implied {
-  opacity: 0.55;
+// "Følger af Admin" (mockup .cb.imp): a dashed primary box with a primary tick,
+// not Material's grey disabled box. The cell is not dimmed on top of that.
+:host ::ng-deep .flag-checkbox--implied .mdc-checkbox .mdc-checkbox__native-control:disabled ~ .mdc-checkbox__background {
+  background-color: transparent;
+  border: 2px dashed var(--mat-sys-primary, #289694);
+}
+
+:host ::ng-deep .flag-checkbox--implied .mdc-checkbox .mdc-checkbox__native-control:disabled ~ .mdc-checkbox__background .mdc-checkbox__checkmark {
+  color: var(--mat-sys-primary, #289694);
+}
+
+.flag-checkbox--implied {
+  --mat-checkbox-disabled-selected-checkmark-color: var(--mat-sys-primary, #289694);
+  --mat-checkbox-disabled-selected-icon-color: var(--mat-sys-primary, #289694);
+}
+
+.no-match {
+  padding: 16px 8px;
+  color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
 }
 
 .flag-cell--changed {
@@ -53,7 +70,7 @@ $changed-background: #fff4c2;
   vertical-align: -1px;
 
   &--given { background: var(--mat-sys-primary, #00796b); }
-  &--implied { border: 1px dashed var(--mat-sys-primary, #00796b); }
+  &--implied { border: 2px dashed var(--mat-sys-primary, #289694); }
   &--changed { background: $changed-background; border: 1px solid var(--mat-sys-outline-variant, #e0e0e0); }
 }
 

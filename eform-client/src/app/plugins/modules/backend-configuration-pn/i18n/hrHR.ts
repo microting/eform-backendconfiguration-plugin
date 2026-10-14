@@ -854,4 +854,12 @@ export const hrHR = {
   'Chemicals: No workers': 'Na ovom objektu nisu dodijeljeni radnici.',
   'Chemicals: Could not load permissions': 'Dozvole se nisu mogle učitati.',
   'Chemicals: Could not save permissions': 'Dozvole nisu spremljene. Vaše su promjene sačuvane, pa možete pokušati ponovno.',
+  'Chemicals: Discard unsaved changes?': 'Odbaciti nespremljene promjene?',
+  'Chemicals: Changed workers': 'Promijenjeni radnici',
+  'Chemicals: Discard changes': 'Odbaci promjene',
+  'Chemicals: Keep editing': 'Nastavi uređivati',
+  'Chemicals: Copied permissions': 'Dozvole kopirane iz {{property}} (promijenjeni radnici: {{count}}). Ne zaboravite spremiti.',
+  'Chemicals: Nothing to copy': 'Nema ništa za kopiranje: nijedan dijeljeni radnik nema različite dozvole za {{property}}.',
+  'Chemicals: Could not copy permissions': 'Dozvole se nisu mogle kopirati.',
+  'Chemicals: No workers match': 'Nijedan radnik ne odgovara pretrazi.',
 };

@@ -15,7 +15,7 @@
         class="btn-quiet ml-auto"
         id="chemicalPermissionsCopyBtn"
         [matMenuTriggerFor]="copyMenu"
-        [disabled]="!otherProperties.length || !rows.length || saving"
+        [disabled]="!otherProperties.length || !rows.length || saving || copying"
       >
         <mat-icon>content_copy</mat-icon>
         <span>{{ 'Chemicals: Copy from another property' | translate }}</span>
@@ -54,29 +54,29 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let row of visibleRows" [id]="'chemicalPermissionRow-' + row.workerId">
+          <tr *ngFor="let row of visibleRows; trackBy: trackByWorker" [id]="'chemicalPermissionRow-' + row.workerId">
             <td class="worker-name">{{ row.workerName }}</td>
-            <td
-              *ngFor="let key of flagKeys"
-              [class.flag-cell--implied]="isImplied(row, key)"
-              [class.flag-cell--changed]="isChanged(row, key)"
-            >
+            <td *ngFor="let key of flagKeys" [class.flag-cell--changed]="isChanged(row, key)">
               <mat-checkbox
                 [id]="'chemicalPermission-' + key + '-' + row.workerId"
+                [class.flag-checkbox--implied]="isImplied(row, key)"
                 [checked]="isChecked(row, key)"
                 [disabled]="isImplied(row, key) || saving"
-                [attr.aria-label]="row.workerName + ': ' + (flagLabels[key].label | translate)"
+                [aria-label]="checkboxLabel(row, key)"
                 (change)="toggle(row, key)"
               ></mat-checkbox>
             </td>
+          </tr>
+          <tr *ngIf="!visibleRows.length" id="chemicalPermissionsNoMatch">
+            <td class="no-match" [attr.colspan]="flagKeys.length + 1">{{ 'Chemicals: No workers match' | translate }}</td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <p class="chemicals-footnote">
-      {{ 'Chemicals: Permissions scope note' | translate: {property: propertyName} }}
-      {{ 'Chemicals: Push recipients note' | translate }}
+      <span *ngIf="propertyName" id="chemicalPermissionsScopeNote">{{ 'Chemicals: Permissions scope note' | translate: {property: propertyName} }}</span>
+      <span id="chemicalPermissionsPushNote">{{ 'Chemicals: Push recipients note' | translate }}</span>
     </p>
 
     <div class="chemicals-save-bar d-flex flex-wrap align-items-center gap-12" id="chemicalPermissionsSaveBar" *ngIf="changeCount > 0">

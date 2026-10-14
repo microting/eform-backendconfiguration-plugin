@@ -978,4 +978,12 @@ export const itIT = {
   'Chemicals: No workers': 'A questa struttura non è assegnato alcun lavoratore.',
   'Chemicals: Could not load permissions': 'Impossibile caricare le autorizzazioni.',
   'Chemicals: Could not save permissions': 'Impossibile salvare le autorizzazioni. Le modifiche sono state mantenute, quindi puoi riprovare.',
+  'Chemicals: Discard unsaved changes?': 'Annullare le modifiche non salvate?',
+  'Chemicals: Changed workers': 'Lavoratori modificati',
+  'Chemicals: Discard changes': 'Scarta le modifiche',
+  'Chemicals: Keep editing': 'Continua a modificare',
+  'Chemicals: Copied permissions': 'Permessi copiati da {{property}} (lavoratori modificati: {{count}}). Ricordati di salvare.',
+  'Chemicals: Nothing to copy': 'Niente da copiare: nessun lavoratore condiviso ha permessi diversi su {{property}}.',
+  'Chemicals: Could not copy permissions': 'Impossibile copiare le autorizzazioni.',
+  'Chemicals: No workers match': 'Nessun lavoratore corrisponde alla ricerca.',
 };

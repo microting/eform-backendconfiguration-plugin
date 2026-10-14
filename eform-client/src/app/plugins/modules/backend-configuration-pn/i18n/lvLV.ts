@@ -854,4 +854,12 @@ export const lvLV = {
   'Chemicals: No workers': 'Šim īpašumam nav norīkots neviens strādnieks.',
   'Chemicals: Could not load permissions': 'Atļaujas nevarēja ielādēt.',
   'Chemicals: Could not save permissions': 'Atļaujas nevarēja saglabāt. Jūsu izmaiņas ir saglabātas, tāpēc varat mēģināt vēlreiz.',
+  'Chemicals: Discard unsaved changes?': 'Vai atmest nesaglabātās izmaiņas?',
+  'Chemicals: Changed workers': 'Mainītie darbinieki',
+  'Chemicals: Discard changes': 'Atmest izmaiņas',
+  'Chemicals: Keep editing': 'Turpināt rediģēšanu',
+  'Chemicals: Copied permissions': 'Atļaujas kopētas no {{property}} (darbinieki mainīti: {{count}}). Atcerieties saglabāt.',
+  'Chemicals: Nothing to copy': 'Nav ko ko kopēt: nevienam koplietotajam darbiniekam nav atšķirīgu atļauju vietnē {{property}}.',
+  'Chemicals: Could not copy permissions': 'Atļaujas nevarēja kopēt.',
+  'Chemicals: No workers match': 'Neviens darbinieks neatbilst meklēšanas kritērijiem.',
 };

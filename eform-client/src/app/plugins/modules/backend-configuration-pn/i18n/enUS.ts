@@ -1146,4 +1146,12 @@ export const enUS= {
   'Chemicals: No workers': 'No workers are assigned to this property.',
   'Chemicals: Could not load permissions': 'The permissions could not be loaded.',
   'Chemicals: Could not save permissions': 'The permissions could not be saved. Your changes are kept, so you can try again.',
+  'Chemicals: Discard unsaved changes?': 'Discard unsaved changes?',
+  'Chemicals: Changed workers': 'Changed workers',
+  'Chemicals: Discard changes': 'Discard changes',
+  'Chemicals: Keep editing': 'Keep editing',
+  'Chemicals: Copied permissions': 'Permissions copied from {{property}} (workers changed: {{count}}). Remember to save.',
+  'Chemicals: Nothing to copy': 'Nothing to copy: no shared worker has different permissions on {{property}}.',
+  'Chemicals: Could not copy permissions': 'The permissions could not be copied.',
+  'Chemicals: No workers match': 'No workers match the search.',
 };

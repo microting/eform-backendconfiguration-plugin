@@ -978,4 +978,12 @@ export const svSE = {
   'Chemicals: No workers': 'Inga anställda är tilldelade den här fastigheten.',
   'Chemicals: Could not load permissions': 'Behörigheterna kunde inte läsas in.',
   'Chemicals: Could not save permissions': 'Behörigheterna kunde inte sparas. Dina ändringar sparas, så du kan försöka igen.',
+  'Chemicals: Discard unsaved changes?': 'Vill du ignorera ändringar som inte sparats?',
+  'Chemicals: Changed workers': 'Bytte arbetare',
+  'Chemicals: Discard changes': 'Ignorera ändringar',
+  'Chemicals: Keep editing': 'Fortsätt redigera',
+  'Chemicals: Copied permissions': 'Behörigheter kopierade från {{property}} (arbetare ändrade: {{count}}). Kom ihåg att spara.',
+  'Chemicals: Nothing to copy': 'Inget att kopiera: ingen delad arbetare har olika behörigheter på {{property}}.',
+  'Chemicals: Could not copy permissions': 'Behörigheterna kunde inte kopieras.',
+  'Chemicals: No workers match': 'Inga arbetare matchar sökningen.',
 };

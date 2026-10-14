@@ -978,4 +978,12 @@ export const ukUA = {
   'Chemicals: No workers': 'До цієї власності не призначено жодних працівників.',
   'Chemicals: Could not load permissions': 'Не вдалося завантажити дозволи.',
   'Chemicals: Could not save permissions': 'Не вдалося зберегти дозволи. Ваші зміни збережено, тож ви можете спробувати ще раз.',
+  'Chemicals: Discard unsaved changes?': 'Відхилити незбережені зміни?',
+  'Chemicals: Changed workers': 'Змінені працівники',
+  'Chemicals: Discard changes': 'Відхилити зміни',
+  'Chemicals: Keep editing': 'Продовжити редагування',
+  'Chemicals: Copied permissions': 'Дозволи скопійовано з {{property}} (змінено працівників: {{count}}). Не забудьте зберегти зміни.',
+  'Chemicals: Nothing to copy': 'Нічого копіювати: жоден спільний працівник не має різних дозволів на {{property}}.',
+  'Chemicals: Could not copy permissions': 'Не вдалося скопіювати дозволи.',
+  'Chemicals: No workers match': 'Немає працівників, які відповідають пошуковому запиту.',
 };

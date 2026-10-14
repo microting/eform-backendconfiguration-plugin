@@ -10,7 +10,7 @@
         bindValue="id"
         [clearable]="false"
         [placeholder]="'Chemicals: Select a property' | translate"
-        [ngModel]="propertyId"
+        [ngModel]="pickerValue"
         (ngModelChange)="onPropertyChange($event)"
       ></mtx-select>
     </mat-form-field>
@@ -22,7 +22,11 @@
   <div *ngIf="loaded && !loadFailed && !properties.length" class="chemicals-empty" id="chemicalsNoProperties">
     {{ 'Chemicals: No properties' | translate }}
   </div>
-  <router-outlet *ngIf="!loadFailed"></router-outlet>
+  <router-outlet
+    *ngIf="!loadFailed"
+    (activate)="onScreenActivate($event)"
+    (deactivate)="onScreenDeactivate()"
+  ></router-outlet>
 </ng-container>
 
 <ng-template #notAvailable>

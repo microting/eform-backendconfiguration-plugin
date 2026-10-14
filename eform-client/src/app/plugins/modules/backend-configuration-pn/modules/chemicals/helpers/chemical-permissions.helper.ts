@@ -29,8 +29,18 @@ export function isImpliedFlag(flags: ChemicalPermissionFlagsModel, key: Chemical
   return flags.admin && key !== 'admin';
 }
 
+/**
+ * A flag Admin implies is locked. Unticking Admin keeps the flags it implied
+ * ticked, now unlocked (the app's owner ruling I4, permissions_cubit.dart), so
+ * removing Admin alone never locks a worker out of the property.
+ */
 export function toggleFlag(flags: ChemicalPermissionFlagsModel, key: ChemicalFlagKey): ChemicalPermissionFlagsModel {
-  return isImpliedFlag(flags, key) ? flags : {...flags, [key]: !flags[key]};
+  if (isImpliedFlag(flags, key)) {
+    return flags;
+  }
+  return key === 'admin' && flags.admin
+    ? {...effectiveFlags(flags), admin: false}
+    : {...flags, [key]: !flags[key]};
 }
 
 export function sameFlags(a: ChemicalPermissionFlagsModel, b: ChemicalPermissionFlagsModel): boolean {

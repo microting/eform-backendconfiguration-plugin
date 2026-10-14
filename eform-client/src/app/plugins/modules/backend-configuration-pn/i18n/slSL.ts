@@ -854,4 +854,12 @@ export const slSL = {
   'Chemicals: No workers': 'Na tej nepremičnini ni dodeljenih nobenih delavcev.',
   'Chemicals: Could not load permissions': 'Dovoljenj ni bilo mogoče naložiti.',
   'Chemicals: Could not save permissions': 'Dovoljenj ni bilo mogoče shraniti. Spremembe so shranjene, zato lahko poskusite znova.',
+  'Chemicals: Discard unsaved changes?': 'Zavržem neshranjene spremembe?',
+  'Chemicals: Changed workers': 'Spremenjeni delavci',
+  'Chemicals: Discard changes': 'Zavrzi spremembe',
+  'Chemicals: Keep editing': 'Nadaljujte z urejanjem',
+  'Chemicals: Copied permissions': 'Dovoljenja kopirana iz {{property}} (spremenjenih delavcev: {{count}}). Ne pozabite shraniti.',
+  'Chemicals: Nothing to copy': 'Ničesar za kopiranje: noben skupni delavec nima drugačnih dovoljenj za {{property}}.',
+  'Chemicals: Could not copy permissions': 'Dovoljenj ni bilo mogoče kopirati.',
+  'Chemicals: No workers match': 'Noben delavec ne ustreza iskanju.',
 };

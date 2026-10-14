@@ -978,4 +978,12 @@ export const noNO = {
   'Chemicals: No workers': 'Ingen arbeidere er tildelt denne eiendommen.',
   'Chemicals: Could not load permissions': 'Tillatelsene kunne ikke lastes inn.',
   'Chemicals: Could not save permissions': 'Tillatelsene kunne ikke lagres. Endringene dine er beholdt, så du kan prøve på nytt.',
+  'Chemicals: Discard unsaved changes?': 'Forkast ulagrede endringer?',
+  'Chemicals: Changed workers': 'Endrede arbeidere',
+  'Chemicals: Discard changes': 'Forkast endringer',
+  'Chemicals: Keep editing': 'Fortsett å redigere',
+  'Chemicals: Copied permissions': 'Tillatelser kopiert fra {{property}} (arbeidere endret: {{count}}). Husk å lagre.',
+  'Chemicals: Nothing to copy': 'Ingenting å kopiere: ingen delte arbeidere har forskjellige tillatelser på {{property}}.',
+  'Chemicals: Could not copy permissions': 'Tillatelsene kunne ikke kopieres.',
+  'Chemicals: No workers match': 'Ingen arbeidere samsvarer med søket.',
 };

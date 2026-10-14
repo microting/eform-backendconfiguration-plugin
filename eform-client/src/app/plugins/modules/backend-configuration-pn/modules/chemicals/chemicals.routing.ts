@@ -1,12 +1,14 @@
 import {NgModule} from '@angular/core';
 import {Route, RouterModule, Routes} from '@angular/router';
 import {CHEMICAL_SCREENS} from './chemicals-screens';
+import {chemicalUnsavedChangesGuard} from './chemicals-unsaved-changes';
 import {ChemicalsContainerComponent} from './components';
 
 const screenRoutes: Route[] = CHEMICAL_SCREENS.map((screen) => ({
   path: screen.path,
   component: screen.component,
   data: {titleKey: screen.titleKey},
+  canDeactivate: [chemicalUnsavedChangesGuard],
 }));
 
 /**

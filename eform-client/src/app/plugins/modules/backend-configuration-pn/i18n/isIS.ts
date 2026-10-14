@@ -854,4 +854,12 @@ export const isIS = {
   'Chemicals: No workers': 'Engum starfsmönnum er úthlutað þessari eign.',
   'Chemicals: Could not load permissions': 'Ekki var hægt að hlaða inn heimildunum.',
   'Chemicals: Could not save permissions': 'Ekki var hægt að vista heimildirnar. Breytingarnar þínar eru geymdar, svo þú getur reynt aftur.',
+  'Chemicals: Discard unsaved changes?': 'Henda óvistuðum breytingum?',
+  'Chemicals: Changed workers': 'Breyttir starfsmenn',
+  'Chemicals: Discard changes': 'Fleygja breytingum',
+  'Chemicals: Keep editing': 'Haltu áfram að breyta',
+  'Chemicals: Copied permissions': 'Heimildir afritaðar af {{property}} (starfsmenn breyttir: {{count}}). Mundu að vista.',
+  'Chemicals: Nothing to copy': 'Ekkert til að afrita: enginn sameiginlegur starfsmaður hefur mismunandi heimildir á {{property}}.',
+  'Chemicals: Could not copy permissions': 'Ekki var hægt að afrita heimildirnar.',
+  'Chemicals: No workers match': 'Engir starfsmenn passa við leitina.',
 };

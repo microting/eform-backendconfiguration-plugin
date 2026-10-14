@@ -978,4 +978,12 @@ export const nlNL = {
   'Chemicals: No workers': 'Er zijn geen werknemers aan dit pand toegewezen.',
   'Chemicals: Could not load permissions': 'De machtigingen konden niet worden geladen.',
   'Chemicals: Could not save permissions': 'De machtigingen konden niet worden opgeslagen. Uw wijzigingen zijn bewaard gebleven, dus u kunt het opnieuw proberen.',
+  'Chemicals: Discard unsaved changes?': 'Niet-opgeslagen wijzigingen verwijderen?',
+  'Chemicals: Changed workers': 'Gewisselde werknemers',
+  'Chemicals: Discard changes': 'Wijzigingen negeren',
+  'Chemicals: Keep editing': 'Blijf bewerken',
+  'Chemicals: Copied permissions': 'Machtigingen gekopieerd van {{property}} (werknemers gewijzigd: {{count}}). Vergeet niet op te slaan.',
+  'Chemicals: Nothing to copy': 'Niets om te kopiëren: geen enkele gedeelde worker heeft andere machtigingen op {{property}}.',
+  'Chemicals: Could not copy permissions': 'De machtigingen konden niet worden gekopieerd.',
+  'Chemicals: No workers match': 'Geen enkele werknemer voldoet aan de zoekcriteria.',
 };

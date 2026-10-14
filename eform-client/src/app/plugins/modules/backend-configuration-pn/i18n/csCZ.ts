@@ -854,4 +854,12 @@ export const csCZ = {
   'Chemicals: No workers': 'K této nemovitosti nejsou přiděleni žádní pracovníci.',
   'Chemicals: Could not load permissions': 'Oprávnění se nepodařilo načíst.',
   'Chemicals: Could not save permissions': 'Oprávnění se nepodařilo uložit. Vaše změny se zachovaly, takže to můžete zkusit znovu.',
+  'Chemicals: Discard unsaved changes?': 'Zahodit neuložené změny?',
+  'Chemicals: Changed workers': 'Změnění pracovníci',
+  'Chemicals: Discard changes': 'Zahodit změny',
+  'Chemicals: Keep editing': 'Pokračovat v úpravách',
+  'Chemicals: Copied permissions': 'Oprávnění zkopírována z {{property}} (změněni pracovníci: {{count}}). Nezapomeňte uložit.',
+  'Chemicals: Nothing to copy': 'Není co kopírovat: žádný sdílený pracovník nemá jiná oprávnění k {{property}}.',
+  'Chemicals: Could not copy permissions': 'Oprávnění se nepodařilo zkopírovat.',
+  'Chemicals: No workers match': 'Žádní pracovníci neodpovídají vyhledávání.',
 };

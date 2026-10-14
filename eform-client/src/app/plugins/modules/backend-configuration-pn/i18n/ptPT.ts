@@ -978,4 +978,12 @@ export const ptPT = {
   'Chemicals: No workers': 'Não há funcionários alocados a esta propriedade.',
   'Chemicals: Could not load permissions': 'Não foi possível carregar as permissões.',
   'Chemicals: Could not save permissions': 'As permissões não puderam ser salvas. Suas alterações foram mantidas, então você pode tentar novamente.',
+  'Chemicals: Discard unsaved changes?': 'Descartar alterações não salvas?',
+  'Chemicals: Changed workers': 'Trabalhadores modificados',
+  'Chemicals: Discard changes': 'Descartar alterações',
+  'Chemicals: Keep editing': 'Continue editando',
+  'Chemicals: Copied permissions': 'Permissões copiadas de {{property}} (trabalhadores alterados: {{count}}). Lembre-se de salvar.',
+  'Chemicals: Nothing to copy': 'Nada para copiar: nenhum trabalhador compartilhado tem permissões diferentes em {{property}}.',
+  'Chemicals: Could not copy permissions': 'As permissões não puderam ser copiadas.',
+  'Chemicals: No workers match': 'Nenhum profissional corresponde à pesquisa.',
 };

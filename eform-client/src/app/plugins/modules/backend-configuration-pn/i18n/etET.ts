@@ -854,4 +854,12 @@ export const etET = {
   'Chemicals: No workers': 'Sellele kinnisvarale pole töötajaid määratud.',
   'Chemicals: Could not load permissions': 'Õigusi ei saanud laadida.',
   'Chemicals: Could not save permissions': 'Lube ei õnnestunud salvestada. Teie muudatused säilitatakse, seega võite uuesti proovida.',
+  'Chemicals: Discard unsaved changes?': 'Kas soovite salvestamata muudatused tühistada?',
+  'Chemicals: Changed workers': 'Vahetatud töötajad',
+  'Chemicals: Discard changes': 'Muudatuste tühistamine',
+  'Chemicals: Keep editing': 'Jätka muutmist',
+  'Chemicals: Copied permissions': 'Õigused kopeeriti lehelt {{property}} (töötajad muudetud: {{count}}). Ärge unustage salvestada.',
+  'Chemicals: Nothing to copy': 'Pole midagi kopeerida: ühelgi jagatud töötajal pole {{property}}-is erinevaid õigusi.',
+  'Chemicals: Could not copy permissions': 'Õigusi ei saanud kopeerida.',
+  'Chemicals: No workers match': 'Otsingule vastavaid töötajaid ei leitud.',
 };

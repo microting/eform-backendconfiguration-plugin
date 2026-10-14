@@ -854,4 +854,12 @@ export const ltLT = {
   'Chemicals: No workers': 'Šiam objektui nėra priskirti jokie darbuotojai.',
   'Chemicals: Could not load permissions': 'Nepavyko įkelti leidimų.',
   'Chemicals: Could not save permissions': 'Nepavyko išsaugoti leidimų. Jūsų pakeitimai išsaugoti, todėl galite bandyti dar kartą.',
+  'Chemicals: Discard unsaved changes?': 'Atmesti neišsaugotus pakeitimus?',
+  'Chemicals: Changed workers': 'Pakeisti darbuotojai',
+  'Chemicals: Discard changes': 'Atmesti pakeitimus',
+  'Chemicals: Keep editing': 'Redaguoti toliau',
+  'Chemicals: Copied permissions': 'Leidimai nukopijuoti iš {{property}} (darbuotojai pakeisti: {{count}}). Nepamirškite išsaugoti.',
+  'Chemicals: Nothing to copy': 'Nėra ko kopijuoti: joks bendrai naudojamas darbuotojas neturi skirtingų leidimų {{property}}.',
+  'Chemicals: Could not copy permissions': 'Nepavyko nukopijuoti leidimų.',
+  'Chemicals: No workers match': 'Nėra darbuotojų, atitinkančių paieškos kriterijus.',
 };

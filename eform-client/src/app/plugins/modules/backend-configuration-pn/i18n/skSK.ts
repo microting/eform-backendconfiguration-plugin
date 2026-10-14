@@ -854,4 +854,12 @@ export const skSK = {
   'Chemicals: No workers': 'K tejto nehnuteľnosti nie sú pridelení žiadni pracovníci.',
   'Chemicals: Could not load permissions': 'Povolenia sa nepodarilo načítať.',
   'Chemicals: Could not save permissions': 'Povolenia sa nepodarilo uložiť. Vaše zmeny sa uložili, takže to môžete skúsiť znova.',
+  'Chemicals: Discard unsaved changes?': 'Zahodiť neuložené zmeny?',
+  'Chemicals: Changed workers': 'Zmenení pracovníci',
+  'Chemicals: Discard changes': 'Zahodiť zmeny',
+  'Chemicals: Keep editing': 'Pokračovať v úpravách',
+  'Chemicals: Copied permissions': 'Povolenia skopírované z {{property}} (zmenení pracovníci: {{count}}). Nezabudnite ich uložiť.',
+  'Chemicals: Nothing to copy': 'Nie je čo kopírovať: žiadny zdieľaný pracovník nemá iné povolenia na {{property}}.',
+  'Chemicals: Could not copy permissions': 'Povolenia sa nepodarilo skopírovať.',
+  'Chemicals: No workers match': 'Žiadni pracovníci nezodpovedajú vyhľadávaniu.',
 };

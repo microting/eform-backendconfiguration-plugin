@@ -854,4 +854,12 @@ export const roRO = {
   'Chemicals: No workers': 'Nu sunt desemnați muncitori la această proprietate.',
   'Chemicals: Could not load permissions': 'Permisiunile nu au putut fi încărcate.',
   'Chemicals: Could not save permissions': 'Permisiunile nu au putut fi salvate. Modificările sunt păstrate, așa că puteți încerca din nou.',
+  'Chemicals: Discard unsaved changes?': 'Anulați modificările nesalvate?',
+  'Chemicals: Changed workers': 'Lucrători schimbați',
+  'Chemicals: Discard changes': 'Anulează modificările',
+  'Chemicals: Keep editing': 'Continuă să editezi',
+  'Chemicals: Copied permissions': 'Permisiuni copiate de la {{property}} (lucrătorii modificați: {{count}}). Nu uitați să salvați.',
+  'Chemicals: Nothing to copy': 'Nimic de copiat: niciun lucrător partajat nu are permisiuni diferite pe {{property}}.',
+  'Chemicals: Could not copy permissions': 'Permisiunile nu au putut fi copiate.',
+  'Chemicals: No workers match': 'Niciun angajat nu corespunde căutării.',
 };

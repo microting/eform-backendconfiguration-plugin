@@ -1046,4 +1046,12 @@ export const da = {
   'Chemicals: No workers': 'Ingen medarbejdere er tilknyttet ejendommen.',
   'Chemicals: Could not load permissions': 'Rettighederne kunne ikke indlæses.',
   'Chemicals: Could not save permissions': 'Rettighederne kunne ikke gemmes. Dine ændringer er bevaret, så du kan prøve igen.',
+  'Chemicals: Discard unsaved changes?': 'Kassér ændringer, der ikke er gemt?',
+  'Chemicals: Changed workers': 'Ændrede medarbejdere',
+  'Chemicals: Discard changes': 'Kassér ændringer',
+  'Chemicals: Keep editing': 'Fortsæt redigering',
+  'Chemicals: Copied permissions': 'Rettigheder kopieret fra {{property}} (ændrede medarbejdere: {{count}}). Husk at gemme.',
+  'Chemicals: Nothing to copy': 'Intet at kopiere: ingen fælles medarbejdere har andre rettigheder på {{property}}.',
+  'Chemicals: Could not copy permissions': 'Rettighederne kunne ikke kopieres.',
+  'Chemicals: No workers match': 'Ingen medarbejdere matcher søgningen.',
 };

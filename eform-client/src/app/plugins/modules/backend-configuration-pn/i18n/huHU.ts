@@ -854,4 +854,12 @@ export const huHU = {
   'Chemicals: No workers': 'Nincsenek munkások hozzárendelve ehhez az ingatlanhoz.',
   'Chemicals: Could not load permissions': 'Az engedélyek nem tölthetők be.',
   'Chemicals: Could not save permissions': 'A jogosultságokat nem sikerült menteni. A módosítások megmaradnak, így újra próbálkozhat.',
+  'Chemicals: Discard unsaved changes?': 'Elveti a nem mentett módosításokat?',
+  'Chemicals: Changed workers': 'Megváltozott munkavállalók',
+  'Chemicals: Discard changes': 'Változtatások elvetése',
+  'Chemicals: Keep editing': 'Szerkesztés folytatása',
+  'Chemicals: Copied permissions': 'Engedélyek átmásolva innen: {{property}} (a dolgozók megváltoztak: {{count}}). Ne felejtsd el menteni.',
+  'Chemicals: Nothing to copy': 'Nincs mit másolnom: egyetlen megosztott felhasználónak sincsenek eltérő jogosultságai a {{property}} oldalon.',
+  'Chemicals: Could not copy permissions': 'A jogosultságokat nem sikerült másolni.',
+  'Chemicals: No workers match': 'Nincsenek a keresésnek megfelelő munkavállalók.',
 };

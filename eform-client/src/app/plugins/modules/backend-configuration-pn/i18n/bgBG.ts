@@ -854,4 +854,12 @@ export const bgBG = {
   'Chemicals: No workers': 'Към този имот не са назначени работници.',
   'Chemicals: Could not load permissions': 'Разрешенията не можаха да бъдат заредени.',
   'Chemicals: Could not save permissions': 'Разрешенията не можаха да бъдат запазени. Промените ви са запазени, така че можете да опитате отново.',
+  'Chemicals: Discard unsaved changes?': 'Да се отхвърлят ли незапазените промени?',
+  'Chemicals: Changed workers': 'Променени работници',
+  'Chemicals: Discard changes': 'Отхвърляне на промените',
+  'Chemicals: Keep editing': 'Продължете да редактирате',
+  'Chemicals: Copied permissions': 'Разрешенията са копирани от {{property}} (работниците са променени: {{count}}). Не забравяйте да запазите.',
+  'Chemicals: Nothing to copy': 'Няма нищо за копиране: никой споделен работник няма различни разрешения за {{property}}.',
+  'Chemicals: Could not copy permissions': 'Разрешенията не можаха да бъдат копирани.',
+  'Chemicals: No workers match': 'Няма работници, които да отговарят на търсенето.',
 };

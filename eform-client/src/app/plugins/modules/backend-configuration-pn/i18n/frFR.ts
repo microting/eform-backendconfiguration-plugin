@@ -977,4 +977,12 @@ export const frFR = {
   'Chemicals: No workers': 'Aucun travailleur n\'est affecté à cette propriété.',
   'Chemicals: Could not load permissions': 'Les autorisations n\'ont pas pu être chargées.',
   'Chemicals: Could not save permissions': 'Les autorisations n\'ont pas pu être enregistrées. Vos modifications sont conservées ; vous pouvez réessayer.',
+  'Chemicals: Discard unsaved changes?': 'Supprimer les modifications non enregistrées ?',
+  'Chemicals: Changed workers': 'Changement de travailleurs',
+  'Chemicals: Discard changes': 'Rejeter les modifications',
+  'Chemicals: Keep editing': 'Continuez à modifier',
+  'Chemicals: Copied permissions': 'Autorisations copiées depuis {{property}} (travailleurs modifiés : {{count}}). N\'oubliez pas d\'enregistrer.',
+  'Chemicals: Nothing to copy': 'Rien à copier : aucun worker partagé n\'a de permissions différentes sur {{property}}.',
+  'Chemicals: Could not copy permissions': 'Les autorisations n\'ont pas pu être copiées.',
+  'Chemicals: No workers match': 'Aucun travailleur ne correspond à la recherche.',
 };

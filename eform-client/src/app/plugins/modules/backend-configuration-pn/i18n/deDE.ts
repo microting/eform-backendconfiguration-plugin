@@ -1071,4 +1071,12 @@ export const deDE = {
   'Chemicals: No workers': 'Für dieses Objekt sind keine Arbeiter eingeteilt.',
   'Chemicals: Could not load permissions': 'Die Berechtigungen konnten nicht geladen werden.',
   'Chemicals: Could not save permissions': 'Die Berechtigungen konnten nicht gespeichert werden. Ihre Änderungen bleiben erhalten, Sie können es also erneut versuchen.',
+  'Chemicals: Discard unsaved changes?': 'Nicht gespeicherte Änderungen verwerfen?',
+  'Chemicals: Changed workers': 'Ausgewechselte Arbeiter',
+  'Chemicals: Discard changes': 'Änderungen verwerfen',
+  'Chemicals: Keep editing': 'Weiter bearbeiten',
+  'Chemicals: Copied permissions': 'Berechtigungen von {{property}} kopiert (Mitarbeiter geändert: {{count}}). Nicht vergessen zu speichern.',
+  'Chemicals: Nothing to copy': 'Nichts zu kopieren: Kein gemeinsam genutzter Worker hat unterschiedliche Berechtigungen für {{property}}.',
+  'Chemicals: Could not copy permissions': 'Die Berechtigungen konnten nicht kopiert werden.',
+  'Chemicals: No workers match': 'Es wurden keine passenden Arbeitskräfte für die Suche gefunden.',
 };
