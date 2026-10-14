@@ -212,6 +212,18 @@ describe('ChemicalsContainerComponent', () => {
     expect(store.dispatch).not.toHaveBeenCalled();
   });
 
+  it('ignores a properties answer that arrives after the first-user flag was withdrawn (R-1)', () => {
+    const pending = new Subject<unknown>();
+    const component = build([], pending);
+
+    isFirstUser$.next(false);
+    pending.next({success: true, model: [{id: 7, name: 'Hovedgården'}]});
+
+    expect(component.properties).toEqual([]);
+    expect(store.dispatch).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
   it.each([
     ['an unsuccessful answer', of({success: false, model: null})],
     ['a failed request', throwError(() => new Error('boom'))],
