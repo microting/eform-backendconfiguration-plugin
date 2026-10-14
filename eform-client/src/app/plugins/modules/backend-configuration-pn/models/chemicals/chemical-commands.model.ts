@@ -41,15 +41,10 @@ export interface ChemicalStockEntryBody {
   amount: ChemicalStockAmountModel;
 }
 
-export interface ChemicalCreateLocationCommand {
-  propertyId: number;
-  name: string;
-  description: string;
-  sortOrder: number | null;
-}
-
 export interface ChemicalUpdateLocationBody {
   name: string;
   description: string;
   sortOrder: number | null;
 }
+
+export type ChemicalCreateLocationCommand = ChemicalUpdateLocationBody & {propertyId: number};

@@ -72,12 +72,9 @@ export interface ChemicalPlacementChangeModel {
 }
 
 /** GET properties/{id}/inventory: one property, locations incl. archived, open + 12-month-closed placements. */
-export interface ChemicalInventoryModel {
+export interface ChemicalInventoryModel extends ChemicalPlacementChangeModel {
   properties: ChemicalPropertyAccessModel[];
   locations: ChemicalLocationModel[];
-  placements: ChemicalPlacementModel[];
-  stockEntries: ChemicalStockEntryModel[];
-  registerEntries: ChemicalRegisterEntryModel[];
   syncToken: string;
   full: boolean;
 }

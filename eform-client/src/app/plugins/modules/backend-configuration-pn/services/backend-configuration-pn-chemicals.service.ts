@@ -22,93 +22,97 @@ import {
 } from '../models';
 
 /** Plan A Task 15 REST prefix. Every Kemi call lives under it. */
-export const BACKEND_CONFIGURATION_PN_CHEMICALS_BASE = 'api/backend-configuration-pn/chemicals';
-const BASE = BACKEND_CONFIGURATION_PN_CHEMICALS_BASE;
+export const BackendConfigurationPnChemicalsMethods = {
+  Base: 'api/backend-configuration-pn/chemicals',
+};
 
 /**
  * REST client for the Kemi web screens (flutter-chemistry spec §11, W1-W6).
- * Routes mirror ChemicalsController (Plan A Task 15) and, from PR E2/E3 on,
- * ChemicalDigestController / ChemicalReportsController (Plan E).
+ * Routes mirror ChemicalsController (Plan A Task 15).
  */
 @Injectable({providedIn: 'root'})
 export class BackendConfigurationPnChemicalsService {
   private apiBaseService = inject(ApiBaseService);
 
+  private url(path: string): string {
+    return `${BackendConfigurationPnChemicalsMethods.Base}/${path}`;
+  }
+
   getPropertyInventory(propertyId: number): Observable<OperationDataResult<ChemicalInventoryModel>> {
-    return this.apiBaseService.get(`${BASE}/properties/${propertyId}/inventory`);
+    return this.apiBaseService.get(this.url(`properties/${propertyId}/inventory`));
   }
 
   searchRegister(query: string, page = 0, pageSize = 25): Observable<OperationDataResult<ChemicalRegisterPageModel>> {
-    return this.apiBaseService.get(`${BASE}/register/search`, {query, page, pageSize});
+    return this.apiBaseService.get(this.url('register/search'), {query, page, pageSize});
   }
 
   lookupBarcode(barcode: string): Observable<OperationDataResult<ChemicalRegisterEntryModel[]>> {
-    return this.apiBaseService.get(`${BASE}/register/barcode/${encodeURIComponent(barcode)}`);
+    return this.apiBaseService.get(this.url(`register/barcode/${encodeURIComponent(barcode)}`));
   }
 
   getSdsBlob(fileName: string): Observable<Blob> {
-    return this.apiBaseService.getBlobData(`${BASE}/sds/${encodeURIComponent(fileName)}`);
+    return this.apiBaseService.getBlobData(this.url(`sds/${encodeURIComponent(fileName)}`));
   }
 
   registerPlacement(command: ChemicalRegisterPlacementCommand): Observable<OperationDataResult<ChemicalPlacementChangeModel>> {
-    return this.apiBaseService.post(`${BASE}/placements`, command);
+    return this.apiBaseService.post(this.url('placements'), command);
   }
 
   movePlacement(placementId: number, body: ChemicalMovePlacementBody): Observable<OperationDataResult<ChemicalPlacementChangeModel>> {
-    return this.apiBaseService.post(`${BASE}/placements/${placementId}/move`, body);
+    return this.apiBaseService.post(this.url(`placements/${placementId}/move`), body);
   }
 
   removePlacement(placementId: number, body: ChemicalRemovePlacementBody): Observable<OperationDataResult<ChemicalPlacementChangeModel>> {
-    return this.apiBaseService.post(`${BASE}/placements/${placementId}/remove`, body);
+    return this.apiBaseService.post(this.url(`placements/${placementId}/remove`), body);
   }
 
   updatePlacementNote(placementId: number, body: ChemicalPlacementNoteBody): Observable<OperationDataResult<ChemicalPlacementChangeModel>> {
-    return this.apiBaseService.put(`${BASE}/placements/${placementId}/note`, body);
+    return this.apiBaseService.put(this.url(`placements/${placementId}/note`), body);
   }
 
   addStockEntry(placementId: number, body: ChemicalStockEntryBody): Observable<OperationDataResult<ChemicalPlacementChangeModel>> {
-    return this.apiBaseService.post(`${BASE}/placements/${placementId}/stock-entries`, body);
+    return this.apiBaseService.post(this.url(`placements/${placementId}/stock-entries`), body);
   }
 
   createLocation(command: ChemicalCreateLocationCommand): Observable<OperationDataResult<ChemicalLocationModel>> {
-    return this.apiBaseService.post(`${BASE}/locations`, command);
+    return this.apiBaseService.post(this.url('locations'), command);
   }
 
   updateLocation(locationId: number, body: ChemicalUpdateLocationBody): Observable<OperationDataResult<ChemicalLocationModel>> {
-    return this.apiBaseService.put(`${BASE}/locations/${locationId}`, body);
+    return this.apiBaseService.put(this.url(`locations/${locationId}`), body);
   }
 
   archiveLocation(locationId: number): Observable<OperationDataResult<ChemicalLocationModel>> {
-    return this.apiBaseService.post(`${BASE}/locations/${locationId}/archive`, {});
+    return this.apiBaseService.post(this.url(`locations/${locationId}/archive`), {});
   }
 
   reorderLocations(propertyId: number, orderedLocationIds: number[]): Observable<OperationDataResult<ChemicalLocationModel[]>> {
-    return this.apiBaseService.put(`${BASE}/properties/${propertyId}/locations/order`, orderedLocationIds);
+    return this.apiBaseService.put(this.url(`properties/${propertyId}/locations/order`), orderedLocationIds);
   }
 
   uploadLocationPhoto(locationId: number, file: File): Observable<OperationDataResult<ChemicalLocationModel>> {
-    return this.apiBaseService.postFormData(`${BASE}/locations/${locationId}/photo`, {file});
+    return this.apiBaseService.postFormData(this.url(`locations/${locationId}/photo`), {file});
   }
 
   /** URL for `<img [src]="url | authImage | async">` (the pipe adds the bearer token). */
   locationPhotoUrl(locationId: number): string {
-    return `/${BASE}/locations/${locationId}/photo`;
+    return `/${this.url(`locations/${locationId}/photo`)}`;
   }
 
   getPermissions(propertyId: number): Observable<OperationDataResult<ChemicalWorkerPermissionModel[]>> {
-    return this.apiBaseService.get(`${BASE}/properties/${propertyId}/permissions`);
+    return this.apiBaseService.get(this.url(`properties/${propertyId}/permissions`));
   }
 
   /** Only the changed workers (W4 save bar); the answer is the full list after save. */
   savePermissions(propertyId: number, changes: ChemicalSetWorkerPermissionCommand[]): Observable<OperationDataResult<ChemicalWorkerPermissionModel[]>> {
-    return this.apiBaseService.put(`${BASE}/properties/${propertyId}/permissions`, changes);
+    return this.apiBaseService.put(this.url(`properties/${propertyId}/permissions`), changes);
   }
 
   getSettings(propertyId: number): Observable<OperationDataResult<ChemicalSettingsModel>> {
-    return this.apiBaseService.get(`${BASE}/properties/${propertyId}/settings`);
+    return this.apiBaseService.get(this.url(`properties/${propertyId}/settings`));
   }
 
   saveSettings(propertyId: number, body: ChemicalSettingsBody): Observable<OperationDataResult<ChemicalSettingsModel>> {
-    return this.apiBaseService.put(`${BASE}/properties/${propertyId}/settings`, body);
+    return this.apiBaseService.put(this.url(`properties/${propertyId}/settings`), body);
   }
 }

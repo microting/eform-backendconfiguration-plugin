@@ -19,13 +19,11 @@ export interface ChemicalSetWorkerPermissionCommand {
   flags: ChemicalPermissionFlagsModel;
 }
 
-export interface ChemicalSettingsModel {
-  propertyId: number;
+export interface ChemicalSettingsBody {
   stockEnabled: boolean;
   digestRecipients: string[];
 }
 
-export interface ChemicalSettingsBody {
-  stockEnabled: boolean;
-  digestRecipients: string[];
+export interface ChemicalSettingsModel extends ChemicalSettingsBody {
+  propertyId: number;
 }

@@ -1,4 +1,4 @@
-/** Integer values of the base package enums (Microting.EformBackendConfigurationBase ChemicalEnums.cs). */
+/** Integer values of the C# enums: the base package (Microting.EformBackendConfigurationBase) and the plugin's ChemicalStockEntryOriginEnum. */
 export enum ChemicalRemovalReason { Used = 1, Disposed = 2, Moved = 3 }
 
 export enum ChemicalStockEntryKind { Received = 1, Consumed = 2, Adjusted = 3, MovedOut = 4, MovedIn = 5 }

@@ -2,7 +2,7 @@ import {Injector, runInInjectionContext} from '@angular/core';
 import {Observable, of} from 'rxjs';
 import {ApiBaseService} from 'src/app/common/services';
 import {
-  BACKEND_CONFIGURATION_PN_CHEMICALS_BASE as BASE,
+  BackendConfigurationPnChemicalsMethods,
   BackendConfigurationPnChemicalsService,
 } from './backend-configuration-pn-chemicals.service';
 import {
@@ -19,9 +19,10 @@ import {
 
 /**
  * Pins every route, verb and body of the Kemi web service against ChemicalsController
- * (Plan A Task 15) and the enum integers against the C# / proto enums.
+ * (Plan A Task 15) and the enum integers against the C# enums.
  */
 describe('BackendConfigurationPnChemicalsService', () => {
+  const BASE = BackendConfigurationPnChemicalsMethods.Base;
   let api: Record<string, jest.Mock>;
   let service: BackendConfigurationPnChemicalsService;
 
@@ -84,7 +85,7 @@ describe('BackendConfigurationPnChemicalsService', () => {
     expect(BASE).toBe('api/backend-configuration-pn/chemicals');
   });
 
-  it('pins the enum integers to the C# and proto enums', () => {
+  it('pins the enum integers to the C# enums', () => {
     expect([ChemicalRemovalReason.Used, ChemicalRemovalReason.Disposed, ChemicalRemovalReason.Moved]).toEqual([1, 2, 3]);
     expect([
       ChemicalStockEntryKind.Received, ChemicalStockEntryKind.Consumed, ChemicalStockEntryKind.Adjusted,
