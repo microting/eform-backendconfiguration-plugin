@@ -178,6 +178,33 @@ public class PluginMenuSyncServiceTests : TestBaseSetup
         Assert.That(Run(Menu()), Is.EqualTo(0));
 
         Assert.That(await SnapshotAsync(), Is.EqualTo(before));
+
+        // Positive control: the same tenant, enabled, does get Kemi. Without it this test
+        // would also pass against a sync that ignores the plugin status or does nothing.
+        await BaseDbContext.EformPlugins.ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, Enabled));
+        Assert.That(Run(Menu()), Is.EqualTo(2), "the group and its one child");
+    }
+
+    /// <summary>
+    /// The host's menu editor copies a group's E2EId onto each of its children
+    /// (eFormAPI.Web MenuService, <c>E2EId = x.E2EId</c>), so after an admin saves the
+    /// menu the Rettigheder link carries the group's id too. A later child must still
+    /// land under the Dropdown row, not under that link.
+    /// </summary>
+    [Test]
+    public async Task ALaterReleaseChild_LandsUnderTheGroup_WhenAChildCarriesTheGroupE2EId()
+    {
+        await InstallAsTheHostDoesAsync(WithoutChemicals(Menu()));
+        Run(Menu());
+        await BaseDbContext.MenuItems.Where(x => x.E2EId == PermissionsE2EId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.E2EId, GroupE2EId));
+
+        Assert.That(Run(MenuWithLaterChild()), Is.EqualTo(1));
+
+        var group = await BaseDbContext.MenuItems.AsNoTracking()
+            .SingleAsync(x => x.E2EId == GroupE2EId && x.Type == MenuItemTypeEnum.Dropdown);
+        var later = await BaseDbContext.MenuItems.AsNoTracking().SingleAsync(x => x.E2EId == LaterChildE2EId);
+        Assert.That(later.ParentId, Is.EqualTo(group.Id));
     }
 
     /// <summary>The sync is generic: a missing root link gets its template permissions too.</summary>

@@ -99,16 +99,18 @@ public class ChemicalsMenuTests
 
     /// <summary>
     /// The host's startup template sync and the plugin's menu sync both key on the
-    /// template E2EId, so two templates sharing one would hide each other.
+    /// template E2EId, and the sync finds a group by its E2EId, so no two templates or
+    /// groups may share one, and every link row carries its template's id.
     /// </summary>
     [Test]
-    public void EveryMenuTemplateE2EIdIsUnique()
+    public void EveryMenuTemplateAndGroupE2EIdIsUnique()
     {
-        var templateIds = Menu()
-            .SelectMany(i => i.Type == MenuItemTypeEnum.Dropdown ? i.ChildItems : [i])
-            .Select(i => i.MenuTemplate.E2EId)
-            .ToList();
+        var menu = Menu();
+        var links = menu.SelectMany(i => i.Type == MenuItemTypeEnum.Dropdown ? i.ChildItems : [i]).ToList();
+        var groupIds = menu.Where(i => i.Type == MenuItemTypeEnum.Dropdown).Select(i => i.E2EId);
 
-        Assert.That(templateIds, Is.Unique);
+        Assert.That(links.Select(i => i.MenuTemplate.E2EId).Concat(groupIds), Is.Unique);
+        Assert.That(links.Where(i => i.E2EId != i.MenuTemplate.E2EId).Select(i => i.E2EId), Is.Empty,
+            "a link's E2EId must equal its template's");
     }
 }
