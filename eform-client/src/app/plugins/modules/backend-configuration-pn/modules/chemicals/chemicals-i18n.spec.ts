@@ -56,8 +56,9 @@ describe('Kemi i18n coverage', () => {
     expect(unprefixed).toEqual([]);
   });
 
-  it('keeps Danish distinct from the key itself', () => {
-    const raw = CHEMICAL_I18N_KEYS.filter((key) => da[key] === key);
+  it('keeps Danish distinct from the key itself for Kemi-only keys', () => {
+    // Reused keys are skipped: some are the same word in Danish ('Status').
+    const raw = CHEMICAL_I18N_KEYS.filter((key) => !CHEMICAL_REUSED_I18N_KEYS.includes(key) && da[key] === key);
 
     expect(raw).toEqual([]);
   });
