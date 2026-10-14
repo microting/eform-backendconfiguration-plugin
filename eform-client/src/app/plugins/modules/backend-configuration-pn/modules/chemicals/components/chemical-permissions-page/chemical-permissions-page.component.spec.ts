@@ -193,6 +193,17 @@ describe('ChemicalPermissionsPageComponent', () => {
       expect(component.changeCount).toBe(1);
     });
 
+    it('keeps the user on the page while a save is in flight, without a discard dialog (Copilot round 2)', () => {
+      component.toggle(component.rows[0], 'stock');
+      component.saving = true;
+      const answers: boolean[] = [];
+
+      component.confirmDiscardChanges().subscribe((ok) => answers.push(ok));
+
+      expect(answers).toEqual([false]);
+      expect(dialogOpen).not.toHaveBeenCalled();
+    });
+
     it('asks the browser to confirm a reload or tab close while edits are unsaved', () => {
       const clean = {preventDefault: jest.fn(), returnValue: undefined as unknown};
       component.onBeforeUnload(clean as unknown as BeforeUnloadEvent);
