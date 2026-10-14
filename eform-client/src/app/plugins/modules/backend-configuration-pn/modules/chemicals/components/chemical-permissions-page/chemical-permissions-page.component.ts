@@ -233,6 +233,10 @@ export class ChemicalPermissionsPageComponent implements OnInit, ChemicalUnsaved
 
   /** Used by the route guard and the container's property switch. */
   confirmDiscardChanges(): Observable<boolean> {
+    if (this.busy) {
+      // A save already issued cannot be cancelled, so "discard" would race its commit: stay until it settles.
+      return of(false);
+    }
     const count = this.changeCount;
     if (!count) {
       return of(true);
