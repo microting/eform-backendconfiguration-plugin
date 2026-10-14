@@ -4,7 +4,7 @@ import {Store} from '@ngrx/store';
 import {BehaviorSubject, of, Subject, throwError} from 'rxjs';
 import {selectCurrentUserIsFirstUser} from 'src/app/state';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
-import {chemicalsSelectProperty, selectChemicalsPropertyId} from '../../../../state';
+import {chemicalsSelectProperty, chemicalsSetProperties, selectChemicalsPropertyId} from '../../../../state';
 import {ChemicalsContainerComponent} from './chemicals-container.component';
 
 describe('ChemicalsContainerComponent', () => {
@@ -184,6 +184,15 @@ describe('ChemicalsContainerComponent', () => {
 
     expect(store.dispatch).not.toHaveBeenCalled();
     expect(router.navigate).toHaveBeenCalledWith([], urlSync(7));
+  });
+
+  it('publishes the loaded list to the store, so the screens do not fetch it again', () => {
+    const list = [{id: 7, name: 'Hovedgården', description: ''}, {id: 8, name: 'Engvej 12', description: ''}];
+
+    build(list);
+
+    expect(properties.getAllPropertiesDictionary).toHaveBeenCalledTimes(1);
+    expect(store.dispatch).toHaveBeenCalledWith(chemicalsSetProperties({payload: list}));
   });
 
   it('follows the first-user flag instead of freezing it (M-1)', () => {

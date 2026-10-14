@@ -1,5 +1,5 @@
 import {chemicalsInitialState, chemicalsReducer} from './chemicals.reducer';
-import {chemicalsSelectProperty, chemicalsUpdateHistoryFilters, chemicalsUpdateInventoryFilters} from './chemicals.actions';
+import {chemicalsSelectProperty, chemicalsSetProperties, chemicalsUpdateHistoryFilters, chemicalsUpdateInventoryFilters} from './chemicals.actions';
 
 describe('chemicalsReducer', () => {
   const filtered = {
@@ -15,6 +15,15 @@ describe('chemicalsReducer', () => {
     expect(state.propertyId).toBeNull();
     expect(state.inventoryFilters).toEqual({search: '', locationId: null, status: 'all', requiresActionOnly: false});
     expect(state.historyFilters).toEqual({dateFrom: null, dateTo: null, userId: null, action: null, locationId: null});
+  });
+
+  it('starts with no loaded properties and stores the list the container loads', () => {
+    expect(chemicalsInitialState.properties).toEqual([]);
+
+    const state = chemicalsReducer(filtered, chemicalsSetProperties({payload: [{id: 1, name: 'Engvej 12', description: ''}]}));
+
+    expect(state.properties).toEqual([{id: 1, name: 'Engvej 12', description: ''}]);
+    expect(state.propertyId).toBe(1);
   });
 
   it('selecting ANOTHER property clears the ids that belonged to the old one', () => {

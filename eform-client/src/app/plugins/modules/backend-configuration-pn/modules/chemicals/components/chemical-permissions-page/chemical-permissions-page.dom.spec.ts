@@ -8,7 +8,8 @@ import {Store} from '@ngrx/store';
 import {TranslateModule} from '@ngx-translate/core';
 import {ToastrService} from 'ngx-toastr';
 import {BehaviorSubject, of} from 'rxjs';
-import {BackendConfigurationPnChemicalsService, BackendConfigurationPnPropertiesService} from '../../../../services';
+import {BackendConfigurationPnChemicalsService} from '../../../../services';
+import {selectChemicalsProperties} from '../../../../state';
 import {NO_CHEMICAL_FLAGS} from '../../helpers';
 import {ChemicalPermissionsPageComponent} from './chemical-permissions-page.component';
 
@@ -28,16 +29,16 @@ describe('ChemicalPermissionsPageComponent (template)', () => {
       declarations: [ChemicalPermissionsPageComponent],
       imports: [FormsModule, MatMenuModule, NoopAnimationsModule, TranslateModule.forRoot()],
       providers: [
-        {provide: Store, useValue: {select: jest.fn().mockReturnValue(new BehaviorSubject<number | null>(3))}},
+        {provide: Store, useValue: {select: jest.fn().mockImplementation((selector) =>
+          selector === selectChemicalsProperties
+            ? of(properties.map((p) => ({...p, description: ''})))
+            : new BehaviorSubject<number | null>(3))}},
         {provide: BackendConfigurationPnChemicalsService, useValue: {
           getPermissions: jest.fn().mockReturnValue(of({success: true, model: [
             {workerId: 1, workerName: 'Jens Hansen', flags: flags({view: true})},
             {workerId: 2, workerName: 'Ole Nielsen', flags: flags({})},
           ]})),
           savePermissions: jest.fn(),
-        }},
-        {provide: BackendConfigurationPnPropertiesService, useValue: {
-          getAllPropertiesDictionary: jest.fn().mockReturnValue(of({success: true, model: properties})),
         }},
         {provide: MatDialog, useValue: {open: jest.fn()}},
         {provide: ToastrService, useValue: {success: jest.fn(), info: jest.fn(), error: jest.fn()}},

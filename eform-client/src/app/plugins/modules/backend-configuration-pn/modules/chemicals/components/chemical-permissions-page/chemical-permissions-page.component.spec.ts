@@ -6,7 +6,8 @@ import {TranslateService} from '@ngx-translate/core';
 import {ToastrService} from 'ngx-toastr';
 import {BehaviorSubject, of, Subject, throwError} from 'rxjs';
 import {DeleteModalComponent} from 'src/app/common/modules/eform-shared/components';
-import {BackendConfigurationPnChemicalsService, BackendConfigurationPnPropertiesService} from '../../../../services';
+import {BackendConfigurationPnChemicalsService} from '../../../../services';
+import {selectChemicalsProperties} from '../../../../state';
 import {NO_CHEMICAL_FLAGS} from '../../helpers';
 import {ChemicalPermissionsPageComponent} from './chemical-permissions-page.component';
 
@@ -32,11 +33,11 @@ describe('ChemicalPermissionsPageComponent', () => {
     property$ = new BehaviorSubject<number | null>(initialPropertyId);
     const injector = Injector.create({
       providers: [
-        {provide: Store, useValue: {select: jest.fn().mockReturnValue(property$)}},
+        {provide: Store, useValue: {select: jest.fn().mockImplementation((selector) =>
+          selector === selectChemicalsProperties
+            ? of([{id: 3, name: 'Hovedgården', description: ''}, {id: 4, name: 'Engvej 12', description: ''}])
+            : property$)}},
         {provide: BackendConfigurationPnChemicalsService, useValue: chemicals},
-        {provide: BackendConfigurationPnPropertiesService, useValue: {
-          getAllPropertiesDictionary: jest.fn().mockReturnValue(of({success: true, model: [{id: 3, name: 'Hovedgården'}, {id: 4, name: 'Engvej 12'}]})),
-        }},
         {provide: DestroyRef, useValue: {onDestroy: jest.fn()}},
         {provide: MatDialog, useValue: {open: dialogOpen}},
         {provide: Overlay, useValue: {scrollStrategies: {reposition: () => ({})}}},
