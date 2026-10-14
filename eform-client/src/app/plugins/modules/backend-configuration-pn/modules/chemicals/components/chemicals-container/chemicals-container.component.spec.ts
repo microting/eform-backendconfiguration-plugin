@@ -22,7 +22,11 @@ describe('ChemicalsContainerComponent', () => {
       select: jest.fn().mockImplementation((selector) =>
         selector === selectCurrentUserIsFirstUser ? isFirstUser$ : selectedProperty$),
       // The real store echoes a selection back through selectChemicalsPropertyId.
-      dispatch: jest.fn().mockImplementation((action: {payload: number | null}) => selectedProperty$.next(action.payload)),
+      dispatch: jest.fn().mockImplementation((action: {type: string; payload: number | null}) => {
+        if (action.type === chemicalsSelectProperty.type) {
+          selectedProperty$.next(action.payload);
+        }
+      }),
     };
     properties = {getAllPropertiesDictionary: jest.fn().mockReturnValue(response ?? of({success: true, model: list}))};
     router = {navigate: jest.fn().mockResolvedValue(true), events: routerEvents$};
