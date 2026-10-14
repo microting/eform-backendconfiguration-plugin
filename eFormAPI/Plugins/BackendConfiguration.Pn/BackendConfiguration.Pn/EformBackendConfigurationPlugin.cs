@@ -2172,9 +2172,9 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                     E2EId = "backend-configuration-pn-tail-bite",
                     DefaultLink = "/plugins/backend-configuration-pn/tail-bite",
                     Permissions = [],
-                    Translations = TailBiteMenuTranslations()
+                    Translations = MenuTranslations("Tail biting", "Schwanzbeißen", "Halebid", "Кусання хвостів")
                 },
-                Translations = TailBiteMenuTranslations()
+                Translations = MenuTranslations("Tail biting", "Schwanzbeißen", "Halebid", "Кусання хвостів")
             },
             new()
             {
@@ -2234,14 +2234,6 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         new() { LocaleName = LocaleNames.German, Name = german, Language = LanguageNames.German },
         new() { LocaleName = LocaleNames.Danish, Name = danish, Language = LanguageNames.Danish },
         new() { LocaleName = LocaleNames.Ukrainian, Name = ukrainian, Language = LanguageNames.Ukrainian }
-    ];
-
-    private static List<PluginMenuTranslationModel> TailBiteMenuTranslations() =>
-    [
-        new() { LocaleName = LocaleNames.English, Name = "Tail biting", Language = LanguageNames.English },
-        new() { LocaleName = LocaleNames.German, Name = "Schwanzbeißen", Language = LanguageNames.German },
-        new() { LocaleName = LocaleNames.Danish, Name = "Halebid", Language = LanguageNames.Danish },
-        new() { LocaleName = LocaleNames.Ukrainian, Name = "Кусання хвостів", Language = LanguageNames.Ukrainian }
     ];
 
     public MenuModel HeaderMenu(IServiceProvider serviceProvider)
@@ -2384,16 +2376,17 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         // stop the plugin from loading.
         try
         {
-            var added = new PluginMenuSyncService(baseDb).Run(PluginId, GetNavigationMenu(null));
-            if (added > 0)
-            {
-                Console.WriteLine($"PluginMenuSync added {added} menu item(s)");
-            }
+            new PluginMenuSyncService(baseDb).Run(PluginId, GetNavigationMenu(null));
         }
         catch (Exception e)
         {
-            Console.WriteLine($"PluginMenuSync failed at startup: {e}");
-            SentrySdk.CaptureException(e);
+            // Not retried: later in this boot the host adds the missing templates without
+            // their menu items, and the next sync reads a template as "offered" and leaves it.
+            const string consequence = "PluginMenuSync failed at startup: menu entries it would have added "
+                + "(the Kemi group) may stay hidden on this tenant and will not be retried. "
+                + "An admin can add them from Advanced -> Navigation menu.";
+            Console.WriteLine($"{consequence} {e}");
+            SentrySdk.CaptureException(new InvalidOperationException(consequence, e));
         }
     }
 

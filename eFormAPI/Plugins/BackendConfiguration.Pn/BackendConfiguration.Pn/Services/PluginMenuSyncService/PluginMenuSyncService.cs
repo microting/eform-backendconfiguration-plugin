@@ -20,6 +20,7 @@ SOFTWARE.
 
 namespace BackendConfiguration.Pn.Services.PluginMenuSyncService;
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
@@ -62,7 +63,10 @@ public class PluginMenuSyncService(BaseDbContext dbContext)
     /// <summary>eFormAPI.Web.Hosting.Enums.PluginStatus.Enabled (host enum, not referenceable).</summary>
     private const int EnabledStatus = 2;
 
-    /// <summary>Adds the missing entries of <paramref name="menu"/>; returns how many menu items it wrote.</summary>
+    /// <summary>
+    /// Adds the missing entries of <paramref name="menu"/>, logs the E2EId of each menu
+    /// item it wrote, and returns how many it wrote.
+    /// </summary>
     public int Run(string pluginId, IReadOnlyList<PluginMenuItemModel> menu)
     {
         var plugin = dbContext.EformPlugins.AsNoTracking().FirstOrDefault(x => x.PluginId == pluginId);
@@ -80,18 +84,18 @@ public class PluginMenuSyncService(BaseDbContext dbContext)
             return 0;
         }
 
-        var added = 0;
+        var added = new List<string>();
         foreach (var item in menu.OrderBy(x => x.Position))
         {
             if (item.Type == MenuItemTypeEnum.Link)
             {
                 if (!offered.Contains(item.MenuTemplate.E2EId))
                 {
-                    added += InTransaction(() =>
+                    added.AddRange(InTransaction(() =>
                     {
                         AddLink(item, plugin.Id, null, NextRootPosition());
-                        return 1;
-                    });
+                        return [item.E2EId];
+                    }));
                 }
 
                 continue;
@@ -110,13 +114,16 @@ public class PluginMenuSyncService(BaseDbContext dbContext)
             }
 
             var groupWasOffered = links.Count > missing.Count;
-            added += InTransaction(() => AddChildren(item, missing, plugin.Id, groupWasOffered));
+            added.AddRange(InTransaction(() => AddChildren(item, missing, plugin.Id, groupWasOffered)));
         }
 
-        return added;
+        // Each E2EId, not just a count: a surprise (an old entry re-added on a tenant whose
+        // template set never converged) must be visible in the boot log.
+        added.ForEach(e2eId => Console.WriteLine($"PluginMenuSync added menu item {e2eId}"));
+        return added.Count;
     }
 
-    private int AddChildren(PluginMenuItemModel group, List<PluginMenuItemModel> children, int pluginRowId,
+    private List<string> AddChildren(PluginMenuItemModel group, List<PluginMenuItemModel> children, int pluginRowId,
         bool groupWasOffered)
     {
         // Any parent: the admin may have moved the group.
@@ -125,7 +132,7 @@ public class PluginMenuSyncService(BaseDbContext dbContext)
             .OrderBy(x => x.Id)
             .Select(x => (int?)x.Id)
             .FirstOrDefault();
-        var written = 0;
+        var written = new List<string>();
         if (groupId == null)
         {
             if (groupWasOffered)
@@ -133,7 +140,7 @@ public class PluginMenuSyncService(BaseDbContext dbContext)
                 // The tenant had this group and the admin deleted it. The host's own
                 // startup pass adds the new children's templates later in this boot,
                 // so the menu editor still offers them.
-                return 0;
+                return written;
             }
 
             var newGroup = new MenuItem
@@ -148,13 +155,13 @@ public class PluginMenuSyncService(BaseDbContext dbContext)
             dbContext.MenuItems.Add(newGroup);
             dbContext.SaveChanges();
             groupId = newGroup.Id;
-            written++;
+            written.Add(newGroup.E2EId);
         }
 
         foreach (var child in children)
         {
             AddLink(child, pluginRowId, groupId, child.Position);
-            written++;
+            written.Add(child.E2EId);
         }
 
         return written;
@@ -222,7 +229,7 @@ public class PluginMenuSyncService(BaseDbContext dbContext)
     /// because BaseDbContextFactory enables retry on failure; the change tracker is
     /// cleared so a retried attempt starts from what the database holds.
     /// </summary>
-    private int InTransaction(System.Func<int> work) =>
+    private List<string> InTransaction(Func<List<string>> work) =>
         dbContext.Database.CreateExecutionStrategy().Execute(() =>
         {
             dbContext.ChangeTracker.Clear();
