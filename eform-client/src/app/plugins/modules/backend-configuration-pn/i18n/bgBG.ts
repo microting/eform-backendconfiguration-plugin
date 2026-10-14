@@ -779,6 +779,7 @@ export const bgBG = {
   'Future tasks cannot be completed or deleted yet': 'Бъдещите задачи все още не могат да бъдат изпълнени или изтрити',
   // #1335 Medarbejdere app columns
   'Not registered': 'Не е регистрирано',
+  'Needs update': 'Нуждае се от актуализация',
   Model: 'Модел',
   'OS version': 'Версия на ОС',
   // #1380 Medarbejdere bulk tags

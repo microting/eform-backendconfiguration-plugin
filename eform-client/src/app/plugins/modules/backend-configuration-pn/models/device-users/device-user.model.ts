@@ -34,6 +34,8 @@ export class DeviceUserModel {
   adHocApp?: AppInstallModel;
   timeApp?: AppInstallModel;
   archiveApp?: AppInstallModel;
+  chemistryApp?: AppInstallModel;
+  halebidApp?: AppInstallModel;
   pinCode: string;
   employeeNo: string;
   startMonday: number;

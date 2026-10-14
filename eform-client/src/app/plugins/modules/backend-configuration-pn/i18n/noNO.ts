@@ -779,6 +779,7 @@ export const noNO = {
   'Future tasks cannot be completed or deleted yet': 'Fremtidige oppgaver kan ikke fylles ut eller slettes ennå',
   // #1335 Medarbejdere app columns
   'Not registered': 'Ikke registrert',
+  'Needs update': 'Må oppdateres',
   Model: 'Modell',
   'OS version': 'OS-versjon',
   // #1380 Medarbejdere bulk tags

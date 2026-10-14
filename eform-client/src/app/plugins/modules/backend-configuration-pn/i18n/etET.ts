@@ -779,6 +779,7 @@ export const etET = {
   'Future tasks cannot be completed or deleted yet': 'Tulevasi ülesandeid ei saa veel täita ega kustutada',
   // #1335 Medarbejdere app columns
   'Not registered': 'Registreerimata',
+  'Needs update': 'Vajab uuendamist',
   Model: 'Mudel',
   'OS version': 'OS-i versioon',
   // #1380 Medarbejdere bulk tags

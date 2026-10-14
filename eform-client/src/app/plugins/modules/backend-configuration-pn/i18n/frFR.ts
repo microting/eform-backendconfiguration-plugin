@@ -778,6 +778,7 @@ export const frFR = {
   'Future tasks cannot be completed or deleted yet': 'Les tâches futures ne peuvent pas encore être effectuées ni supprimées',
   // #1335 Medarbejdere app columns
   'Not registered': 'Non enregistré',
+  'Needs update': 'Mise à jour requise',
   Model: 'Modèle',
   'OS version': 'Version du système',
   // #1380 Medarbejdere bulk tags

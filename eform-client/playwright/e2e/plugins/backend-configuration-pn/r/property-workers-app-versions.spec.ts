@@ -13,7 +13,7 @@ import { customerDatabase, runMariadbSql } from '../db-helpers';
 import { UI_TIMEOUT } from '../wait-helpers';
 
 // #1335 phase 1 — Medarbejdere shows one column per mobile app: Compliance /
-// Ad-hoc / Time / Archive. They replace the eForm / Ad hoc / Time / Archive
+// Ad-hoc / Time / Archive / Chemistry / Halebid. They replace the eForm / Ad hoc / Time / Archive
 // permission chips and the Model & OS / Software version columns.
 //
 // WHAT THIS PROTECTS: line 1 of each cell has three states, and the rule the
@@ -24,7 +24,8 @@ import { UI_TIMEOUT } from '../wait-helpers';
 // A freshly created worker has reported nothing, so every app they may use must
 // be grey; only the apps they may not use are red. Once the Time app reports a
 // version (seeded straight on the login, as the app itself does on sign-in), the
-// Time cell turns green with the version and the device in its tooltip.
+// Time cell turns green with the version and the device in its tooltip. A version
+// older than the app's latest release (baked into the plugin) adds "Skal opdateres".
 
 const rand = generateRandmString(5);
 
@@ -46,7 +47,7 @@ const worker: PropertyWorker = {
 };
 const workerFullName = `${worker.name} ${worker.surname}`;
 
-type AppKey = 'compliance' | 'adhoc' | 'time' | 'archive';
+type AppKey = 'compliance' | 'adhoc' | 'time' | 'archive' | 'chemistry' | 'halebid';
 type AppState = 'installed' | 'no-access' | 'not-registered';
 
 const STATE_TEXT: Record<AppState, string> = {
@@ -71,12 +72,12 @@ async function expectAppState(row: Locator, app: AppKey, state: AppState): Promi
  * Writes a Time-app version onto the worker's login, as flutter-time does on every
  * sign-in (EformUser.TimeRegistration*). No API sets these from the web UI.
  */
-async function seedTimeAppVersion(email: string): Promise<void> {
-  if (!/^[a-z0-9-]+@example\.com$/.test(email)) {
-    throw new Error(`Refusing to build SQL for email ${email}`);
+async function seedTimeAppVersion(email: string, version: string): Promise<void> {
+  if (!/^[a-z0-9-]+@example\.com$/.test(email) || !/^\d+(\.\d+){1,3}$/.test(version)) {
+    throw new Error(`Refusing to build SQL for email ${email} / version ${version}`);
   }
   const sql =
-    `UPDATE Users SET TimeRegistrationSoftwareVersion = '4.0.36', ` +
+    `UPDATE Users SET TimeRegistrationSoftwareVersion = '${version}', ` +
     `TimeRegistrationModel = 'Pixel 8', TimeRegistrationManufacturer = 'Google', ` +
     `TimeRegistrationOsVersion = '15' WHERE Email = '${email}'; SELECT ROW_COUNT();`;
   const stdout = await runMariadbSql(sql, `seed a Time app version for ${email}`, customerDatabase('Angular'));
@@ -101,10 +102,10 @@ test.describe('Property-worker app columns', () => {
     await new LoginPage(page).login();
   });
 
-  test('show Compliance / Ad-hoc / Time / Archive with ja / nej / not-registered states', async ({ page }) => {
+  test('show one column per app with ja / nej / not-registered states and the update flag', async ({ page }) => {
     // 5 min: login (up to 2 min on a cold app), one property create, one device-user
     // create whose SDK provisioning call is the slow part (SLOW_API_TIMEOUT), then two
-    // list refreshes (API_TIMEOUT each). Every wait inside is individually bounded;
+    // list reloads of two fetches each (API_TIMEOUT each). Every wait inside is individually bounded;
     // this is only their sum.
     test.setTimeout(300000);
 
@@ -116,8 +117,8 @@ test.describe('Property-worker app columns', () => {
     await workersPage.goToPropertyWorkers();
     await workersPage.create(worker);
 
-    // Headers: the four app columns, and the old permission / device columns gone.
-    for (const header of ['Compliance', 'Ad-hoc', 'Time', 'Archive']) {
+    // Headers: the six app columns, and the old permission / device columns gone.
+    for (const header of ['Compliance', 'Ad-hoc', 'Time', 'Archive', 'Chemistry', 'Halebid']) {
       await expect(headerCell(page, header), `"${header}" column header`).toHaveCount(1, { timeout: UI_TIMEOUT });
     }
     await expect(headerCell(page, 'eForm'), 'the old "eForm" permission column is gone').toHaveCount(0, { timeout: UI_TIMEOUT });
@@ -134,15 +135,18 @@ test.describe('Property-worker app columns', () => {
     // No access: red.
     await expectAppState(row, 'adhoc', 'no-access');
     await expectAppState(row, 'archive', 'no-access');
+    await expectAppState(row, 'chemistry', 'no-access');
+    await expectAppState(row, 'halebid', 'no-access');
     await expect(row.locator('.app-install-version'), 'no version is shown before one is reported').toHaveCount(0, { timeout: UI_TIMEOUT });
 
-    // The Time app reports a version -> green "Ja" with the version on line 2.
-    await seedTimeAppVersion(worker.workerEmail!);
+    // The Time app reports a version -> green "Ja" with the version on line 2. 99.0.0 is
+    // never older than the baked-in latest, so this does not break when that is bumped.
+    await seedTimeAppVersion(worker.workerEmail!, '99.0.0');
     await reloadWorkerList(workersPage);
 
     await expectAppState(row, 'time', 'installed');
     const timeCell = appCell(row, 'time');
-    await expect(timeCell.locator('.app-install-version')).toHaveText('4.0.36', { timeout: UI_TIMEOUT });
+    await expect(timeCell.locator('.app-install-version')).toHaveText('99.0.0', { timeout: UI_TIMEOUT });
     // The other apps are untouched by the Time report.
     await expectAppState(row, 'compliance', 'not-registered');
     await expectAppState(row, 'archive', 'no-access');
@@ -155,5 +159,17 @@ test.describe('Property-worker app columns', () => {
       timeout: UI_TIMEOUT,
     });
     await expect(tooltip).toContainText('Google', { timeout: UI_TIMEOUT });
+    await expect(timeCell.locator('.app-install-update'), 'a current version is not flagged').toHaveCount(0, {
+      timeout: UI_TIMEOUT,
+    });
+
+    // A version older than the latest release is flagged "Skal opdateres".
+    await seedTimeAppVersion(worker.workerEmail!, '1.0.0');
+    await reloadWorkerList(workersPage);
+    await expect(timeCell.locator('.app-install-version')).toHaveText('1.0.0', { timeout: UI_TIMEOUT });
+    await expect(timeCell.locator('.app-install-update'), 'an older version needs an update').toHaveText(
+      'Skal opdateres',
+      { timeout: UI_TIMEOUT },
+    );
   });
 });

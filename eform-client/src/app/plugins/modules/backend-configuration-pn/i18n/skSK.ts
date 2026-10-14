@@ -779,6 +779,7 @@ export const skSK = {
   'Future tasks cannot be completed or deleted yet': 'Budúce úlohy zatiaľ nie je možné vyplniť ani odstrániť',
   // #1335 Medarbejdere app columns
   'Not registered': 'Neregistrované',
+  'Needs update': 'Vyžaduje aktualizáciu',
   Model: 'Model',
   'OS version': 'Verzia OS',
   // #1380 Medarbejdere bulk tags

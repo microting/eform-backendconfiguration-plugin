@@ -209,6 +209,8 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
       {header: of('Ad-hoc'), field: 'adHocApp'},
       {header: of('Time'), field: 'timeApp'},
       {header: of('Archive'), field: 'archiveApp'},
+      {header: of('Chemistry'), field: 'chemistryApp'},
+      {header: of('Halebid'), field: 'halebidApp'},
       {
         header: this.translateService.stream('Customer no & OTP'),
         field: 'customerOtp',

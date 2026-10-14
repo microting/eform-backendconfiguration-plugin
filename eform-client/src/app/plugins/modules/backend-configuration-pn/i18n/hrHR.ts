@@ -779,6 +779,7 @@ export const hrHR = {
   'Future tasks cannot be completed or deleted yet': 'Buduće zadatke još nije moguće ispuniti ni izbrisati',
   // #1335 Medarbejdere app columns
   'Not registered': 'Nije registrirano',
+  'Needs update': 'Potrebno ažuriranje',
   Model: 'Model',
   'OS version': 'Verzija OS-a',
   // #1380 Medarbejdere bulk tags

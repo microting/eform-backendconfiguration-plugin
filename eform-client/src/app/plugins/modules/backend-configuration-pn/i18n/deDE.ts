@@ -825,6 +825,7 @@ export const deDE = {
   'Future tasks cannot be completed or deleted yet': 'Zukünftige Aufgaben können noch nicht ausgefüllt oder gelöscht werden',
   // #1335 Medarbejdere app columns
   'Not registered': 'Nicht registriert',
+  'Needs update': 'Aktualisierung erforderlich',
   Model: 'Modell',
   'OS version': 'OS-Version',
   // #1380 Medarbejdere bulk tags

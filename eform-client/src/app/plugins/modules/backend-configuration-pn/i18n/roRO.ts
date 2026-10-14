@@ -779,6 +779,7 @@ export const roRO = {
   'Future tasks cannot be completed or deleted yet': 'Sarcinile viitoare nu pot fi încă completate sau șterse',
   // #1335 Medarbejdere app columns
   'Not registered': 'Neînregistrat',
+  'Needs update': 'Necesită actualizare',
   Model: 'Model',
   'OS version': 'Versiune SO',
   // #1380 Medarbejdere bulk tags

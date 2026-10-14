@@ -9,4 +9,8 @@ export interface AppInstallModel {
   model: string | null;
   manufacturer: string | null;
   osVersion: string | null;
+  /** The app's latest released version, from the list baked into the plugin. */
+  latestVersion?: string | null;
+  /** The reported version is lower than `latestVersion`: "Skal opdateres". */
+  needsUpdate?: boolean;
 }

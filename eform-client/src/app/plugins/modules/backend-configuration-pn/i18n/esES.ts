@@ -779,6 +779,7 @@ export const esES = {
   'Future tasks cannot be completed or deleted yet': 'Las tareas futuras aún no se pueden completar ni eliminar',
   // #1335 Medarbejdere app columns
   'Not registered': 'No registrado',
+  'Needs update': 'Necesita actualización',
   Model: 'Modelo',
   'OS version': 'Versión del SO',
   // #1380 Medarbejdere bulk tags

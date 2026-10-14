@@ -779,6 +779,7 @@ export const itIT = {
   'Future tasks cannot be completed or deleted yet': 'Le attività future non possono ancora essere completate né eliminate',
   // #1335 Medarbejdere app columns
   'Not registered': 'Non registrato',
+  'Needs update': 'Aggiornamento necessario',
   Model: 'Modello',
   'OS version': 'Versione del SO',
   // #1380 Medarbejdere bulk tags

@@ -110,6 +110,8 @@ public class DeviceUserModel
     public AppInstallModel AdHocApp { get; set; } = new();
     public AppInstallModel TimeApp { get; set; } = new();
     public AppInstallModel ArchiveApp { get; set; } = new();
+    public AppInstallModel ChemistryApp { get; set; } = new();
+    public AppInstallModel HalebidApp { get; set; } = new();
 
     public string PinCode { get; set; } = null!;
 

@@ -779,6 +779,7 @@ export const huHU = {
   'Future tasks cannot be completed or deleted yet': 'A jövőbeli feladatok még nem tölthetők ki és nem törölhetők',
   // #1335 Medarbejdere app columns
   'Not registered': 'Nincs regisztrálva',
+  'Needs update': 'Frissítés szükséges',
   Model: 'Modell',
   'OS version': 'OS-verzió',
   // #1380 Medarbejdere bulk tags

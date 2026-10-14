@@ -779,6 +779,7 @@ export const nlNL = {
   'Future tasks cannot be completed or deleted yet': 'Toekomstige taken kunnen nog niet worden ingevuld of verwijderd',
   // #1335 Medarbejdere app columns
   'Not registered': 'Niet geregistreerd',
+  'Needs update': 'Update nodig',
   Model: 'Model',
   'OS version': 'OS-versie',
   // #1380 Medarbejdere bulk tags

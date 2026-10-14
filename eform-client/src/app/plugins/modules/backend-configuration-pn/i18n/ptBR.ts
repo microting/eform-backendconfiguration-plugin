@@ -779,6 +779,7 @@ export const ptBR = {
   'Future tasks cannot be completed or deleted yet': 'Tarefas futuras ainda não podem ser concluídas nem excluídas',
   // #1335 Medarbejdere app columns
   'Not registered': 'Não registrado',
+  'Needs update': 'Precisa de atualização',
   Model: 'Modelo',
   'OS version': 'Versão do SO',
   // #1380 Medarbejdere bulk tags
