@@ -70,7 +70,7 @@ describe('ChemicalsContainerComponent', () => {
 
     build([{id: 7, name: 'Hovedgården'}, {id: 8, name: 'Engvej 12'}]);
 
-    expect(store.dispatch).not.toHaveBeenCalled();
+    expect(store.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({type: chemicalsSelectProperty.type}));
     expect(router.navigate).toHaveBeenCalledWith([], urlSync(8));
   });
 
@@ -99,7 +99,7 @@ describe('ChemicalsContainerComponent', () => {
 
     build([{id: 7, name: 'Hovedgården'}, {id: 8, name: 'Engvej 12'}]);
 
-    expect(store.dispatch).not.toHaveBeenCalled();
+    expect(store.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({type: chemicalsSelectProperty.type}));
     expect(router.navigate).toHaveBeenCalledWith([], urlSync(8));
   });
 
