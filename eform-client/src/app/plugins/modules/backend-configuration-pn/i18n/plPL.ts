@@ -779,6 +779,7 @@ export const plPL = {
   'Future tasks cannot be completed or deleted yet': 'Przyszłych zadań nie można jeszcze wykonać ani usunąć',
   // #1335 Medarbejdere app columns
   'Not registered': 'Nie zarejestrowano',
+  'Needs update': 'Wymaga aktualizacji',
   Model: 'Model',
   'OS version': 'Wersja systemu',
   // #1380 Medarbejdere bulk tags

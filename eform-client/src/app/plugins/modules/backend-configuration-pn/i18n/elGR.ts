@@ -779,6 +779,7 @@ export const elGR = {
   'Future tasks cannot be completed or deleted yet': 'Οι μελλοντικές εργασίες δεν μπορούν ακόμη να ολοκληρωθούν ή να διαγραφούν',
   // #1335 Medarbejdere app columns
   'Not registered': 'Δεν έχει καταχωριστεί',
+  'Needs update': 'Χρειάζεται ενημέρωση',
   Model: 'Μοντέλο',
   'OS version': 'Έκδοση ΛΣ',
   // #1380 Medarbejdere bulk tags

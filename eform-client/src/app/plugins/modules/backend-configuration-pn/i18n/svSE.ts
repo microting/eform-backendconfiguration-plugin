@@ -779,6 +779,7 @@ export const svSE = {
   'Future tasks cannot be completed or deleted yet': 'Framtida uppgifter kan inte fyllas i eller tas bort ännu',
   // #1335 Medarbejdere app columns
   'Not registered': 'Inte registrerad',
+  'Needs update': 'Behöver uppdateras',
   Model: 'Modell',
   'OS version': 'OS-version',
   // #1380 Medarbejdere bulk tags

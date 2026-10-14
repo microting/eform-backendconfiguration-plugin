@@ -779,6 +779,7 @@ export const ltLT = {
   'Future tasks cannot be completed or deleted yet': 'Būsimų užduočių dar negalima atlikti ar ištrinti',
   // #1335 Medarbejdere app columns
   'Not registered': 'Neužregistruota',
+  'Needs update': 'Reikia atnaujinti',
   Model: 'Modelis',
   'OS version': 'OS versija',
   // #1380 Medarbejdere bulk tags

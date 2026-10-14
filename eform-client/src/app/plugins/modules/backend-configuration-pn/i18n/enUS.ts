@@ -900,6 +900,7 @@ export const enUS= {
   'Future tasks cannot be completed or deleted yet': 'Future tasks cannot be completed or deleted yet',
   // #1335 Medarbejdere app columns
   'Not registered': 'Not registered',
+  'Needs update': 'Needs update',
   Model: 'Model',
   'OS version': 'OS version',
   // #1380 Medarbejdere bulk tags

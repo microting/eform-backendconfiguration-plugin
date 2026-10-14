@@ -779,6 +779,7 @@ export const slSL = {
   'Future tasks cannot be completed or deleted yet': 'Prihodnjih opravil še ni mogoče izpolniti ali izbrisati',
   // #1335 Medarbejdere app columns
   'Not registered': 'Ni registrirano',
+  'Needs update': 'Potrebna posodobitev',
   Model: 'Model',
   'OS version': 'Različica OS',
   // #1380 Medarbejdere bulk tags

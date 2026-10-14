@@ -800,6 +800,7 @@ export const da = {
   'Future tasks cannot be completed or deleted yet': 'Fremtidige opgaver kan ikke udfyldes eller slettes endnu',
   // #1335 Medarbejdere app columns
   'Not registered': 'Ikke registreret',
+  'Needs update': 'Skal opdateres',
   Model: 'Model',
   'OS version': 'OS-version',
   // #1380 Medarbejdere bulk tags

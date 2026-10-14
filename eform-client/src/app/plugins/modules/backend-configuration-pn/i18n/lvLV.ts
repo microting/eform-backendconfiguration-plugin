@@ -779,6 +779,7 @@ export const lvLV = {
   'Future tasks cannot be completed or deleted yet': 'Nākotnes uzdevumus vēl nevar izpildīt vai dzēst',
   // #1335 Medarbejdere app columns
   'Not registered': 'Nav reģistrēts',
+  'Needs update': 'Nepieciešams atjauninājums',
   Model: 'Modelis',
   'OS version': 'OS versija',
   // #1380 Medarbejdere bulk tags

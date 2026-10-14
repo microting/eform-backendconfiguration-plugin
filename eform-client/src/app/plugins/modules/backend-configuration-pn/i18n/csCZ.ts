@@ -779,6 +779,7 @@ export const csCZ = {
   'Future tasks cannot be completed or deleted yet': 'Budoucí úkoly zatím nelze vyplnit ani smazat',
   // #1335 Medarbejdere app columns
   'Not registered': 'Neregistrováno',
+  'Needs update': 'Vyžaduje aktualizaci',
   Model: 'Model',
   'OS version': 'Verze OS',
   // #1380 Medarbejdere bulk tags

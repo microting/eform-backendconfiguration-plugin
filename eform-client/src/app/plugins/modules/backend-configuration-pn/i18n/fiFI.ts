@@ -779,6 +779,7 @@ export const fiFI = {
   'Future tasks cannot be completed or deleted yet': 'Tulevia tehtäviä ei voi vielä suorittaa eikä poistaa',
   // #1335 Medarbejdere app columns
   'Not registered': 'Ei rekisteröity',
+  'Needs update': 'Vaatii päivityksen',
   Model: 'Malli',
   'OS version': 'Käyttöjärjestelmän versio',
   // #1380 Medarbejdere bulk tags

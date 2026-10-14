@@ -779,6 +779,7 @@ export const isIS = {
   'Future tasks cannot be completed or deleted yet': 'Ekki er enn hægt að fylla út eða eyða framtíðarverkefnum',
   // #1335 Medarbejdere app columns
   'Not registered': 'Ekki skráð',
+  'Needs update': 'Þarf uppfærslu',
   Model: 'Gerð',
   'OS version': 'Útgáfa stýrikerfis',
   // #1380 Medarbejdere bulk tags

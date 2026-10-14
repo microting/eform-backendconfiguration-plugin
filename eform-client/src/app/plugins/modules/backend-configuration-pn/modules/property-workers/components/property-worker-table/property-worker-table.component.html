@@ -14,7 +14,9 @@
     complianceApp: complianceAppTpl,
     adHocApp: adHocAppTpl,
     timeApp: timeAppTpl,
-    archiveApp: archiveAppTpl
+    archiveApp: archiveAppTpl,
+    chemistryApp: chemistryAppTpl,
+    halebidApp: halebidAppTpl
     }"
   [showPaginator]="false"
   [pageOnFront]="false"
@@ -174,7 +176,8 @@
 </ng-template>
 
 <!-- #1335: one cell per mobile app. Line 1 is the state (appInstallState), line 2
-     the reported version; the reporting device's model and OS are the tooltip. -->
+     the reported version, flagged when it is older than the app's latest release;
+     the reporting device's model and OS are the tooltip. -->
 <ng-template #appInstallTpl let-app="app" let-appKey="appKey">
   <div
     class="app-install"
@@ -187,6 +190,9 @@
       <span>{{ appStateLabel(app) | translate }}</span>
     </mat-chip>
     <div class="app-install-version" *ngIf="app?.version">{{ app.version }}</div>
+    <mat-chip class="app-install-update tag-warning" *ngIf="app?.needsUpdate">
+      <span>{{ 'Needs update' | translate }}</span>
+    </mat-chip>
   </div>
 </ng-template>
 
@@ -204,6 +210,14 @@
 
 <ng-template #archiveAppTpl let-row>
   <ng-container *ngTemplateOutlet="appInstallTpl; context: {app: row.archiveApp, appKey: 'archive'}"></ng-container>
+</ng-template>
+
+<ng-template #chemistryAppTpl let-row>
+  <ng-container *ngTemplateOutlet="appInstallTpl; context: {app: row.chemistryApp, appKey: 'chemistry'}"></ng-container>
+</ng-template>
+
+<ng-template #halebidAppTpl let-row>
+  <ng-container *ngTemplateOutlet="appInstallTpl; context: {app: row.halebidApp, appKey: 'halebid'}"></ng-container>
 </ng-template>
 
 <ng-template #tagsTpl let-row>

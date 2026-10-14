@@ -493,6 +493,8 @@ public class BackendConfigurationAssignmentWorkerService(
                 .ToDictionary(g => g.Key, g => g.First());
 
             var appUsersByEmail = await LoadAppUsersByEmail(deviceUsers).ConfigureAwait(false);
+            var chemistrySiteIds = await LoadChemistryAccess(siteIds).ConfigureAwait(false);
+            var halebidSiteIds = await LoadHalebidAccess(siteIds).ConfigureAwait(false);
 
             foreach (var deviceUserModel in deviceUsers)
             {
@@ -620,7 +622,8 @@ public class BackendConfigurationAssignmentWorkerService(
                 deviceUserModel.WorkOrderCases = workOrderCases;
                 deviceUserModel.HasWorkOrdersAssigned = workOrderCases.Count > 0;
 
-                FillAppInstalls(deviceUserModel, unit, FindAppUser(appUsersByEmail, deviceUserModel.WorkerEmail));
+                FillAppInstalls(deviceUserModel, unit, FindAppUser(appUsersByEmail, deviceUserModel.WorkerEmail),
+                    chemistrySiteIds.Contains(deviceUserModel.SiteId), halebidSiteIds.Contains(deviceUserModel.SiteId));
             }
 
             if (requestModel.PropertyIds != null)
@@ -726,48 +729,104 @@ public class BackendConfigurationAssignmentWorkerService(
         return lookup.ByUserName[email].FirstOrDefault() ?? lookup.ByEmail[email].FirstOrDefault();
     }
 
+    /// <summary>The live PropertyWorker rows of <paramref name="siteIds"/> on live properties.</summary>
+    private IQueryable<PropertyWorker> LivePropertyWorkers(List<int> siteIds)
+        => from worker in backendConfigurationPnDbContext.PropertyWorkers.AsNoTracking()
+           join property in backendConfigurationPnDbContext.Properties.AsNoTracking()
+               on worker.PropertyId equals property.Id
+           where siteIds.Contains(worker.WorkerId)
+                 && worker.WorkflowState != Constants.WorkflowStates.Removed
+                 && property.WorkflowState != Constants.WorkflowStates.Removed
+           select worker;
+
     /// <summary>
-    /// Fills the four per-app columns. Must run after TimeRegistrationEnabled,
+    /// The workers (SDK site ids) who may use the Chemistry app: a live View or Admin
+    /// permission on a property they still work on - the rule ChemicalPermissionService applies.
+    /// </summary>
+    private async Task<HashSet<int>> LoadChemistryAccess(List<int> siteIds)
+    {
+        var workerIds = await (
+                from worker in LivePropertyWorkers(siteIds)
+                join permission in backendConfigurationPnDbContext.ChemicalWorkerPermissions.AsNoTracking()
+                    on new { worker.PropertyId, worker.WorkerId } equals new { permission.PropertyId, permission.WorkerId }
+                where permission.WorkflowState != Constants.WorkflowStates.Removed
+                      && (permission.View || permission.Admin)
+                select worker.WorkerId)
+            .Distinct().ToListAsync().ConfigureAwait(false);
+        return workerIds.ToHashSet();
+    }
+
+    /// <summary>
+    /// The workers (SDK site ids) who may use the Halebid (tail-bite) app: they work on a
+    /// property with tail-bite enabled - the rule TailBiteSetupService.ListEnabledPropertiesAsync applies.
+    /// </summary>
+    private async Task<HashSet<int>> LoadHalebidAccess(List<int> siteIds)
+    {
+        var workerIds = await (
+                from worker in LivePropertyWorkers(siteIds)
+                join tailBite in backendConfigurationPnDbContext.TailBiteProperties.AsNoTracking()
+                    on worker.PropertyId equals tailBite.PropertyId
+                where tailBite.Enabled
+                select worker.WorkerId)
+            .Distinct().ToListAsync().ConfigureAwait(false);
+        return workerIds.ToHashSet();
+    }
+
+    /// <summary>
+    /// Fills the per-app columns. Must run after TimeRegistrationEnabled,
     /// TaskManagementEnabled and ArchiveEnabled are known - they are the access flags.
     /// </summary>
     private static void FillAppInstalls(DeviceUserModel deviceUserModel,
-        Microting.eForm.Infrastructure.Data.Entities.Unit unit, AppUserVersions appUser)
+        Microting.eForm.Infrastructure.Data.Entities.Unit unit, AppUserVersions appUser,
+        bool chemistryAccess, bool halebidAccess)
     {
         // Compliance has no per-worker switch: every device user can use it, through the
         // email login (active EformUser + non-resigned Worker, see GrpcSiteResolver) or,
         // without an email, the legacy OTP pairing of the Unit every SiteCreate makes.
-        deviceUserModel.ComplianceApp = new AppInstallModel
+        deviceUserModel.ComplianceApp = WithLatest(new AppInstallModel
         {
             HasAccess = true,
             Version = NullIfBlank(unit?.eFormVersion),
             Model = NullIfBlank(unit?.Model),
             Manufacturer = NullIfBlank(unit?.Manufacturer),
             OsVersion = NullIfBlank(unit?.OsVersion)
-        };
+        }, AppLatestVersions.Compliance);
 
-        // Ad-hoc reports no version anywhere yet (phase 2 of #1335).
-        deviceUserModel.AdHocApp = new AppInstallModel
+        // Ad-hoc, Chemistry and Halebid report no version anywhere yet (phase 2 of #1335).
+        deviceUserModel.AdHocApp = WithLatest(new AppInstallModel
         {
             HasAccess = deviceUserModel.TaskManagementEnabled == true
-        };
+        }, AppLatestVersions.Adhoc);
+        deviceUserModel.ChemistryApp = WithLatest(new AppInstallModel { HasAccess = chemistryAccess },
+            AppLatestVersions.Chemistry);
+        deviceUserModel.HalebidApp = WithLatest(new AppInstallModel { HasAccess = halebidAccess },
+            AppLatestVersions.Halebid);
 
-        deviceUserModel.TimeApp = new AppInstallModel
+        deviceUserModel.TimeApp = WithLatest(new AppInstallModel
         {
             HasAccess = deviceUserModel.TimeRegistrationEnabled == true,
             Version = NullIfBlank(appUser?.TimeVersion),
             Model = NullIfBlank(appUser?.TimeModel),
             Manufacturer = NullIfBlank(appUser?.TimeManufacturer),
             OsVersion = NullIfBlank(appUser?.TimeOsVersion)
-        };
+        }, AppLatestVersions.Time);
 
-        deviceUserModel.ArchiveApp = new AppInstallModel
+        deviceUserModel.ArchiveApp = WithLatest(new AppInstallModel
         {
             HasAccess = deviceUserModel.ArchiveEnabled,
             Version = NullIfBlank(appUser?.ArchiveVersion),
             Model = NullIfBlank(appUser?.ArchiveModel),
             Manufacturer = NullIfBlank(appUser?.ArchiveManufacturer),
             OsVersion = NullIfBlank(appUser?.ArchiveOsVersion)
-        };
+        }, AppLatestVersions.Archive);
+    }
+
+    /// <summary>Adds the app's latest released version and the "Skal opdateres" flag.</summary>
+    private static AppInstallModel WithLatest(AppInstallModel app, string appKey)
+    {
+        app.LatestVersion = AppLatestVersions.For(appKey);
+        app.NeedsUpdate = AppLatestVersions.IsOutdated(app.Version, app.LatestVersion);
+        return app;
     }
 
     private static string NullIfBlank(string value) => string.IsNullOrWhiteSpace(value) ? null : value;

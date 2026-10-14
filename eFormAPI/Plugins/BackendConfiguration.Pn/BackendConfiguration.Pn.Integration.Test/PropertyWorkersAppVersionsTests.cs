@@ -14,7 +14,8 @@ using NSubstitute;
 namespace BackendConfiguration.Pn.Integration.Test;
 
 /// <summary>
-/// #1335 phase 1 - the Medarbejdere columns Compliance / Ad-hoc / Time / Archive.
+/// #1335 phase 1 - the Medarbejdere columns Compliance / Ad-hoc / Time / Archive /
+/// Chemistry / Halebid, and the "Skal opdateres" flag against the baked-in latest versions.
 /// <para>
 /// <c>IndexDeviceUser</c> exposes one <see cref="AppInstallModel"/> per app. The UI
 /// derives three states from it: a reported Version is "Ja"; no access is "Nej";
@@ -27,7 +28,9 @@ namespace BackendConfiguration.Pn.Integration.Test;
 /// Sources: Compliance = SDK <c>Units.eFormVersion</c>; Time =
 /// <c>EformUser.TimeRegistration*</c>; Archive = <c>EformUser.Archive*</c>; Ad-hoc
 /// has no source yet. Access: Compliance always; Ad-hoc = TaskManagementEnabled;
-/// Time = an AssignedSite exists; Archive = the "Kun arkiv" group.
+/// Time = an AssignedSite exists; Archive = the "Kun arkiv" group; Chemistry = a live
+/// View/Admin permission on a property the worker works on; Halebid = works on a
+/// property with tail-bite enabled. Chemistry and Halebid have no version source yet.
 /// </para>
 /// </summary>
 [Parallelizable(ParallelScope.Fixtures)]
@@ -176,6 +179,151 @@ public class PropertyWorkersAppVersionsTests : TestBaseSetup
             Assert.That(b.ArchiveApp.Model, Is.EqualTo("Galaxy S24"));
         });
     }
+
+    private async Task<int> LinkToNewProperty(int siteId)
+    {
+        var property = new Property
+        {
+            Name = $"AppVersions-{Guid.NewGuid()}", ItemPlanningTagId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext!.Properties.AddAsync(property);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+        await BackendConfigurationPnDbContext.PropertyWorkers.AddAsync(new PropertyWorker
+        {
+            PropertyId = property.Id, WorkerId = siteId,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+        return property.Id;
+    }
+
+    private async Task AddChemicalPermission(int propertyId, int siteId, bool view, bool admin)
+    {
+        await BackendConfigurationPnDbContext!.ChemicalWorkerPermissions.AddAsync(new ChemicalWorkerPermission
+        {
+            PropertyId = propertyId, WorkerId = siteId, View = view, Admin = admin, Register = true,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+    }
+
+    private async Task SetTailBite(int propertyId, bool enabled)
+    {
+        await BackendConfigurationPnDbContext!.TailBiteProperties.AddAsync(new TailBiteProperty
+        {
+            PropertyId = propertyId, Enabled = enabled,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+    }
+
+    [Test]
+    public async Task IndexDeviceUser_ChemistryAndHalebidAccess_PerWorker()
+    {
+        // Arrange
+        var core = await GetCore();
+
+        // Worker A: may view chemicals on its property, which has tail-bite enabled.
+        var siteA = await CreateWorker(core, $"a-{Guid.NewGuid():N}@example.com", timeRegistration: false, archive: false);
+        var propertyA = await LinkToNewProperty(siteA);
+        await AddChemicalPermission(propertyA, siteA, view: true, admin: false);
+        await SetTailBite(propertyA, enabled: true);
+
+        // Worker B: a chemical permission without View or Admin, on a property whose
+        // tail-bite is switched off.
+        var siteB = await CreateWorker(core, $"b-{Guid.NewGuid():N}@example.com", timeRegistration: false, archive: false);
+        var propertyB = await LinkToNewProperty(siteB);
+        await AddChemicalPermission(propertyB, siteB, view: false, admin: false);
+        await SetTailBite(propertyB, enabled: false);
+
+        // Worker C: Admin alone grants Chemistry.
+        var siteC = await CreateWorker(core, $"c-{Guid.NewGuid():N}@example.com", timeRegistration: false, archive: false);
+        var propertyC = await LinkToNewProperty(siteC);
+        await AddChemicalPermission(propertyC, siteC, view: false, admin: true);
+
+        // Worker D: had View and tail-bite on a property it no longer works on.
+        var siteD = await CreateWorker(core, $"d-{Guid.NewGuid():N}@example.com", timeRegistration: false, archive: false);
+        var propertyD = await LinkToNewProperty(siteD);
+        await AddChemicalPermission(propertyD, siteD, view: true, admin: false);
+        await SetTailBite(propertyD, enabled: true);
+        await BackendConfigurationPnDbContext!.PropertyWorkers
+            .Where(x => x.PropertyId == propertyD && x.WorkerId == siteD)
+            .ExecuteUpdateAsync(u => u.SetProperty(x => x.WorkflowState, Constants.WorkflowStates.Removed));
+
+        // Act
+        var workers = await Index(core);
+
+        // Assert
+        var a = workers.Single(x => x.SiteId == siteA);
+        var b = workers.Single(x => x.SiteId == siteB);
+        var c = workers.Single(x => x.SiteId == siteC);
+        var d = workers.Single(x => x.SiteId == siteD);
+        Assert.Multiple(() =>
+        {
+            Assert.That(a.ChemistryApp.HasAccess, Is.True);
+            Assert.That(a.HalebidApp.HasAccess, Is.True);
+            Assert.That(a.ChemistryApp.Version, Is.Null, "no version source yet");
+            Assert.That(b.ChemistryApp.HasAccess, Is.False, "a permission without View or Admin is no access");
+            Assert.That(b.HalebidApp.HasAccess, Is.False, "tail-bite is disabled on B's property");
+            Assert.That(c.ChemistryApp.HasAccess, Is.True, "Admin alone grants access");
+            Assert.That(d.ChemistryApp.HasAccess, Is.False, "the permission is on a property D no longer works on");
+            Assert.That(d.HalebidApp.HasAccess, Is.False, "D no longer works on the tail-bite property");
+        });
+    }
+
+    [Test]
+    public async Task IndexDeviceUser_FlagsAnOutdatedReportedVersion()
+    {
+        // Arrange - Compliance reports an old version, Time the latest one.
+        var core = await GetCore();
+        var email = $"d-{Guid.NewGuid():N}@example.com";
+        var site = await CreateWorker(core, email, timeRegistration: true, archive: false);
+        await SetComplianceVersion(site, "3.2.1", "iPhone 15", "18.1");
+        var user = await BaseDbContext!.Users.SingleAsync(x => x.Email == email);
+        user.TimeRegistrationSoftwareVersion = AppLatestVersions.For(AppLatestVersions.Time);
+        await BaseDbContext.SaveChangesAsync();
+
+        // Act
+        var worker = (await Index(core)).Single(x => x.SiteId == site);
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(worker.ComplianceApp.LatestVersion, Is.EqualTo(AppLatestVersions.For(AppLatestVersions.Compliance)));
+            Assert.That(worker.ComplianceApp.NeedsUpdate, Is.True, "3.2.1 is older than the latest Compliance");
+            Assert.That(worker.TimeApp.NeedsUpdate, Is.False, "the latest version needs no update");
+            Assert.That(worker.ArchiveApp.NeedsUpdate, Is.False, "nothing reported is never flagged");
+        });
+    }
+
+    [Test]
+    public void LatestVersions_AreBakedIn_ForEveryApp()
+    {
+        foreach (var app in new[]
+                 {
+                     AppLatestVersions.Compliance, AppLatestVersions.Adhoc, AppLatestVersions.Time,
+                     AppLatestVersions.Archive, AppLatestVersions.Chemistry, AppLatestVersions.Halebid
+                 })
+        {
+            Assert.That(Version.TryParse(AppLatestVersions.For(app), out _), Is.True, app);
+        }
+    }
+
+    [TestCase("4.1.11", "4.1.21", true)]
+    [TestCase("4.1.21", "4.1.21", false)]
+    [TestCase("4.1.22", "4.1.21", false)]
+    [TestCase("4.1.9", "4.1.21", true, TestName = "Numeric, not lexical: 4.1.9 < 4.1.21")]
+    [TestCase("v4.1.11", "4.1.21", true)]
+    [TestCase("4.1.21+40121", "4.1.21", false)]
+    [TestCase("4.1", "4.1.0", false, TestName = "A missing patch part equals .0")]
+    [TestCase("4.1.21.1", "4.1.21.2", true, TestName = "A fourth part is compared too")]
+    [TestCase("4.1.21", "4.1.21.0", false, TestName = "A missing fourth part equals .0")]
+    [TestCase(null, "4.1.21", false)]
+    [TestCase("garbage", "4.1.21", false)]
+    [TestCase("4.1.11", null, false)]
+    public void IsOutdated_ComparesNumerically(string? reported, string? latest, bool expected)
+        => Assert.That(AppLatestVersions.IsOutdated(reported, latest), Is.EqualTo(expected));
 
     [Test]
     public async Task IndexDeviceUser_MatchesTheLoginCaseInsensitively()
