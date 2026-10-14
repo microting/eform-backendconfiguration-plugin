@@ -820,4 +820,9 @@ export const slSL = {
   'Show QR Code': 'Prikaži kodo QR',
   Required: 'Obvezno',
   'Invalid email address': 'Neveljaven e-poštni naslov',
+  'Chemicals: Title': 'Kemikalije',
+  'Chemicals: No properties': 'Najprej ustvarite nepremičnino za upravljanje kemikalij.',
+  'Chemicals: Select a property': 'Izberite nepremičnino',
+  'Chemicals: Not available yet': 'Kemikalije še niso na voljo.',
+  'Chemicals: Permissions title': 'Delavci in dovoljenja',
 };

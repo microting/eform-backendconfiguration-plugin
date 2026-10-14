@@ -820,4 +820,9 @@ export const ltLT = {
   'Show QR Code': 'Rodyti QR kodą',
   Required: 'Privaloma',
   'Invalid email address': 'Neteisingas el. pašto adresas',
+  'Chemicals: Title': 'Cheminės medžiagos',
+  'Chemicals: No properties': 'Pirmiausia sukurkite nuosavybę cheminėms medžiagoms tvarkyti.',
+  'Chemicals: Select a property': 'Pasirinkite nuosavybę',
+  'Chemicals: Not available yet': 'Cheminių medžiagų kol kas nėra.',
+  'Chemicals: Permissions title': 'Darbuotojai ir leidimai',
 };

@@ -820,4 +820,9 @@ export const isIS = {
   'Show QR Code': 'Sýna QR-kóða',
   Required: 'Áskilið',
   'Invalid email address': 'Ógilt netfang',
+  'Chemicals: Title': 'Efni',
+  'Chemicals: No properties': 'Búðu fyrst til eign til að stjórna efnum.',
+  'Chemicals: Select a property': 'Veldu eign',
+  'Chemicals: Not available yet': 'Efnaefni eru ekki fáanleg ennþá.',
+  'Chemicals: Permissions title': 'Starfsmenn og leyfi',
 };

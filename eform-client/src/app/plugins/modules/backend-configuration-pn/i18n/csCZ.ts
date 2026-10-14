@@ -820,4 +820,9 @@ export const csCZ = {
   'Show QR Code': 'Zobrazit QR kód',
   Required: 'Povinné',
   'Invalid email address': 'Neplatná e-mailová adresa',
+  'Chemicals: Title': 'Chemikálie',
+  'Chemicals: No properties': 'Nejprve si vytvořte nemovitost pro správu chemikálií.',
+  'Chemicals: Select a property': 'Vyberte nemovitost',
+  'Chemicals: Not available yet': 'Chemikálie zatím nejsou k dispozici.',
+  'Chemicals: Permissions title': 'Pracovníci a oprávnění',
 };

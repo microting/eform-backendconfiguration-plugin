@@ -820,4 +820,9 @@ export const elGR = {
   'Show QR Code': 'Εμφάνιση κωδικού QR',
   Required: 'Υποχρεωτικό',
   'Invalid email address': 'Μη έγκυρη διεύθυνση email',
+  'Chemicals: Title': 'Χημικά',
+  'Chemicals: No properties': 'Δημιουργήστε πρώτα μια ιδιότητα για τη διαχείριση χημικών ουσιών.',
+  'Chemicals: Select a property': 'Επιλέξτε ένα ακίνητο',
+  'Chemicals: Not available yet': 'Οι χημικές ουσίες δεν είναι ακόμη διαθέσιμες.',
+  'Chemicals: Permissions title': 'Εργαζόμενοι και άδειες',
 };

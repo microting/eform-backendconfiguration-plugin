@@ -820,4 +820,9 @@ export const roRO = {
   'Show QR Code': 'Afișează codul QR',
   Required: 'Obligatoriu',
   'Invalid email address': 'Adresă de e-mail nevalidă',
+  'Chemicals: Title': 'Substanțe chimice',
+  'Chemicals: No properties': 'Creați mai întâi o proprietate pentru a gestiona substanțele chimice.',
+  'Chemicals: Select a property': 'Selectați o proprietate',
+  'Chemicals: Not available yet': 'Substanțele chimice nu sunt încă disponibile.',
+  'Chemicals: Permissions title': 'Lucrătorii și permisiunile',
 };

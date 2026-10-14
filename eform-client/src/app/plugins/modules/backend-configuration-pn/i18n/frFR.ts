@@ -943,4 +943,9 @@ export const frFR = {
   'Save the risk assessment before closing.': 'Save the risk assessment before closing.',
   'Outbreak not found or no access.': 'Outbreak not found or no access.',
   'A follow-up date cannot be before the day the outbreak opened.': 'A follow-up date cannot be before the day the outbreak opened.',
+  'Chemicals: Title': 'Produits chimiques',
+  'Chemicals: No properties': 'Commencez par créer un bâtiment pour gérer les produits chimiques.',
+  'Chemicals: Select a property': 'Sélectionnez une propriété',
+  'Chemicals: Not available yet': 'Les produits chimiques ne sont pas encore disponibles.',
+  'Chemicals: Permissions title': 'Travailleurs et autorisations',
 };

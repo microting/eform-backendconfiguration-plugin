@@ -820,4 +820,9 @@ export const hrHR = {
   'Show QR Code': 'Prikaži QR kod',
   Required: 'Obavezno',
   'Invalid email address': 'Nevažeća adresa e-pošte',
+  'Chemicals: Title': 'Kemikalije',
+  'Chemicals: No properties': 'Prvo stvorite nekretninu za upravljanje kemikalijama.',
+  'Chemicals: Select a property': 'Odaberite nekretninu',
+  'Chemicals: Not available yet': 'Kemikalije još nisu dostupne.',
+  'Chemicals: Permissions title': 'Radnici i dozvole',
 };

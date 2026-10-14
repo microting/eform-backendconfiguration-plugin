@@ -944,4 +944,9 @@ export const nlNL = {
   'Save the risk assessment before closing.': 'Save the risk assessment before closing.',
   'Outbreak not found or no access.': 'Outbreak not found or no access.',
   'A follow-up date cannot be before the day the outbreak opened.': 'A follow-up date cannot be before the day the outbreak opened.',
+  'Chemicals: Title': 'Chemicaliën',
+  'Chemicals: No properties': 'Creëer allereerst een pand voor het beheer van chemicaliën.',
+  'Chemicals: Select a property': 'Selecteer een woning',
+  'Chemicals: Not available yet': 'De chemicaliën zijn nog niet beschikbaar.',
+  'Chemicals: Permissions title': 'Werknemers en vergunningen',
 };

@@ -1112,4 +1112,9 @@ export const enUS= {
   'Save the risk assessment before closing.': 'Save the risk assessment before closing.',
   'Outbreak not found or no access.': 'Outbreak not found or no access.',
   'A follow-up date cannot be before the day the outbreak opened.': 'A follow-up date cannot be before the day the outbreak opened.',
+  'Chemicals: Title': 'Chemicals',
+  'Chemicals: No properties': 'Create a property first to manage chemicals.',
+  'Chemicals: Select a property': 'Select a property',
+  'Chemicals: Not available yet': 'Chemicals is not available yet.',
+  'Chemicals: Permissions title': 'Workers and permissions',
 };

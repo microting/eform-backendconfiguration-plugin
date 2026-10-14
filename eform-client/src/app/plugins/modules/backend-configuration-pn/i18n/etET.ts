@@ -820,4 +820,9 @@ export const etET = {
   'Show QR Code': 'Näita QR-koodi',
   Required: 'Kohustuslik',
   'Invalid email address': 'Vigane e-posti aadress',
+  'Chemicals: Title': 'Kemikaalid',
+  'Chemicals: No properties': 'Loo esmalt kemikaalide haldamiseks objekt.',
+  'Chemicals: Select a property': 'Valige kinnisvara',
+  'Chemicals: Not available yet': 'Kemikaale pole veel saadaval.',
+  'Chemicals: Permissions title': 'Töötajad ja load',
 };

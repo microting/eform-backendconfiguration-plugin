@@ -944,4 +944,9 @@ export const esES = {
   'Save the risk assessment before closing.': 'Save the risk assessment before closing.',
   'Outbreak not found or no access.': 'Outbreak not found or no access.',
   'A follow-up date cannot be before the day the outbreak opened.': 'A follow-up date cannot be before the day the outbreak opened.',
+  'Chemicals: Title': 'productos químicos',
+  'Chemicals: No properties': 'Primero, crea una propiedad para gestionar los productos químicos.',
+  'Chemicals: Select a property': 'Seleccione una propiedad',
+  'Chemicals: Not available yet': 'Los productos químicos aún no están disponibles.',
+  'Chemicals: Permissions title': 'Trabajadores y permisos',
 };

@@ -820,4 +820,9 @@ export const bgBG = {
   'Show QR Code': 'Покажи QR код',
   Required: 'Задължително',
   'Invalid email address': 'Невалиден имейл адрес',
+  'Chemicals: Title': 'Химикали',
+  'Chemicals: No properties': 'Първо създайте имот за управление на химикали.',
+  'Chemicals: Select a property': 'Изберете имот',
+  'Chemicals: Not available yet': 'Химикалите все още не са налични.',
+  'Chemicals: Permissions title': 'Работници и разрешения',
 };

@@ -820,4 +820,9 @@ export const skSK = {
   'Show QR Code': 'Zobraziť QR kód',
   Required: 'Povinné',
   'Invalid email address': 'Neplatná e-mailová adresa',
+  'Chemicals: Title': 'Chemikálie',
+  'Chemicals: No properties': 'Najprv si vytvorte nehnuteľnosť na správu chemikálií.',
+  'Chemicals: Select a property': 'Vyberte nehnuteľnosť',
+  'Chemicals: Not available yet': 'Chemikálie zatiaľ nie sú dostupné.',
+  'Chemicals: Permissions title': 'Pracovníci a povolenia',
 };

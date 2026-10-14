@@ -1012,4 +1012,9 @@ export const da = {
   'Save the risk assessment before closing.': 'Gem risikovurderingen, før udbruddet lukkes.',
   'Outbreak not found or no access.': 'Udbrud ikke fundet, eller du har ikke adgang.',
   'A follow-up date cannot be before the day the outbreak opened.': 'En opfølgningsdato kan ikke ligge før den dag, udbruddet startede.',
+  'Chemicals: Title': 'Kemikalier',
+  'Chemicals: No properties': 'Opret først en ejendom for at administrere kemikalier.',
+  'Chemicals: Select a property': 'Vælg en ejendom',
+  'Chemicals: Not available yet': 'Kemi er endnu ikke tilgængelig.',
+  'Chemicals: Permissions title': 'Medarbejdere & rettigheder',
 };

@@ -944,4 +944,9 @@ export const ptPT = {
   'Save the risk assessment before closing.': 'Save the risk assessment before closing.',
   'Outbreak not found or no access.': 'Outbreak not found or no access.',
   'A follow-up date cannot be before the day the outbreak opened.': 'A follow-up date cannot be before the day the outbreak opened.',
+  'Chemicals: Title': 'Produtos químicos',
+  'Chemicals: No properties': 'Primeiramente, crie uma propriedade para gerenciar produtos químicos.',
+  'Chemicals: Select a property': 'Selecione uma propriedade',
+  'Chemicals: Not available yet': 'Os produtos químicos ainda não estão disponíveis.',
+  'Chemicals: Permissions title': 'Trabalhadores e autorizações',
 };

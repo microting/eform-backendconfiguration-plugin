@@ -944,4 +944,9 @@ export const svSE = {
   'Save the risk assessment before closing.': 'Save the risk assessment before closing.',
   'Outbreak not found or no access.': 'Outbreak not found or no access.',
   'A follow-up date cannot be before the day the outbreak opened.': 'A follow-up date cannot be before the day the outbreak opened.',
+  'Chemicals: Title': 'Kemikalier',
+  'Chemicals: No properties': 'Skapa först en fastighet för att hantera kemikalier.',
+  'Chemicals: Select a property': 'Välj en fastighet',
+  'Chemicals: Not available yet': 'Kemikalier finns inte tillgängliga ännu.',
+  'Chemicals: Permissions title': 'Arbetare och behörigheter',
 };

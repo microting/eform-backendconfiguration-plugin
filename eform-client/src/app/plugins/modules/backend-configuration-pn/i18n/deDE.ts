@@ -1037,4 +1037,9 @@ export const deDE = {
   'Save the risk assessment before closing.': 'Speichern Sie die Risikobewertung, bevor der Ausbruch geschlossen wird.',
   'Outbreak not found or no access.': 'Ausbruch nicht gefunden oder kein Zugriff.',
   'A follow-up date cannot be before the day the outbreak opened.': 'Ein Nachverfolgungsdatum darf nicht vor dem Tag liegen, an dem der Ausbruch begann.',
+  'Chemicals: Title': 'Chemikalien',
+  'Chemicals: No properties': 'Zuerst sollte ein Grundstück für den Umgang mit Chemikalien eingerichtet werden.',
+  'Chemicals: Select a property': 'Wählen Sie eine Immobilie aus',
+  'Chemicals: Not available yet': 'Die Chemikalien sind noch nicht verfügbar.',
+  'Chemicals: Permissions title': 'Arbeiter und Genehmigungen',
 };

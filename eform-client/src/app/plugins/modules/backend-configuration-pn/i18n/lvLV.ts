@@ -820,4 +820,9 @@ export const lvLV = {
   'Show QR Code': 'Rādīt QR kodu',
   Required: 'Obligāts',
   'Invalid email address': 'Nederīga e-pasta adrese',
+  'Chemicals: Title': 'Ķīmiskās vielas',
+  'Chemicals: No properties': 'Vispirms izveidojiet īpašumu ķīmisko vielu pārvaldībai.',
+  'Chemicals: Select a property': 'Izvēlieties īpašumu',
+  'Chemicals: Not available yet': 'Ķīmiskās vielas vēl nav pieejamas.',
+  'Chemicals: Permissions title': 'Darbinieki un atļaujas',
 };

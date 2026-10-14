@@ -944,4 +944,9 @@ export const noNO = {
   'Save the risk assessment before closing.': 'Save the risk assessment before closing.',
   'Outbreak not found or no access.': 'Outbreak not found or no access.',
   'A follow-up date cannot be before the day the outbreak opened.': 'A follow-up date cannot be before the day the outbreak opened.',
+  'Chemicals: Title': 'Kjemikalier',
+  'Chemicals: No properties': 'Opprett først en eiendom for å håndtere kjemikalier.',
+  'Chemicals: Select a property': 'Velg en eiendom',
+  'Chemicals: Not available yet': 'Kjemikalier er ikke tilgjengelige ennå.',
+  'Chemicals: Permissions title': 'Arbeidere og tillatelser',
 };

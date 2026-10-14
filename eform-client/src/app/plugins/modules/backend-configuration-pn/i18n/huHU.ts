@@ -820,4 +820,9 @@ export const huHU = {
   'Show QR Code': 'QR-kód megjelenítése',
   Required: 'Kötelező',
   'Invalid email address': 'Érvénytelen e-mail-cím',
+  'Chemicals: Title': 'Vegyszerek',
+  'Chemicals: No properties': 'Először hozzon létre egy ingatlant a vegyszerek kezelésére.',
+  'Chemicals: Select a property': 'Válasszon egy ingatlant',
+  'Chemicals: Not available yet': 'A vegyszerek még nem állnak rendelkezésre.',
+  'Chemicals: Permissions title': 'Munkavállalók és engedélyek',
 };

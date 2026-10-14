@@ -944,4 +944,9 @@ export const ukUA = {
   'Save the risk assessment before closing.': 'Save the risk assessment before closing.',
   'Outbreak not found or no access.': 'Outbreak not found or no access.',
   'A follow-up date cannot be before the day the outbreak opened.': 'A follow-up date cannot be before the day the outbreak opened.',
+  'Chemicals: Title': 'Хімічні речовини',
+  'Chemicals: No properties': 'Спочатку створіть об\'єкт для управління хімічними речовинами.',
+  'Chemicals: Select a property': 'Виберіть властивість',
+  'Chemicals: Not available yet': 'Хімічних препаратів поки що немає.',
+  'Chemicals: Permissions title': 'Працівники та дозволи',
 };
