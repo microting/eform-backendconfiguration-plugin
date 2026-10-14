@@ -2,7 +2,7 @@ import {Component, DestroyRef, OnInit, inject} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {ActivatedRoute, NavigationEnd, Router} from '@angular/router';
 import {Store} from '@ngrx/store';
-import {filter, take} from 'rxjs';
+import {filter} from 'rxjs';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {selectCurrentUserIsFirstUser} from 'src/app/state';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
@@ -90,7 +90,7 @@ export class ChemicalsContainerComponent implements OnInit {
   }
 
   private askScreen(then: (discard: boolean) => void): void {
-    confirmDiscardOf(this.activeScreen).pipe(take(1)).subscribe(then);
+    confirmDiscardOf(this.activeScreen).subscribe(then);
   }
 
   private applyProperty(propertyId: number | null): void {

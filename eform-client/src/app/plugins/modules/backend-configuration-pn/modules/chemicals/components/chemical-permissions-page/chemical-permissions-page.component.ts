@@ -139,14 +139,18 @@ export class ChemicalPermissionsPageComponent implements OnInit, ChemicalUnsaved
     return effectiveFlags(row.current)[key] !== effectiveFlags(row.stored)[key];
   }
 
+  private t(key: string, params?: object): string {
+    return this.translate.instant(key, params);
+  }
+
   /** "Jens Hansen: Lager – Følger af Admin – Ikke gemt": the states the cell shows by style only. */
   checkboxLabel(row: ChemicalPermissionRow, key: ChemicalFlagKey): string {
-    const parts = [`${row.workerName}: ${this.translate.instant(this.flagLabels[key].label)}`];
+    const parts = [`${row.workerName}: ${this.t(this.flagLabels[key].label)}`];
     if (this.isImplied(row, key)) {
-      parts.push(this.translate.instant('Chemicals: Implied by Admin'));
+      parts.push(this.t('Chemicals: Implied by Admin'));
     }
     if (this.isChanged(row, key)) {
-      parts.push(this.translate.instant('Chemicals: Not saved'));
+      parts.push(this.t('Chemicals: Not saved'));
     }
     return parts.join(' – ');
   }
@@ -210,14 +214,14 @@ export class ChemicalPermissionsPageComponent implements OnInit, ChemicalUnsaved
           const count = copied.filter((r, i) => !sameFlags(effectiveFlags(r.current), effectiveFlags(this.rows[i].current))).length;
           this.rows = copied;
           if (count) {
-            this.toastr.success(this.translate.instant('Chemicals: Copied permissions', {property, count}));
+            this.toastr.success(this.t('Chemicals: Copied permissions', {property, count}));
           } else {
-            this.toastr.info(this.translate.instant('Chemicals: Nothing to copy', {property}));
+            this.toastr.info(this.t('Chemicals: Nothing to copy', {property}));
           }
         },
         error: () => {
           if (propertyId === this.propertyId) {
-            this.toastr.error(this.translate.instant('Chemicals: Could not copy permissions'));
+            this.toastr.error(this.t('Chemicals: Could not copy permissions'));
           }
         },
       });
@@ -229,15 +233,14 @@ export class ChemicalPermissionsPageComponent implements OnInit, ChemicalUnsaved
     if (!count) {
       return of(true);
     }
-    const t = (key: string) => this.translate.instant(key);
     return confirmDiscard(this.dialog, this.overlay, {
-      headerText: t('Chemicals: Discard unsaved changes?'),
+      headerText: this.t('Chemicals: Discard unsaved changes?'),
       fields: [
-        {header: t('Property'), text: this.propertyName},
-        {header: t('Chemicals: Changed workers'), text: String(count)},
+        {header: this.t('Property'), text: this.propertyName},
+        {header: this.t('Chemicals: Changed workers'), text: String(count)},
       ],
-      discardText: t('Chemicals: Discard changes'),
-      keepText: t('Chemicals: Keep editing'),
+      discardText: this.t('Chemicals: Discard changes'),
+      keepText: this.t('Chemicals: Keep editing'),
       confirmId: 'chemicalPermissionsDiscardConfirm',
     });
   }
