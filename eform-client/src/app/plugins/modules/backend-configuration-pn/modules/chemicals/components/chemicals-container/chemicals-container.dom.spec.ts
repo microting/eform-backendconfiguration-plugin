@@ -27,12 +27,14 @@ describe('ChemicalsContainerComponent (picker)', () => {
   const shown = (): string =>
     (fixture.debugElement.query(By.css('#chemicalsPropertySelect .ng-value-label'))?.nativeElement as HTMLElement)
       ?.textContent?.trim() ?? '';
-  const disabled = (): boolean => !!fixture.debugElement.query(By.css('#chemicalsPropertySelect .ng-select-disabled'));
+  const disabled = (): boolean => !!fixture.debugElement.query(By.css('#chemicalsPropertySelect.mtx-select-disabled'));
 
   async function settle(): Promise<void> {
-    fixture.detectChanges();
-    await fixture.whenStable();
-    fixture.detectChanges();
+    // ngModel hands a value over in a microtask, and mtx-select hands it on to ng-select the same way.
+    for (let pass = 0; pass < 3; pass++) {
+      fixture.detectChanges();
+      await fixture.whenStable();
+    }
   }
 
   /** What a user does: open the select and click an option, so the select holds the pick itself. */
