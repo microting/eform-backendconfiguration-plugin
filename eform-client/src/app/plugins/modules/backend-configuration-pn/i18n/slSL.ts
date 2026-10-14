@@ -825,4 +825,5 @@ export const slSL = {
   'Chemicals: Select a property': 'Izberite nepremičnino',
   'Chemicals: Not available yet': 'Kemikalije še niso na voljo.',
   'Chemicals: Permissions title': 'Delavci in dovoljenja',
+  'Chemicals: Could not load properties': 'Lastnosti ni bilo mogoče naložiti.',
 };

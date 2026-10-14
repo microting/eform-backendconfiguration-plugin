@@ -825,4 +825,5 @@ export const csCZ = {
   'Chemicals: Select a property': 'Vyberte nemovitost',
   'Chemicals: Not available yet': 'Chemikálie zatím nejsou k dispozici.',
   'Chemicals: Permissions title': 'Pracovníci a oprávnění',
+  'Chemicals: Could not load properties': 'Vlastnosti se nepodařilo načíst.',
 };

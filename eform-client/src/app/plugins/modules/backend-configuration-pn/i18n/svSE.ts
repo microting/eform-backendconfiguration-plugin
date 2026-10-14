@@ -949,4 +949,5 @@ export const svSE = {
   'Chemicals: Select a property': 'Välj en fastighet',
   'Chemicals: Not available yet': 'Kemikalier finns inte tillgängliga ännu.',
   'Chemicals: Permissions title': 'Arbetare och behörigheter',
+  'Chemicals: Could not load properties': 'Egenskaperna kunde inte läsas in.',
 };

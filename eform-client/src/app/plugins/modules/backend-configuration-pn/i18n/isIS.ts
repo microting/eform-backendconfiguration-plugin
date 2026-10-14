@@ -825,4 +825,5 @@ export const isIS = {
   'Chemicals: Select a property': 'Veldu eign',
   'Chemicals: Not available yet': 'Efnaefni eru ekki fáanleg ennþá.',
   'Chemicals: Permissions title': 'Starfsmenn og leyfi',
+  'Chemicals: Could not load properties': 'Ekki var hægt að hlaða inn eiginleikunum.',
 };

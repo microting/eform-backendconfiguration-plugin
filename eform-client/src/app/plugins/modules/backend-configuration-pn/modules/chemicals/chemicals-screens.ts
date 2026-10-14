@@ -1,3 +1,6 @@
+import {Type} from '@angular/core';
+import {ChemicalPermissionsPageComponent} from './components';
+
 export interface ChemicalScreen {
   /** Router path relative to the Kemi container: /plugins/backend-configuration-pn/chemicals/{path}. */
   path: string;
@@ -5,6 +8,8 @@ export interface ChemicalScreen {
   titleKey: string;
   /** E2EId of the plugin menu child that links here (EformBackendConfigurationPlugin menu). */
   menuE2EId: string;
+  /** The page the route renders. */
+  component: Type<unknown>;
 }
 
 /**
@@ -17,5 +22,6 @@ export const CHEMICAL_SCREENS: ChemicalScreen[] = [
     path: 'permissions',
     titleKey: 'Chemicals: Permissions title',
     menuE2EId: 'backend-configuration-pn-chemicals-permissions',
+    component: ChemicalPermissionsPageComponent,
   },
 ];

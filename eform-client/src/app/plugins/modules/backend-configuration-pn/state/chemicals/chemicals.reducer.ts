@@ -45,8 +45,8 @@ const reducer = createReducer(
         inventoryFilters: {...state.inventoryFilters, locationId: null},
         historyFilters: {...state.historyFilters, locationId: null, userId: null},
       }),
-  on(chemicalsUpdateInventoryFilters, (state, {payload}) => ({...state, inventoryFilters: {...payload}})),
-  on(chemicalsUpdateHistoryFilters, (state, {payload}) => ({...state, historyFilters: {...payload}})),
+  on(chemicalsUpdateInventoryFilters, (state, {payload}) => ({...state, inventoryFilters: payload})),
+  on(chemicalsUpdateHistoryFilters, (state, {payload}) => ({...state, historyFilters: payload})),
 );
 
 export function chemicalsReducer(state: ChemicalsState | undefined, action: Action): ChemicalsState {

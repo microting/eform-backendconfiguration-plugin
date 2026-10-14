@@ -949,4 +949,5 @@ export const ukUA = {
   'Chemicals: Select a property': 'Виберіть властивість',
   'Chemicals: Not available yet': 'Хімічних препаратів поки що немає.',
   'Chemicals: Permissions title': 'Працівники та дозволи',
+  'Chemicals: Could not load properties': 'Не вдалося завантажити властивості.',
 };

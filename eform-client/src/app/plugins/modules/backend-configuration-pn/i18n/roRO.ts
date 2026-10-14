@@ -825,4 +825,5 @@ export const roRO = {
   'Chemicals: Select a property': 'Selectați o proprietate',
   'Chemicals: Not available yet': 'Substanțele chimice nu sunt încă disponibile.',
   'Chemicals: Permissions title': 'Lucrătorii și permisiunile',
+  'Chemicals: Could not load properties': 'Proprietățile nu au putut fi încărcate.',
 };

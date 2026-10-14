@@ -948,4 +948,5 @@ export const frFR = {
   'Chemicals: Select a property': 'Sélectionnez une propriété',
   'Chemicals: Not available yet': 'Les produits chimiques ne sont pas encore disponibles.',
   'Chemicals: Permissions title': 'Travailleurs et autorisations',
+  'Chemicals: Could not load properties': 'Les propriétés n\'ont pas pu être chargées.',
 };

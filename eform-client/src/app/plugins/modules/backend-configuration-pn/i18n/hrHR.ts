@@ -825,4 +825,5 @@ export const hrHR = {
   'Chemicals: Select a property': 'Odaberite nekretninu',
   'Chemicals: Not available yet': 'Kemikalije još nisu dostupne.',
   'Chemicals: Permissions title': 'Radnici i dozvole',
+  'Chemicals: Could not load properties': 'Svojstva se nisu mogla učitati.',
 };

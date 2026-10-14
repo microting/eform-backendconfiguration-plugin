@@ -949,4 +949,5 @@ export const plPL = {
   'Chemicals: Select a property': 'Wybierz nieruchomość',
   'Chemicals: Not available yet': 'Substancje chemiczne nie są jeszcze dostępne.',
   'Chemicals: Permissions title': 'Pracownicy i uprawnienia',
+  'Chemicals: Could not load properties': 'Nie udało się wczytać właściwości.',
 };

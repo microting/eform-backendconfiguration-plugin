@@ -949,4 +949,5 @@ export const noNO = {
   'Chemicals: Select a property': 'Velg en eiendom',
   'Chemicals: Not available yet': 'Kjemikalier er ikke tilgjengelige ennå.',
   'Chemicals: Permissions title': 'Arbeidere og tillatelser',
+  'Chemicals: Could not load properties': 'Egenskapene kunne ikke lastes inn.',
 };

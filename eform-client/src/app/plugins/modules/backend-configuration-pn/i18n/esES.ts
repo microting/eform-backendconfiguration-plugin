@@ -949,4 +949,5 @@ export const esES = {
   'Chemicals: Select a property': 'Seleccione una propiedad',
   'Chemicals: Not available yet': 'Los productos químicos aún no están disponibles.',
   'Chemicals: Permissions title': 'Trabajadores y permisos',
+  'Chemicals: Could not load properties': 'No se pudieron cargar las propiedades.',
 };

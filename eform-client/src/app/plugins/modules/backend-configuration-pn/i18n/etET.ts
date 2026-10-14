@@ -825,4 +825,5 @@ export const etET = {
   'Chemicals: Select a property': 'Valige kinnisvara',
   'Chemicals: Not available yet': 'Kemikaale pole veel saadaval.',
   'Chemicals: Permissions title': 'Töötajad ja load',
+  'Chemicals: Could not load properties': 'Atribuute ei õnnestunud laadida.',
 };

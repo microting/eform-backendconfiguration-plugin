@@ -825,4 +825,5 @@ export const bgBG = {
   'Chemicals: Select a property': 'Изберете имот',
   'Chemicals: Not available yet': 'Химикалите все още не са налични.',
   'Chemicals: Permissions title': 'Работници и разрешения',
+  'Chemicals: Could not load properties': 'Свойствата не можаха да бъдат заредени.',
 };

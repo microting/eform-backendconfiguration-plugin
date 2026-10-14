@@ -1,16 +1,11 @@
-import {NgModule, Type} from '@angular/core';
+import {NgModule} from '@angular/core';
 import {Route, RouterModule, Routes} from '@angular/router';
 import {CHEMICAL_SCREENS} from './chemicals-screens';
-import {ChemicalPermissionsPageComponent, ChemicalsContainerComponent} from './components';
-
-/** Page component per registered screen path. */
-const SCREEN_COMPONENTS: Record<string, Type<unknown>> = {
-  permissions: ChemicalPermissionsPageComponent,
-};
+import {ChemicalsContainerComponent} from './components';
 
 const screenRoutes: Route[] = CHEMICAL_SCREENS.map((screen) => ({
   path: screen.path,
-  component: SCREEN_COMPONENTS[screen.path],
+  component: screen.component,
   data: {titleKey: screen.titleKey},
 }));
 

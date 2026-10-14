@@ -949,4 +949,5 @@ export const fiFI = {
   'Chemicals: Select a property': 'Valitse kiinteistö',
   'Chemicals: Not available yet': 'Kemikaaleja ei ole vielä saatavilla.',
   'Chemicals: Permissions title': 'Työntekijät ja käyttöoikeudet',
+  'Chemicals: Could not load properties': 'Ominaisuuksia ei voitu ladata.',
 };

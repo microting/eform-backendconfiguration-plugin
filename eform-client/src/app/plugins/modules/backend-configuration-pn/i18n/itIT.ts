@@ -949,4 +949,5 @@ export const itIT = {
   'Chemicals: Select a property': 'Seleziona una proprietà',
   'Chemicals: Not available yet': 'I prodotti chimici non sono ancora disponibili.',
   'Chemicals: Permissions title': 'Lavoratori e permessi',
+  'Chemicals: Could not load properties': 'Impossibile caricare le proprietà.',
 };

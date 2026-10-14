@@ -825,4 +825,5 @@ export const lvLV = {
   'Chemicals: Select a property': 'Izvēlieties īpašumu',
   'Chemicals: Not available yet': 'Ķīmiskās vielas vēl nav pieejamas.',
   'Chemicals: Permissions title': 'Darbinieki un atļaujas',
+  'Chemicals: Could not load properties': 'Rekvizītus nevarēja ielādēt.',
 };

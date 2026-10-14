@@ -949,4 +949,5 @@ export const nlNL = {
   'Chemicals: Select a property': 'Selecteer een woning',
   'Chemicals: Not available yet': 'De chemicaliën zijn nog niet beschikbaar.',
   'Chemicals: Permissions title': 'Werknemers en vergunningen',
+  'Chemicals: Could not load properties': 'De eigenschappen konden niet worden geladen.',
 };

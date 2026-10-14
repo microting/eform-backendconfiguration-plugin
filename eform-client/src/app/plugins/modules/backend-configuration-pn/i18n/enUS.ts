@@ -1117,4 +1117,5 @@ export const enUS= {
   'Chemicals: Select a property': 'Select a property',
   'Chemicals: Not available yet': 'Chemicals is not available yet.',
   'Chemicals: Permissions title': 'Workers and permissions',
+  'Chemicals: Could not load properties': 'The properties could not be loaded.',
 };

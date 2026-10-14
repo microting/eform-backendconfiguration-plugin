@@ -825,4 +825,5 @@ export const elGR = {
   'Chemicals: Select a property': 'Επιλέξτε ένα ακίνητο',
   'Chemicals: Not available yet': 'Οι χημικές ουσίες δεν είναι ακόμη διαθέσιμες.',
   'Chemicals: Permissions title': 'Εργαζόμενοι και άδειες',
+  'Chemicals: Could not load properties': 'Δεν ήταν δυνατή η φόρτωση των ιδιοτήτων.',
 };

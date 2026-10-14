@@ -1017,4 +1017,5 @@ export const da = {
   'Chemicals: Select a property': 'Vælg en ejendom',
   'Chemicals: Not available yet': 'Kemi er endnu ikke tilgængelig.',
   'Chemicals: Permissions title': 'Medarbejdere & rettigheder',
+  'Chemicals: Could not load properties': 'Ejendommene kunne ikke indlæses.',
 };

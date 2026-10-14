@@ -825,4 +825,5 @@ export const skSK = {
   'Chemicals: Select a property': 'Vyberte nehnuteľnosť',
   'Chemicals: Not available yet': 'Chemikálie zatiaľ nie sú dostupné.',
   'Chemicals: Permissions title': 'Pracovníci a povolenia',
+  'Chemicals: Could not load properties': 'Vlastnosti sa nepodarilo načítať.',
 };

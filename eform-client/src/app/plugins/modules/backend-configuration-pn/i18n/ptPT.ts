@@ -949,4 +949,5 @@ export const ptPT = {
   'Chemicals: Select a property': 'Selecione uma propriedade',
   'Chemicals: Not available yet': 'Os produtos químicos ainda não estão disponíveis.',
   'Chemicals: Permissions title': 'Trabalhadores e autorizações',
+  'Chemicals: Could not load properties': 'Não foi possível carregar as propriedades.',
 };

@@ -2,7 +2,7 @@ import {Component, DestroyRef, OnInit, inject} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {ActivatedRoute, NavigationEnd, Router} from '@angular/router';
 import {Store} from '@ngrx/store';
-import {filter, take} from 'rxjs';
+import {filter} from 'rxjs';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {selectCurrentUserIsFirstUser} from 'src/app/state';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
@@ -33,33 +33,35 @@ export class ChemicalsContainerComponent implements OnInit {
   private route = inject(ActivatedRoute);
 
   properties: CommonDictionaryModel[] = [];
+  /** Mirrors the store (chemicalsState.propertyId); only the store writes it. */
   propertyId: number | null = null;
   isFirstUser = false;
   loaded = false;
+  loadFailed = false;
   titleKey = DEFAULT_TITLE_KEY;
+  private started = false;
 
   ngOnInit(): void {
     this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        this.refreshTitle();
-        this.syncUrl();
-      });
+      .subscribe(() => this.onNavigationEnd());
     this.refreshTitle();
 
     this.store.select(selectCurrentUserIsFirstUser)
-      .pipe(take(1), takeUntilDestroyed(this.destroyRef))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((isFirstUser) => {
         this.isFirstUser = !!isFirstUser;
-        if (this.isFirstUser) {
+        if (isFirstUser && !this.started) {
+          this.started = true;
           this.loadProperties();
         }
       });
   }
 
   onPropertyChange(propertyId: number | null): void {
-    this.propertyId = propertyId;
-    this.store.dispatch(chemicalsSelectProperty({payload: propertyId}));
+    if (propertyId !== this.propertyId) {
+      this.store.dispatch(chemicalsSelectProperty({payload: propertyId}));
+    }
     this.syncUrl();
   }
 
@@ -70,18 +72,52 @@ export class ChemicalsContainerComponent implements OnInit {
 
     this.propertiesService.getAllPropertiesDictionary()
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((res) => {
-        this.properties = (res && res.success && res.model) || [];
-        this.loaded = true;
-        const fromUrl = this.propertyIdFromUrl();
-        const target = [fromUrl, this.propertyId].find((id) => this.hasProperty(id))
-          ?? (this.properties.length ? this.properties[0].id : null);
-        if (target !== this.propertyId) {
-          this.onPropertyChange(target);
-        } else {
-          this.syncUrl();
-        }
+      .subscribe({
+        next: (res) => {
+          this.loaded = true;
+          if (!res || !res.success) {
+            // The host already toasts the error; show the error state, not "no properties".
+            this.loadFailed = true;
+            return;
+          }
+          this.properties = res.model || [];
+          this.onPropertyChange(this.initialPropertyId());
+        },
+        error: () => {
+          this.loaded = true;
+          this.loadFailed = true;
+        },
       });
+  }
+
+  /** The URL wins (a reload empties the store), then the remembered property, then the first one. */
+  private initialPropertyId(): number | null {
+    const fromUrl = this.propertyIdFromUrl();
+    if (this.hasProperty(fromUrl)) {
+      return fromUrl;
+    }
+    if (this.hasProperty(this.propertyId)) {
+      return this.propertyId;
+    }
+    return this.properties.length ? this.properties[0].id : null;
+  }
+
+  /**
+   * A later navigation carrying another known ?propertyId= (screen links, Back/Forward,
+   * a deeplink) is adopted; anything else gets the URL repaired. No loop: adopting
+   * makes the store equal to the URL, so the repair that follows is a no-op.
+   */
+  private onNavigationEnd(): void {
+    this.refreshTitle();
+    if (!this.isFirstUser || !this.loaded || this.loadFailed) {
+      return;
+    }
+    const fromUrl = this.propertyIdFromUrl();
+    if (this.hasProperty(fromUrl) && fromUrl !== this.propertyId) {
+      this.onPropertyChange(fromUrl);
+    } else {
+      this.syncUrl();
+    }
   }
 
   private hasProperty(id: number | null): boolean {

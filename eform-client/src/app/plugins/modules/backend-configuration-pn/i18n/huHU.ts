@@ -825,4 +825,5 @@ export const huHU = {
   'Chemicals: Select a property': 'Válasszon egy ingatlant',
   'Chemicals: Not available yet': 'A vegyszerek még nem állnak rendelkezésre.',
   'Chemicals: Permissions title': 'Munkavállalók és engedélyek',
+  'Chemicals: Could not load properties': 'A tulajdonságok nem tölthetők be.',
 };

@@ -825,4 +825,5 @@ export const ltLT = {
   'Chemicals: Select a property': 'Pasirinkite nuosavybę',
   'Chemicals: Not available yet': 'Cheminių medžiagų kol kas nėra.',
   'Chemicals: Permissions title': 'Darbuotojai ir leidimai',
+  'Chemicals: Could not load properties': 'Nepavyko įkelti ypatybių.',
 };

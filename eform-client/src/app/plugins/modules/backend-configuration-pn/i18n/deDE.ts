@@ -1042,4 +1042,5 @@ export const deDE = {
   'Chemicals: Select a property': 'Wählen Sie eine Immobilie aus',
   'Chemicals: Not available yet': 'Die Chemikalien sind noch nicht verfügbar.',
   'Chemicals: Permissions title': 'Arbeiter und Genehmigungen',
+  'Chemicals: Could not load properties': 'Die Eigenschaften konnten nicht geladen werden.',
 };
