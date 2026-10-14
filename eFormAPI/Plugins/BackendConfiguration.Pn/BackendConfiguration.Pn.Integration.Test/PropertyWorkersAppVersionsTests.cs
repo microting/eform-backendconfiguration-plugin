@@ -317,6 +317,8 @@ public class PropertyWorkersAppVersionsTests : TestBaseSetup
     [TestCase("v4.1.11", "4.1.21", true)]
     [TestCase("4.1.21+40121", "4.1.21", false)]
     [TestCase("4.1", "4.1.0", false, TestName = "A missing patch part equals .0")]
+    [TestCase("4.1.21.1", "4.1.21.2", true, TestName = "A fourth part is compared too")]
+    [TestCase("4.1.21", "4.1.21.0", false, TestName = "A missing fourth part equals .0")]
     [TestCase(null, "4.1.21", false)]
     [TestCase("garbage", "4.1.21", false)]
     [TestCase("4.1.11", null, false)]

@@ -36,8 +36,9 @@ public static class AppLatestVersions
         => TryParse(reported, out var r) && TryParse(latest, out var l) && r < l;
 
     /// <summary>
-    /// "v4.1.21", "4.1.21+40121" and "4.1.21" all parse as 4.1.21; "4.1" is padded to
-    /// 4.1.0 (System.Version would otherwise rank it below 4.1.0).
+    /// "v4.1.21", "4.1.21+40121" and "4.1.21" all parse as 4.1.21. Missing parts are
+    /// padded with 0 ("4.1" equals "4.1.0"; System.Version would otherwise rank it lower),
+    /// and a fourth part is compared too.
     /// </summary>
     private static bool TryParse(string? value, out Version version)
     {
@@ -46,7 +47,7 @@ public static class AppLatestVersions
         {
             return false;
         }
-        version = new Version(parsed.Major, parsed.Minor, Math.Max(parsed.Build, 0));
+        version = new Version(parsed.Major, parsed.Minor, Math.Max(parsed.Build, 0), Math.Max(parsed.Revision, 0));
         return true;
     }
 
