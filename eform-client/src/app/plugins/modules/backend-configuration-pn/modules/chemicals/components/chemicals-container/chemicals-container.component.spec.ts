@@ -248,10 +248,16 @@ describe('ChemicalsContainerComponent', () => {
     it('stays on the current property and puts the picker back on cancel', () => {
       const {component} = withScreen(false);
 
+      jest.useFakeTimers();
+
       component.onPropertyChange(8);
 
       expect(store.dispatch).not.toHaveBeenCalled();
       expect(component.propertyId).toBe(7);
+      // Put back after a change-detection pass, so the select re-renders the old property.
+      expect(component.pickerValue).toBe(8);
+      jest.runAllTimers();
+      jest.useRealTimers();
       expect(component.pickerValue).toBe(7);
       expect(router.navigate).not.toHaveBeenCalled();
     });
