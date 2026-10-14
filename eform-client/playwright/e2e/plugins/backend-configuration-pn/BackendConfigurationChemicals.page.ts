@@ -97,6 +97,39 @@ export class BackendConfigurationChemicalsPage {
     return this.permissionCell(flag, workerName).locator('input[type="checkbox"]');
   }
 
+  title(): Locator {
+    return this.page.locator('#chemicalsTitle');
+  }
+
+  undoButton(): Locator {
+    return this.page.locator('#chemicalPermissionsUndoBtn');
+  }
+
+  saveButton(): Locator {
+    return this.page.locator('#chemicalPermissionsSaveBtn');
+  }
+
+  copyButton(): Locator {
+    return this.page.locator('#chemicalPermissionsCopyBtn');
+  }
+
+  /** The "copy from" menu item for a property (the menu renders in the CDK overlay). */
+  copyFromItem(propertyName: string): Locator {
+    return this.page.locator('.cdk-overlay-container [id^="chemicalPermissionsCopyFrom-"]').filter({ hasText: propertyName });
+  }
+
+  pushNote(): Locator {
+    return this.page.locator('#chemicalPermissionsPushNote');
+  }
+
+  scopeNote(): Locator {
+    return this.page.locator('#chemicalPermissionsScopeNote');
+  }
+
+  async waitForWorkerRow(workerName: string): Promise<void> {
+    await this.permissionRow(workerName).waitFor({ state: 'visible', timeout: API_TIMEOUT });
+  }
+
   saveBar(): Locator {
     return this.page.locator('#chemicalPermissionsSaveBar');
   }
@@ -118,7 +151,7 @@ export class BackendConfigurationChemicalsPage {
         r.request().method() === 'PUT',
       API_TIMEOUT
     );
-    await this.page.locator('#chemicalPermissionsSaveBtn').click({ timeout: UI_TIMEOUT });
+    await this.saveButton().click({ timeout: UI_TIMEOUT });
     const response = await saved;
     expect((await response.json()).success).toBe(true);
     await this.saveBar().waitFor({ state: 'hidden', timeout: UI_TIMEOUT });

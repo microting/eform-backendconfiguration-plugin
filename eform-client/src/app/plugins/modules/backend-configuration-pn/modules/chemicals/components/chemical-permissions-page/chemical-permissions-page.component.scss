@@ -49,8 +49,8 @@ $implied-color: var(--mat-sys-primary, #00796b);
 }
 
 .flag-checkbox--implied {
-  --mat-checkbox-disabled-selected-checkmark-color: $implied-color;
-  --mat-checkbox-disabled-selected-icon-color: $implied-color;
+  --mat-checkbox-disabled-selected-checkmark-color: #{$implied-color};
+  --mat-checkbox-disabled-selected-icon-color: #{$implied-color};
 }
 
 .no-match {

@@ -31,7 +31,7 @@ async function openPermissions(page: Page, propertyName: string): Promise<Backen
   const kemi = new BackendConfigurationChemicalsPage(page);
   await kemi.gotoPermissions();
   await kemi.selectProperty(propertyName);
-  await kemi.permissionRow(workerName).waitFor({ state: 'visible', timeout: API_TIMEOUT });
+  await kemi.waitForWorkerRow(workerName);
   return kemi;
 }
 
@@ -60,7 +60,7 @@ test.describe.serial('Kemi W4 - worker permissions', () => {
     await kemi.goToPermissionsViaMenu();
 
     await expect(page).toHaveURL(/\/plugins\/backend-configuration-pn\/chemicals\/permissions/, { timeout: UI_TIMEOUT });
-    await expect(page.locator('#chemicalsTitle')).toBeVisible({ timeout: UI_TIMEOUT });
+    await expect(kemi.title()).toBeVisible({ timeout: UI_TIMEOUT });
   });
 
   test('grant View + Register, save, and see it after a reload', async ({ page }) => {
@@ -75,7 +75,7 @@ test.describe.serial('Kemi W4 - worker permissions', () => {
 
     await page.reload();
     await kemi.permissionsPage().waitFor({ state: 'visible', timeout: API_TIMEOUT });
-    await kemi.permissionRow(workerName).waitFor({ state: 'visible', timeout: API_TIMEOUT });
+    await kemi.waitForWorkerRow(workerName);
     await expect(kemi.permissionCheckbox('view', workerName)).toBeChecked({ timeout: UI_TIMEOUT });
     await expect(kemi.permissionCheckbox('register', workerName)).toBeChecked({ timeout: UI_TIMEOUT });
     await expect(kemi.permissionCheckbox('stock', workerName)).not.toBeChecked({ timeout: UI_TIMEOUT });
@@ -102,7 +102,7 @@ test.describe.serial('Kemi W4 - worker permissions', () => {
       await expect(kemi.permissionCell(flag, workerName)).not.toHaveClass(/flag-checkbox--implied/, { timeout: UI_TIMEOUT });
     }
 
-    await page.locator('#chemicalPermissionsUndoBtn').click({ timeout: UI_TIMEOUT });
+    await kemi.undoButton().click({ timeout: UI_TIMEOUT });
     await kemi.saveBar().waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
     await expect(kemi.permissionCheckbox('stock', workerName)).not.toBeChecked({ timeout: UI_TIMEOUT });
     await expect(kemi.permissionCheckbox('stock', workerName)).toBeEnabled({ timeout: UI_TIMEOUT });
@@ -113,9 +113,8 @@ test.describe.serial('Kemi W4 - worker permissions', () => {
     const kemi = await openPermissions(page, other.name);
     await expect(kemi.permissionCheckbox('view', workerName)).not.toBeChecked({ timeout: UI_TIMEOUT });
 
-    await page.locator('#chemicalPermissionsCopyBtn').click({ timeout: UI_TIMEOUT });
-    const copyItem = page.locator('.cdk-overlay-container [id^="chemicalPermissionsCopyFrom-"]').filter({ hasText: main.name });
-    await copyItem.click({ timeout: UI_TIMEOUT });
+    await kemi.copyButton().click({ timeout: UI_TIMEOUT });
+    await kemi.copyFromItem(main.name).click({ timeout: UI_TIMEOUT });
 
     await expect(kemi.permissionCheckbox('view', workerName)).toBeChecked({ timeout: API_TIMEOUT });
     await expect(kemi.permissionCheckbox('register', workerName)).toBeChecked({ timeout: UI_TIMEOUT });
@@ -143,12 +142,12 @@ test.describe.serial('Kemi W4 - worker permissions', () => {
     await kemi.discardConfirmButton().click({ timeout: UI_TIMEOUT });
     await kemi.discardConfirmButton().waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
     await expect(kemi.propertySelect()).toContainText(other.name, { timeout: UI_TIMEOUT });
-    await kemi.permissionRow(workerName).waitFor({ state: 'visible', timeout: API_TIMEOUT });
+    await kemi.waitForWorkerRow(workerName);
     await expect(kemi.saveBar()).toBeHidden({ timeout: UI_TIMEOUT });
 
     // Back on the first property (clean, so no prompt) the discarded edit is not there.
     await kemi.selectProperty(main.name);
-    await kemi.permissionRow(workerName).waitFor({ state: 'visible', timeout: API_TIMEOUT });
+    await kemi.waitForWorkerRow(workerName);
     await expect(kemi.permissionCheckbox('stock', workerName)).not.toBeChecked({ timeout: UI_TIMEOUT });
     await expect(kemi.saveBar()).toBeHidden({ timeout: UI_TIMEOUT });
   });
@@ -157,7 +156,7 @@ test.describe.serial('Kemi W4 - worker permissions', () => {
     test.setTimeout(60000);
     const kemi = await openPermissions(page, main.name);
 
-    await expect(kemi.permissionsPage().locator('#chemicalPermissionsPushNote')).toContainText('Admin eller Fjerne', { timeout: UI_TIMEOUT });
-    await expect(kemi.permissionsPage().locator('#chemicalPermissionsScopeNote')).toContainText(main.name, { timeout: UI_TIMEOUT });
+    await expect(kemi.pushNote()).toContainText('Admin eller Fjerne', { timeout: UI_TIMEOUT });
+    await expect(kemi.scopeNote()).toContainText(main.name, { timeout: UI_TIMEOUT });
   });
 });
