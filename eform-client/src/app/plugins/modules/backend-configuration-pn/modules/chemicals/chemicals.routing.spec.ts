@@ -5,6 +5,7 @@ jest.mock('./components', () => ({
 
 import {routes} from './chemicals.routing';
 import {CHEMICAL_SCREENS} from './chemicals-screens';
+import {chemicalUnsavedChangesGuard} from './chemicals-unsaved-changes';
 
 describe('ChemicalsRouting', () => {
   it('hangs every screen under the container', () => {
@@ -23,6 +24,12 @@ describe('ChemicalsRouting', () => {
     const children = (routes[0].children ?? []).filter((r) => !r.redirectTo);
 
     expect(children.map((r) => r.data?.['titleKey'])).toEqual(CHEMICAL_SCREENS.map((s) => s.titleKey));
+  });
+
+  it('guards every screen against dropping unsaved changes (I-3)', () => {
+    const children = (routes[0].children ?? []).filter((r) => !r.redirectTo);
+
+    expect(children.every((r) => (r.canDeactivate ?? []).includes(chemicalUnsavedChangesGuard))).toBe(true);
   });
 
   it('redirects the empty path to the first screen', () => {

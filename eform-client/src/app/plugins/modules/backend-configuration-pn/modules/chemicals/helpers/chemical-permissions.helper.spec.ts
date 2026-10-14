@@ -35,11 +35,22 @@ describe('chemical permissions helper', () => {
     expect(toggleFlag(admin, 'register')).toBe(admin);
   });
 
-  it('removing Admin restores the flags that were set on their own', () => {
+  it('unticking Admin keeps the flags it implied ticked and unlocked (app owner ruling I4)', () => {
     const withAdmin = toggleFlag(flags({view: true}), 'admin');
     const withoutAdmin = toggleFlag(withAdmin, 'admin');
 
-    expect(effectiveFlags(withoutAdmin)).toEqual(flags({view: true}));
+    expect(withoutAdmin).toEqual({view: true, register: true, remove: true, stock: true, manageLocations: true, admin: false});
+    expect(isImpliedFlag(withoutAdmin, 'stock')).toBe(false);
+    expect(toggleFlag(withoutAdmin, 'stock').stock).toBe(false);
+  });
+
+  it('unticking Admin on an Admin-only worker never locks them out (the app case)', () => {
+    const rows = buildPermissionRows([{workerId: 1, workerName: 'A', flags: flags({admin: true})}]);
+    rows[0].current = toggleFlag(rows[0].current, 'admin');
+
+    expect(changedPermissions(rows)).toEqual([
+      {workerId: 1, flags: {view: true, register: true, remove: true, stock: true, manageLocations: true, admin: false}},
+    ]);
   });
 
   it('builds rows sorted by name with current equal to stored', () => {

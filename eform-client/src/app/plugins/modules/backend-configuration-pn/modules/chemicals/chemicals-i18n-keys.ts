@@ -49,4 +49,13 @@ export const CHEMICAL_I18N_KEYS: string[] = [
   'Chemicals: No workers',
   'Chemicals: Could not load permissions',
   'Chemicals: Could not save permissions',
+  // Task 4 fix round 1 - unsaved-changes confirm, copy feedback, search
+  'Chemicals: Discard unsaved changes?',
+  'Chemicals: Changed workers',
+  'Chemicals: Discard changes',
+  'Chemicals: Keep editing',
+  'Chemicals: Copied permissions',
+  'Chemicals: Nothing to copy',
+  'Chemicals: Could not copy permissions',
+  'Chemicals: No workers match',
 ];

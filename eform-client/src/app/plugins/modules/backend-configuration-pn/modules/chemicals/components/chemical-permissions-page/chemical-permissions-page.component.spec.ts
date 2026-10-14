@@ -1,6 +1,11 @@
-import {DestroyRef, Injector, runInInjectionContext} from '@angular/core';
+import {Overlay} from '@angular/cdk/overlay';
+import {DestroyRef, EventEmitter, Injector, runInInjectionContext} from '@angular/core';
+import {MatDialog} from '@angular/material/dialog';
 import {Store} from '@ngrx/store';
+import {TranslateService} from '@ngx-translate/core';
+import {ToastrService} from 'ngx-toastr';
 import {BehaviorSubject, of, Subject, throwError} from 'rxjs';
+import {DeleteModalComponent} from 'src/app/common/modules/eform-shared/components';
 import {BackendConfigurationPnChemicalsService, BackendConfigurationPnPropertiesService} from '../../../../services';
 import {NO_CHEMICAL_FLAGS} from '../../helpers';
 import {ChemicalPermissionsPageComponent} from './chemical-permissions-page.component';
@@ -10,6 +15,18 @@ describe('ChemicalPermissionsPageComponent', () => {
   let property$: BehaviorSubject<number | null>;
   let chemicals: {getPermissions: jest.Mock; savePermissions: jest.Mock};
   let component: ChemicalPermissionsPageComponent;
+  let dialogOpen: jest.Mock;
+  let toastr: {success: jest.Mock; info: jest.Mock; error: jest.Mock};
+  let translateInstant: jest.Mock;
+
+  /** Makes the next dialog a confirm whose Delete button is `confirmed` and whose closing is `closed`. */
+  function mockConfirmDialog() {
+    const confirmed = new EventEmitter<unknown>();
+    const closed = new Subject<unknown>();
+    const ref = {componentInstance: {delete: confirmed}, close: jest.fn(), afterClosed: () => closed};
+    dialogOpen.mockReturnValue(ref);
+    return {confirmed, closed, ref};
+  }
 
   function build(initialPropertyId: number | null = 3): ChemicalPermissionsPageComponent {
     property$ = new BehaviorSubject<number | null>(initialPropertyId);
@@ -21,6 +38,10 @@ describe('ChemicalPermissionsPageComponent', () => {
           getAllPropertiesDictionary: jest.fn().mockReturnValue(of({success: true, model: [{id: 3, name: 'Hovedgården'}, {id: 4, name: 'Engvej 12'}]})),
         }},
         {provide: DestroyRef, useValue: {onDestroy: jest.fn()}},
+        {provide: MatDialog, useValue: {open: dialogOpen}},
+        {provide: Overlay, useValue: {scrollStrategies: {reposition: () => ({})}}},
+        {provide: TranslateService, useValue: {instant: translateInstant}},
+        {provide: ToastrService, useValue: toastr},
       ],
     });
     const page = runInInjectionContext(injector, () => new ChemicalPermissionsPageComponent());
@@ -29,6 +50,9 @@ describe('ChemicalPermissionsPageComponent', () => {
   }
 
   beforeEach(() => {
+    dialogOpen = jest.fn();
+    translateInstant = jest.fn().mockImplementation((key: string) => key);
+    toastr = {success: jest.fn(), info: jest.fn(), error: jest.fn()};
     chemicals = {
       getPermissions: jest.fn().mockImplementation((propertyId: number) => of({
         success: true,
@@ -94,7 +118,7 @@ describe('ChemicalPermissionsPageComponent', () => {
     expect(component.visibleRows.map((r) => r.workerId)).toEqual([2]);
   });
 
-  it('locks the implied flags of an Admin row and unlocks them when Admin is removed', () => {
+  it('locks the implied flags of an Admin row; unticking Admin keeps them ticked but unlocked (I4)', () => {
     component.toggle(component.rows[0], 'admin');
     expect(component.isImplied(component.rows[0], 'stock')).toBe(true);
     expect(component.isChecked(component.rows[0], 'stock')).toBe(true);
@@ -104,8 +128,121 @@ describe('ChemicalPermissionsPageComponent', () => {
 
     component.toggle(component.rows[0], 'admin');
     expect(component.isImplied(component.rows[0], 'stock')).toBe(false);
+    expect(component.isChecked(component.rows[0], 'stock')).toBe(true);
+    expect(component.changeCount).toBe(1);
+
+    component.toggle(component.rows[0], 'stock');
     expect(component.isChecked(component.rows[0], 'stock')).toBe(false);
-    expect(component.changeCount).toBe(0);
+  });
+
+  it('tracks rows by worker, so a toggle does not rebuild the row (I-2)', () => {
+    expect(component.trackByWorker(0, component.rows[1])).toBe(2);
+  });
+
+  it('labels each checkbox with the worker, the flag and its implied/unsaved state for screen readers', () => {
+    expect(component.checkboxLabel(component.rows[0], 'view')).toBe('Jens Hansen: Chemicals: Flag view');
+
+    component.toggle(component.rows[0], 'admin');
+
+    expect(component.checkboxLabel(component.rows[0], 'stock'))
+      .toBe('Jens Hansen: Chemicals: Flag stock – Chemicals: Implied by Admin – Chemicals: Not saved');
+    expect(component.checkboxLabel(component.rows[0], 'admin')).toBe('Jens Hansen: Chemicals: Flag admin – Chemicals: Not saved');
+  });
+
+  describe('unsaved edits are never dropped silently (I-3)', () => {
+    it('lets the user leave at once when nothing is unsaved', () => {
+      const answers: boolean[] = [];
+
+      component.confirmDiscardChanges().subscribe((ok) => answers.push(ok));
+
+      expect(answers).toEqual([true]);
+      expect(dialogOpen).not.toHaveBeenCalled();
+    });
+
+    it('asks with the platform confirm dialog and lets go after "Kassér ændringer"', () => {
+      const {confirmed, ref} = mockConfirmDialog();
+      component.toggle(component.rows[0], 'stock');
+      const answers: boolean[] = [];
+
+      component.confirmDiscardChanges().subscribe((ok) => answers.push(ok));
+      expect(dialogOpen).toHaveBeenCalledWith(DeleteModalComponent, expect.objectContaining({
+        data: expect.objectContaining({settings: expect.objectContaining({
+          headerText: 'Chemicals: Discard unsaved changes?',
+          deleteButtonText: 'Chemicals: Discard changes',
+          cancelButtonText: 'Chemicals: Keep editing',
+          deleteButtonId: 'chemicalPermissionsDiscardConfirm',
+          cancelButtonId: 'chemicalPermissionsDiscardConfirmCancel',
+        })}),
+      }));
+      confirmed.emit({});
+
+      expect(answers).toEqual([true]);
+      expect(ref.close).toHaveBeenCalled();
+    });
+
+    it('stays when the dialog is cancelled, keeping the edits', () => {
+      const {closed} = mockConfirmDialog();
+      component.toggle(component.rows[0], 'stock');
+      const answers: boolean[] = [];
+
+      component.confirmDiscardChanges().subscribe((ok) => answers.push(ok));
+      closed.next(false);
+
+      expect(answers).toEqual([false]);
+      expect(component.changeCount).toBe(1);
+    });
+
+    it('asks the browser to confirm a reload or tab close while edits are unsaved', () => {
+      const clean = {preventDefault: jest.fn(), returnValue: undefined as unknown};
+      component.onBeforeUnload(clean as unknown as BeforeUnloadEvent);
+      expect(clean.preventDefault).not.toHaveBeenCalled();
+
+      component.toggle(component.rows[0], 'stock');
+      const dirty = {preventDefault: jest.fn(), returnValue: undefined as unknown};
+      component.onBeforeUnload(dirty as unknown as BeforeUnloadEvent);
+
+      expect(dirty.preventDefault).toHaveBeenCalled();
+      expect(dirty.returnValue).toBe('');
+    });
+  });
+
+  describe('copy feedback (m-4)', () => {
+    it('says how many workers changed and that nothing is saved yet', () => {
+      component.copyFrom(4);
+
+      expect(toastr.success).toHaveBeenCalledWith('Chemicals: Copied permissions');
+      expect(translateInstant).toHaveBeenCalledWith('Chemicals: Copied permissions', {property: 'Engvej 12', count: 1});
+    });
+
+    it('says so when the other property has nothing different to copy', () => {
+      chemicals.getPermissions.mockReturnValue(of({success: true, model: [{workerId: 99, workerName: 'X', flags: flags({admin: true})}]}));
+
+      component.copyFrom(4);
+
+      expect(toastr.info).toHaveBeenCalledWith('Chemicals: Nothing to copy');
+      expect(translateInstant).toHaveBeenCalledWith('Chemicals: Nothing to copy', {property: 'Engvej 12'});
+      expect(component.changeCount).toBe(0);
+    });
+
+    it('reports a failed request and changes nothing', () => {
+      chemicals.getPermissions.mockReturnValue(throwError(() => new Error('offline')));
+
+      component.copyFrom(4);
+
+      expect(toastr.error).toHaveBeenCalledWith('Chemicals: Could not copy permissions');
+      expect(component.changeCount).toBe(0);
+      expect(component.copying).toBe(false);
+    });
+
+    it('leaves a refused copy to the host toast (it shows the server message)', () => {
+      chemicals.getPermissions.mockReturnValue(of({success: false, message: 'Nope'}));
+
+      component.copyFrom(4);
+
+      expect(toastr.success).not.toHaveBeenCalled();
+      expect(toastr.error).not.toHaveBeenCalled();
+      expect(component.changeCount).toBe(0);
+    });
   });
 
   describe('without a property (M-9: the tenant has none, the outlet still renders)', () => {

@@ -212,6 +212,68 @@ describe('ChemicalsContainerComponent', () => {
     expect(store.dispatch).not.toHaveBeenCalled();
   });
 
+  describe('a property switch with unsaved edits on the screen (I-3)', () => {
+    function withScreen(answer: boolean) {
+      const component = build([{id: 7, name: 'Hovedgården'}, {id: 8, name: 'Engvej 12'}]);
+      const screen = {confirmDiscardChanges: jest.fn().mockReturnValue(of(answer))};
+      component.onScreenActivate(screen);
+      store.dispatch.mockClear();
+      router.navigate.mockClear();
+      return {component, screen};
+    }
+
+    it('switches after the screen agreed', () => {
+      const {component, screen} = withScreen(true);
+
+      component.onPropertyChange(8);
+
+      expect(screen.confirmDiscardChanges).toHaveBeenCalledTimes(1);
+      expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectProperty({payload: 8}));
+      expect(component.pickerValue).toBe(8);
+    });
+
+    it('stays on the current property and puts the picker back on cancel', () => {
+      const {component} = withScreen(false);
+
+      component.onPropertyChange(8);
+
+      expect(store.dispatch).not.toHaveBeenCalled();
+      expect(component.propertyId).toBe(7);
+      expect(component.pickerValue).toBe(7);
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
+
+    it('asks before adopting another ?propertyId= and repairs the URL on cancel', () => {
+      const {component, screen} = withScreen(false);
+
+      queryParams = {propertyId: '8'};
+      routerEvents$.next(new NavigationEnd(4, '/a', '/a'));
+
+      expect(screen.confirmDiscardChanges).toHaveBeenCalledTimes(1);
+      expect(store.dispatch).not.toHaveBeenCalled();
+      expect(component.propertyId).toBe(7);
+      expect(router.navigate).toHaveBeenCalledWith([], urlSync(7));
+    });
+
+    it('does not ask when the picked property is the current one', () => {
+      const {component, screen} = withScreen(false);
+
+      component.onPropertyChange(7);
+
+      expect(screen.confirmDiscardChanges).not.toHaveBeenCalled();
+    });
+
+    it('stops asking a screen that was deactivated', () => {
+      const {component, screen} = withScreen(false);
+      component.onScreenDeactivate();
+
+      component.onPropertyChange(8);
+
+      expect(screen.confirmDiscardChanges).not.toHaveBeenCalled();
+      expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectProperty({payload: 8}));
+    });
+  });
+
   it('ignores a properties answer that arrives after the first-user flag was withdrawn (R-1)', () => {
     const pending = new Subject<unknown>();
     const component = build([], pending);
