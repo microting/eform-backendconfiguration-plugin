@@ -1,5 +1,6 @@
 export * from './adhoc';
 export * from './area-rules';
+export * from './chemicals';
 export * from './documents';
 export * from './files';
 export * from './properties';

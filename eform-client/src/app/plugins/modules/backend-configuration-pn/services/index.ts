@@ -20,3 +20,4 @@ export * from './backend-configuration-pn-compliance-report.service';
 export * from './backend-configuration-pn-worker-tags.service';
 export * from './backend-configuration-pn-inbox.service';
 export * from './backend-configuration-pn-tail-bite.service';
+export * from './backend-configuration-pn-chemicals.service';

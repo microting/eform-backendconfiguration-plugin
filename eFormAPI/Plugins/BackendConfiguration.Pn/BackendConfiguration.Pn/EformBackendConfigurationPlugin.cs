@@ -98,6 +98,7 @@ using Services.WorkorderCaseGroupIdBackfillService;
 using Services.CalendarConfigurationBackfillService;
 using Services.AreaRulePlanningTagPurgeService;
 using Services.SecurityGroupBackfillService;
+using Services.PluginMenuSyncService;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -2074,12 +2075,14 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                 // no claim gating here - the parent route's plugin-access check
                 // is the whole boundary.
                 //
-                // KNOWN PLATFORM LIMITATION: the plugin's menu seeding only
-                // inserts MenuItem rows on FIRST install, so this entry does NOT
-                // appear on an already-installed database. It shows up only after
-                // the plugin is disabled and re-enabled (Admin -> Plugins) and the
-                // backend restarted. Pre-existing core bug, not fixed here -
-                // recorded so the next reader is not confused.
+                // KNOWN PLATFORM LIMITATION: the host inserts MenuItem rows on
+                // FIRST install only, so this entry did not appear on databases
+                // installed before it. The host did add its template at the next
+                // boot, which is why PluginMenuSyncService (keyed on templates)
+                // leaves it alone: add it from Advanced -> Navigation menu.
+                // Do NOT disable and re-enable the plugin for it - disabling keeps
+                // the MenuItem rows and enabling loads the whole menu again, so
+                // every entry of this plugin would appear twice.
                 Name = "Compliance",
                 E2EId = "backend-configuration-pn-compliance-report",
                 Link = "/plugins/backend-configuration-pn/compliance-report",
@@ -2169,21 +2172,68 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                     E2EId = "backend-configuration-pn-tail-bite",
                     DefaultLink = "/plugins/backend-configuration-pn/tail-bite",
                     Permissions = [],
-                    Translations = TailBiteMenuTranslations()
+                    Translations = MenuTranslations("Tail biting", "Schwanzbeißen", "Halebid", "Кусання хвостів")
                 },
-                Translations = TailBiteMenuTranslations()
+                Translations = MenuTranslations("Tail biting", "Schwanzbeißen", "Halebid", "Кусання хвостів")
+            },
+            new()
+            {
+                // flutter-chemistry web admin (spec §11, mockup web-admin.html): the Kemi group. Each screen adds
+                // its child in the release that ships the screen, at its mockup position (Beholdning 0,
+                // Lokationer 1, Rettigheder 2, Indstillinger 3, Historik 4), so no release shows a dead link.
+                // The children carry no permissions: every plugin user sees them, and ChemicalsController's
+                // policy and first-user gate are the boundary. Existing tenants get the group, and every child
+                // added later, from PluginMenuSyncService at startup (SeedDatabase).
+                Name = "Dropdown",
+                E2EId = "backend-configuration-pn-chemicals",
+                Link = "",
+                Type = MenuItemTypeEnum.Dropdown,
+                Position = 15,
+                Translations = MenuTranslations("Chemicals", "Chemikalien", "Kemi", "Хімікати"),
+                ChildItems =
+                [
+                    ChemicalsMenuChild("permissions", 2,
+                        MenuTranslations("Permissions", "Berechtigungen", "Rettigheder", "Дозволи"))
+                ]
             }
         };
 
         return pluginMenu;
     }
 
-    private static List<PluginMenuTranslationModel> TailBiteMenuTranslations() =>
+    /// <summary>One Kemi screen: <c>/plugins/backend-configuration-pn/chemicals/{path}</c>.</summary>
+    private static PluginMenuItemModel ChemicalsMenuChild(string path, int position,
+        List<PluginMenuTranslationModel> translations)
+    {
+        var e2eId = $"backend-configuration-pn-chemicals-{path}";
+        var link = $"/plugins/backend-configuration-pn/chemicals/{path}";
+        var name = translations.Single(t => t.LocaleName == LocaleNames.English).Name;
+        return new PluginMenuItemModel
+        {
+            Name = name,
+            E2EId = e2eId,
+            Link = link,
+            Type = MenuItemTypeEnum.Link,
+            Position = position,
+            MenuTemplate = new PluginMenuTemplateModel
+            {
+                Name = name,
+                E2EId = e2eId,
+                DefaultLink = link,
+                Permissions = [],
+                Translations = [.. translations]
+            },
+            Translations = [.. translations]
+        };
+    }
+
+    private static List<PluginMenuTranslationModel> MenuTranslations(string english, string german, string danish,
+        string ukrainian) =>
     [
-        new() { LocaleName = LocaleNames.English, Name = "Tail biting", Language = LanguageNames.English },
-        new() { LocaleName = LocaleNames.German, Name = "Schwanzbeißen", Language = LanguageNames.German },
-        new() { LocaleName = LocaleNames.Danish, Name = "Halebid", Language = LanguageNames.Danish },
-        new() { LocaleName = LocaleNames.Ukrainian, Name = "Кусання хвостів", Language = LanguageNames.Ukrainian }
+        new() { LocaleName = LocaleNames.English, Name = english, Language = LanguageNames.English },
+        new() { LocaleName = LocaleNames.German, Name = german, Language = LanguageNames.German },
+        new() { LocaleName = LocaleNames.Danish, Name = danish, Language = LanguageNames.Danish },
+        new() { LocaleName = LocaleNames.Ukrainian, Name = ukrainian, Language = LanguageNames.Ukrainian }
     ];
 
     public MenuModel HeaderMenu(IServiceProvider serviceProvider)
@@ -2320,6 +2370,24 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             }
         }
 
+        // Menu entries added after a tenant installed the plugin (the Kemi group and its
+        // children) reach that tenant's menu here; the host seeds MenuItems on install only.
+        // Runs before the host's startup menu pass. Wrapped: a menu sync failure must not
+        // stop the plugin from loading.
+        try
+        {
+            new PluginMenuSyncService(baseDb).Run(PluginId, GetNavigationMenu(null));
+        }
+        catch (Exception e)
+        {
+            // Not retried: later in this boot the host adds the missing templates without
+            // their menu items, and the next sync reads a template as "offered" and leaves it.
+            const string consequence = "PluginMenuSync failed at startup: menu entries it would have added "
+                + "(the Kemi group) may stay hidden on this tenant and will not be retried. "
+                + "An admin can add them from Advanced -> Navigation menu.";
+            Console.WriteLine($"{consequence} {e}");
+            SentrySdk.CaptureException(new InvalidOperationException(consequence, e));
+        }
     }
 
     public PluginPermissionsManager GetPermissionsManager(string connectionString)

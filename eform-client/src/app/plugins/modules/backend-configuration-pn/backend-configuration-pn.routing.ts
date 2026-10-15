@@ -230,6 +230,20 @@ export const routes: Routes = [
           ),
       },
       {
+        // flutter-chemistry Kemi web screens W1-W6 (Plan E). AuthGuard only, the
+        // same "open to any logged-in plugin user" marker as adhoc-tasks: the
+        // root route enforces backend_configuration_plugin_access and the Kemi
+        // REST controllers enforce the same policy plus the first-user gate
+        // (until GA). Web users are eForm web admins; worker chemical flags do
+        // not apply to them (spec section 8).
+        path: 'chemicals',
+        canActivate: [AuthGuard],
+        loadChildren: () =>
+          import('./modules/chemicals/chemicals.module').then(
+            (m) => m.ChemicalsModule
+          ),
+      },
+      {
         // Google OAuth popup landing route. The backend's
         // GoogleDriveController.OAuthFinish redirects here with either
         // ?gdrive_success=true or ?gdrive_err=<reason>. The component

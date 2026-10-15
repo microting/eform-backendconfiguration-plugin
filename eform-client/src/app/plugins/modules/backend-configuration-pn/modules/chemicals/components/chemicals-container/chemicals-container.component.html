@@ -1,0 +1,38 @@
+<ng-container *ngIf="isFirstUser; else notAvailable">
+  <mat-card class="chemicals-header eform-sub-header d-flex flex-column gap-12 mb-3 p-3">
+    <h2 id="chemicalsTitle" class="chemicals-title">{{ titleKey | translate }}</h2>
+    <mat-form-field class="chemicals-property-picker">
+      <mat-label>{{ 'Property' | translate }}</mat-label>
+      <mtx-select
+        id="chemicalsPropertySelect"
+        [items]="properties"
+        bindLabel="name"
+        bindValue="id"
+        [clearable]="false"
+        [placeholder]="'Chemicals: Select a property' | translate"
+        [ngModel]="pickerValue"
+        [disabled]="screenBusy"
+        (ngModelChange)="onPropertyChange($event)"
+      ></mtx-select>
+    </mat-form-field>
+  </mat-card>
+
+  <div *ngIf="loadFailed" class="chemicals-empty" id="chemicalsLoadFailed">
+    {{ 'Chemicals: Could not load properties' | translate }}
+  </div>
+  <div *ngIf="loaded && !loadFailed && !properties.length" class="chemicals-empty" id="chemicalsNoProperties">
+    {{ 'Chemicals: No properties' | translate }}
+  </div>
+  <router-outlet
+    *ngIf="!loadFailed"
+    (activate)="onScreenActivate($event)"
+    (deactivate)="onScreenDeactivate()"
+  ></router-outlet>
+</ng-container>
+
+<ng-template #notAvailable>
+  <mat-card class="mb-3 p-3">
+    <h2 class="chemicals-title">{{ 'Chemicals: Title' | translate }}</h2>
+    <div class="chemicals-empty" id="chemicalsNotAvailable">{{ 'Chemicals: Not available yet' | translate }}</div>
+  </mat-card>
+</ng-template>

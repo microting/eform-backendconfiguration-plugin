@@ -151,6 +151,28 @@ describe('BackendConfigurationPnRouting', () => {
     });
   });
 
+  describe('chemicals route', () => {
+    // Kemi web screens W1-W6 (flutter-chemistry Plan E). Open to every plugin
+    // user like adhoc-tasks: the root route enforces
+    // backend_configuration_plugin_access and ChemicalsController enforces the
+    // same policy server-side (plus the first-user gate until GA).
+    it('is a DIRECT child of the plugin root route', () => {
+      const directChildren = findRoute(routes, '').children ?? [];
+      const route = directChildren.filter((r) => r.path === 'chemicals');
+
+      expect(route.length).toBe(1);
+      expect(route[0].loadChildren).toBeDefined();
+    });
+
+    it('is guarded by AuthGuard only', () => {
+      expect(findRoute(routes, 'chemicals').canActivate).toEqual([AuthGuard]);
+    });
+
+    it('declares no requiredPermission', () => {
+      expect(findRoute(routes, 'chemicals').data?.['requiredPermission']).toBeUndefined();
+    });
+  });
+
   it('keeps the plugin-wide access gate on the root route', () => {
     // Out of scope for 2026-08-24: opening the parent would change access to
     // every page in the plugin, not just ad-hoc tasks.

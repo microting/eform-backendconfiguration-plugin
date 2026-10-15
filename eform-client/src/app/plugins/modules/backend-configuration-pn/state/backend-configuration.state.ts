@@ -4,6 +4,7 @@ import {
   DocumentsState,
   FilesState,
   CalendarState,
+  ChemicalsState,
   PropertiesState,
   PropertyWorkersState,
   ReportStateV1,
@@ -21,6 +22,7 @@ export interface BackendConfigurationState {
   documentsState: DocumentsState,
   filesState: FilesState;
   calendarState: CalendarState;
+  chemicalsState: ChemicalsState;
   propertiesState: PropertiesState;
   propertyWorkersState: PropertyWorkersState
   reportsV1State: ReportStateV1;

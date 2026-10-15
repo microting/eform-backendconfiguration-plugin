@@ -63,15 +63,15 @@ public class ChemicalsController(
 
     private const string BodyRequired = "A request body is required.";
 
-    private const string ReadingChemicals = "ErrorWhileReadingChemicals";
-    private const string SearchingRegister = "ErrorWhileSearchingChemicalRegister";
-    private const string SavingPlacement = "ErrorWhileSavingChemicalPlacement";
-    private const string SavingStock = "ErrorWhileSavingChemicalStock";
-    private const string SavingLocation = "ErrorWhileSavingChemicalLocation";
-    private const string ReadingPermissions = "ErrorWhileReadingChemicalPermissions";
-    private const string SavingPermissions = "ErrorWhileSavingChemicalPermissions";
-    private const string ReadingSettings = "ErrorWhileReadingChemicalSettings";
-    private const string SavingSettings = "ErrorWhileSavingChemicalSettings";
+    private const string ReadingChemicals = ChemicalLocalizationKeys.ErrorWhileReadingChemicals;
+    private const string SearchingRegister = ChemicalLocalizationKeys.ErrorWhileSearchingChemicalRegister;
+    private const string SavingPlacement = ChemicalLocalizationKeys.ErrorWhileSavingChemicalPlacement;
+    private const string SavingStock = ChemicalLocalizationKeys.ErrorWhileSavingChemicalStock;
+    private const string SavingLocation = ChemicalLocalizationKeys.ErrorWhileSavingChemicalLocation;
+    private const string ReadingPermissions = ChemicalLocalizationKeys.ErrorWhileReadingChemicalPermissions;
+    private const string SavingPermissions = ChemicalLocalizationKeys.ErrorWhileSavingChemicalPermissions;
+    private const string ReadingSettings = ChemicalLocalizationKeys.ErrorWhileReadingChemicalSettings;
+    private const string SavingSettings = ChemicalLocalizationKeys.ErrorWhileSavingChemicalSettings;
 
     private ChemicalCaller Caller => ChemicalCaller.Web(userService.UserId);
 
