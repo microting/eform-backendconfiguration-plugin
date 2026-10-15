@@ -866,7 +866,7 @@ export const bgBG = {
   'Chemicals: Settings title': 'Настройки за фермата или недвижимия имот - Химикали',
   'Chemicals: Stock management': 'Управление на запасите',
   'Chemicals: Enabled': 'Активирано',
-  'Chemicals: Disabled': 'За хора с увреждания',
+  'Chemicals: Disabled': 'Деактивирано',
   'Chemicals: Stock management hint': 'Служителите с разрешение за достъп до склад могат да запишат получени, консумирани и коригирани количества в литри или килограми. Ако е изключено, историята се запазва, но не се показва.',
   'Chemicals: Weekly digest': 'Седмичен дайджест по имейл',
   'Chemicals: Weekly digest hint': 'Изпраща се в понеделник в 07:00, само когато има нещо за правене.',

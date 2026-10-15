@@ -146,7 +146,12 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
             return;
           }
           if (res && res.success) {
+            // A rejected draft the user has not resolved stays (with its error); only the saved part is now clean.
+            const draft = this.recipientInput;
+            const invalid = this.invalidRecipients;
             this.apply(res.model.stockEnabled, res.model.digestRecipients);
+            this.recipientInput = draft;
+            this.invalidRecipients = invalid;
             this.loadPreview(propertyId);
           } else {
             // The host toasts the message too; the edits stay for a retry.

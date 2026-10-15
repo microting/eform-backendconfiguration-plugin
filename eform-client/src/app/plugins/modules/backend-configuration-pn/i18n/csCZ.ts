@@ -875,7 +875,7 @@ export const csCZ = {
   'Chemicals: Remove recipient': 'Odebrat příjemce',
   'Chemicals: Invalid e-mail': 'Neplatná e-mailová adresa: {{value}}',
   'Chemicals: When we warn': 'Když varujeme',
-  'Chemicals: Fixed for all customers': 'Opraveno pro všechny zákazníky',
+  'Chemicals: Fixed for all customers': 'Pevné pro všechny zákazníky',
   'Chemicals: Event': 'Událost',
   'Chemicals: Push': 'TAM',
   'Chemicals: Weekly e-mail': 'Týdenní e-mail',

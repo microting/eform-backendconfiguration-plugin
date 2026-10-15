@@ -875,7 +875,7 @@ export const skSK = {
   'Chemicals: Remove recipient': 'Odstrániť príjemcu',
   'Chemicals: Invalid e-mail': 'Neplatná e-mailová adresa: {{value}}',
   'Chemicals: When we warn': 'Keď varujeme',
-  'Chemicals: Fixed for all customers': 'Opravené pre všetkých zákazníkov',
+  'Chemicals: Fixed for all customers': 'Pevné pre všetkých zákazníkov',
   'Chemicals: Event': 'Udalosť',
   'Chemicals: Push': 'TAM',
   'Chemicals: Weekly e-mail': 'Týždenný e-mail',

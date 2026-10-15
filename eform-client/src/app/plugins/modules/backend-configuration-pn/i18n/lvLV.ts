@@ -866,7 +866,7 @@ export const lvLV = {
   'Chemicals: Settings title': 'Lauksaimniecības vai nekustamā īpašuma iestatījumi — ķīmiskās vielas',
   'Chemicals: Stock management': 'Krājumu pārvaldība',
   'Chemicals: Enabled': 'Iespējots',
-  'Chemicals: Disabled': 'Invalīdi',
+  'Chemicals: Disabled': 'Atspējots',
   'Chemicals: Stock management hint': 'Darbinieki ar atļauju “Krājumi” var reģistrēt saņemtos, patērētos un koriģētos krājumus litros vai kilogramos. Ja šī atļauja ir izslēgta, vēsture tiek saglabāta, bet netiek rādīta.',
   'Chemicals: Weekly digest': 'Iknedēļas apkopojums pa e-pastu',
   'Chemicals: Weekly digest hint': 'Sūtīts pirmdienās plkst. 07:00, tikai tad, ja ir kaut kas darāms.',

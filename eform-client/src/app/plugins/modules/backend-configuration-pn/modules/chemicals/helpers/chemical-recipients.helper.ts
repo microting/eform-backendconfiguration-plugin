@@ -12,6 +12,9 @@ const EMAIL = new RegExp(`^${PART}(\\.${PART})*@${PART}(\\.${PART})+$`);
  */
 const NAMED_ADDRESS = /("[^"]*"|[^,;<>"]*)\s*<([^<>]*)>/g;
 
+/** A whole token that looks like an address (not a bare @ or @handle in a display name). */
+const PLAIN_ADDRESS = /^[^\s@]+@[^\s@]+$/;
+
 /** A digest recipient as stored (Plan A: lower-case, comma-separated). null = not an e-mail address. */
 export function normalizeRecipient(text: string): string | null {
   const value = (text ?? '').trim().toLowerCase();
@@ -23,7 +26,7 @@ export function addRecipients(current: string[], input: string): {recipients: st
   const recipients = [...current];
   const invalid: string[] = [];
   const unwrapped = (input ?? '').replace(NAMED_ADDRESS, (_match, name: string, address: string) => {
-    const swallowed = name.startsWith('"') ? [] : name.split(/\s+/).filter((token) => token.includes('@'));
+    const swallowed = name.startsWith('"') ? [] : name.split(/\s+/).filter((token) => PLAIN_ADDRESS.test(token));
     return ` ${swallowed.join(' ')} ${address} `;
   });
   for (const part of unwrapped.split(/[\s,;]+/).filter((p) => p.length)) {
