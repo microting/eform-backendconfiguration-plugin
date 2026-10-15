@@ -41,7 +41,7 @@ public static class ChemicalLocalizationKeys
     public const string ErrorWhileReadingChemicalSettings = "ErrorWhileReadingChemicalSettings";
     public const string ErrorWhileSavingChemicalSettings = "ErrorWhileSavingChemicalSettings";
 
-    // ChemicalDigestController (Plan E Task 7).
+    // ChemicalDigestController.
     public const string ErrorWhileReadingChemicalDigest = "ErrorWhileReadingChemicalDigest";
 
     public static readonly string[] ControllerErrors =

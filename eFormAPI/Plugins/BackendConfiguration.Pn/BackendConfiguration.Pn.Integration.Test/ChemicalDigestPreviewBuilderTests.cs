@@ -125,17 +125,6 @@ public class ChemicalDigestPreviewBuilderTests : ChemicalTestBase
         Assert.That(digest.HasActionItems, Is.False, "new registrations are informational only");
     }
 
-    private async Task<ChemicalPlacement> CreatePlacementAtAsync(int locationId, int chemicalId, DateTime registeredAt)
-    {
-        var placement = new ChemicalPlacement
-        {
-            LocationId = locationId, ChemicalId = chemicalId, PlacementNote = string.Empty,
-            RegisteredByUserId = TestUserId, RegisteredAt = registeredAt, CreatedByUserId = TestUserId, UpdatedByUserId = TestUserId,
-        };
-        await placement.Create(BackendConfigurationPnDbContext!);
-        return placement;
-    }
-
     // Registered long before the fixed Wednesday below, whatever the real date: never a "new registration" there.
     private static readonly DateTime LongAgo = new(2026, 1, 5, 8, 0, 0, DateTimeKind.Utc);
 
@@ -154,9 +143,9 @@ public class ChemicalDigestPreviewBuilderTests : ChemicalTestBase
             useAndPossessionDeadline: new DateTime(2027, 5, 2, 0, 0, 0, DateTimeKind.Utc));
         var passesOnMonday = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Sidste dag", "1-3",
             salesDeadline: new DateTime(2026, 11, 2, 0, 0, 0, DateTimeKind.Utc));
-        await CreatePlacementAtAsync(lade.Id, passesBeforeMonday.ChemicalId, LongAgo);
-        await CreatePlacementAtAsync(lade.Id, sixMonthsOnMonday.ChemicalId, LongAgo);
-        await CreatePlacementAtAsync(lade.Id, passesOnMonday.ChemicalId, LongAgo);
+        await CreatePlacementAsync(lade.Id, passesBeforeMonday.ChemicalId, registeredAt: LongAgo);
+        await CreatePlacementAsync(lade.Id, sixMonthsOnMonday.ChemicalId, registeredAt: LongAgo);
+        await CreatePlacementAsync(lade.Id, passesOnMonday.ChemicalId, registeredAt: LongAgo);
 
         var digest = await CreateSut().BuildAsync(property.Id, Wednesday);
 
@@ -185,14 +174,14 @@ public class ChemicalDigestPreviewBuilderTests : ChemicalTestBase
         foreach (var (name, sales) in deadlines)
         {
             var chemical = await Seed(name, sales: sales);
-            await CreatePlacementAtAsync(lade.Id, chemical.ChemicalId, LongAgo);
+            await CreatePlacementAsync(lade.Id, chemical.ChemicalId, registeredAt: LongAgo);
         }
 
         // Status and new registrations: registered after the Monday 2026-10-26 07:00 slot, deregistered.
         foreach (var name in new[] { "Øko", "Ådal", "Aalborg Mix", "Ærlig", "ABC", "zeta" })
         {
             var chemical = await Seed(name, status: 6);
-            await CreatePlacementAtAsync(lade.Id, chemical.ChemicalId, new DateTime(2026, 10, 27, 8, 0, 0, DateTimeKind.Utc));
+            await CreatePlacementAsync(lade.Id, chemical.ChemicalId, registeredAt: new DateTime(2026, 10, 27, 8, 0, 0, DateTimeKind.Utc));
         }
 
         var digest = await CreateSut().BuildAsync(property.Id, Wednesday);
