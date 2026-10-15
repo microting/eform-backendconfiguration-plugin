@@ -200,6 +200,7 @@ describe('ChemicalSettingsPageComponent', () => {
     it('starts loading again for the next property and ignores a late answer for the previous one', () => {
       const first = new Subject<unknown>();
       chemicals.getSettings.mockReturnValueOnce(first);
+      property$ = new BehaviorSubject<number | null>(3); // the page from beforeEach must not also react
       component = build();
       chemicals.getSettings.mockReturnValueOnce(of({success: true, model: {propertyId: 4, stockEnabled: false, digestRecipients: ['second@example.com']}}));
 
