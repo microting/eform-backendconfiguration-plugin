@@ -20,6 +20,8 @@ async function openSettings(page: Page): Promise<BackendConfigurationChemicalsPa
   const kemi = new BackendConfigurationChemicalsPage(page);
   await kemi.gotoSettings();
   await kemi.selectProperty(property.name);
+  // Edits made before the stored settings arrive would be overwritten: wait for the form, then the preview.
+  await kemi.waitForSettingsLoaded();
   await page.locator('#chemicalDigestPreview h4, #chemicalDigestPreviewNothing').first().waitFor({ state: 'visible', timeout: API_TIMEOUT });
   return kemi;
 }
@@ -51,7 +53,7 @@ test.describe.serial('Kemi W5 - property settings', () => {
     await openSettings(page);
 
     await expect(page.locator('#chemicalDigestPreviewNothing')).toBeVisible({ timeout: API_TIMEOUT });
-    await expect(page.locator('#chemicalDigestPreviewSubject')).toContainText(/\d/, { timeout: UI_TIMEOUT });
+    await expect(page.locator('#chemicalDigestPreviewSubject')).toContainText(/\((uge|week) \d{1,2}\)/, { timeout: UI_TIMEOUT });
     await expect(page.locator('#chemicalSettingsThresholds tbody tr')).toHaveCount(4, { timeout: UI_TIMEOUT });
   });
 
@@ -65,12 +67,15 @@ test.describe.serial('Kemi W5 - property settings', () => {
     await input.press('Enter');
     await expect(page.locator('#chemicalSettingsRecipient-0')).toContainText('first@example.com', { timeout: UI_TIMEOUT });
     await expect(page.locator('#chemicalSettingsRecipientError')).toContainText('nope', { timeout: UI_TIMEOUT });
+    await expect(input).toHaveAttribute('aria-invalid', 'true', { timeout: UI_TIMEOUT });
+    await expect(input).toHaveAttribute('aria-describedby', 'chemicalSettingsRecipientError', { timeout: UI_TIMEOUT });
     await kemi.saveSettings();
 
     // E-10: a reload empties the store; pick the property again (bounded) before asserting.
     await page.reload();
     await kemi.settingsPage().waitFor({ state: 'visible', timeout: API_TIMEOUT });
     await kemi.selectProperty(property.name);
+    await kemi.waitForSettingsLoaded();
     await expect(page.locator('#chemicalSettingsRecipient-0')).toContainText('first@example.com', { timeout: API_TIMEOUT });
     await expect(page.locator('#chemicalSettingsStockToggle button')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
   });

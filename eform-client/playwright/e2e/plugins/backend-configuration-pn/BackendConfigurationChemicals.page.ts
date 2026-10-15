@@ -82,6 +82,15 @@ export class BackendConfigurationChemicalsPage {
     return this.page.locator('#chemicalSettingsPage');
   }
 
+  /**
+   * The settings form renders only after the stored settings arrived (a failed or pending load shows no
+   * form), so its stock toggle being enabled means it is safe to edit and save.
+   */
+  async waitForSettingsLoaded(): Promise<void> {
+    await this.page.locator('#chemicalSettingsStockToggle button').waitFor({ state: 'visible', timeout: API_TIMEOUT });
+    await expect(this.page.locator('#chemicalSettingsStockToggle button')).toBeEnabled({ timeout: UI_TIMEOUT });
+  }
+
   /** Opens Kemi > Indstillinger through the sidebar: expands each dropdown only if the next level is hidden. */
   async goToSettingsViaMenu(): Promise<void> {
     if (!(await this.settingsMenuButton().isVisible())) {

@@ -32,14 +32,8 @@ describe('ChemicalSettingsPageComponent', () => {
     return {confirmed, closed, ref};
   }
 
-  beforeEach(() => {
-    property$ = new BehaviorSubject<number | null>(3);
-    dialogOpen = jest.fn();
-    chemicals = {
-      getSettings: jest.fn().mockReturnValue(of({success: true, model: {propertyId: 3, stockEnabled: false, digestRecipients: ['first@example.com']}})),
-      saveSettings: jest.fn().mockReturnValue(of({success: true, model: {propertyId: 3, stockEnabled: true, digestRecipients: ['first@example.com', 'second@example.com']}})),
-      getDigestPreview: jest.fn().mockReturnValue(of({success: true, model: preview})),
-    };
+  /** A fresh page over the current mocks (a test that needs a different answer sets the mock first). */
+  function build(): ChemicalSettingsPageComponent {
     const injector = Injector.create({
       providers: [
         {provide: Store, useValue: {select: jest.fn().mockReturnValue(property$)}},
@@ -50,8 +44,20 @@ describe('ChemicalSettingsPageComponent', () => {
         {provide: TranslateService, useValue: {instant: (key: string) => key}},
       ],
     });
-    component = runInInjectionContext(injector, () => new ChemicalSettingsPageComponent());
-    component.ngOnInit();
+    const page = runInInjectionContext(injector, () => new ChemicalSettingsPageComponent());
+    page.ngOnInit();
+    return page;
+  }
+
+  beforeEach(() => {
+    property$ = new BehaviorSubject<number | null>(3);
+    dialogOpen = jest.fn();
+    chemicals = {
+      getSettings: jest.fn().mockReturnValue(of({success: true, model: {propertyId: 3, stockEnabled: false, digestRecipients: ['first@example.com']}})),
+      saveSettings: jest.fn().mockReturnValue(of({success: true, model: {propertyId: 3, stockEnabled: true, digestRecipients: ['first@example.com', 'second@example.com']}})),
+      getDigestPreview: jest.fn().mockReturnValue(of({success: true, model: preview})),
+    };
+    component = build();
   });
 
   it('loads settings and the preview for the selected property', () => {
@@ -145,6 +151,86 @@ describe('ChemicalSettingsPageComponent', () => {
 
     expect(component.stockEnabled).toBe(false);
     expect(component.recipients).toEqual([]);
+  });
+
+  describe('loading the stored settings (never offer Save from the defaults)', () => {
+    const loaded = (stockEnabled: boolean, digestRecipients: string[]) =>
+      ({success: true, model: {propertyId: 3, stockEnabled, digestRecipients}});
+
+    it('is loading, not editable and cannot save until getSettings answers', () => {
+      const pending = new Subject<unknown>();
+      chemicals.getSettings.mockReturnValue(pending);
+      component = build();
+
+      expect(component.loading).toBe(true);
+      expect(component.ready).toBe(false);
+      component.onStockToggle(true);
+      component.recipientInput = 'second@example.com';
+      component.addRecipientInput();
+      component.save();
+      expect(component.stockEnabled).toBe(false);
+      expect(component.recipients).toEqual([]);
+      expect(component.dirty).toBe(false);
+      expect(chemicals.saveSettings).not.toHaveBeenCalled();
+
+      pending.next(loaded(true, ['first@example.com']));
+
+      expect(component.loading).toBe(false);
+      expect(component.ready).toBe(true);
+      expect(component.stockEnabled).toBe(true);
+      expect(component.recipients).toEqual(['first@example.com']);
+    });
+
+    it.each([
+      ['a refused answer', () => of({success: false, message: 'Nope'})],
+      ['an HTTP error', () => throwError(() => new Error('offline'))],
+    ])('shows a load failure for %s and offers no Save from the defaults', (_name, answer) => {
+      chemicals.getSettings.mockReturnValue(answer());
+      component = build();
+
+      expect(component.loadFailed).toBe(true);
+      expect(component.loading).toBe(false);
+      expect(component.ready).toBe(false);
+      component.onStockToggle(true);
+      component.save();
+      expect(chemicals.saveSettings).not.toHaveBeenCalled();
+      expect(component.dirty).toBe(false);
+    });
+
+    it('starts loading again for the next property and ignores a late answer for the previous one', () => {
+      const first = new Subject<unknown>();
+      chemicals.getSettings.mockReturnValueOnce(first);
+      component = build();
+      chemicals.getSettings.mockReturnValueOnce(of({success: true, model: {propertyId: 4, stockEnabled: false, digestRecipients: ['second@example.com']}}));
+
+      property$.next(4);
+      first.next(loaded(true, ['late@example.com']));
+
+      expect(component.recipients).toEqual(['second@example.com']);
+      expect(component.stockEnabled).toBe(false);
+      expect(component.loading).toBe(false);
+    });
+  });
+
+  describe('dirty means "differs from the loaded settings"', () => {
+    it('is clean again after undoing a stock toggle', () => {
+      component.onStockToggle(true);
+      expect(component.dirty).toBe(true);
+
+      component.onStockToggle(false);
+
+      expect(component.dirty).toBe(false);
+    });
+
+    it('is clean again after adding and removing the same recipient', () => {
+      component.recipientInput = 'second@example.com';
+      component.addRecipientInput();
+      expect(component.dirty).toBe(true);
+
+      component.removeRecipient('second@example.com');
+
+      expect(component.dirty).toBe(false);
+    });
   });
 
   describe('unsaved edits are never dropped silently', () => {

@@ -93,4 +93,7 @@ export const CHEMICAL_I18N_KEYS: string[] = [
   'Chemicals: Could not save settings',
   'Chemicals: Discard unsaved settings?',
   'Chemicals: Unsaved settings',
+  // Task 8 fix round 1
+  'Chemicals: Could not load settings',
+  'Chemicals: Yes',
 ];

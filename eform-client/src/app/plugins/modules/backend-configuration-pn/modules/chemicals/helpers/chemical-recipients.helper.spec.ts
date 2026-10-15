@@ -16,6 +16,20 @@ describe('digest recipients helper', () => {
     expect(result.invalid).toEqual(['bad']);
   });
 
+  it('unwraps "Name <address>" from a pasted mail-client list', () => {
+    const result = addRecipients([], 'Mette Hansen <First@Example.com>; "Jens, Hansen" <second@example.com>,Third <third@example.com>');
+
+    expect(result.recipients).toEqual(['first@example.com', 'second@example.com', 'third@example.com']);
+    expect(result.invalid).toEqual([]);
+  });
+
+  it('reports bracketed and quoted leftovers the server would reject', () => {
+    const result = addRecipients([], '"a"@example.com a@example.com. a(b)@example.com');
+
+    expect(result.recipients).toEqual([]);
+    expect(result.invalid).toEqual(['"a"@example.com', 'a@example.com.', 'a(b)@example.com']);
+  });
+
   it('keeps the list unchanged for empty input', () => {
     expect(addRecipients(['second@example.com'], '  ')).toEqual({recipients: ['second@example.com'], invalid: []});
   });
