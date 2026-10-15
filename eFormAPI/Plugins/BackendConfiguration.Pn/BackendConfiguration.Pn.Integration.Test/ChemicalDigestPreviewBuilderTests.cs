@@ -175,10 +175,13 @@ public class ChemicalDigestPreviewBuilderTests : ChemicalTestBase
         DateTime Day(int day, int hour = 0) => new(2026, 10, day, hour, 0, 0, DateTimeKind.Utc);
 
         // Passed deadlines: 2026-10-10 first; the 20th is a date tie even though Alf's value is 22:00 (a DateTime sort would put Zed first).
-        var deadlines = new[] { Seed("Zed", sales: Day(20)), Seed("Alf", sales: Day(20, 22)), Seed("alpha", sales: Day(20)),
-            Seed("Bravo", sales: Day(20)), Seed("Early", sales: Day(10)) };
-        foreach (var chemical in await Task.WhenAll(deadlines))
+        var deadlines = new (string Name, DateTime Sales)[]
         {
+            ("Zed", Day(20)), ("Alf", Day(20, 22)), ("alpha", Day(20)), ("Bravo", Day(20)), ("Early", Day(10)),
+        };
+        foreach (var (name, sales) in deadlines)
+        {
+            var chemical = await Seed(name, sales: sales);
             await CreatePlacementAsync(lade.Id, chemical.ChemicalId);
         }
 
