@@ -23,6 +23,20 @@ describe('digest recipients helper', () => {
     expect(result.invalid).toEqual([]);
   });
 
+  it('keeps a plain address that precedes a "Name <address>" in a mixed paste', () => {
+    const result = addRecipients([], 'first@example.com Second <second@example.com>');
+
+    expect(result.recipients).toEqual(['first@example.com', 'second@example.com']);
+    expect(result.invalid).toEqual([]);
+  });
+
+  it('keeps plain addresses around several named ones in a mixed paste', () => {
+    const result = addRecipients([], 'a@example.com, Mette Hansen <b@example.com> c@example.com "D, E" <d@example.com>');
+
+    expect(result.recipients).toEqual(['a@example.com', 'b@example.com', 'c@example.com', 'd@example.com']);
+    expect(result.invalid).toEqual([]);
+  });
+
   it('reports bracketed and quoted leftovers the server would reject', () => {
     const result = addRecipients([], '"a"@example.com a@example.com. a(b)@example.com');
 

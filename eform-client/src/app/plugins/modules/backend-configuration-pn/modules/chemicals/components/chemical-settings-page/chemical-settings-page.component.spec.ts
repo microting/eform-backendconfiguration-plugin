@@ -365,4 +365,80 @@ describe('ChemicalSettingsPageComponent', () => {
       expect(dirty.returnValue).toBe('');
     });
   });
+
+  describe('Copilot review: pending input and superseded responses', () => {
+    it('counts recipient text typed but not yet added as unsaved', () => {
+      component.recipientInput = 'second@exa';
+      expect(component.dirty).toBe(true);
+
+      const event = {preventDefault: jest.fn(), returnValue: undefined as unknown};
+      component.onBeforeUnload(event as unknown as BeforeUnloadEvent);
+      expect(event.preventDefault).toHaveBeenCalled();
+
+      component.recipientInput = '   ';
+      expect(component.dirty).toBe(false);
+    });
+
+    it('ignores a superseded settings answer after an A to B to A switch', () => {
+      const firstA = new Subject<unknown>();
+      chemicals.getSettings.mockReturnValueOnce(firstA);
+      property$ = new BehaviorSubject<number | null>(3);
+      component = build();
+      chemicals.getSettings.mockReturnValueOnce(of({success: true, model: {propertyId: 4, stockEnabled: false, digestRecipients: []}}));
+      property$.next(4);
+      chemicals.getSettings.mockReturnValueOnce(of({success: true, model: {propertyId: 3, stockEnabled: false, digestRecipients: ['newer@example.com']}}));
+      property$.next(3);
+      component.onStockToggle(true);
+
+      firstA.next({success: true, model: {propertyId: 3, stockEnabled: false, digestRecipients: ['older@example.com']}});
+
+      expect(component.stockEnabled).toBe(true);
+      expect(component.recipients).toEqual(['newer@example.com']);
+      expect(component.dirty).toBe(true);
+    });
+
+    it('ignores a superseded settings error after an A to B to A switch', () => {
+      const firstA = new Subject<unknown>();
+      chemicals.getSettings.mockReturnValueOnce(firstA);
+      property$ = new BehaviorSubject<number | null>(3);
+      component = build();
+      chemicals.getSettings.mockReturnValueOnce(of({success: true, model: {propertyId: 4, stockEnabled: false, digestRecipients: []}}));
+      property$.next(4);
+      property$.next(3);
+
+      firstA.error(new Error('offline'));
+
+      expect(component.loadFailed).toBe(false);
+      expect(component.ready).toBe(true);
+    });
+
+    it('ignores a superseded preview failure that arrives after the refresh from a save', () => {
+      const initial = new Subject<unknown>();
+      chemicals.getDigestPreview.mockReturnValueOnce(initial);
+      property$ = new BehaviorSubject<number | null>(3);
+      component = build();
+      component.onStockToggle(true);
+
+      component.save();
+      expect(component.preview).not.toBeNull();
+      initial.error(new Error('offline'));
+
+      expect(component.preview).not.toBeNull();
+      expect(component.previewFailed).toBe(false);
+    });
+
+    it('ignores a superseded preview answer after an A to B to A switch', () => {
+      const firstA = new Subject<unknown>();
+      chemicals.getDigestPreview.mockReturnValueOnce(firstA);
+      property$ = new BehaviorSubject<number | null>(3);
+      component = build();
+      property$.next(4);
+      property$.next(3);
+
+      firstA.next({success: false, message: 'late'});
+
+      expect(component.previewFailed).toBe(false);
+      expect(component.preview).not.toBeNull();
+    });
+  });
 });
