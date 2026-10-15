@@ -74,4 +74,8 @@ describe('Kemi i18n meaning', () => {
   it.each(NON_ENGLISH)('%s: "Fixed for all customers" does not read as repaired or priced', (locale) => {
     expect(text(locale, 'Chemicals: Fixed for all customers')).not.toMatch(REPAIRED);
   });
+
+  it('esES: a failed save does not say the changes were saved', () => {
+    expect(text('esES', 'Chemicals: Could not save settings')).not.toMatch(/se han guardado/i);
+  });
 });
