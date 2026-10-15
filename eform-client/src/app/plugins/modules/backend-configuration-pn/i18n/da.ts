@@ -1089,4 +1089,6 @@ export const da = {
   'Chemicals: Could not save settings': 'Indstillingerne kunne ikke gemmes. Dine ændringer er bevaret - prøv igen.',
   'Chemicals: Discard unsaved settings?': 'Kassér ikke-gemte indstillinger?',
   'Chemicals: Unsaved settings': 'Ikke gemt',
+  'Chemicals: Could not load settings': 'Indstillingerne kunne ikke indlæses.',
+  'Chemicals: Yes': 'Ja',
 };

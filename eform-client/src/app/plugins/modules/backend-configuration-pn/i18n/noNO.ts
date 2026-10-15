@@ -987,7 +987,7 @@ export const noNO = {
   'Chemicals: Nothing to copy': 'Ingenting å kopiere: ingen delte arbeidere har forskjellige tillatelser på {{property}}.',
   'Chemicals: Could not copy permissions': 'Tillatelsene kunne ikke kopieres.',
   'Chemicals: No workers match': 'Ingen arbeidere samsvarer med søket.',
-  'Chemicals: Settings title': 'Innstillinger for egenskap – Kjemikalier',
+  'Chemicals: Settings title': 'Innstillinger for gården eller eiendommen - Kjemikalier',
   'Chemicals: Stock management': 'Lagerstyring',
   'Chemicals: Enabled': 'Aktivert',
   'Chemicals: Disabled': 'Funksjonshemmet',
@@ -1021,4 +1021,6 @@ export const noNO = {
   'Chemicals: Could not save settings': 'Innstillingene kunne ikke lagres. Endringene dine er beholdt – prøv på nytt.',
   'Chemicals: Discard unsaved settings?': 'Forkast ulagrede innstillinger?',
   'Chemicals: Unsaved settings': 'Ikke lagret',
+  'Chemicals: Could not load settings': 'Innstillingene kunne ikke lastes inn.',
+  'Chemicals: Yes': 'Ja',
 };

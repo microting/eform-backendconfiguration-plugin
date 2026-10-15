@@ -61,8 +61,13 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
   invalidRecipients: string[] = [];
   preview: ChemicalDigestModel | null = null;
   previewSections: ChemicalDigestPreviewSection[] = [];
-  dirty = false;
+  /** The stored settings are being read: the form is not offered until they arrive. */
+  loading = false;
+  /** Reading the stored settings failed (refused or HTTP error): no form, so nothing can overwrite them from defaults. */
+  loadFailed = false;
   saving = false;
+  private loadedStock = false;
+  private loadedRecipients: string[] = [];
   /** The last save was refused or failed; the edits are kept for a retry. */
   saveFailed = false;
 
@@ -75,34 +80,50 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
       });
   }
 
+  /** The form shows the stored settings and may be edited and saved. */
+  get ready(): boolean {
+    return this.propertyId !== null && !this.loading && !this.loadFailed;
+  }
+
+  /** Differs from the loaded settings (so undoing an edit makes the page clean again). */
+  get dirty(): boolean {
+    return this.stockEnabled !== this.loadedStock
+      || this.recipients.length !== this.loadedRecipients.length
+      || this.recipients.some((r, i) => r !== this.loadedRecipients[i]);
+  }
+
   /** A save is in flight and cannot be cancelled: the container locks the property picker. */
   get busy(): boolean {
     return this.saving;
   }
 
   onStockToggle(enabled: boolean): void {
-    this.stockEnabled = enabled;
-    this.dirty = true;
+    if (this.ready) {
+      this.stockEnabled = enabled;
+    }
   }
 
   addRecipientInput(): void {
+    if (!this.ready) {
+      return;
+    }
     const result = addRecipients(this.recipients, this.recipientInput);
-    this.dirty = this.dirty || result.recipients.length !== this.recipients.length;
     this.recipients = result.recipients;
     this.invalidRecipients = result.invalid;
     this.recipientInput = result.invalid.join(' ');
   }
 
   removeRecipient(email: string): void {
-    this.recipients = this.recipients.filter((r) => r !== email);
-    this.dirty = true;
+    if (this.ready) {
+      this.recipients = this.recipients.filter((r) => r !== email);
+    }
   }
 
   save(): void {
-    if (this.propertyId === null || this.saving) {
+    if (!this.ready || this.saving) {
       return;
     }
-    const propertyId = this.propertyId;
+    const propertyId = this.propertyId as number;
     this.saving = true;
     this.saveFailed = false;
     this.chemicalsService.saveSettings(propertyId, {stockEnabled: this.stockEnabled, digestRecipients: this.recipients})
@@ -159,14 +180,30 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
     this.apply(false, []);
     this.setPreview(null);
     this.saveFailed = false;
+    this.loadFailed = false;
+    this.loading = this.propertyId !== null;
     if (this.propertyId === null) {
       return;
     }
     const propertyId = this.propertyId;
-    this.chemicalsService.getSettings(propertyId).subscribe((res) => {
-      if (propertyId === this.propertyId && res && res.success) {
-        this.apply(res.model.stockEnabled, res.model.digestRecipients);
-      }
+    this.chemicalsService.getSettings(propertyId).subscribe({
+      next: (res) => {
+        if (propertyId !== this.propertyId) {
+          return;
+        }
+        this.loading = false;
+        if (res && res.success) {
+          this.apply(res.model.stockEnabled, res.model.digestRecipients);
+        } else {
+          this.loadFailed = true;
+        }
+      },
+      error: () => {
+        if (propertyId === this.propertyId) {
+          this.loading = false;
+          this.loadFailed = true;
+        }
+      },
     });
     this.loadPreview(propertyId);
   }
@@ -194,6 +231,7 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
     this.recipients = [...(recipients ?? [])];
     this.invalidRecipients = [];
     this.recipientInput = '';
-    this.dirty = false;
+    this.loadedStock = stockEnabled;
+    this.loadedRecipients = [...this.recipients];
   }
 }

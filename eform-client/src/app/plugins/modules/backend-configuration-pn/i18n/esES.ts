@@ -987,7 +987,7 @@ export const esES = {
   'Chemicals: Nothing to copy': 'Nada que copiar: ningún trabajador compartido tiene permisos diferentes en {{property}}.',
   'Chemicals: Could not copy permissions': 'No se pudieron copiar los permisos.',
   'Chemicals: No workers match': 'No se encontraron trabajadores que coincidan con la búsqueda.',
-  'Chemicals: Settings title': 'Configuración de la propiedad - Productos químicos',
+  'Chemicals: Settings title': 'Configuración para la granja o propiedad inmobiliaria - Productos químicos',
   'Chemicals: Stock management': 'Gestión de existencias',
   'Chemicals: Enabled': 'Activado',
   'Chemicals: Disabled': 'Desactivado',
@@ -1021,4 +1021,6 @@ export const esES = {
   'Chemicals: Could not save settings': 'No se pudieron guardar los ajustes. Los cambios se han guardado; inténtelo de nuevo.',
   'Chemicals: Discard unsaved settings?': '¿Descartar la configuración no guardada?',
   'Chemicals: Unsaved settings': 'No se guardó',
+  'Chemicals: Could not load settings': 'No se pudo cargar la configuración.',
+  'Chemicals: Yes': 'Sí',
 };

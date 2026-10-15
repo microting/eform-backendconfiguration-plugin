@@ -1189,4 +1189,6 @@ export const enUS= {
   'Chemicals: Could not save settings': 'The settings could not be saved. Your changes are kept - try again.',
   'Chemicals: Discard unsaved settings?': 'Discard unsaved settings?',
   'Chemicals: Unsaved settings': 'Not saved',
+  'Chemicals: Could not load settings': 'The settings could not be loaded.',
+  'Chemicals: Yes': 'Yes',
 };

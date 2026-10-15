@@ -863,7 +863,7 @@ export const slSL = {
   'Chemicals: Nothing to copy': 'Ničesar za kopiranje: noben skupni delavec nima drugačnih dovoljenj za {{property}}.',
   'Chemicals: Could not copy permissions': 'Dovoljenj ni bilo mogoče kopirati.',
   'Chemicals: No workers match': 'Noben delavec ne ustreza iskanju.',
-  'Chemicals: Settings title': 'Nastavitve lastnosti - Kemikalije',
+  'Chemicals: Settings title': 'Nastavitve za kmetijo ali nepremičnino - Kemikalije',
   'Chemicals: Stock management': 'Upravljanje zalog',
   'Chemicals: Enabled': 'Omogočeno',
   'Chemicals: Disabled': 'Onemogočeno',
@@ -897,4 +897,6 @@ export const slSL = {
   'Chemicals: Could not save settings': 'Nastavitev ni bilo mogoče shraniti. Spremembe so shranjene – poskusite znova.',
   'Chemicals: Discard unsaved settings?': 'Zavržem neshranjene nastavitve?',
   'Chemicals: Unsaved settings': 'Ni shranjeno',
+  'Chemicals: Could not load settings': 'Nastavitev ni bilo mogoče naložiti.',
+  'Chemicals: Yes': 'Da',
 };

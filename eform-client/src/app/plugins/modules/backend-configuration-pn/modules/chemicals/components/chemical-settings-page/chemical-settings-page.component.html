@@ -1,6 +1,10 @@
 <div id="chemicalSettingsPage" class="chemicals-page">
 <ng-container *ngIf="propertyId !== null">
 <div class="d-flex flex-column gap-12">
+  <div *ngIf="loadFailed" class="chemicals-empty" id="chemicalSettingsLoadFailed" role="alert">
+    {{ 'Chemicals: Could not load settings' | translate }}
+  </div>
+  <ng-container *ngIf="ready">
   <mat-card class="p-3">
     <div class="d-flex align-items-center gap-12">
       <h3 class="m-0">{{ 'Chemicals: Stock management' | translate }}</h3>
@@ -36,6 +40,8 @@
           [placeholder]="'Chemicals: Add e-mail' | translate"
           [matChipInputFor]="recipientGrid"
           [disabled]="busy"
+          [attr.aria-invalid]="invalidRecipients.length ? 'true' : null"
+          [attr.aria-describedby]="invalidRecipients.length ? 'chemicalSettingsRecipientError' : null"
           [(ngModel)]="recipientInput"
           (keydown.enter)="addRecipientInput(); $event.preventDefault()"
           (blur)="addRecipientInput()"
@@ -58,6 +64,8 @@
     </div>
   </mat-card>
 
+  </ng-container>
+
   <mat-card class="p-3" id="chemicalSettingsThresholds">
     <div class="d-flex align-items-center gap-12">
       <h3 class="m-0">{{ 'Chemicals: When we warn' | translate }}</h3>
@@ -77,8 +85,8 @@
             {{ threshold.key | translate }}
             <small *ngIf="threshold.hintKey">{{ threshold.hintKey | translate }}</small>
           </td>
-          <td><mat-icon>check</mat-icon></td>
-          <td><mat-icon>check</mat-icon></td>
+          <td><mat-icon aria-hidden="true">check</mat-icon><span class="visually-hidden">{{ 'Chemicals: Yes' | translate }}</span></td>
+          <td><mat-icon aria-hidden="true">check</mat-icon><span class="visually-hidden">{{ 'Chemicals: Yes' | translate }}</span></td>
         </tr>
       </tbody>
     </table>

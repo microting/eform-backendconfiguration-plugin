@@ -987,7 +987,7 @@ export const fiFI = {
   'Chemicals: Nothing to copy': 'Ei kopioitavaa: kenelläkään jaetulla työntekijällä ei ole eri käyttöoikeuksia kohteessa {{property}}.',
   'Chemicals: Could not copy permissions': 'Käyttöoikeuksia ei voitu kopioida.',
   'Chemicals: No workers match': 'Hakua vastaavia työntekijöitä ei löytynyt.',
-  'Chemicals: Settings title': 'Ominaisuusasetukset - Kemikaalit',
+  'Chemicals: Settings title': 'Maatilan tai kiinteistön asetukset - Kemikaalit',
   'Chemicals: Stock management': 'Varastonhallinta',
   'Chemicals: Enabled': 'Käytössä',
   'Chemicals: Disabled': 'Liikuntarajoitteinen',
@@ -1021,4 +1021,6 @@ export const fiFI = {
   'Chemicals: Could not save settings': 'Asetuksia ei voitu tallentaa. Muutoksesi säilytetään - yritä uudelleen.',
   'Chemicals: Discard unsaved settings?': 'Hylätäänkö tallentamattomat asetukset?',
   'Chemicals: Unsaved settings': 'Ei tallennettu',
+  'Chemicals: Could not load settings': 'Asetuksia ei voitu ladata.',
+  'Chemicals: Yes': 'Kyllä',
 };

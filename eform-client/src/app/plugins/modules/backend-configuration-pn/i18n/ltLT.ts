@@ -863,7 +863,7 @@ export const ltLT = {
   'Chemicals: Nothing to copy': 'Nėra ko kopijuoti: joks bendrai naudojamas darbuotojas neturi skirtingų leidimų {{property}}.',
   'Chemicals: Could not copy permissions': 'Nepavyko nukopijuoti leidimų.',
   'Chemicals: No workers match': 'Nėra darbuotojų, atitinkančių paieškos kriterijus.',
-  'Chemicals: Settings title': 'Ypatybių nustatymai – cheminės medžiagos',
+  'Chemicals: Settings title': 'Ūkio ar nekilnojamojo turto nustatymai – chemikalai',
   'Chemicals: Stock management': 'Atsargų valdymas',
   'Chemicals: Enabled': 'Įjungta',
   'Chemicals: Disabled': 'Neįgalus',
@@ -897,4 +897,6 @@ export const ltLT = {
   'Chemicals: Could not save settings': 'Nustatymų išsaugoti nepavyko. Jūsų pakeitimai išsaugoti – bandykite dar kartą.',
   'Chemicals: Discard unsaved settings?': 'Atmesti neišsaugotus nustatymus?',
   'Chemicals: Unsaved settings': 'Neišsaugota',
+  'Chemicals: Could not load settings': 'Nepavyko įkelti nustatymų.',
+  'Chemicals: Yes': 'Taip',
 };

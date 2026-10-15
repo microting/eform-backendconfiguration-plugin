@@ -987,7 +987,7 @@ export const ptPT = {
   'Chemicals: Nothing to copy': 'Nada para copiar: nenhum trabalhador compartilhado tem permissões diferentes em {{property}}.',
   'Chemicals: Could not copy permissions': 'As permissões não puderam ser copiadas.',
   'Chemicals: No workers match': 'Nenhum profissional corresponde à pesquisa.',
-  'Chemicals: Settings title': 'Configurações da propriedade - Produtos químicos',
+  'Chemicals: Settings title': 'Configurações para a fazenda ou propriedade imobiliária - Produtos químicos',
   'Chemicals: Stock management': 'Gestão de estoque',
   'Chemicals: Enabled': 'Habilitado',
   'Chemicals: Disabled': 'Desabilitado',
@@ -1021,4 +1021,6 @@ export const ptPT = {
   'Chemicals: Could not save settings': 'Não foi possível salvar as configurações. Suas alterações foram mantidas. Tente novamente.',
   'Chemicals: Discard unsaved settings?': 'Descartar configurações não salvas?',
   'Chemicals: Unsaved settings': 'Não salvo',
+  'Chemicals: Could not load settings': 'Não foi possível carregar as configurações.',
+  'Chemicals: Yes': 'Sim',
 };

@@ -863,7 +863,7 @@ export const bgBG = {
   'Chemicals: Nothing to copy': 'Няма нищо за копиране: никой споделен работник няма различни разрешения за {{property}}.',
   'Chemicals: Could not copy permissions': 'Разрешенията не можаха да бъдат копирани.',
   'Chemicals: No workers match': 'Няма работници, които да отговарят на търсенето.',
-  'Chemicals: Settings title': 'Настройки на свойствата - Химикали',
+  'Chemicals: Settings title': 'Настройки за фермата или недвижимия имот - Химикали',
   'Chemicals: Stock management': 'Управление на запасите',
   'Chemicals: Enabled': 'Активирано',
   'Chemicals: Disabled': 'За хора с увреждания',
@@ -897,4 +897,6 @@ export const bgBG = {
   'Chemicals: Could not save settings': 'Настройките не можаха да бъдат запазени. Промените ви са запазени - опитайте отново.',
   'Chemicals: Discard unsaved settings?': 'Да се отхвърлят ли незапазените настройки?',
   'Chemicals: Unsaved settings': 'Не е запазено',
+  'Chemicals: Could not load settings': 'Настройките не можаха да бъдат заредени.',
+  'Chemicals: Yes': 'Да',
 };

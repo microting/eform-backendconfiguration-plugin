@@ -863,7 +863,7 @@ export const isIS = {
   'Chemicals: Nothing to copy': 'Ekkert til að afrita: enginn sameiginlegur starfsmaður hefur mismunandi heimildir á {{property}}.',
   'Chemicals: Could not copy permissions': 'Ekki var hægt að afrita heimildirnar.',
   'Chemicals: No workers match': 'Engir starfsmenn passa við leitina.',
-  'Chemicals: Settings title': 'Eiginleikastillingar - Efni',
+  'Chemicals: Settings title': 'Stillingar fyrir býlið eða fasteignina - Efni',
   'Chemicals: Stock management': 'Birgðastjórnun',
   'Chemicals: Enabled': 'Virkt',
   'Chemicals: Disabled': 'Óvirkur',
@@ -897,4 +897,6 @@ export const isIS = {
   'Chemicals: Could not save settings': 'Ekki var hægt að vista stillingarnar. Breytingarnar eru geymdar - reyndu aftur.',
   'Chemicals: Discard unsaved settings?': 'Henda óvistuðum stillingum?',
   'Chemicals: Unsaved settings': 'Ekki vistað',
+  'Chemicals: Could not load settings': 'Ekki var hægt að hlaða stillingunum.',
+  'Chemicals: Yes': 'Já',
 };

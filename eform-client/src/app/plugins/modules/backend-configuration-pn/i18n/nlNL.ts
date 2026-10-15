@@ -987,7 +987,7 @@ export const nlNL = {
   'Chemicals: Nothing to copy': 'Niets om te kopiëren: geen enkele gedeelde worker heeft andere machtigingen op {{property}}.',
   'Chemicals: Could not copy permissions': 'De machtigingen konden niet worden gekopieerd.',
   'Chemicals: No workers match': 'Geen enkele werknemer voldoet aan de zoekcriteria.',
-  'Chemicals: Settings title': 'Eigenschappen - Chemicaliën',
+  'Chemicals: Settings title': 'Instellingen voor de boerderij of het onroerend goed - Chemicaliën',
   'Chemicals: Stock management': 'Voorraadbeheer',
   'Chemicals: Enabled': 'Ingeschakeld',
   'Chemicals: Disabled': 'Gehandicapt',
@@ -1021,4 +1021,6 @@ export const nlNL = {
   'Chemicals: Could not save settings': 'De instellingen konden niet worden opgeslagen. Uw wijzigingen zijn bewaard - probeer het opnieuw.',
   'Chemicals: Discard unsaved settings?': 'Niet-opgeslagen instellingen verwijderen?',
   'Chemicals: Unsaved settings': 'Niet opgeslagen',
+  'Chemicals: Could not load settings': 'De instellingen konden niet worden geladen.',
+  'Chemicals: Yes': 'Ja',
 };

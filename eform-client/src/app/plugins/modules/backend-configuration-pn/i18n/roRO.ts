@@ -863,7 +863,7 @@ export const roRO = {
   'Chemicals: Nothing to copy': 'Nimic de copiat: niciun lucrător partajat nu are permisiuni diferite pe {{property}}.',
   'Chemicals: Could not copy permissions': 'Permisiunile nu au putut fi copiate.',
   'Chemicals: No workers match': 'Niciun angajat nu corespunde căutării.',
-  'Chemicals: Settings title': 'Setări proprietăți - Substanțe chimice',
+  'Chemicals: Settings title': 'Setări pentru fermă sau proprietate imobiliară - Produse chimice',
   'Chemicals: Stock management': 'Gestionarea stocurilor',
   'Chemicals: Enabled': 'Activat',
   'Chemicals: Disabled': 'Persoane cu dizabilități',
@@ -897,4 +897,6 @@ export const roRO = {
   'Chemicals: Could not save settings': 'Setările nu au putut fi salvate. Modificările sunt păstrate - încercați din nou.',
   'Chemicals: Discard unsaved settings?': 'Renunțați la setările nesalvate?',
   'Chemicals: Unsaved settings': 'Nesalvat',
+  'Chemicals: Could not load settings': 'Setările nu au putut fi încărcate.',
+  'Chemicals: Yes': 'Da',
 };

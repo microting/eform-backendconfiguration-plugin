@@ -987,7 +987,7 @@ export const plPL = {
   'Chemicals: Nothing to copy': 'Nic do kopiowania: żaden współdzielony pracownik nie ma innych uprawnień na {{property}}.',
   'Chemicals: Could not copy permissions': 'Nie udało się skopiować uprawnień.',
   'Chemicals: No workers match': 'Nie znaleziono pracowników odpowiadających wyszukiwaniu.',
-  'Chemicals: Settings title': 'Ustawienia właściwości – Chemikalia',
+  'Chemicals: Settings title': 'Ustawienia dla gospodarstwa rolnego lub nieruchomości - Chemikalia',
   'Chemicals: Stock management': 'Zarządzanie zapasami',
   'Chemicals: Enabled': 'Włączony',
   'Chemicals: Disabled': 'Wyłączony',
@@ -1021,4 +1021,6 @@ export const plPL = {
   'Chemicals: Could not save settings': 'Nie udało się zapisać ustawień. Zmiany zostały zachowane — spróbuj ponownie.',
   'Chemicals: Discard unsaved settings?': 'Odrzucić niezapisane ustawienia?',
   'Chemicals: Unsaved settings': 'Nie zapisano',
+  'Chemicals: Could not load settings': 'Nie udało się załadować ustawień.',
+  'Chemicals: Yes': 'Tak',
 };

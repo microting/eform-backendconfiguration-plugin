@@ -863,7 +863,7 @@ export const skSK = {
   'Chemicals: Nothing to copy': 'Nie je čo kopírovať: žiadny zdieľaný pracovník nemá iné povolenia na {{property}}.',
   'Chemicals: Could not copy permissions': 'Povolenia sa nepodarilo skopírovať.',
   'Chemicals: No workers match': 'Žiadni pracovníci nezodpovedajú vyhľadávaniu.',
-  'Chemicals: Settings title': 'Nastavenia vlastností – Chemikálie',
+  'Chemicals: Settings title': 'Nastavenia pre farmu alebo nehnuteľnosť - Chemikálie',
   'Chemicals: Stock management': 'Správa zásob',
   'Chemicals: Enabled': 'Povolené',
   'Chemicals: Disabled': 'Zakázané',
@@ -897,4 +897,6 @@ export const skSK = {
   'Chemicals: Could not save settings': 'Nastavenia sa nepodarilo uložiť. Zmeny sa uložili – skúste to znova.',
   'Chemicals: Discard unsaved settings?': 'Zahodiť neuložené nastavenia?',
   'Chemicals: Unsaved settings': 'Neuložené',
+  'Chemicals: Could not load settings': 'Nastavenia sa nepodarilo načítať.',
+  'Chemicals: Yes': 'Áno',
 };

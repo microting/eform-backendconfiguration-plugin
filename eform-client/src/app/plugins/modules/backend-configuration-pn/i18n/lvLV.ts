@@ -863,7 +863,7 @@ export const lvLV = {
   'Chemicals: Nothing to copy': 'Nav ko ko kopēt: nevienam koplietotajam darbiniekam nav atšķirīgu atļauju vietnē {{property}}.',
   'Chemicals: Could not copy permissions': 'Atļaujas nevarēja kopēt.',
   'Chemicals: No workers match': 'Neviens darbinieks neatbilst meklēšanas kritērijiem.',
-  'Chemicals: Settings title': 'Īpašuma iestatījumi — ķīmiskās vielas',
+  'Chemicals: Settings title': 'Lauksaimniecības vai nekustamā īpašuma iestatījumi — ķīmiskās vielas',
   'Chemicals: Stock management': 'Krājumu pārvaldība',
   'Chemicals: Enabled': 'Iespējots',
   'Chemicals: Disabled': 'Invalīdi',
@@ -897,4 +897,6 @@ export const lvLV = {
   'Chemicals: Could not save settings': 'Iestatījumus nevarēja saglabāt. Jūsu izmaiņas ir saglabātas — mēģiniet vēlreiz.',
   'Chemicals: Discard unsaved settings?': 'Vai atmest nesaglabātos iestatījumus?',
   'Chemicals: Unsaved settings': 'Nav saglabāts',
+  'Chemicals: Could not load settings': 'Iestatījumus nevarēja ielādēt.',
+  'Chemicals: Yes': 'Jā',
 };

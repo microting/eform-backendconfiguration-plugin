@@ -986,7 +986,7 @@ export const frFR = {
   'Chemicals: Nothing to copy': 'Rien à copier : aucun worker partagé n\'a de permissions différentes sur {{property}}.',
   'Chemicals: Could not copy permissions': 'Les autorisations n\'ont pas pu être copiées.',
   'Chemicals: No workers match': 'Aucun travailleur ne correspond à la recherche.',
-  'Chemicals: Settings title': 'Paramètres de la propriété - Produits chimiques',
+  'Chemicals: Settings title': 'Paramètres de la ferme ou de la propriété immobilière - Produits chimiques',
   'Chemicals: Stock management': 'Gestion des stocks',
   'Chemicals: Enabled': 'Activé',
   'Chemicals: Disabled': 'Désactivé',
@@ -1020,4 +1020,6 @@ export const frFR = {
   'Chemicals: Could not save settings': 'Les paramètres n\'ont pas pu être enregistrés. Vos modifications sont conservées ; veuillez réessayer.',
   'Chemicals: Discard unsaved settings?': 'Supprimer les paramètres non enregistrés ?',
   'Chemicals: Unsaved settings': 'Non enregistré',
+  'Chemicals: Could not load settings': 'Les paramètres n\'ont pas pu être chargés.',
+  'Chemicals: Yes': 'Oui',
 };

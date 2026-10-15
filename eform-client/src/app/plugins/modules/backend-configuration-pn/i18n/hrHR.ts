@@ -863,7 +863,7 @@ export const hrHR = {
   'Chemicals: Nothing to copy': 'Nema ništa za kopiranje: nijedan dijeljeni radnik nema različite dozvole za {{property}}.',
   'Chemicals: Could not copy permissions': 'Dozvole se nisu mogle kopirati.',
   'Chemicals: No workers match': 'Nijedan radnik ne odgovara pretrazi.',
-  'Chemicals: Settings title': 'Postavke svojstva - Kemikalije',
+  'Chemicals: Settings title': 'Postavke za farmu ili nekretninu - Kemikalije',
   'Chemicals: Stock management': 'Upravljanje zalihama',
   'Chemicals: Enabled': 'Omogućeno',
   'Chemicals: Disabled': 'Onemogućeno',
@@ -897,4 +897,6 @@ export const hrHR = {
   'Chemicals: Could not save settings': 'Postavke nisu spremljene. Vaše su promjene sačuvane - pokušajte ponovno.',
   'Chemicals: Discard unsaved settings?': 'Odbaciti nespremljene postavke?',
   'Chemicals: Unsaved settings': 'Nije spremljeno',
+  'Chemicals: Could not load settings': 'Postavke se nisu mogle učitati.',
+  'Chemicals: Yes': 'Da',
 };

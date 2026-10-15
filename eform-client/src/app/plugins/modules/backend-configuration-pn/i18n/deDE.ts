@@ -1080,7 +1080,7 @@ export const deDE = {
   'Chemicals: Nothing to copy': 'Nichts zu kopieren: Kein gemeinsam genutzter Worker hat unterschiedliche Berechtigungen für {{property}}.',
   'Chemicals: Could not copy permissions': 'Die Berechtigungen konnten nicht kopiert werden.',
   'Chemicals: No workers match': 'Es wurden keine passenden Arbeitskräfte für die Suche gefunden.',
-  'Chemicals: Settings title': 'Eigenschafteneinstellungen - Chemikalien',
+  'Chemicals: Settings title': 'Einstellungen für landwirtschaftliche Betriebe oder Immobilien - Chemikalien',
   'Chemicals: Stock management': 'Bestandsverwaltung',
   'Chemicals: Enabled': 'Ermöglicht',
   'Chemicals: Disabled': 'Deaktiviert',
@@ -1114,4 +1114,6 @@ export const deDE = {
   'Chemicals: Could not save settings': 'Die Einstellungen konnten nicht gespeichert werden. Ihre Änderungen bleiben erhalten – versuchen Sie es erneut.',
   'Chemicals: Discard unsaved settings?': 'Nicht gespeicherte Einstellungen verwerfen?',
   'Chemicals: Unsaved settings': 'Nicht gespeichert',
+  'Chemicals: Could not load settings': 'Die Einstellungen konnten nicht geladen werden.',
+  'Chemicals: Yes': 'Ja',
 };

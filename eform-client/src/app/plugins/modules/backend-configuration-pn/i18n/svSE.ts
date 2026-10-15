@@ -987,7 +987,7 @@ export const svSE = {
   'Chemicals: Nothing to copy': 'Inget att kopiera: ingen delad arbetare har olika behörigheter på {{property}}.',
   'Chemicals: Could not copy permissions': 'Behörigheterna kunde inte kopieras.',
   'Chemicals: No workers match': 'Inga arbetare matchar sökningen.',
-  'Chemicals: Settings title': 'Egenskapsinställningar - Kemikalier',
+  'Chemicals: Settings title': 'Inställningar för gården eller fastigheten - Kemikalier',
   'Chemicals: Stock management': 'Lagerhantering',
   'Chemicals: Enabled': 'Aktiverad',
   'Chemicals: Disabled': 'Funktionshindrad',
@@ -1021,4 +1021,6 @@ export const svSE = {
   'Chemicals: Could not save settings': 'Inställningarna kunde inte sparas. Dina ändringar sparas – försök igen.',
   'Chemicals: Discard unsaved settings?': 'Vill du slänga inställningar som inte sparats?',
   'Chemicals: Unsaved settings': 'Inte sparad',
+  'Chemicals: Could not load settings': 'Inställningarna kunde inte laddas.',
+  'Chemicals: Yes': 'Ja',
 };

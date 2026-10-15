@@ -7,3 +7,4 @@
 .chemicals-digest-section { margin-top: 12px; }
 .chemicals-digest-item { padding: 6px 0; border-bottom: 1px dashed var(--mat-sys-outline-variant, #e0e0e0); }
 .chemicals-digest-item span { margin-left: 8px; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
