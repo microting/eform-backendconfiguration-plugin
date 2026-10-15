@@ -84,4 +84,12 @@ describe('Kemi i18n meaning', () => {
   it.each(Object.entries(CLAIMS_SAVED))('%s: a failed save does not say the changes were saved', (locale, claim) => {
     expect(text(locale, 'Chemicals: Could not save settings')).not.toMatch(claim);
   });
+
+  it.each(NON_ENGLISH)('%s: the "Push" column heading names push notifications, not pushing or "there"', (locale) => {
+    expect(text(locale, 'Chemicals: Push')).toMatch(/push/i);
+  });
+
+  it.each(['esES', 'ptBR', 'ptPT'])('%s: the weekly-repeat hint says the product placement, not a location', (locale) => {
+    expect(text(locale, 'Chemicals: Threshold passed hint')).not.toMatch(/ubicación|localização/i);
+  });
 });
