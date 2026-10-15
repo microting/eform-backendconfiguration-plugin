@@ -100,11 +100,11 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
 
   /**
    * Differs from the loaded settings (so undoing an edit makes the page clean again). An address typed
-   * but not yet added is an unsaved draft too, so the discard and unload guards cover it.
+   * but not yet added is an unsaved draft too, so the discard and unload guards cover it (the input is only offered once the page is ready).
    */
   get dirty(): boolean {
     return this.stockEnabled !== this.loadedStock
-      || this.recipientInput.trim().length > 0
+      || (this.ready && this.recipientInput.trim().length > 0)
       || this.recipients.length !== this.loadedRecipients.length
       || this.recipients.some((r, i) => r !== this.loadedRecipients[i]);
   }
