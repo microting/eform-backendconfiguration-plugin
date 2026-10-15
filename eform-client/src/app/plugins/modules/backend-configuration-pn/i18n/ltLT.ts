@@ -877,7 +877,7 @@ export const ltLT = {
   'Chemicals: When we warn': 'Kai mes perspėjame.',
   'Chemicals: Fixed for all customers': 'Fiksuota visiems klientams',
   'Chemicals: Event': 'Įvykis',
-  'Chemicals: Push': 'Stumti',
+  'Chemicals: Push': 'Push pranešimas',
   'Chemicals: Weekly e-mail': 'Savaitinis el. laiškas',
   'Chemicals: Threshold six months': '6 mėnesiai iki termino pabaigos',
   'Chemicals: Threshold one month': '1 mėnesį iki termino pabaigos',

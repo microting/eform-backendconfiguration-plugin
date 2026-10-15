@@ -877,7 +877,7 @@ export const csCZ = {
   'Chemicals: When we warn': 'Když varujeme',
   'Chemicals: Fixed for all customers': 'Pevné pro všechny zákazníky',
   'Chemicals: Event': 'Událost',
-  'Chemicals: Push': 'TAM',
+  'Chemicals: Push': 'Push oznámení',
   'Chemicals: Weekly e-mail': 'Týdenní e-mail',
   'Chemicals: Threshold six months': '6 měsíců před termínem',
   'Chemicals: Threshold one month': '1 měsíc před termínem',

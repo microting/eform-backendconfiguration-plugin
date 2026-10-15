@@ -877,7 +877,7 @@ export const slSL = {
   'Chemicals: When we warn': 'Ko opozarjamo',
   'Chemicals: Fixed for all customers': 'Fiksno za vse stranke',
   'Chemicals: Event': 'Dogodek',
-  'Chemicals: Push': 'Potisni',
+  'Chemicals: Push': 'Push obvestilo',
   'Chemicals: Weekly e-mail': 'Tedenska e-pošta',
   'Chemicals: Threshold six months': '6 mesecev pred rokom',
   'Chemicals: Threshold one month': '1 mesec pred rokom',

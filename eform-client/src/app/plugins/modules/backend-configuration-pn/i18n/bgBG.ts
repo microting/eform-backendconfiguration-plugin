@@ -877,7 +877,7 @@ export const bgBG = {
   'Chemicals: When we warn': 'Когато предупреждаваме',
   'Chemicals: Fixed for all customers': 'Фиксирано за всички клиенти',
   'Chemicals: Event': 'Събитие',
-  'Chemicals: Push': 'Натиснете',
+  'Chemicals: Push': 'Push известия',
   'Chemicals: Weekly e-mail': 'Седмичен имейл',
   'Chemicals: Threshold six months': '6 месеца преди крайния срок',
   'Chemicals: Threshold one month': '1 месец преди крайния срок',

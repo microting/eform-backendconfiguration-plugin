@@ -1001,7 +1001,7 @@ export const ukUA = {
   'Chemicals: When we warn': 'Коли ми попереджаємо',
   'Chemicals: Fixed for all customers': 'Фіксовано для всіх клієнтів',
   'Chemicals: Event': 'Подія',
-  'Chemicals: Push': 'Натисніть',
+  'Chemicals: Push': 'Push-сповіщення',
   'Chemicals: Weekly e-mail': 'Щотижнева електронна пошта',
   'Chemicals: Threshold six months': '6 місяців до дедлайну',
   'Chemicals: Threshold one month': '1 місяць до дедлайну',

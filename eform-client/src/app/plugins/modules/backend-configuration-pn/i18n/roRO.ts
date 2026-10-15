@@ -877,7 +877,7 @@ export const roRO = {
   'Chemicals: When we warn': 'Când avertizăm',
   'Chemicals: Fixed for all customers': 'Fix pentru toți clienții',
   'Chemicals: Event': 'Eveniment',
-  'Chemicals: Push': 'Apăsaţi',
+  'Chemicals: Push': 'Notificare push',
   'Chemicals: Weekly e-mail': 'E-mail săptămânal',
   'Chemicals: Threshold six months': '6 luni înainte de termenul limită',
   'Chemicals: Threshold one month': '1 lună înainte de termenul limită',

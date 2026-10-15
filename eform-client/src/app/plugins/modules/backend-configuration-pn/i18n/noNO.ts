@@ -1001,7 +1001,7 @@ export const noNO = {
   'Chemicals: When we warn': 'Når vi advarer',
   'Chemicals: Fixed for all customers': 'Fast for alle kunder',
   'Chemicals: Event': 'Hendelse',
-  'Chemicals: Push': 'Trykk',
+  'Chemicals: Push': 'Push-varsel',
   'Chemicals: Weekly e-mail': 'Ukentlig e-post',
   'Chemicals: Threshold six months': '6 måneder før en frist',
   'Chemicals: Threshold one month': '1 måned før en frist',

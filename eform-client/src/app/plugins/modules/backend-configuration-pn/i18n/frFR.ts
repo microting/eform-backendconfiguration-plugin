@@ -1000,7 +1000,7 @@ export const frFR = {
   'Chemicals: When we warn': 'Lorsque nous avertissons',
   'Chemicals: Fixed for all customers': 'Fixe pour tous les clients',
   'Chemicals: Event': 'Événement',
-  'Chemicals: Push': 'Pousser',
+  'Chemicals: Push': 'Notification push',
   'Chemicals: Weekly e-mail': 'Courriel hebdomadaire',
   'Chemicals: Threshold six months': '6 mois avant une date limite',
   'Chemicals: Threshold one month': 'Un mois avant la date limite',

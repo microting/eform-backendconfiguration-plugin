@@ -1094,7 +1094,7 @@ export const deDE = {
   'Chemicals: When we warn': 'Wenn wir warnen',
   'Chemicals: Fixed for all customers': 'Fest für alle Kunden',
   'Chemicals: Event': 'Ereignis',
-  'Chemicals: Push': 'Drücken',
+  'Chemicals: Push': 'Push-Benachrichtigung',
   'Chemicals: Weekly e-mail': 'Wöchentliche E-Mail',
   'Chemicals: Threshold six months': '6 Monate vor einer Frist',
   'Chemicals: Threshold one month': '1 Monat vor einer Frist',

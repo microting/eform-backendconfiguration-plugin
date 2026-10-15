@@ -877,7 +877,7 @@ export const elGR = {
   'Chemicals: When we warn': 'Όταν προειδοποιούμε',
   'Chemicals: Fixed for all customers': 'Σταθερό για όλους τους πελάτες',
   'Chemicals: Event': 'Συμβάν',
-  'Chemicals: Push': 'Σπρώξτε',
+  'Chemicals: Push': 'Ειδοποίηση push',
   'Chemicals: Weekly e-mail': 'Εβδομαδιαίο ηλεκτρονικό ταχυδρομείο',
   'Chemicals: Threshold six months': '6 μήνες πριν από την προθεσμία',
   'Chemicals: Threshold one month': '1 μήνα πριν από την προθεσμία',

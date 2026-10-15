@@ -877,7 +877,7 @@ export const skSK = {
   'Chemicals: When we warn': 'Keď varujeme',
   'Chemicals: Fixed for all customers': 'Pevné pre všetkých zákazníkov',
   'Chemicals: Event': 'Udalosť',
-  'Chemicals: Push': 'TAM',
+  'Chemicals: Push': 'Push upozornenie',
   'Chemicals: Weekly e-mail': 'Týždenný e-mail',
   'Chemicals: Threshold six months': '6 mesiacov pred termínom',
   'Chemicals: Threshold one month': '1 mesiac pred termínom',

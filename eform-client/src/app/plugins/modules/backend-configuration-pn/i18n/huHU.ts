@@ -877,7 +877,7 @@ export const huHU = {
   'Chemicals: When we warn': 'Amikor figyelmeztetünk',
   'Chemicals: Fixed for all customers': 'Minden ügyfélnél rögzített',
   'Chemicals: Event': 'Esemény',
-  'Chemicals: Push': 'Nyomás',
+  'Chemicals: Push': 'Push-értesítés',
   'Chemicals: Weekly e-mail': 'Heti e-mail',
   'Chemicals: Threshold six months': '6 hónappal a határidő előtt',
   'Chemicals: Threshold one month': '1 hónappal a határidő előtt',

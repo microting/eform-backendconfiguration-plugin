@@ -877,7 +877,7 @@ export const lvLV = {
   'Chemicals: When we warn': 'Kad mēs brīdinām',
   'Chemicals: Fixed for all customers': 'Fiksēts visiem klientiem',
   'Chemicals: Event': 'Pasākums',
-  'Chemicals: Push': 'Stumt',
+  'Chemicals: Push': 'Push paziņojums',
   'Chemicals: Weekly e-mail': 'Iknedēļas e-pasts',
   'Chemicals: Threshold six months': '6 mēnešus pirms termiņa beigām',
   'Chemicals: Threshold one month': '1 mēnesi pirms termiņa beigām',

@@ -877,7 +877,7 @@ export const isIS = {
   'Chemicals: When we warn': 'Þegar við vörum við',
   'Chemicals: Fixed for all customers': 'Fast fyrir alla viðskiptavini',
   'Chemicals: Event': 'Viðburður',
-  'Chemicals: Push': 'Ýta',
+  'Chemicals: Push': 'Push-tilkynning',
   'Chemicals: Weekly e-mail': 'Vikulegur tölvupóstur',
   'Chemicals: Threshold six months': '6 mánuðum fyrir frest',
   'Chemicals: Threshold one month': '1 mánuði fyrir frest',

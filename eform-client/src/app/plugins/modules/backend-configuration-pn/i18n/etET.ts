@@ -877,7 +877,7 @@ export const etET = {
   'Chemicals: When we warn': 'Kui me hoiatame',
   'Chemicals: Fixed for all customers': 'Fikseeritud kõigile klientidele',
   'Chemicals: Event': 'Sündmus',
-  'Chemicals: Push': 'Lükka',
+  'Chemicals: Push': 'Push-teavitus',
   'Chemicals: Weekly e-mail': 'Iganädalane e-kiri',
   'Chemicals: Threshold six months': '6 kuud enne tähtaega',
   'Chemicals: Threshold one month': '1 kuu enne tähtaega',

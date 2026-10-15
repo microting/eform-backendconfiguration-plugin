@@ -1001,7 +1001,7 @@ export const itIT = {
   'Chemicals: When we warn': 'Quando avvertiamo',
   'Chemicals: Fixed for all customers': 'Fisso per tutti i clienti',
   'Chemicals: Event': 'Evento',
-  'Chemicals: Push': 'Spingere',
+  'Chemicals: Push': 'Notifica push',
   'Chemicals: Weekly e-mail': 'E-mail settimanale',
   'Chemicals: Threshold six months': '6 mesi prima di una scadenza',
   'Chemicals: Threshold one month': '1 mese prima della scadenza',

@@ -1001,7 +1001,7 @@ export const plPL = {
   'Chemicals: When we warn': 'Kiedy ostrzegamy',
   'Chemicals: Fixed for all customers': 'Stałe dla wszystkich klientów',
   'Chemicals: Event': 'Wydarzenie',
-  'Chemicals: Push': 'Naciskać',
+  'Chemicals: Push': 'Powiadomienie push',
   'Chemicals: Weekly e-mail': 'Tygodniowy e-mail',
   'Chemicals: Threshold six months': '6 miesięcy przed terminem',
   'Chemicals: Threshold one month': '1 miesiąc przed terminem',

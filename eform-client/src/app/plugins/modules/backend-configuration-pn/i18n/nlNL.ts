@@ -1001,7 +1001,7 @@ export const nlNL = {
   'Chemicals: When we warn': 'Wanneer we waarschuwen',
   'Chemicals: Fixed for all customers': 'Vast voor alle klanten',
   'Chemicals: Event': 'Evenement',
-  'Chemicals: Push': 'Duw',
+  'Chemicals: Push': 'Pushmelding',
   'Chemicals: Weekly e-mail': 'Wekelijkse e-mail',
   'Chemicals: Threshold six months': '6 maanden voor een deadline',
   'Chemicals: Threshold one month': '1 maand voor een deadline',

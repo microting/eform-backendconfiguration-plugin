@@ -1001,7 +1001,7 @@ export const svSE = {
   'Chemicals: When we warn': 'När vi varnar',
   'Chemicals: Fixed for all customers': 'Fast för alla kunder',
   'Chemicals: Event': 'Händelse',
-  'Chemicals: Push': 'Tryck',
+  'Chemicals: Push': 'Push-avisering',
   'Chemicals: Weekly e-mail': 'Veckovis e-post',
   'Chemicals: Threshold six months': '6 månader före en deadline',
   'Chemicals: Threshold one month': '1 månad före en deadline',

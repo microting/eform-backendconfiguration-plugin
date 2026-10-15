@@ -1001,7 +1001,7 @@ export const fiFI = {
   'Chemicals: When we warn': 'Kun varoitamme',
   'Chemicals: Fixed for all customers': 'Kiinteä kaikille asiakkaille',
   'Chemicals: Event': 'Tapahtuma',
-  'Chemicals: Push': 'Työnnä',
+  'Chemicals: Push': 'Push-ilmoitus',
   'Chemicals: Weekly e-mail': 'Viikoittainen sähköposti',
   'Chemicals: Threshold six months': '6 kuukautta ennen määräaikaa',
   'Chemicals: Threshold one month': '1 kuukausi ennen määräaikaa',

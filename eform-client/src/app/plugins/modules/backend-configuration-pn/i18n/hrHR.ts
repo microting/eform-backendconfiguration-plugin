@@ -877,7 +877,7 @@ export const hrHR = {
   'Chemicals: When we warn': 'Kad upozoravamo',
   'Chemicals: Fixed for all customers': 'Fiksno za sve korisnike',
   'Chemicals: Event': 'Događaj',
-  'Chemicals: Push': 'Gurnuti',
+  'Chemicals: Push': 'Push obavijest',
   'Chemicals: Weekly e-mail': 'Tjedna e-pošta',
   'Chemicals: Threshold six months': '6 mjeseci prije roka',
   'Chemicals: Threshold one month': '1 mjesec prije roka',
