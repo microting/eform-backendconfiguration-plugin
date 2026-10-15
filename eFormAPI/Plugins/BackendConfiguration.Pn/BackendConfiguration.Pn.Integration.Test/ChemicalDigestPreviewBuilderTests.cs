@@ -81,6 +81,10 @@ public class ChemicalDigestPreviewBuilderTests : ChemicalTestBase
     [TestCase("2026-10-26T05:30:00Z", 44)] // Monday 06:30 local: the slot is still ahead, same week
     [TestCase("2026-10-26T06:00:00Z", 45)] // exactly the slot: the slot is not "after" utcNow
     [TestCase("2026-12-30T10:00:00Z", 1)] // Wednesday: next slot is Monday 2027-01-04, ISO week 1
+    [TestCase("2026-12-23T10:00:00Z", 53)] // Wednesday: next slot is Monday 2026-12-28, ISO week 53
+    [TestCase("2026-03-30T04:30:00Z", 14)] // Monday 06:30 CEST (first Monday after the spring switch): slot ahead
+    [TestCase("2026-03-30T05:00:00Z", 15)] // exactly the slot (07:00 CEST): next Monday
+    [TestCase("2026-03-28T12:00:00Z", 14)] // Saturday before the switch: next slot is Monday 2026-03-30
     public async Task Build_IsoWeek_IsTheWeekOfTheNextDigestSlot(string utcNowIso, int expectedWeek)
     {
         var utcNow = DateTime.Parse(utcNowIso, null, System.Globalization.DateTimeStyles.AdjustToUniversal);
@@ -116,7 +120,81 @@ public class ChemicalDigestPreviewBuilderTests : ChemicalTestBase
         Assert.That(item.PlacementId, Is.EqualTo(change.Placements.Single().Id));
         Assert.That(item.PlacementNote, Is.EqualTo("Reol 2"));
         Assert.That(item.RegisteredByName, Is.EqualTo($"User {TestUserId}"));
+        Assert.That(item.RegisteredAt, Is.EqualTo(change.Placements.Single().RegisteredAt));
+        Assert.That(item.RegisteredAt!.Value.Kind, Is.EqualTo(DateTimeKind.Utc), "serialised with a Z, not as local time");
         Assert.That(digest.HasActionItems, Is.False, "new registrations are informational only");
+    }
+
+    private async Task<ChemicalPlacement> CreatePlacementAtAsync(int locationId, int chemicalId, DateTime registeredAt)
+    {
+        var placement = new ChemicalPlacement
+        {
+            LocationId = locationId, ChemicalId = chemicalId, PlacementNote = string.Empty,
+            RegisteredByUserId = TestUserId, RegisteredAt = registeredAt, CreatedByUserId = TestUserId, UpdatedByUserId = TestUserId,
+        };
+        await placement.Create(BackendConfigurationPnDbContext!);
+        return placement;
+    }
+
+    // A fixed Wednesday: today is 2026-10-28, the next digest slot is Monday 2026-11-02 07:00 (CET).
+    private static readonly DateTime Wednesday = new(2026, 10, 28, 10, 0, 0, DateTimeKind.Utc);
+
+    // I-3: the e-mail is evaluated on the slot's Monday, so a threshold that is reached before then already counts.
+    [Test]
+    public async Task Build_EvaluatesTheThresholdsAtTheNextSlotsDate()
+    {
+        var property = await CreatePropertyAsync();
+        var lade = await CreateLocationAsync(property.Id, "Lade");
+        var passesBeforeMonday = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Passerer", "1-1",
+            salesDeadline: new DateTime(2026, 10, 31, 0, 0, 0, DateTimeKind.Utc));
+        var sixMonthsOnMonday = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Seks maaneder", "1-2",
+            useAndPossessionDeadline: new DateTime(2027, 5, 2, 0, 0, 0, DateTimeKind.Utc));
+        var passesOnMonday = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Sidste dag", "1-3",
+            salesDeadline: new DateTime(2026, 11, 2, 0, 0, 0, DateTimeKind.Utc));
+        await CreatePlacementAsync(lade.Id, passesBeforeMonday.ChemicalId);
+        await CreatePlacementAsync(lade.Id, sixMonthsOnMonday.ChemicalId);
+        await CreatePlacementAsync(lade.Id, passesOnMonday.ChemicalId);
+
+        var digest = await CreateSut().BuildAsync(property.Id, Wednesday);
+
+        Assert.That(digest.PassedDeadlines.Select(i => i.ProductName), Is.EqualTo(new[] { "Passerer" }));
+        Assert.That(digest.UpcomingDeadlines.Select(i => i.ProductName), Is.EquivalentTo(new[] { "Seks maaneder", "Sidste dag" }));
+        Assert.That(digest.UpcomingDeadlines.Single(i => i.ProductName == "Seks maaneder").Threshold, Is.EqualTo(ChemicalAlertThresholdEnum.SixMonths));
+        Assert.That(digest.UpcomingDeadlines.Single(i => i.ProductName == "Sidste dag").Threshold, Is.EqualTo(ChemicalAlertThresholdEnum.OneMonth));
+    }
+
+    // I-2: exactly the order of Plan D's e-mail: deadline sections by deadline DATE then name, the other two by name,
+    // every name compared ordinally and case-insensitively (so Å < Æ < Ø, and "Aa" is not "Å").
+    [Test]
+    public async Task Build_OrdersEachSectionLikePlanDsEmail()
+    {
+        var property = await CreatePropertyAsync();
+        var lade = await CreateLocationAsync(property.Id, "Lade");
+        async Task<SeededChemical> Seed(string name, int status = 5, DateTime? sales = null) =>
+            await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, name, name, status, salesDeadline: sales);
+        DateTime Day(int day, int hour = 0) => new(2026, 10, day, hour, 0, 0, DateTimeKind.Utc);
+
+        // Passed deadlines: 2026-10-10 first; the 20th is a date tie even though Alf's value is 22:00 (a DateTime sort would put Zed first).
+        var deadlines = new[] { Seed("Zed", sales: Day(20)), Seed("Alf", sales: Day(20, 22)), Seed("alpha", sales: Day(20)),
+            Seed("Bravo", sales: Day(20)), Seed("Early", sales: Day(10)) };
+        foreach (var chemical in await Task.WhenAll(deadlines))
+        {
+            await CreatePlacementAsync(lade.Id, chemical.ChemicalId);
+        }
+
+        // Status and new registrations: registered after the Monday 2026-10-26 07:00 slot, deregistered.
+        foreach (var name in new[] { "Øko", "Ådal", "Aalborg Mix", "Ærlig", "ABC", "zeta" })
+        {
+            var chemical = await Seed(name, status: 6);
+            await CreatePlacementAtAsync(lade.Id, chemical.ChemicalId, new DateTime(2026, 10, 27, 8, 0, 0, DateTimeKind.Utc));
+        }
+
+        var digest = await CreateSut().BuildAsync(property.Id, Wednesday);
+
+        Assert.That(digest.PassedDeadlines.Select(i => i.ProductName), Is.EqualTo(new[] { "Early", "Alf", "alpha", "Bravo", "Zed" }));
+        var byName = new[] { "Aalborg Mix", "ABC", "zeta", "Ådal", "Ærlig", "Øko" };
+        Assert.That(digest.DeregisteredOrExpired.Select(i => i.ProductName), Is.EqualTo(byName));
+        Assert.That(digest.NewRegistrations.Select(i => i.ProductName), Is.EqualTo(byName));
     }
 
     // Plan D decision 16: "denne uge" starts at the most recent Monday 07:00 Europe/Copenhagen.
@@ -124,6 +202,9 @@ public class ChemicalDigestPreviewBuilderTests : ChemicalTestBase
     [TestCase("2026-10-26T06:00:00Z", "2026-10-26T06:00:00Z")] // exactly the slot
     [TestCase("2026-10-26T05:30:00Z", "2026-10-19T05:00:00Z")] // Monday 06:30 local: previous slot (CEST)
     [TestCase("2026-10-25T21:00:00Z", "2026-10-19T05:00:00Z")] // Sunday evening
+    [TestCase("2026-03-30T05:00:00Z", "2026-03-30T05:00:00Z")] // exactly the slot, CEST after the spring switch
+    [TestCase("2026-03-30T04:30:00Z", "2026-03-23T06:00:00Z")] // 06:30 CEST: previous slot was 07:00 CET
+    [TestCase("2026-03-29T12:00:00Z", "2026-03-23T06:00:00Z")] // Sunday of the switch
     public void NewRegistrationsSince_IsTheMostRecentMondaySlot(string utcNowIso, string expectedIso)
     {
         var utcNow = DateTime.Parse(utcNowIso, null, System.Globalization.DateTimeStyles.AdjustToUniversal);
