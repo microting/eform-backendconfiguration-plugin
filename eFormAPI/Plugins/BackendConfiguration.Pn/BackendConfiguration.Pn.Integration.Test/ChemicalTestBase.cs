@@ -149,12 +149,13 @@ public abstract class ChemicalTestBase : TestBaseSetup
         return location;
     }
 
-    protected async Task<ChemicalPlacement> CreatePlacementAsync(int locationId, int chemicalId, DateTime? removedAt = null)
+    protected async Task<ChemicalPlacement> CreatePlacementAsync(
+        int locationId, int chemicalId, DateTime? removedAt = null, DateTime? registeredAt = null)
     {
         var placement = new ChemicalPlacement
         {
             LocationId = locationId, ChemicalId = chemicalId, PlacementNote = string.Empty,
-            RegisteredByUserId = TestUserId, RegisteredAt = DateTime.UtcNow.AddDays(-30),
+            RegisteredByUserId = TestUserId, RegisteredAt = registeredAt ?? DateTime.UtcNow.AddDays(-30),
             RemovedAt = removedAt, RemovedByUserId = removedAt.HasValue ? TestUserId : null,
             RemovalReason = removedAt.HasValue ? ChemicalRemovalReasonEnum.Used : null,
             CreatedByUserId = TestUserId, UpdatedByUserId = TestUserId,

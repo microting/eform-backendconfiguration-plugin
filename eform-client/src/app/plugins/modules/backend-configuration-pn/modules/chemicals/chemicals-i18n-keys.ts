@@ -12,15 +12,15 @@ export const CHEMICAL_REUSED_I18N_KEYS: string[] = [
 
 export const CHEMICAL_I18N_KEYS: string[] = [
   ...CHEMICAL_REUSED_I18N_KEYS,
-  // Task 3 - shell
+  // Shell
   'Chemicals: Title',
   'Chemicals: No properties',
   'Chemicals: Select a property',
   'Chemicals: Not available yet',
-  // Task 3 - W4 page title (mockup: "Medarbejdere & rettigheder")
+  // W4 page title
   'Chemicals: Permissions title',
   'Chemicals: Could not load properties',
-  // Task 4 - W4 permissions
+  // W4 permissions
   'Chemicals: Worker',
   'Chemicals: Flag view',
   'Chemicals: Flag view hint',
@@ -49,7 +49,7 @@ export const CHEMICAL_I18N_KEYS: string[] = [
   'Chemicals: No workers',
   'Chemicals: Could not load permissions',
   'Chemicals: Could not save permissions',
-  // Task 4 fix round 1 - unsaved-changes confirm, copy feedback, search
+  // W4 unsaved-changes confirm, copy feedback, search
   'Chemicals: Discard unsaved changes?',
   'Chemicals: Changed workers',
   'Chemicals: Discard changes',
@@ -58,4 +58,42 @@ export const CHEMICAL_I18N_KEYS: string[] = [
   'Chemicals: Nothing to copy',
   'Chemicals: Could not copy permissions',
   'Chemicals: No workers match',
+  // W5 settings
+  'Chemicals: Settings title',
+  'Chemicals: Stock management',
+  'Chemicals: Enabled',
+  'Chemicals: Disabled',
+  'Chemicals: Stock management hint',
+  'Chemicals: Weekly digest',
+  'Chemicals: Weekly digest hint',
+  'Chemicals: Recipients',
+  'Chemicals: Add e-mail',
+  'Chemicals: Remove recipient',
+  'Chemicals: Invalid e-mail',
+  'Chemicals: When we warn',
+  'Chemicals: Fixed for all customers',
+  'Chemicals: Event',
+  'Chemicals: Push',
+  'Chemicals: Weekly e-mail',
+  'Chemicals: Threshold six months',
+  'Chemicals: Threshold one month',
+  'Chemicals: Threshold passed',
+  'Chemicals: Threshold passed hint',
+  'Chemicals: Threshold status changed',
+  'Chemicals: Threshold status changed hint',
+  'Chemicals: Next digest example',
+  'Chemicals: Digest subject',
+  'Chemicals: Digest slot hint',
+  'Chemicals: Digest nothing to act on',
+  'Chemicals: Digest passed',
+  'Chemicals: Digest upcoming',
+  'Chemicals: Digest deregistered or expired',
+  'Chemicals: Digest new registrations',
+  'Chemicals: Digest footer',
+  'Chemicals: Could not save settings',
+  'Chemicals: Discard unsaved settings?',
+  'Chemicals: Unsaved settings',
+  'Chemicals: Could not load settings',
+  'Chemicals: Could not load preview',
+  'Chemicals: Yes',
 ];

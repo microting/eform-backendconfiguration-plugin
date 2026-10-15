@@ -4,6 +4,7 @@ import {OperationDataResult} from 'src/app/common/models';
 import {ApiBaseService} from 'src/app/common/services';
 import {
   ChemicalCreateLocationCommand,
+  ChemicalDigestModel,
   ChemicalInventoryModel,
   ChemicalLocationModel,
   ChemicalMovePlacementBody,
@@ -114,5 +115,10 @@ export class BackendConfigurationPnChemicalsService {
 
   saveSettings(propertyId: number, body: ChemicalSettingsBody): Observable<OperationDataResult<ChemicalSettingsModel>> {
     return this.apiBaseService.put(this.url(`properties/${propertyId}/settings`), body);
+  }
+
+  /** The next weekly e-mail for one property, built by the server from the digest job's rule. */
+  getDigestPreview(propertyId: number): Observable<OperationDataResult<ChemicalDigestModel>> {
+    return this.apiBaseService.get(this.url(`properties/${propertyId}/digest-preview`));
   }
 }

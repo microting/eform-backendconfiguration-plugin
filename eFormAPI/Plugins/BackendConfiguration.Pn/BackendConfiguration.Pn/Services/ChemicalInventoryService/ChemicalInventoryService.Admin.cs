@@ -180,7 +180,7 @@ public partial class ChemicalInventoryService
             .Distinct()
             .ToListAsync().ConfigureAwait(false);
 
-    private static ChemicalSettingsModel MapSettings(int propertyId, ChemicalPropertySettings settings) => new(
+    internal static ChemicalSettingsModel MapSettings(int propertyId, ChemicalPropertySettings settings) => new(
         propertyId,
         settings?.StockEnabled ?? false,
         (settings?.DigestRecipients ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));

@@ -8120,5 +8120,36 @@
       "el-GR": "Σφάλμα κατά την αποθήκευση των χημικών ρυθμίσεων",
       "is-IS": "Villa við að vista efnastillingar"
     }
+  },
+  {
+    "Key": "ErrorWhileReadingChemicalDigest",
+    "LocalizedValue": {
+      "en-US": "Error while building the digest preview",
+      "da": "Fejl ved opbygning af eksemplet på oversigten",
+      "de": "Fehler beim Erstellen der Digest-Vorschau",
+      "uk-UA": "Помилка під час створення попереднього перегляду дайджесту",
+      "pl-PL": "Błąd podczas tworzenia podglądu streszczenia",
+      "no-NO": "Feil under bygging av forhåndsvisning av sammendrag",
+      "sv-SE": "Fel vid skapande av förhandsgranskningen av sammanfattningen",
+      "es-ES": "Error al generar la vista previa del resumen.",
+      "fr-FR": "Erreur lors de la génération de l'aperçu du résumé",
+      "it-IT": "Errore durante la creazione dell'anteprima del digest",
+      "nl-NL": "Fout tijdens het genereren van de samenvattingspreview.",
+      "pt-BR": "Erro ao gerar a pré-visualização do resumo.",
+      "pt-PT": "Erro ao gerar a pré-visualização do resumo.",
+      "fi-FI": "Virhe tiivistelmän esikatselun luomisessa",
+      "et-ET": "Viga kokkuvõtte eelvaate loomisel",
+      "lv-LV": "Kļūda, veidojot īssavilkuma priekšskatījumu",
+      "lt-LT": "Kuriant santraukos peržiūrą įvyko klaida",
+      "ro-RO": "Eroare la crearea previzualizării rezumatului",
+      "hr-HR": "Pogreška prilikom izrade pregleda sažetka",
+      "sl-SL": "Napaka pri ustvarjanju predogleda povzetka",
+      "cs-CZ": "Chyba při vytváření náhledu přehledu",
+      "sk-SK": "Chyba pri vytváraní ukážky súhrnu",
+      "hu-HU": "Hiba történt az összefoglaló előnézet létrehozásakor",
+      "bg-BG": "Грешка при създаването на прегледа на дайджеста",
+      "el-GR": "Σφάλμα κατά τη δημιουργία της προεπισκόπησης της σύνοψης",
+      "is-IS": "Villa við að búa til forskoðun á samantekt"
+    }
   }
 ]

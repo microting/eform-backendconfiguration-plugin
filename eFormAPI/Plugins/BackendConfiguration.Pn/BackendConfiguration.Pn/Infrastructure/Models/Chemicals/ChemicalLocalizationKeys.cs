@@ -41,11 +41,15 @@ public static class ChemicalLocalizationKeys
     public const string ErrorWhileReadingChemicalSettings = "ErrorWhileReadingChemicalSettings";
     public const string ErrorWhileSavingChemicalSettings = "ErrorWhileSavingChemicalSettings";
 
+    // ChemicalDigestController.
+    public const string ErrorWhileReadingChemicalDigest = "ErrorWhileReadingChemicalDigest";
+
     public static readonly string[] ControllerErrors =
     [
         ErrorWhileReadingChemicals, ErrorWhileSearchingChemicalRegister, ErrorWhileSavingChemicalPlacement,
         ErrorWhileSavingChemicalStock, ErrorWhileSavingChemicalLocation, ErrorWhileReadingChemicalPermissions,
         ErrorWhileSavingChemicalPermissions, ErrorWhileReadingChemicalSettings, ErrorWhileSavingChemicalSettings,
+        ErrorWhileReadingChemicalDigest,
     ];
 
     public static IReadOnlyList<string> All { get; } = [.. ControllerErrors];

@@ -25,6 +25,12 @@ const exactText = (text: string): RegExp =>
  *     `#chemicalPermissionsSaveBtn`, discard confirm
  *     `#chemicalPermissionsDiscardConfirm` / `#chemicalPermissionsDiscardConfirmCancel`.
  *
+ *   - W5: `#chemicalSettingsPage`, stock toggle `#chemicalSettingsStockToggle`, recipients
+ *     `#chemicalSettingsRecipient-<i>` / `#chemicalSettingsRecipientInput` / `#chemicalSettingsRecipientError`,
+ *     `#chemicalSettingsSaveBtn`, thresholds `#chemicalSettingsThresholds`, preview `#chemicalDigestPreview`
+ *     (`#chemicalDigestPreviewNothing`, `#chemicalDigestSection-<passed|upcoming|status|new>`), menu child
+ *     `#backend-configuration-pn-chemicals-settings`.
+ *
  * No sleeps: every wait is a bounded wait on a concrete condition.
  */
 export class BackendConfigurationChemicalsPage {
@@ -40,6 +46,10 @@ export class BackendConfigurationChemicalsPage {
 
   permissionsMenuButton(): Locator {
     return this.page.locator('#backend-configuration-pn-chemicals-permissions');
+  }
+
+  settingsMenuButton(): Locator {
+    return this.page.locator('#backend-configuration-pn-chemicals-settings');
   }
 
   propertySelect(): Locator {
@@ -66,6 +76,37 @@ export class BackendConfigurationChemicalsPage {
   async gotoPermissions(): Promise<void> {
     await this.page.goto(`${BASE_URL}/plugins/backend-configuration-pn/chemicals/permissions`);
     await this.permissionsPage().waitFor({ state: 'visible', timeout: API_TIMEOUT });
+  }
+
+  settingsPage(): Locator {
+    return this.page.locator('#chemicalSettingsPage');
+  }
+
+  /**
+   * The settings form renders only after the stored settings arrived (a failed or pending load shows no
+   * form), so its stock toggle being enabled means it is safe to edit and save.
+   */
+  async waitForSettingsLoaded(): Promise<void> {
+    await this.page.locator('#chemicalSettingsStockToggle button').waitFor({ state: 'visible', timeout: API_TIMEOUT });
+    await expect(this.page.locator('#chemicalSettingsStockToggle button')).toBeEnabled({ timeout: UI_TIMEOUT });
+  }
+
+  /** Opens Kemi > Indstillinger through the sidebar: expands each dropdown only if the next level is hidden. */
+  async goToSettingsViaMenu(): Promise<void> {
+    if (!(await this.settingsMenuButton().isVisible())) {
+      if (!(await this.chemicalsGroupButton().isVisible())) {
+        await this.pluginMenuButton().click({ timeout: UI_TIMEOUT });
+      }
+      await this.chemicalsGroupButton().click({ timeout: UI_TIMEOUT });
+    }
+    await this.settingsMenuButton().click({ timeout: UI_TIMEOUT });
+    await this.settingsPage().waitFor({ state: 'visible', timeout: API_TIMEOUT });
+  }
+
+  /** Opens Indstillinger by URL (the menu has its own test); waits for the screen root. */
+  async gotoSettings(): Promise<void> {
+    await this.page.goto(`${BASE_URL}/plugins/backend-configuration-pn/chemicals/settings`);
+    await this.settingsPage().waitFor({ state: 'visible', timeout: API_TIMEOUT });
   }
 
   /** Picks an option in an mtx-select by its exact visible text (no substring match) and waits for the panel to close. */
@@ -160,5 +201,22 @@ export class BackendConfigurationChemicalsPage {
     const response = await saved;
     expect((await response.json()).success).toBe(true);
     await this.saveBar().waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
+  }
+
+  // ----- W5 -------------------------------------------------------------------
+
+  async saveSettings(): Promise<void> {
+    const saved = waitForApiResponse(
+      this.page,
+      'PUT chemicals/properties/{id}/settings',
+      (r) =>
+        /\/api\/backend-configuration-pn\/chemicals\/properties\/\d+\/settings$/.test(r.url()) &&
+        r.request().method() === 'PUT',
+      API_TIMEOUT
+    );
+    await this.page.locator('#chemicalSettingsSaveBtn').click({ timeout: UI_TIMEOUT });
+    const response = await saved;
+    expect((await response.json()).success).toBe(true);
+    await expect(this.page.locator('#chemicalSettingsSaveBtn')).toBeDisabled({ timeout: UI_TIMEOUT });
   }
 }
