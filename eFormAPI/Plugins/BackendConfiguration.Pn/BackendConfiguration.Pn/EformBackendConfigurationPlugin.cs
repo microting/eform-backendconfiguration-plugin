@@ -30,6 +30,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models.TaskManagement;
+using BackendConfiguration.Pn.Services.ChemicalReporting;
 using Microting.eForm.Infrastructure.Models;
 using Microting.EformAngularFrontendBase.Infrastructure.Data;
 using Microting.EformAngularFrontendBase.Infrastructure.Data.Factories;
@@ -144,6 +145,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<Services.TailBite.ITailBiteWebQueryService, Services.TailBite.TailBiteWebQueryService>();
         // flutter-chemistry: the inventory service, its readers and the chemicalbase client.
         services.AddChemicalInventory();
+        // flutter-chemistry Plan E: the digest preview and (later) the reports.
+        services.AddChemicalReporting();
         services.AddTransient<Services.EventDeployService.IEventDeployService,
             Services.EventDeployService.EventDeployService>();
         // Transient, like the sibling DbContext-backed services here; see
@@ -2193,7 +2196,9 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                 ChildItems =
                 [
                     ChemicalsMenuChild("permissions", 2,
-                        MenuTranslations("Permissions", "Berechtigungen", "Rettigheder", "Дозволи"))
+                        MenuTranslations("Permissions", "Berechtigungen", "Rettigheder", "Дозволи")),
+                    ChemicalsMenuChild("settings", 3,
+                        MenuTranslations("Settings", "Einstellungen", "Indstillinger", "Налаштування"))
                 ]
             }
         };

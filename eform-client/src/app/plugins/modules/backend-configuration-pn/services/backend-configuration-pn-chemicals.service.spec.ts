@@ -68,6 +68,7 @@ describe('BackendConfigurationPnChemicalsService', () => {
     ['settings', (s) => s.getSettings(3), 'get', [`${BASE}/properties/3/settings`]],
     ['save settings', (s) => s.saveSettings(3, {stockEnabled: true, digestRecipients: ['first@example.com']}), 'put',
       [`${BASE}/properties/3/settings`, {stockEnabled: true, digestRecipients: ['first@example.com']}]],
+    ['digest preview', (s) => s.getDigestPreview(3), 'get', [`${BASE}/properties/3/digest-preview`]],
   ];
 
   it.each(cases)('%s calls the Plan A route', (_name, call, verb, args) => {

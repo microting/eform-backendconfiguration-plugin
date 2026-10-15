@@ -1,0 +1,129 @@
+<div id="chemicalSettingsPage" class="chemicals-page">
+<ng-container *ngIf="propertyId !== null">
+<div class="d-flex flex-column gap-12">
+  <div *ngIf="loadFailed" class="chemicals-empty" id="chemicalSettingsLoadFailed" role="alert">
+    {{ 'Chemicals: Could not load settings' | translate }}
+  </div>
+  <ng-container *ngIf="ready">
+  <mat-card class="p-3">
+    <div class="d-flex align-items-center gap-12">
+      <h3 class="m-0">{{ 'Chemicals: Stock management' | translate }}</h3>
+      <mat-slide-toggle
+        id="chemicalSettingsStockToggle"
+        [checked]="stockEnabled"
+        [disabled]="busy"
+        [aria-label]="('Chemicals: Stock management' | translate) + ': ' + ((stockEnabled ? 'Chemicals: Enabled' : 'Chemicals: Disabled') | translate)"
+        (change)="onStockToggle($event.checked)"
+      >{{ (stockEnabled ? 'Chemicals: Enabled' : 'Chemicals: Disabled') | translate }}</mat-slide-toggle>
+    </div>
+    <p class="chemicals-hint">{{ 'Chemicals: Stock management hint' | translate }}</p>
+  </mat-card>
+
+  <mat-card class="p-3">
+    <h3 class="m-0">{{ 'Chemicals: Weekly digest' | translate }}</h3>
+    <p class="chemicals-hint">{{ 'Chemicals: Weekly digest hint' | translate }}</p>
+    <mat-form-field class="w-100">
+      <mat-label>{{ 'Chemicals: Recipients' | translate }}</mat-label>
+      <mat-chip-grid #recipientGrid>
+        <mat-chip-row
+          *ngFor="let email of recipients; let i = index"
+          [id]="'chemicalSettingsRecipient-' + i"
+          [disabled]="busy"
+          (removed)="removeRecipient(email)"
+        >
+          {{ email }}
+          <button matChipRemove [attr.aria-label]="'Chemicals: Remove recipient' | translate">
+            <mat-icon>cancel</mat-icon>
+          </button>
+        </mat-chip-row>
+        <input
+          id="chemicalSettingsRecipientInput"
+          [placeholder]="'Chemicals: Add e-mail' | translate"
+          [matChipInputFor]="recipientGrid"
+          [disabled]="busy"
+          [attr.aria-invalid]="invalidRecipients.length ? 'true' : null"
+          [attr.aria-describedby]="invalidRecipients.length ? 'chemicalSettingsRecipientError' : null"
+          [(ngModel)]="recipientInput"
+          (keydown.enter)="addRecipientInput(); $event.preventDefault()"
+          (blur)="addRecipientInput()"
+        >
+      </mat-chip-grid>
+    </mat-form-field>
+    <div class="chemicals-error-slot">
+      <div *ngIf="invalidRecipients.length" class="chemicals-error" id="chemicalSettingsRecipientError" role="alert">
+        {{ 'Chemicals: Invalid e-mail' | translate: {value: invalidRecipients.join(', ')} }}
+      </div>
+    </div>
+    <div class="d-flex flex-wrap align-items-center justify-content-end gap-12">
+      <span *ngIf="saveFailed" class="chemicals-error" id="chemicalSettingsSaveError" role="alert">
+        {{ 'Chemicals: Could not save settings' | translate }}
+      </span>
+      <span *ngIf="dirty && !saveFailed" class="chemicals-hint" id="chemicalSettingsUnsaved">
+        {{ 'Chemicals: Unsaved settings' | translate }}
+      </span>
+      <button class="btn-primary" id="chemicalSettingsSaveBtn" [disabled]="!dirty || busy" (click)="save()">
+        {{ 'Save' | translate }}
+      </button>
+    </div>
+  </mat-card>
+
+  </ng-container>
+
+  <mat-card class="p-3" id="chemicalSettingsThresholds">
+    <div class="d-flex align-items-center gap-12">
+      <h3 class="m-0">{{ 'Chemicals: When we warn' | translate }}</h3>
+      <span class="chemicals-badge">{{ 'Chemicals: Fixed for all customers' | translate }}</span>
+    </div>
+    <table class="chemicals-thresholds">
+      <thead>
+        <tr>
+          <th>{{ 'Chemicals: Event' | translate }}</th>
+          <th>{{ 'Chemicals: Push' | translate }}</th>
+          <th>{{ 'Chemicals: Weekly e-mail' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let threshold of thresholds">
+          <td>
+            {{ threshold.key | translate }}
+            <small *ngIf="threshold.hintKey">{{ threshold.hintKey | translate }}</small>
+          </td>
+          <td><mat-icon aria-hidden="true">check</mat-icon><span class="visually-hidden">{{ 'Chemicals: Yes' | translate }}</span></td>
+          <td><mat-icon aria-hidden="true">check</mat-icon><span class="visually-hidden">{{ 'Chemicals: Yes' | translate }}</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </mat-card>
+
+  <mat-card class="p-3" id="chemicalDigestPreview">
+    <h3 class="m-0">{{ 'Chemicals: Next digest example' | translate }}</h3>
+    <div *ngIf="previewFailed" class="chemicals-empty" id="chemicalDigestPreviewFailed" role="alert">
+      {{ 'Chemicals: Could not load preview' | translate }}
+    </div>
+    <ng-container *ngIf="preview">
+      <p class="chemicals-hint" id="chemicalDigestPreviewSubject">
+        {{ 'Chemicals: Digest subject' | translate: {property: preview.propertyName, week: preview.isoWeek} }}
+      </p>
+      <p class="chemicals-hint">{{ 'Chemicals: Digest slot hint' | translate }}</p>
+      <div *ngIf="!preview.hasActionItems" id="chemicalDigestPreviewNothing" class="chemicals-empty">
+        {{ 'Chemicals: Digest nothing to act on' | translate }}
+      </div>
+      <section *ngFor="let section of previewSections" [id]="'chemicalDigestSection-' + section.id" class="chemicals-digest-section">
+        <h4>{{ section.key | translate }}</h4>
+        <div *ngFor="let item of section.items" class="chemicals-digest-item">
+          <strong>{{ item.productName }}</strong>
+          <span *ngIf="section.deadline && item.deadline">{{ item.deadline | date: 'dd-MM-yyyy' : 'UTC' }}</span>
+          <span *ngIf="section.registration && item.registeredAt">{{ item.registeredAt | date: 'dd-MM' }}</span>
+          <div class="chemicals-hint">
+            {{ item.locationName }}<span *ngIf="item.placementNote"> · {{ item.placementNote }}</span>
+            <span *ngIf="!section.registration && item.statusText"> · {{ item.statusText }}</span>
+            <span *ngIf="section.registration && item.registeredByName"> · {{ item.registeredByName }}</span>
+          </div>
+        </div>
+      </section>
+      <p class="chemicals-hint">{{ 'Chemicals: Digest footer' | translate: {property: preview.propertyName} }}</p>
+    </ng-container>
+  </mat-card>
+</div>
+</ng-container>
+</div>

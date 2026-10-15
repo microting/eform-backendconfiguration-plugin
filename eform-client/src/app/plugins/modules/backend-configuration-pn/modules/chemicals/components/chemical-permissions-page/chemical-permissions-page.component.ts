@@ -10,7 +10,7 @@ import {catchError, finalize, switchMap, tap} from 'rxjs/operators';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {selectChemicalsProperties, selectChemicalsPropertyId} from '../../../../state';
-import {ChemicalUnsavedChangesAware} from '../../chemicals-unsaved-changes';
+import {ChemicalUnsavedChangesAware, confirmDiscardWhenDirty, warnBeforeUnload} from '../../chemicals-unsaved-changes';
 import {
   CHEMICAL_FLAG_KEYS,
   ChemicalFlagKey,
@@ -233,15 +233,8 @@ export class ChemicalPermissionsPageComponent implements OnInit, ChemicalUnsaved
 
   /** Used by the route guard and the container's property switch. */
   confirmDiscardChanges(): Observable<boolean> {
-    if (this.busy) {
-      // A save already issued cannot be cancelled, so "discard" would race its commit: stay until it settles.
-      return of(false);
-    }
     const count = this.changeCount;
-    if (!count) {
-      return of(true);
-    }
-    return confirmDiscard(this.dialog, this.overlay, {
+    return confirmDiscardWhenDirty(this.busy, count > 0, () => confirmDiscard(this.dialog, this.overlay, {
       headerText: this.t('Chemicals: Discard unsaved changes?'),
       fields: [
         {header: this.t('Property'), text: this.propertyName},
@@ -250,16 +243,12 @@ export class ChemicalPermissionsPageComponent implements OnInit, ChemicalUnsaved
       discardText: this.t('Chemicals: Discard changes'),
       keepText: this.t('Chemicals: Keep editing'),
       confirmId: 'chemicalPermissionsDiscardConfirm',
-    });
+    }));
   }
 
-  /** Reload or tab close with unsaved edits: the browser shows its own "leave site?" prompt. */
   @HostListener('window:beforeunload', ['$event'])
   onBeforeUnload(event: BeforeUnloadEvent): void {
-    if (this.changeCount > 0) {
-      event.preventDefault();
-      event.returnValue = '';
-    }
+    warnBeforeUnload(event, this.changeCount > 0);
   }
 
   private propertyNameOf(id: number | null): string {

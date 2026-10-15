@@ -202,13 +202,23 @@ public class ChemicalsController(
         }
         catch (Exception e)
         {
-            if (ExpectedStatusCode(e) is null)
-            {
-                SentrySdk.CaptureException(e);
-            }
-
-            return new OperationDataResult<T>(false, $"{localizationService.GetString(errorKey)}: {e.Message}");
+            return FailureResult<T>(e, localizationService, errorKey);
         }
+    }
+
+    /// <summary>
+    /// The failed result for a service exception: typed outcomes are answers, anything else
+    /// goes to Sentry first. Shared with the other Kemi controllers so the policy cannot drift.
+    /// </summary>
+    internal static OperationDataResult<T> FailureResult<T>(
+        Exception e, IBackendConfigurationLocalizationService localizationService, string errorKey)
+    {
+        if (ExpectedStatusCode(e) is null)
+        {
+            SentrySdk.CaptureException(e);
+        }
+
+        return new OperationDataResult<T>(false, $"{localizationService.GetString(errorKey)}: {e.Message}");
     }
 
     private Task<OperationDataResult<List<T>>> ExecuteListAsync<T>(Func<Task<IReadOnlyList<T>>> action, string errorKey) =>
