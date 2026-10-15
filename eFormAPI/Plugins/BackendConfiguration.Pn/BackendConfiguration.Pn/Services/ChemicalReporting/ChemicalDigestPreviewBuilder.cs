@@ -66,7 +66,7 @@ public class ChemicalDigestPreviewBuilder(
     }
 
     /// <summary>The Copenhagen date of the next digest slot: the Monday 07:00 slot strictly after utcNow.</summary>
-    public static DateOnly NextSlotDate(DateTime utcNow)
+    private static DateOnly NextSlotDate(DateTime utcNow)
     {
         var mostRecentSlot = TimeZoneInfo.ConvertTimeFromUtc(NewRegistrationsSince(utcNow), ChemicalAlertRules.Copenhagen);
         return DateOnly.FromDateTime(mostRecentSlot.Date.AddDays(7));
@@ -104,11 +104,7 @@ public class ChemicalDigestPreviewBuilder(
                 continue;
             }
 
-            foreach (var (kind, deadline) in new[]
-                     {
-                         (ChemicalDeadlineKindEnum.UseAndPossession, entry.UseAndPossessionDeadline),
-                         (ChemicalDeadlineKindEnum.Sales, entry.SalesDeadline),
-                     })
+            foreach (var (kind, deadline) in DeadlinesOf(entry))
             {
                 var threshold = ChemicalAlertRules.ReachedThreshold(deadline, slotDate);
                 if (threshold is null)
@@ -117,7 +113,8 @@ public class ChemicalDigestPreviewBuilder(
                 }
 
                 var item = Item(placement, entry, locations) with { DeadlineKind = kind, Deadline = deadline, Threshold = threshold };
-                (threshold == ChemicalAlertThresholdEnum.Passed ? passed : upcoming).Add(item);
+                var target = threshold == ChemicalAlertThresholdEnum.Passed ? passed : upcoming;
+                target.Add(item);
             }
 
             if (ChemicalAlertRules.IsActionStatus(entry.Status))
@@ -126,14 +123,18 @@ public class ChemicalDigestPreviewBuilder(
             }
         }
 
-        var fresh = recent
-            .Where(p => entries.ContainsKey(p.ChemicalId))
-            .Select(p => Item(p, entries[p.ChemicalId], locations) with
+        var fresh = new List<ChemicalDigestItemModel>();
+        foreach (var placement in recent)
+        {
+            if (entries.TryGetValue(placement.ChemicalId, out var entry))
             {
-                RegisteredByName = userNames.TryGetValue(p.RegisteredByUserId, out var name) ? name : string.Empty,
-                RegisteredAt = DateTime.SpecifyKind(p.RegisteredAt, DateTimeKind.Utc),
-            })
-            .ToList();
+                fresh.Add(Item(placement, entry, locations) with
+                {
+                    RegisteredByName = userNames.TryGetValue(placement.RegisteredByUserId, out var name) ? name : string.Empty,
+                    RegisteredAt = DateTime.SpecifyKind(placement.RegisteredAt, DateTimeKind.Utc),
+                });
+            }
+        }
 
         // Recipients are read the way the settings screen reads them (Plan A's MapSettings), not re-split here.
         var settings = await dbContext.ChemicalPropertySettings.AsNoTracking()
@@ -145,6 +146,12 @@ public class ChemicalDigestPreviewBuilder(
             ByDeadline(passed), ByDeadline(upcoming),
             ByName(statuses), ByName(fresh), recipients);
     }
+
+    private static (ChemicalDeadlineKindEnum Kind, DateTime? Deadline)[] DeadlinesOf(ChemicalRegisterEntryModel entry) =>
+    [
+        (ChemicalDeadlineKindEnum.UseAndPossession, entry.UseAndPossessionDeadline),
+        (ChemicalDeadlineKindEnum.Sales, entry.SalesDeadline),
+    ];
 
     // The order of Plan D's e-mail (ChemicalDigestPlanner): deadline DATE then name; the other sections by name; ordinal, case-insensitive.
     private static List<ChemicalDigestItemModel> ByDeadline(IEnumerable<ChemicalDigestItemModel> items) =>

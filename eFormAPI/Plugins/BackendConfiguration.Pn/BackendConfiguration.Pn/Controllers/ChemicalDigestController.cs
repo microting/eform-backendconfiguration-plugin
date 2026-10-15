@@ -27,7 +27,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.EformBackendConfigurationBase.Infrastructure.Const;
-using Sentry;
 using Services.BackendConfigurationLocalizationService;
 using Services.ChemicalReporting;
 
@@ -37,9 +36,9 @@ using Services.ChemicalReporting;
 [FirstUserOnly]
 [Route("api/backend-configuration-pn/chemicals")]
 public class ChemicalDigestController(
-    IChemicalDigestPreviewBuilder preview,
+    IChemicalDigestPreviewBuilder previewBuilder,
     IBackendConfigurationLocalizationService localizationService,
-    TimeProvider time) : Controller
+    TimeProvider timeProvider) : Controller
 {
     [HttpGet("properties/{propertyId:int}/digest-preview")]
     public async Task<OperationDataResult<ChemicalDigestModel>> GetDigestPreview(int propertyId)
@@ -47,17 +46,12 @@ public class ChemicalDigestController(
         try
         {
             return new OperationDataResult<ChemicalDigestModel>(true,
-                await preview.BuildAsync(propertyId, time.GetUtcNow().UtcDateTime).ConfigureAwait(false));
+                await previewBuilder.BuildAsync(propertyId, timeProvider.GetUtcNow().UtcDateTime).ConfigureAwait(false));
         }
         catch (Exception e)
         {
-            if (ChemicalsController.ExpectedStatusCode(e) is null)
-            {
-                SentrySdk.CaptureException(e);
-            }
-
-            return new OperationDataResult<ChemicalDigestModel>(false,
-                $"{localizationService.GetString(ChemicalLocalizationKeys.ErrorWhileReadingChemicalDigest)}: {e.Message}");
+            return ChemicalsController.FailureResult<ChemicalDigestModel>(
+                e, localizationService, ChemicalLocalizationKeys.ErrorWhileReadingChemicalDigest);
         }
     }
 }
