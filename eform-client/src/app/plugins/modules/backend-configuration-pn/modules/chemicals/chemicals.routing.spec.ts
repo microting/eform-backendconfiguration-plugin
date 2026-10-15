@@ -1,6 +1,7 @@
 jest.mock('./components', () => ({
   ChemicalsContainerComponent: class MockChemicalsContainerComponent {},
   ChemicalPermissionsPageComponent: class MockChemicalPermissionsPageComponent {},
+  ChemicalSettingsPageComponent: class MockChemicalSettingsPageComponent {},
 }));
 
 import {routes} from './chemicals.routing';
@@ -57,6 +58,7 @@ describe('ChemicalsRouting', () => {
     // literals are pinned on both sides. Extend this list with each screen's menu child.
     expect(CHEMICAL_SCREENS.map((s) => [s.path, s.menuE2EId])).toEqual([
       ['permissions', 'backend-configuration-pn-chemicals-permissions'],
+      ['settings', 'backend-configuration-pn-chemicals-settings'],
     ]);
   });
 });

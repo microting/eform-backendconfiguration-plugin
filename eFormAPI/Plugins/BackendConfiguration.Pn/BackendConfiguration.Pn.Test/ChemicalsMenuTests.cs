@@ -17,6 +17,8 @@ public class ChemicalsMenuTests
 {
     private const string GroupE2EId = "backend-configuration-pn-chemicals";
     private const string PermissionsE2EId = "backend-configuration-pn-chemicals-permissions";
+    private const string SettingsE2EId = "backend-configuration-pn-chemicals-settings";
+    private const string SettingsLink = "/plugins/backend-configuration-pn/chemicals/settings";
     private const string PermissionsLink = "/plugins/backend-configuration-pn/chemicals/permissions";
 
     private static List<PluginMenuItemModel> Menu() =>
@@ -26,6 +28,9 @@ public class ChemicalsMenuTests
 
     private static PluginMenuItemModel PermissionsChild() =>
         Group().ChildItems.Single(c => c.E2EId == PermissionsE2EId);
+
+    private static PluginMenuItemModel SettingsChild() =>
+        Group().ChildItems.Single(c => c.E2EId == SettingsE2EId);
 
     private static string Name(IEnumerable<PluginMenuTranslationModel> translations, string locale) =>
         translations.Single(t => t.LocaleName == locale).Name;
@@ -69,8 +74,8 @@ public class ChemicalsMenuTests
     public void PermissionsChildLinksToTheW4Screen()
     {
         var group = Group();
-        Assert.That(group.ChildItems.Select(c => c.E2EId), Is.EqualTo(new[] { PermissionsE2EId }),
-            "E1 ships only Rettigheder; later releases add their own children");
+        Assert.That(group.ChildItems.Select(c => c.E2EId), Is.EqualTo(new[] { PermissionsE2EId, SettingsE2EId }),
+            "E1 shipped Rettigheder, E2 adds Indstillinger; later releases add their own children");
 
         var child = PermissionsChild();
         Assert.That(child.Type, Is.EqualTo(MenuItemTypeEnum.Link));
@@ -94,6 +99,35 @@ public class ChemicalsMenuTests
             Assert.That(Name(translations, LocaleNames.English), Is.EqualTo("Permissions"));
             Assert.That(Name(translations, LocaleNames.German), Is.EqualTo("Berechtigungen"));
             Assert.That(Name(translations, LocaleNames.Ukrainian), Is.EqualTo("Дозволи"));
+        }
+    }
+
+    [Test]
+    public void SettingsChildLinksToTheW5Screen()
+    {
+        var child = SettingsChild();
+
+        Assert.That(child.Type, Is.EqualTo(MenuItemTypeEnum.Link));
+        Assert.That(child.Link, Is.EqualTo(SettingsLink));
+        Assert.That(child.Position, Is.EqualTo(3), "mockup order: Beholdning 0, Lokationer 1, Rettigheder 2, Indstillinger 3, Historik 4");
+        Assert.That(child.MenuTemplate, Is.Not.Null);
+        Assert.That(child.MenuTemplate.E2EId, Is.EqualTo(SettingsE2EId));
+        Assert.That(child.MenuTemplate.DefaultLink, Is.EqualTo(SettingsLink));
+        Assert.That(child.MenuTemplate.Permissions, Is.Empty, "open to every plugin user, like Rettigheder");
+    }
+
+    [Test]
+    public void SettingsChildIsNamedInTheFourMenuLanguages()
+    {
+        var child = SettingsChild();
+
+        foreach (var translations in new[] { child.Translations, child.MenuTemplate.Translations })
+        {
+            Assert.That(translations, Has.Count.EqualTo(4));
+            Assert.That(Name(translations, LocaleNames.Danish), Is.EqualTo("Indstillinger"));
+            Assert.That(Name(translations, LocaleNames.English), Is.EqualTo("Settings"));
+            Assert.That(Name(translations, LocaleNames.German), Is.EqualTo("Einstellungen"));
+            Assert.That(Name(translations, LocaleNames.Ukrainian), Is.EqualTo("Налаштування"));
         }
     }
 
