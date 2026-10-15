@@ -899,4 +899,5 @@ export const bgBG = {
   'Chemicals: Unsaved settings': 'Не е запазено',
   'Chemicals: Could not load settings': 'Настройките не можаха да бъдат заредени.',
   'Chemicals: Yes': 'Да',
+  'Chemicals: Could not load preview': 'Примерът не можа да бъде зареден.',
 };

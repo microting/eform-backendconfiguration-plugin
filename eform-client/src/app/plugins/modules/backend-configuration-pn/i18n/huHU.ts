@@ -899,4 +899,5 @@ export const huHU = {
   'Chemicals: Unsaved settings': 'Nincs mentve',
   'Chemicals: Could not load settings': 'A beállításokat nem sikerült betölteni.',
   'Chemicals: Yes': 'Igen',
+  'Chemicals: Could not load preview': 'A példa nem tölthető be.',
 };

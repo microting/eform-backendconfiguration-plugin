@@ -899,4 +899,5 @@ export const isIS = {
   'Chemicals: Unsaved settings': 'Ekki vistað',
   'Chemicals: Could not load settings': 'Ekki var hægt að hlaða stillingunum.',
   'Chemicals: Yes': 'Já',
+  'Chemicals: Could not load preview': 'Ekki var hægt að hlaða dæminu.',
 };

@@ -1023,4 +1023,5 @@ export const esES = {
   'Chemicals: Unsaved settings': 'No se guardó',
   'Chemicals: Could not load settings': 'No se pudo cargar la configuración.',
   'Chemicals: Yes': 'Sí',
+  'Chemicals: Could not load preview': 'No se pudo cargar el ejemplo.',
 };

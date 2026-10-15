@@ -1116,4 +1116,5 @@ export const deDE = {
   'Chemicals: Unsaved settings': 'Nicht gespeichert',
   'Chemicals: Could not load settings': 'Die Einstellungen konnten nicht geladen werden.',
   'Chemicals: Yes': 'Ja',
+  'Chemicals: Could not load preview': 'Das Beispiel konnte nicht geladen werden.',
 };

@@ -94,6 +94,9 @@
 
   <mat-card class="p-3" id="chemicalDigestPreview">
     <h3 class="m-0">{{ 'Chemicals: Next digest example' | translate }}</h3>
+    <div *ngIf="previewFailed" class="chemicals-empty" id="chemicalDigestPreviewFailed" role="alert">
+      {{ 'Chemicals: Could not load preview' | translate }}
+    </div>
     <ng-container *ngIf="preview">
       <p class="chemicals-hint" id="chemicalDigestPreviewSubject">
         {{ 'Chemicals: Digest subject' | translate: {property: preview.propertyName, week: preview.isoWeek} }}

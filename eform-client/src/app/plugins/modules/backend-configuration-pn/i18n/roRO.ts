@@ -899,4 +899,5 @@ export const roRO = {
   'Chemicals: Unsaved settings': 'Nesalvat',
   'Chemicals: Could not load settings': 'Setările nu au putut fi încărcate.',
   'Chemicals: Yes': 'Da',
+  'Chemicals: Could not load preview': 'Exemplul nu a putut fi încărcat.',
 };

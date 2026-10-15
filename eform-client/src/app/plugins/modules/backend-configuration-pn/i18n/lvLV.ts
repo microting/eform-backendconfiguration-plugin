@@ -899,4 +899,5 @@ export const lvLV = {
   'Chemicals: Unsaved settings': 'Nav saglabāts',
   'Chemicals: Could not load settings': 'Iestatījumus nevarēja ielādēt.',
   'Chemicals: Yes': 'Jā',
+  'Chemicals: Could not load preview': 'Nevarēja ielādēt piemēru.',
 };

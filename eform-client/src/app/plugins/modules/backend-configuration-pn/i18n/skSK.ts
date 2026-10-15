@@ -899,4 +899,5 @@ export const skSK = {
   'Chemicals: Unsaved settings': 'Neuložené',
   'Chemicals: Could not load settings': 'Nastavenia sa nepodarilo načítať.',
   'Chemicals: Yes': 'Áno',
+  'Chemicals: Could not load preview': 'Príklad sa nepodarilo načítať.',
 };

@@ -1023,4 +1023,5 @@ export const plPL = {
   'Chemicals: Unsaved settings': 'Nie zapisano',
   'Chemicals: Could not load settings': 'Nie udało się załadować ustawień.',
   'Chemicals: Yes': 'Tak',
+  'Chemicals: Could not load preview': 'Nie udało się załadować przykładu.',
 };

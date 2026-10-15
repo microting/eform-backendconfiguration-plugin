@@ -1023,4 +1023,5 @@ export const ptBR = {
   'Chemicals: Unsaved settings': 'Não salvo',
   'Chemicals: Could not load settings': 'Não foi possível carregar as configurações.',
   'Chemicals: Yes': 'Sim',
+  'Chemicals: Could not load preview': 'Não foi possível carregar o exemplo.',
 };

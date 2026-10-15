@@ -899,4 +899,5 @@ export const hrHR = {
   'Chemicals: Unsaved settings': 'Nije spremljeno',
   'Chemicals: Could not load settings': 'Postavke se nisu mogle učitati.',
   'Chemicals: Yes': 'Da',
+  'Chemicals: Could not load preview': 'Primjer nije mogao biti učitan.',
 };

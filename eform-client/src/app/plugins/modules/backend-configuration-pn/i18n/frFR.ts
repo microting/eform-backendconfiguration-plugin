@@ -1022,4 +1022,5 @@ export const frFR = {
   'Chemicals: Unsaved settings': 'Non enregistré',
   'Chemicals: Could not load settings': 'Les paramètres n\'ont pas pu être chargés.',
   'Chemicals: Yes': 'Oui',
+  'Chemicals: Could not load preview': 'L\'exemple n\'a pas pu être chargé.',
 };

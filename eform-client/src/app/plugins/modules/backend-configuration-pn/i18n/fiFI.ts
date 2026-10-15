@@ -1023,4 +1023,5 @@ export const fiFI = {
   'Chemicals: Unsaved settings': 'Ei tallennettu',
   'Chemicals: Could not load settings': 'Asetuksia ei voitu ladata.',
   'Chemicals: Yes': 'Kyllä',
+  'Chemicals: Could not load preview': 'Esimerkkiä ei voitu ladata.',
 };

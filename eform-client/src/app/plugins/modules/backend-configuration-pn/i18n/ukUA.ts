@@ -1023,4 +1023,5 @@ export const ukUA = {
   'Chemicals: Unsaved settings': 'Не збережено',
   'Chemicals: Could not load settings': 'Не вдалося завантажити налаштування.',
   'Chemicals: Yes': 'Так',
+  'Chemicals: Could not load preview': 'Не вдалося завантажити приклад.',
 };

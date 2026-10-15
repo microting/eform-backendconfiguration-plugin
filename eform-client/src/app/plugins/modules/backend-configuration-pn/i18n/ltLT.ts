@@ -899,4 +899,5 @@ export const ltLT = {
   'Chemicals: Unsaved settings': 'Neišsaugota',
   'Chemicals: Could not load settings': 'Nepavyko įkelti nustatymų.',
   'Chemicals: Yes': 'Taip',
+  'Chemicals: Could not load preview': 'Nepavyko įkelti pavyzdžio.',
 };

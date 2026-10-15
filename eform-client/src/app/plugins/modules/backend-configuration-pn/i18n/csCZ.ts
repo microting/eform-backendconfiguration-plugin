@@ -899,4 +899,5 @@ export const csCZ = {
   'Chemicals: Unsaved settings': 'Neuloženo',
   'Chemicals: Could not load settings': 'Nastavení se nepodařilo načíst.',
   'Chemicals: Yes': 'Ano',
+  'Chemicals: Could not load preview': 'Příklad se nepodařilo načíst.',
 };

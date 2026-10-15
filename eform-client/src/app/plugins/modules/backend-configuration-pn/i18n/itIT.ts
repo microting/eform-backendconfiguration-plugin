@@ -1022,5 +1022,6 @@ export const itIT = {
   'Chemicals: Discard unsaved settings?': 'Eliminare le impostazioni non salvate?',
   'Chemicals: Unsaved settings': 'Non salvato',
   'Chemicals: Could not load settings': 'Impossibile caricare le impostazioni.',
-  'Chemicals: Yes': 'SÌ',
+  'Chemicals: Yes': 'Sì',
+  'Chemicals: Could not load preview': 'Impossibile caricare l\'esempio.',
 };

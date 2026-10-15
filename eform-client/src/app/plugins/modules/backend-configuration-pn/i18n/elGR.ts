@@ -898,5 +898,6 @@ export const elGR = {
   'Chemicals: Discard unsaved settings?': 'Απόρριψη μη αποθηκευμένων ρυθμίσεων;',
   'Chemicals: Unsaved settings': 'Δεν αποθηκεύτηκε',
   'Chemicals: Could not load settings': 'Δεν ήταν δυνατή η φόρτωση των ρυθμίσεων.',
-  'Chemicals: Yes': 'Ναί',
+  'Chemicals: Yes': 'Ναι',
+  'Chemicals: Could not load preview': 'Δεν ήταν δυνατή η φόρτωση του παραδείγματος.',
 };

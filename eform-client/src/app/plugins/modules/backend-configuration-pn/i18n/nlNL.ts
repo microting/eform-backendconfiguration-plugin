@@ -1023,4 +1023,5 @@ export const nlNL = {
   'Chemicals: Unsaved settings': 'Niet opgeslagen',
   'Chemicals: Could not load settings': 'De instellingen konden niet worden geladen.',
   'Chemicals: Yes': 'Ja',
+  'Chemicals: Could not load preview': 'Het voorbeeld kon niet worden geladen.',
 };

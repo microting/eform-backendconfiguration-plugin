@@ -1091,4 +1091,5 @@ export const da = {
   'Chemicals: Unsaved settings': 'Ikke gemt',
   'Chemicals: Could not load settings': 'Indstillingerne kunne ikke indlæses.',
   'Chemicals: Yes': 'Ja',
+  'Chemicals: Could not load preview': 'Eksemplet kunne ikke indlæses.',
 };

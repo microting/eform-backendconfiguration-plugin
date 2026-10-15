@@ -1023,4 +1023,5 @@ export const svSE = {
   'Chemicals: Unsaved settings': 'Inte sparad',
   'Chemicals: Could not load settings': 'Inställningarna kunde inte laddas.',
   'Chemicals: Yes': 'Ja',
+  'Chemicals: Could not load preview': 'Exemplet kunde inte laddas.',
 };

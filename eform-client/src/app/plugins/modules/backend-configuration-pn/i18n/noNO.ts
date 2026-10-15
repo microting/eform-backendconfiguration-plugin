@@ -1023,4 +1023,5 @@ export const noNO = {
   'Chemicals: Unsaved settings': 'Ikke lagret',
   'Chemicals: Could not load settings': 'Innstillingene kunne ikke lastes inn.',
   'Chemicals: Yes': 'Ja',
+  'Chemicals: Could not load preview': 'Eksemplet kunne ikke lastes inn.',
 };

@@ -899,4 +899,5 @@ export const etET = {
   'Chemicals: Unsaved settings': 'Pole salvestatud',
   'Chemicals: Could not load settings': 'Seadeid ei saanud laadida.',
   'Chemicals: Yes': 'Jah',
+  'Chemicals: Could not load preview': 'Näidet ei saanud laadida.',
 };

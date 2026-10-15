@@ -68,6 +68,8 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
   invalidRecipients: string[] = [];
   preview: ChemicalDigestModel | null = null;
   previewSections: ChemicalDigestPreviewSection[] = [];
+  /** The preview could not be read (refused or HTTP error); the card says so instead of staying empty. */
+  previewFailed = false;
   /** The stored settings are being read: the form is not offered until they arrive. */
   loading = false;
   /** Reading the stored settings failed (refused or HTTP error): no form, so nothing can overwrite them from defaults. */
@@ -175,6 +177,7 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
   private load(): void {
     this.apply(false, []);
     this.setPreview(null);
+    this.previewFailed = false;
     this.saveFailed = false;
     this.loadFailed = false;
     this.loading = this.propertyId !== null;
@@ -205,10 +208,19 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
   }
 
   private loadPreview(propertyId: number): void {
-    this.chemicalsService.getDigestPreview(propertyId).subscribe((res) => {
-      if (propertyId === this.propertyId) {
-        this.setPreview(res && res.success ? res.model : null);
-      }
+    this.chemicalsService.getDigestPreview(propertyId).subscribe({
+      next: (res) => {
+        if (propertyId === this.propertyId) {
+          this.setPreview(res && res.success ? res.model : null);
+          this.previewFailed = !(res && res.success);
+        }
+      },
+      error: () => {
+        if (propertyId === this.propertyId) {
+          this.setPreview(null);
+          this.previewFailed = true;
+        }
+      },
     });
   }
 

@@ -899,4 +899,5 @@ export const slSL = {
   'Chemicals: Unsaved settings': 'Ni shranjeno',
   'Chemicals: Could not load settings': 'Nastavitev ni bilo mogoče naložiti.',
   'Chemicals: Yes': 'Da',
+  'Chemicals: Could not load preview': 'Primera ni bilo mogoče naložiti.',
 };
