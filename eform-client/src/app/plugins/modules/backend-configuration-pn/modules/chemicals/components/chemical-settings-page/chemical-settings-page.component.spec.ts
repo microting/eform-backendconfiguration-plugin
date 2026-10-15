@@ -367,6 +367,18 @@ describe('ChemicalSettingsPageComponent', () => {
   });
 
   describe('Copilot review: pending input and superseded responses', () => {
+    it('keeps a rejected recipient draft and its error after saving the valid settings', () => {
+      component.recipientInput = 'second@example.com, nope';
+      component.addRecipientInput();
+
+      component.save();
+
+      expect(component.recipients).toEqual(['first@example.com', 'second@example.com']);
+      expect(component.recipientInput).toBe('nope');
+      expect(component.invalidRecipients).toEqual(['nope']);
+      expect(component.dirty).toBe(true);
+    });
+
     it('counts recipient text typed but not yet added as unsaved', () => {
       component.recipientInput = 'second@exa';
       expect(component.dirty).toBe(true);

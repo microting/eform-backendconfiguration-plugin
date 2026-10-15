@@ -37,6 +37,13 @@ describe('digest recipients helper', () => {
     expect(result.invalid).toEqual([]);
   });
 
+  it('imports a display name that contains a bare @ without reporting it', () => {
+    const result = addRecipients([], 'Support @ Acme <s@example.com>, @mette <m@example.com>');
+
+    expect(result.recipients).toEqual(['s@example.com', 'm@example.com']);
+    expect(result.invalid).toEqual([]);
+  });
+
   it('reports bracketed and quoted leftovers the server would reject', () => {
     const result = addRecipients([], '"a"@example.com a@example.com. a(b)@example.com');
 
