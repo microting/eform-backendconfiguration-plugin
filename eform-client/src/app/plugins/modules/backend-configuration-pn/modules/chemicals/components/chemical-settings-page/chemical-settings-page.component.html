@@ -12,6 +12,7 @@
         id="chemicalSettingsStockToggle"
         [checked]="stockEnabled"
         [disabled]="busy"
+        [aria-label]="('Chemicals: Stock management' | translate) + ': ' + ((stockEnabled ? 'Chemicals: Enabled' : 'Chemicals: Disabled') | translate)"
         (change)="onStockToggle($event.checked)"
       >{{ (stockEnabled ? 'Chemicals: Enabled' : 'Chemicals: Disabled') | translate }}</mat-slide-toggle>
     </div>
