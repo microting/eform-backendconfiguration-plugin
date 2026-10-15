@@ -65,11 +65,11 @@ public class ChemicalDigestPreviewBuilder(
         return TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(slotLocal, DateTimeKind.Unspecified), ChemicalAlertRules.Copenhagen);
     }
 
-    /// <summary>The ISO week of the next digest slot, i.e. the Monday 07:00 slot strictly after utcNow (the preview stands for that digest).</summary>
-    public static int NextSlotIsoWeek(DateTime utcNow)
+    /// <summary>The Copenhagen date of the next digest slot: the Monday 07:00 slot strictly after utcNow.</summary>
+    public static DateOnly NextSlotDate(DateTime utcNow)
     {
         var mostRecentSlot = TimeZoneInfo.ConvertTimeFromUtc(NewRegistrationsSince(utcNow), ChemicalAlertRules.Copenhagen);
-        return ISOWeek.GetWeekOfYear(mostRecentSlot.Date.AddDays(7));
+        return DateOnly.FromDateTime(mostRecentSlot.Date.AddDays(7));
     }
 
     public async Task<ChemicalDigestModel> BuildAsync(int propertyId, DateTime utcNow)
@@ -77,7 +77,8 @@ public class ChemicalDigestPreviewBuilder(
         var property = await dbContext.Properties.AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == propertyId && p.WorkflowState != Removed).ConfigureAwait(false)
             ?? throw new ChemicalNotFoundException($"Property {propertyId} not found.");
-        var today = ChemicalAlertRules.CopenhagenToday(DateTime.SpecifyKind(utcNow, DateTimeKind.Utc));
+        // The preview stands for the next digest, which Plan D evaluates on the slot's Monday, not today.
+        var slotDate = NextSlotDate(utcNow);
 
         var locations = await dbContext.ChemicalLocations.AsNoTracking()
             .Where(l => l.PropertyId == propertyId)
@@ -109,7 +110,7 @@ public class ChemicalDigestPreviewBuilder(
                          (ChemicalDeadlineKindEnum.Sales, entry.SalesDeadline),
                      })
             {
-                var threshold = ChemicalAlertRules.ReachedThreshold(deadline, today);
+                var threshold = ChemicalAlertRules.ReachedThreshold(deadline, slotDate);
                 if (threshold is null)
                 {
                     continue;
@@ -130,9 +131,8 @@ public class ChemicalDigestPreviewBuilder(
             .Select(p => Item(p, entries[p.ChemicalId], locations) with
             {
                 RegisteredByName = userNames.TryGetValue(p.RegisteredByUserId, out var name) ? name : string.Empty,
-                RegisteredAt = p.RegisteredAt,
+                RegisteredAt = DateTime.SpecifyKind(p.RegisteredAt, DateTimeKind.Utc),
             })
-            .OrderByDescending(i => i.RegisteredAt)
             .ToList();
 
         // Recipients are read the way the settings screen reads them (Plan A's MapSettings), not re-split here.
@@ -141,14 +141,18 @@ public class ChemicalDigestPreviewBuilder(
         var recipients = ChemicalInventoryService.MapSettings(propertyId, settings).DigestRecipients;
 
         return new ChemicalDigestModel(
-            propertyId, property.Name, NextSlotIsoWeek(utcNow), utcNow,
+            propertyId, property.Name, ISOWeek.GetWeekOfYear(slotDate.ToDateTime(TimeOnly.MinValue)), utcNow,
             ByDeadline(passed), ByDeadline(upcoming),
-            statuses.OrderBy(i => i.ProductName, StringComparer.Create(new CultureInfo("da-DK"), true)).ToList(),
-            fresh, recipients);
+            ByName(statuses), ByName(fresh), recipients);
     }
 
+    // The order of Plan D's e-mail (ChemicalDigestPlanner): deadline DATE then name; the other sections by name; ordinal, case-insensitive.
     private static List<ChemicalDigestItemModel> ByDeadline(IEnumerable<ChemicalDigestItemModel> items) =>
-        items.OrderBy(i => i.Deadline).ThenBy(i => i.ProductName).ToList();
+        items.OrderBy(i => i.Deadline.HasValue ? ChemicalAlertRules.DeadlineDate(i.Deadline.Value) : (DateOnly?)null)
+            .ThenBy(i => i.ProductName, StringComparer.OrdinalIgnoreCase).ToList();
+
+    private static List<ChemicalDigestItemModel> ByName(IEnumerable<ChemicalDigestItemModel> items) =>
+        items.OrderBy(i => i.ProductName, StringComparer.OrdinalIgnoreCase).ToList();
 
     private static ChemicalDigestItemModel Item(
         ChemicalPlacement placement,
