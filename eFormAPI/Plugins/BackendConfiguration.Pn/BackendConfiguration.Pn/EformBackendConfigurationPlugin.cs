@@ -2196,7 +2196,9 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                 ChildItems =
                 [
                     ChemicalsMenuChild("permissions", 2,
-                        MenuTranslations("Permissions", "Berechtigungen", "Rettigheder", "Дозволи"))
+                        MenuTranslations("Permissions", "Berechtigungen", "Rettigheder", "Дозволи")),
+                    ChemicalsMenuChild("settings", 3,
+                        MenuTranslations("Settings", "Einstellungen", "Indstillinger", "Налаштування"))
                 ]
             }
         };

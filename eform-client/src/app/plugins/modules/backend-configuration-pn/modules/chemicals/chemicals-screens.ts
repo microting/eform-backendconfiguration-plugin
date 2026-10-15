@@ -1,5 +1,5 @@
 import {Type} from '@angular/core';
-import {ChemicalPermissionsPageComponent} from './components';
+import {ChemicalPermissionsPageComponent, ChemicalSettingsPageComponent} from './components';
 
 export interface ChemicalScreen {
   /** Router path relative to the Kemi container: /plugins/backend-configuration-pn/chemicals/{path}. */
@@ -23,5 +23,11 @@ export const CHEMICAL_SCREENS: ChemicalScreen[] = [
     titleKey: 'Chemicals: Permissions title',
     menuE2EId: 'backend-configuration-pn-chemicals-permissions',
     component: ChemicalPermissionsPageComponent,
+  },
+  {
+    path: 'settings',
+    titleKey: 'Chemicals: Settings title',
+    menuE2EId: 'backend-configuration-pn-chemicals-settings',
+    component: ChemicalSettingsPageComponent,
   },
 ];

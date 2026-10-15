@@ -1,0 +1,9 @@
+.chemicals-hint { opacity: 0.75; margin: 4px 0; }
+.chemicals-error { color: var(--mat-sys-error, #b3261e); margin-bottom: 8px; }
+.chemicals-badge { padding: 2px 8px; border-radius: 12px; background: var(--mat-sys-surface-container-high, #eee); font-size: 12px; }
+.chemicals-thresholds { width: 100%; border-collapse: collapse; margin-top: 8px; }
+.chemicals-thresholds th, .chemicals-thresholds td { padding: 8px; border-bottom: 1px solid var(--mat-sys-outline-variant, #e0e0e0); text-align: left; }
+.chemicals-thresholds small { display: block; opacity: 0.7; }
+.chemicals-digest-section { margin-top: 12px; }
+.chemicals-digest-item { padding: 6px 0; border-bottom: 1px dashed var(--mat-sys-outline-variant, #e0e0e0); }
+.chemicals-digest-item span { margin-left: 8px; }
