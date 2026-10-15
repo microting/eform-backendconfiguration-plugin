@@ -213,6 +213,71 @@ describe('ChemicalSettingsPageComponent', () => {
     });
   });
 
+  describe('the digest preview has a failure state', () => {
+    it.each([
+      ['a refused answer', () => of({success: false, message: 'Nope'})],
+      ['an HTTP error', () => throwError(() => new Error('offline'))],
+    ])('shows a failed preview for %s', (_name, answer) => {
+      chemicals.getDigestPreview.mockReturnValue(answer());
+      component = build();
+
+      expect(component.previewFailed).toBe(true);
+      expect(component.preview).toBeNull();
+      expect(component.previewSections).toEqual([]);
+    });
+
+    it('drops the old preview when the refresh after a save fails', () => {
+      expect(component.preview).not.toBeNull();
+      chemicals.getDigestPreview.mockReturnValue(throwError(() => new Error('offline')));
+      component.onStockToggle(true);
+
+      component.save();
+
+      expect(component.previewFailed).toBe(true);
+      expect(component.preview).toBeNull();
+    });
+
+    it('clears the failure once a preview arrives', () => {
+      chemicals.getDigestPreview.mockReturnValueOnce(throwError(() => new Error('offline')));
+      property$ = new BehaviorSubject<number | null>(3);
+      component = build();
+      expect(component.previewFailed).toBe(true);
+
+      property$.next(4);
+
+      expect(component.previewFailed).toBe(false);
+      expect(component.preview).not.toBeNull();
+    });
+  });
+
+  describe('switching property resets the load state', () => {
+    it('clears loadFailed and loading when the next property loads', () => {
+      chemicals.getSettings.mockReturnValueOnce(throwError(() => new Error('offline')));
+      property$ = new BehaviorSubject<number | null>(3);
+      component = build();
+      expect(component.loadFailed).toBe(true);
+
+      property$.next(4);
+
+      expect(component.loadFailed).toBe(false);
+      expect(component.loading).toBe(false);
+      expect(component.ready).toBe(true);
+    });
+
+    it('is loading again (not failed) while the next property is pending', () => {
+      chemicals.getSettings.mockReturnValueOnce(throwError(() => new Error('offline')));
+      property$ = new BehaviorSubject<number | null>(3);
+      component = build();
+      chemicals.getSettings.mockReturnValueOnce(new Subject());
+
+      property$.next(4);
+
+      expect(component.loadFailed).toBe(false);
+      expect(component.loading).toBe(true);
+      expect(component.ready).toBe(false);
+    });
+  });
+
   describe('dirty means "differs from the loaded settings"', () => {
     it('is clean again after undoing a stock toggle', () => {
       component.onStockToggle(true);

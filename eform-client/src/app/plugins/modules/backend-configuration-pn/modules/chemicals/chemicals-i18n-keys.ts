@@ -96,4 +96,6 @@ export const CHEMICAL_I18N_KEYS: string[] = [
   // Task 8 fix round 1
   'Chemicals: Could not load settings',
   'Chemicals: Yes',
+  // Final fix wave
+  'Chemicals: Could not load preview',
 ];
