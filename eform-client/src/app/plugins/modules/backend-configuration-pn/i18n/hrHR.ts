@@ -894,7 +894,7 @@ export const hrHR = {
   'Chemicals: Digest deregistered or expired': 'Odjavljeno ili isteklo',
   'Chemicals: Digest new registrations': 'Nove registracije ovog tjedna',
   'Chemicals: Digest footer': 'Primate ovu e-poštu jer ste primatelj za {{property}}. Promijenite primatelje pod Kemikalije › Postavke.',
-  'Chemicals: Could not save settings': 'Postavke nisu spremljene. Vaše su promjene sačuvane - pokušajte ponovno.',
+  'Chemicals: Could not save settings': 'Postavke nisu spremljene. Vaše promjene ostaju samo u obrascu - pokušajte ponovno.',
   'Chemicals: Discard unsaved settings?': 'Odbaciti nespremljene postavke?',
   'Chemicals: Unsaved settings': 'Nije spremljeno',
   'Chemicals: Could not load settings': 'Postavke se nisu mogle učitati.',

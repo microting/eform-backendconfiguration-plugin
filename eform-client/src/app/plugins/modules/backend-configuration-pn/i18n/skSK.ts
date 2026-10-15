@@ -894,7 +894,7 @@ export const skSK = {
   'Chemicals: Digest deregistered or expired': 'Zrušená registrácia alebo platnosť vypršala',
   'Chemicals: Digest new registrations': 'Nové registrácie tento týždeň',
   'Chemicals: Digest footer': 'Tento e-mail ste dostali, pretože ste príjemcom e-mailu {{property}}. Príjemcov môžete zmeniť v časti Chemikálie › Nastavenia.',
-  'Chemicals: Could not save settings': 'Nastavenia sa nepodarilo uložiť. Zmeny sa uložili – skúste to znova.',
+  'Chemicals: Could not save settings': 'Nastavenia sa nepodarilo uložiť. Zmeny zostávajú iba vo formulári – skúste to znova.',
   'Chemicals: Discard unsaved settings?': 'Zahodiť neuložené nastavenia?',
   'Chemicals: Unsaved settings': 'Neuložené',
   'Chemicals: Could not load settings': 'Nastavenia sa nepodarilo načítať.',

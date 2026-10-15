@@ -894,7 +894,7 @@ export const lvLV = {
   'Chemicals: Digest deregistered or expired': 'Reģistrācijas izbeigšana vai derīguma termiņš ir beidzies',
   'Chemicals: Digest new registrations': 'Jaunas reģistrācijas šonedēļ',
   'Chemicals: Digest footer': 'Jūs saņēmāt šo e-pastu, jo esat {{property}} adresāts. Mainīt adresātus sadaļā Ķīmiskās vielas › Iestatījumi.',
-  'Chemicals: Could not save settings': 'Iestatījumus nevarēja saglabāt. Jūsu izmaiņas ir saglabātas — mēģiniet vēlreiz.',
+  'Chemicals: Could not save settings': 'Iestatījumus nevarēja saglabāt. Jūsu izmaiņas paliek tikai veidlapā — mēģiniet vēlreiz.',
   'Chemicals: Discard unsaved settings?': 'Vai atmest nesaglabātos iestatījumus?',
   'Chemicals: Unsaved settings': 'Nav saglabāts',
   'Chemicals: Could not load settings': 'Iestatījumus nevarēja ielādēt.',

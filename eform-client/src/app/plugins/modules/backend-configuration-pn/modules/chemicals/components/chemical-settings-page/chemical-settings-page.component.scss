@@ -1,5 +1,7 @@
 .chemicals-empty { padding: 24px; color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6)); }
 .chemicals-hint { opacity: 0.75; margin: 4px 0; }
+/* Reserves the row of the recipient error so clearing it (on blur) never moves Save under a click. */
+.chemicals-error-slot { min-height: calc(1.5em + 8px); }
 .chemicals-error { color: var(--mat-sys-error, #b3261e); margin-bottom: 8px; }
 .chemicals-badge { padding: 2px 8px; border-radius: 12px; background: var(--mat-sys-surface-container-high, #eee); font-size: 12px; }
 .chemicals-thresholds { width: 100%; border-collapse: collapse; margin-top: 8px; }

@@ -894,7 +894,7 @@ export const bgBG = {
   'Chemicals: Digest deregistered or expired': 'Отписана или с изтекъл срок',
   'Chemicals: Digest new registrations': 'Нови регистрации тази седмица',
   'Chemicals: Digest footer': 'Получавате този имейл, защото сте получател на {{property}}. Променете получателите в Химикали › Настройки.',
-  'Chemicals: Could not save settings': 'Настройките не можаха да бъдат запазени. Промените ви са запазени - опитайте отново.',
+  'Chemicals: Could not save settings': 'Настройките не можаха да бъдат запазени. Промените ви остават само във формуляра - опитайте отново.',
   'Chemicals: Discard unsaved settings?': 'Да се отхвърлят ли незапазените настройки?',
   'Chemicals: Unsaved settings': 'Не е запазено',
   'Chemicals: Could not load settings': 'Настройките не можаха да бъдат заредени.',

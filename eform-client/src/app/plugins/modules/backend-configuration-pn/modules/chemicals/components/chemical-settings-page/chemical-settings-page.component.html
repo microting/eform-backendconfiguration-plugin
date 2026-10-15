@@ -48,8 +48,10 @@
         >
       </mat-chip-grid>
     </mat-form-field>
-    <div *ngIf="invalidRecipients.length" class="chemicals-error" id="chemicalSettingsRecipientError" role="alert">
-      {{ 'Chemicals: Invalid e-mail' | translate: {value: invalidRecipients.join(', ')} }}
+    <div class="chemicals-error-slot">
+      <div *ngIf="invalidRecipients.length" class="chemicals-error" id="chemicalSettingsRecipientError" role="alert">
+        {{ 'Chemicals: Invalid e-mail' | translate: {value: invalidRecipients.join(', ')} }}
+      </div>
     </div>
     <div class="d-flex flex-wrap align-items-center justify-content-end gap-12">
       <span *ngIf="saveFailed" class="chemicals-error" id="chemicalSettingsSaveError" role="alert">

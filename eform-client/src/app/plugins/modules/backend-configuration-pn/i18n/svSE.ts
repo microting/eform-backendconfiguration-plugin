@@ -1018,7 +1018,7 @@ export const svSE = {
   'Chemicals: Digest deregistered or expired': 'Avregistrerad eller utgången',
   'Chemicals: Digest new registrations': 'Nya registreringar denna vecka',
   'Chemicals: Digest footer': 'Du får detta e-postmeddelande eftersom du är mottagare av {{property}}. Ändra mottagare under Kemikalier › Inställningar.',
-  'Chemicals: Could not save settings': 'Inställningarna kunde inte sparas. Dina ändringar sparas – försök igen.',
+  'Chemicals: Could not save settings': 'Inställningarna kunde inte sparas. Dina ändringar finns kvar i formuläret – försök igen.',
   'Chemicals: Discard unsaved settings?': 'Vill du slänga inställningar som inte sparats?',
   'Chemicals: Unsaved settings': 'Inte sparad',
   'Chemicals: Could not load settings': 'Inställningarna kunde inte laddas.',

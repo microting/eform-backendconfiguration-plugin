@@ -894,7 +894,7 @@ export const slSL = {
   'Chemicals: Digest deregistered or expired': 'Odjavljeno ali poteklo',
   'Chemicals: Digest new registrations': 'Nove registracije ta teden',
   'Chemicals: Digest footer': 'To e-poštno sporočilo prejemate, ker ste prejemnik sporočila {{property}}. Prejemnike lahko spremenite v razdelku Kemikalije › Nastavitve.',
-  'Chemicals: Could not save settings': 'Nastavitev ni bilo mogoče shraniti. Spremembe so shranjene – poskusite znova.',
+  'Chemicals: Could not save settings': 'Nastavitev ni bilo mogoče shraniti. Spremembe ostanejo samo v obrazcu – poskusite znova.',
   'Chemicals: Discard unsaved settings?': 'Zavržem neshranjene nastavitve?',
   'Chemicals: Unsaved settings': 'Ni shranjeno',
   'Chemicals: Could not load settings': 'Nastavitev ni bilo mogoče naložiti.',

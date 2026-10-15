@@ -1018,7 +1018,7 @@ export const ukUA = {
   'Chemicals: Digest deregistered or expired': 'Знято з реєстрації або термін дії закінчився',
   'Chemicals: Digest new registrations': 'Нові реєстрації цього тижня',
   'Chemicals: Digest footer': 'Ви отримали цей електронний лист, оскільки є одержувачем {{property}}. Змініть одержувачів у розділі Хімічні речовини › Налаштування.',
-  'Chemicals: Could not save settings': 'Не вдалося зберегти налаштування. Ваші зміни збережено. Повторіть спробу.',
+  'Chemicals: Could not save settings': 'Не вдалося зберегти налаштування. Ваші зміни залишаються лише у формі. Повторіть спробу.',
   'Chemicals: Discard unsaved settings?': 'Відхилити незбережені налаштування?',
   'Chemicals: Unsaved settings': 'Не збережено',
   'Chemicals: Could not load settings': 'Не вдалося завантажити налаштування.',

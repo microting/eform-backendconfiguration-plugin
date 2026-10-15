@@ -894,7 +894,7 @@ export const ltLT = {
   'Chemicals: Digest deregistered or expired': 'Išregistruota arba pasibaigęs registracijos laikas',
   'Chemicals: Digest new registrations': 'Naujos registracijos šią savaitę',
   'Chemicals: Digest footer': 'Šį el. laišką gavote, nes esate {{property}} gavėjas. Gavėjus galite pakeisti skiltyje „Cheminės medžiagos“ › „Nustatymai“.',
-  'Chemicals: Could not save settings': 'Nustatymų išsaugoti nepavyko. Jūsų pakeitimai išsaugoti – bandykite dar kartą.',
+  'Chemicals: Could not save settings': 'Nustatymų išsaugoti nepavyko. Jūsų pakeitimai liko tik formoje – bandykite dar kartą.',
   'Chemicals: Discard unsaved settings?': 'Atmesti neišsaugotus nustatymus?',
   'Chemicals: Unsaved settings': 'Neišsaugota',
   'Chemicals: Could not load settings': 'Nepavyko įkelti nustatymų.',
