@@ -78,6 +78,9 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
   busy = false;
   private loadedStock = false;
   private loadedRecipients: string[] = [];
+  /** Bumped by every load / preview request; an answer from an older one is ignored (A to B to A switches). */
+  private loadGeneration = 0;
+  private previewGeneration = 0;
   /** The last save was refused or failed; the edits are kept for a retry. */
   saveFailed = false;
 
@@ -95,9 +98,13 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
     return this.propertyId !== null && !this.loading && !this.loadFailed;
   }
 
-  /** Differs from the loaded settings (so undoing an edit makes the page clean again). */
+  /**
+   * Differs from the loaded settings (so undoing an edit makes the page clean again). An address typed
+   * but not yet added is an unsaved draft too, so the discard and unload guards cover it.
+   */
   get dirty(): boolean {
     return this.stockEnabled !== this.loadedStock
+      || this.recipientInput.trim().length > 0
       || this.recipients.length !== this.loadedRecipients.length
       || this.recipients.some((r, i) => r !== this.loadedRecipients[i]);
   }
@@ -175,6 +182,8 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
   }
 
   private load(): void {
+    this.loadGeneration++;
+    this.previewGeneration++;
     this.apply(false, []);
     this.setPreview(null);
     this.previewFailed = false;
@@ -185,9 +194,10 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
       return;
     }
     const propertyId = this.propertyId;
+    const generation = ++this.loadGeneration;
     this.chemicalsService.getSettings(propertyId).subscribe({
       next: (res) => {
-        if (propertyId !== this.propertyId) {
+        if (generation !== this.loadGeneration) {
           return;
         }
         this.loading = false;
@@ -198,7 +208,7 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
         }
       },
       error: () => {
-        if (propertyId === this.propertyId) {
+        if (generation === this.loadGeneration) {
           this.loading = false;
           this.loadFailed = true;
         }
@@ -208,15 +218,16 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
   }
 
   private loadPreview(propertyId: number): void {
+    const generation = ++this.previewGeneration;
     this.chemicalsService.getDigestPreview(propertyId).subscribe({
       next: (res) => {
-        if (propertyId === this.propertyId) {
+        if (generation === this.previewGeneration) {
           this.setPreview(res && res.success ? res.model : null);
           this.previewFailed = !(res && res.success);
         }
       },
       error: () => {
-        if (propertyId === this.propertyId) {
+        if (generation === this.previewGeneration) {
           this.setPreview(null);
           this.previewFailed = true;
         }
