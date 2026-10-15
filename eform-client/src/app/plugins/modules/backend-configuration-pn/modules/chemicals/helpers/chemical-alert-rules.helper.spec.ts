@@ -26,12 +26,15 @@ describe('chemical alert rules (TypeScript port of Plan D ChemicalAlertRules)', 
     ['2027-08-29', 'sixMonths'],
     ['2028-01-28', 'sixMonths'],
     ['2028-01-29', 'oneMonth'],
+    ['2028-02-29', 'oneMonth'],
+    ['2028-03-01', 'passed'],
   ])('leap-day deadline 2028-02-29, today %s -> %s', (today, expected) => {
     expect(reachedThreshold('2028-02-29T00:00:00', today)).toBe(expected);
   });
 
   it('uses the date part of a UTC timestamp without zone conversion', () => {
     expect(reachedThreshold('2027-03-31T22:00:00Z', '2027-03-31')).toBe('oneMonth');
+    expect(reachedThreshold('2027-03-31T22:00:00Z', '2027-04-01')).toBe('passed');
   });
 
   it('has no threshold without a deadline', () => {
@@ -57,6 +60,10 @@ describe('chemical alert rules (TypeScript port of Plan D ChemicalAlertRules)', 
     expect(requiresAction(null, '2026-09-29')).toBe(false);
     expect(isActionStatus(7)).toBe(true);
     expect(isActionStatus(5)).toBe(false);
+    expect(isActionStatus(8)).toBe(false);
+    expect(isActionStatus(null)).toBe(false);
+    expect(requiresAction(e(7, '2030-01-01', '2030-01-01'), '2026-10-01')).toBe(true);
+    expect(requiresAction(e(5, '2030-01-01', '2030-01-01'), '2026-10-01')).toBe(false);
   });
 
   it('severity: red for passed or status 6/7, amber for 6 or 1 month, none otherwise', () => {
@@ -77,6 +84,11 @@ describe('chemical alert rules (TypeScript port of Plan D ChemicalAlertRules)', 
     expect(governingDeadline({status: 5, salesDeadline: '2031-01-01', useAndPossessionDeadline: '2030-01-01'}, today))
       .toEqual({date: '2030-01-01', kind: ChemicalDeadlineKind.UseAndPossession, threshold: null});
     expect(governingDeadline({status: 5, salesDeadline: null, useAndPossessionDeadline: null}, today)).toBeNull();
+  });
+
+  it('deadline cell: equal severity and equal date -> use-and-possession wins', () => {
+    expect(governingDeadline({status: 5, salesDeadline: '2026-10-15', useAndPossessionDeadline: '2026-10-15'}, '2026-09-29'))
+      .toEqual({date: '2026-10-15', kind: ChemicalDeadlineKind.UseAndPossession, threshold: 'oneMonth'});
   });
 
   it('formats the local calendar date', () => {

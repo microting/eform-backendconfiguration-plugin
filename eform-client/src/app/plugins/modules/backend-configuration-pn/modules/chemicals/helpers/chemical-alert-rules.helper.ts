@@ -24,7 +24,9 @@ export interface ChemicalDeadlineDisplay {
 
 const SEVERITY_ORDER: Record<ChemicalThreshold, number> = {sixMonths: 1, oneMonth: 2, passed: 3};
 
-const pad = (n: number, width = 2) => String(n).padStart(width, '0');
+function pad(n: number, width = 2): string {
+  return String(n).padStart(width, '0');
+}
 
 export function localToday(now: Date = new Date()): string {
   return `${pad(now.getFullYear(), 4)}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
@@ -59,9 +61,7 @@ export function isActionStatus(status: number | null): boolean {
 }
 
 export function requiresAction(entry: ChemicalRuleInput | null, today: string): boolean {
-  return !!entry && (isActionStatus(entry.status)
-    || reachedThreshold(entry.salesDeadline, today) !== null
-    || reachedThreshold(entry.useAndPossessionDeadline, today) !== null);
+  return actionSeverity(entry, today) !== 'none';
 }
 
 /** Row colour (Plan D C1): red when a deadline has passed or the status is 6/7, amber for 6/1 months. */
