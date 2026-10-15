@@ -75,7 +75,13 @@ describe('Kemi i18n meaning', () => {
     expect(text(locale, 'Chemicals: Fixed for all customers')).not.toMatch(REPAIRED);
   });
 
-  it('esES: a failed save does not say the changes were saved', () => {
-    expect(text('esES', 'Chemicals: Could not save settings')).not.toMatch(/se han guardado/i);
+  // After a FAILED save the edits only stay in the form; the text must not say they were saved.
+  const CLAIMS_SAVED: Record<string, RegExp> = {
+    esES: /se han guardado/i, skSK: /zmeny sa uložili/i, bgBG: /са запазени/i, lvLV: /izmaiņas ir saglabātas/i,
+    ltLT: /pakeitimai išsaugoti/i, hrHR: /promjene sačuvane|su promjene sačuvane/i, slSL: /spremembe so shranjene/i,
+    ukUA: /зміни збережено/i, svSE: /ändringar sparas/i,
+  };
+  it.each(Object.entries(CLAIMS_SAVED))('%s: a failed save does not say the changes were saved', (locale, claim) => {
+    expect(text(locale, 'Chemicals: Could not save settings')).not.toMatch(claim);
   });
 });
