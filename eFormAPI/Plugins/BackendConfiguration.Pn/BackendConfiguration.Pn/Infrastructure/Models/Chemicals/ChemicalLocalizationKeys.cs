@@ -48,5 +48,10 @@ public static class ChemicalLocalizationKeys
         ErrorWhileSavingChemicalPermissions, ErrorWhileReadingChemicalSettings, ErrorWhileSavingChemicalSettings,
     ];
 
-    public static IReadOnlyList<string> All { get; } = [.. ControllerErrors];
+    // ChemicalDigestController (Plan E Task 7).
+    public const string ErrorWhileReadingChemicalDigest = "ErrorWhileReadingChemicalDigest";
+
+    public static readonly string[] DigestErrors = [ErrorWhileReadingChemicalDigest];
+
+    public static IReadOnlyList<string> All { get; } = [.. ControllerErrors, .. DigestErrors];
 }
