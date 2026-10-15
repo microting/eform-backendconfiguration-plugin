@@ -1155,4 +1155,5 @@ export const enUS= {
   'Chemicals: Nothing to copy': 'Nothing to copy: no shared worker has different permissions on {{property}}.',
   'Chemicals: Could not copy permissions': 'The permissions could not be copied.',
   'Chemicals: No workers match': 'No workers match the search.',
+  'Could not load languages': 'Could not load languages',
 };

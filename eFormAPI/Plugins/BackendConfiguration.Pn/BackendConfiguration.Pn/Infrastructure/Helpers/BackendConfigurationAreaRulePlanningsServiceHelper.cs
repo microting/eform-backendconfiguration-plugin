@@ -540,8 +540,11 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                     await planningTagSlurryTankFloatingLayerTag.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
                                                 }
 
+                                                var danishLanguage = await sdkDbContext.Languages.FirstAsync(x => x.LanguageCode == "da").ConfigureAwait(false);
+                                                var englishLanguage = await sdkDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US").ConfigureAwait(false);
+                                                var germanLanguage = await sdkDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE").ConfigureAwait(false);
                                                 var name = areaRule.AreaRuleTranslations
-                                                    .Where(x => x.LanguageId == 1)
+                                                    .Where(x => x.LanguageId == danishLanguage.Id)
                                                     .Select(x => x.Name)
                                                     .FirstOrDefault();
 
@@ -568,27 +571,27 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                 [
                                                     new()
                                                     {
-                                                        LanguageId = 1, // da
+                                                        LanguageId = danishLanguage.Id, // da
                                                         Name = areaRule.AreaRuleTranslations
-                                                            .Where(x => x.LanguageId == 1)
+                                                            .Where(x => x.LanguageId == danishLanguage.Id)
                                                             .Select(x => x.Name)
                                                             .FirstOrDefault() + ": Flydelag"
                                                     },
 
                                                     new()
                                                     {
-                                                        LanguageId = 2, // en
+                                                        LanguageId = englishLanguage.Id, // en
                                                         Name = areaRule.AreaRuleTranslations
-                                                            .Where(x => x.LanguageId == 2)
+                                                            .Where(x => x.LanguageId == englishLanguage.Id)
                                                             .Select(x => x.Name)
                                                             .FirstOrDefault() + ": Floating layer"
                                                     },
 
                                                     new()
                                                     {
-                                                        LanguageId = 3, // ge
+                                                        LanguageId = germanLanguage.Id, // ge
                                                         Name = areaRule.AreaRuleTranslations
-                                                            .Where(x => x.LanguageId == 2)
+                                                            .Where(x => x.LanguageId == englishLanguage.Id)
                                                             .Select(x => x.Name)
                                                             .FirstOrDefault() + ": Schwimmende Ebene"
                                                     }
@@ -675,9 +678,13 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                 if (folderId != 0)
                                                 {
                                                     areaRule.FolderId = folderId;
+                                                    var danishLanguageId = await sdkDbContext.Languages
+                                                        .Where(x => x.LanguageCode == "da")
+                                                        .Select(x => x.Id)
+                                                        .FirstAsync().ConfigureAwait(false);
                                                     areaRule.FolderName = await sdkDbContext.FolderTranslations
                                                         .Where(x => x.FolderId == folderId)
-                                                        .Where(x => x.LanguageId == 1) // danish
+                                                        .Where(x => x.LanguageId == danishLanguageId)
                                                         .Select(x => x.Name)
                                                         .FirstAsync().ConfigureAwait(false);
                                                     await areaRule.Update(backendConfigurationPnDbContext)
@@ -1248,9 +1255,13 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             if (folderId != 0)
             {
                 areaRule.FolderId = folderId;
+                var danishLanguageId = await sdkDbContext.Languages
+                    .Where(x => x.LanguageCode == "da")
+                    .Select(x => x.Id)
+                    .FirstAsync().ConfigureAwait(false);
                 areaRule.FolderName = await sdkDbContext.FolderTranslations
                     .Where(x => x.FolderId == folderId)
-                    .Where(x => x.LanguageId == 1) // danish
+                    .Where(x => x.LanguageId == danishLanguageId)
                     .Select(x => x.Name)
                     .FirstAsync().ConfigureAwait(false);
                 await areaRule.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
@@ -1388,7 +1399,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             }
 
             var name = areaRule.AreaRuleTranslations
-                .Where(x => x.LanguageId == 1)
+                .Where(x => x.LanguageId == danishLanguage.Id)
                 .Select(x => x.Name)
                 .FirstOrDefault();
 
@@ -1418,7 +1429,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                     {
                         LanguageId = danishLanguage.Id, // da
                         Name = areaRule.AreaRuleTranslations
-                            .Where(x => x.LanguageId == 1)
+                            .Where(x => x.LanguageId == danishLanguage.Id)
                             .Select(x => x.Name)
                             .FirstOrDefault() + ": Flydelag"
                     },
@@ -1427,7 +1438,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                     {
                         LanguageId = englishLanguage.Id, // en
                         Name = areaRule.AreaRuleTranslations
-                            .Where(x => x.LanguageId == 2)
+                            .Where(x => x.LanguageId == englishLanguage.Id)
                             .Select(x => x.Name)
                             .FirstOrDefault() + ": Floating layer"
                     },
@@ -1436,7 +1447,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                     {
                         LanguageId = germanLanguage.Id, // ge
                         Name = areaRule.AreaRuleTranslations
-                            .Where(x => x.LanguageId == 3)
+                            .Where(x => x.LanguageId == germanLanguage.Id)
                             .Select(x => x.Name)
                             .FirstOrDefault() + ": Schwimmende Ebene"
                     }
@@ -1849,7 +1860,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                 {
                     LanguageId = danishLanguage.Id, // da
                     Name = areaRule.AreaRuleTranslations
-                        .Where(x => x.LanguageId == 1)
+                        .Where(x => x.LanguageId == danishLanguage.Id)
                         .Select(x => x.Name)
                         .FirstOrDefault() + ": Timer og energi"
                 },
@@ -1858,7 +1869,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                 {
                     LanguageId = englishLanguage.Id, // en
                     Name = areaRule.AreaRuleTranslations
-                        .Where(x => x.LanguageId == 2)
+                        .Where(x => x.LanguageId == englishLanguage.Id)
                         .Select(x => x.Name)
                         .FirstOrDefault() + ": Hours and energy"
                 },
@@ -1867,7 +1878,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                 {
                     LanguageId = germanLanguage.Id, // ge
                     Name = areaRule.AreaRuleTranslations
-                        .Where(x => x.LanguageId == 3)
+                        .Where(x => x.LanguageId == germanLanguage.Id)
                         .Select(x => x.Name)
                         .FirstOrDefault() + ": Stunden und Energie"
                 }
@@ -1915,7 +1926,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                 {
                     LanguageId = danishLanguage.Id, // da
                     Name = areaRule.AreaRuleTranslations
-                        .Where(x => x.LanguageId == 1)
+                        .Where(x => x.LanguageId == danishLanguage.Id)
                         .Select(x => x.Name)
                         .FirstOrDefault() + ": Service"
                 },
@@ -1924,7 +1935,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                 {
                     LanguageId = englishLanguage.Id, // en
                     Name = areaRule.AreaRuleTranslations
-                        .Where(x => x.LanguageId == 2)
+                        .Where(x => x.LanguageId == englishLanguage.Id)
                         .Select(x => x.Name)
                         .FirstOrDefault() + ": Service"
                 },
@@ -1933,7 +1944,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                 {
                     LanguageId = germanLanguage.Id, // ge
                     Name = areaRule.AreaRuleTranslations
-                        .Where(x => x.LanguageId == 3)
+                        .Where(x => x.LanguageId == germanLanguage.Id)
                         .Select(x => x.Name)
                         .FirstOrDefault() + ": Service"
                 }
@@ -1949,7 +1960,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                 {
                     LanguageId = danishLanguage.Id, // da
                     Name = areaRule.AreaRuleTranslations
-                        .Where(x => x.LanguageId == 1)
+                        .Where(x => x.LanguageId == danishLanguage.Id)
                         .Select(x => x.Name)
                         .FirstOrDefault() + ": Logbog"
                 },
@@ -1958,7 +1969,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                 {
                     LanguageId = englishLanguage.Id, // en
                     Name = areaRule.AreaRuleTranslations
-                        .Where(x => x.LanguageId == 2)
+                        .Where(x => x.LanguageId == englishLanguage.Id)
                         .Select(x => x.Name)
                         .FirstOrDefault() + ": Logbook"
                 },
@@ -1967,7 +1978,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                 {
                     LanguageId = germanLanguage.Id, // ge
                     Name = areaRule.AreaRuleTranslations
-                        .Where(x => x.LanguageId == 3)
+                        .Where(x => x.LanguageId == germanLanguage.Id)
                         .Select(x => x.Name)
                         .FirstOrDefault() + ": Logbook"
                 }

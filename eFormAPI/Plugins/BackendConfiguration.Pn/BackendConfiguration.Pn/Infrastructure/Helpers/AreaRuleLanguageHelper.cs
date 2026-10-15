@@ -18,13 +18,19 @@ namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 /// </summary>
 public static class AreaRuleLanguageHelper
 {
+    /// <summary>
+    /// What the seed data's (and the frontend app-locale's) literal LanguageIds mean: 1=da,
+    /// 2=en-US, 3=de-DE. The SDK ids for those codes differ per install.
+    /// </summary>
+    private static readonly IReadOnlyDictionary<int, string> SeedLanguageIdToCode =
+        new Dictionary<int, string> { { 1, "da" }, { 2, "en-US" }, { 3, "de-DE" } };
+
     private static async Task<Dictionary<int, int>> BuildSeedLanguageIdToSdkIdAsync(
         MicrotingDbContext sdkDbContext)
     {
         var sdkLanguages = await sdkDbContext.Languages.ToListAsync().ConfigureAwait(false);
-        var seedLanguageIdToCode = new Dictionary<int, string> { { 1, "da" }, { 2, "en-US" }, { 3, "de-DE" } };
         var seedLanguageIdToSdkId = new Dictionary<int, int>();
-        foreach (var (seedLanguageId, code) in seedLanguageIdToCode)
+        foreach (var (seedLanguageId, code) in SeedLanguageIdToCode)
         {
             var lang = sdkLanguages.FirstOrDefault(x => string.Equals(x.LanguageCode, code, StringComparison.OrdinalIgnoreCase));
             if (lang != null)
@@ -75,20 +81,48 @@ public static class AreaRuleLanguageHelper
         RemapTranslations(translations, seedLanguageIdToSdkId);
     }
 
+    /// <summary>
+    /// Remaps a code-built list of folder translations written with the seed LanguageIds
+    /// (1=da, 2=en-US, 3=de-DE) to the real SDK language ids, before it is handed to
+    /// Core.FolderCreate. Value-based like the AreaRuleTranslation overloads, so only pass
+    /// literal seed lists — never ids that came from a client.
+    /// </summary>
+    public static async Task RemapSeedLanguageIdsAsync(
+        IEnumerable<CommonTranslationsModel> translations,
+        MicrotingDbContext sdkDbContext)
+    {
+        var seedLanguageIdToSdkId = await BuildSeedLanguageIdToSdkIdAsync(sdkDbContext).ConfigureAwait(false);
+        Remap(translations, x => x.LanguageId, (x, id) => x.LanguageId = id, seedLanguageIdToSdkId);
+    }
+
+    /// <summary>
+    /// Remaps the seed LanguageIds (1=da, 2=en-US, 3=de-DE) on area translations taken from
+    /// <c>BackendConfigurationSeedAreas.AreasSeed</c>, as the plugin-start area seed does.
+    /// </summary>
+    public static async Task RemapSeedLanguageIdsAsync(
+        IEnumerable<AreaTranslation> translations,
+        MicrotingDbContext sdkDbContext)
+    {
+        var seedLanguageIdToSdkId = await BuildSeedLanguageIdToSdkIdAsync(sdkDbContext).ConfigureAwait(false);
+        Remap(translations, x => x.LanguageId, (x, id) => x.LanguageId = id, seedLanguageIdToSdkId);
+    }
+
     private static void RemapTranslations(
         IEnumerable<AreaRuleTranslation> translations,
+        IReadOnlyDictionary<int, int> seedLanguageIdToSdkId) =>
+        Remap(translations, x => x.LanguageId, (x, id) => x.LanguageId = id, seedLanguageIdToSdkId);
+
+    private static void Remap<T>(
+        IEnumerable<T> translations,
+        Func<T, int> getLanguageId,
+        Action<T, int> setLanguageId,
         IReadOnlyDictionary<int, int> seedLanguageIdToSdkId)
     {
-        if (translations == null)
+        foreach (var translation in translations ?? [])
         {
-            return;
-        }
-
-        foreach (var translation in translations)
-        {
-            if (seedLanguageIdToSdkId.TryGetValue(translation.LanguageId, out var sdkId))
+            if (seedLanguageIdToSdkId.TryGetValue(getLanguageId(translation), out var sdkId))
             {
-                translation.LanguageId = sdkId;
+                setLanguageId(translation, sdkId);
             }
         }
     }
@@ -135,8 +169,6 @@ public static class AreaRuleLanguageHelper
 
         var sdkLanguages = await sdkDbContext.Languages.AsNoTracking().ToListAsync().ConfigureAwait(false);
         var sdkIds = sdkLanguages.Select(x => x.Id).ToHashSet();
-        // Mirror of the frontend applicationLanguages app-locale ids (1=da, 2=en-US, 3=de-DE).
-        var appLocaleIdToCode = new Dictionary<int, string> { { 1, "da" }, { 2, "en-US" }, { 3, "de-DE" } };
 
         foreach (var translation in translationList)
         {
@@ -150,7 +182,7 @@ public static class AreaRuleLanguageHelper
 
             // The id is absent from SDK Languages, so it can only be the frontend's hardcoded
             // app-locale id. Resolve the intended language code from the static map.
-            if (!appLocaleIdToCode.TryGetValue(translation.LanguageId, out var code))
+            if (!SeedLanguageIdToCode.TryGetValue(translation.LanguageId, out var code))
             {
                 logger?.LogWarning(
                     "RemapCommonTranslationLanguageIdsAsync: translate LanguageId {LanguageId} is absent from SDK Languages and is not a known app-locale id; leaving unchanged",

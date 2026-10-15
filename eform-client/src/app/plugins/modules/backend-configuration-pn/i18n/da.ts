@@ -1055,4 +1055,5 @@ export const da = {
   'Chemicals: Nothing to copy': 'Intet at kopiere: ingen fælles medarbejdere har andre rettigheder på {{property}}.',
   'Chemicals: Could not copy permissions': 'Rettighederne kunne ikke kopieres.',
   'Chemicals: No workers match': 'Ingen medarbejdere matcher søgningen.',
+  'Could not load languages': 'Sprogene kunne ikke indlæses',
 };

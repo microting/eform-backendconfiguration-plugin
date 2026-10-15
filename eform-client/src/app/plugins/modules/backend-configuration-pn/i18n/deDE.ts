@@ -1080,4 +1080,5 @@ export const deDE = {
   'Chemicals: Nothing to copy': 'Nichts zu kopieren: Kein gemeinsam genutzter Worker hat unterschiedliche Berechtigungen für {{property}}.',
   'Chemicals: Could not copy permissions': 'Die Berechtigungen konnten nicht kopiert werden.',
   'Chemicals: No workers match': 'Es wurden keine passenden Arbeitskräfte für die Suche gefunden.',
+  'Could not load languages': 'Die Sprachen konnten nicht geladen werden',
 };

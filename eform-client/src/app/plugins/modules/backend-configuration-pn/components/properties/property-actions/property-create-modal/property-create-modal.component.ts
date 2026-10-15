@@ -9,6 +9,9 @@ import { BackendConfigurationPnPropertiesService } from '../../../../services';
 import { MatDialogRef } from '@angular/material/dialog';
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
 import { Subscription } from 'rxjs';
+import { AppSettingsStateService } from 'src/app/modules/application-settings/components/store';
+import { ToastrService } from 'ngx-toastr';
+import { TranslateService } from '@ngx-translate/core';
 
 @AutoUnsubscribe()
 @Component({
@@ -22,6 +25,9 @@ export class PropertyCreateModalComponent implements OnInit, OnDestroy {
   public authStateService = inject(AuthStateService);
   private propertiesService = inject(BackendConfigurationPnPropertiesService);
   public dialogRef = inject(MatDialogRef<PropertyCreateModalComponent>);
+  private appSettingsStateService = inject(AppSettingsStateService);
+  private toastr = inject(ToastrService);
+  private translate = inject(TranslateService);
 
   propertyCreate: EventEmitter<PropertyCreateModel> = new EventEmitter<PropertyCreateModel>();
   newPropertyForm: FormGroup;
@@ -31,6 +37,13 @@ export class PropertyCreateModalComponent implements OnInit, OnDestroy {
 
   getCompanyTypeSub$: Subscription;
   getChrInformationSub$: Subscription;
+  getLanguagesSub$: Subscription;
+  /**
+   * SDK Languages.Id by language code. SDK ids are AUTO_INCREMENT values and differ per
+   * install (#8141), so the app-locale ids are mapped by code. Null until loaded; Create
+   * stays disabled meanwhile, because a positional id would store the wrong language.
+   */
+  private sdkLanguageIdByCode: Map<string, number> | null = null;
 
   get applicationLanguages() {
     return applicationLanguages;
@@ -43,6 +56,16 @@ export class PropertyCreateModalComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.propertyIsFarm = false;
+    this.getLanguagesSub$ = this.appSettingsStateService.getLanguages().subscribe({
+      next: res => {
+        if (res?.success) {
+          this.sdkLanguageIdByCode = new Map((res.model?.languages ?? []).map(l => [l.languageCode, l.id]));
+        } else {
+          this.onLanguagesFailed();
+        }
+      },
+      error: () => this.onLanguagesFailed(),
+    });
 
     // Initialize reactive form
     this.newPropertyForm = this.fb.group({
@@ -64,10 +87,20 @@ export class PropertyCreateModalComponent implements OnInit, OnDestroy {
     this.propertyIsFarm = false;
   }
 
+  private onLanguagesFailed() {
+    this.toastr.error(this.translate.instant('Could not load languages'));
+  }
+
   onCreateProperty() {
+    if (this.isDisabledSaveButton) {
+      return;
+    }
     const newProperty: PropertyCreateModel = {
       ...this.newPropertyForm.value,
-      languagesIds: applicationLanguagesTranslated.map(x => x.id)
+      // Only languages this install has; never a positional app-locale id.
+      languagesIds: applicationLanguagesTranslated
+        .map(x => this.sdkLanguageIdByCode.get(x.locale))
+        .filter((id): id is number => id !== undefined)
     };
     this.propertyCreate.emit(newProperty);
   }
@@ -127,6 +160,6 @@ export class PropertyCreateModalComponent implements OnInit, OnDestroy {
   }
 
   get isDisabledSaveButton(): boolean {
-    return this.newPropertyForm.invalid;
+    return this.newPropertyForm.invalid || !this.sdkLanguageIdByCode;
   }
 }

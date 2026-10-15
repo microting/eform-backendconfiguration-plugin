@@ -231,7 +231,12 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   // Last concrete repeat selection before 'custom' was picked, so cancelling
   // the Tilpasset… dialog can restore the prior preset instead of 'none' (#922).
   private repeatValueBeforeCustom: string | null = 'none';
-  private currentLanguageId = 1;  // default to English
+  /**
+   * SDK Languages.Id of the signed-in user's language, used to name the eForm preview.
+   * 0 until known; translatedName() then falls back to danishLanguageId (resolved by code
+   * once languages load).
+   */
+  private currentLanguageId = 0;
 
   // Per-AreaRulePlanning file attachments. Mutated from the upload/delete
   // handlers below; rendered as 80x80 thumbnails (PNG/JPEG) or filetype icons
@@ -380,7 +385,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
 
   ngOnInit() {
     this.store.select(selectCurrentUserLanguageId).pipe(take(1)).subscribe(langId => {
-      this.currentLanguageId = langId ?? 1;
+      this.currentLanguageId = langId ?? 0;
     });
 
     // Load the active languages list (id/code/name) used to resolve each
@@ -1160,7 +1165,8 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
 
   private translatedName(translations: { languageId: number; name: string }[] | null | undefined): string {
     if (!translations || translations.length === 0) return '';
-    const match = translations.find(tr => tr.languageId === this.currentLanguageId && !!tr.name);
+    const languageId = this.currentLanguageId || this.danishLanguageId;
+    const match = translations.find(tr => tr.languageId === languageId && !!tr.name);
     if (match) return match.name;
     // Fallback: first non-empty name in any language
     const fallback = translations.find(tr => !!tr.name);

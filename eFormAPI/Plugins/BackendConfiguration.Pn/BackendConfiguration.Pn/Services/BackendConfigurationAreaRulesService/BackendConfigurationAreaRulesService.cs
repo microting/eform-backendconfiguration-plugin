@@ -193,7 +193,9 @@ public class BackendConfigurationAreaRulesService : IBackendConfigurationAreaRul
 						.Where(x => x.Id == areaProperty.PropertyId)
 						.FirstAsync().ConfigureAwait(false);
 
-					areaRule.FolderId = await core.FolderCreate([
+					// Seed ids 1=da, 2=en-US, 3=de-DE; remapped to the tenant's SDK language ids below.
+					List<Microting.eForm.Infrastructure.Models.CommonTranslationsModel> morningTourFolderTranslations =
+					[
 						new()
 						{
 							LanguageId = 1, // da
@@ -214,7 +216,9 @@ public class BackendConfigurationAreaRulesService : IBackendConfigurationAreaRul
 							Name = "00. Morgentour",
 							Description = ""
 						}
-					], property.FolderId).ConfigureAwait(false);
+					];
+					await AreaRuleLanguageHelper.RemapSeedLanguageIdsAsync(morningTourFolderTranslations, sdkDbContext).ConfigureAwait(false);
+					areaRule.FolderId = await core.FolderCreate(morningTourFolderTranslations, property.FolderId).ConfigureAwait(false);
 					areaRule.FolderName = "00. Morgenrundtur";
 
 					await areaRule.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
@@ -742,7 +746,10 @@ public class BackendConfigurationAreaRulesService : IBackendConfigurationAreaRul
 			var curentLanguage = await _userService.GetCurrentUserLanguage().ConfigureAwait(false);
 			var core = await _coreHelper.GetCore().ConfigureAwait(false);
 			var sdkDbContext = core.DbContextHelper.GetDbContext();
-			var model = BackendConfigurationSeedAreas.AreaRulesForType7
+			// Seed translations carry seed ids (1=da, 2=en-US, 3=de-DE); compare on real SDK ids.
+			var seedRules = BackendConfigurationSeedAreas.AreaRulesForType7;
+			await AreaRuleLanguageHelper.RemapSeedLanguageIdsAsync(seedRules, sdkDbContext).ConfigureAwait(false);
+			var model = seedRules
 				.GroupBy(x => x.FolderName)
 				.Select(x => new AreaRulesForType7
 				{
@@ -785,7 +792,10 @@ public class BackendConfigurationAreaRulesService : IBackendConfigurationAreaRul
 			var curentLanguage = await _userService.GetCurrentUserLanguage().ConfigureAwait(false);
 			var core = await _coreHelper.GetCore().ConfigureAwait(false);
 			var sdkDbContext = core.DbContextHelper.GetDbContext();
-			var model = BackendConfigurationSeedAreas.AreaRulesForType8
+			// Seed translations carry seed ids (1=da, 2=en-US, 3=de-DE); compare on real SDK ids.
+			var seedRules = BackendConfigurationSeedAreas.AreaRulesForType8;
+			await AreaRuleLanguageHelper.RemapSeedLanguageIdsAsync(seedRules, sdkDbContext).ConfigureAwait(false);
+			var model = seedRules
 				.GroupBy(x => x.FolderName)
 				.Select(x => new AreaRulesForType8
 				{
