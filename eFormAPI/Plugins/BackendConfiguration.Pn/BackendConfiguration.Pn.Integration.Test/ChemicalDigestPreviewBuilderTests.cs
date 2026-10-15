@@ -136,6 +136,9 @@ public class ChemicalDigestPreviewBuilderTests : ChemicalTestBase
         return placement;
     }
 
+    // Registered long before the fixed Wednesday below, whatever the real date: never a "new registration" there.
+    private static readonly DateTime LongAgo = new(2026, 1, 5, 8, 0, 0, DateTimeKind.Utc);
+
     // A fixed Wednesday: today is 2026-10-28, the next digest slot is Monday 2026-11-02 07:00 (CET).
     private static readonly DateTime Wednesday = new(2026, 10, 28, 10, 0, 0, DateTimeKind.Utc);
 
@@ -151,9 +154,9 @@ public class ChemicalDigestPreviewBuilderTests : ChemicalTestBase
             useAndPossessionDeadline: new DateTime(2027, 5, 2, 0, 0, 0, DateTimeKind.Utc));
         var passesOnMonday = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Sidste dag", "1-3",
             salesDeadline: new DateTime(2026, 11, 2, 0, 0, 0, DateTimeKind.Utc));
-        await CreatePlacementAsync(lade.Id, passesBeforeMonday.ChemicalId);
-        await CreatePlacementAsync(lade.Id, sixMonthsOnMonday.ChemicalId);
-        await CreatePlacementAsync(lade.Id, passesOnMonday.ChemicalId);
+        await CreatePlacementAtAsync(lade.Id, passesBeforeMonday.ChemicalId, LongAgo);
+        await CreatePlacementAtAsync(lade.Id, sixMonthsOnMonday.ChemicalId, LongAgo);
+        await CreatePlacementAtAsync(lade.Id, passesOnMonday.ChemicalId, LongAgo);
 
         var digest = await CreateSut().BuildAsync(property.Id, Wednesday);
 
@@ -182,7 +185,7 @@ public class ChemicalDigestPreviewBuilderTests : ChemicalTestBase
         foreach (var (name, sales) in deadlines)
         {
             var chemical = await Seed(name, sales: sales);
-            await CreatePlacementAsync(lade.Id, chemical.ChemicalId);
+            await CreatePlacementAtAsync(lade.Id, chemical.ChemicalId, LongAgo);
         }
 
         // Status and new registrations: registered after the Monday 2026-10-26 07:00 slot, deregistered.
