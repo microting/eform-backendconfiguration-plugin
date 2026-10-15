@@ -107,11 +107,11 @@
         <div *ngFor="let item of section.items" class="chemicals-digest-item">
           <strong>{{ item.productName }}</strong>
           <span *ngIf="section.deadline && item.deadline">{{ item.deadline | date: 'dd-MM-yyyy' : 'UTC' }}</span>
-          <span *ngIf="section.id === 'new' && item.registeredAt">{{ item.registeredAt | date: 'dd-MM' }}</span>
+          <span *ngIf="section.registration && item.registeredAt">{{ item.registeredAt | date: 'dd-MM' }}</span>
           <div class="chemicals-hint">
             {{ item.locationName }}<span *ngIf="item.placementNote"> · {{ item.placementNote }}</span>
-            <span *ngIf="section.id !== 'new' && item.statusText"> · {{ item.statusText }}</span>
-            <span *ngIf="section.id === 'new' && item.registeredByName"> · {{ item.registeredByName }}</span>
+            <span *ngIf="!section.registration && item.statusText"> · {{ item.statusText }}</span>
+            <span *ngIf="section.registration && item.registeredByName"> · {{ item.registeredByName }}</span>
           </div>
         </div>
       </section>

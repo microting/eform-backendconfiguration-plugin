@@ -88,7 +88,7 @@ describe('ChemicalSettingsPageComponent', () => {
     expect(chemicals.saveSettings).toHaveBeenCalledWith(3, {stockEnabled: true, digestRecipients: ['first@example.com', 'second@example.com']});
     expect(chemicals.getDigestPreview).toHaveBeenCalledTimes(2);
     expect(component.dirty).toBe(false);
-    expect(component.saving).toBe(false);
+    expect(component.busy).toBe(false);
   });
 
   it('keeps the edits and says so when the save is refused or fails', () => {
@@ -102,7 +102,7 @@ describe('ChemicalSettingsPageComponent', () => {
     chemicals.saveSettings.mockReturnValue(throwError(() => new Error('offline')));
     component.save();
     expect(component.saveFailed).toBe(true);
-    expect(component.saving).toBe(false);
+    expect(component.busy).toBe(false);
     expect(component.dirty).toBe(true);
   });
 

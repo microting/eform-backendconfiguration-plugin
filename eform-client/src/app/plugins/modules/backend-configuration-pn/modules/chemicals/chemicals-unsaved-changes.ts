@@ -17,3 +17,23 @@ export function confirmDiscardOf(screen: unknown): Observable<boolean> {
 
 /** On every Kemi screen route: leaving a screen with unsaved edits asks first (menu links, Back, other plugins). */
 export const chemicalUnsavedChangesGuard: CanDeactivateFn<unknown> = (screen) => confirmDiscardOf(screen);
+
+/**
+ * The leave/switch answer of a screen with unsaved edits: a request already issued cannot be cancelled,
+ * so "discard" would race its commit and the user stays (no dialog); nothing unsaved lets go at once;
+ * otherwise `ask` opens the discard confirm.
+ */
+export function confirmDiscardWhenDirty(busy: boolean, dirty: boolean, ask: () => Observable<boolean>): Observable<boolean> {
+  if (busy) {
+    return of(false);
+  }
+  return dirty ? ask() : of(true);
+}
+
+/** Reload or tab close with unsaved edits: the browser shows its own "leave site?" prompt. */
+export function warnBeforeUnload(event: BeforeUnloadEvent, dirty: boolean): void {
+  if (dirty) {
+    event.preventDefault();
+    event.returnValue = '';
+  }
+}

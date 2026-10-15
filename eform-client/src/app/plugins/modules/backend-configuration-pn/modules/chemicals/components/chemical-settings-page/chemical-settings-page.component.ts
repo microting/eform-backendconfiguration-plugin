@@ -4,18 +4,23 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {MatDialog} from '@angular/material/dialog';
 import {Store} from '@ngrx/store';
 import {TranslateService} from '@ngx-translate/core';
-import {Observable, of} from 'rxjs';
+import {Observable} from 'rxjs';
 import {finalize} from 'rxjs/operators';
 import {ChemicalDigestItemModel, ChemicalDigestModel} from '../../../../models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {selectChemicalsPropertyId} from '../../../../state';
-import {ChemicalUnsavedChangesAware} from '../../chemicals-unsaved-changes';
+import {ChemicalUnsavedChangesAware, confirmDiscardWhenDirty, warnBeforeUnload} from '../../chemicals-unsaved-changes';
 import {addRecipients, confirmDiscard} from '../../helpers';
 
 /** The fixed alert rules (spec section 9; shown read-only, "Fast for alle kunder"). */
-export const CHEMICAL_ALERT_THRESHOLDS = [
-  {key: 'Chemicals: Threshold six months', hintKey: ''},
-  {key: 'Chemicals: Threshold one month', hintKey: ''},
+export interface ChemicalAlertThresholdRow {
+  key: string;
+  hintKey?: string;
+}
+
+export const CHEMICAL_ALERT_THRESHOLDS: readonly ChemicalAlertThresholdRow[] = [
+  {key: 'Chemicals: Threshold six months'},
+  {key: 'Chemicals: Threshold one month'},
   {key: 'Chemicals: Threshold passed', hintKey: 'Chemicals: Threshold passed hint'},
   {key: 'Chemicals: Threshold status changed', hintKey: 'Chemicals: Threshold status changed hint'},
 ];
@@ -27,6 +32,8 @@ export interface ChemicalDigestPreviewSection {
   items: ChemicalDigestItemModel[];
   /** Show the deadline date next to the product. */
   deadline: boolean;
+  /** Show the registration date and who registered (instead of the status text). */
+  registration: boolean;
 }
 
 /**
@@ -65,7 +72,8 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
   loading = false;
   /** Reading the stored settings failed (refused or HTTP error): no form, so nothing can overwrite them from defaults. */
   loadFailed = false;
-  saving = false;
+  /** A save is in flight and cannot be cancelled: the container locks the property picker. */
+  busy = false;
   private loadedStock = false;
   private loadedRecipients: string[] = [];
   /** The last save was refused or failed; the edits are kept for a retry. */
@@ -92,11 +100,6 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
       || this.recipients.some((r, i) => r !== this.loadedRecipients[i]);
   }
 
-  /** A save is in flight and cannot be cancelled: the container locks the property picker. */
-  get busy(): boolean {
-    return this.saving;
-  }
-
   onStockToggle(enabled: boolean): void {
     if (this.ready) {
       this.stockEnabled = enabled;
@@ -120,14 +123,14 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
   }
 
   save(): void {
-    if (!this.ready || this.saving) {
+    const propertyId = this.propertyId;
+    if (propertyId === null || !this.ready || this.busy) {
       return;
     }
-    const propertyId = this.propertyId as number;
-    this.saving = true;
+    this.busy = true;
     this.saveFailed = false;
     this.chemicalsService.saveSettings(propertyId, {stockEnabled: this.stockEnabled, digestRecipients: this.recipients})
-      .pipe(finalize(() => (this.saving = false)))
+      .pipe(finalize(() => (this.busy = false)))
       .subscribe({
         next: (res) => {
           if (propertyId !== this.propertyId) {
@@ -151,29 +154,22 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
 
   /** Used by the route guard and the container's property switch. */
   confirmDiscardChanges(): Observable<boolean> {
-    if (this.busy) {
-      // A save already issued cannot be cancelled, so "discard" would race its commit: stay until it settles.
-      return of(false);
-    }
-    if (!this.dirty) {
-      return of(true);
-    }
-    return confirmDiscard(this.dialog, this.overlay, {
-      headerText: this.translate.instant('Chemicals: Discard unsaved settings?'),
-      fields: this.preview ? [{header: this.translate.instant('Property'), text: this.preview.propertyName}] : [],
-      discardText: this.translate.instant('Chemicals: Discard changes'),
-      keepText: this.translate.instant('Chemicals: Keep editing'),
+    return confirmDiscardWhenDirty(this.busy, this.dirty, () => confirmDiscard(this.dialog, this.overlay, {
+      headerText: this.t('Chemicals: Discard unsaved settings?'),
+      fields: this.preview ? [{header: this.t('Property'), text: this.preview.propertyName}] : [],
+      discardText: this.t('Chemicals: Discard changes'),
+      keepText: this.t('Chemicals: Keep editing'),
       confirmId: 'chemicalSettingsDiscardConfirm',
-    });
+    }));
   }
 
-  /** Reload or tab close with unsaved edits: the browser shows its own "leave site?" prompt. */
   @HostListener('window:beforeunload', ['$event'])
   onBeforeUnload(event: BeforeUnloadEvent): void {
-    if (this.dirty) {
-      event.preventDefault();
-      event.returnValue = '';
-    }
+    warnBeforeUnload(event, this.dirty);
+  }
+
+  private t(key: string): string {
+    return this.translate.instant(key);
   }
 
   private load(): void {
@@ -218,12 +214,17 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
 
   private setPreview(preview: ChemicalDigestModel | null): void {
     this.preview = preview;
-    this.previewSections = !preview ? [] : [
-      {id: 'passed', key: 'Chemicals: Digest passed', items: preview.passedDeadlines, deadline: true},
-      {id: 'upcoming', key: 'Chemicals: Digest upcoming', items: preview.upcomingDeadlines, deadline: true},
-      {id: 'status', key: 'Chemicals: Digest deregistered or expired', items: preview.deregisteredOrExpired, deadline: false},
-      {id: 'new', key: 'Chemicals: Digest new registrations', items: preview.newRegistrations, deadline: false},
-    ].filter((section) => section.items.length) as ChemicalDigestPreviewSection[];
+    if (!preview) {
+      this.previewSections = [];
+      return;
+    }
+    const sections: ChemicalDigestPreviewSection[] = [
+      {id: 'passed', key: 'Chemicals: Digest passed', items: preview.passedDeadlines, deadline: true, registration: false},
+      {id: 'upcoming', key: 'Chemicals: Digest upcoming', items: preview.upcomingDeadlines, deadline: true, registration: false},
+      {id: 'status', key: 'Chemicals: Digest deregistered or expired', items: preview.deregisteredOrExpired, deadline: false, registration: false},
+      {id: 'new', key: 'Chemicals: Digest new registrations', items: preview.newRegistrations, deadline: false, registration: true},
+    ];
+    this.previewSections = sections.filter((section) => section.items.length > 0);
   }
 
   private apply(stockEnabled: boolean, recipients: string[]): void {
