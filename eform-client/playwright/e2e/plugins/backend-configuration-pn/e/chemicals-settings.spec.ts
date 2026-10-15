@@ -69,6 +69,8 @@ test.describe.serial('Kemi W5 - property settings', () => {
     await expect(page.locator('#chemicalSettingsRecipientError')).toContainText('nope', { timeout: UI_TIMEOUT });
     await expect(input).toHaveAttribute('aria-invalid', 'true', { timeout: UI_TIMEOUT });
     await expect(input).toHaveAttribute('aria-describedby', 'chemicalSettingsRecipientError', { timeout: UI_TIMEOUT });
+    // A rejected draft is kept (and counts as unsaved) after Save, so clear it: the saved page must be clean.
+    await input.fill('', { timeout: UI_TIMEOUT });
     await kemi.saveSettings();
 
     // E-10: a reload empties the store; pick the property again (bounded) before asserting.

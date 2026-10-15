@@ -1018,7 +1018,7 @@ export const esES = {
   'Chemicals: Digest deregistered or expired': 'Dado de baja o caducado',
   'Chemicals: Digest new registrations': 'Nuevas inscripciones esta semana',
   'Chemicals: Digest footer': 'Recibes este correo electrónico porque eres destinatario de {{property}}. Cambia los destinatarios en Productos químicos › Configuración.',
-  'Chemicals: Could not save settings': 'No se pudieron guardar los ajustes. Los cambios se han guardado; inténtelo de nuevo.',
+  'Chemicals: Could not save settings': 'No se pudieron guardar los ajustes. Los cambios solo se conservan en el formulario; inténtelo de nuevo.',
   'Chemicals: Discard unsaved settings?': '¿Descartar la configuración no guardada?',
   'Chemicals: Unsaved settings': 'No se guardó',
   'Chemicals: Could not load settings': 'No se pudo cargar la configuración.',
