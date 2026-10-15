@@ -115,6 +115,8 @@ public static class DocumentHelper
                             }
                         };
 
+                        await AreaRuleLanguageHelper.RemapSeedLanguageIdsAsync(documentFolderTranslations, sdkDbContext)
+                            .ConfigureAwait(false);
                         folderId = await core.FolderCreate(documentFolderTranslations, propertyFolderId)
                             .ConfigureAwait(false);
                     }

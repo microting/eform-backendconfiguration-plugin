@@ -1192,4 +1192,5 @@ export const enUS= {
   'Chemicals: Could not load settings': 'The settings could not be loaded.',
   'Chemicals: Yes': 'Yes',
   'Chemicals: Could not load preview': 'The example could not be loaded.',
+  'Could not load languages': 'Could not load languages',
 };

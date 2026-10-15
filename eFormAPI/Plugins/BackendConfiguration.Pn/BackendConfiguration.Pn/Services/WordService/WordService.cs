@@ -31,6 +31,7 @@ using BackendConfigurationLocalizationService;
 using eFormCore;
 using ImageMagick;
 using Infrastructure.Data.Seed.Data;
+using Infrastructure.Helpers;
 using Infrastructure.Models.AreaRules;
 using Infrastructure.Models.TaskManagement;
 using Microsoft.EntityFrameworkCore;
@@ -216,7 +217,10 @@ public class WordService(
             curentLanguage = await sdkDbContext.Languages.FirstAsync(x => x.Name == "Danish").ConfigureAwait(false);
         }
 
-        var areaRulesForType7 = BackendConfigurationSeedAreas.AreaRulesForType7
+        // Seed translations carry seed ids (1=da, 2=en-US, 3=de-DE); compare on real SDK ids.
+        var seedRulesForType7 = BackendConfigurationSeedAreas.AreaRulesForType7;
+        await AreaRuleLanguageHelper.RemapSeedLanguageIdsAsync(seedRulesForType7, sdkDbContext).ConfigureAwait(false);
+        var areaRulesForType7 = seedRulesForType7
             .GroupBy(x => x.FolderName)
             .Select(x => new AreaRulesForType7
             {
@@ -378,7 +382,10 @@ public class WordService(
             .ToListAsync();
 
 
-        var areaRulesForType8 = BackendConfigurationSeedAreas.AreaRulesForType8
+        // Seed translations carry seed ids (1=da, 2=en-US, 3=de-DE); compare on real SDK ids.
+        var seedRulesForType8 = BackendConfigurationSeedAreas.AreaRulesForType8;
+        await AreaRuleLanguageHelper.RemapSeedLanguageIdsAsync(seedRulesForType8, sdkDbContext).ConfigureAwait(false);
+        var areaRulesForType8 = seedRulesForType8
             .GroupBy(x => x.FolderName)
             .Select(x => new AreaRulesForType8
             {

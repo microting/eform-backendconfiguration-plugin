@@ -1117,4 +1117,5 @@ export const deDE = {
   'Chemicals: Could not load settings': 'Die Einstellungen konnten nicht geladen werden.',
   'Chemicals: Yes': 'Ja',
   'Chemicals: Could not load preview': 'Das Beispiel konnte nicht geladen werden.',
+  'Could not load languages': 'Die Sprachen konnten nicht geladen werden',
 };

@@ -979,6 +979,8 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                     }
                 };
 
+                await AreaRuleLanguageHelper.RemapSeedLanguageIdsAsync(documentFolderTranslations, sdkDbContext)
+                    .ConfigureAwait(false);
                 folderId = await core.FolderCreate(documentFolderTranslations, property.FolderId).ConfigureAwait(false);
             }
 

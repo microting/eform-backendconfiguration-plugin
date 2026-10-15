@@ -89,9 +89,14 @@ public static class BackendConfigurationAreaRulesServiceHelper
                     areaRule.IsDefault = areaRuleType7.IsDefault;
                     // create folder
                     var pairedFolderToPropertyArea = areaProperty.ProperyAreaFolders.Select(x => x.FolderId).ToList();
+                    // The seed FolderName is the English folder name; resolve English by code, not by id.
+                    var englishLanguageId = await sdkDbContext.Languages
+                        .Where(x => x.LanguageCode == "en-US")
+                        .Select(x => x.Id)
+                        .FirstAsync().ConfigureAwait(false);
                     var parentFolderId = await sdkDbContext.FolderTranslations
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Where(x => x.LanguageId == 2) // en
+                        .Where(x => x.LanguageId == englishLanguageId)
                         .Where(x => pairedFolderToPropertyArea.Contains(x.FolderId))
                         .Where(x => x.Name == areaRuleType7.FolderName)
                         .Select(x => x.FolderId)

@@ -1092,4 +1092,5 @@ export const da = {
   'Chemicals: Could not load settings': 'Indstillingerne kunne ikke indlæses.',
   'Chemicals: Yes': 'Ja',
   'Chemicals: Could not load preview': 'Eksemplet kunne ikke indlæses.',
+  'Could not load languages': 'Sprogene kunne ikke indlæses',
 };

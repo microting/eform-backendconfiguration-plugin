@@ -6691,6 +6691,9 @@ public class BackendConfigurationCalendarService(
             return existingFolder.FolderId;
         }
 
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+
         // 2) Resolve the Logbøger Area — if it's missing (or its translations are),
         // seed from BackendConfigurationSeedAreas — same source the plugin-init
         // seed loop uses (EformBackendConfigurationPlugin.SeedDatabase).
@@ -6726,6 +6729,11 @@ public class BackendConfigurationCalendarService(
                 logger.LogError("Logbøger area is missing from seed data — cannot resolve folder for property {PropertyId}", propertyId);
                 return null;
             }
+
+            // Seed translations carry seed ids (1=da, 2=en-US, 3=de-DE); store the tenant's
+            // real SDK language ids, as the plugin-start area seed does.
+            await AreaRuleLanguageHelper.RemapSeedLanguageIdsAsync(seededArea.AreaTranslations, sdkDbContext)
+                .ConfigureAwait(false);
 
             var existingArea = await backendConfigurationPnDbContext.Areas
                 .FirstOrDefaultAsync(a => a.Id == seededArea.Id);
@@ -6769,8 +6777,6 @@ public class BackendConfigurationCalendarService(
         // default branch — create AreaProperty + SDK folder + ProperyAreaFolder + seed AreaRules.
         // We skip the Update(...) call because it also computes assignmentsForDelete, which would
         // destroy any OTHER active AreaProperties this property already has.
-        var core = await coreHelper.GetCore().ConfigureAwait(false);
-        var sdkDbContext = core.DbContextHelper.GetDbContext();
 
         var property = await backendConfigurationPnDbContext.Properties
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -6796,8 +6802,11 @@ public class BackendConfigurationCalendarService(
         };
         await newAreaFolder.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
 
-        foreach (var seedRule in Infrastructure.Data.Seed.Data.BackendConfigurationSeedAreas.AreaRules
-                     .Where(x => x.AreaId == areaId))
+        var seedRules = Infrastructure.Data.Seed.Data.BackendConfigurationSeedAreas.AreaRules
+            .Where(x => x.AreaId == areaId)
+            .ToList();
+        await AreaRuleLanguageHelper.RemapSeedLanguageIdsAsync(seedRules, sdkDbContext).ConfigureAwait(false);
+        foreach (var seedRule in seedRules)
         {
             seedRule.PropertyId = property.Id;
             seedRule.FolderId = folderId;
