@@ -61,6 +61,8 @@ test.describe.serial('Kemi W5 - property settings', () => {
     test.setTimeout(90000);
     const kemi = await openSettings(page);
 
+    // The switch is named after the setting it controls ("<setting>: <state>"), not just by its state.
+    await expect(page.locator('#chemicalSettingsStockToggle button')).toHaveAttribute('aria-label', /\S+: \S+/, { timeout: UI_TIMEOUT });
     await page.locator('#chemicalSettingsStockToggle button').click({ timeout: UI_TIMEOUT });
     const input = page.locator('#chemicalSettingsRecipientInput');
     await input.fill('First@Example.com, nope', { timeout: UI_TIMEOUT });
