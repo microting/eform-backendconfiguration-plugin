@@ -28,6 +28,7 @@ import {
   ArchiveMoveConfirmDialogComponent,
   ArchivePropertiesDialogComponent,
   ArchiveFolderTreeComponent,
+  ArchiveDocumentPanelComponent,
 } from './components';
 import {FilesRouting} from './files.routing';
 import {MatButtonModule} from '@angular/material/button';
@@ -76,6 +77,7 @@ import {ArchiveMoveFlowService} from './services/archive-move-flow.service';
     ArchiveMoveConfirmDialogComponent,
     ArchivePropertiesDialogComponent,
     ArchiveFolderTreeComponent,
+    ArchiveDocumentPanelComponent,
   ],
   imports: [
     CommonModule,

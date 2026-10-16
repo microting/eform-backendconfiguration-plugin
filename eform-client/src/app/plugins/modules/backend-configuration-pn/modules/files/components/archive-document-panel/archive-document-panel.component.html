@@ -1,0 +1,139 @@
+<aside class="archive-panel" id="archiveDocumentPanel" [class.archive-panel--drawer]="drawer" [attr.aria-label]="'Document' | translate">
+  <div class="archive-panel__top">
+    <span class="archive-panel__title">{{ file?.fileName }}</span>
+    <button mat-icon-button type="button" id="archivePanelCloseBtn" [attr.aria-label]="'Close' | translate" (click)="closed.emit()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Every control is disabled while a save runs, so nothing typed meanwhile is silently dropped by the reload. -->
+  <div class="archive-panel__body" *ngIf="edited">
+    <pdf-viewer
+      *ngIf="pdfBytes"
+      class="archive-panel__preview"
+      [src]="pdfBytes"
+      [show-all]="false"
+      [page]="1"
+      [original-size]="false"
+      [render-text]="false"
+    ></pdf-viewer>
+
+    <mat-form-field class="w-100">
+      <mat-label>{{ 'Name' | translate }} *</mat-label>
+      <input matInput id="archivePanelNameInput" [(ngModel)]="edited.name" [disabled]="busy" />
+    </mat-form-field>
+
+    <!-- edited.documentDate is the server's calendar day as yyyy-MM-dd (serverDay), which the date pipe reads as a local day. -->
+    <div class="archive-panel__field" id="archivePanelDate">
+      <div class="archive-panel__label">{{ 'Document date' | translate }}</div>
+      <ng-container *ngIf="!editingDate; else dateEditor">
+        <div *ngIf="edited.documentDateState === DateState.Suggested; else dateShown" class="archive-panel__suggestion">
+          <span class="archive-date archive-date--suggested" id="archivePanelDateValue">
+            <mat-icon>auto_awesome</mat-icon>{{ 'Suggested' | translate }}: {{ edited.documentDate | date: 'dd.MM.yyyy' }}
+          </span>
+          <div class="d-flex flex-row gap-12">
+            <button type="button" class="btn-secondary" id="archivePanelDateEditBtn" [disabled]="busy" (click)="editDate()">{{ 'Change date' | translate }}</button>
+            <button type="button" class="btn-primary btn-primary--icon-left" id="archivePanelDateApproveBtn" [disabled]="busy" (click)="approveDate()">
+              <mat-icon>check</mat-icon><span>{{ 'Approve' | translate }}</span>
+            </button>
+          </div>
+        </div>
+        <ng-template #dateShown>
+          <div class="d-flex flex-row flex-wrap align-items-center gap-12">
+            <span class="archive-date" id="archivePanelDateValue">
+              {{ edited.documentDate ? (edited.documentDate | date: 'dd.MM.yyyy') : ('No date' | translate) }}
+            </span>
+            <small *ngIf="edited.documentDateState === DateState.Approved && original?.documentDateState === DateState.Suggested" class="helper-text">
+              {{ 'Approved when you save' | translate }}
+            </small>
+            <button type="button" class="btn-secondary" id="archivePanelDateEditBtn" [disabled]="busy" (click)="editDate()">
+              {{ (edited.documentDate ? 'Change date' : 'Set date') | translate }}
+            </button>
+          </div>
+        </ng-template>
+      </ng-container>
+      <ng-template #dateEditor>
+        <div class="d-flex flex-row align-items-center gap-12">
+          <mat-form-field>
+            <mat-label>{{ 'Document date' | translate }}</mat-label>
+            <input matInput type="date" id="archivePanelDateInput" [ngModel]="edited.documentDate" (ngModelChange)="setDate($event)" [disabled]="busy" />
+          </mat-form-field>
+          <button type="button" class="btn-secondary" id="archivePanelDateDoneBtn" [disabled]="busy" (click)="editingDate = false">{{ 'Done' | translate }}</button>
+        </div>
+      </ng-template>
+    </div>
+
+    <mat-form-field class="w-100">
+      <mat-label>{{ 'Properties' | translate }} *</mat-label>
+      <mtx-select
+        id="archivePanelPropertiesSelect"
+        [items]="properties"
+        bindLabel="name"
+        bindValue="id"
+        [multiple]="true"
+        [(ngModel)]="edited.propertyIds"
+        [disabled]="busy"
+        appendTo="body"
+      ></mtx-select>
+    </mat-form-field>
+
+    <app-archive-folder-picker
+      [options]="folderOptions"
+      [value]="edited.folderId"
+      (valueChange)="setFolder($event)"
+      pickerId="archivePanelFolderSelect"
+      [disabled]="busy"
+    ></app-archive-folder-picker>
+
+    <div class="archive-panel__field" id="archivePanelAccess">
+      <div class="archive-panel__label">{{ 'Read access' | translate }}</div>
+      <ng-container *ngIf="isAdmin; else accessReadOnly">
+        <ng-container *ngIf="edited.ownAccess; else inherited">
+          <div class="archive-access archive-access--own"><mat-icon>lock</mat-icon>{{ 'Own access' | translate }}: {{ ownGroupsLabel }}</div>
+          <div class="archive-access__struck"><s>{{ inheritedLabel }}</s></div>
+          <mat-form-field class="w-100">
+            <mat-label>{{ 'Worker groups' | translate }}</mat-label>
+            <mtx-select
+              id="archivePanelAccessSelect"
+              [items]="accessItems"
+              bindLabel="name"
+              bindValue="id"
+              [multiple]="true"
+              [clearable]="true"
+              [(ngModel)]="edited.readTagIds"
+              [disabled]="busy"
+              appendTo="body"
+            ></mtx-select>
+          </mat-form-field>
+          <button type="button" class="btn-secondary" id="archivePanelUseFolderAccessBtn" [disabled]="busy" (click)="useFolderAccess()">{{ "Use the folder's access" | translate }}</button>
+        </ng-container>
+        <ng-template #inherited>
+          <div class="archive-access">{{ inheritedLabel }}</div>
+          <button type="button" class="btn-secondary" id="archivePanelOwnAccessBtn" [disabled]="busy" (click)="useOwnAccess()">{{ 'Own access' | translate }}</button>
+        </ng-template>
+      </ng-container>
+      <ng-template #accessReadOnly><div class="archive-access">{{ readAccessLabel }}</div></ng-template>
+    </div>
+
+    <mat-form-field class="w-100">
+      <mat-label>{{ 'Tags' | translate }}</mat-label>
+      <mtx-select
+        id="archivePanelTagsSelect"
+        [items]="availableTags"
+        bindLabel="name"
+        bindValue="id"
+        [multiple]="true"
+        [clearable]="true"
+        [(ngModel)]="edited.tagIds"
+        [disabled]="busy"
+        appendTo="body"
+      ></mtx-select>
+    </mat-form-field>
+  </div>
+
+  <div class="archive-panel__foot">
+    <span *ngIf="positionLabel" class="helper-text" id="archivePanelPosition">{{ positionLabel }}</span>
+    <button type="button" class="btn-secondary" id="archivePanelSaveBtn" [disabled]="!canSave" (click)="save(false)">{{ 'Save' | translate }}</button>
+    <button type="button" class="btn-primary" id="archivePanelSaveNextBtn" [disabled]="!canSaveNext" (click)="save(true)">{{ 'Save and next' | translate }}</button>
+  </div>
+</aside>
