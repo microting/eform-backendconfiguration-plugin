@@ -58,6 +58,7 @@ export const ARCHIVE_I18N_KEYS: string[] = [
   'Approved when you save',
   'Save and next',
   'Set properties',
+  'Replaces the properties of {{count}} document.',
   'Replaces the properties of {{count}} documents.',
   'Your account is disabled',
   'No matching folder was found. Choose one before you file.',

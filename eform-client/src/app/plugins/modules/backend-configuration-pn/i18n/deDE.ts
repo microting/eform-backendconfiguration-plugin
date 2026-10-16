@@ -1178,6 +1178,7 @@ export const deDE = {
   'Save and next': 'Speichern und weiter',
   'Set properties': 'Immobilien festlegen',
   'Replaces the properties of {{count}} documents.': 'Ersetzt die Immobilien von {{count}} Dokumenten.',
+  'Replaces the properties of {{count}} document.': 'Ersetzt die Immobilien von {{count}} Dokument.',
   'Your account is disabled': 'Ihr Konto ist deaktiviert',
   'No matching folder was found. Choose one before you file.': 'Es wurde kein passender Ordner gefunden. Wählen Sie einen, bevor Sie ablegen.',
 };

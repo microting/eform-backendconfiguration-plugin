@@ -1153,6 +1153,7 @@ export const da = {
   'Save and next': 'Gem og næste',
   'Set properties': 'Sæt ejendomme',
   'Replaces the properties of {{count}} documents.': 'Erstatter ejendommene på {{count}} dokumenter.',
+  'Replaces the properties of {{count}} document.': 'Erstatter ejendommene på {{count}} dokument.',
   'Your account is disabled': 'Din konto er deaktiveret',
   'No matching folder was found. Choose one before you file.': 'Der blev ikke fundet en passende mappe. Vælg en, før du arkiverer.',
 };

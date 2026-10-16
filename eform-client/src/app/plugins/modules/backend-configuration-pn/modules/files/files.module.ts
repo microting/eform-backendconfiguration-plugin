@@ -21,6 +21,12 @@ import {
   InboxContainerComponent,
   InboxReviewDialogComponent,
   InboxSettingsComponent,
+  ArchiveFolderPickerComponent,
+  ArchiveFolderNameDialogComponent,
+  ArchiveFolderChooseDialogComponent,
+  ArchiveAccessDialogComponent,
+  ArchiveMoveConfirmDialogComponent,
+  ArchivePropertiesDialogComponent,
 } from './components';
 import {FilesRouting} from './files.routing';
 import {MatButtonModule} from '@angular/material/button';
@@ -42,6 +48,8 @@ import {MtxProgressModule} from '@ng-matero/extensions/progress';
 import {MatDatepickerModule} from '@angular/material/datepicker';
 import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
 import {MatSelectModule} from '@angular/material/select';
+import {MatRadioModule} from '@angular/material/radio';
+import {ArchiveMoveFlowService} from './services/archive-move-flow.service';
 
 @NgModule({
   declarations: [
@@ -60,6 +68,12 @@ import {MatSelectModule} from '@angular/material/select';
     InboxContainerComponent,
     InboxReviewDialogComponent,
     InboxSettingsComponent,
+    ArchiveFolderPickerComponent,
+    ArchiveFolderNameDialogComponent,
+    ArchiveFolderChooseDialogComponent,
+    ArchiveAccessDialogComponent,
+    ArchiveMoveConfirmDialogComponent,
+    ArchivePropertiesDialogComponent,
   ],
   imports: [
     CommonModule,
@@ -91,7 +105,9 @@ import {MatSelectModule} from '@angular/material/select';
     MatMenu,
     MatMenuItem,
     MatSelectModule,
+    MatRadioModule,
   ],
+  providers: [ArchiveMoveFlowService],
 })
 
 export class FilesModule {

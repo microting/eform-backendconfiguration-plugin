@@ -1253,6 +1253,7 @@ export const enUS= {
   'Save and next': 'Save and next',
   'Set properties': 'Set properties',
   'Replaces the properties of {{count}} documents.': 'Replaces the properties of {{count}} documents.',
+  'Replaces the properties of {{count}} document.': 'Replaces the properties of {{count}} document.',
   'Your account is disabled': 'Your account is disabled',
   'No matching folder was found. Choose one before you file.': 'No matching folder was found. Choose one before you file.',
 };

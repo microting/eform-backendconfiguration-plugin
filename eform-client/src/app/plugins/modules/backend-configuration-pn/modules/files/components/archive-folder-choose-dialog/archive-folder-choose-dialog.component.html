@@ -1,0 +1,12 @@
+<h3 mat-dialog-title>{{ data.title | translate: data.titleParams }}</h3>
+<div mat-dialog-content>
+  <app-archive-folder-picker
+    [options]="data.options"
+    [(value)]="selectedId"
+    pickerId="archiveFolderChooseSelect"
+  ></app-archive-folder-picker>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end gap-12">
+  <button class="btn-cancel" id="archiveFolderChooseCancelBtn" (click)="cancel()">{{ 'Cancel' | translate }}</button>
+  <button class="btn-primary" id="archiveFolderChooseBtn" [disabled]="selectedId === null" (click)="choose()">{{ 'Choose' | translate }}</button>
+</div>

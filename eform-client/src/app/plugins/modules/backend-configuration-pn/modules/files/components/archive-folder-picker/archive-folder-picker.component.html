@@ -1,0 +1,27 @@
+<mat-form-field class="w-100">
+  <mat-label>{{ label | translate }} *</mat-label>
+  <mtx-select
+    [id]="pickerId"
+    [items]="options"
+    bindLabel="label"
+    bindValue="id"
+    [ngModel]="value"
+    (ngModelChange)="valueChange.emit($event)"
+    [clearable]="false"
+    [disabled]="disabled"
+    [placeholder]="'Search folder' | translate"
+    appendTo="body"
+  >
+    <ng-template ng-option-tmp let-item="item">
+      <span class="archive-folder-option" [class.archive-folder-option--child]="item.depth === 1" [attr.data-folder-id]="item.id">
+        <mat-icon>folder</mat-icon>
+        <span>{{ item.label }}</span>
+        <span *ngIf="item.isDefault" class="archive-folder-row__std">{{ 'default' | translate }}</span>
+        <ng-container *ngIf="item.restricted">
+          <mat-icon class="archive-lock">lock</mat-icon>
+          <small class="helper-text">{{ item.groupsLabel }}</small>
+        </ng-container>
+      </span>
+    </ng-template>
+  </mtx-select>
+</mat-form-field>

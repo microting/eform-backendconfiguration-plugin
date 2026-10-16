@@ -1,0 +1,31 @@
+<h3 mat-dialog-title>{{ data.title | translate: data.titleParams }}</h3>
+<div mat-dialog-content class="d-flex flex-column gap-12">
+  <mat-radio-group *ngIf="data.mode === 'files'" class="d-flex flex-column gap-4" [(ngModel)]="ownAccess" (change)="touch()">
+    <!-- click too: re-choosing the preselected "inherit" fires no change. -->
+    <mat-radio-button [value]="false" id="archiveAccessInherit" (click)="touch()">{{ "Use the folder's access" | translate }}</mat-radio-button>
+    <mat-radio-button [value]="true" id="archiveAccessOwn" (click)="touch()">{{ 'Own access' | translate }}</mat-radio-button>
+  </mat-radio-group>
+  <ng-container *ngIf="ownAccess">
+    <mat-form-field class="w-100">
+      <mat-label>{{ 'Worker groups' | translate }}</mat-label>
+      <mtx-select
+        id="archiveAccessTagSelect"
+        [items]="items"
+        bindLabel="name"
+        bindValue="id"
+        [multiple]="true"
+        [clearable]="true"
+        [(ngModel)]="tagIds"
+        (ngModelChange)="touch()"
+        appendTo="body"
+      ></mtx-select>
+    </mat-form-field>
+    <p *ngIf="!tagIds.length" id="archiveAccessOpenHint" class="helper-text mb-0">
+      {{ 'No groups: everyone with archive access can read.' | translate }}
+    </p>
+  </ng-container>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end gap-12">
+  <button class="btn-cancel" id="archiveAccessCancelBtn" (click)="cancel()">{{ 'Cancel' | translate }}</button>
+  <button class="btn-primary" id="archiveAccessSaveBtn" [disabled]="!canSave" (click)="save()">{{ 'Save' | translate }}</button>
+</div>

@@ -1,0 +1,11 @@
+<h3 mat-dialog-title>{{ data.title | translate: data.titleParams }}</h3>
+<div mat-dialog-content>
+  <mat-form-field class="w-100">
+    <mat-label>{{ 'Name' | translate }}</mat-label>
+    <input matInput id="archiveFolderNameInput" [(ngModel)]="name" [maxlength]="maxLength" (keyup.enter)="save()" cdkFocusInitial />
+  </mat-form-field>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end gap-12">
+  <button class="btn-cancel" id="archiveFolderNameCancelBtn" (click)="cancel()">{{ 'Cancel' | translate }}</button>
+  <button class="btn-primary" id="archiveFolderNameSaveBtn" [disabled]="!canSave" (click)="save()">{{ 'Save' | translate }}</button>
+</div>
