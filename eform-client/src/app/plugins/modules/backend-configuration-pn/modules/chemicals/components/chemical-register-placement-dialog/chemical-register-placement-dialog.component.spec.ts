@@ -135,6 +135,24 @@ describe('ChemicalRegisterPlacementDialogComponent', () => {
       expect(component.canSave).toBe(false);
     });
 
+    it('drops a pick made from the old results while the new search was pending (N-m1)', () => {
+      const component = build(false);
+      component.query = 'karate';
+      component.search();
+      component.locationId = 10;
+      const pending = new Subject<unknown>();
+      chemicals.searchRegister.mockReturnValue(pending);
+      component.query = 'virkon';
+      component.search();
+
+      component.select(component.results[0]);
+      pending.next(page([{chemicalId: 300, name: 'Virkon S'}]));
+
+      expect(component.selected).toBeNull();
+      expect(component.productId).toBeNull();
+      expect(component.canSave).toBe(false);
+    });
+
     it('ignores an older answer that arrives after a newer one', () => {
       const component = build(false);
       const slow = new Subject<unknown>();

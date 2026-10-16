@@ -1,3 +1,4 @@
+import {HttpErrorResponse} from '@angular/common/http';
 import {DestroyRef, Injector, runInInjectionContext} from '@angular/core';
 import {Overlay} from '@angular/cdk/overlay';
 import {MatDialog} from '@angular/material/dialog';
@@ -292,6 +293,98 @@ describe('ChemicalInventoryPageComponent', () => {
     component.exportAuthorityList();
 
     expect(toastr.error).toHaveBeenCalledWith('Chemicals: Export not allowed');
+  });
+
+  it.each([400, 500])('never shows the technical message of a raw HTTP %p error (N-m4)', (status) => {
+    const component = build();
+    chemicals.exportInventory.mockReturnValue(throwError(() => new HttpErrorResponse({status, url: '/api/x', error: 'boom'})));
+
+    component.exportInventory();
+
+    expect(toastr.error).toHaveBeenCalledWith('Export failed');
+    expect(toastr.error).not.toHaveBeenCalledWith(expect.stringContaining('Http failure'));
+  });
+
+  describe('W2 side panel and placement actions', () => {
+    const dialogOf = (component: ChemicalInventoryPageComponent) =>
+      (component as unknown as {dialog: {open: jest.Mock}}).dialog;
+
+    it('opens the side panel and chains the chosen action into its dialog', () => {
+      const component = build();
+      const dialog = dialogOf(component);
+      dialog.open
+        .mockReturnValueOnce({afterClosed: () => of({action: 'remove', row: component.rows[0]})})
+        .mockReturnValueOnce({afterClosed: () => of(true)});
+
+      component.openDetails(component.rows[0]);
+
+      expect(dialog.open).toHaveBeenCalledTimes(2);
+      expect(dialog.open.mock.calls[1][0].name).toBe('ChemicalRemoveDialogComponent');
+      expect(chemicals.getPropertyInventory).toHaveBeenCalledTimes(2);
+    });
+
+    it('gives the side panel the row, the inventory and the stock flag', () => {
+      const component = build({}, {stockEnabled: true});
+      const dialog = dialogOf(component);
+      dialog.open.mockReturnValue({afterClosed: () => of(undefined)});
+
+      component.openDetails(component.rows[0]);
+
+      expect(dialog.open.mock.calls[0][0].name).toBe('ChemicalProductDrawerComponent');
+      expect(dialog.open.mock.calls[0][1].data).toEqual({row: component.rows[0], inventory: component.inventory, stockEnabled: true});
+      expect(dialog.open).toHaveBeenCalledTimes(1);
+      expect(chemicals.getPropertyInventory).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([
+      ['move', 'ChemicalMoveDialogComponent'],
+      ['stock', 'ChemicalStockDialogComponent'],
+    ])('chains "%s" from the side panel into %s', (action, dialogName) => {
+      const component = build({}, {stockEnabled: true});
+      const dialog = dialogOf(component);
+      dialog.open
+        .mockReturnValueOnce({afterClosed: () => of({action, row: component.rows[1]})})
+        .mockReturnValueOnce({afterClosed: () => of(false)});
+
+      component.openDetails(component.rows[0]);
+
+      expect(dialog.open.mock.calls[1][0].name).toBe(dialogName);
+      expect(dialog.open.mock.calls[1][1].data.row).toBe(component.rows[1]);
+    });
+
+    it.each([
+      ['openMove', 'ChemicalMoveDialogComponent'],
+      ['openNote', 'ChemicalNoteDialogComponent'],
+      ['openStock', 'ChemicalStockDialogComponent'],
+      ['openRemove', 'ChemicalRemoveDialogComponent'],
+    ] as const)('%s reloads the inventory only after a save', (method, dialogName) => {
+      const component = build();
+      const dialog = dialogOf(component);
+      dialog.open.mockReturnValue({afterClosed: () => of(false)});
+
+      component[method](component.rows[0]);
+
+      expect(dialog.open.mock.calls[0][0].name).toBe(dialogName);
+      expect(dialog.open.mock.calls[0][1].data.row).toBe(component.rows[0]);
+      expect(chemicals.getPropertyInventory).toHaveBeenCalledTimes(1);
+
+      dialog.open.mockReturnValue({afterClosed: () => of(true)});
+      component[method](component.rows[0]);
+
+      expect(chemicals.getPropertyInventory).toHaveBeenCalledTimes(2);
+    });
+
+    it('gives the move dialog the property\'s locations and the stock flag, and the remove dialog today', () => {
+      const component = build({}, {stockEnabled: true});
+      const dialog = dialogOf(component);
+      dialog.open.mockReturnValue({afterClosed: () => of(false)});
+
+      component.openMove(component.rows[0]);
+      component.openRemove(component.rows[0]);
+
+      expect(dialog.open.mock.calls[0][1].data).toEqual({row: component.rows[0], locations: component.inventory.locations, stockEnabled: true});
+      expect(dialog.open.mock.calls[1][1].data.today).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    });
   });
 
   it('toggles the requires-action chip through the store', () => {

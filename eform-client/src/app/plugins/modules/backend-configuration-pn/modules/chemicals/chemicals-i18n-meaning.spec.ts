@@ -106,4 +106,29 @@ describe('Kemi i18n meaning', () => {
     const storage = PLACEMENT_KEYS.filter((key) => STORAGE_PLACE.test(text(locale, key)));
     expect(storage).toEqual([]);
   });
+
+  // Moving or removing a placement acts on the registered chemical; read as a storage place, "Remove placement"
+  // would sound like deleting the location itself.
+  const PLACEMENT_ACTION_KEYS = ['Chemicals: Move placement', 'Chemicals: Remove placement'];
+
+  it.each(NON_ENGLISH)('%s: moving and removing a placement name the chemical, not a storage place', (locale) => {
+    const storage = PLACEMENT_ACTION_KEYS.filter((key) => STORAGE_PLACE.test(text(locale, key)));
+    expect(storage).toEqual([]);
+  });
+
+  // A write-off is stock deducted from the inventory when a placement is removed, never accounting depreciation.
+  const DEPRECIATION = /amorti|ammortam|deprecia|abschreib|afschrijv|avskriv|amortyz|амортиз|αποσβ|poistot|értékcsökken/i;
+
+  it.each(NON_ENGLISH)('%s: the removal write-off is a stock deduction, not depreciation', (locale) => {
+    expect(text(locale, 'Chemicals: Stock origin write-off')).not.toMatch(DEPRECIATION);
+  });
+
+  // The stock balance is a quantity in stock, never an equilibrium or a bank/account balance.
+  const NOT_QUANTITY = /gleichgewicht|équilibre|equilibrio|equilíbrio|evenwicht|jämvikt|likevekt|tasapaino|tasakaal|równowag|rovnováh|ravnotež|egyensúly|echilibru|pusiausvyr|līdzsvar|равновес|рівноваг|ισορροπ|jafnvægi|kontostand|solde|saldo bancario|saldo bancário|zůstatek|zostatok|egyenleg|баланс|guthaben/i;
+  const BALANCE_KEYS = ['Chemicals: Balance', 'Chemicals: Current balance', 'Chemicals: Counted balance'];
+
+  it.each(NON_ENGLISH)('%s: the stock balance is a quantity in stock, not an equilibrium or an account', (locale) => {
+    const wrong = BALANCE_KEYS.filter((key) => NOT_QUANTITY.test(text(locale, key)));
+    expect(wrong).toEqual([]);
+  });
 });

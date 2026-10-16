@@ -3,10 +3,14 @@ import {
   ChemicalLocationModel,
   ChemicalPlacementModel,
   ChemicalRegisterEntryModel,
+  ChemicalStockEntryKind,
+  ChemicalStockEntryModel,
+  ChemicalStockEntryOrigin,
+  ChemicalStockUnit,
 } from '../../../models';
 
 /**
- * Test data builders for the W1 specs (helper, page, page template). Not exported from the
+ * Test data builders for the W1/W2 specs (helper, page, page template, side panel). Not exported from the
  * helpers barrel: production code never imports them. A model change touches only this file.
  */
 
@@ -30,6 +34,18 @@ export function placement(id: number, locationId: number, chemicalId: number, pa
   };
 }
 
+/** A stock entry as the server sends it: balanceAfter is the server's running balance (E-06). */
+export function stockEntry(
+  id: number, placementId: number, kind: ChemicalStockEntryKind, amount: number, at: string, balanceAfter: number,
+  partial: Partial<ChemicalStockEntryModel> = {},
+): ChemicalStockEntryModel {
+  return {
+    id, placementId, kind, containerSize: null, unit: ChemicalStockUnit.Kg, amount, containerCount: null,
+    batchLot: null, note: null, byUserId: 5, byName: 'Jens Hansen', at, balanceAfter,
+    origin: ChemicalStockEntryOrigin.Manual, counterpartPlacementId: null, ...partial,
+  };
+}
+
 export function location(id: number, name: string, partial: Partial<ChemicalLocationModel> = {}): ChemicalLocationModel {
   return {id, propertyId: 1, name, description: '', photoFileName: null, sortOrder: id, archived: false, updatedAt: '', ...partial};
 }
@@ -40,12 +56,13 @@ export function inventoryOf(parts: {
   locations?: ChemicalLocationModel[];
   placements?: ChemicalPlacementModel[];
   registerEntries?: ChemicalRegisterEntryModel[];
+  stockEntries?: ChemicalStockEntryModel[];
 } = {}): ChemicalInventoryModel {
   return {
     properties: [{propertyId: parts.propertyId ?? 1, name: 'Hovedgården', permissions: null, stockEnabled: !!parts.stockEnabled, callerWorkerId: null}],
     locations: parts.locations ?? [],
     placements: parts.placements ?? [],
-    stockEntries: [],
+    stockEntries: parts.stockEntries ?? [],
     registerEntries: parts.registerEntries ?? [],
     syncToken: '',
     full: true,

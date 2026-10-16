@@ -1,10 +1,12 @@
-import {ChemicalStockUnit} from '../../../models';
-import {entry, inventoryOf, location, placement} from './chemical-inventory.fixtures';
+import {ChemicalStockEntryKind, ChemicalStockEntryOrigin, ChemicalStockUnit} from '../../../models';
+import {entry, inventoryOf, location, placement, stockEntry} from './chemical-inventory.fixtures';
 import {
   buildInventoryRows,
   chemicalStatusLabelKey,
   filterInventoryRows,
   isStockEnabled,
+  placementStockHistory,
+  placementsOfChemical,
   sdsFileNameFor,
   summarizeActions,
 } from './chemical-inventory.helper';
@@ -96,5 +98,76 @@ describe('chemical inventory helper', () => {
     expect(isStockEnabled(null, 1)).toBe(false);
     expect(sdsFileNameFor(rows.find((r) => r.placement.id === 2))).toBe('sds200');
     expect(sdsFileNameFor(rows.find((r) => r.placement.id === 5))).toBeNull();
+  });
+});
+
+describe('placement stock history and sibling placements', () => {
+  const withEntries = {
+    ...inventory,
+    stockEntries: [
+      stockEntry(1, 2, ChemicalStockEntryKind.Received, 5, '2026-08-12T08:00:00', 5),
+      stockEntry(3, 2, ChemicalStockEntryKind.Consumed, -0.5, '2026-09-24T08:00:00', 3.5),
+      stockEntry(2, 2, ChemicalStockEntryKind.Consumed, -1, '2026-09-02T08:00:00', 4),
+      stockEntry(4, 3, ChemicalStockEntryKind.Received, 9, '2026-09-01T08:00:00', 9),
+    ],
+  };
+
+  it('lists the placement\'s movements newest first with the running balance', () => {
+    const history = placementStockHistory(withEntries, 2);
+
+    expect(history.map((h) => [h.entry.id, h.balanceAfter])).toEqual([[3, 3.5], [2, 4], [1, 5]]);
+  });
+
+  it('shows the server\'s balance after each entry and never recomputes it (E-06)', () => {
+    // The inventory carries only the last 12 months: older entries are missing, so a client sum would be wrong.
+    const truncated = {
+      ...inventory,
+      stockEntries: [
+        stockEntry(11, 2, ChemicalStockEntryKind.Consumed, -1, '2026-09-02T08:00:00', 11),
+        stockEntry(12, 2, ChemicalStockEntryKind.Consumed, -2, '2026-09-03T08:00:00', 9),
+      ],
+    };
+
+    expect(placementStockHistory(truncated, 2).map((h) => h.balanceAfter)).toEqual([9, 11]);
+  });
+
+  it('orders entries booked at the same moment by id, newest first', () => {
+    const sameTime = {
+      ...inventory,
+      stockEntries: [
+        stockEntry(21, 2, ChemicalStockEntryKind.Received, 2, '2026-09-02T08:00:00', 2),
+        stockEntry(22, 2, ChemicalStockEntryKind.Consumed, -2, '2026-09-02T08:00:00', 0),
+      ],
+    };
+
+    expect(placementStockHistory(sameTime, 2).map((h) => h.entry.id)).toEqual([22, 21]);
+  });
+
+  it('labels the kind of each entry and where a move or a removal wrote it (E-06)', () => {
+    const labelled = {
+      ...inventory,
+      stockEntries: [
+        stockEntry(31, 2, ChemicalStockEntryKind.Received, 5, '2026-09-01T08:00:00', 5),
+        stockEntry(32, 2, ChemicalStockEntryKind.MovedOut, -2, '2026-09-02T08:00:00', 3,
+          {origin: ChemicalStockEntryOrigin.Move, counterpartPlacementId: 9}),
+        stockEntry(33, 2, ChemicalStockEntryKind.Consumed, -3, '2026-09-03T08:00:00', 0,
+          {origin: ChemicalStockEntryOrigin.RemovalWriteOff}),
+      ],
+    };
+
+    expect(placementStockHistory(labelled, 2).map((h) => [h.kindLabelKey, h.originLabelKey])).toEqual([
+      ['Chemicals: Stock kind 2', 'Chemicals: Stock origin write-off'],
+      ['Chemicals: Stock kind 4', 'Chemicals: Stock origin move'],
+      ['Chemicals: Stock kind 1', null],
+    ]);
+  });
+
+  it('is empty without an inventory', () => {
+    expect(placementStockHistory(null, 2)).toEqual([]);
+    expect(placementsOfChemical(null, 100)).toEqual([]);
+  });
+
+  it('lists every open placement of the same chemical', () => {
+    expect(placementsOfChemical(inventory, 100).map((p) => p.id)).toEqual([1]);
   });
 });

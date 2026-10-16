@@ -28,10 +28,11 @@ describe('ChemicalInventoryPageComponent (template)', () => {
   const find = (selector: string): HTMLElement | null => fixture.nativeElement.querySelector(selector);
   const disabled = (selector: string) => (find(selector) as HTMLButtonElement).disabled;
 
-  function render(locations: Array<{id: number; archived: boolean}>, answer?: Observable<unknown>): void {
+  function render(locations: Array<{id: number; archived: boolean}>, answer?: Observable<unknown>, stockEnabled = false): void {
     filters$ = new BehaviorSubject({...chemicalsInitialState.inventoryFilters});
     const inventory = inventoryOf({
       propertyId: 3,
+      stockEnabled,
       locations: locations.map((l) => location(l.id, `Lager ${l.id}`, {propertyId: 3, archived: l.archived})),
       placements: [placement(7, 10, 200, {propertyId: 3})],
       // Afmeldt (6): requires action whatever today's date is.
@@ -134,5 +135,33 @@ describe('ChemicalInventoryPageComponent (template)', () => {
     const product = find('#chemicalRowProduct-0');
     expect(product?.tagName).toBe('BUTTON');
     expect(product?.textContent).toContain('Karate 2,5 WG');
+  });
+
+  describe('row menu (W2 placement actions)', () => {
+    const openRowMenu = () => {
+      (find('#action-items-0 button') as HTMLButtonElement).click();
+      fixture.detectChanges();
+    };
+    // The menu panel renders in the CDK overlay container, outside the fixture.
+    const menuItem = (id: string) => document.querySelector(`#${id}`);
+
+    it('offers move, note and remove, and no stock movement while stock is off', () => {
+      render([{id: 10, archived: false}]);
+
+      openRowMenu();
+
+      expect(menuItem('chemicalRowMove-0')).not.toBeNull();
+      expect(menuItem('chemicalRowNote-0')).not.toBeNull();
+      expect(menuItem('chemicalRowRemove-0')).not.toBeNull();
+      expect(menuItem('chemicalRowStock-0')).toBeNull();
+    });
+
+    it('offers the stock movement when stock is on', () => {
+      render([{id: 10, archived: false}], undefined, true);
+
+      openRowMenu();
+
+      expect(menuItem('chemicalRowStock-0')).not.toBeNull();
+    });
   });
 });
