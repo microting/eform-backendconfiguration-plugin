@@ -40,7 +40,7 @@ public class ChemicalExportServiceTests : ChemicalTestBase
 
     private static ChemicalStockAmountModel Liters(decimal amount) => new(null, null, amount, ChemicalStockUnitEnum.L, null, null, null);
 
-    private async Task<(int PropertyId, string PropertyName, int Open1, int Open2, int Closed)> ArrangeAsync(bool stock)
+    private async Task<(int PropertyId, string PropertyName, int Open1, int Open2, int Closed)> ArrangeAsync(bool stock, decimal amount = 2m)
     {
         var property = await CreatePropertyAsync();
         var inventory = CreateInventoryService();
@@ -48,7 +48,7 @@ public class ChemicalExportServiceTests : ChemicalTestBase
         var lade = await inventory.CreateLocationAsync(Web, new ChemicalCreateLocationCommand(property.Id, "Lade", "", null));
         var chemical = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Karate 2,5 WG", "1-212", status: 6, sdsFileName: "abc123");
         async Task<int> RegisterAsync(string note) => (await inventory.RegisterPlacementAsync(Web,
-            new ChemicalRegisterPlacementCommand(lade.Id, chemical.ChemicalId, null, note, stock ? Liters(2) : null))).Placements.Single().Id;
+            new ChemicalRegisterPlacementCommand(lade.Id, chemical.ChemicalId, null, note, stock ? Liters(amount) : null))).Placements.Single().Id;
         var open1 = await RegisterAsync("=HYPERLINK(\"x\")");
         var open2 = await RegisterAsync("Hylde 2");
         var closed = await RegisterAsync("Hylde 3");
@@ -115,6 +115,33 @@ public class ChemicalExportServiceTests : ChemicalTestBase
     }
 
     [Test]
+    public async Task InventoryXlsx_Quantity_KeepsRealDecimalsAndDropsOnlyTrailingZeros()
+    {
+        var a = await ArrangeAsync(stock: true, amount: 2.5m);
+
+        var (_, rows) = XlsxTestReader.Read((await CreateSut().InventoryXlsxAsync(TestUserId, a.PropertyId, null)).Content);
+
+        Assert.That(rows[1][rows[0].IndexOf("ChemicalColumnQuantity")], Is.EqualTo("2.5"));
+    }
+
+    [Test]
+    public async Task InventoryXlsx_SortsNamesInDanishOrder_RegardlessOfTheHostCulture()
+    {
+        var property = await CreatePropertyAsync();
+        var inventory = CreateInventoryService();
+        var lade = await inventory.CreateLocationAsync(Web, new ChemicalCreateLocationCommand(property.Id, "Lade", "", null));
+        foreach (var name in new[] { "Åben", "Zebra", "Ægte" })
+        {
+            var chemical = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, name, $"9-{name.Length}{(int)name[0]}");
+            await inventory.RegisterPlacementAsync(Web, new ChemicalRegisterPlacementCommand(lade.Id, chemical.ChemicalId, null, "", null));
+        }
+
+        var (_, rows) = XlsxTestReader.Read((await CreateSut().InventoryXlsxAsync(TestUserId, property.Id, null)).Content);
+
+        Assert.That(rows.Skip(1).Select(r => r[0]), Is.EqualTo(new[] { "Zebra", "Ægte", "Åben" }), "Danish: z, æ, å");
+    }
+
+    [Test]
     public async Task RemovedPlacementsXlsx_ListsClosedPlacementsWithReason()
     {
         var a = await ArrangeAsync(stock: false);
@@ -138,7 +165,11 @@ public class ChemicalExportServiceTests : ChemicalTestBase
 
         var (_, rows) = XlsxTestReader.Read((await CreateSut().HistoryXlsxAsync(a.PropertyId, query)).Content);
 
+        Assert.That(events, Is.Not.Empty, "the arrange wrote history inside the period");
         Assert.That(rows, Has.Count.EqualTo(events.Count + 1));
+        Assert.That(rows.Select(r => r[2]), Does.Contain("ChemicalActionRegistered").And.Contain("ChemicalActionRemoved"));
+        var removed = rows.Single(r => r[2] == "ChemicalActionRemoved");
+        Assert.That(removed[6], Is.EqualTo("ChemicalColumnRemovalReason: ChemicalReasonDisposed · farligt affald"));
         Assert.That(rows[0], Is.EqualTo(new List<string>
         {
             "ChemicalColumnTime", "ChemicalColumnUser", "ChemicalColumnAction", "ChemicalColumnProduct",

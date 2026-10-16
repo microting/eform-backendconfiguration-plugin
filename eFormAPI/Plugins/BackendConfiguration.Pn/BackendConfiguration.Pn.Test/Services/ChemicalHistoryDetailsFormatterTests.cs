@@ -105,8 +105,73 @@ public class ChemicalHistoryDetailsFormatterTests
     }), Is.EqualTo("<ChemicalThresholdPassed> (<ChemicalDeadlineUseAndPossession>) · push 2 · e-mail 3"));
 
     [Test]
-    public void RenamedAndNote() => Assert.That(
+    public void RenamedAndStatus() => Assert.That(
         (Format(new ChemicalHistoryEventModel { Action = ChemicalHistoryActionEnum.LocationRenamed, OldValue = "Kemirum", NewValue = "Kemirum 2" }),
          Format(new ChemicalHistoryEventModel { Action = ChemicalHistoryActionEnum.StatusChanged, StatusText = "Produkt afmeldt" })),
         Is.EqualTo(("Kemirum → Kemirum 2", "Produkt afmeldt")));
+
+    [Test]
+    public void ThreeDecimalQuantities_AreNotRounded() => Assert.That(
+        (Format(new ChemicalHistoryEventModel
+        {
+            Action = ChemicalHistoryActionEnum.StockConsumed, Amount = -0.125m, Unit = ChemicalStockUnitEnum.L, BalanceAfter = 0.875m,
+        }),
+         Format(new ChemicalHistoryEventModel
+         {
+             Action = ChemicalHistoryActionEnum.StockReceived, Amount = 0.004m, Unit = ChemicalStockUnitEnum.Kg, BalanceAfter = 0.004m,
+         }),
+         Format(new ChemicalHistoryEventModel
+         {
+             Action = ChemicalHistoryActionEnum.StockAdjusted, Amount = 0.125m, Unit = ChemicalStockUnitEnum.L, BalanceAfter = 1.5m,
+         }),
+         Format(new ChemicalHistoryEventModel
+         {
+             Action = ChemicalHistoryActionEnum.Removed, RemovalReason = ChemicalRemovalReasonEnum.Used,
+             Amount = -0.004m, Unit = ChemicalStockUnitEnum.Kg,
+         })),
+        Is.EqualTo((
+            "-0.125 L · <ChemicalBalance> 0.875 L",
+            "0.004 kg · <ChemicalBalance> 0.004 kg",
+            "<ChemicalBalance> 1.375 → 1.5 L",
+            "<ChemicalColumnRemovalReason>: <ChemicalReasonUsed> · -0.004 kg")));
+
+    [Test]
+    public void Registered_ShowsTheNote() => Assert.That(Format(new ChemicalHistoryEventModel
+    {
+        Action = ChemicalHistoryActionEnum.Registered, Note = "Hylde 2",
+    }), Is.EqualTo("Hylde 2"));
+
+    [Test]
+    public void NoteChanged_ShowsOldAndNew() => Assert.That(Format(new ChemicalHistoryEventModel
+    {
+        Action = ChemicalHistoryActionEnum.NoteChanged, OldValue = "Hylde 1", NewValue = "Hylde 2",
+    }), Is.EqualTo("Hylde 1 → Hylde 2"));
+
+    [Test]
+    public void LocationCreatedArchivedAndPhoto_ShowTheLocationName() => Assert.That(
+        (Format(new ChemicalHistoryEventModel { Action = ChemicalHistoryActionEnum.LocationCreated, LocationName = "Lade" }),
+         Format(new ChemicalHistoryEventModel { Action = ChemicalHistoryActionEnum.LocationArchived, LocationName = "Lade" }),
+         Format(new ChemicalHistoryEventModel { Action = ChemicalHistoryActionEnum.LocationPhotoChanged, LocationName = "Lade" })),
+        Is.EqualTo(("Lade", "Lade", "Lade")));
+
+    [Test]
+    public void Removed_WithoutAReason_IsTheMovedReason() => Assert.That(Format(new ChemicalHistoryEventModel
+    {
+        Action = ChemicalHistoryActionEnum.Removed, RemovalReason = null,
+    }), Is.EqualTo("<ChemicalColumnRemovalReason>: <ChemicalReasonMoved>"));
+
+    [Test]
+    public void AlertSent_ForTheSalesDeadlineAndAStatusChange() => Assert.That(
+        (Format(new ChemicalHistoryEventModel
+        {
+            Action = ChemicalHistoryActionEnum.AlertSent, Threshold = ChemicalAlertThresholdEnum.SixMonths,
+            DeadlineKind = ChemicalDeadlineKindEnum.Sales, PushCount = 0, EmailCount = 1,
+        }),
+         Format(new ChemicalHistoryEventModel
+         {
+             Action = ChemicalHistoryActionEnum.AlertSent, Threshold = null, DeadlineKind = ChemicalDeadlineKindEnum.Sales,
+         })),
+        Is.EqualTo((
+            "<ChemicalThresholdSixMonths> (<ChemicalDeadlineSales>) · push 0 · e-mail 1",
+            "<ChemicalThresholdStatusChanged> (<ChemicalDeadlineSales>) · push 0 · e-mail 0")));
 }

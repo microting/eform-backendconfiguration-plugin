@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Text;
 using BackendConfiguration.Pn.Infrastructure.Models.Chemicals;
 using BackendConfiguration.Pn.Services.ChemicalReporting;
@@ -29,8 +30,8 @@ public class ChemicalAuthorityListTests
         [new ChemicalHazardStatementModel("H302", "Farlig ved indtagelse."), new ChemicalHazardStatementModel("H410", "Meget giftig for vandlevende organismer.")],
         [], "Syngenta", [new ChemicalProductModel(id * 10, $"{name} 1 L", "", sds, sds)], Now);
 
-    private static ChemicalPlacementModel Placement(int id, int locationId, int chemicalId, DateTime? removedAt = null, decimal balance = 0, ChemicalStockUnitEnum? unit = null) => new(
-        id, locationId, 1, chemicalId, null, $"Hylde {id}", 5, "Jens Hansen", Now.AddDays(-30),
+    private static ChemicalPlacementModel Placement(int id, int locationId, int chemicalId, DateTime? removedAt = null, decimal balance = 0, ChemicalStockUnitEnum? unit = null, int propertyId = 1) => new(
+        id, locationId, propertyId, chemicalId, null, $"Hylde {id}", 5, "Jens Hansen", Now.AddDays(-30),
         removedAt.HasValue ? 5 : null, removedAt.HasValue ? "Jens Hansen" : null, removedAt, removedAt.HasValue ? ChemicalRemovalReasonEnum.Used : null,
         null, null, balance, unit, Now, null);
 
@@ -94,6 +95,26 @@ public class ChemicalAuthorityListTests
     }
 
     [Test]
+    public void Build_QuantityKeepsThreeDecimals()
+    {
+        var doc = ChemicalAuthorityListBuilder.Build(
+            Inventory(true, [Placement(1, 11, 100, balance: 0.004m, unit: ChemicalStockUnitEnum.Kg), Placement(2, 11, 100, balance: 0.875m, unit: ChemicalStockUnitEnum.L)], [Entry(100, "Karate")]),
+            1, Now, "https://x", Text);
+
+        Assert.That(doc.Rows.Select(r => r.Quantity), Is.EquivalentTo(new[] { "0.004 kg", "0.875 L" }));
+    }
+
+    [Test]
+    public void Build_ListsOnlyThePlacementsOfTheRequestedProperty()
+    {
+        var doc = ChemicalAuthorityListBuilder.Build(
+            Inventory(false, [Placement(1, 11, 100), Placement(2, 11, 200, propertyId: 2)], [Entry(100, "Karate"), Entry(200, "Hussar OD")]),
+            1, Now, "https://x", Text);
+
+        Assert.That(doc.Rows.Select(r => r.ProductName), Is.EqualTo(new[] { "Karate" }));
+    }
+
+    [Test]
     public void Build_ChemicalMissingFromRegister_KeepsTheRow()
     {
         var doc = ChemicalAuthorityListBuilder.Build(Inventory(false, [Placement(1, 11, 999)], []), 1, Now, "https://x", Text);
@@ -113,8 +134,16 @@ public class ChemicalAuthorityListTests
         var pdf = ChemicalAuthorityListPdf.Render(doc);
 
         Assert.That(Encoding.ASCII.GetString(pdf, 0, 5), Is.EqualTo("%PDF-"));
-        Assert.That(pdf.Length, Is.GreaterThan(2000));
+        Assert.That(PageCount(pdf), Is.GreaterThan(1), "60 rows of hazard text cannot fit on one landscape A4 page");
     }
+
+    [Test]
+    public void Render_EmptyListIsOnePage() =>
+        Assert.That(PageCount(ChemicalAuthorityListPdf.Render(ChemicalAuthorityListBuilder.Build(Inventory(false, [], []), 1, Now, "https://x", Text))), Is.EqualTo(1));
+
+    /// <summary>Skia writes page dictionaries as plain objects: "/Type /Page" (the page tree is "/Type /Pages").</summary>
+    private static int PageCount(byte[] pdf) =>
+        Regex.Matches(Encoding.Latin1.GetString(pdf), @"/Type\s*/Page(?![A-Za-z])").Count;
 
     [Test]
     public void Render_EmptyList_IsStillAPdf()
