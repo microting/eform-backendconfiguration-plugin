@@ -240,4 +240,219 @@ public class ArchiveFoldersServiceTests : TestBaseSetup
 
         Assert.That(result.Message, Is.EqualTo("ArchiveFolderNotFound"));
     }
+
+    [Test]
+    public async Task Update_Rename_AndRenameToASiblingsName()
+    {
+        var db = BackendConfigurationPnDbContext!;
+        var drift = await ArchiveTestData.FolderAsync(db, "Drift");
+        await ArchiveTestData.FolderAsync(db, "Kontrakter");
+
+        var renamed = await _service.UpdateAsync(drift.Id, new ArchiveFolderUpdateModel { Name = "Driften" });
+        var clash = await _service.UpdateAsync(drift.Id, new ArchiveFolderUpdateModel { Name = "kontrakter" });
+
+        Assert.That(renamed.Success, Is.True, renamed.Message);
+        Assert.That(clash.Message, Is.EqualTo("ArchiveFolderNameExistsTopLevel"));
+        var stored = await db.ArchiveFolders.AsNoTracking().SingleAsync(f => f.Id == drift.Id);
+        Assert.That(stored.Name, Is.EqualTo("Driften"));
+    }
+
+    [Test]
+    public async Task Update_DefaultFolder_CanBeRenamedButNotMoved()
+    {
+        var db = BackendConfigurationPnDbContext!;
+        var drift = await ArchiveTestData.FolderAsync(db, "Drift");
+
+        var renamed = await _service.UpdateAsync(_arkiv, new ArchiveFolderUpdateModel { Name = "Indbakke-arkiv" });
+        var moved = await _service.UpdateAsync(_arkiv, new ArchiveFolderUpdateModel { ParentId = drift.Id });
+
+        Assert.That(renamed.Success, Is.True, renamed.Message);
+        Assert.That(moved.Message, Is.EqualTo("ArchiveDefaultFolderCannotMove"));
+    }
+
+    [Test]
+    public async Task Update_MoveThatWouldMakeThreeLevels_IsRefused()
+    {
+        var db = BackendConfigurationPnDbContext!;
+        var drift = await ArchiveTestData.FolderAsync(db, "Drift");
+        var fakturaer = await ArchiveTestData.FolderAsync(db, "Fakturaer", drift.Id);
+        var kontrakter = await ArchiveTestData.FolderAsync(db, "Kontrakter");
+
+        var underSubfolder = await _service.UpdateAsync(kontrakter.Id, new ArchiveFolderUpdateModel { ParentId = fakturaer.Id });
+        var parentWithChildren = await _service.UpdateAsync(drift.Id, new ArchiveFolderUpdateModel { ParentId = kontrakter.Id });
+
+        Assert.That(underSubfolder.Message, Is.EqualTo("ArchiveMaxTwoLevels"));
+        Assert.That(parentWithChildren.Message, Is.EqualTo("ArchiveMaxTwoLevels"));
+    }
+
+    [Test]
+    public async Task Update_MoveUnderRestrictedParent_ReportsDocumentsWhoseAccessChanged_ThenMoveToTop()
+    {
+        var db = BackendConfigurationPnDbContext!;
+        var ledelse = await ArchiveTestData.FolderAsync(db, "Ledelse", null, G1);
+        var kontrakter = await ArchiveTestData.FolderAsync(db, "Kontrakter");
+        await ArchiveTestData.FileAsync(db, kontrakter.Id, "Lejekontrakt");
+        await ArchiveTestData.FileAsync(db, kontrakter.Id, "Egen adgang", ownAccess: true, ownGroups: [G2]);
+
+        var moved = await _service.UpdateAsync(kontrakter.Id, new ArchiveFolderUpdateModel { ParentId = ledelse.Id });
+        var back = await _service.UpdateAsync(kontrakter.Id, new ArchiveFolderUpdateModel { MoveToTop = true });
+
+        Assert.That(moved.Success, Is.True, moved.Message);
+        Assert.That(moved.Model.AccessChanged, Is.EqualTo(1), "own access travels with the document (D11)");
+        Assert.That(back.Model.AccessChanged, Is.EqualTo(1));
+        var stored = await db.ArchiveFolders.AsNoTracking().SingleAsync(f => f.Id == kontrakter.Id);
+        Assert.That(stored.ParentId, Is.Null);
+    }
+
+    [Test]
+    public async Task Update_UnknownFolder_IsNotFound() =>
+        await Assert.ThrowsAsync<ArchiveNotFoundException>(() =>
+            _service.UpdateAsync(999999, new ArchiveFolderUpdateModel { Name = "X" }));
+
+    [Test]
+    public async Task Delete_FolderWithDocumentsOrSubfolders_IsRefused()
+    {
+        var db = BackendConfigurationPnDbContext!;
+        var drift = await ArchiveTestData.FolderAsync(db, "Drift");
+        await ArchiveTestData.FolderAsync(db, "Fakturaer", drift.Id);
+        var kontrakter = await ArchiveTestData.FolderAsync(db, "Kontrakter");
+        await ArchiveTestData.FileAsync(db, kontrakter.Id);
+
+        Assert.That((await _service.DeleteAsync(drift.Id)).Message, Is.EqualTo("ArchiveFolderNotEmpty"));
+        Assert.That((await _service.DeleteAsync(kontrakter.Id)).Message, Is.EqualTo("ArchiveFolderNotEmpty"));
+    }
+
+    [Test]
+    public async Task Delete_DefaultFolder_IsRefusedEvenWhenEmpty()
+    {
+        Assert.That((await _service.DeleteAsync(_arkiv)).Message, Is.EqualTo("ArchiveDefaultFolderCannotDelete"));
+    }
+
+    [Test]
+    public async Task Delete_EmptyFolder_IsSoftDeletedWithItsReadTags()
+    {
+        var db = BackendConfigurationPnDbContext!;
+        var tom = await ArchiveTestData.FolderAsync(db, "Tom", null, G1);
+
+        var result = await _service.DeleteAsync(tom.Id);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That((await Index()).Select(f => f.Id), Does.Not.Contain(tom.Id));
+        Assert.That(await db.ArchiveFolderReadTags
+            .AnyAsync(t => t.ArchiveFolderId == tom.Id && t.WorkflowState != "removed"), Is.False);
+    }
+
+    [Test]
+    public async Task UpdateAccess_DefaultFolder_CannotBeRestricted()
+    {
+        var result = await _service.UpdateAccessAsync(_arkiv, new ArchiveFolderAccessModel { TagIds = [G1] });
+
+        Assert.That(result.Message, Is.EqualTo("ArchiveDefaultFolderCannotRestrict"));
+    }
+
+    [Test]
+    public async Task UpdateAccess_GroupWithoutLiveMembers_IsRefused()
+    {
+        var db = BackendConfigurationPnDbContext!;
+        var drift = await ArchiveTestData.FolderAsync(db, "Drift");
+
+        var result = await _service.UpdateAccessAsync(drift.Id, new ArchiveFolderAccessModel { TagIds = [999] });
+
+        Assert.That(result.Message, Is.EqualTo("ArchiveUnknownGroup"));
+    }
+
+    [Test]
+    public async Task UpdateAccess_OnTopFolder_CountsItsAndInheritingSubfoldersDocuments()
+    {
+        var db = BackendConfigurationPnDbContext!;
+        var drift = await ArchiveTestData.FolderAsync(db, "Drift");
+        var fakturaer = await ArchiveTestData.FolderAsync(db, "Fakturaer", drift.Id);
+        var loen = await ArchiveTestData.FolderAsync(db, "Løn", drift.Id, G2);
+        await ArchiveTestData.FileAsync(db, drift.Id, "Plan");
+        await ArchiveTestData.FileAsync(db, fakturaer.Id, "Faktura");
+        await ArchiveTestData.FileAsync(db, loen.Id, "Lønseddel");
+        await ArchiveTestData.FileAsync(db, drift.Id, "Egen", ownAccess: true);
+
+        var result = await _service.UpdateAccessAsync(drift.Id, new ArchiveFolderAccessModel { TagIds = [G1] });
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(result.Model.AccessChanged, Is.EqualTo(2), "Plan and Faktura; Løn has its own groups, Egen own access");
+        Assert.That((await Index()).Single(f => f.Id == drift.Id).ReadGroups.Select(g => g.Id), Is.EqualTo(new[] { G1 }));
+    }
+
+    [Test]
+    public async Task UpdateAccess_ClearAgain_FolderIsOpenForNonAdmin()
+    {
+        var db = BackendConfigurationPnDbContext!;
+        var drift = await ArchiveTestData.FolderAsync(db, "Drift", null, G1);
+        await ArchiveTestData.FileAsync(db, drift.Id, "Plan");
+
+        var cleared = await _service.UpdateAccessAsync(drift.Id, new ArchiveFolderAccessModel { TagIds = [] });
+        _access.Context = ArchiveTestData.User();
+
+        Assert.That(cleared.Model.AccessChanged, Is.EqualTo(1));
+        var row = (await Index()).Single(f => f.Id == drift.Id);
+        Assert.That(row.Restricted, Is.False);
+        Assert.That(row.Count, Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task UpdateAccess_KeepsAGroupThatLostItsMembers()
+    {
+        const int deadGroup = 777;
+        var db = BackendConfigurationPnDbContext!;
+        var drift = await ArchiveTestData.FolderAsync(db, "Drift", null, deadGroup);
+
+        var result = await _service.UpdateAccessAsync(drift.Id, new ArchiveFolderAccessModel { TagIds = [deadGroup, G1] });
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That((await Index()).Single(f => f.Id == drift.Id).ReadGroups.Select(g => g.Id),
+            Is.EquivalentTo(new[] { deadGroup, G1 }));
+    }
+
+    [Test]
+    public async Task Update_MoveUnderItself_IsRefused()
+    {
+        var db = BackendConfigurationPnDbContext!;
+        var drift = await ArchiveTestData.FolderAsync(db, "Drift");
+
+        var result = await _service.UpdateAsync(drift.Id, new ArchiveFolderUpdateModel { ParentId = drift.Id });
+
+        Assert.That(result.Message, Is.EqualTo("ArchiveMaxTwoLevels"));
+        var stored = await db.ArchiveFolders.AsNoTracking().SingleAsync(f => f.Id == drift.Id);
+        Assert.That(stored.ParentId, Is.Null);
+    }
+
+    [Test]
+    public async Task Update_NothingChanged_SavesNoNewVersion()
+    {
+        var db = BackendConfigurationPnDbContext!;
+        var drift = await ArchiveTestData.FolderAsync(db, "Drift");
+
+        var result = await _service.UpdateAsync(drift.Id, new ArchiveFolderUpdateModel { Name = " Drift " });
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(result.Model.AccessChanged, Is.EqualTo(0));
+        var stored = await db.ArchiveFolders.AsNoTracking().SingleAsync(f => f.Id == drift.Id);
+        Assert.That(stored.Version, Is.EqualTo(drift.Version));
+    }
+
+    [Test]
+    public async Task UpdateAccess_ClearThenAddTheSameGroup_RestrictsAgainWithANewRow()
+    {
+        var db = BackendConfigurationPnDbContext!;
+        var drift = await ArchiveTestData.FolderAsync(db, "Drift", null, G1);
+        await ArchiveTestData.FileAsync(db, drift.Id, "Plan");
+
+        await _service.UpdateAccessAsync(drift.Id, new ArchiveFolderAccessModel { TagIds = [] });
+        var again = await _service.UpdateAccessAsync(drift.Id, new ArchiveFolderAccessModel { TagIds = [G1] });
+        _access.Context = ArchiveTestData.User(G2);
+
+        Assert.That(again.Success, Is.True, again.Message);
+        Assert.That(again.Model.AccessChanged, Is.EqualTo(1));
+        Assert.That((await Index()).Select(f => f.Id), Does.Not.Contain(drift.Id), "restricted again for a non-member");
+        var rows = await db.ArchiveFolderReadTags.AsNoTracking()
+            .Where(t => t.ArchiveFolderId == drift.Id && t.SdkTagId == G1).ToListAsync();
+        Assert.That(rows.Select(t => t.WorkflowState), Is.EquivalentTo(new[] { "removed", "created" }));
+    }
 }

@@ -21,6 +21,15 @@ public interface IArchiveFoldersService
     Task<OperationDataResult<List<ArchiveFolderModel>>> IndexAsync(List<int> propertyIds);
 
     Task<OperationDataResult<ArchiveFolderModel>> CreateAsync(ArchiveFolderCreateModel model);
+
+    /// <summary>Rename and/or move (D2, D12). Returns how many documents' effective access changed (D11).</summary>
+    Task<OperationDataResult<AccessChangeModel>> UpdateAsync(int id, ArchiveFolderUpdateModel model);
+
+    /// <summary>Soft delete; only an empty, non-default folder (D12).</summary>
+    Task<OperationResult> DeleteAsync(int id);
+
+    /// <summary>Sets the folder's own read groups; empty = open. Not on the default folder (D12).</summary>
+    Task<OperationDataResult<AccessChangeModel>> UpdateAccessAsync(int id, ArchiveFolderAccessModel model);
 }
 
 /// <summary>
@@ -78,7 +87,7 @@ public class ArchiveFoldersService(
         var refusal = ValidateParent(model.ParentId, null, folders) ?? ValidateName(name, model.ParentId, null, folders);
         if (refusal != null)
         {
-            return new OperationDataResult<ArchiveFolderModel>(false, refusal);
+            return Refusal<ArchiveFolderModel>(refusal);
         }
 
         var folder = new ArchiveFolder
@@ -91,6 +100,118 @@ public class ArchiveFoldersService(
         var created = new ArchiveFolderSnapshot(folders.All.Append(node));
         var names = await access.GetGroupNamesAsync(created.EffectiveGroups(node.Id).ToList());
         return new OperationDataResult<ArchiveFolderModel>(true, Model(node, 0, created, names));
+    }
+
+    public async Task<OperationDataResult<AccessChangeModel>> UpdateAsync(int id, ArchiveFolderUpdateModel model)
+    {
+        await access.GetEnabledContextAsync();
+        var (before, node) = await LoadExistingAsync(id);
+        var parentId = model.MoveToTop ? null : model.ParentId ?? node.ParentId;
+        var name = model.Name?.Trim() ?? node.Name;
+        var moving = parentId != node.ParentId;
+        if (!moving && name == node.Name)
+        {
+            return new OperationDataResult<AccessChangeModel>(true, new AccessChangeModel());
+        }
+
+        if (moving && node.IsDefault)
+        {
+            return Refused<AccessChangeModel>("ArchiveDefaultFolderCannotMove");
+        }
+
+        var refusal = (moving ? ValidateParent(parentId, node, before) : null)
+                      ?? ValidateName(name, parentId, node.Id, before);
+        if (refusal != null)
+        {
+            return Refusal<AccessChangeModel>(refusal);
+        }
+
+        var documents = await DocumentsUnderAsync(id);
+        var folder = await dbContext.ArchiveFolders.SingleAsync(f => f.Id == id);
+        folder.Name = name;
+        folder.ParentId = parentId;
+        folder.UpdatedByUserId = userService.UserId;
+        await folder.Update(dbContext);
+        return await AccessChangedAsync(documents, before);
+    }
+
+    public async Task<OperationResult> DeleteAsync(int id)
+    {
+        await access.GetEnabledContextAsync();
+        var folder = await dbContext.ArchiveFolders.FirstOrDefaultAsync(f => f.Id == id && f.WorkflowState != Removed)
+                     ?? throw new ArchiveNotFoundException();
+        if (folder.IsDefault)
+        {
+            return new OperationResult(false, localization.GetString("ArchiveDefaultFolderCannotDelete"));
+        }
+
+        // Restricted documents block too; NULL-folder rows are default-folder rows, refused above.
+        var documents = await dbContext.Files.CountAsync(f => f.FolderId == id && f.WorkflowState != Removed);
+        var subfolders = await dbContext.ArchiveFolders.CountAsync(f => f.ParentId == id && f.WorkflowState != Removed);
+        if (documents + subfolders > 0)
+        {
+            return new OperationResult(false, localization.GetString("ArchiveFolderNotEmpty", documents, subfolders));
+        }
+
+        await ArchiveReadTagSync.SyncFolderAsync(dbContext, id, [], userService.UserId);
+        folder.UpdatedByUserId = userService.UserId;
+        await folder.Delete(dbContext);
+        return new OperationResult(true);
+    }
+
+    public async Task<OperationDataResult<AccessChangeModel>> UpdateAccessAsync(int id, ArchiveFolderAccessModel model)
+    {
+        await access.GetEnabledContextAsync();
+        var (before, node) = await LoadExistingAsync(id);
+        var tagIds = (model.TagIds ?? []).Distinct().ToList();
+        if (node.IsDefault && tagIds.Count > 0)
+        {
+            return Refused<AccessChangeModel>("ArchiveDefaultFolderCannotRestrict");
+        }
+
+        // Only newly added groups need live members; a kept group that lost its last member stays.
+        if (!await access.AreAssignableGroupsAsync(tagIds, node.OwnGroupIds))
+        {
+            return Refused<AccessChangeModel>("ArchiveUnknownGroup");
+        }
+
+        var documents = await DocumentsUnderAsync(id);
+        await ArchiveReadTagSync.SyncFolderAsync(dbContext, id, tagIds, userService.UserId);
+        return await AccessChangedAsync(documents, before);
+    }
+
+    private OperationDataResult<T> Refused<T>(string key) => Refusal<T>(localization.GetString(key));
+
+    private static OperationDataResult<T> Refusal<T>(string localizedMessage) => new(false, localizedMessage);
+
+    /// <summary>The live folder tree and the live folder <paramref name="id"/> in it; unknown → 404.</summary>
+    private async Task<(ArchiveFolderSnapshot Folders, ArchiveFolderNode Node)> LoadExistingAsync(int id)
+    {
+        var folders = await ArchiveFolderSnapshot.LoadAsync(dbContext);
+        return (folders, folders.Find(id) ?? throw new ArchiveNotFoundException());
+    }
+
+    /// <summary>
+    /// The live documents in the folder and in its subfolders, with their access inputs. `FolderId == folderId` misses
+    /// NULL (default-folder) rows; that is safe because the default folder can never be restricted (D12), so its
+    /// documents' effective access is open before and after any allowed change.
+    /// </summary>
+    private async Task<List<ArchiveFileAccessRow>> DocumentsUnderAsync(int folderId)
+    {
+        var ids = await dbContext.Files
+            .Where(f => f.WorkflowState != Removed && (f.FolderId == folderId || f.Folder.ParentId == folderId))
+            .Select(f => f.Id)
+            .ToListAsync();
+        return await ArchiveAccessRules.LoadFileRowsAsync(dbContext, ids);
+    }
+
+    /// <summary>D11: how many documents' effective groups differ between <paramref name="before"/> and the saved tree.</summary>
+    private async Task<OperationDataResult<AccessChangeModel>> AccessChangedAsync(List<ArchiveFileAccessRow> documents,
+        ArchiveFolderSnapshot before)
+    {
+        var after = await ArchiveFolderSnapshot.LoadAsync(dbContext);
+        var changed = documents.Count(d => !ArchiveAccessRules.SameGroups(d.Effective(before), d.Effective(after)));
+        return new OperationDataResult<AccessChangeModel>(true, new AccessChangeModel { AccessChanged = changed });
     }
 
     private static ArchiveFolderModel Model(ArchiveFolderNode folder, int count, ArchiveFolderSnapshot folders,
@@ -123,12 +244,13 @@ public class ArchiveFoldersService(
         }
 
         var parent = folders.Find(id);
-        if (parent == null || id == moving?.Id)
+        if (parent == null)
         {
             return localization.GetString("ArchiveFolderNotFound");
         }
 
-        return parent.ParentId != null || (moving != null && folders.ChildrenOf(moving.Id).Any())
+        // Under itself would nest a folder in its own level: refused as a level violation, not "not found".
+        return id == moving?.Id || parent.ParentId != null || (moving != null && folders.ChildrenOf(moving.Id).Any())
             ? localization.GetString("ArchiveMaxTwoLevels")
             : null;
     }

@@ -24,4 +24,18 @@ public class ArchiveFoldersController(IArchiveFoldersService service) : Controll
     [Authorize(Roles = EformRole.Admin)]
     public Task<OperationDataResult<ArchiveFolderModel>> Create([FromBody] ArchiveFolderCreateModel model) =>
         service.CreateAsync(model);
+
+    [HttpPut("{id:int}")]
+    [Authorize(Roles = EformRole.Admin)]
+    public Task<OperationDataResult<AccessChangeModel>> Update(int id, [FromBody] ArchiveFolderUpdateModel model) =>
+        service.UpdateAsync(id, model);
+
+    [HttpDelete("{id:int}")]
+    [Authorize(Roles = EformRole.Admin)]
+    public Task<OperationResult> Delete(int id) => service.DeleteAsync(id);
+
+    [HttpPut("{id:int}/access")]
+    [Authorize(Roles = EformRole.Admin)]
+    public Task<OperationDataResult<AccessChangeModel>> UpdateAccess(int id, [FromBody] ArchiveFolderAccessModel model) =>
+        service.UpdateAccessAsync(id, model);
 }

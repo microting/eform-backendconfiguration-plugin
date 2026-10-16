@@ -56,6 +56,12 @@ public class ArchiveControllersAuthorizationTests
         var c = typeof(ArchiveFoldersController);
         yield return new TestCaseData(c, Action<HttpPostAttribute>(c, nameof(ArchiveFoldersController.Create)))
             .SetName("AdminOnly_POST_archive-folders");
+        yield return new TestCaseData(c, Action<HttpPutAttribute>(c, nameof(ArchiveFoldersController.Update)))
+            .SetName("AdminOnly_PUT_archive-folders-id");
+        yield return new TestCaseData(c, Action<HttpDeleteAttribute>(c, nameof(ArchiveFoldersController.Delete)))
+            .SetName("AdminOnly_DELETE_archive-folders-id");
+        yield return new TestCaseData(c, Action<HttpPutAttribute>(c, nameof(ArchiveFoldersController.UpdateAccess)))
+            .SetName("AdminOnly_PUT_archive-folders-id-access");
     }
 
     private static IEnumerable<TestCaseData> OpenToUser()
