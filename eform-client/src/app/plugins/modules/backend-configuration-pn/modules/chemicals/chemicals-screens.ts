@@ -4,15 +4,13 @@ import {ChemicalInventoryPageComponent, ChemicalPermissionsPageComponent, Chemic
 export interface ChemicalScreen {
   /**
    * Router path relative to the Kemi container: /plugins/backend-configuration-pn/chemicals/{path}.
-   * '' is the Kemi root itself (W1, the landing screen and the digest deeplink target).
+   * Never '': the host menu marks a link active on every URL it prefixes, so the bare Kemi root
+   * would light up on every screen (Task 12 I-4). The root redirects to the first screen.
    */
   path: string;
   /** Page title shown by the container (mockup web-admin.html). */
   titleKey: string;
-  /**
-   * E2EId of the plugin menu child that links here (EformBackendConfigurationPlugin menu). A literal,
-   * not derived from the path: W1's path is '' but its id is ...-chemicals-inventory.
-   */
+  /** E2EId of the plugin menu child that links here (EformBackendConfigurationPlugin menu), pinned as a literal. */
   menuE2EId: string;
   /** The page the route renders. */
   component: Type<unknown>;
@@ -25,7 +23,7 @@ export interface ChemicalScreen {
  */
 export const CHEMICAL_SCREENS: ChemicalScreen[] = [
   {
-    path: '',
+    path: 'inventory',
     titleKey: 'Chemicals: Inventory title',
     menuE2EId: 'backend-configuration-pn-chemicals-inventory',
     component: ChemicalInventoryPageComponent,

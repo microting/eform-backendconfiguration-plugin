@@ -22,12 +22,13 @@
                   ]"
                   [ngModel]="filters.status" (ngModelChange)="updateFilters({status: $event})"></mtx-select>
     </mat-form-field>
-    <button class="btn-quiet" id="chemicalsRequiresActionChip" [class.chemicals-chip--active]="filters.requiresActionOnly" (click)="toggleRequiresAction()">
+    <button class="btn-quiet" id="chemicalsRequiresActionChip" [class.chemicals-chip--active]="filters.requiresActionOnly"
+            [attr.aria-pressed]="filters.requiresActionOnly" [disabled]="!inventory" (click)="toggleRequiresAction()">
       <mat-icon>warning</mat-icon>
-      <span>{{ 'Chemicals: Requires action' | translate }} {{ summary.total }}</span>
+      <span>{{ 'Chemicals: Requires action' | translate }}<ng-container *ngIf="inventory"> {{ summary.total }}</ng-container></span>
     </button>
     <button class="btn-quiet ml-auto" id="chemicalsExportBtn" [matMenuTriggerFor]="exportMenu"
-            [disabled]="exporting || propertyId === null" [attr.aria-busy]="exporting">
+            [disabled]="exporting || !inventory" [attr.aria-busy]="exporting">
       <mat-icon>{{ exporting ? 'hourglass_empty' : 'download' }}</mat-icon>
       <span>{{ 'Chemicals: Export' | translate }}</span>
     </button>
@@ -51,7 +52,8 @@
     </button>
   </div>
 
-  <div *ngIf="summary.total > 0" id="chemicalsActionBanner" class="chemicals-banner" [class.chemicals-banner--overdue]="summary.overdue > 0">
+  <div *ngIf="summary.total > 0" id="chemicalsActionBanner" role="status" class="chemicals-banner"
+       [class.chemicals-banner--overdue]="summary.overdue > 0">
     <mat-icon>schedule</mat-icon>
     <span>{{ 'Chemicals: Action banner' | translate: {count: summary.total} }}</span>
     <button class="btn-quiet ml-auto" id="chemicalsShowOnlyActionBtn" *ngIf="!filters.requiresActionOnly" (click)="toggleRequiresAction()">
@@ -59,7 +61,13 @@
     </button>
   </div>
 
+  <div *ngIf="loading" class="chemicals-empty" id="chemicalInventoryLoading">{{ 'Chemicals: Loading inventory' | translate }}</div>
+  <div *ngIf="loadFailed" class="chemicals-empty" id="chemicalInventoryLoadFailed" role="alert">
+    {{ 'Chemicals: Could not load inventory' | translate }}
+  </div>
+
   <mtx-grid
+    *ngIf="inventory"
     [data]="visibleRows"
     [columns]="columns"
     [cellTemplate]="{pictograms: pictogramsTpl, productName: productTpl, status: statusTpl, placementNote: noteTpl, stock: stockTpl, deadline: deadlineTpl, registered: registeredTpl, actions: actionsTpl}"
@@ -75,18 +83,20 @@
   <ng-template #pictogramsTpl let-row>
     <span class="ghs-chip" *ngFor="let code of row.pictograms">{{ code }}</span>
   </ng-template>
-  <ng-template #productTpl let-row>
-    <a class="chemicals-link" (click)="openDetails(row)"><strong>{{ row.productName }}</strong></a>
+  <ng-template #productTpl let-row let-i="index">
+    <button type="button" class="chemicals-link" id="chemicalRowProduct-{{i}}" (click)="openDetails(row)">
+      <strong>{{ row.productName }}</strong>
+    </button>
     <div class="chemicals-hint">{{ 'Chemicals: Reg no short' | translate }} {{ row.registrationNo }}</div>
   </ng-template>
   <ng-template #statusTpl let-row>
-    <span class="status-chip" [class.status-chip--bad]="row.entry?.status === 6 || row.entry?.status === 7">
+    <span class="status-chip" [class.status-chip--bad]="row.statusBad">
       {{ row.statusLabelKey ? (row.statusLabelKey | translate) : row.statusText }}
     </span>
   </ng-template>
   <ng-template #noteTpl let-row>{{ row.placement.placementNote }}</ng-template>
   <ng-template #stockTpl let-row>
-    <span *ngIf="row.placement.unit">{{ row.placement.balance | number: '1.0-3' }} {{ row.placement.unit === 2 ? 'kg' : 'L' }}</span>
+    <span *ngIf="row.stockUnitLabel">{{ row.placement.balance | number: '1.0-3' }} {{ row.stockUnitLabel }}</span>
   </ng-template>
   <ng-template #deadlineTpl let-row>
     <ng-container *ngIf="row.deadline; else noDeadline">
@@ -94,7 +104,7 @@
         <span *ngIf="row.deadline.threshold === 'passed'">{{ 'Chemicals: Passed' | translate }}</span>
         {{ row.deadline.date | date: 'dd-MM-yyyy' }}
       </span>
-      <div class="chemicals-hint">{{ (row.deadline.kind === 2 ? 'Chemicals: Sales deadline' : 'Chemicals: Use deadline') | translate }}</div>
+      <div class="chemicals-hint">{{ row.deadlineLabelKey | translate }}</div>
     </ng-container>
     <ng-template #noDeadline><span class="chemicals-hint">{{ 'Chemicals: No deadline' | translate }}</span></ng-template>
   </ng-template>
@@ -104,7 +114,8 @@
   </ng-template>
   <ng-template #actionsTpl let-row let-i="index">
     <div class="chemicals-actions" id="action-items-{{i}}">
-      <button id="actionMenu" mat-icon-button [matMenuTriggerFor]="rowMenu" [matTooltip]="'Actions' | translate">
+      <button id="actionMenu" mat-icon-button [matMenuTriggerFor]="rowMenu" [matTooltip]="'Actions' | translate"
+              [attr.aria-label]="'Actions' | translate">
         <mat-icon>more_vert</mat-icon>
       </button>
       <mat-menu #rowMenu="matMenu">

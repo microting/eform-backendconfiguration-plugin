@@ -2188,16 +2188,18 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                 // policy and first-user gate are the boundary. Existing tenants get the group, and every child
                 // added later, from PluginMenuSyncService at startup (SeedDatabase).
                 Name = "Dropdown",
-                E2EId = "backend-configuration-pn-chemicals",
+                E2EId = ChemicalsMenuE2EId,
                 Link = "",
                 Type = MenuItemTypeEnum.Dropdown,
                 Position = 15,
                 Translations = MenuTranslations("Chemicals", "Chemikalien", "Kemi", "Хімікати"),
                 ChildItems =
                 [
-                    // W1 is the Kemi landing screen: the module root, not a /chemicals/{path} child.
+                    // W1 has its own path: the host marks a menu link active on every URL it prefixes, so a
+                    // link to the bare Kemi root would light up on every Kemi screen. Angular redirects the
+                    // root (the Plan D digest link) to it.
                     ChemicalsMenuChild("inventory", 0,
-                        MenuTranslations("Inventory", "Bestand", "Beholdning", "Запаси"), routePath: ""),
+                        MenuTranslations("Inventory", "Bestand", "Beholdning", "Запаси")),
                     ChemicalsMenuChild("permissions", 2,
                         MenuTranslations("Permissions", "Berechtigungen", "Rettigheder", "Дозволи")),
                     ChemicalsMenuChild("settings", 3,
@@ -2209,18 +2211,18 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         return pluginMenu;
     }
 
-    /// <summary>
-    /// One Kemi screen, E2EId <c>backend-configuration-pn-chemicals-{name}</c>, link
-    /// <c>/plugins/backend-configuration-pn/chemicals/{routePath}</c> (<paramref name="routePath"/> defaults to
-    /// <paramref name="name"/>; an empty one links the Kemi root itself, without a trailing slash).
-    /// </summary>
-    private static PluginMenuItemModel ChemicalsMenuChild(string name, int position,
-        List<PluginMenuTranslationModel> translations, string routePath = null)
+    /// <summary>E2EId of the Kemi menu group; each screen's child adds <c>-{path}</c>.</summary>
+    private const string ChemicalsMenuE2EId = "backend-configuration-pn-chemicals";
+
+    /// <summary>The Kemi module root; each screen's link adds <c>/{path}</c>.</summary>
+    private const string ChemicalsLink = "/plugins/backend-configuration-pn/chemicals";
+
+    /// <summary>One Kemi screen: <c>/plugins/backend-configuration-pn/chemicals/{path}</c>.</summary>
+    private static PluginMenuItemModel ChemicalsMenuChild(string path, int position,
+        List<PluginMenuTranslationModel> translations)
     {
-        const string root = "/plugins/backend-configuration-pn/chemicals";
-        var path = routePath ?? name;
-        var e2eId = $"backend-configuration-pn-chemicals-{name}";
-        var link = path.Length == 0 ? root : $"{root}/{path}";
+        var e2eId = $"{ChemicalsMenuE2EId}-{path}";
+        var link = $"{ChemicalsLink}/{path}";
         var englishName = translations.Single(t => t.LocaleName == LocaleNames.English).Name;
         return new PluginMenuItemModel
         {

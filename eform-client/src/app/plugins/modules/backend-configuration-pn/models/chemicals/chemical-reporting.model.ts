@@ -51,3 +51,12 @@ export interface ChemicalHistoryQueryModel {
   page: number;
   pageSize: number;
 }
+
+/**
+ * A failed download. `message` is the server's own reason for a refused request (400/409/422);
+ * null for anything else (403, 404, 5xx, no answer), where the caller shows its own text.
+ */
+export interface ChemicalDownloadError {
+  status: number;
+  message: string | null;
+}

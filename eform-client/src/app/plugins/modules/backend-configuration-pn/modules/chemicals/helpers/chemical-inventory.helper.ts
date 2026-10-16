@@ -2,13 +2,22 @@ import {
   CHEMICAL_STATUS_APPROVED,
   CHEMICAL_STATUS_DEREGISTERED,
   CHEMICAL_STATUS_EXPIRED,
+  ChemicalDeadlineKind,
   ChemicalInventoryModel,
   ChemicalLocationModel,
   ChemicalPlacementModel,
   ChemicalRegisterEntryModel,
+  ChemicalStockUnit,
 } from '../../../models';
 import {ChemicalInventoryFiltersModel} from '../../../state';
-import {ChemicalDeadlineDisplay, ChemicalSeverity, actionSeverity, governingDeadline, requiresAction} from './chemical-alert-rules.helper';
+import {
+  ChemicalDeadlineDisplay,
+  ChemicalSeverity,
+  actionSeverity,
+  governingDeadline,
+  isActionStatus,
+  requiresAction,
+} from './chemical-alert-rules.helper';
 
 /** One W1 row: an OPEN placement joined with its location and register entry. */
 export interface ChemicalInventoryRow {
@@ -20,11 +29,24 @@ export interface ChemicalInventoryRow {
   locationName: string;
   statusLabelKey: string | null;
   statusText: string;
+  /** Afmeldt or Udløbet: the status chip is drawn as a warning. */
+  statusBad: boolean;
   severity: ChemicalSeverity;
   requiresAction: boolean;
   deadline: ChemicalDeadlineDisplay | null;
+  /** 'Chemicals: Sales deadline' / 'Chemicals: Use deadline', null without a deadline. */
+  deadlineLabelKey: string | null;
+  /** 'kg' / 'L' for the Lager cell, '' when the placement has no stock unit. */
+  stockUnitLabel: string;
   pictograms: string[];
 }
+
+const STOCK_UNIT_LABELS: Record<ChemicalStockUnit, string> = {[ChemicalStockUnit.L]: 'L', [ChemicalStockUnit.Kg]: 'kg'};
+
+const DEADLINE_LABEL_KEYS: Record<ChemicalDeadlineKind, string> = {
+  [ChemicalDeadlineKind.Sales]: 'Chemicals: Sales deadline',
+  [ChemicalDeadlineKind.UseAndPossession]: 'Chemicals: Use deadline',
+};
 
 export function chemicalStatusLabelKey(status: number | null): string | null {
   switch (status) {
@@ -50,6 +72,7 @@ export function buildInventoryRows(inventory: ChemicalInventoryModel | null, tod
     .map((placement) => {
       const entry = entries.get(placement.chemicalId) ?? null;
       const location = locations.get(placement.locationId) ?? null;
+      const deadline = governingDeadline(entry, today);
       return {
         placement, entry, location,
         productName: entry?.name ?? `#${placement.chemicalId}`,
@@ -57,9 +80,12 @@ export function buildInventoryRows(inventory: ChemicalInventoryModel | null, tod
         locationName: location?.name ?? '',
         statusLabelKey: chemicalStatusLabelKey(entry?.status ?? null),
         statusText: entry?.statusText ?? '',
+        statusBad: isActionStatus(entry?.status ?? null),
         severity: actionSeverity(entry, today),
         requiresAction: requiresAction(entry, today),
-        deadline: governingDeadline(entry, today),
+        deadline,
+        deadlineLabelKey: deadline ? DEADLINE_LABEL_KEYS[deadline.kind] : null,
+        stockUnitLabel: placement.unit ? STOCK_UNIT_LABELS[placement.unit] : '',
         pictograms: entry?.hazardPictograms ?? [],
       };
     })

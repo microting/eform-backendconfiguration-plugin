@@ -1228,4 +1228,9 @@ export const enUS= {
   'Chemicals: Placement note': 'Placement note',
   'Chemicals: Initial amount': 'Amount received',
   'Chemicals: Could not open safety data sheet': 'The safety data sheet could not be opened.',
+  'Chemicals: Loading inventory': 'Loading the inventory…',
+  'Chemicals: Could not load inventory': 'The inventory could not be loaded.',
+  'Chemicals: Export not allowed': 'You do not have access to this export.',
+  'Chemicals: Unit': 'Unit',
+  'Chemicals: More register matches': 'Showing {{shown}} of {{total}} matches. Refine the search.',
 };

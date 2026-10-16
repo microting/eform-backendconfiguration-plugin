@@ -1,8 +1,8 @@
-import {HttpBackend, HttpClient, HttpResponse} from '@angular/common/http';
+import {HttpBackend, HttpClient, HttpErrorResponse, HttpResponse} from '@angular/common/http';
 import {Injectable, inject} from '@angular/core';
 import {Store} from '@ngrx/store';
-import {Observable} from 'rxjs';
-import {map, switchMap, take} from 'rxjs/operators';
+import {Observable, from, of, throwError} from 'rxjs';
+import {catchError, map, switchMap, take} from 'rxjs/operators';
 import {OperationDataResult} from 'src/app/common/models';
 import {ApiBaseService} from 'src/app/common/services';
 import {selectBearerToken} from 'src/app/state/auth/auth.selector';
@@ -11,6 +11,7 @@ import {
   ChemicalCreateLocationCommand,
   ChemicalDigestModel,
   ChemicalDownload,
+  ChemicalDownloadError,
   ChemicalHistoryQueryModel,
   ChemicalInventoryModel,
   ChemicalLocationModel,
@@ -29,6 +30,43 @@ import {
   ChemicalWorkerPermissionModel,
 } from '../models';
 
+/** Statuses whose blob body is the server's reason for refusing the request (ChemicalsController.FileResultAsync). */
+const REASON_STATUSES = [400, 409, 422];
+
+/** The reason text of a refused download, or null. The body is a blob (responseType), plain text or a JSON string. */
+function toDownloadError(err: unknown): Observable<ChemicalDownloadError> {
+  const status = err instanceof HttpErrorResponse ? err.status : 0;
+  const body = err instanceof HttpErrorResponse ? err.error : null;
+  if (!REASON_STATUSES.includes(status) || !(body instanceof Blob)) {
+    return of({status, message: null});
+  }
+  return from(readText(body)).pipe(
+    map((text) => ({status, message: unquote(text.trim()) || null})),
+    catchError(() => of({status, message: null})),
+  );
+}
+
+function readText(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ''));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsText(blob);
+  });
+}
+
+function unquote(text: string): string {
+  if (!text.startsWith('"')) {
+    return text;
+  }
+  try {
+    const parsed = JSON.parse(text);
+    return typeof parsed === 'string' ? parsed.trim() : text;
+  } catch {
+    return text;
+  }
+}
+
 /** Plan A Task 15 REST prefix. Every Kemi call lives under it. */
 export const BackendConfigurationPnChemicalsMethods = {
   Base: 'api/backend-configuration-pn/chemicals',
@@ -46,7 +84,7 @@ export class BackendConfigurationPnChemicalsService {
    * BackendConfigurationPnComplianceReportService.export(): the host's error interceptor
    * shows nothing for a failed blob request and retries a 403 as an expired token, and
    * ApiBaseService hides the Content-Disposition header that carries the server's file name.
-   * A failure reaches the caller untouched; each export button toasts it (m-2).
+   * A failure reaches the caller as a ChemicalDownloadError; each export button toasts it (m-2, m-9).
    */
   private rawHttp = new HttpClient(inject(HttpBackend));
   private store = inject(Store);
@@ -168,6 +206,7 @@ export class BackendConfigurationPnChemicalsService {
         blob: res.body ?? new Blob(),
         fileName: parseContentDispositionFileName(res.headers.get('Content-Disposition'), fallbackFileName),
       })),
+      catchError((err: unknown) => toDownloadError(err).pipe(switchMap((error) => throwError(() => error)))),
     );
   }
 }

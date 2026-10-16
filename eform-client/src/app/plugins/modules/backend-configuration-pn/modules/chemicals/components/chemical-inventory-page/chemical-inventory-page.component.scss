@@ -9,4 +9,5 @@
 .deadline--passed { color: var(--mat-sys-error, #b3261e); font-weight: 600; }
 .deadline--soon { color: #9a6700; font-weight: 600; }
 .chemicals-hint { opacity: 0.7; font-size: 12px; }
-.chemicals-link { cursor: pointer; }
+.chemicals-link { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.chemicals-empty { padding: 24px 8px; color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6)); }

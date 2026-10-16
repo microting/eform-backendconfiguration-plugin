@@ -1128,4 +1128,9 @@ export const da = {
   'Chemicals: Placement note': 'Placeringsnote',
   'Chemicals: Initial amount': 'Modtaget mængde',
   'Chemicals: Could not open safety data sheet': 'Sikkerhedsdatabladet kunne ikke åbnes.',
+  'Chemicals: Loading inventory': 'Henter beholdningen…',
+  'Chemicals: Could not load inventory': 'Beholdningen kunne ikke hentes.',
+  'Chemicals: Export not allowed': 'Du har ikke adgang til denne eksport.',
+  'Chemicals: Unit': 'Enhed',
+  'Chemicals: More register matches': 'Viser {{shown}} af {{total}} fund. Præcisér søgningen.',
 };

@@ -4,6 +4,15 @@ import {finalize} from 'rxjs/operators';
 import {ChemicalLocationModel, ChemicalRegisterEntryModel, ChemicalStockUnit} from '../../../../models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 
+const MIN_QUERY_LENGTH = 2;
+const PAGE_SIZE = 25;
+
+/** A barcode's digits without leading zeros (GTIN-13 vs GTIN-14), '' for anything that is not one. */
+function barcodeDigits(value: string | null | undefined): string {
+  const text = (value ?? '').trim();
+  return /^\d{8,14}$/.test(text) ? text.replace(/^0+/, '') : '';
+}
+
 export interface ChemicalRegisterPlacementDialogData {
   propertyId: number;
   locations: ChemicalLocationModel[];
@@ -26,6 +35,8 @@ export class ChemicalRegisterPlacementDialogComponent {
   readonly locations = this.data.locations.filter((l) => !l.archived);
   query = '';
   results: ChemicalRegisterEntryModel[] = [];
+  /** Matches the register has in all; it answers the first PAGE_SIZE. */
+  total = 0;
   searched = false;
   selected: ChemicalRegisterEntryModel | null = null;
   productId: number | null = null;
@@ -34,25 +45,48 @@ export class ChemicalRegisterPlacementDialogComponent {
   amount: number | null = null;
   unit: ChemicalStockUnit = ChemicalStockUnit.L;
   saving = false;
+  /** Only the newest search may fill the results (two quick searches can answer out of order). */
+  private searchGeneration = 0;
+  /** The query of the shown results, digits only: a barcode picks its own package (m-5). */
+  private searchedBarcode = '';
 
   get canSave(): boolean {
-    return !!this.selected && this.locationId !== null && !this.saving;
+    const amountValid = !this.data.stockEnabled || this.amount === null || this.amount > 0;
+    return !!this.selected && this.locationId !== null && amountValid && !this.saving;
+  }
+
+  get hasMore(): boolean {
+    return this.total > this.results.length;
   }
 
   search(): void {
     const query = this.query.trim();
-    if (!query) {
+    // The register needs two characters; a shorter query would only come back as an error.
+    if (query.length < MIN_QUERY_LENGTH) {
       return;
     }
-    this.chemicalsService.searchRegister(query, 0, 25).subscribe((res) => {
-      this.results = (res && res.success && res.model?.entries) || [];
+    // A new search drops the earlier pick: Save must never register a chemical the user no longer sees (I-2).
+    this.selected = null;
+    this.productId = null;
+    const generation = ++this.searchGeneration;
+    this.chemicalsService.searchRegister(query, 0, PAGE_SIZE).subscribe((res) => {
+      if (generation !== this.searchGeneration) {
+        return;
+      }
+      const page = res && res.success ? res.model : null;
+      this.results = page?.entries ?? [];
+      this.total = page?.total ?? 0;
+      this.searchedBarcode = barcodeDigits(query);
       this.searched = true;
     });
   }
 
   select(entry: ChemicalRegisterEntryModel): void {
     this.selected = entry;
-    this.productId = null;
+    const scanned = this.searchedBarcode
+      ? entry.products.find((p) => barcodeDigits(p.barcode) === this.searchedBarcode)
+      : undefined;
+    this.productId = scanned?.productId ?? null;
   }
 
   cancel(): void {
