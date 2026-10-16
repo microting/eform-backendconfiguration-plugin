@@ -294,7 +294,16 @@ public partial class ChemicalInventoryService
         var entries = await LiveEntries(ids).OrderBy(e => e.Id).ToListAsync().ConfigureAwait(false);
         var entriesByPlacement = entries.ToLookup(e => e.PlacementId);
 
-        var balanceAfter = BalanceAfterByEntry(entries);
+        var balanceAfter = new Dictionary<int, decimal>();
+        foreach (var ledger in entriesByPlacement)
+        {
+            var balance = 0m;
+            foreach (var entry in ledger)
+            {
+                balance += entry.Amount;
+                balanceAfter[entry.Id] = balance;
+            }
+        }
 
         var writeOffs = rows
             .Select(r => (r.Placement.Id, EntryId: FindWriteOff(r.Placement, entriesByPlacement[r.Placement.Id], balanceAfter)))
@@ -342,26 +351,6 @@ public partial class ChemicalInventoryService
             .ToList();
 
         return (placements, entryModels);
-    }
-
-    /// <summary>
-    /// Entry id → the placement's balance right after it. A ledger is read in Id order, the
-    /// order the writes were made in and the one every balance check uses; At may be backdated.
-    /// </summary>
-    internal static Dictionary<int, decimal> BalanceAfterByEntry(IEnumerable<ChemicalStockEntry> entries)
-    {
-        var balanceAfter = new Dictionary<int, decimal>();
-        foreach (var ledger in entries.GroupBy(e => e.PlacementId))
-        {
-            var balance = 0m;
-            foreach (var entry in ledger.OrderBy(e => e.Id))
-            {
-                balance += entry.Amount;
-                balanceAfter[entry.Id] = balance;
-            }
-        }
-
-        return balanceAfter;
     }
 
     /// <summary>

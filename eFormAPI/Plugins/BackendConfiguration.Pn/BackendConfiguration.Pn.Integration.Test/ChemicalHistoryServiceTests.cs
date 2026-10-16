@@ -264,10 +264,12 @@ public class ChemicalHistoryServiceTests : ChemicalTestBase
         var roundup = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Roundup PowerMax", "1-285");
         var registered = (await inventory.RegisterPlacementAsync(Web,
             new ChemicalRegisterPlacementCommand(lade.Id, roundup.ChemicalId, null, "Hylde", Liters(5)))).Placements.Single();
-        await inventory.AddStockEntryAsync(Web, new ChemicalAddStockEntryCommand(registered.Id, ChemicalStockEntryKindEnum.Consumed, Liters(1)));
-        // Logged after the consumption, but dated at the registration instant (the earliest a removal may be dated).
+        // Consumed one minute after the registration; the removal is logged after it, but dated before it
+        // (the earliest a removal may be dated is the registration instant).
+        await inventory.AddStockEntryAsync(Web, new ChemicalAddStockEntryCommand(registered.Id, ChemicalStockEntryKindEnum.Consumed,
+            new ChemicalStockAmountModel(null, null, 1m, ChemicalStockUnitEnum.L, null, null, registered.RegisteredAt.AddMinutes(1))));
         await inventory.RemovePlacementAsync(Web,
-            new ChemicalRemovePlacementCommand(registered.Id, ChemicalRemovalReasonEnum.Used, registered.RegisteredAt, "tom"));
+            new ChemicalRemovePlacementCommand(registered.Id, ChemicalRemovalReasonEnum.Used, registered.RegisteredAt.AddMilliseconds(1), "tom"));
 
         var events = await CreateSut().GetAllAsync(property.Id, Around(DateTime.UtcNow));
 
@@ -304,6 +306,7 @@ public class ChemicalHistoryServiceTests : ChemicalTestBase
     {
         var property = await CreatePropertyAsync();
         var inventory = CreateInventoryService();
+        await inventory.SetSettingsAsync(Web, new ChemicalSetSettingsCommand(property.Id, true, []));
         var lade = await inventory.CreateLocationAsync(Web, new ChemicalCreateLocationCommand(property.Id, "Lade", "", null));
         var roundup = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Roundup PowerMax", "1-285");
         var day = LocalDate(DateTime.UtcNow).AddDays(-3);
@@ -331,6 +334,7 @@ public class ChemicalHistoryServiceTests : ChemicalTestBase
     {
         var property = await CreatePropertyAsync();
         var inventory = CreateInventoryService();
+        await inventory.SetSettingsAsync(Web, new ChemicalSetSettingsCommand(property.Id, true, []));
         var lade = await inventory.CreateLocationAsync(Web, new ChemicalCreateLocationCommand(property.Id, "Lade", "", null));
         var roundup = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Roundup PowerMax", "1-285");
         var placement = (await inventory.RegisterPlacementAsync(Web,

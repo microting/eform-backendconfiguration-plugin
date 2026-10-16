@@ -23,7 +23,6 @@ namespace BackendConfiguration.Pn.Services.ChemicalReporting;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
@@ -88,24 +87,6 @@ public static class ChemicalXlsxWriter
         },
     };
 
-    /// <summary>Drops what XML 1.0 cannot carry: control characters, unpaired surrogates, U+FFFE and U+FFFF.</summary>
-    private static string Clean(string text)
-    {
-        var builder = new StringBuilder();
-        text ??= string.Empty;
-        for (var i = 0; i < text.Length; i++)
-        {
-            var c = text[i];
-            if (char.IsHighSurrogate(c) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]))
-            {
-                builder.Append(c).Append(text[++i]);
-            }
-            else if (c is '\t' or '\n' or '\r' || (!char.IsControl(c) && !char.IsSurrogate(c) && c is not ('\uFFFE' or '\uFFFF')))
-            {
-                builder.Append(c);
-            }
-        }
-
-        return builder.ToString();
-    }
+    private static string Clean(string text) =>
+        new((text ?? string.Empty).Where(c => c is '\t' or '\n' or '\r' || !char.IsControl(c)).ToArray());
 }

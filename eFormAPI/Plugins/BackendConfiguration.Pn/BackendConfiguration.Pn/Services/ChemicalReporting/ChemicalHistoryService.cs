@@ -30,7 +30,6 @@ using Microsoft.EntityFrameworkCore;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
-using Microting.EformBackendConfigurationBase.Infrastructure.Helpers;
 using BmdConstants = Microting.EformBackendConfigurationBase.Infrastructure.Const.Constants;
 using SdkConstants = Microting.eForm.Infrastructure.Constants.Constants;
 
@@ -72,7 +71,6 @@ public class ChemicalHistoryService(
             .Where(e => query.Action is null || e.Action == query.Action)
             .Where(e => query.LocationId is null || e.LocationId == query.LocationId || e.TargetLocationId == query.LocationId);
 
-    /// <summary>The dates are Europe/Copenhagen calendar days; the result is the matching UTC interval [From, ToExclusive).</summary>
     private static (DateTime From, DateTime ToExclusive) Period(ChemicalHistoryQuery query)
     {
         if (query.From.TimeOfDay != TimeSpan.Zero || query.To.TimeOfDay != TimeSpan.Zero)
@@ -80,25 +78,20 @@ public class ChemicalHistoryService(
             throw new ArgumentException("The period takes dates only, without a time of day.");
         }
 
-        var days = (query.To.Date - query.From.Date).Days + 1;
-        if (days < 1)
+        var from = DateTime.SpecifyKind(query.From, DateTimeKind.Utc);
+        var toExclusive = DateTime.SpecifyKind(query.To, DateTimeKind.Utc).AddDays(1);
+        if (toExclusive <= from)
         {
             throw new ArgumentException("The period ends before it starts.");
         }
 
-        if (days > MaxPeriodDays)
+        if ((toExclusive - from).TotalDays > MaxPeriodDays)
         {
             throw new ArgumentException($"The period is at most {MaxPeriodDays} days.");
         }
 
-        return (LocalMidnightToUtc(query.From), LocalMidnightToUtc(query.To.AddDays(1)));
+        return (from, toExclusive);
     }
-
-    private static DateTime LocalMidnightToUtc(DateTime date) =>
-        TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(date.Date, DateTimeKind.Unspecified), ChemicalAlertRules.Copenhagen);
-
-    private static DateTime LocalDay(DateTime utc) =>
-        TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), ChemicalAlertRules.Copenhagen).Date;
 
     private async Task<List<ChemicalHistoryEventModel>> LoadAsync(int propertyId, ChemicalHistoryQuery query)
     {
@@ -111,15 +104,14 @@ public class ChemicalHistoryService(
         bool InPeriod(DateTime? at) => at is { } value && value >= from && value < to;
 
         var locations = await dbContext.ChemicalLocations.AsNoTracking()
-            .Where(l => l.PropertyId == propertyId).OrderBy(l => l.Id).ToDictionaryAsync(l => l.Id).ConfigureAwait(false);
+            .Where(l => l.PropertyId == propertyId).ToDictionaryAsync(l => l.Id).ConfigureAwait(false);
         var locationIds = locations.Keys.ToArray();
         var placements = await dbContext.ChemicalPlacements.AsNoTracking()
-            .Where(p => locationIds.Contains(p.LocationId) && p.WorkflowState != RemovedState).OrderBy(p => p.Id)
-            .ToDictionaryAsync(p => p.Id).ConfigureAwait(false);
+            .Where(p => locationIds.Contains(p.LocationId)).ToDictionaryAsync(p => p.Id).ConfigureAwait(false);
         var placementIds = placements.Keys.ToArray();
         var entries = await dbContext.ChemicalStockEntries.AsNoTracking()
             .Where(e => placementIds.Contains(e.PlacementId) && e.WorkflowState != RemovedState)
-            .OrderBy(e => e.Id).ToListAsync().ConfigureAwait(false);
+            .OrderBy(e => e.At).ThenBy(e => e.Id).ToListAsync().ConfigureAwait(false);
         var placementVersions = await dbContext.ChemicalPlacementVersions.AsNoTracking()
             .Where(v => placementIds.Contains(v.ChemicalPlacementId)).OrderBy(v => v.Id).ToListAsync().ConfigureAwait(false);
         var locationVersions = await dbContext.ChemicalLocationVersions.AsNoTracking()
@@ -130,12 +122,20 @@ public class ChemicalHistoryService(
             .Where(v => v.PropertyId == propertyId).OrderBy(v => v.Id).ToListAsync().ConfigureAwait(false);
         var alerts = await dbContext.ChemicalAlertLogs.AsNoTracking()
             .Where(a => placementIds.Contains(a.PlacementId) && a.SentAt >= from && a.SentAt < to && a.WorkflowState != RemovedState)
-            .OrderBy(a => a.Id).ToListAsync().ConfigureAwait(false);
+            .ToListAsync().ConfigureAwait(false);
 
-        // Running balance over ALL entries, in Id order, with the helper the inventory itself uses.
+        // Running balance over ALL entries (not only the period's), the way the inventory reads it.
         var entriesByPlacement = entries.ToLookup(e => e.PlacementId);
-        var entriesById = entries.ToDictionary(e => e.Id);
-        var balanceAfter = ChemicalInventoryService.BalanceAfterByEntry(entries);
+        var balanceAfter = new Dictionary<int, decimal>();
+        foreach (var ledger in entriesByPlacement)
+        {
+            var balance = 0m;
+            foreach (var entry in ledger)
+            {
+                balance += entry.Amount;
+                balanceAfter[entry.Id] = balance;
+            }
+        }
 
         // E-06: the write-off entry of a stocked removal is folded into the Removed event.
         var writeOffs = placements.Values
@@ -154,7 +154,7 @@ public class ChemicalHistoryService(
 
         var events = new List<ChemicalHistoryEventModel>();
 
-        foreach (var p in placements.Values)
+        foreach (var p in placements.Values.Where(p => p.WorkflowState != RemovedState))
         {
             if (InPeriod(p.RegisteredAt) && p.MovedFromPlacementId is null)
             {
@@ -167,7 +167,7 @@ public class ChemicalHistoryService(
             if (InPeriod(p.RegisteredAt) && p.MovedFromPlacementId is { } sourceId)
             {
                 var source = placements.GetValueOrDefault(sourceId);
-                var movedIn = entriesByPlacement[p.Id].FirstOrDefault(e => e.Kind == ChemicalStockEntryKindEnum.MovedIn);
+                var movedIn = entries.FirstOrDefault(e => e.PlacementId == p.Id && e.Kind == ChemicalStockEntryKindEnum.MovedIn);
                 events.Add(ForPlacement(p, p.RegisteredAt, p.RegisteredByUserId, ChemicalHistoryActionEnum.Moved) with
                 {
                     LocationId = source?.LocationId, LocationName = LocationName(source?.LocationId),
@@ -179,7 +179,7 @@ public class ChemicalHistoryService(
             if (p.RemovedAt is { } removedAt && InPeriod(removedAt)
                 && p.RemovalReason is ChemicalRemovalReasonEnum.Used or ChemicalRemovalReasonEnum.Disposed)
             {
-                var writeOff = writeOffs.TryGetValue(p.Id, out var entryId) ? entriesById[entryId] : null;
+                var writeOff = writeOffs.TryGetValue(p.Id, out var entryId) ? entries.First(e => e.Id == entryId) : null;
                 events.Add(ForPlacement(p, removedAt, p.RemovedByUserId ?? 0, ChemicalHistoryActionEnum.Removed) with
                 {
                     RemovalReason = p.RemovalReason, Note = p.RemovalNote ?? string.Empty,
@@ -305,7 +305,7 @@ public class ChemicalHistoryService(
         }
 
         events.AddRange(alerts
-            .GroupBy(a => new { a.PlacementId, a.Threshold, a.DeadlineKind, a.Status, Day = LocalDay(a.SentAt) })
+            .GroupBy(a => new { a.PlacementId, a.Threshold, a.DeadlineKind, a.Status, Day = a.SentAt.Date })
             .Select(g => ForPlacement(placements[g.Key.PlacementId], g.Min(a => a.SentAt), 0,
                 g.Key.Threshold == ChemicalAlertThresholdEnum.StatusChanged
                     ? ChemicalHistoryActionEnum.StatusChanged
@@ -322,17 +322,14 @@ public class ChemicalHistoryService(
         var products = (await register.GetByIdsAsync(chemicalIds).ConfigureAwait(false)).ToDictionary(e => e.ChemicalId);
         var userNames = await names.UserNamesAsync(events.Where(e => e.UserId > 0).Select(e => e.UserId).Distinct()).ConfigureAwait(false);
 
-        // The final key is the source order (all sources are read in a fixed order), so paging is deterministic.
         return events
-            .Select((e, seq) => (Event: e with
+            .Select(e => e with
             {
                 ProductName = e.ChemicalId is { } id ? products.TryGetValue(id, out var p) ? p.Name : $"#{id}" : string.Empty,
                 RegistrationNo = e.ChemicalId is { } rid && products.TryGetValue(rid, out var r) ? r.RegistrationNo : string.Empty,
                 UserName = e.UserId > 0 ? userNames.GetValueOrDefault(e.UserId, $"#{e.UserId}") : string.Empty,
-            }, Seq: seq))
-            .OrderByDescending(x => x.Event.At).ThenByDescending(x => x.Event.Action).ThenByDescending(x => x.Event.PlacementId)
-            .ThenBy(x => x.Seq)
-            .Select(x => x.Event)
+            })
+            .OrderByDescending(e => e.At).ThenByDescending(e => e.Action).ThenByDescending(e => e.PlacementId)
             .ToList();
     }
 
