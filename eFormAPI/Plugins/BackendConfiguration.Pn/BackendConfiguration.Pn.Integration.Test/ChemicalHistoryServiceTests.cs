@@ -347,7 +347,7 @@ public class ChemicalHistoryServiceTests : ChemicalTestBase
         var events = await CreateSut().GetAllAsync(property.Id, Around(DateTime.UtcNow));
 
         Assert.That(events.Where(e => e.PlacementId == placement), Is.Empty);
-        Assert.That(events.Select(e => e.Action), Is.EqualTo(new[] { ChemicalHistoryActionEnum.LocationCreated }));
+        Assert.That(events.Select(e => e.Action), Is.EquivalentTo(new[] { ChemicalHistoryActionEnum.LocationCreated, ChemicalHistoryActionEnum.SettingsChanged }));
     }
 
     [Test]
