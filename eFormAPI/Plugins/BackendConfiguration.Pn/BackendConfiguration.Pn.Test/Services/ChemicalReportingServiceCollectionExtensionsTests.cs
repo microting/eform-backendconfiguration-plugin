@@ -39,6 +39,7 @@ public class ChemicalReportingServiceCollectionExtensionsTests
         (Type Service, Type Implementation)[] expected =
         [
             (typeof(IChemicalDigestPreviewBuilder), typeof(ChemicalDigestPreviewBuilder)),
+            (typeof(IChemicalHistoryService), typeof(ChemicalHistoryService)),
         ];
         foreach (var (service, implementation) in expected)
         {
