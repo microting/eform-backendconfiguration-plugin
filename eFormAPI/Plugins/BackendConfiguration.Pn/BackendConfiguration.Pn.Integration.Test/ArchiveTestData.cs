@@ -1,4 +1,5 @@
 #nullable enable
+using BackendConfiguration.Pn.Services.ArchiveAccess;
 using BackendConfiguration.Pn.Services.ArchiveFolders;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
@@ -65,4 +66,10 @@ public static class ArchiveTestData
         }.Create(db);
         return file;
     }
+
+    public static ArchiveAccessContext Admin => new(false, true, []);
+
+    public static ArchiveAccessContext User(params int[] groups) => new(false, false, groups);
+
+    public static ArchiveAccessContext Disabled => ArchiveAccessContext.Disabled;
 }
