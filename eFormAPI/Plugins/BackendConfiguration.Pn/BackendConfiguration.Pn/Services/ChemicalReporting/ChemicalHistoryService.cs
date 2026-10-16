@@ -91,14 +91,10 @@ public class ChemicalHistoryService(
             throw new ArgumentException($"The period is at most {MaxPeriodDays} days.");
         }
 
-        return (LocalMidnightToUtc(query.From), LocalMidnightToUtc(query.To.AddDays(1)));
+        return (ChemicalCopenhagen.LocalMidnightToUtc(query.From), ChemicalCopenhagen.LocalMidnightToUtc(query.To.AddDays(1)));
     }
 
-    private static DateTime LocalMidnightToUtc(DateTime date) =>
-        TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(date.Date, DateTimeKind.Unspecified), ChemicalAlertRules.Copenhagen);
-
-    private static DateTime LocalDay(DateTime utc) =>
-        TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), ChemicalAlertRules.Copenhagen).Date;
+    private static DateTime LocalDay(DateTime utc) => ChemicalCopenhagen.ToCopenhagen(utc).Date;
 
     private async Task<List<ChemicalHistoryEventModel>> LoadAsync(int propertyId, ChemicalHistoryQuery query)
     {

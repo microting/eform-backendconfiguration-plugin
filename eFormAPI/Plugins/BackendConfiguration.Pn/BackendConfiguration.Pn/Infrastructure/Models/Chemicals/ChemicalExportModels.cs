@@ -29,7 +29,11 @@ public sealed record ChemicalInventoryExportBody(List<int> PlacementIds);
 
 public sealed record ChemicalAuthorityListRow(
     string ProductName, string RegistrationNo, string Status, string SignalWord, string Pictograms, string HazardStatements,
-    string Location, string Placement, string Deadlines, string Quantity, string SdsUrl);
+    string Location, string Placement, string Deadlines, string Quantity, string SdsUrl)
+{
+    /// <summary>The printed text cells in Headers order (without the SDS column): the one column set the PDF renders.</summary>
+    public IReadOnlyList<string> Cells { get; init; } = [];
+}
 
 public sealed record ChemicalAuthorityListDocument(
     string Title, string Subtitle, IReadOnlyList<string> Headers, IReadOnlyList<ChemicalAuthorityListRow> Rows,

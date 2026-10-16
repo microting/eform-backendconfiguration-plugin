@@ -37,47 +37,51 @@ using K = Infrastructure.Models.Chemicals.ChemicalLocalizationKeys;
 /// </summary>
 public static class ChemicalAuthorityListBuilder
 {
-    public static ChemicalAuthorityListDocument Build(
-        ChemicalInventoryModel inventory, int propertyId, DateTime generatedAtUtc, string sdsBaseUrl, Func<string, string> text)
-    {
-        var property = inventory.Properties.FirstOrDefault(p => p.PropertyId == propertyId);
-        var showQuantity = property?.StockEnabled ?? false;
-        var locations = inventory.Locations.ToDictionary(l => l.Id);
-        var entries = inventory.RegisterEntries.ToDictionary(e => e.ChemicalId);
-        var local = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(generatedAtUtc, DateTimeKind.Utc), ChemicalAlertRules.Copenhagen);
+    /// <summary>Text columns in print order; the SDS link column always follows.</summary>
+    private static readonly (string HeaderKey, Func<ChemicalAuthorityListRow, string> Value, bool StockOnly)[] Columns =
+    [
+        (K.ChemicalColumnProduct, r => r.ProductName, false),
+        (K.ChemicalColumnRegistrationNo, r => r.RegistrationNo, false),
+        (K.ChemicalColumnStatus, r => r.Status, false),
+        (K.ChemicalColumnSignalWord, r => r.SignalWord, false),
+        (K.ChemicalColumnPictograms, r => r.Pictograms, false),
+        (K.ChemicalColumnHazardStatements, r => r.HazardStatements, false),
+        (K.ChemicalColumnLocation, r => r.Location, false),
+        (K.ChemicalColumnPlacement, r => r.Placement, false),
+        (K.ChemicalColumnDeadlines, r => r.Deadlines, false),
+        (K.ChemicalColumnQuantity, r => r.Quantity, true),
+    ];
 
-        var rows = inventory.Placements
+    public static ChemicalAuthorityListDocument Build(
+        ChemicalInventoryModel model, int propertyId, DateTime generatedAtUtc, string sdsBaseUrl, Func<string, string> text)
+    {
+        var lookup = new ChemicalInventoryLookup(model);
+        var showQuantity = model.Properties.FirstOrDefault(p => p.PropertyId == propertyId)?.StockEnabled ?? false;
+        var columns = Columns.Where(c => showQuantity || !c.StockOnly).ToList();
+
+        var rows = model.Placements
             .Where(p => p.RemovedAt == null && p.PropertyId == propertyId)
-            .Select(p => (Placement: p, Location: locations.GetValueOrDefault(p.LocationId), Entry: entries.GetValueOrDefault(p.ChemicalId)))
+            .Select(p => (Placement: p, Location: lookup.Location(p.LocationId), Entry: lookup.Entry(p.ChemicalId)))
             .OrderBy(x => x.Location?.SortOrder ?? int.MaxValue)
             .ThenBy(x => x.Entry?.Name ?? string.Empty, TagNameComparer.Danish)
             .ThenBy(x => x.Placement.LocationId)
             .ThenBy(x => x.Placement.Id)
-            .Select(x => Row(x.Placement, x.Location, x.Entry, showQuantity, sdsBaseUrl, text))
+            .Select(x => Row(x.Placement, x.Location, x.Entry, lookup, showQuantity, sdsBaseUrl, text))
+            .Select(row => row with { Cells = columns.Select(c => c.Value(row)).ToList() })
             .ToList();
 
-        var headers = new List<string>
-        {
-            text(K.ChemicalColumnProduct), text(K.ChemicalColumnRegistrationNo), text(K.ChemicalColumnStatus),
-            text(K.ChemicalColumnSignalWord), text(K.ChemicalColumnPictograms), text(K.ChemicalColumnHazardStatements),
-            text(K.ChemicalColumnLocation), text(K.ChemicalColumnPlacement), text(K.ChemicalColumnDeadlines),
-        };
-        if (showQuantity)
-        {
-            headers.Add(text(K.ChemicalColumnQuantity));
-        }
-
-        headers.Add(text(K.ChemicalColumnSds));
+        var headers = columns.Select(c => text(c.HeaderKey)).Append(text(K.ChemicalColumnSds)).ToList();
 
         return new ChemicalAuthorityListDocument(
             text(K.ChemicalAuthorityListTitle),
-            $"{text(K.ChemicalPropertyLabel)}: {property?.Name} · {text(K.ChemicalGeneratedLabel)}: {local.ToString("dd-MM-yyyy HH:mm", CultureInfo.InvariantCulture)}",
+            $"{text(K.ChemicalPropertyLabel)}: {lookup.PropertyName(propertyId)} · {text(K.ChemicalGeneratedLabel)}: "
+            + ChemicalCopenhagen.ToCopenhagen(generatedAtUtc).ToString("dd-MM-yyyy HH:mm", CultureInfo.InvariantCulture),
             headers, rows, showQuantity, text(K.ChemicalSdsLink));
     }
 
     private static ChemicalAuthorityListRow Row(
         ChemicalPlacementModel placement, ChemicalLocationModel location, ChemicalRegisterEntryModel entry,
-        bool showQuantity, string sdsBaseUrl, Func<string, string> text)
+        ChemicalInventoryLookup lookup, bool showQuantity, string sdsBaseUrl, Func<string, string> text)
     {
         var deadlines = new List<string>();
         if (entry?.SalesDeadline is { } sales)
@@ -94,7 +98,7 @@ public static class ChemicalAuthorityListBuilder
                   ?? entry?.Products.FirstOrDefault(p => !string.IsNullOrEmpty(p.SdsFileName));
 
         return new ChemicalAuthorityListRow(
-            entry?.Name ?? $"#{placement.ChemicalId}",
+            lookup.ProductName(placement.ChemicalId),
             entry?.RegistrationNo ?? string.Empty,
             entry?.StatusText ?? string.Empty,
             entry?.SignalWordText ?? string.Empty,

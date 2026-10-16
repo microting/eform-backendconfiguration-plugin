@@ -20,7 +20,6 @@ SOFTWARE.
 
 namespace BackendConfiguration.Pn.Services.ChemicalReporting;
 
-using System.Collections.Generic;
 using Infrastructure.Models.Chemicals;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
@@ -62,7 +61,7 @@ public static class ChemicalAuthorityListPdf
 
                 foreach (var row in document.Rows)
                 {
-                    foreach (var value in TextCells(row, document.ShowQuantity))
+                    foreach (var value in row.Cells)
                     {
                         table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(value);
                     }
@@ -91,21 +90,4 @@ public static class ChemicalAuthorityListPdf
                 text.TotalPages();
             });
         })).GeneratePdf();
-
-    private static IEnumerable<string> TextCells(ChemicalAuthorityListRow row, bool showQuantity)
-    {
-        yield return row.ProductName;
-        yield return row.RegistrationNo;
-        yield return row.Status;
-        yield return row.SignalWord;
-        yield return row.Pictograms;
-        yield return row.HazardStatements;
-        yield return row.Location;
-        yield return row.Placement;
-        yield return row.Deadlines;
-        if (showQuantity)
-        {
-            yield return row.Quantity;
-        }
-    }
 }

@@ -52,26 +52,26 @@ public class ChemicalExportService(
     private DateTime UtcNow => time.GetUtcNow().UtcDateTime;
 
     private static string Local(DateTime utc, string format) =>
-        TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), ChemicalAlertRules.Copenhagen).ToString(format, CultureInfo.InvariantCulture);
+        ChemicalCopenhagen.ToCopenhagen(utc).ToString(format, CultureInfo.InvariantCulture);
 
     private string FileName(string titleKey, string propertyName, string extension) =>
         $"{ComplianceExportFileNaming.SanitiseFileNamePart(T(titleKey))} - {ComplianceExportFileNaming.SanitiseFileNamePart(propertyName)} - {Local(UtcNow, "yyyy-MM-dd")}.{extension}";
 
     public async Task<ChemicalExportFile> AuthorityListPdfAsync(int userId, int propertyId)
     {
-        var model = await inventory.GetPropertyInventoryAsync(ChemicalCaller.Web(userId), propertyId).ConfigureAwait(false);
+        var model = await LoadAsync(userId, propertyId).ConfigureAwait(false);
         var document = ChemicalAuthorityListBuilder.Build(model, propertyId, UtcNow, chemicalBase.Value.BaseUrl, T);
         return new ChemicalExportFile(ChemicalAuthorityListPdf.Render(document),
-            FileName(K.ChemicalAuthorityListTitle, PropertyName(model, propertyId), "pdf"), PdfContentType);
+            FileName(K.ChemicalAuthorityListTitle, new ChemicalInventoryLookup(model).PropertyName(propertyId), "pdf"), PdfContentType);
     }
 
     public async Task<ChemicalExportFile> InventoryXlsxAsync(int userId, int propertyId, IReadOnlyCollection<int> placementIds)
     {
-        var model = await inventory.GetPropertyInventoryAsync(ChemicalCaller.Web(userId), propertyId).ConfigureAwait(false);
+        var model = await LoadAsync(userId, propertyId).ConfigureAwait(false);
         var stock = model.Properties.FirstOrDefault(p => p.PropertyId == propertyId)?.StockEnabled ?? false;
         var wanted = placementIds?.ToHashSet();
         var today = ChemicalAlertRules.CopenhagenToday(UtcNow);
-        var (locations, entries) = Lookups(model);
+        var lookup = new ChemicalInventoryLookup(model);
 
         var headers = new List<string> { T(K.ChemicalColumnProduct), T(K.ChemicalColumnRegistrationNo), T(K.ChemicalColumnStatus), T(K.ChemicalColumnLocation), T(K.ChemicalColumnPlacement) };
         if (stock)
@@ -83,17 +83,17 @@ public class ChemicalExportService(
 
         var rows = model.Placements
             .Where(p => p.RemovedAt == null && p.PropertyId == propertyId && (wanted == null || wanted.Contains(p.Id)))
-            .OrderBy(p => locations.GetValueOrDefault(p.LocationId)?.SortOrder ?? int.MaxValue)
-            .ThenBy(p => entries.GetValueOrDefault(p.ChemicalId)?.Name ?? string.Empty, TagNameComparer.Danish)
+            .OrderBy(p => lookup.Location(p.LocationId)?.SortOrder ?? int.MaxValue)
+            .ThenBy(p => lookup.Entry(p.ChemicalId)?.Name ?? string.Empty, TagNameComparer.Danish)
             .ThenBy(p => p.LocationId)
             .ThenBy(p => p.Id)
             .Select(p =>
             {
-                var entry = entries.GetValueOrDefault(p.ChemicalId);
+                var entry = lookup.Entry(p.ChemicalId);
                 var row = new List<object>
                 {
-                    entry?.Name ?? $"#{p.ChemicalId}", entry?.RegistrationNo ?? string.Empty, entry?.StatusText ?? string.Empty,
-                    locations.GetValueOrDefault(p.LocationId)?.Name ?? string.Empty, p.PlacementNote ?? string.Empty,
+                    lookup.ProductName(p.ChemicalId), entry?.RegistrationNo ?? string.Empty, entry?.StatusText ?? string.Empty,
+                    lookup.Location(p.LocationId)?.Name ?? string.Empty, p.PlacementNote ?? string.Empty,
                 };
                 if (stock)
                 {
@@ -111,14 +111,13 @@ public class ChemicalExportService(
                 return (IReadOnlyList<object>)row;
             });
 
-        return new ChemicalExportFile(ChemicalXlsxWriter.Write(T(K.ChemicalInventoryExportTitle), headers, rows),
-            FileName(K.ChemicalInventoryExportTitle, PropertyName(model, propertyId), "xlsx"), XlsxContentType);
+        return Xlsx(K.ChemicalInventoryExportTitle, lookup.PropertyName(propertyId), headers, rows);
     }
 
     public async Task<ChemicalExportFile> RemovedPlacementsXlsxAsync(int userId, int propertyId)
     {
-        var model = await inventory.GetPropertyInventoryAsync(ChemicalCaller.Web(userId), propertyId).ConfigureAwait(false);
-        var (locations, entries) = Lookups(model);
+        var model = await LoadAsync(userId, propertyId).ConfigureAwait(false);
+        var lookup = new ChemicalInventoryLookup(model);
         string[] headers =
         [
             T(K.ChemicalColumnProduct), T(K.ChemicalColumnRegistrationNo), T(K.ChemicalColumnLocation), T(K.ChemicalColumnPlacement),
@@ -129,9 +128,9 @@ public class ChemicalExportService(
             .OrderByDescending(p => p.RemovedAt)
             .Select(p => (IReadOnlyList<object>)new object[]
             {
-                entries.GetValueOrDefault(p.ChemicalId)?.Name ?? $"#{p.ChemicalId}",
-                entries.GetValueOrDefault(p.ChemicalId)?.RegistrationNo ?? string.Empty,
-                locations.GetValueOrDefault(p.LocationId)?.Name ?? string.Empty,
+                lookup.ProductName(p.ChemicalId),
+                lookup.Entry(p.ChemicalId)?.RegistrationNo ?? string.Empty,
+                lookup.Location(p.LocationId)?.Name ?? string.Empty,
                 p.PlacementNote ?? string.Empty,
                 T(ChemicalHistoryDetailsFormatter.ReasonKey(p.RemovalReason)),
                 Local(p.RemovedAt!.Value, "dd-MM-yyyy"),
@@ -139,8 +138,7 @@ public class ChemicalExportService(
                 p.RemovalNote ?? string.Empty,
             });
 
-        return new ChemicalExportFile(ChemicalXlsxWriter.Write(T(K.ChemicalRemovedPlacementsTitle), headers, rows),
-            FileName(K.ChemicalRemovedPlacementsTitle, PropertyName(model, propertyId), "xlsx"), XlsxContentType);
+        return Xlsx(K.ChemicalRemovedPlacementsTitle, lookup.PropertyName(propertyId), headers, rows);
     }
 
     public async Task<ChemicalExportFile> HistoryXlsxAsync(int propertyId, ChemicalHistoryQuery query)
@@ -164,16 +162,16 @@ public class ChemicalExportService(
             ChemicalHistoryDetailsFormatter.Format(e, T),
         });
 
-        return new ChemicalExportFile(ChemicalXlsxWriter.Write(T(K.ChemicalHistoryTitle), headers, rows),
-            FileName(K.ChemicalHistoryTitle, propertyName, "xlsx"), XlsxContentType);
+        return Xlsx(K.ChemicalHistoryTitle, propertyName, headers, rows);
     }
 
     /// <summary>The database column keeps a fixed scale ("2.000"); the sheet shows the number as typed ("2").</summary>
     private static decimal WithoutTrailingZeros(decimal value) => value / 1.000000000000000000000000000000000m;
 
-    private static string PropertyName(ChemicalInventoryModel model, int propertyId) =>
-        model.Properties.FirstOrDefault(p => p.PropertyId == propertyId)?.Name ?? string.Empty;
+    private Task<ChemicalInventoryModel> LoadAsync(int userId, int propertyId) =>
+        inventory.GetPropertyInventoryAsync(ChemicalCaller.Web(userId), propertyId);
 
-    private static (Dictionary<int, ChemicalLocationModel> Locations, Dictionary<int, ChemicalRegisterEntryModel> Entries) Lookups(ChemicalInventoryModel model) =>
-        (model.Locations.ToDictionary(l => l.Id), model.RegisterEntries.ToDictionary(e => e.ChemicalId));
+    /// <summary>The sheet name and the file name come from the same title key, so they cannot drift apart.</summary>
+    private ChemicalExportFile Xlsx(string titleKey, string propertyName, IReadOnlyList<string> headers, IEnumerable<IReadOnlyList<object>> rows) =>
+        new(ChemicalXlsxWriter.Write(T(titleKey), headers, rows), FileName(titleKey, propertyName, "xlsx"), XlsxContentType);
 }
