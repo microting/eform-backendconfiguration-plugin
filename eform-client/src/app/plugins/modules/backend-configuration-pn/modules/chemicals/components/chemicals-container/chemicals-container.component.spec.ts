@@ -15,8 +15,8 @@ describe('ChemicalsContainerComponent', () => {
   let childTitleKey: string | undefined;
   let store: {select: jest.Mock; dispatch: jest.Mock};
   let properties: {getAllPropertiesDictionary: jest.Mock};
-  let router: {navigate: jest.Mock; events: Subject<unknown>; getCurrentNavigation: jest.Mock};
-  /** What Router.getCurrentNavigation() answers when the container starts. */
+  let router: {navigate: jest.Mock; events: Subject<unknown>; currentNavigation: jest.Mock};
+  /** What the Router.currentNavigation signal holds when the container starts. */
   let navigationAtStart: unknown;
 
   function build(list: Array<{id: number; name: string}>, response?: unknown): ChemicalsContainerComponent {
@@ -34,7 +34,7 @@ describe('ChemicalsContainerComponent', () => {
     router = {
       navigate: jest.fn().mockResolvedValue(true),
       events: routerEvents$,
-      getCurrentNavigation: jest.fn().mockReturnValue(navigationAtStart),
+      currentNavigation: jest.fn().mockReturnValue(navigationAtStart),
     };
     const route = {
       get snapshot() {

@@ -6,6 +6,8 @@ import {ChemicalsContainerComponent} from './components';
 
 const screenRoutes: Route[] = CHEMICAL_SCREENS.map((screen) => ({
   path: screen.path,
+  // Only the bare /chemicals opens the root screen (Angular's rule for an empty-path leaf).
+  ...(screen.path === '' ? {pathMatch: 'full' as const} : {}),
   component: screen.component,
   data: {titleKey: screen.titleKey},
   canDeactivate: [chemicalUnsavedChangesGuard],
@@ -14,16 +16,14 @@ const screenRoutes: Route[] = CHEMICAL_SCREENS.map((screen) => ({
 /**
  * /plugins/backend-configuration-pn/chemicals/... (spec section 11 W1-W6). Each screen
  * is its own menu child and route (no in-page tabs); the container owns the page frame
- * and the property picker. The empty path redirects to the first registered screen.
+ * and the property picker. W1 Beholdning IS the empty path, so there is no redirect
+ * (a '' -> '' redirect would loop, M-3).
  */
 export const routes: Routes = [
   {
     path: '',
     component: ChemicalsContainerComponent,
-    children: [
-      {path: '', pathMatch: 'full', redirectTo: CHEMICAL_SCREENS[0].path},
-      ...screenRoutes,
-    ],
+    children: screenRoutes,
   },
 ];
 

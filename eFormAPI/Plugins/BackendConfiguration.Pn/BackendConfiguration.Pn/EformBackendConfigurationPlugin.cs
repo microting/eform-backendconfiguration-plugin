@@ -2195,6 +2195,9 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                 Translations = MenuTranslations("Chemicals", "Chemikalien", "Kemi", "Хімікати"),
                 ChildItems =
                 [
+                    // W1 is the Kemi landing screen: the module root, not a /chemicals/{path} child.
+                    ChemicalsMenuChild("inventory", 0,
+                        MenuTranslations("Inventory", "Bestand", "Beholdning", "Запаси"), routePath: ""),
                     ChemicalsMenuChild("permissions", 2,
                         MenuTranslations("Permissions", "Berechtigungen", "Rettigheder", "Дозволи")),
                     ChemicalsMenuChild("settings", 3,
@@ -2206,23 +2209,29 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         return pluginMenu;
     }
 
-    /// <summary>One Kemi screen: <c>/plugins/backend-configuration-pn/chemicals/{path}</c>.</summary>
-    private static PluginMenuItemModel ChemicalsMenuChild(string path, int position,
-        List<PluginMenuTranslationModel> translations)
+    /// <summary>
+    /// One Kemi screen, E2EId <c>backend-configuration-pn-chemicals-{name}</c>, link
+    /// <c>/plugins/backend-configuration-pn/chemicals/{routePath}</c> (<paramref name="routePath"/> defaults to
+    /// <paramref name="name"/>; an empty one links the Kemi root itself, without a trailing slash).
+    /// </summary>
+    private static PluginMenuItemModel ChemicalsMenuChild(string name, int position,
+        List<PluginMenuTranslationModel> translations, string routePath = null)
     {
-        var e2eId = $"backend-configuration-pn-chemicals-{path}";
-        var link = $"/plugins/backend-configuration-pn/chemicals/{path}";
-        var name = translations.Single(t => t.LocaleName == LocaleNames.English).Name;
+        const string root = "/plugins/backend-configuration-pn/chemicals";
+        var path = routePath ?? name;
+        var e2eId = $"backend-configuration-pn-chemicals-{name}";
+        var link = path.Length == 0 ? root : $"{root}/{path}";
+        var englishName = translations.Single(t => t.LocaleName == LocaleNames.English).Name;
         return new PluginMenuItemModel
         {
-            Name = name,
+            Name = englishName,
             E2EId = e2eId,
             Link = link,
             Type = MenuItemTypeEnum.Link,
             Position = position,
             MenuTemplate = new PluginMenuTemplateModel
             {
-                Name = name,
+                Name = englishName,
                 E2EId = e2eId,
                 DefaultLink = link,
                 Permissions = [],

@@ -34,3 +34,20 @@ export interface ChemicalDigestModel {
   recipients: string[];
   hasActionItems: boolean;
 }
+
+/** A file download: the bytes and the server-chosen name (Content-Disposition). */
+export interface ChemicalDownload {
+  blob: Blob;
+  fileName: string;
+}
+
+/** Body of POST …/history and …/history/export (Plan E Task 9 ChemicalHistoryQuery). Dates yyyy-MM-dd, inclusive. */
+export interface ChemicalHistoryQueryModel {
+  from: string;
+  to: string;
+  userId: number | null;
+  action: number | null;
+  locationId: number | null;
+  page: number;
+  pageSize: number;
+}

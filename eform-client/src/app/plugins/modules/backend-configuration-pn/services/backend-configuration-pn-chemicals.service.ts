@@ -1,10 +1,17 @@
+import {HttpBackend, HttpClient, HttpResponse} from '@angular/common/http';
 import {Injectable, inject} from '@angular/core';
+import {Store} from '@ngrx/store';
 import {Observable} from 'rxjs';
+import {map, switchMap, take} from 'rxjs/operators';
 import {OperationDataResult} from 'src/app/common/models';
 import {ApiBaseService} from 'src/app/common/services';
+import {selectBearerToken} from 'src/app/state/auth/auth.selector';
+import {parseContentDispositionFileName} from './backend-configuration-pn-compliance-report.service';
 import {
   ChemicalCreateLocationCommand,
   ChemicalDigestModel,
+  ChemicalDownload,
+  ChemicalHistoryQueryModel,
   ChemicalInventoryModel,
   ChemicalLocationModel,
   ChemicalMovePlacementBody,
@@ -34,6 +41,15 @@ export const BackendConfigurationPnChemicalsMethods = {
 @Injectable({providedIn: 'root'})
 export class BackendConfigurationPnChemicalsService {
   private apiBaseService = inject(ApiBaseService);
+  /**
+   * Raw client without interceptors for the file downloads, as
+   * BackendConfigurationPnComplianceReportService.export(): the host's error interceptor
+   * shows nothing for a failed blob request and retries a 403 as an expired token, and
+   * ApiBaseService hides the Content-Disposition header that carries the server's file name.
+   * A failure reaches the caller untouched; each export button toasts it (m-2).
+   */
+  private rawHttp = new HttpClient(inject(HttpBackend));
+  private store = inject(Store);
 
   private url(path: string): string {
     return `${BackendConfigurationPnChemicalsMethods.Base}/${path}`;
@@ -120,5 +136,38 @@ export class BackendConfigurationPnChemicalsService {
   /** The next weekly e-mail for one property, built by the server from the digest job's rule. */
   getDigestPreview(propertyId: number): Observable<OperationDataResult<ChemicalDigestModel>> {
     return this.apiBaseService.get(this.url(`properties/${propertyId}/digest-preview`));
+  }
+
+  exportAuthorityList(propertyId: number): Observable<ChemicalDownload> {
+    return this.download('GET', `properties/${propertyId}/exports/authority-list`, null, 'chemicals.pdf');
+  }
+
+  /** placementIds = the rows the page shows (Plan E decision 4); null = every open placement. */
+  exportInventory(propertyId: number, placementIds: number[] | null): Observable<ChemicalDownload> {
+    return this.download('POST', `properties/${propertyId}/exports/inventory`, {placementIds}, 'chemicals.xlsx');
+  }
+
+  exportRemovedPlacements(propertyId: number): Observable<ChemicalDownload> {
+    return this.download('GET', `properties/${propertyId}/exports/removed-placements`, null, 'removed-placements.xlsx');
+  }
+
+  exportHistory(propertyId: number, query: ChemicalHistoryQueryModel): Observable<ChemicalDownload> {
+    return this.download('POST', `properties/${propertyId}/history/export`, query, 'chemical-history.xlsx');
+  }
+
+  private download(method: 'GET' | 'POST', path: string, body: unknown, fallbackFileName: string): Observable<ChemicalDownload> {
+    return this.store.select(selectBearerToken).pipe(
+      take(1),
+      switchMap((token) => this.rawHttp.request(method, this.url(path), {
+        body,
+        observe: 'response',
+        responseType: 'blob',
+        headers: token ? {Authorization: `Bearer ${token}`} : {},
+      })),
+      map((res: HttpResponse<Blob>) => ({
+        blob: res.body ?? new Blob(),
+        fileName: parseContentDispositionFileName(res.headers.get('Content-Disposition'), fallbackFileName),
+      })),
+    );
   }
 }
