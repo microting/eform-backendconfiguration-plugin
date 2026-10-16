@@ -985,4 +985,9 @@ export const csCZ = {
   'Chemicals: Stock origin move': 'Přemístění',
   'Chemicals: Stock origin write-off': 'Odpis zásob při odebrání',
   'Chemicals: Move to another location': 'Přesunout na jiné místo',
+  'Chemicals: Amount limits': 'Použijte maximálně 3 desetinná místa a ne více než 1 000 000.',
+  'Chemicals: No other location': 'Nemovitost nemá jiné aktivní místo, kam lze chemikálii přesunout.',
+  'Chemicals: Removal reason': 'Důvod pro odstranění chemikálie',
+  'Chemicals: How much to move': 'Kolik z množství se má přesunout',
+  'Chemicals: Product details': 'Detaily produktu',
 };

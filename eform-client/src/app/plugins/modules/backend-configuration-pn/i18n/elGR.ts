@@ -950,7 +950,7 @@ export const elGR = {
   'Chemicals: Remove placement': 'Αφαίρεση της χημικής ουσίας',
   'Chemicals: Hazardous waste warning': 'Η προθεσμία έχει παρέλθει. Το προϊόν πρέπει να απορριφθεί ως επικίνδυνο απόβλητο.',
   'Chemicals: Reason used': 'Εξαντλήθηκε',
-  'Chemicals: Reason disposed': 'Απορρίφθηκε',
+  'Chemicals: Reason disposed': 'Διατέθηκε ως απόβλητο',
   'Chemicals: Reason moved automatic': 'Μετακινήθηκε (ορίζεται αυτόματα κατά τη μετακίνηση)',
   'Chemicals: Note': 'Σημείωση',
   'Chemicals: Remove': 'Αφαίρεση',
@@ -985,4 +985,9 @@ export const elGR = {
   'Chemicals: Stock origin move': 'Μετακίνηση',
   'Chemicals: Stock origin write-off': 'Διαγραφή αποθέματος κατά την αφαίρεση',
   'Chemicals: Move to another location': 'Μετακίνηση σε άλλη τοποθεσία',
+  'Chemicals: Amount limits': 'Χρησιμοποιήστε το πολύ 3 δεκαδικά ψηφία και όχι περισσότερα από 1.000.000.',
+  'Chemicals: No other location': 'Το ακίνητο δεν έχει άλλη ενεργή τοποθεσία στην οποία να μετακινηθεί η χημική ουσία.',
+  'Chemicals: Removal reason': 'Λόγος αφαίρεσης της χημικής ουσίας',
+  'Chemicals: How much to move': 'Πόση ποσότητα θα μετακινηθεί',
+  'Chemicals: Product details': 'Λεπτομέρειες προϊόντος',
 };

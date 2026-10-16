@@ -111,8 +111,11 @@ describe('Kemi i18n meaning', () => {
   // would sound like deleting the location itself.
   const PLACEMENT_ACTION_KEYS = ['Chemicals: Move placement', 'Chemicals: Remove placement'];
 
+  // German "umlagern"/"verlagern" (relocate stock, the fix-round-1 ruling for "move") contains "lager" but names no storage place.
+  const RELOCATE_STOCK = /\b(um|ver)lager\w*/gi;
+
   it.each(NON_ENGLISH)('%s: moving and removing a placement name the chemical, not a storage place', (locale) => {
-    const storage = PLACEMENT_ACTION_KEYS.filter((key) => STORAGE_PLACE.test(text(locale, key)));
+    const storage = PLACEMENT_ACTION_KEYS.filter((key) => STORAGE_PLACE.test(text(locale, key).replace(RELOCATE_STOCK, '')));
     expect(storage).toEqual([]);
   });
 

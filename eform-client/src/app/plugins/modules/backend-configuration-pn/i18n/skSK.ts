@@ -985,4 +985,9 @@ export const skSK = {
   'Chemicals: Stock origin move': 'Presun',
   'Chemicals: Stock origin write-off': 'Odpis zásob pri odstránení',
   'Chemicals: Move to another location': 'Presunúť na iné miesto',
+  'Chemicals: Amount limits': 'Použite maximálne 3 desatinné miesta a nie viac ako 1 000 000.',
+  'Chemicals: No other location': 'Nehnuteľnosť nemá iné aktívne miesto, kam možno chemikáliu presunúť.',
+  'Chemicals: Removal reason': 'Dôvod odstránenia chemikálie',
+  'Chemicals: How much to move': 'Koľko z množstva sa má presunúť',
+  'Chemicals: Product details': 'Detaily produktu',
 };

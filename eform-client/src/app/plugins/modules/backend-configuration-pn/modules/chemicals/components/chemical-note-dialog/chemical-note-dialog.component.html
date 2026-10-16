@@ -6,6 +6,6 @@
   </mat-form-field>
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
-  <button class="btn-cancel" id="chemicalNoteCancelBtn" (click)="cancel()">{{ 'Cancel' | translate }}</button>
-  <button class="btn-primary" id="chemicalNoteSaveBtn" [disabled]="saving" (click)="save()">{{ 'Save' | translate }}</button>
+  <button class="btn-cancel" id="chemicalNoteCancelBtn" [disabled]="saving" (click)="cancel()">{{ 'Cancel' | translate }}</button>
+  <button class="btn-primary" id="chemicalNoteSaveBtn" [disabled]="!canSave" (click)="save()">{{ 'Save' | translate }}</button>
 </div>

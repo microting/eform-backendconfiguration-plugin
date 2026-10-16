@@ -1,8 +1,7 @@
 import {Component, inject} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
-import {finalize} from 'rxjs/operators';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
-import {ChemicalInventoryRow} from '../../helpers';
+import {ChemicalPlacementDialogData, cancelPlacementDialog, closeWhenSaved, discardContext} from '../../helpers';
 
 /** "Ret placeringsnote". */
 @Component({
@@ -13,27 +12,34 @@ import {ChemicalInventoryRow} from '../../helpers';
 })
 export class ChemicalNoteDialogComponent {
   private chemicalsService = inject(BackendConfigurationPnChemicalsService);
-  private dialogRef = inject(MatDialogRef<ChemicalNoteDialogComponent>);
-  readonly data: {row: ChemicalInventoryRow} = inject(MAT_DIALOG_DATA);
+  private dialogRef = inject(MatDialogRef<ChemicalNoteDialogComponent, boolean>);
+  private discardContext = discardContext(this.dialogRef);
+  readonly data: ChemicalPlacementDialogData = inject(MAT_DIALOG_DATA);
 
-  note = this.data.row.placement.placementNote ?? '';
+  private readonly original = this.data.row.placement.placementNote ?? '';
+  note = this.original;
   saving = false;
 
+  get canSave(): boolean {
+    return !this.saving;
+  }
+
+  get dirty(): boolean {
+    return this.note.trim() !== this.original.trim();
+  }
+
   cancel(): void {
-    this.dialogRef.close(false);
+    cancelPlacementDialog(this.discardContext, {
+      busy: this.saving, dirty: this.dirty, productName: this.data.row.productName, confirmId: 'chemicalNoteDiscardConfirm',
+    });
   }
 
   save(): void {
-    if (this.saving) {
+    if (!this.canSave) {
       return;
     }
     this.saving = true;
-    this.chemicalsService.updatePlacementNote(this.data.row.placement.id, {placementNote: this.note.trim()})
-      .pipe(finalize(() => (this.saving = false)))
-      .subscribe((res) => {
-        if (res && res.success) {
-          this.dialogRef.close(true);
-        }
-      });
+    closeWhenSaved(this.dialogRef, this.chemicalsService.updatePlacementNote(this.data.row.placement.id, {placementNote: this.note.trim()}),
+      () => (this.saving = false));
   }
 }

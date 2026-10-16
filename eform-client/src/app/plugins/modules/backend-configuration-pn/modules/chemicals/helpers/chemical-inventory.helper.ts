@@ -181,3 +181,21 @@ export function placementStockHistory(inventory: ChemicalInventoryModel | null, 
 export function placementsOfChemical(inventory: ChemicalInventoryModel | null, chemicalId: number): ChemicalPlacementModel[] {
   return (inventory?.placements ?? []).filter((p) => p.chemicalId === chemicalId && !p.removedAt);
 }
+
+/** The server's ChemicalQuantity.MaxAmount: one million L/kg; anything larger is a unit mistake. */
+export const CHEMICAL_MAX_AMOUNT = 1_000_000;
+
+/**
+ * The server's ChemicalQuantity rules (decimal(18,3)): at most three decimals, not above
+ * CHEMICAL_MAX_AMOUNT, not negative, and zero only where allowed (a counted balance).
+ */
+export function isValidQuantity(value: number | null | undefined, allowZero: boolean): boolean {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > CHEMICAL_MAX_AMOUNT) {
+    return false;
+  }
+  if (value === 0) {
+    return allowZero;
+  }
+  const thousandths = value * 1000;
+  return Math.abs(thousandths - Math.round(thousandths)) < 1e-6;
+}

@@ -985,4 +985,9 @@ export const huHU = {
   'Chemicals: Stock origin move': 'Áthelyezés',
   'Chemicals: Stock origin write-off': 'Készletlevonás eltávolításkor',
   'Chemicals: Move to another location': 'Áthelyezés egy másik helyre',
+  'Chemicals: Amount limits': 'Legfeljebb 3 tizedesjegyet használjon, és ne legyen több 1 000 000-nél.',
+  'Chemicals: No other location': 'Az ingatlannak nincs más aktív helyszíne, ahová a vegyi anyag áthelyezhető.',
+  'Chemicals: Removal reason': 'A vegyi anyag eltávolításának oka',
+  'Chemicals: How much to move': 'Mennyit kell áthelyezni',
+  'Chemicals: Product details': 'Termékadatok',
 };

@@ -1,7 +1,7 @@
 <div id="chemicalDrawer" class="chemicals-drawer d-flex flex-column">
   <div class="d-flex align-items-start gap-12">
     <div class="flex-grow-1">
-      <h2 class="m-0">{{ row.productName }}</h2>
+      <h2 class="m-0" id="chemicalDrawerTitle">{{ row.productName }}</h2>
       <div class="chemicals-hint">
         {{ 'Chemicals: Reg no short' | translate }} {{ row.registrationNo }}
         <span *ngIf="row.entry?.authorisationHolder"> · {{ row.entry.authorisationHolder }}</span>
@@ -16,16 +16,16 @@
     </button>
   </div>
 
-  <nav class="d-flex gap-8 my-2" role="tablist">
-    <button class="btn-quiet" id="chemicalDrawerTabOverview" role="tab" [attr.aria-selected]="tab === 'overview'"
-            [class.chemicals-chip--active]="tab === 'overview'" (click)="tab = 'overview'">{{ 'Chemicals: Overview' | translate }}</button>
-    <button class="btn-quiet" id="chemicalDrawerTabPlacements" role="tab" [attr.aria-selected]="tab === 'placements'"
-            [class.chemicals-chip--active]="tab === 'placements'" (click)="tab = 'placements'">{{ 'Chemicals: Placements' | translate }} {{ placements.length }}</button>
-    <button *ngIf="stockEnabled" class="btn-quiet" id="chemicalDrawerTabStock" role="tab" [attr.aria-selected]="tab === 'stock'"
-            [class.chemicals-chip--active]="tab === 'stock'" (click)="tab = 'stock'">{{ 'Chemicals: Stock history' | translate }}</button>
-  </nav>
+  <div class="d-flex gap-8 my-2" role="tablist" [attr.aria-label]="'Chemicals: Product details' | translate">
+    <button *ngFor="let t of tabs" class="btn-quiet" type="button" role="tab" [id]="t.elementId"
+            [attr.aria-selected]="tab === t.id" [attr.aria-controls]="'chemicalDrawerPanel'" [attr.tabindex]="tab === t.id ? 0 : -1"
+            [class.chemicals-chip--active]="tab === t.id" (click)="tab = t.id" (keydown)="onTabKeydown($event)">
+      {{ t.labelKey | translate }}<ng-container *ngIf="t.id === 'placements'"> {{ placements.length }}</ng-container>
+    </button>
+  </div>
 
-  <div class="flex-grow-1 chemicals-drawer__body" [ngSwitch]="tab">
+  <div class="flex-grow-1 chemicals-drawer__body" id="chemicalDrawerPanel" role="tabpanel" tabindex="0"
+       [attr.aria-labelledby]="selectedTab.elementId" [ngSwitch]="tab">
     <div *ngSwitchCase="'overview'" class="d-flex flex-column gap-12">
       <div *ngIf="row.deadline" class="chemicals-banner" [class.chemicals-banner--overdue]="row.severity === 'overdue'">
         <mat-icon>schedule</mat-icon>
@@ -55,9 +55,9 @@
     </div>
 
     <div *ngSwitchCase="'placements'" id="chemicalDrawerPlacements">
-      <div *ngFor="let p of placements" class="chemicals-digest-item">
+      <div *ngFor="let p of placements" class="chemicals-list-item">
         <strong>{{ locationName(p.locationId) }}</strong><ng-container *ngIf="p.placementNote"> · {{ p.placementNote }}</ng-container>
-        <span *ngIf="stockEnabled && p.unit"> · {{ p.balance | number: '1.0-3' }} {{ unitLabel(p.unit) }}</span>
+        <span *ngIf="stockEnabled && p.unit"> · {{ p.balance | number: '1.0-3' }} {{ stockUnitLabel(p.unit) }}</span>
       </div>
     </div>
 
@@ -77,8 +77,8 @@
             {{ h.kindLabelKey | translate }}
             <div *ngIf="h.originLabelKey" class="chemicals-hint">{{ h.originLabelKey | translate }}</div>
           </td>
-          <td>{{ h.entry.amount | number: '1.0-3' }} {{ unitLabel(h.entry.unit) }}</td>
-          <td class="chemicals-stock-balance">{{ h.balanceAfter | number: '1.0-3' }} {{ unitLabel(h.entry.unit) }}</td>
+          <td>{{ h.entry.amount | number: '1.0-3' }} {{ stockUnitLabel(h.entry.unit) }}</td>
+          <td class="chemicals-stock-balance">{{ h.balanceAfter | number: '1.0-3' }} {{ stockUnitLabel(h.entry.unit) }}</td>
         </tr>
       </tbody>
     </table>

@@ -950,7 +950,7 @@ export const slSL = {
   'Chemicals: Remove placement': 'Odstrani kemikalijo',
   'Chemicals: Hazardous waste warning': 'Rok je potekel. Izdelek je treba odstraniti kot nevarni odpadek.',
   'Chemicals: Reason used': 'Porabljeno',
-  'Chemicals: Reason disposed': 'Odstranjeno',
+  'Chemicals: Reason disposed': 'Zavrženo kot odpadek',
   'Chemicals: Reason moved automatic': 'Premaknjeno (samodejno nastavljeno s premikom)',
   'Chemicals: Note': 'Opomba',
   'Chemicals: Remove': 'Odstrani',
@@ -985,4 +985,9 @@ export const slSL = {
   'Chemicals: Stock origin move': 'Premik',
   'Chemicals: Stock origin write-off': 'Odpis zaloge ob odstranitvi',
   'Chemicals: Move to another location': 'Premakni na drugo lokacijo',
+  'Chemicals: Amount limits': 'Uporabite največ 3 decimalna mesta in ne več kot 1.000.000.',
+  'Chemicals: No other location': 'Nepremičnina nima druge aktivne lokacije, kamor bi lahko premaknili kemikalijo.',
+  'Chemicals: Removal reason': 'Razlog za odstranitev kemikalije',
+  'Chemicals: How much to move': 'Koliko količine je treba premakniti',
+  'Chemicals: Product details': 'Podrobnosti o izdelku',
 };

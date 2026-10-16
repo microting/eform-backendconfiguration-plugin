@@ -1278,4 +1278,9 @@ export const enUS= {
   'Chemicals: Stock origin move': 'Move',
   'Chemicals: Stock origin write-off': 'Write-off on removal',
   'Chemicals: Move to another location': 'Move to another location',
+  'Chemicals: Amount limits': 'Use at most 3 decimals and no more than 1,000,000.',
+  'Chemicals: No other location': 'The property has no other active location to move the chemical to.',
+  'Chemicals: Removal reason': 'Reason for removal',
+  'Chemicals: How much to move': 'How much to move',
+  'Chemicals: Product details': 'Product details',
 };

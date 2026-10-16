@@ -1109,4 +1109,9 @@ export const plPL = {
   'Chemicals: Stock origin move': 'Przeniesienie',
   'Chemicals: Stock origin write-off': 'Odpis zapasu przy usunięciu',
   'Chemicals: Move to another location': 'Przenieś do innej lokalizacji',
+  'Chemicals: Amount limits': 'Można używać maksymalnie 3 cyfr po przecinku i nie więcej niż 1 000 000.',
+  'Chemicals: No other location': 'Nieruchomość nie ma innej aktywnej lokalizacji, do której można przenieść substancję chemiczną.',
+  'Chemicals: Removal reason': 'Powód usunięcia substancji chemicznej',
+  'Chemicals: How much to move': 'Ile przenieść',
+  'Chemicals: Product details': 'Szczegóły produktu',
 };

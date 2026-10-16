@@ -1109,4 +1109,9 @@ export const nlNL = {
   'Chemicals: Stock origin move': 'Verplaatsing',
   'Chemicals: Stock origin write-off': 'Afboeking bij verwijdering',
   'Chemicals: Move to another location': 'Verplaatsen naar een andere locatie',
+  'Chemicals: Amount limits': 'Gebruik maximaal 3 decimalen en niet meer dan 1.000.000.',
+  'Chemicals: No other location': 'Het pand heeft geen andere actieve locatie om de chemische stof naartoe te verplaatsen.',
+  'Chemicals: Removal reason': 'Reden voor het verwijderen van de chemische stof',
+  'Chemicals: How much to move': 'Hoeveel er wordt verplaatst',
+  'Chemicals: Product details': 'Productdetails',
 };

@@ -1077,7 +1077,7 @@ export const ukUA = {
   'Chemicals: Reason disposed': 'Утилізовано',
   'Chemicals: Reason moved automatic': 'Переміщено (встановлюється автоматично при переміщенні)',
   'Chemicals: Note': 'Примітка',
-  'Chemicals: Remove': 'Видалити',
+  'Chemicals: Remove': 'Вилучити',
   'Chemicals: Edit placement note': 'Редагувати примітку щодо місця зберігання',
   'Chemicals: Stock movement': 'Рух запасів',
   'Chemicals: Register stock movement': 'Зафіксувати рух запасів',
@@ -1109,4 +1109,9 @@ export const ukUA = {
   'Chemicals: Stock origin move': 'Переміщення',
   'Chemicals: Stock origin write-off': 'Списання запасу під час вилучення',
   'Chemicals: Move to another location': 'Перемістити в інше місце',
+  'Chemicals: Amount limits': 'Використовуйте щонайбільше 3 знаки після коми та не більше 1 000 000.',
+  'Chemicals: No other location': 'Об\'єкт не має іншого активного місця, куди можна перемістити хімічну речовину.',
+  'Chemicals: Removal reason': 'Причина вилучення хімічної речовини',
+  'Chemicals: How much to move': 'Яку частину кількості потрібно перемістити',
+  'Chemicals: Product details': 'Деталі продукту',
 };

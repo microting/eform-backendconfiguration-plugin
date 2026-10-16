@@ -29,12 +29,18 @@ import {
   filterInventoryRows,
   isStockEnabled,
   localToday,
+  openSafetyDataSheet,
   sdsFileNameFor,
   summarizeActions,
 } from '../../helpers';
 import {ChemicalMoveDialogComponent} from '../chemical-move-dialog/chemical-move-dialog.component';
 import {ChemicalNoteDialogComponent} from '../chemical-note-dialog/chemical-note-dialog.component';
-import {ChemicalDrawerResult, ChemicalProductDrawerComponent} from '../chemical-product-drawer/chemical-product-drawer.component';
+import {
+  ChemicalDrawerAction,
+  ChemicalDrawerResult,
+  ChemicalProductDrawerComponent,
+  ChemicalProductDrawerData,
+} from '../chemical-product-drawer/chemical-product-drawer.component';
 import {ChemicalRegisterPlacementDialogComponent} from '../chemical-register-placement-dialog/chemical-register-placement-dialog.component';
 import {ChemicalRemoveDialogComponent} from '../chemical-remove-dialog/chemical-remove-dialog.component';
 import {ChemicalStockDialogComponent} from '../chemical-stock-dialog/chemical-stock-dialog.component';
@@ -173,23 +179,22 @@ export class ChemicalInventoryPageComponent implements OnInit {
     })).afterClosed().subscribe((saved) => saved && this.reload());
   }
 
-  /** W2 side panel; the action chosen there opens its dialog (move, stock movement or remove). */
+  /** W2 side panel (read-only, so Esc and a backdrop click close it); the action chosen there opens its dialog. */
   openDetails(row: ChemicalInventoryRow): void {
-    this.dialog.open(ChemicalProductDrawerComponent, {
+    const openers: Record<ChemicalDrawerAction, (target: ChemicalInventoryRow) => void> = {
+      move: (target) => this.openMove(target),
+      stock: (target) => this.openStock(target),
+      remove: (target) => this.openRemove(target),
+    };
+    this.dialog.open<ChemicalProductDrawerComponent, ChemicalProductDrawerData, ChemicalDrawerResult>(ChemicalProductDrawerComponent, {
       ...dialogConfigHelper(this.overlay, {row, inventory: this.inventory, stockEnabled: this.stockEnabled}),
+      disableClose: false,
+      ariaLabel: row.productName,
       position: {top: '0', right: '0'},
       height: '100vh',
       maxHeight: '100vh',
       panelClass: 'chemicals-drawer-panel',
-    }).afterClosed().subscribe((result: ChemicalDrawerResult) => {
-      if (result?.action === 'move') {
-        this.openMove(result.row);
-      } else if (result?.action === 'stock') {
-        this.openStock(result.row);
-      } else if (result?.action === 'remove') {
-        this.openRemove(result.row);
-      }
-    });
+    }).afterClosed().subscribe((result) => result && openers[result.action](result.row));
   }
 
   openMove(row: ChemicalInventoryRow): void {
@@ -208,19 +213,19 @@ export class ChemicalInventoryPageComponent implements OnInit {
     this.openAndReload(ChemicalRemoveDialogComponent, {row, today: localToday()});
   }
 
-  /** Every placement dialog closes with true after a save; only then is the inventory stale. */
-  private openAndReload(component: ComponentType<unknown>, data: unknown): void {
-    this.dialog.open(component, dialogConfigHelper(this.overlay, data)).afterClosed().subscribe((saved) => saved && this.reload());
+  /**
+   * Every placement dialog closes with true after a save; only then is the inventory stale. The data
+   * type is the dialog's own (`data` field), so a wrong shape does not compile.
+   */
+  private openAndReload<D>(component: ComponentType<{readonly data: D}>, data: D): void {
+    this.dialog.open<{readonly data: D}, D, boolean>(component, dialogConfigHelper(this.overlay, data))
+      .afterClosed().subscribe((saved) => saved && this.reload());
   }
 
   openSds(row: ChemicalInventoryRow): void {
     const fileName = sdsFileNameFor(row);
     if (fileName) {
-      // getBlobData runs through the host interceptors, which show nothing for a failed blob request.
-      this.chemicalsService.getSdsBlob(fileName).subscribe({
-        next: (blob) => window.open(URL.createObjectURL(blob), '_blank'),
-        error: () => this.toastr.error(this.translate.instant('Chemicals: Could not open safety data sheet')),
-      });
+      openSafetyDataSheet(this.chemicalsService, this.toastr, this.translate, fileName);
     }
   }
 

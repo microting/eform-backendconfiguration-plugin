@@ -985,4 +985,9 @@ export const bgBG = {
   'Chemicals: Stock origin move': 'Преместване',
   'Chemicals: Stock origin write-off': 'Отписване на запаси при премахване',
   'Chemicals: Move to another location': 'Преместване на друго място',
+  'Chemicals: Amount limits': 'Използвайте най-много 3 знака след десетичната запетая и не повече от 1 000 000.',
+  'Chemicals: No other location': 'Имотът няма друго активно място, където химикалът да бъде преместен.',
+  'Chemicals: Removal reason': 'Причина за премахване на химикала',
+  'Chemicals: How much to move': 'Каква част от количеството да се премести',
+  'Chemicals: Product details': 'Детайли за продукта',
 };

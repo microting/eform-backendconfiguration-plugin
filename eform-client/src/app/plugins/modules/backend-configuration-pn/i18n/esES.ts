@@ -1077,7 +1077,7 @@ export const esES = {
   'Chemicals: Reason disposed': 'Desechado',
   'Chemicals: Reason moved automatic': 'Movido (se establece automáticamente al moverlo)',
   'Chemicals: Note': 'Nota',
-  'Chemicals: Remove': 'Eliminar',
+  'Chemicals: Remove': 'Retirar',
   'Chemicals: Edit placement note': 'Editar la nota sobre el lugar de almacenamiento',
   'Chemicals: Stock movement': 'Movimiento de existencias',
   'Chemicals: Register stock movement': 'Registrar movimiento de existencias',
@@ -1109,4 +1109,9 @@ export const esES = {
   'Chemicals: Stock origin move': 'Traslado',
   'Chemicals: Stock origin write-off': 'Baja de existencias al retirar',
   'Chemicals: Move to another location': 'Trasladar a otra ubicación',
+  'Chemicals: Amount limits': 'Utilice como máximo 3 decimales y no más de 1.000.000.',
+  'Chemicals: No other location': 'La propiedad no tiene otra ubicación activa a la que trasladar el producto químico.',
+  'Chemicals: Removal reason': 'Motivo para retirar el producto químico',
+  'Chemicals: How much to move': 'Cuánto trasladar',
+  'Chemicals: Product details': 'Detalles del producto',
 };

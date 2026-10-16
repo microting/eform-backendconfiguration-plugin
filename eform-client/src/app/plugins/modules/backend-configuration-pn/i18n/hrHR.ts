@@ -985,4 +985,9 @@ export const hrHR = {
   'Chemicals: Stock origin move': 'Premještanje',
   'Chemicals: Stock origin write-off': 'Otpis zalihe pri uklanjanju',
   'Chemicals: Move to another location': 'Premjesti na drugu lokaciju',
+  'Chemicals: Amount limits': 'Koristite najviše 3 decimale i ne više od 1.000.000.',
+  'Chemicals: No other location': 'Nekretnina nema drugu aktivnu lokaciju za premještanje kemikalije.',
+  'Chemicals: Removal reason': 'Razlog za uklanjanje kemikalije',
+  'Chemicals: How much to move': 'Koliki dio količine treba premjestiti',
+  'Chemicals: Product details': 'Detalji o proizvodu',
 };

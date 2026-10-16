@@ -1,23 +1,28 @@
 <h3 mat-dialog-title>{{ 'Chemicals: Move placement' | translate }} · {{ data.row.productName }}</h3>
 <div mat-dialog-content class="d-flex flex-column gap-12">
+  <div *ngIf="!targets.length" id="chemicalMoveNoTargets" class="chemicals-hint" role="status">{{ 'Chemicals: No other location' | translate }}</div>
   <mat-form-field>
     <mat-label>{{ 'Chemicals: Target location' | translate }}</mat-label>
-    <mtx-select id="chemicalMoveTargetSelect" [items]="targets" bindLabel="name" bindValue="id" [(ngModel)]="targetLocationId" [clearable]="false"></mtx-select>
+    <mtx-select id="chemicalMoveTargetSelect" [items]="targets" bindLabel="name" bindValue="id" [(ngModel)]="targetLocationId"
+                [clearable]="false" [disabled]="!targets.length"></mtx-select>
   </mat-form-field>
   <mat-form-field>
     <mat-label>{{ 'Chemicals: Placement note at target' | translate }}</mat-label>
     <input matInput id="chemicalMoveNote" [(ngModel)]="note" maxlength="1000">
   </mat-form-field>
-  <mat-radio-group *ngIf="canPartial" class="d-flex flex-column" [(ngModel)]="moveAll">
-    <mat-radio-button id="chemicalMoveAll" [value]="true">{{ 'Chemicals: Move all' | translate }}</mat-radio-button>
-    <mat-radio-button id="chemicalMovePart" [value]="false">{{ 'Chemicals: Move part' | translate }}</mat-radio-button>
-  </mat-radio-group>
-  <mat-form-field *ngIf="canPartial && !moveAll">
-    <mat-label>{{ 'Chemicals: Amount to move' | translate }} ({{ data.row.placement.balance | number: '1.0-3' }} {{ data.row.stockUnitLabel }})</mat-label>
-    <input matInput type="number" min="0" step="0.001" id="chemicalMoveAmount" [(ngModel)]="amount">
-  </mat-form-field>
+  <ng-container *ngIf="canPartial">
+    <mat-radio-group id="chemicalMoveAmountChoice" class="d-flex flex-column" [attr.aria-label]="'Chemicals: How much to move' | translate" [(ngModel)]="moveAll">
+      <mat-radio-button id="chemicalMoveAll" [value]="true">{{ 'Chemicals: Move all' | translate }}</mat-radio-button>
+      <mat-radio-button id="chemicalMovePart" [value]="false">{{ 'Chemicals: Move part' | translate }}</mat-radio-button>
+    </mat-radio-group>
+    <mat-form-field *ngIf="!moveAll">
+      <mat-label>{{ 'Chemicals: Amount to move' | translate }} ({{ placement.balance | number: '1.0-3' }} {{ data.row.stockUnitLabel }})</mat-label>
+      <input matInput type="number" min="0" step="0.001" id="chemicalMoveAmount" [(ngModel)]="amount">
+      <mat-hint *ngIf="outsideLimits" id="chemicalMoveAmountHint">{{ 'Chemicals: Amount limits' | translate }}</mat-hint>
+    </mat-form-field>
+  </ng-container>
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
-  <button class="btn-cancel" id="chemicalMoveCancelBtn" (click)="cancel()">{{ 'Cancel' | translate }}</button>
+  <button class="btn-cancel" id="chemicalMoveCancelBtn" [disabled]="saving" (click)="cancel()">{{ 'Cancel' | translate }}</button>
   <button class="btn-primary" id="chemicalMoveSaveBtn" [disabled]="!canSave" (click)="save()">{{ 'Chemicals: Move' | translate }}</button>
 </div>

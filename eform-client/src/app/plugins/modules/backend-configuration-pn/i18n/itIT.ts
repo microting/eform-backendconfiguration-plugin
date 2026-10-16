@@ -1109,4 +1109,9 @@ export const itIT = {
   'Chemicals: Stock origin move': 'Spostamento',
   'Chemicals: Stock origin write-off': 'Scarico alla rimozione',
   'Chemicals: Move to another location': 'Spostare in un\'altra sede',
+  'Chemicals: Amount limits': 'Utilizzare al massimo 3 cifre decimali e non più di 1.000.000.',
+  'Chemicals: No other location': 'La proprietà non dispone di altri luoghi attivi in cui trasferire la sostanza chimica.',
+  'Chemicals: Removal reason': 'Motivo della rimozione della sostanza chimica',
+  'Chemicals: How much to move': 'Quanto spostare',
+  'Chemicals: Product details': 'Dettagli del prodotto',
 };

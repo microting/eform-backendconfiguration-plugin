@@ -1,12 +1,10 @@
 import {Component, inject} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
-import {finalize} from 'rxjs/operators';
 import {ChemicalRemovalReason} from '../../../../models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
-import {ChemicalInventoryRow, reachedThreshold} from '../../helpers';
+import {ChemicalPlacementDialogData, cancelPlacementDialog, closeWhenSaved, discardContext, reachedThreshold} from '../../helpers';
 
-export interface ChemicalRemoveDialogData {
-  row: ChemicalInventoryRow;
+export interface ChemicalRemoveDialogData extends ChemicalPlacementDialogData {
   /** yyyy-MM-dd; injected so the warning is testable. */
   today: string;
 }
@@ -25,7 +23,8 @@ export interface ChemicalRemoveDialogData {
 })
 export class ChemicalRemoveDialogComponent {
   private chemicalsService = inject(BackendConfigurationPnChemicalsService);
-  private dialogRef = inject(MatDialogRef<ChemicalRemoveDialogComponent>);
+  private dialogRef = inject(MatDialogRef<ChemicalRemoveDialogComponent, boolean>);
+  private discardContext = discardContext(this.dialogRef);
   readonly data: ChemicalRemoveDialogData = inject(MAT_DIALOG_DATA);
 
   readonly reasons = ChemicalRemovalReason;
@@ -38,8 +37,14 @@ export class ChemicalRemoveDialogComponent {
     return (this.reason === ChemicalRemovalReason.Used || this.reason === ChemicalRemovalReason.Disposed) && !this.saving;
   }
 
+  get dirty(): boolean {
+    return this.reason !== null || this.note.trim() !== '';
+  }
+
   cancel(): void {
-    this.dialogRef.close(false);
+    cancelPlacementDialog(this.discardContext, {
+      busy: this.saving, dirty: this.dirty, productName: this.data.row.productName, confirmId: 'chemicalRemoveDiscardConfirm',
+    });
   }
 
   save(): void {
@@ -47,12 +52,8 @@ export class ChemicalRemoveDialogComponent {
       return;
     }
     this.saving = true;
-    this.chemicalsService.removePlacement(this.data.row.placement.id, {reason: this.reason, removedAt: null, note: this.note.trim()})
-      .pipe(finalize(() => (this.saving = false)))
-      .subscribe((res) => {
-        if (res && res.success) {
-          this.dialogRef.close(true);
-        }
-      });
+    closeWhenSaved(this.dialogRef, this.chemicalsService.removePlacement(this.data.row.placement.id, {
+      reason: this.reason, removedAt: null, note: this.note.trim(),
+    }), () => (this.saving = false));
   }
 }

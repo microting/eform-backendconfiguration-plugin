@@ -1,14 +1,7 @@
-:host ::ng-deep .chemical-row--overdue td:first-child { box-shadow: inset 4px 0 0 var(--mat-sys-error, #b3261e); }
-:host ::ng-deep .chemical-row--warning td:first-child { box-shadow: inset 4px 0 0 #e6a100; }
-.chemicals-banner { display: flex; align-items: center; gap: 8px; padding: 10px 16px; margin-bottom: 12px; border-radius: 12px; background: #fff4d6; }
-.chemicals-banner--overdue { background: #fde7e5; }
-.chemicals-chip--active { outline: 2px solid var(--mat-sys-primary, #00796b); }
-.ghs-chip { display: inline-block; margin-right: 4px; padding: 1px 6px; border: 1px solid #b3261e; border-radius: 4px; font-size: 11px; }
-.status-chip { padding: 2px 8px; border-radius: 12px; background: #e3f2e9; }
-.status-chip--bad { background: #fde7e5; }
-.deadline--passed { color: var(--mat-sys-error, #b3261e); font-weight: 600; }
-.deadline--soon { color: #9a6700; font-weight: 600; }
-.chemicals-hint { opacity: 0.7; font-size: 12px; }
+@use '../../chemicals-shared';
+
+:host ::ng-deep .chemical-row--overdue td:first-child { box-shadow: inset 4px 0 0 var(--md-alert); }
+:host ::ng-deep .chemical-row--warning td:first-child { box-shadow: inset 4px 0 0 var(--status-afventer-bg); }
+.chemicals-banner { margin-bottom: var(--spacing-lg); }
 .chemicals-link { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
-.chemicals-empty { padding: 24px 8px; color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6)); }
-::ng-deep .chemicals-drawer-panel .mat-mdc-dialog-surface { border-radius: 20px 0 0 20px; }
+::ng-deep .chemicals-drawer-panel .mat-mdc-dialog-surface { border-radius: var(--md-radius) 0 0 var(--md-radius); }

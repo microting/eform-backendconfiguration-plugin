@@ -983,6 +983,11 @@ export const isIS = {
   'Chemicals: Stock kind 4': 'Fært út',
   'Chemicals: Stock kind 5': 'Fært inn',
   'Chemicals: Stock origin move': 'Flutningur',
-  'Chemicals: Stock origin write-off': 'Afskrift birgða við fjarlægingu',
+  'Chemicals: Stock origin write-off': 'Birgðafrádráttur við fjarlægingu',
   'Chemicals: Move to another location': 'Færa á annan stað',
+  'Chemicals: Amount limits': 'Notið mest þrjá aukastafi og ekki meira en 1.000.000.',
+  'Chemicals: No other location': 'Eignin hefur engan annan virkan stað til að flytja efnið til.',
+  'Chemicals: Removal reason': 'Ástæða fyrir því að fjarlægja efnið',
+  'Chemicals: How much to move': 'Hversu mikið af magninu á að flytja',
+  'Chemicals: Product details': 'Upplýsingar um vöru',
 };

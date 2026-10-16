@@ -1108,4 +1108,9 @@ export const frFR = {
   'Chemicals: Stock origin move': 'Déplacement',
   'Chemicals: Stock origin write-off': 'Sortie de stock au retrait',
   'Chemicals: Move to another location': 'Déplacer vers un autre emplacement',
+  'Chemicals: Amount limits': 'Utilisez au maximum 3 décimales et pas plus de 1 000 000.',
+  'Chemicals: No other location': 'La propriété n\'a aucun autre emplacement actif vers lequel déplacer le produit chimique.',
+  'Chemicals: Removal reason': 'Raison du retrait du produit chimique',
+  'Chemicals: How much to move': 'Quelle quantité déplacer',
+  'Chemicals: Product details': 'Détails du produit',
 };

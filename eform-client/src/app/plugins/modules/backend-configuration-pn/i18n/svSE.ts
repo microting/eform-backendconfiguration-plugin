@@ -1106,7 +1106,12 @@ export const svSE = {
   'Chemicals: Stock kind 3': 'Justerat',
   'Chemicals: Stock kind 4': 'Flyttad ut',
   'Chemicals: Stock kind 5': 'Flyttad in',
-  'Chemicals: Stock origin move': 'Flytt',
+  'Chemicals: Stock origin move': 'Flyttning',
   'Chemicals: Stock origin write-off': 'Lageravdrag vid borttagning',
   'Chemicals: Move to another location': 'Flytta till en annan plats',
+  'Chemicals: Amount limits': 'Använd högst 3 decimaler och inte mer än 1 000 000.',
+  'Chemicals: No other location': 'Fastigheten har ingen annan aktiv plats att flytta kemikalien till.',
+  'Chemicals: Removal reason': 'Anledning till borttagning av kemikalien',
+  'Chemicals: How much to move': 'Hur mycket av kvantiteten som ska flyttas',
+  'Chemicals: Product details': 'Produktinformation',
 };

@@ -985,4 +985,9 @@ export const ltLT = {
   'Chemicals: Stock origin move': 'Perkėlimas',
   'Chemicals: Stock origin write-off': 'Atsargų nurašymas pašalinus',
   'Chemicals: Move to another location': 'Perkelti į kitą vietą',
+  'Chemicals: Amount limits': 'Naudokite ne daugiau kaip 3 skaičius po kablelio ir ne daugiau kaip 1 000 000.',
+  'Chemicals: No other location': 'Objektas neturi jokios kitos aktyvios vietos, į kurią būtų galima perkelti cheminę medžiagą.',
+  'Chemicals: Removal reason': 'Cheminės medžiagos pašalinimo priežastis',
+  'Chemicals: How much to move': 'Kiek perkelti',
+  'Chemicals: Product details': 'Produkto informacija',
 };

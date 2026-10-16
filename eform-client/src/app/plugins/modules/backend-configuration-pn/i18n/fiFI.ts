@@ -1109,4 +1109,9 @@ export const fiFI = {
   'Chemicals: Stock origin move': 'Siirto',
   'Chemicals: Stock origin write-off': 'Varastovähennys poistettaessa',
   'Chemicals: Move to another location': 'Siirrä toiseen paikkaan',
+  'Chemicals: Amount limits': 'Käytä enintään kolmea desimaalia ja enintään 1 000 000.',
+  'Chemicals: No other location': 'Kiinteistöllä ei ole muuta aktiivista sijaintia, johon kemikaalia voisi siirtää.',
+  'Chemicals: Removal reason': 'Kemikaalin poistamisen syy',
+  'Chemicals: How much to move': 'Kuinka suuri osa määrästä on siirrettävä',
+  'Chemicals: Product details': 'Tuotetiedot',
 };

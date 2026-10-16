@@ -985,4 +985,9 @@ export const etET = {
   'Chemicals: Stock origin move': 'Teisaldamine',
   'Chemicals: Stock origin write-off': 'Laost mahakandmine eemaldamisel',
   'Chemicals: Move to another location': 'Teisalda teise asukohta',
+  'Chemicals: Amount limits': 'Kasutage maksimaalselt kolme kümnendkohta ja mitte rohkem kui 1 000 000.',
+  'Chemicals: No other location': 'Kinnistul pole muud aktiivset asukohta, kuhu kemikaali teisaldada.',
+  'Chemicals: Removal reason': 'Kemikaali eemaldamise põhjus',
+  'Chemicals: How much to move': 'Kui suur osa kogusest teisaldada',
+  'Chemicals: Product details': 'Toote üksikasjad',
 };

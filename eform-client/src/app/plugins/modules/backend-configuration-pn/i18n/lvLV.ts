@@ -985,4 +985,9 @@ export const lvLV = {
   'Chemicals: Stock origin move': 'Pārvietošana',
   'Chemicals: Stock origin write-off': 'Krājumu norakstīšana izņemot',
   'Chemicals: Move to another location': 'Pārvietot uz citu atrašanās vietu',
+  'Chemicals: Amount limits': 'Izmantojiet ne vairāk kā 3 ciparus aiz komata un ne vairāk kā 1 000 000.',
+  'Chemicals: No other location': 'Īpašumam nav citas aktīvas vietas, uz kuru pārvietot ķīmisko vielu.',
+  'Chemicals: Removal reason': 'Ķīmiskās vielas noņemšanas iemesls',
+  'Chemicals: How much to move': 'Cik liela daļa no daudzuma ir jāpārvieto',
+  'Chemicals: Product details': 'Produkta informācija',
 };

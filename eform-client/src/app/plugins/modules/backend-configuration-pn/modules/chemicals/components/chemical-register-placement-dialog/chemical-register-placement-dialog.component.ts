@@ -1,8 +1,8 @@
 import {Component, inject} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
-import {finalize} from 'rxjs/operators';
 import {ChemicalLocationModel, ChemicalRegisterEntryModel, ChemicalStockUnit} from '../../../../models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
+import {closeWhenSaved, isValidQuantity} from '../../helpers';
 
 const MIN_QUERY_LENGTH = 2;
 const PAGE_SIZE = 25;
@@ -51,7 +51,8 @@ export class ChemicalRegisterPlacementDialogComponent {
   private searchedBarcode = '';
 
   get canSave(): boolean {
-    const amountValid = !this.data.stockEnabled || this.amount === null || this.amount > 0;
+    // No initial stock, or one within the server's ChemicalQuantity rules (M3).
+    const amountValid = !this.data.stockEnabled || this.amount === null || isValidQuantity(this.amount, false);
     return !!this.selected && this.locationId !== null && amountValid && !this.saving;
   }
 
@@ -93,7 +94,10 @@ export class ChemicalRegisterPlacementDialogComponent {
   }
 
   cancel(): void {
-    this.dialogRef.close(false);
+    // A registration in flight cannot be cancelled; closing now would skip the reload (M2).
+    if (!this.saving) {
+      this.dialogRef.close(false);
+    }
   }
 
   save(): void {
@@ -101,7 +105,7 @@ export class ChemicalRegisterPlacementDialogComponent {
       return;
     }
     this.saving = true;
-    this.chemicalsService.registerPlacement({
+    closeWhenSaved(this.dialogRef, this.chemicalsService.registerPlacement({
       locationId: this.locationId,
       chemicalId: this.selected.chemicalId,
       productId: this.productId,
@@ -109,10 +113,6 @@ export class ChemicalRegisterPlacementDialogComponent {
       initialStock: this.data.stockEnabled && this.amount
         ? {containerSize: null, containerCount: null, amount: this.amount, unit: this.unit, batchLot: null, note: null, at: null}
         : null,
-    }).pipe(finalize(() => (this.saving = false))).subscribe((res) => {
-      if (res && res.success) {
-        this.dialogRef.close(true);
-      }
-    });
+    }), () => (this.saving = false));
   }
 }

@@ -1109,4 +1109,9 @@ export const ptBR = {
   'Chemicals: Stock origin move': 'Transferência',
   'Chemicals: Stock origin write-off': 'Baixa de estoque na remoção',
   'Chemicals: Move to another location': 'Transferir para outro local',
+  'Chemicals: Amount limits': 'Utilize no máximo 3 casas decimais e não mais que 1.000.000.',
+  'Chemicals: No other location': 'A propriedade não possui outro local ativo para onde o produto químico possa ser transferido.',
+  'Chemicals: Removal reason': 'Motivo para a remoção do produto químico',
+  'Chemicals: How much to move': 'Quanto transferir',
+  'Chemicals: Product details': 'Detalhes do produto',
 };

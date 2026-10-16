@@ -1109,4 +1109,9 @@ export const noNO = {
   'Chemicals: Stock origin move': 'Flytting',
   'Chemicals: Stock origin write-off': 'Lagertrekk ved fjerning',
   'Chemicals: Move to another location': 'Flytt til et annet sted',
+  'Chemicals: Amount limits': 'Bruk maksimalt 3 desimaler og ikke mer enn 1 000 000.',
+  'Chemicals: No other location': 'Eiendommen har ingen andre aktive steder å flytte kjemikaliet til.',
+  'Chemicals: Removal reason': 'Årsak til fjerning av kjemikaliet',
+  'Chemicals: How much to move': 'Hvor mye av mengden som skal flyttes',
+  'Chemicals: Product details': 'Produktdetaljer',
 };
