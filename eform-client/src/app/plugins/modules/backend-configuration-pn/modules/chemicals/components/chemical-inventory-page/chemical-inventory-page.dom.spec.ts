@@ -4,20 +4,21 @@ import {FormsModule} from '@angular/forms';
 import {MatDialog} from '@angular/material/dialog';
 import {MatMenuModule} from '@angular/material/menu';
 import {NoopAnimationsModule} from '@angular/platform-browser/animations';
-import {ActivatedRoute, convertToParamMap} from '@angular/router';
+import {ActivatedRoute, Router, convertToParamMap} from '@angular/router';
+import {MtxGridModule} from '@ng-matero/extensions/grid';
 import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {Store} from '@ngrx/store';
 import {TranslateModule} from '@ngx-translate/core';
 import {ToastrService} from 'ngx-toastr';
-import {BehaviorSubject, of} from 'rxjs';
+import {BehaviorSubject, Observable, Subject, of, throwError} from 'rxjs';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {chemicalsInitialState, selectChemicalsInventoryFilters} from '../../../../state';
 import {ChemicalInventoryPageComponent} from './chemical-inventory-page.component';
 
 /**
- * Template-level checks for W1: the ids the e2e specs use, the "Kræver handling" banner and
- * the disabled states. mtx-grid is an unknown element under NO_ERRORS_SCHEMA, so rows are
- * covered by the component spec, not here.
+ * Template-level checks for W1: the ids the e2e specs use, the "Kræver handling" banner,
+ * the loading and failed states, the disabled states and the accessible names. The real
+ * mtx-grid renders the rows.
  */
 describe('ChemicalInventoryPageComponent (template)', () => {
   let fixture: ComponentFixture<ChemicalInventoryPageComponent>;
@@ -26,7 +27,7 @@ describe('ChemicalInventoryPageComponent (template)', () => {
   const find = (selector: string): HTMLElement | null => fixture.nativeElement.querySelector(selector);
   const disabled = (selector: string) => (find(selector) as HTMLButtonElement).disabled;
 
-  function render(locations: Array<{id: number; archived: boolean}>): void {
+  function render(locations: Array<{id: number; archived: boolean}>, answer?: Observable<unknown>): void {
     filters$ = new BehaviorSubject({...chemicalsInitialState.inventoryFilters});
     const inventory = {
       properties: [{propertyId: 3, name: 'Hovedgården', permissions: null, stockEnabled: false, callerWorkerId: null}],
@@ -50,7 +51,7 @@ describe('ChemicalInventoryPageComponent (template)', () => {
     TestBed.configureTestingModule({
       declarations: [ChemicalInventoryPageComponent],
       // The real mtx-select: ngModel needs its value accessor.
-      imports: [FormsModule, MatMenuModule, MtxSelectModule, NoopAnimationsModule, TranslateModule.forRoot()],
+      imports: [FormsModule, MatMenuModule, MtxGridModule, MtxSelectModule, NoopAnimationsModule, TranslateModule.forRoot()],
       providers: [
         {provide: Store, useValue: {
           select: jest.fn().mockImplementation((selector) =>
@@ -58,11 +59,12 @@ describe('ChemicalInventoryPageComponent (template)', () => {
           dispatch: jest.fn(),
         }},
         {provide: BackendConfigurationPnChemicalsService, useValue: {
-          getPropertyInventory: jest.fn().mockReturnValue(of({success: true, model: inventory})),
+          getPropertyInventory: jest.fn().mockReturnValue(answer ?? of({success: true, model: inventory})),
         }},
         {provide: ActivatedRoute, useValue: {snapshot: {queryParamMap: convertToParamMap({})}}},
         {provide: MatDialog, useValue: {open: jest.fn()}},
         {provide: ToastrService, useValue: {error: jest.fn()}},
+        {provide: Router, useValue: {navigate: jest.fn(), currentNavigation: jest.fn().mockReturnValue(null)}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
     });
@@ -112,5 +114,36 @@ describe('ChemicalInventoryPageComponent (template)', () => {
     render([{id: 10, archived: true}]);
 
     expect(disabled('#chemicalsRegisterPlacementBtn')).toBe(true);
+  });
+
+  it('shows neither "no placements" nor a 0 chip while the inventory loads, and keeps chip and export off (I-1)', () => {
+    render([{id: 10, archived: false}], new Subject());
+
+    expect(find('#chemicalInventoryLoading')).not.toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Chemicals: No placements');
+    expect(find('#chemicalsRequiresActionChip')?.textContent).not.toMatch(/\d/);
+    expect(disabled('#chemicalsRequiresActionChip')).toBe(true);
+    expect(disabled('#chemicalsExportBtn')).toBe(true);
+    expect(find('#chemicalsActionBanner')).toBeNull();
+  });
+
+  it('shows an alert instead of an empty table when the inventory cannot be loaded (I-1)', () => {
+    render([{id: 10, archived: false}], throwError(() => new Error('500')));
+
+    expect(find('#chemicalInventoryLoadFailed')?.getAttribute('role')).toBe('alert');
+    expect(find('mtx-grid')).toBeNull();
+    expect(disabled('#chemicalsRequiresActionChip')).toBe(true);
+    expect(disabled('#chemicalsExportBtn')).toBe(true);
+  });
+
+  it('names its controls for assistive technology (m-6, m-7)', () => {
+    render([{id: 10, archived: false}]);
+
+    expect(find('#chemicalsRequiresActionChip')?.getAttribute('aria-pressed')).toBe('false');
+    expect(find('#chemicalsActionBanner')?.getAttribute('role')).toBe('status');
+    expect(find('#action-items-0 button')?.getAttribute('aria-label')).toBe('Actions');
+    const product = find('#chemicalRowProduct-0');
+    expect(product?.tagName).toBe('BUTTON');
+    expect(product?.textContent).toContain('Karate 2,5 WG');
   });
 });

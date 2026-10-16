@@ -133,4 +133,10 @@ export const CHEMICAL_I18N_KEYS: string[] = [
   'Chemicals: Product variant',
   'Chemicals: Placement note',
   'Chemicals: Initial amount',
+  // Task 12 fix round 1 - W1 load states, export refusals, dialog
+  'Chemicals: Loading inventory',
+  'Chemicals: Could not load inventory',
+  'Chemicals: Export not allowed',
+  'Chemicals: Unit',
+  'Chemicals: More register matches',
 ];

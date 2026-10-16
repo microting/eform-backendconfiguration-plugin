@@ -90,7 +90,7 @@ public class PluginMenuSyncServiceTests : TestBaseSetup
             .Include(x => x.Translations).SingleAsync(x => x.E2EId == InventoryE2EId);
         Assert.That(child.ParentId, Is.EqualTo(group.Id));
         Assert.That(child.Type, Is.EqualTo(MenuItemTypeEnum.Link));
-        Assert.That(child.Link, Is.EqualTo("/plugins/backend-configuration-pn/chemicals"));
+        Assert.That(child.Link, Is.EqualTo("/plugins/backend-configuration-pn/chemicals/inventory"));
         Assert.That(child.Position, Is.EqualTo(0));
         Assert.That(child.IsInternalLink, Is.True);
         AssertNames(child.Translations.Select(t => (t.LocaleName, t.Name, t.Language)),
@@ -146,7 +146,7 @@ public class PluginMenuSyncServiceTests : TestBaseSetup
             "Rettigheder", "Permissions", "Berechtigungen", "Дозволи");
     }
 
-    /// <summary>A tenant that already got Kemi with Rettigheder only (E1) gets Indstillinger and Beholdning on its next startup.</summary>
+    /// <summary>A tenant that already got Kemi with Rettigheder only (E1) gets Beholdning and Indstillinger on its next startup.</summary>
     [Test]
     public async Task ExistingTenantWithKemiButWithoutSettings_GetsTheNewChildUnderTheGroup()
     {
@@ -171,7 +171,53 @@ public class PluginMenuSyncServiceTests : TestBaseSetup
         Assert.That(template.EformPluginId, Is.EqualTo(_pluginRowId));
         Assert.That(template.MenuTemplatePermissions, Is.Empty);
         Assert.That(await BaseDbContext.MenuItems.CountAsync(x => x.E2EId == GroupE2EId), Is.EqualTo(1));
+        var inventory = await BaseDbContext.MenuItems.AsNoTracking().SingleAsync(x => x.E2EId == InventoryE2EId);
+        Assert.That(inventory.ParentId, Is.EqualTo(group.Id));
+        Assert.That(inventory.Position, Is.EqualTo(0));
         Assert.That(Run(Menu()), Is.EqualTo(0), "and a second startup adds nothing");
+    }
+
+    /// <summary>
+    /// m-13: the menu editor renumbers a group's children from 0, so on an E2 tenant whose admin saved the
+    /// menu Rettigheder holds 0 and Indstillinger 1. Beholdning (0) must still come first, not tie with
+    /// Rettigheder and sort after it by id.
+    /// </summary>
+    [Test]
+    public async Task ANewFirstChild_StaysFirst_WhenTheAdminRenumberedTheGroup()
+    {
+        await InstallAsTheHostDoesAsync(AsE2Shipped(Menu()));
+        await BaseDbContext.MenuItems.Where(x => x.E2EId == PermissionsE2EId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Position, 0));
+        await BaseDbContext.MenuItems.Where(x => x.E2EId == SettingsE2EId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Position, 1));
+
+        Assert.That(Run(Menu()), Is.EqualTo(1));
+
+        var group = await BaseDbContext.MenuItems.AsNoTracking().SingleAsync(x => x.E2EId == GroupE2EId);
+        var children = await BaseDbContext.MenuItems.AsNoTracking()
+            .Where(x => x.ParentId == group.Id).OrderBy(x => x.Position).ThenBy(x => x.Id)
+            .Select(x => new { x.E2EId, x.Position }).ToListAsync();
+        Assert.That(children.Select(x => x.E2EId), Is.EqualTo(new[] { InventoryE2EId, PermissionsE2EId, SettingsE2EId }));
+        Assert.That(children.Select(x => x.Position), Is.Unique, "no tie left for the host to break by id");
+    }
+
+    /// <summary>
+    /// The sync keys on the template E2EId, never on the link: a tenant whose Beholdning row carries an older
+    /// link (as an unreleased build of this branch wrote it) gets no second Beholdning, and its row is kept.
+    /// </summary>
+    [Test]
+    public async Task AnExistingChildWithAnOlderLink_IsNotAddedAgain()
+    {
+        await InstallAsTheHostDoesAsync(Menu());
+        await BaseDbContext.MenuItems.Where(x => x.E2EId == InventoryE2EId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Link, "/plugins/backend-configuration-pn/chemicals"));
+        await BaseDbContext.MenuTemplates.Where(x => x.E2EId == InventoryE2EId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.DefaultLink, "/plugins/backend-configuration-pn/chemicals"));
+
+        Assert.That(Run(Menu()), Is.EqualTo(0));
+
+        Assert.That(await BaseDbContext.MenuItems.CountAsync(x => x.E2EId == InventoryE2EId), Is.EqualTo(1));
+        Assert.That(await BaseDbContext.MenuTemplates.CountAsync(x => x.E2EId == InventoryE2EId), Is.EqualTo(1));
     }
 
     [Test]

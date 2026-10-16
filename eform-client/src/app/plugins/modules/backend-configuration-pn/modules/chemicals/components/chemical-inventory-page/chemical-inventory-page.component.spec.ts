@@ -1,11 +1,11 @@
 import {DestroyRef, Injector, runInInjectionContext} from '@angular/core';
 import {Overlay} from '@angular/cdk/overlay';
 import {MatDialog} from '@angular/material/dialog';
-import {ActivatedRoute, convertToParamMap} from '@angular/router';
+import {ActivatedRoute, Router, convertToParamMap} from '@angular/router';
 import {Store} from '@ngrx/store';
 import {TranslateService} from '@ngx-translate/core';
 import {ToastrService} from 'ngx-toastr';
-import {BehaviorSubject, Subject, of, throwError} from 'rxjs';
+import {BehaviorSubject, Observable, Subject, of, throwError} from 'rxjs';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {
   chemicalsInitialState,
@@ -24,6 +24,7 @@ describe('ChemicalInventoryPageComponent', () => {
   let store: {select: jest.Mock; dispatch: jest.Mock};
   let chemicals: Record<string, jest.Mock>;
   let toastr: {error: jest.Mock};
+  let router: {navigate: jest.Mock; currentNavigation: jest.Mock};
 
   function inventoryOf(stockEnabled: boolean) {
     return {
@@ -42,7 +43,10 @@ describe('ChemicalInventoryPageComponent', () => {
     };
   }
 
-  function build(queryParams: Record<string, string> = {}, opts: {stockEnabled?: boolean; propertyId?: number | null} = {}): ChemicalInventoryPageComponent {
+  function build(
+    queryParams: Record<string, string> = {},
+    opts: {stockEnabled?: boolean; propertyId?: number | null; inventory?: Observable<unknown>} = {},
+  ): ChemicalInventoryPageComponent {
     (saveAs as unknown as jest.Mock).mockClear();
     property$ = new BehaviorSubject<number | null>(opts.propertyId === undefined ? 3 : opts.propertyId);
     filters$ = new BehaviorSubject({...chemicalsInitialState.inventoryFilters});
@@ -51,12 +55,13 @@ describe('ChemicalInventoryPageComponent', () => {
       dispatch: jest.fn(),
     };
     chemicals = {
-      getPropertyInventory: jest.fn().mockReturnValue(of({success: true, model: inventoryOf(!!opts.stockEnabled)})),
+      getPropertyInventory: jest.fn().mockReturnValue(opts.inventory ?? of({success: true, model: inventoryOf(!!opts.stockEnabled)})),
       exportInventory: jest.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Kemikalier.xlsx'})),
       exportAuthorityList: jest.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Kemikalieliste.pdf'})),
       exportRemovedPlacements: jest.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Fjernede.xlsx'})),
     };
     toastr = {error: jest.fn()};
+    router = {navigate: jest.fn().mockResolvedValue(true), currentNavigation: jest.fn().mockReturnValue(null)};
     const injector = Injector.create({providers: [
       {provide: Store, useValue: store},
       {provide: BackendConfigurationPnChemicalsService, useValue: chemicals},
@@ -65,6 +70,7 @@ describe('ChemicalInventoryPageComponent', () => {
       {provide: Overlay, useValue: {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}}},
       {provide: DestroyRef, useValue: {onDestroy: jest.fn()}},
       {provide: ToastrService, useValue: toastr},
+      {provide: Router, useValue: router},
       {provide: TranslateService, useValue: {instant: (k: string) => k, stream: (k: string) => of(k)}},
     ]});
     const component = runInInjectionContext(injector, () => new ChemicalInventoryPageComponent());
@@ -95,19 +101,120 @@ describe('ChemicalInventoryPageComponent', () => {
     expect(chemicals.getPropertyInventory).toHaveBeenCalledWith(4);
   });
 
-  it('honours the digest deeplink (Plan D C4): property and requires-action filter', () => {
+  it('honours the requires-action filter of the digest deeplink (Plan D C4)', () => {
     build({propertyId: '12', filter: 'requires-action'});
 
-    expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectProperty({payload: 12}));
     expect(store.dispatch).toHaveBeenCalledWith(chemicalsUpdateInventoryFilters({
       payload: {...chemicalsInitialState.inventoryFilters, requiresActionOnly: true},
     }));
   });
 
-  it.each(['abc', '0', '-3', '1.5', ''])('ignores a malformed deeplink property id %p', (value) => {
-    build({propertyId: value});
+  it('leaves ?propertyId= to the container, which checks it against the known properties (m-1)', () => {
+    build({propertyId: '12', filter: 'requires-action'});
 
     expect(store.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({type: chemicalsSelectProperty.type}));
+  });
+
+  describe('loading and failure (I-1)', () => {
+    it('is loading, with no rows and nothing exportable, until the inventory answers', () => {
+      const pending = new Subject<unknown>();
+      const component = build({}, {inventory: pending});
+
+      expect(component.loading).toBe(true);
+      expect(component.loadFailed).toBe(false);
+      component.exportInventory();
+      expect(chemicals.exportInventory).not.toHaveBeenCalled();
+
+      pending.next({success: true, model: inventoryOf(false)});
+
+      expect(component.loading).toBe(false);
+      expect(component.rows).toHaveLength(2);
+    });
+
+    it.each([
+      ['an unsuccessful answer', () => of({success: false, message: 'x'})],
+      ['a failed request', () => throwError(() => new Error('500'))],
+    ])('shows the failed state after %s', (_name, answer) => {
+      const component = build({}, {inventory: answer()});
+
+      expect(component.loading).toBe(false);
+      expect(component.loadFailed).toBe(true);
+      expect(component.inventory).toBeNull();
+      component.exportInventory();
+      expect(chemicals.exportInventory).not.toHaveBeenCalled();
+    });
+
+    it('recovers on the next property', () => {
+      const component = build({}, {inventory: throwError(() => new Error('500'))});
+      chemicals.getPropertyInventory.mockReturnValue(of({success: true, model: inventoryOf(false)}));
+
+      property$.next(4);
+
+      expect(component.loadFailed).toBe(false);
+      expect(component.rows).toHaveLength(2);
+    });
+  });
+
+  describe('late answers (m-3)', () => {
+    it('ignores the answer for a property the user already left', () => {
+      const late = new Subject<unknown>();
+      const component = build({}, {inventory: late});
+      const other = inventoryOf(false);
+      other.placements = other.placements.slice(0, 1);
+      chemicals.getPropertyInventory.mockReturnValue(of({success: true, model: other}));
+      property$.next(4);
+
+      late.next({success: true, model: inventoryOf(false)});
+
+      expect(component.rows.map((r) => r.placement.id)).toEqual([7]);
+    });
+
+    it('ignores an older answer for the same property that lands after a newer reload', () => {
+      const first = new Subject<unknown>();
+      const component = build({}, {inventory: first});
+      const fresh = inventoryOf(false);
+      fresh.placements = fresh.placements.slice(1);
+      chemicals.getPropertyInventory.mockReturnValue(of({success: true, model: fresh}));
+      component.reload();
+
+      first.next({success: true, model: inventoryOf(false)});
+
+      expect(component.rows.map((r) => r.placement.id)).toEqual([8]);
+    });
+  });
+
+  describe('switching the requires-action chip off drops ?filter= (m-2)', () => {
+    const requiresActionOn = () => filters$.next({...chemicalsInitialState.inventoryFilters, requiresActionOnly: true});
+    const dropFilter = {queryParams: {filter: null}, queryParamsHandling: 'merge', replaceUrl: true};
+
+    it('removes the deeplink filter from the URL', () => {
+      const component = build({filter: 'requires-action'});
+      requiresActionOn();
+
+      component.toggleRequiresAction();
+
+      expect(router.navigate).toHaveBeenCalledWith([], dropFilter);
+    });
+
+    it('never cancels a navigation in flight to do so (R-2)', () => {
+      const component = build({filter: 'requires-action'});
+      requiresActionOn();
+      router.currentNavigation.mockReturnValue({id: 2});
+
+      component.toggleRequiresAction();
+
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
+
+    it('leaves the URL alone when switching on, or when there is no filter parameter', () => {
+      build({filter: 'requires-action'}).toggleRequiresAction();
+      expect(router.navigate).not.toHaveBeenCalled();
+
+      const component = build();
+      requiresActionOn();
+      component.toggleRequiresAction();
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
   });
 
   it('shows the Lager column only when stock is enabled for the property (spec §11)', () => {
@@ -178,6 +285,24 @@ describe('ChemicalInventoryPageComponent', () => {
 
     expect(chemicals.getSdsBlob).toHaveBeenCalledWith('sds200');
     expect(toastr.error).toHaveBeenCalledWith('Chemicals: Could not open safety data sheet');
+  });
+
+  it('shows the server\'s reason for a refused export (m-9)', () => {
+    const component = build();
+    chemicals.exportInventory.mockReturnValue(throwError(() => ({status: 400, message: 'Placeringen hører til en anden ejendom.'})));
+
+    component.exportInventory();
+
+    expect(toastr.error).toHaveBeenCalledWith('Placeringen hører til en anden ejendom.');
+  });
+
+  it('says the user may not export when the server answers 403 (m-9)', () => {
+    const component = build();
+    chemicals.exportAuthorityList.mockReturnValue(throwError(() => ({status: 403, message: null})));
+
+    component.exportAuthorityList();
+
+    expect(toastr.error).toHaveBeenCalledWith('Chemicals: Export not allowed');
   });
 
   it('toggles the requires-action chip through the store', () => {

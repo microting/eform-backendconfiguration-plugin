@@ -1,6 +1,6 @@
 import {Injector, runInInjectionContext} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
-import {of} from 'rxjs';
+import {Subject, of} from 'rxjs';
 import {ChemicalStockUnit} from '../../../../models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {ChemicalRegisterPlacementDialogComponent} from './chemical-register-placement-dialog.component';
@@ -112,5 +112,91 @@ describe('ChemicalRegisterPlacementDialogComponent', () => {
     component.cancel();
 
     expect(dialogRef.close).toHaveBeenCalledWith(false);
+  });
+
+  describe('a new search (I-2)', () => {
+    const page = (entries: Array<{chemicalId: number; name: string}>, total = entries.length) =>
+      ({success: true, model: {total, entries: entries.map((e) => ({...e, registrationNo: '', products: []}))}});
+
+    it('drops the earlier pick, so Save cannot register a chemical the user no longer sees', () => {
+      const component = build(false);
+      component.query = 'karate';
+      component.search();
+      component.select(component.results[0]);
+      component.locationId = 10;
+      expect(component.canSave).toBe(true);
+
+      chemicals.searchRegister.mockReturnValue(of(page([{chemicalId: 300, name: 'Virkon S'}])));
+      component.query = 'virkon';
+      component.search();
+
+      expect(component.selected).toBeNull();
+      expect(component.productId).toBeNull();
+      expect(component.canSave).toBe(false);
+    });
+
+    it('ignores an older answer that arrives after a newer one', () => {
+      const component = build(false);
+      const slow = new Subject<unknown>();
+      chemicals.searchRegister.mockReturnValueOnce(slow).mockReturnValueOnce(of(page([{chemicalId: 300, name: 'Virkon S'}])));
+      component.query = 'karate';
+      component.search();
+      component.query = 'virkon';
+      component.search();
+
+      slow.next(page([{chemicalId: 200, name: 'Karate 2,5 WG'}]));
+
+      expect(component.results.map((r) => r.chemicalId)).toEqual([300]);
+    });
+
+    it('tells the user when the register has more matches than it shows (m-4)', () => {
+      const component = build(false);
+      chemicals.searchRegister.mockReturnValue(of(page([{chemicalId: 300, name: 'Virkon S'}], 40)));
+      component.query = 'vir';
+
+      component.search();
+
+      expect(component.total).toBe(40);
+      expect(component.hasMore).toBe(true);
+    });
+  });
+
+  it('needs at least two characters before it asks the register (m-4)', () => {
+    const component = build(false);
+    component.query = ' k ';
+
+    component.search();
+
+    expect(chemicals.searchRegister).not.toHaveBeenCalled();
+  });
+
+  it.each([-5, 0])('cannot save a received amount of %p (m-4)', (amount) => {
+    const component = build(true);
+    component.query = 'karate';
+    component.search();
+    component.select(component.results[0]);
+    component.locationId = 10;
+
+    component.amount = amount;
+
+    expect(component.canSave).toBe(false);
+    component.amount = null;
+    expect(component.canSave).toBe(true);
+  });
+
+  it('picks the package whose barcode was searched (m-5)', () => {
+    const component = build(false);
+    chemicals.searchRegister.mockReturnValue(of({success: true, model: {total: 1, entries: [{
+      chemicalId: 200, name: 'Karate 2,5 WG', registrationNo: '1-212', products: [
+        {productId: 2000, name: 'Karate 1 L', barcode: '5701234000017'},
+        {productId: 2001, name: 'Karate 5 L', barcode: '5701234000024'},
+      ],
+    }]}}));
+    component.query = ' 05701234000024 ';
+    component.search();
+
+    component.select(component.results[0]);
+
+    expect(component.productId).toBe(2001);
   });
 });

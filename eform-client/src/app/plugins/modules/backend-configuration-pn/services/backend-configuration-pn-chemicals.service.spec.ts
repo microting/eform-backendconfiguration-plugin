@@ -1,7 +1,7 @@
 import {HttpBackend, HttpErrorResponse, HttpHeaders, HttpRequest, HttpResponse} from '@angular/common/http';
 import {Injector, runInInjectionContext} from '@angular/core';
 import {Store} from '@ngrx/store';
-import {Observable, of, throwError} from 'rxjs';
+import {Observable, lastValueFrom, of, throwError} from 'rxjs';
 import {ApiBaseService} from 'src/app/common/services';
 import {
   BackendConfigurationPnChemicalsMethods,
@@ -13,6 +13,7 @@ import {
   CHEMICAL_STATUS_EXPIRED,
   ChemicalAlertThreshold,
   ChemicalDeadlineKind,
+  ChemicalDownloadError,
   ChemicalRemovalReason,
   ChemicalStockEntryKind,
   ChemicalStockEntryOrigin,
@@ -148,13 +149,29 @@ describe('BackendConfigurationPnChemicalsService', () => {
 
       service.exportAuthorityList(3).subscribe({
         next: (file) => files.push(file),
-        error: (err: HttpErrorResponse) => {
+        error: (err: ChemicalDownloadError) => {
           expect(files).toEqual([]);
-          expect(err.status).toBe(403);
+          expect(err).toEqual({status: 403, message: null});
           expect(backend.handle).toHaveBeenCalledTimes(1);
           done();
         },
       });
+    });
+
+    it.each([
+      ['plain text', 'Placeringen hører til en anden ejendom.'],
+      ['a JSON string', '"Placeringen hører til en anden ejendom."'],
+    ])('reads the reason of a refused export (400) from the blob body as %s (m-9)', async (_name, body) => {
+      backend.handle.mockReturnValue(throwError(() => new HttpErrorResponse({status: 400, error: new Blob([body])})));
+
+      const refused: ChemicalDownloadError = {status: 400, message: 'Placeringen hører til en anden ejendom.'};
+      await expect(lastValueFrom(service.exportInventory(3, [7]))).rejects.toEqual(refused);
+    });
+
+    it('keeps the generic text of an unexpected server error (500) to itself', async () => {
+      backend.handle.mockReturnValue(throwError(() => new HttpErrorResponse({status: 500, error: new Blob(['An unexpected error occurred'])})));
+
+      await expect(lastValueFrom(service.exportRemovedPlacements(3))).rejects.toEqual({status: 500, message: null});
     });
   });
 

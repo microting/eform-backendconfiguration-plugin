@@ -104,6 +104,18 @@ describe('chemical inventory helper', () => {
     expect(chemicalStatusLabelKey(1)).toBeNull();
   });
 
+  it('gives the template ready-made labels instead of BMD and enum integers (m-8)', () => {
+    const karate = rows.find((r) => r.placement.id === 2);
+    const virkon = rows.find((r) => r.placement.id === 1);
+
+    expect([karate.statusBad, rows.find((r) => r.placement.id === 3).statusBad, virkon.statusBad]).toEqual([true, true, false]);
+    expect([karate.stockUnitLabel, virkon.stockUnitLabel]).toEqual(['kg', '']);
+    expect(karate.deadlineLabelKey).toBe('Chemicals: Use deadline');
+    expect(virkon.deadlineLabelKey).toBeNull();
+    expect(buildInventoryRows({...inventory, registerEntries: [entry(100, 'Virkon S', {salesDeadline: '2027-01-01T00:00:00'})]}, TODAY)
+      .find((r) => r.placement.id === 1).deadlineLabelKey).toBe('Chemicals: Sales deadline');
+  });
+
   it('knows whether stock is enabled and which SDS a row opens', () => {
     expect(isStockEnabled(inventory, 1)).toBe(true);
     expect(isStockEnabled(null, 1)).toBe(false);

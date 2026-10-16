@@ -5,6 +5,8 @@ jest.mock('./components', () => ({
   ChemicalSettingsPageComponent: class MockChemicalSettingsPageComponent {},
 }));
 
+import {TestBed} from '@angular/core/testing';
+import {Router, provideRouter} from '@angular/router';
 import {routes} from './chemicals.routing';
 import {CHEMICAL_SCREENS} from './chemicals-screens';
 import {chemicalUnsavedChangesGuard} from './chemicals-unsaved-changes';
@@ -34,23 +36,34 @@ describe('ChemicalsRouting', () => {
     expect(children.every((r) => (r.canDeactivate ?? []).includes(chemicalUnsavedChangesGuard))).toBe(true);
   });
 
-  it('opens W1 Beholdning at the Kemi root itself, with no redirect that could loop (M-3)', () => {
-    const children = routes[0].children ?? [];
-    const root = children.filter((r) => r.path === '');
+  it('sends the bare Kemi root to W1 Beholdning with one relative redirect that cannot loop (M-3, I-4)', () => {
+    const redirects = (routes[0].children ?? []).filter((r) => r.redirectTo !== undefined);
 
-    expect(children.some((r) => r.redirectTo !== undefined)).toBe(false);
-    expect(root).toHaveLength(1);
-    expect(root[0].component?.name).toBe('MockChemicalInventoryPageComponent');
-    // Without 'full' the empty path would match the start of /permissions and swallow the other screens.
-    expect(root[0].pathMatch).toBe('full');
-    expect(CHEMICAL_SCREENS[0].path).toBe('');
+    expect(redirects).toEqual([{path: '', pathMatch: 'full', redirectTo: 'inventory'}]);
+    expect(CHEMICAL_SCREENS[0].path).toBe('inventory');
+    // Every screen has its own non-empty path, so a menu link is active on its own page only.
+    expect(CHEMICAL_SCREENS.every((s) => s.path !== '')).toBe(true);
   });
 
-  it('lets every other screen keep its own non-empty path', () => {
-    const others = (routes[0].children ?? []).filter((r) => r.path !== '');
+  describe('with the real router', () => {
+    let router: Router;
 
-    expect(others.map((r) => r.path)).toEqual(['permissions', 'settings']);
-    expect(others.every((r) => r.pathMatch === undefined)).toBe(true);
+    beforeEach(() => {
+      TestBed.configureTestingModule({providers: [provideRouter([{path: 'chemicals', children: routes}])]});
+      router = TestBed.inject(Router);
+    });
+
+    it('lands the Plan D digest link on W1 and keeps its query parameters', async () => {
+      await router.navigateByUrl('/chemicals?propertyId=3&filter=requires-action');
+
+      expect(router.url).toBe('/chemicals/inventory?propertyId=3&filter=requires-action');
+    });
+
+    it('leaves a screen path alone', async () => {
+      await router.navigateByUrl('/chemicals/permissions?propertyId=3');
+
+      expect(router.url).toBe('/chemicals/permissions?propertyId=3');
+    });
   });
 
   it('gives every screen a component', () => {
@@ -69,9 +82,8 @@ describe('ChemicalsRouting', () => {
     // EformBackendConfigurationPlugin.ChemicalsMenuChild builds
     // `backend-configuration-pn-chemicals-{path}`; jest cannot read the C#, so the
     // literals are pinned on both sides. Extend this list with each screen's menu child.
-    // W1 lives at the Kemi root (path ''), so its id is not built from the path (M-3).
     expect(CHEMICAL_SCREENS.map((s) => [s.path, s.menuE2EId])).toEqual([
-      ['', 'backend-configuration-pn-chemicals-inventory'],
+      ['inventory', 'backend-configuration-pn-chemicals-inventory'],
       ['permissions', 'backend-configuration-pn-chemicals-permissions'],
       ['settings', 'backend-configuration-pn-chemicals-settings'],
     ]);

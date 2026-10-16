@@ -104,7 +104,7 @@ describe('ChemicalsContainerComponent', () => {
     expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectProperty({payload: 8}));
   });
 
-  it.each(['99', 'abc', ''])('ignores an unusable ?propertyId=%s', (value) => {
+  it.each(['99', 'abc', '', '0', '-3', '1.5'])('ignores an unusable ?propertyId=%s', (value) => {
     selectedProperty$.next(8);
     queryParams = {propertyId: value};
 

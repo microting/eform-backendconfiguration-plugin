@@ -21,8 +21,9 @@ public class ChemicalsMenuTests
     private const string SettingsE2EId = "backend-configuration-pn-chemicals-settings";
     private const string SettingsLink = "/plugins/backend-configuration-pn/chemicals/settings";
     private const string PermissionsLink = "/plugins/backend-configuration-pn/chemicals/permissions";
-    // W1 is the Kemi landing screen: the module root itself, not a /chemicals/{path} child (M-3).
-    private const string InventoryLink = "/plugins/backend-configuration-pn/chemicals";
+    // W1 has its own path (Task 12 ruling I-4), so the host's prefix-matching routerLinkActive marks
+    // Beholdning only on W1; the Angular routing redirects the bare Kemi root here.
+    private const string InventoryLink = "/plugins/backend-configuration-pn/chemicals/inventory";
 
     private static List<PluginMenuItemModel> Menu() =>
         new EformBackendConfigurationPlugin().GetNavigationMenu(null!);
@@ -114,7 +115,7 @@ public class ChemicalsMenuTests
         var child = InventoryChild();
 
         Assert.That(child.Type, Is.EqualTo(MenuItemTypeEnum.Link));
-        Assert.That(child.Link, Is.EqualTo(InventoryLink), "no trailing slash: the Angular route is the empty path");
+        Assert.That(child.Link, Is.EqualTo(InventoryLink), "not the bare Kemi root, which every Kemi page starts with");
         Assert.That(child.Position, Is.EqualTo(0), "mockup order: Beholdning 0, Lokationer 1, Rettigheder 2, Indstillinger 3, Historik 4");
         Assert.That(child.MenuTemplate, Is.Not.Null);
         Assert.That(child.MenuTemplate.E2EId, Is.EqualTo(InventoryE2EId));

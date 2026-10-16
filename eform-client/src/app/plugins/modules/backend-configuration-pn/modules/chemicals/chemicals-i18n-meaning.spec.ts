@@ -92,4 +92,18 @@ describe('Kemi i18n meaning', () => {
   it.each(['esES', 'ptBR', 'ptPT'])('%s: the weekly-repeat hint says the product placement, not a location', (locale) => {
     expect(text(locale, 'Chemicals: Threshold passed hint')).not.toMatch(/ubicación|localização/i);
   });
+
+  // A placement is a chemical registered at a location (W1), never a storage place, store room or warehouse
+  // (Task 12 review I-3: "Chemikalienlager registrieren" read as "register a chemical warehouse").
+  const STORAGE_PLACE = new RegExp([
+    'lager', 'stockage', 'przechowywan', 'składowan', 'förvaring', 'opslag', 'зберіган', 'tároló', 'sklad',
+    'almacenamiento', 'stoccaggio', 'armazenamento', 'lagring', 'säilytys', 'varasto', 'hoiukoh', 'ladustami',
+    'uzglabāšan', 'saugojim', 'sandėliav', 'depozitar', 'съхранение', 'αποθήκευσ', 'geymslu',
+  ].join('|'), 'i');
+  const PLACEMENT_KEYS = ['Chemicals: Register placement', 'Chemicals: Action banner', 'Chemicals: Export removed placements'];
+
+  it.each(NON_ENGLISH)('%s: W1 placement texts name registered chemicals, not storage places', (locale) => {
+    const storage = PLACEMENT_KEYS.filter((key) => STORAGE_PLACE.test(text(locale, key)));
+    expect(storage).toEqual([]);
+  });
 });
