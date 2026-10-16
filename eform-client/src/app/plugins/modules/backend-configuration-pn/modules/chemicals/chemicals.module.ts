@@ -1,3 +1,4 @@
+import {DragDropModule} from '@angular/cdk/drag-drop';
 import {CommonModule} from '@angular/common';
 import {NgModule} from '@angular/core';
 import {FormsModule} from '@angular/forms';
@@ -16,9 +17,12 @@ import {RouterModule} from '@angular/router';
 import {TranslateModule} from '@ngx-translate/core';
 import {MtxGridModule} from '@ng-matero/extensions/grid';
 import {MtxSelectModule} from '@ng-matero/extensions/select';
+import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
 import {ChemicalsRouting} from './chemicals.routing';
 import {
   ChemicalInventoryPageComponent,
+  ChemicalLocationDialogComponent,
+  ChemicalLocationsPageComponent,
   ChemicalMoveDialogComponent,
   ChemicalNoteDialogComponent,
   ChemicalPermissionsPageComponent,
@@ -44,6 +48,8 @@ import {
     ChemicalRemoveDialogComponent,
     ChemicalNoteDialogComponent,
     ChemicalStockDialogComponent,
+    ChemicalLocationsPageComponent,
+    ChemicalLocationDialogComponent,
     ChemicalPermissionsPageComponent,
     ChemicalSettingsPageComponent,
   ],
@@ -53,6 +59,8 @@ import {
     RouterModule,
     ChemicalsRouting,
     FormsModule,
+    DragDropModule,
+    EformSharedModule,
     MatCardModule,
     MatCheckboxModule,
     MatChipsModule,

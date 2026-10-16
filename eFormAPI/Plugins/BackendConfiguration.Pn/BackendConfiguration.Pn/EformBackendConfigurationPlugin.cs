@@ -2204,6 +2204,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                     // root (the Plan D digest link) to it.
                     ChemicalsMenuChild("inventory", 0,
                         MenuTranslations("Inventory", "Bestand", "Beholdning", "Запаси")),
+                    ChemicalsMenuChild("locations", 1,
+                        MenuTranslations("Locations", "Standorte", "Lokationer", "Локації")),
                     ChemicalsMenuChild("permissions", 2,
                         MenuTranslations("Permissions", "Berechtigungen", "Rettigheder", "Дозволи")),
                     ChemicalsMenuChild("settings", 3,

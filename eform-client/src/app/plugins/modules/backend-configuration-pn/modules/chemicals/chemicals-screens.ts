@@ -1,5 +1,10 @@
 import {Type} from '@angular/core';
-import {ChemicalInventoryPageComponent, ChemicalPermissionsPageComponent, ChemicalSettingsPageComponent} from './components';
+import {
+  ChemicalInventoryPageComponent,
+  ChemicalLocationsPageComponent,
+  ChemicalPermissionsPageComponent,
+  ChemicalSettingsPageComponent,
+} from './components';
 
 export interface ChemicalScreen {
   /**
@@ -27,6 +32,12 @@ export const CHEMICAL_SCREENS: ChemicalScreen[] = [
     titleKey: 'Chemicals: Inventory title',
     menuE2EId: 'backend-configuration-pn-chemicals-inventory',
     component: ChemicalInventoryPageComponent,
+  },
+  {
+    path: 'locations',
+    titleKey: 'Chemicals: Locations title',
+    menuE2EId: 'backend-configuration-pn-chemicals-locations',
+    component: ChemicalLocationsPageComponent,
   },
   {
     path: 'permissions',

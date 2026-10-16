@@ -8,3 +8,5 @@ export * from './chemical-move-dialog/chemical-move-dialog.component';
 export * from './chemical-remove-dialog/chemical-remove-dialog.component';
 export * from './chemical-note-dialog/chemical-note-dialog.component';
 export * from './chemical-stock-dialog/chemical-stock-dialog.component';
+export * from './chemical-locations-page/chemical-locations-page.component';
+export * from './chemical-location-dialog/chemical-location-dialog.component';

@@ -34,7 +34,7 @@ export function closeWhenSaved(
   });
 }
 
-/** The services a placement dialog's discard confirm needs. */
+/** The services a Kemi dialog's discard confirm needs. */
 export interface ChemicalDiscardContext {
   dialogRef: ChemicalClosable;
   dialog: MatDialog;
@@ -48,24 +48,37 @@ export function discardContext(dialogRef: ChemicalClosable): ChemicalDiscardCont
 }
 
 /**
- * Cancel of a placement dialog (M5): nothing while a save is in flight (it cannot be cancelled),
- * at once when nothing was entered, otherwise only after the user confirms the discard.
+ * Cancel of a Kemi dialog with typed input (M5): nothing while a save is in flight (it cannot be
+ * cancelled), at once when nothing was entered, otherwise only after the user confirms the discard.
+ * The confirm names what is edited (`field`: a translation key and its value). The dialog closes
+ * with `result` (true when something was already saved, so the page reloads).
  */
-export function cancelPlacementDialog(
+export function cancelChemicalDialog(
   ctx: ChemicalDiscardContext,
-  state: {busy: boolean; dirty: boolean; productName: string; confirmId: string},
+  state: {busy: boolean; dirty: boolean; field: {headerKey: string; text: string}; confirmId: string; result?: boolean},
 ): void {
   const t = (key: string) => ctx.translate.instant(key);
   confirmDiscardWhenDirty(state.busy, state.dirty, () => confirmDiscard(ctx.dialog, ctx.overlay, {
     headerText: t('Chemicals: Discard unsaved changes?'),
-    fields: [{header: t('Chemicals: Product'), text: state.productName}],
+    fields: [{header: t(state.field.headerKey), text: state.field.text}],
     discardText: t('Chemicals: Discard changes'),
     keepText: t('Chemicals: Keep editing'),
     confirmId: state.confirmId,
   })).subscribe((discard) => {
     if (discard) {
-      ctx.dialogRef.close(false);
+      ctx.dialogRef.close(state.result ?? false);
     }
+  });
+}
+
+/** Cancel of a W2 placement dialog: the confirm names the product. */
+export function cancelPlacementDialog(
+  ctx: ChemicalDiscardContext,
+  state: {busy: boolean; dirty: boolean; productName: string; confirmId: string},
+): void {
+  cancelChemicalDialog(ctx, {
+    busy: state.busy, dirty: state.dirty, confirmId: state.confirmId,
+    field: {headerKey: 'Chemicals: Product', text: state.productName},
   });
 }
 
