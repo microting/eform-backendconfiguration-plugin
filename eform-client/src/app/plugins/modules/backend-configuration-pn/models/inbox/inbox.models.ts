@@ -1,3 +1,5 @@
+import {ServerDate} from '../../modules/tail-bite/shared/tail-bite-dates';
+
 /** Mirrors Microting.EformBackendConfigurationBase InboxDocumentStatus. */
 export enum InboxDocumentStatus {
   Preparing = 0,
@@ -13,6 +15,10 @@ export enum InboxDocumentStatus {
 export enum InboxSuggestionKind {
   Property = 0,
   Tag = 1,
+  /** 0..1 per document; targetId = folder id, targetName = path ("Drift › Fakturaer"). */
+  Folder = 2,
+  /** 0..1 per document; targetDate set, targetId = 0. */
+  DocumentDate = 3,
 }
 
 /**
@@ -34,6 +40,8 @@ export interface InboxSuggestionModel {
   evidence: string | null;
   page: number | null;
   reason: string | null;
+  /** DocumentDate suggestions only; a Date after the host's DateInterceptor, see FilesModel.documentDate / serverDay. */
+  targetDate: ServerDate | null;
 }
 
 export interface InboxListItemModel {

@@ -4,4 +4,6 @@ export class FilesCreateModel {
   src?: Uint8Array;
   tagIds: number[];
   propertyIds: number[];
+  /** Sent as FilesForCreate[i][FolderId]; the upload page always sets it. */
+  folderId?: number;
 }

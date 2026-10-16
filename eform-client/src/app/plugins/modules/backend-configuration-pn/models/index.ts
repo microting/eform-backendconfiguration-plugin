@@ -12,6 +12,7 @@ export * from './device-users';
 export * from './cases';
 export * from './pools';
 export * from './files';
+export * from './archive-folders/archive-folder.models';
 export * from './task-tracker';
 export * from './task-wizard';
 export * from './statistics';

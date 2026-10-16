@@ -3,7 +3,9 @@ import {
   BackendConfigurationPnInboxMethods,
   BackendConfigurationPnInboxService,
 } from './backend-configuration-pn-inbox.service';
-import {InboxDocumentStatus, InboxSenderRuleKind} from '../models';
+import {InboxDocumentStatus, InboxSenderRuleKind, InboxSuggestionKind, InboxSuggestionModel} from '../models';
+import {serverDay} from '../modules/tail-bite/shared/tail-bite-dates';
+import {passThroughAccountDisabledHandler} from './archive-account-disabled.handler.stub';
 
 /**
  * Pins the wire contract of the Indbakke service against InboxController: URL, verb and body of each
@@ -12,6 +14,7 @@ import {InboxDocumentStatus, InboxSenderRuleKind} from '../models';
 describe('BackendConfigurationPnInboxService', () => {
   let service: BackendConfigurationPnInboxService;
   let apiBaseServiceSpy: any;
+  let handle: jest.Mock;
 
   beforeEach(() => {
     apiBaseServiceSpy = {
@@ -26,7 +29,9 @@ describe('BackendConfigurationPnInboxService', () => {
     apiBaseServiceSpy.post.mockReturnValue(of({success: true}));
     apiBaseServiceSpy.put.mockReturnValue(of({success: true}));
     apiBaseServiceSpy.getBlobData.mockReturnValue(of(new Blob([])));
-    service = new BackendConfigurationPnInboxService(apiBaseServiceSpy);
+    const stub = passThroughAccountDisabledHandler();
+    handle = stub.handle;
+    service = new BackendConfigurationPnInboxService(apiBaseServiceSpy, stub.handler);
   });
 
   describe('list', () => {
@@ -45,6 +50,20 @@ describe('BackendConfigurationPnInboxService', () => {
 
       service.list(null, '').subscribe();
       expect(apiBaseServiceSpy.get.mock.lastCall[1]).toEqual({status: null, search: null});
+    });
+
+    it('hands a DocumentDate suggestion\'s targetDate on as the DateInterceptor\'s Date; its UTC day is the date', () => {
+      // "2026-10-03T00:00:00" from the server, read by the host's DateInterceptor as midnight UTC.
+      const suggestion: InboxSuggestionModel = {
+        id: 1, kind: InboxSuggestionKind.DocumentDate, targetId: 0, targetName: '', source: 0, confidence: 0.9,
+        evidence: null, page: 1, reason: null, targetDate: new Date(Date.UTC(2026, 9, 3)),
+      };
+      apiBaseServiceSpy.get.mockReturnValue(of({success: true, model: [{id: 5, suggestions: [suggestion]}]}));
+
+      let received: InboxSuggestionModel | undefined;
+      service.list(null, '').subscribe(result => received = result.model[0].suggestions[0]);
+
+      expect(serverDay(received.targetDate)).toBe('2026-10-03');
     });
   });
 
@@ -93,5 +112,17 @@ describe('BackendConfigurationPnInboxService', () => {
   it('rotateAddress POSTs to settings/rotate-address', () => {
     service.rotateAddress().subscribe();
     expect(apiBaseServiceSpy.post).toHaveBeenCalledWith('api/backend-configuration-pn/inbox/settings/rotate-address', {});
+  });
+
+  it('routes every call through the account-disabled handler', () => {
+    service.list(null, '').subscribe();
+    service.getPdf(7).subscribe();
+    service.file(7, {name: 'Invoice 42', propertyIds: [3], tagIds: []}).subscribe();
+    service.undo(7).subscribe();
+    service.reject(7).subscribe();
+    service.getSettings().subscribe();
+    service.updateSettings({senderRules: []}).subscribe();
+    service.rotateAddress().subscribe();
+    expect(handle).toHaveBeenCalledTimes(8);
   });
 });
