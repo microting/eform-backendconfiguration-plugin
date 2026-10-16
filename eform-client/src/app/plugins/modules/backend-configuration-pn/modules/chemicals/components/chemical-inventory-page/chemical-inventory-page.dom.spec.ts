@@ -5,6 +5,7 @@ import {MatDialog} from '@angular/material/dialog';
 import {MatMenuModule} from '@angular/material/menu';
 import {NoopAnimationsModule} from '@angular/platform-browser/animations';
 import {ActivatedRoute, convertToParamMap} from '@angular/router';
+import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {Store} from '@ngrx/store';
 import {TranslateModule} from '@ngx-translate/core';
 import {ToastrService} from 'ngx-toastr';
@@ -48,7 +49,8 @@ describe('ChemicalInventoryPageComponent (template)', () => {
     };
     TestBed.configureTestingModule({
       declarations: [ChemicalInventoryPageComponent],
-      imports: [FormsModule, MatMenuModule, NoopAnimationsModule, TranslateModule.forRoot()],
+      // The real mtx-select: ngModel needs its value accessor.
+      imports: [FormsModule, MatMenuModule, MtxSelectModule, NoopAnimationsModule, TranslateModule.forRoot()],
       providers: [
         {provide: Store, useValue: {
           select: jest.fn().mockImplementation((selector) =>
