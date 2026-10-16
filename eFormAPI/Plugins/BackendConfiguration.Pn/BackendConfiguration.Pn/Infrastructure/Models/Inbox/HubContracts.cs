@@ -28,8 +28,15 @@ public record CatalogProperty(int Id, string Name, string? Address);
 
 public record CatalogTag(int Id, string Name);
 
-/// <summary><c>CanCreateTags</c>: this tenant answers <c>POST …/inbox/hub/tags</c>. Older tenants leave it out.</summary>
-public record CatalogResponse(List<CatalogProperty> Properties, List<CatalogTag> Tags, bool CanCreateTags);
+/// <summary>A live archive folder; <c>ParentId</c> null for a top folder (at most 2 levels).</summary>
+public record CatalogFolder(int Id, string Name, int? ParentId);
+
+/// <summary>
+/// <c>CanCreateTags</c>: this tenant answers <c>POST …/inbox/hub/tags</c>. Older tenants leave it out.
+/// <c>Folders</c>: the archive folders the hub may suggest; older tenants leave it out (no folder suggestions).
+/// </summary>
+public record CatalogResponse(List<CatalogProperty> Properties, List<CatalogTag> Tags, bool CanCreateTags,
+    List<CatalogFolder> Folders);
 
 /// <summary>The tag name as staff typed it; the tenant trims it and removes a leading '#'.</summary>
 public record CreateTagRequest(string? Name);
@@ -37,9 +44,13 @@ public record CreateTagRequest(string? Name);
 /// <summary><c>Created</c> is false when an existing tag was returned or a removed one restored.</summary>
 public record CreateTagResponse(int Id, string Name, bool Created);
 
-/// <summary><c>Kind</c> is "property" or "tag"; <c>Source</c> is "textMatch", "ai" or "reviewer".</summary>
+/// <summary>
+/// <c>Kind</c> is "property", "tag", "folder" or "documentDate" (case-insensitive; anything else is dropped);
+/// <c>Source</c> is "textMatch", "ai" or "reviewer". <c>TargetId</c> is 0 and <c>TargetDate</c> ("yyyy-MM-dd")
+/// is set for "documentDate"; <c>TargetDate</c> is null for the other kinds and missing from older hubs.
+/// </summary>
 public record DeliverSuggestion(string Kind, int TargetId, string Source, double Confidence, string? Evidence,
-    int? Page, string? Reason);
+    int? Page, string? Reason, DateTime? TargetDate = null);
 
 public record DeliverMetadata(string HubDocumentId, int? PageCount, bool ReviewedByMicroting,
     List<DeliverSuggestion> Suggestions);
