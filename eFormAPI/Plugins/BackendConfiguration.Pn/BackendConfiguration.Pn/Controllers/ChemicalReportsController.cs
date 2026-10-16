@@ -24,21 +24,19 @@ using System;
 using System.Threading.Tasks;
 using Infrastructure.Models.Chemicals;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.EformBackendConfigurationBase.Infrastructure.Const;
-using Sentry;
-using Services.BackendConfigurationComplianceExportService;
 using Services.BackendConfigurationLocalizationService;
+using Services.ChemicalInventoryService;
 using Services.ChemicalReporting;
 
 /// <summary>
 /// W6 history and the W1/W6 downloads (flutter-chemistry spec section 11). Same prefix and
-/// policy as ChemicalsController; callers are eForm web admins (ChemicalCaller.Web).
-/// Downloads answer 400 with a readable text on failure and carry a UTF-8 safe
-/// Content-Disposition (ComplianceExportFileNaming, as the compliance export does).
+/// policy as ChemicalsController; callers are eForm web admins (ChemicalCaller.Web). Failures
+/// follow the sibling controllers: the history answers 200 with Success=false and a localized
+/// message (the host shows it), downloads answer through ChemicalsController.FileResultAsync.
 /// </summary>
 [Authorize(Policy = BackendConfigurationClaims.AccessBackendConfigurationPlugin)]
 // TODO(chemistry-GA): remove this gate (and its tests in ChemicalReportsControllerTests) with the one on ChemicalsController.
@@ -47,25 +45,25 @@ using Services.ChemicalReporting;
 public class ChemicalReportsController(
     IChemicalExportService exports,
     IChemicalHistoryService history,
+    IChemicalPermissionService permissions,
     IUserService userService,
     IBackendConfigurationLocalizationService localizationService) : Controller
 {
+    private ChemicalCaller Caller => ChemicalCaller.Web(userService.UserId);
+
     [HttpPost("properties/{propertyId:int}/history")]
     public async Task<OperationDataResult<ChemicalHistoryPageModel>> GetHistory(
         int propertyId, [FromBody] ChemicalHistoryRequest request)
     {
         try
         {
+            var query = ChemicalsController.Required(request).ToQuery();
+            await permissions.RequireAsync(Caller, propertyId, ChemicalPermission.View).ConfigureAwait(false);
             return new OperationDataResult<ChemicalHistoryPageModel>(true,
-                await history.GetPageAsync(propertyId, ToQuery(request)).ConfigureAwait(false));
+                await history.GetPageAsync(propertyId, query).ConfigureAwait(false));
         }
         catch (Exception e)
         {
-            if (e is ArgumentException)
-            {
-                Response.StatusCode = StatusCodes.Status400BadRequest;
-            }
-
             return ChemicalsController.FailureResult<ChemicalHistoryPageModel>(
                 e, localizationService, ChemicalLocalizationKeys.ErrorWhileReadingChemicalHistory);
         }
@@ -73,40 +71,23 @@ public class ChemicalReportsController(
 
     [HttpPost("properties/{propertyId:int}/history/export")]
     public Task<IActionResult> ExportHistory(int propertyId, [FromBody] ChemicalHistoryRequest request) =>
-        DownloadAsync(() => exports.HistoryXlsxAsync(propertyId, ToQuery(request)));
+        ChemicalsController.FileResultAsync(this, async () =>
+        {
+            var query = ChemicalsController.Required(request).ToQuery();
+            await permissions.RequireAsync(Caller, propertyId, ChemicalPermission.View).ConfigureAwait(false);
+            return await exports.HistoryXlsxAsync(propertyId, query).ConfigureAwait(false);
+        });
 
     [HttpGet("properties/{propertyId:int}/exports/authority-list")]
     public Task<IActionResult> ExportAuthorityList(int propertyId) =>
-        DownloadAsync(() => exports.AuthorityListPdfAsync(userService.UserId, propertyId));
+        ChemicalsController.FileResultAsync(this, () => exports.AuthorityListPdfAsync(userService.UserId, propertyId));
 
+    // A missing body exports every open placement (Plan E decision 4), so the body is optional here.
     [HttpPost("properties/{propertyId:int}/exports/inventory")]
     public Task<IActionResult> ExportInventory(int propertyId, [FromBody] ChemicalInventoryExportBody body) =>
-        DownloadAsync(() => exports.InventoryXlsxAsync(userService.UserId, propertyId, body?.PlacementIds));
+        ChemicalsController.FileResultAsync(this, () => exports.InventoryXlsxAsync(userService.UserId, propertyId, body?.PlacementIds));
 
     [HttpGet("properties/{propertyId:int}/exports/removed-placements")]
     public Task<IActionResult> ExportRemovedPlacements(int propertyId) =>
-        DownloadAsync(() => exports.RemovedPlacementsXlsxAsync(userService.UserId, propertyId));
-
-    /// <summary>A missing body or a period that is not exactly yyyy-MM-dd is an ArgumentException (a 400).</summary>
-    private static ChemicalHistoryQuery ToQuery(ChemicalHistoryRequest request) =>
-        (request ?? throw new ArgumentException("A request body is required.")).ToQuery();
-
-    private async Task<IActionResult> DownloadAsync(Func<Task<ChemicalExportFile>> produce)
-    {
-        try
-        {
-            var file = await produce().ConfigureAwait(false);
-            Response.Headers["Content-Disposition"] = ComplianceExportFileNaming.BuildContentDisposition(file.FileName);
-            return File(file.Content, file.ContentType);
-        }
-        catch (Exception e)
-        {
-            if (ChemicalsController.ExpectedStatusCode(e) is null)
-            {
-                SentrySdk.CaptureException(e);
-            }
-
-            return BadRequest($"{localizationService.GetString(ChemicalLocalizationKeys.ErrorWhileExportingChemicals)}: {e.Message}");
-        }
-    }
+        ChemicalsController.FileResultAsync(this, () => exports.RemovedPlacementsXlsxAsync(userService.UserId, propertyId));
 }
