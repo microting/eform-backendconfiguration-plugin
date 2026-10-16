@@ -31,6 +31,7 @@ public static class ChemicalReportingServiceCollectionExtensions
     {
         services.TryAddSingleton(TimeProvider.System);
         services.AddTransient<IChemicalDigestPreviewBuilder, ChemicalDigestPreviewBuilder>();
+        services.AddTransient<IChemicalHistoryService, ChemicalHistoryService>();
         return services;
     }
 }

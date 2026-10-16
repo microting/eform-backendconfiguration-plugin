@@ -362,7 +362,7 @@ public partial class ChemicalInventoryService
     /// write-off's kind, zeroed the balance and carries the removal's timestamp to
     /// the microsecond.
     /// </summary>
-    private static int? FindWriteOff(ChemicalPlacement placement, IEnumerable<ChemicalStockEntry> ledger,
+    internal static int? FindWriteOff(ChemicalPlacement placement, IEnumerable<ChemicalStockEntry> ledger,
         IReadOnlyDictionary<int, decimal> balanceAfter)
     {
         if (placement.RemovedAt is not { } removedAt
