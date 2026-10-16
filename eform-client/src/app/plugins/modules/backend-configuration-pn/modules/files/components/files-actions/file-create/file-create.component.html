@@ -31,6 +31,15 @@
 
 <ng-container *ngIf="selectedFile === null">
   <div class="selectors need-wrapper">
+    <div>
+      <app-archive-folder-picker
+        [options]="folderOptions"
+        [value]="selectedFolderId"
+        (valueChange)="selectedFolderId = $event"
+        pickerId="archiveUploadFolderSelect"
+      ></app-archive-folder-picker>
+      <p *ngIf="!selectedFolderId" id="archiveUploadFolderRequired" class="helper-text mb-0">{{ 'Choose a folder' | translate }}</p>
+    </div>
     <mat-form-field>
       <mat-label>{{'Properties' | translate}}</mat-label>
       <mtx-select
