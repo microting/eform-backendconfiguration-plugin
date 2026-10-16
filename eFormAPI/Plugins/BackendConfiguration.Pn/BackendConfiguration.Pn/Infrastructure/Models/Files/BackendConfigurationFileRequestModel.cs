@@ -26,6 +26,7 @@ SOFTWARE.
 namespace BackendConfiguration.Pn.Infrastructure.Models.Files;
 
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using System;
 using System.Collections.Generic;
 
@@ -48,4 +49,10 @@ public class BackendConfigurationFileRequestModel : FilterAndSortModel
 	public string? Manufacturer { get; set; }
 
 	public string? OsVersion { get; set; }
+
+	/// <summary>Documents lying directly in this folder (a top folder's subfolders are not included).</summary>
+	public int? FolderId { get; set; }
+
+	/// <summary>"Dato skal tjekkes" = <see cref="DocumentDateState.Suggested"/>.</summary>
+	public DocumentDateState? DateState { get; set; }
 }

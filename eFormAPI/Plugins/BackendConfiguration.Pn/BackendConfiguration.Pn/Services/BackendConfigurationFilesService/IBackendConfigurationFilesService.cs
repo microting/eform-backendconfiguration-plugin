@@ -25,4 +25,10 @@ public interface IBackendConfigurationFilesService
 	Task<OperationDataResult<BackendConfigurationFileModel>> GetById(int id);
 
 	Task<UploadedData> GetUploadedDataByFileId(int id);
+
+	/// <summary>
+	/// Name and stored file of every id, in one query; null when any id is missing or unreadable (the zip is all or
+	/// nothing).
+	/// </summary>
+	Task<Dictionary<int, ArchiveFileDownload>> GetDownloadsAsync(IReadOnlyCollection<int> fileIds);
 }

@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using System;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
 
@@ -36,4 +37,10 @@ public class BackendConfigurationFileCreate
         = [];
 
     public IFormFile File { get; set; }
+
+    /// <summary><c>FilesForCreate[i][FolderId]</c>. Missing or 0 (older apps) → the default folder.</summary>
+    public int? FolderId { get; set; }
+
+    /// <summary><c>FilesForCreate[i][DocumentDate]</c>, yyyy-MM-dd. Given → Approved; missing → None (D10).</summary>
+    public DateTime? DocumentDate { get; set; }
 }

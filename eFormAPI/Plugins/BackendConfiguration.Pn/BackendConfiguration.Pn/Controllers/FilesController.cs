@@ -116,6 +116,11 @@ public class FilesController : Controller
 	public async Task<IActionResult> GetLoginPageImage(int id)
 	{
 		var uploadedData = await _backendConfigurationFilesService.GetUploadedDataByFileId(id);
+		if (uploadedData == null)
+		{
+			// Missing or not readable by the caller: the same 404, so a restricted document's existence does not leak.
+			return new NotFoundResult();
+		}
 
 		// IArchiveStorage reads S3 or local storage per the SDK s3Enabled setting; the object name is the
 		// same "{checksum}.{extension}" key the S3-only read used.
@@ -156,12 +161,19 @@ public class FilesController : Controller
 	{
 		if (model.FileIds is { Count: > 0 })
 		{
+			var downloads = await _backendConfigurationFilesService.GetDownloadsAsync(model.FileIds);
+			if (downloads == null)
+			{
+				// All or nothing: one missing or unreadable id fails the whole zip.
+				return new NotFoundResult();
+			}
+
 			using var archiveStream = new MemoryStream();
 			using (var archive = new ZipArchive(archiveStream, ZipArchiveMode.Create, true))
 			{
 				foreach (var fileId in model.FileIds)
 				{
-					var uploadedData = await _backendConfigurationFilesService.GetUploadedDataByFileId(fileId);
+					var (fileName, uploadedData) = downloads[fileId];
 					await using var stream = await _archiveStorage.GetAsync(FileArchiver.ObjectName(uploadedData.Checksum, uploadedData.Extension));
 					if (stream == null)
 					{
@@ -169,9 +181,8 @@ public class FilesController : Controller
 						return new NotFoundResult();
 					}
 
-					var operationDataResult = await _backendConfigurationFilesService.GetById(fileId);
 					var zipArchiveEntry = archive.CreateEntry(
-						ZipEntryName(operationDataResult.Model.FileName, uploadedData.Extension), CompressionLevel.Fastest);
+						ZipEntryName(fileName, uploadedData.Extension), CompressionLevel.Fastest);
 					await using var zipStream = zipArchiveEntry.Open();
 					await stream.CopyToAsync(zipStream);
 				}
