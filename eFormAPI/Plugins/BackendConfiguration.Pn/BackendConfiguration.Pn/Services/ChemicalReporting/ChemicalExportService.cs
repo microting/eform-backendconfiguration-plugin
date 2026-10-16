@@ -28,6 +28,7 @@ using System.Threading.Tasks;
 using BackendConfigurationComplianceExportService;
 using BackendConfigurationLocalizationService;
 using ChemicalInventoryService;
+using Infrastructure.Helpers;
 using Infrastructure.Models.Chemicals;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -83,7 +84,9 @@ public class ChemicalExportService(
         var rows = model.Placements
             .Where(p => p.RemovedAt == null && p.PropertyId == propertyId && (wanted == null || wanted.Contains(p.Id)))
             .OrderBy(p => locations.GetValueOrDefault(p.LocationId)?.SortOrder ?? int.MaxValue)
-            .ThenBy(p => entries.GetValueOrDefault(p.ChemicalId)?.Name ?? string.Empty)
+            .ThenBy(p => entries.GetValueOrDefault(p.ChemicalId)?.Name ?? string.Empty, TagNameComparer.Danish)
+            .ThenBy(p => p.LocationId)
+            .ThenBy(p => p.Id)
             .Select(p =>
             {
                 var entry = entries.GetValueOrDefault(p.ChemicalId);

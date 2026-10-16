@@ -40,7 +40,7 @@ public static class ChemicalHistoryDetailsFormatter
         _ => string.Empty,
     };
 
-    public static string Number(decimal value) => value.ToString("0.##", CultureInfo.InvariantCulture);
+    public static string Number(decimal value) => value.ToString("0.###", CultureInfo.InvariantCulture);
 
     public static string Format(ChemicalHistoryEventModel e, Func<string, string> text)
     {

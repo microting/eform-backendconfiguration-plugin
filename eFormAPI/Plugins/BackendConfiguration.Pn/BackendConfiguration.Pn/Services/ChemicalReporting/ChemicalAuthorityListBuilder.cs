@@ -25,6 +25,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using ChemicalInventoryService;
+using Infrastructure.Helpers;
 using Infrastructure.Models.Chemicals;
 using Microting.EformBackendConfigurationBase.Infrastructure.Helpers;
 using K = Infrastructure.Models.Chemicals.ChemicalLocalizationKeys;
@@ -46,10 +47,12 @@ public static class ChemicalAuthorityListBuilder
         var local = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(generatedAtUtc, DateTimeKind.Utc), ChemicalAlertRules.Copenhagen);
 
         var rows = inventory.Placements
-            .Where(p => p.RemovedAt == null)
+            .Where(p => p.RemovedAt == null && p.PropertyId == propertyId)
             .Select(p => (Placement: p, Location: locations.GetValueOrDefault(p.LocationId), Entry: entries.GetValueOrDefault(p.ChemicalId)))
             .OrderBy(x => x.Location?.SortOrder ?? int.MaxValue)
-            .ThenBy(x => x.Entry?.Name ?? string.Empty, StringComparer.Create(new CultureInfo("da-DK"), true))
+            .ThenBy(x => x.Entry?.Name ?? string.Empty, TagNameComparer.Danish)
+            .ThenBy(x => x.Placement.LocationId)
+            .ThenBy(x => x.Placement.Id)
             .Select(x => Row(x.Placement, x.Location, x.Entry, showQuantity, sdsBaseUrl, text))
             .ToList();
 

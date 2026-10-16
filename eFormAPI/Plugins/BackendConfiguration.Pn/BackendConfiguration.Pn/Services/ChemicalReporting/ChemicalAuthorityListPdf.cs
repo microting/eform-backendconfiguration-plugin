@@ -74,7 +74,12 @@ public static class ChemicalAuthorityListPdf
                     }
                     else
                     {
-                        sds.Hyperlink(row.SdsUrl).Text(document.SdsLinkText).FontColor(Colors.Blue.Darken2).Underline();
+                        // The address is printed too, so the paper copy still tells an inspector where the sheet is.
+                        sds.Column(column =>
+                        {
+                            column.Item().Hyperlink(row.SdsUrl).Text(document.SdsLinkText).FontColor(Colors.Blue.Darken2).Underline();
+                            column.Item().Text(row.SdsUrl).FontSize(6).FontColor(Colors.Grey.Darken2);
+                        });
                     }
                 }
             });
