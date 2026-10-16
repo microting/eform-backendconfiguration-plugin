@@ -48,6 +48,27 @@ public sealed record ChemicalHistoryQuery(
     DateTime From, DateTime To, int? UserId, ChemicalHistoryActionEnum? Action, int? LocationId, int Page = 0, int PageSize = 25);
 
 /// <summary>
+/// The W6 filter as the client sends it: From/To are exactly "yyyy-MM-dd" strings. A time, an
+/// offset or "Z" is rejected here (a DateTime cannot carry an offset, so the model binder would
+/// swallow it silently); ChemicalHistoryService re-checks the resulting dates.
+/// </summary>
+public sealed record ChemicalHistoryRequest(
+    string From, string To, int? UserId, ChemicalHistoryActionEnum? Action, int? LocationId, int Page = 0, int PageSize = 25)
+{
+    private const string DateFormat = "yyyy-MM-dd";
+
+    /// <exception cref="ArgumentException">From or To is not exactly yyyy-MM-dd.</exception>
+    public ChemicalHistoryQuery ToQuery() =>
+        new(ParseDate(From, nameof(From)), ParseDate(To, nameof(To)), UserId, Action, LocationId, Page, PageSize);
+
+    private static DateTime ParseDate(string value, string field) =>
+        DateTime.TryParseExact(value, DateFormat, System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None, out var date)
+            ? date
+            : throw new ArgumentException($"{field} must be a date formatted as yyyy-MM-dd.");
+}
+
+/// <summary>
 /// One immutable history line. Which fields are set depends on Action:
 /// stock: Amount (signed), Unit, BalanceAfter; Moved: Location → TargetLocation, Amount;
 /// Removed: RemovalReason, Note, and for a stocked placement the written-off Amount (signed) and Unit;
