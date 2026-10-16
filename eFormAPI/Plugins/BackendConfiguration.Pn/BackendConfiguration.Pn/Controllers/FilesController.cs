@@ -21,11 +21,13 @@ SOFTWARE.
 namespace BackendConfiguration.Pn.Controllers;
 
 using Infrastructure.Helpers;
+using Infrastructure.Models.ArchiveFolders;
 using Infrastructure.Models.Files;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microting.eFormApi.BasePn.Abstractions;
+using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 using Services.BackendConfigurationFilesService;
@@ -37,6 +39,7 @@ using System.Threading.Tasks;
 using System.Linq;
 
 [Authorize]
+[ArchiveAccessFilter]
 [Route("api/backend-configuration-pn/files")]
 public class FilesController : Controller
 {
@@ -85,6 +88,28 @@ public class FilesController : Controller
 		return await _backendConfigurationFilesService.UpdateProperties(model);
 	}
 
+	/// <summary>Moves documents into a folder. Non-admins only between folders with the same access (D17).</summary>
+	[HttpPut("folder")]
+	public async Task<OperationDataResult<FilesMoveResultModel>> Move([FromBody] FilesMoveModel model)
+	{
+		return await _backendConfigurationFilesService.Move(model);
+	}
+
+	/// <summary>Sets (approves) or clears the document date.</summary>
+	[HttpPut("{id:int}/date")]
+	public async Task<OperationResult> UpdateDate(int id, [FromBody] FileDateModel model)
+	{
+		return await _backendConfigurationFilesService.UpdateDate(id, model);
+	}
+
+	/// <summary>Own read access per document (admin).</summary>
+	[HttpPut("access")]
+	[Authorize(Roles = EformRole.Admin)]
+	public async Task<OperationDataResult<AccessChangeModel>> UpdateAccess([FromBody] FilesAccessModel model)
+	{
+		return await _backendConfigurationFilesService.UpdateAccess(model);
+	}
+
 	[HttpPost]
 	[Route("create")]
 	public async Task<OperationResult> Create([FromForm] BackendConfigurationFileCreateList model)
@@ -115,6 +140,11 @@ public class FilesController : Controller
 	public async Task<IActionResult> GetLoginPageImage(int id)
 	{
 		var uploadedData = await _backendConfigurationFilesService.GetUploadedDataByFileId(id);
+		if (uploadedData == null)
+		{
+			// Missing or not readable by the caller: the same 404, so a restricted document's existence does not leak.
+			return new NotFoundResult();
+		}
 
 		// IArchiveStorage reads S3 or local storage per the SDK s3Enabled setting; the object name is the
 		// same "{checksum}.{extension}" key the S3-only read used.
@@ -155,12 +185,19 @@ public class FilesController : Controller
 	{
 		if (model.FileIds is { Count: > 0 })
 		{
+			var downloads = await _backendConfigurationFilesService.GetDownloadsAsync(model.FileIds);
+			if (downloads == null)
+			{
+				// All or nothing: one missing or unreadable id fails the whole zip.
+				return new NotFoundResult();
+			}
+
 			using var archiveStream = new MemoryStream();
 			using (var archive = new ZipArchive(archiveStream, ZipArchiveMode.Create, true))
 			{
 				foreach (var fileId in model.FileIds)
 				{
-					var uploadedData = await _backendConfigurationFilesService.GetUploadedDataByFileId(fileId);
+					var (fileName, uploadedData) = downloads[fileId];
 					await using var stream = await _archiveStorage.GetAsync(FileArchiver.ObjectName(uploadedData.Checksum, uploadedData.Extension));
 					if (stream == null)
 					{
@@ -168,9 +205,8 @@ public class FilesController : Controller
 						return new NotFoundResult();
 					}
 
-					var operationDataResult = await _backendConfigurationFilesService.GetById(fileId);
 					var zipArchiveEntry = archive.CreateEntry(
-						ZipEntryName(operationDataResult.Model.FileName, uploadedData.Extension), CompressionLevel.Fastest);
+						ZipEntryName(fileName, uploadedData.Extension), CompressionLevel.Fastest);
 					await using var zipStream = zipArchiveEntry.Open();
 					await stream.CopyToAsync(zipStream);
 				}

@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
@@ -7,19 +8,24 @@ namespace BackendConfiguration.Pn.Integration.Test;
 /// <summary>Fixture data for the Indbakke tests. Fictional names and example.org/.net addresses only.</summary>
 public static class InboxTestData
 {
-    /// <summary>Empties the inbox and archive tables. Properties are left behind; assert by id, not by set.</summary>
+    /// <summary>Empties the inbox, archive and archive folder tables (folder FKs are Restrict: read tags, then subfolders, then top folders).</summary>
     public static async Task ClearAsync(BackendConfigurationPnDbContext db)
     {
         db.InboxSuggestions.RemoveRange(db.InboxSuggestions);
         db.InboxDocuments.RemoveRange(db.InboxDocuments);
         db.InboxSenderRules.RemoveRange(db.InboxSenderRules);
         db.InboxAddresses.RemoveRange(db.InboxAddresses);
+        db.FileReadTags.RemoveRange(db.FileReadTags);
         db.FilesTags.RemoveRange(db.FilesTags);
         db.PropertyFiles.RemoveRange(db.PropertyFiles);
         db.UploadedDatas.RemoveRange(db.UploadedDatas);
         db.Files.RemoveRange(db.Files);
         db.FileTags.RemoveRange(db.FileTags);
         await db.SaveChangesAsync();
+        await db.ArchiveFolderReadTags.ExecuteDeleteAsync();
+        await db.ArchiveFolders.Where(f => f.ParentId != null).ExecuteDeleteAsync();
+        await db.ArchiveFolders.ExecuteDeleteAsync();
+        db.ChangeTracker.Clear();
     }
 
     public static async Task<Property> PropertyAsync(BackendConfigurationPnDbContext db, string name = "Nordvej 12",

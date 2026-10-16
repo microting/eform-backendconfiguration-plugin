@@ -196,6 +196,10 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<IBackendConfigurationAreaRulesService, BackendConfigurationAreaRulesService>();
         services.AddTransient<IBackendConfigurationDocumentService, BackendConfigurationDocumentService>();
         services.AddTransient<IBackendConfigurationReportService, BackendConfigurationReportService>();
+        // Scoped, not transient: the caller's archive context (D7, groups) is resolved once per request and shared
+        // by ArchiveAccessFilterAttribute and every archive service in that request.
+        services.AddScoped<Services.ArchiveAccess.IArchiveAccessService, Services.ArchiveAccess.ArchiveAccessService>();
+        services.AddTransient<Services.ArchiveFolders.IArchiveFoldersService, Services.ArchiveFolders.ArchiveFoldersService>();
         services.AddTransient<IBackendConfigurationFilesService, BackendConfigurationFilesService>();
         // Singletons: the verifier holds the replay store, the provider caches the customer number.
         services.AddSingleton<Services.InboundMail.InboundMailRequestVerifier>();

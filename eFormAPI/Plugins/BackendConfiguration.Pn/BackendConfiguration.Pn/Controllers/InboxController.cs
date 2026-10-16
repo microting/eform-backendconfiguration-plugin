@@ -15,6 +15,7 @@ using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 namespace BackendConfiguration.Pn.Controllers;
 
 [Authorize(Roles = EformRole.Admin)]
+[ArchiveAccessFilter]
 [Route("api/backend-configuration-pn/inbox")]
 public class InboxController(IInboxService inbox, IInboxSettingsService settings, IUserService userService,
     ILogger<InboxController> logger) : Controller

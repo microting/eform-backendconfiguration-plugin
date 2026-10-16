@@ -2,6 +2,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using BackendConfiguration.Pn.Infrastructure.Models.Inbox;
+using BackendConfiguration.Pn.Services.ArchiveAccess;
 using BackendConfiguration.Pn.Services.FileArchive;
 using BackendConfiguration.Pn.Services.InboundMail;
 using Microsoft.EntityFrameworkCore;
@@ -21,18 +22,34 @@ public class InboxServiceTests : TestBaseSetup
 {
     private IArchiveStorage _storage = null!;
     private InboxService _service = null!;
+    private FixedArchiveAccess _access = null!;
+    private int _folderId;
 
     [SetUp]
     public async Task SetUpService()
     {
         await InboxTestData.ClearAsync(BackendConfigurationPnDbContext!);
+        _folderId = await ArchiveTestData.DefaultFolderIdAsync(BackendConfigurationPnDbContext!);
+        _access = new FixedArchiveAccess(ArchiveTestData.Admin, BackendConfigurationPnDbContext!);
         _storage = Substitute.For<IArchiveStorage>();
         _storage.GetAsync(Arg.Any<string>())
             .Returns(_ => Task.FromResult<Stream?>(new MemoryStream(Encoding.ASCII.GetBytes("%PDF-1.7 x"))));
         _service = new InboxService(BackendConfigurationPnDbContext!, _storage,
-            new FileArchiver(BackendConfigurationPnDbContext!, _storage), new BackendConfigurationLocalizationService(),
-            NullLogger<InboxService>.Instance);
+            new FileArchiver(BackendConfigurationPnDbContext!, _storage), _access,
+            new BackendConfigurationLocalizationService(), NullLogger<InboxService>.Instance);
     }
+
+    private async Task<(InboxDocument Doc, Property Property)> ReadyWithPropertyAsync() =>
+        (await InboxTestData.ReadyDocumentAsync(BackendConfigurationPnDbContext!),
+            await InboxTestData.PropertyAsync(BackendConfigurationPnDbContext!));
+
+    /// <summary>A filing of <paramref name="p"/> named "x"; the folder defaults to the default folder.</summary>
+    private FileInboxDocumentRequest Req(Property p, int? folderId = null, DateTime? date = null, bool approved = false) =>
+        new()
+        {
+            Name = "x", PropertyIds = [p.Id], TagIds = [], FolderId = folderId ?? _folderId, DocumentDate = date,
+            DocumentDateApproved = approved
+        };
 
     private static InboxSuggestion Suggestion(int docId, InboxSuggestionKind kind, int targetId, double confidence) => new()
     {
@@ -43,8 +60,7 @@ public class InboxServiceTests : TestBaseSetup
     [Test]
     public async Task List_ShowsLiveDocumentsWithSuggestionNames()
     {
-        var doc = await InboxTestData.ReadyDocumentAsync(BackendConfigurationPnDbContext!);
-        var p = await InboxTestData.PropertyAsync(BackendConfigurationPnDbContext!);
+        var (doc, p) = await ReadyWithPropertyAsync();
         await Suggestion(doc.Id, InboxSuggestionKind.Property, p.Id, 0.5).Create(BackendConfigurationPnDbContext!);
 
         var res = await _service.ListAsync(null, null);
@@ -67,15 +83,14 @@ public class InboxServiceTests : TestBaseSetup
     [Test]
     public async Task File_CreatesArchiveFile_MarksFiledAndAccepted()
     {
-        var doc = await InboxTestData.ReadyDocumentAsync(BackendConfigurationPnDbContext!);
-        var p = await InboxTestData.PropertyAsync(BackendConfigurationPnDbContext!);
+        var (doc, p) = await ReadyWithPropertyAsync();
         var t = await InboxTestData.TagAsync(BackendConfigurationPnDbContext!);
         var other = await InboxTestData.TagAsync(BackendConfigurationPnDbContext!, "Brand");
         await Suggestion(doc.Id, InboxSuggestionKind.Tag, t.Id, 0.5).Create(BackendConfigurationPnDbContext!);
         await Suggestion(doc.Id, InboxSuggestionKind.Tag, other.Id, 0.3).Create(BackendConfigurationPnDbContext!);
 
         var res = await _service.FileAsync(doc.Id,
-            new FileInboxDocumentRequest { Name = "Servicerapport VA-02", PropertyIds = [p.Id], TagIds = [t.Id] }, 7);
+            new FileInboxDocumentRequest { FolderId = _folderId, Name = "Servicerapport VA-02", PropertyIds = [p.Id], TagIds = [t.Id] }, 7);
 
         Assert.That(res.Success, Is.True);
         await BackendConfigurationPnDbContext!.Entry(doc).ReloadAsync();
@@ -105,11 +120,11 @@ public class InboxServiceTests : TestBaseSetup
             var doc = await InboxTestData.ReadyDocumentAsync(BackendConfigurationPnDbContext!, md5);
             var p = await InboxTestData.PropertyAsync(BackendConfigurationPnDbContext!);
             var service = new InboxService(BackendConfigurationPnDbContext!, storage,
-                new FileArchiver(BackendConfigurationPnDbContext!, storage), new BackendConfigurationLocalizationService(),
-                NullLogger<InboxService>.Instance);
+                new FileArchiver(BackendConfigurationPnDbContext!, storage), _access,
+                new BackendConfigurationLocalizationService(), NullLogger<InboxService>.Instance);
 
             var res = await service.FileAsync(doc.Id,
-                new FileInboxDocumentRequest { Name = "Lokal", PropertyIds = [p.Id], TagIds = [] }, 7);
+                new FileInboxDocumentRequest { FolderId = _folderId, Name = "Lokal", PropertyIds = [p.Id], TagIds = [] }, 7);
 
             Assert.That(res.Success, Is.True, res.Message);
             await using var archived = await storage.GetAsync(FileArchiver.ObjectName(md5, "pdf"));
@@ -125,23 +140,21 @@ public class InboxServiceTests : TestBaseSetup
     [Test]
     public async Task File_NullLists_FailsWithoutThrowing()
     {
-        var doc = await InboxTestData.ReadyDocumentAsync(BackendConfigurationPnDbContext!);
-        var p = await InboxTestData.PropertyAsync(BackendConfigurationPnDbContext!);
+        var (doc, p) = await ReadyWithPropertyAsync();
 
-        var noProperties = await _service.FileAsync(doc.Id, new FileInboxDocumentRequest { Name = "x", PropertyIds = null!, TagIds = null! }, 7);
+        var noProperties = await _service.FileAsync(doc.Id, new FileInboxDocumentRequest { FolderId = _folderId, Name = "x", PropertyIds = null!, TagIds = null! }, 7);
         Assert.That(noProperties.Success, Is.False);
         Assert.That(noProperties.Message, Is.EqualTo("InboxChooseAtLeastOneProperty"));
 
-        var noTags = await _service.FileAsync(doc.Id, new FileInboxDocumentRequest { Name = "x", PropertyIds = [p.Id], TagIds = null! }, 7);
+        var noTags = await _service.FileAsync(doc.Id, new FileInboxDocumentRequest { FolderId = _folderId, Name = "x", PropertyIds = [p.Id], TagIds = null! }, 7);
         Assert.That(noTags.Success, Is.True);
     }
 
     [Test]
     public async Task File_Twice_SecondIsRejectedAndLeavesOneFile()
     {
-        var doc = await InboxTestData.ReadyDocumentAsync(BackendConfigurationPnDbContext!);
-        var p = await InboxTestData.PropertyAsync(BackendConfigurationPnDbContext!);
-        var req = new FileInboxDocumentRequest { Name = "x", PropertyIds = [p.Id], TagIds = [] };
+        var (doc, p) = await ReadyWithPropertyAsync();
+        var req = Req(p);
         Assert.That((await _service.FileAsync(doc.Id, req, 7)).Success, Is.True);
 
         Assert.That((await _service.FileAsync(doc.Id, req, 7)).Success, Is.False);
@@ -154,26 +167,27 @@ public class InboxServiceTests : TestBaseSetup
         Microting.EformBackendConfigurationBase.Infrastructure.Data.BackendConfigurationPnDbContext db, int docId) : IFileArchiver
     {
         public async Task<int> ArchiveAsync(Stream content, string name, string extension,
-            IReadOnlyCollection<int> propertyIds, IReadOnlyCollection<int> tagIds, int userId,
-            Func<int, Task>? inTransaction = null)
+            IReadOnlyCollection<int> propertyIds, IReadOnlyCollection<int> tagIds, int folderId,
+            DateTime? documentDate, DocumentDateState documentDateState, int userId,
+            Func<int, Task>? inTransaction = null, Func<ArchiveFolderSnapshot, bool>? folderAllowed = null)
         {
             await db.InboxDocuments.Where(d => d.Id == docId)
                 .ExecuteUpdateAsync(s => s.SetProperty(d => d.Status, InboxDocumentStatus.Filed));
-            return await inner.ArchiveAsync(content, name, extension, propertyIds, tagIds, userId, inTransaction);
+            return await inner.ArchiveAsync(content, name, extension, propertyIds, tagIds, folderId, documentDate,
+                documentDateState, userId, inTransaction, folderAllowed);
         }
     }
 
     [Test]
     public async Task File_ConcurrentlyFiled_ClaimFailsAndNoFileRowRemains()
     {
-        var doc = await InboxTestData.ReadyDocumentAsync(BackendConfigurationPnDbContext!);
-        var p = await InboxTestData.PropertyAsync(BackendConfigurationPnDbContext!);
+        var (doc, p) = await ReadyWithPropertyAsync();
         var racing = new RacingArchiver(new FileArchiver(BackendConfigurationPnDbContext!, _storage), _storage,
             BackendConfigurationPnDbContext!, doc.Id);
-        var service = new InboxService(BackendConfigurationPnDbContext!, _storage, racing,
+        var service = new InboxService(BackendConfigurationPnDbContext!, _storage, racing, _access,
             new BackendConfigurationLocalizationService(), NullLogger<InboxService>.Instance);
 
-        var res = await service.FileAsync(doc.Id, new FileInboxDocumentRequest { Name = "x", PropertyIds = [p.Id], TagIds = [] }, 7);
+        var res = await service.FileAsync(doc.Id, Req(p), 7);
 
         Assert.That(res.Success, Is.False);
         Assert.That(await BackendConfigurationPnDbContext!.Files.CountAsync(), Is.EqualTo(0));
@@ -184,7 +198,7 @@ public class InboxServiceTests : TestBaseSetup
     {
         var doc = await InboxTestData.ReadyDocumentAsync(BackendConfigurationPnDbContext!);
 
-        var res = await _service.FileAsync(doc.Id, new FileInboxDocumentRequest { Name = "x", PropertyIds = [], TagIds = [] }, 7);
+        var res = await _service.FileAsync(doc.Id, new FileInboxDocumentRequest { FolderId = _folderId, Name = "x", PropertyIds = [], TagIds = [] }, 7);
 
         Assert.That(res.Success, Is.False);
         await BackendConfigurationPnDbContext!.Entry(doc).ReloadAsync();
@@ -195,7 +209,7 @@ public class InboxServiceTests : TestBaseSetup
     public async Task File_UnknownPropertyId_IsRejected()
     {
         var doc = await InboxTestData.ReadyDocumentAsync(BackendConfigurationPnDbContext!);
-        var res = await _service.FileAsync(doc.Id, new FileInboxDocumentRequest { Name = "x", PropertyIds = [999999], TagIds = [] }, 7);
+        var res = await _service.FileAsync(doc.Id, new FileInboxDocumentRequest { FolderId = _folderId, Name = "x", PropertyIds = [999999], TagIds = [] }, 7);
         Assert.That(res.Success, Is.False);
         Assert.That(await BackendConfigurationPnDbContext!.Files.CountAsync(), Is.EqualTo(0));
     }
@@ -208,7 +222,7 @@ public class InboxServiceTests : TestBaseSetup
         await doc.Update(BackendConfigurationPnDbContext!);
         var p = await InboxTestData.PropertyAsync(BackendConfigurationPnDbContext!);
 
-        var res = await _service.FileAsync(doc.Id, new FileInboxDocumentRequest { Name = "x", PropertyIds = [p.Id], TagIds = [] }, 7);
+        var res = await _service.FileAsync(doc.Id, Req(p), 7);
 
         Assert.That(res.Success, Is.False);
     }
@@ -216,11 +230,10 @@ public class InboxServiceTests : TestBaseSetup
     [Test]
     public async Task Undo_WithinTenMinutes_RemovesFileAndReopens()
     {
-        var doc = await InboxTestData.ReadyDocumentAsync(BackendConfigurationPnDbContext!);
-        var p = await InboxTestData.PropertyAsync(BackendConfigurationPnDbContext!);
+        var (doc, p) = await ReadyWithPropertyAsync();
         var t = await InboxTestData.TagAsync(BackendConfigurationPnDbContext!);
         await Suggestion(doc.Id, InboxSuggestionKind.Tag, t.Id, 0.5).Create(BackendConfigurationPnDbContext!);
-        await _service.FileAsync(doc.Id, new FileInboxDocumentRequest { Name = "x", PropertyIds = [p.Id], TagIds = [t.Id] }, 7);
+        await _service.FileAsync(doc.Id, new FileInboxDocumentRequest { FolderId = _folderId, Name = "x", PropertyIds = [p.Id], TagIds = [t.Id] }, 7);
 
         var res = await _service.UndoAsync(doc.Id, 7);
 
@@ -242,9 +255,8 @@ public class InboxServiceTests : TestBaseSetup
     [Test]
     public async Task Undo_AfterTenMinutes_IsRejected()
     {
-        var doc = await InboxTestData.ReadyDocumentAsync(BackendConfigurationPnDbContext!);
-        var p = await InboxTestData.PropertyAsync(BackendConfigurationPnDbContext!);
-        await _service.FileAsync(doc.Id, new FileInboxDocumentRequest { Name = "x", PropertyIds = [p.Id], TagIds = [] }, 7);
+        var (doc, p) = await ReadyWithPropertyAsync();
+        await _service.FileAsync(doc.Id, Req(p), 7);
         await BackendConfigurationPnDbContext!.Entry(doc).ReloadAsync();
         doc.FiledAt = DateTime.UtcNow.AddMinutes(-11);
         await doc.Update(BackendConfigurationPnDbContext);
@@ -329,6 +341,7 @@ public class InboxServiceTests : TestBaseSetup
         await using var db1 = new BackendConfigurationPnDbContext(options);
         await using var db2 = new BackendConfigurationPnDbContext(options);
         InboxService NewService(BackendConfigurationPnDbContext db) => new(db, _storage, new FileArchiver(db, _storage),
+            new FixedArchiveAccess(ArchiveTestData.Admin, db),
             new BackendConfigurationLocalizationService(), NullLogger<InboxService>.Instance);
 
         var results = await Task.WhenAll(NewService(db1).RejectAsync(first.Id, true, 7),
@@ -392,5 +405,179 @@ public class InboxServiceTests : TestBaseSetup
         await BackendConfigurationPnDbContext!.Entry(doc).ReloadAsync();
         Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.Rejected));
         Assert.That((await LiveRulesAsync()).Single().Pattern, Is.EqualTo("post@example.net"));
+    }
+
+    private static InboxSuggestion DateSuggestion(int docId, DateTime date) => new()
+    {
+        InboxDocumentId = docId, Kind = InboxSuggestionKind.DocumentDate, TargetId = 0, TargetDate = date,
+        Confidence = 0.5, CreatedByUserId = 0, UpdatedByUserId = 0
+    };
+
+    private async Task<Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.File> FiledFileAsync(InboxDocument doc)
+    {
+        await BackendConfigurationPnDbContext!.Entry(doc).ReloadAsync();
+        return await BackendConfigurationPnDbContext.Files.AsNoTracking().SingleAsync(f => f.Id == doc.FiledFileId);
+    }
+
+    [Test]
+    public async Task File_WithoutFolderId_LandsInDefaultFolder()
+    {
+        // Old apps and the pre-folder web Indbakke send no folderId: the filing must keep working (compatibility).
+        var (doc, p) = await ReadyWithPropertyAsync();
+        await ArchiveTestData.FolderAsync(BackendConfigurationPnDbContext!, "Drift");
+
+        var res = await _service.FileAsync(doc.Id, new FileInboxDocumentRequest { Name = "x", PropertyIds = [p.Id] }, 7);
+
+        Assert.That(res.Success, Is.True, res.Message);
+        var file = await FiledFileAsync(doc);
+        Assert.That(file.FolderId, Is.EqualTo(_folderId));
+        Assert.That(await BackendConfigurationPnDbContext!.ArchiveFolders.CountAsync(f => f.IsDefault), Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task File_FolderIdZero_IsRefused_ChooseFolder()
+    {
+        var (doc, p) = await ReadyWithPropertyAsync();
+
+        var res = await _service.FileAsync(doc.Id, Req(p, 0), 7);
+
+        Assert.That(res.Success, Is.False);
+        Assert.That(res.Message, Is.EqualTo("ArchiveChooseFolder"));
+        Assert.That(await BackendConfigurationPnDbContext!.Files.CountAsync(), Is.EqualTo(0));
+    }
+
+    [Test]
+    public async Task File_UnknownOrRemovedFolder_IsRefused()
+    {
+        var (doc, p) = await ReadyWithPropertyAsync();
+        var gone = await ArchiveTestData.FolderAsync(BackendConfigurationPnDbContext!, "Udgået");
+        await gone.Delete(BackendConfigurationPnDbContext!);
+
+        var unknown = await _service.FileAsync(doc.Id, Req(p, 999999), 7);
+        var removed = await _service.FileAsync(doc.Id, Req(p, gone.Id), 7);
+
+        Assert.That(unknown.Message, Is.EqualTo("ArchiveFolderNotFound"));
+        Assert.That(removed.Message, Is.EqualTo("ArchiveFolderNotFound"));
+        Assert.That(await BackendConfigurationPnDbContext!.Files.CountAsync(), Is.EqualTo(0));
+    }
+
+    [Test]
+    public async Task File_FolderTheCallerCannotRead_IsRefusedAsNotFound()
+    {
+        // D17, the same rule as an upload: only into a folder the caller can read.
+        var (doc, p) = await ReadyWithPropertyAsync();
+        var restricted = await ArchiveTestData.FolderAsync(BackendConfigurationPnDbContext!, "Ledelse", null, 41);
+        _access.Context = ArchiveTestData.User(42);
+
+        var res = await _service.FileAsync(doc.Id,
+            Req(p, restricted.Id), 7);
+
+        Assert.That(res.Success, Is.False);
+        Assert.That(res.Message, Is.EqualTo("ArchiveFolderNotFound"));
+        Assert.That(await BackendConfigurationPnDbContext!.Files.CountAsync(), Is.EqualTo(0));
+    }
+
+    [Test]
+    public async Task File_DisabledCaller_ThrowsAccountDisabled()
+    {
+        var (doc, p) = await ReadyWithPropertyAsync();
+        _access.Context = ArchiveTestData.Disabled;
+
+        await Assert.ThrowsAsync<ArchiveAccountDisabledException>(() => _service.FileAsync(doc.Id,
+            Req(p), 7));
+        Assert.That(await BackendConfigurationPnDbContext!.Files.CountAsync(), Is.EqualTo(0));
+    }
+
+    [TestCase(true, DocumentDateState.Approved)]
+    [TestCase(false, DocumentDateState.Suggested)]
+    public async Task File_WithDate_ApprovedOrLeftAsSuggested(bool approved, DocumentDateState expected)
+    {
+        var (doc, p) = await ReadyWithPropertyAsync();
+        var drift = await ArchiveTestData.FolderAsync(BackendConfigurationPnDbContext!, "Drift");
+
+        var res = await _service.FileAsync(doc.Id, Req(p, drift.Id, new DateTime(2026, 9, 30), approved), 7);
+
+        Assert.That(res.Success, Is.True, res.Message);
+        var file = await FiledFileAsync(doc);
+        Assert.That(file.FolderId, Is.EqualTo(drift.Id));
+        Assert.That(file.DocumentDate, Is.EqualTo(new DateTime(2026, 9, 30)));
+        Assert.That(file.DocumentDateState, Is.EqualTo(expected));
+    }
+
+    [Test]
+    public async Task File_WithoutDate_StateNone()
+    {
+        var (doc, p) = await ReadyWithPropertyAsync();
+
+        await _service.FileAsync(doc.Id, Req(p, approved: true), 7);
+
+        var file = await FiledFileAsync(doc);
+        Assert.That(file.DocumentDateState, Is.EqualTo(DocumentDateState.None));
+        Assert.That(file.DocumentDate, Is.Null);
+    }
+
+    [Test]
+    public async Task File_FolderSuggestions_AcceptedWhenTheChosenFolderIsTheTarget()
+    {
+        var (doc, p) = await ReadyWithPropertyAsync();
+        var drift = await ArchiveTestData.FolderAsync(BackendConfigurationPnDbContext!, "Drift");
+        var kontrakter = await ArchiveTestData.FolderAsync(BackendConfigurationPnDbContext!, "Kontrakter");
+        await Suggestion(doc.Id, InboxSuggestionKind.Folder, drift.Id, 0.5).Create(BackendConfigurationPnDbContext!);
+        await Suggestion(doc.Id, InboxSuggestionKind.Folder, kontrakter.Id, 0.3).Create(BackendConfigurationPnDbContext!);
+
+        await _service.FileAsync(doc.Id, Req(p, drift.Id), 7);
+
+        var accepted = await BackendConfigurationPnDbContext!.InboxSuggestions.AsNoTracking()
+            .Where(s => s.Kind == InboxSuggestionKind.Folder).ToDictionaryAsync(s => s.TargetId, s => s.Accepted);
+        Assert.That(accepted[drift.Id], Is.True);
+        Assert.That(accepted[kontrakter.Id], Is.False);
+    }
+
+    [Test]
+    public async Task File_DateSuggestion_AcceptedComparesTheDateOnly()
+    {
+        // The hub's date may carry a time part: compared and stored by day.
+        var (doc, p) = await ReadyWithPropertyAsync();
+        await DateSuggestion(doc.Id, new DateTime(2026, 9, 30)).Create(BackendConfigurationPnDbContext!);
+
+        await _service.FileAsync(doc.Id, Req(p, date: new DateTime(2026, 9, 30, 14, 5, 0)), 7);
+
+        var suggestion = await BackendConfigurationPnDbContext!.InboxSuggestions.AsNoTracking().SingleAsync();
+        Assert.That(suggestion.Accepted, Is.True);
+        Assert.That((await FiledFileAsync(doc)).DocumentDate, Is.EqualTo(new DateTime(2026, 9, 30)));
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task File_DateSuggestion_NotAcceptedWithoutADateOrForAnotherDay(bool withAnotherDay)
+    {
+        var (doc, p) = await ReadyWithPropertyAsync();
+        await DateSuggestion(doc.Id, new DateTime(2026, 9, 30)).Create(BackendConfigurationPnDbContext!);
+        DateTime? filedDate = withAnotherDay ? new DateTime(2026, 10, 1) : null;
+
+        await _service.FileAsync(doc.Id, Req(p, date: filedDate, approved: true), 7);
+
+        var suggestion = await BackendConfigurationPnDbContext!.InboxSuggestions.AsNoTracking().SingleAsync();
+        Assert.That(suggestion.Accepted, Is.False);
+    }
+
+    [Test]
+    public async Task List_FolderSuggestionNamesThePath_DateSuggestionCarriesTheDate()
+    {
+        var doc = await InboxTestData.ReadyDocumentAsync(BackendConfigurationPnDbContext!);
+        var drift = await ArchiveTestData.FolderAsync(BackendConfigurationPnDbContext!, "Drift");
+        var fakturaer = await ArchiveTestData.FolderAsync(BackendConfigurationPnDbContext!, "Fakturaer", drift.Id);
+        await Suggestion(doc.Id, InboxSuggestionKind.Folder, fakturaer.Id, 0.5).Create(BackendConfigurationPnDbContext!);
+        await DateSuggestion(doc.Id, new DateTime(2026, 9, 30)).Create(BackendConfigurationPnDbContext!);
+
+        var item = (await _service.GetAsync(doc.Id)).Model;
+
+        var folder = item.Suggestions.Single(s => s.Kind == (int)InboxSuggestionKind.Folder);
+        Assert.That(folder.Kind, Is.EqualTo(2));
+        Assert.That(folder.TargetName, Is.EqualTo("Drift › Fakturaer"));
+        var date = item.Suggestions.Single(s => s.Kind == (int)InboxSuggestionKind.DocumentDate);
+        Assert.That(date.Kind, Is.EqualTo(3));
+        Assert.That(date.TargetDate, Is.EqualTo(new DateTime(2026, 9, 30)));
+        Assert.That(date.TargetName, Is.EqualTo(""));
     }
 }
