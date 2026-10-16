@@ -9,8 +9,9 @@ import {Store} from '@ngrx/store';
 import {saveAs} from 'file-saver';
 import {ToastrService} from 'ngx-toastr';
 import {Observable, combineLatest} from 'rxjs';
+import {finalize} from 'rxjs/operators';
 import {dialogConfigHelper} from 'src/app/common/helpers';
-import {ChemicalDownload, ChemicalDownloadError, ChemicalInventoryModel} from '../../../../models';
+import {ChemicalDownload, ChemicalDownloadError, ChemicalInventoryModel, ChemicalLocationModel} from '../../../../models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {
   ChemicalInventoryFiltersModel,
@@ -20,6 +21,7 @@ import {
   selectChemicalsPropertyId,
 } from '../../../../state';
 import {
+  ChemicalActionSummary,
   ChemicalInventoryRow,
   buildInventoryRows,
   filterInventoryRows,
@@ -60,6 +62,12 @@ export class ChemicalInventoryPageComponent implements OnInit {
   filters: ChemicalInventoryFiltersModel = {...chemicalsInitialState.inventoryFilters};
   rows: ChemicalInventoryRow[] = [];
   visibleRows: ChemicalInventoryRow[] = [];
+  /** "Kræver handling" counts of `rows`; set with them, not per change detection. */
+  summary: ChemicalActionSummary = summarizeActions([]);
+  /** Where a placement can be registered; set with the inventory. */
+  activeLocations: ChemicalLocationModel[] = [];
+  /** Rebuilt when the inventory loads (the Lager column depends on the property's stock flag), not per change detection. */
+  columns: MtxGridColumn[] = [];
   exporting = false;
   /** The inventory request is in flight; nothing is shown as empty meanwhile (I-1). */
   loading = false;
@@ -75,17 +83,6 @@ export class ChemicalInventoryPageComponent implements OnInit {
   get stockEnabled(): boolean {
     return isStockEnabled(this.inventory, this.propertyId);
   }
-
-  get summary() {
-    return summarizeActions(this.rows);
-  }
-
-  get activeLocations() {
-    return (this.inventory?.locations ?? []).filter((l) => !l.archived);
-  }
-
-  /** Rebuilt when the inventory loads (the Lager column depends on the property's stock flag), not per change detection. */
-  columns: MtxGridColumn[] = [];
 
   private buildColumns(): MtxGridColumn[] {
     const header = (key: string) => this.translate.stream(key);
@@ -119,8 +116,7 @@ export class ChemicalInventoryPageComponent implements OnInit {
 
   reload(): void {
     const generation = ++this.loadGeneration;
-    this.inventory = null;
-    this.rows = [];
+    this.setInventory(null);
     this.loadFailed = false;
     this.loading = this.propertyId !== null;
     this.applyFilters();
@@ -138,10 +134,7 @@ export class ChemicalInventoryPageComponent implements OnInit {
           this.loadFailed = true;
           return;
         }
-        this.inventory = res.model;
-        this.columns = this.buildColumns();
-        this.rows = buildInventoryRows(res.model, localToday());
-        this.applyFilters();
+        this.setInventory(res.model);
       },
       error: () => {
         if (generation === this.loadGeneration) {
@@ -173,7 +166,7 @@ export class ChemicalInventoryPageComponent implements OnInit {
     })).afterClosed().subscribe((saved) => saved && this.reload());
   }
 
-  /** W2 side panel - wired in Task 13. */
+  // TODO(Task 13): open the W2 side panel; the product button and the "Show details" item already call this.
   openDetails(row: ChemicalInventoryRow): void {
     void row;
   }
@@ -211,13 +204,9 @@ export class ChemicalInventoryPageComponent implements OnInit {
       return;
     }
     this.exporting = true;
-    download().subscribe({
+    download().pipe(finalize(() => (this.exporting = false))).subscribe({
       next: (file) => saveAs(file.blob, file.fileName),
-      error: (err: Partial<ChemicalDownloadError>) => {
-        this.exporting = false;
-        this.toastr.error(this.exportFailureText(err));
-      },
-      complete: () => (this.exporting = false),
+      error: (err: Partial<ChemicalDownloadError>) => this.toastr.error(this.exportFailureText(err)),
     });
   }
 
@@ -244,6 +233,18 @@ export class ChemicalInventoryPageComponent implements OnInit {
       return;
     }
     void this.router.navigate([], {queryParams: {filter: null}, queryParamsHandling: 'merge', replaceUrl: true});
+  }
+
+  /** The inventory and everything derived from it; null clears the page while a property loads. */
+  private setInventory(inventory: ChemicalInventoryModel | null): void {
+    this.inventory = inventory;
+    this.rows = inventory ? buildInventoryRows(inventory, localToday()) : [];
+    this.summary = summarizeActions(this.rows);
+    this.activeLocations = (inventory?.locations ?? []).filter((l) => !l.archived);
+    if (inventory) {
+      this.columns = this.buildColumns();
+    }
+    this.applyFilters();
   }
 
   private applyFilters(): void {

@@ -13,6 +13,7 @@ import {
   chemicalsUpdateInventoryFilters,
   selectChemicalsInventoryFilters,
 } from '../../../../state';
+import {inventoryOf, location, placement} from '../../helpers/chemical-inventory.fixtures';
 import {ChemicalInventoryPageComponent} from './chemical-inventory-page.component';
 
 jest.mock('file-saver', () => ({saveAs: jest.fn()}));
@@ -26,22 +27,10 @@ describe('ChemicalInventoryPageComponent', () => {
   let toastr: {error: jest.Mock};
   let router: {navigate: jest.Mock; currentNavigation: jest.Mock};
 
-  function inventoryOf(stockEnabled: boolean) {
-    return {
-      properties: [{propertyId: 3, name: 'Hovedgården', permissions: null, stockEnabled, callerWorkerId: null}],
-      locations: [{id: 10, propertyId: 3, name: 'Lade', description: '', photoFileName: null, sortOrder: 1, archived: false, updatedAt: ''}],
-      placements: [7, 8].map((id) => ({
-        id, locationId: 10, propertyId: 3, chemicalId: id * 10, productId: null, placementNote: '', registeredByUserId: 1,
-        registeredByName: 'A', registeredAt: '2026-09-01T00:00:00', removedByUserId: null, removedByName: null, removedAt: null,
-        removalReason: null, removalNote: null, movedFromPlacementId: null, balance: 0, unit: null, updatedAt: '',
-        writeOffEntryId: null,
-      })),
-      stockEntries: [],
-      registerEntries: [],
-      syncToken: '',
-      full: true,
-    };
-  }
+  const inventoryFor = (stockEnabled: boolean) => inventoryOf({
+    propertyId: 3, stockEnabled, locations: [location(10, 'Lade', {propertyId: 3})],
+    placements: [7, 8].map((id) => placement(id, 10, id * 10, {propertyId: 3})),
+  });
 
   function build(
     queryParams: Record<string, string> = {},
@@ -55,7 +44,7 @@ describe('ChemicalInventoryPageComponent', () => {
       dispatch: jest.fn(),
     };
     chemicals = {
-      getPropertyInventory: jest.fn().mockReturnValue(opts.inventory ?? of({success: true, model: inventoryOf(!!opts.stockEnabled)})),
+      getPropertyInventory: jest.fn().mockReturnValue(opts.inventory ?? of({success: true, model: inventoryFor(!!opts.stockEnabled)})),
       exportInventory: jest.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Kemikalier.xlsx'})),
       exportAuthorityList: jest.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Kemikalieliste.pdf'})),
       exportRemovedPlacements: jest.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Fjernede.xlsx'})),
@@ -125,7 +114,7 @@ describe('ChemicalInventoryPageComponent', () => {
       component.exportInventory();
       expect(chemicals.exportInventory).not.toHaveBeenCalled();
 
-      pending.next({success: true, model: inventoryOf(false)});
+      pending.next({success: true, model: inventoryFor(false)});
 
       expect(component.loading).toBe(false);
       expect(component.rows).toHaveLength(2);
@@ -146,7 +135,7 @@ describe('ChemicalInventoryPageComponent', () => {
 
     it('recovers on the next property', () => {
       const component = build({}, {inventory: throwError(() => new Error('500'))});
-      chemicals.getPropertyInventory.mockReturnValue(of({success: true, model: inventoryOf(false)}));
+      chemicals.getPropertyInventory.mockReturnValue(of({success: true, model: inventoryFor(false)}));
 
       property$.next(4);
 
@@ -159,12 +148,12 @@ describe('ChemicalInventoryPageComponent', () => {
     it('ignores the answer for a property the user already left', () => {
       const late = new Subject<unknown>();
       const component = build({}, {inventory: late});
-      const other = inventoryOf(false);
+      const other = inventoryFor(false);
       other.placements = other.placements.slice(0, 1);
       chemicals.getPropertyInventory.mockReturnValue(of({success: true, model: other}));
       property$.next(4);
 
-      late.next({success: true, model: inventoryOf(false)});
+      late.next({success: true, model: inventoryFor(false)});
 
       expect(component.rows.map((r) => r.placement.id)).toEqual([7]);
     });
@@ -172,12 +161,12 @@ describe('ChemicalInventoryPageComponent', () => {
     it('ignores an older answer for the same property that lands after a newer reload', () => {
       const first = new Subject<unknown>();
       const component = build({}, {inventory: first});
-      const fresh = inventoryOf(false);
+      const fresh = inventoryFor(false);
       fresh.placements = fresh.placements.slice(1);
       chemicals.getPropertyInventory.mockReturnValue(of({success: true, model: fresh}));
       component.reload();
 
-      first.next({success: true, model: inventoryOf(false)});
+      first.next({success: true, model: inventoryFor(false)});
 
       expect(component.rows.map((r) => r.placement.id)).toEqual([8]);
     });

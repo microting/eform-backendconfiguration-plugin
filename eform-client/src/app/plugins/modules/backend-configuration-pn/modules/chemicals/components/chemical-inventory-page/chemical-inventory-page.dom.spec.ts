@@ -13,6 +13,7 @@ import {ToastrService} from 'ngx-toastr';
 import {BehaviorSubject, Observable, Subject, of, throwError} from 'rxjs';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {chemicalsInitialState, selectChemicalsInventoryFilters} from '../../../../state';
+import {entry, inventoryOf, location, placement} from '../../helpers/chemical-inventory.fixtures';
 import {ChemicalInventoryPageComponent} from './chemical-inventory-page.component';
 
 /**
@@ -29,25 +30,13 @@ describe('ChemicalInventoryPageComponent (template)', () => {
 
   function render(locations: Array<{id: number; archived: boolean}>, answer?: Observable<unknown>): void {
     filters$ = new BehaviorSubject({...chemicalsInitialState.inventoryFilters});
-    const inventory = {
-      properties: [{propertyId: 3, name: 'Hovedgården', permissions: null, stockEnabled: false, callerWorkerId: null}],
-      locations: locations.map((l) => ({...l, propertyId: 3, name: `Lager ${l.id}`, description: '', photoFileName: null, sortOrder: l.id, updatedAt: ''})),
-      placements: [{
-        id: 7, locationId: 10, propertyId: 3, chemicalId: 200, productId: null, placementNote: '', registeredByUserId: 1,
-        registeredByName: 'A', registeredAt: '2026-09-01T00:00:00', removedByUserId: null, removedByName: null, removedAt: null,
-        removalReason: null, removalNote: null, movedFromPlacementId: null, balance: 0, unit: null, updatedAt: '', writeOffEntryId: null,
-      }],
-      stockEntries: [],
+    const inventory = inventoryOf({
+      propertyId: 3,
+      locations: locations.map((l) => location(l.id, `Lager ${l.id}`, {propertyId: 3, archived: l.archived})),
+      placements: [placement(7, 10, 200, {propertyId: 3})],
       // Afmeldt (6): requires action whatever today's date is.
-      registerEntries: [{
-        chemicalId: 200, name: 'Karate 2,5 WG', registrationNo: '1-212', status: 6, statusText: 'Produkt afmeldt',
-        salesDeadline: null, useAndPossessionDeadline: null, authorisationDate: null, authorisationExpirationDate: null,
-        authorisationTerminationDate: null, hazardPictograms: [], signalWord: null, signalWordText: '', hazardStatements: [],
-        activeSubstances: [], authorisationHolder: '', products: [], updatedAt: '',
-      }],
-      syncToken: '',
-      full: true,
-    };
+      registerEntries: [entry(200, 'Karate 2,5 WG', {registrationNo: '1-212', status: 6, statusText: 'Produkt afmeldt', products: []})],
+    });
     TestBed.configureTestingModule({
       declarations: [ChemicalInventoryPageComponent],
       // The real mtx-select: ngModel needs its value accessor.

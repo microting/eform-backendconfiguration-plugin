@@ -1,4 +1,5 @@
-import {ChemicalInventoryModel, ChemicalPlacementModel, ChemicalRegisterEntryModel, ChemicalStockUnit} from '../../../models';
+import {ChemicalStockUnit} from '../../../models';
+import {entry, inventoryOf, location, placement} from './chemical-inventory.fixtures';
 import {
   buildInventoryRows,
   chemicalStatusLabelKey,
@@ -10,32 +11,9 @@ import {
 
 const TODAY = '2026-09-29';
 
-function entry(id: number, name: string, partial: Partial<ChemicalRegisterEntryModel> = {}): ChemicalRegisterEntryModel {
-  return {
-    chemicalId: id, name, registrationNo: `${id}-1`, status: 5, statusText: 'Produkt godkendt',
-    salesDeadline: null, useAndPossessionDeadline: null, authorisationDate: null, authorisationExpirationDate: null,
-    authorisationTerminationDate: null, hazardPictograms: ['GHS07'], signalWord: 2, signalWordText: 'Advarsel',
-    hazardStatements: [], activeSubstances: [], authorisationHolder: 'Syngenta',
-    products: [{productId: id * 10, name: `${name} 1 L`, barcode: '', sdsFileName: `sds${id}`, sdsChecksum: `sds${id}`}],
-    updatedAt: '2026-09-01T00:00:00', ...partial,
-  };
-}
-
-function placement(id: number, locationId: number, chemicalId: number, partial: Partial<ChemicalPlacementModel> = {}): ChemicalPlacementModel {
-  return {
-    id, locationId, propertyId: 1, chemicalId, productId: null, placementNote: `Hylde ${id}`, registeredByUserId: 5,
-    registeredByName: 'Jens Hansen', registeredAt: '2026-08-12T08:00:00', removedByUserId: null, removedByName: null,
-    removedAt: null, removalReason: null, removalNote: null, movedFromPlacementId: null, balance: 0, unit: null,
-    updatedAt: '2026-08-12T08:00:00', writeOffEntryId: null, ...partial,
-  };
-}
-
-const inventory: ChemicalInventoryModel = {
-  properties: [{propertyId: 1, name: 'Hovedgården', permissions: null, stockEnabled: true, callerWorkerId: null}],
-  locations: [
-    {id: 10, propertyId: 1, name: 'Værksted', description: '', photoFileName: null, sortOrder: 2, archived: false, updatedAt: ''},
-    {id: 11, propertyId: 1, name: 'Lade', description: '', photoFileName: null, sortOrder: 1, archived: false, updatedAt: ''},
-  ],
+const inventory = inventoryOf({
+  stockEnabled: true,
+  locations: [location(10, 'Værksted', {sortOrder: 2}), location(11, 'Lade', {sortOrder: 1})],
   placements: [
     placement(1, 10, 100),
     placement(2, 11, 200, {balance: 3.5, unit: ChemicalStockUnit.Kg}),
@@ -43,15 +21,12 @@ const inventory: ChemicalInventoryModel = {
     placement(4, 11, 100, {removedAt: '2026-09-01T00:00:00'}),
     placement(5, 10, 999),
   ],
-  stockEntries: [],
   registerEntries: [
     entry(100, 'Virkon S'),
     entry(200, 'Karate 2,5 WG', {status: 6, statusText: 'Produkt afmeldt', useAndPossessionDeadline: '2027-03-01T00:00:00'}),
     entry(300, 'Stalddesinfektion Plus', {status: 7, statusText: 'Produkt udløbet', useAndPossessionDeadline: '2026-07-01T00:00:00'}),
   ],
-  syncToken: '',
-  full: true,
-};
+});
 
 describe('chemical inventory helper', () => {
   const rows = buildInventoryRows(inventory, TODAY);

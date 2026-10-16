@@ -111,7 +111,14 @@ export function filterInventoryRows(rows: ChemicalInventoryRow[], filters: Chemi
     && (!filters.requiresActionOnly || row.requiresAction));
 }
 
-export function summarizeActions(rows: ChemicalInventoryRow[]): {total: number; overdue: number; warning: number} {
+/** The "Kræver handling" chip and banner counts. */
+export interface ChemicalActionSummary {
+  total: number;
+  overdue: number;
+  warning: number;
+}
+
+export function summarizeActions(rows: ChemicalInventoryRow[]): ChemicalActionSummary {
   return {
     total: rows.filter((r) => r.requiresAction).length,
     overdue: rows.filter((r) => r.severity === 'overdue').length,
