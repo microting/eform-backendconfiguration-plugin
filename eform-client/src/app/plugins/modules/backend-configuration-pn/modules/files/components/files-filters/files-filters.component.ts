@@ -18,6 +18,7 @@ import {debounceTime, skip} from 'rxjs/operators';
 import {Store} from '@ngrx/store';
 import {
   selectFilesFilters,
+  selectFilesNameFilters,
   FilesFiltrationModel, filesUpdateFilters
 } from '../../../../state';
 
@@ -45,6 +46,7 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
   selectFiltersSub$: Subscription;
   filterChangesSub$: Subscription;
   getAllPropertiesSub$: Subscription;
+  nameFilterSyncSub$: Subscription;
   @Input()
   get availableTags(): SharedTagModel[] {
     return this._availableTags;
@@ -121,6 +123,14 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
         this.store.dispatch(filesUpdateFilters(filters))
         this.updateTable.emit();
       });
+
+    // Selecting a folder clears the search in the store (filesSelectFolder); mirror that into the field
+    // without emitting, so the cleared text does not trigger another reload.
+    this.nameFilterSyncSub$ = this.store.select(selectFilesNameFilters).subscribe(name => {
+      if (this.filtersForm && this.filtersForm.value.nameFilter !== name) {
+        this.filtersForm.patchValue({nameFilter: name}, {emitEvent: false});
+      }
+    });
   }
 
   getProperties() {

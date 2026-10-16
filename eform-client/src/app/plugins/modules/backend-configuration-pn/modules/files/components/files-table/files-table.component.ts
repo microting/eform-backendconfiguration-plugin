@@ -1,217 +1,133 @@
-import {
-  Component,
-  EventEmitter,
-  Input,
-  OnInit,
-  Output,
-  inject,
-  OnChanges,
-  OnDestroy,
-  AfterViewChecked,
-  SimpleChanges,
-  ElementRef
-} from '@angular/core';
-import {FilesModel} from '../../../../models';
-import {MtxGridColumn} from '@ng-matero/extensions/grid';
+import {Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, inject} from '@angular/core';
 import {TranslateService} from '@ngx-translate/core';
-import {Paged, SharedTagModel} from 'src/app/common/models';
-import {FilesStateService} from '../../store';
-import {Sort} from '@angular/material/sort';
-import {BackendConfigurationPnFilesService} from 'src/app/plugins/modules/backend-configuration-pn/services';
-import {Store} from "@ngrx/store";
-import {
-  selectFilesNameFilters,
-  selectFilesPaginationIsSortDsc,
-  selectFilesPaginationSort
-} from "src/app/plugins/modules/backend-configuration-pn/state/files/files.selector";
+import {Paged} from 'src/app/common/models';
+import {DocumentDateState, FilesModel} from '../../../../models';
+import {BackendConfigurationPnFilesService} from '../../../../services';
+import {ARCHIVE_PATH_SEPARATOR, dateOnlyOf, groupNames} from '../../../../helpers';
 
+/**
+ * The W1 document table: Checkbox · Navn · Dokumentdato · Ejendomme · Læseadgang (admin) · Etiketter.
+ * A native table so rows can be HTML5 drag sources for the folder tree. Selection is owned by the page
+ * (`selectedIds`) and emitted in table order, so "1 af 2 valgte" follows the rows.
+ */
 @Component({
-    selector: 'app-files-table',
-    templateUrl: './files-table.component.html',
-    styleUrls: ['./files-table.component.scss'],
-    standalone: false
+  selector: 'app-files-table',
+  templateUrl: './files-table.component.html',
+  standalone: false,
 })
-export class FilesTableComponent implements OnInit, OnChanges, OnDestroy, AfterViewChecked {
-  private store = inject(Store);
-  public filesStateService = inject(FilesStateService);
-  private translateService = inject(TranslateService);
+export class FilesTableComponent implements OnChanges, OnDestroy {
   private filesService = inject(BackendConfigurationPnFilesService);
-  private el = inject(ElementRef);
+  private translateService = inject(TranslateService);
 
-  _files: Paged<FilesModel> = new Paged<FilesModel>();
-  @Input()
-  set files(files: Paged<FilesModel>) {
-    if (files?.entities?.length) {
-      files.entities = files.entities.map(file => ({
-        ...file,
-        tags: file.tags
-          ? [...file.tags].sort((a, b) =>
-            a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
-          )
-          : []
-      }));
-    }
-    this._files = files;
-    this.selectedFiles = [];
-    this.allFileSelected = false;
-  }
-  get files() {
-    return this._files;
-  }
-  @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
-  @Output() openDeleteModal: EventEmitter<FilesModel> = new EventEmitter<FilesModel>();
-  @Output() openEditNameModal: EventEmitter<FilesModel> = new EventEmitter<FilesModel>();
-  @Output() openEditTagsModal: EventEmitter<FilesModel> = new EventEmitter<FilesModel>();
-  @Output() changeSelectedFiles: EventEmitter<number[]> = new EventEmitter<number[]>();
-  @Output() clickTag: EventEmitter<number> = new EventEmitter<number>();
-  @Output() highlightedRowRendered: EventEmitter<void> = new EventEmitter<void>();
+  @Input() files: Paged<FilesModel> = new Paged<FilesModel>();
+  @Input() isAdmin = false;
+  /** Search and "Dato skal tjekkes" span all folders: then each name shows its folder path. */
+  @Input() showPath = false;
+  @Input() loaded = false;
+  @Input() selectedIds: number[] = [];
+  @Input() currentFileId: number | null = null;
   @Input() highlightedFileId: number | null = null;
-  private pendingScrollToFileId: number | null = null;
-  private waitingForFreshData = false;
+  @Input() sortField = '';
+  @Input() sortDesc = false;
+  @Output() selectedIdsChange = new EventEmitter<number[]>();
+  @Output() openFile = new EventEmitter<FilesModel>();
+  @Output() openDeleteModal = new EventEmitter<FilesModel>();
+  @Output() rowDragStart = new EventEmitter<FilesModel>();
+  @Output() rowDragEnd = new EventEmitter<void>();
+  @Output() sort = new EventEmitter<string>();
 
-  selectedFiles: number[] = [];
-  allFileSelected: boolean = false;
-
-  tableHeaders: MtxGridColumn[] = [
-    {field: 'select', header: '', width: '50px'},
-    {field: 'id', header: this.translateService.stream('Id'), sortable: true, sortProp: {id: 'Id'}},
-    {
-      field: 'createDate',
-      header: this.translateService.stream('Create date'),
-      type: 'date',
-      typeParameter: {format: 'dd.MM.yyyy HH:mm:ss'},
-      sortable: true,
-      sortProp: {id: 'CreatedAt'}
-    },
-    {
-      field: 'fileName',
-      header: this.translateService.stream('File name'),
-      sortable: true,
-      sortProp: {id: 'FileName'},
-      formatter: (filesModel: FilesModel) => `${filesModel.fileName}.${filesModel.fileExtension}`
-    },
-    {field: 'property', header: this.translateService.stream('Property'), sortable: false, sortProp: {id: 'PropertyId'}},
-    {field: 'tags', header: this.translateService.stream('Tags')},
-    {
-      field: 'actions',
-      header: this.translateService.stream('Actions'),
-      width: '200px',
-      pinned: 'right',
-      right: '0px',
-    },
-  ];
-  pdfSub$: any;
-
-  get getIntermediateSelectedFiles() {
-    return this.selectedFiles.length > 0 && this.selectedFiles.length !== this._files.total;
-  }
-  public selectFilesPaginationSort$ = this.store.select(selectFilesPaginationSort);
-  public selectFilesPaginationIsSortDsc$ = this.store.select(selectFilesPaginationIsSortDsc);
-  public selectFilesNameFilters$ = this.store.select(selectFilesNameFilters);
-
-
-
-  ngOnInit(): void {
-  }
+  readonly DateState = DocumentDateState;
+  rows: FilesModel[] = [];
+  /** The blob URL of the last opened PDF; revoked when the next one opens or the table goes away. */
+  private viewUrl: string | null = null;
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['highlightedFileId'] && this.highlightedFileId) {
-      this.waitingForFreshData = true;
-      this.pendingScrollToFileId = null;
-    }
-    if (changes['files'] && this.waitingForFreshData && this.highlightedFileId) {
-      this.waitingForFreshData = false;
-      this.pendingScrollToFileId = this.highlightedFileId;
-    }
-  }
-
-  ngAfterViewChecked(): void {
-    if (this.pendingScrollToFileId && this._files?.entities?.length) {
-      const fileId = this.pendingScrollToFileId;
-      const index = this._files.entities.findIndex(f => f.id === fileId);
-      if (index >= 0) {
-        this.pendingScrollToFileId = null;
-        setTimeout(() => {
-          const row = this.el.nativeElement.querySelector(`#fileId-${index}`);
-          if (row) {
-            const tr = row.closest('tr') || row.closest('mat-row') || row.parentElement;
-            if (tr) {
-              tr.scrollIntoView({behavior: 'smooth', block: 'center'});
-              tr.classList.add('highlight-row');
-              setTimeout(() => tr.classList.remove('highlight-row'), 5000);
-            }
-          }
-          this.highlightedRowRendered.emit();
-        });
-      }
+    if (changes['files']) {
+      this.rows = (this.files?.entities ?? []).map(file => ({
+        ...file,
+        tags: [...(file.tags ?? [])].sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'})),
+      }));
     }
   }
 
   ngOnDestroy(): void {
+    this.revokeViewUrl();
   }
 
-  rowClassFormatter = (rowData: any) => {
-    if (this.highlightedFileId && rowData.id === this.highlightedFileId) {
-      return {'highlight-row': true};
-    }
-    return {};
-  };
+  trackById(_: number, row: FilesModel): number {
+    return row.id;
+  }
 
-  onOpenView(file: FilesModel) {
-    this.pdfSub$ = this.filesService.getPdfFile(file.id).subscribe((blob) => {
-      const fileURL = URL.createObjectURL(blob);
-      window.open(fileURL);
+  /** Enter or Space on a focused row opens it, like a click. Keys on the checkbox or the menu button are theirs. */
+  onRowKey(event: Event, row: FilesModel): void {
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+    event.preventDefault();
+    this.openFile.emit(row);
+  }
+
+  get allSelected(): boolean {
+    return this.rows.length > 0 && this.rows.every(r => this.selectedIds.includes(r.id));
+  }
+
+  get someSelected(): boolean {
+    return this.selectedIds.length > 0 && !this.allSelected;
+  }
+
+  isSelected(id: number): boolean {
+    return this.selectedIds.includes(id);
+  }
+
+  toggle(id: number): void {
+    const selected = new Set(this.selectedIds);
+    if (selected.has(id)) {
+      selected.delete(id);
+    } else {
+      selected.add(id);
+    }
+    this.selectedIdsChange.emit(this.rows.filter(r => selected.has(r.id)).map(r => r.id));
+  }
+
+  toggleAll(checked: boolean): void {
+    this.selectedIdsChange.emit(checked ? this.rows.map(r => r.id) : []);
+  }
+
+  /** The server's calendar day as yyyy-MM-dd (serverDay), which the date pipe reads as a local day. */
+  documentDay(row: FilesModel): string | null {
+    return dateOnlyOf(row.documentDate);
+  }
+
+  pathLabel(row: FilesModel): string {
+    return (row.folderPath ?? []).join(ARCHIVE_PATH_SEPARATOR);
+  }
+
+  ownAccessLabel(row: FilesModel): string {
+    return row.readGroups?.length ? groupNames(row.readGroups) : this.translateService.instant('everyone with archive access');
+  }
+
+  onDragStart(event: DragEvent, row: FilesModel): void {
+    if (event.dataTransfer) {
+      // Firefox only starts a drag with data set; the page tracks the dragged ids itself.
+      event.dataTransfer.setData('text/plain', String(row.id));
+      event.dataTransfer.effectAllowed = 'move';
+    }
+    this.rowDragStart.emit(row);
+  }
+
+  onOpenView(row: FilesModel): void {
+    this.filesService.getPdfFile(row.id).subscribe(blob => {
+      // Not revoked at once: the new tab may still be loading it.
+      this.revokeViewUrl();
+      this.viewUrl = URL.createObjectURL(blob);
+      window.open(this.viewUrl);
     });
   }
 
-  onOpenDeleteModal(model: FilesModel) {
-    this.openDeleteModal.emit(model);
-  }
-
-  onShowEditDocumentModal(model: FilesModel) {
-    this.openEditNameModal.emit(model);
-  }
-
-  openEditTags(model: FilesModel) {
-    this.openEditTagsModal.emit(model);
-  }
-
-  onSortTable(sort: Sort) {
-    this.filesStateService.onSortTable(sort.active);
-    this.updateTable.emit();
-  }
-
-  onClickTag(tag: SharedTagModel) {
-    this.clickTag.emit(tag.id);
-  }
-
-  onChangeSelectedFiles(row: FilesModel) {
-    const i = this.selectedFiles.findIndex(x => x === row.id);
-    if (i !== -1) {
-      this.selectedFiles = this.selectedFiles.filter(x => x !== row.id);
-    } else {
-      this.selectedFiles = [...this.selectedFiles, row.id];
+  private revokeViewUrl(): void {
+    if (this.viewUrl) {
+      URL.revokeObjectURL(this.viewUrl);
+      this.viewUrl = null;
     }
-    if (this.selectedFiles.length === 0) {
-      this.allFileSelected = false;
-    } else if (this.selectedFiles.length !== this._files.total) {
-      this.allFileSelected = true;
-    }
-    this.changeSelectedFiles.emit(this.selectedFiles);
-  }
-
-  selectAllFiles(selected: boolean) {
-    this.allFileSelected = selected;
-    if (selected) {
-      this.selectedFiles = this._files.entities.map(x => x.id);
-    } else {
-      this.selectedFiles = [];
-    }
-    this.changeSelectedFiles.emit(this.selectedFiles);
-  }
-
-  getSelectedFile(row: FilesModel) {
-    const i = this.selectedFiles.findIndex(x => x === row.id);
-    return i !== -1;
   }
 }
