@@ -271,7 +271,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddMemoryCache();
         services.AddControllers();
         SeedEForms(services).GetAwaiter().GetResult();
-        // QuestPDF 2202.8+ is fully open-source; no license configuration needed.
+        // QuestPDF licence: LicenseType.Community, set once in AddChemicalReporting.
     }
 
     public void AddPluginConfig(IConfigurationBuilder builder, string connectionString)

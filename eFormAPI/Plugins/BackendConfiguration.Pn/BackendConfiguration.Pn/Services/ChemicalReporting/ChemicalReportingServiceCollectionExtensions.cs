@@ -23,15 +23,20 @@ namespace BackendConfiguration.Pn.Services.ChemicalReporting;
 using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using QuestPDF.Infrastructure;
 
 public static class ChemicalReportingServiceCollectionExtensions
 {
     /// <summary>Services behind ChemicalDigestController and ChemicalReportsController (Plan E).</summary>
     public static IServiceCollection AddChemicalReporting(this IServiceCollection services)
     {
+        // E-08: Microting is within the QuestPDF Community limits (owner, 2026-10-14). Set once here,
+        // at plugin start-up, never per render.
+        QuestPDF.Settings.License = LicenseType.Community;
         services.TryAddSingleton(TimeProvider.System);
         services.AddTransient<IChemicalDigestPreviewBuilder, ChemicalDigestPreviewBuilder>();
         services.AddTransient<IChemicalHistoryService, ChemicalHistoryService>();
+        services.AddTransient<IChemicalExportService, ChemicalExportService>();
         return services;
     }
 }
