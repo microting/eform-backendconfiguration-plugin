@@ -22,6 +22,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Chemicals;
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 
 public enum ChemicalHistoryActionEnum
@@ -50,7 +51,7 @@ public sealed record ChemicalHistoryQuery(
 /// <summary>
 /// The W6 filter as the client sends it: From/To are exactly "yyyy-MM-dd" strings. A time, an
 /// offset or "Z" is rejected here (a DateTime cannot carry an offset, so the model binder would
-/// swallow it silently); ChemicalHistoryService re-checks the resulting dates.
+/// swallow it silently). ChemicalHistoryService still checks the time of day for its other callers.
 /// </summary>
 public sealed record ChemicalHistoryRequest(
     string From, string To, int? UserId, ChemicalHistoryActionEnum? Action, int? LocationId, int Page = 0, int PageSize = 25)
@@ -62,8 +63,8 @@ public sealed record ChemicalHistoryRequest(
         new(ParseDate(From, nameof(From)), ParseDate(To, nameof(To)), UserId, Action, LocationId, Page, PageSize);
 
     private static DateTime ParseDate(string value, string field) =>
-        DateTime.TryParseExact(value, DateFormat, System.Globalization.CultureInfo.InvariantCulture,
-            System.Globalization.DateTimeStyles.None, out var date)
+        DateTime.TryParseExact(value, DateFormat, CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out var date)
             ? date
             : throw new ArgumentException($"{field} must be a date formatted as yyyy-MM-dd.");
 }

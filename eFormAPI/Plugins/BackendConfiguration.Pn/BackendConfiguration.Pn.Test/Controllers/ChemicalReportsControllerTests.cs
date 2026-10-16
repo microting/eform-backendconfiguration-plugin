@@ -44,8 +44,8 @@ namespace BackendConfiguration.Pn.Test.Controllers;
 public class ChemicalReportsControllerTests
 {
     private const int UserId = 5;
-    private static readonly ChemicalHistoryRequest Request = new("2026-09-01", "2026-09-29", null, null, null);
-    private static readonly ChemicalHistoryQuery Query = Request.ToQuery();
+    private static readonly ChemicalHistoryRequest SampleRequest = new("2026-09-01", "2026-09-29", null, null, null);
+    private static readonly ChemicalHistoryQuery SampleQuery = SampleRequest.ToQuery();
 
     private static readonly string[] ExpectedRoutes =
     [
@@ -94,9 +94,9 @@ public class ChemicalReportsControllerTests
     {
         var sut = CreateSut();
         var page = new ChemicalHistoryPageModel([], 0, []);
-        _history.GetPageAsync(3, Query).Returns(page);
+        _history.GetPageAsync(3, SampleQuery).Returns(page);
 
-        var result = await sut.GetHistory(3, Request);
+        var result = await sut.GetHistory(3, SampleRequest);
 
         Assert.That(result.Success, Is.True);
         Assert.That(result.Model, Is.SameAs(page));
@@ -110,7 +110,7 @@ public class ChemicalReportsControllerTests
         _permissions.RequireAsync(ChemicalCaller.Web(UserId), 3, ChemicalPermission.View)
             .ThrowsAsync(new ChemicalPermissionDeniedException("No View permission on property 3."));
 
-        var result = await sut.GetHistory(3, Request);
+        var result = await sut.GetHistory(3, SampleRequest);
 
         Assert.That(result.Success, Is.False);
         Assert.That(result.Message, Does.Contain("No View permission"));
@@ -121,9 +121,9 @@ public class ChemicalReportsControllerTests
     public async Task GetHistory_ServiceValidationError_IsA200FailedResultWithTheReason()
     {
         var sut = CreateSut();
-        _history.GetPageAsync(3, Query).ThrowsAsync(new ArgumentException("The period ends before it starts."));
+        _history.GetPageAsync(3, SampleQuery).ThrowsAsync(new ArgumentException("The period ends before it starts."));
 
-        var result = await sut.GetHistory(3, Request);
+        var result = await sut.GetHistory(3, SampleRequest);
 
         Assert.That(result.Success, Is.False);
         Assert.That(result.Message, Is.EqualTo("ErrorWhileReadingChemicalHistory: The period ends before it starts."));
@@ -143,7 +143,7 @@ public class ChemicalReportsControllerTests
     {
         var sut = CreateSut();
 
-        var result = await sut.GetHistory(3, Request with { From = from });
+        var result = await sut.GetHistory(3, SampleRequest with { From = from });
 
         Assert.That(result.Success, Is.False);
         Assert.That(result.Message, Does.StartWith("ErrorWhileReadingChemicalHistory: From must be"));
@@ -156,7 +156,7 @@ public class ChemicalReportsControllerTests
     {
         var sut = CreateSut();
 
-        var result = await sut.GetHistory(3, Request with { To = "2026-09-29T00:00:00+00:00" });
+        var result = await sut.GetHistory(3, SampleRequest with { To = "2026-09-29T00:00:00+00:00" });
 
         Assert.That(result.Success, Is.False);
         Assert.That(result.Message, Does.StartWith("ErrorWhileReadingChemicalHistory: To must be"));
@@ -177,9 +177,9 @@ public class ChemicalReportsControllerTests
     public async Task GetHistory_UnexpectedFailure_HidesTheRawMessage()
     {
         var sut = CreateSut();
-        _history.GetPageAsync(3, Query).ThrowsAsync(new InvalidOperationException("boom"));
+        _history.GetPageAsync(3, SampleQuery).ThrowsAsync(new InvalidOperationException("boom"));
 
-        var result = await sut.GetHistory(3, Request);
+        var result = await sut.GetHistory(3, SampleRequest);
 
         Assert.That(result.Success, Is.False);
         Assert.That(result.Message, Is.EqualTo("ErrorWhileReadingChemicalHistory"));
@@ -189,11 +189,11 @@ public class ChemicalReportsControllerTests
     public async Task GetHistory_TypedOutcomes_AreNotSentToSentry_ButUnexpectedOnesAre()
     {
         var sut = CreateSut();
-        _history.GetPageAsync(3, Query).ThrowsAsync(new ChemicalNotFoundException("gone"));
-        Assert.That(await ControllerTestKit.CountSentryEventsAsync(() => sut.GetHistory(3, Request)), Is.Zero);
+        _history.GetPageAsync(3, SampleQuery).ThrowsAsync(new ChemicalNotFoundException("gone"));
+        Assert.That(await ControllerTestKit.CountSentryEventsAsync(() => sut.GetHistory(3, SampleRequest)), Is.Zero);
 
-        _history.GetPageAsync(3, Query).ThrowsAsync(new InvalidOperationException("boom"));
-        Assert.That(await ControllerTestKit.CountSentryEventsAsync(() => sut.GetHistory(3, Request)), Is.EqualTo(1));
+        _history.GetPageAsync(3, SampleQuery).ThrowsAsync(new InvalidOperationException("boom"));
+        Assert.That(await ControllerTestKit.CountSentryEventsAsync(() => sut.GetHistory(3, SampleRequest)), Is.EqualTo(1));
     }
 
     // ---- downloads ----
@@ -202,9 +202,9 @@ public class ChemicalReportsControllerTests
     public async Task ExportHistory_ChecksViewOnTheProperty_AndIsAnXlsxFile()
     {
         var sut = CreateSut();
-        _exports.HistoryXlsxAsync(3, Query).Returns(new ChemicalExportFile([1], "h.xlsx", ChemicalExportService.XlsxContentType));
+        _exports.HistoryXlsxAsync(3, SampleQuery).Returns(new ChemicalExportFile([1], "h.xlsx", ChemicalExportService.XlsxContentType));
 
-        var result = (FileContentResult)await sut.ExportHistory(3, Request);
+        var result = (FileContentResult)await sut.ExportHistory(3, SampleRequest);
 
         Assert.That(result.ContentType, Is.EqualTo(ChemicalExportService.XlsxContentType));
         await _permissions.Received(1).RequireAsync(ChemicalCaller.Web(UserId), 3, ChemicalPermission.View);
@@ -217,7 +217,7 @@ public class ChemicalReportsControllerTests
         _permissions.RequireAsync(ChemicalCaller.Web(UserId), 3, ChemicalPermission.View)
             .ThrowsAsync(new ChemicalPermissionDeniedException("No View permission on property 3."));
 
-        AssertStatus(await sut.ExportHistory(3, Request), StatusCodes.Status403Forbidden);
+        AssertStatus(await sut.ExportHistory(3, SampleRequest), StatusCodes.Status403Forbidden);
         await _exports.DidNotReceiveWithAnyArgs().HistoryXlsxAsync(default, default);
     }
 
@@ -227,7 +227,7 @@ public class ChemicalReportsControllerTests
     {
         var sut = CreateSut();
 
-        AssertStatus(await sut.ExportHistory(3, Request with { From = from }), StatusCodes.Status400BadRequest);
+        AssertStatus(await sut.ExportHistory(3, SampleRequest with { From = from }), StatusCodes.Status400BadRequest);
         await _exports.DidNotReceiveWithAnyArgs().HistoryXlsxAsync(default, default);
     }
 
