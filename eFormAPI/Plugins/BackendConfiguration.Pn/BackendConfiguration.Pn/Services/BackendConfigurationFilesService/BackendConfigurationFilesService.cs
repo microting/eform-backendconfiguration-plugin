@@ -31,6 +31,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using ArchiveFolders;
 using BackendConfigurationFileTagsService;
 using BackendConfigurationLocalizationService;
 using FileArchive;
@@ -38,6 +39,7 @@ using Infrastructure.Models.Files;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure.Constants;
+using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Helpers;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
@@ -321,13 +323,16 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 	{
 		try
 		{
+			// Until the caller can choose a folder, files go to the default folder.
+			var folderId = await ArchiveDefaultFolder.GetOrCreateIdAsync(_dbContext, _userService.UserId);
 			foreach (var fileCreate in model.Where(x => x.File != null))
 			{
 				var fileExtension = Path.GetExtension(fileCreate.File.FileName).TrimStart('.').ToLower();
 				var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileCreate.File.FileName);
 				await using var stream = fileCreate.File.OpenReadStream();
 				await _fileArchiver.ArchiveAsync(stream, fileNameWithoutExtension, fileExtension,
-					fileCreate.PropertyIds, fileCreate.TagIds, _userService.UserId);
+					fileCreate.PropertyIds, fileCreate.TagIds, folderId, null, DocumentDateState.None,
+					_userService.UserId);
 			}
 
 			return new OperationResult(true);

@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Inbox;
+using BackendConfiguration.Pn.Services.ArchiveFolders;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.FileArchive;
 using Microsoft.EntityFrameworkCore;
@@ -126,10 +127,13 @@ public class InboxService(BackendConfigurationPnDbContext dbContext, IArchiveSto
             }
 
             pdf.Position = 0;
+            // Until the caller can choose a folder, files go to the default folder.
+            var folderId = await ArchiveDefaultFolder.GetOrCreateIdAsync(dbContext, userId);
 
             // The inbox state commits in the archiver's own transaction, so the archive rows and the
             // Filed status can never disagree. The callback may run again on a retry: it reloads what it changes.
-            await archiver.ArchiveAsync(pdf, name, "pdf", propertyIds, tagIds, userId, async fileId =>
+            await archiver.ArchiveAsync(pdf, name, "pdf", propertyIds, tagIds, folderId, null,
+                DocumentDateState.None, userId, async fileId =>
             {
                 // Claims the row (blocks a concurrent filer until commit) only while it is still Ready.
                 var claimed = await dbContext.InboxDocuments
