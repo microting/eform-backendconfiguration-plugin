@@ -1,0 +1,192 @@
+import {DestroyRef, Injector, runInInjectionContext} from '@angular/core';
+import {Overlay} from '@angular/cdk/overlay';
+import {MatDialog} from '@angular/material/dialog';
+import {ActivatedRoute, convertToParamMap} from '@angular/router';
+import {Store} from '@ngrx/store';
+import {TranslateService} from '@ngx-translate/core';
+import {ToastrService} from 'ngx-toastr';
+import {BehaviorSubject, Subject, of, throwError} from 'rxjs';
+import {BackendConfigurationPnChemicalsService} from '../../../../services';
+import {
+  chemicalsInitialState,
+  chemicalsSelectProperty,
+  chemicalsUpdateInventoryFilters,
+  selectChemicalsInventoryFilters,
+} from '../../../../state';
+import {ChemicalInventoryPageComponent} from './chemical-inventory-page.component';
+
+jest.mock('file-saver', () => ({saveAs: jest.fn()}));
+import {saveAs} from 'file-saver';
+
+describe('ChemicalInventoryPageComponent', () => {
+  let property$: BehaviorSubject<number | null>;
+  let filters$: BehaviorSubject<typeof chemicalsInitialState.inventoryFilters>;
+  let store: {select: jest.Mock; dispatch: jest.Mock};
+  let chemicals: Record<string, jest.Mock>;
+  let toastr: {error: jest.Mock};
+
+  function inventoryOf(stockEnabled: boolean) {
+    return {
+      properties: [{propertyId: 3, name: 'Hovedgården', permissions: null, stockEnabled, callerWorkerId: null}],
+      locations: [{id: 10, propertyId: 3, name: 'Lade', description: '', photoFileName: null, sortOrder: 1, archived: false, updatedAt: ''}],
+      placements: [7, 8].map((id) => ({
+        id, locationId: 10, propertyId: 3, chemicalId: id * 10, productId: null, placementNote: '', registeredByUserId: 1,
+        registeredByName: 'A', registeredAt: '2026-09-01T00:00:00', removedByUserId: null, removedByName: null, removedAt: null,
+        removalReason: null, removalNote: null, movedFromPlacementId: null, balance: 0, unit: null, updatedAt: '',
+        writeOffEntryId: null,
+      })),
+      stockEntries: [],
+      registerEntries: [],
+      syncToken: '',
+      full: true,
+    };
+  }
+
+  function build(queryParams: Record<string, string> = {}, opts: {stockEnabled?: boolean; propertyId?: number | null} = {}): ChemicalInventoryPageComponent {
+    (saveAs as unknown as jest.Mock).mockClear();
+    property$ = new BehaviorSubject<number | null>(opts.propertyId === undefined ? 3 : opts.propertyId);
+    filters$ = new BehaviorSubject({...chemicalsInitialState.inventoryFilters});
+    store = {
+      select: jest.fn().mockImplementation((selector) => (selector === selectChemicalsInventoryFilters ? filters$ : property$)),
+      dispatch: jest.fn(),
+    };
+    chemicals = {
+      getPropertyInventory: jest.fn().mockReturnValue(of({success: true, model: inventoryOf(!!opts.stockEnabled)})),
+      exportInventory: jest.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Kemikalier.xlsx'})),
+      exportAuthorityList: jest.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Kemikalieliste.pdf'})),
+      exportRemovedPlacements: jest.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Fjernede.xlsx'})),
+    };
+    toastr = {error: jest.fn()};
+    const injector = Injector.create({providers: [
+      {provide: Store, useValue: store},
+      {provide: BackendConfigurationPnChemicalsService, useValue: chemicals},
+      {provide: ActivatedRoute, useValue: {snapshot: {queryParamMap: convertToParamMap(queryParams)}}},
+      {provide: MatDialog, useValue: {open: jest.fn()}},
+      {provide: Overlay, useValue: {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}}},
+      {provide: DestroyRef, useValue: {onDestroy: jest.fn()}},
+      {provide: ToastrService, useValue: toastr},
+      {provide: TranslateService, useValue: {instant: (k: string) => k, stream: (k: string) => of(k)}},
+    ]});
+    const component = runInInjectionContext(injector, () => new ChemicalInventoryPageComponent());
+    component.ngOnInit();
+    return component;
+  }
+
+  it('loads the inventory of the selected property', () => {
+    const component = build();
+
+    expect(chemicals.getPropertyInventory).toHaveBeenCalledWith(3);
+    expect(component.rows.map((r) => r.placement.id)).toEqual([7, 8]);
+  });
+
+  it('makes no call while no property is selected', () => {
+    const component = build({}, {propertyId: null});
+
+    expect(chemicals.getPropertyInventory).not.toHaveBeenCalled();
+    expect(component.rows).toEqual([]);
+  });
+
+  it('reloads when the property changes', () => {
+    build();
+    chemicals.getPropertyInventory.mockClear();
+
+    property$.next(4);
+
+    expect(chemicals.getPropertyInventory).toHaveBeenCalledWith(4);
+  });
+
+  it('honours the digest deeplink (Plan D C4): property and requires-action filter', () => {
+    build({propertyId: '12', filter: 'requires-action'});
+
+    expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectProperty({payload: 12}));
+    expect(store.dispatch).toHaveBeenCalledWith(chemicalsUpdateInventoryFilters({
+      payload: {...chemicalsInitialState.inventoryFilters, requiresActionOnly: true},
+    }));
+  });
+
+  it.each(['abc', '0', '-3', '1.5', ''])('ignores a malformed deeplink property id %p', (value) => {
+    build({propertyId: value});
+
+    expect(store.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({type: chemicalsSelectProperty.type}));
+  });
+
+  it('shows the Lager column only when stock is enabled for the property (spec §11)', () => {
+    expect(build({}, {stockEnabled: false}).columns.map((c) => c.field)).not.toContain('stock');
+    expect(build({}, {stockEnabled: true}).columns.map((c) => c.field)).toContain('stock');
+  });
+
+  it('exports exactly the rows the table shows', () => {
+    const component = build();
+    filters$.next({...chemicalsInitialState.inventoryFilters, search: 'no match at all'});
+
+    component.exportInventory();
+
+    expect(chemicals.exportInventory).toHaveBeenCalledWith(3, []);
+    expect(saveAs).toHaveBeenCalledWith(expect.any(Blob), 'Kemikalier.xlsx');
+  });
+
+  it('saves the authority list and the removed placements under the server file names', () => {
+    const component = build();
+
+    component.exportAuthorityList();
+    component.exportRemovedPlacements();
+
+    expect(saveAs).toHaveBeenCalledWith(expect.any(Blob), 'Kemikalieliste.pdf');
+    expect(saveAs).toHaveBeenCalledWith(expect.any(Blob), 'Fjernede.xlsx');
+  });
+
+  const exports: Array<[string, 'exportAuthorityList' | 'exportInventory' | 'exportRemovedPlacements']> = [
+    ['authority list', 'exportAuthorityList'],
+    ['current filter', 'exportInventory'],
+    ['removed placements', 'exportRemovedPlacements'],
+  ];
+
+  it.each(exports)('keeps the %s export busy until the file arrives, and ignores a second click', (_name, method) => {
+    const component = build();
+    const file$ = new Subject<{blob: Blob; fileName: string}>();
+    chemicals[method].mockReturnValue(file$);
+
+    component[method]();
+    component[method]();
+
+    expect(component.exporting).toBe(true);
+    expect(chemicals[method]).toHaveBeenCalledTimes(1);
+
+    file$.next({blob: new Blob(['x']), fileName: 'f'});
+    file$.complete();
+
+    expect(component.exporting).toBe(false);
+  });
+
+  it.each(exports)('toasts a localized failure for the %s export and frees the button (m-2)', (_name, method) => {
+    const component = build();
+    chemicals[method].mockReturnValue(throwError(() => new Error('500')));
+
+    component[method]();
+
+    expect(toastr.error).toHaveBeenCalledWith('Export failed');
+    expect(component.exporting).toBe(false);
+    expect(saveAs).not.toHaveBeenCalled();
+  });
+
+  it('toasts when the safety data sheet cannot be fetched (the host shows nothing for a blob error)', () => {
+    const component = build();
+    chemicals.getSdsBlob = jest.fn().mockReturnValue(throwError(() => new Error('404')));
+    const row = {...component.rows[0], entry: {products: [{productId: 1, sdsFileName: 'sds200'}]}} as unknown as typeof component.rows[0];
+
+    component.openSds(row);
+
+    expect(chemicals.getSdsBlob).toHaveBeenCalledWith('sds200');
+    expect(toastr.error).toHaveBeenCalledWith('Chemicals: Could not open safety data sheet');
+  });
+
+  it('toggles the requires-action chip through the store', () => {
+    const component = build();
+
+    component.toggleRequiresAction();
+
+    expect(store.dispatch).toHaveBeenCalledWith(chemicalsUpdateInventoryFilters({
+      payload: {...chemicalsInitialState.inventoryFilters, requiresActionOnly: true},
+    }));
+  });
+});

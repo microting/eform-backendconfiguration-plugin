@@ -8,6 +8,7 @@
  */
 export const CHEMICAL_REUSED_I18N_KEYS: string[] = [
   'Cancel', 'Save', 'Search', 'Actions', 'Status', 'Property', 'Close', 'Location', 'Name', 'Description',
+  'Export failed',
 ];
 
 export const CHEMICAL_I18N_KEYS: string[] = [
@@ -96,4 +97,40 @@ export const CHEMICAL_I18N_KEYS: string[] = [
   'Chemicals: Could not load settings',
   'Chemicals: Could not load preview',
   'Chemicals: Yes',
+  // Task 12 - W1 inventory
+  'Chemicals: Inventory title',
+  'Chemicals: Hazard',
+  'Chemicals: Product',
+  'Chemicals: Placement',
+  'Chemicals: Stock',
+  'Chemicals: Deadline',
+  'Chemicals: Registered',
+  'Chemicals: All',
+  'Chemicals: Status approved',
+  'Chemicals: Status deregistered',
+  'Chemicals: Status expired',
+  'Chemicals: Requires action',
+  'Chemicals: Action banner',
+  'Chemicals: Show only these',
+  'Chemicals: Export',
+  'Chemicals: Export authority list',
+  'Chemicals: Export current filter',
+  'Chemicals: Export removed placements',
+  'Chemicals: Register placement',
+  'Chemicals: Search inventory hint',
+  'Chemicals: No placements',
+  'Chemicals: Reg no short',
+  'Chemicals: Passed',
+  'Chemicals: Sales deadline',
+  'Chemicals: Use deadline',
+  'Chemicals: No deadline',
+  'Chemicals: Show details',
+  'Chemicals: Open safety data sheet',
+  'Chemicals: Could not open safety data sheet',
+  'Chemicals: Search register',
+  'Chemicals: Search register hint',
+  'Chemicals: No register match',
+  'Chemicals: Product variant',
+  'Chemicals: Placement note',
+  'Chemicals: Initial amount',
 ];

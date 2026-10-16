@@ -1,5 +1,7 @@
+import {HttpBackend, HttpErrorResponse, HttpHeaders, HttpRequest, HttpResponse} from '@angular/common/http';
 import {Injector, runInInjectionContext} from '@angular/core';
-import {Observable, of} from 'rxjs';
+import {Store} from '@ngrx/store';
+import {Observable, of, throwError} from 'rxjs';
 import {ApiBaseService} from 'src/app/common/services';
 import {
   BackendConfigurationPnChemicalsMethods,
@@ -25,6 +27,7 @@ describe('BackendConfigurationPnChemicalsService', () => {
   const BASE = BackendConfigurationPnChemicalsMethods.Base;
   let api: Record<string, jest.Mock>;
   let service: BackendConfigurationPnChemicalsService;
+  let backend: {handle: jest.Mock};
 
   beforeEach(() => {
     api = {
@@ -34,7 +37,18 @@ describe('BackendConfigurationPnChemicalsService', () => {
       postFormData: jest.fn().mockReturnValue(of({success: true, model: {}})),
       getBlobData: jest.fn().mockReturnValue(of(new Blob([]))),
     };
-    const injector = Injector.create({providers: [{provide: ApiBaseService, useValue: api}]});
+    backend = {
+      handle: jest.fn().mockReturnValue(of(new HttpResponse({
+        status: 200,
+        body: new Blob(['%PDF-']),
+        headers: new HttpHeaders({'Content-Disposition': "attachment; filename=\"Kemi.pdf\"; filename*=UTF-8''Kemikalieliste%20-%20%C3%86bleg%C3%A5rden.pdf"}),
+      }))),
+    };
+    const injector = Injector.create({providers: [
+      {provide: ApiBaseService, useValue: api},
+      {provide: HttpBackend, useValue: backend},
+      {provide: Store, useValue: {select: jest.fn().mockReturnValue(of('token-1'))}},
+    ]});
     service = runInInjectionContext(injector, () => new BackendConfigurationPnChemicalsService());
   });
 
@@ -76,6 +90,72 @@ describe('BackendConfigurationPnChemicalsService', () => {
 
     expect(api[verb]).toHaveBeenCalledTimes(1);
     expect(api[verb]).toHaveBeenCalledWith(...args);
+  });
+
+
+  /**
+   * W1/W6 file downloads run on a raw HttpClient (no host interceptors): the host's error
+   * interceptor cannot read a blob error and would retry a 403 as an expired token, and
+   * ApiBaseService hides the Content-Disposition header that carries the server's file name.
+   */
+  describe('downloads', () => {
+    const lastRequest = (): HttpRequest<unknown> => backend.handle.mock.lastCall[0];
+
+    it('GETs the authority list PDF with the bearer token and reads the UTF-8 file name', (done) => {
+      service.exportAuthorityList(3).subscribe((file) => {
+        expect(lastRequest().method).toBe('GET');
+        expect(lastRequest().url).toBe(`${BASE}/properties/3/exports/authority-list`);
+        expect(lastRequest().headers.get('Authorization')).toBe('Bearer token-1');
+        expect(lastRequest().responseType).toBe('blob');
+        expect(file.fileName).toBe('Kemikalieliste - Æblegården.pdf');
+        done();
+      });
+    });
+
+    it('POSTs the visible placement ids for the Excel of the current filter', (done) => {
+      service.exportInventory(3, [7, 8]).subscribe(() => {
+        expect(lastRequest().method).toBe('POST');
+        expect(lastRequest().url).toBe(`${BASE}/properties/3/exports/inventory`);
+        expect(lastRequest().body).toEqual({placementIds: [7, 8]});
+        done();
+      });
+    });
+
+    it('GETs removed placements and POSTs the history query with yyyy-MM-dd dates', () => {
+      service.exportRemovedPlacements(3).subscribe();
+      expect(lastRequest().method).toBe('GET');
+      expect(lastRequest().url).toBe(`${BASE}/properties/3/exports/removed-placements`);
+
+      const query = {from: '2026-09-01', to: '2026-09-29', userId: null, action: null, locationId: null, page: 0, pageSize: 25};
+      service.exportHistory(3, query).subscribe();
+      expect(lastRequest().method).toBe('POST');
+      expect(lastRequest().url).toBe(`${BASE}/properties/3/history/export`);
+      expect(lastRequest().body).toEqual(query);
+    });
+
+    it('falls back to a client-side file name when the header is missing', (done) => {
+      backend.handle.mockReturnValue(of(new HttpResponse({status: 200, body: new Blob(['x'])})));
+
+      service.exportRemovedPlacements(3).subscribe((file) => {
+        expect(file.fileName).toBe('removed-placements.xlsx');
+        done();
+      });
+    });
+
+    it('hands a refused download (403) to the caller once, with no token-refresh retry', (done) => {
+      backend.handle.mockReturnValue(throwError(() => new HttpErrorResponse({status: 403})));
+      const files: unknown[] = [];
+
+      service.exportAuthorityList(3).subscribe({
+        next: (file) => files.push(file),
+        error: (err: HttpErrorResponse) => {
+          expect(files).toEqual([]);
+          expect(err.status).toBe(403);
+          expect(backend.handle).toHaveBeenCalledTimes(1);
+          done();
+        },
+      });
+    });
   });
 
   it('builds the location photo URL for the authImage pipe', () => {

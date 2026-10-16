@@ -67,7 +67,9 @@ describe('ChemicalsContainerComponent (picker)', () => {
         {provide: BackendConfigurationPnPropertiesService, useValue: {
           getAllPropertiesDictionary: () => of({success: true, model: list}),
         }},
-        {provide: Router, useValue: {navigate: jest.fn().mockResolvedValue(true), events: new Subject()}},
+        {provide: Router, useValue: {
+          navigate: jest.fn().mockResolvedValue(true), events: new Subject(), getCurrentNavigation: jest.fn().mockReturnValue(null),
+        }},
         {provide: ActivatedRoute, useValue: {snapshot: {queryParamMap: convertToParamMap({})}, firstChild: null}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
