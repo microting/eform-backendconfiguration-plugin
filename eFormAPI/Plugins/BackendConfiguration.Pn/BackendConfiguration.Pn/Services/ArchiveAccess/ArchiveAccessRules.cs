@@ -29,6 +29,10 @@ public static class ArchiveAccessRules
         !ctx.IsDisabled
         && (ctx.IsAdmin || effectiveGroups.Count == 0 || effectiveGroups.Any(g => ctx.UserGroupIds.Contains(g)));
 
+    /// <summary>A live folder the caller can read: the only folders a document may be put into (D17).</summary>
+    public static bool IsWritableFolder(ArchiveAccessContext ctx, ArchiveFolderSnapshot folders, int folderId) =>
+        folders.Find(folderId) != null && CanRead(ctx, folders.EffectiveGroups(folderId));
+
     public static bool SameGroups(IEnumerable<int> a, IEnumerable<int> b) => new HashSet<int>(a).SetEquals(b);
 
     /// <summary>D11: how many of <paramref name="items"/> have different effective groups before and after a change.</summary>

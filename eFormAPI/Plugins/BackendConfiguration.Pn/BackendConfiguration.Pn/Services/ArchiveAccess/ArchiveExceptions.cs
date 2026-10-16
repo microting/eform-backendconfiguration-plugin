@@ -13,3 +13,12 @@ public sealed class ArchiveAccountDisabledException() : Exception("account_disab
 /// the same for both, so a restricted document's existence does not leak.
 /// </summary>
 public sealed class ArchiveNotFoundException() : Exception("archive item not found or not readable");
+
+public static class ArchiveExceptions
+{
+    /// <summary>
+    /// False for the archive refusals, which ArchiveAccessFilter answers 403/404; use as a catch filter so a broad
+    /// catch never turns them into success=false.
+    /// </summary>
+    public static bool IsUnexpected(Exception e) => e is not (ArchiveNotFoundException or ArchiveAccountDisabledException);
+}

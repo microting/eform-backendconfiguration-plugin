@@ -7,9 +7,14 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Inbox;
 public class InboxSuggestionModel
 {
     public int Id { get; set; }
+    /// <summary>InboxSuggestionKind as an int: 0 Property, 1 Tag, 2 Folder, 3 DocumentDate.</summary>
     public int Kind { get; set; }
+    /// <summary>Property, tag or folder id; 0 for DocumentDate.</summary>
     public int TargetId { get; set; }
+    /// <summary>Property/tag name; a folder's path "Drift › Fakturaer"; empty for DocumentDate.</summary>
     public string TargetName { get; set; } = "";
+    /// <summary>The suggested document date (DocumentDate only).</summary>
+    public DateTime? TargetDate { get; set; }
     public int Source { get; set; }
     public double Confidence { get; set; }
     public string? Evidence { get; set; }
@@ -36,6 +41,12 @@ public class FileInboxDocumentRequest
     public string Name { get; set; } = "";
     public List<int> PropertyIds { get; set; } = new();
     public List<int> TagIds { get; set; } = new();
+    /// <summary>null = default folder (old apps, pre-folder web); 0 = refused (ArchiveChooseFolder); unknown or unreadable =
+    /// ArchiveFolderNotFound. The new web and app UIs still require a folder before Arkivér (D9).</summary>
+    public int? FolderId { get; set; }
+    public DateTime? DocumentDate { get; set; }
+    /// <summary>True when the reviewer pressed Godkend (or typed the date); false keeps it as a suggestion to check.</summary>
+    public bool DocumentDateApproved { get; set; }
 }
 
 public class InboxSenderRuleModel

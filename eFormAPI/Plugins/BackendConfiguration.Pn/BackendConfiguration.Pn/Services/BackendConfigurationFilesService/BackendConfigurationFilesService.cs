@@ -53,7 +53,7 @@ using UploadedData = Microting.EformBackendConfigurationBase.Infrastructure.Data
 /// <summary>
 /// The archive documents. Every read and write goes through <see cref="IArchiveAccessService"/>: a disabled caller
 /// gets <see cref="ArchiveAccountDisabledException"/> (403), a missing or unreadable document
-/// <see cref="ArchiveNotFoundException"/> (404). Refusals are thrown outside the catch filters (IsUnexpected), so
+/// <see cref="ArchiveNotFoundException"/> (404). Refusals are thrown outside the catch filters (ArchiveExceptions.IsUnexpected), so
 /// they never become success=false.
 /// </summary>
 public class BackendConfigurationFilesService : IBackendConfigurationFilesService
@@ -199,7 +199,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 
 			return new OperationDataResult<Paged<BackendConfigurationFilesModel>>(true, pagedFilesModel);
 		}
-		catch (Exception e) when (IsUnexpected(e))
+		catch (Exception e) when (ArchiveExceptions.IsUnexpected(e))
 		{
 			Console.WriteLine(e);
 			_logger.LogError(e, e.Message);
@@ -250,7 +250,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 
 			return new OperationResult(true);
 		}
-		catch (Exception e) when (IsUnexpected(e))
+		catch (Exception e) when (ArchiveExceptions.IsUnexpected(e))
 		{
 			Console.WriteLine(e);
 			_logger.LogError(e, e.Message);
@@ -294,7 +294,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 
 			return new OperationResult(true);
 		}
-		catch (Exception e) when (IsUnexpected(e))
+		catch (Exception e) when (ArchiveExceptions.IsUnexpected(e))
 		{
 			Console.WriteLine(e);
 			_logger.LogError(e, e.Message);
@@ -351,7 +351,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 				upload.FolderId > 0 ? upload.FolderId.Value : defaultFolderId;
 
 			// All folders first: one refused folder stores nothing (D17: only into folders the caller can read).
-			if (uploads.Any(u => !IsWritableFolder(ctx, folders, FolderOf(u))))
+			if (uploads.Any(u => !ArchiveAccessRules.IsWritableFolder(ctx, folders, FolderOf(u))))
 			{
 				return new OperationResult(false, _localizationService.GetString("ArchiveFolderNotFound"));
 			}
@@ -370,7 +370,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 
 			return new OperationResult(true);
 		}
-		catch (Exception e) when (IsUnexpected(e))
+		catch (Exception e) when (ArchiveExceptions.IsUnexpected(e))
 		{
 			Console.WriteLine(e);
 			_logger.LogError(e, e.Message);
@@ -418,7 +418,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 
 			return new OperationResult(true);
 		}
-		catch (Exception e) when (IsUnexpected(e))
+		catch (Exception e) when (ArchiveExceptions.IsUnexpected(e))
 		{
 			Console.WriteLine(e);
 			_logger.LogError(e, e.Message);
@@ -463,7 +463,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 			await FillArchiveFieldsAsync([file], folders);
 			return new OperationDataResult<BackendConfigurationFileModel>(true, file);
 		}
-		catch (Exception e) when (IsUnexpected(e))
+		catch (Exception e) when (ArchiveExceptions.IsUnexpected(e))
 		{
 			Console.WriteLine(e);
 			_logger.LogError(e, e.Message);
@@ -482,7 +482,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 
 		var ctx = await EnsureReadableAsync(ids);
 		var folders = await ArchiveFolderSnapshot.LoadAsync(_dbContext);
-		if (!IsWritableFolder(ctx, folders, model.FolderId))
+		if (!ArchiveAccessRules.IsWritableFolder(ctx, folders, model.FolderId))
 		{
 			throw new ArchiveNotFoundException();
 		}
@@ -607,10 +607,6 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 
 	private static List<int> DistinctIds(IEnumerable<int> ids) => (ids ?? []).Distinct().ToList();
 
-	/// <summary>The archive refusals (403/404) are answered by ArchiveAccessFilter, never as success=false.</summary>
-	private static bool IsUnexpected(Exception e) =>
-		e is not (ArchiveNotFoundException or ArchiveAccountDisabledException);
-
 	/// <summary>
 	/// Every id is a live document the caller can read, else <see cref="ArchiveNotFoundException"/> (the same for
 	/// missing and unreadable, so a restricted document's existence does not leak). Returns the caller's context.
@@ -628,10 +624,6 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 
 		return ctx;
 	}
-
-	/// <summary>A live folder the caller can read: the only folders a document may be put into (D17).</summary>
-	private static bool IsWritableFolder(ArchiveAccessContext ctx, ArchiveFolderSnapshot folders, int folderId) =>
-		folders.Find(folderId) != null && ArchiveAccessRules.CanRead(ctx, folders.EffectiveGroups(folderId));
 
 	/// <summary>Sets FolderPath and the effective ReadGroups (with names) on the rows.</summary>
 	private async Task FillArchiveFieldsAsync(IReadOnlyCollection<IArchiveFileRow> rows, ArchiveFolderSnapshot folders)

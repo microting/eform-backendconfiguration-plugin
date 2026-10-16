@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Inbox;
+using BackendConfiguration.Pn.Services.ArchiveAccess;
 using BackendConfiguration.Pn.Services.ArchiveFolders;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.FileArchive;
@@ -31,7 +32,8 @@ public interface IInboxService
 }
 
 public class InboxService(BackendConfigurationPnDbContext dbContext, IArchiveStorage storage, IFileArchiver archiver,
-    IBackendConfigurationLocalizationService localization, ILogger<InboxService> logger) : IInboxService
+    IArchiveAccessService archiveAccess, IBackendConfigurationLocalizationService localization,
+    ILogger<InboxService> logger) : IInboxService
 {
     private static readonly TimeSpan UndoWindow = TimeSpan.FromMinutes(10);
 
@@ -105,6 +107,10 @@ public class InboxService(BackendConfigurationPnDbContext dbContext, IArchiveSto
         var tagIds = (req?.TagIds ?? []).Distinct().ToList();
         if (propertyIds.Count == 0)
             return new OperationResult(false, localization.GetString("InboxChooseAtLeastOneProperty"));
+        // folderId 0 is an explicit "no folder" and is refused; a missing folderId (old apps, the pre-folder web
+        // Indbakke) files into the default folder below.
+        if (req!.FolderId == 0)
+            return new OperationResult(false, localization.GetString("ArchiveChooseFolder"));
 
         var liveProperties = await dbContext.Properties
             .CountAsync(p => propertyIds.Contains(p.Id) && p.WorkflowState != Constants.WorkflowStates.Removed);
@@ -113,9 +119,22 @@ public class InboxService(BackendConfigurationPnDbContext dbContext, IArchiveSto
         if (liveProperties != propertyIds.Count || liveTags != tagIds.Count)
             return new OperationResult(false, localization.GetString("InboxUnknownPropertyOrTag"));
 
-        var name = string.IsNullOrWhiteSpace(req!.Name) ? Path.GetFileNameWithoutExtension(doc.FileName) : req.Name.Trim();
+        // Outside the try: a disabled caller's ArchiveAccountDisabledException is answered 403 by ArchiveAccessFilter.
+        var ctx = await archiveAccess.GetEnabledContextAsync();
+
+        // D8: a date the reviewer approved is Approved; the hub's suggestion kept as is stays Suggested, so it shows
+        // under "Dato skal tjekkes". Stored date-only: a hub date may carry a time part.
+        var documentDate = req.DocumentDate?.Date;
+        var dateState = documentDate == null ? DocumentDateState.None
+            : req.DocumentDateApproved ? DocumentDateState.Approved : DocumentDateState.Suggested;
+        var name = string.IsNullOrWhiteSpace(req.Name) ? Path.GetFileNameWithoutExtension(doc.FileName) : req.Name.Trim();
         try
         {
+            var folderId = req.FolderId ?? await ArchiveDefaultFolder.GetOrCreateIdAsync(dbContext, userId);
+            // D17: only into a live folder the caller can read; unknown and unreadable answer alike. Before any write.
+            if (!ArchiveAccessRules.IsWritableFolder(ctx, await ArchiveFolderSnapshot.LoadAsync(dbContext), folderId))
+                return new OperationResult(false, localization.GetString("ArchiveFolderNotFound"));
+
             // Inside the try: a storage failure is logged and answered, not a bare 500.
             // Copied to memory and the stored object closed first: the archive object gets the same
             // content-derived name, and local storage cannot overwrite a file that is still open.
@@ -127,50 +146,57 @@ public class InboxService(BackendConfigurationPnDbContext dbContext, IArchiveSto
             }
 
             pdf.Position = 0;
-            // Until the caller can choose a folder, files go to the default folder.
-            var folderId = await ArchiveDefaultFolder.GetOrCreateIdAsync(dbContext, userId);
 
             // The inbox state commits in the archiver's own transaction, so the archive rows and the
             // Filed status can never disagree. The callback may run again on a retry: it reloads what it changes.
-            await archiver.ArchiveAsync(pdf, name, "pdf", propertyIds, tagIds, folderId, null,
-                DocumentDateState.None, userId, async fileId =>
-            {
-                // Claims the row (blocks a concurrent filer until commit) only while it is still Ready.
-                var claimed = await dbContext.InboxDocuments
-                    .Where(d => d.Id == id && d.Status == InboxDocumentStatus.Ready)
-                    .ExecuteUpdateAsync(s => s.SetProperty(d => d.UpdatedAt, DateTime.UtcNow));
-                if (claimed == 0) throw new InboxStateException("InboxDocumentNotReady");
-
-                var tracked = await dbContext.InboxDocuments.Include(d => d.Suggestions).SingleAsync(d => d.Id == id);
-                foreach (var suggestion in tracked.Suggestions.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+            await archiver.ArchiveAsync(pdf, name, "pdf", propertyIds, tagIds, folderId, documentDate, dateState, userId,
+                async fileId =>
                 {
-                    suggestion.Accepted = suggestion.Kind == InboxSuggestionKind.Property
-                        ? propertyIds.Contains(suggestion.TargetId)
-                        : tagIds.Contains(suggestion.TargetId);
-                    suggestion.UpdatedByUserId = userId;
-                    await suggestion.Update(dbContext);
-                }
+                    // Claims the row (blocks a concurrent filer until commit) only while it is still Ready.
+                    var claimed = await dbContext.InboxDocuments
+                        .Where(d => d.Id == id && d.Status == InboxDocumentStatus.Ready)
+                        .ExecuteUpdateAsync(s => s.SetProperty(d => d.UpdatedAt, DateTime.UtcNow));
+                    if (claimed == 0) throw new InboxStateException("InboxDocumentNotReady");
 
-                tracked.Status = InboxDocumentStatus.Filed;
-                tracked.FiledFileId = fileId;
-                tracked.FiledAt = DateTime.UtcNow;
-                tracked.FiledByUserId = userId;
-                tracked.UpdatedByUserId = userId;
-                await tracked.Update(dbContext);
-            });
+                    var tracked = await dbContext.InboxDocuments.Include(d => d.Suggestions).SingleAsync(d => d.Id == id);
+                    foreach (var suggestion in tracked.Suggestions.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+                    {
+                        suggestion.Accepted = Accepted(suggestion, propertyIds, tagIds, folderId, documentDate);
+                        suggestion.UpdatedByUserId = userId;
+                        await suggestion.Update(dbContext);
+                    }
+
+                    tracked.Status = InboxDocumentStatus.Filed;
+                    tracked.FiledFileId = fileId;
+                    tracked.FiledAt = DateTime.UtcNow;
+                    tracked.FiledByUserId = userId;
+                    tracked.UpdatedByUserId = userId;
+                    await tracked.Update(dbContext);
+                });
         }
         catch (InboxStateException e)
         {
             dbContext.ChangeTracker.Clear();
             return StateFailure(e);
         }
-        catch (Exception e)
+        catch (Exception e) when (ArchiveExceptions.IsUnexpected(e))
         {
             return UnexpectedFailure(e, "file");
         }
 
         return new OperationResult(true, localization.GetString("InboxDocumentFiled"));
     }
+
+    /// <summary>Whether the reviewer kept the suggestion. Dates compare by day.</summary>
+    private static bool? Accepted(InboxSuggestion s, List<int> propertyIds, List<int> tagIds, int folderId,
+        DateTime? documentDate) => s.Kind switch
+    {
+        InboxSuggestionKind.Property => propertyIds.Contains(s.TargetId),
+        InboxSuggestionKind.Tag => tagIds.Contains(s.TargetId),
+        InboxSuggestionKind.Folder => s.TargetId == folderId,
+        InboxSuggestionKind.DocumentDate => documentDate != null && s.TargetDate?.Date == documentDate.Value.Date,
+        _ => null
+    };
 
     public async Task<OperationResult> UndoAsync(int id, int userId)
     {
@@ -342,6 +368,9 @@ public class InboxService(BackendConfigurationPnDbContext dbContext, IArchiveSto
             .ToDictionaryAsync(p => p.Id, p => p.Name);
         var tagNames = await dbContext.FileTags.Where(t => tagIds.Contains(t.Id))
             .ToDictionaryAsync(t => t.Id, t => t.Name);
+        var folders = suggestions.Any(s => s.Kind == InboxSuggestionKind.Folder)
+            ? await ArchiveFolderSnapshot.LoadAsync(dbContext)
+            : new ArchiveFolderSnapshot([]);
 
         return docs.Select(d => new InboxListItem
         {
@@ -367,8 +396,14 @@ public class InboxService(BackendConfigurationPnDbContext dbContext, IArchiveSto
                     Evidence = s.Evidence,
                     Page = s.Page,
                     Reason = s.Reason,
-                    TargetName = (s.Kind == InboxSuggestionKind.Property ? propertyNames : tagNames)
-                        .GetValueOrDefault(s.TargetId, "")
+                    TargetDate = s.TargetDate?.Date,
+                    TargetName = s.Kind switch
+                    {
+                        InboxSuggestionKind.Property => propertyNames.GetValueOrDefault(s.TargetId, ""),
+                        InboxSuggestionKind.Tag => tagNames.GetValueOrDefault(s.TargetId, ""),
+                        InboxSuggestionKind.Folder => string.Join(ArchiveFolderSnapshot.PathSeparator, folders.Path(s.TargetId)),
+                        _ => ""
+                    }
                 }).ToList()
         }).ToList();
     }
