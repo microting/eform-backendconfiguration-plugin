@@ -94,7 +94,7 @@ public class ChemicalExportService(
                 };
                 if (stock)
                 {
-                    row.Add(p.Unit is null ? (object)string.Empty : p.Balance);
+                    row.Add(p.Unit is null ? (object)string.Empty : WithoutTrailingZeros(p.Balance));
                     row.Add(ChemicalHistoryDetailsFormatter.Unit(p.Unit));
                 }
 
@@ -164,6 +164,9 @@ public class ChemicalExportService(
         return new ChemicalExportFile(ChemicalXlsxWriter.Write(T(K.ChemicalHistoryTitle), headers, rows),
             FileName(K.ChemicalHistoryTitle, propertyName, "xlsx"), XlsxContentType);
     }
+
+    /// <summary>The database column keeps a fixed scale ("2.000"); the sheet shows the number as typed ("2").</summary>
+    private static decimal WithoutTrailingZeros(decimal value) => value / 1.000000000000000000000000000000000m;
 
     private static string PropertyName(ChemicalInventoryModel model, int propertyId) =>
         model.Properties.FirstOrDefault(p => p.PropertyId == propertyId)?.Name ?? string.Empty;

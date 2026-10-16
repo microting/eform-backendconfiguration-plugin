@@ -4,6 +4,7 @@ using BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportServi
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.ChemicalInventoryService;
 using BackendConfiguration.Pn.Services.ChemicalReporting;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using NSubstitute;
@@ -15,6 +16,10 @@ namespace BackendConfiguration.Pn.Integration.Test;
 public class ChemicalExportServiceTests : ChemicalTestBase
 {
     private static readonly ChemicalCaller Web = ChemicalCaller.Web(TestUserId);
+
+    /// <summary>The QuestPDF licence is set by plugin start-up (AddChemicalReporting), not per render.</summary>
+    [OneTimeSetUp]
+    public void StartUp() => new ServiceCollection().AddChemicalReporting();
 
     /// <summary>
     /// The sut clock only feeds file names and the "printed" stamp. The arranged data is written with
