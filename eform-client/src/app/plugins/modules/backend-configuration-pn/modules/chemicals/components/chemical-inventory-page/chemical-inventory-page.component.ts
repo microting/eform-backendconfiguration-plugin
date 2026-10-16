@@ -221,12 +221,17 @@ export class ChemicalInventoryPageComponent implements OnInit {
     });
   }
 
-  /** The server's reason when it gave one (m-9), else a refusal or the generic failure. */
+  /**
+   * The server's reason when it gave one (m-9), else a refusal or the generic failure. Only a
+   * ChemicalDownloadError (it has a status) carries a reason: any other error's message is
+   * technical and is never shown.
+   */
   private exportFailureText(err: Partial<ChemicalDownloadError> | null): string {
-    if (err?.message) {
+    const isDownloadError = typeof err?.status === 'number';
+    if (isDownloadError && err.message) {
       return err.message;
     }
-    return this.translate.instant(err?.status === 403 ? 'Chemicals: Export not allowed' : 'Export failed');
+    return this.translate.instant(isDownloadError && err.status === 403 ? 'Chemicals: Export not allowed' : 'Export failed');
   }
 
   /**
