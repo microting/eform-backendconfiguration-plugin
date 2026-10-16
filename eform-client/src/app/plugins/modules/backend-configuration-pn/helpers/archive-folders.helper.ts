@@ -107,11 +107,6 @@ export function ownFolderGroups(folder: ArchiveFolderModel): ArchiveNamedItem[] 
   return folder.ownGroups ? folder.readGroups : [];
 }
 
-/** Own groups replace the folder's (even an empty set, which opens the document). */
-export function effectiveFileGroups(file: ArchiveMovableFile, folders: ArchiveFolderModel[]): ArchiveNamedItem[] {
-  return file.ownAccess ? file.readGroups : effectiveFolderGroups(folders, file.folderId);
-}
-
 export function sameGroups(a: ArchiveNamedItem[], b: ArchiveNamedItem[]): boolean {
   const ids = new Set(a.map(g => g.id));
   return ids.size === new Set(b.map(g => g.id)).size && b.every(g => ids.has(g.id));
@@ -119,6 +114,11 @@ export function sameGroups(a: ArchiveNamedItem[], b: ArchiveNamedItem[]): boolea
 
 export function groupNames(groups: ArchiveNamedItem[]): string {
   return groups.map(g => g.name).join(', ');
+}
+
+/** Who can read: the group names, or the translated "everyone with archive access" when there are none. */
+export function whoCanRead(groups: ArchiveNamedItem[], translate: (key: string) => string): string {
+  return groups.length ? groupNames(groups) : translate('everyone with archive access');
 }
 
 /**

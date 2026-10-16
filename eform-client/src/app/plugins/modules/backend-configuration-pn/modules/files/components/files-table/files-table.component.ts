@@ -3,7 +3,7 @@ import {TranslateService} from '@ngx-translate/core';
 import {Paged} from 'src/app/common/models';
 import {DocumentDateState, FilesModel} from '../../../../models';
 import {BackendConfigurationPnFilesService} from '../../../../services';
-import {ARCHIVE_PATH_SEPARATOR, dateOnlyOf, groupNames} from '../../../../helpers';
+import {ARCHIVE_PATH_SEPARATOR, dateOnlyOf, whoCanRead} from '../../../../helpers';
 
 /**
  * The W1 document table: Checkbox · Navn · Dokumentdato · Ejendomme · Læseadgang (admin) · Etiketter.
@@ -103,7 +103,7 @@ export class FilesTableComponent implements OnChanges, OnDestroy {
   }
 
   ownAccessLabel(row: FilesModel): string {
-    return row.readGroups?.length ? groupNames(row.readGroups) : this.translateService.instant('everyone with archive access');
+    return whoCanRead(row.readGroups ?? [], key => this.translateService.instant(key));
   }
 
   onDragStart(event: DragEvent, row: FilesModel): void {

@@ -11,7 +11,7 @@ import {
   accessSourceFolder,
   effectiveFolderGroups,
   findFolder,
-  groupNames,
+  whoCanRead,
   hasPanelChanges,
   isPanelValid,
   panelChanges,
@@ -71,7 +71,7 @@ export class ArchiveDocumentPanelComponent implements OnChanges {
     if (changes['fileId']) {
       this.load();
     } else if (changes['workerTags']) {
-      this.refreshAccessItems();
+      this.refreshAccessItems(this.selectedGroups());
     }
   }
 
@@ -312,7 +312,17 @@ export class ArchiveDocumentPanelComponent implements OnChanges {
   }
 
   private whoLabel(groups: ArchiveNamedItem[]): string {
-    return groups.length ? groupNames(groups) : this.translateService.instant('everyone with archive access');
+    return whoCanRead(groups, key => this.translateService.instant(key));
+  }
+
+  /** The groups chosen right now (own access), else the document's; a chosen stale group must survive a tag refresh. */
+  private selectedGroups(): ArchiveNamedItem[] {
+    const fileGroups = this.file?.readGroups ?? [];
+    if (!this.edited?.ownAccess) {
+      return fileGroups;
+    }
+    const known = [...fileGroups, ...(this.edited.folderId ? this.folderGroups(this.edited.folderId) : [])];
+    return this.edited.readTagIds.map(id => known.find(g => g.id === id) ?? this.accessItems.find(g => g.id === id) ?? {id, name: ''});
   }
 
   /**

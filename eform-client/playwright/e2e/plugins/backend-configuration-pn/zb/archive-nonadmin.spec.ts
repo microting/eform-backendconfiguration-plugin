@@ -1,6 +1,8 @@
 import { APIRequestContext, expect, Page, test } from '@playwright/test';
 import { generateRandmString } from '../../../helper-functions';
 import { BackendConfigurationArchivePage, DEFAULT_FOLDER, FOLDERS_PATH } from '../BackendConfigurationArchive.page';
+import DatabaseConfigurationConstants from '../../../Constants/DatabaseConfigurationConstants';
+import LoginConstants from '../../../Constants/LoginConstants';
 import { API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from '../wait-helpers';
 
 /**
@@ -10,8 +12,8 @@ import { API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from '../wait-helpers';
  */
 const BASE_URL = 'http://localhost:4200';
 /** The CI admin. */
-const ADMIN_EMAIL = 'admin@admin.com';
-const ADMIN_PASSWORD = 'secretpassword';
+const ADMIN_EMAIL: string = DatabaseConfigurationConstants.email;
+const ADMIN_PASSWORD: string = LoginConstants.password;
 const USER_PASSWORD = 'Secret_password_2026!';
 /** A cold app can take up to a minute before the login button renders. */
 const COLD_APP_TIMEOUT = 60000;

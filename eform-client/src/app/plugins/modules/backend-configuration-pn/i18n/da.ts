@@ -1120,6 +1120,7 @@ export const da = {
   'Worker groups': 'Medarbejdergrupper',
   'No groups: everyone with archive access can read.': 'Ingen grupper: alle med arkivadgang kan læse.',
   'everyone with archive access': 'alle med arkivadgang',
+  'Document': 'Dokument',
   everyone: 'alle',
   'no members': 'ingen medlemmer',
   'Use the folder\'s access': 'Brug mappens adgang',

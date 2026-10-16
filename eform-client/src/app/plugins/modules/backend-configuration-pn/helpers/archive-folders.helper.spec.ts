@@ -4,7 +4,6 @@ import {
   accessGroupItems,
   accessSourceFolder,
   buildFolderTree,
-  effectiveFileGroups,
   effectiveFolderGroups,
   folderActions,
   folderMoveOptions,
@@ -13,6 +12,7 @@ import {
   folderPathLabel,
   findFolder,
   groupNames,
+  whoCanRead,
   moveImpact,
   ownFolderGroups,
   sameGroups,
@@ -103,9 +103,10 @@ describe('archive folder helpers', () => {
       expect(accessSourceFolder(folders, 4)).toBeNull();
     });
 
-    it('a document with own access keeps its own groups, even none in a restricted folder', () => {
-      expect(effectiveFileGroups({id: 1, folderId: 7, ownAccess: true, readGroups: []}, folders)).toEqual([]);
-      expect(effectiveFileGroups({id: 1, folderId: 7, ownAccess: false, readGroups: []}, folders)).toEqual([ledelse]);
+    it('names who can read, or says everyone with archive access when no group is set', () => {
+      const translate = (key: string) => `t:${key}`;
+      expect(whoCanRead([ledelse, bogholderi], translate)).toBe('Ledelse, Bogholderi');
+      expect(whoCanRead([], translate)).toBe('t:everyone with archive access');
     });
 
     it('compares groups by id, ignoring order', () => {

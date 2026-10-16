@@ -1145,6 +1145,7 @@ export const deDE = {
   'Worker groups': 'Mitarbeitergruppen',
   'No groups: everyone with archive access can read.': 'Keine Gruppen: Alle mit Archivzugriff können lesen.',
   'everyone with archive access': 'alle mit Archivzugriff',
+  'Document': 'Dokument',
   everyone: 'alle',
   'no members': 'keine Mitglieder',
   'Use the folder\'s access': 'Zugriff des Ordners verwenden',

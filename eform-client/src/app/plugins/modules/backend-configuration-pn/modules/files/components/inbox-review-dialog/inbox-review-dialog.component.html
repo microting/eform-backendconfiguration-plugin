@@ -20,7 +20,7 @@
           [options]="folderOptions"
           [value]="selectedFolderId"
           (valueChange)="selectedFolderId = $event"
-          [disabled]="filed"
+          [disabled]="filed || busy"
           pickerId="inboxFolderSelect"
         ></app-archive-folder-picker>
         <ng-container *ngIf="visibleFolderSuggestion as s">

@@ -26,6 +26,7 @@ export const ARCHIVE_I18N_KEYS: string[] = [
   'Worker groups',
   'No groups: everyone with archive access can read.',
   'everyone with archive access',
+  'Document',
   'everyone',
   'no members',
   'Use the folder\'s access',

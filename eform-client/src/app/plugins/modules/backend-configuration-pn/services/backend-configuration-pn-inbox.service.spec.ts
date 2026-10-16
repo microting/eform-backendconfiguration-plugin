@@ -120,7 +120,7 @@ describe('BackendConfigurationPnInboxService', () => {
   it('routes every call through the account-disabled handler', () => {
     service.list(null, '').subscribe();
     service.getPdf(7).subscribe();
-    service.file(7, {name: 'Invoice 42', propertyIds: [3], tagIds: []}).subscribe();
+    service.file(7, {name: 'Invoice 42', propertyIds: [3], tagIds: [], folderId: 11, documentDate: null, documentDateApproved: false}).subscribe();
     service.undo(7).subscribe();
     service.reject(7).subscribe();
     service.getSettings().subscribe();

@@ -147,6 +147,17 @@ describe('ArchiveDocumentPanelComponent', () => {
     expect(panel.accessItems).toEqual([{id: 5, name: 'Ledelse', description: ''}, {id: 9, name: 'Vagt', description: ''}]);
   });
 
+  it('keeps a selected stale group when worker groups arrive after "Own access" was clicked', () => {
+    reloadWith({...file, ownAccess: false, readGroups: []});
+    panel.workerTags = [];
+    panel.useOwnAccess();
+    edit({readTagIds: [9]});
+    panel.workerTags = [ledelseTag];
+    panel.ngOnChanges({workerTags: {} as any});
+    expect(panel.accessItems.map(g => g.id)).toEqual([5, 9]);
+    expect(panel.edited?.readTagIds).toEqual([9]);
+  });
+
   it('"Gem og næste" without changes moves on without calling the API', () => {
     panel.hasNext = true;
     panel.save(true);

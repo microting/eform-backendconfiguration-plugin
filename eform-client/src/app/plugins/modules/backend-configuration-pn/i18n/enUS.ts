@@ -1220,6 +1220,7 @@ export const enUS= {
   'Worker groups': 'Worker groups',
   'No groups: everyone with archive access can read.': 'No groups: everyone with archive access can read.',
   'everyone with archive access': 'everyone with archive access',
+  'Document': 'Document',
   everyone: 'everyone',
   'no members': 'no members',
   'Use the folder\'s access': 'Use the folder\'s access',

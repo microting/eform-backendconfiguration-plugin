@@ -31,7 +31,7 @@ import {
   folderMoveOptions,
   folderOptions,
   folderPath,
-  groupNames,
+  whoCanRead,
   ownFolderGroups,
 } from '../../../../helpers';
 import {
@@ -175,7 +175,7 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
       return '';
     }
     const groups = effectiveFolderGroups(this.folders, id);
-    const who = groups.length ? groupNames(groups) : this.translateService.instant('everyone with archive access');
+    const who = whoCanRead(groups, key => this.translateService.instant(key));
     const source = accessSourceFolder(this.folders, id);
     return source && source.id !== id
       ? this.translateService.instant('Read access: {{who}} (inherits from {{folder}})', {who, folder: source.name})
@@ -380,6 +380,9 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
       .setFilesAccess({fileIds: ids, ownAccess: result.ownAccess, tagIds: result.tagIds})
       .subscribe(res => {
         if (res?.success) {
+          if (result.ownAccess) { // inheriting documents read per their own folder, so there is no single "who" to name
+            this.toastAccessChanged(res.model?.accessChanged ?? 0, this.workerTags.filter(t => result.tagIds.includes(t.id)));
+          }
           this.refresh();
         }
       }));
