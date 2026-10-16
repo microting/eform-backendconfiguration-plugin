@@ -21,11 +21,13 @@ SOFTWARE.
 namespace BackendConfiguration.Pn.Controllers;
 
 using Infrastructure.Helpers;
+using Infrastructure.Models.ArchiveFolders;
 using Infrastructure.Models.Files;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microting.eFormApi.BasePn.Abstractions;
+using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 using Services.BackendConfigurationFilesService;
@@ -84,6 +86,28 @@ public class FilesController : Controller
 	public async Task<OperationResult> UpdateProperties([FromBody] BackendConfigurationFileUpdateProperties model)
 	{
 		return await _backendConfigurationFilesService.UpdateProperties(model);
+	}
+
+	/// <summary>Moves documents into a folder. Non-admins only between folders with the same access (D17).</summary>
+	[HttpPut("folder")]
+	public async Task<OperationDataResult<FilesMoveResultModel>> Move([FromBody] FilesMoveModel model)
+	{
+		return await _backendConfigurationFilesService.Move(model);
+	}
+
+	/// <summary>Sets (approves) or clears the document date.</summary>
+	[HttpPut("{id:int}/date")]
+	public async Task<OperationResult> UpdateDate(int id, [FromBody] FileDateModel model)
+	{
+		return await _backendConfigurationFilesService.UpdateDate(id, model);
+	}
+
+	/// <summary>Own read access per document (admin).</summary>
+	[HttpPut("access")]
+	[Authorize(Roles = EformRole.Admin)]
+	public async Task<OperationDataResult<AccessChangeModel>> UpdateAccess([FromBody] FilesAccessModel model)
+	{
+		return await _backendConfigurationFilesService.UpdateAccess(model);
 	}
 
 	[HttpPost]

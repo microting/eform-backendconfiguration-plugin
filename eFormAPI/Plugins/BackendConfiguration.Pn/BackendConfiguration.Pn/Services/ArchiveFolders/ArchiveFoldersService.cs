@@ -153,9 +153,14 @@ public class ArchiveFoldersService(
             return new OperationResult(false, localization.GetString("ArchiveFolderNotEmpty", documents, subfolders));
         }
 
-        await ArchiveReadTagSync.SyncFolderAsync(dbContext, id, [], userService.UserId);
-        folder.UpdatedByUserId = userService.UserId;
-        await folder.Delete(dbContext);
+        // One transaction: a folder whose read tags are gone but which is still live would read as open.
+        await ArchiveTransaction.RunAsync(dbContext, async () =>
+        {
+            await ArchiveReadTagSync.SyncFolderAsync(dbContext, id, [], userService.UserId);
+            var live = await dbContext.ArchiveFolders.SingleAsync(f => f.Id == id);
+            live.UpdatedByUserId = userService.UserId;
+            await live.Delete(dbContext);
+        });
         return new OperationResult(true);
     }
 
@@ -176,7 +181,10 @@ public class ArchiveFoldersService(
         }
 
         var documents = await DocumentsUnderAsync(id);
-        await ArchiveReadTagSync.SyncFolderAsync(dbContext, id, tagIds, userService.UserId);
+        // One transaction: the sync deletes the old groups before creating the new ones, and a folder left with
+        // none in between would read as open. A partial write must never widen access.
+        await ArchiveTransaction.RunAsync(dbContext,
+            () => ArchiveReadTagSync.SyncFolderAsync(dbContext, id, tagIds, userService.UserId));
         return await AccessChangedAsync(documents, before);
     }
 
@@ -210,7 +218,7 @@ public class ArchiveFoldersService(
         ArchiveFolderSnapshot before)
     {
         var after = await ArchiveFolderSnapshot.LoadAsync(dbContext);
-        var changed = documents.Count(d => !ArchiveAccessRules.SameGroups(d.Effective(before), d.Effective(after)));
+        var changed = ArchiveAccessRules.CountAccessChanged(documents, d => d.Effective(before), d => d.Effective(after));
         return new OperationDataResult<AccessChangeModel>(true, new AccessChangeModel { AccessChanged = changed });
     }
 

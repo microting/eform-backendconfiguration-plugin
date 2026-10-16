@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -29,6 +30,10 @@ public static class ArchiveAccessRules
         && (ctx.IsAdmin || effectiveGroups.Count == 0 || effectiveGroups.Any(g => ctx.UserGroupIds.Contains(g)));
 
     public static bool SameGroups(IEnumerable<int> a, IEnumerable<int> b) => new HashSet<int>(a).SetEquals(b);
+
+    /// <summary>D11: how many of <paramref name="items"/> have different effective groups before and after a change.</summary>
+    public static int CountAccessChanged<T>(IEnumerable<T> items, Func<T, IEnumerable<int>> before,
+        Func<T, IEnumerable<int>> after) => items.Count(i => !SameGroups(before(i), after(i)));
 
     /// <summary>Live read-tag ids as stored on a node or row: distinct, ascending.</summary>
     internal static List<int> GroupIds(IEnumerable<int> liveTagIds) => liveTagIds.Distinct().Order().ToList();

@@ -36,6 +36,7 @@ using ArchiveFolders;
 using BackendConfigurationFileTagsService;
 using BackendConfigurationLocalizationService;
 using FileArchive;
+using Infrastructure.Models.ArchiveFolders;
 using Infrastructure.Models.Files;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -471,6 +472,108 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 		}
 	}
 
+	public async Task<OperationDataResult<FilesMoveResultModel>> Move(FilesMoveModel model)
+	{
+		var ids = DistinctIds(model.FileIds);
+		if (ids.Count == 0)
+		{
+			return new OperationDataResult<FilesMoveResultModel>(true, new FilesMoveResultModel());
+		}
+
+		var ctx = await EnsureReadableAsync(ids);
+		var folders = await ArchiveFolderSnapshot.LoadAsync(_dbContext);
+		if (!IsWritableFolder(ctx, folders, model.FolderId))
+		{
+			throw new ArchiveNotFoundException();
+		}
+
+		// Resolved rows: a NULL FolderId already reads as the default folder.
+		var moving = (await ArchiveAccessRules.LoadFileRowsAsync(_dbContext, ids))
+			.Where(r => r.FolderId != model.FolderId)
+			.ToList();
+		var accessChanged = ArchiveAccessRules.CountAccessChanged(moving,
+			r => r.Effective(folders), r => r.EffectiveIn(model.FolderId, folders));
+		if (accessChanged > 0 && !ctx.IsAdmin)
+		{
+			// D17: changing who can read a document is an administrator's decision.
+			return new OperationDataResult<FilesMoveResultModel>(false,
+				_localizationService.GetString("ArchiveMoveChangesAccess"));
+		}
+
+		var movingIds = moving.Select(r => r.FileId).ToList();
+		// All or nothing, as the D17 refusal promises: a partial move must never widen access.
+		await ArchiveTransaction.RunAsync(_dbContext, async () =>
+		{
+			foreach (var file in await _dbContext.Files.Where(f => movingIds.Contains(f.Id)).ToListAsync())
+			{
+				file.FolderId = model.FolderId;
+				file.UpdatedByUserId = _userService.UserId;
+				await file.Update(_dbContext);
+			}
+		});
+
+		return new OperationDataResult<FilesMoveResultModel>(true,
+			new FilesMoveResultModel { Moved = movingIds.Count, AccessChanged = accessChanged });
+	}
+
+	public async Task<OperationResult> UpdateDate(int id, FileDateModel model)
+	{
+		await EnsureReadableAsync([id]);
+		var file = await _dbContext.Files.SingleAsync(f => f.Id == id);
+		file.DocumentDate = model.Date?.Date;
+		file.DocumentDateState = model.Date == null ? DocumentDateState.None : DocumentDateState.Approved;
+		file.UpdatedByUserId = _userService.UserId;
+		await file.Update(_dbContext);
+		return new OperationResult(true);
+	}
+
+	public async Task<OperationDataResult<AccessChangeModel>> UpdateAccess(FilesAccessModel model)
+	{
+		var ids = DistinctIds(model.FileIds);
+		if (ids.Count == 0)
+		{
+			return new OperationDataResult<AccessChangeModel>(true, new AccessChangeModel());
+		}
+
+		var ctx = await EnsureReadableAsync(ids);
+		if (!ctx.IsAdmin)
+		{
+			// The controller is admin-only; this keeps any other caller to the same rule.
+			throw new ArchiveNotFoundException();
+		}
+
+		var tagIds = model.OwnAccess ? DistinctIds(model.TagIds) : [];
+		var before = await ArchiveAccessRules.LoadFileRowsAsync(_dbContext, ids);
+		// Only groups new to some document need live members (the folder rule, per document).
+		var groupsOnEveryDocument = before
+			.Select(r => r.OwnAccess ? r.OwnGroupIds : [])
+			.Aggregate<IEnumerable<int>>((a, b) => a.Intersect(b))
+			.ToList();
+		if (!await _archiveAccess.AreAssignableGroupsAsync(tagIds, groupsOnEveryDocument))
+		{
+			return new OperationDataResult<AccessChangeModel>(false, _localizationService.GetString("ArchiveUnknownGroup"));
+		}
+
+		// One transaction: own access saved with the old groups deleted but the new ones missing would read as open.
+		await ArchiveTransaction.RunAsync(_dbContext, async () =>
+		{
+			foreach (var file in await _dbContext.Files.Where(f => ids.Contains(f.Id)).ToListAsync())
+			{
+				file.OwnAccess = model.OwnAccess;
+				file.UpdatedByUserId = _userService.UserId;
+				await file.Update(_dbContext);
+				await ArchiveReadTagSync.SyncFileAsync(_dbContext, file.Id, tagIds, _userService.UserId);
+			}
+		});
+
+		var folders = await ArchiveFolderSnapshot.LoadAsync(_dbContext);
+		var beforeById = before.ToDictionary(r => r.FileId);
+		var after = await ArchiveAccessRules.LoadFileRowsAsync(_dbContext, ids);
+		var accessChanged = ArchiveAccessRules.CountAccessChanged(after,
+			r => beforeById[r.FileId].Effective(folders), r => r.Effective(folders));
+		return new OperationDataResult<AccessChangeModel>(true, new AccessChangeModel { AccessChanged = accessChanged });
+	}
+
 	/// <summary>The stored file of a readable document; null for a missing or unreadable one (the controller answers 404).</summary>
 	public async Task<UploadedData> GetUploadedDataByFileId(int id)
 	{
@@ -501,6 +604,8 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 		var folders = await ArchiveFolderSnapshot.LoadAsync(_dbContext);
 		return (folders, folders.DefaultFolderId ?? 0);
 	}
+
+	private static List<int> DistinctIds(IEnumerable<int> ids) => (ids ?? []).Distinct().ToList();
 
 	/// <summary>The archive refusals (403/404) are answered by ArchiveAccessFilter, never as success=false.</summary>
 	private static bool IsUnexpected(Exception e) =>
