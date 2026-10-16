@@ -37,6 +37,7 @@ using System.Threading.Tasks;
 using System.Linq;
 
 [Authorize]
+[ArchiveAccessFilter]
 [Route("api/backend-configuration-pn/files")]
 public class FilesController : Controller
 {
