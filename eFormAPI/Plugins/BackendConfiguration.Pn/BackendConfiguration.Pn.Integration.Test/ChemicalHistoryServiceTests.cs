@@ -21,8 +21,10 @@ SOFTWARE.
 using BackendConfiguration.Pn.Infrastructure.Models.Chemicals;
 using BackendConfiguration.Pn.Services.ChemicalInventoryService;
 using BackendConfiguration.Pn.Services.ChemicalReporting;
+using Microsoft.EntityFrameworkCore;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+using Microting.EformBackendConfigurationBase.Infrastructure.Helpers;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
@@ -40,7 +42,28 @@ public class ChemicalHistoryServiceTests : ChemicalTestBase
     private ChemicalHistoryService CreateSut() =>
         new(BackendConfigurationPnDbContext!, new ChemicalRegisterReader(ChemicalsDbContext!), Names);
 
-    private static ChemicalHistoryQuery Around(DateTime now) => new(now.Date.AddDays(-1), now.Date.AddDays(1), null, null, null, 0, 100);
+    // The query period is made of Europe/Copenhagen calendar days.
+    private static DateTime LocalDate(DateTime utc) =>
+        TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), ChemicalAlertRules.Copenhagen).Date;
+
+    private static DateTime LocalToUtc(DateTime local) =>
+        TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(local, DateTimeKind.Unspecified), ChemicalAlertRules.Copenhagen);
+
+    private static ChemicalHistoryQuery Around(DateTime now) => new(LocalDate(now).AddDays(-1), LocalDate(now).AddDays(1), null, null, null, 0, 100);
+
+    private static ChemicalHistoryQuery OnDays(DateTime from, DateTime to) => new(from, to, null, null, null, 0, 100);
+
+    private async Task<ChemicalAlertLog> AddAlertAsync(int placementId, DateTime sentAt, ChemicalAlertThresholdEnum threshold,
+        ChemicalAlertChannelEnum channel, int? status, ChemicalDeadlineKindEnum? deadlineKind = null)
+    {
+        var log = new ChemicalAlertLog
+        {
+            PlacementId = placementId, Threshold = threshold, Status = status, DeadlineKind = deadlineKind, Channel = channel,
+            SentAt = sentAt, CreatedByUserId = 0, UpdatedByUserId = 0,
+        };
+        await log.Create(BackendConfigurationPnDbContext!);
+        return log;
+    }
 
     private static ChemicalStockAmountModel Liters(decimal amount) => new(null, null, amount, ChemicalStockUnitEnum.L, null, null, null);
 
@@ -182,10 +205,12 @@ public class ChemicalHistoryServiceTests : ChemicalTestBase
     public async Task Query_EndDateIsInclusive_AndOtherPeriodsAreEmpty()
     {
         var s = await ArrangeAsync();
-        var today = DateTime.UtcNow.Date;
+        var sut = CreateSut();
+        var all = await sut.GetAllAsync(s.PropertyId, Around(DateTime.UtcNow));
+        var newestDay = LocalDate(all.Max(e => e.At));
 
-        var sameDay = await CreateSut().GetAllAsync(s.PropertyId, new ChemicalHistoryQuery(today, today, null, null, null));
-        var lastYear = await CreateSut().GetAllAsync(s.PropertyId, new ChemicalHistoryQuery(today.AddYears(-1), today.AddYears(-1).AddDays(30), null, null, null));
+        var sameDay = await sut.GetAllAsync(s.PropertyId, OnDays(newestDay, newestDay));
+        var lastYear = await sut.GetAllAsync(s.PropertyId, OnDays(newestDay.AddYears(-1), newestDay.AddYears(-1).AddDays(30)));
 
         Assert.That(sameDay, Is.Not.Empty);
         Assert.That(lastYear, Is.Empty);
@@ -227,5 +252,123 @@ public class ChemicalHistoryServiceTests : ChemicalTestBase
         var page = await CreateSut().GetPageAsync(s.PropertyId, Around(DateTime.UtcNow) with { PageSize = 10_000, Page = -3 });
 
         Assert.That(page.Events.Count, Is.LessThanOrEqualTo(ChemicalHistoryService.MaxPageSize));
+    }
+
+    [Test]
+    public async Task Ledger_IsReadInIdOrder_SoABackdatedRemovalStillFoldsTheWriteOff()
+    {
+        var property = await CreatePropertyAsync();
+        var inventory = CreateInventoryService();
+        await inventory.SetSettingsAsync(Web, new ChemicalSetSettingsCommand(property.Id, true, []));
+        var lade = await inventory.CreateLocationAsync(Web, new ChemicalCreateLocationCommand(property.Id, "Lade", "", null));
+        var roundup = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Roundup PowerMax", "1-285");
+        var registered = (await inventory.RegisterPlacementAsync(Web,
+            new ChemicalRegisterPlacementCommand(lade.Id, roundup.ChemicalId, null, "Hylde", Liters(5)))).Placements.Single();
+        await inventory.AddStockEntryAsync(Web, new ChemicalAddStockEntryCommand(registered.Id, ChemicalStockEntryKindEnum.Consumed, Liters(1)));
+        // Logged after the consumption, but dated at the registration instant (the earliest a removal may be dated).
+        await inventory.RemovePlacementAsync(Web,
+            new ChemicalRemovePlacementCommand(registered.Id, ChemicalRemovalReasonEnum.Used, registered.RegisteredAt, "tom"));
+
+        var events = await CreateSut().GetAllAsync(property.Id, Around(DateTime.UtcNow));
+
+        var removal = events.Single(e => e.Action == ChemicalHistoryActionEnum.Removed);
+        Assert.That((removal.Amount, removal.Unit), Is.EqualTo(((decimal?)-4m, (ChemicalStockUnitEnum?)ChemicalStockUnitEnum.L)));
+        var consumed = events.Where(e => e.Action == ChemicalHistoryActionEnum.StockConsumed).ToList();
+        Assert.That(consumed.Select(e => (e.Amount, e.BalanceAfter)), Is.EqualTo(new[] { ((decimal?)-1m, (decimal?)4m) }));
+    }
+
+    [Test]
+    public async Task Adjustment_DatedBeforeTheReceipt_KeepsTheLedgerBalances()
+    {
+        var property = await CreatePropertyAsync();
+        var inventory = CreateInventoryService();
+        await inventory.SetSettingsAsync(Web, new ChemicalSetSettingsCommand(property.Id, true, []));
+        var lade = await inventory.CreateLocationAsync(Web, new ChemicalCreateLocationCommand(property.Id, "Lade", "", null));
+        var roundup = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Roundup PowerMax", "1-285");
+        var now = DateTime.UtcNow;
+        var placement = (await inventory.RegisterPlacementAsync(Web,
+            new ChemicalRegisterPlacementCommand(lade.Id, roundup.ChemicalId, null, "Hylde", Liters(5)))).Placements.Single().Id;
+        await inventory.AddStockEntryAsync(Web, new ChemicalAddStockEntryCommand(placement, ChemicalStockEntryKindEnum.Adjusted,
+            new ChemicalStockAmountModel(null, null, 3m, ChemicalStockUnitEnum.L, null, null, now.AddHours(-6))));
+
+        var events = await CreateSut().GetAllAsync(property.Id, Around(now));
+
+        var adjusted = events.Single(e => e.Action == ChemicalHistoryActionEnum.StockAdjusted);
+        Assert.That((adjusted.Amount, adjusted.BalanceAfter), Is.EqualTo(((decimal?)-2m, (decimal?)3m)));
+        var received = events.Single(e => e.Action == ChemicalHistoryActionEnum.StockReceived);
+        Assert.That(received.BalanceAfter, Is.EqualTo(5m));
+    }
+
+    [Test]
+    public async Task Period_IsMadeOfCopenhagenDays_AlsoForTheAlertDayGrouping()
+    {
+        var property = await CreatePropertyAsync();
+        var inventory = CreateInventoryService();
+        var lade = await inventory.CreateLocationAsync(Web, new ChemicalCreateLocationCommand(property.Id, "Lade", "", null));
+        var roundup = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Roundup PowerMax", "1-285");
+        var day = LocalDate(DateTime.UtcNow).AddDays(-3);
+        var justAfterMidnight = LocalToUtc(day.AddMinutes(30));
+        var lateTheDayBefore = LocalToUtc(day.AddMinutes(-30));
+        var placement = (await inventory.RegisterPlacementAsync(Web,
+            new ChemicalRegisterPlacementCommand(lade.Id, roundup.ChemicalId, null, "Hylde",
+                new ChemicalStockAmountModel(null, null, 5m, ChemicalStockUnitEnum.L, null, null, justAfterMidnight)))).Placements.Single().Id;
+        await AddAlertAsync(placement, justAfterMidnight, ChemicalAlertThresholdEnum.StatusChanged, ChemicalAlertChannelEnum.Push, 6);
+        await AddAlertAsync(placement, lateTheDayBefore, ChemicalAlertThresholdEnum.StatusChanged, ChemicalAlertChannelEnum.Push, 6);
+        var sut = CreateSut();
+
+        var thatDay = await sut.GetAllAsync(property.Id, OnDays(day, day));
+        var dayBefore = await sut.GetAllAsync(property.Id, OnDays(day.AddDays(-1), day.AddDays(-1)));
+        var both = await sut.GetAllAsync(property.Id, OnDays(day.AddDays(-1), day));
+
+        Assert.That(thatDay.Select(e => e.Action), Is.EquivalentTo(new[]
+            { ChemicalHistoryActionEnum.StockReceived, ChemicalHistoryActionEnum.StatusChanged }), "00:30 local is still the previous day in UTC");
+        Assert.That(dayBefore.Select(e => e.Action), Is.EqualTo(new[] { ChemicalHistoryActionEnum.StatusChanged }));
+        Assert.That(both.Count(e => e.Action == ChemicalHistoryActionEnum.StatusChanged), Is.EqualTo(2), "one status line per local day");
+    }
+
+    [Test]
+    public async Task RemovedPlacements_ContributeNoEventsAtAll()
+    {
+        var property = await CreatePropertyAsync();
+        var inventory = CreateInventoryService();
+        var lade = await inventory.CreateLocationAsync(Web, new ChemicalCreateLocationCommand(property.Id, "Lade", "", null));
+        var roundup = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Roundup PowerMax", "1-285");
+        var placement = (await inventory.RegisterPlacementAsync(Web,
+            new ChemicalRegisterPlacementCommand(lade.Id, roundup.ChemicalId, null, "Hylde", Liters(5)))).Placements.Single().Id;
+        await inventory.UpdatePlacementNoteAsync(Web, placement, "Anden hylde");
+        await AddAlertAsync(placement, DateTime.UtcNow, ChemicalAlertThresholdEnum.StatusChanged, ChemicalAlertChannelEnum.Push, 6);
+        var row = await BackendConfigurationPnDbContext!.ChemicalPlacements.SingleAsync(p => p.Id == placement);
+        await row.Delete(BackendConfigurationPnDbContext!);
+
+        var events = await CreateSut().GetAllAsync(property.Id, Around(DateTime.UtcNow));
+
+        Assert.That(events.Where(e => e.PlacementId == placement), Is.Empty);
+        Assert.That(events.Select(e => e.Action), Is.EqualTo(new[] { ChemicalHistoryActionEnum.LocationCreated }));
+    }
+
+    [Test]
+    public async Task LocationArchivePhotoAndSixMonthAlert_AreDerived()
+    {
+        var property = await CreatePropertyAsync();
+        var inventory = CreateInventoryService();
+        var photo = await inventory.CreateLocationAsync(Web, new ChemicalCreateLocationCommand(property.Id, "Foto", "", null));
+        await inventory.SaveLocationPhotoAsync(Web, photo.Id, [1, 2, 3], "image/jpeg");
+        var archived = await inventory.CreateLocationAsync(Web, new ChemicalCreateLocationCommand(property.Id, "Gammel", "", null));
+        await inventory.ArchiveLocationAsync(Web, archived.Id);
+        var roundup = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Roundup PowerMax", "1-285");
+        var placement = (await inventory.RegisterPlacementAsync(Web,
+            new ChemicalRegisterPlacementCommand(photo.Id, roundup.ChemicalId, null, "Hylde", null))).Placements.Single().Id;
+        await AddAlertAsync(placement, DateTime.UtcNow, ChemicalAlertThresholdEnum.SixMonths, ChemicalAlertChannelEnum.Email, null,
+            ChemicalDeadlineKindEnum.Sales);
+        await AddAlertAsync(placement, DateTime.UtcNow, ChemicalAlertThresholdEnum.SixMonths, ChemicalAlertChannelEnum.Push, null,
+            ChemicalDeadlineKindEnum.Sales);
+
+        var events = await CreateSut().GetAllAsync(property.Id, Around(DateTime.UtcNow));
+
+        Assert.That(events.Single(e => e.Action == ChemicalHistoryActionEnum.LocationPhotoChanged).LocationId, Is.EqualTo(photo.Id));
+        Assert.That(events.Single(e => e.Action == ChemicalHistoryActionEnum.LocationArchived).LocationName, Is.EqualTo("Gammel"));
+        var alert = events.Single(e => e.Action == ChemicalHistoryActionEnum.AlertSent);
+        Assert.That((alert.UserId, alert.Threshold, alert.DeadlineKind, alert.PushCount, alert.EmailCount),
+            Is.EqualTo((0, (ChemicalAlertThresholdEnum?)ChemicalAlertThresholdEnum.SixMonths, (ChemicalDeadlineKindEnum?)ChemicalDeadlineKindEnum.Sales, 1, 1)));
     }
 }

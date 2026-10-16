@@ -67,6 +67,16 @@ public class ChemicalXlsxWriterTests
     }
 
     [Test]
+    public void CharactersInvalidInXml_AreDropped_ButValidSurrogatePairsStay()
+    {
+        var bytes = ChemicalXlsxWriter.Write("x", ["A"],
+            [new object[] { "a\uD800b\uDC00c\uFFFEd\uFFFFe\U0001F600f" }]);
+
+        var (_, rows) = XlsxTestReader.Read(bytes);
+        Assert.That(rows[1][0], Is.EqualTo("abcde\U0001F600f"));
+    }
+
+    [Test]
     public void HeaderOnly_IsAValidWorkbook()
     {
         var (_, rows) = XlsxTestReader.Read(ChemicalXlsxWriter.Write("x", ["A"], []));
