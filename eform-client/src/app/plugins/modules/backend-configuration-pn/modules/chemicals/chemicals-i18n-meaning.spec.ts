@@ -180,10 +180,52 @@ describe('Kemi i18n meaning', () => {
     ['isIS', 'Chemicals: Stock origin write-off', 'Birgðafrádráttur við fjarlægingu'],
     ['esES', 'Chemicals: Remove', 'Retirar'],
     ['ukUA', 'Chemicals: Remove', 'Вилучити'],
+    // Task 13 re-review N-m1: the write-off follows every removal (also "used up"), not only a disposal.
+    ['roRO', 'Chemicals: Stock origin write-off', 'Scădere din stoc la îndepărtare'],
   ];
 
   it.each(REVIEWED)('%s keeps the reviewed %s', (locale, key, value) => {
     expect(text(locale, key)).toBe(value);
+  });
+
+  // A location (W3) is the physical place where a chemical stands: never a warehouse or storage room, an internship
+  // or job placement, or moving house (machine translation produced all three).
+  const LOCATION_KEYS = [
+    'Chemicals: Locations title', 'Chemicals: New location', 'Chemicals: Edit location', 'Chemicals: No locations',
+    'Chemicals: Loading locations', 'Chemicals: Could not load locations', 'Chemicals: Archive blocked',
+  ];
+  const INTERNSHIP = new RegExp([
+    '\\bstage\\b', 'stagiu', 'tirocin', 'praktikum', '\\bpraktik\\b', 'praktika', 'praktyk', 'staż', 'stáž', 'práctica',
+    'estágio', 'harjoittel', 'starfsnám', 'πρακτική', 'стажув', 'стаж', 'prakse', 'praksa', 'gyakornok', 'szakmai gyakorlat',
+  ].join('|'), 'i');
+
+  it.each(NON_ENGLISH)('%s: a location is the place a chemical stands, not a storage place', (locale) => {
+    expect(LOCATION_KEYS.filter((key) => STORAGE_PLACE.test(text(locale, key)))).toEqual([]);
+  });
+
+  it.each(NON_ENGLISH)('%s: a location is not an internship or a job placement', (locale) => {
+    expect([...LOCATION_KEYS, 'Chemicals: Photo hint'].filter((key) => INTERNSHIP.test(text(locale, key)))).toEqual([]);
+  });
+
+  it.each(NON_ENGLISH)('%s: a location is not moving house', (locale) => {
+    expect(LOCATION_KEYS.filter((key) => RELOCATION.test(text(locale, key)))).toEqual([]);
+  });
+
+  // "No." heads the order column: a number, never the word "no".
+  const NEGATION: Record<string, RegExp> = {
+    deDE: /^nein\.?$/i, esES: /^no\.?$/i, frFR: /^non\.?$/i, itIT: /^no\.?$/i, ptPT: /^não\.?$/i, ptBR: /^não\.?$/i,
+    nlNL: /^nee\.?$/i, svSE: /^nej\.?$/i, noNO: /^nei\.?$/i, plPL: /^nie\.?$/i, ukUA: /^ні\.?$/i,
+  };
+
+  it.each(Object.entries(NEGATION))('%s: the order column "No." is a number, not "no"', (locale, negation) => {
+    expect(text(locale, 'Chemicals: No.')).not.toMatch(negation);
+  });
+
+  // Archiving a location is an action (a verb on the button), never the noun "archive".
+  const ARCHIVE_NOUN: Record<string, RegExp> = {deDE: /^archiv$/i, nlNL: /^archief$/i, plPL: /^archiwum$/i, frFR: /^archives?$/i, esES: /^archivo$/i};
+
+  it.each(Object.entries(ARCHIVE_NOUN))('%s: "Archive" is the action, not the noun', (locale, noun) => {
+    expect(text(locale, 'Chemicals: Archive')).not.toMatch(noun);
   });
 
   it('ptPT uses the European "stock", never the Brazilian "estoque", in every Kemi text', () => {

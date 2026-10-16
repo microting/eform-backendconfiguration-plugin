@@ -1,6 +1,7 @@
 jest.mock('./components', () => ({
   ChemicalsContainerComponent: class MockChemicalsContainerComponent {},
   ChemicalInventoryPageComponent: class MockChemicalInventoryPageComponent {},
+  ChemicalLocationsPageComponent: class MockChemicalLocationsPageComponent {},
   ChemicalPermissionsPageComponent: class MockChemicalPermissionsPageComponent {},
   ChemicalSettingsPageComponent: class MockChemicalSettingsPageComponent {},
 }));
@@ -66,6 +67,25 @@ describe('ChemicalsRouting', () => {
     });
   });
 
+  it('puts W3 Lokationer second, rendering the locations page (Task 14, mockup order)', () => {
+    const children = (routes[0].children ?? []).filter((r) => !r.redirectTo);
+
+    expect(CHEMICAL_SCREENS.map((s) => s.path)).toEqual(['inventory', 'locations', 'permissions', 'settings']);
+    expect(children[1].component?.name).toBe('MockChemicalLocationsPageComponent');
+    expect(children[1].data?.['titleKey']).toBe('Chemicals: Locations title');
+  });
+
+  describe('W3 with the real router', () => {
+    it('keeps the property of the Lokationer link', async () => {
+      TestBed.configureTestingModule({providers: [provideRouter([{path: 'chemicals', children: routes}])]});
+      const router = TestBed.inject(Router);
+
+      await router.navigateByUrl('/chemicals/locations?propertyId=3');
+
+      expect(router.url).toBe('/chemicals/locations?propertyId=3');
+    });
+  });
+
   it('gives every screen a component', () => {
     const children = (routes[0].children ?? []).filter((r) => !r.redirectTo);
 
@@ -84,6 +104,7 @@ describe('ChemicalsRouting', () => {
     // literals are pinned on both sides. Extend this list with each screen's menu child.
     expect(CHEMICAL_SCREENS.map((s) => [s.path, s.menuE2EId])).toEqual([
       ['inventory', 'backend-configuration-pn-chemicals-inventory'],
+      ['locations', 'backend-configuration-pn-chemicals-locations'],
       ['permissions', 'backend-configuration-pn-chemicals-permissions'],
       ['settings', 'backend-configuration-pn-chemicals-settings'],
     ]);

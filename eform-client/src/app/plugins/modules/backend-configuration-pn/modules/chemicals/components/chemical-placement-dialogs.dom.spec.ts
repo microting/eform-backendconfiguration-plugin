@@ -79,6 +79,24 @@ describe('Kemi placement dialogs (template)', () => {
     expect(find('#chemicalMoveNoTargets')?.textContent).toContain('Chemicals: No other location');
   });
 
+  it.each([
+    [1.0005, true],
+    [1_000_001, true],
+    [2.5, false],
+    [1_000_000, false],
+  ])('the stock dialog explains the amount limits (3 decimals, at most 1,000,000) for %s (Task 13 N-m3)', (amount, shown) => {
+    const dialog = render(ChemicalStockDialogComponent, {row}) as unknown as {amount: number | null};
+
+    dialog.amount = amount;
+    fixture.detectChanges();
+
+    const hint = find('#chemicalStockAmountHint');
+    expect(hint !== null).toBe(shown);
+    if (shown) {
+      expect(hint?.textContent).toContain('Chemicals: Amount limits');
+    }
+  });
+
   it('shows no empty-state text when another location exists', () => {
     render(ChemicalMoveDialogComponent, {row, locations, stockEnabled: false});
 

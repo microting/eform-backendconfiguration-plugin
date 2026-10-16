@@ -17,6 +17,7 @@ public class ChemicalsMenuTests
 {
     private const string GroupE2EId = "backend-configuration-pn-chemicals";
     private const string InventoryE2EId = "backend-configuration-pn-chemicals-inventory";
+    private const string LocationsE2EId = "backend-configuration-pn-chemicals-locations";
     private const string PermissionsE2EId = "backend-configuration-pn-chemicals-permissions";
     private const string SettingsE2EId = "backend-configuration-pn-chemicals-settings";
     private const string SettingsLink = "/plugins/backend-configuration-pn/chemicals/settings";
@@ -24,6 +25,7 @@ public class ChemicalsMenuTests
     // W1 has its own path (Task 12 ruling I-4), so the host's prefix-matching routerLinkActive marks
     // Beholdning only on W1; the Angular routing redirects the bare Kemi root here.
     private const string InventoryLink = "/plugins/backend-configuration-pn/chemicals/inventory";
+    private const string LocationsLink = "/plugins/backend-configuration-pn/chemicals/locations";
 
     private static List<PluginMenuItemModel> Menu() =>
         new EformBackendConfigurationPlugin().GetNavigationMenu(null!);
@@ -35,6 +37,9 @@ public class ChemicalsMenuTests
 
     private static PluginMenuItemModel InventoryChild() =>
         Group().ChildItems.Single(c => c.E2EId == InventoryE2EId);
+
+    private static PluginMenuItemModel LocationsChild() =>
+        Group().ChildItems.Single(c => c.E2EId == LocationsE2EId);
 
     private static PluginMenuItemModel SettingsChild() =>
         Group().ChildItems.Single(c => c.E2EId == SettingsE2EId);
@@ -81,8 +86,8 @@ public class ChemicalsMenuTests
     public void PermissionsChildLinksToTheW4Screen()
     {
         var group = Group();
-        Assert.That(group.ChildItems.Select(c => c.E2EId), Is.EqualTo(new[] { InventoryE2EId, PermissionsE2EId, SettingsE2EId }),
-            "E1 shipped Rettigheder, E2 Indstillinger, E3 Beholdning; later releases add their own children");
+        Assert.That(group.ChildItems.Select(c => c.E2EId), Is.EqualTo(new[] { InventoryE2EId, LocationsE2EId, PermissionsE2EId, SettingsE2EId }),
+            "E1 shipped Rettigheder, E2 Indstillinger, E3 Beholdning and Lokationer; later releases add their own children");
 
         var child = PermissionsChild();
         Assert.That(child.Type, Is.EqualTo(MenuItemTypeEnum.Link));
@@ -135,6 +140,35 @@ public class ChemicalsMenuTests
             Assert.That(Name(translations, LocaleNames.English), Is.EqualTo("Inventory"));
             Assert.That(Name(translations, LocaleNames.German), Is.EqualTo("Bestand"));
             Assert.That(Name(translations, LocaleNames.Ukrainian), Is.EqualTo("Запаси"));
+        }
+    }
+
+    [Test]
+    public void LocationsChildLinksToTheW3Screen()
+    {
+        var child = LocationsChild();
+
+        Assert.That(child.Type, Is.EqualTo(MenuItemTypeEnum.Link));
+        Assert.That(child.Link, Is.EqualTo(LocationsLink));
+        Assert.That(child.Position, Is.EqualTo(1), "mockup order: Beholdning 0, Lokationer 1, Rettigheder 2, Indstillinger 3, Historik 4");
+        Assert.That(child.MenuTemplate, Is.Not.Null);
+        Assert.That(child.MenuTemplate.E2EId, Is.EqualTo(LocationsE2EId));
+        Assert.That(child.MenuTemplate.DefaultLink, Is.EqualTo(LocationsLink));
+        Assert.That(child.MenuTemplate.Permissions, Is.Empty, "open to every plugin user, like Rettigheder");
+    }
+
+    [Test]
+    public void LocationsChildIsNamedInTheFourMenuLanguages()
+    {
+        var child = LocationsChild();
+
+        foreach (var translations in new[] { child.Translations, child.MenuTemplate.Translations })
+        {
+            Assert.That(translations, Has.Count.EqualTo(4));
+            Assert.That(Name(translations, LocaleNames.Danish), Is.EqualTo("Lokationer"));
+            Assert.That(Name(translations, LocaleNames.English), Is.EqualTo("Locations"));
+            Assert.That(Name(translations, LocaleNames.German), Is.EqualTo("Standorte"));
+            Assert.That(Name(translations, LocaleNames.Ukrainian), Is.EqualTo("Локації"));
         }
     }
 
