@@ -169,12 +169,12 @@ public class InboxServiceTests : TestBaseSetup
         public async Task<int> ArchiveAsync(Stream content, string name, string extension,
             IReadOnlyCollection<int> propertyIds, IReadOnlyCollection<int> tagIds, int folderId,
             DateTime? documentDate, DocumentDateState documentDateState, int userId,
-            Func<int, Task>? inTransaction = null)
+            Func<int, Task>? inTransaction = null, Func<ArchiveFolderSnapshot, bool>? folderAllowed = null)
         {
             await db.InboxDocuments.Where(d => d.Id == docId)
                 .ExecuteUpdateAsync(s => s.SetProperty(d => d.Status, InboxDocumentStatus.Filed));
             return await inner.ArchiveAsync(content, name, extension, propertyIds, tagIds, folderId, documentDate,
-                documentDateState, userId, inTransaction);
+                documentDateState, userId, inTransaction, folderAllowed);
         }
     }
 

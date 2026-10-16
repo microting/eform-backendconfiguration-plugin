@@ -79,118 +79,160 @@ public class ArchiveFoldersService(
         return new OperationDataResult<List<ArchiveFolderModel>>(true, result);
     }
 
+    // Every tree or access change below runs in ArchiveTransaction and starts by locking the folders it changes
+    // (ArchiveFolderLock: exclusive, one statement, ascending Id), then reloads the tree and validates on it. The
+    // validation is inside, not before, so two concurrent requests can never both pass on the same old tree (e.g. A
+    // under B and B under A, which would save a cycle) and a retry never commits a stale decision.
+
     public async Task<OperationDataResult<ArchiveFolderModel>> CreateAsync(ArchiveFolderCreateModel model)
     {
         await access.GetEnabledContextAsync();
-        var folders = await ArchiveFolderSnapshot.LoadAsync(dbContext);
         var name = (model.Name ?? "").Trim();
-        var refusal = ValidateParent(model.ParentId, null, folders) ?? ValidateName(name, model.ParentId, null, folders);
-        if (refusal != null)
+        return await InTransactionAsync(async () =>
         {
-            return Refusal<ArchiveFolderModel>(refusal);
-        }
+            // Exclusive, not shared, on the parent: the two-level rule also needs it not to move under another folder
+            // meanwhile. A top-level folder has no parent row to lock, so two top-level folders created with the
+            // same name at the same instant are not serialised (a duplicate name, never a broken tree).
+            await ArchiveFolderLock.ExclusiveAsync(dbContext, [model.ParentId]);
+            var folders = await ArchiveFolderSnapshot.LoadAsync(dbContext);
+            Refuse(ValidateParent(model.ParentId, null, folders) ?? ValidateName(name, model.ParentId, null, folders));
 
-        var folder = new ArchiveFolder
-        {
-            Name = name, ParentId = model.ParentId, CreatedByUserId = userService.UserId,
-            UpdatedByUserId = userService.UserId
-        };
-        await folder.Create(dbContext);
-        var node = new ArchiveFolderNode(folder.Id, folder.Name, folder.ParentId, false, []);
-        var created = new ArchiveFolderSnapshot(folders.All.Append(node));
-        var names = await access.GetGroupNamesAsync(created.EffectiveGroups(node.Id).ToList());
-        return new OperationDataResult<ArchiveFolderModel>(true, Model(node, 0, created, names));
+            var folder = new ArchiveFolder
+            {
+                Name = name, ParentId = model.ParentId, CreatedByUserId = userService.UserId,
+                UpdatedByUserId = userService.UserId
+            };
+            await folder.Create(dbContext);
+            var node = new ArchiveFolderNode(folder.Id, folder.Name, folder.ParentId, false, []);
+            var created = new ArchiveFolderSnapshot(folders.All.Append(node));
+            var names = await access.GetGroupNamesAsync(created.EffectiveGroups(node.Id).ToList());
+            return Model(node, 0, created, names);
+        });
     }
 
     public async Task<OperationDataResult<AccessChangeModel>> UpdateAsync(int id, ArchiveFolderUpdateModel model)
     {
         await access.GetEnabledContextAsync();
-        var (before, node) = await LoadExistingAsync(id);
-        var parentId = model.MoveToTop ? null : model.ParentId ?? node.ParentId;
-        var name = model.Name?.Trim() ?? node.Name;
-        var moving = parentId != node.ParentId;
-        if (!moving && name == node.Name)
+        // Read now only to know which parent to lock; everything is decided on the tree reloaded under the locks.
+        var (_, current) = await LoadExistingAsync(id);
+        return await InTransactionAsync(async () =>
         {
-            return new OperationDataResult<AccessChangeModel>(true, new AccessChangeModel());
-        }
+            // The folder, its old parent and its new parent.
+            await ArchiveFolderLock.ExclusiveAsync(dbContext,
+                [id, current.ParentId, model.MoveToTop ? null : model.ParentId]);
+            var (before, node) = await LoadExistingAsync(id);
+            var parentId = model.MoveToTop ? null : model.ParentId ?? node.ParentId;
+            var name = model.Name?.Trim() ?? node.Name;
+            var moving = parentId != node.ParentId;
+            if (!moving && name == node.Name)
+            {
+                return new AccessChangeModel();
+            }
 
-        if (moving && node.IsDefault)
-        {
-            return Refused<AccessChangeModel>("ArchiveDefaultFolderCannotMove");
-        }
+            if (moving && node.IsDefault)
+            {
+                RefuseKey("ArchiveDefaultFolderCannotMove");
+            }
 
-        var refusal = (moving ? ValidateParent(parentId, node, before) : null)
-                      ?? ValidateName(name, parentId, node.Id, before);
-        if (refusal != null)
-        {
-            return Refusal<AccessChangeModel>(refusal);
-        }
+            Refuse((moving ? ValidateParent(parentId, node, before) : null)
+                   ?? ValidateName(name, parentId, node.Id, before));
 
-        var documents = await DocumentsUnderAsync(id);
-        var folder = await dbContext.ArchiveFolders.SingleAsync(f => f.Id == id);
-        folder.Name = name;
-        folder.ParentId = parentId;
-        folder.UpdatedByUserId = userService.UserId;
-        await folder.Update(dbContext);
-        return await AccessChangedAsync(documents, before);
+            var documents = await DocumentsUnderAsync(id);
+            var folder = await dbContext.ArchiveFolders.SingleAsync(f => f.Id == id);
+            folder.Name = name;
+            folder.ParentId = parentId;
+            folder.UpdatedByUserId = userService.UserId;
+            await folder.Update(dbContext);
+            return await AccessChangedAsync(documents, before);
+        });
     }
 
     public async Task<OperationResult> DeleteAsync(int id)
     {
         await access.GetEnabledContextAsync();
-        var folder = await dbContext.ArchiveFolders.FirstOrDefaultAsync(f => f.Id == id && f.WorkflowState != Removed)
-                     ?? throw new ArchiveNotFoundException();
-        if (folder.IsDefault)
+        // One transaction: a folder whose read tags are gone but which is still live would read as open. The lock
+        // keeps uploads, filings and moves into it (shared locks) and new subfolders out until it is gone.
+        var deleted = await InTransactionAsync(async () =>
         {
-            return new OperationResult(false, localization.GetString("ArchiveDefaultFolderCannotDelete"));
-        }
+            await ArchiveFolderLock.ExclusiveAsync(dbContext, [id]);
+            var folder = await dbContext.ArchiveFolders.FirstOrDefaultAsync(f => f.Id == id && f.WorkflowState != Removed)
+                         ?? throw new ArchiveNotFoundException();
+            if (folder.IsDefault)
+            {
+                RefuseKey("ArchiveDefaultFolderCannotDelete");
+            }
 
-        // Restricted documents block too; NULL-folder rows are default-folder rows, refused above.
-        var documents = await dbContext.Files.CountAsync(f => f.FolderId == id && f.WorkflowState != Removed);
-        var subfolders = await dbContext.ArchiveFolders.CountAsync(f => f.ParentId == id && f.WorkflowState != Removed);
-        if (documents + subfolders > 0)
-        {
-            return new OperationResult(false, localization.GetString("ArchiveFolderNotEmpty", documents, subfolders));
-        }
+            // Restricted documents block too; NULL-folder rows are default-folder rows, refused above.
+            var documents = await dbContext.Files.CountAsync(f => f.FolderId == id && f.WorkflowState != Removed);
+            var subfolders = await dbContext.ArchiveFolders.CountAsync(f => f.ParentId == id && f.WorkflowState != Removed);
+            if (documents + subfolders > 0)
+            {
+                RefuseKey("ArchiveFolderNotEmpty", documents, subfolders);
+            }
 
-        // One transaction: a folder whose read tags are gone but which is still live would read as open.
-        await ArchiveTransaction.RunAsync(dbContext, async () =>
-        {
             await ArchiveReadTagSync.SyncFolderAsync(dbContext, id, [], userService.UserId);
-            var live = await dbContext.ArchiveFolders.SingleAsync(f => f.Id == id);
-            live.UpdatedByUserId = userService.UserId;
-            await live.Delete(dbContext);
+            folder.UpdatedByUserId = userService.UserId;
+            await folder.Delete(dbContext);
+            return true;
         });
-        return new OperationResult(true);
+        // A plain OperationResult, as before: no model in the response.
+        return new OperationResult(deleted.Success, deleted.Message);
     }
 
     public async Task<OperationDataResult<AccessChangeModel>> UpdateAccessAsync(int id, ArchiveFolderAccessModel model)
     {
         await access.GetEnabledContextAsync();
-        var (before, node) = await LoadExistingAsync(id);
         var tagIds = (model.TagIds ?? []).Distinct().ToList();
-        if (node.IsDefault && tagIds.Count > 0)
+        // One transaction: the sync deletes the old groups before creating the new ones, and a folder left with none
+        // in between would read as open. A partial write must never widen access. Under the lock the sync starts from
+        // the folder's live groups, so two concurrent changes apply one after the other instead of adding up.
+        return await InTransactionAsync(async () =>
         {
-            return Refused<AccessChangeModel>("ArchiveDefaultFolderCannotRestrict");
-        }
+            await ArchiveFolderLock.ExclusiveAsync(dbContext, [id]);
+            var (before, node) = await LoadExistingAsync(id);
+            if (node.IsDefault && tagIds.Count > 0)
+            {
+                RefuseKey("ArchiveDefaultFolderCannotRestrict");
+            }
 
-        // Only newly added groups need live members; a kept group that lost its last member stays.
-        if (!await access.AreAssignableGroupsAsync(tagIds, node.OwnGroupIds))
-        {
-            return Refused<AccessChangeModel>("ArchiveUnknownGroup");
-        }
+            // Only newly added groups need live members; a kept group that lost its last member stays.
+            if (!await access.AreAssignableGroupsAsync(tagIds, node.OwnGroupIds))
+            {
+                RefuseKey("ArchiveUnknownGroup");
+            }
 
-        var documents = await DocumentsUnderAsync(id);
-        // One transaction: the sync deletes the old groups before creating the new ones, and a folder left with
-        // none in between would read as open. A partial write must never widen access.
-        await ArchiveTransaction.RunAsync(dbContext,
-            () => ArchiveReadTagSync.SyncFolderAsync(dbContext, id, tagIds, userService.UserId));
-        return await AccessChangedAsync(documents, before);
+            var documents = await DocumentsUnderAsync(id);
+            await ArchiveReadTagSync.SyncFolderAsync(dbContext, id, tagIds, userService.UserId);
+            return await AccessChangedAsync(documents, before);
+        });
     }
 
-    private OperationDataResult<T> Refused<T>(string key) => Refusal<T>(localization.GetString(key));
+    /// <summary>A refusal found inside a transaction: thrown before any write, so the transaction commits nothing.</summary>
+    private sealed class FolderRefusedException(string message) : Exception(message);
 
-    private static OperationDataResult<T> Refusal<T>(string localizedMessage) => new(false, localizedMessage);
+    private static void Refuse(string? localizedMessage)
+    {
+        if (localizedMessage != null)
+        {
+            throw new FolderRefusedException(localizedMessage);
+        }
+    }
+
+    private void RefuseKey(string key, params object[] args) =>
+        throw new FolderRefusedException(args.Length == 0 ? localization.GetString(key) : localization.GetString(key, args));
+
+    /// <summary>Runs <paramref name="work"/> in ArchiveTransaction; a <see cref="Refuse"/> inside becomes success=false.</summary>
+    private async Task<OperationDataResult<T>> InTransactionAsync<T>(Func<Task<T>> work)
+    {
+        try
+        {
+            return new OperationDataResult<T>(true, await ArchiveTransaction.RunAsync(dbContext, work));
+        }
+        catch (FolderRefusedException e)
+        {
+            return new OperationDataResult<T>(false, e.Message);
+        }
+    }
 
     /// <summary>The live folder tree and the live folder <paramref name="id"/> in it; unknown → 404.</summary>
     private async Task<(ArchiveFolderSnapshot Folders, ArchiveFolderNode Node)> LoadExistingAsync(int id)
@@ -214,12 +256,12 @@ public class ArchiveFoldersService(
     }
 
     /// <summary>D11: how many documents' effective groups differ between <paramref name="before"/> and the saved tree.</summary>
-    private async Task<OperationDataResult<AccessChangeModel>> AccessChangedAsync(List<ArchiveFileAccessRow> documents,
+    private async Task<AccessChangeModel> AccessChangedAsync(List<ArchiveFileAccessRow> documents,
         ArchiveFolderSnapshot before)
     {
         var after = await ArchiveFolderSnapshot.LoadAsync(dbContext);
         var changed = ArchiveAccessRules.CountAccessChanged(documents, d => d.Effective(before), d => d.Effective(after));
-        return new OperationDataResult<AccessChangeModel>(true, new AccessChangeModel { AccessChanged = changed });
+        return new AccessChangeModel { AccessChanged = changed };
     }
 
     private static ArchiveFolderModel Model(ArchiveFolderNode folder, int count, ArchiveFolderSnapshot folders,

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
+using BackendConfiguration.Pn.Services.ArchiveAccess;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
@@ -24,11 +24,18 @@ public interface IFileArchiver
     /// with the filing. It may run more than once if the execution
     /// strategy retries the transaction (the change tracker is cleared before each retry), so it must
     /// (re)load whatever it modifies inside the callback, never use entities loaded before the call.
+    /// <para>
+    /// The transaction first locks <paramref name="folderId"/> shared (ArchiveFolderLock) and, before commit, re-checks
+    /// on the live tree that it is a live folder and that <paramref name="folderAllowed"/> (the caller's D17 rule, e.g.
+    /// ArchiveAccessRules.IsWritableFolder) still holds; otherwise it throws
+    /// <see cref="ArchiveFolderUnavailableException"/> and nothing is committed. So a document never lands in a folder
+    /// that was deleted, or made unreadable to the caller, after the caller's early check.
+    /// </para>
     /// </summary>
     Task<int> ArchiveAsync(Stream content, string name, string extension,
         IReadOnlyCollection<int> propertyIds, IReadOnlyCollection<int> tagIds, int folderId,
         DateTime? documentDate, DocumentDateState documentDateState, int userId,
-        Func<int, Task>? inTransaction = null);
+        Func<int, Task>? inTransaction = null, Func<ArchiveFolderSnapshot, bool>? folderAllowed = null);
 }
 
 /// <summary>
@@ -43,7 +50,7 @@ public class FileArchiver(BackendConfigurationPnDbContext dbContext, IArchiveSto
     public async Task<int> ArchiveAsync(Stream content, string name, string extension,
         IReadOnlyCollection<int> propertyIds, IReadOnlyCollection<int> tagIds, int folderId,
         DateTime? documentDate, DocumentDateState documentDateState, int userId,
-        Func<int, Task>? inTransaction = null)
+        Func<int, Task>? inTransaction = null, Func<ArchiveFolderSnapshot, bool>? folderAllowed = null)
     {
         // Letters and digits only: the extension ends up in storage keys, content types and zip entry names.
         extension = new string(extension.Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
@@ -53,16 +60,10 @@ public class FileArchiver(BackendConfigurationPnDbContext dbContext, IArchiveSto
 
         await storage.PutAsync(staged.TempPath, ObjectName(staged.Md5, extension));
 
-        var strategy = dbContext.Database.CreateExecutionStrategy();
-        var attempt = 0;
-        return await strategy.ExecuteAsync(async () =>
+        return await ArchiveTransaction.RunAsync(dbContext, async () =>
         {
-            if (attempt++ > 0)
-            {
-                dbContext.ChangeTracker.Clear();
-            }
-
-            await using var tx = await dbContext.Database.BeginTransactionAsync();
+            // Lock first; re-checked below, after the writes.
+            await ArchiveFolderLock.SharedAsync(dbContext, [folderId]);
             var file = new File
             {
                 FileName = name, FolderId = folderId, DocumentDate = date, DocumentDateState = dateState,
@@ -95,7 +96,16 @@ public class FileArchiver(BackendConfigurationPnDbContext dbContext, IArchiveSto
                 await inTransaction(file.Id);
             }
 
-            await tx.CommitAsync();
+            // Re-checked after the writes, not before: the first plain read fixes the transaction's snapshot, and
+            // the caller's claim in inTransaction (an UPDATE ... WHERE still-Ready) must run without one. The shared
+            // lock already holds the folder as it is now; a refusal rolls every row of this attempt back.
+            var folders = await ArchiveFolderSnapshot.LoadAsync(dbContext);
+            if (folders.Find(folderId) == null || folderAllowed?.Invoke(folders) == false)
+            {
+                dbContext.ChangeTracker.Clear();
+                throw new ArchiveFolderUnavailableException();
+            }
+
             return file.Id;
         });
     }

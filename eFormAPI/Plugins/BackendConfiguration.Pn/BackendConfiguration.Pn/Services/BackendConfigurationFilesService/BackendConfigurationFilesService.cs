@@ -346,14 +346,15 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 			var defaultFolderId = await ArchiveDefaultFolder.GetOrCreateIdAsync(_dbContext, _userService.UserId);
 			var folders = await ArchiveFolderSnapshot.LoadAsync(_dbContext);
 			var uploads = model.Where(x => x.File != null).ToList();
-			// Older apps send no FolderId, or 0: the default folder.
+			// Older apps send no FolderId, or 0: the default folder. Any other id (negative included) must be a
+			// folder the caller can write to.
 			int FolderOf(BackendConfigurationFileCreate upload) =>
-				upload.FolderId > 0 ? upload.FolderId.Value : defaultFolderId;
+				upload.FolderId is null or 0 ? defaultFolderId : upload.FolderId.Value;
 
 			// All folders first: one refused folder stores nothing (D17: only into folders the caller can read).
 			if (uploads.Any(u => !ArchiveAccessRules.IsWritableFolder(ctx, folders, FolderOf(u))))
 			{
-				return new OperationResult(false, _localizationService.GetString("ArchiveFolderNotFound"));
+				return FolderNotFound();
 			}
 
 			foreach (var fileCreate in uploads)
@@ -361,14 +362,22 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 				var fileExtension = Path.GetExtension(fileCreate.File.FileName).TrimStart('.').ToLower();
 				var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileCreate.File.FileName);
 				var documentDate = fileCreate.DocumentDate?.Date;
+				var folderId = FolderOf(fileCreate);
 				await using var stream = fileCreate.File.OpenReadStream();
+				// The archiver re-checks the folder under its lock (the check above is only the early refusal).
 				await _fileArchiver.ArchiveAsync(stream, fileNameWithoutExtension, fileExtension,
-					fileCreate.PropertyIds, fileCreate.TagIds, FolderOf(fileCreate), documentDate,
+					fileCreate.PropertyIds, fileCreate.TagIds, folderId, documentDate,
 					documentDate == null ? DocumentDateState.None : DocumentDateState.Approved,
-					_userService.UserId);
+					_userService.UserId,
+					folderAllowed: live => ArchiveAccessRules.IsWritableFolder(ctx, live, folderId));
 			}
 
 			return new OperationResult(true);
+		}
+		catch (ArchiveFolderUnavailableException)
+		{
+			// Deleted or restricted after the check above. Uploads of this request committed before it stay.
+			return FolderNotFound();
 		}
 		catch (Exception e) when (ArchiveExceptions.IsUnexpected(e))
 		{
@@ -377,6 +386,9 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 			return new OperationResult(false, _localizationService.GetString("ErrorWhileCreateFiles"));
 		}
 	}
+
+	private OperationResult FolderNotFound() =>
+		new(false, _localizationService.GetString("ArchiveFolderNotFound"));
 
 	public async Task<OperationResult> Delete(int id)
 	{
@@ -481,45 +493,56 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 		}
 
 		var ctx = await EnsureReadableAsync(ids);
-		var folders = await ArchiveFolderSnapshot.LoadAsync(_dbContext);
-		if (!ArchiveAccessRules.IsWritableFolder(ctx, folders, model.FolderId))
+		// Early refusal: an unknown target id would otherwise hold a gap lock on ArchiveFolders for the whole
+		// transaction. The authoritative check is repeated inside, under the lock.
+		if (!ArchiveAccessRules.IsWritableFolder(ctx, await ArchiveFolderSnapshot.LoadAsync(_dbContext), model.FolderId))
 		{
 			throw new ArchiveNotFoundException();
 		}
 
-		// Resolved rows: a NULL FolderId already reads as the default folder.
-		var moving = (await ArchiveAccessRules.LoadFileRowsAsync(_dbContext, ids))
-			.Where(r => r.FolderId != model.FolderId)
-			.ToList();
-		var accessChanged = ArchiveAccessRules.CountAccessChanged(moving,
-			r => r.Effective(folders), r => r.EffectiveIn(model.FolderId, folders));
-		if (accessChanged > 0 && !ctx.IsAdmin)
+		// The source folders as read now, to lock them; a document moved elsewhere meanwhile is re-read below.
+		var sourceFolderIds = (await ArchiveAccessRules.LoadFileRowsAsync(_dbContext, ids)).Select(r => (int?)r.FolderId);
+		// All or nothing, as the D17 refusal promises: a partial move must never widen access. Every decision is made
+		// inside, under the locks, on freshly loaded rows: target folder, readability, D17 and the D11 count.
+		var moved = await ArchiveTransaction.RunAsync(_dbContext, async () =>
 		{
-			// D17: changing who can read a document is an administrator's decision.
-			return new OperationDataResult<FilesMoveResultModel>(false,
-				_localizationService.GetString("ArchiveMoveChangesAccess"));
-		}
-
-		var movingIds = moving.Select(r => r.FileId).ToList();
-		// All or nothing, as the D17 refusal promises: a partial move must never widen access.
-		await ArchiveTransaction.RunAsync(_dbContext, async () =>
-		{
-			var files = await _dbContext.Files.Where(f => movingIds.Contains(f.Id) && f.WorkflowState != Removed).ToListAsync();
-			if (files.Count != movingIds.Count)
+			await ArchiveFolderLock.SharedAsync(_dbContext, sourceFolderIds.Append(model.FolderId));
+			await ArchiveFolderLock.DocumentsExclusiveAsync(_dbContext, ids);
+			var folders = await ArchiveFolderSnapshot.LoadAsync(_dbContext);
+			// Resolved rows: a NULL FolderId already reads as the default folder.
+			var rows = await ArchiveAccessRules.LoadFileRowsAsync(_dbContext, ids);
+			if (rows.Count != ids.Count
+			    || rows.Any(r => !ArchiveAccessRules.CanRead(ctx, r.Effective(folders)))
+			    || !ArchiveAccessRules.IsWritableFolder(ctx, folders, model.FolderId))
 			{
 				throw new ArchiveNotFoundException();
 			}
 
+			var moving = rows.Where(r => r.FolderId != model.FolderId).ToList();
+			var accessChanged = ArchiveAccessRules.CountAccessChanged(moving,
+				r => r.Effective(folders), r => r.EffectiveIn(model.FolderId, folders));
+			if (accessChanged > 0 && !ctx.IsAdmin)
+			{
+				// D17: changing who can read a document is an administrator's decision. Nothing is written.
+				return null;
+			}
+
+			var movingIds = moving.Select(r => r.FileId).ToList();
+			var files = await _dbContext.Files.Where(f => movingIds.Contains(f.Id)).ToListAsync();
 			foreach (var file in files)
 			{
 				file.FolderId = model.FolderId;
 				file.UpdatedByUserId = _userService.UserId;
 				await file.Update(_dbContext);
 			}
+
+			return new FilesMoveResultModel { Moved = movingIds.Count, AccessChanged = accessChanged };
 		});
 
-		return new OperationDataResult<FilesMoveResultModel>(true,
-			new FilesMoveResultModel { Moved = movingIds.Count, AccessChanged = accessChanged });
+		return moved == null
+			? new OperationDataResult<FilesMoveResultModel>(false,
+				_localizationService.GetString("ArchiveMoveChangesAccess"))
+			: new OperationDataResult<FilesMoveResultModel>(true, moved);
 	}
 
 	public async Task<OperationResult> UpdateDate(int id, FileDateModel model)
@@ -550,26 +573,28 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 		}
 
 		var tagIds = model.OwnAccess ? DistinctIds(model.TagIds) : [];
-		var before = await ArchiveAccessRules.LoadFileRowsAsync(_dbContext, ids);
-		// Only groups new to some document need live members (the folder rule, per document).
-		var groupsOnEveryDocument = before
-			.Select(r => r.OwnAccess ? r.OwnGroupIds : [])
-			.Aggregate<IEnumerable<int>>((a, b) => a.Intersect(b))
-			.ToList();
-		if (!await _archiveAccess.AreAssignableGroupsAsync(tagIds, groupsOnEveryDocument))
-		{
-			return new OperationDataResult<AccessChangeModel>(false, _localizationService.GetString("ArchiveUnknownGroup"));
-		}
-
 		// One transaction: own access saved with the old groups deleted but the new ones missing would read as open.
-		await ArchiveTransaction.RunAsync(_dbContext, async () =>
+		// The documents are locked first, so the group rule and the D11 count rest on their rows as they are now.
+		var accessChanged = await ArchiveTransaction.RunAsync(_dbContext, async () =>
 		{
-			var files = await _dbContext.Files.Where(f => ids.Contains(f.Id) && f.WorkflowState != Removed).ToListAsync();
-			if (files.Count != ids.Count)
+			await ArchiveFolderLock.DocumentsExclusiveAsync(_dbContext, ids);
+			var before = await ArchiveAccessRules.LoadFileRowsAsync(_dbContext, ids);
+			if (before.Count != ids.Count)
 			{
 				throw new ArchiveNotFoundException();
 			}
 
+			// Only groups new to some document need live members (the folder rule, per document).
+			var groupsOnEveryDocument = before
+				.Select(r => r.OwnAccess ? r.OwnGroupIds : [])
+				.Aggregate<IEnumerable<int>>((a, b) => a.Intersect(b))
+				.ToList();
+			if (!await _archiveAccess.AreAssignableGroupsAsync(tagIds, groupsOnEveryDocument))
+			{
+				return (int?)null;
+			}
+
+			var files = await _dbContext.Files.Where(f => ids.Contains(f.Id)).ToListAsync();
 			foreach (var file in files)
 			{
 				file.OwnAccess = model.OwnAccess;
@@ -577,14 +602,17 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 				await file.Update(_dbContext);
 				await ArchiveReadTagSync.SyncFileAsync(_dbContext, file.Id, tagIds, _userService.UserId);
 			}
+
+			var folders = await ArchiveFolderSnapshot.LoadAsync(_dbContext);
+			var beforeById = before.ToDictionary(r => r.FileId);
+			var after = await ArchiveAccessRules.LoadFileRowsAsync(_dbContext, ids);
+			return ArchiveAccessRules.CountAccessChanged(after,
+				r => beforeById[r.FileId].Effective(folders), r => r.Effective(folders));
 		});
 
-		var folders = await ArchiveFolderSnapshot.LoadAsync(_dbContext);
-		var beforeById = before.ToDictionary(r => r.FileId);
-		var after = await ArchiveAccessRules.LoadFileRowsAsync(_dbContext, ids);
-		var accessChanged = ArchiveAccessRules.CountAccessChanged(after,
-			r => beforeById[r.FileId].Effective(folders), r => r.Effective(folders));
-		return new OperationDataResult<AccessChangeModel>(true, new AccessChangeModel { AccessChanged = accessChanged });
+		return accessChanged is { } changed
+			? new OperationDataResult<AccessChangeModel>(true, new AccessChangeModel { AccessChanged = changed })
+			: new OperationDataResult<AccessChangeModel>(false, _localizationService.GetString("ArchiveUnknownGroup"));
 	}
 
 	/// <summary>The stored file of a readable document; null for a missing or unreadable one (the controller answers 404).</summary>

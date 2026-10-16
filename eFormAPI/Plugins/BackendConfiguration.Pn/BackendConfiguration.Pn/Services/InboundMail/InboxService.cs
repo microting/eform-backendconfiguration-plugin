@@ -172,7 +172,14 @@ public class InboxService(BackendConfigurationPnDbContext dbContext, IArchiveSto
                     tracked.FiledByUserId = userId;
                     tracked.UpdatedByUserId = userId;
                     await tracked.Update(dbContext);
-                });
+                },
+                // The check above is the early refusal; this one runs under the archiver's folder lock.
+                live => ArchiveAccessRules.IsWritableFolder(ctx, live, folderId));
+        }
+        catch (ArchiveFolderUnavailableException)
+        {
+            // Deleted or made unreadable to the caller after the check above; the document stays Ready.
+            return new OperationResult(false, localization.GetString("ArchiveFolderNotFound"));
         }
         catch (InboxStateException e)
         {

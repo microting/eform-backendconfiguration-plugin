@@ -1,7 +1,10 @@
 #nullable enable
+using System.Text;
 using BackendConfiguration.Pn.Controllers;
+using BackendConfiguration.Pn.Infrastructure.Models.Files;
 using BackendConfiguration.Pn.Services.ArchiveAccess;
 using BackendConfiguration.Pn.Services.ArchiveFolders;
+using Microsoft.AspNetCore.Http;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
@@ -66,6 +69,18 @@ public static class ArchiveTestData
             FileLocation = "", CreatedByUserId = 1, UpdatedByUserId = 1
         }.Create(db);
         return file;
+    }
+
+    /// <summary>A one-file upload request; a null or 0 <paramref name="folderId"/> means the default folder.</summary>
+    public static BackendConfigurationFileCreate Upload(string fileName, int? folderId = null, DateTime? date = null)
+    {
+        var bytes = Encoding.ASCII.GetBytes("%PDF-1.7 upload");
+        return new BackendConfigurationFileCreate
+        {
+            File = new FormFile(new MemoryStream(bytes), 0, bytes.Length, "file", fileName),
+            FolderId = folderId,
+            DocumentDate = date
+        };
     }
 
     /// <summary>Every controller that serves archive data; the filter and authorization tests share it.</summary>

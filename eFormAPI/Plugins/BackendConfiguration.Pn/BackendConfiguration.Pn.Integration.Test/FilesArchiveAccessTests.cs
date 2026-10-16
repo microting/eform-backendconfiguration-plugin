@@ -220,16 +220,8 @@ public class FilesArchiveAccessTests : TestBaseSetup
         Assert.That(file.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
     }
 
-    private static BackendConfigurationFileCreate Upload(string fileName, int? folderId = null, DateTime? date = null)
-    {
-        var bytes = Encoding.ASCII.GetBytes("%PDF-1.7 upload");
-        return new BackendConfigurationFileCreate
-        {
-            File = new FormFile(new MemoryStream(bytes), 0, bytes.Length, "file", fileName),
-            FolderId = folderId,
-            DocumentDate = date
-        };
-    }
+    private static BackendConfigurationFileCreate Upload(string fileName, int? folderId = null, DateTime? date = null) =>
+        ArchiveTestData.Upload(fileName, folderId, date);
 
     [Test]
     public async Task Create_FolderIdZeroOrMissing_LandsInDefaultFolderWithStateNone()
@@ -255,6 +247,18 @@ public class FilesArchiveAccessTests : TestBaseSetup
         Assert.That(file.DocumentDate, Is.EqualTo(new DateTime(2026, 10, 2)));
         Assert.That(file.DocumentDateState, Is.EqualTo(DocumentDateState.Approved));
         Assert.That(file.CreatedByUserId, Is.EqualTo(5));
+    }
+
+    [Test]
+    public async Task Create_NegativeFolderId_IsRefused()
+    {
+        var result = await _service.Create([Upload("Negativ.pdf", -1)]);
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Message, Is.EqualTo("ArchiveFolderNotFound"));
+        Assert.That(await BackendConfigurationPnDbContext!.Files.AnyAsync(f => f.FileName == "Negativ"), Is.False,
+            "only a missing FolderId or 0 means the default folder");
+        await _storage.DidNotReceive().PutAsync(Arg.Any<string>(), Arg.Any<string>());
     }
 
     [Test]
