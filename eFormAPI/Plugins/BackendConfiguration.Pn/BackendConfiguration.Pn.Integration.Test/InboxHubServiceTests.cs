@@ -505,4 +505,95 @@ public class InboxHubServiceTests : TestBaseSetup
         Assert.That(InboxHubService.NormalizeTagName("#" + new string('a', 100)), Is.EqualTo(new string('a', 100)));
         Assert.That(InboxHubService.NormalizeTagName(new string('a', 101)), Is.Null);
     }
+
+    [Test]
+    public async Task Catalog_ListsLiveFoldersWithTheirParent()
+    {
+        var drift = await ArchiveTestData.FolderAsync(BackendConfigurationPnDbContext!, "Drift");
+        var fakturaer = await ArchiveTestData.FolderAsync(BackendConfigurationPnDbContext!, "Fakturaer", drift.Id);
+        var gone = await ArchiveTestData.FolderAsync(BackendConfigurationPnDbContext!, "Udgået");
+        await gone.Delete(BackendConfigurationPnDbContext!);
+
+        var catalog = await _service.CatalogAsync();
+
+        Assert.That(catalog.Folders, Is.EquivalentTo(new[]
+        {
+            new CatalogFolder(drift.Id, "Drift", null), new CatalogFolder(fakturaer.Id, "Fakturaer", drift.Id)
+        }));
+        var json = System.Text.Json.JsonSerializer.Serialize(catalog, HubJson.Options);
+        Assert.That(json, Does.Contain($"\"folders\":[{{\"id\":{drift.Id},\"name\":\"Drift\",\"parentId\":null}}"));
+    }
+
+    [Test]
+    public async Task Deliver_FolderAndDocumentDateSuggestions_AreStored()
+    {
+        var doc = await PreparingAsync();
+        var fakturaer = await ArchiveTestData.FolderAsync(BackendConfigurationPnDbContext!, "Fakturaer");
+        var meta = new DeliverMetadata(doc.HubDocumentId, 1, false,
+        [
+            new("folder", fakturaer.Id, "textMatch", 0.5, "Faktura", 1, "“Faktura” står i dokumentet."),
+            new("documentDate", 0, "textMatch", 0.5, "Fakturadato: 30.09.2026", 1, null, new DateTime(2026, 9, 30))
+        ]);
+
+        await _service.DeliverAsync(meta, Pdf(), "faktura.pdf");
+
+        var suggestions = await BackendConfigurationPnDbContext!.InboxSuggestions.AsNoTracking()
+            .Where(s => s.InboxDocumentId == doc.Id).ToListAsync();
+        var folder = suggestions.Single(s => s.Kind == InboxSuggestionKind.Folder);
+        Assert.That(folder.TargetId, Is.EqualTo(fakturaer.Id));
+        Assert.That(folder.TargetDate, Is.Null);
+        var date = suggestions.Single(s => s.Kind == InboxSuggestionKind.DocumentDate);
+        Assert.That(date.TargetId, Is.EqualTo(0));
+        Assert.That(date.TargetDate, Is.EqualTo(new DateTime(2026, 9, 30)));
+    }
+
+    [Test]
+    public async Task Deliver_DocumentDateWithTime_StoresTheDateOnly()
+    {
+        var doc = await PreparingAsync();
+
+        await _service.DeliverAsync(new DeliverMetadata(doc.HubDocumentId, 1, false,
+            [new("DocumentDate", 0, "textMatch", 0.2, null, null, "Kun maildatoen fundet", new DateTime(2026, 9, 30, 22, 15, 0))]),
+            Pdf(), "a.pdf");
+
+        var date = await BackendConfigurationPnDbContext!.InboxSuggestions.AsNoTracking().SingleAsync();
+        Assert.That(date.TargetDate, Is.EqualTo(new DateTime(2026, 9, 30)));
+    }
+
+    [Test]
+    public async Task Deliver_FolderForUnknownOrRemovedFolder_AndDateWithoutDate_AreDropped()
+    {
+        var doc = await PreparingAsync();
+        var gone = await ArchiveTestData.FolderAsync(BackendConfigurationPnDbContext!, "Udgået");
+        await gone.Delete(BackendConfigurationPnDbContext!);
+
+        await _service.DeliverAsync(new DeliverMetadata(doc.HubDocumentId, 1, false,
+        [
+            new("folder", 999999, "textMatch", 0.5, null, 1, null),
+            new("folder", gone.Id, "textMatch", 0.5, null, 1, null),
+            new("documentDate", 0, "textMatch", 0.5, null, 1, null)
+        ]), Pdf(), "a.pdf");
+
+        Assert.That(await BackendConfigurationPnDbContext!.InboxSuggestions.CountAsync(), Is.EqualTo(0));
+        await BackendConfigurationPnDbContext.Entry(doc).ReloadAsync();
+        Assert.That(doc.Status, Is.EqualTo(InboxDocumentStatus.Ready));
+    }
+
+    [Test]
+    public void DeliverMetadata_ReadsTheHubsCamelCaseKindAndDateOnlyTargetDate()
+    {
+        const string json = """
+            {"hubDocumentId":"6f1c0f43-3f8e-4f7f-9d2a-0d6b8f3a1c11","pageCount":1,"reviewedByMicroting":false,
+             "suggestions":[{"kind":"documentDate","targetId":0,"source":"textMatch","confidence":0.5,
+                             "evidence":null,"page":1,"reason":null,"targetDate":"2026-09-30"},
+                            {"kind":"tag","targetId":4,"source":"textMatch","confidence":0.5,
+                             "evidence":null,"page":1,"reason":null,"targetDate":null}]}
+            """;
+
+        var meta = System.Text.Json.JsonSerializer.Deserialize<DeliverMetadata>(json, HubJson.Options)!;
+
+        Assert.That(meta.Suggestions[0].Kind, Is.EqualTo("documentDate"));
+        Assert.That(meta.Suggestions[0].TargetDate, Is.EqualTo(new DateTime(2026, 9, 30)));
+        Assert.That(meta.Suggestions[1].TargetDate, Is.Null);
+    }
 }

@@ -107,7 +107,12 @@ public class InboxHubService(BackendConfigurationPnDbContext dbContext, IArchive
             .OrderBy(t => t.Id)
             .Select(t => new CatalogTag(t.Id, t.Name))
             .ToListAsync();
-        return new CatalogResponse(properties, tags, CanCreateTags: true);
+        var folders = await dbContext.ArchiveFolders
+            .Where(f => f.WorkflowState != Constants.WorkflowStates.Removed)
+            .OrderBy(f => f.Id)
+            .Select(f => new CatalogFolder(f.Id, f.Name, f.ParentId))
+            .ToListAsync();
+        return new CatalogResponse(properties, tags, CanCreateTags: true, Folders: folders);
     }
 
     public Task<CreateTagResponse?> CreateTagAsync(string name) =>
@@ -267,6 +272,9 @@ public class InboxHubService(BackendConfigurationPnDbContext dbContext, IArchive
         var tagIds = (await dbContext.FileTags
             .Where(t => t.WorkflowState != Constants.WorkflowStates.Removed)
             .Select(t => t.Id).ToListAsync()).ToHashSet();
+        var folderIds = (await dbContext.ArchiveFolders
+            .Where(f => f.WorkflowState != Constants.WorkflowStates.Removed)
+            .Select(f => f.Id).ToListAsync()).ToHashSet();
 
         foreach (var s in meta.Suggestions)
         {
@@ -281,16 +289,28 @@ public class InboxHubService(BackendConfigurationPnDbContext dbContext, IArchive
             }
 
             // The target may have been removed since the central service fetched the catalog.
-            if (!(kind == InboxSuggestionKind.Tag ? tagIds : propertyIds).Contains(s.TargetId))
+            var usable = kind switch
+            {
+                InboxSuggestionKind.Property => propertyIds.Contains(s.TargetId),
+                InboxSuggestionKind.Tag => tagIds.Contains(s.TargetId),
+                InboxSuggestionKind.Folder => folderIds.Contains(s.TargetId),
+                InboxSuggestionKind.DocumentDate => s.TargetDate != null,
+                _ => false
+            };
+            if (!usable)
             {
                 continue;
             }
+
+            var isDate = kind == InboxSuggestionKind.DocumentDate;
 
             await new InboxSuggestion
             {
                 InboxDocumentId = inboxDocumentId,
                 Kind = kind.Value,
-                TargetId = s.TargetId,
+                // TargetId is non-nullable: a date suggestion has no target row and stores 0.
+                TargetId = isDate ? 0 : s.TargetId,
+                TargetDate = isDate ? s.TargetDate!.Value.Date : null,
                 Source = source.Value,
                 Confidence = Math.Clamp(s.Confidence, 0, 1),
                 Evidence = Cut(s.Evidence, 250),
@@ -306,6 +326,8 @@ public class InboxHubService(BackendConfigurationPnDbContext dbContext, IArchive
     {
         "property" => InboxSuggestionKind.Property,
         "tag" => InboxSuggestionKind.Tag,
+        "folder" => InboxSuggestionKind.Folder,
+        "documentdate" => InboxSuggestionKind.DocumentDate,
         _ => null
     };
 

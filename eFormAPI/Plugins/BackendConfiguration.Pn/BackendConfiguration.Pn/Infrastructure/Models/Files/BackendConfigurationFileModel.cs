@@ -28,8 +28,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Files;
 
 using System.Collections.Generic;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 
-public class BackendConfigurationFileModel
+public class BackendConfigurationFileModel : IArchiveFileRow
 {
 	public int Id { get; set; }
 	public DateTime CreateDate { get; set; }
@@ -41,4 +42,11 @@ public class BackendConfigurationFileModel
 		= [];
 	public List<CommonTagModel> Tags { get; set; }
 		= [];
+
+	public int FolderId { get; set; }
+	public List<string> FolderPath { get; set; } = [];
+	public DateTime? DocumentDate { get; set; }
+	public DocumentDateState DocumentDateState { get; set; }
+	public List<CommonTagModel> ReadGroups { get; set; } = [];
+	public bool OwnAccess { get; set; }
 }
