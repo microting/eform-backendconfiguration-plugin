@@ -72,15 +72,23 @@ public class ChemicalHistoryServiceTests : ChemicalTestBase
 
     private sealed record Scenario(int PropertyId, int Lade, int Kemirum, int Moved, int Target, int Removed, int Worker);
 
-    private async Task<Scenario> ArrangeAsync()
+    /// <summary>A property with stock enabled, the location "Lade" and the register product "Roundup PowerMax".</summary>
+    private async Task<(Property Property, ChemicalInventoryService Inventory, ChemicalLocationModel Lade, SeededChemical Roundup)>
+        ArrangeStockedPropertyAsync()
     {
         var property = await CreatePropertyAsync();
         var inventory = CreateInventoryService();
         await inventory.SetSettingsAsync(Web, new ChemicalSetSettingsCommand(property.Id, true, []));
         var lade = await inventory.CreateLocationAsync(Web, new ChemicalCreateLocationCommand(property.Id, "Lade", "", null));
+        var roundup = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Roundup PowerMax", "1-285");
+        return (property, inventory, lade, roundup);
+    }
+
+    private async Task<Scenario> ArrangeAsync()
+    {
+        var (property, inventory, lade, roundup) = await ArrangeStockedPropertyAsync();
         var kemirum = await inventory.CreateLocationAsync(Web, new ChemicalCreateLocationCommand(property.Id, "Kemirum", "", null));
         await inventory.UpdateLocationAsync(Web, new ChemicalUpdateLocationCommand(kemirum.Id, "Kemirum 2", "", null));
-        var roundup = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Roundup PowerMax", "1-285");
         var rodilon = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Rodilon Pasta", "616-4");
 
         var moved = (await inventory.RegisterPlacementAsync(Web,
@@ -159,11 +167,7 @@ public class ChemicalHistoryServiceTests : ChemicalTestBase
     [Test]
     public async Task Removal_OfAStockedPlacement_FoldsTheWriteOffIntoTheRemovedEvent()
     {
-        var property = await CreatePropertyAsync();
-        var inventory = CreateInventoryService();
-        await inventory.SetSettingsAsync(Web, new ChemicalSetSettingsCommand(property.Id, true, []));
-        var lade = await inventory.CreateLocationAsync(Web, new ChemicalCreateLocationCommand(property.Id, "Lade", "", null));
-        var roundup = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Roundup PowerMax", "1-285");
+        var (property, inventory, lade, roundup) = await ArrangeStockedPropertyAsync();
         var placement = (await inventory.RegisterPlacementAsync(Web,
             new ChemicalRegisterPlacementCommand(lade.Id, roundup.ChemicalId, null, "Hylde", Liters(5)))).Placements.Single().Id;
         await inventory.AddStockEntryAsync(Web, new ChemicalAddStockEntryCommand(placement, ChemicalStockEntryKindEnum.Consumed, Liters(1)));
@@ -183,21 +187,22 @@ public class ChemicalHistoryServiceTests : ChemicalTestBase
     {
         var s = await ArrangeAsync();
         var sut = CreateSut();
-        var all = await sut.GetAllAsync(s.PropertyId, Around(DateTime.UtcNow));
+        var period = Around(DateTime.UtcNow);
+        var all = await sut.GetAllAsync(s.PropertyId, period);
 
-        var page = await sut.GetPageAsync(s.PropertyId, Around(DateTime.UtcNow) with { PageSize = 3, Page = 1 });
+        var page = await sut.GetPageAsync(s.PropertyId, period with { PageSize = 3, Page = 1 });
         Assert.That(page.Total, Is.EqualTo(all.Count));
         Assert.That(page.Events.Select(Key), Is.EqualTo(all.Skip(3).Take(3).Select(Key)));
         Assert.That(page.Users, Is.EqualTo(new[] { new ChemicalHistoryUserModel(TestUserId, $"User {TestUserId}") }));
 
-        var system = await sut.GetAllAsync(s.PropertyId, Around(DateTime.UtcNow) with { UserId = 0 });
+        var system = await sut.GetAllAsync(s.PropertyId, period with { UserId = 0 });
         Assert.That(system.Select(e => e.Action), Is.EqualTo(new[] { ChemicalHistoryActionEnum.StatusChanged }));
 
-        var kemirum = await sut.GetAllAsync(s.PropertyId, Around(DateTime.UtcNow) with { LocationId = s.Kemirum });
+        var kemirum = await sut.GetAllAsync(s.PropertyId, period with { LocationId = s.Kemirum });
         Assert.That(kemirum.Select(e => e.Action), Does.Contain(ChemicalHistoryActionEnum.Moved), "a move counts for its target location");
         Assert.That(kemirum.Any(e => e.PlacementId == s.Removed), Is.False);
 
-        var removals = await sut.GetAllAsync(s.PropertyId, Around(DateTime.UtcNow) with { Action = ChemicalHistoryActionEnum.Removed });
+        var removals = await sut.GetAllAsync(s.PropertyId, period with { Action = ChemicalHistoryActionEnum.Removed });
         Assert.That(removals, Has.Count.EqualTo(1));
     }
 
@@ -257,11 +262,7 @@ public class ChemicalHistoryServiceTests : ChemicalTestBase
     [Test]
     public async Task Ledger_IsReadInIdOrder_SoABackdatedRemovalStillFoldsTheWriteOff()
     {
-        var property = await CreatePropertyAsync();
-        var inventory = CreateInventoryService();
-        await inventory.SetSettingsAsync(Web, new ChemicalSetSettingsCommand(property.Id, true, []));
-        var lade = await inventory.CreateLocationAsync(Web, new ChemicalCreateLocationCommand(property.Id, "Lade", "", null));
-        var roundup = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Roundup PowerMax", "1-285");
+        var (property, inventory, lade, roundup) = await ArrangeStockedPropertyAsync();
         var registered = (await inventory.RegisterPlacementAsync(Web,
             new ChemicalRegisterPlacementCommand(lade.Id, roundup.ChemicalId, null, "Hylde", Liters(5)))).Placements.Single();
         // Consumed one minute after the registration; the removal is logged after it, but dated before it
@@ -282,11 +283,7 @@ public class ChemicalHistoryServiceTests : ChemicalTestBase
     [Test]
     public async Task Adjustment_DatedBeforeTheReceipt_KeepsTheLedgerBalances()
     {
-        var property = await CreatePropertyAsync();
-        var inventory = CreateInventoryService();
-        await inventory.SetSettingsAsync(Web, new ChemicalSetSettingsCommand(property.Id, true, []));
-        var lade = await inventory.CreateLocationAsync(Web, new ChemicalCreateLocationCommand(property.Id, "Lade", "", null));
-        var roundup = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Roundup PowerMax", "1-285");
+        var (property, inventory, lade, roundup) = await ArrangeStockedPropertyAsync();
         var now = DateTime.UtcNow;
         var placement = (await inventory.RegisterPlacementAsync(Web,
             new ChemicalRegisterPlacementCommand(lade.Id, roundup.ChemicalId, null, "Hylde", Liters(5)))).Placements.Single().Id;
@@ -304,11 +301,7 @@ public class ChemicalHistoryServiceTests : ChemicalTestBase
     [Test]
     public async Task Period_IsMadeOfCopenhagenDays_AlsoForTheAlertDayGrouping()
     {
-        var property = await CreatePropertyAsync();
-        var inventory = CreateInventoryService();
-        await inventory.SetSettingsAsync(Web, new ChemicalSetSettingsCommand(property.Id, true, []));
-        var lade = await inventory.CreateLocationAsync(Web, new ChemicalCreateLocationCommand(property.Id, "Lade", "", null));
-        var roundup = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Roundup PowerMax", "1-285");
+        var (property, inventory, lade, roundup) = await ArrangeStockedPropertyAsync();
         var day = LocalDate(DateTime.UtcNow).AddDays(-3);
         var justAfterMidnight = LocalToUtc(day.AddMinutes(30));
         var lateTheDayBefore = LocalToUtc(day.AddMinutes(-30));
@@ -332,11 +325,7 @@ public class ChemicalHistoryServiceTests : ChemicalTestBase
     [Test]
     public async Task RemovedPlacements_ContributeNoEventsAtAll()
     {
-        var property = await CreatePropertyAsync();
-        var inventory = CreateInventoryService();
-        await inventory.SetSettingsAsync(Web, new ChemicalSetSettingsCommand(property.Id, true, []));
-        var lade = await inventory.CreateLocationAsync(Web, new ChemicalCreateLocationCommand(property.Id, "Lade", "", null));
-        var roundup = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Roundup PowerMax", "1-285");
+        var (property, inventory, lade, roundup) = await ArrangeStockedPropertyAsync();
         var placement = (await inventory.RegisterPlacementAsync(Web,
             new ChemicalRegisterPlacementCommand(lade.Id, roundup.ChemicalId, null, "Hylde", Liters(5)))).Placements.Single().Id;
         await inventory.UpdatePlacementNoteAsync(Web, placement, "Anden hylde");

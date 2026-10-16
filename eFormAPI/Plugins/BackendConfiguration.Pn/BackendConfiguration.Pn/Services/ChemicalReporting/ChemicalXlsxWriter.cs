@@ -29,7 +29,7 @@ using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 
 /// <summary>
-/// Minimal one-sheet .xlsx for the Kemi exports (W1, W6). Text is written as inline
+/// Minimal one-sheet .xlsx for the Kemi exports. Text is written as inline
 /// strings, never as formulas, so "=HYPERLINK(...)" in a note stays text. decimal
 /// and int become number cells; dates arrive pre-formatted as text.
 /// </summary>
