@@ -23,6 +23,7 @@ using System.Linq;
 using BackendConfiguration.Pn.Services.ChemicalReporting;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
+using QuestPDF.Infrastructure;
 
 namespace BackendConfiguration.Pn.Test.Services;
 
@@ -40,6 +41,7 @@ public class ChemicalReportingServiceCollectionExtensionsTests
         [
             (typeof(IChemicalDigestPreviewBuilder), typeof(ChemicalDigestPreviewBuilder)),
             (typeof(IChemicalHistoryService), typeof(ChemicalHistoryService)),
+            (typeof(IChemicalExportService), typeof(ChemicalExportService)),
         ];
         foreach (var (service, implementation) in expected)
         {
@@ -47,5 +49,17 @@ public class ChemicalReportingServiceCollectionExtensionsTests
         }
 
         Assert.That(services.Single(d => d.ServiceType == typeof(TimeProvider)).Lifetime, Is.EqualTo(ServiceLifetime.Singleton));
+    }
+
+    /// <summary>E-08: Microting is within the QuestPDF Community limits; plugin start-up sets it once.</summary>
+    [Test]
+    [NonParallelizable]
+    public void AddChemicalReporting_SetsTheQuestPdfCommunityLicence()
+    {
+        QuestPDF.Settings.License = null;
+
+        new ServiceCollection().AddChemicalReporting();
+
+        Assert.That(QuestPDF.Settings.License, Is.EqualTo(LicenseType.Community));
     }
 }
