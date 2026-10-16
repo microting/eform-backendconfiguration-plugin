@@ -185,4 +185,10 @@ export const CHEMICAL_I18N_KEYS: string[] = [
   'Chemicals: Stock origin move',
   'Chemicals: Stock origin write-off',
   'Chemicals: Move to another location',
+  // Task 13 fix round 1 - amount limits, move empty state, accessible names
+  'Chemicals: Amount limits',
+  'Chemicals: No other location',
+  'Chemicals: Removal reason',
+  'Chemicals: How much to move',
+  'Chemicals: Product details',
 ];

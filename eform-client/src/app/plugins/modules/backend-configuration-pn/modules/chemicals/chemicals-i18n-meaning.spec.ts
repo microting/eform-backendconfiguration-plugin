@@ -117,7 +117,7 @@ describe('Kemi i18n meaning', () => {
   });
 
   // A write-off is stock deducted from the inventory when a placement is removed, never accounting depreciation.
-  const DEPRECIATION = /amorti|ammortam|deprecia|abschreib|afschrijv|avskriv|amortyz|амортиз|αποσβ|poistot|értékcsökken/i;
+  const DEPRECIATION = /amorti|ammortam|deprecia|abschreib|afschrijv|avskriv|afskrift|amortyz|амортиз|αποσβ|poistot|értékcsökken/i;
 
   it.each(NON_ENGLISH)('%s: the removal write-off is a stock deduction, not depreciation', (locale) => {
     expect(text(locale, 'Chemicals: Stock origin write-off')).not.toMatch(DEPRECIATION);
@@ -130,5 +130,60 @@ describe('Kemi i18n meaning', () => {
   it.each(NON_ENGLISH)('%s: the stock balance is a quantity in stock, not an equilibrium or an account', (locale) => {
     const wrong = BALANCE_KEYS.filter((key) => NOT_QUANTITY.test(text(locale, key)));
     expect(wrong).toEqual([]);
+  });
+
+  // Moving a placement relocates a chemical between locations, never a person moving house
+  // (Task 13: machine translation produced "Umziehen", "Me mudé", "Переїхав", "durch einen Zug").
+  const RELOCATION = new RegExp([
+    'umzug', 'umzieh', 'umgezogen', 'eingezogen', 'durch einen zug', 'verhuiz', 'verhuisd', 'déménag', 'emménag',
+    'mudanza', 'me mud', 'mudarse', 'trasladarse', 'mudou-se', 'mudar-se', 'residência', 'trasferirsi', 'trasloc',
+    'przeprowadz', 'переїзд', 'переїха', 'переезд', 'přestěh', 'odstěhov', 'presťah', 'preseli', 'muutt', 'muutto',
+    'költöz', 'a se muta', 'mutați-vă', 'kolim', 'pārcēl', 'persikėl', 'išsikraust', 'преместих', 'μετακόμισ',
+    'flutti', 'flyttelass', 'flyttlass',
+  ].join('|'), 'i');
+  const MOVE_KEYS = [
+    'Chemicals: Move placement', 'Chemicals: Move', 'Chemicals: Move all', 'Chemicals: Move part',
+    'Chemicals: Move to another location', 'Chemicals: Amount to move', 'Chemicals: Stock origin move',
+    'Chemicals: Stock kind 4', 'Chemicals: Stock kind 5', 'Chemicals: Reason moved automatic', 'Chemicals: How much to move',
+    'Chemicals: No other location',
+  ];
+
+  it.each(NON_ENGLISH)('%s: moving a placement relocates a chemical, not a person moving house', (locale) => {
+    const relocation = MOVE_KEYS.filter((key) => RELOCATION.test(text(locale, key)));
+    expect(relocation).toEqual([]);
+  });
+
+  it('deDE: a move is an Umlagerung, never "verschieben" (which also reads as postpone)', () => {
+    expect(MOVE_KEYS.filter((key) => /verschieb/i.test(text('deDE', key)))).toEqual([]);
+  });
+
+  // Removing a placement keeps it in the history: the action is never "delete".
+  const DELETE: Record<string, RegExp> = {esES: /eliminar|borrar/i, ukUA: /видал/i, deDE: /lösch/i, frFR: /supprim/i, itIT: /elimin|cancell/i};
+
+  it.each(Object.entries(DELETE))('%s: removing a placement does not say delete', (locale, deleteWord) => {
+    expect(['Chemicals: Remove', 'Chemicals: Remove placement'].filter((key) => deleteWord.test(text(locale, key)))).toEqual([]);
+  });
+
+  it.each(NON_ENGLISH)('%s: the reason "disposed of" is not the same word as the remove action', (locale) => {
+    const stem = (key: string) => text(locale, key).toLocaleLowerCase().slice(0, 5);
+    expect(stem('Chemicals: Reason disposed')).not.toBe(stem('Chemicals: Remove'));
+  });
+
+  // Hand-reviewed values the machine translation got wrong (Task 13 review M11).
+  const REVIEWED: Array<[string, string, string]> = [
+    ['elGR', 'Chemicals: Reason disposed', 'Διατέθηκε ως απόβλητο'],
+    ['slSL', 'Chemicals: Reason disposed', 'Zavrženo kot odpadek'],
+    ['svSE', 'Chemicals: Stock origin move', 'Flyttning'],
+    ['isIS', 'Chemicals: Stock origin write-off', 'Birgðafrádráttur við fjarlægingu'],
+    ['esES', 'Chemicals: Remove', 'Retirar'],
+    ['ukUA', 'Chemicals: Remove', 'Вилучити'],
+  ];
+
+  it.each(REVIEWED)('%s keeps the reviewed %s', (locale, key, value) => {
+    expect(text(locale, key)).toBe(value);
+  });
+
+  it('ptPT uses the European "stock", never the Brazilian "estoque", in every Kemi text', () => {
+    expect(CHEMICAL_I18N_KEYS.filter((key) => /estoque/i.test(text('ptPT', key)))).toEqual([]);
   });
 });

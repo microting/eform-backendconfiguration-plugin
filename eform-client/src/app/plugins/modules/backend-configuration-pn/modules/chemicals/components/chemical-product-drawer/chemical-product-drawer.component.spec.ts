@@ -48,9 +48,35 @@ describe('ChemicalProductDrawerComponent', () => {
     expect(dialogRef.close).toHaveBeenCalledWith(undefined);
   });
 
-  it('offers the stock tab and action only when stock is enabled', () => {
-    expect(build(true).component.stockEnabled).toBe(true);
-    expect(build(false).component.stockEnabled).toBe(false);
+  it('lists the stock tab only when stock is enabled', () => {
+    expect(build(true).component.tabs.map((t) => t.id)).toEqual(['overview', 'placements', 'stock']);
+    expect(build(false).component.tabs.map((t) => t.id)).toEqual(['overview', 'placements']);
+  });
+
+  it('moves between the tabs with the arrow keys, Home and End, wrapping around (WAI-ARIA tabs)', () => {
+    const {component} = build(true);
+    const key = (k: string) => component.onTabKeydown({key: k, preventDefault: jest.fn()} as unknown as KeyboardEvent);
+
+    key('ArrowRight');
+    expect(component.tab).toBe('placements');
+    key('End');
+    expect(component.tab).toBe('stock');
+    key('ArrowRight');
+    expect(component.tab).toBe('overview');
+    key('ArrowLeft');
+    expect(component.tab).toBe('stock');
+    key('Home');
+    expect(component.tab).toBe('overview');
+    key('a');
+    expect(component.tab).toBe('overview');
+  });
+
+  it('never lands on the stock tab with the keyboard when stock is off', () => {
+    const {component} = build(false);
+
+    component.onTabKeydown({key: 'ArrowLeft', preventDefault: jest.fn()} as unknown as KeyboardEvent);
+
+    expect(component.tab).toBe('placements');
   });
 
   it('lists the chemical\'s open placements on the property and this placement\'s stock history', () => {

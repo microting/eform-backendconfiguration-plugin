@@ -82,4 +82,40 @@ describe('ChemicalProductDrawerComponent (template)', () => {
     expect(rows[0].querySelector('.chemicals-stock-balance')?.textContent?.trim()).toBe('3 kg');
     expect(rows[1].textContent).not.toContain('Chemicals: Stock origin');
   });
+
+  describe('tabs follow the WAI-ARIA tabs pattern (M8)', () => {
+    const tabIds = ['chemicalDrawerTabOverview', 'chemicalDrawerTabPlacements', 'chemicalDrawerTabStock'];
+
+    it('has a tablist of tabs, each controlling its labelled tabpanel, with one tab in the tab order', () => {
+      render(true);
+
+      expect(find('[role="tablist"]')?.getAttribute('aria-label')).toBeTruthy();
+      const tabs = tabIds.map((id) => find(`#${id}`) as HTMLElement);
+      expect(tabs.map((t) => t.getAttribute('role'))).toEqual(['tab', 'tab', 'tab']);
+      expect(tabs.map((t) => t.getAttribute('aria-selected'))).toEqual(['true', 'false', 'false']);
+      expect(tabs.map((t) => t.getAttribute('tabindex'))).toEqual(['0', '-1', '-1']);
+      const panel = find('[role="tabpanel"]') as HTMLElement;
+      expect(tabs[0].getAttribute('aria-controls')).toBe(panel.id);
+      expect(panel.getAttribute('aria-labelledby')).toBe('chemicalDrawerTabOverview');
+    });
+
+    it('selects and focuses the next tab on ArrowRight', () => {
+      render(true);
+
+      find('#chemicalDrawerTabOverview')?.dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowRight', bubbles: true}));
+      fixture.detectChanges();
+
+      const placements = find('#chemicalDrawerTabPlacements') as HTMLElement;
+      expect(placements.getAttribute('aria-selected')).toBe('true');
+      expect(placements.getAttribute('tabindex')).toBe('0');
+      expect(document.activeElement).toBe(placements);
+      expect(find('[role="tabpanel"]')?.getAttribute('aria-labelledby')).toBe('chemicalDrawerTabPlacements');
+    });
+
+    it('is not a navigation landmark', () => {
+      render(true);
+
+      expect(find('nav[role="tablist"]')).toBeNull();
+    });
+  });
 });

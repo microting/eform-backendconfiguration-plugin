@@ -305,6 +305,15 @@ describe('ChemicalInventoryPageComponent', () => {
     expect(toastr.error).not.toHaveBeenCalledWith(expect.stringContaining('Http failure'));
   });
 
+  it('never shows the message of a plain Error, even one that carries a status (N-m4)', () => {
+    const component = build();
+    chemicals.exportInventory.mockReturnValue(throwError(() => Object.assign(new Error('TypeError: technical detail'), {status: 500})));
+
+    component.exportInventory();
+
+    expect(toastr.error).toHaveBeenCalledWith('Export failed');
+  });
+
   describe('W2 side panel and placement actions', () => {
     const dialogOf = (component: ChemicalInventoryPageComponent) =>
       (component as unknown as {dialog: {open: jest.Mock}}).dialog;
@@ -334,6 +343,28 @@ describe('ChemicalInventoryPageComponent', () => {
       expect(dialog.open.mock.calls[0][1].data).toEqual({row: component.rows[0], inventory: component.inventory, stockEnabled: true});
       expect(dialog.open).toHaveBeenCalledTimes(1);
       expect(chemicals.getPropertyInventory).toHaveBeenCalledTimes(1);
+    });
+
+    it('lets Esc and a backdrop click close the read-only side panel, and names it after the product (M6, M7)', () => {
+      const component = build();
+      const dialog = dialogOf(component);
+      dialog.open.mockReturnValue({afterClosed: () => of(undefined)});
+
+      component.openDetails(component.rows[0]);
+
+      const config = dialog.open.mock.calls[0][1];
+      expect(config.disableClose).toBe(false);
+      expect(config.ariaLabel).toBe(component.rows[0].productName);
+    });
+
+    it('keeps the placement dialogs closable only through their buttons', () => {
+      const component = build();
+      const dialog = dialogOf(component);
+      dialog.open.mockReturnValue({afterClosed: () => of(false)});
+
+      component.openNote(component.rows[0]);
+
+      expect(dialog.open.mock.calls[0][1].disableClose).toBe(true);
     });
 
     it.each([

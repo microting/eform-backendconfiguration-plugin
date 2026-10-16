@@ -1,20 +1,24 @@
 import {Injector, runInInjectionContext} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
-import {of} from 'rxjs';
+import {Subject, of} from 'rxjs';
 import {ChemicalStockEntryKind, ChemicalStockUnit} from '../../../../models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
+import {discardConfirmHarness} from '../../helpers/chemical-dialogs.testing';
 import {ChemicalStockDialogComponent} from './chemical-stock-dialog.component';
 
 describe('ChemicalStockDialogComponent', () => {
   let chemicals: {addStockEntry: jest.Mock};
   let dialogRef: {close: jest.Mock};
+  let confirm: ReturnType<typeof discardConfirmHarness>;
 
   function build(unit: ChemicalStockUnit | null): ChemicalStockDialogComponent {
     chemicals = {addStockEntry: jest.fn().mockReturnValue(of({success: true, model: {}}))};
     dialogRef = {close: jest.fn()};
+    confirm = discardConfirmHarness();
     const injector = Injector.create({providers: [
       {provide: BackendConfigurationPnChemicalsService, useValue: chemicals},
       {provide: MatDialogRef, useValue: dialogRef},
+      ...confirm.providers,
       {provide: MAT_DIALOG_DATA, useValue: {row: {placement: {id: 7, balance: 3.5, unit}, productName: 'Karate'}}},
     ]});
     return runInInjectionContext(injector, () => new ChemicalStockDialogComponent());
@@ -55,6 +59,24 @@ describe('ChemicalStockDialogComponent', () => {
     expect(component.canSave).toBe(true);
   });
 
+  it('accepts consuming exactly the whole balance (server: consumed <= balance)', () => {
+    const component = build(ChemicalStockUnit.Kg);
+    component.kind = ChemicalStockEntryKind.Consumed;
+
+    component.amount = 3.5;
+
+    expect(component.canSave).toBe(true);
+  });
+
+  it('refuses receiving nothing (server: the amount must be greater than zero)', () => {
+    const component = build(ChemicalStockUnit.Kg);
+    component.kind = ChemicalStockEntryKind.Received;
+
+    component.amount = 0;
+
+    expect(component.canSave).toBe(false);
+  });
+
   it('refuses an adjustment to the current balance, which the server rejects as no change (E-20)', () => {
     const component = build(ChemicalStockUnit.Kg);
     component.kind = ChemicalStockEntryKind.Adjusted;
@@ -62,6 +84,30 @@ describe('ChemicalStockDialogComponent', () => {
     component.amount = 3.5;
 
     expect(component.canSave).toBe(false);
+  });
+
+  it.each([
+    [ChemicalStockEntryKind.Received, 1.0005],
+    [ChemicalStockEntryKind.Received, 1_000_000.5],
+    [ChemicalStockEntryKind.Received, 2_000_000],
+    [ChemicalStockEntryKind.Adjusted, 0.0004],
+    [ChemicalStockEntryKind.Adjusted, 1_000_001],
+  ])('refuses kind %p with amount %p: more than three decimals or above one million (M3)', (kind, amount) => {
+    const component = build(ChemicalStockUnit.Kg);
+    component.kind = kind;
+
+    component.amount = amount;
+
+    expect(component.canSave).toBe(false);
+  });
+
+  it('accepts the server maximum of one million', () => {
+    const component = build(ChemicalStockUnit.Kg);
+    component.kind = ChemicalStockEntryKind.Received;
+
+    component.amount = 1_000_000;
+
+    expect(component.canSave).toBe(true);
   });
 
   it('sends the batch only for received goods', () => {
@@ -93,11 +139,43 @@ describe('ChemicalStockDialogComponent', () => {
     expect(component.saving).toBe(false);
   });
 
-  it('closes with false on cancel', () => {
+  it('closes with false on cancel when nothing was entered', () => {
     const component = build(null);
 
     component.cancel();
 
+    expect(confirm.dialog.open).not.toHaveBeenCalled();
     expect(dialogRef.close).toHaveBeenCalledWith(false);
+  });
+
+  describe('cancel with typed input asks first (M5)', () => {
+    it.each([
+      ['an amount', (c: ChemicalStockDialogComponent) => (c.amount = 2)],
+      ['a batch', (c: ChemicalStockDialogComponent) => (c.batchLot = 'L-1')],
+      ['a note', (c: ChemicalStockDialogComponent) => (c.note = 'x')],
+    ])('asks after %s and closes only on "discard"', (_name, edit) => {
+      const component = build(ChemicalStockUnit.Kg);
+      edit(component);
+
+      component.cancel();
+
+      expect(confirm.confirmId()).toBe('chemicalStockDiscardConfirm');
+      expect(dialogRef.close).not.toHaveBeenCalled();
+      confirm.discard();
+      expect(dialogRef.close).toHaveBeenCalledWith(false);
+    });
+
+    it('does nothing while the entry is being saved (M2)', () => {
+      const component = build(ChemicalStockUnit.Kg);
+      chemicals.addStockEntry.mockReturnValue(new Subject());
+      component.kind = ChemicalStockEntryKind.Received;
+      component.amount = 1;
+      component.save();
+
+      component.cancel();
+
+      expect(confirm.dialog.open).not.toHaveBeenCalled();
+      expect(dialogRef.close).not.toHaveBeenCalled();
+    });
   });
 });

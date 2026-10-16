@@ -1,8 +1,10 @@
 import {ChemicalStockEntryKind, ChemicalStockEntryOrigin, ChemicalStockUnit} from '../../../models';
 import {entry, inventoryOf, location, placement, stockEntry} from './chemical-inventory.fixtures';
 import {
+  CHEMICAL_MAX_AMOUNT,
   buildInventoryRows,
   chemicalStatusLabelKey,
+  isValidQuantity,
   filterInventoryRows,
   isStockEnabled,
   placementStockHistory,
@@ -169,5 +171,25 @@ describe('placement stock history and sibling placements', () => {
 
   it('lists every open placement of the same chemical', () => {
     expect(placementsOfChemical(inventory, 100).map((p) => p.id)).toEqual([1]);
+  });
+});
+
+describe('isValidQuantity (the server\'s ChemicalQuantity rules)', () => {
+  it('accepts up to three decimals and at most one million', () => {
+    expect(CHEMICAL_MAX_AMOUNT).toBe(1_000_000);
+    for (const value of [0.001, 0.1, 2.5, 1.125, 999_999.999, 1_000_000]) {
+      expect(isValidQuantity(value, false)).toBe(true);
+    }
+  });
+
+  it('refuses more than three decimals, more than one million, negatives and non-numbers', () => {
+    for (const value of [0.0005, 1.0005, 1_000_000.001, 2_000_000, -1, NaN, Infinity, null, undefined]) {
+      expect(isValidQuantity(value as number, true)).toBe(false);
+    }
+  });
+
+  it('accepts zero only where the server does (a counted balance)', () => {
+    expect(isValidQuantity(0, true)).toBe(true);
+    expect(isValidQuantity(0, false)).toBe(false);
   });
 });

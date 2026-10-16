@@ -202,6 +202,32 @@ describe('ChemicalRegisterPlacementDialogComponent', () => {
     expect(component.canSave).toBe(true);
   });
 
+  it.each([1.0005, 1_000_001])('cannot save an initial amount of %p: more than three decimals or above one million (M3)', (amount) => {
+    const component = build(true);
+    component.query = 'karate';
+    component.search();
+    component.select(component.results[0]);
+    component.locationId = 10;
+
+    component.amount = amount;
+
+    expect(component.canSave).toBe(false);
+  });
+
+  it('ignores cancel while the registration is in flight (M2)', () => {
+    const component = build(false);
+    chemicals.registerPlacement.mockReturnValue(new Subject());
+    component.query = 'karate';
+    component.search();
+    component.select(component.results[0]);
+    component.locationId = 10;
+    component.save();
+
+    component.cancel();
+
+    expect(dialogRef.close).not.toHaveBeenCalled();
+  });
+
   it('picks the package whose barcode was searched (m-5)', () => {
     const component = build(false);
     chemicals.searchRegister.mockReturnValue(of({success: true, model: {total: 1, entries: [{
