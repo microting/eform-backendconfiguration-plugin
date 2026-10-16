@@ -1,0 +1,122 @@
+<nav class="archive-rail" id="archiveFolderTree" [attr.aria-label]="'Folders' | translate">
+  <div class="archive-rail__head">
+    <span>{{ 'Folders' | translate }}</span>
+    <button
+      *ngIf="isAdmin"
+      mat-icon-button
+      type="button"
+      id="archiveNewFolderBtn"
+      [matTooltip]="'New folder' | translate"
+      [attr.aria-label]="'New folder' | translate"
+      (click)="createTop.emit()"
+    >
+      <mat-icon>create_new_folder</mat-icon>
+    </button>
+  </div>
+
+  <ng-container *ngFor="let node of tree; trackBy: trackByNode">
+    <ng-container *ngTemplateOutlet="row; context: {$implicit: node.folder, hasChildren: node.children.length > 0}"></ng-container>
+    <div
+      *ngIf="node.children.length && !isCollapsed(node.folder.id)"
+      class="archive-folder-children"
+      [id]="'archiveFolderChildren-' + node.folder.id"
+    >
+      <ng-container *ngFor="let child of node.children; trackBy: trackByFolder">
+        <ng-container *ngTemplateOutlet="row; context: {$implicit: child, hasChildren: false}"></ng-container>
+      </ng-container>
+    </div>
+  </ng-container>
+
+  <p class="archive-rail__foot">
+    <mat-icon class="archive-lock">lock</mat-icon>
+    <span>{{ 'A lock means that only certain worker groups can read the folder.' | translate }}</span>
+  </p>
+</nav>
+
+<ng-template #row let-folder let-hasChildren="hasChildren">
+  <div
+    class="archive-folder-row"
+    [class.archive-folder-row--selected]="folder.id === selectedFolderId"
+    [class.archive-folder-row--empty]="folder.count === 0"
+    [class.archive-folder-row--drop]="folder.id === dropTargetId"
+    [attr.data-folder-id]="folder.id"
+    [attr.data-folder-name]="folder.name"
+    (dragover)="onDragOver($event, folder)"
+    (dragleave)="onDragLeave(folder)"
+    (drop)="onDrop($event, folder)"
+  >
+    <button
+      *ngIf="hasChildren; else noToggle"
+      type="button"
+      class="archive-folder-row__toggle"
+      [attr.aria-expanded]="!isCollapsed(folder.id)"
+      [attr.aria-label]="'Show or hide subfolders' | translate"
+      (click)="toggle(folder.id)"
+    >
+      <mat-icon>{{ isCollapsed(folder.id) ? 'chevron_right' : 'expand_more' }}</mat-icon>
+    </button>
+    <ng-template #noToggle><span class="archive-folder-row__toggle"></span></ng-template>
+
+    <button
+      type="button"
+      class="archive-folder-row__main"
+      [attr.aria-current]="folder.id === selectedFolderId ? 'true' : null"
+      (click)="folderSelected.emit(folder.id)"
+    >
+      <mat-icon class="archive-folder-row__icon">{{ folder.id === selectedFolderId ? 'folder_open' : 'folder' }}</mat-icon>
+      <span class="archive-folder-row__name">{{ folder.name }}</span>
+      <span *ngIf="folder.isDefault" class="archive-folder-row__std">{{ 'default' | translate }}</span>
+      <mat-icon *ngIf="folder.restricted" class="archive-lock" [matTooltip]="'Restricted read access' | translate">lock</mat-icon>
+      <span class="archive-folder-row__count">{{ folder.count }}</span>
+    </button>
+
+    <ng-container *ngIf="isAdmin">
+      <button
+        mat-icon-button
+        type="button"
+        class="archive-folder-row__menu"
+        [id]="'archiveFolderMenuBtn-' + folder.id"
+        [matMenuTriggerFor]="folderMenu"
+        [attr.aria-label]="'Folder menu' | translate"
+      >
+        <mat-icon>more_vert</mat-icon>
+      </button>
+      <mat-menu #folderMenu="matMenu">
+        <ng-container *ngIf="actions(folder) as a">
+          <button mat-menu-item [id]="'archiveFolderNewSubBtn-' + folder.id" [disabled]="!a.canCreateSubfolder" (click)="createSubfolder.emit(folder)">
+            <mat-icon>create_new_folder</mat-icon>
+            <span>{{ 'New subfolder' | translate }}
+              <ng-container *ngTemplateOutlet="reasonTpl; context: {$implicit: a.createSubfolderReason}"></ng-container>
+            </span>
+          </button>
+          <button mat-menu-item [id]="'archiveFolderRenameBtn-' + folder.id" (click)="renameFolder.emit(folder)">
+            <mat-icon>edit</mat-icon>
+            <span>{{ 'Rename' | translate }}</span>
+          </button>
+          <button mat-menu-item [id]="'archiveFolderMoveBtn-' + folder.id" [disabled]="!a.canMove" (click)="moveFolder.emit(folder)">
+            <mat-icon>drive_file_move</mat-icon>
+            <span>{{ 'Move' | translate }}
+              <ng-container *ngTemplateOutlet="reasonTpl; context: {$implicit: a.moveReason}"></ng-container>
+            </span>
+          </button>
+          <button mat-menu-item [id]="'archiveFolderAccessBtn-' + folder.id" [disabled]="!a.canRestrict" (click)="editAccess.emit(folder)">
+            <mat-icon>group</mat-icon>
+            <span>{{ 'Read access' | translate }}
+              <ng-container *ngTemplateOutlet="reasonTpl; context: {$implicit: a.restrictReason}"></ng-container>
+            </span>
+          </button>
+          <button mat-menu-item class="btn-delete-menu" [id]="'archiveFolderDeleteBtn-' + folder.id" [disabled]="!a.canDelete" (click)="deleteFolder.emit(folder)">
+            <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
+            <span>{{ 'Delete folder' | translate }}
+              <ng-container *ngTemplateOutlet="reasonTpl; context: {$implicit: a.deleteReason, params: a.deleteReasonParams}"></ng-container>
+            </span>
+          </button>
+        </ng-container>
+      </mat-menu>
+    </ng-container>
+  </div>
+</ng-template>
+
+<ng-template #reasonTpl let-reason let-params="params">
+  <small *ngIf="reason" class="archive-menu-reason">{{ reason | translate: params }}</small>
+</ng-template>

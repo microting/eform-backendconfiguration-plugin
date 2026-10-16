@@ -13,3 +13,4 @@ export * from './archive-folder-choose-dialog/archive-folder-choose-dialog.compo
 export * from './archive-access-dialog/archive-access-dialog.component';
 export * from './archive-move-confirm-dialog/archive-move-confirm-dialog.component';
 export * from './archive-properties-dialog/archive-properties-dialog.component';
+export * from './archive-folder-tree/archive-folder-tree.component';
