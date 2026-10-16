@@ -122,8 +122,20 @@
         <button mat-menu-item id="chemicalRowDetails-{{i}}" (click)="openDetails(row)">
           <mat-icon>info</mat-icon><span>{{ 'Chemicals: Show details' | translate }}</span>
         </button>
+        <button mat-menu-item id="chemicalRowMove-{{i}}" (click)="openMove(row)">
+          <mat-icon>move_location</mat-icon><span>{{ 'Chemicals: Move to another location' | translate }}</span>
+        </button>
+        <button mat-menu-item id="chemicalRowNote-{{i}}" (click)="openNote(row)">
+          <mat-icon>edit_note</mat-icon><span>{{ 'Chemicals: Edit placement note' | translate }}</span>
+        </button>
+        <button *ngIf="stockEnabled" mat-menu-item id="chemicalRowStock-{{i}}" (click)="openStock(row)">
+          <mat-icon>inventory_2</mat-icon><span>{{ 'Chemicals: Register stock movement' | translate }}</span>
+        </button>
         <button mat-menu-item id="chemicalRowSds-{{i}}" [disabled]="!row.entry?.products?.length" (click)="openSds(row)">
           <mat-icon>description</mat-icon><span>{{ 'Chemicals: Open safety data sheet' | translate }}</span>
+        </button>
+        <button mat-menu-item id="chemicalRowRemove-{{i}}" (click)="openRemove(row)">
+          <mat-icon color="warn">remove_circle</mat-icon><span>{{ 'Chemicals: Remove placement' | translate }}…</span>
         </button>
       </mat-menu>
     </div>

@@ -1,0 +1,31 @@
+<h3 mat-dialog-title>{{ 'Chemicals: Stock movement' | translate }} · {{ data.row.productName }}</h3>
+<div mat-dialog-content class="d-flex flex-column gap-12">
+  <div class="chemicals-hint">{{ 'Chemicals: Current balance' | translate }}: {{ data.row.placement.balance | number: '1.0-3' }} {{ unitLabel }}</div>
+  <mat-radio-group class="d-flex gap-12" [(ngModel)]="kind">
+    <mat-radio-button id="chemicalStockKindReceived" [value]="kinds.Received">{{ 'Chemicals: Received' | translate }}</mat-radio-button>
+    <mat-radio-button id="chemicalStockKindConsumed" [value]="kinds.Consumed">{{ 'Chemicals: Consumed' | translate }}</mat-radio-button>
+    <mat-radio-button id="chemicalStockKindAdjusted" [value]="kinds.Adjusted">{{ 'Chemicals: Adjusted' | translate }}</mat-radio-button>
+  </mat-radio-group>
+  <div class="d-flex gap-12 align-items-center">
+    <mat-form-field>
+      <mat-label>{{ (kind === kinds.Adjusted ? 'Chemicals: Counted balance' : 'Chemicals: Amount') | translate }}</mat-label>
+      <input matInput type="number" min="0" step="0.001" id="chemicalStockAmount" [(ngModel)]="amount">
+    </mat-form-field>
+    <mat-radio-group [attr.aria-label]="'Chemicals: Unit' | translate" [(ngModel)]="unit" [disabled]="unitLocked">
+      <mat-radio-button [value]="units.L">L</mat-radio-button>
+      <mat-radio-button [value]="units.Kg">kg</mat-radio-button>
+    </mat-radio-group>
+  </div>
+  <mat-form-field *ngIf="kind === kinds.Received">
+    <mat-label>{{ 'Chemicals: Batch' | translate }}</mat-label>
+    <input matInput id="chemicalStockBatch" [(ngModel)]="batchLot" maxlength="100">
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{ 'Chemicals: Note' | translate }}</mat-label>
+    <input matInput id="chemicalStockNote" [(ngModel)]="note" maxlength="1000">
+  </mat-form-field>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button class="btn-cancel" id="chemicalStockCancelBtn" (click)="cancel()">{{ 'Cancel' | translate }}</button>
+  <button class="btn-primary" id="chemicalStockSaveBtn" [disabled]="!canSave" (click)="save()">{{ 'Save' | translate }}</button>
+</div>

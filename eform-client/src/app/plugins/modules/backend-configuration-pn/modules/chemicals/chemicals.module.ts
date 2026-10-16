@@ -19,9 +19,14 @@ import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {ChemicalsRouting} from './chemicals.routing';
 import {
   ChemicalInventoryPageComponent,
+  ChemicalMoveDialogComponent,
+  ChemicalNoteDialogComponent,
   ChemicalPermissionsPageComponent,
+  ChemicalProductDrawerComponent,
   ChemicalRegisterPlacementDialogComponent,
+  ChemicalRemoveDialogComponent,
   ChemicalSettingsPageComponent,
+  ChemicalStockDialogComponent,
   ChemicalsContainerComponent,
 } from './components';
 
@@ -34,6 +39,11 @@ import {
     ChemicalsContainerComponent,
     ChemicalInventoryPageComponent,
     ChemicalRegisterPlacementDialogComponent,
+    ChemicalProductDrawerComponent,
+    ChemicalMoveDialogComponent,
+    ChemicalRemoveDialogComponent,
+    ChemicalNoteDialogComponent,
+    ChemicalStockDialogComponent,
     ChemicalPermissionsPageComponent,
     ChemicalSettingsPageComponent,
   ],

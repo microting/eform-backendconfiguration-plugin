@@ -7,6 +7,9 @@ import {
   ChemicalLocationModel,
   ChemicalPlacementModel,
   ChemicalRegisterEntryModel,
+  ChemicalStockEntryKind,
+  ChemicalStockEntryModel,
+  ChemicalStockEntryOrigin,
   ChemicalStockUnit,
 } from '../../../models';
 import {ChemicalInventoryFiltersModel} from '../../../state';
@@ -42,6 +45,11 @@ export interface ChemicalInventoryRow {
 }
 
 const STOCK_UNIT_LABELS: Record<ChemicalStockUnit, string> = {[ChemicalStockUnit.L]: 'L', [ChemicalStockUnit.Kg]: 'kg'};
+
+/** 'kg' / 'L', '' without a unit. */
+export function stockUnitLabel(unit: ChemicalStockUnit | null): string {
+  return unit ? STOCK_UNIT_LABELS[unit] : '';
+}
 
 const DEADLINE_LABEL_KEYS: Record<ChemicalDeadlineKind, string> = {
   [ChemicalDeadlineKind.Sales]: 'Chemicals: Sales deadline',
@@ -85,7 +93,7 @@ export function buildInventoryRows(inventory: ChemicalInventoryModel | null, tod
         requiresAction: requiresAction(entry, today),
         deadline,
         deadlineLabelKey: deadline ? DEADLINE_LABEL_KEYS[deadline.kind] : null,
-        stockUnitLabel: placement.unit ? STOCK_UNIT_LABELS[placement.unit] : '',
+        stockUnitLabel: stockUnitLabel(placement.unit),
         pictograms: entry?.hazardPictograms ?? [],
       };
     })
@@ -131,4 +139,45 @@ export function sdsFileNameFor(row: ChemicalInventoryRow): string | null {
   const products = row.entry?.products ?? [];
   const own = products.find((p) => p.productId === row.placement.productId && p.sdsFileName);
   return (own ?? products.find((p) => !!p.sdsFileName))?.sdsFileName ?? null;
+}
+
+/** One W2 "Lagerhistorik" line. */
+export interface ChemicalStockHistoryRow {
+  entry: ChemicalStockEntryModel;
+  /** The server's running balance after the entry (E-06): the inventory holds only 12 months, so it is never summed here. */
+  balanceAfter: number;
+  kindLabelKey: string;
+  /** 'Chemicals: Stock origin move' / '… write-off' for entries a move or a removal wrote; null for manual ones. */
+  originLabelKey: string | null;
+}
+
+const STOCK_KIND_LABEL_KEYS: Record<ChemicalStockEntryKind, string> = {
+  [ChemicalStockEntryKind.Received]: 'Chemicals: Stock kind 1',
+  [ChemicalStockEntryKind.Consumed]: 'Chemicals: Stock kind 2',
+  [ChemicalStockEntryKind.Adjusted]: 'Chemicals: Stock kind 3',
+  [ChemicalStockEntryKind.MovedOut]: 'Chemicals: Stock kind 4',
+  [ChemicalStockEntryKind.MovedIn]: 'Chemicals: Stock kind 5',
+};
+
+const STOCK_ORIGIN_LABEL_KEYS: Partial<Record<ChemicalStockEntryOrigin, string>> = {
+  [ChemicalStockEntryOrigin.Move]: 'Chemicals: Stock origin move',
+  [ChemicalStockEntryOrigin.RemovalWriteOff]: 'Chemicals: Stock origin write-off',
+};
+
+/** W2 "Lagerhistorik": the placement's entries, newest first (same moment: higher id first). */
+export function placementStockHistory(inventory: ChemicalInventoryModel | null, placementId: number): ChemicalStockHistoryRow[] {
+  return (inventory?.stockEntries ?? [])
+    .filter((e) => e.placementId === placementId)
+    .sort((a, b) => b.at.localeCompare(a.at) || b.id - a.id)
+    .map((entry) => ({
+      entry,
+      balanceAfter: entry.balanceAfter,
+      kindLabelKey: STOCK_KIND_LABEL_KEYS[entry.kind],
+      originLabelKey: STOCK_ORIGIN_LABEL_KEYS[entry.origin] ?? null,
+    }));
+}
+
+/** W2 "Placeringer": every open placement of the chemical on the property. */
+export function placementsOfChemical(inventory: ChemicalInventoryModel | null, chemicalId: number): ChemicalPlacementModel[] {
+  return (inventory?.placements ?? []).filter((p) => p.chemicalId === chemicalId && !p.removedAt);
 }

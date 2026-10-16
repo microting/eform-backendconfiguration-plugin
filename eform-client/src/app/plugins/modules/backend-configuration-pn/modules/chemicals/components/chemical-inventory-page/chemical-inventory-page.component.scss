@@ -11,3 +11,4 @@
 .chemicals-hint { opacity: 0.7; font-size: 12px; }
 .chemicals-link { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .chemicals-empty { padding: 24px 8px; color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6)); }
+::ng-deep .chemicals-drawer-panel .mat-mdc-dialog-surface { border-radius: 20px 0 0 20px; }

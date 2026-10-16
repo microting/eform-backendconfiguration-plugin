@@ -1,6 +1,8 @@
+import {HttpErrorResponse} from '@angular/common/http';
 import {Component, DestroyRef, OnInit, inject} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {Overlay} from '@angular/cdk/overlay';
+import {ComponentType} from '@angular/cdk/portal';
 import {MatDialog} from '@angular/material/dialog';
 import {ActivatedRoute, Router} from '@angular/router';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
@@ -30,7 +32,12 @@ import {
   sdsFileNameFor,
   summarizeActions,
 } from '../../helpers';
+import {ChemicalMoveDialogComponent} from '../chemical-move-dialog/chemical-move-dialog.component';
+import {ChemicalNoteDialogComponent} from '../chemical-note-dialog/chemical-note-dialog.component';
+import {ChemicalDrawerResult, ChemicalProductDrawerComponent} from '../chemical-product-drawer/chemical-product-drawer.component';
 import {ChemicalRegisterPlacementDialogComponent} from '../chemical-register-placement-dialog/chemical-register-placement-dialog.component';
+import {ChemicalRemoveDialogComponent} from '../chemical-remove-dialog/chemical-remove-dialog.component';
+import {ChemicalStockDialogComponent} from '../chemical-stock-dialog/chemical-stock-dialog.component';
 
 /**
  * W1 "Kemikalier – beholdning": open placements of the selected property with
@@ -166,9 +173,44 @@ export class ChemicalInventoryPageComponent implements OnInit {
     })).afterClosed().subscribe((saved) => saved && this.reload());
   }
 
-  // TODO(Task 13): open the W2 side panel; the product button and the "Show details" item already call this.
+  /** W2 side panel; the action chosen there opens its dialog (move, stock movement or remove). */
   openDetails(row: ChemicalInventoryRow): void {
-    void row;
+    this.dialog.open(ChemicalProductDrawerComponent, {
+      ...dialogConfigHelper(this.overlay, {row, inventory: this.inventory, stockEnabled: this.stockEnabled}),
+      position: {top: '0', right: '0'},
+      height: '100vh',
+      maxHeight: '100vh',
+      panelClass: 'chemicals-drawer-panel',
+    }).afterClosed().subscribe((result: ChemicalDrawerResult) => {
+      if (result?.action === 'move') {
+        this.openMove(result.row);
+      } else if (result?.action === 'stock') {
+        this.openStock(result.row);
+      } else if (result?.action === 'remove') {
+        this.openRemove(result.row);
+      }
+    });
+  }
+
+  openMove(row: ChemicalInventoryRow): void {
+    this.openAndReload(ChemicalMoveDialogComponent, {row, locations: this.inventory?.locations ?? [], stockEnabled: this.stockEnabled});
+  }
+
+  openNote(row: ChemicalInventoryRow): void {
+    this.openAndReload(ChemicalNoteDialogComponent, {row});
+  }
+
+  openStock(row: ChemicalInventoryRow): void {
+    this.openAndReload(ChemicalStockDialogComponent, {row});
+  }
+
+  openRemove(row: ChemicalInventoryRow): void {
+    this.openAndReload(ChemicalRemoveDialogComponent, {row, today: localToday()});
+  }
+
+  /** Every placement dialog closes with true after a save; only then is the inventory stale. */
+  private openAndReload(component: ComponentType<unknown>, data: unknown): void {
+    this.dialog.open(component, dialogConfigHelper(this.overlay, data)).afterClosed().subscribe((saved) => saved && this.reload());
   }
 
   openSds(row: ChemicalInventoryRow): void {
@@ -212,11 +254,11 @@ export class ChemicalInventoryPageComponent implements OnInit {
 
   /**
    * The server's reason when it gave one (m-9), else a refusal or the generic failure. Only a
-   * ChemicalDownloadError (it has a status) carries a reason: any other error's message is
-   * technical and is never shown.
+   * ChemicalDownloadError (a plain {status, message} from the service) carries a reason: a raw
+   * HttpErrorResponse or an Error also has a message, but a technical one that is never shown (N-m4).
    */
   private exportFailureText(err: Partial<ChemicalDownloadError> | null): string {
-    const isDownloadError = typeof err?.status === 'number';
+    const isDownloadError = typeof err?.status === 'number' && !(err instanceof HttpErrorResponse) && !(err instanceof Error);
     if (isDownloadError && err.message) {
       return err.message;
     }

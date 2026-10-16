@@ -73,6 +73,9 @@ export class ChemicalRegisterPlacementDialogComponent {
       if (generation !== this.searchGeneration) {
         return;
       }
+      // A pick from the old results made while this search was pending is gone with them (N-m1).
+      this.selected = null;
+      this.productId = null;
       const page = res && res.success ? res.model : null;
       this.results = page?.entries ?? [];
       this.total = page?.total ?? 0;
