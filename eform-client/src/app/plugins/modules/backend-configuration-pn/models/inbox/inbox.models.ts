@@ -49,10 +49,10 @@ export interface InboxListItemModel {
   fileName: string;
   subject: string | null;
   fromAddress: string;
-  /** UTC, ISO 8601 with a `Z` (the service adds it; the API sends no offset). */
-  receivedAt: string;
-  /** UTC, ISO 8601 with a `Z`, or null. */
-  readyBy: string | null;
+  /** UTC; a Date after the host's DateInterceptor (see ServerDate). */
+  receivedAt: ServerDate;
+  /** UTC or null; a Date after the host's DateInterceptor (see ServerDate). */
+  readyBy: ServerDate | null;
   status: InboxDocumentStatus;
   failureReason: string | null;
   reviewedByMicroting: boolean;
@@ -63,6 +63,13 @@ export interface FileInboxDocumentModel {
   name: string;
   propertyIds: number[];
   tagIds: number[];
+  /** Always sent by this UI (filing is blocked without a folder). The API files a missing folderId into the
+   * default folder (older clients) and refuses 0. */
+  folderId: number;
+  /** yyyy-MM-dd or null. */
+  documentDate: string | null;
+  /** True when a person approved or set the date; a kept hub suggestion files as Suggested. */
+  documentDateApproved: boolean;
 }
 
 export interface InboxSenderRuleModel {

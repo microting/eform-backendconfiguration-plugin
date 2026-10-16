@@ -72,8 +72,11 @@ describe('BackendConfigurationPnInboxService', () => {
     expect(apiBaseServiceSpy.getBlobData).toHaveBeenCalledWith('api/backend-configuration-pn/inbox/7/file');
   });
 
-  it('file POSTs name, propertyIds and tagIds', () => {
-    const body = {name: 'Invoice 42', propertyIds: [3], tagIds: [5, 6]};
+  it('file POSTs name, properties, tags, folder and the document date', () => {
+    const body = {
+      name: 'Invoice 42', propertyIds: [3], tagIds: [5, 6],
+      folderId: 9, documentDate: '2026-10-03', documentDateApproved: false,
+    };
     service.file(7, body).subscribe();
     expect(apiBaseServiceSpy.post).toHaveBeenCalledWith('api/backend-configuration-pn/inbox/7/file', body);
   });

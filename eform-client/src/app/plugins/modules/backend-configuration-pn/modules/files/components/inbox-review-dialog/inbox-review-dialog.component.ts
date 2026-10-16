@@ -3,17 +3,31 @@ import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {Observable} from 'rxjs';
 import {CommonDictionaryModel, OperationResult, SharedTagModel} from 'src/app/common/models';
 import {
+  BackendConfigurationPnArchiveFoldersService,
   BackendConfigurationPnFileTagsService,
   BackendConfigurationPnInboxService,
   BackendConfigurationPnPropertiesService,
 } from '../../../../services';
-import {InboxListItemModel, InboxSuggestionKind, InboxSuggestionModel} from '../../../../models';
-import {INBOX_PRESELECT_CONFIDENCE, inboxConfidence, inboxIsUnknownSender} from '../../../../helpers';
+import {FileInboxDocumentModel, InboxListItemModel, InboxSuggestionKind, InboxSuggestionModel} from '../../../../models';
+import {
+  ArchiveFolderOption,
+  INBOX_PRESELECT_CONFIDENCE,
+  dateOnlyOf,
+  folderOptions,
+  inboxConfidence,
+  inboxDateSuggestion,
+  inboxFolderSuggestion,
+  inboxIsUnknownSender,
+  preselectedFolderId,
+} from '../../../../helpers';
 
 /**
  * Review and file one Ready document: the PDF on the left; on the right pickers over every live
  * property and file tag, with the suggestions as quick toggles (preselected at confidence ≥ 0.5) and
- * their evidence text. A person always presses Arkivér; at least one property is required.
+ * their evidence text. A person always files by hand; at least one property and a folder are required.
+ * The folder is preselected only from the hub's suggestion (confidence ≥ 0.5, a folder that still exists);
+ * otherwise the person must choose one. The document date starts as the hub's suggestion and is filed as
+ * suggested until a person approves it or sets another date.
  *
  * Closes with `true` when anything changed (filed, undone or rejected), so the list reloads.
  */
@@ -28,12 +42,25 @@ export class InboxReviewDialogComponent implements OnInit {
   private inboxService = inject(BackendConfigurationPnInboxService);
   private propertiesService = inject(BackendConfigurationPnPropertiesService);
   private fileTagsService = inject(BackendConfigurationPnFileTagsService);
+  private foldersService = inject(BackendConfigurationPnArchiveFoldersService);
 
   readonly Kind = InboxSuggestionKind;
   readonly isUnknownSender = inboxIsUnknownSender;
   readonly confidence = inboxConfidence;
   readonly propertySuggestions = this.suggestionsOf(InboxSuggestionKind.Property);
   readonly tagSuggestions = this.suggestionsOf(InboxSuggestionKind.Tag);
+  /** At most one folder suggestion per document, preselected like properties at confidence ≥ 0.5. */
+  readonly folderSuggestion = inboxFolderSuggestion(this.data.suggestions);
+  /** At most one date suggestion per document; filed unchanged, it stays marked as suggested (needs checking). */
+  readonly dateSuggestion = inboxDateSuggestion(this.data.suggestions);
+  folderOptions: ArchiveFolderOption[] = [];
+  private knownFolderIds = new Set<number>();
+  selectedFolderId: number | null = null;
+  /** yyyy-MM-dd: targetDate is a Date after the host's DateInterceptor, dateOnlyOf reads its UTC day (serverDay). */
+  documentDate: string | null = dateOnlyOf(this.dateSuggestion?.targetDate);
+  /** True once a person approved the date or set it. */
+  dateApproved = false;
+  editingDate = false;
 
   availableProperties: CommonDictionaryModel[] = [];
   availableTags: SharedTagModel[] = [];
@@ -47,8 +74,20 @@ export class InboxReviewDialogComponent implements OnInit {
   busy = false;
   private changed = false;
 
+  /** The folder suggestion, unless it points at a folder deleted or unreadable since; such a suggestion is hidden. */
+  get visibleFolderSuggestion(): InboxSuggestionModel | null {
+    return this.folderSuggestion && this.folderKnown(this.folderSuggestion) ? this.folderSuggestion : null;
+  }
+
+  get folderSuggestionSelected(): boolean {
+    return !!this.folderSuggestion && this.selectedFolderId === this.folderSuggestion.targetId;
+  }
+
   get canFile(): boolean {
-    return !this.busy && this.selectedPropertyIds.length > 0 && this.name.trim().length > 0;
+    return !this.busy
+      && this.selectedPropertyIds.length > 0
+      && this.selectedFolderId !== null
+      && this.name.trim().length > 0;
   }
 
   ngOnInit(): void {
@@ -65,6 +104,15 @@ export class InboxReviewDialogComponent implements OnInit {
         const tags = res.model;
         this.availableTags = tags;
         this.selectedTagIds = this.selectedTagIds.filter(id => tags.some(t => t.id === id));
+      }
+    });
+    this.foldersService.getFolders([]).subscribe(res => {
+      if (res?.success && res.model) {
+        const folders = res.model;
+        this.knownFolderIds = new Set(folders.map(f => f.id));
+        this.folderOptions = folderOptions(folders);
+        // No fallback to the default folder: without a usable suggestion the person must choose one.
+        this.selectedFolderId = preselectedFolderId(this.folderSuggestion, folders);
       }
     });
     this.inboxService.getPdf(this.data.id).subscribe({
@@ -94,12 +142,31 @@ export class InboxReviewDialogComponent implements OnInit {
     }
   }
 
+  /** A refused folder (deleted or unreadable since: success=false) is toasted and keeps the dialog open. */
   fileIt(): void {
-    if (!this.canFile) {
+    // canFile already requires a folder; the explicit null check narrows selectedFolderId to number.
+    if (!this.canFile || this.selectedFolderId === null) {
       return;
     }
-    const model = {name: this.name.trim(), propertyIds: this.selectedPropertyIds, tagIds: this.selectedTagIds};
+    const model: FileInboxDocumentModel = {
+      name: this.name.trim(),
+      propertyIds: this.selectedPropertyIds,
+      tagIds: this.selectedTagIds,
+      folderId: this.selectedFolderId,
+      documentDate: this.documentDate,
+      documentDateApproved: this.documentDate !== null && this.dateApproved,
+    };
     this.run(this.inboxService.file(this.data.id, model), () => (this.filed = this.changed = true));
+  }
+
+  folderKnown(s: InboxSuggestionModel): boolean {
+    return this.knownFolderIds.has(s.targetId);
+  }
+
+  /** A date a person enters counts as approved; an emptied field files without a date. */
+  setDate(value: string): void {
+    this.documentDate = value || null;
+    this.dateApproved = !!value;
   }
 
   undo(): void {
@@ -134,6 +201,8 @@ export class InboxReviewDialogComponent implements OnInit {
         }
       },
       error: () => (this.busy = false),
+      // The host interceptor swallows a 404 and completes empty (C4); the buttons must not stay disabled.
+      complete: () => (this.busy = false),
     });
   }
 
