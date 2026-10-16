@@ -504,7 +504,13 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 		// All or nothing, as the D17 refusal promises: a partial move must never widen access.
 		await ArchiveTransaction.RunAsync(_dbContext, async () =>
 		{
-			foreach (var file in await _dbContext.Files.Where(f => movingIds.Contains(f.Id)).ToListAsync())
+			var files = await _dbContext.Files.Where(f => movingIds.Contains(f.Id) && f.WorkflowState != Removed).ToListAsync();
+			if (files.Count != movingIds.Count)
+			{
+				throw new ArchiveNotFoundException();
+			}
+
+			foreach (var file in files)
 			{
 				file.FolderId = model.FolderId;
 				file.UpdatedByUserId = _userService.UserId;
@@ -519,7 +525,8 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 	public async Task<OperationResult> UpdateDate(int id, FileDateModel model)
 	{
 		await EnsureReadableAsync([id]);
-		var file = await _dbContext.Files.SingleAsync(f => f.Id == id);
+		var file = await _dbContext.Files.SingleOrDefaultAsync(f => f.Id == id && f.WorkflowState != Removed)
+		           ?? throw new ArchiveNotFoundException();
 		file.DocumentDate = model.Date?.Date;
 		file.DocumentDateState = model.Date == null ? DocumentDateState.None : DocumentDateState.Approved;
 		file.UpdatedByUserId = _userService.UserId;
@@ -557,7 +564,13 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 		// One transaction: own access saved with the old groups deleted but the new ones missing would read as open.
 		await ArchiveTransaction.RunAsync(_dbContext, async () =>
 		{
-			foreach (var file in await _dbContext.Files.Where(f => ids.Contains(f.Id)).ToListAsync())
+			var files = await _dbContext.Files.Where(f => ids.Contains(f.Id) && f.WorkflowState != Removed).ToListAsync();
+			if (files.Count != ids.Count)
+			{
+				throw new ArchiveNotFoundException();
+			}
+
+			foreach (var file in files)
 			{
 				file.OwnAccess = model.OwnAccess;
 				file.UpdatedByUserId = _userService.UserId;

@@ -182,6 +182,19 @@ public class FilesMoveDateAccessTests : TestBaseSetup
     }
 
     [Test]
+    public async Task UpdateDate_RemovedDocument_IsNotFound()
+    {
+        var a = await NewFile(_drift, "a");
+        var stored = await Db.Files.SingleAsync(f => f.Id == a);
+        stored.WorkflowState = Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed;
+        await Db.SaveChangesAsync();
+        AsUser();
+
+        await Assert.ThrowsAsync<ArchiveNotFoundException>(() =>
+            _service.UpdateDate(a, new FileDateModel { Date = new DateTime(2026, 1, 1) }));
+    }
+
+    [Test]
     public async Task UpdateAccess_OwnGroups_ThenBackToTheFolders()
     {
         var a = await NewFile(_fakturaer, "a");
