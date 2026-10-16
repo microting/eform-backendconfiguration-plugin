@@ -26,3 +26,15 @@ export const filesUpdatePaginationTotalItemsCount = createAction(
   '[Files] Update Pagination Total Items Count',
   (payload: number) => ({payload})
 );
+
+/** Lists one folder; clears the search and "Dato skal tjekkes", which both span all folders. */
+export const filesSelectFolder = createAction(
+  '[Files] Select Folder',
+  (payload: number) => ({payload})
+);
+
+/** "Dato skal tjekkes": documents whose date is only suggested, across all folders. */
+export const filesToggleDateCheck = createAction(
+  '[Files] Toggle Date Check',
+  (payload: boolean) => ({payload})
+);
