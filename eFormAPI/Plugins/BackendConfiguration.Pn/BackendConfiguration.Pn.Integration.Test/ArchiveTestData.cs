@@ -1,4 +1,5 @@
 #nullable enable
+using BackendConfiguration.Pn.Controllers;
 using BackendConfiguration.Pn.Services.ArchiveAccess;
 using BackendConfiguration.Pn.Services.ArchiveFolders;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
@@ -65,6 +66,14 @@ public static class ArchiveTestData
             FileLocation = "", CreatedByUserId = 1, UpdatedByUserId = 1
         }.Create(db);
         return file;
+    }
+
+    /// <summary>Every controller that serves archive data; the filter and authorization tests share it.</summary>
+    public static IEnumerable<Type> ArchiveControllers()
+    {
+        yield return typeof(FilesController);
+        yield return typeof(ArchiveFoldersController);
+        yield return typeof(InboxController);
     }
 
     public static ArchiveAccessContext Admin => new(false, true, []);

@@ -98,13 +98,7 @@ public class ArchiveAccessFilterTests
         Assert.That(executed!.ExceptionHandled, Is.False);
     }
 
-    private static IEnumerable<Type> ArchiveControllers()
-    {
-        yield return typeof(FilesController);
-        yield return typeof(InboxController);
-    }
-
-    [TestCaseSource(nameof(ArchiveControllers))]
+    [TestCaseSource(typeof(ArchiveTestData), nameof(ArchiveTestData.ArchiveControllers))]
     public void ArchiveController_CarriesTheFilter(Type controller) =>
         Assert.That(controller.GetCustomAttribute<ArchiveAccessFilterAttribute>(), Is.Not.Null,
             $"{controller.Name} serves archive data: D7 requires the account_disabled 403 on every action.");
