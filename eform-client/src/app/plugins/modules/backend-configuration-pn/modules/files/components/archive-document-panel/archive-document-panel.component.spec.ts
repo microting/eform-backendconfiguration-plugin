@@ -1,8 +1,15 @@
+import {NO_ERRORS_SCHEMA} from '@angular/core';
+import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {By} from '@angular/platform-browser';
+import {A11yModule, CdkTrapFocus} from '@angular/cdk/a11y';
+import {TranslateModule} from '@ngx-translate/core';
 import {EMPTY, Subject, of} from 'rxjs';
 import {CommonDictionaryModel, OperationResult, SharedTagModel} from 'src/app/common/models';
 import {ArchiveDocumentPanelComponent} from './archive-document-panel.component';
 import {ArchivePanelValue} from '../../../../helpers';
 import {ArchiveFolderModel, DocumentDateState, FileModel} from '../../../../models';
+import {BackendConfigurationPnFilesService} from '../../../../services';
+import {ArchiveMoveFlowService} from '../../services/archive-move-flow.service';
 
 const ledelse = {id: 5, name: 'Ledelse'};
 const vagt = {id: 9, name: 'Vagt'};
@@ -265,5 +272,79 @@ describe('ArchiveDocumentPanelComponent', () => {
   it('non-admins see who reads the document, without controls', () => {
     panel.isAdmin = false;
     expect(panel.readAccessLabel).toBe('Read access: {{who}} {"who":"Ledelse"}');
+  });
+});
+
+describe('ArchiveDocumentPanelComponent as a drawer (below 1100 px)', () => {
+  let fixture: ComponentFixture<ArchiveDocumentPanelComponent>;
+  let row: HTMLElement;
+  let closed: jest.Mock;
+  const aside = (): HTMLElement => fixture.nativeElement.querySelector('#archiveDocumentPanel');
+  const closeBtn = (): HTMLElement => fixture.nativeElement.querySelector('#archivePanelCloseBtn');
+
+  /** The row that opened the panel has focus, as after a click or Enter on it. FormsModule is left out on purpose:
+   * the body's ngModel bindings stay inert, so only the panel's frame is under test. */
+  function render(drawer: boolean): void {
+    row = document.createElement('div');
+    row.tabIndex = 0;
+    document.body.appendChild(row);
+    row.focus();
+    TestBed.configureTestingModule({
+      declarations: [ArchiveDocumentPanelComponent],
+      imports: [A11yModule, TranslateModule.forRoot()],
+      providers: [
+        {provide: BackendConfigurationPnFilesService, useValue: {getFile: () => of({success: true, model: file}), getPdfFile: () => EMPTY}},
+        {provide: ArchiveMoveFlowService, useValue: {move: jest.fn()}},
+      ],
+      schemas: [NO_ERRORS_SCHEMA],
+    });
+    fixture = TestBed.createComponent(ArchiveDocumentPanelComponent);
+    fixture.componentRef.setInput('fileId', 7);
+    fixture.componentRef.setInput('drawer', drawer);
+    closed = jest.fn();
+    fixture.componentInstance.closed.subscribe(closed);
+    fixture.detectChanges();
+  }
+
+  afterEach(() => {
+    fixture?.destroy();
+    row?.remove();
+  });
+
+  it('is a modal dialog named by the document, traps focus and starts on the close button', () => {
+    render(true);
+    expect(aside().getAttribute('role')).toBe('dialog');
+    expect(aside().getAttribute('aria-modal')).toBe('true');
+    expect(aside().getAttribute('aria-labelledby')).toBe('archivePanelTitle');
+    expect(fixture.debugElement.query(By.directive(CdkTrapFocus)).injector.get(CdkTrapFocus).enabled).toBe(true);
+    expect(document.activeElement).toBe(closeBtn());
+  });
+
+  it('closes on Escape, but not when a control inside already handled it', () => {
+    render(true);
+    const handled = new KeyboardEvent('keydown', {key: 'Escape', bubbles: true, cancelable: true});
+    handled.preventDefault();
+    closeBtn().dispatchEvent(handled);
+    expect(closed).not.toHaveBeenCalled();
+    closeBtn().dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true, cancelable: true}));
+    expect(closed).toHaveBeenCalledTimes(1);
+  });
+
+  it('gives focus back to the row that opened it when it closes', () => {
+    render(true);
+    expect(document.activeElement).not.toBe(row);
+    fixture.destroy();
+    expect(document.activeElement).toBe(row);
+  });
+
+  it('side by side (1100 px and up) stays a plain region: no dialog role, no trap, focus stays on the row', () => {
+    render(false);
+    expect(aside().getAttribute('role')).toBeNull();
+    expect(aside().getAttribute('aria-modal')).toBeNull();
+    expect(fixture.debugElement.query(By.directive(CdkTrapFocus)).injector.get(CdkTrapFocus).enabled).toBe(false);
+    expect(document.activeElement).toBe(row);
+    row.blur();
+    fixture.destroy();
+    expect(document.activeElement).not.toBe(row);
   });
 });

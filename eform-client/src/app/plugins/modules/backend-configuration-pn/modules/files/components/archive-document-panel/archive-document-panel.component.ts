@@ -1,4 +1,6 @@
-import {Component, EventEmitter, Input, OnChanges, Output, SimpleChanges} from '@angular/core';
+import {
+  AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild,
+} from '@angular/core';
 import {TranslateService} from '@ngx-translate/core';
 import {Observable, concat, defaultIfEmpty, defer, map, takeWhile, toArray} from 'rxjs';
 import {CommonDictionaryModel, OperationResult, SharedTagModel} from 'src/app/common/models';
@@ -35,7 +37,7 @@ export interface ArchivePanelSaved {
   templateUrl: './archive-document-panel.component.html',
   standalone: false,
 })
-export class ArchiveDocumentPanelComponent implements OnChanges {
+export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Input() fileId!: number;
   @Input() folders: ArchiveFolderModel[] = [];
   @Input() folderOptions: ArchiveFolderOption[] = [];
@@ -50,6 +52,7 @@ export class ArchiveDocumentPanelComponent implements OnChanges {
   @Input() hasNext = false;
   @Output() saved = new EventEmitter<ArchivePanelSaved>();
   @Output() closed = new EventEmitter<void>();
+  @ViewChild('closeButton', {read: ElementRef}) closeButton?: ElementRef<HTMLButtonElement>;
 
   readonly DateState = DocumentDateState;
   file: FileModel | null = null;
@@ -60,6 +63,8 @@ export class ArchiveDocumentPanelComponent implements OnChanges {
   editingDate = false;
   pdfBytes: Uint8Array | null = null;
   busy = false;
+  /** Drawer only: what had focus when the drawer opened (the row), focused again when it closes. */
+  private returnFocusTo: HTMLElement | null = null;
 
   constructor(
     private filesService: BackendConfigurationPnFilesService,
@@ -68,11 +73,49 @@ export class ArchiveDocumentPanelComponent implements OnChanges {
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
+    // The window narrowed while the panel was open: it is a modal drawer from now on.
+    if (changes['drawer'] && !changes['drawer'].firstChange && this.drawer) {
+      this.captureFocus();
+    }
     if (changes['fileId']) {
       this.load();
     } else if (changes['workerTags']) {
       this.refreshAccessItems(this.selectedGroups());
     }
+  }
+
+  ngAfterViewInit(): void {
+    if (this.drawer) {
+      this.captureFocus();
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.drawer && this.returnFocusTo?.isConnected) {
+      this.returnFocusTo.focus();
+    }
+  }
+
+  /**
+   * Escape closes the drawer. A control that handles Escape itself (an open select list) prevents the default,
+   * so its Escape only closes that list.
+   */
+  onEscape(event: Event): void {
+    if (this.drawer && !event.defaultPrevented) {
+      event.preventDefault();
+      this.closed.emit();
+    }
+  }
+
+  /** Drawer: remembers the opener and moves focus to the close button, unless focus is already inside the panel. */
+  private captureFocus(): void {
+    const active = document.activeElement;
+    const host = this.closeButton?.nativeElement.closest('aside');
+    if (active instanceof HTMLElement && host?.contains(active)) {
+      return;
+    }
+    this.returnFocusTo = active instanceof HTMLElement && active !== document.body ? active : null;
+    this.closeButton?.nativeElement.focus();
   }
 
   /** Opens a document: its data and the PDF preview, from a clean view. */

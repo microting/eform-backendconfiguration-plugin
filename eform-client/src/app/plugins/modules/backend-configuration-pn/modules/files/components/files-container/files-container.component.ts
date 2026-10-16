@@ -456,16 +456,19 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
   }
 
   editFolderAccess(folder: ArchiveFolderModel): void {
+    // A subfolder without own groups inherits its parent's: the dialog says so instead of "everyone".
+    const parent = findFolder(this.folders, folder.parentId);
+    const parentGroups = parent ? effectiveFolderGroups(this.folders, parent.id) : [];
     this.openAccessDialog({
       mode: 'folder', title: 'Read access for {{folder}}', titleParams: {folder: folder.name},
       workerTags: this.workerTags, currentGroups: ownFolderGroups(folder), ownAccess: true,
+      inheritedFrom: parent && parentGroups.length ? {folder: parent.name, groups: parentGroups} : undefined,
     }).subscribe(result => this.foldersService.setFolderAccess(folder.id, {tagIds: result.tagIds}).subscribe(res => {
       if (res?.success) {
         const chosen: ArchiveNamedItem[] = result.tagIds.map(id => ({
           id, name: this.workerTags.find(t => t.id === id)?.name ?? folder.readGroups.find(g => g.id === id)?.name ?? '',
         }));
-        const parent = findFolder(this.folders, folder.parentId);
-        this.toastAccessChanged(res.model?.accessChanged ?? 0, chosen.length ? chosen : parent?.readGroups ?? []);
+        this.toastAccessChanged(res.model?.accessChanged ?? 0, chosen.length ? chosen : parentGroups);
       }
       this.afterFolderChange(res?.success);
     }));

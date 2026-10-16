@@ -1,7 +1,19 @@
-<aside class="archive-panel" id="archiveDocumentPanel" [class.archive-panel--drawer]="drawer" [attr.aria-label]="'Document' | translate">
+<!-- Below 1100 px the panel is a modal drawer: dialog semantics, focus kept inside (cdkTrapFocus), Escape closes it
+     and the row that opened it gets focus back (ngOnDestroy). Side by side it is a plain region without a trap. -->
+<aside
+  class="archive-panel"
+  id="archiveDocumentPanel"
+  [class.archive-panel--drawer]="drawer"
+  [attr.role]="drawer ? 'dialog' : null"
+  [attr.aria-modal]="drawer ? 'true' : null"
+  [attr.aria-labelledby]="drawer && file?.fileName ? 'archivePanelTitle' : null"
+  [attr.aria-label]="'Document' | translate"
+  [cdkTrapFocus]="drawer"
+  (keydown.escape)="onEscape($event)"
+>
   <div class="archive-panel__top">
-    <span class="archive-panel__title">{{ file?.fileName }}</span>
-    <button mat-icon-button type="button" id="archivePanelCloseBtn" [attr.aria-label]="'Close' | translate" (click)="closed.emit()">
+    <span class="archive-panel__title" id="archivePanelTitle">{{ file?.fileName }}</span>
+    <button #closeButton mat-icon-button type="button" id="archivePanelCloseBtn" [attr.aria-label]="'Close' | translate" (click)="closed.emit()">
       <mat-icon>close</mat-icon>
     </button>
   </div>

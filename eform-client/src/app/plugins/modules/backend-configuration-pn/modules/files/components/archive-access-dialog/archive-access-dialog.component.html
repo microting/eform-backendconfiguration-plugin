@@ -23,7 +23,7 @@
       ></mtx-select>
     </mat-form-field>
     <p *ngIf="!tagIds.length" id="archiveAccessOpenHint" class="helper-text mb-0">
-      {{ 'No groups: everyone with archive access can read.' | translate }}
+      {{ openHint }}
     </p>
   </ng-container>
 </div>

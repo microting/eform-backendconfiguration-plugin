@@ -14,7 +14,7 @@ import {CommonDictionaryModel, SharedTagModel} from 'src/app/common/models';
 import {TranslateService} from '@ngx-translate/core';
 import {FilesStateService} from '../../store';
 import {format, parse} from 'date-fns';
-import {debounceTime, skip} from 'rxjs/operators';
+import {debounceTime, map, skip} from 'rxjs/operators';
 import {Store} from '@ngrx/store';
 import {
   selectFilesFilters,
@@ -105,8 +105,10 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
         });
       });
 
+    // The form is read when the debounce ends, not the value that started it: selecting a folder meanwhile clears
+    // the search (nameFilterSync below), and the stale text must not switch the table back to "all folders".
     this.filterChangesSub$ = this.filtersForm.valueChanges
-      .pipe(debounceTime(500), skip(1))
+      .pipe(debounceTime(500), skip(1), map(() => this.filtersForm.getRawValue()))
       .subscribe((value: { propertyIds: number[], dateRange: { dateFrom: Date, dateTo: Date }, nameFilter: string, tagIds: number[] }) => {
         const filters: FilesFiltrationModel = {
           ...this.currentFilters,
@@ -119,6 +121,9 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
 
         if (filters.dateRange.dateFrom && !filters.dateRange.dateTo) {
           return; // no update store and table if date range not fulfilled
+        }
+        if (this.sameFilters(filters, this.currentFilters)) {
+          return; // e.g. a search that a folder selection cleared before the debounce ended: nothing left to apply
         }
         this.store.dispatch(filesUpdateFilters(filters))
         this.updateTable.emit();
@@ -144,6 +149,14 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
           });
         }
       });
+  }
+
+  /** The fields this form sets; a null and an empty date both mean "no date". */
+  private sameFilters(a: FilesFiltrationModel, b: FilesFiltrationModel): boolean {
+    const fields = (f: FilesFiltrationModel): string => JSON.stringify([
+      f.propertyIds ?? [], f.tagIds ?? [], f.nameFilter ?? '', f.dateRange?.dateFrom || null, f.dateRange?.dateTo || null,
+    ]);
+    return fields(a) === fields(b);
   }
 
   clearDateRangeFilter() {

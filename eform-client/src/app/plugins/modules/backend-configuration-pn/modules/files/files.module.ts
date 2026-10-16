@@ -49,6 +49,7 @@ import {MatDatepickerModule} from '@angular/material/datepicker';
 import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
 import {MatSelectModule} from '@angular/material/select';
 import {MatRadioModule} from '@angular/material/radio';
+import {A11yModule} from '@angular/cdk/a11y';
 import {ArchiveMoveFlowService} from './services/archive-move-flow.service';
 
 @NgModule({
@@ -106,6 +107,7 @@ import {ArchiveMoveFlowService} from './services/archive-move-flow.service';
     MatMenuItem,
     MatSelectModule,
     MatRadioModule,
+    A11yModule,
   ],
   providers: [ArchiveMoveFlowService],
 })

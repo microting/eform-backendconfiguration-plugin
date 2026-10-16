@@ -5,7 +5,7 @@ import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {MatRadioModule} from '@angular/material/radio';
 import {NoopAnimationsModule} from '@angular/platform-browser/animations';
 import {MtxSelectModule} from '@ng-matero/extensions/select';
-import {TranslateModule} from '@ngx-translate/core';
+import {TranslateModule, TranslateService} from '@ngx-translate/core';
 import {ArchiveAccessDialogComponent, ArchiveAccessDialogData} from './archive-access-dialog.component';
 
 const ledelse = {id: 5, name: 'Ledelse', description: ''};
@@ -54,6 +54,46 @@ describe('ArchiveAccessDialogComponent', () => {
     });
     expect(c.ownAccess).toBe(true);
     expect(c.canSave).toBe(true);
+  });
+
+  describe('hint while no group is chosen (folder mode)', () => {
+    const folder = (partial: Partial<ArchiveAccessDialogData> = {}): ArchiveAccessDialogData => ({
+      mode: 'folder', title: 'Read access for {{folder}}', titleParams: {folder: 'Fakturaer'},
+      workerTags: [ledelse, bogholderi], currentGroups: [], ownAccess: true, ...partial,
+    });
+    const hint = (): string => find('#archiveAccessOpenHint')!.textContent!.trim();
+
+    function renderTranslated(data: ArchiveAccessDialogData): ArchiveAccessDialogComponent {
+      const c = render(data);
+      const translate = TestBed.inject(TranslateService);
+      translate.setTranslation('en', {
+        'Inherits from {{folder}}: {{who}}': 'Inherits from {{folder}}: {{who}}',
+        'No groups: everyone with archive access can read.': 'No groups: everyone with archive access can read.',
+      });
+      translate.use('en');
+      fixture.detectChanges();
+      return c;
+    }
+
+    it('a subfolder of a restricted folder inherits the parent\'s groups, so the hint names them', () => {
+      renderTranslated(folder({inheritedFrom: {folder: 'Drift', groups: [ledelse, bogholderi]}}));
+      expect(hint()).toBe('Inherits from Drift: Ledelse, Bogholderi');
+    });
+
+    it('a top folder, or a subfolder of an open folder, is read by everyone with archive access', () => {
+      renderTranslated(folder());
+      expect(hint()).toBe('No groups: everyone with archive access can read.');
+      fixture.destroy();
+      renderTranslated(folder({inheritedFrom: {folder: 'Drift', groups: []}}));
+      expect(hint()).toBe('No groups: everyone with archive access can read.');
+    });
+
+    it('the hint goes away once a group is chosen', () => {
+      const c = renderTranslated(folder({inheritedFrom: {folder: 'Drift', groups: [ledelse]}}));
+      c.tagIds = [6];
+      fixture.detectChanges();
+      expect(find('#archiveAccessOpenHint')).toBeNull();
+    });
   });
 
   describe('bulk (several documents, C5)', () => {
