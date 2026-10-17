@@ -434,4 +434,32 @@ describe('Kemi i18n meaning', () => {
   it.each(REVIEWED_FIX_ROUND_1)('%s keeps the reviewed %s', (locale, key, value) => {
     expect(text(locale, key)).toBe(value);
   });
+
+  // Task 15 re-review m-11: "Register" is the right to register chemicals, never signing yourself up (machine
+  // translation produced pt "Cadastrando-se", fi "Rekisteröityminen", lv "Reģistrēšanās"). Also in the W6 Excel.
+  const SELF_SIGNUP = /-se$|cadastrando|rekisteröitymi|reģistrēšanās/i;
+
+  it.each(NON_ENGLISH)('%s: the "register" right registers chemicals, it is not signing yourself up', (locale) => {
+    expect(text(locale, 'Chemicals: Flag register')).not.toMatch(SELF_SIGNUP);
+  });
+
+  it('the self-signup guard catches what machine translation produced', () => {
+    for (const bad of ['Cadastrando-se', 'Rekisteröityminen', 'Reģistrēšanās']) {
+      expect(bad).toMatch(SELF_SIGNUP);
+    }
+    for (const good of ['Registro', 'Registo', 'Rekisteröinti', 'Reģistrēšana']) {
+      expect(good).not.toMatch(SELF_SIGNUP);
+    }
+  });
+
+  const REVIEWED_REGISTER_RIGHT: Array<[string, string, string]> = [
+    ['ptBR', 'Chemicals: Flag register', 'Registro'],
+    ['ptPT', 'Chemicals: Flag register', 'Registo'],
+    ['fiFI', 'Chemicals: Flag register', 'Rekisteröinti'],
+    ['lvLV', 'Chemicals: Flag register', 'Reģistrēšana'],
+  ];
+
+  it.each(REVIEWED_REGISTER_RIGHT)('%s keeps the reviewed %s', (locale, key, value) => {
+    expect(text(locale, key)).toBe(value);
+  });
 });
