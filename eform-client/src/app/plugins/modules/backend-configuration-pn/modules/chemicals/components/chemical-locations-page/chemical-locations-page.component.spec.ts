@@ -216,7 +216,9 @@ describe('ChemicalLocationsPageComponent', () => {
       const settings = dialog.open.mock.lastCall[1].data.settings;
       expect(settings.deleteButtonId).toBe('chemicalLocationArchiveConfirm');
       expect(settings.headerText).toBe('Chemicals: Archive location?');
-      expect(settings.fields.map((f: {text: string}) => f.text)).toEqual(['Lade', 'Chemicals: Archive confirm hint']);
+      // The hint is a plain sentence (left, normal weight), not a bold value without a label (N-m1).
+      expect(settings.fields.map((f: {header: string; text: string}) => [f.header, f.text]))
+        .toEqual([['Location', 'Lade'], ['Chemicals: Archive confirm hint', '']]);
       expect(settings.deleteButtonText).toBe('Chemicals: Archive');
 
       confirmed.next();

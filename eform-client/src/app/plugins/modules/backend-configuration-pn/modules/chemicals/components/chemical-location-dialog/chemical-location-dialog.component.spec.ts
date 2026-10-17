@@ -196,6 +196,20 @@ describe('ChemicalLocationDialogComponent', () => {
     expect(dialogRef.close).toHaveBeenCalledWith(true);
   });
 
+  it('tells the page to reload when an edit was saved but its photo was refused and the user then cancels (N-m2)', () => {
+    const component = build(existing);
+    chemicals.uploadLocationPhoto.mockReturnValue(of({success: false, message: 'Fotoet kunne ikke gemmes'}));
+    component.name = 'Kemirum 2';
+    component.onFile(new File(['x'], 'm.jpg', {type: 'image/jpeg'}));
+    component.save();
+    expect(dialogRef.close).not.toHaveBeenCalled();
+
+    component.cancel();
+    confirm.discard();
+
+    expect(dialogRef.close).toHaveBeenCalledWith(true);
+  });
+
   it('is in edit mode for an existing location', () => {
     expect(build(existing).editing).toBe(true);
   });

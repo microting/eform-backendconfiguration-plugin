@@ -1,7 +1,7 @@
 import {CdkDrag, CdkDropList, DragDropModule} from '@angular/cdk/drag-drop';
 import {Overlay} from '@angular/cdk/overlay';
 import {NO_ERRORS_SCHEMA, Pipe, PipeTransform} from '@angular/core';
-import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {ComponentFixture, TestBed, fakeAsync, tick} from '@angular/core/testing';
 import {FormsModule} from '@angular/forms';
 import {MatCheckboxModule} from '@angular/material/checkbox';
 import {MatDialog} from '@angular/material/dialog';
@@ -29,7 +29,10 @@ describe('ChemicalLocationsPageComponent (template)', () => {
   const find = (selector: string): HTMLElement | null => fixture.nativeElement.querySelector(selector);
   const disabled = (selector: string) => (find(selector) as HTMLButtonElement).disabled;
 
+  let reorder: Subject<unknown>;
+
   function render(answer?: Observable<unknown>): void {
+    reorder = new Subject<unknown>();
     const inventory = inventoryOf({
       propertyId: 3,
       locations: [
@@ -47,6 +50,7 @@ describe('ChemicalLocationsPageComponent (template)', () => {
         {provide: BackendConfigurationPnChemicalsService, useValue: {
           getPropertyInventory: jest.fn().mockReturnValue(answer ?? of({success: true, model: inventory})),
           locationPhotoUrl: (id: number) => `/photo/${id}`,
+          reorderLocations: jest.fn().mockImplementation(() => reorder),
         }},
         {provide: MatDialog, useValue: {open: jest.fn()}},
         {provide: Overlay, useValue: {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}}},
@@ -137,9 +141,44 @@ describe('ChemicalLocationsPageComponent (template)', () => {
     component.reordering = true;
     fixture.detectChanges();
 
-    expect(disabled('#chemicalLocationDown-1')).toBe(true);
-    expect(disabled('#chemicalLocationUp-2')).toBe(true);
+    // aria-disabled, not disabled, while an order saves: a disabled button would drop the keyboard focus (N-I1).
+    expect(find('#chemicalLocationDown-1')?.getAttribute('aria-disabled')).toBe('true');
+    expect(find('#chemicalLocationUp-2')?.getAttribute('aria-disabled')).toBe('true');
+    expect(disabled('#chemicalLocationUp-2')).toBe(false);
   });
+
+  it.each([
+    ['saved', {success: true, model: []}],
+    ['refused', {success: false, message: 'Nej'}],
+  ])('keeps the keyboard focus on the moved row after an up press (%s) (N-I1)', fakeAsync((_name: string, answer: unknown) => {
+    render();
+    const up = find('#chemicalLocationUp-2') as HTMLButtonElement;
+    up.focus();
+
+    up.click();
+    fixture.detectChanges();
+    reorder.next(answer);
+    reorder.complete();
+    fixture.detectChanges();
+    tick();
+    fixture.detectChanges();
+
+    // Kemirum is first after the save (or back at its place after a refusal): focus is on one of its move buttons.
+    expect(['chemicalLocationUp-2', 'chemicalLocationDown-2']).toContain((document.activeElement as HTMLElement).id);
+  }));
+
+  it('keeps the row elements across a saved order (rows are tracked by location id)', fakeAsync(() => {
+    render();
+    const before = find('#chemicalLocationRow-2');
+
+    (find('#chemicalLocationUp-2') as HTMLButtonElement).click();
+    reorder.next({success: true, model: [location(2, 'Kemirum', {propertyId: 3, sortOrder: 1, photoFileName: 'p.jpg'})]});
+    reorder.complete();
+    fixture.detectChanges();
+    tick();
+
+    expect(find('#chemicalLocationRow-2')).toBe(before);
+  }));
 
   it('shows a loading state, not an empty list, while the locations load', () => {
     render(new Subject());
