@@ -1,9 +1,11 @@
 import {Injectable} from '@angular/core';
 import {HttpErrorResponse} from '@angular/common/http';
-import {EMPTY, MonoTypeOperatorFunction, Observable, catchError, from, switchMap, tap, throwError} from 'rxjs';
+import {EMPTY, MonoTypeOperatorFunction, Observable, catchError, from, switchMap, throwError} from 'rxjs';
 import {ToastrService} from 'ngx-toastr';
 import {TranslateService} from '@ngx-translate/core';
+import {Store} from '@ngrx/store';
 import {AuthStateService} from 'src/app/common/store';
+import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
 
 /** The 403 body code the archive API sends for a resigned or deactivated user (spec D7). */
 export const ARCHIVE_ACCOUNT_DISABLED = 'account_disabled';
@@ -46,7 +48,8 @@ export async function archiveErrorCode(body: unknown): Promise<string | null> {
  *
  * Parallel archive calls (folders and files load together) can all fail at once; only the first one toasts and
  * logs out (`logout()` is not idempotent), later ones just complete empty. The handler is a root singleton and
- * logout does not reload the page, so the next archive call that succeeds (the user is signed in again) re-arms it.
+ * logout does not reload the page, so a NEW authenticated session (isAuth turning true) re-arms it. A late success from a
+ * request that was already in flight must not re-arm it, or a later disabled response would log out and toast twice.
  *
  * 404s: the host interceptor retries a 404 and then completes EMPTY (eform-angular-frontend#8147). A service method
  * tagged "May complete empty (404)" therefore returns an observable that COMPLETES WITHOUT A VALUE for a missing or
@@ -55,18 +58,25 @@ export async function archiveErrorCode(body: unknown): Promise<string | null> {
  */
 @Injectable({providedIn: 'root'})
 export class ArchiveAccountDisabledHandler {
-  /** Set by the first account_disabled hit (later hits do nothing); cleared by the next successful call. */
+  /** Set by the first account_disabled hit (later hits do nothing); cleared when a new authenticated session starts. */
   private signingOut = false;
 
   constructor(
     private authStateService: AuthStateService,
     private toastrService: ToastrService,
     private translateService: TranslateService,
-  ) {}
+    store: Store,
+  ) {
+    // Root singleton: this subscription intentionally lives for the whole app.
+    store.select(selectAuthIsAuth).subscribe(isAuth => {
+      if (isAuth) {
+        this.signingOut = false;
+      }
+    });
+  }
 
   handle<T>(): MonoTypeOperatorFunction<T> {
     return (source: Observable<T>) => source.pipe(
-      tap(() => { this.signingOut = false; }),
       catchError((error: unknown) => {
         if (!(error instanceof HttpErrorResponse) || error.status !== 403) {
           return throwError(() => error);

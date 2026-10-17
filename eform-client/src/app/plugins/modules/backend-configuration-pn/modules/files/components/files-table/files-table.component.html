@@ -6,7 +6,7 @@
           id="archiveSelectAll"
           [checked]="allSelected"
           [indeterminate]="someSelected"
-          [attr.aria-label]="'Select all' | translate"
+          [aria-label]="'Select all' | translate"
           (change)="toggleAll($event.checked)"
         ></mat-checkbox>
       </th>
@@ -39,7 +39,7 @@
       (click)="openFile.emit(row)"
     >
       <td class="archive-table__select" (click)="$event.stopPropagation()">
-        <mat-checkbox [id]="'archiveSelect-' + row.id" [checked]="isSelected(row.id)" (change)="toggle(row.id)"></mat-checkbox>
+        <mat-checkbox [id]="'archiveSelect-' + row.id" [aria-labelledby]="'fileName-' + i" [checked]="isSelected(row.id)" (change)="toggle(row.id)"></mat-checkbox>
       </td>
       <td>
         <div class="archive-doc-name">

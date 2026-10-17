@@ -1,18 +1,21 @@
 import {HttpErrorResponse} from '@angular/common/http';
-import {concat, merge, of, throwError} from 'rxjs';
+import {BehaviorSubject, concat, defer, merge, of, throwError} from 'rxjs';
 import {ArchiveAccountDisabledHandler, archiveErrorCode} from './archive-account-disabled.handler';
 
 /** D7: a resigned or deactivated user gets 403 {"error":"account_disabled"} from every archive call. */
 describe('ArchiveAccountDisabledHandler', () => {
   let auth: {logout: jest.Mock};
   let toastr: {error: jest.Mock};
+  let isAuth$: BehaviorSubject<boolean>;
   let handler: ArchiveAccountDisabledHandler;
 
   beforeEach(() => {
     auth = {logout: jest.fn()};
     toastr = {error: jest.fn()};
     const translate = {instant: (key: string) => key};
-    handler = new ArchiveAccountDisabledHandler(auth as any, toastr as any, translate as any);
+    isAuth$ = new BehaviorSubject<boolean>(true);
+    const store = {select: () => isAuth$};
+    handler = new ArchiveAccountDisabledHandler(auth as any, toastr as any, translate as any, store as any);
   });
 
   const failWith = (status: number, body: unknown) => throwError(() => new HttpErrorResponse({status, error: body}));
@@ -69,12 +72,29 @@ describe('ArchiveAccountDisabledHandler', () => {
     });
   });
 
-  it('logs out again after a successful call (signed in again in the same tab)', done => {
+  it('logs out again after a new login (isAuth false then true)', done => {
     const disabled = () => failWith(403, {error: 'account_disabled'}).pipe(handler.handle());
-    concat(disabled(), of('ok').pipe(handler.handle()), disabled()).subscribe({
+    concat(
+      disabled(),
+      defer(() => { isAuth$.next(false); isAuth$.next(true); return of('ok'); }),
+      disabled(),
+    ).subscribe({
       error: err => done(err),
       complete: () => {
         expect(auth.logout).toHaveBeenCalledTimes(2);
+        expect(toastr.error).toHaveBeenCalledTimes(2);
+        done();
+      },
+    });
+  });
+
+  it('does not re-arm on a late successful response; a later disabled response logs out only once', done => {
+    const disabled = () => failWith(403, {error: 'account_disabled'}).pipe(handler.handle());
+    concat(disabled(), of('late ok').pipe(handler.handle()), disabled()).subscribe({
+      error: err => done(err),
+      complete: () => {
+        expect(auth.logout).toHaveBeenCalledTimes(1);
+        expect(toastr.error).toHaveBeenCalledTimes(1);
         done();
       },
     });
