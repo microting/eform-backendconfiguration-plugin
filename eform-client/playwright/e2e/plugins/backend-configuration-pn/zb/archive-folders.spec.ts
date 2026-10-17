@@ -21,7 +21,8 @@ import { API_TIMEOUT, UI_TIMEOUT } from '../wait-helpers';
  * Z6 a kept date suggestion lands under "Dato skal tjekkes" and is approved from the panel (D8)
  * Z7 only empty folders can be deleted (D12)
  * Z8 below 1100 px the document panel is a drawer
- * Z9 an account_disabled answer ends the session (D7) — last, it signs the page out
+ * Z9 beside the panel the table scrolls inside its own frame; the page does not scroll sideways (#1450)
+ * Z10 an account_disabled answer ends the session (D7) — last, it signs the page out
  */
 const rand = generateRandmString(5);
 const property: PropertyCreateUpdate = {
@@ -236,7 +237,37 @@ test.describe.serial('Arkiv med mapper (W1)', () => {
     }
   });
 
-  test('Z9 an account_disabled answer ends the session', async () => {
+  test('Z9 beside the panel the table scrolls inside its own frame', async () => {
+    // One page load and one folder list.
+    test.setTimeout(90000);
+    // At 1200 px the panel sits beside the table (side mode from 1100 px), which leaves the table far less
+    // room than its columns need.
+    await page.setViewportSize({ width: 1200, height: 900 });
+    try {
+      await archive.open();
+      await archive.selectFolder(topFolder);
+      await archive.fileRow(docInArkiv).locator('.fileName').click({ timeout: UI_TIMEOUT });
+      await expect(archive.panel()).toBeVisible({ timeout: UI_TIMEOUT });
+      await expect(archive.panel()).not.toHaveClass(/archive-panel--drawer/, { timeout: UI_TIMEOUT });
+      const widths = () => page.evaluate(() => {
+        const card = document.querySelector('.content-card')!;
+        const table = document.querySelector('app-files-table')!;
+        return {
+          cardOverflow: card.scrollWidth - card.clientWidth,
+          cardScrollLeft: card.scrollLeft,
+          tableOverflow: table.scrollWidth - table.clientWidth,
+        };
+      });
+      // The table is wider than its column, and that overflow stays inside the table's own frame.
+      await expect.poll(async () => (await widths()).tableOverflow, { timeout: UI_TIMEOUT }).toBeGreaterThan(0);
+      expect(await widths()).toMatchObject({ cardOverflow: 0, cardScrollLeft: 0 });
+    } finally {
+      // playwright.config.ts use.viewport
+      await page.setViewportSize({ width: 1920, height: 1080 });
+    }
+  });
+
+  test('Z10 an account_disabled answer ends the session', async () => {
     // One page load whose folder call is answered 403 below (the host retries it once after a token
     // refresh), then the redirect to the login page.
     test.setTimeout(90000);
