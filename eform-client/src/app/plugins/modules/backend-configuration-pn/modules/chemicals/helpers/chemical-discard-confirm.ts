@@ -47,3 +47,9 @@ export function confirmDiscard(dialog: MatDialog, overlay: Overlay, c: ChemicalD
     );
   });
 }
+
+/**
+ * The same platform confirm for any irreversible Kemi action (W3 archive): `discardText` labels the
+ * confirming button. Emits once: true after the user confirmed.
+ */
+export const confirmChemicalAction = confirmDiscard;

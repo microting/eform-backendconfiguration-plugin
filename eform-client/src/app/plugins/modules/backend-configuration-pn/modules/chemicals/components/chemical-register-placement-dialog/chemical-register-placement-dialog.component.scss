@@ -1,0 +1,12 @@
+@use '../../chemicals-shared';
+
+// The host's global `.flex-column` also sets `flex: 1 0 0`, so a scrolling element with that class sizes from a zero
+// basis and collapses inside a flex column (Task 16 e2e: first the dialog content, then the result list, could not
+// be clicked). A block host keeps the content out of the dialog surface's flex column, as in every Kemi dialog.
+:host { display: block; max-width: 520px; }
+
+.chemicals-register-results {
+  flex: 0 0 auto;
+  max-height: 240px;
+  overflow-y: auto;
+}

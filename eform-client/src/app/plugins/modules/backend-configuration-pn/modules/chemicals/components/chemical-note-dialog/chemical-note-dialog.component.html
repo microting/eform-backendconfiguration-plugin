@@ -1,0 +1,11 @@
+<h3 mat-dialog-title>{{ 'Chemicals: Edit placement note' | translate }}</h3>
+<div mat-dialog-content>
+  <mat-form-field class="w-100">
+    <mat-label>{{ 'Chemicals: Placement note' | translate }}</mat-label>
+    <input matInput id="chemicalNoteInput" [(ngModel)]="note" maxlength="1000">
+  </mat-form-field>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button class="btn-cancel" id="chemicalNoteCancelBtn" [disabled]="saving" (click)="cancel()">{{ 'Cancel' | translate }}</button>
+  <button class="btn-primary" id="chemicalNoteSaveBtn" [disabled]="!canSave" (click)="save()">{{ 'Save' | translate }}</button>
+</div>

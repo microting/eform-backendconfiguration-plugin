@@ -1,0 +1,143 @@
+<div id="chemicalInventoryPage">
+  <div class="d-flex flex-row flex-wrap align-items-end gap-12 mb-2">
+    <mat-form-field>
+      <mat-label>{{ 'Search' | translate }}</mat-label>
+      <input matInput id="chemicalsInventorySearch" [ngModel]="filters.search" (ngModelChange)="updateFilters({search: $event})"
+             [placeholder]="'Chemicals: Search inventory hint' | translate">
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{ 'Location' | translate }}</mat-label>
+      <mtx-select id="chemicalsLocationFilter" [items]="inventory?.locations ?? []" bindLabel="name" bindValue="id"
+                  [ngModel]="filters.locationId" (ngModelChange)="updateFilters({locationId: $event ?? null})"
+                  [placeholder]="'Chemicals: All' | translate"></mtx-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{ 'Status' | translate }}</mat-label>
+      <mtx-select id="chemicalsStatusFilter" [clearable]="false" bindLabel="label" bindValue="value"
+                  [items]="[
+                    {value: 'all', label: 'Chemicals: All' | translate},
+                    {value: 'approved', label: 'Chemicals: Status approved' | translate},
+                    {value: 'deregistered', label: 'Chemicals: Status deregistered' | translate},
+                    {value: 'expired', label: 'Chemicals: Status expired' | translate}
+                  ]"
+                  [ngModel]="filters.status" (ngModelChange)="updateFilters({status: $event})"></mtx-select>
+    </mat-form-field>
+    <button class="btn-quiet" id="chemicalsRequiresActionChip" [class.chemicals-chip--active]="filters.requiresActionOnly"
+            [attr.aria-pressed]="filters.requiresActionOnly" [disabled]="!inventory" (click)="toggleRequiresAction()">
+      <mat-icon>warning</mat-icon>
+      <span>{{ 'Chemicals: Requires action' | translate }}<ng-container *ngIf="inventory"> {{ summary.total }}</ng-container></span>
+    </button>
+    <button class="btn-quiet ml-auto" id="chemicalsExportBtn" [matMenuTriggerFor]="exportMenu"
+            [disabled]="exporting || !inventory" [attr.aria-busy]="exporting">
+      <mat-icon>{{ exporting ? 'hourglass_empty' : 'download' }}</mat-icon>
+      <span>{{ 'Chemicals: Export' | translate }}</span>
+    </button>
+    <mat-menu #exportMenu="matMenu">
+      <button mat-menu-item id="chemicalsExportAuthorityList" (click)="exportAuthorityList()">
+        <mat-icon>picture_as_pdf</mat-icon>
+        <span>{{ 'Chemicals: Export authority list' | translate }}</span>
+      </button>
+      <button mat-menu-item id="chemicalsExportInventory" (click)="exportInventory()">
+        <mat-icon>table_view</mat-icon>
+        <span>{{ 'Chemicals: Export current filter' | translate }}</span>
+      </button>
+      <button mat-menu-item id="chemicalsExportRemoved" (click)="exportRemovedPlacements()">
+        <mat-icon>history</mat-icon>
+        <span>{{ 'Chemicals: Export removed placements' | translate }}</span>
+      </button>
+    </mat-menu>
+    <button class="btn-primary btn-primary--icon-left" id="chemicalsRegisterPlacementBtn" [disabled]="!activeLocations.length" (click)="openRegister()">
+      <mat-icon>add</mat-icon>
+      <span>{{ 'Chemicals: Register placement' | translate }}</span>
+    </button>
+  </div>
+
+  <div *ngIf="summary.total > 0" id="chemicalsActionBanner" role="status" class="chemicals-banner"
+       [class.chemicals-banner--overdue]="summary.overdue > 0">
+    <mat-icon>schedule</mat-icon>
+    <span>{{ 'Chemicals: Action banner' | translate: {count: summary.total} }}</span>
+    <button class="btn-quiet ml-auto" id="chemicalsShowOnlyActionBtn" *ngIf="!filters.requiresActionOnly" (click)="toggleRequiresAction()">
+      {{ 'Chemicals: Show only these' | translate }}
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="chemicals-empty" id="chemicalInventoryLoading">{{ 'Chemicals: Loading inventory' | translate }}</div>
+  <div *ngIf="loadFailed" class="chemicals-empty" id="chemicalInventoryLoadFailed" role="alert">
+    {{ 'Chemicals: Could not load inventory' | translate }}
+  </div>
+
+  <mtx-grid
+    *ngIf="inventory"
+    [data]="visibleRows"
+    [columns]="columns"
+    [cellTemplate]="{pictograms: pictogramsTpl, productName: productTpl, status: statusTpl, placementNote: noteTpl, stock: stockTpl, deadline: deadlineTpl, registered: registeredTpl, actions: actionsTpl}"
+    [rowClassFormatter]="rowClassFormatter"
+    [showPaginator]="true"
+    [pageOnFront]="true"
+    [pageSize]="25"
+    [showToolbar]="false"
+    [showColumnMenuButton]="false"
+    noResultText="{{ 'Chemicals: No placements' | translate }}"
+  ></mtx-grid>
+
+  <ng-template #pictogramsTpl let-row>
+    <span class="ghs-chip" *ngFor="let code of row.pictograms">{{ code }}</span>
+  </ng-template>
+  <ng-template #productTpl let-row let-i="index">
+    <button type="button" class="chemicals-link" id="chemicalRowProduct-{{i}}" (click)="openDetails(row)">
+      <strong>{{ row.productName }}</strong>
+    </button>
+    <div class="chemicals-hint">{{ 'Chemicals: Reg no short' | translate }} {{ row.registrationNo }}</div>
+  </ng-template>
+  <ng-template #statusTpl let-row>
+    <span class="status-chip" [class.status-chip--bad]="row.statusBad">
+      {{ row.statusLabelKey ? (row.statusLabelKey | translate) : row.statusText }}
+    </span>
+  </ng-template>
+  <ng-template #noteTpl let-row>{{ row.placement.placementNote }}</ng-template>
+  <ng-template #stockTpl let-row>
+    <span *ngIf="row.stockUnitLabel">{{ row.placement.balance | number: '1.0-3' }} {{ row.stockUnitLabel }}</span>
+  </ng-template>
+  <ng-template #deadlineTpl let-row>
+    <ng-container *ngIf="row.deadline; else noDeadline">
+      <span [class.deadline--passed]="row.deadline.threshold === 'passed'" [class.deadline--soon]="row.deadline.threshold && row.deadline.threshold !== 'passed'">
+        <span *ngIf="row.deadline.threshold === 'passed'">{{ 'Chemicals: Passed' | translate }}</span>
+        {{ row.deadline.date | date: 'dd-MM-yyyy' }}
+      </span>
+      <div class="chemicals-hint">{{ row.deadlineLabelKey | translate }}</div>
+    </ng-container>
+    <ng-template #noDeadline><span class="chemicals-hint">{{ 'Chemicals: No deadline' | translate }}</span></ng-template>
+  </ng-template>
+  <ng-template #registeredTpl let-row>
+    {{ row.placement.registeredByName }}
+    <div class="chemicals-hint">{{ row.placement.registeredAt | date: 'dd-MM-yyyy' }}</div>
+  </ng-template>
+  <ng-template #actionsTpl let-row let-i="index">
+    <div id="action-items-{{i}}">
+      <button id="actionMenu" mat-icon-button [matMenuTriggerFor]="rowMenu" [matTooltip]="'Actions' | translate"
+              [attr.aria-label]="'Actions' | translate">
+        <mat-icon>more_vert</mat-icon>
+      </button>
+      <mat-menu #rowMenu="matMenu">
+        <button mat-menu-item id="chemicalRowDetails-{{i}}" (click)="openDetails(row)">
+          <mat-icon>info</mat-icon><span>{{ 'Chemicals: Show details' | translate }}</span>
+        </button>
+        <button mat-menu-item id="chemicalRowMove-{{i}}" (click)="openMove(row)">
+          <mat-icon>move_location</mat-icon><span>{{ 'Chemicals: Move to another location' | translate }}</span>
+        </button>
+        <button mat-menu-item id="chemicalRowNote-{{i}}" (click)="openNote(row)">
+          <mat-icon>edit_note</mat-icon><span>{{ 'Chemicals: Edit placement note' | translate }}</span>
+        </button>
+        <button *ngIf="stockEnabled" mat-menu-item id="chemicalRowStock-{{i}}" (click)="openStock(row)">
+          <mat-icon>inventory_2</mat-icon><span>{{ 'Chemicals: Register stock movement' | translate }}</span>
+        </button>
+        <button mat-menu-item id="chemicalRowSds-{{i}}" [disabled]="!row.entry?.products?.length" (click)="openSds(row)">
+          <mat-icon>description</mat-icon><span>{{ 'Chemicals: Open safety data sheet' | translate }}</span>
+        </button>
+        <button mat-menu-item id="chemicalRowRemove-{{i}}" (click)="openRemove(row)">
+          <mat-icon color="warn">remove_circle</mat-icon><span>{{ 'Chemicals: Remove placement' | translate }}…</span>
+        </button>
+      </mat-menu>
+    </div>
+  </ng-template>
+</div>

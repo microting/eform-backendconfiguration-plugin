@@ -275,7 +275,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddMemoryCache();
         services.AddControllers();
         SeedEForms(services).GetAwaiter().GetResult();
-        // QuestPDF 2202.8+ is fully open-source; no license configuration needed.
+        // QuestPDF licence: LicenseType.Community, set once in AddChemicalReporting.
     }
 
     public void AddPluginConfig(IConfigurationBuilder builder, string connectionString)
@@ -2192,17 +2192,26 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                 // policy and first-user gate are the boundary. Existing tenants get the group, and every child
                 // added later, from PluginMenuSyncService at startup (SeedDatabase).
                 Name = "Dropdown",
-                E2EId = "backend-configuration-pn-chemicals",
+                E2EId = ChemicalsMenuE2EId,
                 Link = "",
                 Type = MenuItemTypeEnum.Dropdown,
                 Position = 15,
                 Translations = MenuTranslations("Chemicals", "Chemikalien", "Kemi", "Хімікати"),
                 ChildItems =
                 [
+                    // W1 has its own path: the host marks a menu link active on every URL it prefixes, so a
+                    // link to the bare Kemi root would light up on every Kemi screen. Angular redirects the
+                    // root (the Plan D digest link) to it.
+                    ChemicalsMenuChild("inventory", 0,
+                        MenuTranslations("Inventory", "Bestand", "Beholdning", "Запаси")),
+                    ChemicalsMenuChild("locations", 1,
+                        MenuTranslations("Locations", "Standorte", "Lokationer", "Локації")),
                     ChemicalsMenuChild("permissions", 2,
                         MenuTranslations("Permissions", "Berechtigungen", "Rettigheder", "Дозволи")),
                     ChemicalsMenuChild("settings", 3,
-                        MenuTranslations("Settings", "Einstellungen", "Indstillinger", "Налаштування"))
+                        MenuTranslations("Settings", "Einstellungen", "Indstillinger", "Налаштування")),
+                    ChemicalsMenuChild("history", 4,
+                        MenuTranslations("History", "Verlauf", "Historik", "Історія"))
                 ]
             }
         };
@@ -2210,23 +2219,29 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         return pluginMenu;
     }
 
+    /// <summary>E2EId of the Kemi menu group; each screen's child adds <c>-{path}</c>.</summary>
+    private const string ChemicalsMenuE2EId = "backend-configuration-pn-chemicals";
+
+    /// <summary>The Kemi module root; each screen's link adds <c>/{path}</c>.</summary>
+    private const string ChemicalsLink = "/plugins/backend-configuration-pn/chemicals";
+
     /// <summary>One Kemi screen: <c>/plugins/backend-configuration-pn/chemicals/{path}</c>.</summary>
     private static PluginMenuItemModel ChemicalsMenuChild(string path, int position,
         List<PluginMenuTranslationModel> translations)
     {
-        var e2eId = $"backend-configuration-pn-chemicals-{path}";
-        var link = $"/plugins/backend-configuration-pn/chemicals/{path}";
-        var name = translations.Single(t => t.LocaleName == LocaleNames.English).Name;
+        var e2eId = $"{ChemicalsMenuE2EId}-{path}";
+        var link = $"{ChemicalsLink}/{path}";
+        var englishName = translations.Single(t => t.LocaleName == LocaleNames.English).Name;
         return new PluginMenuItemModel
         {
-            Name = name,
+            Name = englishName,
             E2EId = e2eId,
             Link = link,
             Type = MenuItemTypeEnum.Link,
             Position = position,
             MenuTemplate = new PluginMenuTemplateModel
             {
-                Name = name,
+                Name = englishName,
                 E2EId = e2eId,
                 DefaultLink = link,
                 Permissions = [],

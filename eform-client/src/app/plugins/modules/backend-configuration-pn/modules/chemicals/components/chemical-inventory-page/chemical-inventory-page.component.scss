@@ -1,0 +1,7 @@
+@use '../../chemicals-shared';
+
+:host ::ng-deep .chemical-row--overdue td:first-child { box-shadow: inset 4px 0 0 var(--md-alert); }
+:host ::ng-deep .chemical-row--warning td:first-child { box-shadow: inset 4px 0 0 var(--status-afventer-bg); }
+.chemicals-banner { margin-bottom: var(--spacing-lg); }
+.chemicals-link { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+::ng-deep .chemicals-drawer-panel .mat-mdc-dialog-surface { border-radius: var(--md-radius) 0 0 var(--md-radius); }

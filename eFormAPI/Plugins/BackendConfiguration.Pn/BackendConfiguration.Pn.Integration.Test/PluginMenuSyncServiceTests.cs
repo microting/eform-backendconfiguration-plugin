@@ -24,8 +24,11 @@ public class PluginMenuSyncServiceTests : TestBaseSetup
 {
     private const string PluginId = "eform-backend-configuration-plugin";
     private const string GroupE2EId = "backend-configuration-pn-chemicals";
+    private const string InventoryE2EId = "backend-configuration-pn-chemicals-inventory";
+    private const string LocationsE2EId = "backend-configuration-pn-chemicals-locations";
     private const string PermissionsE2EId = "backend-configuration-pn-chemicals-permissions";
     private const string SettingsE2EId = "backend-configuration-pn-chemicals-settings";
+    private const string HistoryE2EId = "backend-configuration-pn-chemicals-history";
     private const string LaterChildE2EId = "backend-configuration-pn-chemicals-later-child";
 
     // eFormAPI.Web.Hosting.Enums.PluginStatus lives in the host, which the tests cannot reference.
@@ -72,6 +75,158 @@ public class PluginMenuSyncServiceTests : TestBaseSetup
         Assert.That(await BaseDbContext.MenuItems.CountAsync(x => x.E2EId == GroupE2EId), Is.EqualTo(1));
         Assert.That(await BaseDbContext.MenuItems.CountAsync(x => x.E2EId == PermissionsE2EId), Is.EqualTo(1));
         Assert.That(await BaseDbContext.MenuItems.CountAsync(x => x.E2EId == SettingsE2EId), Is.EqualTo(1));
+        Assert.That(await BaseDbContext.MenuItems.CountAsync(x => x.E2EId == InventoryE2EId), Is.EqualTo(1));
+        Assert.That(await BaseDbContext.MenuItems.CountAsync(x => x.E2EId == LocationsE2EId), Is.EqualTo(1));
+        Assert.That(await BaseDbContext.MenuItems.CountAsync(x => x.E2EId == HistoryE2EId), Is.EqualTo(1));
+    }
+
+    /// <summary>E3: a tenant with Rettigheder and Indstillinger (E2) gets Beholdning and Lokationer in front of them, and Historik after them, on its next startup.</summary>
+    [Test]
+    public async Task ExistingTenantWithKemiButWithoutInventory_GetsBeholdningFirstUnderTheGroup()
+    {
+        await InstallAsTheHostDoesAsync(AsE2Shipped(Menu()));
+        var group = await BaseDbContext.MenuItems.AsNoTracking().SingleAsync(x => x.E2EId == GroupE2EId);
+        Assert.That(await BaseDbContext.MenuItems.AnyAsync(x => x.E2EId == InventoryE2EId), Is.False, "arrange: an E2 tenant");
+
+        Assert.That(Run(Menu()), Is.EqualTo(3), "only the three new children");
+
+        var child = await BaseDbContext.MenuItems.AsNoTracking()
+            .Include(x => x.Translations).SingleAsync(x => x.E2EId == InventoryE2EId);
+        Assert.That(child.ParentId, Is.EqualTo(group.Id));
+        Assert.That(child.Type, Is.EqualTo(MenuItemTypeEnum.Link));
+        Assert.That(child.Link, Is.EqualTo("/plugins/backend-configuration-pn/chemicals/inventory"));
+        Assert.That(child.Position, Is.EqualTo(0));
+        Assert.That(child.IsInternalLink, Is.True);
+        AssertNames(child.Translations.Select(t => (t.LocaleName, t.Name, t.Language)),
+            "Beholdning", "Inventory", "Bestand", "Запаси");
+        var template = await BaseDbContext.MenuTemplates.AsNoTracking().Include(x => x.MenuTemplatePermissions)
+            .SingleAsync(x => x.E2EId == InventoryE2EId);
+        Assert.That(child.MenuTemplateId, Is.EqualTo(template.Id));
+        Assert.That(template.DefaultLink, Is.EqualTo(child.Link));
+        Assert.That(template.MenuTemplatePermissions, Is.Empty);
+        var children = await BaseDbContext.MenuItems.AsNoTracking()
+            .Where(x => x.ParentId == group.Id).OrderBy(x => x.Position).Select(x => x.E2EId).ToListAsync();
+        Assert.That(children, Is.EqualTo(new[] { InventoryE2EId, LocationsE2EId, PermissionsE2EId, SettingsE2EId, HistoryE2EId }));
+        Assert.That(Run(Menu()), Is.EqualTo(0), "and a second startup adds nothing");
+    }
+
+    /// <summary>Task 14: a tenant that has Beholdning but not yet Lokationer gets Lokationer second, under the group.</summary>
+    [Test]
+    public async Task ExistingTenantWithInventoryButWithoutLocations_GetsLokationerSecondUnderTheGroup()
+    {
+        await InstallAsTheHostDoesAsync(WithoutLocations(Menu()));
+        var group = await BaseDbContext.MenuItems.AsNoTracking().SingleAsync(x => x.E2EId == GroupE2EId);
+        Assert.That(await BaseDbContext.MenuItems.AnyAsync(x => x.E2EId == LocationsE2EId), Is.False, "arrange: no Lokationer yet");
+
+        Assert.That(Run(Menu()), Is.EqualTo(2), "only Lokationer and Historik, which that tenant has not seen either");
+
+        var child = await BaseDbContext.MenuItems.AsNoTracking()
+            .Include(x => x.Translations).SingleAsync(x => x.E2EId == LocationsE2EId);
+        Assert.That(child.ParentId, Is.EqualTo(group.Id));
+        Assert.That(child.Type, Is.EqualTo(MenuItemTypeEnum.Link));
+        Assert.That(child.Link, Is.EqualTo("/plugins/backend-configuration-pn/chemicals/locations"));
+        Assert.That(child.Position, Is.EqualTo(1));
+        Assert.That(child.IsInternalLink, Is.True);
+        AssertNames(child.Translations.Select(t => (t.LocaleName, t.Name, t.Language)),
+            "Lokationer", "Locations", "Standorte", "Локації");
+        var template = await BaseDbContext.MenuTemplates.AsNoTracking().Include(x => x.MenuTemplatePermissions)
+            .SingleAsync(x => x.E2EId == LocationsE2EId);
+        Assert.That(child.MenuTemplateId, Is.EqualTo(template.Id));
+        Assert.That(template.EformPluginId, Is.EqualTo(_pluginRowId));
+        Assert.That(template.DefaultLink, Is.EqualTo(child.Link));
+        Assert.That(template.MenuTemplatePermissions, Is.Empty);
+        var children = await BaseDbContext.MenuItems.AsNoTracking()
+            .Where(x => x.ParentId == group.Id).OrderBy(x => x.Position).Select(x => x.E2EId).ToListAsync();
+        Assert.That(children, Is.EqualTo(new[] { InventoryE2EId, LocationsE2EId, PermissionsE2EId, SettingsE2EId, HistoryE2EId }));
+        Assert.That(Run(Menu()), Is.EqualTo(0), "and a second startup adds nothing");
+    }
+
+    /// <summary>Task 15: a tenant that has the four other Kemi screens but not Historik gets Historik last, under the group.</summary>
+    [Test]
+    public async Task ExistingTenantWithoutHistory_GetsHistorikLastUnderTheGroup()
+    {
+        await InstallAsTheHostDoesAsync(WithoutHistory(Menu()));
+        var group = await BaseDbContext.MenuItems.AsNoTracking().SingleAsync(x => x.E2EId == GroupE2EId);
+        Assert.That(await BaseDbContext.MenuItems.AnyAsync(x => x.E2EId == HistoryE2EId), Is.False, "arrange: no Historik yet");
+
+        Assert.That(Run(Menu()), Is.EqualTo(1), "only the new child");
+
+        var child = await BaseDbContext.MenuItems.AsNoTracking()
+            .Include(x => x.Translations).SingleAsync(x => x.E2EId == HistoryE2EId);
+        Assert.That(child.ParentId, Is.EqualTo(group.Id));
+        Assert.That(child.Type, Is.EqualTo(MenuItemTypeEnum.Link));
+        Assert.That(child.Link, Is.EqualTo("/plugins/backend-configuration-pn/chemicals/history"));
+        Assert.That(child.Position, Is.EqualTo(4));
+        Assert.That(child.IsInternalLink, Is.True);
+        AssertNames(child.Translations.Select(t => (t.LocaleName, t.Name, t.Language)),
+            "Historik", "History", "Verlauf", "Історія");
+        var template = await BaseDbContext.MenuTemplates.AsNoTracking().Include(x => x.MenuTemplatePermissions)
+            .SingleAsync(x => x.E2EId == HistoryE2EId);
+        Assert.That(child.MenuTemplateId, Is.EqualTo(template.Id));
+        Assert.That(template.EformPluginId, Is.EqualTo(_pluginRowId));
+        Assert.That(template.DefaultLink, Is.EqualTo(child.Link));
+        Assert.That(template.MenuTemplatePermissions, Is.Empty);
+        var children = await BaseDbContext.MenuItems.AsNoTracking()
+            .Where(x => x.ParentId == group.Id).OrderBy(x => x.Position).ThenBy(x => x.Id)
+            .Select(x => new { x.E2EId, x.Position }).ToListAsync();
+        Assert.That(children.Select(x => x.E2EId),
+            Is.EqualTo(new[] { InventoryE2EId, LocationsE2EId, PermissionsE2EId, SettingsE2EId, HistoryE2EId }));
+        Assert.That(children.Select(x => x.Position), Is.Unique);
+        Assert.That(Run(Menu()), Is.EqualTo(0), "and a second startup adds nothing");
+    }
+
+    /// <summary>
+    /// The admin deleted Lokationer and saved the menu, so the editor renumbered the rest 0, 1, 2. Historik (4)
+    /// still lands last, and the sync neither brings Lokationer back nor moves the admin's rows.
+    /// </summary>
+    [Test]
+    public async Task ANewLastChild_StaysLast_WhenTheAdminRemovedAChildAndRenumberedTheGroup()
+    {
+        await InstallAsTheHostDoesAsync(WithoutHistory(Menu()));
+        var locations = await BaseDbContext.MenuItems.SingleAsync(x => x.E2EId == LocationsE2EId);
+        await BaseDbContext.MenuItemTranslations.Where(x => x.MenuItemId == locations.Id).ExecuteDeleteAsync();
+        await BaseDbContext.MenuItems.Where(x => x.Id == locations.Id).ExecuteDeleteAsync();
+        BaseDbContext.ChangeTracker.Clear();
+        await BaseDbContext.MenuItems.Where(x => x.E2EId == InventoryE2EId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Position, 0));
+        await BaseDbContext.MenuItems.Where(x => x.E2EId == PermissionsE2EId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Position, 1));
+        await BaseDbContext.MenuItems.Where(x => x.E2EId == SettingsE2EId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Position, 2));
+
+        Assert.That(Run(Menu()), Is.EqualTo(1), "Historik only: Lokationer's template is still there, so it stays deleted");
+
+        var group = await BaseDbContext.MenuItems.AsNoTracking().SingleAsync(x => x.E2EId == GroupE2EId);
+        var children = await BaseDbContext.MenuItems.AsNoTracking()
+            .Where(x => x.ParentId == group.Id).OrderBy(x => x.Position).ThenBy(x => x.Id)
+            .Select(x => new { x.E2EId, x.Position }).ToListAsync();
+        Assert.That(children.Select(x => x.E2EId), Is.EqualTo(new[] { InventoryE2EId, PermissionsE2EId, SettingsE2EId, HistoryE2EId }));
+        Assert.That(children.Select(x => x.Position), Is.EqualTo(new[] { 0, 1, 2, 4 }), "the admin's rows keep their places");
+    }
+
+    /// <summary>
+    /// m-13 for a child in the middle: the admin saved the menu, so Beholdning 0, Rettigheder 1, Indstillinger 2.
+    /// Lokationer (1) must land between Beholdning and Rettigheder, not tie with Rettigheder.
+    /// </summary>
+    [Test]
+    public async Task ANewMiddleChild_TakesItsPlace_WhenTheAdminRenumberedTheGroup()
+    {
+        await InstallAsTheHostDoesAsync(WithoutLocations(Menu()));
+        await BaseDbContext.MenuItems.Where(x => x.E2EId == InventoryE2EId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Position, 0));
+        await BaseDbContext.MenuItems.Where(x => x.E2EId == PermissionsE2EId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Position, 1));
+        await BaseDbContext.MenuItems.Where(x => x.E2EId == SettingsE2EId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Position, 2));
+
+        Assert.That(Run(Menu()), Is.EqualTo(2), "Lokationer and Historik");
+
+        var group = await BaseDbContext.MenuItems.AsNoTracking().SingleAsync(x => x.E2EId == GroupE2EId);
+        var children = await BaseDbContext.MenuItems.AsNoTracking()
+            .Where(x => x.ParentId == group.Id).OrderBy(x => x.Position).ThenBy(x => x.Id)
+            .Select(x => new { x.E2EId, x.Position }).ToListAsync();
+        Assert.That(children.Select(x => x.E2EId), Is.EqualTo(new[] { InventoryE2EId, LocationsE2EId, PermissionsE2EId, SettingsE2EId, HistoryE2EId }));
+        Assert.That(children.Select(x => x.Position), Is.Unique, "no tie left for the host to break by id");
     }
 
     [Test]
@@ -80,7 +235,7 @@ public class PluginMenuSyncServiceTests : TestBaseSetup
         await InstallAsTheHostDoesAsync(WithoutChemicals(Menu()));
         var lastRootPosition = await BaseDbContext.MenuItems.Where(x => x.ParentId == null).MaxAsync(x => x.Position);
 
-        Assert.That(Run(Menu()), Is.EqualTo(3), "the group and its two children");
+        Assert.That(Run(Menu()), Is.EqualTo(6), "the group and its five children");
 
         var group = await BaseDbContext.MenuItems.AsNoTracking()
             .Include(x => x.Translations).SingleAsync(x => x.E2EId == GroupE2EId);
@@ -114,15 +269,15 @@ public class PluginMenuSyncServiceTests : TestBaseSetup
             "Rettigheder", "Permissions", "Berechtigungen", "Дозволи");
     }
 
-    /// <summary>E2: a tenant that already got Kemi with Rettigheder (E1) gets Indstillinger on its next startup.</summary>
+    /// <summary>A tenant that already got Kemi with Rettigheder only (E1) gets Beholdning, Lokationer, Indstillinger and Historik on its next startup.</summary>
     [Test]
     public async Task ExistingTenantWithKemiButWithoutSettings_GetsTheNewChildUnderTheGroup()
     {
-        await InstallAsTheHostDoesAsync(WithoutSettingsChild(Menu()));
+        await InstallAsTheHostDoesAsync(AsE1Shipped(Menu()));
         var group = await BaseDbContext.MenuItems.AsNoTracking().SingleAsync(x => x.E2EId == GroupE2EId);
         Assert.That(await BaseDbContext.MenuItems.AnyAsync(x => x.E2EId == SettingsE2EId), Is.False, "arrange: an E1 tenant");
 
-        Assert.That(Run(Menu()), Is.EqualTo(1), "only the new child");
+        Assert.That(Run(Menu()), Is.EqualTo(4), "only the four new children");
 
         var child = await BaseDbContext.MenuItems.AsNoTracking()
             .Include(x => x.Translations).SingleAsync(x => x.E2EId == SettingsE2EId);
@@ -139,7 +294,53 @@ public class PluginMenuSyncServiceTests : TestBaseSetup
         Assert.That(template.EformPluginId, Is.EqualTo(_pluginRowId));
         Assert.That(template.MenuTemplatePermissions, Is.Empty);
         Assert.That(await BaseDbContext.MenuItems.CountAsync(x => x.E2EId == GroupE2EId), Is.EqualTo(1));
+        var inventory = await BaseDbContext.MenuItems.AsNoTracking().SingleAsync(x => x.E2EId == InventoryE2EId);
+        Assert.That(inventory.ParentId, Is.EqualTo(group.Id));
+        Assert.That(inventory.Position, Is.EqualTo(0));
         Assert.That(Run(Menu()), Is.EqualTo(0), "and a second startup adds nothing");
+    }
+
+    /// <summary>
+    /// m-13: the menu editor renumbers a group's children from 0, so on an E2 tenant whose admin saved the
+    /// menu Rettigheder holds 0 and Indstillinger 1. Beholdning (0) must still come first, not tie with
+    /// Rettigheder and sort after it by id.
+    /// </summary>
+    [Test]
+    public async Task ANewFirstChild_StaysFirst_WhenTheAdminRenumberedTheGroup()
+    {
+        await InstallAsTheHostDoesAsync(AsE2Shipped(Menu()));
+        await BaseDbContext.MenuItems.Where(x => x.E2EId == PermissionsE2EId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Position, 0));
+        await BaseDbContext.MenuItems.Where(x => x.E2EId == SettingsE2EId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Position, 1));
+
+        Assert.That(Run(Menu()), Is.EqualTo(3));
+
+        var group = await BaseDbContext.MenuItems.AsNoTracking().SingleAsync(x => x.E2EId == GroupE2EId);
+        var children = await BaseDbContext.MenuItems.AsNoTracking()
+            .Where(x => x.ParentId == group.Id).OrderBy(x => x.Position).ThenBy(x => x.Id)
+            .Select(x => new { x.E2EId, x.Position }).ToListAsync();
+        Assert.That(children.Select(x => x.E2EId), Is.EqualTo(new[] { InventoryE2EId, LocationsE2EId, PermissionsE2EId, SettingsE2EId, HistoryE2EId }));
+        Assert.That(children.Select(x => x.Position), Is.Unique, "no tie left for the host to break by id");
+    }
+
+    /// <summary>
+    /// The sync keys on the template E2EId, never on the link: a tenant whose Beholdning row carries an older
+    /// link (as an unreleased build of this branch wrote it) gets no second Beholdning, and its row is kept.
+    /// </summary>
+    [Test]
+    public async Task AnExistingChildWithAnOlderLink_IsNotAddedAgain()
+    {
+        await InstallAsTheHostDoesAsync(Menu());
+        await BaseDbContext.MenuItems.Where(x => x.E2EId == InventoryE2EId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Link, "/plugins/backend-configuration-pn/chemicals"));
+        await BaseDbContext.MenuTemplates.Where(x => x.E2EId == InventoryE2EId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.DefaultLink, "/plugins/backend-configuration-pn/chemicals"));
+
+        Assert.That(Run(Menu()), Is.EqualTo(0));
+
+        Assert.That(await BaseDbContext.MenuItems.CountAsync(x => x.E2EId == InventoryE2EId), Is.EqualTo(1));
+        Assert.That(await BaseDbContext.MenuTemplates.CountAsync(x => x.E2EId == InventoryE2EId), Is.EqualTo(1));
     }
 
     [Test]
@@ -194,7 +395,7 @@ public class PluginMenuSyncServiceTests : TestBaseSetup
         var group = await BaseDbContext.MenuItems.AsNoTracking().SingleAsync(x => x.E2EId == GroupE2EId);
         var children = await BaseDbContext.MenuItems.AsNoTracking()
             .Where(x => x.ParentId == group.Id).OrderBy(x => x.Position).Select(x => x.E2EId).ToListAsync();
-        Assert.That(children, Is.EqualTo(new[] { PermissionsE2EId, SettingsE2EId, LaterChildE2EId }));
+        Assert.That(children, Is.EqualTo(new[] { InventoryE2EId, LocationsE2EId, PermissionsE2EId, SettingsE2EId, HistoryE2EId, LaterChildE2EId }));
         Assert.That(await BaseDbContext.MenuTemplates.CountAsync(x => x.E2EId == LaterChildE2EId), Is.EqualTo(1));
     }
 
@@ -212,7 +413,7 @@ public class PluginMenuSyncServiceTests : TestBaseSetup
         // Positive control: the same tenant, enabled, does get Kemi. Without it this test
         // would also pass against a sync that ignores the plugin status or does nothing.
         await BaseDbContext.EformPlugins.ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, Enabled));
-        Assert.That(Run(Menu()), Is.EqualTo(3), "the group and its two children");
+        Assert.That(Run(Menu()), Is.EqualTo(6), "the group and its five children");
     }
 
     /// <summary>
@@ -311,9 +512,30 @@ public class PluginMenuSyncServiceTests : TestBaseSetup
         menu.Where(x => x.E2EId != GroupE2EId).ToList();
 
     /// <summary>The Kemi menu as E1 shipped it: the group with Rettigheder only.</summary>
-    private static List<PluginMenuItemModel> WithoutSettingsChild(List<PluginMenuItemModel> menu)
+    private static List<PluginMenuItemModel> AsE1Shipped(List<PluginMenuItemModel> menu)
     {
-        menu.Single(x => x.E2EId == GroupE2EId).ChildItems.RemoveAll(c => c.E2EId == SettingsE2EId);
+        menu.Single(x => x.E2EId == GroupE2EId).ChildItems.RemoveAll(c => c.E2EId is SettingsE2EId or InventoryE2EId or LocationsE2EId or HistoryE2EId);
+        return menu;
+    }
+
+    /// <summary>The Kemi menu as E2 shipped it: the group with Rettigheder and Indstillinger.</summary>
+    private static List<PluginMenuItemModel> AsE2Shipped(List<PluginMenuItemModel> menu)
+    {
+        menu.Single(x => x.E2EId == GroupE2EId).ChildItems.RemoveAll(c => c.E2EId is InventoryE2EId or LocationsE2EId or HistoryE2EId);
+        return menu;
+    }
+
+    /// <summary>The Kemi menu before Task 14: Beholdning, Rettigheder and Indstillinger; no Lokationer, no Historik.</summary>
+    private static List<PluginMenuItemModel> WithoutLocations(List<PluginMenuItemModel> menu)
+    {
+        menu.Single(x => x.E2EId == GroupE2EId).ChildItems.RemoveAll(c => c.E2EId is LocationsE2EId or HistoryE2EId);
+        return menu;
+    }
+
+    /// <summary>The Kemi menu before Task 15: Beholdning, Lokationer, Rettigheder and Indstillinger, no Historik.</summary>
+    private static List<PluginMenuItemModel> WithoutHistory(List<PluginMenuItemModel> menu)
+    {
+        menu.Single(x => x.E2EId == GroupE2EId).ChildItems.RemoveAll(c => c.E2EId == HistoryE2EId);
         return menu;
     }
 

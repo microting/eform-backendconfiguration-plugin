@@ -3,7 +3,7 @@ import {DestroyRef, EventEmitter, Injector, runInInjectionContext} from '@angula
 import {MatDialog} from '@angular/material/dialog';
 import {Store} from '@ngrx/store';
 import {TranslateService} from '@ngx-translate/core';
-import {BehaviorSubject, Subject, of, throwError} from 'rxjs';
+import {BehaviorSubject, EMPTY, Subject, of, throwError} from 'rxjs';
 import {DeleteModalComponent} from 'src/app/common/modules/eform-shared/components';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {ChemicalSettingsPageComponent} from './chemical-settings-page.component';
@@ -184,6 +184,8 @@ describe('ChemicalSettingsPageComponent', () => {
     it.each([
       ['a refused answer', () => of({success: false, message: 'Nope'})],
       ['an HTTP error', () => throwError(() => new Error('offline'))],
+      // The host interceptor gives up on a 5xx or a network failure with EMPTY (Task 14 M2).
+      ['no answer at all', () => EMPTY],
     ])('shows a load failure for %s and offers no Save from the defaults', (_name, answer) => {
       chemicals.getSettings.mockReturnValue(answer());
       component = build();

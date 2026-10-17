@@ -1,0 +1,19 @@
+<h3 mat-dialog-title>{{ 'Chemicals: Remove placement' | translate }} · {{ data.row.productName }}</h3>
+<div mat-dialog-content class="d-flex flex-column gap-12">
+  <div *ngIf="hazardousWaste" id="chemicalRemoveHazardWarning" class="chemicals-danger" role="alert">
+    <mat-icon>warning</mat-icon><span>{{ 'Chemicals: Hazardous waste warning' | translate }}</span>
+  </div>
+  <mat-radio-group id="chemicalRemoveReason" class="d-flex flex-column" [attr.aria-label]="'Chemicals: Removal reason' | translate" [(ngModel)]="reason">
+    <mat-radio-button id="chemicalRemoveReasonUsed" [value]="reasons.Used">{{ 'Chemicals: Reason used' | translate }}</mat-radio-button>
+    <mat-radio-button id="chemicalRemoveReasonDisposed" [value]="reasons.Disposed">{{ 'Chemicals: Reason disposed' | translate }}</mat-radio-button>
+    <mat-radio-button [value]="reasons.Moved" disabled>{{ 'Chemicals: Reason moved automatic' | translate }}</mat-radio-button>
+  </mat-radio-group>
+  <mat-form-field>
+    <mat-label>{{ 'Chemicals: Note' | translate }}</mat-label>
+    <input matInput id="chemicalRemoveNote" [(ngModel)]="note" maxlength="1000">
+  </mat-form-field>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button class="btn-cancel" id="chemicalRemoveCancelBtn" [disabled]="saving" (click)="cancel()">{{ 'Cancel' | translate }}</button>
+  <button class="btn-delete" id="chemicalRemoveSaveBtn" [disabled]="!canSave" (click)="save()">{{ 'Chemicals: Remove' | translate }}</button>
+</div>
