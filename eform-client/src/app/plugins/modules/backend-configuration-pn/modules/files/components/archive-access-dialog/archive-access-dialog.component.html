@@ -1,0 +1,33 @@
+<h3 mat-dialog-title>{{ data.title | translate: data.titleParams }}</h3>
+<!-- No flex-column on mat-dialog-content: the global `.flex-column` (styles.scss) sets `flex: 1 0 0`, which
+     collapses this scrolling flex item of the dialog surface to 0 px and clips the whole body. -->
+<div mat-dialog-content>
+  <mat-radio-group *ngIf="data.mode === 'files'" class="d-flex flex-column gap-4 mb-2" [(ngModel)]="ownAccess" (change)="touch()">
+    <!-- click too: re-choosing the preselected "inherit" fires no change. -->
+    <mat-radio-button [value]="false" id="archiveAccessInherit" (click)="touch()">{{ "Use the folder's access" | translate }}</mat-radio-button>
+    <mat-radio-button [value]="true" id="archiveAccessOwn" (click)="touch()">{{ 'Own access' | translate }}</mat-radio-button>
+  </mat-radio-group>
+  <ng-container *ngIf="ownAccess">
+    <mat-form-field class="w-100">
+      <mat-label>{{ 'Worker groups' | translate }}</mat-label>
+      <mtx-select
+        id="archiveAccessTagSelect"
+        [items]="items"
+        bindLabel="name"
+        bindValue="id"
+        [multiple]="true"
+        [clearable]="true"
+        [(ngModel)]="tagIds"
+        (ngModelChange)="touch()"
+        appendTo="body"
+      ></mtx-select>
+    </mat-form-field>
+    <p *ngIf="!tagIds.length" id="archiveAccessOpenHint" class="helper-text mb-0">
+      {{ openHint }}
+    </p>
+  </ng-container>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end gap-12">
+  <button class="btn-cancel" id="archiveAccessCancelBtn" (click)="cancel()">{{ 'Cancel' | translate }}</button>
+  <button class="btn-primary" id="archiveAccessSaveBtn" [disabled]="!canSave" (click)="save()">{{ 'Save' | translate }}</button>
+</div>

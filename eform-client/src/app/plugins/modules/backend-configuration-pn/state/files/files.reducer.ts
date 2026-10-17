@@ -5,7 +5,9 @@ import {
   filesUpdateFilters,
   filesUpdatePagination,
   filesUpdatePaginationTotalItemsCount,
-  filesUpdatePropertyIds
+  filesUpdatePropertyIds,
+  filesSelectFolder,
+  filesToggleDateCheck
 } from './files.actions';
 
 export interface FilesFiltrationModel extends FiltrationStateModel {
@@ -14,6 +16,10 @@ export interface FilesFiltrationModel extends FiltrationStateModel {
     dateFrom: string,
     dateTo: string,
   },
+  /** The folder the table lists; not sent while a search or the date check spans all folders. */
+  folderId: number | null,
+  /** "Dato skal tjekkes" chip. */
+  needsDateCheck: boolean,
 }
 
 export interface FilesState {
@@ -39,6 +45,8 @@ export const filesInitialState: FilesState = {
       dateTo: '',
     },
     tagIds: [],
+    folderId: null,
+    needsDateCheck: false,
   },
   total: 0,
 };
@@ -76,6 +84,24 @@ const _filesReducer = createReducer(
       pagination: {
         ...state.pagination,
         total: payload,
+      },
+    }
+  )),
+  on(filesSelectFolder, (state, {payload}) => ({
+      ...state,
+      filters: {
+        ...state.filters,
+        folderId: payload,
+        needsDateCheck: false,
+        nameFilter: '',
+      },
+    }
+  )),
+  on(filesToggleDateCheck, (state, {payload}) => ({
+      ...state,
+      filters: {
+        ...state.filters,
+        needsDateCheck: payload,
       },
     }
   )),

@@ -97,22 +97,30 @@ export interface CatalogEntry {
   name: string;
 }
 
-/** GET catalog: the live properties and file tags, as the central service sees them. */
-export async function fetchCatalog(request: APIRequestContext): Promise<{ properties: CatalogEntry[]; tags: CatalogEntry[] }> {
+export interface CatalogFolder extends CatalogEntry {
+  parentId: number | null;
+}
+
+/** GET catalog: the live properties, file tags and archive folders, as the central service sees them. */
+export async function fetchCatalog(request: APIRequestContext): Promise<{ properties: CatalogEntry[]; tags: CatalogEntry[]; folders: CatalogFolder[] }> {
   const res = await signedCall(request, 'GET', 'catalog', 'catalog');
   return res.json();
 }
 
 /** A suggestion the central service attaches to a delivered document. */
 export interface Suggestion {
-  kind: 'property' | 'tag';
-  targetId: number;
+  /** camelCase, as the hub sends them (the tenant parses kinds case-insensitively). */
+  kind: 'property' | 'tag' | 'folder' | 'documentDate';
+  /** Property, tag or folder id; a documentDate sends 0. */
+  targetId?: number;
+  /** documentDate only: yyyy-MM-dd. */
+  targetDate?: string;
 }
 
 export interface SeedOptions {
   fromAddress: string;
   fileName: string;
-  /** Property and tag ids to suggest; sent with confidence 0.5, the review dialog's preselect threshold. */
+  /** Property, tag, folder and date suggestions; sent with confidence 0.5, the review dialog's preselect threshold. */
   suggestions?: Suggestion[];
   /** The hub's "staff reviewed the suggestions" flag; the tenant stores it but shows no marker for it. */
   reviewedByMicroting?: boolean;
@@ -164,7 +172,13 @@ export async function deliverInboxDocument(request: APIRequestContext, hubDocume
     pageCount: 1,
     reviewedByMicroting,
     suggestions: suggestions.map(s => ({
-      ...s, source: 'textMatch', confidence: 0.5, evidence: 'Nordvej 12', page: 1, reason: 'Adressen står i dokumentet.',
+      targetId: 0,
+      ...s,
+      source: 'textMatch',
+      confidence: 0.5,
+      evidence: s.kind === 'documentDate' ? 'Fakturadato 03.10.2026' : 'Nordvej 12',
+      page: 1,
+      reason: s.kind === 'documentDate' ? 'Datoen står i dokumentet.' : 'Adressen står i dokumentet.',
     })),
   });
   const body = Buffer.concat([

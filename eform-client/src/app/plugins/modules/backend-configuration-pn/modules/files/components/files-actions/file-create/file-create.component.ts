@@ -5,10 +5,14 @@ import {FilesCreateModel} from '../../../../../models';
 import {SharedTagModel} from 'src/app/common/models';
 import {
   BackendConfigurationPnFilesService,
+  BackendConfigurationPnArchiveFoldersService,
   BackendConfigurationPnFileTagsService,
   BackendConfigurationPnPropertiesService
 } from '../../../../../services';
-import {Subscription} from 'rxjs';
+import {Subscription, take} from 'rxjs';
+import {Store} from '@ngrx/store';
+import {ArchiveFolderOption, folderOptions} from '../../../../../helpers';
+import {selectFilesFolderId} from '../../../../../state';
 import {FileTagsComponent} from '../../';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import * as R from 'ramda';
@@ -27,6 +31,12 @@ export class FileCreateComponent implements OnInit, OnDestroy {
   private tagsService = inject(BackendConfigurationPnFileTagsService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private foldersService = inject(BackendConfigurationPnArchiveFoldersService);
+  private store = inject(Store);
+  folderOptions: ArchiveFolderOption[] = [];
+  /** Required: every archive document lies in exactly one folder (D1). */
+  selectedFolderId: number | null = null;
+  getFoldersSub$: Subscription;
 
   @ViewChild('tagsModal') tagsModal: FileTagsComponent;
 
@@ -44,8 +54,8 @@ export class FileCreateComponent implements OnInit, OnDestroy {
   }
 
   get disabledUploadBtn(): boolean {
-    // disabled if not files and not set property for all files
-    return this.files.length === 0 || /*(*/!this.selectedProperties/* || this.files.findIndex(x => !!x.propertyId) === -1)*/;
+    // disabled if no files, no property or no folder
+    return this.files.length === 0 || !this.selectedProperties || !this.selectedFolderId;
   }
 
   set availableTags(val: SharedTagModel[]) {
@@ -73,6 +83,7 @@ export class FileCreateComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.getProperties();
     this.getTags();
+    this.getFolders();
   }
 
   getProperties() {
@@ -89,6 +100,28 @@ export class FileCreateComponent implements OnInit, OnDestroy {
       if (data && data.success) {
         this.availableTags = data.model;
       }
+    });
+  }
+
+  /** Preselects the folder the Arkiv page showed (?folderId=), else the store's folder, else the default folder. */
+  getFolders() {
+    const requested = Number(this.route.snapshot.queryParamMap.get('folderId'));
+    this.store.select(selectFilesFolderId).pipe(take(1)).subscribe(current => {
+      this.getFoldersSub$ = this.foldersService.getFolders([]).subscribe(res => {
+        if (!res?.success || !res.model) {
+          return;
+        }
+        const folders = res.model;
+        const known = (id: number | null) => id !== null && folders.some(f => f.id === id);
+        this.folderOptions = folderOptions(folders);
+        if (known(requested)) {
+          this.selectedFolderId = requested;
+        } else if (known(current)) {
+          this.selectedFolderId = current;
+        } else {
+          this.selectedFolderId = folders.find(f => f.isDefault)?.id ?? null;
+        }
+      });
     });
   }
 
@@ -163,7 +196,8 @@ export class FileCreateComponent implements OnInit, OnDestroy {
     let model = this.files.map((x) => ({
       file: x.file,
       propertyIds: x.propertyIds,
-      tagIds: x.tagIds
+      tagIds: x.tagIds,
+      folderId: this.selectedFolderId,
     }));
     this.backendConfigurationPnFilesService
       .createFiles({filesForCreate: [...model]})

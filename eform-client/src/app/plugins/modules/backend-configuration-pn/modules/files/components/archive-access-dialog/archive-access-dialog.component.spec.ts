@@ -1,0 +1,138 @@
+import {NO_ERRORS_SCHEMA} from '@angular/core';
+import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {FormsModule} from '@angular/forms';
+import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MatRadioModule} from '@angular/material/radio';
+import {NoopAnimationsModule} from '@angular/platform-browser/animations';
+import {MtxSelectModule} from '@ng-matero/extensions/select';
+import {TranslateModule, TranslateService} from '@ngx-translate/core';
+import {ArchiveAccessDialogComponent, ArchiveAccessDialogData} from './archive-access-dialog.component';
+
+const ledelse = {id: 5, name: 'Ledelse', description: ''};
+const bogholderi = {id: 6, name: 'Bogholderi', description: ''};
+
+const bulk = (partial: Partial<ArchiveAccessDialogData> = {}): ArchiveAccessDialogData => ({
+  mode: 'files', title: 'Read access for {{count}} documents', titleParams: {count: 3},
+  workerTags: [ledelse, bogholderi], currentGroups: [], ownAccess: false, ...partial,
+});
+
+describe('ArchiveAccessDialogComponent', () => {
+  let fixture: ComponentFixture<ArchiveAccessDialogComponent>;
+  let close: jest.Mock;
+  const find = (selector: string): HTMLElement | null => fixture.nativeElement.querySelector(selector);
+
+  function render(data: ArchiveAccessDialogData): ArchiveAccessDialogComponent {
+    close = jest.fn();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      declarations: [ArchiveAccessDialogComponent],
+      imports: [FormsModule, MatRadioModule, MtxSelectModule, NoopAnimationsModule, TranslateModule.forRoot()],
+      providers: [{provide: MAT_DIALOG_DATA, useValue: data}, {provide: MatDialogRef, useValue: {close}}],
+      schemas: [NO_ERRORS_SCHEMA],
+    });
+    fixture = TestBed.createComponent(ArchiveAccessDialogComponent);
+    fixture.detectChanges();
+    return fixture.componentInstance;
+  }
+
+  afterEach(() => fixture?.destroy());
+
+  it('keeps a current group without live members, marked "no members", and keeps it selected', () => {
+    const c = render({
+      mode: 'folder', title: 'Read access for {{folder}}', titleParams: {folder: 'Miljø'},
+      workerTags: [ledelse], currentGroups: [{id: 9, name: 'Vagt'}], ownAccess: true,
+    });
+    expect(c.items).toEqual([ledelse, {id: 9, name: 'Vagt (no members)'}]);
+    expect(c.tagIds).toEqual([9]);
+    c.save();
+    expect(close).toHaveBeenCalledWith({ownAccess: true, tagIds: [9]});
+  });
+
+  it('folder mode always edits own groups and can save at once', () => {
+    const c = render({
+      mode: 'folder', title: 'Read access for {{folder}}', workerTags: [ledelse], currentGroups: [ledelse], ownAccess: false,
+    });
+    expect(c.ownAccess).toBe(true);
+    expect(c.canSave).toBe(true);
+  });
+
+  describe('hint while no group is chosen (folder mode)', () => {
+    const folder = (partial: Partial<ArchiveAccessDialogData> = {}): ArchiveAccessDialogData => ({
+      mode: 'folder', title: 'Read access for {{folder}}', titleParams: {folder: 'Fakturaer'},
+      workerTags: [ledelse, bogholderi], currentGroups: [], ownAccess: true, ...partial,
+    });
+    const hint = (): string => find('#archiveAccessOpenHint')!.textContent!.trim();
+
+    function renderTranslated(data: ArchiveAccessDialogData): ArchiveAccessDialogComponent {
+      const c = render(data);
+      const translate = TestBed.inject(TranslateService);
+      translate.setTranslation('en', {
+        'Inherits from {{folder}}: {{who}}': 'Inherits from {{folder}}: {{who}}',
+        'No groups: everyone with archive access can read.': 'No groups: everyone with archive access can read.',
+      });
+      translate.use('en');
+      fixture.detectChanges();
+      return c;
+    }
+
+    it('a subfolder of a restricted folder inherits the parent\'s groups, so the hint names them', () => {
+      renderTranslated(folder({inheritedFrom: {folder: 'Drift', groups: [ledelse, bogholderi]}}));
+      expect(hint()).toBe('Inherits from Drift: Ledelse, Bogholderi');
+    });
+
+    it('a top folder, or a subfolder of an open folder, is read by everyone with archive access', () => {
+      renderTranslated(folder());
+      expect(hint()).toBe('No groups: everyone with archive access can read.');
+      fixture.destroy();
+      renderTranslated(folder({inheritedFrom: {folder: 'Drift', groups: []}}));
+      expect(hint()).toBe('No groups: everyone with archive access can read.');
+    });
+
+    it('the hint goes away once a group is chosen', () => {
+      const c = renderTranslated(folder({inheritedFrom: {folder: 'Drift', groups: [ledelse]}}));
+      c.tagIds = [6];
+      fixture.detectChanges();
+      expect(find('#archiveAccessOpenHint')).toBeNull();
+    });
+  });
+
+  describe('bulk (several documents, C5)', () => {
+    it('starts from "use the folder\'s access" and one click on Save sends nothing', () => {
+      const c = render(bulk());
+      expect(c.ownAccess).toBe(false);
+      expect(c.canSave).toBe(false);
+      c.save();
+      expect(close).not.toHaveBeenCalled();
+    });
+
+    it('confirming the preselected "inherit" is a choice that enables Save', () => {
+      const c = render(bulk());
+      c.touch();
+      c.save();
+      expect(close).toHaveBeenCalledWith({ownAccess: false, tagIds: []});
+    });
+
+    it('own access sends the chosen groups once touched', () => {
+      const c = render(bulk());
+      c.ownAccess = true;
+      c.tagIds = [5];
+      c.touch();
+      c.save();
+      expect(close).toHaveBeenCalledWith({ownAccess: true, tagIds: [5]});
+    });
+
+    it('renders Save disabled until the admin picks a radio', () => {
+      render(bulk());
+      const saveBtn = (): HTMLButtonElement => find('#archiveAccessSaveBtn') as HTMLButtonElement;
+      expect(saveBtn().disabled).toBe(true);
+      find('#archiveAccessOwn')!.click();
+      fixture.detectChanges();
+      expect(saveBtn().disabled).toBe(false);
+    });
+  });
+
+  it('cancel closes with nothing', () => {
+    render(bulk()).cancel();
+    expect(close).toHaveBeenCalledWith();
+  });
+});

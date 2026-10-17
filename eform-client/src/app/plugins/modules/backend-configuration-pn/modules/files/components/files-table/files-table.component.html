@@ -1,123 +1,90 @@
-<mtx-grid
-  [data]="_files.entities"
-  [columns]="tableHeaders"
-  [cellTemplate]="{select: selectTpl, id: idTpl, createDate: createDateTpl, fileName: fileNameTpl, property: propertyTpl, tags: tagsTpl, actions: actionsTpl}"
-  [headerExtraTemplate]="selectHeaderTpl"
-  [showPaginator]="false"
-  [pageOnFront]="false"
-  [rowStriped]="true"
-  [showToolbar]="false"
-  [showColumnMenuButton]="false"
-  [sortActive]="selectFilesPaginationSort$ | async"
-  [sortDirection]="selectFilesPaginationIsSortDsc$ | async"
-  [rowClassFormatter]="rowClassFormatter"
-  (sortChange)="onSortTable($event)"
-  noResultText="{{'No files found' | translate}}"
->
-</mtx-grid>
-
-<ng-template #selectHeaderTpl let-col>
-  <div *ngIf="col.field === 'select'" class="column-select">
-    <mat-checkbox
-      [indeterminate]="getIntermediateSelectedFiles"
-      [ngModel]="allFileSelected"
-      (ngModelChange)="selectAllFiles($event)"
-    ></mat-checkbox>
-  </div>
-  <div *ngIf="col.field === 'actions'" class="column-actions">
-    <button
-      mat-icon-button
-      color="primary"
-      matTooltip="{{'Refresh table' | translate}}"
-      (click)="updateTable.emit()">
-      <mat-icon>refresh</mat-icon>
-    </button>
-  </div>
-</ng-template>
-
-<ng-template #selectTpl let-row>
-  <div class="column-select">
-    <mat-checkbox
-      (change)="onChangeSelectedFiles(row)"
-      [ngModel]="getSelectedFile(row)"
-    ></mat-checkbox>
-  </div>
-</ng-template>
-
-<ng-template #idTpl let-row let-i="index">
-  <div class="fileId" id="fileId-{{i}}">{{ row.id }}</div>
-</ng-template>
-
-<ng-template #createDateTpl let-row let-i="index">
-  <div class="fileCreateDate" id="fileCreateDate-{{i}}">{{ row.createDate | date:'dd.MM.yyyy HH:mm:ss' }}</div>
-</ng-template>
-
-<ng-template #fileNameTpl let-row let-i="index">
-  <div class="fileName" id="fileName-{{i}}">{{ row.fileName }}.{{ row.fileExtension }}</div>
-</ng-template>
-
-<ng-template #propertyTpl let-row let-i="index">
-  <div class="d-flex flex-wrap align-items-center gap-4">
-    <mat-chip-list>
-      <mat-chip *ngFor="let property of row.properties">
-        <span>{{ property }}</span>
-      </mat-chip>
-    </mat-chip-list>
-  </div>
-</ng-template>
-
-<ng-template #tagsTpl let-row let-i="index">
-  <div class="d-flex flex-wrap align-items-center gap-4">
-    <mat-chip-list>
-      <mat-chip *ngFor="let tag of row.tags" color="primary" (click)="onClickTag(tag)">
-        <span>{{ tag.name }}</span>
-      </mat-chip>
-    </mat-chip-list>
-    <button
-      mat-icon-button
-      color="primary"
-      id="editTagsBtn-{{i}}"
-      matTooltip="{{'Edit tags file' | translate}}"
-      (click)="openEditTags(row)">
-      <mat-icon fontSet="material-symbols-outlined">edit_square</mat-icon>
-    </button>
-  </div>
-</ng-template>
-
-<ng-template #actionsTpl let-row let-i="index">
-  <div class="files-actions" id="action-items-{{i}}">
-    <button id="actionMenu" mat-icon-button [matMenuTriggerFor]="menu" matTooltip="{{ 'Actions' | translate }}">
-      <mat-icon>more_vert</mat-icon>
-    </button>
-
-    <mat-menu #menu="matMenu">
-      <button
-        mat-menu-item
-        id="viewPdfBtn-{{i}}"
-        class="viewPdfBtn"
-        (click)="onOpenView(row)"
-      >
-        <mat-icon>visibility</mat-icon>
-        <span>{{ 'View File' | translate }}</span>
-      </button>
-      <button
-        mat-menu-item
-        id="editFilenameBtn-{{i}}"
-        class="editFilenameBtn"
-        (click)="onShowEditDocumentModal(row)"
-      >
-        <mat-icon color="accent">edit</mat-icon>
-        <span>{{ 'Edit file name' | translate }}</span>
-      </button>
-      <button
-        mat-menu-item
-        id="deleteFileBtn-{{i}}"
-        class="deleteFileBtn btn-delete-menu"
-        (click)="onOpenDeleteModal(row)"
-      >
-        <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
-        <span>{{ 'Delete file' | translate }}</span>
-      </button>
-    </mat-menu>
-  </div>
-</ng-template>
+<table class="table archive-table" id="archiveFilesTable">
+  <thead>
+    <tr>
+      <th class="archive-table__select">
+        <mat-checkbox
+          id="archiveSelectAll"
+          [checked]="allSelected"
+          [indeterminate]="someSelected"
+          [aria-label]="'Select all' | translate"
+          (change)="toggleAll($event.checked)"
+        ></mat-checkbox>
+      </th>
+      <th>
+        <button type="button" class="table-sort-btn" id="archiveSortName" (click)="sort.emit('FileName')">
+          {{ 'Name' | translate }}
+          <mat-icon *ngIf="sortField === 'FileName'">{{ sortDesc ? 'arrow_downward' : 'arrow_upward' }}</mat-icon>
+        </button>
+      </th>
+      <th>{{ 'Document date' | translate }}</th>
+      <th>{{ 'Properties' | translate }}</th>
+      <th *ngIf="isAdmin" id="archiveAccessHeader">{{ 'Read access' | translate }}</th>
+      <th>{{ 'Tags' | translate }}</th>
+      <th class="archive-table__actions" [attr.aria-label]="'Actions' | translate"></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr
+      *ngFor="let row of rows; let i = index; trackBy: trackById"
+      class="archive-file-row"
+      [attr.data-file-id]="row.id"
+      [class.archive-file-row--current]="row.id === currentFileId"
+      [class.row-highlight-flash]="row.id === highlightedFileId"
+      tabindex="0"
+      draggable="true"
+      (keydown.enter)="onRowKey($event, row)"
+      (keydown.space)="onRowKey($event, row)"
+      (dragstart)="onDragStart($event, row)"
+      (dragend)="rowDragEnd.emit()"
+      (click)="openFile.emit(row)"
+    >
+      <td class="archive-table__select" (click)="$event.stopPropagation()">
+        <mat-checkbox [id]="'archiveSelect-' + row.id" [aria-labelledby]="'fileName-' + i" [checked]="isSelected(row.id)" (change)="toggle(row.id)"></mat-checkbox>
+      </td>
+      <td>
+        <div class="archive-doc-name">
+          <mat-icon>picture_as_pdf</mat-icon>
+          <span class="fileName" [id]="'fileName-' + i">{{ row.fileName }}.{{ row.fileExtension }}</span>
+        </div>
+        <div *ngIf="showPath" class="archive-doc-path helper-text">{{ pathLabel(row) }}</div>
+      </td>
+      <td [ngSwitch]="row.documentDateState">
+        <span *ngSwitchCase="DateState.Suggested" class="archive-date archive-date--suggested" [matTooltip]="'Suggested date, check it' | translate">
+          <mat-icon>auto_awesome</mat-icon>{{ documentDay(row) | date: 'dd.MM.yyyy' }}
+        </span>
+        <span *ngSwitchCase="DateState.Approved" class="archive-date">{{ documentDay(row) | date: 'dd.MM.yyyy' }}</span>
+        <span *ngSwitchDefault class="helper-text">–</span>
+      </td>
+      <td>
+        <div class="ejendom-chips"><span class="ejendom-chip" *ngFor="let property of row.properties">{{ property }}</span></div>
+      </td>
+      <td *ngIf="isAdmin">
+        <span *ngIf="row.ownAccess; else inherits" class="archive-access archive-access--own"><mat-icon>lock</mat-icon>{{ ownAccessLabel(row) }}</span>
+        <ng-template #inherits><span class="helper-text">{{ 'Inherits' | translate }}</span></ng-template>
+      </td>
+      <td>
+        <div class="ejendom-chips"><span class="tag" *ngFor="let tag of row.tags">{{ tag.name }}</span></div>
+      </td>
+      <td class="archive-table__actions" (click)="$event.stopPropagation()">
+        <div [id]="'action-items-' + i">
+          <button id="actionMenu" mat-icon-button type="button" [matMenuTriggerFor]="rowMenu" [matTooltip]="'Actions' | translate">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #rowMenu="matMenu">
+            <button mat-menu-item [id]="'viewPdfBtn-' + i" class="viewPdfBtn" (click)="onOpenView(row)">
+              <mat-icon>visibility</mat-icon>
+              <span>{{ 'View PDF' | translate }}</span>
+            </button>
+            <button mat-menu-item [id]="'deleteFileBtn-' + i" class="deleteFileBtn btn-delete-menu" (click)="openDeleteModal.emit(row)">
+              <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
+              <span>{{ 'Delete file' | translate }}</span>
+            </button>
+          </mat-menu>
+        </div>
+      </td>
+    </tr>
+    <tr *ngIf="loaded && !rows.length" id="archiveNoFiles">
+      <td [attr.colspan]="isAdmin ? 7 : 6">{{ 'No files found' | translate }}</td>
+    </tr>
+  </tbody>
+</table>

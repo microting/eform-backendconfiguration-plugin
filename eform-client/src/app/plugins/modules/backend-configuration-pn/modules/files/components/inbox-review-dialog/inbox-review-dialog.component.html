@@ -15,6 +15,85 @@
     </div>
 
     <div class="d-flex flex-column gap-12" style="flex: 1 1 320px; min-width: 0">
+      <div class="d-flex flex-column gap-4" id="inboxFolderRow">
+        <app-archive-folder-picker
+          [options]="folderOptions"
+          [value]="selectedFolderId"
+          (valueChange)="selectedFolderId = $event"
+          [disabled]="filed || busy"
+          pickerId="inboxFolderSelect"
+        ></app-archive-folder-picker>
+        <ng-container *ngIf="visibleFolderSuggestion as s">
+          <small>{{ 'Suggestions' | translate }}</small>
+          <button
+            type="button"
+            class="inbox-choice align-self-start"
+            data-kind="folder"
+            [attr.data-target-id]="s.targetId"
+            [class.btn-primary]="folderSuggestionSelected"
+            [class.btn-secondary]="!folderSuggestionSelected"
+            [attr.aria-pressed]="folderSuggestionSelected"
+            [disabled]="filed || busy"
+            (click)="selectedFolderId = s.targetId"
+          >
+            <ng-container *ngTemplateOutlet="confidenceDot; context: {$implicit: s}"></ng-container>
+            <mat-icon *ngIf="folderSuggestionSelected">check</mat-icon>{{ s.targetName }}
+          </button>
+          <ng-container *ngTemplateOutlet="inboxEvidence; context: {$implicit: s}"></ng-container>
+        </ng-container>
+        <p *ngIf="!filed && selectedFolderId === null" id="inboxFolderRequired" class="mb-0">
+          <small>{{ (visibleFolderSuggestion ? 'Choose a folder' : 'No matching folder was found. Choose one before you file.') | translate }}</small>
+        </p>
+      </div>
+
+      <!-- documentDate is a yyyy-MM-dd day (dateOnlyOf/serverDay), which the date pipe reads as a local day. -->
+      <div class="d-flex flex-column gap-4" id="inboxDateRow">
+        <small>{{ 'Document date' | translate }}</small>
+        <ng-container *ngIf="!editingDate; else inboxDateEditor">
+          <div class="d-flex flex-row flex-wrap align-items-center gap-12">
+            <ng-container *ngIf="dateSuggestion && documentDate && !dateApproved">
+              <ng-container *ngTemplateOutlet="confidenceDot; context: {$implicit: dateSuggestion}"></ng-container>
+            </ng-container>
+            <span id="inboxDateValue">{{ documentDate ? (documentDate | date: 'dd.MM.yyyy') : ('No date' | translate) }}</span>
+            <span *ngIf="dateApproved" id="inboxDateApproved" class="status-chip status-chip--aktiv">{{ 'Approved' | translate }}</span>
+            <button type="button" class="btn-secondary" id="inboxDateEditBtn" [disabled]="filed || busy" (click)="editingDate = true">
+              {{ (documentDate ? 'Change date' : 'Set date') | translate }}
+            </button>
+            <button
+              *ngIf="documentDate && !dateApproved"
+              type="button"
+              class="btn-primary btn-primary--icon-left"
+              id="inboxDateApproveBtn"
+              [disabled]="filed || busy"
+              (click)="dateApproved = true"
+            >
+              <mat-icon>check</mat-icon><span>{{ 'Approve' | translate }}</span>
+            </button>
+          </div>
+          <ng-container *ngIf="dateSuggestion">
+            <ng-container *ngTemplateOutlet="inboxEvidence; context: {$implicit: dateSuggestion}"></ng-container>
+          </ng-container>
+        </ng-container>
+        <ng-template #inboxDateEditor>
+          <div class="d-flex flex-row align-items-center gap-12">
+            <mat-form-field>
+              <mat-label>{{ 'Document date' | translate }}</mat-label>
+              <input
+                matInput
+                type="date"
+                id="inboxDateInput"
+                [ngModel]="documentDate"
+                (ngModelChange)="setDate($event)"
+                [disabled]="filed || busy"
+              />
+            </mat-form-field>
+            <button type="button" class="btn-secondary" id="inboxDateDoneBtn" [disabled]="filed || busy" (click)="editingDate = false">
+              {{ 'Done' | translate }}
+            </button>
+          </div>
+        </ng-template>
+      </div>
+
       <mat-form-field>
         <mat-label>{{ 'Property' | translate }}</mat-label>
         <mtx-select
@@ -90,19 +169,29 @@
         [disabled]="filed"
         (click)="toggle(s)"
       >
-        <span
-          [class]="confidence(s.confidence).dotClass"
-          role="img"
-          [attr.aria-label]="confidence(s.confidence).label | translate"
-          [attr.title]="confidence(s.confidence).label | translate"
-        ></span>
+        <ng-container *ngTemplateOutlet="confidenceDot; context: {$implicit: s}"></ng-container>
         <mat-icon *ngIf="isSelected(s)">check</mat-icon>{{ s.targetName }}
       </button>
-      <small *ngIf="s.reason || s.evidence" class="inbox-evidence">
-        {{ s.reason }}
-        <ng-container *ngIf="s.evidence">“{{ s.evidence }}”</ng-container>
-        <ng-container *ngIf="s.page"> ({{ 'page' | translate }} {{ s.page }})</ng-container>
-      </small>
+      <ng-container *ngTemplateOutlet="inboxEvidence; context: {$implicit: s}"></ng-container>
     </div>
   </div>
+</ng-template>
+
+<!-- A suggestion's confidence as a coloured dot. -->
+<ng-template #confidenceDot let-s>
+  <span
+    [class]="confidence(s.confidence).dotClass"
+    role="img"
+    [attr.aria-label]="confidence(s.confidence).label | translate"
+    [attr.title]="confidence(s.confidence).label | translate"
+  ></span>
+</ng-template>
+
+<!-- Why a suggestion was made: the hub's reason, the quoted evidence and its page. -->
+<ng-template #inboxEvidence let-s>
+  <small *ngIf="s.reason || s.evidence" class="inbox-evidence">
+    {{ s.reason }}
+    <ng-container *ngIf="s.evidence">“{{ s.evidence }}”</ng-container>
+    <ng-container *ngIf="s.page"> ({{ 'page' | translate }} {{ s.page }})</ng-container>
+  </small>
 </ng-template>

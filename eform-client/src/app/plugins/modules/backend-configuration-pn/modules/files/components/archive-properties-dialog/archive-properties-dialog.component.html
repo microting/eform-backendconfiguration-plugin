@@ -1,0 +1,20 @@
+<h3 mat-dialog-title>{{ 'Set properties' | translate }}</h3>
+<div mat-dialog-content>
+  <p class="helper-text">{{ replacesKey | translate: {count: data.count} }}</p>
+  <mat-form-field class="w-100">
+    <mat-label>{{ 'Properties' | translate }} *</mat-label>
+    <mtx-select
+      id="archivePropertiesSelect"
+      [items]="data.properties"
+      bindLabel="name"
+      bindValue="id"
+      [multiple]="true"
+      [(ngModel)]="propertyIds"
+      appendTo="body"
+    ></mtx-select>
+  </mat-form-field>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end gap-12">
+  <button class="btn-cancel" id="archivePropertiesCancelBtn" (click)="cancel()">{{ 'Cancel' | translate }}</button>
+  <button class="btn-primary" id="archivePropertiesSaveBtn" [disabled]="!propertyIds.length" (click)="save()">{{ 'Save' | translate }}</button>
+</div>
