@@ -211,13 +211,13 @@ public class ChemicalsMenuTests
     public void HistoryChildLinksToTheW6ScreenAsTheLastChild()
     {
         var group = Group();
-        var child = group.ChildItems.Single(c => c.E2EId == HistoryE2EId);
+        var child = HistoryChild();
 
-        Assert.That(group.ChildItems.Last(), Is.SameAs(child), "Historik is the last Kemi screen (mockup order)");
+        Assert.That(group.ChildItems.Last().E2EId, Is.EqualTo(HistoryE2EId), "Historik is the last Kemi screen (mockup order)");
         Assert.That(child.Type, Is.EqualTo(MenuItemTypeEnum.Link));
         Assert.That(child.Link, Is.EqualTo(HistoryLink));
         Assert.That(child.Position, Is.EqualTo(4), "mockup order: Beholdning 0, Lokationer 1, Rettigheder 2, Indstillinger 3, Historik 4");
-        Assert.That(group.ChildItems.Where(c => c != child).Select(c => c.Position), Has.All.LessThan(child.Position));
+        Assert.That(group.ChildItems.Where(c => c.E2EId != HistoryE2EId).Select(c => c.Position), Has.All.LessThan(child.Position));
         Assert.That(child.MenuTemplate, Is.Not.Null);
         Assert.That(child.MenuTemplate.E2EId, Is.EqualTo(HistoryE2EId));
         Assert.That(child.MenuTemplate.DefaultLink, Is.EqualTo(HistoryLink));

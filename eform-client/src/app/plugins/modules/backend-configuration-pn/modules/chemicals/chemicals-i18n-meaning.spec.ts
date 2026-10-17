@@ -398,4 +398,40 @@ describe('Kemi i18n meaning', () => {
   it.each(REVIEWED_HISTORY)('%s keeps the reviewed %s', (locale, key, value) => {
     expect(text(locale, key)).toBe(value);
   });
+
+  // Task 15 review m-6: the permission flags now also appear in the W6 details ("+Registrere"), so they are labels of a
+  // right: a capitalised word, never a visit (es "Visita"), viewing a film (fr "visionnage") or an adjective (pl).
+  const FLAG_KEYS = ['Chemicals: Flag view', 'Chemicals: Flag register', 'Chemicals: Flag remove', 'Chemicals: Flag stock',
+    'Chemicals: Flag manage locations', 'Chemicals: Flag admin'];
+  const NOT_A_RIGHT = /visita|visionnage|rejestracyjn|^spis$/i;
+
+  it.each(Object.keys(LOCALES))('%s writes the permission flags as capitalised labels', (locale) => {
+    expect(FLAG_KEYS.filter((key) => text(locale, key)[0] !== text(locale, key)[0].toLocaleUpperCase())).toEqual([]);
+  });
+
+  it.each(NON_ENGLISH)('%s: a permission flag names a right, not a visit, a screening or an adjective', (locale) => {
+    expect(FLAG_KEYS.filter((key) => NOT_A_RIGHT.test(text(locale, key)))).toEqual([]);
+  });
+
+  it('the flag guard catches what machine translation produced', () => {
+    for (const bad of ['Visita', 'visionnage', 'Rejestracyjny', 'Spis']) {
+      expect(bad).toMatch(NOT_A_RIGHT);
+    }
+    expect('Rejestracja').not.toMatch(NOT_A_RIGHT);
+  });
+
+  const REVIEWED_FIX_ROUND_1: Array<[string, string, string]> = [
+    ['esES', 'Chemicals: Flag view', 'Ver'],
+    ['frFR', 'Chemicals: Flag view', 'Consultation'],
+    ['plPL', 'Chemicals: Flag register', 'Rejestracja'],
+    ['plPL', 'Chemicals: Flag stock', 'Magazyn'],
+    // m-10: the action names agree with "Flyttad"/"Borttagen" and "Przeniesiono"/"Usunięto".
+    ['svSE', 'Chemicals: Action StockAdjusted', 'Justerad'],
+    ['plPL', 'Chemicals: Action StockConsumed', 'Zużyto'],
+    ['da', 'Chemicals: Archived', 'arkiveret'],
+  ];
+
+  it.each(REVIEWED_FIX_ROUND_1)('%s keeps the reviewed %s', (locale, key, value) => {
+    expect(text(locale, key)).toBe(value);
+  });
 });

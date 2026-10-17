@@ -14,6 +14,7 @@ import {
   addDays,
   asUtcIso,
   buildHistoryQuery,
+  copenhagenToday,
   defaultHistoryPeriod,
   formatHistoryDetails,
   formatHistoryNumber,
@@ -103,6 +104,15 @@ describe('chemical history helper', () => {
     expect(addDays('2026-03-01', -1)).toBe('2026-02-28');
     expect(addDays('2026-12-31', 1)).toBe('2027-01-01');
     expect(addDays('2024-02-28', 1)).toBe('2024-02-29');
+  });
+
+  it('takes today as the Copenhagen calendar day, the one the server counts the period in (m-2)', () => {
+    // 22:30 UTC on 28 September is 00:30 on the 29th in Copenhagen (CEST, +2).
+    expect(copenhagenToday(new Date('2026-09-28T22:30:00Z'))).toBe('2026-09-29');
+    expect(copenhagenToday(new Date('2026-09-28T21:30:00Z'))).toBe('2026-09-28');
+    // Winter time (+1) and a year end.
+    expect(copenhagenToday(new Date('2026-12-31T23:30:00Z'))).toBe('2027-01-01');
+    expect(copenhagenToday(new Date('2026-12-31T22:30:00Z'))).toBe('2026-12-31');
   });
 
   it('defaults to the last 30 days including today', () => {

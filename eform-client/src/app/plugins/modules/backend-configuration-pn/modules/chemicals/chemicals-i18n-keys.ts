@@ -234,6 +234,8 @@ export const CHEMICAL_I18N_KEYS: string[] = [
   'Chemicals: No history',
   'Chemicals: Loading history',
   'Chemicals: Could not load history',
+  // Task 15 fix round 1 - archived locations in the W6 filter
+  'Chemicals: Archived',
   // Task 15 - the words of ChemicalHistoryDetailsFormatter (the Excel), HISTORY_TEXT_KEYS
   'Chemicals: History reason',
   'Chemicals: History reason moved',

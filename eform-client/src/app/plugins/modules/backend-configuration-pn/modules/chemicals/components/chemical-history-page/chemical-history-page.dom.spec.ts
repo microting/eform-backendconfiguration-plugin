@@ -11,6 +11,7 @@ import {BehaviorSubject, NEVER, Observable, of} from 'rxjs';
 import {ChemicalHistoryAction, ChemicalHistoryEventModel, ChemicalRemovalReason, ChemicalStockUnit} from '../../../../models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {ChemicalHistoryFiltersModel, chemicalsInitialState} from '../../../../state';
+import {asUtcIso} from '../../helpers/chemical-history.helper';
 import {location} from '../../helpers/chemical-inventory.fixtures';
 import {ChemicalHistoryPageComponent} from './chemical-history-page.component';
 
@@ -41,7 +42,9 @@ describe('ChemicalHistoryPageComponent (template)', () => {
     historyEvent({at: '2026-09-28T12:05:00Z', action: ChemicalHistoryAction.LocationCreated, productName: '', locationName: ''}),
   ];
 
-  function render(answer?: Observable<unknown>, exportAnswer?: Observable<unknown>): void {
+  let utc: jest.SpyInstance;
+
+  function render(answer?: Observable<unknown>, exportAnswer?: Observable<unknown>, inventory?: Observable<unknown>): void {
     view$ = new BehaviorSubject({propertyId: 3 as number | null, filters: {...chemicalsInitialState.historyFilters}});
     TestBed.configureTestingModule({
       declarations: [ChemicalHistoryPageComponent],
@@ -53,7 +56,7 @@ describe('ChemicalHistoryPageComponent (template)', () => {
         }},
         {provide: BackendConfigurationPnChemicalsService, useValue: {
           getHistory: jest.fn().mockReturnValue(answer ?? of({success: true, model: {events, total: 4, users: [{userId: 5, name: 'Mette Larsen'}]}})),
-          getPropertyInventory: jest.fn().mockReturnValue(of({success: true, model: {locations: [location(10, 'Lade', {propertyId: 3})]}})),
+          getPropertyInventory: jest.fn().mockReturnValue(inventory ?? of({success: true, model: {locations: [location(10, 'Lade', {propertyId: 3})]}})),
           exportHistory: jest.fn().mockReturnValue(exportAnswer ?? NEVER),
         }},
         {provide: ToastrService, useValue: {error: jest.fn()}},
@@ -62,7 +65,9 @@ describe('ChemicalHistoryPageComponent (template)', () => {
     });
     fixture = TestBed.createComponent(ChemicalHistoryPageComponent);
     component = fixture.componentInstance;
-    component.today = '2026-09-29';
+    component.now = () => new Date('2026-09-29T10:00:00Z');
+    // Spied before the first render, so the template's own call is seen (m-1).
+    utc = jest.spyOn(component, 'utc');
     fixture.detectChanges();
   }
 
@@ -102,7 +107,8 @@ describe('ChemicalHistoryPageComponent (template)', () => {
     expect(cell(0, 'details')).toBe('Produkt afmeldt');
     expect(cell(1, 'user')).toBe('Mette Larsen');
     expect(cell(1, 'product')).toBe('Karate 2,5 WG');
-    expect(cell(1, 'location')).toBe('Lade → Kemirum');
+    // The Location column is the event's location, as in the Excel; Details carries the move (m-9).
+    expect(cell(1, 'location')).toBe('Lade');
     expect(cell(1, 'details')).toBe('Lade → Kemirum · 5 L');
     expect(cell(2, 'details')).toBe('Chemicals: History reason: Chemicals: Reason used · tom');
     expect(cell(3, 'product')).toBe('–');
@@ -124,7 +130,7 @@ describe('ChemicalHistoryPageComponent (template)', () => {
 
   it('says it is loading, then that it failed, never an empty log', () => {
     render(NEVER);
-    expect(find('#chemicalHistoryLoading')?.getAttribute('role')).toBe('status');
+    expect(find('#chemicalHistoryStatus')?.textContent).toContain('Chemicals: Loading history');
     expect(find('#chemicalHistoryEmpty')).toBeNull();
     fixture.destroy();
     TestBed.resetTestingModule();
@@ -160,5 +166,47 @@ describe('ChemicalHistoryPageComponent (template)', () => {
     to.dispatchEvent(new Event('change'));
 
     expect(component.filters.dateTo).toBe('2026-09-15');
+  });
+
+  it('renders every time through asUtcIso, so it does not depend on the runner\'s zone (m-1)', () => {
+    render();
+
+    expect(utc).toHaveBeenCalledWith('2026-09-28T12:05:00');
+    expect(utc).toHaveBeenCalledWith('2026-09-28T14:05:00+02:00');
+    expect(utc.mock.results.map((r) => r.value)).toContain('2026-09-28T12:05:00Z');
+    utc.mockRestore();
+    expect(component.utc).toBe(asUtcIso);
+  });
+
+  it('hides the paginator when the log could not be loaded or the period is wrong (m-4)', () => {
+    render(of({success: false}));
+    expect(find('#chemicalHistoryPaginator')).toBeNull();
+    fixture.destroy();
+    TestBed.resetTestingModule();
+
+    render();
+    expect(find('#chemicalHistoryPaginator')).not.toBeNull();
+    component.updateFilters({dateFrom: '2026-09-20', dateTo: '2026-09-10'});
+    fixture.detectChanges();
+    expect(find('#chemicalHistoryPaginator')).toBeNull();
+  });
+
+  it('names the table and keeps one live region whose text follows the load (m-7)', () => {
+    render(NEVER);
+    const status = find('#chemicalHistoryStatus');
+    expect(status?.getAttribute('role')).toBe('status');
+    expect(status?.textContent?.trim()).toBe('Chemicals: Loading history');
+    fixture.destroy();
+    TestBed.resetTestingModule();
+
+    render();
+    expect(find('#chemicalHistoryStatus')?.textContent?.trim()).toBe('');
+    expect(find('#chemicalHistoryTable')?.getAttribute('aria-label')).toBe('Chemicals: History title');
+  });
+
+  it('says so under the location filter when the locations could not be loaded (m-8)', () => {
+    render(undefined, undefined, of({success: false}));
+
+    expect(find('#chemicalHistoryLocationsFailed')?.textContent).toContain('Chemicals: Could not load locations');
   });
 });

@@ -28,7 +28,7 @@ describe('ChemicalHistoryPageComponent', () => {
 
   const page = (total = 214) => ({success: true, model: {events: [], total, users: [{userId: 5, name: 'Mette Larsen'}]}});
 
-  function build(opts: {propertyId?: number | null; history?: Observable<unknown>} = {}): ChemicalHistoryPageComponent {
+  function build(opts: {propertyId?: number | null; history?: Observable<unknown>; locations?: unknown[]; inventory?: Observable<unknown>} = {}): ChemicalHistoryPageComponent {
     (saveAs as unknown as jest.Mock).mockClear();
     view$ = new BehaviorSubject<View>({
       propertyId: opts.propertyId === undefined ? 3 : opts.propertyId,
@@ -46,9 +46,9 @@ describe('ChemicalHistoryPageComponent', () => {
     };
     chemicals = {
       getHistory: jest.fn().mockReturnValue(opts.history ?? of(page())),
-      getPropertyInventory: jest.fn().mockReturnValue(of({success: true, model: {
-        locations: [location(10, 'Lade', {propertyId: 3}), location(11, 'Gammel', {propertyId: 3, archived: true})],
-      }})),
+      getPropertyInventory: jest.fn().mockReturnValue(opts.inventory ?? of({success: true, model: {
+        locations: opts.locations ?? [location(10, 'Lade', {propertyId: 3}), location(11, 'Gammel', {propertyId: 3, archived: true})],
+      }}))),
       exportHistory: jest.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Kemihistorik.xlsx'})),
     };
     toastr = {error: jest.fn()};
@@ -60,7 +60,7 @@ describe('ChemicalHistoryPageComponent', () => {
       {provide: TranslateService, useValue: {instant: (k: string) => k}},
     ]});
     const component = runInInjectionContext(injector, () => new ChemicalHistoryPageComponent());
-    component.today = '2026-09-29';
+    component.now = () => new Date('2026-09-29T10:00:00Z');
     component.ngOnInit();
     return component;
   }
@@ -239,5 +239,60 @@ describe('ChemicalHistoryPageComponent', () => {
     expect(component.details({
       action: 2, locationName: 'Lade', targetLocationName: 'Kemirum', amount: 5, unit: 1, note: 'Reol 1',
     } as unknown as ChemicalHistoryEventModel)).toBe('Lade → Kemirum · 5 L · Reol 1');
+  });
+
+  it('counts the default period in Copenhagen days, taken again at every load (m-2)', () => {
+    const component = build();
+    component.now = () => new Date('2026-09-29T22:30:00Z');
+
+    component.updateFilters({action: 1});
+
+    expect(chemicals.getHistory).toHaveBeenLastCalledWith(3, expect.objectContaining({from: '2026-09-01', to: '2026-09-30'}));
+  });
+
+  it('marks archived locations in the filter and lists them after the active ones (m-3)', () => {
+    const component = build({locations: [
+      location(11, 'Gammel', {propertyId: 3, archived: true, sortOrder: 0}),
+      location(10, 'Lade', {propertyId: 3, sortOrder: 2}),
+      location(12, 'Kemirum', {propertyId: 3, sortOrder: 1}),
+    ]});
+
+    expect(component.locationOptions).toEqual([
+      {id: 12, name: 'Kemirum'},
+      {id: 10, name: 'Lade'},
+      {id: 11, name: 'Gammel (Chemicals: Archived)'},
+    ]);
+  });
+
+  it('says so when the locations could not be loaded (m-8)', () => {
+    const silent = build({inventory: EMPTY});
+    expect(silent.locationsFailed).toBe(true);
+
+    const loaded = build();
+    expect(loaded.locationsFailed).toBe(false);
+  });
+
+  it('keeps the selected user in the list when the period has no events of theirs (m-5)', () => {
+    const component = build();
+    component.updateFilters({userId: 5});
+    chemicals.getHistory.mockReturnValue(of({success: true, model: {events: [], total: 0, users: []}}));
+
+    component.updateFilters({dateFrom: '2026-01-01', dateTo: '2026-01-31'});
+
+    expect(component.userOptions).toEqual([{userId: 0, name: 'Chemicals: System user'}, {userId: 5, name: 'Mette Larsen'}]);
+  });
+
+  it('names a selected user it has never seen by id, never as a blank (m-5)', () => {
+    const component = build({history: of({success: true, model: {events: [], total: 0, users: []}})});
+
+    component.updateFilters({userId: 9});
+
+    expect(component.userOptions.map((u) => [u.userId, u.name])).toEqual([[0, 'Chemicals: System user'], [9, '#9']]);
+  });
+
+  it('hands the user filter the same list until the users change (R1)', () => {
+    const component = build();
+
+    expect(component.userOptions).toBe(component.userOptions);
   });
 });
