@@ -62,7 +62,30 @@ const exactText = (text: string): RegExp =>
  * No sleeps: every wait is a bounded wait on a concrete condition.
  */
 export class BackendConfigurationChemicalsPage {
-  constructor(public page: Page) {}
+  /** Uncaught page errors and console errors, quoted when a Kemi screen does not show what the server sent. */
+  private readonly browserErrors: string[] = [];
+  /** Every inventory GET the page made, in order. */
+  private readonly inventoryRequests: string[] = [];
+
+  constructor(public page: Page) {
+    page.on('pageerror', (error) => this.browserErrors.push(`pageerror: ${error.message}`));
+    page.on('console', (message) => {
+      if (message.type() === 'error') {
+        this.browserErrors.push(`console: ${message.text()}`);
+      }
+    });
+    page.on('request', (request) => {
+      if (request.method() === 'GET' && /\/chemicals\/properties\/\d+\/inventory$/.test(new URL(request.url()).pathname)) {
+        this.inventoryRequests.push(new URL(request.url()).pathname);
+      }
+    });
+  }
+
+  /** What the browser reported, for failure messages. */
+  browserReport(): string {
+    return `page ${this.page.url()}; inventory GETs [${this.inventoryRequests.join(', ')}]; ` +
+      `browser errors [${this.browserErrors.join(' | ')}]`;
+  }
 
   pluginMenuButton(): Locator {
     return this.page.locator('#backend-configuration-pn');
@@ -334,7 +357,11 @@ export class BackendConfigurationChemicalsPage {
     const names: string[] = (inventory.model?.registerEntries ?? []).map((e: { name: string }) => e.name);
     expect(names, `inventory reload ${new URL(reload.url()).pathname}: ${JSON.stringify(inventory).slice(0, 2000)}`)
       .toContain(productName);
-    await this.inventoryRow(productName).first().waitFor({ state: 'visible', timeout: API_TIMEOUT });
+    try {
+      await this.inventoryRow(productName).first().waitFor({ state: 'visible', timeout: API_TIMEOUT });
+    } catch (error) {
+      throw new Error(`W1 does not show ${productName} although the reloaded inventory has it: ${String(error)}\n${this.browserReport()}`);
+    }
   }
 
   /** Clicks a download trigger (menu item or button) and returns the browser's suggested file name. */
