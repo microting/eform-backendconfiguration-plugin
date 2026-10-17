@@ -339,7 +339,8 @@ export class BackendConfigurationChemicalsPage {
       (r) => r.url().includes(`${CHEMICALS_API}/register/search`), API_TIMEOUT);
     await this.page.locator('#chemicalRegisterSearchBtn').click({ timeout: UI_TIMEOUT });
     expect((await (await search).json()).success).toBe(true);
-    await this.page.locator('[id^="chemicalRegisterResult-"]').filter({ hasText: productName }).click({ timeout: UI_TIMEOUT });
+    await this.page.locator('[id^="chemicalRegisterResult-"]').filter({ hasText: productName })
+      .locator('input[type="radio"]').check({ timeout: UI_TIMEOUT });
     await this.selectMtxOption('#chemicalRegisterLocationSelect', locationName);
     await this.page.locator('#chemicalRegisterNote').fill(note, { timeout: UI_TIMEOUT });
     const saved = waitForApiResponse(this.page, 'POST chemicals/placements',

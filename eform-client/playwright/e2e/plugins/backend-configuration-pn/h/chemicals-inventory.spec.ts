@@ -110,7 +110,9 @@ test.describe.serial('Kemi W1/W2 - inventory', () => {
     await page.locator('#chemicalDrawerRemoveBtn').click({ timeout: UI_TIMEOUT });
     await page.locator('#chemicalDrawer').waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
     await expect(page.locator('#chemicalRemoveHazardWarning')).toBeVisible({ timeout: UI_TIMEOUT });
-    await page.locator('#chemicalRemoveReasonDisposed').click({ timeout: UI_TIMEOUT });
+    // The radio itself: a click on the empty end of the full-width row selects nothing (Material radio).
+    await page.locator('#chemicalRemoveReasonDisposed input[type="radio"]').check({ timeout: UI_TIMEOUT });
+    await expect(page.locator('#chemicalRemoveSaveBtn')).toBeEnabled({ timeout: UI_TIMEOUT });
     const removed = waitForApiResponse(page, 'POST placements/{id}/remove',
       (r) => /\/chemicals\/placements\/\d+\/remove$/.test(r.url()), API_TIMEOUT);
     await page.locator('#chemicalRemoveSaveBtn').click({ timeout: UI_TIMEOUT });
