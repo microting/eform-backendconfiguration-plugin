@@ -6,6 +6,7 @@ import {ApiBaseService} from 'src/app/common/services';
 import {
   BackendConfigurationPnChemicalsMethods,
   BackendConfigurationPnChemicalsService,
+  restoreIsoDates,
 } from './backend-configuration-pn-chemicals.service';
 import {
   CHEMICAL_STATUS_APPROVED,
@@ -93,6 +94,48 @@ describe('BackendConfigurationPnChemicalsService', () => {
 
     expect(api[verb]).toHaveBeenCalledTimes(1);
     expect(api[verb]).toHaveBeenCalledWith(...args);
+  });
+
+  /**
+   * Task 16 e2e: the host's DateInterceptor turns every ISO date-time string of a JSON answer into a Date
+   * ("2026-09-17T00:00:00Z" -> Date). The Kemi models carry the wire text (deadlines are compared as yyyy-MM-dd,
+   * stock entries sorted by their text, history times read as UTC), so W1 crashed with
+   * "value.substring is not a function" on a product with a deadline.
+   */
+  describe('dates from the host DateInterceptor', () => {
+    const intercepted = () => ({
+      success: true,
+      model: {
+        registerEntries: [{name: 'Roundup', useAndPossessionDeadline: new Date(Date.UTC(2026, 8, 17)), salesDeadline: null}],
+        stockEntries: [{at: new Date(Date.UTC(2026, 9, 17, 12, 30, 5, 250))}],
+        properties: [{propertyId: 3, stockEnabled: false}],
+      },
+    });
+
+    it.each(cases.filter(([, , verb]) => verb !== 'getBlobData'))('%s answers with ISO text again, never a Date', async (_name, call, verb) => {
+      api[verb].mockReturnValue(of(intercepted()));
+
+      const res = await lastValueFrom(call(service)) as ReturnType<typeof intercepted>;
+
+      expect(res.model.registerEntries[0].useAndPossessionDeadline).toBe('2026-09-17T00:00:00.000Z');
+      expect(res.model.stockEntries[0].at).toBe('2026-10-17T12:30:05.250Z');
+      expect(res.model.registerEntries[0].salesDeadline).toBeNull();
+      expect(res.model.properties[0]).toEqual({propertyId: 3, stockEnabled: false});
+    });
+
+    it('restoreIsoDates walks objects and arrays and leaves other values alone', () => {
+      expect(restoreIsoDates(new Date(Date.UTC(2026, 0, 2)))).toBe('2026-01-02T00:00:00.000Z');
+      expect(restoreIsoDates([new Date(Date.UTC(2026, 0, 2)), 'x', 1, null, true]))
+        .toEqual(['2026-01-02T00:00:00.000Z', 'x', 1, null, true]);
+      expect(restoreIsoDates({a: {b: [{at: new Date(Date.UTC(2026, 0, 2))}]}, n: 0, s: ''}))
+        .toEqual({a: {b: [{at: '2026-01-02T00:00:00.000Z'}]}, n: 0, s: ''});
+      expect(restoreIsoDates(null)).toBeNull();
+    });
+
+    it('keeps an invalid Date as it is instead of throwing', () => {
+      const invalid = new Date(NaN);
+      expect(restoreIsoDates({at: invalid}).at).toBe(invalid);
+    });
   });
 
 
