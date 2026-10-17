@@ -31,7 +31,9 @@ import {
 })
 export class FilesFiltersComponent implements OnInit, OnDestroy {
   private store = inject(Store);
-  private actions$ = inject(ActionsSubject);
+  /** Every filesSelectFolder, as the '' it leaves in the search. Kept piped: @AutoUnsubscribe calls unsubscribe() on
+   * every property that has one, and the raw ActionsSubject is the store's global action stream. */
+  private folderSelected$ = inject(ActionsSubject).pipe(filter(action => action.type === filesSelectFolder.type), map(() => ''));
   private translate = inject(TranslateService);
   public filesStateService = inject(FilesStateService);
   private propertyService = inject(BackendConfigurationPnPropertiesService);
@@ -135,7 +137,7 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
     // alone would not emit.
     this.nameFilterSyncSub$ = merge(
       this.store.select(selectFilesNameFilters),
-      this.actions$.pipe(filter(action => action.type === filesSelectFolder.type), map(() => '')),
+      this.folderSelected$,
     ).subscribe(name => {
       if (this.filtersForm && this.filtersForm.value.nameFilter !== name) {
         this.filtersForm.patchValue({nameFilter: name}, {emitEvent: false});
