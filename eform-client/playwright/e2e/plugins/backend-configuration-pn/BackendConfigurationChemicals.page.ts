@@ -1,7 +1,21 @@
 import { Locator, Page, expect } from '@playwright/test';
-import { API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from './wait-helpers';
+import { ActionMenuItem, openRowActionMenu } from './row-action-menu';
+import { API_TIMEOUT, SLOW_API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from './wait-helpers';
 
 const BASE_URL = 'http://localhost:4200';
+const CHEMICALS_API = '/api/backend-configuration-pn/chemicals';
+
+/** The Kemi screens (route path under `/plugins/backend-configuration-pn/chemicals/`) and the root element each renders. */
+const SCREEN_ROOTS = {
+  inventory: '#chemicalInventoryPage',
+  locations: '#chemicalLocationsPage',
+  permissions: '#chemicalPermissionsPage',
+  settings: '#chemicalSettingsPage',
+  history: '#chemicalHistoryPage',
+} as const;
+export type ChemicalScreen = keyof typeof SCREEN_ROOTS;
+/** Menu children of `#backend-configuration-pn-chemicals`, in menu order. */
+export const CHEMICAL_SCREENS_IN_MENU_ORDER: ChemicalScreen[] = ['inventory', 'locations', 'permissions', 'settings', 'history'];
 
 /** Anchored, whitespace-tolerant regexp so an option must match the whole label (`Farm` never picks `Farm 2`). */
 const exactText = (text: string): RegExp =>
@@ -30,6 +44,20 @@ const exactText = (text: string): RegExp =>
  *     `#chemicalSettingsSaveBtn`, thresholds `#chemicalSettingsThresholds`, preview `#chemicalDigestPreview`
  *     (`#chemicalDigestPreviewNothing`, `#chemicalDigestSection-<passed|upcoming|status|new>`), menu child
  *     `#backend-configuration-pn-chemicals-settings`.
+ *   - W1: `#chemicalInventoryPage` (mtx-grid rows `.mat-mdc-row`, `chemical-row--overdue|warning`), chip
+ *     `#chemicalsRequiresActionChip`, banner `#chemicalsActionBanner`, export menu `#chemicalsExportBtn` >
+ *     `#chemicalsExportAuthorityList|Inventory|Removed`, `#chemicalsRegisterPlacementBtn` (dialog
+ *     `#chemicalRegisterSearchInput`, `#chemicalRegisterResult-<chemicalId>`, `#chemicalRegisterLocationSelect`,
+ *     `#chemicalRegisterNote`, `#chemicalRegisterSaveBtn`), row menu `chemicalRowDetails|Move|Remove-<i>`.
+ *   - W2: side panel `#chemicalDrawer` (opened by the row menu "details", i.e. W1 openDetails), move dialog
+ *     `#chemicalMoveTargetSelect` / `#chemicalMoveSaveBtn`, remove dialog `#chemicalRemoveHazardWarning` /
+ *     `#chemicalRemoveReasonDisposed` / `#chemicalRemoveSaveBtn`.
+ *   - W3: `#chemicalLocationsPage`, rows `#chemicalLocationRow-<id>` in `#chemicalLocationsList` (archived:
+ *     `chemicals-location-row--archived`), drag handle `#chemicalLocationDrag-<id>`, `#chemicalLocationUp|Down-<id>`,
+ *     `#chemicalLocationArchive-<id>` + confirm `#chemicalLocationArchiveConfirm`, `#chemicalLocationsShowArchived`.
+ *   - W6: `#chemicalHistoryPage`, live region `#chemicalHistoryStatus` (text only while loading), rows
+ *     `#chemicalHistoryTable tr.chemical-history-row[data-action]`, `#chemicalHistoryActionFilter`,
+ *     `#chemicalHistoryExportBtn`.
  *
  * No sleeps: every wait is a bounded wait on a concrete condition.
  */
@@ -72,10 +100,31 @@ export class BackendConfigurationChemicalsPage {
     await this.permissionsPage().waitFor({ state: 'visible', timeout: API_TIMEOUT });
   }
 
+  /** Opens a Kemi screen by URL (`query` e.g. `?propertyId=3`); waits for the screen root. */
+  async gotoScreen(screen: ChemicalScreen, query = ''): Promise<void> {
+    await this.page.goto(`${BASE_URL}/plugins/backend-configuration-pn/chemicals/${screen}${query}`, { timeout: API_TIMEOUT });
+    await this.page.locator(SCREEN_ROOTS[screen]).waitFor({ state: 'visible', timeout: API_TIMEOUT });
+  }
+
+  /** Opens a Kemi screen by URL and picks the property by name (never relies on which property sorts first, E-10). */
+  async openScreenFor(screen: ChemicalScreen, propertyName: string): Promise<void> {
+    await this.gotoScreen(screen);
+    await this.selectProperty(propertyName);
+  }
+
+  /**
+   * Reloads the page. The ngrx store does not survive a reload, so the property is picked again by name (E-10);
+   * the container would also restore it from ?propertyId=, and picking the selected one again is a no-op.
+   */
+  async reloadScreenFor(screen: ChemicalScreen, propertyName: string): Promise<void> {
+    await this.page.reload({ timeout: API_TIMEOUT });
+    await this.page.locator(SCREEN_ROOTS[screen]).waitFor({ state: 'visible', timeout: API_TIMEOUT });
+    await this.selectProperty(propertyName);
+  }
+
   /** Opens Rettigheder by URL (the menu has its own test); waits for the screen root. */
   async gotoPermissions(): Promise<void> {
-    await this.page.goto(`${BASE_URL}/plugins/backend-configuration-pn/chemicals/permissions`);
-    await this.permissionsPage().waitFor({ state: 'visible', timeout: API_TIMEOUT });
+    await this.gotoScreen('permissions');
   }
 
   settingsPage(): Locator {
@@ -105,16 +154,19 @@ export class BackendConfigurationChemicalsPage {
 
   /** Opens Indstillinger by URL (the menu has its own test); waits for the screen root. */
   async gotoSettings(): Promise<void> {
-    await this.page.goto(`${BASE_URL}/plugins/backend-configuration-pn/chemicals/settings`);
-    await this.settingsPage().waitFor({ state: 'visible', timeout: API_TIMEOUT });
+    await this.gotoScreen('settings');
   }
 
-  /** Picks an option in an mtx-select by its exact visible text (no substring match) and waits for the panel to close. */
-  async selectMtxOption(selector: string, text: string): Promise<void> {
+  /**
+   * Picks an option in an mtx-select by its exact visible text (no substring match), or by a regexp the
+   * caller anchors itself (e.g. one label per UI language), and waits for the panel to close.
+   */
+  async selectMtxOption(selector: string, text: string | RegExp): Promise<void> {
     await this.page.locator(selector).click({ timeout: UI_TIMEOUT });
     const panel = this.page.locator('.ng-dropdown-panel');
     await panel.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
-    await panel.locator('.ng-option').filter({ hasText: exactText(text) }).click({ timeout: UI_TIMEOUT });
+    const label = typeof text === 'string' ? exactText(text) : text;
+    await panel.locator('.ng-option').filter({ hasText: label }).click({ timeout: UI_TIMEOUT });
     await panel.waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
   }
 
@@ -218,5 +270,133 @@ export class BackendConfigurationChemicalsPage {
     const response = await saved;
     expect((await response.json()).success).toBe(true);
     await expect(this.page.locator('#chemicalSettingsSaveBtn')).toBeDisabled({ timeout: UI_TIMEOUT });
+  }
+
+  // ----- Menu -----------------------------------------------------------------
+
+  /** The menu child that links a screen, e.g. `#backend-configuration-pn-chemicals-inventory`. */
+  screenMenuButton(screen: ChemicalScreen): Locator {
+    return this.page.locator(`#backend-configuration-pn-chemicals-${screen}`);
+  }
+
+  /** Every Kemi menu child, in DOM (menu) order. */
+  screenMenuButtons(): Locator {
+    return this.page.locator(CHEMICAL_SCREENS_IN_MENU_ORDER.map((screen) => `#backend-configuration-pn-chemicals-${screen}`).join(', '));
+  }
+
+  /** Expands the plugin dropdown and the Kemi group, each only if the next level is hidden. */
+  async expandChemicalsMenu(): Promise<void> {
+    if (!(await this.screenMenuButton('inventory').isVisible())) {
+      if (!(await this.chemicalsGroupButton().isVisible())) {
+        await this.pluginMenuButton().click({ timeout: UI_TIMEOUT });
+      }
+      await this.chemicalsGroupButton().click({ timeout: UI_TIMEOUT });
+    }
+    await this.screenMenuButton('inventory').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+  }
+
+  // ----- W1 / W2 ----------------------------------------------------------------
+
+  inventoryRow(productName: string): Locator {
+    return this.page.locator('#chemicalInventoryPage .mat-mdc-row').filter({ hasText: productName });
+  }
+
+  async openInventoryRowMenu(productName: string): Promise<ActionMenuItem> {
+    return openRowActionMenu(this.page, this.inventoryRow(productName), `inventory row ${productName}`);
+  }
+
+  /** "Registrér placering": searches the register for `productName`, picks it, a location and a note, and saves. */
+  async registerPlacement(productName: string, locationName: string, note: string): Promise<void> {
+    const open = this.page.locator('#chemicalsRegisterPlacementBtn');
+    // Enabled once the inventory (and so its active locations) has loaded.
+    await expect(open).toBeEnabled({ timeout: API_TIMEOUT });
+    await open.click({ timeout: UI_TIMEOUT });
+    await this.page.locator('#chemicalRegisterSearchInput').fill(productName, { timeout: UI_TIMEOUT });
+    const search = waitForApiResponse(this.page, 'GET chemicals/register/search',
+      (r) => r.url().includes(`${CHEMICALS_API}/register/search`), API_TIMEOUT);
+    await this.page.locator('#chemicalRegisterSearchBtn').click({ timeout: UI_TIMEOUT });
+    expect((await (await search).json()).success).toBe(true);
+    await this.page.locator('[id^="chemicalRegisterResult-"]').filter({ hasText: productName }).click({ timeout: UI_TIMEOUT });
+    await this.selectMtxOption('#chemicalRegisterLocationSelect', locationName);
+    await this.page.locator('#chemicalRegisterNote').fill(note, { timeout: UI_TIMEOUT });
+    const saved = waitForApiResponse(this.page, 'POST chemicals/placements',
+      (r) => r.url().endsWith(`${CHEMICALS_API}/placements`) && r.request().method() === 'POST', API_TIMEOUT);
+    await this.page.locator('#chemicalRegisterSaveBtn').click({ timeout: UI_TIMEOUT });
+    expect((await (await saved).json()).success).toBe(true);
+    await this.page.locator('#chemicalRegisterSaveBtn').waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
+    await this.inventoryRow(productName).first().waitFor({ state: 'visible', timeout: API_TIMEOUT });
+  }
+
+  /** Clicks a download trigger (menu item or button) and returns the browser's suggested file name. */
+  async download(triggerSelector: string): Promise<string> {
+    const download = this.page.waitForEvent('download', { timeout: SLOW_API_TIMEOUT });
+    await this.page.locator(triggerSelector).click({ timeout: UI_TIMEOUT });
+    return (await download).suggestedFilename();
+  }
+
+  /** Opens the W1 export menu (enabled once the inventory has loaded and no export runs) and downloads one item. */
+  async exportFromInventory(itemId: string): Promise<string> {
+    const button = this.page.locator('#chemicalsExportBtn');
+    await expect(button).toBeEnabled({ timeout: SLOW_API_TIMEOUT });
+    await button.click({ timeout: UI_TIMEOUT });
+    return this.download(`.cdk-overlay-container #${itemId}`);
+  }
+
+  // ----- W3 -------------------------------------------------------------------
+
+  /** All location rows; archived ones only while "show archived" is on. */
+  locationRows(): Locator {
+    return this.page.locator('#chemicalLocationsList [id^="chemicalLocationRow-"]');
+  }
+
+  locationRow(name: string): Locator {
+    return this.locationRows().filter({ has: this.page.locator('.chemicals-location-name', { hasText: exactText(name) }) });
+  }
+
+  /** The names of the active (not archived) rows, in screen order. */
+  activeLocationNames(): Locator {
+    return this.page.locator('#chemicalLocationsList [id^="chemicalLocationRow-"]:not(.chemicals-location-row--archived) .chemicals-location-name');
+  }
+
+  /** The location's id, read off its row id `chemicalLocationRow-<id>`. */
+  async locationId(name: string): Promise<number> {
+    const rowId = await this.locationRow(name).getAttribute('id', { timeout: UI_TIMEOUT });
+    const id = Number((rowId ?? '').replace('chemicalLocationRow-', ''));
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new Error(`location row '${name}' has no numeric id (got '${rowId}')`);
+    }
+    return id;
+  }
+
+  async createLocation(name: string): Promise<void> {
+    const open = this.page.locator('#chemicalLocationsNewBtn');
+    // Enabled once the property's locations have loaded.
+    await expect(open).toBeEnabled({ timeout: API_TIMEOUT });
+    await open.click({ timeout: UI_TIMEOUT });
+    await this.page.locator('#chemicalLocationName').fill(name, { timeout: UI_TIMEOUT });
+    const saved = waitForApiResponse(this.page, 'POST chemicals/locations',
+      (r) => r.url().endsWith(`${CHEMICALS_API}/locations`) && r.request().method() === 'POST', API_TIMEOUT);
+    await this.page.locator('#chemicalLocationSaveBtn').click({ timeout: UI_TIMEOUT });
+    expect((await (await saved).json()).success).toBe(true);
+    await this.locationRow(name).waitFor({ state: 'visible', timeout: API_TIMEOUT });
+  }
+
+  /** Waits for the PUT of a new location order and asserts the server took it. */
+  waitForLocationOrderSaved(): Promise<void> {
+    return waitForApiResponse(this.page, 'PUT chemicals/properties/{id}/locations/order',
+      (r) => /\/chemicals\/properties\/\d+\/locations\/order$/.test(r.url()) && r.request().method() === 'PUT', API_TIMEOUT)
+      .then(async (response) => expect((await response.json()).success).toBe(true));
+  }
+
+  // ----- W6 -------------------------------------------------------------------
+
+  historyRows(): Locator {
+    return this.page.locator('#chemicalHistoryTable tr.chemical-history-row');
+  }
+
+  /** The history page answered: the live region is empty again (not loading) and the table is there. */
+  async waitForHistoryLoaded(): Promise<void> {
+    await this.page.locator('#chemicalHistoryTable').waitFor({ state: 'visible', timeout: API_TIMEOUT });
+    await expect(this.page.locator('#chemicalHistoryStatus')).toHaveText('', { timeout: API_TIMEOUT });
   }
 }
