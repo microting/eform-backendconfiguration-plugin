@@ -68,6 +68,26 @@ function unquote(text: string): string {
   }
 }
 
+/**
+ * Undoes the host's DateInterceptor for a Kemi answer: every Date it made of an ISO date-time string becomes
+ * ISO-8601 UTC text again ("2026-09-17T00:00:00.000Z"). The Kemi models carry the wire text: deadlines are
+ * compared as yyyy-MM-dd, stock entries sorted by their text, history times read as UTC (Task 16 e2e: W1
+ * crashed on a deadline Date). The interceptor reads offset-less times as UTC, so the day is kept. An invalid
+ * Date is left as it is. Mutates and returns `value`.
+ */
+export function restoreIsoDates<T>(value: T): T {
+  if (value instanceof Date) {
+    return (Number.isNaN(value.getTime()) ? value : value.toISOString()) as unknown as T;
+  }
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    for (const key of Object.keys(record)) {
+      record[key] = restoreIsoDates(record[key]);
+    }
+  }
+  return value;
+}
+
 /** Plan A Task 15 REST prefix. Every Kemi call lives under it. */
 export const BackendConfigurationPnChemicalsMethods = {
   Base: 'api/backend-configuration-pn/chemicals',
@@ -90,20 +110,25 @@ export class BackendConfigurationPnChemicalsService {
   private rawHttp = new HttpClient(inject(HttpBackend));
   private store = inject(Store);
 
+  /** A JSON answer with the dates the host DateInterceptor made turned back into ISO text (restoreIsoDates). */
+  private json<T>(request: Observable<T>): Observable<T> {
+    return request.pipe(map((res) => restoreIsoDates(res)));
+  }
+
   private url(path: string): string {
     return `${BackendConfigurationPnChemicalsMethods.Base}/${path}`;
   }
 
   getPropertyInventory(propertyId: number): Observable<OperationDataResult<ChemicalInventoryModel>> {
-    return this.apiBaseService.get(this.url(`properties/${propertyId}/inventory`));
+    return this.json(this.apiBaseService.get(this.url(`properties/${propertyId}/inventory`)));
   }
 
   searchRegister(query: string, page = 0, pageSize = 25): Observable<OperationDataResult<ChemicalRegisterPageModel>> {
-    return this.apiBaseService.get(this.url('register/search'), {query, page, pageSize});
+    return this.json(this.apiBaseService.get(this.url('register/search'), {query, page, pageSize}));
   }
 
   lookupBarcode(barcode: string): Observable<OperationDataResult<ChemicalRegisterEntryModel[]>> {
-    return this.apiBaseService.get(this.url(`register/barcode/${encodeURIComponent(barcode)}`));
+    return this.json(this.apiBaseService.get(this.url(`register/barcode/${encodeURIComponent(barcode)}`)));
   }
 
   getSdsBlob(fileName: string): Observable<Blob> {
@@ -111,43 +136,43 @@ export class BackendConfigurationPnChemicalsService {
   }
 
   registerPlacement(command: ChemicalRegisterPlacementCommand): Observable<OperationDataResult<ChemicalPlacementChangeModel>> {
-    return this.apiBaseService.post(this.url('placements'), command);
+    return this.json(this.apiBaseService.post(this.url('placements'), command));
   }
 
   movePlacement(placementId: number, body: ChemicalMovePlacementBody): Observable<OperationDataResult<ChemicalPlacementChangeModel>> {
-    return this.apiBaseService.post(this.url(`placements/${placementId}/move`), body);
+    return this.json(this.apiBaseService.post(this.url(`placements/${placementId}/move`), body));
   }
 
   removePlacement(placementId: number, body: ChemicalRemovePlacementBody): Observable<OperationDataResult<ChemicalPlacementChangeModel>> {
-    return this.apiBaseService.post(this.url(`placements/${placementId}/remove`), body);
+    return this.json(this.apiBaseService.post(this.url(`placements/${placementId}/remove`), body));
   }
 
   updatePlacementNote(placementId: number, body: ChemicalPlacementNoteBody): Observable<OperationDataResult<ChemicalPlacementChangeModel>> {
-    return this.apiBaseService.put(this.url(`placements/${placementId}/note`), body);
+    return this.json(this.apiBaseService.put(this.url(`placements/${placementId}/note`), body));
   }
 
   addStockEntry(placementId: number, body: ChemicalStockEntryBody): Observable<OperationDataResult<ChemicalPlacementChangeModel>> {
-    return this.apiBaseService.post(this.url(`placements/${placementId}/stock-entries`), body);
+    return this.json(this.apiBaseService.post(this.url(`placements/${placementId}/stock-entries`), body));
   }
 
   createLocation(command: ChemicalCreateLocationCommand): Observable<OperationDataResult<ChemicalLocationModel>> {
-    return this.apiBaseService.post(this.url('locations'), command);
+    return this.json(this.apiBaseService.post(this.url('locations'), command));
   }
 
   updateLocation(locationId: number, body: ChemicalUpdateLocationBody): Observable<OperationDataResult<ChemicalLocationModel>> {
-    return this.apiBaseService.put(this.url(`locations/${locationId}`), body);
+    return this.json(this.apiBaseService.put(this.url(`locations/${locationId}`), body));
   }
 
   archiveLocation(locationId: number): Observable<OperationDataResult<ChemicalLocationModel>> {
-    return this.apiBaseService.post(this.url(`locations/${locationId}/archive`), {});
+    return this.json(this.apiBaseService.post(this.url(`locations/${locationId}/archive`), {}));
   }
 
   reorderLocations(propertyId: number, orderedLocationIds: number[]): Observable<OperationDataResult<ChemicalLocationModel[]>> {
-    return this.apiBaseService.put(this.url(`properties/${propertyId}/locations/order`), orderedLocationIds);
+    return this.json(this.apiBaseService.put(this.url(`properties/${propertyId}/locations/order`), orderedLocationIds));
   }
 
   uploadLocationPhoto(locationId: number, file: File): Observable<OperationDataResult<ChemicalLocationModel>> {
-    return this.apiBaseService.postFormData(this.url(`locations/${locationId}/photo`), {file});
+    return this.json(this.apiBaseService.postFormData(this.url(`locations/${locationId}/photo`), {file}));
   }
 
   /** URL for `<img [src]="url | authImage | async">` (the pipe adds the bearer token). */
@@ -156,30 +181,30 @@ export class BackendConfigurationPnChemicalsService {
   }
 
   getPermissions(propertyId: number): Observable<OperationDataResult<ChemicalWorkerPermissionModel[]>> {
-    return this.apiBaseService.get(this.url(`properties/${propertyId}/permissions`));
+    return this.json(this.apiBaseService.get(this.url(`properties/${propertyId}/permissions`)));
   }
 
   /** Only the changed workers (W4 save bar); the answer is the full list after save. */
   savePermissions(propertyId: number, changes: ChemicalSetWorkerPermissionCommand[]): Observable<OperationDataResult<ChemicalWorkerPermissionModel[]>> {
-    return this.apiBaseService.put(this.url(`properties/${propertyId}/permissions`), changes);
+    return this.json(this.apiBaseService.put(this.url(`properties/${propertyId}/permissions`), changes));
   }
 
   getSettings(propertyId: number): Observable<OperationDataResult<ChemicalSettingsModel>> {
-    return this.apiBaseService.get(this.url(`properties/${propertyId}/settings`));
+    return this.json(this.apiBaseService.get(this.url(`properties/${propertyId}/settings`)));
   }
 
   saveSettings(propertyId: number, body: ChemicalSettingsBody): Observable<OperationDataResult<ChemicalSettingsModel>> {
-    return this.apiBaseService.put(this.url(`properties/${propertyId}/settings`), body);
+    return this.json(this.apiBaseService.put(this.url(`properties/${propertyId}/settings`), body));
   }
 
   /** The next weekly e-mail for one property, built by the server from the digest job's rule. */
   getDigestPreview(propertyId: number): Observable<OperationDataResult<ChemicalDigestModel>> {
-    return this.apiBaseService.get(this.url(`properties/${propertyId}/digest-preview`));
+    return this.json(this.apiBaseService.get(this.url(`properties/${propertyId}/digest-preview`)));
   }
 
   /** W6: one server page of the property's history. A refused query (bad period) is 200 + success=false. */
   getHistory(propertyId: number, query: ChemicalHistoryQueryModel): Observable<OperationDataResult<ChemicalHistoryPageModel>> {
-    return this.apiBaseService.post(this.url(`properties/${propertyId}/history`), query);
+    return this.json(this.apiBaseService.post(this.url(`properties/${propertyId}/history`), query));
   }
 
   exportAuthorityList(propertyId: number): Observable<ChemicalDownload> {
