@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import {FormControl, FormGroup} from '@angular/forms';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import {Subscription, take} from 'rxjs';
+import {Subscription, combineLatest, take} from 'rxjs';
 import {BackendConfigurationPnPropertiesService,} from '../../../../services';
 import {CommonDictionaryModel, SharedTagModel} from 'src/app/common/models';
 import {TranslateService} from '@ngx-translate/core';
@@ -19,6 +19,7 @@ import {Store} from '@ngrx/store';
 import {
   selectFilesFilters,
   selectFilesNameFilters,
+  selectFilesFolderId,
   FilesFiltrationModel, filesUpdateFilters
 } from '../../../../state';
 
@@ -130,8 +131,12 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
       });
 
     // Selecting a folder clears the search in the store (filesSelectFolder); mirror that into the field
-    // without emitting, so the cleared text does not trigger another reload.
-    this.nameFilterSyncSub$ = this.store.select(selectFilesNameFilters).subscribe(name => {
+    // without emitting, so the cleared text does not trigger another reload. The folder is watched too: text
+    // still debouncing was never stored, so the store's search stays '' and its selector alone would not emit.
+    this.nameFilterSyncSub$ = combineLatest([
+      this.store.select(selectFilesNameFilters),
+      this.store.select(selectFilesFolderId),
+    ]).subscribe(([name]) => {
       if (this.filtersForm && this.filtersForm.value.nameFilter !== name) {
         this.filtersForm.patchValue({nameFilter: name}, {emitEvent: false});
       }
