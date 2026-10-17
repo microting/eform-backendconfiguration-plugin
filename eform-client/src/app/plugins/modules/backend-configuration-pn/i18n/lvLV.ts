@@ -830,7 +830,7 @@ export const lvLV = {
   'Chemicals: Worker': 'Darbinieks',
   'Chemicals: Flag view': 'Skatīšana',
   'Chemicals: Flag view hint': 'Skatīt sarakstu un informāciju',
-  'Chemicals: Flag register': 'Reģistrēšanās',
+  'Chemicals: Flag register': 'Reģistrēšana',
   'Chemicals: Flag register hint': 'Pievienot izvietojumus',
   'Chemicals: Flag remove': 'Noņemt',
   'Chemicals: Flag remove hint': 'Noņemt ar iemeslu',

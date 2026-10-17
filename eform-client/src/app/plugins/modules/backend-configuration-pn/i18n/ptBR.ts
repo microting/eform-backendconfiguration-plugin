@@ -954,7 +954,7 @@ export const ptBR = {
   'Chemicals: Worker': 'Funcionário',
   'Chemicals: Flag view': 'Visualização',
   'Chemicals: Flag view hint': 'Veja a lista e os detalhes.',
-  'Chemicals: Flag register': 'Cadastrando-se',
+  'Chemicals: Flag register': 'Registro',
   'Chemicals: Flag register hint': 'Adicionar locais',
   'Chemicals: Flag remove': 'Remover',
   'Chemicals: Flag remove hint': 'Remover com um motivo',

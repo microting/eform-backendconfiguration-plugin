@@ -954,7 +954,7 @@ export const fiFI = {
   'Chemicals: Worker': 'Työntekijä',
   'Chemicals: Flag view': 'Katselu',
   'Chemicals: Flag view hint': 'Katso lista ja tiedot',
-  'Chemicals: Flag register': 'Rekisteröityminen',
+  'Chemicals: Flag register': 'Rekisteröinti',
   'Chemicals: Flag register hint': 'Lisää sijoitteluja',
   'Chemicals: Flag remove': 'Poistaa',
   'Chemicals: Flag remove hint': 'Poista syystä',
