@@ -211,4 +211,9 @@ export const CHEMICAL_I18N_KEYS: string[] = [
   'Chemicals: Photo hint',
   'Chemicals: Photo wrong type',
   'Chemicals: Photo too large',
+  // Task 14 fix round 1 - move buttons, archive confirm
+  'Chemicals: Move location up',
+  'Chemicals: Move location down',
+  'Chemicals: Archive location?',
+  'Chemicals: Archive confirm hint',
 ];

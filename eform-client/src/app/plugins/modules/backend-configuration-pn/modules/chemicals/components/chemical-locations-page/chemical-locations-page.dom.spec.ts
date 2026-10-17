@@ -64,7 +64,8 @@ describe('ChemicalLocationsPageComponent (template)', () => {
     render();
 
     for (const id of ['#chemicalLocationsPage', '#chemicalLocationsNewBtn', '#chemicalLocationsShowArchived', '#chemicalLocationsList',
-      '#chemicalLocationRow-1', '#chemicalLocationDrag-1', '#chemicalLocationEdit-1', '#chemicalLocationArchive-1']) {
+      '#chemicalLocationRow-1', '#chemicalLocationDrag-1', '#chemicalLocationEdit-1', '#chemicalLocationArchive-1',
+      '#chemicalLocationUp-1', '#chemicalLocationDown-1']) {
       expect(find(id)).not.toBeNull();
     }
     expect(find('#chemicalLocationRow-3')).toBeNull();
@@ -102,6 +103,7 @@ describe('ChemicalLocationsPageComponent (template)', () => {
     render();
     const list = fixture.debugElement.query(By.directive(CdkDropList)).injector.get(CdkDropList);
     expect(list.disabled).toBe(false);
+    expect(list.sortPredicate).toBe(component.canSortTo);
 
     component.reordering = true;
     fixture.detectChanges();
@@ -109,12 +111,34 @@ describe('ChemicalLocationsPageComponent (template)', () => {
     expect(list.disabled).toBe(true);
   });
 
-  it('names the icon-only buttons for assistive technology', () => {
+  it('names the icon-only buttons for assistive technology; the drag handle is decorative (I2)', () => {
     render();
 
     expect(find('#chemicalLocationEdit-1')?.getAttribute('aria-label')).toBe('Chemicals: Edit location');
     expect(find('#chemicalLocationArchive-1')?.getAttribute('aria-label')).toBe('Chemicals: Archive');
-    expect(find('#chemicalLocationDrag-1')?.getAttribute('aria-label')).toBe('Chemicals: Drag hint');
+    expect(find('#chemicalLocationUp-2')?.getAttribute('aria-label')).toBe('Chemicals: Move location up');
+    expect(find('#chemicalLocationDown-1')?.getAttribute('aria-label')).toBe('Chemicals: Move location down');
+    expect(find('#chemicalLocationDrag-1')?.getAttribute('aria-hidden')).toBe('true');
+    expect(find('#chemicalLocationDrag-1')?.hasAttribute('aria-label')).toBe(false);
+  });
+
+  it('offers up and down buttons on active rows, disabled at the ends and while an order is saved (I2)', () => {
+    render();
+    component.showArchived = true;
+    fixture.detectChanges();
+
+    expect(disabled('#chemicalLocationUp-1')).toBe(true);
+    expect(disabled('#chemicalLocationDown-1')).toBe(false);
+    expect(disabled('#chemicalLocationUp-2')).toBe(false);
+    expect(disabled('#chemicalLocationDown-2')).toBe(true);
+    expect(find('#chemicalLocationUp-3')).toBeNull();
+    expect(find('#chemicalLocationDown-3')).toBeNull();
+
+    component.reordering = true;
+    fixture.detectChanges();
+
+    expect(disabled('#chemicalLocationDown-1')).toBe(true);
+    expect(disabled('#chemicalLocationUp-2')).toBe(true);
   });
 
   it('shows a loading state, not an empty list, while the locations load', () => {

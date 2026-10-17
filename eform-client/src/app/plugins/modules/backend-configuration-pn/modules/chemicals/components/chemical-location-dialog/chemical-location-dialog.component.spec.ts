@@ -12,6 +12,13 @@ describe('ChemicalLocationDialogComponent', () => {
 
   const existing = {location: {id: 2, name: 'Kemirum', description: 'Reoler'}, openCount: 2, actionCount: 0};
 
+  beforeEach(() => {
+    // jsdom has no object URLs; the dialog previews a picked photo through one (M1).
+    let next = 0;
+    URL.createObjectURL = jest.fn().mockImplementation(() => `blob:preview-${++next}`);
+    URL.revokeObjectURL = jest.fn();
+  });
+
   function build(row: unknown): ChemicalLocationDialogComponent {
     chemicals = {
       createLocation: jest.fn().mockReturnValue(of({success: true, model: {id: 44}})),
@@ -164,10 +171,77 @@ describe('ChemicalLocationDialogComponent', () => {
     component.onFile(new File(['x'], 'm.jpg', {type: 'image/jpeg'}));
     component.save();
 
-    component.onFile(null);
     component.cancel();
     confirm.discard();
 
     expect(dialogRef.close).toHaveBeenCalledWith(true);
+  });
+
+  it('after a create whose photo was refused, edits the saved location and counts only the photo as unsaved (M5)', () => {
+    const component = build(null);
+    chemicals.uploadLocationPhoto.mockReturnValue(of({success: false, message: 'Fotoet kunne ikke gemmes'}));
+    component.name = ' Maskinhus ';
+    component.description = 'Bag laden';
+    component.onFile(new File(['x'], 'm.jpg', {type: 'image/jpeg'}));
+    expect(component.editing).toBe(false);
+
+    component.save();
+
+    expect(component.editing).toBe(true);
+    expect(component.dirty).toBe(true);
+    component.onFile(null);
+    expect(component.dirty).toBe(false);
+    component.cancel();
+    expect(confirm.dialog.open).not.toHaveBeenCalled();
+    expect(dialogRef.close).toHaveBeenCalledWith(true);
+  });
+
+  it('is in edit mode for an existing location', () => {
+    expect(build(existing).editing).toBe(true);
+  });
+
+  describe('photo preview (M1)', () => {
+    it('previews a picked valid photo and frees the previous preview', () => {
+      const component = build(existing);
+
+      component.onFile(new File(['x'], 'a.jpg', {type: 'image/jpeg'}));
+      expect(component.previewUrl).toBe('blob:preview-1');
+
+      component.onFile(new File(['x'], 'b.png', {type: 'image/png'}));
+      expect(component.previewUrl).toBe('blob:preview-2');
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview-1');
+    });
+
+    it('shows no preview for a refused file or after the photo is cleared', () => {
+      const component = build(existing);
+      component.onFile(new File(['x'], 'a.jpg', {type: 'image/jpeg'}));
+
+      component.onFile(new File(['x'], 'a.gif', {type: 'image/gif'}));
+      expect(component.previewUrl).toBeNull();
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview-1');
+
+      component.onFile(null);
+      expect(component.previewUrl).toBeNull();
+    });
+
+    it('frees the preview when the dialog is destroyed', () => {
+      const component = build(existing);
+      component.onFile(new File(['x'], 'a.jpg', {type: 'image/jpeg'}));
+
+      component.ngOnDestroy();
+
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview-1');
+    });
+  });
+
+  it('reads the picked file and clears the input, so the same file can be picked again (M6)', () => {
+    const component = build(existing);
+    const file = new File(['x'], 'a.jpg', {type: 'image/jpeg'});
+    const input = {files: [file], value: 'C:\\fakepath\\a.jpg'} as unknown as HTMLInputElement;
+
+    component.onFileInput(input);
+
+    expect(component.photo).toBe(file);
+    expect(input.value).toBe('');
   });
 });

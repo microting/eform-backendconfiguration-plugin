@@ -1,8 +1,8 @@
 import {entry, inventoryOf, location, placement} from './chemical-inventory.fixtures';
 import {
   LOCATION_PHOTO_MAX_BYTES,
+  activeLocationIds,
   buildLocationRows,
-  reorderedLocationIds,
   validateLocationPhoto,
 } from './chemical-locations.helper';
 
@@ -47,17 +47,22 @@ describe('chemical locations helper', () => {
     expect(buildLocationRows(null, '2026-09-29')).toEqual([]);
   });
 
-  it('computes the new order of ACTIVE locations after a drag', () => {
+  it('gives the order body: the ACTIVE locations in row order, never an archived one', () => {
     const rows = buildLocationRows(inventory, '2026-09-29');
 
-    expect(reorderedLocationIds(rows, 2, 0)).toEqual([1, 2, 4]);
-    expect(reorderedLocationIds(rows, 0, 0)).toEqual([2, 4, 1]);
+    expect(activeLocationIds(rows)).toEqual([2, 4, 1]);
+    expect(activeLocationIds([rows[3], rows[2], rows[0]])).toEqual([1, 2]);
   });
 
-  it('never puts an archived location in the order body, even when dropped past the active rows', () => {
-    const rows = buildLocationRows(inventory, '2026-09-29');
+  it('counts "kræver handling" exactly as W1 does (one rule for both screens)', () => {
+    // A passed use deadline on an approved product: overdue in W1, so one action here.
+    const withDeadline = inventoryOf({
+      locations: [location(1, 'L1')],
+      placements: [placement(10, 1, 300)],
+      registerEntries: [entry(300, 'Udløbet', {status: 5, useAndPossessionDeadline: '2026-01-01'})],
+    });
 
-    expect(reorderedLocationIds(rows, 0, 3)).toEqual([4, 1, 2]);
+    expect(buildLocationRows(withDeadline, '2026-09-29').map((r) => r.actionCount)).toEqual([1]);
   });
 
   it('accepts JPG and PNG up to 10 MB', () => {

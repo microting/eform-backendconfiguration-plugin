@@ -182,6 +182,12 @@ describe('Kemi i18n meaning', () => {
     ['ukUA', 'Chemicals: Remove', 'Вилучити'],
     // Task 13 re-review N-m1: the write-off follows every removal (also "used up"), not only a disposal.
     ['roRO', 'Chemicals: Stock origin write-off', 'Scădere din stoc la îndepărtare'],
+    // Task 14 review M8: reads right for a count of 1 too (da plural, et partitive), ro labels in the informal imperative.
+    ['da', 'Chemicals: Archive blocked',
+      'Lokationen kan først arkiveres, når alle placeringer her ({{count}}) er flyttet eller fjernet. Arkiverede lokationer beholder deres historik.'],
+    ['etET', 'Chemicals: Archive blocked',
+      'Asukoha saab arhiveerida, kui selle {{count}} registreeritud kemikaali on teise kohta teisaldatud või eemaldatud. Arhiveeritud asukohad säilitavad oma ajaloo.'],
+    ['roRO', 'Chemicals: Edit location', 'Editează locația'],
   ];
 
   it.each(REVIEWED)('%s keeps the reviewed %s', (locale, key, value) => {
@@ -193,6 +199,7 @@ describe('Kemi i18n meaning', () => {
   const LOCATION_KEYS = [
     'Chemicals: Locations title', 'Chemicals: New location', 'Chemicals: Edit location', 'Chemicals: No locations',
     'Chemicals: Loading locations', 'Chemicals: Could not load locations', 'Chemicals: Archive blocked',
+    'Chemicals: Archive location?', 'Chemicals: Archive confirm hint', 'Chemicals: Move location up', 'Chemicals: Move location down',
   ];
   const INTERNSHIP = new RegExp([
     '\\bstage\\b', 'stagiu', 'tirocin', 'praktikum', '\\bpraktik\\b', 'praktika', 'praktyk', 'staż', 'stáž', 'práctica',
@@ -221,11 +228,35 @@ describe('Kemi i18n meaning', () => {
     expect(text(locale, 'Chemicals: No.')).not.toMatch(negation);
   });
 
-  // Archiving a location is an action (a verb on the button), never the noun "archive".
-  const ARCHIVE_NOUN: Record<string, RegExp> = {deDE: /^archiv$/i, nlNL: /^archief$/i, plPL: /^archiwum$/i, frFR: /^archives?$/i, esES: /^archivo$/i};
+  // Archiving a location is an action (a verb on the button), never the noun "archive". Not anchored at the end:
+  // machine translation produced "Archiwum tego" ("the archive of this").
+  const ARCHIVE_NOUN: Record<string, RegExp> = {
+    deDE: /^archiv\b/i, nlNL: /^archief\b/i, plPL: /^archiwum\b/i, frFR: /^archives?\b/i, esES: /^archivo\b/i,
+    itIT: /^archivio\b/i, svSE: /^arkiv$/i, noNO: /^arkiv$/i, da: /^arkiv$/i, isIS: /^skjalasafn$/i,
+  };
 
   it.each(Object.entries(ARCHIVE_NOUN))('%s: "Archive" is the action, not the noun', (locale, noun) => {
     expect(text(locale, 'Chemicals: Archive')).not.toMatch(noun);
+  });
+
+  it('the archive-noun guard catches what machine translation produced', () => {
+    expect('Archiwum tego').toMatch(ARCHIVE_NOUN.plPL);
+    expect('Archiv').toMatch(ARCHIVE_NOUN.deDE);
+    expect('Archivieren').not.toMatch(ARCHIVE_NOUN.deDE);
+  });
+
+  // "Loading locations" is the screen loading data, never loading cargo (Task 14 machine translation produced
+  // "Ladepositionen", "Ubicaciones de carga", "Emplacements de chargement", "Laadlocaties", "Locais de carregamento").
+  const CARGO = /ladeposition|verlade|de carga|de chargement|laadlocat|de carregamento|ładunk|nakládk|lastning/i;
+
+  it.each(NON_ENGLISH)('%s: loading locations is loading data, not cargo', (locale) => {
+    expect(LOCATION_KEYS.filter((key) => CARGO.test(text(locale, key)))).toEqual([]);
+  });
+
+  it('the cargo guard catches what machine translation produced', () => {
+    for (const bad of ['Ladepositionen…', 'Ubicaciones de carga…', 'Emplacements de chargement…', 'Laadlocaties…', 'Locais de carregamento…']) {
+      expect(bad).toMatch(CARGO);
+    }
   });
 
   it('ptPT uses the European "stock", never the Brazilian "estoque", in every Kemi text', () => {

@@ -6,7 +6,7 @@ import {ActivatedRoute, Router, convertToParamMap} from '@angular/router';
 import {Store} from '@ngrx/store';
 import {TranslateService} from '@ngx-translate/core';
 import {ToastrService} from 'ngx-toastr';
-import {BehaviorSubject, Observable, Subject, of, throwError} from 'rxjs';
+import {BehaviorSubject, EMPTY, Observable, Subject, of, throwError} from 'rxjs';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {
   chemicalsInitialState,
@@ -124,6 +124,8 @@ describe('ChemicalInventoryPageComponent', () => {
     it.each([
       ['an unsuccessful answer', () => of({success: false, message: 'x'})],
       ['a failed request', () => throwError(() => new Error('500'))],
+      // The host interceptor gives up on a 5xx or a network failure with EMPTY (Task 14 M2).
+      ['no answer at all', () => EMPTY],
     ])('shows the failed state after %s', (_name, answer) => {
       const component = build({}, {inventory: answer()});
 
