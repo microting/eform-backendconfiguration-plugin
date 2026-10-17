@@ -1,12 +1,12 @@
 @use '../../chemicals-shared';
 
-// Like every Kemi dialog: a block host. Without it the host is display: contents inside the dialog surface, the
-// content becomes a shrinkable flex item of the surface, and it collapsed so its fields could not be reached (Task 16 e2e).
+// The host's global `.flex-column` also sets `flex: 1 0 0`, so a scrolling element with that class sizes from a zero
+// basis and collapses inside a flex column (Task 16 e2e: first the dialog content, then the result list, could not
+// be clicked). A block host keeps the content out of the dialog surface's flex column, as in every Kemi dialog.
 :host { display: block; max-width: 520px; }
 
-// A scrolling flex item may shrink to nothing (min-height: auto is 0 with overflow); the results must keep their height.
 .chemicals-register-results {
-  flex-shrink: 0;
+  flex: 0 0 auto;
   max-height: 240px;
   overflow-y: auto;
 }
