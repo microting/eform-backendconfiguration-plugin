@@ -1,5 +1,6 @@
 import {Type} from '@angular/core';
 import {
+  ChemicalHistoryPageComponent,
   ChemicalInventoryPageComponent,
   ChemicalLocationsPageComponent,
   ChemicalPermissionsPageComponent,
@@ -50,5 +51,11 @@ export const CHEMICAL_SCREENS: ChemicalScreen[] = [
     titleKey: 'Chemicals: Settings title',
     menuE2EId: 'backend-configuration-pn-chemicals-settings',
     component: ChemicalSettingsPageComponent,
+  },
+  {
+    path: 'history',
+    titleKey: 'Chemicals: History title',
+    menuE2EId: 'backend-configuration-pn-chemicals-history',
+    component: ChemicalHistoryPageComponent,
   },
 ];

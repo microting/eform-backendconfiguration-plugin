@@ -12,6 +12,7 @@ import {
   ChemicalDigestModel,
   ChemicalDownload,
   ChemicalDownloadError,
+  ChemicalHistoryPageModel,
   ChemicalHistoryQueryModel,
   ChemicalInventoryModel,
   ChemicalLocationModel,
@@ -174,6 +175,11 @@ export class BackendConfigurationPnChemicalsService {
   /** The next weekly e-mail for one property, built by the server from the digest job's rule. */
   getDigestPreview(propertyId: number): Observable<OperationDataResult<ChemicalDigestModel>> {
     return this.apiBaseService.get(this.url(`properties/${propertyId}/digest-preview`));
+  }
+
+  /** W6: one server page of the property's history. A refused query (bad period) is 200 + success=false. */
+  getHistory(propertyId: number, query: ChemicalHistoryQueryModel): Observable<OperationDataResult<ChemicalHistoryPageModel>> {
+    return this.apiBaseService.post(this.url(`properties/${propertyId}/history`), query);
   }
 
   exportAuthorityList(propertyId: number): Observable<ChemicalDownload> {

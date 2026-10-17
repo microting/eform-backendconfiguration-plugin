@@ -10,6 +10,7 @@ import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatIconModule} from '@angular/material/icon';
 import {MatInputModule} from '@angular/material/input';
 import {MatMenuModule} from '@angular/material/menu';
+import {MatPaginatorModule} from '@angular/material/paginator';
 import {MatRadioModule} from '@angular/material/radio';
 import {MatSlideToggleModule} from '@angular/material/slide-toggle';
 import {MatTooltipModule} from '@angular/material/tooltip';
@@ -20,6 +21,7 @@ import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
 import {ChemicalsRouting} from './chemicals.routing';
 import {
+  ChemicalHistoryPageComponent,
   ChemicalInventoryPageComponent,
   ChemicalLocationDialogComponent,
   ChemicalLocationsPageComponent,
@@ -52,6 +54,7 @@ import {
     ChemicalLocationDialogComponent,
     ChemicalPermissionsPageComponent,
     ChemicalSettingsPageComponent,
+    ChemicalHistoryPageComponent,
   ],
   imports: [
     CommonModule,
@@ -69,6 +72,7 @@ import {
     MatIconModule,
     MatInputModule,
     MatMenuModule,
+    MatPaginatorModule,
     MatRadioModule,
     MatSlideToggleModule,
     MatTooltipModule,

@@ -1,4 +1,3 @@
-import {HttpErrorResponse} from '@angular/common/http';
 import {Component, DestroyRef, OnInit, inject} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {Overlay} from '@angular/cdk/overlay';
@@ -13,7 +12,7 @@ import {ToastrService} from 'ngx-toastr';
 import {Observable, combineLatest} from 'rxjs';
 import {finalize} from 'rxjs/operators';
 import {dialogConfigHelper} from 'src/app/common/helpers';
-import {ChemicalDownload, ChemicalDownloadError, ChemicalInventoryModel, ChemicalLocationModel} from '../../../../models';
+import {ChemicalDownload, ChemicalInventoryModel, ChemicalLocationModel} from '../../../../models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {
   ChemicalInventoryFiltersModel,
@@ -27,6 +26,7 @@ import {
   ChemicalInventoryRow,
   ChemicalLatestLoad,
   buildInventoryRows,
+  downloadFailureText,
   filterInventoryRows,
   isStockEnabled,
   localToday,
@@ -236,21 +236,8 @@ export class ChemicalInventoryPageComponent implements OnInit {
     this.exporting = true;
     download().pipe(finalize(() => (this.exporting = false))).subscribe({
       next: (file) => saveAs(file.blob, file.fileName),
-      error: (err: Partial<ChemicalDownloadError>) => this.toastr.error(this.exportFailureText(err)),
+      error: (err: unknown) => this.toastr.error(downloadFailureText(err, this.translate)),
     });
-  }
-
-  /**
-   * The server's reason when it gave one (m-9), else a refusal or the generic failure. Only a
-   * ChemicalDownloadError (a plain {status, message} from the service) carries a reason: a raw
-   * HttpErrorResponse or an Error also has a message, but a technical one that is never shown (N-m4).
-   */
-  private exportFailureText(err: Partial<ChemicalDownloadError> | null): string {
-    const isDownloadError = typeof err?.status === 'number' && !(err instanceof HttpErrorResponse) && !(err instanceof Error);
-    if (isDownloadError && err.message) {
-      return err.message;
-    }
-    return this.translate.instant(isDownloadError && err.status === 403 ? 'Chemicals: Export not allowed' : 'Export failed');
   }
 
   /**

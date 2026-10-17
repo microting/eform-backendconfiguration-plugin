@@ -1,0 +1,75 @@
+<div id="chemicalHistoryPage">
+  <div class="d-flex flex-row flex-wrap align-items-end gap-12 mb-2">
+    <mat-form-field>
+      <mat-label>{{ 'Chemicals: User' | translate }}</mat-label>
+      <mtx-select id="chemicalHistoryUserFilter" [items]="userOptions" bindLabel="name" bindValue="userId"
+                  [ngModel]="filters.userId" (ngModelChange)="updateFilters({userId: $event ?? null})"
+                  [placeholder]="'Chemicals: All users' | translate"></mtx-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{ 'Chemicals: Action' | translate }}</mat-label>
+      <mtx-select id="chemicalHistoryActionFilter" [ngModel]="filters.action" (ngModelChange)="updateFilters({action: $event ?? null})"
+                  [placeholder]="'Chemicals: All actions' | translate">
+        <mtx-option *ngFor="let action of actions" [value]="action">{{ actionKey(action) | translate }}</mtx-option>
+      </mtx-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{ 'Location' | translate }}</mat-label>
+      <mtx-select id="chemicalHistoryLocationFilter" [items]="locations" bindLabel="name" bindValue="id"
+                  [ngModel]="filters.locationId" (ngModelChange)="updateFilters({locationId: $event ?? null})"
+                  [placeholder]="'Chemicals: All' | translate"></mtx-select>
+    </mat-form-field>
+    <!-- (change), not ngModelChange: a half-typed date is '' and would snap the field back to the default. -->
+    <mat-form-field>
+      <mat-label>{{ 'Chemicals: From' | translate }}</mat-label>
+      <input matInput type="date" id="chemicalHistoryFrom" [value]="query.from" [max]="query.to"
+             (change)="setDate('dateFrom', $any($event.target))">
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{ 'Chemicals: To' | translate }}</mat-label>
+      <input matInput type="date" id="chemicalHistoryTo" [value]="query.to" [min]="query.from"
+             (change)="setDate('dateTo', $any($event.target))">
+    </mat-form-field>
+    <button class="btn-quiet ml-auto" id="chemicalHistoryExportBtn" [disabled]="exporting || periodError || propertyId === null"
+            [attr.aria-busy]="exporting" (click)="export()">
+      <mat-icon>{{ exporting ? 'hourglass_empty' : 'download' }}</mat-icon>
+      <span>{{ 'Chemicals: Export as Excel' | translate }}</span>
+    </button>
+  </div>
+
+  <div *ngIf="periodErrorKey as errorKey" id="chemicalHistoryPeriodError" class="chemicals-danger" role="alert">
+    <mat-icon>error</mat-icon><span>{{ errorKey | translate }}</span>
+  </div>
+  <div *ngIf="loading" id="chemicalHistoryLoading" class="chemicals-empty" role="status">{{ 'Chemicals: Loading history' | translate }}</div>
+  <div *ngIf="loadFailed" id="chemicalHistoryLoadFailed" class="chemicals-danger" role="alert">
+    <mat-icon>error</mat-icon><span>{{ 'Chemicals: Could not load history' | translate }}</span>
+  </div>
+
+  <ng-container *ngIf="!loading && !loadFailed && !periodError && propertyId !== null">
+    <table id="chemicalHistoryTable" class="chemicals-history-table">
+      <thead>
+        <tr>
+          <th scope="col">{{ 'Chemicals: Time' | translate }}</th>
+          <th scope="col">{{ 'Chemicals: User' | translate }}</th>
+          <th scope="col">{{ 'Chemicals: Action' | translate }}</th>
+          <th scope="col">{{ 'Chemicals: Product' | translate }}</th>
+          <th scope="col">{{ 'Location' | translate }}</th>
+          <th scope="col">{{ 'Chemicals: Details' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let e of events" class="chemical-history-row" [attr.data-action]="e.action">
+          <td class="col-time">{{ utc(e.at) | date: 'dd-MM-yyyy HH:mm' }}</td>
+          <td class="col-user">{{ e.userId === systemUserId ? ('Chemicals: System' | translate) : e.userName }}</td>
+          <td class="col-action">{{ actionKey(e.action) | translate }}</td>
+          <td class="col-product">{{ e.productName || '–' }}</td>
+          <td class="col-location">{{ e.targetLocationName ? e.locationName + ' → ' + e.targetLocationName : (e.locationName || '–') }}</td>
+          <td class="col-details">{{ details(e) }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div *ngIf="!events.length" class="chemicals-empty" id="chemicalHistoryEmpty">{{ 'Chemicals: No history' | translate }}</div>
+  </ng-container>
+  <mat-paginator id="chemicalHistoryPaginator" [length]="total" [pageIndex]="pageIndex" [pageSize]="pageSize"
+                 [pageSizeOptions]="pageSizeOptions" [disabled]="loading || periodError" (page)="onPage($event)"></mat-paginator>
+</div>

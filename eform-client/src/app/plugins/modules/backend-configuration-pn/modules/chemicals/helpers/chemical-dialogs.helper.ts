@@ -1,8 +1,10 @@
 import {Overlay} from '@angular/cdk/overlay';
+import {HttpErrorResponse} from '@angular/common/http';
 import {inject} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
 import {TranslateService} from '@ngx-translate/core';
 import {Observable, finalize} from 'rxjs';
+import {ChemicalDownloadError} from '../../../models';
 import {confirmDiscardWhenDirty} from '../chemicals-unsaved-changes';
 import {confirmDiscard} from './chemical-discard-confirm';
 import {ChemicalInventoryRow} from './chemical-inventory.helper';
@@ -97,4 +99,19 @@ export function openSafetyDataSheet(
     next: (blob) => window.open(URL.createObjectURL(blob), '_blank'),
     error: () => toastr.error(translate.instant('Chemicals: Could not open safety data sheet')),
   });
+}
+
+/**
+ * The toast of a failed file download (W1 exports, W6 Excel): the raw download client has no interceptors,
+ * so the page says it. The server's reason when it gave one (m-9), else a refusal (403) or the generic
+ * failure. Only a ChemicalDownloadError (a plain {status, message} from the service) carries a reason: a raw
+ * HttpErrorResponse or an Error also has a message, but a technical one that is never shown (N-m4).
+ */
+export function downloadFailureText(err: unknown, translate: {instant(key: string): string}): string {
+  const candidate = err as Partial<ChemicalDownloadError> | null;
+  const isDownloadError = typeof candidate?.status === 'number' && !(err instanceof HttpErrorResponse) && !(err instanceof Error);
+  if (isDownloadError && candidate.message) {
+    return candidate.message;
+  }
+  return translate.instant(isDownloadError && candidate.status === 403 ? 'Chemicals: Export not allowed' : 'Export failed');
 }
