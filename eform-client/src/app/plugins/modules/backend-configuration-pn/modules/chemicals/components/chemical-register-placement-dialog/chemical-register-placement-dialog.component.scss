@@ -1,5 +1,9 @@
 @use '../../chemicals-shared';
 
+// Like every Kemi dialog: a block host. Without it the host is display: contents inside the dialog surface, the
+// content becomes a shrinkable flex item of the surface, and it collapsed so its fields could not be reached (Task 16 e2e).
+:host { display: block; max-width: 520px; }
+
 .chemicals-register-results {
   max-height: 240px;
   overflow-y: auto;
