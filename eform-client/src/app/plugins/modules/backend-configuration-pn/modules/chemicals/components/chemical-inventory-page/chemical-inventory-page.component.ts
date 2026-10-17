@@ -25,6 +25,7 @@ import {
 import {
   ChemicalActionSummary,
   ChemicalInventoryRow,
+  ChemicalLatestLoad,
   buildInventoryRows,
   filterInventoryRows,
   isStockEnabled,
@@ -82,16 +83,21 @@ export class ChemicalInventoryPageComponent implements OnInit {
   /** Rebuilt when the inventory loads (the Lager column depends on the property's stock flag), not per change detection. */
   columns: MtxGridColumn[] = [];
   exporting = false;
-  /** The inventory request is in flight; nothing is shown as empty meanwhile (I-1). */
-  loading = false;
-  loadFailed = false;
-  /** Only the newest inventory request may set the rows (another property, or a reload after a save). */
-  private loadGeneration = 0;
+  /** The newest inventory request; nothing is shown as empty while it is in flight (I-1). */
+  private readonly load = new ChemicalLatestLoad();
 
   readonly rowClassFormatter = {
     'chemical-row--overdue': (row: ChemicalInventoryRow) => row.severity === 'overdue',
     'chemical-row--warning': (row: ChemicalInventoryRow) => row.severity === 'warning',
   };
+
+  get loading(): boolean {
+    return this.load.loading;
+  }
+
+  get loadFailed(): boolean {
+    return this.load.failed;
+  }
 
   get stockEnabled(): boolean {
     return isStockEnabled(this.inventory, this.propertyId);
@@ -128,34 +134,11 @@ export class ChemicalInventoryPageComponent implements OnInit {
   }
 
   reload(): void {
-    const generation = ++this.loadGeneration;
+    this.load.reset();
     this.setInventory(null);
-    this.loadFailed = false;
-    this.loading = this.propertyId !== null;
-    this.applyFilters();
-    if (this.propertyId === null) {
-      return;
+    if (this.propertyId !== null) {
+      this.load.run(this.chemicalsService.getPropertyInventory(this.propertyId), (inventory) => this.setInventory(inventory));
     }
-    this.chemicalsService.getPropertyInventory(this.propertyId).subscribe({
-      next: (res) => {
-        if (generation !== this.loadGeneration) {
-          return;
-        }
-        this.loading = false;
-        if (!res || !res.success) {
-          // ApiBaseService already toasted the server's message.
-          this.loadFailed = true;
-          return;
-        }
-        this.setInventory(res.model);
-      },
-      error: () => {
-        if (generation === this.loadGeneration) {
-          this.loading = false;
-          this.loadFailed = true;
-        }
-      },
-    });
   }
 
   updateFilters(patch: Partial<ChemicalInventoryFiltersModel>): void {

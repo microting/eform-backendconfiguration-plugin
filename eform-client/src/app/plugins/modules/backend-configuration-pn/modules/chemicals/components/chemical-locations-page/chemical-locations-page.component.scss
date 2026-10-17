@@ -13,7 +13,7 @@
 .col-name { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .col-count, .col-updated { width: 110px; flex: none; }
 .col-status { width: 160px; flex: none; }
-.col-actions { width: 96px; flex: none; justify-content: flex-end; }
+.col-actions { width: 192px; flex: none; justify-content: flex-end; }
 .chemicals-location-name { font-weight: 600; }
 .chemicals-location-thumb { width: 48px; height: 36px; object-fit: cover; border-radius: var(--radius-sm); }
 .chemicals-location-nophoto { color: var(--md-on-surface-variant); }

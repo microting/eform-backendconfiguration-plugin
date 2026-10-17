@@ -994,7 +994,7 @@ export const roRO = {
   'Chemicals: Loading locations': 'Se încarcă locațiile…',
   'Chemicals: Could not load locations': 'Locațiile nu au putut fi încărcate.',
   'Chemicals: New location': 'Locație nouă',
-  'Chemicals: Edit location': 'Editați locația',
+  'Chemicals: Edit location': 'Editează locația',
   'Chemicals: Show archived': 'Afișează locațiile arhivate ({{count}})',
   'Chemicals: Drag hint': 'Trageți de ghidaj pentru a schimba ordinea. Aplicația mobilă folosește aceeași ordine.',
   'Chemicals: No.': 'Nr.',
@@ -1009,4 +1009,8 @@ export const roRO = {
   'Chemicals: Photo hint': 'JPG sau PNG, maximum 10 MB. Fotografia îi ajută pe noii angajați să găsească locul potrivit.',
   'Chemicals: Photo wrong type': 'Se pot folosi doar fotografii în format JPG sau PNG.',
   'Chemicals: Photo too large': 'Fotografia are o dimensiune mai mare de 10 MB.',
+  'Chemicals: Move location up': 'Mută {{name}} mai sus în listă',
+  'Chemicals: Move location down': 'Mută {{name}} mai jos în listă',
+  'Chemicals: Archive location?': 'Arhivați această locație?',
+  'Chemicals: Archive confirm hint': 'Locația nu va mai fi afișată în aplicația mobilă. Istoricul acesteia este păstrat.',
 };

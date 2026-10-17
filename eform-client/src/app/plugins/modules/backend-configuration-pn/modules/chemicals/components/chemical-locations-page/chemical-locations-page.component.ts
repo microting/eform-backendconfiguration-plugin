@@ -1,14 +1,23 @@
 import {Component, DestroyRef, OnInit, inject} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
-import {CdkDragDrop} from '@angular/cdk/drag-drop';
+import {CdkDragDrop, moveItemInArray} from '@angular/cdk/drag-drop';
 import {Overlay} from '@angular/cdk/overlay';
 import {MatDialog} from '@angular/material/dialog';
+import {TranslateService} from '@ngx-translate/core';
 import {Store} from '@ngrx/store';
-import {finalize} from 'rxjs/operators';
+import {filter, finalize, switchMap} from 'rxjs/operators';
 import {dialogConfigHelper} from 'src/app/common/helpers';
+import {ChemicalLocationModel} from '../../../../models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {selectChemicalsPropertyId} from '../../../../state';
-import {ChemicalLocationRow, buildLocationRows, localToday, reorderedLocationIds} from '../../helpers';
+import {
+  ChemicalLatestLoad,
+  ChemicalLocationRow,
+  activeLocationIds,
+  buildLocationRows,
+  confirmChemicalAction,
+  localToday,
+} from '../../helpers';
 import {
   ChemicalLocationDialogComponent,
   ChemicalLocationDialogData,
@@ -16,9 +25,10 @@ import {
 
 /**
  * W3 "Lokationer": the locations of the selected property with photo, product and action counts.
- * Drag to reorder (the app uses the order too); archived locations cannot be dragged and are not
- * part of the order. A location can be archived only without open placements (spec §5.1; the
- * server enforces it as well). "Vis arkiverede" shows the archived ones, read-only.
+ * Drag, or the up/down buttons, change the order (the app uses it too); archived locations cannot be
+ * moved and are not part of the order. A location can be archived only without open placements
+ * (spec §5.1; the server enforces it as well) and only after a confirm, since the screen cannot undo
+ * it. "Vis arkiverede" shows the archived ones, read-only.
  */
 @Component({
   selector: 'app-chemical-locations-page',
@@ -31,21 +41,32 @@ export class ChemicalLocationsPageComponent implements OnInit {
   private chemicalsService = inject(BackendConfigurationPnChemicalsService);
   private dialog = inject(MatDialog);
   private overlay = inject(Overlay);
+  private translate = inject(TranslateService);
   private destroyRef = inject(DestroyRef);
 
   propertyId: number | null = null;
   rows: ChemicalLocationRow[] = [];
   showArchived = false;
-  /** The inventory request is in flight; nothing is shown as empty meanwhile. */
-  loading = false;
-  loadFailed = false;
-  /** A new order is being saved; dragging waits for it, so two orders never race. */
+  /** A new order is being saved; moving waits for it, so two orders never race. */
   reordering = false;
-  /** Only the newest inventory request may set the rows (another property, or a reload after a save). */
-  private loadGeneration = 0;
+  /** The newest inventory request; nothing is shown as empty while it is in flight. */
+  private readonly load = new ChemicalLatestLoad();
 
   /** Bound to cdkDropListSortPredicate: a row can only be sorted among the active locations. */
   readonly canSortTo = (index: number): boolean => index < this.activeCount;
+
+  get loading(): boolean {
+    return this.load.loading;
+  }
+
+  get loadFailed(): boolean {
+    return this.load.failed;
+  }
+
+  /** An order save cannot be cancelled: the container locks the property picker meanwhile (M3). */
+  get busy(): boolean {
+    return this.reordering;
+  }
 
   get visibleRows(): ChemicalLocationRow[] {
     return this.showArchived ? this.rows : this.rows.filter((r) => !r.location.archived);
@@ -69,37 +90,18 @@ export class ChemicalLocationsPageComponent implements OnInit {
   }
 
   reload(): void {
-    const generation = ++this.loadGeneration;
+    this.load.reset();
     this.rows = [];
-    this.loadFailed = false;
-    this.loading = this.propertyId !== null;
-    if (this.propertyId === null) {
-      return;
+    if (this.propertyId !== null) {
+      this.load.run(this.chemicalsService.getPropertyInventory(this.propertyId),
+        (inventory) => (this.rows = buildLocationRows(inventory, localToday())));
     }
-    this.chemicalsService.getPropertyInventory(this.propertyId).subscribe({
-      next: (res) => {
-        if (generation !== this.loadGeneration) {
-          return;
-        }
-        this.loading = false;
-        if (!res || !res.success) {
-          // ApiBaseService already toasted the server's message.
-          this.loadFailed = true;
-          return;
-        }
-        this.rows = buildLocationRows(res.model, localToday());
-      },
-      error: () => {
-        if (generation === this.loadGeneration) {
-          this.loading = false;
-          this.loadFailed = true;
-        }
-      },
-    });
   }
 
+  /** Versioned by the stored file name (a new one per upload), so a replaced photo is never served from a cache. */
   photoUrl(row: ChemicalLocationRow): string | null {
-    return row.location.photoFileName ? this.chemicalsService.locationPhotoUrl(row.location.id) : null;
+    const fileName = row.location.photoFileName;
+    return fileName ? `${this.chemicalsService.locationPhotoUrl(row.location.id)}?v=${encodeURIComponent(fileName)}` : null;
   }
 
   canArchive(row: ChemicalLocationRow): boolean {
@@ -111,19 +113,57 @@ export class ChemicalLocationsPageComponent implements OnInit {
     return !row.location.archived;
   }
 
-  /** Shows the new order at once; a refused order reloads the server's. */
-  drop(event: CdkDragDrop<ChemicalLocationRow[]>): void {
-    if (this.propertyId === null || this.reordering || event.previousIndex === event.currentIndex) {
+  canMoveUp(row: ChemicalLocationRow): boolean {
+    return this.canMove(row) && this.indexOf(row) > 0;
+  }
+
+  canMoveDown(row: ChemicalLocationRow): boolean {
+    return this.canMove(row) && this.indexOf(row) < this.activeCount - 1;
+  }
+
+  /** The keyboard and single-pointer alternative to dragging (WCAG 2.1.1, 2.5.7). */
+  moveUp(row: ChemicalLocationRow): void {
+    if (this.canMoveUp(row)) {
+      const index = this.indexOf(row);
+      this.drop({previousIndex: index, currentIndex: index - 1});
+    }
+  }
+
+  moveDown(row: ChemicalLocationRow): void {
+    if (this.canMoveDown(row)) {
+      const index = this.indexOf(row);
+      this.drop({previousIndex: index, currentIndex: index + 1});
+    }
+  }
+
+  /**
+   * Shows the new order at once. A refused order, or one that gets no answer (the host interceptor
+   * ends a 5xx or a network failure with EMPTY), reloads the server's; a saved one takes over the
+   * locations the server returns ("Senest ændret" moves).
+   */
+  drop(event: Pick<CdkDragDrop<ChemicalLocationRow[]>, 'previousIndex' | 'currentIndex'>): void {
+    const lastActive = this.activeCount - 1;
+    const currentIndex = Math.min(event.currentIndex, lastActive);
+    if (this.propertyId === null || this.reordering || event.previousIndex > lastActive || event.previousIndex === currentIndex) {
       return;
     }
-    const ids = reorderedLocationIds(this.rows, event.previousIndex, event.currentIndex);
-    const byId = new Map(this.rows.map((r) => [r.location.id, r]));
-    this.rows = [...ids.map((id) => byId.get(id)), ...this.rows.filter((r) => r.location.archived)];
+    const rows = [...this.rows];
+    moveItemInArray(rows, event.previousIndex, currentIndex);
+    this.rows = rows;
     this.reordering = true;
-    this.chemicalsService.reorderLocations(this.propertyId, ids)
-      .pipe(finalize(() => (this.reordering = false)))
+    let answered = false;
+    this.chemicalsService.reorderLocations(this.propertyId, activeLocationIds(rows))
+      .pipe(finalize(() => {
+        this.reordering = false;
+        if (!answered) {
+          this.reload();
+        }
+      }))
       .subscribe((res) => {
-        if (!(res && res.success)) {
+        answered = true;
+        if (res && res.success) {
+          this.takeOver(res.model ?? []);
+        } else {
           this.reload();
         }
       });
@@ -133,7 +173,20 @@ export class ChemicalLocationsPageComponent implements OnInit {
     if (!this.canArchive(row)) {
       return;
     }
-    this.chemicalsService.archiveLocation(row.location.id).subscribe((res) => {
+    const t = (key: string) => this.translate.instant(key);
+    confirmChemicalAction(this.dialog, this.overlay, {
+      headerText: t('Chemicals: Archive location?'),
+      fields: [
+        {header: t('Location'), text: row.location.name},
+        {header: '', text: t('Chemicals: Archive confirm hint')},
+      ],
+      discardText: t('Chemicals: Archive'),
+      keepText: t('Cancel'),
+      confirmId: 'chemicalLocationArchiveConfirm',
+    }).pipe(
+      filter(Boolean),
+      switchMap(() => this.chemicalsService.archiveLocation(row.location.id)),
+    ).subscribe((res) => {
       if (res && res.success) {
         this.reload();
       }
@@ -148,6 +201,20 @@ export class ChemicalLocationsPageComponent implements OnInit {
     if (this.canEdit(row)) {
       this.openDialog(row);
     }
+  }
+
+  private canMove(row: ChemicalLocationRow): boolean {
+    return !this.reordering && !row.location.archived;
+  }
+
+  private indexOf(row: ChemicalLocationRow): number {
+    return this.rows.findIndex((r) => r.location.id === row.location.id);
+  }
+
+  /** The saved locations replace the shown ones; the counts and the order stay. */
+  private takeOver(saved: ChemicalLocationModel[]): void {
+    const byId = new Map(saved.map((l) => [l.id, l]));
+    this.rows = this.rows.map((r) => (byId.has(r.location.id) ? {...r, location: byId.get(r.location.id)} : r));
   }
 
   private openDialog(row: ChemicalLocationRow | null): void {

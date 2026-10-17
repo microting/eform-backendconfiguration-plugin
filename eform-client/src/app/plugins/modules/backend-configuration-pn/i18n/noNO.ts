@@ -1133,4 +1133,8 @@ export const noNO = {
   'Chemicals: Photo hint': 'JPG eller PNG, maksimalt 10 MB. Bildet hjelper nye ansatte med å finne stedet.',
   'Chemicals: Photo wrong type': 'Bare JPG- eller PNG-bilder kan brukes.',
   'Chemicals: Photo too large': 'Bildet er større enn 10 MB.',
+  'Chemicals: Move location up': 'Flytt {{name}} opp i listen',
+  'Chemicals: Move location down': 'Flytt {{name}} ned i listen',
+  'Chemicals: Archive location?': 'Arkivere dette stedet?',
+  'Chemicals: Archive confirm hint': 'Stedet vises ikke lenger i mobilappen. Historikken beholdes.',
 };

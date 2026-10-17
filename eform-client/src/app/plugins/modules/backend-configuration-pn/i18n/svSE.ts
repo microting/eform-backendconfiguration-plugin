@@ -1133,4 +1133,8 @@ export const svSE = {
   'Chemicals: Photo hint': 'JPG eller PNG, högst 10 MB. Fotot hjälper nyanställda att hitta platsen.',
   'Chemicals: Photo wrong type': 'Endast JPG- eller PNG-foton kan användas.',
   'Chemicals: Photo too large': 'Fotot är större än 10 MB.',
+  'Chemicals: Move location up': 'Flytta {{name}} uppåt i listan',
+  'Chemicals: Move location down': 'Flytta {{name}} nedåt i listan',
+  'Chemicals: Archive location?': 'Arkivera den här platsen?',
+  'Chemicals: Archive confirm hint': 'Platsen kommer inte längre att visas i mobilappen. Dess historik sparas.',
 };

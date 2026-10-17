@@ -1133,4 +1133,8 @@ export const itIT = {
   'Chemicals: Photo hint': 'JPG o PNG, al massimo 10 MB. La foto aiuta i nuovi dipendenti a trovare il posto.',
   'Chemicals: Photo wrong type': 'È consentito utilizzare solo foto in formato JPG o PNG.',
   'Chemicals: Photo too large': 'La foto è più grande di 10 MB.',
+  'Chemicals: Move location up': 'Sposta {{name}} in alto nell\'elenco',
+  'Chemicals: Move location down': 'Sposta {{name}} in basso nell\'elenco',
+  'Chemicals: Archive location?': 'Archiviare questa posizione?',
+  'Chemicals: Archive confirm hint': 'La posizione non verrà più visualizzata nell\'app mobile. La cronologia verrà conservata.',
 };

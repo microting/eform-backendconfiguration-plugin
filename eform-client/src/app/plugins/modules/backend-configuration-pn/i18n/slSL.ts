@@ -1009,4 +1009,8 @@ export const slSL = {
   'Chemicals: Photo hint': 'JPG ali PNG, največ 10 MB. Fotografija pomaga novim zaposlenim najti mesto.',
   'Chemicals: Photo wrong type': 'Uporabljate lahko samo fotografije v formatu JPG ali PNG.',
   'Chemicals: Photo too large': 'Fotografija je večja od 10 MB.',
+  'Chemicals: Move location up': 'Premakni {{name}} navzgor na seznamu',
+  'Chemicals: Move location down': 'Premakni {{name}} navzdol na seznamu',
+  'Chemicals: Archive location?': 'Arhivirati to lokacijo?',
+  'Chemicals: Archive confirm hint': 'Lokacija ne bo več prikazana v mobilni aplikaciji. Njena zgodovina se ohrani.',
 };

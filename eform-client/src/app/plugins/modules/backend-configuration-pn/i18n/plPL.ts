@@ -1133,4 +1133,8 @@ export const plPL = {
   'Chemicals: Photo hint': 'JPG lub PNG, maksymalnie 10 MB. Zdjęcie pomaga nowym pracownikom odnaleźć miejsce.',
   'Chemicals: Photo wrong type': 'Można używać wyłącznie zdjęć w formacie JPG lub PNG.',
   'Chemicals: Photo too large': 'Zdjęcie jest większe niż 10 MB.',
+  'Chemicals: Move location up': 'Przesuń {{name}} w górę na liście',
+  'Chemicals: Move location down': 'Przesuń {{name}} w dół na liście',
+  'Chemicals: Archive location?': 'Zarchiwizować tę lokalizację?',
+  'Chemicals: Archive confirm hint': 'Lokalizacja nie będzie już wyświetlana w aplikacji mobilnej. Jej historia zostanie zachowana.',
 };

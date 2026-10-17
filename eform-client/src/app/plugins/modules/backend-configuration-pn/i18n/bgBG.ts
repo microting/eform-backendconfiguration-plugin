@@ -1009,4 +1009,8 @@ export const bgBG = {
   'Chemicals: Photo hint': 'JPG или PNG, най-много 10 MB. Снимката помага на новите служители да намерят мястото.',
   'Chemicals: Photo wrong type': 'Могат да се използват само JPG или PNG снимки.',
   'Chemicals: Photo too large': 'Снимката е по-голяма от 10 MB.',
+  'Chemicals: Move location up': 'Премести {{name}} нагоре в списъка',
+  'Chemicals: Move location down': 'Премести {{name}} надолу в списъка',
+  'Chemicals: Archive location?': 'Да се архивира ли това местоположение?',
+  'Chemicals: Archive confirm hint': 'Местоположението вече няма да се показва в мобилното приложение. Историята му се запазва.',
 };

@@ -10,7 +10,7 @@ import {ChemicalDigestItemModel, ChemicalDigestModel} from '../../../../models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {selectChemicalsPropertyId} from '../../../../state';
 import {ChemicalUnsavedChangesAware, confirmDiscardWhenDirty, warnBeforeUnload} from '../../chemicals-unsaved-changes';
-import {addRecipients, confirmDiscard} from '../../helpers';
+import {ChemicalLatestLoad, addRecipients, confirmDiscard} from '../../helpers';
 
 /** The fixed alert rules (spec section 9; shown read-only, "Fast for alle kunder"). */
 export interface ChemicalAlertThresholdRow {
@@ -70,16 +70,13 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
   previewSections: ChemicalDigestPreviewSection[] = [];
   /** The preview could not be read (refused or HTTP error); the card says so instead of staying empty. */
   previewFailed = false;
-  /** The stored settings are being read: the form is not offered until they arrive. */
-  loading = false;
-  /** Reading the stored settings failed (refused or HTTP error): no form, so nothing can overwrite them from defaults. */
-  loadFailed = false;
+  /** Reading the stored settings; only the newest request may deliver (A to B to A switches). */
+  private readonly settingsLoad = new ChemicalLatestLoad();
   /** A save is in flight and cannot be cancelled: the container locks the property picker. */
   busy = false;
   private loadedStock = false;
   private loadedRecipients: string[] = [];
-  /** Bumped by every load / preview request; an answer from an older one is ignored (A to B to A switches). */
-  private loadGeneration = 0;
+  /** Bumped by every preview request; an answer from an older one is ignored (A to B to A switches). */
   private previewGeneration = 0;
   /** The last save was refused or failed; the edits are kept for a retry. */
   saveFailed = false;
@@ -91,6 +88,16 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
         this.propertyId = id;
         this.load();
       });
+  }
+
+  /** The stored settings are being read: the form is not offered until they arrive. */
+  get loading(): boolean {
+    return this.settingsLoad.loading;
+  }
+
+  /** Reading the stored settings failed (refused, HTTP error or no answer): no form, so nothing can overwrite them from defaults. */
+  get loadFailed(): boolean {
+    return this.settingsLoad.failed;
   }
 
   /** The form shows the stored settings and may be edited and saved. */
@@ -187,38 +194,18 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
   }
 
   private load(): void {
-    this.loadGeneration++;
+    this.settingsLoad.reset();
     this.previewGeneration++;
     this.apply(false, []);
     this.setPreview(null);
     this.previewFailed = false;
     this.saveFailed = false;
-    this.loadFailed = false;
-    this.loading = this.propertyId !== null;
     if (this.propertyId === null) {
       return;
     }
     const propertyId = this.propertyId;
-    const generation = ++this.loadGeneration;
-    this.chemicalsService.getSettings(propertyId).subscribe({
-      next: (res) => {
-        if (generation !== this.loadGeneration) {
-          return;
-        }
-        this.loading = false;
-        if (res && res.success) {
-          this.apply(res.model.stockEnabled, res.model.digestRecipients);
-        } else {
-          this.loadFailed = true;
-        }
-      },
-      error: () => {
-        if (generation === this.loadGeneration) {
-          this.loading = false;
-          this.loadFailed = true;
-        }
-      },
-    });
+    this.settingsLoad.run(this.chemicalsService.getSettings(propertyId),
+      (settings) => this.apply(settings.stockEnabled, settings.digestRecipients));
     this.loadPreview(propertyId);
   }
 

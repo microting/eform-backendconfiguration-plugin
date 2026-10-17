@@ -1009,4 +1009,8 @@ export const huHU = {
   'Chemicals: Photo hint': 'JPG vagy PNG, legfeljebb 10 MB. A fotó segít az új alkalmazottaknak megtalálni a helyet.',
   'Chemicals: Photo wrong type': 'Csak JPG vagy PNG formátumú képek használhatók.',
   'Chemicals: Photo too large': 'A fotó nagyobb, mint 10 MB.',
+  'Chemicals: Move location up': '{{name}} mozgatása feljebb a listában',
+  'Chemicals: Move location down': '{{name}} mozgatása lejjebb a listában',
+  'Chemicals: Archive location?': 'Archiválja ezt a helyszínt?',
+  'Chemicals: Archive confirm hint': 'A helyszín többé nem jelenik meg a mobilalkalmazásban. Az előzményei megmaradnak.',
 };

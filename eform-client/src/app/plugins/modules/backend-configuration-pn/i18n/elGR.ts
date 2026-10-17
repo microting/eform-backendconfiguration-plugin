@@ -1009,4 +1009,8 @@ export const elGR = {
   'Chemicals: Photo hint': 'JPG ή PNG, το πολύ 10 MB. Η φωτογραφία βοηθά τους νέους υπαλλήλους να βρουν το σημείο.',
   'Chemicals: Photo wrong type': 'Μπορούν να χρησιμοποιηθούν μόνο φωτογραφίες JPG ή PNG.',
   'Chemicals: Photo too large': 'Η φωτογραφία είναι μεγαλύτερη από 10 MB.',
+  'Chemicals: Move location up': 'Μετακίνηση του {{name}} προς τα πάνω στη λίστα',
+  'Chemicals: Move location down': 'Μετακίνηση του {{name}} προς τα κάτω στη λίστα',
+  'Chemicals: Archive location?': 'Αρχειοθέτηση αυτής της τοποθεσίας;',
+  'Chemicals: Archive confirm hint': 'Η τοποθεσία δεν θα εμφανίζεται πλέον στην εφαρμογή για κινητά. Το ιστορικό της διατηρείται.',
 };

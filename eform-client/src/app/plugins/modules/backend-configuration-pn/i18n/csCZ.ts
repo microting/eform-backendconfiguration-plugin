@@ -1009,4 +1009,8 @@ export const csCZ = {
   'Chemicals: Photo hint': 'JPG nebo PNG, maximálně 10 MB. Fotografie pomáhá novým zaměstnancům najít dané místo.',
   'Chemicals: Photo wrong type': 'Lze použít pouze fotografie ve formátu JPG nebo PNG.',
   'Chemicals: Photo too large': 'Fotografie je větší než 10 MB.',
+  'Chemicals: Move location up': 'Přesunout {{name}} v seznamu nahoru',
+  'Chemicals: Move location down': 'Přesunout {{name}} v seznamu dolů',
+  'Chemicals: Archive location?': 'Archivovat tuto lokalitu?',
+  'Chemicals: Archive confirm hint': 'Lokalita se již nebude zobrazovat v mobilní aplikaci. Její historie zůstane zachována.',
 };

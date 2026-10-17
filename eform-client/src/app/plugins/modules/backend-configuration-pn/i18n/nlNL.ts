@@ -1133,4 +1133,8 @@ export const nlNL = {
   'Chemicals: Photo hint': 'JPG of PNG, maximaal 10 MB. De foto helpt nieuwe medewerkers de plek te vinden.',
   'Chemicals: Photo wrong type': 'Alleen JPG- of PNG-foto\'s zijn toegestaan.',
   'Chemicals: Photo too large': 'De foto is groter dan 10 MB.',
+  'Chemicals: Move location up': 'Verplaats {{name}} omhoog in de lijst',
+  'Chemicals: Move location down': 'Verplaats {{name}} naar beneden in de lijst',
+  'Chemicals: Archive location?': 'Deze locatie archiveren?',
+  'Chemicals: Archive confirm hint': 'De locatie wordt niet meer getoond in de mobiele app. De geschiedenis blijft bewaard.',
 };

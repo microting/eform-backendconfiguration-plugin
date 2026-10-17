@@ -1009,4 +1009,8 @@ export const skSK = {
   'Chemicals: Photo hint': 'JPG alebo PNG, maximálne 10 MB. Fotografia pomáha novým zamestnancom nájsť dané miesto.',
   'Chemicals: Photo wrong type': 'Môžu sa použiť iba fotografie vo formáte JPG alebo PNG.',
   'Chemicals: Photo too large': 'Fotografia je väčšia ako 10 MB.',
+  'Chemicals: Move location up': 'Presunúť {{name}} vyššie v zozname',
+  'Chemicals: Move location down': 'Presunúť {{name}} nadol v zozname',
+  'Chemicals: Archive location?': 'Archivovať túto lokalitu?',
+  'Chemicals: Archive confirm hint': 'Lokalita sa už nebude zobrazovať v mobilnej aplikácii. Jej história sa zachová.',
 };

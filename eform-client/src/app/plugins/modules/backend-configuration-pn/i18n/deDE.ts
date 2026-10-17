@@ -1227,4 +1227,8 @@ export const deDE = {
   'Chemicals: Photo hint': 'JPG oder PNG, maximal 10 MB. Das Foto hilft neuen Mitarbeitern, den Ort zu finden.',
   'Chemicals: Photo wrong type': 'Es dürfen nur Fotos im JPG- oder PNG-Format verwendet werden.',
   'Chemicals: Photo too large': 'Das Foto ist größer als 10 MB.',
+  'Chemicals: Move location up': '{{name}} in der Liste nach oben verschieben',
+  'Chemicals: Move location down': '{{name}} in der Liste nach unten verschieben',
+  'Chemicals: Archive location?': 'Diesen Standort archivieren?',
+  'Chemicals: Archive confirm hint': 'Der Standort wird in der mobilen App nicht mehr angezeigt. Sein Verlauf bleibt erhalten.',
 };

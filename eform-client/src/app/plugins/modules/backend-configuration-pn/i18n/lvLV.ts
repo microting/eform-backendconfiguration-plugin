@@ -1009,4 +1009,8 @@ export const lvLV = {
   'Chemicals: Photo hint': 'JPG vai PNG, ne vairāk kā 10 MB. Fotoattēls palīdz jaunajiem darbiniekiem atrast vietu.',
   'Chemicals: Photo wrong type': 'Var izmantot tikai JPG vai PNG formāta fotoattēlus.',
   'Chemicals: Photo too large': 'Fotoattēla izmērs pārsniedz 10 MB.',
+  'Chemicals: Move location up': 'Pārvietot {{name}} sarakstā uz augšu',
+  'Chemicals: Move location down': 'Pārvietot {{name}} sarakstā uz leju',
+  'Chemicals: Archive location?': 'Vai arhivēt šo atrašanās vietu?',
+  'Chemicals: Archive confirm hint': 'Atrašanās vieta vairs netiks rādīta mobilajā lietotnē. Tās vēsture tiek saglabāta.',
 };

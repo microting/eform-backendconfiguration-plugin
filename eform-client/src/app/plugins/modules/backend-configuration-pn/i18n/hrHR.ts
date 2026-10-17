@@ -1009,4 +1009,8 @@ export const hrHR = {
   'Chemicals: Photo hint': 'JPG ili PNG, najviše 10 MB. Fotografija pomaže novim zaposlenicima da pronađu mjesto.',
   'Chemicals: Photo wrong type': 'Mogu se koristiti samo JPG ili PNG fotografije.',
   'Chemicals: Photo too large': 'Fotografija je veća od 10 MB.',
+  'Chemicals: Move location up': 'Pomakni {{name}} prema gore na popisu',
+  'Chemicals: Move location down': 'Pomakni {{name}} prema dolje na popisu',
+  'Chemicals: Archive location?': 'Arhivirati ovu lokaciju?',
+  'Chemicals: Archive confirm hint': 'Lokacija se više neće prikazivati u mobilnoj aplikaciji. Njezina povijest se čuva.',
 };

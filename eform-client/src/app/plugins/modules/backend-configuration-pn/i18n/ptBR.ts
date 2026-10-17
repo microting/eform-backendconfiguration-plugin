@@ -1133,4 +1133,8 @@ export const ptBR = {
   'Chemicals: Photo hint': 'JPG ou PNG, no máximo 10 MB. A foto ajuda os novos funcionários a encontrarem o local.',
   'Chemicals: Photo wrong type': 'Somente fotos em formato JPG ou PNG podem ser utilizadas.',
   'Chemicals: Photo too large': 'A foto tem mais de 10 MB.',
+  'Chemicals: Move location up': 'Mover {{name}} para cima na lista',
+  'Chemicals: Move location down': 'Mover {{name}} para baixo na lista',
+  'Chemicals: Archive location?': 'Arquivar este local?',
+  'Chemicals: Archive confirm hint': 'O local não será mais exibido no aplicativo móvel. Seu histórico será mantido.',
 };

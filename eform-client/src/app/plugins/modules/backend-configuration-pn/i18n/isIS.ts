@@ -1009,4 +1009,8 @@ export const isIS = {
   'Chemicals: Photo hint': 'JPG eða PNG, mest 10 MB. Myndin hjálpar nýjum starfsmönnum að finna staðinn.',
   'Chemicals: Photo wrong type': 'Aðeins má nota myndir í JPG- eða PNG-sniði.',
   'Chemicals: Photo too large': 'Myndin er stærri en 10 MB.',
+  'Chemicals: Move location up': 'Færa {{name}} upp í listanum',
+  'Chemicals: Move location down': 'Færa {{name}} niður í listanum',
+  'Chemicals: Archive location?': 'Setja þessa staðsetningu í skjalasafn?',
+  'Chemicals: Archive confirm hint': 'Staðsetningin birtist ekki lengur í smáforritinu. Saga hennar er varðveitt.',
 };

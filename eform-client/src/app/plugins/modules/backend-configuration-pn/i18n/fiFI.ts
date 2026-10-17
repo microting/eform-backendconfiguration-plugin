@@ -1133,4 +1133,8 @@ export const fiFI = {
   'Chemicals: Photo hint': 'JPG tai PNG, enintään 10 Mt. Kuva auttaa uusia työntekijöitä löytämään paikan.',
   'Chemicals: Photo wrong type': 'Vain JPG- tai PNG-kuvia voi käyttää.',
   'Chemicals: Photo too large': 'Kuva on yli 10 Mt:n kokoinen.',
+  'Chemicals: Move location up': 'Siirrä {{name}} ylöspäin listalla',
+  'Chemicals: Move location down': 'Siirrä {{name}} alaspäin listalla',
+  'Chemicals: Archive location?': 'Arkistoidaanko tämä sijainti?',
+  'Chemicals: Archive confirm hint': 'Sijaintia ei enää näytetä mobiilisovelluksessa. Sen historia säilytetään.',
 };

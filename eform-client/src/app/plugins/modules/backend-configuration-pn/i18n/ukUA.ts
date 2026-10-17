@@ -1133,4 +1133,8 @@ export const ukUA = {
   'Chemicals: Photo hint': 'JPG або PNG, максимум 10 МБ. Фотографія допомагає новим співробітникам знайти потрібне місце.',
   'Chemicals: Photo wrong type': 'Можна використовувати лише фотографії у форматі JPG або PNG.',
   'Chemicals: Photo too large': 'Розмір фотографії перевищує 10 МБ.',
+  'Chemicals: Move location up': 'Перемістити {{name}} вгору у списку',
+  'Chemicals: Move location down': 'Перемістити {{name}} вниз у списку',
+  'Chemicals: Archive location?': 'Архівувати цю локацію?',
+  'Chemicals: Archive confirm hint': 'Локація більше не відображатиметься в мобільному застосунку. Її історія зберігається.',
 };

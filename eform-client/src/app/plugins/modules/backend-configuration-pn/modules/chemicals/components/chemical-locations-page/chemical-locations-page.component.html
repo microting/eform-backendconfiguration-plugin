@@ -32,14 +32,15 @@
         cdkDrag
         [cdkDragDisabled]="row.location.archived"
       >
+        <!-- The handle is for pointer users only; the up/down buttons are the keyboard and single-pointer way. -->
         <span class="col-drag">
           <mat-icon *ngIf="!row.location.archived" cdkDragHandle [id]="'chemicalLocationDrag-' + row.location.id"
-                    [attr.aria-label]="'Chemicals: Drag hint' | translate">drag_indicator</mat-icon>
+                    aria-hidden="true">drag_indicator</mat-icon>
         </span>
         <span class="col-no">{{ row.location.archived ? '–' : i + 1 }}</span>
         <span class="col-photo">
-          <img *ngIf="photoUrl(row) as url" class="chemicals-location-thumb" [src]="url | authImage | async" alt="">
-          <mat-icon *ngIf="!row.location.photoFileName" class="chemicals-location-nophoto">add_a_photo</mat-icon>
+          <img *ngIf="photoUrl(row) as url; else noPhoto" class="chemicals-location-thumb" [src]="url | authImage | async" alt="">
+          <ng-template #noPhoto><mat-icon class="chemicals-location-nophoto">add_a_photo</mat-icon></ng-template>
         </span>
         <span class="col-name">
           <span class="chemicals-location-name">{{ row.location.name }}</span>
@@ -52,6 +53,16 @@
         </span>
         <span class="col-updated">{{ row.location.updatedAt | date: 'dd-MM-yyyy' }}</span>
         <span class="col-actions d-flex gap-8">
+          <ng-container *ngIf="!row.location.archived">
+            <button mat-icon-button [id]="'chemicalLocationUp-' + row.location.id" [disabled]="!canMoveUp(row)"
+                    [attr.aria-label]="'Chemicals: Move location up' | translate: {name: row.location.name}" (click)="moveUp(row)">
+              <mat-icon>arrow_upward</mat-icon>
+            </button>
+            <button mat-icon-button [id]="'chemicalLocationDown-' + row.location.id" [disabled]="!canMoveDown(row)"
+                    [attr.aria-label]="'Chemicals: Move location down' | translate: {name: row.location.name}" (click)="moveDown(row)">
+              <mat-icon>arrow_downward</mat-icon>
+            </button>
+          </ng-container>
           <button mat-icon-button [id]="'chemicalLocationEdit-' + row.location.id" [disabled]="!canEdit(row)"
                   [attr.aria-label]="'Chemicals: Edit location' | translate" [matTooltip]="'Chemicals: Edit location' | translate"
                   (click)="openEdit(row)">

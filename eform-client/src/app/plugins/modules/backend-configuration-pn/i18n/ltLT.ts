@@ -1009,4 +1009,8 @@ export const ltLT = {
   'Chemicals: Photo hint': 'JPG arba PNG formatu, ne didesniu kaip 10 MB. Nuotrauka padeda naujiems darbuotojams rasti reikiamą vietą.',
   'Chemicals: Photo wrong type': 'Galima naudoti tik JPG arba PNG formato nuotraukas.',
   'Chemicals: Photo too large': 'Nuotrauka didesnė nei 10 MB.',
+  'Chemicals: Move location up': 'Perkelti {{name}} sąraše aukštyn',
+  'Chemicals: Move location down': 'Perkelti {{name}} sąraše žemyn',
+  'Chemicals: Archive location?': 'Archyvuoti šią vietą?',
+  'Chemicals: Archive confirm hint': 'Vieta nebebus rodoma mobiliojoje programėlėje. Jos istorija bus išsaugota.',
 };
