@@ -1154,6 +1154,7 @@ export const itIT = {
   'Chemicals: No history': 'In questo periodo non è stato registrato nulla.',
   'Chemicals: Loading history': 'Caricamento del registro eventi…',
   'Chemicals: Could not load history': 'Impossibile caricare il registro eventi.',
+  'Chemicals: Archived': 'archiviata',
   'Chemicals: History reason': 'Motivo',
   'Chemicals: History reason moved': 'Spostato',
   'Chemicals: History balance': 'giacenza',

@@ -1154,6 +1154,7 @@ export const ptBR = {
   'Chemicals: No history': 'Nada foi registrado neste período.',
   'Chemicals: Loading history': 'Carregando o registro de eventos…',
   'Chemicals: Could not load history': 'Não foi possível carregar o registro de eventos.',
+  'Chemicals: Archived': 'arquivado',
   'Chemicals: History reason': 'Motivo',
   'Chemicals: History reason moved': 'Movido',
   'Chemicals: History balance': 'estoque',

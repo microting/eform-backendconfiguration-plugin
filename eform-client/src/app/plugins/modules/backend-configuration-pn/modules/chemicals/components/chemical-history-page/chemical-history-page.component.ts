@@ -25,12 +25,12 @@ import {
   SYSTEM_USER_ID,
   asUtcIso,
   buildHistoryQuery,
+  copenhagenToday,
   defaultHistoryPeriod,
   downloadFailureText,
   formatHistoryDetails,
   historyActionKey,
   historyPeriodError,
-  localToday,
 } from '../../helpers';
 
 /**
@@ -57,8 +57,10 @@ export class ChemicalHistoryPageComponent implements OnInit {
   readonly utc = asUtcIso;
   readonly pageSizeOptions = HISTORY_PAGE_SIZES;
   readonly systemUserId = SYSTEM_USER_ID;
-  /** The browser's calendar day: the default period ends today. */
-  today = localToday();
+  /** The clock (a spec sets it); today is taken from it at every load, not frozen at construction. */
+  now: () => Date = () => new Date();
+  /** The Copenhagen day of the latest load (the server counts the period in Copenhagen days): the default period ends there. */
+  today = copenhagenToday();
   propertyId: number | null = null;
   filters: ChemicalHistoryFiltersModel = {...chemicalsInitialState.historyFilters};
   events: ChemicalHistoryEventModel[] = [];
@@ -66,6 +68,10 @@ export class ChemicalHistoryPageComponent implements OnInit {
   users: ChemicalHistoryUserModel[] = [];
   /** All locations of the property, archived ones included: their history stays. */
   locations: ChemicalLocationModel[] = [];
+  /** The location filter: active ones in their order, then the archived ones, marked. */
+  locationOptions: Array<{id: number; name: string}> = [];
+  /** The user filter: System, the period's users and, if it is not among them, the selected user (m-5). */
+  userOptions: ChemicalHistoryUserModel[] = [];
   total = 0;
   pageIndex = 0;
   pageSize = HISTORY_PAGE_SIZES[0];
@@ -73,6 +79,8 @@ export class ChemicalHistoryPageComponent implements OnInit {
   /** The newest page request; an answer for an older query or property is dropped. */
   private readonly load = new ChemicalLatestLoad();
   private readonly locationsLoad = new ChemicalLatestLoad();
+  /** Every user name seen on this property, so a selected user never shows as a blank chip. */
+  private readonly knownUsers = new Map<number, string>();
 
   get loading(): boolean {
     return this.load.loading;
@@ -80,6 +88,11 @@ export class ChemicalHistoryPageComponent implements OnInit {
 
   get loadFailed(): boolean {
     return this.load.failed;
+  }
+
+  /** The location filter could not be filled (a refusal, an error or no answer). */
+  get locationsFailed(): boolean {
+    return this.locationsLoad.failed;
   }
 
   /** A download in flight belongs to this property: the container keeps the picker until it lands. */
@@ -100,10 +113,6 @@ export class ChemicalHistoryPageComponent implements OnInit {
     return this.periodErrorKey !== null;
   }
 
-  get userOptions(): ChemicalHistoryUserModel[] {
-    return [{userId: SYSTEM_USER_ID, name: this.translate.instant('Chemicals: System user')}, ...this.users];
-  }
-
   ngOnInit(): void {
     this.store.select(selectChemicalsHistoryView)
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -113,9 +122,11 @@ export class ChemicalHistoryPageComponent implements OnInit {
         this.filters = filters;
         this.pageIndex = 0;
         if (propertyChanged) {
+          this.knownUsers.clear();
           this.users = [];
           this.loadLocations();
         }
+        this.setUsers(this.users);
         this.reload(true);
       });
   }
@@ -163,29 +174,50 @@ export class ChemicalHistoryPageComponent implements OnInit {
 
   /** `restart`: a new property or filter, so the old count no longer applies; a page change keeps it. */
   private reload(restart: boolean): void {
-    const query = this.query;
+    this.today = copenhagenToday(this.now());
     this.load.reset();
     this.events = [];
-    if (restart) {
+    const propertyId = this.propertyId;
+    const unqueryable = propertyId === null || this.periodError;
+    if (restart || unqueryable) {
       this.total = 0;
     }
-    if (this.propertyId === null || historyPeriodError(query)) {
-      this.total = 0;
+    if (unqueryable) {
       return;
     }
-    this.load.run(this.chemicalsService.getHistory(this.propertyId, query), (page) => {
+    this.load.run(this.chemicalsService.getHistory(propertyId, this.query), (page) => {
       this.events = page?.events ?? [];
       this.total = page?.total ?? 0;
-      this.users = page?.users ?? [];
+      this.setUsers(page?.users ?? []);
     });
+  }
+
+  private setUsers(users: ChemicalHistoryUserModel[]): void {
+    this.users = users;
+    users.forEach((u) => this.knownUsers.set(u.userId, u.name));
+    const selected = this.filters.userId;
+    const hidden = selected !== null && selected !== SYSTEM_USER_ID && !users.some((u) => u.userId === selected);
+    this.userOptions = [
+      {userId: SYSTEM_USER_ID, name: this.translate.instant('Chemicals: System user')},
+      ...users,
+      ...(hidden ? [{userId: selected, name: this.knownUsers.get(selected) ?? `#${selected}`}] : []),
+    ];
   }
 
   private loadLocations(): void {
     this.locationsLoad.reset();
-    this.locations = [];
+    this.setLocations([]);
     if (this.propertyId !== null) {
       this.locationsLoad.run(this.chemicalsService.getPropertyInventory(this.propertyId),
-        (inventory) => (this.locations = inventory?.locations ?? []));
+        (inventory) => this.setLocations(inventory?.locations ?? []));
     }
+  }
+
+  private setLocations(locations: ChemicalLocationModel[]): void {
+    this.locations = locations;
+    const archived = this.translate.instant('Chemicals: Archived');
+    this.locationOptions = [...locations]
+      .sort((a, b) => Number(a.archived) - Number(b.archived) || a.sortOrder - b.sortOrder || a.id - b.id)
+      .map((l) => ({id: l.id, name: l.archived ? `${l.name} (${archived})` : l.name}));
   }
 }

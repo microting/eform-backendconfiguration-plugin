@@ -1030,6 +1030,7 @@ export const ltLT = {
   'Chemicals: No history': 'Per šį laikotarpį nieko neužregistruota.',
   'Chemicals: Loading history': 'Įkeliamas įvykių žurnalas…',
   'Chemicals: Could not load history': 'Nepavyko įkelti įvykių žurnalo.',
+  'Chemicals: Archived': 'archyvuota',
   'Chemicals: History reason': 'Priežastis',
   'Chemicals: History reason moved': 'Perkelta',
   'Chemicals: History balance': 'likutis',

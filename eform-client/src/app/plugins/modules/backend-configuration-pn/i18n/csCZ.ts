@@ -1030,6 +1030,7 @@ export const csCZ = {
   'Chemicals: No history': 'V tomto období nebylo nic zaznamenáno.',
   'Chemicals: Loading history': 'Načítání historie událostí…',
   'Chemicals: Could not load history': 'Historii událostí se nepodařilo načíst.',
+  'Chemicals: Archived': 'archivovaná',
   'Chemicals: History reason': 'Důvod',
   'Chemicals: History reason moved': 'Přesunuto',
   'Chemicals: History balance': 'stav zásob',

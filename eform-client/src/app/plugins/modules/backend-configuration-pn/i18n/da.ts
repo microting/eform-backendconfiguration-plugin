@@ -1287,6 +1287,7 @@ export const da = {
   'Chemicals: No history': 'Der skete intet i perioden.',
   'Chemicals: Loading history': 'Henter historikken…',
   'Chemicals: Could not load history': 'Historikken kunne ikke hentes.',
+  'Chemicals: Archived': 'arkiveret',
   'Chemicals: History reason': 'Årsag',
   'Chemicals: History reason moved': 'Flyttet',
   'Chemicals: History balance': 'saldo',

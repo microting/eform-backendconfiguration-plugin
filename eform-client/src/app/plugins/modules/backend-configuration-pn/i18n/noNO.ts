@@ -1154,6 +1154,7 @@ export const noNO = {
   'Chemicals: No history': 'Ingenting ble loggført i denne perioden.',
   'Chemicals: Loading history': 'Laster inn hendelsesloggen…',
   'Chemicals: Could not load history': 'Hendelsesloggen kunne ikke lastes inn.',
+  'Chemicals: Archived': 'arkivert',
   'Chemicals: History reason': 'Årsak',
   'Chemicals: History reason moved': 'Flyttet',
   'Chemicals: History balance': 'beholdning',

@@ -1154,6 +1154,7 @@ export const ukUA = {
   'Chemicals: No history': 'За цей період нічого не зареєстровано.',
   'Chemicals: Loading history': 'Завантаження журналу подій…',
   'Chemicals: Could not load history': 'Не вдалося завантажити журнал подій.',
+  'Chemicals: Archived': 'архівовано',
   'Chemicals: History reason': 'Причина',
   'Chemicals: History reason moved': 'Переміщено',
   'Chemicals: History balance': 'залишок',

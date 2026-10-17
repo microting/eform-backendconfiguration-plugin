@@ -1,12 +1,6 @@
 @use '../../chemicals-shared';
 
 .chemicals-danger { margin-bottom: var(--spacing-lg); }
-.chemicals-history-table { width: 100%; border-collapse: collapse; }
-.chemicals-history-table th, .chemicals-history-table td {
-  padding: var(--spacing-md); text-align: left; vertical-align: top;
-  border-bottom: 1px solid color-mix(in srgb, var(--md-outline) 35%, transparent);
-}
-.chemicals-history-table th { font-weight: 600; color: var(--md-on-surface-variant); }
-.chemicals-history-table td { background: var(--md-surface); color: var(--md-on-surface); }
+.chemicals-history-hint-error { color: var(--md-alert); }
 .col-time { white-space: nowrap; }
 .col-details { color: var(--md-on-surface-variant); }

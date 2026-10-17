@@ -1030,6 +1030,7 @@ export const elGR = {
   'Chemicals: No history': 'Δεν καταγράφηκε τίποτα σε αυτήν την περίοδο.',
   'Chemicals: Loading history': 'Φόρτωση του ιστορικού…',
   'Chemicals: Could not load history': 'Δεν ήταν δυνατή η φόρτωση του ιστορικού.',
+  'Chemicals: Archived': 'αρχειοθετημένη',
   'Chemicals: History reason': 'Λόγος',
   'Chemicals: History reason moved': 'Μετακινήθηκε',
   'Chemicals: History balance': 'απόθεμα',

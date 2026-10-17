@@ -1030,6 +1030,7 @@ export const skSK = {
   'Chemicals: No history': 'V tomto období nebolo nič zaznamenané.',
   'Chemicals: Loading history': 'Načítava sa história udalostí…',
   'Chemicals: Could not load history': 'Históriu udalostí sa nepodarilo načítať.',
+  'Chemicals: Archived': 'archivovaná',
   'Chemicals: History reason': 'Dôvod',
   'Chemicals: History reason moved': 'Presunuté',
   'Chemicals: History balance': 'stav zásob',

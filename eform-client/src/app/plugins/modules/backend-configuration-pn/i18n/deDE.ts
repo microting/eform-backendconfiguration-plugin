@@ -1312,6 +1312,7 @@ export const deDE = {
   'Chemicals: No history': 'In diesem Zeitraum wurde nichts protokolliert.',
   'Chemicals: Loading history': 'Das Ereignisprotokoll wird geladen…',
   'Chemicals: Could not load history': 'Das Ereignisprotokoll konnte nicht geladen werden.',
+  'Chemicals: Archived': 'archiviert',
   'Chemicals: History reason': 'Grund',
   'Chemicals: History reason moved': 'Umgelagert',
   'Chemicals: History balance': 'Bestand',

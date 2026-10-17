@@ -34,6 +34,13 @@ function dayNumber(ymd: string): number {
   return Date.UTC(y, m - 1, d) / 86_400_000;
 }
 
+const COPENHAGEN_DAY = new Intl.DateTimeFormat('en-CA', {timeZone: 'Europe/Copenhagen', year: 'numeric', month: '2-digit', day: '2-digit'});
+
+/** Today as the server counts the period: the Europe/Copenhagen calendar day, yyyy-MM-dd ('en-CA' formats it so). */
+export function copenhagenToday(now: Date = new Date()): string {
+  return COPENHAGEN_DAY.format(now);
+}
+
 export function defaultHistoryPeriod(today: string): {from: string; to: string} {
   return {from: addDays(today, -(HISTORY_DEFAULT_DAYS - 1)), to: today};
 }

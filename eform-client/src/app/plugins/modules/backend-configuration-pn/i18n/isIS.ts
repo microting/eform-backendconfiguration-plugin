@@ -1030,6 +1030,7 @@ export const isIS = {
   'Chemicals: No history': 'Ekkert var skráð á þessu tímabili.',
   'Chemicals: Loading history': 'Hleður atburðaskrá…',
   'Chemicals: Could not load history': 'Ekki tókst að hlaða atburðaskránni.',
+  'Chemicals: Archived': 'í skjalasafni',
   'Chemicals: History reason': 'Ástæða',
   'Chemicals: History reason moved': 'Fært',
   'Chemicals: History balance': 'birgðastaða',

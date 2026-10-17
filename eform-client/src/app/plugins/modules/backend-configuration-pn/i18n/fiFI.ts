@@ -1154,6 +1154,7 @@ export const fiFI = {
   'Chemicals: No history': 'Tänä aikana ei kirjattu mitään.',
   'Chemicals: Loading history': 'Ladataan tapahtumalokia…',
   'Chemicals: Could not load history': 'Tapahtumalokin lataaminen epäonnistui.',
+  'Chemicals: Archived': 'arkistoitu',
   'Chemicals: History reason': 'Syy',
   'Chemicals: History reason moved': 'Siirretty',
   'Chemicals: History balance': 'varastosaldo',

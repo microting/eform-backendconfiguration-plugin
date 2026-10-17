@@ -1154,6 +1154,7 @@ export const ptPT = {
   'Chemicals: No history': 'Nada foi registado neste período.',
   'Chemicals: Loading history': 'A carregar o registo de eventos…',
   'Chemicals: Could not load history': 'Não foi possível carregar o registo de eventos.',
+  'Chemicals: Archived': 'arquivado',
   'Chemicals: History reason': 'Motivo',
   'Chemicals: History reason moved': 'Movido',
   'Chemicals: History balance': 'stock',

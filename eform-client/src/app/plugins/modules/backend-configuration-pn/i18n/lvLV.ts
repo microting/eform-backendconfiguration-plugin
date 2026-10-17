@@ -1030,6 +1030,7 @@ export const lvLV = {
   'Chemicals: No history': 'Šajā periodā nekas netika reģistrēts.',
   'Chemicals: Loading history': 'Notiek notikumu žurnāla ielāde…',
   'Chemicals: Could not load history': 'Neizdevās ielādēt notikumu žurnālu.',
+  'Chemicals: Archived': 'arhivēta',
   'Chemicals: History reason': 'Iemesls',
   'Chemicals: History reason moved': 'Pārvietots',
   'Chemicals: History balance': 'atlikums',

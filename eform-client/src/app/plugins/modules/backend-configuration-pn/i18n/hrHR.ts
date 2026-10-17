@@ -1030,6 +1030,7 @@ export const hrHR = {
   'Chemicals: No history': 'U tom razdoblju ništa nije zabilježeno.',
   'Chemicals: Loading history': 'Učitavanje zapisnika događaja…',
   'Chemicals: Could not load history': 'Zapisnik događaja nije moguće učitati.',
+  'Chemicals: Archived': 'arhivirana',
   'Chemicals: History reason': 'Razlog',
   'Chemicals: History reason moved': 'Premješteno',
   'Chemicals: History balance': 'stanje zalihe',

@@ -1387,6 +1387,7 @@ export const enUS= {
   'Chemicals: No history': 'Nothing happened in this period.',
   'Chemicals: Loading history': 'Loading the event log…',
   'Chemicals: Could not load history': 'The event log could not be loaded.',
+  'Chemicals: Archived': 'archived',
   'Chemicals: History reason': 'Reason',
   'Chemicals: History reason moved': 'Moved',
   'Chemicals: History balance': 'balance',

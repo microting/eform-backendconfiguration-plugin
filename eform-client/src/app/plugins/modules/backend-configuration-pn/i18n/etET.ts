@@ -1030,6 +1030,7 @@ export const etET = {
   'Chemicals: No history': 'Sellel perioodil ei logitud midagi.',
   'Chemicals: Loading history': 'Sündmuste logi laadimine…',
   'Chemicals: Could not load history': 'Sündmuste logi ei õnnestunud laadida.',
+  'Chemicals: Archived': 'arhiveeritud',
   'Chemicals: History reason': 'Põhjus',
   'Chemicals: History reason moved': 'Teisaldatud',
   'Chemicals: History balance': 'laoseis',

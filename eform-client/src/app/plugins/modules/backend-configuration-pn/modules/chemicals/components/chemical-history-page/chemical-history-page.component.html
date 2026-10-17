@@ -15,9 +15,12 @@
     </mat-form-field>
     <mat-form-field>
       <mat-label>{{ 'Location' | translate }}</mat-label>
-      <mtx-select id="chemicalHistoryLocationFilter" [items]="locations" bindLabel="name" bindValue="id"
+      <mtx-select id="chemicalHistoryLocationFilter" [items]="locationOptions" bindLabel="name" bindValue="id"
                   [ngModel]="filters.locationId" (ngModelChange)="updateFilters({locationId: $event ?? null})"
                   [placeholder]="'Chemicals: All' | translate"></mtx-select>
+      <mat-hint *ngIf="locationsFailed" id="chemicalHistoryLocationsFailed" class="chemicals-history-hint-error" role="alert">
+        {{ 'Chemicals: Could not load locations' | translate }}
+      </mat-hint>
     </mat-form-field>
     <!-- (change), not ngModelChange: a half-typed date is '' and would snap the field back to the default. -->
     <mat-form-field>
@@ -40,13 +43,14 @@
   <div *ngIf="periodErrorKey as errorKey" id="chemicalHistoryPeriodError" class="chemicals-danger" role="alert">
     <mat-icon>error</mat-icon><span>{{ errorKey | translate }}</span>
   </div>
-  <div *ngIf="loading" id="chemicalHistoryLoading" class="chemicals-empty" role="status">{{ 'Chemicals: Loading history' | translate }}</div>
+  <!-- Always present, only its text changes: a live region created together with its text is often not announced. -->
+  <div id="chemicalHistoryStatus" role="status" [class.chemicals-empty]="loading">{{ loading ? ('Chemicals: Loading history' | translate) : '' }}</div>
   <div *ngIf="loadFailed" id="chemicalHistoryLoadFailed" class="chemicals-danger" role="alert">
     <mat-icon>error</mat-icon><span>{{ 'Chemicals: Could not load history' | translate }}</span>
   </div>
 
   <ng-container *ngIf="!loading && !loadFailed && !periodError && propertyId !== null">
-    <table id="chemicalHistoryTable" class="chemicals-history-table">
+    <table id="chemicalHistoryTable" class="chemicals-table" [attr.aria-label]="'Chemicals: History title' | translate">
       <thead>
         <tr>
           <th scope="col">{{ 'Chemicals: Time' | translate }}</th>
@@ -63,13 +67,14 @@
           <td class="col-user">{{ e.userId === systemUserId ? ('Chemicals: System' | translate) : e.userName }}</td>
           <td class="col-action">{{ actionKey(e.action) | translate }}</td>
           <td class="col-product">{{ e.productName || '–' }}</td>
-          <td class="col-location">{{ e.targetLocationName ? e.locationName + ' → ' + e.targetLocationName : (e.locationName || '–') }}</td>
+          <!-- The event's location, as in the Excel; a move's route is in Details. -->
+          <td class="col-location">{{ e.locationName || '–' }}</td>
           <td class="col-details">{{ details(e) }}</td>
         </tr>
       </tbody>
     </table>
     <div *ngIf="!events.length" class="chemicals-empty" id="chemicalHistoryEmpty">{{ 'Chemicals: No history' | translate }}</div>
   </ng-container>
-  <mat-paginator id="chemicalHistoryPaginator" [length]="total" [pageIndex]="pageIndex" [pageSize]="pageSize"
-                 [pageSizeOptions]="pageSizeOptions" [disabled]="loading || periodError" (page)="onPage($event)"></mat-paginator>
+  <mat-paginator *ngIf="!loadFailed && !periodError && propertyId !== null" id="chemicalHistoryPaginator" [length]="total" [pageIndex]="pageIndex" [pageSize]="pageSize"
+                 [pageSizeOptions]="pageSizeOptions" [disabled]="loading" (page)="onPage($event)"></mat-paginator>
 </div>

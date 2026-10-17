@@ -1030,6 +1030,7 @@ export const slSL = {
   'Chemicals: No history': 'V tem obdobju ni bilo zabeleženo nič.',
   'Chemicals: Loading history': 'Nalaganje dnevnika dogodkov…',
   'Chemicals: Could not load history': 'Dnevnika dogodkov ni bilo mogoče naložiti.',
+  'Chemicals: Archived': 'arhivirana',
   'Chemicals: History reason': 'Razlog',
   'Chemicals: History reason moved': 'Premaknjeno',
   'Chemicals: History balance': 'zaloga',

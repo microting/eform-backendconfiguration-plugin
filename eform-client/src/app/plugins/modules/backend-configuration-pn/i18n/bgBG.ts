@@ -1030,6 +1030,7 @@ export const bgBG = {
   'Chemicals: No history': 'През този период не е регистрирано нищо.',
   'Chemicals: Loading history': 'Зареждане на историята на събитията…',
   'Chemicals: Could not load history': 'Историята на събитията не можа да бъде заредена.',
+  'Chemicals: Archived': 'архивирано',
   'Chemicals: History reason': 'Причина',
   'Chemicals: History reason moved': 'Преместено',
   'Chemicals: History balance': 'наличност',

@@ -1154,6 +1154,7 @@ export const nlNL = {
   'Chemicals: No history': 'In deze periode is niets vastgelegd.',
   'Chemicals: Loading history': 'Het logboek wordt geladen…',
   'Chemicals: Could not load history': 'Het logboek kon niet worden geladen.',
+  'Chemicals: Archived': 'gearchiveerd',
   'Chemicals: History reason': 'Reden',
   'Chemicals: History reason moved': 'Verplaatst',
   'Chemicals: History balance': 'voorraad',

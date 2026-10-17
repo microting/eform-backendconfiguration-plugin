@@ -1030,6 +1030,7 @@ export const roRO = {
   'Chemicals: No history': 'Nu s-a înregistrat nimic în această perioadă.',
   'Chemicals: Loading history': 'Se încarcă jurnalul de evenimente…',
   'Chemicals: Could not load history': 'Jurnalul de evenimente nu a putut fi încărcat.',
+  'Chemicals: Archived': 'arhivată',
   'Chemicals: History reason': 'Motiv',
   'Chemicals: History reason moved': 'Mutat',
   'Chemicals: History balance': 'stoc',

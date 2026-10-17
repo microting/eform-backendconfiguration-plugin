@@ -1030,6 +1030,7 @@ export const huHU = {
   'Chemicals: No history': 'Ebben az időszakban semmi sem került naplózásra.',
   'Chemicals: Loading history': 'Eseménynapló betöltése…',
   'Chemicals: Could not load history': 'Az eseménynaplót nem sikerült betölteni.',
+  'Chemicals: Archived': 'archivált',
   'Chemicals: History reason': 'Ok',
   'Chemicals: History reason moved': 'Áthelyezve',
   'Chemicals: History balance': 'készlet',
