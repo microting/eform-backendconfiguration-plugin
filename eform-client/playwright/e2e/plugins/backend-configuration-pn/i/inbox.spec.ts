@@ -1,8 +1,11 @@
-import { test, expect, Locator, Page, Response } from '@playwright/test';
+import { test, expect, Locator, Page } from '@playwright/test';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
 import DatabaseConfigurationConstants from '../../../Constants/DatabaseConfigurationConstants';
 import { BackendConfigurationPropertiesPage, PropertyCreateUpdate } from '../BackendConfigurationProperties.page';
+import {
+  BackendConfigurationArchivePage, DEFAULT_FOLDER, expectSuccess, FILES_PATH, InboxStatus,
+} from '../BackendConfigurationArchive.page';
 import {
   addressTokenHash,
   announceInboxDocument,
@@ -13,13 +16,10 @@ import {
   seedInboxDocument,
   startHubStub,
 } from '../inbox-hub-seed';
-import { API_TIMEOUT, UI_TIMEOUT, ignoreUnhandledRejections, waitForApiResponse } from '../wait-helpers';
+import { API_TIMEOUT, UI_TIMEOUT } from '../wait-helpers';
 
 /** The CI admin's e-mail, used as an ordinary sender: every sender is accepted unless blocked. */
 const ADMIN_EMAIL: string = DatabaseConfigurationConstants.email;
-
-/** InboxDocumentStatus, as the list renders it in `data-status`. */
-const Status = { Ready: '2', Filed: '4' } as const;
 
 /**
  * Indbakke (inbound mail inbox), tenant side (shard i). Documents are seeded through the signed hub
@@ -32,6 +32,8 @@ const Status = { Ready: '2', Filed: '4' } as const;
  *    sender's next mail is refused.
  * I3 a document without suggestions cannot be filed without a property, and is rejected.
  * I4 the blocked senders are listed, saved and survive a reload; the address is rotated.
+ * I5 a document reviewed by Microting shows no "checked by Microting" marker.
+ * I6 a folder and a date suggestion: the folder is preselected, Godkend approves the date, the filing carries both.
  *
  * The admin sees the archive section tabs (the inbox is admin-only).
  * It is also the tenant's first user (lowest AspNetUsers Id), the only one who may rotate the address.
@@ -39,6 +41,7 @@ const Status = { Ready: '2', Filed: '4' } as const;
 test.describe.serial('Indbakke', () => {
   let page: Page;
   let hub: HubStub;
+  let archive: BackendConfigurationArchivePage;
   const property: PropertyCreateUpdate = {
     name: `Inbox ${generateRandmString(5)}`,
     chrNumber: generateRandmString(5),
@@ -54,7 +57,8 @@ test.describe.serial('Indbakke', () => {
     test.setTimeout(240000);
     hub = await startHubStub();
     page = await browser.newPage();
-    await page.goto('http://localhost:4200');
+    archive = new BackendConfigurationArchivePage(page);
+    await page.goto('http://localhost:4200', { timeout: API_TIMEOUT });
     await new LoginPage(page).login();
     const properties = new BackendConfigurationPropertiesPage(page);
     await properties.goToProperties();
@@ -71,57 +75,14 @@ test.describe.serial('Indbakke', () => {
     await hub?.close();
   });
 
-  const rowFor = (fileName: string): Locator => page.locator('#inboxTable tr.inbox-row', { hasText: fileName });
-  const dialog = (): Locator => page.locator('mat-dialog-container');
+  const rowFor = (fileName: string): Locator => archive.inboxRow(fileName);
+  const dialog = (): Locator => archive.dialog();
 
-  /** Starts waiting for an inbox API call; the wait is armed before the action that triggers it. */
-  function waitForInbox(description: string, method: string, pathSuffix: string): Promise<Response> {
-    const wait = waitForApiResponse(page, `${method} ${description}`,
-      r => r.request().method() === method && new URL(r.url()).pathname.endsWith(pathSuffix), API_TIMEOUT);
-    ignoreUnhandledRejections(wait);
-    return wait;
-  }
-
-  /**
-   * The call answered 2xx with `success: true`. A non-2xx fails with its status and body (the cause);
-   * OperationResult answers HTTP 200 also on failure, so `success` is checked as well.
-   */
-  async function expectSuccess(response: Promise<Response>, what: string): Promise<void> {
-    const resp = await response;
-    if (!resp.ok()) {
-      throw new Error(`${what}: HTTP ${resp.status()} ${await resp.text()}`);
-    }
-    const body = await resp.json();
-    expect(body.success, `${what}: ${body.message ?? ''}`).toBe(true);
-  }
-
-  /** Arms the wait for the inbox call, clicks, and expects the call to succeed. */
+  /** Arms the wait for the call, clicks, and expects the call to succeed. */
   async function clickAndExpectSuccess(target: Locator, method: string, pathSuffix: string, what: string): Promise<void> {
-    const call = waitForInbox(what, method, pathSuffix);
-    await target.click();
+    const call = archive.waitForCall(what, method, pathSuffix);
+    await target.click({ timeout: UI_TIMEOUT });
     await expectSuccess(call, what);
-  }
-
-  async function openReview(id: string): Promise<void> {
-    await page.locator(`#inboxReviewBtn-${id}`).click();
-    await expect(dialog()).toHaveCount(1, { timeout: UI_TIMEOUT });
-  }
-
-  async function openInbox(): Promise<void> {
-    const listed = waitForInbox('inbox list', 'GET', '/api/backend-configuration-pn/inbox');
-    await page.goto('http://localhost:4200/plugins/backend-configuration-pn/files/inbox');
-    await expectSuccess(listed, 'loading the inbox list');
-    await expect(page.locator('#inboxTable')).toBeVisible({ timeout: UI_TIMEOUT });
-  }
-
-  /** The row's inbox id, once exactly one row shows the file in the expected status. */
-  async function rowId(fileName: string, status: string): Promise<string> {
-    const row = rowFor(fileName);
-    await expect(row).toHaveCount(1, { timeout: UI_TIMEOUT });
-    await expect(row).toHaveAttribute('data-status', status, { timeout: UI_TIMEOUT });
-    const id = await row.getAttribute('data-inbox-id');
-    expect(id, `inbox id of the row for ${fileName}`).toMatch(/^\d+$/);
-    return id!;
   }
 
   test('I1 file a delivered document into the archive', async () => {
@@ -131,31 +92,30 @@ test.describe.serial('Indbakke', () => {
     await seedInboxDocument(page.request, {
       fromAddress: ADMIN_EMAIL, fileName, suggestions: [{ kind: 'property', targetId: propertyId }],
     });
-    await openInbox();
+    await archive.openInbox();
     for (const tab of ['#archiveNavInbox', '#archiveNavArchive', '#archiveNavSettings']) {
       await expect(page.locator(tab), `archive section tab ${tab}`).toBeVisible({ timeout: UI_TIMEOUT });
     }
 
-    const id = await rowId(fileName, Status.Ready);
-    await openReview(id);
+    const id = await archive.inboxRowId(fileName, InboxStatus.Ready);
+    await archive.openReview(id);
 
     // The suggestion (confidence 0.5) is preselected, so the property requirement is already met.
     const choice = dialog().locator(`button.inbox-choice[data-kind="property"][data-target-id="${propertyId}"]`);
     await expect(choice).toHaveAttribute('aria-pressed', 'true', { timeout: UI_TIMEOUT });
+    // No folder suggestion: filing waits until a folder is chosen (D9).
+    await expect(dialog().locator('#inboxFolderRequired')).toBeVisible({ timeout: UI_TIMEOUT });
+    await expect(dialog().locator('#inboxFileBtn')).toBeDisabled({ timeout: UI_TIMEOUT });
+    await archive.chooseInSelect('inboxFolderSelect', DEFAULT_FOLDER);
     await expect(dialog().locator('#inboxFileBtn')).toBeEnabled({ timeout: UI_TIMEOUT });
 
-    await clickAndExpectSuccess(dialog().locator('#inboxFileBtn'), 'POST', `/inbox/${id}/file`, 'filing the document');
-    await expect(dialog().locator('#inboxUndoBtn')).toBeVisible({ timeout: UI_TIMEOUT });
-    await dialog().locator('#inboxCloseBtn').click();
-    await expect(dialog()).toBeHidden({ timeout: UI_TIMEOUT });
-    await expect(rowFor(fileName)).toHaveAttribute('data-status', Status.Filed, { timeout: UI_TIMEOUT });
+    await archive.fileFromReview(id, 'filing the document');
+    await archive.closeReview();
+    await expect(rowFor(fileName)).toHaveAttribute('data-status', InboxStatus.Filed, { timeout: UI_TIMEOUT });
 
-    await clickAndExpectSuccess(page.locator('#archiveNavArchive'), 'POST', '/api/backend-configuration-pn/files',
-      'loading the archive');
-    // Archive file names render as "<name>.<extension>"; the inbox filed it under the PDF's own name.
-    const archived = page.locator('app-files-table .mat-mdc-row').filter({
-      has: page.locator('.fileName', { hasText: fileName }),
-    });
+    await clickAndExpectSuccess(page.locator('#archiveNavArchive'), 'POST', FILES_PATH, 'loading the archive');
+    // Filed into the default folder, which the Arkiv page opens on, under the PDF's own name.
+    const archived = archive.fileRow(fileName);
     await expect(archived).toHaveCount(1, { timeout: UI_TIMEOUT });
     await expect(archived).toContainText(property.name!, { timeout: UI_TIMEOUT });
   });
@@ -166,12 +126,10 @@ test.describe.serial('Indbakke', () => {
     const fileName = `scan_${generateRandmString(4)}.pdf`;
     // Nobody configured this sender: it is accepted all the same.
     await seedInboxDocument(page.request, { fromAddress: blockedSender, fileName });
-    await openInbox();
-    const id = await rowId(fileName, Status.Ready);
-    await openReview(id);
+    const id = await archive.openReadyReview(fileName);
 
-    const rejected = waitForInbox('rejecting the document and blocking its sender', 'POST', `/inbox/${id}/reject`);
-    await dialog().locator('#inboxRejectBlockBtn').click();
+    const rejected = archive.waitForCall('rejecting the document and blocking its sender', 'POST', `/inbox/${id}/reject`);
+    await archive.clickInDialog('inboxRejectBlockBtn');
     await expectSuccess(rejected, 'rejecting the document and blocking its sender');
     expect(new URL((await rejected).url()).searchParams.get('block'), 'the reject asked for the block').toBe('true');
     await expect(dialog()).toBeHidden({ timeout: UI_TIMEOUT });
@@ -181,7 +139,7 @@ test.describe.serial('Indbakke', () => {
     const nextFileName = `scan_${generateRandmString(4)}.pdf`;
     const next = await announceInboxDocument(page.request, blockedSender.toUpperCase(), nextFileName);
     expect(next.senderVerdict, 'the blocked sender is refused').toBe('blocked');
-    await openInbox();
+    await archive.openInbox();
     await expect(rowFor(nextFileName)).toHaveCount(0, { timeout: UI_TIMEOUT });
   });
 
@@ -190,12 +148,11 @@ test.describe.serial('Indbakke', () => {
     test.setTimeout(120000);
     const fileName = `Faktura ${generateRandmString(4)}.pdf`;
     await seedInboxDocument(page.request, { fromAddress: ADMIN_EMAIL, fileName });
-    await openInbox();
-    const id = await rowId(fileName, Status.Ready);
-    await openReview(id);
+    const id = await archive.openReadyReview(fileName);
 
     // No suggestion, so no property: filing is blocked until one is chosen.
     await expect(dialog().locator('#inboxPropertyRequired')).toBeVisible({ timeout: UI_TIMEOUT });
+    await expect(dialog().locator('#inboxFolderRequired')).toBeVisible({ timeout: UI_TIMEOUT });
     await expect(dialog().locator('#inboxFileBtn')).toBeDisabled({ timeout: UI_TIMEOUT });
 
     await clickAndExpectSuccess(dialog().locator('#inboxRejectBtn'), 'POST', `/inbox/${id}/reject`, 'rejecting the document');
@@ -207,7 +164,7 @@ test.describe.serial('Indbakke', () => {
   test('I4 settings: save blocked senders and rotate the address', async () => {
     // Three settings loads (the first registers the address with the stub hub), save and rotate.
     test.setTimeout(120000);
-    await openInbox();
+    await archive.openInbox();
     await clickAndExpectSuccess(page.locator('#archiveNavSettings'), 'GET', '/inbox/settings', 'loading the inbox settings');
 
     const address = page.locator('#inboxAddress');
@@ -227,8 +184,8 @@ test.describe.serial('Indbakke', () => {
     await blockedInput.fill('@example.org');
     await clickAndExpectSuccess(page.locator('#inboxSaveBtn'), 'PUT', '/inbox/settings', 'saving the inbox settings');
 
-    const reloaded = waitForInbox('inbox settings after reload', 'GET', '/inbox/settings');
-    await page.reload();
+    const reloaded = archive.waitForCall('inbox settings after reload', 'GET', '/inbox/settings');
+    await page.reload({ timeout: API_TIMEOUT });
     await expectSuccess(reloaded, 'reloading the inbox settings');
     // The save is a full replace: the sender blocked in I2 is gone, only the new rule is left.
     await expect(blockedInput).toHaveValue('@example.org', { timeout: UI_TIMEOUT });
@@ -256,13 +213,43 @@ test.describe.serial('Indbakke', () => {
     const fileName = `Servicerapport ${generateRandmString(4)}.pdf`;
     await seedInboxDocument(page.request, { fromAddress: ADMIN_EMAIL, fileName, reviewedByMicroting: true });
     // The removed texts in Danish and English (the e2e UI language).
-    await openInbox();
-    const id = await rowId(fileName, Status.Ready);
+    await archive.openInbox();
+    const id = await archive.inboxRowId(fileName, InboxStatus.Ready);
     await expect(rowFor(fileName).getByText(/Kontrolleret af Microting|Checked by Microting/)).toHaveCount(0, { timeout: UI_TIMEOUT });
 
-    await openReview(id);
+    await archive.openReview(id);
     // The dialog body has rendered (its file button is there) before checking what it does not show.
     await expect(dialog().locator('#inboxFileBtn')).toBeVisible({ timeout: UI_TIMEOUT });
     await expect(dialog().getByText(/Microting har kontrolleret|Microting checked these suggestions/)).toHaveCount(0, { timeout: UI_TIMEOUT });
+  });
+
+  test('I6 a folder and a date suggestion: the folder is preselected, Godkend approves the date', async () => {
+    // One catalog call, two signed seeding calls, one page load and the file call, each bounded by API_TIMEOUT.
+    test.setTimeout(120000);
+    const fileName = `Faktura ${generateRandmString(4)}.pdf`;
+    const catalog = await fetchCatalog(page.request);
+    const arkiv = catalog.folders.find(f => f.name === DEFAULT_FOLDER && f.parentId === null);
+    expect(arkiv, 'the catalog lists the default folder').toBeTruthy();
+    await seedInboxDocument(page.request, {
+      fromAddress: ADMIN_EMAIL,
+      fileName,
+      suggestions: [
+        { kind: 'property', targetId: propertyId },
+        { kind: 'folder', targetId: arkiv!.id },
+        { kind: 'documentDate', targetDate: '2026-10-03' },
+      ],
+    });
+    const id = await archive.openReadyReview(fileName);
+
+    // Confidence 0.5 = the preselect threshold, as for properties.
+    const folderChoice = dialog().locator(`button.inbox-choice[data-kind="folder"][data-target-id="${arkiv!.id}"]`);
+    await expect(folderChoice).toHaveAttribute('aria-pressed', 'true', { timeout: UI_TIMEOUT });
+    await expect(dialog().locator('#inboxDateValue')).toContainText('03.10.2026', { timeout: UI_TIMEOUT });
+    await archive.clickInDialog('inboxDateApproveBtn');
+    await expect(dialog().locator('#inboxDateApproved')).toBeVisible({ timeout: UI_TIMEOUT });
+
+    const filed = await archive.fileFromReview(id, 'filing with the folder and the approved date');
+    expect(filed.request().postDataJSON(), 'the filing carries the folder and the approved date').toEqual(
+      expect.objectContaining({ folderId: arkiv!.id, documentDate: '2026-10-03', documentDateApproved: true }));
   });
 });

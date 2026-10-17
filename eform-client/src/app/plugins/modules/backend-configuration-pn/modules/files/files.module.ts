@@ -8,11 +8,9 @@ import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-i
 import {
   FilesContainerComponent,
   FileCreateComponent,
-  FileNameEditComponent,
   FilesFiltersComponent,
   FilesTableComponent,
   FileTagsComponent,
-  FileTagsEditComponent,
   FileCreateDropZoneComponent,
   FileCreateEditFileComponent,
   DownloadFilesNameArchiveComponent,
@@ -21,6 +19,14 @@ import {
   InboxContainerComponent,
   InboxReviewDialogComponent,
   InboxSettingsComponent,
+  ArchiveFolderPickerComponent,
+  ArchiveFolderNameDialogComponent,
+  ArchiveFolderChooseDialogComponent,
+  ArchiveAccessDialogComponent,
+  ArchiveMoveConfirmDialogComponent,
+  ArchivePropertiesDialogComponent,
+  ArchiveFolderTreeComponent,
+  ArchiveDocumentPanelComponent,
 } from './components';
 import {FilesRouting} from './files.routing';
 import {MatButtonModule} from '@angular/material/button';
@@ -42,6 +48,9 @@ import {MtxProgressModule} from '@ng-matero/extensions/progress';
 import {MatDatepickerModule} from '@angular/material/datepicker';
 import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
 import {MatSelectModule} from '@angular/material/select';
+import {MatRadioModule} from '@angular/material/radio';
+import {A11yModule} from '@angular/cdk/a11y';
+import {ArchiveMoveFlowService} from './services/archive-move-flow.service';
 
 @NgModule({
   declarations: [
@@ -49,9 +58,7 @@ import {MatSelectModule} from '@angular/material/select';
     FilesTableComponent,
     FilesFiltersComponent,
     FileCreateComponent,
-    FileNameEditComponent,
     FileTagsComponent,
-    FileTagsEditComponent,
     FileCreateDropZoneComponent,
     FileCreateEditFileComponent,
     DownloadFilesNameArchiveComponent,
@@ -60,6 +67,14 @@ import {MatSelectModule} from '@angular/material/select';
     InboxContainerComponent,
     InboxReviewDialogComponent,
     InboxSettingsComponent,
+    ArchiveFolderPickerComponent,
+    ArchiveFolderNameDialogComponent,
+    ArchiveFolderChooseDialogComponent,
+    ArchiveAccessDialogComponent,
+    ArchiveMoveConfirmDialogComponent,
+    ArchivePropertiesDialogComponent,
+    ArchiveFolderTreeComponent,
+    ArchiveDocumentPanelComponent,
   ],
   imports: [
     CommonModule,
@@ -91,7 +106,10 @@ import {MatSelectModule} from '@angular/material/select';
     MatMenu,
     MatMenuItem,
     MatSelectModule,
+    MatRadioModule,
+    A11yModule,
   ],
+  providers: [ArchiveMoveFlowService],
 })
 
 export class FilesModule {

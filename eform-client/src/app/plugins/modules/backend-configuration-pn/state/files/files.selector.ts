@@ -19,3 +19,5 @@ export const selectFilesNameFilters =
     createSelector(selectFiles, (state) => state.filters.nameFilter);
 export const selectFilesPaginationTotalItemsCount =
     createSelector(selectFiles, (state) => state.pagination.total);
+export const selectFilesFolderId =
+    createSelector(selectFiles, (state) => state.filters.folderId);

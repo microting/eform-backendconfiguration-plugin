@@ -22,7 +22,8 @@ namespace BackendConfiguration.Pn.Integration.Test;
 /// The folder-locking protocol (ArchiveFolderLock) under real concurrency: a second context holds a folder lock the
 /// way a concurrent request would, the request under test starts and is seen waiting on that lock, then the holder
 /// changes the folder and commits. The request must decide on the committed state, not on what it read before its
-/// transaction. Deterministic: the change is made only once the request is observed blocked (INNODB_TRX).
+/// transaction. Deterministic: the change is made only once the request's own connection is observed in LOCK WAIT
+/// (INNODB_TRX), see <see cref="WaitUntilBlockedAsync"/>.
 /// </summary>
 [Parallelizable(ParallelScope.Fixtures)]
 [TestFixture]
@@ -31,6 +32,14 @@ public class ArchiveConcurrencyTests : TestBaseSetup
     private const int G1 = 901;
     private const int G2 = 902;
     private static readonly TimeSpan BlockedTimeout = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// InnoDB serves INNODB_TRX from a buffer it refreshes only when the previous read of it ended more than 0.1 s ago
+    /// (trx0i_s.cc, CACHE_MIN_IDLE_TIME_NS; trx_i_s_cache_end_read stamps last_read on every read). Polling faster
+    /// than that keeps re-reading the snapshot taken before the request started waiting, forever. The fixture owns its
+    /// container, so the observer is the only reader and every poll this far apart sees live state.
+    /// </summary>
+    private static readonly TimeSpan InnodbTrxPollInterval = TimeSpan.FromMilliseconds(250);
     private FixedArchiveAccess _access = null!;
     private BackendConfigurationFilesService _files = null!;
     private ArchiveFoldersService _folders = null!;
@@ -62,6 +71,13 @@ public class ArchiveConcurrencyTests : TestBaseSetup
     {
         await using var holder = CreateFreshBackendConfigurationDbContext();
         await using var observer = CreateFreshBackendConfigurationDbContext();
+        // The request runs on the fixture's context. Opened here, EF keeps this one connection for the context until
+        // TearDown disposes it, so its id is the server thread the request's transaction will wait on.
+        var requestDb = BackendConfigurationPnDbContext!;
+        await requestDb.Database.OpenConnectionAsync();
+        var requestConnectionId = await requestDb.Database
+            .SqlQueryRaw<long>("SELECT CAST(CONNECTION_ID() AS SIGNED) AS Value")
+            .SingleAsync();
         Task<T>? running = null;
         try
         {
@@ -70,7 +86,7 @@ public class ArchiveConcurrencyTests : TestBaseSetup
                 await ArchiveFolderLock.ExclusiveAsync(holder, lockedFolderIds.Select(id => (int?)id));
                 // Started once: a retried holder attempt must not start a second request on the fixture context.
                 running ??= Task.Run(request);
-                await WaitUntilBlockedAsync(observer, running);
+                await WaitUntilBlockedAsync(observer, running, requestConnectionId);
                 await change(holder);
             });
         }
@@ -95,8 +111,20 @@ public class ArchiveConcurrencyTests : TestBaseSetup
         await live.Update(db);
     }
 
-    private static async Task WaitUntilBlockedAsync(BackendConfigurationPnDbContext observer, Task request)
+    /// <summary>
+    /// Returns once the request's connection (<paramref name="requestConnectionId"/>) is in an InnoDB lock wait on the
+    /// folder-lock statement itself (ArchiveFolderLock's <c>SELECT Id FROM `ArchiveFolders` WHERE Id IN (...)</c>).
+    /// Only that thread and that statement count: the holder's own transaction cannot satisfy the wait, and neither
+    /// can a later statement that happens to queue behind the holder's lock. An upload's INSERT, for one, waits on the
+    /// folder row through the Files.FolderId foreign key even without the shared lock. If it never blocks there, the
+    /// failure says what that thread was doing instead.
+    /// </summary>
+    private static async Task WaitUntilBlockedAsync(BackendConfigurationPnDbContext observer, Task request,
+        long requestConnectionId)
     {
+        // ArchiveFolderLock's statement; MySqlConnector inlines the ids, so trx_query holds the literal text.
+        var folderTable = observer.Model.FindEntityType(typeof(ArchiveFolder))!.GetTableName();
+        var folderLockQuery = $"SELECT Id FROM `{folderTable}` WHERE Id IN (%";
         var deadline = DateTime.UtcNow + BlockedTimeout;
         while (DateTime.UtcNow < deadline)
         {
@@ -106,17 +134,31 @@ public class ArchiveConcurrencyTests : TestBaseSetup
             }
 
             var waiting = await observer.Database
-                .SqlQueryRaw<long>("SELECT COUNT(*) AS Value FROM information_schema.INNODB_TRX WHERE trx_state = 'LOCK WAIT'")
+                .SqlQueryRaw<long>(
+                    "SELECT COUNT(*) AS Value FROM information_schema.INNODB_TRX " +
+                    "WHERE trx_mysql_thread_id = {0} AND trx_state = 'LOCK WAIT' AND trx_query LIKE {1}",
+                    requestConnectionId, folderLockQuery)
                 .SingleAsync();
             if (waiting > 0)
             {
                 return;
             }
 
-            await Task.Delay(50);
+            await Task.Delay(InnodbTrxPollInterval);
         }
 
-        Assert.Fail($"the request was not blocked on the folder lock within {BlockedTimeout.TotalSeconds}s");
+        var thread = await observer.Database
+            .SqlQueryRaw<string>(
+                "SELECT CONCAT_WS(' | ', CONCAT('command=', p.COMMAND), CONCAT('state=', p.STATE), " +
+                "CONCAT('trx=', IFNULL(t.trx_state, 'none')), CONCAT('trx_query=', IFNULL(t.trx_query, 'none')), " +
+                "CONCAT('sql=', IFNULL(p.INFO, 'none'))) AS Value " +
+                "FROM information_schema.PROCESSLIST p " +
+                "LEFT JOIN information_schema.INNODB_TRX t ON t.trx_mysql_thread_id = p.ID WHERE p.ID = {0}",
+                requestConnectionId)
+            .SingleOrDefaultAsync();
+        Assert.Fail($"the request (connection {requestConnectionId}) was not blocked on the folder-lock statement within " +
+                    $"{BlockedTimeout.TotalSeconds}s; request task {request.Status}; its connection: " +
+                    $"{thread ?? "gone from PROCESSLIST"}");
     }
 
     [Test]

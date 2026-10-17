@@ -1,12 +1,12 @@
 import {Injectable} from '@angular/core';
-import {Observable, tap} from 'rxjs';
+import {Observable, map, tap} from 'rxjs';
 import {
   CommonPaginationState,
   OperationDataResult,
   Paged,
 } from 'src/app/common/models';
 import {updateTableSort} from 'src/app/common/helpers';
-import {FilesModel,} from '../../../models';
+import {DocumentDateState, FilesModel} from '../../../models';
 import {BackendConfigurationPnFilesService,} from '../../../services';
 import {Store} from '@ngrx/store';
 import {
@@ -32,7 +32,9 @@ export class FilesStateService {
     this.selectFilesFilters$.subscribe(x => this.currentFilters = x);
   }
 
+  /** A search and "Dato skal tjekkes" span all folders (spec section 5); otherwise one folder is listed. */
   getFiles(): Observable<OperationDataResult<Paged<FilesModel>>> {
+    const spansAllFolders = !!this.currentFilters.nameFilter || this.currentFilters.needsDateCheck;
     return this.service.getAllFiles({
       propertyIds: this.currentFilters.propertyIds,
       nameFilter: this.currentFilters.nameFilter,
@@ -41,6 +43,8 @@ export class FilesStateService {
       dateTo: this.currentFilters.dateRange.dateTo,
       sort: this.currentPagination.sort,
       isSortDsc: this.currentPagination.isSortDsc,
+      folderId: spansAllFolders ? null : this.currentFilters.folderId,
+      dateState: this.currentFilters.needsDateCheck ? DocumentDateState.Suggested : null,
     }).pipe(
       tap((data) => {
         if (data && data.success) {
@@ -48,6 +52,21 @@ export class FilesStateService {
         }
       })
     );
+  }
+
+  /** The "Dato skal tjekkes" count: Suggested documents of the selected properties, all folders. */
+  getDateCheckCount(): Observable<number> {
+    return this.service.getAllFiles({
+      propertyIds: this.currentFilters.propertyIds,
+      nameFilter: '',
+      tagIds: [],
+      dateFrom: this.currentFilters.dateRange.dateFrom,
+      dateTo: this.currentFilters.dateRange.dateTo,
+      sort: 'Id',
+      isSortDsc: false,
+      folderId: null,
+      dateState: DocumentDateState.Suggested,
+    }).pipe(map(res => (res && res.success && res.model ? res.model.total || 0 : 0)));
   }
 
   onSortTable(sort: string) {

@@ -1,0 +1,11 @@
+<h3 mat-dialog-title>{{ 'Read access changes' | translate }}</h3>
+<div mat-dialog-content>
+  <p id="archiveMoveImpact">{{ data.text }}</p>
+  <p *ngIf="!data.canConfirm" id="archiveMoveAdminOnly" class="mb-0">
+    {{ 'The move changes who can read the documents. Only an administrator can do that.' | translate }}
+  </p>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end gap-12">
+  <button class="btn-cancel" id="archiveMoveCancelBtn" (click)="cancel()">{{ (data.canConfirm ? 'Cancel' : 'Close') | translate }}</button>
+  <button *ngIf="data.canConfirm" class="btn-primary" id="archiveMoveConfirmBtn" (click)="confirm()">{{ 'Move' | translate }}</button>
+</div>

@@ -2,14 +2,18 @@
   <app-archive-section-nav></app-archive-section-nav>
   <h2 style="margin: 0">{{ pageTitle | translate }}</h2>
   <div class="d-flex flex-row flex-wrap align-items-end justify-content-end gap-12">
-    <app-files-filters [availableTags]="availableTags" (updateTable)="updateTable()"></app-files-filters>
+    <app-files-filters [availableTags]="availableTags" (updateTable)="refresh()"></app-files-filters>
     <button
-      class="btn-primary btn-primary--icon-left"
-      [disabled]="selectedFileIds.length === 0"
-      (click)="downloadSelectedFiles()"
+      type="button"
+      id="archiveDateCheckChip"
+      class="chip"
+      [class.chip-selected]="filters?.needsDateCheck"
+      [attr.aria-pressed]="!!filters?.needsDateCheck"
+      (click)="toggleDateCheck()"
     >
-      <mat-icon>download</mat-icon>
-      <span>{{ 'Download selected' | translate }}</span>
+      <mat-icon>event_busy</mat-icon>
+      <span>{{ 'Date needs checking' | translate }}</span>
+      <span class="archive-chip-count" id="archiveDateCheckCount">{{ dateCheckCount }}</span>
     </button>
     <button
       class="btn-secondary btn-secondary--icon-left"
@@ -25,24 +29,105 @@
       id="addNewFileBtn"
       matTooltip="{{ 'Upload PDF' | translate }}"
       routerLink="./create"
+      [queryParams]="{folderId: selectedFolderId}"
     >
       <mat-icon>file_upload</mat-icon>
       <span>{{ 'Upload PDF' | translate }}</span>
     </button>
   </div>
 </mat-card>
-<app-files-table
-  [files]="files"
-  [highlightedFileId]="highlightedFileId"
-  (updateTable)="updateTable()"
-  (clickTag)="addTagToFilter($event)"
-  (openEditNameModal)="showEditModal($event)"
-  (openDeleteModal)="showDeleteModal($event)"
-  (openEditTagsModal)="showEditTagsModal($event)"
-  (changeSelectedFiles)="selectedFileIds = $event"
-  (highlightedRowRendered)="onHighlightedRowRendered()"
->
-</app-files-table>
+
+<!-- A drawer (narrow) floats over the page: the 360 px third column is only for the side-by-side layout. -->
+<div class="archive-workspace" [class.archive-workspace--with-panel]="currentFileId !== null && !narrow">
+  <app-archive-folder-tree
+    [folders]="folders"
+    [selectedFolderId]="listMode === 'folder' ? selectedFolderId : null"
+    [isAdmin]="isAdmin"
+    [dragActive]="dragActive"
+    (folderSelected)="selectFolder($event)"
+    (createTop)="createTopFolder()"
+    (createSubfolder)="createSubfolder($event)"
+    (renameFolder)="renameFolder($event)"
+    (moveFolder)="moveFolder($event)"
+    (editAccess)="editFolderAccess($event)"
+    (deleteFolder)="deleteFolder($event)"
+    (filesDropped)="onFolderDrop($event)"
+  ></app-archive-folder-tree>
+
+  <section class="archive-center">
+    <div class="archive-crumb" id="archiveCrumb" [ngSwitch]="listMode">
+      <span *ngSwitchCase="'search'">{{ 'Search results in all folders' | translate }}</span>
+      <span *ngSwitchCase="'date'">{{ 'Date needs checking' | translate }} · {{ 'all folders' | translate }}</span>
+      <ng-container *ngSwitchDefault>
+        <ng-container *ngFor="let part of selectedPath; let last = last">
+          <span [class.archive-crumb__parent]="!last">{{ part }}</span>
+          <mat-icon *ngIf="!last">chevron_right</mat-icon>
+        </ng-container>
+        <span class="archive-crumb__access" id="archiveCrumbAccess"><mat-icon>group</mat-icon>{{ crumbAccessLabel }}</span>
+      </ng-container>
+    </div>
+
+    <div class="archive-subfolders" id="archiveSubfolders" *ngIf="listMode === 'folder' && subfolders.length">
+      <button type="button" class="chip" *ngFor="let sub of subfolders" [attr.data-folder-id]="sub.id" (click)="selectFolder(sub.id)">
+        <mat-icon>folder</mat-icon><span>{{ sub.name }}</span><span class="archive-chip-count">{{ sub.count }}</span>
+      </button>
+    </div>
+
+    <div class="archive-selbar" id="archiveSelectionBar" *ngIf="selectedFileIds.length">
+      <strong>{{ selectedKey | translate: {count: selectedFileIds.length} }}</strong>
+      <button type="button" class="btn-secondary btn-secondary--icon-left" id="archiveMoveSelectedBtn" (click)="moveSelected()">
+        <mat-icon>drive_file_move</mat-icon><span>{{ 'Move to folder' | translate }}</span>
+      </button>
+      <button type="button" class="btn-secondary btn-secondary--icon-left" id="archivePropertiesSelectedBtn" (click)="setSelectedProperties()">
+        <mat-icon>home_work</mat-icon><span>{{ 'Properties' | translate }}</span>
+      </button>
+      <button *ngIf="isAdmin" type="button" class="btn-secondary btn-secondary--icon-left" id="archiveAccessSelectedBtn" (click)="setSelectedAccess()">
+        <mat-icon>group</mat-icon><span>{{ 'Read access' | translate }}</span>
+      </button>
+      <button type="button" class="btn-secondary btn-secondary--icon-left" id="archiveDownloadSelectedBtn" (click)="downloadSelectedFiles()">
+        <mat-icon>download</mat-icon><span>{{ 'Download selected' | translate }}</span>
+      </button>
+      <button mat-icon-button type="button" id="archiveClearSelectionBtn" [attr.aria-label]="'Clear selection' | translate" (click)="selectedFileIds = []">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <app-files-table
+      [files]="files"
+      [isAdmin]="isAdmin"
+      [showPath]="listMode !== 'folder'"
+      [loaded]="filesLoaded"
+      [selectedIds]="selectedFileIds"
+      [currentFileId]="currentFileId"
+      [highlightedFileId]="highlightedFileId"
+      [sortField]="sortField"
+      [sortDesc]="sortDesc"
+      (selectedIdsChange)="selectedFileIds = $event"
+      (openFile)="openFile($event)"
+      (openDeleteModal)="showDeleteModal($event)"
+      (rowDragStart)="onRowDragStart($event)"
+      (rowDragEnd)="onRowDragEnd()"
+      (sort)="onSort($event)"
+    ></app-files-table>
+  </section>
+
+  <div class="archive-panel-backdrop" *ngIf="narrow && currentFileId !== null" (click)="closePanel()"></div>
+  <app-archive-document-panel
+    *ngIf="currentFileId !== null"
+    [fileId]="currentFileId"
+    [folders]="folders"
+    [folderOptions]="options"
+    [properties]="properties"
+    [availableTags]="availableTags"
+    [workerTags]="workerTags"
+    [isAdmin]="isAdmin"
+    [drawer]="narrow"
+    [positionLabel]="positionLabel"
+    [hasNext]="hasNext"
+    (saved)="onPanelSaved($event)"
+    (closed)="closePanel()"
+  ></app-archive-document-panel>
+</div>
 
 <app-file-tags
   #tagsModal
