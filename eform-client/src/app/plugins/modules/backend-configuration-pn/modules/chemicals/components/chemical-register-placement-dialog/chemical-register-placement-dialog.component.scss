@@ -4,7 +4,9 @@
 // content becomes a shrinkable flex item of the surface, and it collapsed so its fields could not be reached (Task 16 e2e).
 :host { display: block; max-width: 520px; }
 
+// A scrolling flex item may shrink to nothing (min-height: auto is 0 with overflow); the results must keep their height.
 .chemicals-register-results {
+  flex-shrink: 0;
   max-height: 240px;
   overflow-y: auto;
 }
