@@ -8,19 +8,18 @@ import {
 } from '@angular/core';
 import {FormControl, FormGroup} from '@angular/forms';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import {Subscription, combineLatest, take} from 'rxjs';
+import {Subscription, merge, take} from 'rxjs';
 import {BackendConfigurationPnPropertiesService,} from '../../../../services';
 import {CommonDictionaryModel, SharedTagModel} from 'src/app/common/models';
 import {TranslateService} from '@ngx-translate/core';
 import {FilesStateService} from '../../store';
 import {format, parse} from 'date-fns';
-import {debounceTime, map, skip} from 'rxjs/operators';
-import {Store} from '@ngrx/store';
+import {debounceTime, filter, map, skip} from 'rxjs/operators';
+import {ActionsSubject, Store} from '@ngrx/store';
 import {
   selectFilesFilters,
   selectFilesNameFilters,
-  selectFilesFolderId,
-  FilesFiltrationModel, filesUpdateFilters
+  FilesFiltrationModel, filesSelectFolder, filesUpdateFilters
 } from '../../../../state';
 
 @AutoUnsubscribe()
@@ -32,6 +31,7 @@ import {
 })
 export class FilesFiltersComponent implements OnInit, OnDestroy {
   private store = inject(Store);
+  private actions$ = inject(ActionsSubject);
   private translate = inject(TranslateService);
   public filesStateService = inject(FilesStateService);
   private propertyService = inject(BackendConfigurationPnPropertiesService);
@@ -130,13 +130,13 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
         this.updateTable.emit();
       });
 
-    // Selecting a folder clears the search in the store (filesSelectFolder); mirror that into the field
-    // without emitting, so the cleared text does not trigger another reload. The folder is watched too: text
-    // still debouncing was never stored, so the store's search stays '' and its selector alone would not emit.
-    this.nameFilterSyncSub$ = combineLatest([
+    // Selecting a folder clears the search in the store; mirror that into the field without emitting. The action
+    // is watched too: text still debouncing was never stored (and a re-click changes no state), so the selector
+    // alone would not emit.
+    this.nameFilterSyncSub$ = merge(
       this.store.select(selectFilesNameFilters),
-      this.store.select(selectFilesFolderId),
-    ]).subscribe(([name]) => {
+      this.actions$.pipe(filter(action => action.type === filesSelectFolder.type), map(() => '')),
+    ).subscribe(name => {
       if (this.filtersForm && this.filtersForm.value.nameFilter !== name) {
         this.filtersForm.patchValue({nameFilter: name}, {emitEvent: false});
       }

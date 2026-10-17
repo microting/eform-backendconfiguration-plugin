@@ -65,4 +65,17 @@ describe('FilesFiltersComponent — search debounce', () => {
     expect(component.nameFilterControl.value).toBe('');
     expect(updateTable).not.toHaveBeenCalled();
   }));
+
+  it('re-clicking the folder already selected also drops a search that is still debouncing', fakeAsync(() => {
+    setUp();
+    store.dispatch(filesSelectFolder(4));
+    component.nameFilterControl.setValue('faktura');
+    tick(300);
+    store.dispatch(filesSelectFolder(4)); // same folder: the stored filters do not change at all
+    tick(500);
+    expect(filters().folderId).toBe(4);
+    expect(filters().nameFilter).toBe('');
+    expect(component.nameFilterControl.value).toBe('');
+    expect(updateTable).not.toHaveBeenCalled();
+  }));
 });
