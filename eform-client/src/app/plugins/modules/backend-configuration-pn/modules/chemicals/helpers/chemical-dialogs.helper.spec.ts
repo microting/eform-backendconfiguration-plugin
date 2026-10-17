@@ -1,5 +1,6 @@
+import {HttpErrorResponse} from '@angular/common/http';
 import {Subject, of, throwError} from 'rxjs';
-import {closeWhenSaved, openSafetyDataSheet} from './chemical-dialogs.helper';
+import {closeWhenSaved, downloadFailureText, openSafetyDataSheet} from './chemical-dialogs.helper';
 
 describe('closeWhenSaved (shared save/busy/close of the Kemi dialogs)', () => {
   it('closes with true after a successful save and reports when the request settles', () => {
@@ -56,5 +57,23 @@ describe('openSafetyDataSheet (shared by W1 and the W2 side panel)', () => {
     openSafetyDataSheet(sds, toastr, translate, 'sds200');
 
     expect(toastr.error).toHaveBeenCalledWith('Chemicals: Could not open safety data sheet');
+  });
+});
+
+describe('downloadFailureText (shared by the W1 exports and the W6 Excel)', () => {
+  const translate = {instant: (key: string) => key};
+
+  it.each([
+    ['the server\'s reason for a refused file', {status: 400, message: 'Perioden er højst 366 dage.'}, 'Perioden er højst 366 dage.'],
+    ['a refusal without a reason', {status: 409, message: null}, 'Export failed'],
+    ['a forbidden file', {status: 403, message: null}, 'Chemicals: Export not allowed'],
+    ['no answer', {status: 0, message: null}, 'Export failed'],
+    ['a raw HttpErrorResponse (its message is technical)', new HttpErrorResponse({status: 400, url: '/api/x', error: 'boom'}), 'Export failed'],
+    ['a forbidden raw HttpErrorResponse', new HttpErrorResponse({status: 403, url: '/api/x'}), 'Export failed'],
+    ['an Error with a status', Object.assign(new Error('TypeError: technical detail'), {status: 400}), 'Export failed'],
+    ['nothing at all', null, 'Export failed'],
+    ['a string', 'boom', 'Export failed'],
+  ])('says %s', (_name, error, expected) => {
+    expect(downloadFailureText(error, translate)).toBe(expected);
   });
 });

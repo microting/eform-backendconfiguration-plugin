@@ -84,6 +84,8 @@ describe('BackendConfigurationPnChemicalsService', () => {
     ['save settings', (s) => s.saveSettings(3, {stockEnabled: true, digestRecipients: ['first@example.com']}), 'put',
       [`${BASE}/properties/3/settings`, {stockEnabled: true, digestRecipients: ['first@example.com']}]],
     ['digest preview', (s) => s.getDigestPreview(3), 'get', [`${BASE}/properties/3/digest-preview`]],
+    ['history page', (s) => s.getHistory(3, {from: '2026-09-01', to: '2026-09-29', userId: null, action: null, locationId: null, page: 1, pageSize: 25}), 'post',
+      [`${BASE}/properties/3/history`, {from: '2026-09-01', to: '2026-09-29', userId: null, action: null, locationId: null, page: 1, pageSize: 25}]],
   ];
 
   it.each(cases)('%s calls the Plan A route', (_name, call, verb, args) => {

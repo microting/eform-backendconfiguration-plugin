@@ -4,6 +4,7 @@ jest.mock('./components', () => ({
   ChemicalLocationsPageComponent: class MockChemicalLocationsPageComponent {},
   ChemicalPermissionsPageComponent: class MockChemicalPermissionsPageComponent {},
   ChemicalSettingsPageComponent: class MockChemicalSettingsPageComponent {},
+  ChemicalHistoryPageComponent: class MockChemicalHistoryPageComponent {},
 }));
 
 import {TestBed} from '@angular/core/testing';
@@ -70,7 +71,7 @@ describe('ChemicalsRouting', () => {
   it('puts W3 Lokationer second, rendering the locations page (Task 14, mockup order)', () => {
     const children = (routes[0].children ?? []).filter((r) => !r.redirectTo);
 
-    expect(CHEMICAL_SCREENS.map((s) => s.path)).toEqual(['inventory', 'locations', 'permissions', 'settings']);
+    expect(CHEMICAL_SCREENS.map((s) => s.path)).toEqual(['inventory', 'locations', 'permissions', 'settings', 'history']);
     expect(children[1].component?.name).toBe('MockChemicalLocationsPageComponent');
     expect(children[1].data?.['titleKey']).toBe('Chemicals: Locations title');
   });
@@ -83,6 +84,28 @@ describe('ChemicalsRouting', () => {
       await router.navigateByUrl('/chemicals/locations?propertyId=3');
 
       expect(router.url).toBe('/chemicals/locations?propertyId=3');
+    });
+  });
+
+  it('puts W6 Historik last, rendering the history page (Task 15, mockup order)', () => {
+    const children = (routes[0].children ?? []).filter((r) => !r.redirectTo);
+    const last = children[children.length - 1];
+
+    expect(CHEMICAL_SCREENS[CHEMICAL_SCREENS.length - 1].path).toBe('history');
+    expect(last.path).toBe('history');
+    expect(last.component?.name).toBe('MockChemicalHistoryPageComponent');
+    expect(last.data?.['titleKey']).toBe('Chemicals: History title');
+    expect(last.canDeactivate).toContain(chemicalUnsavedChangesGuard);
+  });
+
+  describe('W6 with the real router', () => {
+    it('keeps the property of the Historik link', async () => {
+      TestBed.configureTestingModule({providers: [provideRouter([{path: 'chemicals', children: routes}])]});
+      const router = TestBed.inject(Router);
+
+      await router.navigateByUrl('/chemicals/history?propertyId=3');
+
+      expect(router.url).toBe('/chemicals/history?propertyId=3');
     });
   });
 
@@ -107,6 +130,7 @@ describe('ChemicalsRouting', () => {
       ['locations', 'backend-configuration-pn-chemicals-locations'],
       ['permissions', 'backend-configuration-pn-chemicals-permissions'],
       ['settings', 'backend-configuration-pn-chemicals-settings'],
+      ['history', 'backend-configuration-pn-chemicals-history'],
     ]);
   });
 });

@@ -128,7 +128,7 @@ describe('Kemi i18n meaning', () => {
 
   // The stock balance is a quantity in stock, never an equilibrium or a bank/account balance.
   const NOT_QUANTITY = /gleichgewicht|équilibre|equilibrio|equilíbrio|evenwicht|jämvikt|likevekt|tasapaino|tasakaal|równowag|rovnováh|ravnotež|egyensúly|echilibru|pusiausvyr|līdzsvar|равновес|рівноваг|ισορροπ|jafnvægi|kontostand|solde|saldo bancario|saldo bancário|zůstatek|zostatok|egyenleg|баланс|guthaben/i;
-  const BALANCE_KEYS = ['Chemicals: Balance', 'Chemicals: Current balance', 'Chemicals: Counted balance'];
+  const BALANCE_KEYS = ['Chemicals: Balance', 'Chemicals: Current balance', 'Chemicals: Counted balance', 'Chemicals: History balance'];
 
   it.each(NON_ENGLISH)('%s: the stock balance is a quantity in stock, not an equilibrium or an account', (locale) => {
     const wrong = BALANCE_KEYS.filter((key) => NOT_QUANTITY.test(text(locale, key)));
@@ -149,6 +149,8 @@ describe('Kemi i18n meaning', () => {
     'Chemicals: Move to another location', 'Chemicals: Amount to move', 'Chemicals: Stock origin move',
     'Chemicals: Stock kind 4', 'Chemicals: Stock kind 5', 'Chemicals: Reason moved automatic', 'Chemicals: How much to move',
     'Chemicals: No other location',
+    // Task 15: the W6 action and the Excel's removal reason
+    'Chemicals: Action Moved', 'Chemicals: History reason moved',
   ];
 
   it.each(NON_ENGLISH)('%s: moving a placement relocates a chemical, not a person moving house', (locale) => {
@@ -164,7 +166,8 @@ describe('Kemi i18n meaning', () => {
   const DELETE: Record<string, RegExp> = {esES: /eliminar|borrar/i, ukUA: /видал/i, deDE: /lösch/i, frFR: /supprim/i, itIT: /elimin|cancell/i};
 
   it.each(Object.entries(DELETE))('%s: removing a placement does not say delete', (locale, deleteWord) => {
-    expect(['Chemicals: Remove', 'Chemicals: Remove placement'].filter((key) => deleteWord.test(text(locale, key)))).toEqual([]);
+    expect(['Chemicals: Remove', 'Chemicals: Remove placement', 'Chemicals: Action Removed']
+      .filter((key) => deleteWord.test(text(locale, key)))).toEqual([]);
   });
 
   it.each(NON_ENGLISH)('%s: the reason "disposed of" is not the same word as the remove action', (locale) => {
@@ -200,6 +203,9 @@ describe('Kemi i18n meaning', () => {
     'Chemicals: Locations title', 'Chemicals: New location', 'Chemicals: Edit location', 'Chemicals: No locations',
     'Chemicals: Loading locations', 'Chemicals: Could not load locations', 'Chemicals: Archive blocked',
     'Chemicals: Archive location?', 'Chemicals: Archive confirm hint', 'Chemicals: Move location up', 'Chemicals: Move location down',
+    // Task 15: the W6 location actions
+    'Chemicals: Action LocationCreated', 'Chemicals: Action LocationRenamed', 'Chemicals: Action LocationArchived',
+    'Chemicals: Action LocationPhotoChanged',
   ];
   const INTERNSHIP = new RegExp([
     '\\bstage\\b', 'stagiu', 'tirocin', 'praktikum', '\\bpraktik\\b', 'praktika', 'praktyk', 'staż', 'stáž', 'práctica',
@@ -261,5 +267,135 @@ describe('Kemi i18n meaning', () => {
 
   it('ptPT uses the European "stock", never the Brazilian "estoque", in every Kemi text', () => {
     expect(CHEMICAL_I18N_KEYS.filter((key) => /estoque/i.test(text('ptPT', key)))).toEqual([]);
+  });
+
+  // Task 15 - W6 "Historik" is the property's event log (browser-history sense), never history the subject or a story.
+  const HISTORY_KEYS = ['Chemicals: History title', 'Chemicals: Loading history', 'Chemicals: Could not load history'];
+  const HISTORY_SUBJECT: Record<string, RegExp> = {
+    deDE: /geschichte/i, frFR: /\bhistoire\b/i, itIT: /\bstoria\b/i, esES: /\bhistoria\b/i, ptBR: /\bhistória\b/i, ptPT: /\bhistória\b/i,
+    roRO: /\bistorie\b/i, huHU: /történe/i, elGR: /ιστορία/i, isIS: /\bsaga\b/i, nlNL: /geschiedenis/i,
+  };
+
+  it.each(Object.entries(HISTORY_SUBJECT))('%s: the history page is an event log, not history the subject or a story', (locale, subject) => {
+    expect(HISTORY_KEYS.filter((key) => subject.test(text(locale, key)))).toEqual([]);
+  });
+
+  it('the history-subject guard catches what machine translation produced', () => {
+    expect('Geschichte').toMatch(HISTORY_SUBJECT.deDE);
+    expect('Storia').toMatch(HISTORY_SUBJECT.itIT);
+    expect('Historia').toMatch(HISTORY_SUBJECT.esES);
+    expect('Saga').toMatch(HISTORY_SUBJECT.isIS);
+    expect('Történet').toMatch(HISTORY_SUBJECT.huHU);
+    expect('Historial').not.toMatch(HISTORY_SUBJECT.esES);
+  });
+
+  // "Action" heads the event-type column and "Stock" is goods in stock: never a share on the stock market
+  // (machine translation produced "Aktie", "Hlutabréf", "Aktienkurs", "cours de l'action").
+  const SHARE = /aktie|hlutabr|osake|aktsia|акці[яї]|акци[яи]|μετοχ|cours de l/i;
+  const SHARE_KEYS = [
+    'Chemicals: Action', 'Chemicals: All actions', 'Chemicals: Flag stock', 'Chemicals: Action StockReceived',
+    'Chemicals: Action StockConsumed', 'Chemicals: Action StockAdjusted', 'Chemicals: Stock turned on', 'Chemicals: Stock turned off',
+    'Chemicals: History balance',
+  ];
+
+  it.each(NON_ENGLISH)('%s: an action is an event and stock is goods, never a company share', (locale) => {
+    expect(SHARE_KEYS.filter((key) => SHARE.test(text(locale, key)))).toEqual([]);
+  });
+
+  // A moved chemical is relocated, never emotionally moved (machine translation produced "Emocionado", "Wzruszony", "Rörd").
+  const EMOTION = /emocion|wzrusz|^rörd|commoss|gerührt|ontroer|(^|\s)ému|dojat|liikutt/i;
+
+  it.each(NON_ENGLISH)('%s: "Moved" relocates a chemical, it is not an emotion', (locale) => {
+    expect(['Chemicals: Action Moved', 'Chemicals: History reason moved'].filter((key) => EMOTION.test(text(locale, key)))).toEqual([]);
+  });
+
+  it('the share and emotion guards catch what machine translation produced', () => {
+    for (const bad of ['Aktie', 'Hlutabréf', 'Aktienkurs korrigierte sich', 'Le cours de l\'action a été corrigé']) {
+      expect(bad).toMatch(SHARE);
+    }
+    for (const bad of ['Emocionado', 'Wzruszony', 'Rörd']) {
+      expect(bad).toMatch(EMOTION);
+    }
+    expect('Umgelagert').not.toMatch(EMOTION);
+    expect('Aktion').not.toMatch(SHARE);
+  });
+
+  // "Consumed" is stock used up, never digested or consummated (machine translation produced "Strawiony", "Consumado").
+  it.each(NON_ENGLISH)('%s: consumed stock is used up, not digested or consummated', (locale) => {
+    expect(text(locale, 'Chemicals: Action StockConsumed')).not.toMatch(/strawi|consumad|geconsumeerd/i);
+  });
+
+  // The W6 action names are labels, never shouted (machine translation produced "ENTFERNT", "REMOVED", "RIMOSSO").
+  const ACTION_KEYS = Object.keys(enUS).filter((key) => key.startsWith('Chemicals: Action ') && key !== 'Chemicals: Action banner');
+
+  it('has one action name per history action', () => {
+    expect(ACTION_KEYS).toHaveLength(15);
+  });
+
+  it.each(Object.keys(LOCALES))('%s writes the action names in normal case', (locale) => {
+    expect(ACTION_KEYS.filter((key) => text(locale, key) === text(locale, key).toLocaleUpperCase())).toEqual([]);
+  });
+
+  // The placement note is a note about the spot, never an internship ("Note de stage").
+  it.each(NON_ENGLISH)('%s: the placement-note action is not an internship', (locale) => {
+    expect(text(locale, 'Chemicals: Action NoteChanged')).not.toMatch(INTERNSHIP);
+  });
+
+  // An archived location is put in the archive, not stored (Icelandic "geymd" reads as kept in storage, Task 14).
+  it('isIS: an archived location is put in the archive, not stored', () => {
+    expect(text('isIS', 'Chemicals: Action LocationArchived')).not.toMatch(/geym/i);
+  });
+
+  // The upper date bound is "until", never a direction or a purpose ("zu", "à", "para").
+  const TO_DIRECTION: Record<string, RegExp> = {
+    deDE: /^(zu|nach|an)$/i, frFR: /^(à|vers)$/i, esES: /^(a|para)$/i, ptBR: /^(para|a)$/i, ptPT: /^(para|a)$/i,
+    itIT: /^(a|per)$/i, nlNL: /^(naar|aan)$/i,
+  };
+
+  it.each(Object.entries(TO_DIRECTION))('%s: "To" ends a period, it is not a direction', (locale, direction) => {
+    expect(text(locale, 'Chemicals: To')).not.toMatch(direction);
+  });
+
+  // The time column is a timestamp, never the weather ("Tiempo", "Tempo", "Temps").
+  it.each(['esES', 'ptBR', 'ptPT', 'itIT', 'frFR'])('%s: the time column is a date and time, not the weather', (locale) => {
+    expect(text(locale, 'Chemicals: Time')).not.toMatch(/^(tiempo|tempo|temps)$/i);
+  });
+
+  // The removal reason label is a noun, never the verb "to reason" (sv "Resonera").
+  it('svSE: the removal reason label is a noun', () => {
+    expect(text('svSE', 'Chemicals: History reason')).not.toMatch(/^resonera/i);
+  });
+
+  // A threshold names a deadline coming up, never a delivery or submission date.
+  const DELIVERY = /entrega|inlever|skilafrest|realizacji|виконання/i;
+
+  it.each(NON_ENGLISH)('%s: an alert threshold is a deadline, not a delivery or submission date', (locale) => {
+    expect(['Chemicals: History threshold six months', 'Chemicals: History threshold one month']
+      .filter((key) => DELIVERY.test(text(locale, key)))).toEqual([]);
+  });
+
+  // Hand-reviewed W6 values (Task 15).
+  const REVIEWED_HISTORY: Array<[string, string, string]> = [
+    ['da', 'Chemicals: History title', 'Historik'],
+    ['deDE', 'Chemicals: History title', 'Verlauf'],
+    ['frFR', 'Chemicals: History title', 'Historique'],
+    ['esES', 'Chemicals: History title', 'Historial'],
+    ['itIT', 'Chemicals: History title', 'Cronologia'],
+    ['ptPT', 'Chemicals: History title', 'Histórico'],
+    ['deDE', 'Chemicals: Action Moved', 'Umgelagert'],
+    ['esES', 'Chemicals: Action Moved', 'Trasladado'],
+    ['svSE', 'Chemicals: History reason', 'Orsak'],
+    ['deDE', 'Chemicals: To', 'Bis'],
+    // The Excel's own words (localization.json) in the two languages the customers read.
+    ['da', 'Chemicals: History reason', 'Årsag'],
+    ['da', 'Chemicals: History balance', 'saldo'],
+    ['enUS', 'Chemicals: History balance', 'balance'],
+    ['da', 'Chemicals: History digest recipients', 'Modtagere af oversigt'],
+    ['da', 'Chemicals: History threshold six months', 'Frist inden for 6 måneder'],
+    ['da', 'Chemicals: Action NoteChanged', 'Placeringsnote rettet'],
+  ];
+
+  it.each(REVIEWED_HISTORY)('%s keeps the reviewed %s', (locale, key, value) => {
+    expect(text(locale, key)).toBe(value);
   });
 });
