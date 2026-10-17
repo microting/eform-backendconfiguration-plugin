@@ -48,7 +48,7 @@ describe('ChemicalHistoryPageComponent', () => {
       getHistory: jest.fn().mockReturnValue(opts.history ?? of(page())),
       getPropertyInventory: jest.fn().mockReturnValue(opts.inventory ?? of({success: true, model: {
         locations: opts.locations ?? [location(10, 'Lade', {propertyId: 3}), location(11, 'Gammel', {propertyId: 3, archived: true})],
-      }}))),
+      }})),
       exportHistory: jest.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Kemihistorik.xlsx'})),
     };
     toastr = {error: jest.fn()};
