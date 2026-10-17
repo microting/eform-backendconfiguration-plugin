@@ -52,6 +52,9 @@ export class ChemicalLocationsPageComponent implements OnInit {
   /** The newest inventory request; nothing is shown as empty while it is in flight. */
   private readonly load = new ChemicalLatestLoad();
 
+  /** Rows keep their elements across a saved order or a reload, so a focused move button survives (N-I1). */
+  readonly trackByLocation = (_index: number, row: ChemicalLocationRow): number => row.location.id;
+
   /** Bound to cdkDropListSortPredicate: a row can only be sorted among the active locations. */
   readonly canSortTo = (index: number): boolean => index < this.activeCount;
 
@@ -113,35 +116,46 @@ export class ChemicalLocationsPageComponent implements OnInit {
     return !row.location.archived;
   }
 
+  /** The first active row: its Up button is disabled. */
+  isFirstActive(row: ChemicalLocationRow): boolean {
+    return this.indexOf(row) === 0;
+  }
+
+  /** The last active row: its Down button is disabled. */
+  isLastActive(row: ChemicalLocationRow): boolean {
+    return this.indexOf(row) === this.activeCount - 1;
+  }
+
   canMoveUp(row: ChemicalLocationRow): boolean {
-    return this.canMove(row) && this.indexOf(row) > 0;
+    return this.canMove(row) && !this.isFirstActive(row);
   }
 
   canMoveDown(row: ChemicalLocationRow): boolean {
-    return this.canMove(row) && this.indexOf(row) < this.activeCount - 1;
+    return this.canMove(row) && !this.isLastActive(row);
   }
 
   /** The keyboard and single-pointer alternative to dragging (WCAG 2.1.1, 2.5.7). */
   moveUp(row: ChemicalLocationRow): void {
     if (this.canMoveUp(row)) {
       const index = this.indexOf(row);
-      this.drop({previousIndex: index, currentIndex: index - 1});
+      this.drop({previousIndex: index, currentIndex: index - 1}, row.location.id);
     }
   }
 
   moveDown(row: ChemicalLocationRow): void {
     if (this.canMoveDown(row)) {
       const index = this.indexOf(row);
-      this.drop({previousIndex: index, currentIndex: index + 1});
+      this.drop({previousIndex: index, currentIndex: index + 1}, row.location.id);
     }
   }
 
   /**
    * Shows the new order at once. A refused order, or one that gets no answer (the host interceptor
    * ends a 5xx or a network failure with EMPTY), reloads the server's; a saved one takes over the
-   * locations the server returns ("Senest ændret" moves).
+   * locations the server returns ("Senest ændret" moves). A move from a button gives `focusId`: once
+   * the save settled and the rows rendered, the moved row's move button gets the focus back (N-I1).
    */
-  drop(event: Pick<CdkDragDrop<ChemicalLocationRow[]>, 'previousIndex' | 'currentIndex'>): void {
+  drop(event: Pick<CdkDragDrop<ChemicalLocationRow[]>, 'previousIndex' | 'currentIndex'>, focusId: number | null = null): void {
     const lastActive = this.activeCount - 1;
     const currentIndex = Math.min(event.currentIndex, lastActive);
     if (this.propertyId === null || this.reordering || event.previousIndex > lastActive || event.previousIndex === currentIndex) {
@@ -157,6 +171,10 @@ export class ChemicalLocationsPageComponent implements OnInit {
         this.reordering = false;
         if (!answered) {
           this.reload();
+        }
+        if (focusId !== null) {
+          // After this change detection pass: the buttons are enabled and the rows are in place.
+          setTimeout(() => this.focusMoveButton(focusId));
         }
       }))
       .subscribe((res) => {
@@ -178,7 +196,8 @@ export class ChemicalLocationsPageComponent implements OnInit {
       headerText: t('Chemicals: Archive location?'),
       fields: [
         {header: t('Location'), text: row.location.name},
-        {header: '', text: t('Chemicals: Archive confirm hint')},
+        // The modal shows a header left and a bold value right: the hint is a plain sentence (N-m1).
+        {header: t('Chemicals: Archive confirm hint'), text: ''},
       ],
       discardText: t('Chemicals: Archive'),
       keepText: t('Cancel'),
@@ -205,6 +224,16 @@ export class ChemicalLocationsPageComponent implements OnInit {
 
   private canMove(row: ChemicalLocationRow): boolean {
     return !this.reordering && !row.location.archived;
+  }
+
+  /** Up, or Down when the row is now first (Up is disabled there); nothing when the row is gone. */
+  private focusMoveButton(locationId: number): void {
+    const row = this.rows.find((r) => r.location.id === locationId);
+    if (!row || row.location.archived) {
+      return;
+    }
+    const button = this.isFirstActive(row) ? 'Down' : 'Up';
+    document.getElementById(`chemicalLocation${button}-${locationId}`)?.focus();
   }
 
   private indexOf(row: ChemicalLocationRow): number {

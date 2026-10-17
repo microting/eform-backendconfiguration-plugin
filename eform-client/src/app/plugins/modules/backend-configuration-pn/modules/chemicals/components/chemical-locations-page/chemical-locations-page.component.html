@@ -25,7 +25,7 @@
     <div id="chemicalLocationsList" cdkDropList [cdkDropListData]="visibleRows" [cdkDropListDisabled]="reordering"
          [cdkDropListSortPredicate]="canSortTo" (cdkDropListDropped)="drop($event)">
       <div
-        *ngFor="let row of visibleRows; let i = index"
+        *ngFor="let row of visibleRows; let i = index; trackBy: trackByLocation"
         class="chemicals-location-row d-flex align-items-center"
         [class.chemicals-location-row--archived]="row.location.archived"
         [id]="'chemicalLocationRow-' + row.location.id"
@@ -54,11 +54,14 @@
         <span class="col-updated">{{ row.location.updatedAt | date: 'dd-MM-yyyy' }}</span>
         <span class="col-actions d-flex gap-8">
           <ng-container *ngIf="!row.location.archived">
-            <button mat-icon-button [id]="'chemicalLocationUp-' + row.location.id" [disabled]="!canMoveUp(row)"
+            <!-- aria-disabled while an order saves: a disabled button would drop the keyboard focus. -->
+            <button mat-icon-button [id]="'chemicalLocationUp-' + row.location.id" [disabled]="isFirstActive(row)"
+                    [attr.aria-disabled]="reordering ? 'true' : null"
                     [attr.aria-label]="'Chemicals: Move location up' | translate: {name: row.location.name}" (click)="moveUp(row)">
               <mat-icon>arrow_upward</mat-icon>
             </button>
-            <button mat-icon-button [id]="'chemicalLocationDown-' + row.location.id" [disabled]="!canMoveDown(row)"
+            <button mat-icon-button [id]="'chemicalLocationDown-' + row.location.id" [disabled]="isLastActive(row)"
+                    [attr.aria-disabled]="reordering ? 'true' : null"
                     [attr.aria-label]="'Chemicals: Move location down' | translate: {name: row.location.name}" (click)="moveDown(row)">
               <mat-icon>arrow_downward</mat-icon>
             </button>

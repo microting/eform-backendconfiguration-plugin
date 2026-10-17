@@ -43,6 +43,8 @@ export class ChemicalLocationDialogComponent implements OnDestroy {
   /** Object URL of the picked photo, shown instead of the stored one until it is saved. */
   previewUrl: string | null = null;
   saving = false;
+  /** A Save already wrote the location (its photo may have been refused): the page must reload on close. */
+  private wrote = false;
   /** The location this dialog writes: the edited one, or the one a first Save created. */
   private locationId: number | null = this.data.row?.location.id ?? null;
 
@@ -79,8 +81,8 @@ export class ChemicalLocationDialogComponent implements OnDestroy {
       dirty: this.dirty,
       field: {headerKey: 'Location', text: this.name.trim() || this.savedName},
       confirmId: 'chemicalLocationDiscardConfirm',
-      // A location created before a refused photo is new on the page, so it reloads.
-      result: this.data.row === null && this.editing,
+      // A location saved before a refused photo is new or changed on the page, so it reloads (N-m2).
+      result: this.wrote,
     });
   }
 
@@ -100,6 +102,7 @@ export class ChemicalLocationDialogComponent implements OnDestroy {
         if (!res?.success) {
           return of(res);
         }
+        this.wrote = true;
         this.locationId ??= res.model.id;
         this.savedName = name;
         this.savedDescription = description;
