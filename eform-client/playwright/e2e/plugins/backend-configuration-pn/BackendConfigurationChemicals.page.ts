@@ -321,9 +321,19 @@ export class BackendConfigurationChemicalsPage {
     await this.page.locator('#chemicalRegisterNote').fill(note, { timeout: UI_TIMEOUT });
     const saved = waitForApiResponse(this.page, 'POST chemicals/placements',
       (r) => r.url().endsWith(`${CHEMICALS_API}/placements`) && r.request().method() === 'POST', API_TIMEOUT);
+    // A save reloads the property's inventory; it must hold the new placement.
+    const reloaded = waitForApiResponse(this.page, 'GET chemicals/properties/{id}/inventory after the save',
+      (r) => /\/chemicals\/properties\/\d+\/inventory$/.test(new URL(r.url()).pathname) && r.request().method() === 'GET',
+      API_TIMEOUT);
     await this.page.locator('#chemicalRegisterSaveBtn').click({ timeout: UI_TIMEOUT });
-    expect((await (await saved).json()).success).toBe(true);
+    const placement = await (await saved).json();
+    expect(placement.success, `POST placements: ${JSON.stringify(placement).slice(0, 1000)}`).toBe(true);
     await this.page.locator('#chemicalRegisterSaveBtn').waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
+    const reload = await reloaded;
+    const inventory = await reload.json();
+    const names: string[] = (inventory.model?.registerEntries ?? []).map((e: { name: string }) => e.name);
+    expect(names, `inventory reload ${new URL(reload.url()).pathname}: ${JSON.stringify(inventory).slice(0, 2000)}`)
+      .toContain(productName);
     await this.inventoryRow(productName).first().waitFor({ state: 'visible', timeout: API_TIMEOUT });
   }
 
