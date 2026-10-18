@@ -1,3 +1,4 @@
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {FormsModule} from '@angular/forms';
@@ -12,6 +13,8 @@ import {selectCurrentUserIsFirstUser} from 'src/app/state';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
 import {chemicalsSelectProperty} from '../../../../state';
 import {ChemicalsContainerComponent} from './chemicals-container.component';
+import {detectChanges} from '../../../../testing/detect-changes';
+import {CommonModule} from '@angular/common';
 
 /**
  * Rendered-level checks for the property picker: what the select shows and whether it is
@@ -31,9 +34,12 @@ describe('ChemicalsContainerComponent (picker)', () => {
 
   async function settle(): Promise<void> {
     // ngModel hands a value over in a microtask, and mtx-select hands it on to ng-select the same way.
+    // The container puts a refused pick back in a setTimeout, which `ng test` (zoneless) does not
+    // wait for, so each pass also lets one macrotask run.
     for (let pass = 0; pass < 3; pass++) {
-      fixture.detectChanges();
+      detectChanges(fixture);
       await fixture.whenStable();
+      await new Promise((resolve) => setTimeout(resolve));
     }
   }
 
@@ -51,27 +57,29 @@ describe('ChemicalsContainerComponent (picker)', () => {
   beforeEach(async () => {
     selectedProperty$ = new BehaviorSubject<number | null>(null);
     const store = {
-      select: jest.fn().mockImplementation((selector) =>
+      select: vi.fn().mockImplementation((selector) =>
         selector === selectCurrentUserIsFirstUser ? new BehaviorSubject(true) : selectedProperty$),
-      dispatch: jest.fn().mockImplementation((action: {type: string; payload: number | null}) => {
+      dispatch: vi.fn().mockImplementation((action: {type: string; payload: number | null}) => {
         if (action.type === chemicalsSelectProperty.type) {
           selectedProperty$.next(action.payload);
         }
       }),
     };
     await TestBed.configureTestingModule({
-      declarations: [ChemicalsContainerComponent],
-      imports: [FormsModule, NoopAnimationsModule, MtxSelectModule, TranslateModule.forRoot()],
+      imports: [ChemicalsContainerComponent, FormsModule, NoopAnimationsModule, MtxSelectModule, TranslateModule.forRoot()],
       providers: [
         {provide: Store, useValue: store},
         {provide: BackendConfigurationPnPropertiesService, useValue: {
           getAllPropertiesDictionary: () => of({success: true, model: list}),
         }},
-        {provide: Router, useValue: {navigate: jest.fn().mockResolvedValue(true), events: new Subject()}},
+        {provide: Router, useValue: {navigate: vi.fn().mockResolvedValue(true), events: new Subject()}},
         {provide: ActivatedRoute, useValue: {snapshot: {queryParamMap: convertToParamMap({})}, firstChild: null}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
-    }).compileComponents();
+    })
+      // Keep the scope these specs were written for (the old TestBed module), not the
+      // component's own Material imports.
+      .overrideComponent(ChemicalsContainerComponent, {set: {imports: [CommonModule, FormsModule, MtxSelectModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}}).compileComponents();
     fixture = TestBed.createComponent(ChemicalsContainerComponent);
     component = fixture.componentInstance;
     await settle();

@@ -14,7 +14,11 @@ import {RepeatScopeModalComponent} from '../repeat-scope-modal/repeat-scope-moda
 import {CalendarImageLightboxComponent} from '../calendar-image-lightbox/calendar-image-lightbox.component';
 import {CalendarRepeatService} from '../../services/calendar-repeat.service';
 import {getCurrentLocale} from '../../services/calendar-locale.helper';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
+import {NgIf, NgFor, AsyncPipe} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatProgressSpinner} from '@angular/material/progress-spinner';
+import {AuthImagePipe} from 'src/app/common/pipes';
 
 export interface TaskPreviewModalData {
   task: CalendarTaskModel;
@@ -32,8 +36,8 @@ export interface TaskPreviewModalData {
 }
 
 @Component({
-  standalone: false,
   selector: 'app-task-preview-modal',
+  imports: [NgIf, NgFor, AsyncPipe, TranslatePipe, MatIcon, MatProgressSpinner, AuthImagePipe],
   templateUrl: './task-preview-modal.component.html',
   styleUrls: ['./task-preview-modal.component.scss'],
 })

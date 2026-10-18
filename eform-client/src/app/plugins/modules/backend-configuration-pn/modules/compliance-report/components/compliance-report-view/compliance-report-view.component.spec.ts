@@ -1,3 +1,7 @@
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
+vi.mock('ng-gallery', () => ({Gallery: class {}, GalleryModule: class {}, ImageItem: class {}, GALLERY_CONFIG: 'GALLERY_CONFIG'}));
+vi.mock('ng-gallery/lightbox', () => ({Lightbox: class {}, LightboxModule: class {}}));
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
@@ -19,6 +23,8 @@ import {COMPLIANCE_EMPTY_CELL, ComplianceReportTable} from '../../helpers';
 import {ComplianceReportStateService} from '../../store';
 import {ComplianceReportViewComponent} from './compliance-report-view.component';
 import {CalendarCompleteEventModalComponent} from '../../../calendar/modals/calendar-complete-event-modal/calendar-complete-event-modal.component';
+import {CommonModule} from '@angular/common';
+import {detectChanges} from '../../../../testing/detect-changes';
 
 /**
  * The meta line's reference data (#1329) is loaded on mount — the properties
@@ -27,11 +33,11 @@ import {CalendarCompleteEventModalComponent} from '../../../calendar/modals/cale
  */
 const emptyList = () => of({success: true, model: []});
 const referenceDataPropertiesService = () => ({
-  getAllPropertiesDictionary: jest.fn().mockReturnValue(emptyList()),
-  getDeviceUsersFiltered: jest.fn().mockReturnValue(emptyList()),
+  getAllPropertiesDictionary: vi.fn().mockReturnValue(emptyList()),
+  getDeviceUsersFiltered: vi.fn().mockReturnValue(emptyList()),
 });
 const referenceDataCalendarService = () => ({
-  getBoards: jest.fn().mockReturnValue(emptyList()),
+  getBoards: vi.fn().mockReturnValue(emptyList()),
 });
 
 /**
@@ -123,29 +129,28 @@ describe('ComplianceReportViewComponent — buildGridColumns', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ComplianceReportViewComponent],
-      imports: [TranslateModule.forRoot()],
+      imports: [ComplianceReportViewComponent, TranslateModule.forRoot()],
       providers: [
         // The REAL state service (it is `@Injectable()` with no providedIn and
         // no dependencies of its own), so nothing here can drift from it.
         // Nothing fetches: `fetchRequested$` is gated on `reportVisible`, which
         // a fresh instance leaves false.
         ComplianceReportStateService,
-        {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns: jest.fn()}},
-        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: jest.fn()}},
+        {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns: vi.fn()}},
+        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: vi.fn()}},
         {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
         {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
-        {provide: MatDialog, useValue: {open: jest.fn()}},
+        {provide: MatDialog, useValue: {open: vi.fn()}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
-    }).compileComponents();
+    }).overrideComponent(ComplianceReportViewComponent, {set: {imports: [CommonModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}}).compileComponents();
 
     fixture = TestBed.createComponent(ComplianceReportViewComponent);
     component = fixture.componentInstance;
     // Required, not incidental: the `static: true` ViewChild TemplateRefs the
     // answer/images/actions cells bind to are resolved by the first creation
     // pass.
-    fixture.detectChanges();
+    detectChanges(fixture);
   });
 
   it('prefixes every answer field with answer_ and keeps the BARE key as answerKey', () => {
@@ -328,22 +333,21 @@ describe('ComplianceReportViewComponent — the row ceilings', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ComplianceReportViewComponent],
-      imports: [TranslateModule.forRoot()],
+      imports: [ComplianceReportViewComponent, TranslateModule.forRoot()],
       providers: [
         ComplianceReportStateService,
-        {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns: jest.fn()}},
-        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: jest.fn()}},
+        {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns: vi.fn()}},
+        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: vi.fn()}},
         {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
         {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
-        {provide: MatDialog, useValue: {open: jest.fn()}},
+        {provide: MatDialog, useValue: {open: vi.fn()}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
-    }).compileComponents();
+    }).overrideComponent(ComplianceReportViewComponent, {set: {imports: [CommonModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}}).compileComponents();
 
     const fixture = TestBed.createComponent(ComplianceReportViewComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    detectChanges(fixture);
   });
 
   it('caps ONE big table at the per-table cap', () => {
@@ -507,22 +511,21 @@ describe('ComplianceReportViewComponent — the Billeder cell', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ComplianceReportViewComponent],
-      imports: [TranslateModule.forRoot()],
+      imports: [ComplianceReportViewComponent, TranslateModule.forRoot()],
       providers: [
         ComplianceReportStateService,
-        {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns: jest.fn()}},
-        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: jest.fn()}},
+        {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns: vi.fn()}},
+        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: vi.fn()}},
         {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
         {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
-        {provide: MatDialog, useValue: {open: jest.fn()}},
+        {provide: MatDialog, useValue: {open: vi.fn()}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
-    }).compileComponents();
+    }).overrideComponent(ComplianceReportViewComponent, {set: {imports: [CommonModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}}).compileComponents();
 
     const fixture = TestBed.createComponent(ComplianceReportViewComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    detectChanges(fixture);
   });
 
   // -------------------------------------------------------------------
@@ -704,7 +707,7 @@ describe('ComplianceReportViewComponent — the Billeder cell', () => {
 describe('ComplianceReportViewComponent — one table per eForm under a headline', () => {
   let fixture: ComponentFixture<ComplianceReportViewComponent>;
   let component: ComplianceReportViewComponent;
-  let dialogOpen: jest.Mock;
+  let dialogOpen: Mock;
   let state: ComplianceReportStateService;
 
   const caseModel = (
@@ -764,25 +767,24 @@ describe('ComplianceReportViewComponent — one table per eForm under a headline
   ];
 
   beforeEach(async () => {
-    dialogOpen = jest.fn();
+    dialogOpen = vi.fn();
     await TestBed.configureTestingModule({
-      declarations: [ComplianceReportViewComponent],
-      imports: [TranslateModule.forRoot()],
+      imports: [ComplianceReportViewComponent, TranslateModule.forRoot()],
       providers: [
         ComplianceReportStateService,
-        {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns: jest.fn()}},
-        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: jest.fn()}},
+        {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns: vi.fn()}},
+        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: vi.fn()}},
         {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
         {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
         {provide: MatDialog, useValue: {open: dialogOpen}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
-    }).compileComponents();
+    }).overrideComponent(ComplianceReportViewComponent, {set: {imports: [CommonModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}}).compileComponents();
 
     fixture = TestBed.createComponent(ComplianceReportViewComponent);
     component = fixture.componentInstance;
     state = TestBed.inject(ComplianceReportStateService);
-    fixture.detectChanges();
+    detectChanges(fixture);
   });
 
   it('renders ONE section with TWO tables, in server order, each with only its own columns', () => {
@@ -811,7 +813,7 @@ describe('ComplianceReportViewComponent — one table per eForm under a headline
 
   it('shows the headline and caption ONCE, and an eForm sub-heading per table', () => {
     (component as any).applyResponse(mixedGroup());
-    fixture.detectChanges();
+    detectChanges(fixture);
     const root: HTMLElement = fixture.nativeElement;
 
     const sections = root.querySelectorAll('section.compliance-report__section');
@@ -841,7 +843,7 @@ describe('ComplianceReportViewComponent — one table per eForm under a headline
       table.rows = [];
       table.expanded = false;
     }
-    fixture.detectChanges();
+    detectChanges(fixture);
     const root: HTMLElement = fixture.nativeElement;
 
     const ids = Array.from(root.querySelectorAll('[id^="complianceReportShowAll-"]')).map((el) => el.id);
@@ -853,7 +855,7 @@ describe('ComplianceReportViewComponent — one table per eForm under a headline
     groups[0].templates[1] = {...groups[0].templates[1], schemaUnavailable: true, columns: []};
 
     (component as any).applyResponse(groups);
-    fixture.detectChanges();
+    detectChanges(fixture);
     const tableEls = Array.from(
       (fixture.nativeElement as HTMLElement).querySelectorAll('[data-table-key]'),
     );
@@ -991,22 +993,21 @@ describe('ComplianceReportViewComponent — the answer cell', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ComplianceReportViewComponent],
-      imports: [TranslateModule.forRoot()],
+      imports: [ComplianceReportViewComponent, TranslateModule.forRoot()],
       providers: [
         ComplianceReportStateService,
-        {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns: jest.fn()}},
-        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: jest.fn()}},
+        {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns: vi.fn()}},
+        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: vi.fn()}},
         {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
         {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
-        {provide: MatDialog, useValue: {open: jest.fn()}},
+        {provide: MatDialog, useValue: {open: vi.fn()}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
-    }).compileComponents();
+    }).overrideComponent(ComplianceReportViewComponent, {set: {imports: [CommonModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}}).compileComponents();
 
     const fixture = TestBed.createComponent(ComplianceReportViewComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    detectChanges(fixture);
   });
 
   it('ticks a checked CheckBox and gives it no text; unchecked is empty, unanswered the en dash', () => {
@@ -1090,31 +1091,30 @@ describe('ComplianceReportViewComponent — the answer cell', () => {
  * first and last tests below pin; the second only proves the guard is not stuck
  * closed.
  *
- * `fixture.detectChanges()` is what runs `ngOnInit` — hence the mode is set
+ * `detectChanges(fixture)` is what runs `ngOnInit` — hence the mode is set
  * BEFORE it — and the same `NO_ERRORS_SCHEMA` TestBed as the suites above keeps
  * mtx-grid and Material out of it.
  */
 describe('ComplianceReportViewComponent — the view-mode guard', () => {
   let fixture: ComponentFixture<ComplianceReportViewComponent>;
   let state: ComplianceReportStateService;
-  let eformColumns: jest.Mock;
+  let eformColumns: Mock;
 
   beforeEach(async () => {
-    eformColumns = jest.fn().mockReturnValue(of({success: true, model: []}));
+    eformColumns = vi.fn().mockReturnValue(of({success: true, model: []}));
 
     await TestBed.configureTestingModule({
-      declarations: [ComplianceReportViewComponent],
-      imports: [TranslateModule.forRoot()],
+      imports: [ComplianceReportViewComponent, TranslateModule.forRoot()],
       providers: [
         ComplianceReportStateService,
         {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns}},
-        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: jest.fn()}},
+        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: vi.fn()}},
         {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
         {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
-        {provide: MatDialog, useValue: {open: jest.fn()}},
+        {provide: MatDialog, useValue: {open: vi.fn()}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
-    }).compileComponents();
+    }).overrideComponent(ComplianceReportViewComponent, {set: {imports: [CommonModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}}).compileComponents();
 
     fixture = TestBed.createComponent(ComplianceReportViewComponent);
     // The SAME instance the component injects — it is provided on the TestBed,
@@ -1124,7 +1124,7 @@ describe('ComplianceReportViewComponent — the view-mode guard', () => {
 
   it('drops a trigger emitted while another view owns the mode', () => {
     state.setMode('details');
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     // `requestFetch()` un-hides the report and emits, so the trigger really
     // does reach the subscription — it is the guard, not the `reportVisible`
@@ -1136,7 +1136,7 @@ describe('ComplianceReportViewComponent — the view-mode guard', () => {
 
   it('is not stuck closed: it queries as soon as Rapport owns the mode', () => {
     state.setMode('details');
-    fixture.detectChanges();
+    detectChanges(fixture);
     state.requestFetch();
 
     state.setMode('report');
@@ -1149,7 +1149,7 @@ describe('ComplianceReportViewComponent — the view-mode guard', () => {
   it('drops the reset trigger `Oversigt` fires while it is still mounted', () => {
     // The scenario the guard was written for, end to end.
     state.setMode('report');
-    fixture.detectChanges();
+    detectChanges(fixture);
     state.requestFetch();
     expect(eformColumns).toHaveBeenCalledTimes(1);
 
@@ -1167,7 +1167,7 @@ describe('ComplianceReportViewComponent — the view-mode guard', () => {
     // would clear it again in the same tick and this could not fail.
     eformColumns.mockReturnValue(new Subject<any>());
     state.setMode('details');
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     state.requestFetch();
 
@@ -1187,8 +1187,8 @@ describe('ComplianceReportViewComponent — delete returns to the next row', () 
   let fixture: ComponentFixture<ComplianceReportViewComponent>;
   let component: ComplianceReportViewComponent;
   let state: ComplianceReportStateService;
-  let eformColumns: jest.Mock;
-  let deleteCompliance: jest.Mock;
+  let eformColumns: Mock;
+  let deleteCompliance: Mock;
   let afterClosed$: Subject<unknown>;
 
   const caseModel = (complianceId: number, sdkCaseId = 100 + complianceId): ComplianceReportCaseModel => ({
@@ -1250,14 +1250,13 @@ describe('ComplianceReportViewComponent — delete returns to the next row', () 
   };
 
   beforeEach(async () => {
-    jest.useFakeTimers();
-    eformColumns = jest.fn().mockReturnValue(of({success: true, model: []}));
-    deleteCompliance = jest.fn();
+    vi.useFakeTimers();
+    eformColumns = vi.fn().mockReturnValue(of({success: true, model: []}));
+    deleteCompliance = vi.fn();
     afterClosed$ = new Subject<unknown>();
 
     await TestBed.configureTestingModule({
-      declarations: [ComplianceReportViewComponent],
-      imports: [TranslateModule.forRoot()],
+      imports: [ComplianceReportViewComponent, TranslateModule.forRoot()],
       providers: [
         ComplianceReportStateService,
         {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns}},
@@ -1266,11 +1265,11 @@ describe('ComplianceReportViewComponent — delete returns to the next row', () 
         {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
         {
           provide: MatDialog,
-          useValue: {open: jest.fn(() => ({afterClosed: () => afterClosed$, close: jest.fn()}))},
+          useValue: {open: vi.fn(() => ({afterClosed: () => afterClosed$, close: vi.fn()}))},
         },
       ],
       schemas: [NO_ERRORS_SCHEMA],
-    }).compileComponents();
+    }).overrideComponent(ComplianceReportViewComponent, {set: {imports: [CommonModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}}).compileComponents();
 
     fixture = TestBed.createComponent(ComplianceReportViewComponent);
     component = fixture.componentInstance;
@@ -1278,11 +1277,11 @@ describe('ComplianceReportViewComponent — delete returns to the next row', () 
     component.canDeleteLogs = true;
     state = TestBed.inject(ComplianceReportStateService);
     state.setMode('report');
-    fixture.detectChanges();
+    detectChanges(fixture);
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it('deletes by the compliance id of the row the dialog was opened from', () => {
@@ -1339,10 +1338,10 @@ describe('ComplianceReportViewComponent — delete returns to the next row', () 
     deleteAndRefresh(response([caseModel(1), caseModel(2)]), 1, response([caseModel(2)]));
     expect(component.highlightedRowKey).toBe('case:102');
 
-    jest.advanceTimersByTime(2999);
+    vi.advanceTimersByTime(2999);
     expect(component.highlightedRowKey).toBe('case:102');
 
-    jest.advanceTimersByTime(1);
+    vi.advanceTimersByTime(1);
     expect(component.highlightedRowKey).toBeNull();
   });
 
@@ -1356,7 +1355,7 @@ describe('ComplianceReportViewComponent — delete returns to the next row', () 
    */
   it('hands mtx-grid a NEW formatter when the highlight drops (its rowClass pipe is pure)', () => {
     const boundFormatter = () => {
-      fixture.detectChanges();
+      detectChanges(fixture);
       const grid = fixture.nativeElement.querySelector('mtx-grid') as
         | (HTMLElement & {rowClassFormatter?: Record<string, (row: unknown, index: number) => boolean>})
         | null;
@@ -1368,7 +1367,7 @@ describe('ComplianceReportViewComponent — delete returns to the next row', () 
     const landed = boundFormatter();
     expect(landed['row-highlight-flash'](rowById(2), 0)).toBe(true);
 
-    jest.advanceTimersByTime(3000);
+    vi.advanceTimersByTime(3000);
     const dropped = boundFormatter();
 
     // Same reference = the pure pipe returns its memoised "highlighted" string.
@@ -1379,14 +1378,14 @@ describe('ComplianceReportViewComponent — delete returns to the next row', () 
   it('scrolls the highlighted row into view one frame after the render', () => {
     const tr = document.createElement('tr');
     tr.className = 'row-highlight-flash';
-    const scrollIntoView = jest.fn();
+    const scrollIntoView = vi.fn();
     (tr as any).scrollIntoView = scrollIntoView;
     fixture.nativeElement.appendChild(tr);
 
     deleteAndRefresh(response([caseModel(1), caseModel(2)]), 1, response([caseModel(2)]));
     expect(scrollIntoView).not.toHaveBeenCalled();
 
-    jest.advanceTimersByTime(0);
+    vi.advanceTimersByTime(0);
     expect(scrollIntoView).toHaveBeenCalledWith({behavior: 'smooth', block: 'center'});
   });
 
@@ -1449,8 +1448,8 @@ describe('ComplianceReportViewComponent — Rediger opens the Detaljer dialog (#
   let fixture: ComponentFixture<ComplianceReportViewComponent>;
   let component: ComplianceReportViewComponent;
   let state: ComplianceReportStateService;
-  let eformColumns: jest.Mock;
-  let dialogOpen: jest.Mock;
+  let eformColumns: Mock;
+  let dialogOpen: Mock;
   let closed: Subject<{saved?: boolean} | undefined>;
 
   const caseModel = (complianceId: number): ComplianceReportCaseModel => ({
@@ -1498,36 +1497,35 @@ describe('ComplianceReportViewComponent — Rediger opens the Detaljer dialog (#
       .find((r) => r.complianceId === complianceId)!;
 
   beforeEach(async () => {
-    jest.useFakeTimers();
-    eformColumns = jest.fn().mockReturnValue(of({success: true, model: response()}));
+    vi.useFakeTimers();
+    eformColumns = vi.fn().mockReturnValue(of({success: true, model: response()}));
     closed = new Subject();
-    dialogOpen = jest.fn(() => ({afterClosed: () => closed}));
+    dialogOpen = vi.fn(() => ({afterClosed: () => closed}));
 
     await TestBed.configureTestingModule({
-      declarations: [ComplianceReportViewComponent],
-      imports: [TranslateModule.forRoot()],
+      imports: [ComplianceReportViewComponent, TranslateModule.forRoot()],
       providers: [
         ComplianceReportStateService,
         {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns}},
-        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: jest.fn()}},
+        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: vi.fn()}},
         {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
         {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
         {provide: MatDialog, useValue: {open: dialogOpen}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
-    }).compileComponents();
+    }).overrideComponent(ComplianceReportViewComponent, {set: {imports: [CommonModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}}).compileComponents();
 
     state = TestBed.inject(ComplianceReportStateService);
     state.setMode('report');
     state.requestFetch();
     fixture = TestBed.createComponent(ComplianceReportViewComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    detectChanges(fixture);
     eformColumns.mockClear();
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it('opens the dialog in edit mode with the case, its completer and the task assignment', () => {
@@ -1579,8 +1577,8 @@ describe('ComplianceReportViewComponent — future tasks cannot be deleted (#130
   let fixture: ComponentFixture<ComplianceReportViewComponent>;
   let component: ComplianceReportViewComponent;
   let state: ComplianceReportStateService;
-  let eformColumns: jest.Mock;
-  let dialogOpen: jest.Mock;
+  let eformColumns: Mock;
+  let dialogOpen: Mock;
 
   const caseModel = (complianceId: number, taskDate: string, completed: boolean): ComplianceReportCaseModel => ({
     complianceId,
@@ -1617,24 +1615,23 @@ describe('ComplianceReportViewComponent — future tasks cannot be deleted (#130
       .find((r) => r.complianceId === complianceId)!;
 
   beforeEach(async () => {
-    jest.useFakeTimers();
-    jest.setSystemTime(new Date('2026-09-18T10:00:00Z'));
-    eformColumns = jest.fn().mockReturnValue(of({success: true, model: []}));
-    dialogOpen = jest.fn(() => ({afterClosed: () => new Subject<unknown>(), close: jest.fn()}));
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-18T10:00:00Z'));
+    eformColumns = vi.fn().mockReturnValue(of({success: true, model: []}));
+    dialogOpen = vi.fn(() => ({afterClosed: () => new Subject<unknown>(), close: vi.fn()}));
 
     await TestBed.configureTestingModule({
-      declarations: [ComplianceReportViewComponent],
-      imports: [TranslateModule.forRoot()],
+      imports: [ComplianceReportViewComponent, TranslateModule.forRoot()],
       providers: [
         ComplianceReportStateService,
         {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns}},
-        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: jest.fn()}},
+        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: vi.fn()}},
         {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
         {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
         {provide: MatDialog, useValue: {open: dialogOpen}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
-    }).compileComponents();
+    }).overrideComponent(ComplianceReportViewComponent, {set: {imports: [CommonModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}}).compileComponents();
 
     fixture = TestBed.createComponent(ComplianceReportViewComponent);
     component = fixture.componentInstance;
@@ -1642,7 +1639,7 @@ describe('ComplianceReportViewComponent — future tasks cannot be deleted (#130
     component.canDeleteLogs = true;
     state = TestBed.inject(ComplianceReportStateService);
     state.setMode('report');
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     eformColumns.mockReturnValue(
       of({
@@ -1660,7 +1657,7 @@ describe('ComplianceReportViewComponent — future tasks cannot be deleted (#130
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it.each([
@@ -1701,8 +1698,8 @@ describe('ComplianceReportViewComponent — future tasks cannot be deleted (#130
 describe('ComplianceReportViewComponent — the meta line names the calendar and the employees', () => {
   let state: ComplianceReportStateService;
   let component: ComplianceReportViewComponent;
-  let getBoards: jest.Mock;
-  let getDeviceUsersFiltered: jest.Mock;
+  let getBoards: Mock;
+  let getDeviceUsersFiltered: Mock;
 
   const boardsFor = (propertyId: number) =>
     of({success: true, model: [{id: propertyId * 10, name: `Calendar ${propertyId}`}]});
@@ -1716,28 +1713,27 @@ describe('ComplianceReportViewComponent — the meta line names the calendar and
     });
 
   beforeEach(async () => {
-    getBoards = jest.fn((propertyId: number) => boardsFor(propertyId));
-    getDeviceUsersFiltered = jest.fn((model: {propertyIds: number[]}) => workersFor(model.propertyIds[0] ?? null));
+    getBoards = vi.fn((propertyId: number) => boardsFor(propertyId));
+    getDeviceUsersFiltered = vi.fn((model: {propertyIds: number[]}) => workersFor(model.propertyIds[0] ?? null));
 
     await TestBed.configureTestingModule({
-      declarations: [ComplianceReportViewComponent],
-      imports: [TranslateModule.forRoot()],
+      imports: [ComplianceReportViewComponent, TranslateModule.forRoot()],
       providers: [
         ComplianceReportStateService,
-        {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns: jest.fn()}},
-        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: jest.fn()}},
+        {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns: vi.fn()}},
+        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: vi.fn()}},
         {
           provide: BackendConfigurationPnPropertiesService,
           useValue: {
-            getAllPropertiesDictionary: jest.fn().mockReturnValue(of({success: true, model: [{id: 5, name: 'Property A'}]})),
+            getAllPropertiesDictionary: vi.fn().mockReturnValue(of({success: true, model: [{id: 5, name: 'Property A'}]})),
             getDeviceUsersFiltered,
           },
         },
         {provide: BackendConfigurationPnCalendarService, useValue: {getBoards}},
-        {provide: MatDialog, useValue: {open: jest.fn()}},
+        {provide: MatDialog, useValue: {open: vi.fn()}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
-    }).compileComponents();
+    }).overrideComponent(ComplianceReportViewComponent, {set: {imports: [CommonModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}}).compileComponents();
 
     state = TestBed.inject(ComplianceReportStateService);
   });
@@ -1745,7 +1741,7 @@ describe('ComplianceReportViewComponent — the meta line names the calendar and
   const mount = () => {
     const fixture = TestBed.createComponent(ComplianceReportViewComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    detectChanges(fixture);
     return fixture;
   };
 
@@ -1836,7 +1832,7 @@ describe('ComplianceReportViewComponent — the meta line names the calendar and
     const fixture = mount();
     state.setFilterSilently({siteIds: [1]});
     component.hasFetched = true;
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     const meta: HTMLElement = fixture.nativeElement.querySelector('#complianceReportMeta');
     const lines = meta.querySelectorAll('.compliance-report__meta-line');

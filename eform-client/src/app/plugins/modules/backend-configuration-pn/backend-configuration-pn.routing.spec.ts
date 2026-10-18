@@ -1,23 +1,13 @@
+import {describe, it, expect, vi} from 'vitest';
 import {Route} from '@angular/router';
 import {AuthGuard, PermissionGuard} from 'src/app/common/guards';
 
-// The plugin components barrel ('./components', imported by the routing
-// module for its eagerly-referenced components) re-exports
-// BackendConfigurationCaseModule, which transitively imports the host's
-// entire src/app/modules barrel — that chain reaches
-// admin-settings.component.ts and its ESM-only `uuid` dependency, which the
-// host jest transform does not process (transformIgnorePatterns only lets
-// *.mjs and an allowlist through). This spec only inspects the route
-// definitions, so mock the barrel to keep the module graph scoped to the
-// routing table. jest.mock is hoisted above the imports, so the real barrel
-// is never loaded. Same treatment as report-table.component.spec.ts.
-jest.mock('./components', () => ({
-  GoogleDriveAccountsComponent: class MockGoogleDriveAccountsComponent {},
-  GoogleDriveOAuthFinishComponent: class MockGoogleDriveOAuthFinishComponent {},
-  PropertiesContainerComponent: class MockPropertiesContainerComponent {},
-  PropertyAreasComponent: class MockPropertyAreasComponent {},
-  ReportContainerComponent: class MockReportContainerComponent {},
-}));
+// The plugin components barrel re-exports BackendConfigurationCaseModule, which pulls in the host's
+// eform-cases components (element-picture -> ng-gallery). ng-gallery's partially compiled bundle throws
+// "Cannot access 'GalleryItemComponent' before initialization" when the Angular test builder loads it
+// unlinked, and the gallery is not under test, so stub it (vi.mock on package specifiers works here).
+vi.mock('ng-gallery', () => ({Gallery: class {}, GalleryModule: class {}, ImageItem: class {}, GALLERY_CONFIG: 'GALLERY_CONFIG'}));
+vi.mock('ng-gallery/lightbox', () => ({Lightbox: class {}, LightboxModule: class {}}));
 
 import {routes} from './backend-configuration-pn.routing';
 

@@ -1,15 +1,16 @@
 import {Component, Inject} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {BackendConfigurationPnCalendarService} from '../../../../services';
 import {CalendarTaskModel} from '../../../../models/calendar';
+import {TranslatePipe} from '@ngx-translate/core';
 
 export interface TaskDeleteModalData {
   task: CalendarTaskModel;
 }
 
 @Component({
-  standalone: false,
   selector: 'app-task-delete-modal',
+  imports: [TranslatePipe, MatDialogTitle, MatDialogContent, MatDialogActions],
   templateUrl: './task-delete-modal.component.html',
 })
 export class TaskDeleteModalComponent {

@@ -1,3 +1,4 @@
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {
   calendarFiltersStorageKey,
   parseSavedCalendarDate,
@@ -18,7 +19,7 @@ describe('calendar-filters.storage (#1303)', () => {
   };
 
   beforeEach(() => window.localStorage.clear());
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => vi.restoreAllMocks());
 
   it('keys the settings per user', () => {
     expect(calendarFiltersStorageKey(USER)).toBe('bcpn.calendar.filters.7');
@@ -120,14 +121,14 @@ describe('calendar-filters.storage (#1303)', () => {
   });
 
   it('does not throw when reading from storage throws', () => {
-    jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('SecurityError'); });
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('SecurityError'); });
 
     expect(() => readSavedCalendarFilters(USER)).not.toThrow();
     expect(readSavedCalendarFilters(USER)).toBeNull();
   });
 
   it('does not throw when writing to storage throws', () => {
-    jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('QuotaExceededError'); });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('QuotaExceededError'); });
 
     expect(() => writeSavedCalendarFilters(USER, filters)).not.toThrow();
   });

@@ -1,3 +1,4 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {of, throwError} from 'rxjs';
 import {AdhocAreaCreateModalComponent} from './adhoc-area-create-modal.component';
 
@@ -7,8 +8,8 @@ describe('AdhocAreaCreateModalComponent', () => {
   let component: AdhocAreaCreateModalComponent;
 
   beforeEach(() => {
-    dialogRefSpy = {close: jest.fn()};
-    adhocStateServiceSpy = {createAreas: jest.fn()};
+    dialogRefSpy = {close: vi.fn()};
+    adhocStateServiceSpy = {createAreas: vi.fn()};
     component = new AdhocAreaCreateModalComponent(dialogRefSpy, {propertyId: 1, propertyName: 'Gård Nord'}, adhocStateServiceSpy);
   });
 

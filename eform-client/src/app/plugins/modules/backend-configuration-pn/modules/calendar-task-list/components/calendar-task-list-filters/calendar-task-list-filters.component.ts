@@ -3,12 +3,17 @@ import {Subject} from 'rxjs';
 import {debounceTime, takeUntil} from 'rxjs/operators';
 import {CommonDictionaryModel, SharedTagModel} from 'src/app/common/models';
 import {CalendarBoardModel, CalendarTaskListFiltrationModel} from '../../../../models/calendar';
+import {FormsModule} from '@angular/forms';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MtxSelect, MtxOption} from '@ng-matero/extensions/select';
 
 @Component({
   selector: 'app-calendar-task-list-filters',
+  imports: [FormsModule, TranslatePipe, MatFormField, MatLabel, MatInput, MtxSelect, MtxOption],
   templateUrl: './calendar-task-list-filters.component.html',
   styleUrls: ['./calendar-task-list-filters.component.scss'],
-  standalone: false,
 })
 export class CalendarTaskListFiltersComponent implements OnInit, OnDestroy {
   @Input() properties: CommonDictionaryModel[] = [];

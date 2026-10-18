@@ -5,11 +5,9 @@ import {ActivatedRoute} from '@angular/router';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
 import {AuthStateService} from 'src/app/common/store';
-import {
-  AreaRuleCreateModalComponent,
-  AreaRuleDeleteModalComponent,
-  AreaRuleEditModalComponent,
-} from '../';
+import {AreaRuleCreateModalComponent} from '../area-rule-create-modal/area-rule-create-modal.component';
+import {AreaRuleDeleteModalComponent} from '../area-rule-delete-modal/area-rule-delete-modal.component';
+import {AreaRuleEditModalComponent} from '../area-rule-edit-modal/area-rule-edit-modal.component';
 import {
   AreaRulePlanningModel,
   AreaRulesCreateModel,
@@ -31,13 +29,19 @@ import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {AreaRulesStateService} from '../store';
 import { Sort } from '@angular/material/sort';
+import {NgIf} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatTooltip} from '@angular/material/tooltip';
+import {EformNewSubheaderComponent} from 'src/app/common/modules/eform-shared/components';
+import {AreaRulesTableComponent} from '../area-rules-table/area-rules-table.component';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-area-rules-container',
+    imports: [NgIf, MatIcon, MatIconButton, MatTooltip, EformNewSubheaderComponent, AreaRulesTableComponent],
     templateUrl: './area-rules-container.component.html',
     styleUrls: ['./area-rules-container.component.scss'],
-    standalone: false
 })
 export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   private areasService = inject(BackendConfigurationPnAreasService);

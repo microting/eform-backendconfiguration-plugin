@@ -22,6 +22,9 @@ import {
   sortSummaries,
 } from '../../helpers';
 import {ComplianceReportStateService} from '../../store';
+import {NgIf, NgFor, NgClass} from '@angular/common';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatIcon} from '@angular/material/icon';
 
 /**
  * The Oversigt view of the standalone Compliance page (#1164): one row per
@@ -47,8 +50,8 @@ import {ComplianceReportStateService} from '../../store';
  * push it into.
  */
 @Component({
-  standalone: false,
   selector: 'app-compliance-overview-view',
+  imports: [NgIf, NgFor, NgClass, TranslatePipe, MatIcon],
   templateUrl: './compliance-overview-view.component.html',
   styleUrls: ['./compliance-overview-view.component.scss'],
 })

@@ -12,7 +12,6 @@ import {
 import {TaskManagementRouting} from './task-management.routing';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
-import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
 import {MatButtonModule} from '@angular/material/button';
 import {MatTooltipModule} from '@angular/material/tooltip';
 import {MatIconModule} from '@angular/material/icon';
@@ -28,13 +27,6 @@ import {MatChip} from "@angular/material/chips";
 import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
 
 @NgModule({
-  declarations: [
-    TaskManagementContainerComponent,
-    TaskManagementTableComponent,
-    TaskManagementFiltersComponent,
-    TaskManagementCreateShowModalComponent,
-    TaskManagementDeleteModalComponent
-  ],
   imports: [
     CommonModule,
     TranslateModule,
@@ -42,7 +34,6 @@ import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
     TaskManagementRouting,
     EformSharedModule,
     ReactiveFormsModule,
-    EformImportedModule,
     FormsModule,
     MatButtonModule,
     MatTooltipModule,
@@ -59,6 +50,11 @@ import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
     MatMenuTrigger,
     MatMenu,
     MatMenuItem,
+    TaskManagementContainerComponent,
+    TaskManagementTableComponent,
+    TaskManagementFiltersComponent,
+    TaskManagementCreateShowModalComponent,
+    TaskManagementDeleteModalComponent,
   ],
   providers: [],
 })

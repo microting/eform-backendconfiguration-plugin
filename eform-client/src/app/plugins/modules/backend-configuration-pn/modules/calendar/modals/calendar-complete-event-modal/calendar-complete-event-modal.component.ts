@@ -2,14 +2,14 @@ import {
   Component, Inject, OnInit, QueryList, ViewChildren, inject,
 } from '@angular/core';
 import {MAT_DATE_FORMATS} from '@angular/material/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {CALENDAR_MAT_DATE_FORMATS} from '../../calendar-date-formats';
 import {EFormService} from 'src/app/common/services';
 import {
   TemplateDto, CaseEditRequest, ReplyElementDto, ReplyRequest,
   ElementDto, DataItemDto, CommonDictionaryModel,
 } from 'src/app/common/models';
-import {CaseEditElementComponent} from 'src/app/common/modules/eform-cases/components';
+import {CaseEditElementComponent, CaseEditNavComponent} from 'src/app/common/modules/eform-cases/components';
 import {
   BackendConfigurationPnCasesService,
   BackendConfigurationPnCompliancesService,
@@ -18,6 +18,13 @@ import {
 } from '../../../../services';
 import {CalendarPrepareCompleteResult} from '../../../../models';
 import {endOfDay, isAfter, parseISO} from 'date-fns';
+import {NgIf, NgFor} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatFormField, MatSuffix} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MtxSelect, MtxSelectOptionTemplate, MtxSelectOptgroupTemplate} from '@ng-matero/extensions/select';
+import {MatDatepicker, MatDatepickerInput, MatDatepickerToggle} from '@angular/material/datepicker';
 import * as R from 'ramda';
 
 /**
@@ -74,9 +81,9 @@ export interface CalendarCompleteEventModalData {
 
 @Component({
   selector: 'app-calendar-complete-event-modal',
+  imports: [NgIf, NgFor, FormsModule, TranslatePipe, MatFormField, MatSuffix, MatInput, MtxSelect, MtxSelectOptionTemplate, MatDialogTitle, MatDialogContent, MatDialogActions, MatDatepicker, MatDatepickerInput, MatDatepickerToggle, MtxSelectOptgroupTemplate, CaseEditElementComponent, CaseEditNavComponent],
   templateUrl: './calendar-complete-event-modal.component.html',
   styleUrls: ['./calendar-complete-event-modal.component.scss'],
-  standalone: false,
   // "Udført dato" renders the long Danish form. Declared HERE, not only on
   // CalendarModule, because MatDialog creates this component under the injector
   // of the module that opened it (`Dialog._createInjector` parents on

@@ -12,8 +12,8 @@ import {
 } from '@angular/core';
 import {ReportEformItemModel} from '../../../models/report';
 import {CaseDeleteComponent} from '../../../components';
-import {MtxGridColumn} from '@ng-matero/extensions/grid';
-import {TranslateService} from '@ngx-translate/core';
+import {MtxGridColumn, MtxGrid} from '@ng-matero/extensions/grid';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
@@ -22,14 +22,19 @@ import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {format, parseISO} from 'date-fns';
 import {selectAuthIsAdmin, selectAuthIsAuth, selectCurrentUserFullName} from 'src/app/state';
 import {Store} from '@ngrx/store';
+import {NgIf} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatTooltip} from '@angular/material/tooltip';
+import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-report-table',
+    imports: [NgIf, TranslatePipe, MatIcon, MatIconButton, MtxGrid, MatTooltip, MatMenu, MatMenuItem, MatMenuTrigger],
     templateUrl: './report-table.component.html',
     styleUrls: ['./report-table.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    standalone: false
 })
 export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
   private store = inject(Store);

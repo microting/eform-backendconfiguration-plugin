@@ -1,18 +1,20 @@
+import {describe, it, expect, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {of} from 'rxjs';
 import {FilesStateService} from './files-state.service';
 import {DocumentDateState} from '../../../models';
 import {filesInitialState, FilesFiltrationModel, selectFilesFilters} from '../../../state';
 
 describe('FilesStateService — folder and date filters', () => {
-  let api: {getAllFiles: jest.Mock};
+  let api: {getAllFiles: Mock};
 
   function create(filters: Partial<FilesFiltrationModel>): FilesStateService {
     const allFilters = {...filesInitialState.filters, ...filters};
     const store = {
-      select: jest.fn(selector => of(selector === selectFilesFilters ? allFilters : filesInitialState.pagination)),
-      dispatch: jest.fn(),
+      select: vi.fn(selector => of(selector === selectFilesFilters ? allFilters : filesInitialState.pagination)),
+      dispatch: vi.fn(),
     };
-    api = {getAllFiles: jest.fn().mockReturnValue(of({success: true, model: {total: 4, entities: []}}))};
+    api = {getAllFiles: vi.fn().mockReturnValue(of({success: true, model: {total: 4, entities: []}}))};
     return new FilesStateService(store as any, api as any);
   }
 
@@ -31,7 +33,7 @@ describe('FilesStateService — folder and date filters', () => {
     expect(api.getAllFiles.mock.lastCall[0]).toEqual(expect.objectContaining({folderId: null, dateState: DocumentDateState.Suggested}));
   });
 
-  it('counts the Suggested documents of the selected properties for the chip', done => {
+  it('counts the Suggested documents of the selected properties for the chip', () => new Promise<void>(done => {
     create({folderId: 4, propertyIds: [3], nameFilter: 'x', tagIds: [9]}).getDateCheckCount().subscribe(count => {
       expect(count).toBe(4);
       expect(api.getAllFiles.mock.lastCall[0]).toEqual(expect.objectContaining({
@@ -39,5 +41,5 @@ describe('FilesStateService — folder and date filters', () => {
       }));
       done();
     });
-  });
+  }));
 });

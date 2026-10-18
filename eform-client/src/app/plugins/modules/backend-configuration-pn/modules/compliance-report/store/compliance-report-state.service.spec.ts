@@ -1,3 +1,4 @@
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {
   addClampedMonths,
   COMPLIANCE_FILTER_DEBOUNCE_MS,
@@ -25,16 +26,16 @@ describe('ComplianceReportStateService', () => {
   let service: ComplianceReportStateService;
 
   function settle(): void {
-    jest.advanceTimersByTime(COMPLIANCE_FILTER_DEBOUNCE_MS);
+    vi.advanceTimersByTime(COMPLIANCE_FILTER_DEBOUNCE_MS);
   }
 
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     service = new ComplianceReportStateService();
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   describe('defaults', () => {
@@ -101,9 +102,9 @@ describe('ComplianceReportStateService', () => {
       service.fetchRequested$.subscribe(() => fetches.push(1));
 
       service.setFilter({tagIds: [1]});
-      jest.advanceTimersByTime(COMPLIANCE_FILTER_DEBOUNCE_MS - 50);
+      vi.advanceTimersByTime(COMPLIANCE_FILTER_DEBOUNCE_MS - 50);
       service.setFilter({tagIds: [1, 2]});
-      jest.advanceTimersByTime(COMPLIANCE_FILTER_DEBOUNCE_MS - 50);
+      vi.advanceTimersByTime(COMPLIANCE_FILTER_DEBOUNCE_MS - 50);
       service.setFilter({tagIds: [1, 2, 3]});
       expect(fetches.length).toBe(0);
 
@@ -794,7 +795,7 @@ describe('ComplianceReportStateService', () => {
     function withToday(today: Date, fn: () => void): void {
       // The suite already runs under fake timers (see beforeEach); only the
       // clock needs pinning here.
-      jest.setSystemTime(today);
+      vi.setSystemTime(today);
       fn();
     }
 
@@ -1203,15 +1204,15 @@ describe('ComplianceReportStateService — remembered period (#1299)', () => {
   }
 
   beforeEach(() => {
-    jest.useFakeTimers();
-    jest.setSystemTime(new Date(2026, 8, 18, 10, 0));
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 18, 10, 0));
     window.localStorage.clear();
     service = new ComplianceReportStateService();
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
-    jest.useRealTimers();
+    vi.restoreAllMocks();
+    vi.useRealTimers();
     window.localStorage.clear();
   });
 
@@ -1403,7 +1404,7 @@ describe('ComplianceReportStateService — remembered period (#1299)', () => {
   });
 
   it('a storage that throws on read falls back to the default without breaking', () => {
-    jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('SecurityError');
     });
 
@@ -1413,14 +1414,14 @@ describe('ComplianceReportStateService — remembered period (#1299)', () => {
 
   it('a storage that throws on write still applies the change and fetches', () => {
     service.restoreSavedPeriod(USER);
-    jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('QuotaExceededError');
     });
     const fetches: number[] = [];
     service.fetchRequested$.subscribe(() => fetches.push(1));
 
     expect(() => service.setFilter({periodPreset: '3'})).not.toThrow();
-    jest.advanceTimersByTime(COMPLIANCE_FILTER_DEBOUNCE_MS);
+    vi.advanceTimersByTime(COMPLIANCE_FILTER_DEBOUNCE_MS);
 
     expect(service.filters.periodPreset).toBe('3');
     expect(fetches.length).toBe(1);

@@ -1,3 +1,6 @@
+import {CommonModule} from '@angular/common';
+import {describe, it, expect, beforeEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
@@ -52,55 +55,54 @@ describe('TaskListPageComponent — Logbøger folder resolution', () => {
 
   beforeEach(async () => {
     propertiesServiceStub = {
-      getAllPropertiesDictionary: jest.fn().mockReturnValue(of({success: true, model: []})),
-      getDeviceUsersFiltered: jest.fn().mockReturnValue(of({success: true, model: []})),
+      getAllPropertiesDictionary: vi.fn().mockReturnValue(of({success: true, model: []})),
+      getDeviceUsersFiltered: vi.fn().mockReturnValue(of({success: true, model: []})),
       // Nested one level down so the recursive search is exercised.
-      getLinkedFolderDtos: jest.fn().mockReturnValue(of({
+      getLinkedFolderDtos: vi.fn().mockReturnValue(of({
         success: true,
         model: [{id: 5, name: 'Property root', children: [{id: 77, name: 'Logbøger', children: []}]}],
       })),
     };
     dialogStub = {
-      open: jest.fn().mockReturnValue({afterClosed: () => of(false)}),
+      open: vi.fn().mockReturnValue({afterClosed: () => of(false)}),
     };
 
     await TestBed.configureTestingModule({
-      declarations: [TaskListPageComponent],
       imports: [TranslateModule.forRoot()],
       providers: [
         {provide: MatDialog, useValue: dialogStub},
         {
           provide: Overlay,
           // dialogConfigHelper reads overlay.scrollStrategies.reposition().
-          useValue: {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}},
+          useValue: {scrollStrategies: {reposition: vi.fn().mockReturnValue({})}},
         },
         {
           provide: BackendConfigurationPnCalendarService,
           useValue: {
-            getTasksIndex: jest.fn().mockReturnValue(of({success: true, model: []})),
-            getBoards: jest.fn().mockReturnValue(of({success: true, model: []})),
+            getTasksIndex: vi.fn().mockReturnValue(of({success: true, model: []})),
+            getBoards: vi.fn().mockReturnValue(of({success: true, model: []})),
           },
         },
         {provide: BackendConfigurationPnPropertiesService, useValue: propertiesServiceStub},
         {
           provide: ItemsPlanningPnTagsService,
-          useValue: {getPlanningsTags: jest.fn().mockReturnValue(of({success: true, model: []}))},
+          useValue: {getPlanningsTags: vi.fn().mockReturnValue(of({success: true, model: []}))},
         },
         {
           provide: EFormService,
-          useValue: {getAll: jest.fn().mockReturnValue(of({success: true, model: {templates: []}}))},
+          useValue: {getAll: vi.fn().mockReturnValue(of({success: true, model: {templates: []}}))},
         },
         {
           provide: BackendConfigurationPnWorkerTagsService,
-          useValue: {getWorkerTags: jest.fn().mockReturnValue(of({success: true, model: []}))},
+          useValue: {getWorkerTags: vi.fn().mockReturnValue(of({success: true, model: []}))},
         },
         {provide: CalendarRepeatService, useValue: {}},
         {provide: BackendConfigurationPnTaskListService, useValue: {}},
         // #1302 — the page reads selectAuthIsAdmin once in ngOnInit.
-        {provide: Store, useValue: {select: jest.fn().mockReturnValue(of(true))}},
+        {provide: Store, useValue: {select: vi.fn().mockReturnValue(of(true))}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
-    }).compileComponents();
+    }).overrideComponent(TaskListPageComponent, {set: {imports: [CommonModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}}).compileComponents();
 
     fixture = TestBed.createComponent(TaskListPageComponent);
     component = fixture.componentInstance;
@@ -201,47 +203,46 @@ describe('TaskListPageComponent — move to calendar batch action', () => {
   const moveToBoard = () => component.batchActions.find(a => a.id === 'moveToBoard');
 
   beforeEach(async () => {
-    dialogStub = {open: jest.fn().mockReturnValue({afterClosed: () => of(false)})};
+    dialogStub = {open: vi.fn().mockReturnValue({afterClosed: () => of(false)})};
 
     await TestBed.configureTestingModule({
-      declarations: [TaskListPageComponent],
       imports: [TranslateModule.forRoot()],
       providers: [
         {provide: MatDialog, useValue: dialogStub},
-        {provide: Overlay, useValue: {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}}},
+        {provide: Overlay, useValue: {scrollStrategies: {reposition: vi.fn().mockReturnValue({})}}},
         {
           provide: BackendConfigurationPnCalendarService,
           useValue: {
-            getTasksIndex: jest.fn().mockReturnValue(of({success: true, model: []})),
-            getBoards: jest.fn().mockReturnValue(of({success: true, model: boards})),
+            getTasksIndex: vi.fn().mockReturnValue(of({success: true, model: []})),
+            getBoards: vi.fn().mockReturnValue(of({success: true, model: boards})),
           },
         },
         {
           provide: BackendConfigurationPnPropertiesService,
           useValue: {
-            getAllPropertiesDictionary: jest.fn().mockReturnValue(of({success: true, model: []})),
-            getDeviceUsersFiltered: jest.fn().mockReturnValue(of({success: true, model: []})),
+            getAllPropertiesDictionary: vi.fn().mockReturnValue(of({success: true, model: []})),
+            getDeviceUsersFiltered: vi.fn().mockReturnValue(of({success: true, model: []})),
           },
         },
         {
           provide: ItemsPlanningPnTagsService,
-          useValue: {getPlanningsTags: jest.fn().mockReturnValue(of({success: true, model: []}))},
+          useValue: {getPlanningsTags: vi.fn().mockReturnValue(of({success: true, model: []}))},
         },
         {
           provide: EFormService,
-          useValue: {getAll: jest.fn().mockReturnValue(of({success: true, model: {templates: []}}))},
+          useValue: {getAll: vi.fn().mockReturnValue(of({success: true, model: {templates: []}}))},
         },
         {
           provide: BackendConfigurationPnWorkerTagsService,
-          useValue: {getWorkerTags: jest.fn().mockReturnValue(of({success: true, model: []}))},
+          useValue: {getWorkerTags: vi.fn().mockReturnValue(of({success: true, model: []}))},
         },
         {provide: CalendarRepeatService, useValue: {}},
         {provide: BackendConfigurationPnTaskListService, useValue: {}},
         // #1302 — the page reads selectAuthIsAdmin once in ngOnInit.
-        {provide: Store, useValue: {select: jest.fn().mockReturnValue(of(true))}},
+        {provide: Store, useValue: {select: vi.fn().mockReturnValue(of(true))}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
-    }).compileComponents();
+    }).overrideComponent(TaskListPageComponent, {set: {imports: [CommonModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}}).compileComponents();
 
     component = TestBed.createComponent(TaskListPageComponent).componentInstance;
     component.ngOnInit();
@@ -301,7 +302,7 @@ describe('TaskListPageComponent — move to calendar batch action', () => {
 describe('TaskListPageComponent — change report headline batch action', () => {
   let component: TaskListPageComponent;
   let dialogStub: any;
-  let tagsService: {getPlanningsTags: jest.Mock};
+  let tagsService: {getPlanningsTags: Mock};
 
   const tags = [
     {id: 3, name: 'BBB headline', description: '', isLocked: false},
@@ -326,45 +327,44 @@ describe('TaskListPageComponent — change report headline batch action', () => 
   };
 
   beforeEach(async () => {
-    dialogStub = {open: jest.fn().mockReturnValue({afterClosed: () => of(false)})};
-    tagsService = {getPlanningsTags: jest.fn().mockReturnValue(of({success: true, model: tags}))};
+    dialogStub = {open: vi.fn().mockReturnValue({afterClosed: () => of(false)})};
+    tagsService = {getPlanningsTags: vi.fn().mockReturnValue(of({success: true, model: tags}))};
 
     await TestBed.configureTestingModule({
-      declarations: [TaskListPageComponent],
       imports: [TranslateModule.forRoot()],
       providers: [
         {provide: MatDialog, useValue: dialogStub},
-        {provide: Overlay, useValue: {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}}},
+        {provide: Overlay, useValue: {scrollStrategies: {reposition: vi.fn().mockReturnValue({})}}},
         {
           provide: BackendConfigurationPnCalendarService,
           useValue: {
-            getTasksIndex: jest.fn().mockReturnValue(of({success: true, model: []})),
-            getBoards: jest.fn().mockReturnValue(of({success: true, model: []})),
+            getTasksIndex: vi.fn().mockReturnValue(of({success: true, model: []})),
+            getBoards: vi.fn().mockReturnValue(of({success: true, model: []})),
           },
         },
         {
           provide: BackendConfigurationPnPropertiesService,
           useValue: {
-            getAllPropertiesDictionary: jest.fn().mockReturnValue(of({success: true, model: []})),
-            getDeviceUsersFiltered: jest.fn().mockReturnValue(of({success: true, model: []})),
+            getAllPropertiesDictionary: vi.fn().mockReturnValue(of({success: true, model: []})),
+            getDeviceUsersFiltered: vi.fn().mockReturnValue(of({success: true, model: []})),
           },
         },
         {provide: ItemsPlanningPnTagsService, useValue: tagsService},
         {
           provide: EFormService,
-          useValue: {getAll: jest.fn().mockReturnValue(of({success: true, model: {templates: []}}))},
+          useValue: {getAll: vi.fn().mockReturnValue(of({success: true, model: {templates: []}}))},
         },
         {
           provide: BackendConfigurationPnWorkerTagsService,
-          useValue: {getWorkerTags: jest.fn().mockReturnValue(of({success: true, model: []}))},
+          useValue: {getWorkerTags: vi.fn().mockReturnValue(of({success: true, model: []}))},
         },
         {provide: CalendarRepeatService, useValue: {}},
         {provide: BackendConfigurationPnTaskListService, useValue: {}},
         // #1302 — the page reads selectAuthIsAdmin once in ngOnInit.
-        {provide: Store, useValue: {select: jest.fn().mockReturnValue(of(true))}},
+        {provide: Store, useValue: {select: vi.fn().mockReturnValue(of(true))}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
-    }).compileComponents();
+    }).overrideComponent(TaskListPageComponent, {set: {imports: [CommonModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}}).compileComponents();
 
     component = TestBed.createComponent(TaskListPageComponent).componentInstance;
     component.ngOnInit();

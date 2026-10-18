@@ -1,3 +1,4 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {of} from 'rxjs';
 import {AdhocCompleteModalComponent} from './adhoc-complete-modal.component';
 
@@ -10,14 +11,14 @@ describe('AdhocCompleteModalComponent', () => {
   let component: AdhocCompleteModalComponent;
 
   beforeEach(() => {
-    dialogRefSpy = {close: jest.fn()};
-    adhocServiceSpy = {setCompleted: jest.fn()};
+    dialogRefSpy = {close: vi.fn()};
+    adhocServiceSpy = {setCompleted: vi.fn()};
     adhocStateServiceSpy = {
-      getWorkersForProperty: jest.fn().mockReturnValue(
+      getWorkersForProperty: vi.fn().mockReturnValue(
         of([{workerId: 100, displayName: 'Mette Hansen', propertyIds: [1]}])
       ),
     };
-    toastrSpy = {success: jest.fn()};
+    toastrSpy = {success: vi.fn()};
     translateSpy = {instant: (key: string) => key};
 
     component = new AdhocCompleteModalComponent(

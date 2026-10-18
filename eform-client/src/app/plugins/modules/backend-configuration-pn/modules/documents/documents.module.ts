@@ -4,7 +4,7 @@ import {TranslateModule} from '@ngx-translate/core';
 import {RouterModule} from '@angular/router';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
-import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
+import {FormattingTextEditorComponent} from 'src/app/common/modules/eform-imported/formatting-text-editor/formatting-text-editor.component';
 import {
   DocumentsContainerComponent,
   DocumentsDocumentCreateComponent,
@@ -36,18 +36,6 @@ import {MatChip} from "@angular/material/chips";
 import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
 
 @NgModule({
-  declarations: [
-    DocumentsContainerComponent,
-    DocumentsTableComponent,
-    DocumentsFiltersComponent,
-    DocumentsFoldersComponent,
-    DocumentsFolderCreateComponent,
-    DocumentsFolderEditComponent,
-    DocumentsFolderDeleteComponent,
-    DocumentsDocumentCreateComponent,
-    DocumentsDocumentEditComponent,
-    DocumentsDocumentDeleteComponent
-  ],
   imports: [
     CommonModule,
     TranslateModule,
@@ -55,7 +43,7 @@ import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
     DocumentsRouting,
     EformSharedModule,
     ReactiveFormsModule,
-    EformImportedModule,
+    FormattingTextEditorComponent,
     FormsModule,
     MatButtonModule,
     MatTooltipModule,
@@ -75,6 +63,16 @@ import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
     MatMenu,
     MatMenuItem,
     MatMenuTrigger,
+    DocumentsContainerComponent,
+    DocumentsTableComponent,
+    DocumentsFiltersComponent,
+    DocumentsFoldersComponent,
+    DocumentsFolderCreateComponent,
+    DocumentsFolderEditComponent,
+    DocumentsFolderDeleteComponent,
+    DocumentsDocumentCreateComponent,
+    DocumentsDocumentEditComponent,
+    DocumentsDocumentDeleteComponent,
   ],
   providers: [],
 })

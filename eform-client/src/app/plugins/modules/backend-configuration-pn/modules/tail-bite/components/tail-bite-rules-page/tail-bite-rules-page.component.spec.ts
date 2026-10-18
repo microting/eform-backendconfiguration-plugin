@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
@@ -17,31 +19,31 @@ describe('TailBiteRulesPageComponent', () => {
   const rootRule = {id: 9, locationId: 1, minBittenPigs: 5, minSevere: 1, windowDays: 7, countDepth: 1, version: 1,
     updatedAt: '2026-10-04T05:00:00Z'};
   const stableRule = {id: 10, locationId: 2, minBittenPigs: 3, minSevere: null, windowDays: 7, countDepth: 2, version: 2, updatedAt: null};
-  let service: Record<string, jest.Mock>;
-  let dialogOpen: jest.Mock;
+  let service: Record<string, Mock>;
+  let dialogOpen: Mock;
   let component: TailBiteRulesPageComponent;
   let params: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
 
   /** Makes the next dialog a confirm dialog whose Delete button is the returned emitter. */
   function mockConfirmDialog(): EventEmitter<unknown> {
     const confirmed = new EventEmitter<unknown>();
-    dialogOpen.mockReturnValue({componentInstance: {delete: confirmed}, close: jest.fn(), afterClosed: () => NEVER});
+    dialogOpen.mockReturnValue({componentInstance: {delete: confirmed}, close: vi.fn(), afterClosed: () => NEVER});
     return confirmed;
   }
 
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     service = {
-      getTree: jest.fn().mockReturnValue(of({success: true, model: tree})),
-      getRules: jest.fn().mockReturnValue(of({success: true, model: [stableRule, rootRule]})),
-      getRuleHistory: jest.fn().mockReturnValue(of({success: true, model: [
+      getTree: vi.fn().mockReturnValue(of({success: true, model: tree})),
+      getRules: vi.fn().mockReturnValue(of({success: true, model: [stableRule, rootRule]})),
+      getRuleHistory: vi.fn().mockReturnValue(of({success: true, model: [
         {version: 2, locationId: 2, minBittenPigs: 3, minSevere: null, windowDays: 7, countDepth: 2, changedAt: null}]})),
-      previewRule: jest.fn().mockReturnValue(of({success: true, model: {outbreaksWouldOpen: 4, perSummingLocation: {'3': 3, '2': 1}}})),
-      createRule: jest.fn().mockReturnValue(of({success: true, model: 11})),
-      updateRule: jest.fn().mockReturnValue(of({success: true})),
-      deleteRule: jest.fn().mockReturnValue(of({success: true})),
+      previewRule: vi.fn().mockReturnValue(of({success: true, model: {outbreaksWouldOpen: 4, perSummingLocation: {'3': 3, '2': 1}}})),
+      createRule: vi.fn().mockReturnValue(of({success: true, model: 11})),
+      updateRule: vi.fn().mockReturnValue(of({success: true})),
+      deleteRule: vi.fn().mockReturnValue(of({success: true})),
     };
-    dialogOpen = jest.fn();
+    dialogOpen = vi.fn();
     params = new BehaviorSubject(convertToParamMap({propertyId: '3'}));
     TestBed.configureTestingModule({
       providers: [
@@ -59,7 +61,7 @@ describe('TailBiteRulesPageComponent', () => {
 
   afterEach(() => {
     component.ngOnDestroy();
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it('lists rules in tree order with the root rule marked', () => {
@@ -71,7 +73,7 @@ describe('TailBiteRulesPageComponent', () => {
     component.edit(stableRule);
     component.draft!.minBittenPigs = 4;
     component.requestPreview();
-    jest.advanceTimersByTime(400);
+    vi.advanceTimersByTime(400);
     expect(service.previewRule).toHaveBeenCalledTimes(1);
     expect(service.previewRule).toHaveBeenCalledWith({locationId: 2, minBittenPigs: 4, minSevere: null, windowDays: 7, countDepth: 2});
     expect(component.preview!.outbreaksWouldOpen).toBe(4);
@@ -83,7 +85,7 @@ describe('TailBiteRulesPageComponent', () => {
     component.edit(stableRule);
     component.draft!.minBittenPigs = null;
     component.requestPreview();
-    jest.advanceTimersByTime(400);
+    vi.advanceTimersByTime(400);
     expect(service.previewRule).not.toHaveBeenCalled();
     expect(component.canSave).toBe(false);
   });
@@ -183,7 +185,7 @@ describe('TailBiteRulesPageComponent', () => {
   it('shows an error when the preview request fails', () => {
     service.previewRule.mockReturnValue(throwError(() => new Error('boom')));
     component.edit(stableRule);
-    jest.advanceTimersByTime(400);
+    vi.advanceTimersByTime(400);
     expect(component.preview).toBeNull();
     expect(component.previewError).toBe('Could not calculate the preview');
   });
@@ -211,7 +213,7 @@ describe('TailBiteRulesPageComponent', () => {
   it('shows a generic message when a refused preview has none', () => {
     service.previewRule.mockReturnValue(of({success: false}));
     component.edit(stableRule);
-    jest.advanceTimersByTime(400);
+    vi.advanceTimersByTime(400);
     expect(component.previewError).toBe('Could not calculate the preview');
   });
 
@@ -232,7 +234,7 @@ describe('TailBiteRulesPageComponent', () => {
     const latePreview = new Subject<{success: boolean; model: unknown}>();
     service.previewRule.mockReturnValue(latePreview);
     component.edit(stableRule);
-    jest.advanceTimersByTime(400);
+    vi.advanceTimersByTime(400);
     params.next(convertToParamMap({propertyId: '4'}));
     latePreview.next({success: true, model: {outbreaksWouldOpen: 9, perSummingLocation: {}}});
     expect(component.preview).toBeNull();
@@ -243,10 +245,10 @@ describe('TailBiteRulesPageComponent', () => {
     const second = new Subject<{success: boolean; model: unknown}>();
     service.previewRule.mockReturnValueOnce(first).mockReturnValueOnce(second);
     component.edit(stableRule);
-    jest.advanceTimersByTime(400);
+    vi.advanceTimersByTime(400);
     component.draft!.minBittenPigs = 4;
     component.requestPreview();
-    jest.advanceTimersByTime(400);
+    vi.advanceTimersByTime(400);
     first.next({success: true, model: {outbreaksWouldOpen: 1, perSummingLocation: {}}});
     expect(component.preview).toBeNull();
     second.next({success: true, model: {outbreaksWouldOpen: 2, perSummingLocation: {}}});
@@ -256,7 +258,7 @@ describe('TailBiteRulesPageComponent', () => {
   it('shows the server message when the preview is refused', () => {
     service.previewRule.mockReturnValue(of({success: false, message: 'too wide'}));
     component.edit(stableRule);
-    jest.advanceTimersByTime(400);
+    vi.advanceTimersByTime(400);
     expect(component.preview).toBeNull();
     expect(component.previewError).toBe('too wide');
   });

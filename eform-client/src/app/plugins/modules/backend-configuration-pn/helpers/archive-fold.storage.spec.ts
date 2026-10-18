@@ -1,9 +1,10 @@
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {ARCHIVE_FOLD_STORAGE_KEY, readCollapsedFolderIds, writeCollapsedFolderIds} from './archive-fold.storage';
 
 describe('archive fold storage', () => {
   beforeEach(() => window.localStorage.clear());
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
     window.localStorage.clear();
   });
 
@@ -21,8 +22,8 @@ describe('archive fold storage', () => {
   });
 
   it('survives blocked storage (fold state is only a convenience)', () => {
-    jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked'); });
-    jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked'); });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
     expect(readCollapsedFolderIds()).toEqual([]);
     expect(() => writeCollapsedFolderIds([1])).not.toThrow();
   });

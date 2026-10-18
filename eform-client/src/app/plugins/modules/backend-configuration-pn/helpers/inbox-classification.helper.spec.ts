@@ -1,3 +1,4 @@
+import {describe, it, expect} from 'vitest';
 import {ArchiveFolderModel, InboxSuggestionKind, InboxSuggestionModel} from '../models';
 import {serverDay} from '../modules/tail-bite/shared/tail-bite-dates';
 import {inboxDateSuggestion, inboxFolderSuggestion, preselectedFolderId} from './inbox-classification.helper';

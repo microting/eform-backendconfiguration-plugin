@@ -48,7 +48,6 @@ import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning
 @Component({
   selector: 'app-task-list-tags',
   template: '',
-  standalone: false,
 })
 export class TaskListTagsComponent implements OnChanges, OnDestroy {
   private tagsService = inject(ItemsPlanningPnTagsService);

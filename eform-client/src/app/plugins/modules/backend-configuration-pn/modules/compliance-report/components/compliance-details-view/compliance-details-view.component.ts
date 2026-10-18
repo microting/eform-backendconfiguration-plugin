@@ -12,7 +12,7 @@ import {
   ViewContainerRef,
 } from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {Subject, Subscription, merge, of} from 'rxjs';
 import {catchError, filter as rxFilter, finalize, switchMap, takeUntil, tap} from 'rxjs/operators';
 import {ComplianceReportPagedModel, ComplianceReportRowModel} from '../../../../models';
@@ -34,6 +34,10 @@ import {
 } from '../../helpers';
 import {ComplianceReportStateService} from '../../store';
 import {COMPLIANCE_PAGE_SOURCE, isFutureTask} from '../../../../helpers';
+import {NgIf, NgFor} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatTooltip} from '@angular/material/tooltip';
 
 /** How long the post-completion ring stays on the row (compliance.css:266). */
 const HIGHLIGHT_MS = 2200;
@@ -62,8 +66,8 @@ const HIGHLIGHT_MS = 2200;
  * Completable rows are focusable but have no `role="button"` — see the template.
  */
 @Component({
-  standalone: false,
   selector: 'app-compliance-details-view',
+  imports: [NgIf, NgFor, TranslatePipe, MatIcon, MatIconButton, MatTooltip],
   templateUrl: './compliance-details-view.component.html',
   styleUrls: ['./compliance-details-view.component.scss'],
 })

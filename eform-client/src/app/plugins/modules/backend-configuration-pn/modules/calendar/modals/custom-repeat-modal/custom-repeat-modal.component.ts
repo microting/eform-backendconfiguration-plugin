@@ -1,9 +1,19 @@
 import {Component, Inject, OnInit} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {CalendarRepeatService} from '../../services/calendar-repeat.service';
 import {CalendarRepeatMeta} from '../../../../models/calendar';
 import {getCurrentLocale} from '../../services/calendar-locale.helper';
+import {NgIf, NgFor} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatFormField, MatSuffix} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {MatRadioGroup, MatRadioButton} from '@angular/material/radio';
+import {CdkConnectedOverlay, CdkOverlayOrigin} from '@angular/cdk/overlay';
+import {CalendarMiniCalendarComponent} from '../../components/calendar-mini-calendar/calendar-mini-calendar.component';
 
 export interface CustomRepeatModalData {
   date: Date;
@@ -17,8 +27,8 @@ interface WeekdayCircle {
 }
 
 @Component({
-  standalone: false,
   selector: 'app-custom-repeat-modal',
+  imports: [NgIf, NgFor, FormsModule, TranslatePipe, MatIcon, MatIconButton, MatFormField, MatInput, MtxSelect, MatRadioGroup, MatRadioButton, CdkConnectedOverlay, CdkOverlayOrigin, CalendarMiniCalendarComponent, MatSuffix],
   templateUrl: './custom-repeat-modal.component.html',
   styleUrls: ['./custom-repeat-modal.component.scss'],
 })

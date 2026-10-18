@@ -9,23 +9,28 @@ import {
 import {Subscription} from 'rxjs';
 import {ActivatedRoute, Router} from '@angular/router';
 import {BackendConfigurationPnPropertiesService} from '../../services';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {PropertyAreasEditModalComponent} from '../../components';
 import {AuthStateService} from 'src/app/common/store';
-import {MtxGridColumn} from '@ng-matero/extensions/grid';
+import {MtxGridColumn, MtxGrid} from '@ng-matero/extensions/grid';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {selectAuthIsAdmin, selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
+import {NgIf, AsyncPipe} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatTooltip} from '@angular/material/tooltip';
+import {EformNewSubheaderComponent} from 'src/app/common/modules/eform-shared/components';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-property-areas',
+    imports: [NgIf, AsyncPipe, TranslatePipe, MatIcon, MatIconButton, MtxGrid, MatTooltip, EformNewSubheaderComponent],
     templateUrl: './property-areas.component.html',
     styleUrls: ['./property-areas.component.scss'],
-    standalone: false
 })
 export class PropertyAreasComponent implements OnInit, OnDestroy {
   private store = inject(Store);

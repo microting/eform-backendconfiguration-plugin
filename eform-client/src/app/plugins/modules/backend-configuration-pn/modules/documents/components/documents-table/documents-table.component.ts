@@ -7,10 +7,10 @@ import {
   inject
 } from '@angular/core';
 import {DocumentModel, DocumentSimpleFolderModel, DocumentTranslationModel,} from '../../../../models';
-import {MtxGridColumn} from '@ng-matero/extensions/grid';
-import {TranslateService} from '@ngx-translate/core';
+import {MtxGridColumn, MtxGrid} from '@ng-matero/extensions/grid';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {applicationLanguages2, PdfIcon, WordIcon} from 'src/app/common/const';
-import {MatIconRegistry} from '@angular/material/icon';
+import {MatIconRegistry, MatIcon} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
 import {TemplateFilesService} from 'src/app/common/services';
 import {Subscription} from 'rxjs';
@@ -22,13 +22,17 @@ import {
   selectDocumentsPaginationIsSortDsc,
   selectDocumentsPaginationSort
 } from '../../../../state/documents/documents.selector';
+import {NgIf, NgFor, NgClass, AsyncPipe} from '@angular/common';
+import {MatIconButton} from '@angular/material/button';
+import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
+import {MatChip} from '@angular/material/chips';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-documents-table',
+    imports: [NgIf, NgFor, NgClass, AsyncPipe, TranslatePipe, MatIcon, MatIconButton, MtxGrid, MatMenu, MatMenuItem, MatMenuTrigger, MatChip],
     templateUrl: './documents-table.component.html',
     styleUrls: ['./documents-table.component.scss'],
-    standalone: false
 })
 export class DocumentsTableComponent implements OnInit, OnDestroy {
   private store = inject(Store);

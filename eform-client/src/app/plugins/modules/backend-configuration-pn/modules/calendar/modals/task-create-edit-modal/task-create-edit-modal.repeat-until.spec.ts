@@ -1,3 +1,4 @@
+import {describe, it, expect, afterEach, vi} from 'vitest';
 import {of} from 'rxjs';
 import {TaskCreateEditModalComponent, TaskCreateEditModalData} from './task-create-edit-modal.component';
 import {CalendarRepeatMeta} from '../../../../models/calendar';
@@ -33,35 +34,35 @@ describe('TaskCreateEditModalComponent — repeat-until payload (#1293)', () => 
 
   function build(data: Partial<TaskCreateEditModalData> = {}): TaskCreateEditModalComponent {
     calendarService = {
-      getBoards: jest.fn().mockReturnValue(of({success: true, model: [{id: 1, name: 'Kalender', color: '#fff'}]})),
-      createTask: jest.fn().mockReturnValue(of({success: false})),
-      updateTask: jest.fn().mockReturnValue(of({success: false})),
+      getBoards: vi.fn().mockReturnValue(of({success: true, model: [{id: 1, name: 'Kalender', color: '#fff'}]})),
+      createTask: vi.fn().mockReturnValue(of({success: false})),
+      updateTask: vi.fn().mockReturnValue(of({success: false})),
     };
     propertiesService = {
-      getLinkedSites: jest.fn((propertyId: number) =>
+      getLinkedSites: vi.fn((propertyId: number) =>
         of({success: true, model: propertyId === 5 ? WORKERS_P5 : WORKERS_P6})),
     };
     workerTagsService = {
-      getWorkerTags: jest.fn((propertyId: number) =>
+      getWorkerTags: vi.fn((propertyId: number) =>
         of({success: true, model: propertyId === 5 ? TEAMS_P5 : TEAMS_P6})),
     };
     const repeatService: any = {
-      buildRepeatSelectOptions: jest.fn().mockReturnValue([]),
-      reconstructMetaFromTask: jest.fn().mockReturnValue(null),
-      reanchorMetaToDate: jest.fn((m: any) => m),
-      metaToWeekdaysCsv: jest.fn().mockReturnValue(null),
-      metaToDayOfMonth: jest.fn().mockReturnValue(null),
-      metaToRepeatOrdinalWeek: jest.fn().mockReturnValue(null),
+      buildRepeatSelectOptions: vi.fn().mockReturnValue([]),
+      reconstructMetaFromTask: vi.fn().mockReturnValue(null),
+      reanchorMetaToDate: vi.fn((m: any) => m),
+      metaToWeekdaysCsv: vi.fn().mockReturnValue(null),
+      metaToDayOfMonth: vi.fn().mockReturnValue(null),
+      metaToRepeatOrdinalWeek: vi.fn().mockReturnValue(null),
     };
     const translate: any = {instant: (k: string) => k, currentLang: 'da'};
     const store: any = {select: () => of(1)};
-    const eformVisualEditorService: any = {getVisualEditorTemplate: jest.fn().mockReturnValue(of({success: false}))};
+    const eformVisualEditorService: any = {getVisualEditorTemplate: vi.fn().mockReturnValue(of({success: false}))};
     const translationService: any = {
-      translationPossible: jest.fn().mockReturnValue(of({success: true, model: false})),
-      getTranslation: jest.fn(),
+      translationPossible: vi.fn().mockReturnValue(of({success: true, model: false})),
+      getTranslation: vi.fn(),
     };
     const appSettingsStateService: any = {
-      getLanguages: jest.fn().mockReturnValue(of({success: true, model: {languages: LANGUAGES}})),
+      getLanguages: vi.fn().mockReturnValue(of({success: true, model: {languages: LANGUAGES}})),
     };
 
     const fullData: TaskCreateEditModalData = {
@@ -81,18 +82,18 @@ describe('TaskCreateEditModalComponent — repeat-until payload (#1293)', () => 
     };
 
     const c = new TaskCreateEditModalComponent(
-      {close: jest.fn()} as any,
+      {close: vi.fn()} as any,
       fullData,
       calendarService,
       repeatService,
-      {open: jest.fn()} as any,
+      {open: vi.fn()} as any,
       {} as any,
       translate,
       eformVisualEditorService,
       propertiesService,
       store,
-      {error: jest.fn()} as any,
-      {createPlanningTag: jest.fn()} as any,
+      {error: vi.fn()} as any,
+      {createPlanningTag: vi.fn()} as any,
       {} as any,
       {} as any,
       translationService,

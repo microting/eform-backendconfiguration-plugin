@@ -208,7 +208,7 @@ export class WorkerRowObject {
 
         if ($actionCell.length > 0) {
           cy.wrap($actionCell)
-            .find('#actionMenu', { timeout: 500 })
+            .find('[id^="actionMenu"]', { timeout: 500 })
             .filter(':visible')
             .first()
             .should('be.visible')

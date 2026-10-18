@@ -1,3 +1,4 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {BackendConfigurationPnCalendarService, BackendConfigurationPnCalendarMethods} from './backend-configuration-pn-calendar.service';
 import {of} from 'rxjs';
 
@@ -12,14 +13,14 @@ describe('BackendConfigurationPnCalendarService', () => {
     // its own uniform toasts ("Updated." / "Error [key]") — see
     // 2026-07-15-calendar-repeat-modal-texts-and-toasts-design.md.
     apiBaseServiceSpy = {
-      getNoToast: jest.fn(),
-      postNoToast: jest.fn(),
-      putNoToast: jest.fn(),
-      deleteNoToast: jest.fn(),
+      getNoToast: vi.fn(),
+      postNoToast: vi.fn(),
+      putNoToast: vi.fn(),
+      deleteNoToast: vi.fn(),
     };
     apiBaseServiceSpy.putNoToast.mockReturnValue(of({success: true}));
-    toastrSpy = {success: jest.fn(), error: jest.fn()};
-    translateSpy = {instant: jest.fn((key: string) => key)};
+    toastrSpy = {success: vi.fn(), error: vi.fn()};
+    translateSpy = {instant: vi.fn((key: string) => key)};
     service = new BackendConfigurationPnCalendarService(apiBaseServiceSpy, toastrSpy, translateSpy);
   });
 
@@ -66,7 +67,7 @@ describe('BackendConfigurationPnCalendarService', () => {
   });
 
   describe('createTask', () => {
-    it('POSTs to Tasks and resolves an OperationDataResult<number> envelope', (done) => {
+    it('POSTs to Tasks and resolves an OperationDataResult<number> envelope', () => new Promise<void>((done) => {
       // The pre-save staging flow depends on createTask returning the new
       // AreaRulePlanning id in the OperationDataResult envelope so the modal
       // can iterate the staged-files queue against it.
@@ -81,7 +82,7 @@ describe('BackendConfigurationPnCalendarService', () => {
         expect(res.model).toBe(4711);
         done();
       });
-    });
+    }));
   });
 
   describe('uniform toasts', () => {

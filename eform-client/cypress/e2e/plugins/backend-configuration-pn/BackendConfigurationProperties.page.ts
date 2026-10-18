@@ -138,7 +138,7 @@ class BackendConfigurationPropertiesPage extends PageWithNavbarPage {
   };
 
   public navigateToPropertyArea(i) {
-    return cy.get(`#navigateToPropertyArea`).eq(i)
+    return cy.get(`[id^="navigateToPropertyArea"]`).eq(i)
       .should('be.visible')
       .should('be.enabled');
   };
@@ -291,7 +291,7 @@ export class PropertyRowObject {
 
         if ($actionCell.length > 0) {
           cy.wrap($actionCell)
-            .find('#actionMenu', { timeout: 500 })
+            .find('[id^="actionMenu"]', { timeout: 500 })
             .filter(':visible')
             .first()
             .should('be.visible')
@@ -330,7 +330,7 @@ export class PropertyRowObject {
 
         if ($actionCell.length > 0) {
           cy.wrap($actionCell)
-            .find('#actionMenu', { timeout: 500 })
+            .find('[id^="actionMenu"]', { timeout: 500 })
             .filter(':visible')
             .should('be.visible')
             .click({ force: true });
@@ -426,7 +426,7 @@ export class PropertyRowObject {
     const row = cy.get('.mat-mdc-row').contains(nameBindArea);
     //const row = () => cy.get('.mat-mdc-row').contains(nameBindArea).scrollIntoView();
     row.parent().parent().scrollIntoView();
-    const navigateBtn = row.get('.cdk-column-book > div').find('#navigateToPropertyArea');
+    const navigateBtn = row.get('.cdk-column-book > div').find('[id^="navigateToPropertyArea"]');
     navigateBtn.click();
     backendConfigurationAreaRulesPage.ruleCreateBtn().should('be.visible');
   }

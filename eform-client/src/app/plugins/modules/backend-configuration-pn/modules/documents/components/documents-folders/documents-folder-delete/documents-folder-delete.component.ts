@@ -1,19 +1,20 @@
 import {Component, EventEmitter, OnInit,
   inject
 } from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {AuthStateService} from 'src/app/common/store';
 import {applicationLanguages} from 'src/app/common/const';
 import {BackendConfigurationPnDocumentsService} from '../../../../../services';
 import {DocumentFolderModel} from '../../../../../models';
 import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
+import {TranslatePipe} from '@ngx-translate/core';
 
 @Component({
     selector: 'app-folder-delete',
+    imports: [TranslatePipe, MatDialogTitle, MatDialogContent, MatDialogActions],
     templateUrl: './documents-folder-delete.component.html',
     styleUrls: ['./documents-folder-delete.component.scss'],
-    standalone: false
 })
 export class DocumentsFolderDeleteComponent implements OnInit {
   private authStore = inject(Store);

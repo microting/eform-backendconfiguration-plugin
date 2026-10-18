@@ -1,3 +1,4 @@
+import {describe, it, expect} from 'vitest';
 import {TailBiteOutbreakSummary} from '../../../models';
 import {outbreakStatus} from './tail-bite-outbreak-status';
 

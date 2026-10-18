@@ -4,7 +4,6 @@ import {TranslateModule} from '@ngx-translate/core';
 import {FormsModule} from '@angular/forms';
 import {ComplianceCaseRouting} from './compliance-case.routing';
 import {CasesModule} from 'src/app/modules';
-import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
 import {EformCasesModule} from 'src/app/common/modules/eform-cases/eform-cases.module';
 import {
@@ -19,18 +18,14 @@ import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatIconModule} from '@angular/material/icon';
 import {MatInputModule} from '@angular/material/input';
 import {MatDatepickerModule} from '@angular/material/datepicker';
+import {MatDialogModule} from '@angular/material/dialog';
 
 @NgModule({
-  declarations: [
-    ComplianceCaseHeaderComponent,
-    ComplianceCasePageComponent
-  ],
   imports: [
     TranslateModule,
     EformSharedModule,
     ComplianceCaseRouting,
     CommonModule,
-    EformImportedModule,
     FormsModule,
     CasesModule,
     EformCasesModule,
@@ -39,7 +34,10 @@ import {MatDatepickerModule} from '@angular/material/datepicker';
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
-    MatDatepickerModule
+    MatDatepickerModule,
+    MatDialogModule,
+    ComplianceCaseHeaderComponent,
+    ComplianceCasePageComponent,
   ]
 })
 export class ComplianceCaseModule {

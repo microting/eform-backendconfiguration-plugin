@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {NavigationEnd, Router} from '@angular/router';
 import {Subject, of, throwError} from 'rxjs';
@@ -6,12 +8,12 @@ import {TailBiteShellComponent} from './tail-bite-shell.component';
 
 describe('TailBiteShellComponent', () => {
   const base = '/plugins/backend-configuration-pn/tail-bite';
-  let router: {url: string; events: Subject<unknown>; navigate: jest.Mock; navigateByUrl: jest.Mock};
-  let getMyProperties: jest.Mock;
+  let router: {url: string; events: Subject<unknown>; navigate: Mock; navigateByUrl: Mock};
+  let getMyProperties: Mock;
   let component: TailBiteShellComponent;
 
   const create = (url: string) => {
-    router = {url, events: new Subject(), navigate: jest.fn(), navigateByUrl: jest.fn()};
+    router = {url, events: new Subject(), navigate: vi.fn(), navigateByUrl: vi.fn()};
     TestBed.configureTestingModule({
       providers: [
         {provide: Router, useValue: router},
@@ -24,7 +26,7 @@ describe('TailBiteShellComponent', () => {
 
   beforeEach(() => {
     // The caller's properties: the server returns only enabled ones where the caller is a worker (not 2 here).
-    getMyProperties = jest.fn().mockReturnValue(of({success: true, model: [
+    getMyProperties = vi.fn().mockReturnValue(of({success: true, model: [
       {propertyId: 1, name: 'Ejendom Nord', enabled: true},
       {propertyId: 3, name: 'Ejendom Vest', enabled: true},
     ]}));

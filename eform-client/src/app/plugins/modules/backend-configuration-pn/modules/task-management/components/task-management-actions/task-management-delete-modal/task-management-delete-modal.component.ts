@@ -1,16 +1,17 @@
 import {Component, OnDestroy, OnInit, inject} from '@angular/core';
 import {WorkOrderCaseModel} from '../../../../../models';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {BackendConfigurationPnTaskManagementService} from '../../../../../services';
 import {Subscription} from 'rxjs';
+import {TranslatePipe} from '@ngx-translate/core';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-task-management-delete-modal',
+    imports: [TranslatePipe, MatDialogTitle, MatDialogContent, MatDialogActions],
     templateUrl: './task-management-delete-modal.component.html',
     styleUrls: ['./task-management-delete-modal.component.scss'],
-    standalone: false
 })
 export class TaskManagementDeleteModalComponent implements OnInit, OnDestroy {
   public dialogRef = inject(MatDialogRef<TaskManagementDeleteModalComponent>);

@@ -1,10 +1,14 @@
 import {Component, Inject} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
-import {TranslateService} from '@ngx-translate/core';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {ToastrService} from 'ngx-toastr';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services/items-planning-pn-tags.service';
 import {BackendConfigurationPnTaskListService} from '../../../../../services';
 import {TaskListBatchModalData} from '../../task-list-page/task-list-page.component';
+import {NgFor} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MtxSelect} from '@ng-matero/extensions/select';
 
 /**
  * Batch "Skift rapportoverskrift" modal (#1298) — sets the report headline of
@@ -22,8 +26,8 @@ import {TaskListBatchModalData} from '../../task-list-page/task-list-page.compon
  * page's full tag list and the action needs no property filter.
  */
 @Component({
-  standalone: false,
   selector: 'app-batch-report-headline-modal',
+  imports: [NgFor, FormsModule, TranslatePipe, MatFormField, MatLabel, MtxSelect, MatDialogTitle, MatDialogContent, MatDialogActions],
   templateUrl: './batch-report-headline-modal.component.html',
 })
 export class BatchReportHeadlineModalComponent {

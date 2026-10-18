@@ -1,5 +1,7 @@
 import {Component, OnInit, inject, ViewChild, ElementRef} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatIcon} from '@angular/material/icon';
 import * as QRCode from 'qrcode';
 
 export interface QrModalData {
@@ -9,9 +11,9 @@ export interface QrModalData {
 
 @Component({
   selector: 'app-property-worker-qr-modal',
+  imports: [TranslatePipe, MatIcon, MatDialogTitle, MatDialogContent, MatDialogActions],
   templateUrl: './property-worker-qr-modal.component.html',
   styleUrls: ['./property-worker-qr-modal.component.scss'],
-  standalone: false,
 })
 export class PropertyWorkerQrModalComponent implements OnInit {
   public dialogRef = inject(MatDialogRef<PropertyWorkerQrModalComponent>);

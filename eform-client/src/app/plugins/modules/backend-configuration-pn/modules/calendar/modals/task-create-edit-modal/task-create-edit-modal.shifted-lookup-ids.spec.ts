@@ -1,3 +1,4 @@
+import {describe, it, expect, vi} from 'vitest';
 import {of} from 'rxjs';
 import {TaskCreateEditModalComponent, TaskCreateEditModalData} from './task-create-edit-modal.component';
 
@@ -28,31 +29,31 @@ describe('TaskCreateEditModalComponent — shifted lookup ids (#8141)', () => {
     currentUserLanguageId?: number;
   }): TaskCreateEditModalComponent {
     const calendarService: any = {
-      getBoards: jest.fn().mockReturnValue(of({success: true, model: []})),
-      createTask: jest.fn().mockReturnValue(of({success: false})),
-      updateTask: jest.fn().mockReturnValue(of({success: false})),
+      getBoards: vi.fn().mockReturnValue(of({success: true, model: []})),
+      createTask: vi.fn().mockReturnValue(of({success: false})),
+      updateTask: vi.fn().mockReturnValue(of({success: false})),
     };
-    const propertiesService: any = {getLinkedSites: jest.fn().mockReturnValue(of({success: true, model: []}))};
-    const workerTagsService: any = {getWorkerTags: jest.fn().mockReturnValue(of({success: true, model: []}))};
+    const propertiesService: any = {getLinkedSites: vi.fn().mockReturnValue(of({success: true, model: []}))};
+    const workerTagsService: any = {getWorkerTags: vi.fn().mockReturnValue(of({success: true, model: []}))};
     const repeatService: any = {
-      buildRepeatSelectOptions: jest.fn().mockReturnValue([]),
-      reconstructMetaFromTask: jest.fn().mockReturnValue(null),
-      reanchorMetaToDate: jest.fn((m: any) => m),
-      metaToWeekdaysCsv: jest.fn().mockReturnValue(null),
-      metaToDayOfMonth: jest.fn().mockReturnValue(null),
-      metaToRepeatOrdinalWeek: jest.fn().mockReturnValue(null),
+      buildRepeatSelectOptions: vi.fn().mockReturnValue([]),
+      reconstructMetaFromTask: vi.fn().mockReturnValue(null),
+      reanchorMetaToDate: vi.fn((m: any) => m),
+      metaToWeekdaysCsv: vi.fn().mockReturnValue(null),
+      metaToDayOfMonth: vi.fn().mockReturnValue(null),
+      metaToRepeatOrdinalWeek: vi.fn().mockReturnValue(null),
     };
     const translate: any = {instant: (k: string) => k, currentLang: 'da'};
     const store: any = {select: () => of(opts.currentUserLanguageId)};
     const eformVisualEditorService: any = {
-      getVisualEditorTemplate: jest.fn().mockReturnValue(of({success: true, model: opts.template})),
+      getVisualEditorTemplate: vi.fn().mockReturnValue(of({success: true, model: opts.template})),
     };
     const translationService: any = {
-      translationPossible: jest.fn().mockReturnValue(of({success: true, model: false})),
-      getTranslation: jest.fn(),
+      translationPossible: vi.fn().mockReturnValue(of({success: true, model: false})),
+      getTranslation: vi.fn(),
     };
     const appSettingsStateService: any = {
-      getLanguages: jest.fn().mockReturnValue(of({success: true, model: {languages: LANGUAGES}})),
+      getLanguages: vi.fn().mockReturnValue(of({success: true, model: {languages: LANGUAGES}})),
     };
     const data: TaskCreateEditModalData = {
       task: null,
@@ -70,18 +71,18 @@ describe('TaskCreateEditModalComponent — shifted lookup ids (#8141)', () => {
     };
 
     const c = new TaskCreateEditModalComponent(
-      {close: jest.fn()} as any,
+      {close: vi.fn()} as any,
       data,
       calendarService,
       repeatService,
-      {open: jest.fn()} as any,
+      {open: vi.fn()} as any,
       {} as any,
       translate,
       eformVisualEditorService,
       propertiesService,
       store,
-      {error: jest.fn(), warning: jest.fn()} as any,
-      {createPlanningTag: jest.fn()} as any,
+      {error: vi.fn(), warning: vi.fn()} as any,
+      {createPlanningTag: vi.fn()} as any,
       {} as any,
       {} as any,
       translationService,

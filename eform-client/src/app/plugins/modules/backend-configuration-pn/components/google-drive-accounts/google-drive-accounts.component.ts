@@ -1,8 +1,13 @@
 import {Component, OnInit, inject} from '@angular/core';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {ToastrService} from 'ngx-toastr';
 import {GoogleDriveAccount} from '../../models/calendar';
 import {BackendConfigurationPnGoogleDriveService} from '../../services';
+import {NgIf, NgFor, DatePipe} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatButton} from '@angular/material/button';
+import {MatProgressSpinner} from '@angular/material/progress-spinner';
+import {MatList, MatListItem, MatListItemIcon, MatListItemLine, MatListItemTitle} from '@angular/material/list';
 
 /**
  * PR-8 settings panel — lists the user's connected Google Drive accounts
@@ -19,8 +24,8 @@ import {BackendConfigurationPnGoogleDriveService} from '../../services';
  * convention — adding one for a single call site would balloon the surface.
  */
 @Component({
-  standalone: false,
   selector: 'app-google-drive-accounts',
+  imports: [NgIf, NgFor, DatePipe, TranslatePipe, MatIcon, MatButton, MatProgressSpinner, MatList, MatListItem, MatListItemIcon, MatListItemLine, MatListItemTitle],
   template: `
     <div class="gd-accounts">
       <h2>{{ 'Connected Google Drive accounts' | translate }}</h2>

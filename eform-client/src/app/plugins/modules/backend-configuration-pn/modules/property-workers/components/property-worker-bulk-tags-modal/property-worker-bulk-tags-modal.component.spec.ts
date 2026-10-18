@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {of, Subject} from 'rxjs';
 import {TestBed} from '@angular/core/testing';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
@@ -11,8 +13,8 @@ import {PropertyWorkerBulkTagsModalComponent, PropertyWorkerBulkTagsModalData} f
  * component uses inject() field injection.
  */
 describe('PropertyWorkerBulkTagsModalComponent', () => {
-  let serviceSpy: {bulkUpdateWorkerTags: jest.Mock};
-  let dialogRefSpy: {close: jest.Mock};
+  let serviceSpy: {bulkUpdateWorkerTags: Mock};
+  let dialogRefSpy: {close: Mock};
   let component: PropertyWorkerBulkTagsModalComponent;
 
   const data: PropertyWorkerBulkTagsModalData = {
@@ -21,8 +23,8 @@ describe('PropertyWorkerBulkTagsModalComponent', () => {
   };
 
   beforeEach(() => {
-    serviceSpy = {bulkUpdateWorkerTags: jest.fn().mockReturnValue(of({success: true}))};
-    dialogRefSpy = {close: jest.fn()};
+    serviceSpy = {bulkUpdateWorkerTags: vi.fn().mockReturnValue(of({success: true}))};
+    dialogRefSpy = {close: vi.fn()};
     TestBed.configureTestingModule({
       providers: [
         {provide: BackendConfigurationPnPropertiesService, useValue: serviceSpy},

@@ -251,8 +251,8 @@
                   <tbody id="pairingModalTableBody" role="rowgroup">
                   <ng-container *ngFor="let worker of selectedArea.availableWorkers; let i = index">
                     <tr class="mat-mdc-row cdk-row {{i%2 ? 'mat-row-odd' : ''}}">
-                      <td role="cell" class="mat-mdc-cell cdk-cell" id="microtingId">{{worker.siteId}}</td>
-                      <td role="cell" class="mat-mdc-cell cdk-cell" id="deviceUserFullName">{{worker.siteName}}</td>
+                      <td role="cell" class="mat-mdc-cell cdk-cell" id="microtingId{{i}}">{{worker.siteId}}</td>
+                      <td role="cell" class="mat-mdc-cell cdk-cell" id="deviceUserFullName{{i}}">{{worker.siteName}}</td>
                       <td role="cell" class="mat-mdc-cell cdk-cell">
                         <div class="mat-checkbox">
                           <mat-checkbox class="mat-checkbox"

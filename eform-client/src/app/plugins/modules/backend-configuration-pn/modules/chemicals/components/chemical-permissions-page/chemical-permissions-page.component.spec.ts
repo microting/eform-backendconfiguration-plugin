@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {Overlay} from '@angular/cdk/overlay';
 import {DestroyRef, EventEmitter, Injector, runInInjectionContext} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
@@ -14,17 +16,17 @@ import {ChemicalPermissionsPageComponent} from './chemical-permissions-page.comp
 describe('ChemicalPermissionsPageComponent', () => {
   const flags = (partial: Partial<typeof NO_CHEMICAL_FLAGS>) => ({...NO_CHEMICAL_FLAGS, ...partial});
   let property$: BehaviorSubject<number | null>;
-  let chemicals: {getPermissions: jest.Mock; savePermissions: jest.Mock};
+  let chemicals: {getPermissions: Mock; savePermissions: Mock};
   let component: ChemicalPermissionsPageComponent;
-  let dialogOpen: jest.Mock;
-  let toastr: {success: jest.Mock; info: jest.Mock; error: jest.Mock};
-  let translateInstant: jest.Mock;
+  let dialogOpen: Mock;
+  let toastr: {success: Mock; info: Mock; error: Mock};
+  let translateInstant: Mock;
 
   /** Makes the next dialog a confirm whose Delete button is `confirmed` and whose closing is `closed`. */
   function mockConfirmDialog() {
     const confirmed = new EventEmitter<unknown>();
     const closed = new Subject<unknown>();
-    const ref = {componentInstance: {delete: confirmed}, close: jest.fn(), afterClosed: () => closed};
+    const ref = {componentInstance: {delete: confirmed}, close: vi.fn(), afterClosed: () => closed};
     dialogOpen.mockReturnValue(ref);
     return {confirmed, closed, ref};
   }
@@ -33,12 +35,12 @@ describe('ChemicalPermissionsPageComponent', () => {
     property$ = new BehaviorSubject<number | null>(initialPropertyId);
     const injector = Injector.create({
       providers: [
-        {provide: Store, useValue: {select: jest.fn().mockImplementation((selector) =>
+        {provide: Store, useValue: {select: vi.fn().mockImplementation((selector) =>
           selector === selectChemicalsProperties
             ? of([{id: 3, name: 'Hovedgården', description: ''}, {id: 4, name: 'Engvej 12', description: ''}])
             : property$)}},
         {provide: BackendConfigurationPnChemicalsService, useValue: chemicals},
-        {provide: DestroyRef, useValue: {onDestroy: jest.fn()}},
+        {provide: DestroyRef, useValue: {onDestroy: vi.fn()}},
         {provide: MatDialog, useValue: {open: dialogOpen}},
         {provide: Overlay, useValue: {scrollStrategies: {reposition: () => ({})}}},
         {provide: TranslateService, useValue: {instant: translateInstant}},
@@ -51,17 +53,17 @@ describe('ChemicalPermissionsPageComponent', () => {
   }
 
   beforeEach(() => {
-    dialogOpen = jest.fn();
-    translateInstant = jest.fn().mockImplementation((key: string) => key);
-    toastr = {success: jest.fn(), info: jest.fn(), error: jest.fn()};
+    dialogOpen = vi.fn();
+    translateInstant = vi.fn().mockImplementation((key: string) => key);
+    toastr = {success: vi.fn(), info: vi.fn(), error: vi.fn()};
     chemicals = {
-      getPermissions: jest.fn().mockImplementation((propertyId: number) => of({
+      getPermissions: vi.fn().mockImplementation((propertyId: number) => of({
         success: true,
         model: propertyId === 3
           ? [{workerId: 1, workerName: 'Jens Hansen', flags: flags({view: true})}, {workerId: 2, workerName: 'Ole Nielsen', flags: flags({})}]
           : [{workerId: 2, workerName: 'Ole Nielsen', flags: flags({view: true, register: true})}],
       })),
-      savePermissions: jest.fn().mockReturnValue(of({
+      savePermissions: vi.fn().mockReturnValue(of({
         success: true,
         model: [{workerId: 1, workerName: 'Jens Hansen', flags: flags({view: true, stock: true})}, {workerId: 2, workerName: 'Ole Nielsen', flags: flags({})}],
       })),
@@ -205,12 +207,12 @@ describe('ChemicalPermissionsPageComponent', () => {
     });
 
     it('asks the browser to confirm a reload or tab close while edits are unsaved', () => {
-      const clean = {preventDefault: jest.fn(), returnValue: undefined as unknown};
+      const clean = {preventDefault: vi.fn(), returnValue: undefined as unknown};
       component.onBeforeUnload(clean as unknown as BeforeUnloadEvent);
       expect(clean.preventDefault).not.toHaveBeenCalled();
 
       component.toggle(component.rows[0], 'stock');
-      const dirty = {preventDefault: jest.fn(), returnValue: undefined as unknown};
+      const dirty = {preventDefault: vi.fn(), returnValue: undefined as unknown};
       component.onBeforeUnload(dirty as unknown as BeforeUnloadEvent);
 
       expect(dirty.preventDefault).toHaveBeenCalled();

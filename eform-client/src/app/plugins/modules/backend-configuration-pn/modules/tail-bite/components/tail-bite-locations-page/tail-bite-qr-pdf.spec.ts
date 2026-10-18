@@ -1,16 +1,8 @@
-import {TextDecoder, TextEncoder} from 'util';
+import {describe, it, expect, vi} from 'vitest';
 import {PDFDocument, StandardFonts} from 'pdf-lib';
 import {TailBiteLocationNode} from '../../../../models';
 import * as QRCode from 'qrcode';
 import {buildQrSheetPdf, fitTitle, LABELS_PER_PAGE, pdfSafeText, qrLabels, TailBiteQrLabel} from './tail-bite-qr-pdf';
-
-jest.mock('qrcode', () => {
-  const actual = jest.requireActual('qrcode');
-  return {...actual, create: jest.fn(actual.create)};
-});
-
-// jsdom has no TextEncoder/TextDecoder; qrcode needs them at call time and every browser has them.
-Object.assign(globalThis, {TextEncoder, TextDecoder});
 
 const node = (id: number, parentId: number | null, name: string, depth: number): TailBiteLocationNode =>
   ({id, parentId, name, depth, sortOrder: 0, removed: false, qrCode: `tok_${id}_AbCdEfGhIjKlMnOpQr`});
@@ -64,8 +56,9 @@ describe('tail-bite QR sheet', () => {
 
   it('encodes the code unchanged at error correction M', () => {
     const code = 'tok_9_AbCdEfGhIjKlMnOpQr';
-    return buildQrSheetPdf([{qrCode: code, title: 'Sti', lines: []}], 'H').then(() => {
-      expect(QRCode.create).toHaveBeenCalledWith(code, {errorCorrectionLevel: 'M'});
+    const create = vi.fn(QRCode.create);
+    return buildQrSheetPdf([{qrCode: code, title: 'Sti', lines: []}], 'H', create).then(() => {
+      expect(create).toHaveBeenCalledWith(code, {errorCorrectionLevel: 'M'});
     });
   });
 

@@ -62,8 +62,20 @@ export class TailBitePage {
 
   /** Types into the text dialog (a name or a reason) and saves. */
   async answerTextDialog(text: string): Promise<void> {
-    await this.page.locator('#tailBiteTextDialogInput').fill(text);
-    await this.page.locator('#tailBiteTextDialogSave').click();
+    // The dialog's DOM exists before its first change detection (the host coalesces it to the next frame):
+    // text typed before then is wiped when ngModel writes its initial value, leaving Save disabled. The title
+    // is an interpolation, so once it has text the first pass (and ngModel's write) has run. `.last()`: the
+    // previous dialog may still be animating out.
+    const dialog = this.page.locator('mat-dialog-container')
+      .filter({ has: this.page.locator('#tailBiteTextDialogInput') }).last();
+    await expect(dialog.locator('[mat-dialog-title]')).not.toBeEmpty({ timeout: UI_TIMEOUT });
+    const input = dialog.locator('#tailBiteTextDialogInput');
+    const save = dialog.locator('#tailBiteTextDialogSave');
+    await expect(async () => {
+      await input.fill(text);
+      await expect(save).toBeEnabled({ timeout: 1000 });
+    }).toPass({ timeout: UI_TIMEOUT });
+    await save.click();
   }
 
   /** Confirms the platform delete modal through its confirm button id. */

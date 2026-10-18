@@ -16,7 +16,7 @@ test.describe('Backend Config plugin enabled', () => {
     const pluginRow = page.locator('.mat-mdc-row').filter({ hasText: pluginName }).first();
     await expect(pluginRow).toBeVisible();
 
-    await pluginRow.locator('#actionMenu').click();
+    await pluginRow.locator('[id^="actionMenu"]').click();
     await page.waitForTimeout(500);
 
     await expect(

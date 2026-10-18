@@ -1,5 +1,9 @@
 import {Component, inject} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
+import {FormsModule} from '@angular/forms';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
 
 export interface ArchiveFolderNameDialogData {
   /** Translation key, e.g. 'New subfolder in {{folder}}'. */
@@ -12,8 +16,8 @@ export interface ArchiveFolderNameDialogData {
 /** Ny mappe / Ny undermappe / Omdøb. Closes with the trimmed name; the server checks uniqueness and depth. */
 @Component({
   selector: 'app-archive-folder-name-dialog',
+  imports: [FormsModule, TranslatePipe, MatFormField, MatLabel, MatInput, MatDialogTitle, MatDialogContent, MatDialogActions],
   templateUrl: './archive-folder-name-dialog.component.html',
-  standalone: false,
 })
 export class ArchiveFolderNameDialogComponent {
   readonly data: ArchiveFolderNameDialogData = inject(MAT_DIALOG_DATA);

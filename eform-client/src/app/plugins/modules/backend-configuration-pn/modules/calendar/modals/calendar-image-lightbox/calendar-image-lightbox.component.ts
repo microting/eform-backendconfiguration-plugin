@@ -2,6 +2,10 @@ import {Component, Inject, OnDestroy, ViewEncapsulation} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {Subject} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
+import {NgIf, NgFor, AsyncPipe} from '@angular/common';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatIcon} from '@angular/material/icon';
+import {AuthImagePipe} from 'src/app/common/pipes';
 
 /**
  * i18n keys held as CONSTANTS rather than written inline in the template.
@@ -112,8 +116,8 @@ export interface CalendarImageLightboxData {
  * is no residual index and no stale `src` to clear.
  */
 @Component({
-  standalone: false,
   selector: 'app-calendar-image-lightbox',
+  imports: [NgIf, NgFor, AsyncPipe, TranslatePipe, MatIcon, AuthImagePipe],
   templateUrl: './calendar-image-lightbox.component.html',
   styleUrls: ['./calendar-image-lightbox.component.scss'],
   // The overlay pane (`.calendar-lightbox-panel`, set via

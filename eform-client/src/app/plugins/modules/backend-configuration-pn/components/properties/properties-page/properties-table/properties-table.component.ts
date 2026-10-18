@@ -7,9 +7,9 @@ import {PropertiesStateService} from '../../store';
 import {PropertyCompliancesColorBadgesEnum} from 'src/app/plugins/modules/backend-configuration-pn/enums';
 import {EntitySelectService} from 'src/app/common/services';
 import {Sort} from '@angular/material/sort';
-import {MtxGridColumn} from '@ng-matero/extensions/grid';
+import {MtxGridColumn, MtxGrid} from '@ng-matero/extensions/grid';
 import {Subject} from 'rxjs';
-import {MatIconRegistry} from '@angular/material/icon';
+import {MatIconRegistry, MatIcon} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
 import {WordIcon} from 'src/app/common/const';
 import { ThemePalette } from '@angular/material/core';
@@ -20,13 +20,19 @@ import {
   selectPropertiesPaginationIsSortDsc,
   selectPropertiesPaginationSort
 } from '../../../../state/properties/properties.selector';
+import {NgIf, AsyncPipe} from '@angular/common';
+import {TranslatePipe} from '@ngx-translate/core';
+import {RouterLink} from '@angular/router';
+import {MatIconButton} from '@angular/material/button';
+import {MatTooltip} from '@angular/material/tooltip';
+import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
 
 @Component({
     selector: 'app-properties-table',
+    imports: [NgIf, AsyncPipe, TranslatePipe, RouterLink, MatIcon, MatIconButton, MtxGrid, MatTooltip, MatMenu, MatMenuItem, MatMenuTrigger],
     templateUrl: './properties-table.component.html',
     styleUrls: ['./properties-table.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    standalone: false
 })
 export class PropertiesTableComponent implements OnInit {
   private store = inject(Store);

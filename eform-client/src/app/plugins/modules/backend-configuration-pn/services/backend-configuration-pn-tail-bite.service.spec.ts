@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {of} from 'rxjs';
 import {TailBiteFactor} from '../models';
 import {BackendConfigurationPnTailBiteService} from './backend-configuration-pn-tail-bite.service';
@@ -8,11 +10,11 @@ import {BackendConfigurationPnTailBiteService} from './backend-configuration-pn-
  */
 describe('BackendConfigurationPnTailBiteService', () => {
   const base = 'api/backend-configuration-pn/tail-bite';
-  let api: {get: jest.Mock; post: jest.Mock; postNoToast: jest.Mock; put: jest.Mock; delete: jest.Mock};
+  let api: {get: Mock; post: Mock; postNoToast: Mock; put: Mock; delete: Mock};
   let service: BackendConfigurationPnTailBiteService;
 
   beforeEach(() => {
-    const ok = () => jest.fn().mockReturnValue(of({success: true}));
+    const ok = () => vi.fn().mockReturnValue(of({success: true}));
     api = {get: ok(), post: ok(), postNoToast: ok(), put: ok(), delete: ok()};
     service = new BackendConfigurationPnTailBiteService(api as any);
   });

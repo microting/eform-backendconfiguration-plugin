@@ -7,7 +7,7 @@ import {CompliancesStateService} from '../store';
 import {AuthStateService} from 'src/app/common/store';
 import {Sort} from '@angular/material/sort';
 import {TranslateService} from '@ngx-translate/core';
-import {MtxGridColumn} from '@ng-matero/extensions/grid';
+import {MtxGridColumn, MtxGrid} from '@ng-matero/extensions/grid';
 import {ActivatedRoute, Router} from '@angular/router';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {MatDialog} from '@angular/material/dialog';
@@ -22,10 +22,10 @@ import {isFutureTask} from '../../../../helpers';
 
 @Component({
     selector: 'app-compliances-table',
+    imports: [MtxGrid],
     templateUrl: './compliances-table.component.html',
     styleUrls: ['./compliances-table.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    standalone: false
 })
 export class CompliancesTableComponent implements OnInit {
   private store = inject(Store);

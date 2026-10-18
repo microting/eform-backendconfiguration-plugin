@@ -1,6 +1,6 @@
 import {Component, DestroyRef, OnInit, inject} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
-import {ActivatedRoute, NavigationEnd, Router} from '@angular/router';
+import {ActivatedRoute, NavigationEnd, Router, RouterOutlet} from '@angular/router';
 import {Store} from '@ngrx/store';
 import {filter} from 'rxjs';
 import {CommonDictionaryModel} from 'src/app/common/models';
@@ -8,6 +8,12 @@ import {selectCurrentUserIsFirstUser} from 'src/app/state';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
 import {chemicalsSelectProperty, chemicalsSetProperties, selectChemicalsPropertyId} from '../../../../state';
 import {ChemicalUnsavedChangesAware, confirmDiscardOf} from '../../chemicals-unsaved-changes';
+import {NgIf} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatCard} from '@angular/material/card';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MtxSelect} from '@ng-matero/extensions/select';
 
 const DEFAULT_TITLE_KEY = 'Chemicals: Title';
 
@@ -24,9 +30,9 @@ const DEFAULT_TITLE_KEY = 'Chemicals: Title';
  */
 @Component({
   selector: 'app-chemicals-container',
+  imports: [NgIf, FormsModule, TranslatePipe, RouterOutlet, MatCard, MatFormField, MatLabel, MtxSelect],
   templateUrl: './chemicals-container.component.html',
   styleUrls: ['./chemicals-container.component.scss'],
-  standalone: false,
 })
 export class ChemicalsContainerComponent implements OnInit {
   private store = inject(Store);

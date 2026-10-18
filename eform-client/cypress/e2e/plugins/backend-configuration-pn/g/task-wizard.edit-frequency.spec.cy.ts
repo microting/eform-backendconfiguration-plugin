@@ -164,7 +164,7 @@ describe('Area rules type 1', () => {
     // cy.get('.cdk-row .cdk-column-actions .editBtn').first().click();
     cy.get('[id^=action-items]')
       .first()
-      .find('#actionMenu')
+      .find('[id^="actionMenu"]')
       .should('be.visible')
       .click({ force: true });
 
@@ -199,7 +199,7 @@ describe('Area rules type 1', () => {
     // cy.get('.cdk-row .cdk-column-actions .editBtn').first().click();
     cy.get('[id^=action-items]')
       .first()
-      .find('#actionMenu')
+      .find('[id^="actionMenu"]')
       .should('be.visible')
       .click({ force: true });
 

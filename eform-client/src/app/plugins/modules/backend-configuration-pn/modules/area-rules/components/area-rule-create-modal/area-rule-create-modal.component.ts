@@ -22,15 +22,25 @@ import {
   PoolHoursModel,
 } from '../../../../models';
 import {BackendConfigurationPnAreasService} from '../../../../services';
-import {TranslateService} from '@ngx-translate/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
-import {MtxGridColumn, MtxGridCellTemplate} from '@ng-matero/extensions/grid';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
+import {MtxGridColumn, MtxGridCellTemplate, MtxGrid} from '@ng-matero/extensions/grid';
+import {NgIf, NgFor} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {MatIcon} from '@angular/material/icon';
+import {MatButton} from '@angular/material/button';
+import {MatCard, MatCardContent, MatCardTitle} from '@angular/material/card';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {MatTooltip} from '@angular/material/tooltip';
+import {MatCheckbox} from '@angular/material/checkbox';
 
 @Component({
     selector: 'app-area-rule-create-modal',
+    imports: [NgIf, NgFor, FormsModule, TranslatePipe, MatIcon, MatButton, MatCard, MatCardContent, MatCardTitle, MatFormField, MatLabel, MatInput, MtxSelect, MtxGrid, MatTooltip, MatDialogTitle, MatDialogContent, MatDialogActions, MatCheckbox],
     templateUrl: './area-rule-create-modal.component.html',
     styleUrls: ['./area-rule-create-modal.component.scss'],
-    standalone: false
 })
 export class AreaRuleCreateModalComponent implements OnInit {
   private eFormService = inject(EFormService);

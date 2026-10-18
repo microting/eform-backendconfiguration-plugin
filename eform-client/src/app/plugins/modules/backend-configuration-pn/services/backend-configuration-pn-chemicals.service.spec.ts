@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {Injector, runInInjectionContext} from '@angular/core';
 import {Observable, of} from 'rxjs';
 import {ApiBaseService} from 'src/app/common/services';
@@ -23,16 +25,16 @@ import {
  */
 describe('BackendConfigurationPnChemicalsService', () => {
   const BASE = BackendConfigurationPnChemicalsMethods.Base;
-  let api: Record<string, jest.Mock>;
+  let api: Record<string, Mock>;
   let service: BackendConfigurationPnChemicalsService;
 
   beforeEach(() => {
     api = {
-      get: jest.fn().mockReturnValue(of({success: true, model: {}})),
-      post: jest.fn().mockReturnValue(of({success: true, model: {}})),
-      put: jest.fn().mockReturnValue(of({success: true, model: {}})),
-      postFormData: jest.fn().mockReturnValue(of({success: true, model: {}})),
-      getBlobData: jest.fn().mockReturnValue(of(new Blob([]))),
+      get: vi.fn().mockReturnValue(of({success: true, model: {}})),
+      post: vi.fn().mockReturnValue(of({success: true, model: {}})),
+      put: vi.fn().mockReturnValue(of({success: true, model: {}})),
+      postFormData: vi.fn().mockReturnValue(of({success: true, model: {}})),
+      getBlobData: vi.fn().mockReturnValue(of(new Blob([]))),
     };
     const injector = Injector.create({providers: [{provide: ApiBaseService, useValue: api}]});
     service = runInInjectionContext(injector, () => new BackendConfigurationPnChemicalsService());

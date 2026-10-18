@@ -1,17 +1,18 @@
 import {Component, EventEmitter, Input, Output} from '@angular/core';
-import {TranslateService} from '@ngx-translate/core';
-import {MtxGridColumn} from '@ng-matero/extensions/grid';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
+import {MtxGridColumn, MtxGrid} from '@ng-matero/extensions/grid';
 import {CommonDictionaryModel, SharedTagModel} from 'src/app/common/models';
 import {CalendarBoardModel, CalendarTaskModel} from '../../../../models/calendar';
 import {assigneeDisplayNames} from '../../../calendar/services/calendar-task.mapper';
 import {CalendarRepeatService} from '../../../calendar/services/calendar-repeat.service';
 import {formatRepeatText} from '../../calendar-task-list-repeat.util';
+import {NgClass} from '@angular/common';
 
 @Component({
   selector: 'app-calendar-task-list-table',
+  imports: [NgClass, TranslatePipe, MtxGrid],
   templateUrl: './calendar-task-list-table.component.html',
   styleUrls: ['./calendar-task-list-table.component.scss'],
-  standalone: false,
 })
 export class CalendarTaskListTableComponent {
   @Input() tasks: CalendarTaskModel[] = [];

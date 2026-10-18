@@ -1,4 +1,11 @@
+import {describe, it, expect, afterEach, vi} from 'vitest';
+// ng2-pdf-viewer assigns to the pdfjs-dist module namespace when it loads, which
+// throws under the unit-test builder (ESM namespaces are not extensible), and
+// pdfjs-dist cannot be mocked from inside the package. No spec renders a PDF.
+vi.mock('ng2-pdf-viewer', () => ({PdfViewerModule: class {}, PdfViewerComponent: class {}}));
+import {CommonModule} from '@angular/common';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
+import {detectChanges} from '../../../../../testing/detect-changes';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {ActivatedRoute, Router} from '@angular/router';
 import {Store} from '@ngrx/store';
@@ -22,12 +29,11 @@ describe('FileCreateComponent folder preselection', () => {
 
   function setup(requested: string | null, storeFolderId: number | null) {
     TestBed.configureTestingModule({
-      declarations: [FileCreateComponent],
-      imports: [TranslateModule.forRoot()],
+      imports: [FileCreateComponent, TranslateModule.forRoot()],
       schemas: [NO_ERRORS_SCHEMA],
       providers: [
         {provide: Store, useValue: {select: () => of(storeFolderId)}},
-        {provide: Router, useValue: {navigate: jest.fn()}},
+        {provide: Router, useValue: {navigate: vi.fn()}},
         {provide: ActivatedRoute, useValue: {snapshot: {queryParamMap: {get: () => requested}}}},
         {
           provide: BackendConfigurationPnArchiveFoldersService,
@@ -35,12 +41,16 @@ describe('FileCreateComponent folder preselection', () => {
         },
         {provide: BackendConfigurationPnPropertiesService, useValue: {getAllPropertiesDictionary: () => of({success: true, model: []})}},
         {provide: BackendConfigurationPnFileTagsService, useValue: {getTags: () => of({success: true, model: []})}},
-        {provide: BackendConfigurationPnFilesService, useValue: {createFiles: jest.fn()}},
+        {provide: BackendConfigurationPnFilesService, useValue: {createFiles: vi.fn()}},
       ],
     });
+    // Keep the scope these specs were written for (the old TestBed module had only
+    // CommonModule + these imports): the component's real Material/forms imports
+    // would make them test Material instead of this component.
+    TestBed.overrideComponent(FileCreateComponent, {set: {imports: [CommonModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}});
     fixture = TestBed.createComponent(FileCreateComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    detectChanges(fixture);
   }
 
   afterEach(() => fixture?.destroy());
@@ -65,12 +75,12 @@ describe('FileCreateComponent folder preselection', () => {
     component.files = [{file: new File(['x'], 'a.pdf'), tagIds: [], propertyIds: [1]}];
     component.selectedProperties = [1];
     component.selectedFolderId = null;
-    fixture.detectChanges();
+    detectChanges(fixture);
     expect(component.disabledUploadBtn).toBe(true);
     expect(fixture.nativeElement.querySelector('#archiveUploadFolderRequired')).not.toBeNull();
 
     component.selectedFolderId = 3;
-    fixture.detectChanges();
+    detectChanges(fixture);
     expect(component.disabledUploadBtn).toBe(false);
     expect(fixture.nativeElement.querySelector('#archiveUploadFolderRequired')).toBeNull();
   });

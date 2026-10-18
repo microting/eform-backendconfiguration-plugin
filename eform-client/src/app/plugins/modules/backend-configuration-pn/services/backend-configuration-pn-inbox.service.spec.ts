@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {of} from 'rxjs';
 import {
   BackendConfigurationPnInboxMethods,
@@ -14,15 +16,15 @@ import {passThroughAccountDisabledHandler} from './archive-account-disabled.hand
 describe('BackendConfigurationPnInboxService', () => {
   let service: BackendConfigurationPnInboxService;
   let apiBaseServiceSpy: any;
-  let handle: jest.Mock;
+  let handle: Mock;
 
   beforeEach(() => {
     apiBaseServiceSpy = {
-      get: jest.fn(),
-      getNoToast: jest.fn(),
-      post: jest.fn(),
-      put: jest.fn(),
-      getBlobData: jest.fn(),
+      get: vi.fn(),
+      getNoToast: vi.fn(),
+      post: vi.fn(),
+      put: vi.fn(),
+      getBlobData: vi.fn(),
     };
     apiBaseServiceSpy.get.mockReturnValue(of({success: true, model: []}));
     apiBaseServiceSpy.getNoToast.mockReturnValue(of({success: true, model: {}}));

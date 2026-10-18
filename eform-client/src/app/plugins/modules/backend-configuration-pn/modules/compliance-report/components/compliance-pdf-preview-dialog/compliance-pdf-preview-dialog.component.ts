@@ -1,6 +1,10 @@
 import {Component, Inject, OnInit} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {saveAs} from 'file-saver';
+import {NgIf} from '@angular/common';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatProgressSpinner} from '@angular/material/progress-spinner';
+import {PdfViewerModule} from 'ng2-pdf-viewer';
 
 export interface CompliancePdfPreviewDialogData {
   /** The PDF bytes the export endpoint answered with. */
@@ -23,8 +27,8 @@ export interface CompliancePdfPreviewDialogData {
  * read once in `ngOnInit`; the spinner covers the read.
  */
 @Component({
-  standalone: false,
   selector: 'app-compliance-pdf-preview-dialog',
+  imports: [NgIf, TranslatePipe, MatProgressSpinner, MatDialogTitle, MatDialogContent, MatDialogActions, PdfViewerModule],
   templateUrl: './compliance-pdf-preview-dialog.component.html',
   styleUrls: ['./compliance-pdf-preview-dialog.component.scss'],
 })

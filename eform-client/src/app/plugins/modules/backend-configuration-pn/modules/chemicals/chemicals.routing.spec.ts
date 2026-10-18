@@ -1,9 +1,5 @@
-jest.mock('./components', () => ({
-  ChemicalsContainerComponent: class MockChemicalsContainerComponent {},
-  ChemicalPermissionsPageComponent: class MockChemicalPermissionsPageComponent {},
-  ChemicalSettingsPageComponent: class MockChemicalSettingsPageComponent {},
-}));
-
+import {describe, it, expect} from 'vitest';
+import {ChemicalsContainerComponent} from './components';
 import {routes} from './chemicals.routing';
 import {CHEMICAL_SCREENS} from './chemicals-screens';
 import {chemicalUnsavedChangesGuard} from './chemicals-unsaved-changes';
@@ -12,7 +8,7 @@ describe('ChemicalsRouting', () => {
   it('hangs every screen under the container', () => {
     expect(routes).toHaveLength(1);
     expect(routes[0].path).toBe('');
-    expect(routes[0].component?.name).toBe('MockChemicalsContainerComponent');
+    expect(routes[0].component).toBe(ChemicalsContainerComponent);
   });
 
   it('has one child route per registered screen, in registry order', () => {
@@ -54,7 +50,7 @@ describe('ChemicalsRouting', () => {
 
   it('pins the menu E2EIds to the literals the C# menu definition and ChemicalsMenuTests use', () => {
     // EformBackendConfigurationPlugin.ChemicalsMenuChild builds
-    // `backend-configuration-pn-chemicals-{path}`; jest cannot read the C#, so the
+    // `backend-configuration-pn-chemicals-{path}`; the spec cannot read the C#, so the
     // literals are pinned on both sides. Extend this list with each screen's menu child.
     expect(CHEMICAL_SCREENS.map((s) => [s.path, s.menuE2EId])).toEqual([
       ['permissions', 'backend-configuration-pn-chemicals-permissions'],

@@ -161,8 +161,8 @@ test.describe('Area rules type 1', () => {
     );
 
     // Copy task
-    await expect(page.locator('.task-actions').first().locator('#actionMenu')).toBeVisible();
-    await page.locator('.task-actions').first().locator('#actionMenu').click({ force: true });
+    await expect(page.locator('.task-actions').first().locator('[id^="actionMenu"]')).toBeVisible();
+    await page.locator('.task-actions').first().locator('[id^="actionMenu"]').click({ force: true });
 
     // Plain click, no force and no sleep: Material puts `pointer-events: none`
     // on `.mat-menu-panel-animating`, so the actionability check IS the
@@ -213,8 +213,8 @@ test.describe('Area rules type 1', () => {
     );
 
     // Copy and set new eform
-    await expect(page.locator('.task-actions').first().locator('#actionMenu')).toBeVisible();
-    await page.locator('.task-actions').first().locator('#actionMenu').click({ force: true });
+    await expect(page.locator('.task-actions').first().locator('[id^="actionMenu"]')).toBeVisible();
+    await page.locator('.task-actions').first().locator('[id^="actionMenu"]').click({ force: true });
 
     // Now click the Copy Task button inside the opened menu.
     //

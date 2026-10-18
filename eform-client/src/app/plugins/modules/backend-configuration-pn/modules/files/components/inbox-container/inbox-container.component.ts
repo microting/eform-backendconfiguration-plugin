@@ -11,11 +11,20 @@ import {
 } from '../../../../models';
 import {INBOX_PRESELECT_CONFIDENCE, INBOX_STATUS_LABELS, inboxConfidence, inboxIsUnknownSender} from '../../../../helpers';
 import {InboxReviewDialogComponent} from '../inbox-review-dialog/inbox-review-dialog.component';
+import {NgIf, NgFor, NgTemplateOutlet, DatePipe} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatCard} from '@angular/material/card';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MatSelect} from '@angular/material/select';
+import {MatOption} from '@angular/material/core';
+import {ArchiveSectionNavComponent} from '../archive-section-nav/archive-section-nav.component';
 
 @Component({
   selector: 'app-inbox-container',
+  imports: [NgIf, NgFor, NgTemplateOutlet, DatePipe, FormsModule, TranslatePipe, MatCard, MatFormField, MatLabel, MatInput, MatSelect, MatOption, ArchiveSectionNavComponent],
   templateUrl: './inbox-container.component.html',
-  standalone: false,
 })
 export class InboxContainerComponent implements OnInit {
   private inboxService = inject(BackendConfigurationPnInboxService);

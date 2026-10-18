@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {Subject, of} from 'rxjs';
 import {ComplianceReportStateService} from '../../store';
 import {ComplianceOverviewViewComponent} from './compliance-overview-view.component';
@@ -39,7 +41,7 @@ describe('ComplianceOverviewViewComponent — buildRequest', () => {
     state = new ComplianceReportStateService();
     // `overview()` is never reached: no test here subscribes to
     // `fetchRequested$`, so `ngOnInit` is deliberately not called.
-    const service = {overview: jest.fn()};
+    const service = {overview: vi.fn()};
     component = new ComplianceOverviewViewComponent(state, service as any);
   });
 
@@ -141,7 +143,7 @@ describe('ComplianceOverviewViewComponent — buildRequest', () => {
 describe('ComplianceOverviewViewComponent — the count it reports back', () => {
   it('reports the ROW count, which excludes the totals row', () => {
     const state = new ComplianceReportStateService();
-    const component = new ComplianceOverviewViewComponent(state, {overview: jest.fn()} as any);
+    const component = new ComplianceOverviewViewComponent(state, {overview: vi.fn()} as any);
     const row = (propertyId: number) => ({
       propertyId,
       propertyName: `Ejendom ${propertyId}`,
@@ -204,13 +206,13 @@ describe('ComplianceOverviewViewComponent — the count it reports back', () => 
  */
 describe('ComplianceOverviewViewComponent — the view-mode guard', () => {
   let state: ComplianceReportStateService;
-  let service: {overview: jest.Mock};
+  let service: {overview: Mock};
   let component: ComplianceOverviewViewComponent;
 
   beforeEach(() => {
     state = new ComplianceReportStateService();
     service = {
-      overview: jest.fn().mockReturnValue(of({success: true, model: {rows: [], totals: null}})),
+      overview: vi.fn().mockReturnValue(of({success: true, model: {rows: [], totals: null}})),
     };
     component = new ComplianceOverviewViewComponent(state, service as any);
   });

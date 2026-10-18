@@ -1,7 +1,7 @@
 import {AfterViewInit, Component, ElementRef, EventEmitter, Inject, OnDestroy, OnInit, Optional, Output, ViewChild} from '@angular/core';
-import {FormControl, Validators} from '@angular/forms';
+import {FormControl, Validators, FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog';
-import {Overlay} from '@angular/cdk/overlay';
+import {Overlay, CdkConnectedOverlay, CdkOverlayOrigin} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {EformVisualEditorModel} from 'src/app/common/models/eforms/visual-editor/eform-visual-editor.model';
@@ -39,11 +39,23 @@ import {getCurrentLocale} from '../../services/calendar-locale.helper';
 import {CustomRepeatModalComponent} from '../custom-repeat-modal/custom-repeat-modal.component';
 import {RepeatScopeModalComponent} from '../repeat-scope-modal/repeat-scope-modal.component';
 import {EformChangeScopeModalComponent} from '../eform-change-scope-modal/eform-change-scope-modal.component';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {ToastrService} from 'ngx-toastr';
 import {firstValueFrom, Observable, of} from 'rxjs';
 import {switchMap, take, timeout} from 'rxjs/operators';
 import {OperationDataResult} from 'src/app/common/models';
+import {NgIf, NgFor, AsyncPipe, DatePipe} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatProgressSpinner} from '@angular/material/progress-spinner';
+import {MatFormField, MatLabel, MatSuffix} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MtxSelect, MtxSelectLabelTemplate, MtxSelectOptionTemplate, MtxSelectOptgroupTemplate} from '@ng-matero/extensions/select';
+import {MatTooltip} from '@angular/material/tooltip';
+import {MatCheckbox} from '@angular/material/checkbox';
+import {MatSlideToggle} from '@angular/material/slide-toggle';
+import {AuthImagePipe} from 'src/app/common/pipes';
+import {CalendarMiniCalendarComponent} from '../../components/calendar-mini-calendar/calendar-mini-calendar.component';
 
 export interface TaskCreateEditModalData {
   task: CalendarTaskModel | null;
@@ -128,8 +140,8 @@ declare const google: any;
 const SAVE_TRANSLATION_TIMEOUT_MS = 15000;
 
 @Component({
-  standalone: false,
   selector: 'app-task-create-edit-modal',
+  imports: [NgIf, NgFor, AsyncPipe, DatePipe, FormsModule, ReactiveFormsModule, TranslatePipe, MatIcon, MatIconButton, MatProgressSpinner, MatFormField, MatLabel, MatInput, MtxSelect, MtxSelectLabelTemplate, MtxSelectOptionTemplate, MatTooltip, MatCheckbox, MatSlideToggle, CdkConnectedOverlay, CdkOverlayOrigin, AuthImagePipe, CalendarMiniCalendarComponent, MatSuffix, MtxSelectOptgroupTemplate],
   templateUrl: './task-create-edit-modal.component.html',
   styleUrls: ['./task-create-edit-modal.component.scss'],
 })

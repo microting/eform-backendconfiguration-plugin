@@ -1,3 +1,4 @@
+import {describe, it, expect} from 'vitest';
 import {TailBiteFactor, TailBiteOutbreakAction, TailBiteOutbreakDetail} from '../../../../models';
 import {
   assessmentErrors,

@@ -5,14 +5,15 @@ import {
 } from '@angular/core';
 import {DeviceUserService} from 'src/app/common/services';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {DeviceUserModel} from '../../../../models';
+import {TranslatePipe} from '@ngx-translate/core';
 
 @Component({
     selector: 'app-property-worker-delete-modal',
+    imports: [TranslatePipe, MatDialogTitle, MatDialogContent, MatDialogActions],
     templateUrl: './property-worker-delete-modal.component.html',
     styleUrls: ['./property-worker-delete-modal.component.scss'],
-    standalone: false
 })
 export class PropertyWorkerDeleteModalComponent implements OnInit {
   private deviceUserService = inject(DeviceUserService);

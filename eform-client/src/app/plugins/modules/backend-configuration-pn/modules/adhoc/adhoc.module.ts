@@ -39,19 +39,6 @@ import {
  * the module is feature-complete for the dashboard's UI.
  */
 @NgModule({
-  declarations: [
-    AdhocContainerComponent,
-    AdhocTableComponent,
-    AdhocFiltersComponent,
-    AdhocTaskDrawerComponent,
-    AdhocDeleteModalComponent,
-    AdhocPhotoDeleteModalComponent,
-    AdhocCopyModalComponent,
-    AdhocCompleteModalComponent,
-    AdhocHistoryComponent,
-    AdhocAreaCreateModalComponent,
-    AdhocAreaAdminModalComponent,
-  ],
   imports: [
     CommonModule,
     TranslateModule,
@@ -77,6 +64,17 @@ import {
     MatDatepickerModule,
     MatChip,
     MatCheckboxModule,
+    AdhocContainerComponent,
+    AdhocTableComponent,
+    AdhocFiltersComponent,
+    AdhocTaskDrawerComponent,
+    AdhocDeleteModalComponent,
+    AdhocPhotoDeleteModalComponent,
+    AdhocCopyModalComponent,
+    AdhocCompleteModalComponent,
+    AdhocHistoryComponent,
+    AdhocAreaCreateModalComponent,
+    AdhocAreaAdminModalComponent,
   ],
   providers: [],
 })

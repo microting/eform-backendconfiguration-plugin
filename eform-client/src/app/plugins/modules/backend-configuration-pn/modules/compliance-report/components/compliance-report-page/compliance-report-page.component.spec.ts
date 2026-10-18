@@ -1,3 +1,7 @@
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+vi.mock('ng-gallery', () => ({Gallery: class {}, GalleryModule: class {}, ImageItem: class {}, GALLERY_CONFIG: 'GALLERY_CONFIG'}));
+vi.mock('ng-gallery/lightbox', () => ({Lightbox: class {}, LightboxModule: class {}}));
+vi.mock('ng2-pdf-viewer', () => ({PdfViewerModule: class {}, PdfViewerComponent: class {}}));
 import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {By} from '@angular/platform-browser';
@@ -9,6 +13,7 @@ import {of} from 'rxjs';
 import {BackendConfigurationPnComplianceReportService} from '../../../../services';
 import {ComplianceReportStateService} from '../../store';
 import {ComplianceReportPageComponent} from './compliance-report-page.component';
+import {CommonModule} from '@angular/common';
 
 /**
  * The Oversigt/Detaljer/Rapport switcher (#1296). It used to be three
@@ -51,16 +56,15 @@ describe('ComplianceReportPageComponent — mode switcher', () => {
     state = new ComplianceReportStateService();
 
     TestBed.configureTestingModule({
-      declarations: [ComplianceReportPageComponent],
-      imports: [TranslateModule.forRoot(), MatButtonToggleModule],
+      imports: [ComplianceReportPageComponent, TranslateModule.forRoot(), MatButtonToggleModule],
       providers: [
         {provide: ComplianceReportStateService, useValue: state},
-        {provide: BackendConfigurationPnComplianceReportService, useValue: {export: jest.fn()}},
-        {provide: MatDialog, useValue: {open: jest.fn()}},
-        {provide: Store, useValue: {select: jest.fn().mockReturnValue(of({id: USER_ID}))}},
+        {provide: BackendConfigurationPnComplianceReportService, useValue: {export: vi.fn()}},
+        {provide: MatDialog, useValue: {open: vi.fn()}},
+        {provide: Store, useValue: {select: vi.fn().mockReturnValue(of({id: USER_ID}))}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
-    });
+    }).overrideComponent(ComplianceReportPageComponent, {set: {imports: [CommonModule, TranslateModule, MatButtonToggleModule], schemas: [NO_ERRORS_SCHEMA]}});
 
     fixture = TestBed.createComponent(ComplianceReportPageComponent);
     fixture.detectChanges();
@@ -115,8 +119,8 @@ describe('ComplianceReportPageComponent — mode switcher', () => {
   });
 
   it('clicking Detaljer switches the mode without resetting', () => {
-    const reset = jest.spyOn(state, 'resetToOverview');
-    const setMode = jest.spyOn(state, 'setMode');
+    const reset = vi.spyOn(state, 'resetToOverview');
+    const setMode = vi.spyOn(state, 'setMode');
 
     click('details');
 
@@ -129,7 +133,7 @@ describe('ComplianceReportPageComponent — mode switcher', () => {
   });
 
   it('clicking Rapport switches the mode without resetting', () => {
-    const reset = jest.spyOn(state, 'resetToOverview');
+    const reset = vi.spyOn(state, 'resetToOverview');
 
     click('report');
 
@@ -141,7 +145,7 @@ describe('ComplianceReportPageComponent — mode switcher', () => {
   it('clicking the ALREADY-selected Oversigt re-fetches and keeps every filter (#1299, via (click) not (change))', () => {
     expect(state.mode).toBe('overview');
     state.setFilter(NON_DEFAULT);
-    const toOverview = jest.spyOn(state, 'resetToOverview');
+    const toOverview = vi.spyOn(state, 'resetToOverview');
     const fetches: number[] = [];
     state.fetchRequested$.subscribe(() => fetches.push(1));
     const before = fetches.length;
@@ -189,16 +193,15 @@ describe('ComplianceReportPageComponent — remembered period on entry', () => {
   function create(userId: number | null) {
     const state = new ComplianceReportStateService();
     TestBed.configureTestingModule({
-      declarations: [ComplianceReportPageComponent],
-      imports: [TranslateModule.forRoot(), MatButtonToggleModule],
+      imports: [ComplianceReportPageComponent, TranslateModule.forRoot(), MatButtonToggleModule],
       providers: [
         {provide: ComplianceReportStateService, useValue: state},
-        {provide: BackendConfigurationPnComplianceReportService, useValue: {export: jest.fn()}},
-        {provide: MatDialog, useValue: {open: jest.fn()}},
-        {provide: Store, useValue: {select: jest.fn().mockReturnValue(of(userId == null ? null : {id: userId}))}},
+        {provide: BackendConfigurationPnComplianceReportService, useValue: {export: vi.fn()}},
+        {provide: MatDialog, useValue: {open: vi.fn()}},
+        {provide: Store, useValue: {select: vi.fn().mockReturnValue(of(userId == null ? null : {id: userId}))}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
-    });
+    }).overrideComponent(ComplianceReportPageComponent, {set: {imports: [CommonModule, TranslateModule, MatButtonToggleModule], schemas: [NO_ERRORS_SCHEMA]}});
     return state;
   }
 
@@ -212,8 +215,8 @@ describe('ComplianceReportPageComponent — remembered period on entry', () => {
     );
     const state = create(USER_ID);
     // Both spies call through; only the order is observed.
-    const restore = jest.spyOn(state, 'restoreSavedPeriod');
-    const enter = jest.spyOn(state, 'enterPage');
+    const restore = vi.spyOn(state, 'restoreSavedPeriod');
+    const enter = vi.spyOn(state, 'enterPage');
 
     const fixture = TestBed.createComponent(ComplianceReportPageComponent);
     fixture.detectChanges();

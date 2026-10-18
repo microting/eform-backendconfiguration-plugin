@@ -1,3 +1,4 @@
+import {describe, it, expect} from 'vitest';
 import {TailBiteLocationNode, TailBiteOutbreakSummary} from '../../../../models';
 import {outbreakRows} from './tail-bite-outbreak-rows';
 

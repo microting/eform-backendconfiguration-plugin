@@ -1,3 +1,4 @@
+import {describe, it, expect, vi} from 'vitest';
 import {ActivatedRouteSnapshot, RouterStateSnapshot} from '@angular/router';
 import {Observable, of} from 'rxjs';
 import {chemicalUnsavedChangesGuard, confirmDiscardOf, confirmDiscardWhenDirty, warnBeforeUnload} from './chemicals-unsaved-changes';
@@ -17,7 +18,7 @@ describe('Kemi unsaved-changes guard (I-3)', () => {
   });
 
   it('asks a screen that can hold unsaved changes', () => {
-    const screen = {confirmDiscardChanges: jest.fn().mockReturnValue(of(false))};
+    const screen = {confirmDiscardChanges: vi.fn().mockReturnValue(of(false))};
 
     expect(answer(runGuard(screen))).toEqual([false]);
     expect(screen.confirmDiscardChanges).toHaveBeenCalledTimes(1);
@@ -25,14 +26,14 @@ describe('Kemi unsaved-changes guard (I-3)', () => {
 
   describe('confirmDiscardWhenDirty', () => {
     it('keeps the user on the page while a request is in flight, without asking', () => {
-      const ask = jest.fn().mockReturnValue(of(true));
+      const ask = vi.fn().mockReturnValue(of(true));
 
       expect(answer(confirmDiscardWhenDirty(true, true, ask))).toEqual([false]);
       expect(ask).not.toHaveBeenCalled();
     });
 
     it('lets go at once when nothing is unsaved', () => {
-      const ask = jest.fn().mockReturnValue(of(false));
+      const ask = vi.fn().mockReturnValue(of(false));
 
       expect(answer(confirmDiscardWhenDirty(false, false, ask))).toEqual([true]);
       expect(ask).not.toHaveBeenCalled();
@@ -45,7 +46,7 @@ describe('Kemi unsaved-changes guard (I-3)', () => {
   });
 
   describe('warnBeforeUnload', () => {
-    const eventOf = () => ({preventDefault: jest.fn(), returnValue: undefined as unknown});
+    const eventOf = () => ({preventDefault: vi.fn(), returnValue: undefined as unknown});
 
     it('asks the browser to confirm only while edits are unsaved', () => {
       const clean = eventOf();

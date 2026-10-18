@@ -17,15 +17,21 @@ import {
   PoolHourModel,
 } from '../../../../models';
 import * as R from 'ramda';
-import {TranslateService} from '@ngx-translate/core';
-import {MtxGridCellTemplate, MtxGridColumn} from '@ng-matero/extensions/grid';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
+import {MtxGridCellTemplate, MtxGridColumn, MtxGrid} from '@ng-matero/extensions/grid';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
+import {NgIf, NgFor} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {MatCheckbox} from '@angular/material/checkbox';
 
 @Component({
     selector: 'app-area-rule-edit-modal',
+    imports: [NgIf, NgFor, FormsModule, TranslatePipe, MatFormField, MatLabel, MatInput, MtxSelect, MtxGrid, MatDialogTitle, MatDialogContent, MatDialogActions, MatCheckbox],
     templateUrl: './area-rule-edit-modal.component.html',
     styleUrls: ['./area-rule-edit-modal.component.scss'],
-    standalone: false
 })
 export class AreaRuleEditModalComponent implements OnInit {
   private eFormService = inject(EFormService);

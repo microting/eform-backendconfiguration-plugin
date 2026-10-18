@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
@@ -8,12 +10,6 @@ import {BehaviorSubject, NEVER, Subject, of, throwError} from 'rxjs';
 import {ToastrService} from 'ngx-toastr';
 import {BackendConfigurationPnTailBiteService} from '../../../../services';
 import {TailBiteLocationsPageComponent} from './tail-bite-locations-page.component';
-import {buildQrSheetPdf} from './tail-bite-qr-pdf';
-
-jest.mock('./tail-bite-qr-pdf', () => ({
-  ...jest.requireActual('./tail-bite-qr-pdf'),
-  buildQrSheetPdf: jest.fn(),
-}));
 
 describe('TailBiteLocationsPageComponent', () => {
   const tree = {propertyId: 3, treeVersion: 1, actionTypes: [], locations: [
@@ -21,25 +17,25 @@ describe('TailBiteLocationsPageComponent', () => {
     {id: 2, parentId: 1, name: 'Stald A', depth: 1, sortOrder: 0, qrCode: 'qb', removed: false},
     {id: 3, parentId: 2, name: 'Sektion 4', depth: 2, sortOrder: 0, qrCode: 'qc', removed: false},
   ]};
-  let service: Record<string, jest.Mock>;
-  let dialogOpen: jest.Mock;
+  let service: Record<string, Mock>;
+  let dialogOpen: Mock;
   let component: TailBiteLocationsPageComponent;
   let params: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
-  let toastr: {error: jest.Mock};
-  const ok = () => jest.fn().mockReturnValue(of({success: true}));
+  let toastr: {error: Mock};
+  const ok = () => vi.fn().mockReturnValue(of({success: true}));
 
   beforeEach(() => {
     params = new BehaviorSubject(convertToParamMap({propertyId: '3'}));
-    toastr = {error: jest.fn()};
+    toastr = {error: vi.fn()};
     service = {
-      getTree: jest.fn().mockReturnValue(of({success: true, model: tree})),
-      getRules: jest.fn().mockReturnValue(of({success: true, model: [
+      getTree: vi.fn().mockReturnValue(of({success: true, model: tree})),
+      getRules: vi.fn().mockReturnValue(of({success: true, model: [
         {id: 9, locationId: 1, minBittenPigs: 5, minSevere: 1, windowDays: 7, countDepth: 1, version: 1, updatedAt: null}]})),
-      getOccupancy: jest.fn().mockReturnValue(of({success: true, model: [
+      getOccupancy: vi.fn().mockReturnValue(of({success: true, model: [
         {locationId: 3, pigCount: 360, source: 0, validFrom: '2026-09-15T00:00:00Z'}]})),
       createLocation: ok(), renameLocation: ok(), moveLocation: ok(), deleteLocation: ok(), createPenRange: ok(), setOccupancy: ok(),
     };
-    dialogOpen = jest.fn();
+    dialogOpen = vi.fn();
     TestBed.configureTestingModule({
       providers: [
         {provide: BackendConfigurationPnTailBiteService, useValue: service},
@@ -62,13 +58,13 @@ describe('TailBiteLocationsPageComponent', () => {
   const textDialog = () => {
     const saved = new Subject<string>();
     const closed = new Subject<void>();
-    const close = jest.fn(() => closed.next());
+    const close = vi.fn(() => closed.next());
     dialogOpen.mockReturnValueOnce({componentInstance: {saved}, close, afterClosed: () => closed});
     return {save: (text: string) => saved.next(text), cancel: () => closed.next(), close};
   };
   const confirmDialog = () => {
     const clicks = new EventEmitter<unknown>();
-    dialogOpen.mockReturnValueOnce({componentInstance: {delete: clicks}, close: jest.fn(), afterClosed: () => NEVER});
+    dialogOpen.mockReturnValueOnce({componentInstance: {delete: clicks}, close: vi.fn(), afterClosed: () => NEVER});
     return () => clicks.emit({});
   };
 
@@ -238,30 +234,32 @@ describe('TailBiteLocationsPageComponent', () => {
 
   describe('printing QR labels', () => {
     let clicked: string[];
+    let buildQrSheetPdf: Mock;
     beforeEach(() => {
       clicked = [];
-      (buildQrSheetPdf as jest.Mock).mockReset().mockResolvedValue(new Uint8Array([1]));
-      (URL as unknown as Record<string, unknown>)['createObjectURL'] = jest.fn().mockReturnValue('blob:x');
-      (URL as unknown as Record<string, unknown>)['revokeObjectURL'] = jest.fn();
-      jest.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      buildQrSheetPdf = vi.fn().mockResolvedValue(new Uint8Array([1]));
+      component.buildQrSheet = buildQrSheetPdf;
+      (URL as unknown as Record<string, unknown>)['createObjectURL'] = vi.fn().mockReturnValue('blob:x');
+      (URL as unknown as Record<string, unknown>)['revokeObjectURL'] = vi.fn();
+      vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
         clicked.push(this.download);
       });
     });
-    afterEach(() => jest.restoreAllMocks());
+    afterEach(() => vi.restoreAllMocks());
 
     it('leaves removed nodes out and names the file after today', async () => {
       component.tree = {...tree, locations: tree.locations.map((l) => (l.id === 3 ? {...l, removed: true} : l))};
       component.rows = component.rows.map((r) => (r.node.id === 3 ? {...r, node: {...r.node, removed: true}} : r));
       component.setAllChecked(true);
       await component.printQr();
-      const labels = (buildQrSheetPdf as jest.Mock).mock.calls[0][0] as {title: string}[];
+      const labels = buildQrSheetPdf.mock.calls[0][0] as {title: string}[];
       expect(labels.map((l) => l.title).join('|')).not.toContain('Sektion 4');
       expect(clicked[0]).toMatch(/^halebid-qr-\d{4}-\d{2}-\d{2}\.pdf$/);
       expect(component.busy).toBe(false);
     });
 
     it('shows an error toast and frees the page when the sheet cannot be built', async () => {
-      (buildQrSheetPdf as jest.Mock).mockRejectedValue(new Error('boom'));
+      buildQrSheetPdf.mockRejectedValue(new Error('boom'));
       component.setChecked(2, true);
       await component.printQr();
       expect(toastr.error).toHaveBeenCalledWith('Could not create the QR sheet');

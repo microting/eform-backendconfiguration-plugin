@@ -18,8 +18,8 @@ import {
 } from '../../../../services';
 import {Subscription, zip} from 'rxjs';
 import {Sort} from '@angular/material/sort';
-import {MtxGridColumn} from '@ng-matero/extensions/grid';
-import {TranslateService} from '@ngx-translate/core';
+import {MtxGridColumn, MtxGrid} from '@ng-matero/extensions/grid';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {MatDialog, MatDialogRef, MatDialogState} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper, findFullNameById} from 'src/app/common/helpers';
@@ -36,12 +36,14 @@ import {
 import {PlanningTagsComponent} from 'src/app/plugins/modules/items-planning-pn/modules/plannings/components';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
 import {AppSettingsStateService} from 'src/app/modules/application-settings/components/store';
+import {AsyncPipe} from '@angular/common';
+import {EformNewSubheaderComponent} from 'src/app/common/modules/eform-shared/components';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-property-worker-assignments-page',
+    imports: [AsyncPipe, TranslatePipe, MtxGrid, EformNewSubheaderComponent],
     templateUrl: './task-worker-assignments-page.component.html',
-    standalone: false
 })
 export class TaskWorkerAssignmentsPageComponent implements OnInit, OnDestroy {
   private store = inject(Store);

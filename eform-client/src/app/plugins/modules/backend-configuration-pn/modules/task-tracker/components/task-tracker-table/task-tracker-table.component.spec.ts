@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {ElementRef} from '@angular/core';
 import {TestBed} from '@angular/core/testing';
 import {Overlay} from '@angular/cdk/overlay';
@@ -24,7 +26,7 @@ import {TaskTrackerTableComponent} from './task-tracker-table.component';
  */
 describe('TaskTrackerTableComponent — Delete Case gate (#1300)', () => {
   let component: TaskTrackerTableComponent;
-  let dialogOpen: jest.Mock;
+  let dialogOpen: Mock;
   let isAdmin: boolean;
 
   const task = (storedUtc: string, overrides: Partial<TaskModel> = {}): TaskModel =>
@@ -38,20 +40,20 @@ describe('TaskTrackerTableComponent — Delete Case gate (#1300)', () => {
     }) as unknown as TaskModel;
 
   beforeEach(() => {
-    jest.useFakeTimers();
-    jest.setSystemTime(new Date('2026-09-18T10:00:00Z'));
-    dialogOpen = jest.fn(() => ({afterClosed: () => of(false)}));
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-18T10:00:00Z'));
+    dialogOpen = vi.fn(() => ({afterClosed: () => of(false)}));
     isAdmin = true;
 
     TestBed.configureTestingModule({
       providers: [
         {provide: MatDialog, useValue: {open: dialogOpen}},
-        {provide: Overlay, useValue: {scrollStrategies: {reposition: jest.fn()}}},
-        {provide: Store, useValue: {select: jest.fn((selector: unknown) => of(selector === selectCurrentUserIsAdmin ? isAdmin : false))}},
-        {provide: TranslateService, useValue: {stream: jest.fn(() => of('')), instant: jest.fn((k: string) => k)}},
+        {provide: Overlay, useValue: {scrollStrategies: {reposition: vi.fn()}}},
+        {provide: Store, useValue: {select: vi.fn((selector: unknown) => of(selector === selectCurrentUserIsAdmin ? isAdmin : false))}},
+        {provide: TranslateService, useValue: {stream: vi.fn(() => of('')), instant: vi.fn((k: string) => k)}},
         {provide: TaskTrackerStateService, useValue: {}},
         {provide: ActivatedRoute, useValue: {}},
-        {provide: Router, useValue: {navigate: jest.fn()}},
+        {provide: Router, useValue: {navigate: vi.fn()}},
         {provide: ElementRef, useValue: new ElementRef(document.createElement('div'))},
       ],
     });
@@ -59,7 +61,7 @@ describe('TaskTrackerTableComponent — Delete Case gate (#1300)', () => {
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it.each([
@@ -73,9 +75,9 @@ describe('TaskTrackerTableComponent — Delete Case gate (#1300)', () => {
 
   it('flips at Copenhagen midnight (CEST), not UTC midnight', () => {
     const storedTomorrow = task('2026-09-19T00:00:00Z');
-    jest.setSystemTime(new Date('2026-09-18T21:59:00Z')); // 23:59 local
+    vi.setSystemTime(new Date('2026-09-18T21:59:00Z')); // 23:59 local
     expect(component.canDeleteTask(storedTomorrow)).toBe(false);
-    jest.setSystemTime(new Date('2026-09-18T22:00:00Z')); // 00:00 local on the 19th
+    vi.setSystemTime(new Date('2026-09-18T22:00:00Z')); // 00:00 local on the 19th
     expect(component.canDeleteTask(storedTomorrow)).toBe(true);
   });
 

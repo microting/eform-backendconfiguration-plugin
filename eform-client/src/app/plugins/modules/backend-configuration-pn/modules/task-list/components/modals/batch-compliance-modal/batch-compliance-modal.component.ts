@@ -1,7 +1,11 @@
 import {Component, Inject} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {BackendConfigurationPnTaskListService} from '../../../../../services';
 import {TaskListBatchModalData} from '../../task-list-page/task-list-page.component';
+import {NgFor} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatRadioGroup, MatRadioButton} from '@angular/material/radio';
 
 /**
  * Batch "set compliance" modal — flips `ComplianceEnabled` on every selected
@@ -25,8 +29,8 @@ import {TaskListBatchModalData} from '../../task-list-page/task-list-page.compon
  * batch modals' `get valid()` / `[disabled]="!valid"` idiom.
  */
 @Component({
-  standalone: false,
   selector: 'app-batch-compliance-modal',
+  imports: [NgFor, FormsModule, TranslatePipe, MatDialogTitle, MatDialogContent, MatDialogActions, MatRadioGroup, MatRadioButton],
   templateUrl: './batch-compliance-modal.component.html',
 })
 export class BatchComplianceModalComponent {

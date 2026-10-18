@@ -6,15 +6,24 @@ import {BackendConfigurationPnDocumentsService} from '../../../../../services';
 import {Subscription} from 'rxjs';
 import {TemplateFilesService} from 'src/app/common/services';
 import {applicationLanguages2, PdfIcon} from 'src/app/common/const';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
-import {MatIconRegistry} from '@angular/material/icon';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
+import {MatIconRegistry, MatIcon} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
+import {NgIf, NgFor} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatIconButton} from '@angular/material/button';
+import {MatCard, MatCardContent, MatCardTitle} from '@angular/material/card';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MatTooltip} from '@angular/material/tooltip';
+import {FormattingTextEditorComponent} from 'src/app/common/modules/eform-imported/formatting-text-editor/formatting-text-editor.component';
 
 @Component({
     selector: 'app-documents-document-delete',
+    imports: [NgIf, NgFor, FormsModule, TranslatePipe, MatIcon, MatIconButton, MatCard, MatCardContent, MatCardTitle, MatFormField, MatLabel, MatInput, MatTooltip, MatDialogTitle, MatDialogContent, MatDialogActions, FormattingTextEditorComponent],
     templateUrl: './documents-document-delete.component.html',
     styleUrls: ['./documents-document-delete.component.scss'],
-    standalone: false
 })
 export class DocumentsDocumentDeleteComponent implements OnInit {
   private templateFilesService = inject(TemplateFilesService);

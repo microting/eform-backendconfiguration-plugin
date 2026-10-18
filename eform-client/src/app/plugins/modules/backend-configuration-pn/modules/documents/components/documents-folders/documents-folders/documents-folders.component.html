@@ -9,8 +9,8 @@
   </button>
 
   <div class="d-flex flex-column">
-    <div class="d-flex flex-row tag-row align-items-center" *ngFor="let folder of folders.entities">
-      <div id="tagName">
+    <div class="d-flex flex-row tag-row align-items-center" *ngFor="let folder of folders.entities; let i = index">
+      <div id="tagName{{i}}">
         {{getFolderTranslation(folder) }}
       </div>
       <div class="spacer"></div>
@@ -18,7 +18,7 @@
         <button
           mat-icon-button
           (click)="showEditFolderModal(folder)"
-          id="editTagBtn"
+          id="editTagBtn{{i}}"
           matTooltip="{{'Edit folder' | translate}}"
         >
           <mat-icon fontSet="material-symbols-outlined">edit_square</mat-icon>
@@ -27,7 +27,7 @@
           [disabled]="!folder.isDeletable"
           mat-icon-button
           (click)="showDeleteFolderModal(folder)"
-          id="deleteFolderBtn"
+          id="deleteFolderBtn{{i}}"
           matTooltip="{{'Delete folder' | translate}}"
         >
           <mat-icon>delete</mat-icon>

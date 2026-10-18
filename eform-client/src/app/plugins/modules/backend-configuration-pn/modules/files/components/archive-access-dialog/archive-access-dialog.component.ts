@@ -1,9 +1,14 @@
 import {Component, inject} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
-import {TranslateService} from '@ngx-translate/core';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {ArchiveNamedItem} from '../../../../models';
 import {accessGroupItems, groupNames} from '../../../../helpers';
+import {NgIf} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {MatRadioGroup, MatRadioButton} from '@angular/material/radio';
 
 export interface ArchiveAccessDialogData {
   /** 'folder': the folder's own groups; 'files' (bulk, open with `ownAccess: false`): inherit or own groups. */
@@ -30,8 +35,8 @@ export interface ArchiveAccessDialogResult {
 /** Læseadgang (admin only). No groups = everyone with archive access. */
 @Component({
   selector: 'app-archive-access-dialog',
+  imports: [NgIf, FormsModule, TranslatePipe, MatFormField, MatLabel, MtxSelect, MatDialogTitle, MatDialogContent, MatDialogActions, MatRadioGroup, MatRadioButton],
   templateUrl: './archive-access-dialog.component.html',
-  standalone: false,
 })
 export class ArchiveAccessDialogComponent {
   readonly data: ArchiveAccessDialogData = inject(MAT_DIALOG_DATA);

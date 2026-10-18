@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {Overlay} from '@angular/cdk/overlay';
 import {EventEmitter} from '@angular/core';
 import {TestBed} from '@angular/core/testing';
@@ -9,8 +11,8 @@ import {BackendConfigurationPnTailBiteService} from '../../../../services';
 import {TailBiteActionTypesPageComponent} from './tail-bite-action-types-page.component';
 
 describe('TailBiteActionTypesPageComponent', () => {
-  let service: Record<string, jest.Mock>;
-  let dialogOpen: jest.Mock;
+  let service: Record<string, Mock>;
+  let dialogOpen: Mock;
   let params: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
   let component: TailBiteActionTypesPageComponent;
 
@@ -18,12 +20,12 @@ describe('TailBiteActionTypesPageComponent', () => {
 
   beforeEach(() => {
     service = {
-      getActionTypes: jest.fn().mockReturnValue(of(listOf('Halm'))),
-      createActionType: jest.fn().mockReturnValue(of({success: true, model: 7})),
-      renameActionType: jest.fn().mockReturnValue(of({success: true})),
-      deleteActionType: jest.fn().mockReturnValue(of({success: true})),
+      getActionTypes: vi.fn().mockReturnValue(of(listOf('Halm'))),
+      createActionType: vi.fn().mockReturnValue(of({success: true, model: 7})),
+      renameActionType: vi.fn().mockReturnValue(of({success: true})),
+      deleteActionType: vi.fn().mockReturnValue(of({success: true})),
     };
-    dialogOpen = jest.fn();
+    dialogOpen = vi.fn();
     params = new BehaviorSubject(convertToParamMap({propertyId: '3'}));
     TestBed.configureTestingModule({
       providers: [
@@ -42,7 +44,7 @@ describe('TailBiteActionTypesPageComponent', () => {
 
   const openDeleteDialog = () => {
     const confirmed = new EventEmitter<unknown>();
-    const close = jest.fn();
+    const close = vi.fn();
     dialogOpen.mockReturnValueOnce({componentInstance: {delete: confirmed}, close, afterClosed: () => NEVER});
     component.remove(component.actionTypes[0]);
     return {confirmed, close};
@@ -124,7 +126,7 @@ describe('TailBiteActionTypesPageComponent', () => {
   const textDialog = () => {
     const saved = new Subject<string>();
     const closed = new Subject<void>();
-    const close = jest.fn(() => closed.next());
+    const close = vi.fn(() => closed.next());
     dialogOpen.mockReturnValueOnce({componentInstance: {saved}, close, afterClosed: () => closed});
     return {save: (text: string) => saved.next(text), cancel: () => closed.next(), close};
   };

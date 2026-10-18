@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {Overlay} from '@angular/cdk/overlay';
 import {DestroyRef, EventEmitter, Injector, runInInjectionContext} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
@@ -10,8 +12,8 @@ import {ChemicalSettingsPageComponent} from './chemical-settings-page.component'
 
 describe('ChemicalSettingsPageComponent', () => {
   let property$: BehaviorSubject<number | null>;
-  let chemicals: {getSettings: jest.Mock; saveSettings: jest.Mock; getDigestPreview: jest.Mock};
-  let dialogOpen: jest.Mock;
+  let chemicals: {getSettings: Mock; saveSettings: Mock; getDigestPreview: Mock};
+  let dialogOpen: Mock;
   let component: ChemicalSettingsPageComponent;
   const item = (name: string, deadline: string | null = null) => ({
     placementId: 1, chemicalId: 2, productName: name, registrationNo: '1-1', locationName: 'Lade', placementNote: '',
@@ -27,7 +29,7 @@ describe('ChemicalSettingsPageComponent', () => {
   function mockConfirmDialog() {
     const confirmed = new EventEmitter<unknown>();
     const closed = new Subject<unknown>();
-    const ref = {componentInstance: {delete: confirmed}, close: jest.fn(), afterClosed: () => closed};
+    const ref = {componentInstance: {delete: confirmed}, close: vi.fn(), afterClosed: () => closed};
     dialogOpen.mockReturnValue(ref);
     return {confirmed, closed, ref};
   }
@@ -36,9 +38,9 @@ describe('ChemicalSettingsPageComponent', () => {
   function build(): ChemicalSettingsPageComponent {
     const injector = Injector.create({
       providers: [
-        {provide: Store, useValue: {select: jest.fn().mockReturnValue(property$)}},
+        {provide: Store, useValue: {select: vi.fn().mockReturnValue(property$)}},
         {provide: BackendConfigurationPnChemicalsService, useValue: chemicals},
-        {provide: DestroyRef, useValue: {onDestroy: jest.fn()}},
+        {provide: DestroyRef, useValue: {onDestroy: vi.fn()}},
         {provide: MatDialog, useValue: {open: dialogOpen}},
         {provide: Overlay, useValue: {scrollStrategies: {reposition: () => ({})}}},
         {provide: TranslateService, useValue: {instant: (key: string) => key}},
@@ -51,11 +53,11 @@ describe('ChemicalSettingsPageComponent', () => {
 
   beforeEach(() => {
     property$ = new BehaviorSubject<number | null>(3);
-    dialogOpen = jest.fn();
+    dialogOpen = vi.fn();
     chemicals = {
-      getSettings: jest.fn().mockReturnValue(of({success: true, model: {propertyId: 3, stockEnabled: false, digestRecipients: ['first@example.com']}})),
-      saveSettings: jest.fn().mockReturnValue(of({success: true, model: {propertyId: 3, stockEnabled: true, digestRecipients: ['first@example.com', 'second@example.com']}})),
-      getDigestPreview: jest.fn().mockReturnValue(of({success: true, model: preview})),
+      getSettings: vi.fn().mockReturnValue(of({success: true, model: {propertyId: 3, stockEnabled: false, digestRecipients: ['first@example.com']}})),
+      saveSettings: vi.fn().mockReturnValue(of({success: true, model: {propertyId: 3, stockEnabled: true, digestRecipients: ['first@example.com', 'second@example.com']}})),
+      getDigestPreview: vi.fn().mockReturnValue(of({success: true, model: preview})),
     };
     component = build();
   });
@@ -353,12 +355,12 @@ describe('ChemicalSettingsPageComponent', () => {
     });
 
     it('asks the browser to confirm a reload or tab close while edits are unsaved', () => {
-      const clean = {preventDefault: jest.fn(), returnValue: undefined as unknown};
+      const clean = {preventDefault: vi.fn(), returnValue: undefined as unknown};
       component.onBeforeUnload(clean as unknown as BeforeUnloadEvent);
       expect(clean.preventDefault).not.toHaveBeenCalled();
 
       component.onStockToggle(true);
-      const dirty = {preventDefault: jest.fn(), returnValue: undefined as unknown};
+      const dirty = {preventDefault: vi.fn(), returnValue: undefined as unknown};
       component.onBeforeUnload(dirty as unknown as BeforeUnloadEvent);
 
       expect(dirty.preventDefault).toHaveBeenCalled();
@@ -383,7 +385,7 @@ describe('ChemicalSettingsPageComponent', () => {
       component.recipientInput = 'second@exa';
       expect(component.dirty).toBe(true);
 
-      const event = {preventDefault: jest.fn(), returnValue: undefined as unknown};
+      const event = {preventDefault: vi.fn(), returnValue: undefined as unknown};
       component.onBeforeUnload(event as unknown as BeforeUnloadEvent);
       expect(event.preventDefault).toHaveBeenCalled();
 

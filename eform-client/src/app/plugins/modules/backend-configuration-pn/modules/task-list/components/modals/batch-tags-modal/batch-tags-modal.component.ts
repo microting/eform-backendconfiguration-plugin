@@ -1,15 +1,20 @@
 import {Component, Inject} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {BackendConfigurationPnTaskListService} from '../../../../../services';
 import {TaskListBatchModalData} from '../../task-list-page/task-list-page.component';
+import {NgFor} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MtxSelect} from '@ng-matero/extensions/select';
 
 // Covers both addTags and removeTags — same multi-select shape, different
 // vocabulary (data.tags is the full tag list for add, the union of tags
 // already present on the selected rows for remove — the page precomputes
 // this) and a different service call on submit.
 @Component({
-  standalone: false,
   selector: 'app-batch-tags-modal',
+  imports: [NgFor, FormsModule, TranslatePipe, MatFormField, MatLabel, MtxSelect, MatDialogTitle, MatDialogContent, MatDialogActions],
   templateUrl: './batch-tags-modal.component.html',
 })
 export class BatchTagsModalComponent {

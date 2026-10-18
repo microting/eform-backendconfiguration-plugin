@@ -1,3 +1,4 @@
+import {describe, it, expect} from 'vitest';
 import {da} from '../../i18n/da';
 import {deDE} from '../../i18n/deDE';
 import {enUS} from '../../i18n/enUS';

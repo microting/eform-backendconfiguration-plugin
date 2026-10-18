@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {of, throwError} from 'rxjs';
 import {CalendarTaskModel} from '../../../../../models/calendar';
 import {TaskListBatchModalData} from '../../task-list-page/task-list-page.component';
@@ -15,11 +17,11 @@ describe('BatchReportHeadlineModalComponent', () => {
   ];
   const task = (id: number) => ({id, title: `T${id}`, tags: []} as unknown as CalendarTaskModel);
 
-  let dialogRef: {close: jest.Mock};
-  let taskListService: {changeReportHeadline: jest.Mock};
-  let tagsService: {createPlanningTag: jest.Mock};
-  let toastr: {error: jest.Mock};
-  let translate: {instant: jest.Mock};
+  let dialogRef: {close: Mock};
+  let taskListService: {changeReportHeadline: Mock};
+  let tagsService: {createPlanningTag: Mock};
+  let toastr: {error: Mock};
+  let translate: {instant: Mock};
 
   const build = (selectedTasks: CalendarTaskModel[] = [task(1), task(2)]) => {
     const data: TaskListBatchModalData = {mode: 'changeReportHeadline', selectedTasks, tags};
@@ -28,14 +30,14 @@ describe('BatchReportHeadlineModalComponent', () => {
   };
 
   beforeEach(() => {
-    dialogRef = {close: jest.fn()};
-    taskListService = {changeReportHeadline: jest.fn().mockReturnValue(of({success: true}))};
+    dialogRef = {close: vi.fn()};
+    taskListService = {changeReportHeadline: vi.fn().mockReturnValue(of({success: true}))};
     tagsService = {
-      createPlanningTag: jest.fn().mockReturnValue(
+      createPlanningTag: vi.fn().mockReturnValue(
         of({success: true, model: {id: 9, name: 'New headline', description: '', isLocked: false}})),
     };
-    toastr = {error: jest.fn()};
-    translate = {instant: jest.fn((k: string) => k)};
+    toastr = {error: vi.fn()};
+    translate = {instant: vi.fn((k: string) => k)};
   });
 
   it('offers every headline it was given (headlines are global)', () => {

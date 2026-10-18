@@ -17,27 +17,27 @@ import {NgxChartsModule} from '@swimlane/ngx-charts';
 import {MatCardModule} from '@angular/material/card';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MtxSelectModule} from '@ng-matero/extensions/select';
+import {MatDialogModule} from '@angular/material/dialog';
 
 @NgModule({
-  declarations: [
-    StatisticsContainerComponent,
-    PlannedTaskDaysComponent,
-    AdHocTaskPrioritiesComponent,
-    DocumentUpdatedDaysComponent,
-    PlannedTaskWorkersComponent,
-    AdHocTaskWorkersComponent,
-  ],
   imports: [
     CommonModule,
     TranslateModule,
     RouterModule,
     StatisticsRouting,
     EformSharedModule,
+    MatDialogModule,
     FormsModule,
     NgxChartsModule,
     MatCardModule,
     MatFormFieldModule,
     MtxSelectModule,
+    StatisticsContainerComponent,
+    PlannedTaskDaysComponent,
+    AdHocTaskPrioritiesComponent,
+    DocumentUpdatedDaysComponent,
+    PlannedTaskWorkersComponent,
+    AdHocTaskWorkersComponent,
   ],
   exports: [
     PlannedTaskDaysComponent,

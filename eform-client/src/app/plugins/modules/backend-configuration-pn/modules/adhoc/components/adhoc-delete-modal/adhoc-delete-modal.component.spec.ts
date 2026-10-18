@@ -1,3 +1,4 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {of} from 'rxjs';
 import {AdhocDeleteModalComponent} from './adhoc-delete-modal.component';
 
@@ -7,8 +8,8 @@ describe('AdhocDeleteModalComponent', () => {
   let component: AdhocDeleteModalComponent;
 
   beforeEach(() => {
-    dialogRefSpy = {close: jest.fn()};
-    adhocServiceSpy = {deleteTask: jest.fn()};
+    dialogRefSpy = {close: vi.fn()};
+    adhocServiceSpy = {deleteTask: vi.fn()};
     component = new AdhocDeleteModalComponent(dialogRefSpy, {id: 7, title: 'Fix roof'}, adhocServiceSpy);
   });
 

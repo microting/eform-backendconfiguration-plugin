@@ -12,7 +12,6 @@ import {
 import {TaskTrackerRouting} from './task-tracker.routing';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
-import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
 import {MatButtonModule} from '@angular/material/button';
 import {MatTooltipModule} from '@angular/material/tooltip';
 import {MatIconModule} from '@angular/material/icon';
@@ -32,14 +31,6 @@ import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
 import {AppIconComponent} from "src/app/components/icons/app-icon/app-icon.component";
 
 @NgModule({
-  declarations: [
-    TaskTrackerContainerComponent,
-    TaskTrackerTableComponent,
-    TaskTrackerFiltersComponent,
-    TaskTrackerCreateShowModalComponent,
-    TaskTrackerShownColumnsComponent,
-    TaskTrackerSelectWorkerModalComponent
-  ],
     imports: [
         CommonModule,
         TranslateModule,
@@ -47,7 +38,6 @@ import {AppIconComponent} from "src/app/components/icons/app-icon/app-icon.compo
         TaskTrackerRouting,
         EformSharedModule,
         ReactiveFormsModule,
-        EformImportedModule,
         FormsModule,
         MatButtonModule,
         MatCheckboxModule,
@@ -68,6 +58,12 @@ import {AppIconComponent} from "src/app/components/icons/app-icon/app-icon.compo
         MatMenu,
         MatMenuItem,
         AppIconComponent,
+        TaskTrackerContainerComponent,
+        TaskTrackerTableComponent,
+        TaskTrackerFiltersComponent,
+        TaskTrackerCreateShowModalComponent,
+        TaskTrackerShownColumnsComponent,
+        TaskTrackerSelectWorkerModalComponent,
     ],
   providers: [],
 })

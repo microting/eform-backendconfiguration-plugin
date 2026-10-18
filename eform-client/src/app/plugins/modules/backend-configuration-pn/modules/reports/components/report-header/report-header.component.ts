@@ -7,25 +7,31 @@ import {
   OnDestroy,
   inject
 } from '@angular/core';
-import {FormControl, FormGroup, Validators} from '@angular/forms';
+import {FormControl, FormGroup, Validators, ReactiveFormsModule} from '@angular/forms';
 import {ReportPnGenerateModel} from '../../../../models';
 import {SharedTagModel} from 'src/app/common/models';
 import {ReportStateService} from '../store';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
-import {MatIconRegistry} from '@angular/material/icon';
+import {MatIconRegistry, MatIcon} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
 import {ExcelIcon, PARSING_DATE_FORMAT, WordIcon, PdfIcon} from 'src/app/common/const';
 import {format, parse} from 'date-fns';
 import {AppMenuStateService} from 'src/app/common/store';
 import {Router} from '@angular/router';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatCard} from '@angular/material/card';
+import {MatFormField, MatLabel, MatPrefix} from '@angular/material/form-field';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {MatTooltip} from '@angular/material/tooltip';
+import {MatDatepickerToggle, MatDateRangeInput, MatDateRangePicker, MatStartDate, MatEndDate} from '@angular/material/datepicker';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-backend-pn-report-header',
+    imports: [ReactiveFormsModule, TranslatePipe, MatIcon, MatCard, MatFormField, MatLabel, MatPrefix, MtxSelect, MatTooltip, MatDatepickerToggle, MatDateRangeInput, MatDateRangePicker, MatStartDate, MatEndDate],
     templateUrl: './report-header.component.html',
     styleUrls: ['./report-header.component.scss'],
-    standalone: false
 })
 // REPORTS V2
 export class ReportHeaderComponent implements OnInit, OnDestroy {
