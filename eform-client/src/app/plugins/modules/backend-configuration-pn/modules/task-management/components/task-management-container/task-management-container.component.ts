@@ -25,13 +25,22 @@ import {
   selectTaskManagementPropertyId,
   selectTaskManagementPropertyIdIsNullOrUndefined
 } from '../../../../state/task-management/task-management.selector';
+import {NgIf, AsyncPipe} from '@angular/common';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatIcon} from '@angular/material/icon';
+import {MatCard} from '@angular/material/card';
+import {MatTooltip} from '@angular/material/tooltip';
+import {AdHocTaskPrioritiesComponent} from '../../../statistics/components/ad-hoc-task-priorities/ad-hoc-task-priorities.component';
+import {AdHocTaskWorkersComponent} from '../../../statistics/components/ad-hoc-task-workers/ad-hoc-task-workers.component';
+import {TaskManagementTableComponent} from '../task-management-table/task-management-table.component';
+import {TaskManagementFiltersComponent} from '../task-management-filters/task-management-filters.component';
 
 @AutoUnsubscribe()
 @Component({
   selector: 'app-task-management-container',
+  imports: [NgIf, AsyncPipe, TranslatePipe, MatIcon, MatCard, MatTooltip, AdHocTaskPrioritiesComponent, AdHocTaskWorkersComponent, TaskManagementTableComponent, TaskManagementFiltersComponent],
   templateUrl: './task-management-container.component.html',
   styleUrls: ['./task-management-container.component.scss'],
-  standalone: false
 })
 export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   private store = inject(Store);

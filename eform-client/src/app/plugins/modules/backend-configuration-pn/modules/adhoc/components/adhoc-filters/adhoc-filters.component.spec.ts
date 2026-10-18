@@ -1,3 +1,4 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {of} from 'rxjs';
 import {AdhocFiltersComponent} from './adhoc-filters.component';
 import {adhocInitialState} from '../../../../state';
@@ -23,22 +24,22 @@ describe('AdhocFiltersComponent', () => {
         {id: 10, name: 'Vedligehold', isUserTag: false},
         {id: 11, name: 'Sikkerhed', isUserTag: false},
       ],
-      updateFilters: jest.fn().mockImplementation((partial: any) => {
+      updateFilters: vi.fn().mockImplementation((partial: any) => {
         adhocStateServiceSpy.currentFilters = {...adhocStateServiceSpy.currentFilters, ...partial};
       }),
-      getAreasForProperty: jest.fn().mockReturnValue(of([{id: 100, propertyId: 1, name: 'Stald 1'}])),
-      loadTags: jest.fn().mockReturnValue(of([])),
+      getAreasForProperty: vi.fn().mockReturnValue(of([{id: 100, propertyId: 1, name: 'Stald 1'}])),
+      loadTags: vi.fn().mockReturnValue(of([])),
     };
     adhocServiceSpy = {
-      createTag: jest.fn().mockReturnValue(of({success: true, model: {id: 12, name: 'Ny', isUserTag: false}})),
-      deleteTag: jest.fn().mockReturnValue(of({success: true})),
+      createTag: vi.fn().mockReturnValue(of({success: true, model: {id: 12, name: 'Ny', isUserTag: false}})),
+      deleteTag: vi.fn().mockReturnValue(of({success: true})),
     };
     translateSpy = {instant: (key: string) => key};
     elementRefSpy = {nativeElement: {contains: () => true}};
-    dialogSpy = {open: jest.fn()};
+    dialogSpy = {open: vi.fn()};
     // dialogConfigHelper reads overlay.scrollStrategies.reposition() — a bare
     // {} makes every dialog-opening action throw before dialog.open is hit.
-    overlaySpy = {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}};
+    overlaySpy = {scrollStrategies: {reposition: vi.fn().mockReturnValue({})}};
 
     component = new AdhocFiltersComponent(adhocStateServiceSpy, adhocServiceSpy, translateSpy, elementRefSpy, dialogSpy, overlaySpy);
   });
@@ -127,7 +128,7 @@ describe('AdhocFiltersComponent', () => {
 
     it('openAreaCreateModal opens with the selected property and reloads areas when changed', () => {
       adhocStateServiceSpy.currentFilters.propertyId = 1;
-      const afterClosedSpy = {afterClosed: jest.fn()};
+      const afterClosedSpy = {afterClosed: vi.fn()};
       afterClosedSpy.afterClosed.mockReturnValue(of(true));
       dialogSpy.open.mockReturnValue(afterClosedSpy);
 
@@ -148,7 +149,7 @@ describe('AdhocFiltersComponent', () => {
 
     it('openAreaAdminModal opens with the selected property and only reloads areas when something changed', () => {
       adhocStateServiceSpy.currentFilters.propertyId = 1;
-      const afterClosedSpy = {afterClosed: jest.fn()};
+      const afterClosedSpy = {afterClosed: vi.fn()};
       afterClosedSpy.afterClosed.mockReturnValue(of(false));
       dialogSpy.open.mockReturnValue(afterClosedSpy);
 

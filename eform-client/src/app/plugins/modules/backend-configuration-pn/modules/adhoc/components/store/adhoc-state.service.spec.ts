@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {of} from 'rxjs';
 import {AdhocStateService} from './adhoc-state.service';
 import {AdhocTaskStatusFilter} from '../../../../models';
@@ -16,7 +18,7 @@ import {
  */
 describe('AdhocStateService', () => {
   let service: AdhocStateService;
-  let storeSpy: {select: jest.Mock; dispatch: jest.Mock};
+  let storeSpy: {select: Mock; dispatch: Mock};
   let adhocServiceSpy: any;
 
   function buildService(): AdhocStateService {
@@ -33,7 +35,7 @@ describe('AdhocStateService', () => {
       // returns do not stringify to anything containing the selector name,
       // so toString()-based matching silently returns undefined for all
       // three slices.
-      select: jest.fn().mockImplementation((selector: any) => {
+      select: vi.fn().mockImplementation((selector: any) => {
         if (selector === selectAdhocFilters) {
           return of(adhocInitialState.filters);
         }
@@ -45,17 +47,17 @@ describe('AdhocStateService', () => {
         }
         return of(undefined);
       }),
-      dispatch: jest.fn(),
+      dispatch: vi.fn(),
     };
     adhocServiceSpy = {
-      getTasks: jest.fn(),
-      getProperties: jest.fn(),
-      getTags: jest.fn(),
-      getAreas: jest.fn(),
-      getWorkers: jest.fn(),
-      createAreas: jest.fn(),
-      renameArea: jest.fn(),
-      deleteArea: jest.fn(),
+      getTasks: vi.fn(),
+      getProperties: vi.fn(),
+      getTags: vi.fn(),
+      getAreas: vi.fn(),
+      getWorkers: vi.fn(),
+      createAreas: vi.fn(),
+      renameArea: vi.fn(),
+      deleteArea: vi.fn(),
     };
     service = buildService();
   });

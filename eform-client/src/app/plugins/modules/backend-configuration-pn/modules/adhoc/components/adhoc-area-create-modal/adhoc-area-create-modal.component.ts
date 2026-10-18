@@ -1,8 +1,13 @@
 import {Component, Inject, OnDestroy} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {AdhocStateService} from '../store';
+import {NgIf} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
 
 export interface AdhocAreaCreateModalData {
   propertyId: number;
@@ -20,9 +25,9 @@ export interface AdhocAreaCreateModalData {
 @AutoUnsubscribe()
 @Component({
   selector: 'app-adhoc-area-create-modal',
+  imports: [NgIf, FormsModule, TranslatePipe, MatFormField, MatLabel, MatInput, MatDialogTitle, MatDialogContent, MatDialogActions],
   templateUrl: './adhoc-area-create-modal.component.html',
   styleUrls: ['./adhoc-area-create-modal.component.scss'],
-  standalone: false,
 })
 export class AdhocAreaCreateModalComponent implements OnDestroy {
   namesText = '';

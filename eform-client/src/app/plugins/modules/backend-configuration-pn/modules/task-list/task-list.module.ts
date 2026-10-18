@@ -64,8 +64,6 @@ import {
     MtxGridModule,
     MtxSelectModule,
     CalendarModule,
-  ],
-  declarations: [
     TaskListPageComponent,
     TaskListFiltersComponent,
     TaskListTableComponent,
@@ -79,7 +77,7 @@ import {
     BatchStatusModalComponent,
     BatchDeleteModalComponent,
     BatchBoardModalComponent,
-  BatchReportHeadlineModalComponent,
+    BatchReportHeadlineModalComponent,
   ],
 })
 export class TaskListModule {}

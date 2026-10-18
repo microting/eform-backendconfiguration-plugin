@@ -1,3 +1,6 @@
+import {CommonModule} from '@angular/common';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
@@ -21,6 +24,7 @@ import {
 import {RepeatScopeModalComponent} from '../../../calendar/modals/repeat-scope-modal/repeat-scope-modal.component';
 import {CalendarTaskModel} from '../../../../models/calendar';
 import {TaskListPageComponent} from './task-list-page.component';
+import {detectChanges} from '../../../../testing/detect-changes';
 
 /**
  * #1302 — Opgaveliste for the eForm `user` role.
@@ -73,47 +77,46 @@ describe('TaskListPageComponent — #1302', () => {
 
   async function setup(isAdmin: boolean) {
     isAdmin$ = new BehaviorSubject<boolean>(isAdmin);
-    dialogStub = {open: jest.fn().mockReturnValue({afterClosed: () => of(false)})};
+    dialogStub = {open: vi.fn().mockReturnValue({afterClosed: () => of(false)})};
 
     await TestBed.configureTestingModule({
-      declarations: [TaskListPageComponent],
       imports: [TranslateModule.forRoot()],
       providers: [
         {provide: MatDialog, useValue: dialogStub},
-        {provide: Overlay, useValue: {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}}},
+        {provide: Overlay, useValue: {scrollStrategies: {reposition: vi.fn().mockReturnValue({})}}},
         {
           provide: BackendConfigurationPnCalendarService,
           useValue: {
-            getTasksIndex: jest.fn().mockReturnValue(of({success: true, model: []})),
-            getBoards: jest.fn().mockReturnValue(of({success: true, model: []})),
+            getTasksIndex: vi.fn().mockReturnValue(of({success: true, model: []})),
+            getBoards: vi.fn().mockReturnValue(of({success: true, model: []})),
           },
         },
         {
           provide: BackendConfigurationPnPropertiesService,
           useValue: {
-            getAllPropertiesDictionary: jest.fn().mockReturnValue(of({success: true, model: []})),
-            getDeviceUsersFiltered: jest.fn().mockReturnValue(of({success: true, model: []})),
-            getLinkedFolderDtos: jest.fn().mockReturnValue(of({success: true, model: []})),
+            getAllPropertiesDictionary: vi.fn().mockReturnValue(of({success: true, model: []})),
+            getDeviceUsersFiltered: vi.fn().mockReturnValue(of({success: true, model: []})),
+            getLinkedFolderDtos: vi.fn().mockReturnValue(of({success: true, model: []})),
           },
         },
         {
           provide: ItemsPlanningPnTagsService,
-          useValue: {getPlanningsTags: jest.fn().mockReturnValue(of({success: true, model: []}))},
+          useValue: {getPlanningsTags: vi.fn().mockReturnValue(of({success: true, model: []}))},
         },
         {
           provide: EFormService,
-          useValue: {getAll: jest.fn().mockReturnValue(of({success: true, model: {templates: []}}))},
+          useValue: {getAll: vi.fn().mockReturnValue(of({success: true, model: {templates: []}}))},
         },
         {
           provide: BackendConfigurationPnWorkerTagsService,
-          useValue: {getWorkerTags: jest.fn().mockReturnValue(of({success: true, model: []}))},
+          useValue: {getWorkerTags: vi.fn().mockReturnValue(of({success: true, model: []}))},
         },
         {provide: CalendarRepeatService, useValue: {}},
         {provide: BackendConfigurationPnTaskListService, useValue: {}},
-        {provide: Store, useValue: {select: jest.fn().mockReturnValue(isAdmin$)}},
+        {provide: Store, useValue: {select: vi.fn().mockReturnValue(isAdmin$)}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
-    }).compileComponents();
+    }).overrideComponent(TaskListPageComponent, {set: {imports: [CommonModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}}).compileComponents();
 
     fixture = TestBed.createComponent(TaskListPageComponent);
     component = fixture.componentInstance;
@@ -128,7 +131,7 @@ describe('TaskListPageComponent — #1302', () => {
   describe('batch UI gating', () => {
     it('admin: batch dropdown rendered, grid selectable, counter shown for a selection', async () => {
       await setup(true);
-      fixture.detectChanges();
+      detectChanges(fixture);
 
       expect(component.isAdmin).toBe(true);
       expect(q('#taskListBatchAction')).not.toBeNull();
@@ -137,13 +140,13 @@ describe('TaskListPageComponent — #1302', () => {
       expect((q('app-task-list-table') as any).isAdmin).toBe(true);
 
       component.selection = new Set([1, 2]);
-      fixture.detectChanges();
+      detectChanges(fixture);
       expect(q('#taskListSelectionCount')).not.toBeNull();
     });
 
     it('user: no batch dropdown, no selection counter, no checkbox column', async () => {
       await setup(false);
-      fixture.detectChanges();
+      detectChanges(fixture);
 
       expect(component.isAdmin).toBe(false);
       expect(q('#taskListBatchAction')).toBeNull();
@@ -151,13 +154,13 @@ describe('TaskListPageComponent — #1302', () => {
 
       // Even with a (stale) selection the counter stays hidden.
       component.selection = new Set([1]);
-      fixture.detectChanges();
+      detectChanges(fixture);
       expect(q('#taskListSelectionCount')).toBeNull();
     });
 
     it('user: everything the spec did not mention stays (refresh, Manage tags, CSV export, grid)', async () => {
       await setup(false);
-      fixture.detectChanges();
+      detectChanges(fixture);
 
       expect(q('#taskListRefreshBtn')).not.toBeNull();
       expect(q('#taskListManageTagsBtn')).not.toBeNull();
@@ -168,10 +171,10 @@ describe('TaskListPageComponent — #1302', () => {
 
     it('reads the role ONCE — a later emission never flips the grid inputs', async () => {
       await setup(true);
-      fixture.detectChanges();
+      detectChanges(fixture);
 
       isAdmin$.next(false);
-      fixture.detectChanges();
+      detectChanges(fixture);
 
       expect(component.isAdmin).toBe(true);
       expect(q('#taskListBatchAction')).not.toBeNull();
@@ -186,10 +189,10 @@ describe('TaskListPageComponent — #1302', () => {
       await setup(true);
       component.ngOnInit();
       // Thursday 17 Sep 2026, 12:00 local.
-      jest.useFakeTimers({now: new Date(2026, 8, 17, 12, 0, 0)});
+      vi.useFakeTimers({now: new Date(2026, 8, 17, 12, 0, 0)});
     });
 
-    afterEach(() => jest.useRealTimers());
+    afterEach(() => vi.useRealTimers());
 
     const openedData = (): TaskCreateEditModalData => dialogStub.open.mock.calls[0][1].data;
 
@@ -260,46 +263,46 @@ describe('TaskListPageComponent — #1302', () => {
   //    onSave() returned before ever reaching the scope dialog.
   // =========================================================================
   describe('the modal opened from the list (#1140 + scope dialog)', () => {
-    let modalDialog: {open: jest.Mock};
+    let modalDialog: {open: Mock};
 
     function buildModal(data: TaskCreateEditModalData): TaskCreateEditModalComponent {
-      modalDialog = {open: jest.fn().mockReturnValue({afterClosed: () => of(undefined)})};
+      modalDialog = {open: vi.fn().mockReturnValue({afterClosed: () => of(undefined)})};
       const modal = new TaskCreateEditModalComponent(
-        {close: jest.fn()} as any,
+        {close: vi.fn()} as any,
         data,
         {
-          getBoards: jest.fn().mockReturnValue(of({success: true, model: [{id: 1, name: 'Kalender', color: '#fff'}]})),
-          createTask: jest.fn().mockReturnValue(of({success: false})),
-          updateTask: jest.fn().mockReturnValue(of({success: false})),
+          getBoards: vi.fn().mockReturnValue(of({success: true, model: [{id: 1, name: 'Kalender', color: '#fff'}]})),
+          createTask: vi.fn().mockReturnValue(of({success: false})),
+          updateTask: vi.fn().mockReturnValue(of({success: false})),
         } as any,
         {
-          buildRepeatSelectOptions: jest.fn().mockReturnValue([]),
-          reconstructMetaFromTask: jest.fn().mockReturnValue(null),
-          reanchorMetaToDate: jest.fn((m: any) => m),
-          metaToWeekdaysCsv: jest.fn().mockReturnValue(null),
-          metaToDayOfMonth: jest.fn().mockReturnValue(null),
-          metaToRepeatOrdinalWeek: jest.fn().mockReturnValue(null),
+          buildRepeatSelectOptions: vi.fn().mockReturnValue([]),
+          reconstructMetaFromTask: vi.fn().mockReturnValue(null),
+          reanchorMetaToDate: vi.fn((m: any) => m),
+          metaToWeekdaysCsv: vi.fn().mockReturnValue(null),
+          metaToDayOfMonth: vi.fn().mockReturnValue(null),
+          metaToRepeatOrdinalWeek: vi.fn().mockReturnValue(null),
         } as any,
         modalDialog as any,
-        {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}} as any,
+        {scrollStrategies: {reposition: vi.fn().mockReturnValue({})}} as any,
         {instant: (k: string) => k, currentLang: 'da'} as any,
-        {getVisualEditorTemplate: jest.fn().mockReturnValue(of({success: false}))} as any,
-        {getLinkedSites: jest.fn().mockReturnValue(of({success: true, model: [
+        {getVisualEditorTemplate: vi.fn().mockReturnValue(of({success: false}))} as any,
+        {getLinkedSites: vi.fn().mockReturnValue(of({success: true, model: [
           {id: 12, name: 'Clara Holm', description: '', languageId: 1},
         ]}))} as any,
         {select: () => of(1)} as any,
-        {error: jest.fn()} as any,
-        {createPlanningTag: jest.fn()} as any,
+        {error: vi.fn()} as any,
+        {createPlanningTag: vi.fn()} as any,
         {} as any,
         {} as any,
         {
-          translationPossible: jest.fn().mockReturnValue(of({success: true, model: false})),
-          getTranslation: jest.fn(),
+          translationPossible: vi.fn().mockReturnValue(of({success: true, model: false})),
+          getTranslation: vi.fn(),
         } as any,
-        {getLanguages: jest.fn().mockReturnValue(of({success: true, model: {languages: [
+        {getLanguages: vi.fn().mockReturnValue(of({success: true, model: {languages: [
           {id: 1, languageCode: 'da', name: 'Dansk', isActive: true},
         ]}}))} as any,
-        {getWorkerTags: jest.fn().mockReturnValue(of({success: true, model: []}))} as any,
+        {getWorkerTags: vi.fn().mockReturnValue(of({success: true, model: []}))} as any,
       );
       modal.ngOnInit();
       return modal;
@@ -309,10 +312,10 @@ describe('TaskListPageComponent — #1302', () => {
       await setup(true);
       component.ngOnInit();
       component.boards = [{id: 1, name: 'Kalender', color: '#fff', propertyId: 5} as any];
-      jest.useFakeTimers({now: new Date(2026, 8, 17, 12, 0, 0)});
+      vi.useFakeTimers({now: new Date(2026, 8, 17, 12, 0, 0)});
     });
 
-    afterEach(() => jest.useRealTimers());
+    afterEach(() => vi.useRealTimers());
 
     it('a past-started recurring series opens EDITABLE and Save shows RepeatScopeModalComponent', async () => {
       component.onEditTask(buildTask());

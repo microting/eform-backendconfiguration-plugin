@@ -1,5 +1,6 @@
 import {Component} from '@angular/core';
-import {MatDialogRef} from '@angular/material/dialog';
+import {MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
+import {TranslatePipe} from '@ngx-translate/core';
 
 /**
  * "Slet billede?" confirmation (#1100) - gates BOTH photo-delete flavours in
@@ -13,9 +14,9 @@ import {MatDialogRef} from '@angular/material/dialog';
  */
 @Component({
   selector: 'app-adhoc-photo-delete-modal',
+  imports: [TranslatePipe, MatDialogTitle, MatDialogContent, MatDialogActions],
   templateUrl: './adhoc-photo-delete-modal.component.html',
   styleUrls: ['./adhoc-photo-delete-modal.component.scss'],
-  standalone: false,
 })
 export class AdhocPhotoDeleteModalComponent {
   constructor(public dialogRef: MatDialogRef<AdhocPhotoDeleteModalComponent, boolean>) {

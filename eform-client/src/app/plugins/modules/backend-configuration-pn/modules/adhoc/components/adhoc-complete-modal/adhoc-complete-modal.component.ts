@@ -1,12 +1,15 @@
 import {Component, Inject, OnDestroy, OnInit} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {ToastrService} from 'ngx-toastr';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {AdhocWorkerModel} from '../../../../models';
 import {BackendConfigurationPnAdhocService} from '../../../../services';
 import {AdhocStateService} from '../store';
+import {FormsModule} from '@angular/forms';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MtxSelect} from '@ng-matero/extensions/select';
 
 export interface AdhocCompleteModalData {
   id: number;
@@ -25,9 +28,9 @@ export interface AdhocCompleteModalData {
 @AutoUnsubscribe()
 @Component({
   selector: 'app-adhoc-complete-modal',
+  imports: [FormsModule, TranslatePipe, MatFormField, MatLabel, MtxSelect, MatDialogTitle, MatDialogContent, MatDialogActions],
   templateUrl: './adhoc-complete-modal.component.html',
   styleUrls: ['./adhoc-complete-modal.component.scss'],
-  standalone: false,
 })
 export class AdhocCompleteModalComponent implements OnInit, OnDestroy {
   workers: AdhocWorkerModel[] = [];

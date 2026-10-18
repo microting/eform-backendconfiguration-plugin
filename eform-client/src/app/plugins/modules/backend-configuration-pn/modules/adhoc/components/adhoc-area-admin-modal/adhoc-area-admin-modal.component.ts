@@ -1,9 +1,17 @@
 import {Component, Inject, OnDestroy, OnInit} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {AdhocAreaModel} from '../../../../models';
 import {AdhocStateService} from '../store';
+import {NgIf, NgFor} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatFormField} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MatTooltip} from '@angular/material/tooltip';
 
 export interface AdhocAreaAdminModalData {
   propertyId: number;
@@ -21,9 +29,9 @@ export interface AdhocAreaAdminModalData {
 @AutoUnsubscribe()
 @Component({
   selector: 'app-adhoc-area-admin-modal',
+  imports: [NgIf, NgFor, FormsModule, TranslatePipe, MatIcon, MatIconButton, MatFormField, MatInput, MatTooltip, MatDialogTitle, MatDialogContent, MatDialogActions],
   templateUrl: './adhoc-area-admin-modal.component.html',
   styleUrls: ['./adhoc-area-admin-modal.component.scss'],
-  standalone: false,
 })
 export class AdhocAreaAdminModalComponent implements OnInit, OnDestroy {
   areas: AdhocAreaModel[] = [];

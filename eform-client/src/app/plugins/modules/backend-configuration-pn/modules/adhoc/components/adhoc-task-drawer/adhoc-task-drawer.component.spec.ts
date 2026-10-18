@@ -1,3 +1,9 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
+// The real component graph reaches host eform-cases -> ng-gallery, which throws
+// "Cannot access 'GalleryItemComponent' before initialization" under the Angular
+// test builder; the gallery is not under test, so stub the package.
+vi.mock('ng-gallery', () => ({Gallery: class {}, GalleryModule: class {}, ImageItem: class {}, GALLERY_CONFIG: 'GALLERY_CONFIG'}));
+vi.mock('ng-gallery/lightbox', () => ({Lightbox: class {}, LightboxModule: class {}}));
 import {FormBuilder} from '@angular/forms';
 import {of} from 'rxjs';
 import {AdhocTaskDrawerComponent, AdhocTaskDrawerData} from './adhoc-task-drawer.component';
@@ -46,27 +52,27 @@ describe('AdhocTaskDrawerComponent', () => {
   };
 
   function buildComponent(data: AdhocTaskDrawerData): AdhocTaskDrawerComponent {
-    dialogRefSpy = {close: jest.fn()};
+    dialogRefSpy = {close: vi.fn()};
     adhocStateServiceSpy = {
       properties: [{id: 1, name: 'Gård Nord'}],
       tags: [{id: 1000, name: 'Vedligehold', isUserTag: false}],
-      getAreasForProperty: jest.fn().mockReturnValue(of([{id: 10, propertyId: 1, name: 'Stald 1'}])),
-      getWorkersForProperty: jest.fn().mockReturnValue(of([{workerId: 100, displayName: 'Mette Hansen', propertyIds: [1]}])),
-      loadTags: jest.fn().mockReturnValue(of([])),
+      getAreasForProperty: vi.fn().mockReturnValue(of([{id: 10, propertyId: 1, name: 'Stald 1'}])),
+      getWorkersForProperty: vi.fn().mockReturnValue(of([{workerId: 100, displayName: 'Mette Hansen', propertyIds: [1]}])),
+      loadTags: vi.fn().mockReturnValue(of([])),
     };
     adhocServiceSpy = {
-      createTask: jest.fn(),
-      updateTask: jest.fn(),
-      createTag: jest.fn(),
-      uploadPhoto: jest.fn(),
-      addComment: jest.fn(),
-      getPhotoBlob: jest.fn(),
+      createTask: vi.fn(),
+      updateTask: vi.fn(),
+      createTag: vi.fn(),
+      uploadPhoto: vi.fn(),
+      addComment: vi.fn(),
+      getPhotoBlob: vi.fn(),
     };
-    gallerySpy = {ref: jest.fn().mockReturnValue({load: jest.fn()})};
-    lightboxSpy = {open: jest.fn()};
-    matDialogSpy = {open: jest.fn()};
+    gallerySpy = {ref: vi.fn().mockReturnValue({load: vi.fn()})};
+    lightboxSpy = {open: vi.fn()};
+    matDialogSpy = {open: vi.fn()};
     // dialogConfigHelper(overlay) only touches scrollStrategies.reposition().
-    overlaySpy = {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}};
+    overlaySpy = {scrollStrategies: {reposition: vi.fn().mockReturnValue({})}};
 
     const component = new AdhocTaskDrawerComponent(
       dialogRefSpy,
@@ -127,7 +133,7 @@ describe('AdhocTaskDrawerComponent', () => {
     // #1100: queued (create-mode) previews get the same confirm gate as
     // existing photos.
     it('onDeleteQueuedPhoto removes the queued file only after the modal confirms', () => {
-      (URL as any).revokeObjectURL = jest.fn();
+      (URL as any).revokeObjectURL = vi.fn();
       component.queuedPhotoFiles = [new File([''], 'a.png', {type: 'image/png'})];
       component.queuedPhotoPreviews = ['blob:a'];
       matDialogSpy.open.mockReturnValue({afterClosed: () => of(true)});
@@ -138,7 +144,7 @@ describe('AdhocTaskDrawerComponent', () => {
     });
 
     it('onDeleteQueuedPhoto keeps the queued file when the modal is cancelled', () => {
-      (URL as any).revokeObjectURL = jest.fn();
+      (URL as any).revokeObjectURL = vi.fn();
       component.queuedPhotoFiles = [new File([''], 'a.png', {type: 'image/png'})];
       component.queuedPhotoPreviews = ['blob:a'];
       matDialogSpy.open.mockReturnValue({afterClosed: () => of(false)});

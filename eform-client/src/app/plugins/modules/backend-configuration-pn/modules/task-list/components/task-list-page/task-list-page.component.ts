@@ -1,7 +1,7 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {Store} from '@ngrx/store';
 import {Observable, of} from 'rxjs';
 import {defaultIfEmpty, finalize, map, take} from 'rxjs/operators';
@@ -43,6 +43,15 @@ import {BatchReportHeadlineModalComponent} from '../modals/batch-report-headline
 import {TaskListTagsComponent} from '../task-list-tags/task-list-tags.component';
 import {TaskListTableComponent} from '../task-list-table/task-list-table.component';
 import {resolveEditOccurrenceDate} from './task-list-edit-date.util';
+import {NgIf} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton, MatButton} from '@angular/material/button';
+import {MatCard, MatCardContent} from '@angular/material/card';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MtxSelect, MtxSelectOptionTemplate, MtxSelectOptgroupTemplate} from '@ng-matero/extensions/select';
+import {MatTooltip} from '@angular/material/tooltip';
+import {TaskListFiltersComponent} from '../task-list-filters/task-list-filters.component';
 
 // Task 11 implements the batch action modals; this task only wires up the
 // dropdown + selection plumbing and stubs the modal opener.
@@ -82,9 +91,9 @@ export interface TaskListBatchModalData {
 
 @Component({
   selector: 'app-task-list-page',
+  imports: [NgIf, FormsModule, TranslatePipe, MatIcon, MatIconButton, MatButton, MatCard, MatCardContent, MatFormField, MatLabel, MtxSelect, MtxSelectOptionTemplate, MatTooltip, TaskListTableComponent, TaskListFiltersComponent, TaskListTagsComponent, MtxSelectOptgroupTemplate],
   templateUrl: './task-list-page.component.html',
   styleUrls: ['./task-list-page.component.scss'],
-  standalone: false,
 })
 export class TaskListPageComponent implements OnInit {
   properties: CommonDictionaryModel[] = [];

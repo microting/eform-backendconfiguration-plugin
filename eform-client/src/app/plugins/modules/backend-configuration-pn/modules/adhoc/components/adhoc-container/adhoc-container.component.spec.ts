@@ -1,3 +1,11 @@
+import {CommonModule} from '@angular/common';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
+// The real component graph reaches host eform-cases -> ng-gallery, which throws
+// "Cannot access 'GalleryItemComponent' before initialization" under the Angular
+// test builder; the gallery is not under test, so stub the package.
+vi.mock('ng-gallery', () => ({Gallery: class {}, GalleryModule: class {}, ImageItem: class {}, GALLERY_CONFIG: 'GALLERY_CONFIG'}));
+vi.mock('ng-gallery/lightbox', () => ({Lightbox: class {}, LightboxModule: class {}}));
 import {of, Subject} from 'rxjs';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
@@ -12,6 +20,7 @@ import {AppMenuStateService} from 'src/app/common/store';
 import {BackendConfigurationPnAdhocService} from '../../../../services';
 import {AdhocStateService} from '../store';
 import {AdhocContainerComponent, AdhocViewMode} from './adhoc-container.component';
+import {detectChanges} from '../../../../testing/detect-changes';
 import {AdhocHistoryComponent} from '../adhoc-history/adhoc-history.component';
 
 /**
@@ -29,13 +38,13 @@ describe('AdhocContainerComponent', () => {
   let component: AdhocContainerComponent;
 
   function buildComponent(): AdhocContainerComponent {
-    adhocServiceSpy = {getTask: jest.fn()};
-    dialogSpy = {open: jest.fn().mockReturnValue({afterClosed: () => of(false)})};
+    adhocServiceSpy = {getTask: vi.fn()};
+    dialogSpy = {open: vi.fn().mockReturnValue({afterClosed: () => of(false)})};
     adhocStateServiceSpy = {
-      getTasks: jest.fn().mockReturnValue(of({success: true, model: {entities: [], openCount: 0, completedCount: 0, archivedCount: 0}})),
-      loadProperties: jest.fn().mockReturnValue(of([])),
-      loadTags: jest.fn().mockReturnValue(of([])),
-      resetReferenceData: jest.fn(),
+      getTasks: vi.fn().mockReturnValue(of({success: true, model: {entities: [], openCount: 0, completedCount: 0, archivedCount: 0}})),
+      loadProperties: vi.fn().mockReturnValue(of([])),
+      loadTags: vi.fn().mockReturnValue(of([])),
+      resetReferenceData: vi.fn(),
       currentFilters: {status: 'open'},
       currentPagination: {},
     };
@@ -44,11 +53,11 @@ describe('AdhocContainerComponent', () => {
       providers: [
         {provide: Router, useValue: {url: '/adhoc'}},
         {provide: ActivatedRoute, useValue: {snapshot: {firstChild: null}}},
-        {provide: AppMenuStateService, useValue: {leftAppMenus$: of([]), getTitleByUrl: jest.fn().mockReturnValue('Adhoc')}},
-        {provide: Store, useValue: {select: jest.fn().mockReturnValue(of({})), dispatch: jest.fn()}},
+        {provide: AppMenuStateService, useValue: {leftAppMenus$: of([]), getTitleByUrl: vi.fn().mockReturnValue('Adhoc')}},
+        {provide: Store, useValue: {select: vi.fn().mockReturnValue(of({})), dispatch: vi.fn()}},
         {provide: MatDialog, useValue: dialogSpy},
         // dialogConfigHelper reads overlay.scrollStrategies.reposition().
-        {provide: Overlay, useValue: {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}}},
+        {provide: Overlay, useValue: {scrollStrategies: {reposition: vi.fn().mockReturnValue({})}}},
         {provide: AdhocStateService, useValue: adhocStateServiceSpy},
         {provide: BackendConfigurationPnAdhocService, useValue: adhocServiceSpy},
       ],
@@ -122,7 +131,7 @@ describe('AdhocContainerComponent', () => {
 
     const historyStub = (updateTable: () => any): AdhocHistoryComponent => {
       const history = Object.create(AdhocHistoryComponent.prototype) as AdhocHistoryComponent;
-      history.updateTable = jest.fn(updateTable);
+      history.updateTable = vi.fn(updateTable);
       return history;
     };
 
@@ -199,7 +208,7 @@ describe('AdhocContainerComponent', () => {
  */
 describe('AdhocContainerComponent — view switcher', () => {
   let fixture: ComponentFixture<AdhocContainerComponent>;
-  let routerSpy: {url: string; navigate: jest.Mock};
+  let routerSpy: {url: string; navigate: Mock};
   let routeStub: {snapshot: {firstChild: any}};
 
   const group = (): MatButtonToggleGroup =>
@@ -214,7 +223,7 @@ describe('AdhocContainerComponent — view switcher', () => {
   /** Simulates the router landing on a URL: the snapshot is replaced, as on any navigation. */
   const landOn = (view: AdhocViewMode): void => {
     routeStub.snapshot = {firstChild: view === 'history' ? {routeConfig: {path: 'history'}} : null};
-    fixture.detectChanges();
+    detectChanges(fixture);
   };
 
   /** Exactly `view` is checked: group value plus aria-checked on both inner buttons. */
@@ -226,37 +235,36 @@ describe('AdhocContainerComponent — view switcher', () => {
   };
 
   beforeEach(() => {
-    routerSpy = {url: '/adhoc-tasks', navigate: jest.fn().mockResolvedValue(true)};
+    routerSpy = {url: '/adhoc-tasks', navigate: vi.fn().mockResolvedValue(true)};
     routeStub = {snapshot: {firstChild: null}};
 
     TestBed.configureTestingModule({
-      declarations: [AdhocContainerComponent],
       imports: [TranslateModule.forRoot(), MatButtonToggleModule],
       providers: [
         {provide: Router, useValue: routerSpy},
         {provide: ActivatedRoute, useValue: routeStub},
-        {provide: AppMenuStateService, useValue: {leftAppMenus$: of([]), getTitleByUrl: jest.fn().mockReturnValue('Adhoc')}},
-        {provide: Store, useValue: {select: jest.fn().mockReturnValue(of({})), dispatch: jest.fn()}},
-        {provide: MatDialog, useValue: {open: jest.fn()}},
-        {provide: Overlay, useValue: {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}}},
+        {provide: AppMenuStateService, useValue: {leftAppMenus$: of([]), getTitleByUrl: vi.fn().mockReturnValue('Adhoc')}},
+        {provide: Store, useValue: {select: vi.fn().mockReturnValue(of({})), dispatch: vi.fn()}},
+        {provide: MatDialog, useValue: {open: vi.fn()}},
+        {provide: Overlay, useValue: {scrollStrategies: {reposition: vi.fn().mockReturnValue({})}}},
         {
           provide: AdhocStateService,
           useValue: {
-            getTasks: jest.fn().mockReturnValue(of({success: true, model: {entities: [], openCount: 0, completedCount: 0, archivedCount: 0}})),
-            loadProperties: jest.fn().mockReturnValue(of([])),
-            loadTags: jest.fn().mockReturnValue(of([])),
-            resetReferenceData: jest.fn(),
+            getTasks: vi.fn().mockReturnValue(of({success: true, model: {entities: [], openCount: 0, completedCount: 0, archivedCount: 0}})),
+            loadProperties: vi.fn().mockReturnValue(of([])),
+            loadTags: vi.fn().mockReturnValue(of([])),
+            resetReferenceData: vi.fn(),
             currentFilters: {status: 'open'},
             currentPagination: {},
           },
         },
-        {provide: BackendConfigurationPnAdhocService, useValue: {getTask: jest.fn()}},
+        {provide: BackendConfigurationPnAdhocService, useValue: {getTask: vi.fn()}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
-    });
+    }).overrideComponent(AdhocContainerComponent, {set: {imports: [CommonModule, TranslateModule, MatButtonToggleModule], schemas: [NO_ERRORS_SCHEMA]}});
 
     fixture = TestBed.createComponent(AdhocContainerComponent);
-    fixture.detectChanges();
+    detectChanges(fixture);
   });
 
   afterEach(() => {
@@ -288,7 +296,7 @@ describe('AdhocContainerComponent — view switcher', () => {
 
   it('clicking Historik navigates to the history child route', () => {
     innerButton('history').click();
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     expect(routerSpy.navigate).toHaveBeenCalledTimes(1);
     expect(routerSpy.navigate).toHaveBeenCalledWith(['history'], {relativeTo: routeStub});
@@ -298,7 +306,7 @@ describe('AdhocContainerComponent — view switcher', () => {
     landOn('history');
 
     innerButton('list').click();
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     expect(routerSpy.navigate).toHaveBeenCalledTimes(1);
     expect(routerSpy.navigate).toHaveBeenCalledWith(['./'], {relativeTo: routeStub});
@@ -306,7 +314,7 @@ describe('AdhocContainerComponent — view switcher', () => {
 
   it('re-clicking the already-checked Overblik does not navigate', () => {
     innerButton('list').click();
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     expect(routerSpy.navigate).not.toHaveBeenCalled();
   });

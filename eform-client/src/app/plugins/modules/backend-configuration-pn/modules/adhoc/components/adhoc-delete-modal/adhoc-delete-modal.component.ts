@@ -1,8 +1,9 @@
 import {Component, Inject, OnDestroy, OnInit} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {BackendConfigurationPnAdhocService} from '../../../../services';
+import {TranslatePipe} from '@ngx-translate/core';
 
 export interface AdhocDeleteModalData {
   id: number;
@@ -20,9 +21,9 @@ export interface AdhocDeleteModalData {
 @AutoUnsubscribe()
 @Component({
   selector: 'app-adhoc-delete-modal',
+  imports: [TranslatePipe, MatDialogTitle, MatDialogContent, MatDialogActions],
   templateUrl: './adhoc-delete-modal.component.html',
   styleUrls: ['./adhoc-delete-modal.component.scss'],
-  standalone: false,
 })
 export class AdhocDeleteModalComponent implements OnInit, OnDestroy {
   deleteTaskSub$: Subscription;

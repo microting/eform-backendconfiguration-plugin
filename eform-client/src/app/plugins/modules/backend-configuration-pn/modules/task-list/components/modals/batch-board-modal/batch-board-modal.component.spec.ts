@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {of} from 'rxjs';
 import {CalendarBoardModel, CalendarTaskModel} from '../../../../../models/calendar';
 import {TaskListBatchModalData} from '../../task-list-page/task-list-page.component';
@@ -17,8 +19,8 @@ describe('BatchBoardModalComponent', () => {
   const task = (id: number, boardId: number | null) =>
     ({id, boardId, title: `T${id}`, tags: []} as unknown as CalendarTaskModel);
 
-  let dialogRef: {close: jest.Mock};
-  let taskListService: {moveToBoard: jest.Mock};
+  let dialogRef: {close: Mock};
+  let taskListService: {moveToBoard: Mock};
 
   const build = (selectedTasks: CalendarTaskModel[]) => {
     const data: TaskListBatchModalData = {mode: 'moveToBoard', selectedTasks, boards};
@@ -27,8 +29,8 @@ describe('BatchBoardModalComponent', () => {
   const optionIds = (modal: BatchBoardModalComponent) => modal.boards.map(b => b.id);
 
   beforeEach(() => {
-    dialogRef = {close: jest.fn()};
-    taskListService = {moveToBoard: jest.fn().mockReturnValue(of({success: true}))};
+    dialogRef = {close: vi.fn()};
+    taskListService = {moveToBoard: vi.fn().mockReturnValue(of({success: true}))};
   });
 
   it('hides the current calendar when every selected task shares it', () => {

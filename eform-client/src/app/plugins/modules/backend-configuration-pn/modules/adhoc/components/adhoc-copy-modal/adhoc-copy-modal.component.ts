@@ -1,9 +1,10 @@
 import {Component, Inject, OnDestroy, OnInit} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {AdhocTaskModel} from '../../../../models';
 import {BackendConfigurationPnAdhocService} from '../../../../services';
+import {TranslatePipe} from '@ngx-translate/core';
 
 export interface AdhocCopyModalData {
   id: number;
@@ -20,9 +21,9 @@ export interface AdhocCopyModalData {
 @AutoUnsubscribe()
 @Component({
   selector: 'app-adhoc-copy-modal',
+  imports: [TranslatePipe, MatDialogTitle, MatDialogContent, MatDialogActions],
   templateUrl: './adhoc-copy-modal.component.html',
   styleUrls: ['./adhoc-copy-modal.component.scss'],
-  standalone: false,
 })
 export class AdhocCopyModalComponent implements OnInit, OnDestroy {
   copyTaskSub$: Subscription;

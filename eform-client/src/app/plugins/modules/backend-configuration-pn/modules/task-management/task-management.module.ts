@@ -27,13 +27,6 @@ import {MatChip} from "@angular/material/chips";
 import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
 
 @NgModule({
-  declarations: [
-    TaskManagementContainerComponent,
-    TaskManagementTableComponent,
-    TaskManagementFiltersComponent,
-    TaskManagementCreateShowModalComponent,
-    TaskManagementDeleteModalComponent
-  ],
   imports: [
     CommonModule,
     TranslateModule,
@@ -57,6 +50,11 @@ import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
     MatMenuTrigger,
     MatMenu,
     MatMenuItem,
+    TaskManagementContainerComponent,
+    TaskManagementTableComponent,
+    TaskManagementFiltersComponent,
+    TaskManagementCreateShowModalComponent,
+    TaskManagementDeleteModalComponent,
   ],
   providers: [],
 })

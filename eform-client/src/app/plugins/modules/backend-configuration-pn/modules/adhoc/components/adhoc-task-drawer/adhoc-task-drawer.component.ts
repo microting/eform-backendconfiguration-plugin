@@ -1,6 +1,6 @@
 import {Component, Inject, OnDestroy, OnInit, ViewEncapsulation} from '@angular/core';
-import {FormBuilder, FormGroup, Validators} from '@angular/forms';
-import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog';
+import {FormBuilder, FormGroup, Validators, FormsModule, ReactiveFormsModule} from '@angular/forms';
+import {MAT_DIALOG_DATA, MatDialog, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {Gallery, GalleryItem, ImageItem} from 'ng-gallery';
@@ -21,6 +21,18 @@ import {BackendConfigurationPnAdhocService} from '../../../../services';
 import {AdhocStateService} from '../store';
 import {resolvePropertyName, resolveWorkerName} from '../../adhoc-display.util';
 import {AdhocPhotoDeleteModalComponent} from '../adhoc-photo-delete-modal/adhoc-photo-delete-modal.component';
+import {NgIf, NgFor, AsyncPipe, DatePipe} from '@angular/common';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton, MatButton} from '@angular/material/button';
+import {MatFormField, MatLabel, MatSuffix} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {MatDatepicker, MatDatepickerInput, MatDatepickerToggle} from '@angular/material/datepicker';
+import {MatCheckbox} from '@angular/material/checkbox';
+import {MatChip} from '@angular/material/chips';
+import {AuthImagePipe} from 'src/app/common/pipes';
+import {MatButtonToggleGroup, MatButtonToggle} from '@angular/material/button-toggle';
 
 export type AdhocTaskDrawerMode = 'create' | 'view' | 'edit';
 
@@ -71,9 +83,9 @@ function timeToMinutes(time: string): number {
 @AutoUnsubscribe()
 @Component({
   selector: 'app-adhoc-task-drawer',
+  imports: [NgIf, NgFor, AsyncPipe, DatePipe, FormsModule, ReactiveFormsModule, TranslatePipe, MatIcon, MatIconButton, MatButton, MatFormField, MatLabel, MatSuffix, MatInput, MtxSelect, MatDialogTitle, MatDialogContent, MatDialogActions, MatDatepicker, MatDatepickerInput, MatDatepickerToggle, MatCheckbox, MatChip, AuthImagePipe, MatButtonToggleGroup, MatButtonToggle],
   templateUrl: './adhoc-task-drawer.component.html',
   styleUrls: ['./adhoc-task-drawer.component.scss'],
-  standalone: false,
   // The overlay pane (`.adhoc-drawer-panel`, set via MatDialogConfig.panelClass
   // by callers) lives outside this component's own DOM subtree, so the
   // right-anchor/full-height rules in the stylesheet need global scope to

@@ -1,8 +1,13 @@
 import {Component, Inject} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {CalendarBoardModel} from '../../../../../models/calendar';
 import {BackendConfigurationPnTaskListService} from '../../../../../services';
 import {TaskListBatchModalData} from '../../task-list-page/task-list-page.component';
+import {NgFor} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MtxSelect} from '@ng-matero/extensions/select';
 
 /**
  * Batch "Flyt til kalender" modal (#1297) — moves every selected task to
@@ -22,8 +27,8 @@ import {TaskListBatchModalData} from '../../task-list-page/task-list-page.compon
  * product owner accepted that, and the action needs no confirm step beyond Save.
  */
 @Component({
-  standalone: false,
   selector: 'app-batch-board-modal',
+  imports: [NgFor, FormsModule, TranslatePipe, MatFormField, MatLabel, MtxSelect, MatDialogTitle, MatDialogContent, MatDialogActions],
   templateUrl: './batch-board-modal.component.html',
 })
 export class BatchBoardModalComponent {

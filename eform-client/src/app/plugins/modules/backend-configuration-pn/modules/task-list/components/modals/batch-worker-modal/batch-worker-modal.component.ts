@@ -1,8 +1,13 @@
 import {Component, Inject} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {BackendConfigurationPnTaskListService} from '../../../../../services';
 import {TaskListBatchModalData} from '../../task-list-page/task-list-page.component';
+import {NgIf, NgFor} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MtxSelect} from '@ng-matero/extensions/select';
 
 // Covers three batch actions that all boil down to "pick worker(s)": assign
 // (move all selected tasks to one worker), addWorker (add one worker to the
@@ -10,8 +15,8 @@ import {TaskListBatchModalData} from '../../task-list-page/task-list-page.compon
 // another). The template swaps between a single select and a from/to pair
 // based on data.mode.
 @Component({
-  standalone: false,
   selector: 'app-batch-worker-modal',
+  imports: [NgIf, NgFor, FormsModule, TranslatePipe, MatFormField, MatLabel, MtxSelect, MatDialogTitle, MatDialogContent, MatDialogActions],
   templateUrl: './batch-worker-modal.component.html',
 })
 export class BatchWorkerModalComponent {

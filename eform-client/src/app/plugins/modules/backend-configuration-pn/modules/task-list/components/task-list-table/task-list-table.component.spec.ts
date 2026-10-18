@@ -1,3 +1,5 @@
+import {CommonModule} from '@angular/common';
+import {describe, it, expect} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {TranslateModule} from '@ngx-translate/core';
@@ -244,11 +246,10 @@ describe('buildTaskListRows', () => {
 describe('TaskListTableComponent — checkbox column gating (#1302)', () => {
   const render = async (isAdmin: boolean | undefined) => {
     await TestBed.configureTestingModule({
-      declarations: [TaskListTableComponent],
       imports: [TranslateModule.forRoot()],
       providers: [{provide: CalendarRepeatService, useValue: {}}],
       schemas: [NO_ERRORS_SCHEMA],
-    }).compileComponents();
+    }).overrideComponent(TaskListTableComponent, {set: {imports: [CommonModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}}).compileComponents();
     const fixture = TestBed.createComponent(TaskListTableComponent);
     if (isAdmin !== undefined) {
       fixture.componentInstance.isAdmin = isAdmin;

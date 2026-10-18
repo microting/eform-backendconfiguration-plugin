@@ -1,7 +1,11 @@
 import {Component, Inject} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {BackendConfigurationPnTaskListService} from '../../../../../services';
 import {TaskListBatchModalData} from '../../task-list-page/task-list-page.component';
+import {NgIf, NgFor} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatRadioGroup, MatRadioButton} from '@angular/material/radio';
 
 /**
  * Batch "activate / deactivate" modal (#1123) — flips
@@ -27,8 +31,8 @@ import {TaskListBatchModalData} from '../../task-list-page/task-list-page.compon
  * SDK cases but says nothing about the occurrences that DO disappear.
  */
 @Component({
-  standalone: false,
   selector: 'app-batch-status-modal',
+  imports: [NgIf, NgFor, FormsModule, TranslatePipe, MatDialogTitle, MatDialogContent, MatDialogActions, MatRadioGroup, MatRadioButton],
   templateUrl: './batch-status-modal.component.html',
 })
 export class BatchStatusModalComponent {

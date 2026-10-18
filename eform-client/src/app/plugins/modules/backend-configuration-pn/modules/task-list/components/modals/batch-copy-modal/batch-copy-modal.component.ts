@@ -1,5 +1,5 @@
 import {Component, Inject} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {CalendarBoardModel} from '../../../../../models/calendar';
 import {
@@ -8,6 +8,13 @@ import {
   BackendConfigurationPnTaskListService,
 } from '../../../../../services';
 import {TaskListBatchModalData} from '../../task-list-page/task-list-page.component';
+import {NgFor} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatFormField, MatLabel, MatSuffix} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {MatDatepicker, MatDatepickerInput, MatDatepickerToggle} from '@angular/material/datepicker';
 
 // Copy the selected tasks onto a board that belongs to a (possibly
 // different) target property. Board + worker roster are both scoped to
@@ -16,8 +23,8 @@ import {TaskListBatchModalData} from '../../task-list-page/task-list-page.compon
 // the backend's copy endpoint enforces AtLeastOneWorkerMustBeAssigned +
 // PropertyWorkers validation on the target site.
 @Component({
-  standalone: false,
   selector: 'app-batch-copy-modal',
+  imports: [NgFor, FormsModule, TranslatePipe, MatFormField, MatLabel, MatSuffix, MatInput, MtxSelect, MatDialogTitle, MatDialogContent, MatDialogActions, MatDatepicker, MatDatepickerInput, MatDatepickerToggle],
   templateUrl: './batch-copy-modal.component.html',
 })
 export class BatchCopyModalComponent {
