@@ -67,7 +67,7 @@
       </td>
       <td class="archive-table__actions" (click)="$event.stopPropagation()">
         <div [id]="'action-items-' + i">
-          <button id="actionMenu" mat-icon-button type="button" [matMenuTriggerFor]="rowMenu" [matTooltip]="'Actions' | translate">
+          <button id="actionMenu{{i}}" mat-icon-button type="button" [matMenuTriggerFor]="rowMenu" [matTooltip]="'Actions' | translate">
             <mat-icon>more_vert</mat-icon>
           </button>
           <mat-menu #rowMenu="matMenu">
