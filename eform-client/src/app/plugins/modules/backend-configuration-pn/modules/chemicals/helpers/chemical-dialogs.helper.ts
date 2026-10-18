@@ -87,8 +87,9 @@ export function cancelPlacementDialog(
 
 /**
  * Opens a safety data sheet in a new tab (W1 row menu and the W2 side panel). The blob request runs
- * through the host interceptors, which show nothing for a failed blob, so a failure is toasted here
- * with a fixed text (never the technical error).
+ * through the host interceptors, which show nothing for a failed blob and end a 5xx or a network
+ * failure with EMPTY, so an error or a completion without a sheet is toasted here with a fixed text
+ * (never the technical error).
  */
 export function openSafetyDataSheet(
   sds: {getSdsBlob(fileName: string): Observable<Blob>},
@@ -96,9 +97,19 @@ export function openSafetyDataSheet(
   translate: {instant(key: string): string},
   fileName: string,
 ): void {
+  const fail = () => toastr.error(translate.instant('Chemicals: Could not open safety data sheet'));
+  let opened = false;
   sds.getSdsBlob(fileName).subscribe({
-    next: (blob) => window.open(URL.createObjectURL(blob), '_blank'),
-    error: () => toastr.error(translate.instant('Chemicals: Could not open safety data sheet')),
+    next: (blob) => {
+      opened = true;
+      window.open(URL.createObjectURL(blob), '_blank');
+    },
+    error: fail,
+    complete: () => {
+      if (!opened) {
+        fail();
+      }
+    },
   });
 }
 
