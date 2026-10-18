@@ -1,5 +1,5 @@
 import {HttpErrorResponse} from '@angular/common/http';
-import {Subject, of, throwError} from 'rxjs';
+import {EMPTY, Subject, of, throwError} from 'rxjs';
 import {closeWhenSaved, downloadFailureText, openSafetyDataSheet} from './chemical-dialogs.helper';
 
 describe('closeWhenSaved (shared save/busy/close of the Kemi dialogs)', () => {
@@ -57,6 +57,18 @@ describe('openSafetyDataSheet (shared by W1 and the W2 side panel)', () => {
     openSafetyDataSheet(sds, toastr, translate, 'sds200');
 
     expect(toastr.error).toHaveBeenCalledWith('Chemicals: Could not open safety data sheet');
+  });
+
+  it('toasts the same text when the request completes without a sheet (the host ends a 5xx or network failure with EMPTY)', () => {
+    const open = jest.spyOn(window, 'open').mockReturnValue(null);
+    const sds = {getSdsBlob: jest.fn().mockReturnValue(EMPTY)};
+
+    openSafetyDataSheet(sds, toastr, translate, 'sds200');
+
+    expect(open).not.toHaveBeenCalled();
+    expect(toastr.error).toHaveBeenCalledTimes(1);
+    expect(toastr.error).toHaveBeenCalledWith('Chemicals: Could not open safety data sheet');
+    open.mockRestore();
   });
 });
 
