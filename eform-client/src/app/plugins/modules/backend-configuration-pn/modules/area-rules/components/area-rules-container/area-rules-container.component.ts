@@ -31,13 +31,19 @@ import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {AreaRulesStateService} from '../store';
 import { Sort } from '@angular/material/sort';
+import {NgIf} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatTooltip} from '@angular/material/tooltip';
+import {EformNewSubheaderComponent} from 'src/app/common/modules/eform-shared/components';
+import {AreaRulesTableComponent} from '../area-rules-table/area-rules-table.component';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-area-rules-container',
+    imports: [NgIf, MatIcon, MatIconButton, MatTooltip, EformNewSubheaderComponent, AreaRulesTableComponent],
     templateUrl: './area-rules-container.component.html',
     styleUrls: ['./area-rules-container.component.scss'],
-    standalone: false
 })
 export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   private areasService = inject(BackendConfigurationPnAreasService);

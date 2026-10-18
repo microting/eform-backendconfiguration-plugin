@@ -3,7 +3,7 @@ import {
   inject, ViewChild
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import {FormControl, FormGroup} from '@angular/forms';
+import {FormControl, FormGroup, FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {combineLatest, forkJoin, Subscription, take} from 'rxjs';
 import {
   CommonDictionaryModel,
@@ -22,7 +22,7 @@ import {
 } from '../tail-bite-managers-dialog/tail-bite-managers-dialog.component';
 import {PropertyWorkersStateService} from '../store';
 import {Sort} from '@angular/material/sort';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
@@ -41,12 +41,21 @@ import {
 import {EformTagService} from 'src/app/common/services';
 import {EformsTagsComponent} from 'src/app/common/modules/eform-shared-tags/components';
 import {CommonTagModel} from '../../../../models';
+import {NgIf, AsyncPipe} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatCard} from '@angular/material/card';
+import {MatFormField, MatLabel, MatSuffix} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {MatTooltip} from '@angular/material/tooltip';
+import {MatSlideToggle} from '@angular/material/slide-toggle';
+import {PropertyWorkerTableComponent} from '../property-worker-table/property-worker-table.component';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-property-workers-page',
+    imports: [NgIf, AsyncPipe, FormsModule, ReactiveFormsModule, TranslatePipe, MatIcon, MatCard, MatFormField, MatLabel, MatSuffix, MatInput, MtxSelect, MatTooltip, MatSlideToggle, PropertyWorkerTableComponent, EformsTagsComponent],
     templateUrl: './property-workers-page.component.html',
-    standalone: false
 })
 export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   private store = inject(Store);

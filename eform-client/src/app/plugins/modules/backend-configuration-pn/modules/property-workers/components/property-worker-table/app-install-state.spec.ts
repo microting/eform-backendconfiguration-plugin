@@ -1,3 +1,4 @@
+import {describe, it, expect} from 'vitest';
 import {AppInstallModel} from '../../../../models';
 import {appInstallState} from './app-install-state';
 

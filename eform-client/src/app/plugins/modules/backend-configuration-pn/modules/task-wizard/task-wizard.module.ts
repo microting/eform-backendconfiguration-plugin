@@ -59,8 +59,6 @@ import {
     MatMenuItem,
     MatMenuTrigger,
     FolderTreeSelectComponent,
-  ],
-  declarations: [
     TaskWizardFiltersComponent,
     TaskWizardPageComponent,
     TaskWizardTableComponent,

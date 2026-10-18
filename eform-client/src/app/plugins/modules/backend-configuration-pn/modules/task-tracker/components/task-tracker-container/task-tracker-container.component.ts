@@ -27,7 +27,7 @@ import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper, findFullNameById} from 'src/app/common/helpers';
 import {LoaderService} from 'src/app/common/services';
-import {MatIconRegistry} from '@angular/material/icon';
+import {MatIconRegistry, MatIcon} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
 import {ExcelIcon} from 'src/app/common/const';
 import {catchError, skip, tap} from 'rxjs/operators';
@@ -55,13 +55,20 @@ import {
 import {
   TaskTrackerSelectWorkerModalComponent
 } from 'src/app/plugins/modules/backend-configuration-pn/modules/task-tracker/components';
+import {NgIf} from '@angular/common';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatCard} from '@angular/material/card';
+import {MatTooltip} from '@angular/material/tooltip';
+import {TaskTrackerTableComponent} from '../task-tracker-table/task-tracker-table.component';
+import {TaskTrackerFiltersComponent} from '../task-tracker-filters/task-tracker-filters.component';
+import {PlannedTaskDaysComponent} from '../../../statistics/components/planned-task-days/planned-task-days.component';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-task-tracker-container',
+    imports: [NgIf, TranslatePipe, MatIcon, MatCard, MatTooltip, TaskTrackerTableComponent, TaskTrackerFiltersComponent, PlannedTaskDaysComponent, PlanningTagsComponent],
     templateUrl: './task-tracker-container.component.html',
     styleUrls: ['./task-tracker-container.component.scss'],
-    standalone: false
 })
 export class TaskTrackerContainerComponent implements OnInit, AfterViewInit, AfterViewChecked, OnDestroy {
   private store = inject(Store);

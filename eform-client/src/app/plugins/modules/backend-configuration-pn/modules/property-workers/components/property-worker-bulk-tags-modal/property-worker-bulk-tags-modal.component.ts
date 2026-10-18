@@ -1,8 +1,14 @@
 import {Component, inject} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {DeviceUserModel, WorkerTagsBulkMode} from '../../../../models';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
+import {NgFor} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {MatRadioGroup, MatRadioButton} from '@angular/material/radio';
 
 export interface PropertyWorkerBulkTagsModalData {
   workers: DeviceUserModel[];
@@ -16,8 +22,8 @@ export interface PropertyWorkerBulkTagsModalData {
  */
 @Component({
   selector: 'app-property-worker-bulk-tags-modal',
+  imports: [NgFor, FormsModule, TranslatePipe, MatFormField, MatLabel, MtxSelect, MatDialogTitle, MatDialogContent, MatDialogActions, MatRadioGroup, MatRadioButton],
   templateUrl: './property-worker-bulk-tags-modal.component.html',
-  standalone: false,
 })
 export class PropertyWorkerBulkTagsModalComponent {
   private propertiesService = inject(BackendConfigurationPnPropertiesService);

@@ -31,14 +31,6 @@ import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
 import {AppIconComponent} from "src/app/components/icons/app-icon/app-icon.component";
 
 @NgModule({
-  declarations: [
-    TaskTrackerContainerComponent,
-    TaskTrackerTableComponent,
-    TaskTrackerFiltersComponent,
-    TaskTrackerCreateShowModalComponent,
-    TaskTrackerShownColumnsComponent,
-    TaskTrackerSelectWorkerModalComponent
-  ],
     imports: [
         CommonModule,
         TranslateModule,
@@ -66,6 +58,12 @@ import {AppIconComponent} from "src/app/components/icons/app-icon/app-icon.compo
         MatMenu,
         MatMenuItem,
         AppIconComponent,
+        TaskTrackerContainerComponent,
+        TaskTrackerTableComponent,
+        TaskTrackerFiltersComponent,
+        TaskTrackerCreateShowModalComponent,
+        TaskTrackerShownColumnsComponent,
+        TaskTrackerSelectWorkerModalComponent,
     ],
   providers: [],
 })

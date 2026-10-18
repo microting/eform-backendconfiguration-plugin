@@ -15,17 +15,17 @@
 </mtx-grid>
 <ng-template #tagsTpl let-row>
   <div class="d-flex flex-wrap align-items-center gap-2">
-    <mat-chip-list>
+    <mat-chip-set>
       <mat-chip *ngFor="let tag of row.tags" color="primary">
         <span>{{ tag.name }}</span>
       </mat-chip>
-    </mat-chip-list>
+    </mat-chip-set>
   </div>
 </ng-template>
 
 <ng-template #actionsTpl let-row let-i="index">
   <div class="task-tracker-actions" id="action-items-{{i}}" *ngIf="(row.createdInWizard && !row.movedToExpiredFolder) || (selectCurrentUserIsAdmin$ | async)">
-    <button id="actionMenu" mat-icon-button [matMenuTriggerFor]="menu" matTooltip="{{ 'Actions' | translate }}">
+    <button id="actionMenu{{i}}" mat-icon-button [matMenuTriggerFor]="menu" matTooltip="{{ 'Actions' | translate }}">
       <mat-icon>more_vert</mat-icon>
     </button>
 

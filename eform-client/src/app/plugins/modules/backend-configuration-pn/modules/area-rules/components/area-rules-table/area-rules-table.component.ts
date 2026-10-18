@@ -13,8 +13,8 @@ import {
   AreaRuleT2TypesEnum,
 } from '../../../../enums';
 import {AreaModel, AreaRuleSimpleModel} from '../../../../models';
-import {MtxGridColumn} from '@ng-matero/extensions/grid';
-import {TranslateService} from '@ngx-translate/core';
+import {MtxGridColumn, MtxGrid} from '@ng-matero/extensions/grid';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {AuthStateService} from 'src/app/common/store';
 import {AreaRulesStateService} from '../store';
 import {Sort} from '@angular/material/sort';
@@ -26,13 +26,18 @@ import {
   selectAreaRulesPaginationIsSortDsc,
   selectAreaRulesPaginationSort
 } from "src/app/plugins/modules/backend-configuration-pn/state/area-rules/area-rules.selector";
+import {NgIf, AsyncPipe} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatTooltip} from '@angular/material/tooltip';
+import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
 
 @Component({
     selector: 'app-area-rules-table',
+    imports: [NgIf, AsyncPipe, TranslatePipe, MatIcon, MatIconButton, MtxGrid, MatTooltip, MatMenu, MatMenuItem, MatMenuTrigger],
     templateUrl: './area-rules-table.component.html',
     styleUrls: ['./area-rules-table.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    standalone: false
 })
 export class AreaRulesTableComponent implements OnChanges, OnInit {
   private store = inject(Store);

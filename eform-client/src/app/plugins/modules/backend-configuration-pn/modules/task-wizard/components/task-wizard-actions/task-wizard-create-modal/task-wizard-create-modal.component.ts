@@ -11,19 +11,19 @@ import {
   TemplateListModel,
   TemplateRequestModel
 } from 'src/app/common/models';
-import {FormBuilder, FormGroup, FormControl, Validators, FormArray} from '@angular/forms';
+import {FormBuilder, FormGroup, FormControl, Validators, FormArray, ReactiveFormsModule} from '@angular/forms';
 import {RepeatTypeEnum, TaskWizardStatusesEnum} from '../../../../../enums';
 import {TaskWizardCreateModel} from '../../../../../models';
-import {TranslateService} from '@ngx-translate/core';
-import {MatDialog, MatDialogRef} from '@angular/material/dialog';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
+import {MatDialog, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {EFormService} from 'src/app/common/services';
 import {debounceTime, switchMap} from 'rxjs/operators';
-import {MatDatepickerInputEvent} from '@angular/material/datepicker';
+import {MatDatepickerInputEvent, MatDatepicker, MatDatepickerInput} from '@angular/material/datepicker';
 import {set} from 'date-fns';
 import {generateWeeksList} from '../../../../../helpers';
 import * as R from 'ramda';
-import {MtxGridColumn} from '@ng-matero/extensions/grid';
-import {MatCheckboxChange} from '@angular/material/checkbox';
+import {MtxGridColumn, MtxGrid} from '@ng-matero/extensions/grid';
+import {MatCheckboxChange, MatCheckbox} from '@angular/material/checkbox';
 import {TaskWizardFoldersModalComponent} from '../';
 import {findFullNameById, dialogConfigHelper} from 'src/app/common/helpers';
 import {Subscription, take} from 'rxjs';
@@ -32,13 +32,21 @@ import {PlanningTagsComponent} from 'src/app/plugins/modules/items-planning-pn/m
 import {AuthStateService} from 'src/app/common/store';
 import {selectAuthIsAuth, selectCurrentUserIsAdmin} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
+import {NgIf, NgFor, AsyncPipe} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {MatTooltip} from '@angular/material/tooltip';
+import {MatSlideToggle} from '@angular/material/slide-toggle';
+import {FolderTreeSelectComponent} from 'src/app/common/modules/eform-shared/components/eform-tree-select/folder-tree-select.component';
 
 @AutoUnsubscribe()
 @Component({
   selector: 'app-task-wizard-create-modal',
+  imports: [NgIf, NgFor, AsyncPipe, ReactiveFormsModule, TranslatePipe, MatIcon, MatFormField, MatLabel, MatInput, MtxSelect, MtxGrid, MatTooltip, MatDialogTitle, MatDialogContent, MatDialogActions, MatDatepicker, MatDatepickerInput, MatCheckbox, MatSlideToggle, FolderTreeSelectComponent],
   templateUrl: './task-wizard-create-modal.component.html',
   styleUrls: ['./task-wizard-create-modal.component.scss'],
-  standalone: false
 })
 export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
   private store = inject(Store);

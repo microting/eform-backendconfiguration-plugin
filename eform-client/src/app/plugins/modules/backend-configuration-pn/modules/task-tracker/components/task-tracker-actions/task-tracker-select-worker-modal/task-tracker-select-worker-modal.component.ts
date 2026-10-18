@@ -2,16 +2,19 @@ import {CommonDictionaryModel, WorkerModel} from 'src/app/common/models';
 import {Component, EventEmitter, OnDestroy, OnInit, ViewChild,
   inject
 } from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {TaskWizardCreateModel} from 'src/app/plugins/modules/backend-configuration-pn/models';
 import * as R from 'ramda';
 import {TaskWizardStatusesEnum} from 'src/app/plugins/modules/backend-configuration-pn/enums';
+import {FormsModule} from '@angular/forms';
+import {TranslatePipe} from '@ngx-translate/core';
+import {NgSelectComponent} from '@ng-select/ng-select';
 
 @Component({
     selector: 'app-task-tracker-select-worker-modal',
+    imports: [FormsModule, TranslatePipe, MatDialogTitle, MatDialogContent, MatDialogActions, NgSelectComponent],
     templateUrl: './task-tracker-select-worker-modal.component.html',
     styleUrls: ['./task-tracker-select-worker-modal.component.scss'],
-    standalone: false
 })
 export class TaskTrackerSelectWorkerModalComponent implements OnInit, OnDestroy {
   public dialogRef = inject(MatDialogRef<TaskTrackerSelectWorkerModalComponent>);

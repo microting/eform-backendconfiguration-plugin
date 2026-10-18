@@ -8,10 +8,10 @@ import {
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {CommonDictionaryModel, FolderDto} from 'src/app/common/models';
-import {FormControl, FormGroup} from '@angular/forms';
+import {FormControl, FormGroup, ReactiveFormsModule} from '@angular/forms';
 import {TaskWizardStateService} from '../store';
 import {TaskWizardStatusesEnum} from '../../../../enums';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {interval, Subscription} from 'rxjs';
 import {Store} from '@ngrx/store';
 import * as R from 'ramda';
@@ -20,13 +20,15 @@ import {
 } from '../../../../state';
 import {debounce, filter, tap} from 'rxjs/operators';
 import {ActivatedRoute} from '@angular/router';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MtxSelect} from '@ng-matero/extensions/select';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-task-wizard-filters',
+    imports: [ReactiveFormsModule, TranslatePipe, MatFormField, MatLabel, MtxSelect],
     templateUrl: './task-wizard-filters.component.html',
     styleUrls: ['./task-wizard-filters.component.scss'],
-    standalone: false
 })
 export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
   private store = inject(Store);
