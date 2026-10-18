@@ -32,7 +32,7 @@ import {
 } from '../models';
 
 /** Statuses whose blob body is the server's reason for refusing the request (ChemicalsController.FileResultAsync). */
-const REASON_STATUSES = [400, 409, 422];
+const REASON_STATUSES = [400, 409];
 
 /** The reason text of a refused download, or null. The body is a blob (responseType), plain text or a JSON string. */
 function toDownloadError(err: unknown): Observable<ChemicalDownloadError> {

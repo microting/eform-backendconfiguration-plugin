@@ -78,8 +78,9 @@ export function historyActionKey(action: ChemicalHistoryAction): string {
 }
 
 /**
- * The event time as an ISO string the date pipe reads as UTC. The server's DateTime may come without an
- * offset; one that already has "Z" or "+hh:mm" is left alone (appending "Z" would make it invalid).
+ * The event time as an ISO string the date pipe reads as UTC. Defence only: restoreIsoDates (the Kemi service)
+ * already emits "…Z", so this adds a "Z" just to an offset-less time; one that already has "Z" or "+hh:mm" is
+ * left alone (appending "Z" would make it invalid).
  */
 export function asUtcIso(at: string): string {
   return /(Z|[+-]\d{2}:?\d{2})$/i.test(at) ? at : `${at}Z`;
