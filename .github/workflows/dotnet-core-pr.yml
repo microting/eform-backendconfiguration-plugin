@@ -89,7 +89,8 @@ jobs:
       id: pw
       run: |
         cd eform-angular-frontend/eform-client
-        VER=$(awk -F'"' '/^"@playwright\/test@/{b=1} b&&/^  version/{print $2; exit}' yarn.lock)
+        # Yarn 1: `  version "1.x.y"`; Yarn 4 (berry): `  version: 1.x.y`
+        VER=$(awk '/^"?@playwright\/test@/{b=1} b&&/^  version/{v=$0; sub(/^  version:? +/,"",v); gsub(/"/,"",v); print v; exit}' yarn.lock)
         if [ -z "$VER" ]; then
           echo "::error::Could not resolve @playwright/test version from yarn.lock"
           exit 1
