@@ -294,12 +294,12 @@ describe('ChemicalLocationsPageComponent', () => {
       chemicals.getPropertyInventory.mockReturnValue(answer);
 
       component.reload();
-      expect(component.loading).toBe(true);
+      expect(component.load.loading).toBe(true);
       expect(component.rows).toEqual([]);
 
       answer.error(new Error('500'));
-      expect(component.loading).toBe(false);
-      expect(component.loadFailed).toBe(true);
+      expect(component.load.loading).toBe(false);
+      expect(component.load.failed).toBe(true);
     });
 
     it('treats a refused inventory as a failed load', () => {
@@ -308,7 +308,7 @@ describe('ChemicalLocationsPageComponent', () => {
 
       component.reload();
 
-      expect(component.loadFailed).toBe(true);
+      expect(component.load.failed).toBe(true);
       expect(component.rows).toEqual([]);
     });
 
@@ -318,8 +318,8 @@ describe('ChemicalLocationsPageComponent', () => {
 
       component.reload();
 
-      expect(component.loading).toBe(false);
-      expect(component.loadFailed).toBe(true);
+      expect(component.load.loading).toBe(false);
+      expect(component.load.failed).toBe(true);
     });
 
     it('ignores the answer for a property the user already left', () => {
@@ -343,7 +343,7 @@ describe('ChemicalLocationsPageComponent', () => {
       component.openCreate();
 
       expect(component.rows).toEqual([]);
-      expect(component.loading).toBe(false);
+      expect(component.load.loading).toBe(false);
       expect(dialog.open).not.toHaveBeenCalled();
     });
   });

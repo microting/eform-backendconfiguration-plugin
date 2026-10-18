@@ -1,3 +1,6 @@
+@use '../../chemicals-shared';
+
+// E2's own spacing and Material colours for these two; the shared partial brings the load-failed banner.
 .chemicals-empty { padding: 24px; color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6)); }
 .chemicals-hint { opacity: 0.75; margin: 4px 0; }
 /* Reserves the row of the recipient error so clearing it (on blur) never moves Save under a click. */

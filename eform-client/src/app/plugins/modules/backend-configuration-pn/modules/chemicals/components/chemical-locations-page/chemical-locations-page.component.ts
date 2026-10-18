@@ -50,21 +50,13 @@ export class ChemicalLocationsPageComponent implements OnInit {
   /** A new order is being saved; moving waits for it, so two orders never race. */
   reordering = false;
   /** The newest inventory request; nothing is shown as empty while it is in flight. */
-  private readonly load = new ChemicalLatestLoad();
+  readonly load = new ChemicalLatestLoad();
 
   /** Rows keep their elements across a saved order or a reload, so a focused move button survives (N-I1). */
   readonly trackByLocation = (_index: number, row: ChemicalLocationRow): number => row.location.id;
 
   /** Bound to cdkDropListSortPredicate: a row can only be sorted among the active locations. */
   readonly canSortTo = (index: number): boolean => index < this.activeCount;
-
-  get loading(): boolean {
-    return this.load.loading;
-  }
-
-  get loadFailed(): boolean {
-    return this.load.failed;
-  }
 
   /** An order save cannot be cancelled: the container locks the property picker meanwhile (M3). */
   get busy(): boolean {

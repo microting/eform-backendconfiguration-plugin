@@ -162,7 +162,7 @@ describe('ChemicalSettingsPageComponent', () => {
       chemicals.getSettings.mockReturnValue(pending);
       component = build();
 
-      expect(component.loading).toBe(true);
+      expect(component.load.loading).toBe(true);
       expect(component.ready).toBe(false);
       component.onStockToggle(true);
       component.recipientInput = 'second@example.com';
@@ -175,7 +175,7 @@ describe('ChemicalSettingsPageComponent', () => {
 
       pending.next(loaded(true, ['first@example.com']));
 
-      expect(component.loading).toBe(false);
+      expect(component.load.loading).toBe(false);
       expect(component.ready).toBe(true);
       expect(component.stockEnabled).toBe(true);
       expect(component.recipients).toEqual(['first@example.com']);
@@ -190,8 +190,8 @@ describe('ChemicalSettingsPageComponent', () => {
       chemicals.getSettings.mockReturnValue(answer());
       component = build();
 
-      expect(component.loadFailed).toBe(true);
-      expect(component.loading).toBe(false);
+      expect(component.load.failed).toBe(true);
+      expect(component.load.loading).toBe(false);
       expect(component.ready).toBe(false);
       component.onStockToggle(true);
       component.save();
@@ -211,7 +211,7 @@ describe('ChemicalSettingsPageComponent', () => {
 
       expect(component.recipients).toEqual(['second@example.com']);
       expect(component.stockEnabled).toBe(false);
-      expect(component.loading).toBe(false);
+      expect(component.load.loading).toBe(false);
     });
   });
 
@@ -253,16 +253,16 @@ describe('ChemicalSettingsPageComponent', () => {
   });
 
   describe('switching property resets the load state', () => {
-    it('clears loadFailed and loading when the next property loads', () => {
+    it('clears the failed and loading state when the next property loads', () => {
       chemicals.getSettings.mockReturnValueOnce(throwError(() => new Error('offline')));
       property$ = new BehaviorSubject<number | null>(3);
       component = build();
-      expect(component.loadFailed).toBe(true);
+      expect(component.load.failed).toBe(true);
 
       property$.next(4);
 
-      expect(component.loadFailed).toBe(false);
-      expect(component.loading).toBe(false);
+      expect(component.load.failed).toBe(false);
+      expect(component.load.loading).toBe(false);
       expect(component.ready).toBe(true);
     });
 
@@ -274,8 +274,8 @@ describe('ChemicalSettingsPageComponent', () => {
 
       property$.next(4);
 
-      expect(component.loadFailed).toBe(false);
-      expect(component.loading).toBe(true);
+      expect(component.load.failed).toBe(false);
+      expect(component.load.loading).toBe(true);
       expect(component.ready).toBe(false);
     });
   });
@@ -422,7 +422,7 @@ describe('ChemicalSettingsPageComponent', () => {
 
       firstA.error(new Error('offline'));
 
-      expect(component.loadFailed).toBe(false);
+      expect(component.load.failed).toBe(false);
       expect(component.ready).toBe(true);
     });
 

@@ -1,14 +1,13 @@
 import { test, expect, Page } from '@playwright/test';
-import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
-import { BackendConfigurationPropertiesPage, PropertyCreateUpdate } from '../BackendConfigurationProperties.page';
 import {
   BackendConfigurationChemicalsPage,
   CHEMICAL_SCREENS_IN_MENU_ORDER,
   ChemicalScreen,
+  kemiProperty,
 } from '../BackendConfigurationChemicals.page';
 import { isoDateFromToday, propertyIdByName, seedRegisterChemical } from '../chemical-register-seed';
-import { API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from '../wait-helpers';
+import { API_TIMEOUT, UI_TIMEOUT } from '../wait-helpers';
 
 /**
  * W1 + W2 (flutter-chemistry spec §11): register placements from the BMD register, "Kræver handling"
@@ -18,43 +17,26 @@ import { API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from '../wait-helpers';
  * texts, so they hold in any UI language.
  */
 const rand = generateRandmString(6);
-const property: PropertyCreateUpdate = {
-  name: `Kemi-inv-${rand}`, chrNumber: generateRandmString(5), address: generateRandmString(5), cvrNumber: '1111111',
-};
+const property = kemiProperty('Kemi-inv', rand);
 const approved = `KemiOK${rand}`;
 const expired = `KemiUD${rand}`;
 const lade = `Lade-${rand}`;
 const kemirum = `Kemirum-${rand}`;
 
-async function open(page: Page, screen: ChemicalScreen): Promise<BackendConfigurationChemicalsPage> {
-  await page.goto('http://localhost:4200', { timeout: API_TIMEOUT });
-  await new LoginPage(page).login();
-  const kemi = new BackendConfigurationChemicalsPage(page);
-  await kemi.openScreenFor(screen, property.name);
-  return kemi;
-}
+const open = (page: Page, screen: ChemicalScreen) => BackendConfigurationChemicalsPage.openLoggedIn(page, screen, property.name);
 
 test.describe.serial('Kemi W1/W2 - inventory', () => {
   test('seed: two register products, a property and two locations', async ({ page }) => {
     test.setTimeout(180000);
     await seedRegisterChemical({ name: approved, registrationNo: `1-${rand}`, status: 5 });
     await seedRegisterChemical({ name: expired, registrationNo: `2-${rand}`, status: 7, useAndPossessionDeadline: isoDateFromToday(-30) });
-    await page.goto('http://localhost:4200', { timeout: API_TIMEOUT });
-    await new LoginPage(page).login();
-    const properties = new BackendConfigurationPropertiesPage(page);
-    await properties.goToProperties();
-    await properties.createProperty(property);
-    const kemi = new BackendConfigurationChemicalsPage(page);
-    await kemi.openScreenFor('locations', property.name);
-    await kemi.createLocation(lade);
-    await kemi.createLocation(kemirum);
+    const kemi = await BackendConfigurationChemicalsPage.login(page);
+    await kemi.createPropertyWithLocations(property, [lade, kemirum]);
   });
 
   test('the Kemi menu lists the five screens in order and opens Beholdning', async ({ page }) => {
     test.setTimeout(120000);
-    await page.goto('http://localhost:4200', { timeout: API_TIMEOUT });
-    await new LoginPage(page).login();
-    const kemi = new BackendConfigurationChemicalsPage(page);
+    const kemi = await BackendConfigurationChemicalsPage.login(page);
 
     await kemi.expandChemicalsMenu();
     const items = kemi.screenMenuButtons();
@@ -86,12 +68,9 @@ test.describe.serial('Kemi W1/W2 - inventory', () => {
   test('the digest deeplink on the bare Kemi root opens W1 filtered (Plan D C4)', async ({ page }) => {
     test.setTimeout(90000);
     const propertyId = await propertyIdByName(property.name);
-    await page.goto('http://localhost:4200', { timeout: API_TIMEOUT });
-    await new LoginPage(page).login();
+    const kemi = await BackendConfigurationChemicalsPage.login(page);
 
-    await page.goto(`http://localhost:4200/plugins/backend-configuration-pn/chemicals?propertyId=${propertyId}&filter=requires-action`,
-      { timeout: API_TIMEOUT });
-    const kemi = new BackendConfigurationChemicalsPage(page);
+    await kemi.gotoRoot(`?propertyId=${propertyId}&filter=requires-action`);
     await kemi.inventoryRow(expired).waitFor({ state: 'visible', timeout: API_TIMEOUT });
     await expect(page).toHaveURL(/\/chemicals\/inventory\?.*filter=requires-action/, { timeout: UI_TIMEOUT });
     await expect(kemi.propertySelect()).toContainText(property.name, { timeout: UI_TIMEOUT });
@@ -113,10 +92,9 @@ test.describe.serial('Kemi W1/W2 - inventory', () => {
     // The radio itself: a click on the empty end of the full-width row selects nothing (Material radio).
     await page.locator('#chemicalRemoveReasonDisposed input[type="radio"]').check({ timeout: UI_TIMEOUT });
     await expect(page.locator('#chemicalRemoveSaveBtn')).toBeEnabled({ timeout: UI_TIMEOUT });
-    const removed = waitForApiResponse(page, 'POST placements/{id}/remove',
-      (r) => /\/chemicals\/placements\/\d+\/remove$/.test(r.url()), API_TIMEOUT);
+    const removed = kemi.waitForChemicalsCall('POST', /^placements\/\d+\/remove$/);
     await page.locator('#chemicalRemoveSaveBtn').click({ timeout: UI_TIMEOUT });
-    expect((await (await removed).json()).success).toBe(true);
+    await removed;
     await expect(kemi.inventoryRow(expired)).toHaveCount(0, { timeout: API_TIMEOUT });
     await expect(page.locator('#chemicalsActionBanner')).toHaveCount(0, { timeout: UI_TIMEOUT });
   });
@@ -130,10 +108,9 @@ test.describe.serial('Kemi W1/W2 - inventory', () => {
     await menuItem('chemicalRowMove').click({ timeout: UI_TIMEOUT });
     await kemi.selectMtxOption('#chemicalMoveTargetSelect', kemirum);
     await page.locator('#chemicalMoveNote').fill('Shelf 1', { timeout: UI_TIMEOUT });
-    const moved = waitForApiResponse(page, 'POST placements/{id}/move',
-      (r) => /\/chemicals\/placements\/\d+\/move$/.test(r.url()), API_TIMEOUT);
+    const moved = kemi.waitForChemicalsCall('POST', /^placements\/\d+\/move$/);
     await page.locator('#chemicalMoveSaveBtn').click({ timeout: UI_TIMEOUT });
-    expect((await (await moved).json()).success).toBe(true);
+    await moved;
     await expect(kemi.inventoryRow(approved)).toContainText(kemirum, { timeout: API_TIMEOUT });
     await expect(kemi.inventoryRow(approved)).toContainText('Shelf 1', { timeout: UI_TIMEOUT });
   });

@@ -87,7 +87,6 @@ public class ChemicalAuthorityListTests
         var withStock = ChemicalAuthorityListBuilder.Build(Inventory(true, placements, entries), 1, Now, "https://x", Text);
         var withoutStock = ChemicalAuthorityListBuilder.Build(Inventory(false, placements, entries), 1, Now, "https://x", Text);
 
-        Assert.That(withStock.ShowQuantity, Is.True);
         Assert.That(withStock.Rows.Single().Quantity, Is.EqualTo("3.5 kg"));
         Assert.That(withStock.Headers, Does.Contain("ChemicalColumnQuantity"));
         Assert.That(withoutStock.Headers, Does.Not.Contain("ChemicalColumnQuantity"));

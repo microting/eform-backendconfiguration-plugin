@@ -29,7 +29,10 @@ public static class ChemicalCopenhagen
     public static DateTime ToCopenhagen(DateTime utc) =>
         TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), ChemicalAlertRules.Copenhagen);
 
+    /// <summary>A Copenhagen wall-clock time as a UTC instant.</summary>
+    public static DateTime FromCopenhagenLocal(DateTime local) =>
+        TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(local, DateTimeKind.Unspecified), ChemicalAlertRules.Copenhagen);
+
     /// <summary>Midnight at the start of the given Copenhagen calendar day, as a UTC instant.</summary>
-    public static DateTime LocalMidnightToUtc(DateTime date) =>
-        TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(date.Date, DateTimeKind.Unspecified), ChemicalAlertRules.Copenhagen);
+    public static DateTime LocalMidnightToUtc(DateTime date) => FromCopenhagenLocal(date.Date);
 }

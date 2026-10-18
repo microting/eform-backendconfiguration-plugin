@@ -70,8 +70,11 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
   previewSections: ChemicalDigestPreviewSection[] = [];
   /** The preview could not be read (refused or HTTP error); the card says so instead of staying empty. */
   previewFailed = false;
-  /** Reading the stored settings; only the newest request may deliver (A to B to A switches). */
-  private readonly settingsLoad = new ChemicalLatestLoad();
+  /**
+   * Reading the stored settings; only the newest request may deliver (A to B to A switches). The form is not
+   * offered while it loads, nor after it failed, so nothing can overwrite the stored settings from defaults.
+   */
+  readonly load = new ChemicalLatestLoad();
   /** A save is in flight and cannot be cancelled: the container locks the property picker. */
   busy = false;
   private loadedStock = false;
@@ -86,23 +89,13 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((id) => {
         this.propertyId = id;
-        this.load();
+        this.loadSettings();
       });
-  }
-
-  /** The stored settings are being read: the form is not offered until they arrive. */
-  get loading(): boolean {
-    return this.settingsLoad.loading;
-  }
-
-  /** Reading the stored settings failed (refused, HTTP error or no answer): no form, so nothing can overwrite them from defaults. */
-  get loadFailed(): boolean {
-    return this.settingsLoad.failed;
   }
 
   /** The form shows the stored settings and may be edited and saved. */
   get ready(): boolean {
-    return this.propertyId !== null && !this.loading && !this.loadFailed;
+    return this.propertyId !== null && !this.load.loading && !this.load.failed;
   }
 
   /**
@@ -193,8 +186,8 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
     return this.translate.instant(key);
   }
 
-  private load(): void {
-    this.settingsLoad.reset();
+  private loadSettings(): void {
+    this.load.reset();
     this.previewGeneration++;
     this.apply(false, []);
     this.setPreview(null);
@@ -204,7 +197,7 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
       return;
     }
     const propertyId = this.propertyId;
-    this.settingsLoad.run(this.chemicalsService.getSettings(propertyId),
+    this.load.run(this.chemicalsService.getSettings(propertyId),
       (settings) => this.apply(settings.stockEnabled, settings.digestRecipients));
     this.loadPreview(propertyId);
   }

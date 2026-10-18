@@ -5,17 +5,17 @@
     </mat-checkbox>
     <span class="chemicals-hint">{{ 'Chemicals: Drag hint' | translate }}</span>
     <button class="btn-primary btn-primary--icon-left ml-auto" id="chemicalLocationsNewBtn"
-            [disabled]="propertyId === null || loading || loadFailed" (click)="openCreate()">
+            [disabled]="propertyId === null || load.loading || load.failed" (click)="openCreate()">
       <mat-icon>add</mat-icon><span>{{ 'Chemicals: New location' | translate }}</span>
     </button>
   </div>
 
-  <div *ngIf="loading" id="chemicalLocationsLoading" class="chemicals-empty" role="status">{{ 'Chemicals: Loading locations' | translate }}</div>
-  <div *ngIf="loadFailed" id="chemicalLocationsLoadFailed" class="chemicals-danger" role="alert">
+  <div *ngIf="load.loading" id="chemicalLocationsLoading" class="chemicals-empty" role="status">{{ 'Chemicals: Loading locations' | translate }}</div>
+  <div *ngIf="load.failed" id="chemicalLocationsLoadFailed" class="chemicals-danger" role="alert">
     <mat-icon>error</mat-icon><span>{{ 'Chemicals: Could not load locations' | translate }}</span>
   </div>
 
-  <ng-container *ngIf="!loading && !loadFailed && propertyId !== null">
+  <ng-container *ngIf="!load.loading && !load.failed && propertyId !== null">
     <div class="chemicals-location-header d-flex align-items-center">
       <span class="col-drag"></span><span class="col-no">{{ 'Chemicals: No.' | translate }}</span>
       <span class="col-photo">{{ 'Chemicals: Photo' | translate }}</span><span class="col-name">{{ 'Name' | translate }}</span>

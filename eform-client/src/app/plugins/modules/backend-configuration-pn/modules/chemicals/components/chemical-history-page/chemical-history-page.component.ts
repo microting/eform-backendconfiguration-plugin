@@ -2,9 +2,7 @@ import {Component, DestroyRef, OnInit, inject} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {TranslateService} from '@ngx-translate/core';
 import {Store} from '@ngrx/store';
-import {saveAs} from 'file-saver';
 import {ToastrService} from 'ngx-toastr';
-import {finalize} from 'rxjs/operators';
 import {
   ChemicalHistoryEventModel,
   ChemicalHistoryQueryModel,
@@ -27,7 +25,7 @@ import {
   buildHistoryQuery,
   copenhagenToday,
   defaultHistoryPeriod,
-  downloadFailureText,
+  downloadFile,
   formatHistoryDetails,
   historyActionKey,
   historyPeriodError,
@@ -77,18 +75,10 @@ export class ChemicalHistoryPageComponent implements OnInit {
   pageSize = HISTORY_PAGE_SIZES[0];
   exporting = false;
   /** The newest page request; an answer for an older query or property is dropped. */
-  private readonly load = new ChemicalLatestLoad();
+  readonly load = new ChemicalLatestLoad();
   private readonly locationsLoad = new ChemicalLatestLoad();
   /** Every user name seen on this property, so a selected user never shows as a blank chip. */
   private readonly knownUsers = new Map<number, string>();
-
-  get loading(): boolean {
-    return this.load.loading;
-  }
-
-  get loadFailed(): boolean {
-    return this.load.failed;
-  }
 
   /** The location filter could not be filled (a refusal, an error or no answer). */
   get locationsFailed(): boolean {
@@ -164,12 +154,8 @@ export class ChemicalHistoryPageComponent implements OnInit {
       return;
     }
     this.exporting = true;
-    this.chemicalsService.exportHistory(this.propertyId, {...this.query, page: 0})
-      .pipe(finalize(() => (this.exporting = false)))
-      .subscribe({
-        next: (file) => saveAs(file.blob, file.fileName),
-        error: (err: unknown) => this.toastr.error(downloadFailureText(err, this.translate)),
-      });
+    downloadFile(this.chemicalsService.exportHistory(this.propertyId, {...this.query, page: 0}), this.toastr, this.translate,
+      () => (this.exporting = false));
   }
 
   /** `restart`: a new property or filter, so the old count no longer applies; a page change keeps it. */

@@ -37,4 +37,4 @@ public sealed record ChemicalAuthorityListRow(
 
 public sealed record ChemicalAuthorityListDocument(
     string Title, string Subtitle, IReadOnlyList<string> Headers, IReadOnlyList<ChemicalAuthorityListRow> Rows,
-    bool ShowQuantity, string SdsLinkText);
+    string SdsLinkText);

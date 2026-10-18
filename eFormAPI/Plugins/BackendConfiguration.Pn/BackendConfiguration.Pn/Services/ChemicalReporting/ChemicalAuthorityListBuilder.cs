@@ -76,7 +76,7 @@ public static class ChemicalAuthorityListBuilder
             text(K.ChemicalAuthorityListTitle),
             $"{text(K.ChemicalPropertyLabel)}: {lookup.PropertyName(propertyId)} · {text(K.ChemicalGeneratedLabel)}: "
             + ChemicalCopenhagen.ToCopenhagen(generatedAtUtc).ToString("dd-MM-yyyy HH:mm", CultureInfo.InvariantCulture),
-            headers, rows, showQuantity, text(K.ChemicalSdsLink));
+            headers, rows, text(K.ChemicalSdsLink));
     }
 
     private static ChemicalAuthorityListRow Row(

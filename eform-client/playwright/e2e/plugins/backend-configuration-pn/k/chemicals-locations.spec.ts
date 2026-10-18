@@ -1,9 +1,7 @@
 import { test, expect, Page } from '@playwright/test';
-import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
-import { BackendConfigurationPropertiesPage, PropertyCreateUpdate } from '../BackendConfigurationProperties.page';
-import { BackendConfigurationChemicalsPage } from '../BackendConfigurationChemicals.page';
-import { API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from '../wait-helpers';
+import { BackendConfigurationChemicalsPage, kemiProperty } from '../BackendConfigurationChemicals.page';
+import { API_TIMEOUT, UI_TIMEOUT } from '../wait-helpers';
 
 /**
  * W3 "Lokationer" (flutter-chemistry spec §11): create, reorder by drag and by the up/down buttons (the
@@ -11,32 +9,16 @@ import { API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from '../wait-helpers';
  * database; the spec seeds one property and three locations through the UI.
  */
 const rand = generateRandmString(6);
-const property: PropertyCreateUpdate = {
-  name: `Kemi-loc-${rand}`, chrNumber: generateRandmString(5), address: generateRandmString(5), cvrNumber: '1111111',
-};
+const property = kemiProperty('Kemi-loc', rand);
 const [a, b, c] = [`A-${rand}`, `B-${rand}`, `C-${rand}`];
 
-async function openLocations(page: Page): Promise<BackendConfigurationChemicalsPage> {
-  await page.goto('http://localhost:4200', { timeout: API_TIMEOUT });
-  await new LoginPage(page).login();
-  const kemi = new BackendConfigurationChemicalsPage(page);
-  await kemi.openScreenFor('locations', property.name);
-  return kemi;
-}
+const openLocations = (page: Page) => BackendConfigurationChemicalsPage.openLoggedIn(page, 'locations', property.name);
 
 test.describe.serial('Kemi W3 - locations', () => {
   test('seed: a property and three locations, listed in creation order', async ({ page }) => {
     test.setTimeout(150000);
-    await page.goto('http://localhost:4200', { timeout: API_TIMEOUT });
-    await new LoginPage(page).login();
-    const properties = new BackendConfigurationPropertiesPage(page);
-    await properties.goToProperties();
-    await properties.createProperty(property);
-    const kemi = new BackendConfigurationChemicalsPage(page);
-    await kemi.openScreenFor('locations', property.name);
-    for (const name of [a, b, c]) {
-      await kemi.createLocation(name);
-    }
+    const kemi = await BackendConfigurationChemicalsPage.login(page);
+    await kemi.createPropertyWithLocations(property, [a, b, c]);
     await expect(kemi.activeLocationNames()).toHaveText([a, b, c], { timeout: UI_TIMEOUT });
   });
 
@@ -88,10 +70,9 @@ test.describe.serial('Kemi W3 - locations', () => {
     await kemi.locationRow(b).waitFor({ state: 'visible', timeout: API_TIMEOUT });
 
     await kemi.locationRow(b).locator('[id^="chemicalLocationArchive-"]').click({ timeout: UI_TIMEOUT });
-    const archived = waitForApiResponse(page, 'POST locations/{id}/archive',
-      (r) => /\/chemicals\/locations\/\d+\/archive$/.test(r.url()) && r.request().method() === 'POST', API_TIMEOUT);
+    const archived = kemi.waitForChemicalsCall('POST', /^locations\/\d+\/archive$/);
     await page.locator('#chemicalLocationArchiveConfirm').click({ timeout: UI_TIMEOUT });
-    expect((await (await archived).json()).success).toBe(true);
+    await archived;
     await expect(kemi.locationRow(b)).toHaveCount(0, { timeout: API_TIMEOUT });
     await expect(kemi.activeLocationNames()).toHaveText([a, c], { timeout: UI_TIMEOUT });
 

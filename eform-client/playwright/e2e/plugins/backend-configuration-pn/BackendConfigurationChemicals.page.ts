@@ -1,4 +1,7 @@
-import { Locator, Page, expect } from '@playwright/test';
+import { Locator, Page, Response, expect } from '@playwright/test';
+import { LoginPage } from '../../Page objects/Login.page';
+import { generateRandmString } from '../../helper-functions';
+import { BackendConfigurationPropertiesPage, PropertyCreateUpdate } from './BackendConfigurationProperties.page';
 import { ActionMenuItem, openRowActionMenu } from './row-action-menu';
 import { API_TIMEOUT, SLOW_API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from './wait-helpers';
 
@@ -16,6 +19,11 @@ const SCREEN_ROOTS = {
 export type ChemicalScreen = keyof typeof SCREEN_ROOTS;
 /** Menu children of `#backend-configuration-pn-chemicals`, in menu order. */
 export const CHEMICAL_SCREENS_IN_MENU_ORDER: ChemicalScreen[] = ['inventory', 'locations', 'permissions', 'settings', 'history'];
+
+/** A fresh property for one Kemi spec, named `<prefix>-<rand>` so the spec can pick it by name (E-10). */
+export const kemiProperty = (prefix: string, rand: string): PropertyCreateUpdate => ({
+  name: `${prefix}-${rand}`, chrNumber: generateRandmString(5), address: generateRandmString(5), cvrNumber: '1111111',
+});
 
 /** Anchored, whitespace-tolerant regexp so an option must match the whole label (`Farm` never picks `Farm 2`). */
 const exactText = (text: string): RegExp =>
@@ -64,8 +72,6 @@ const exactText = (text: string): RegExp =>
 export class BackendConfigurationChemicalsPage {
   /** Uncaught page errors and console errors, quoted when a Kemi screen does not show what the server sent. */
   private readonly browserErrors: string[] = [];
-  /** Every inventory GET the page made, in order. */
-  private readonly inventoryRequests: string[] = [];
 
   constructor(public page: Page) {
     page.on('pageerror', (error) => this.browserErrors.push(`pageerror: ${error.message}`));
@@ -74,17 +80,52 @@ export class BackendConfigurationChemicalsPage {
         this.browserErrors.push(`console: ${message.text()}`);
       }
     });
-    page.on('request', (request) => {
-      if (request.method() === 'GET' && /\/chemicals\/properties\/\d+\/inventory$/.test(new URL(request.url()).pathname)) {
-        this.inventoryRequests.push(new URL(request.url()).pathname);
-      }
-    });
   }
 
-  /** What the browser reported, for failure messages. */
+  /** Logs in from the app root and opens a Kemi screen for the property (the shared start of every Kemi spec). */
+  static async openLoggedIn(page: Page, screen: ChemicalScreen, propertyName: string): Promise<BackendConfigurationChemicalsPage> {
+    const kemi = await BackendConfigurationChemicalsPage.login(page);
+    await kemi.openScreenFor(screen, propertyName);
+    return kemi;
+  }
+
+  /** Logs in from the app root. */
+  static async login(page: Page): Promise<BackendConfigurationChemicalsPage> {
+    await page.goto(BASE_URL, { timeout: API_TIMEOUT });
+    await new LoginPage(page).login();
+    return new BackendConfigurationChemicalsPage(page);
+  }
+
+  /** Creates the property through the Properties screen, then its Kemi locations through W3 (logged in). */
+  async createPropertyWithLocations(property: PropertyCreateUpdate, locationNames: string[]): Promise<void> {
+    const properties = new BackendConfigurationPropertiesPage(this.page);
+    await properties.goToProperties();
+    await properties.createProperty(property);
+    await this.openScreenFor('locations', property.name);
+    for (const name of locationNames) {
+      await this.createLocation(name);
+    }
+  }
+
+  /** The page URL and what the browser reported, for failure messages. */
   browserReport(): string {
-    return `page ${this.page.url()}; inventory GETs [${this.inventoryRequests.join(', ')}]; ` +
-      `browser errors [${this.browserErrors.join(' | ')}]`;
+    return `page ${this.page.url()}; browser errors [${this.browserErrors.join(' | ')}]`;
+  }
+
+  /**
+   * Waits for a Kemi API answer (`path` is matched after `/api/backend-configuration-pn/chemicals/`), asserts
+   * success and returns the JSON. Call it before the click that sends the request.
+   */
+  async waitForChemicalsCall(method: string, path: RegExp, match: (response: Response) => boolean = () => true): Promise<any> {
+    const description = `${method} chemicals/${path.source}`;
+    const response = await waitForApiResponse(this.page, description, (r) => {
+      const pathname = new URL(r.url()).pathname;
+      return r.request().method() === method && pathname.startsWith(`${CHEMICALS_API}/`)
+        && path.test(pathname.slice(CHEMICALS_API.length + 1)) && match(r);
+    }, API_TIMEOUT);
+    const json = await response.json();
+    expect(json.success, description).toBe(true);
+    return json;
   }
 
   pluginMenuButton(): Locator {
@@ -111,16 +152,27 @@ export class BackendConfigurationChemicalsPage {
     return this.page.locator('#chemicalPermissionsPage');
   }
 
-  /** Opens Kemi > Rettigheder through the sidebar: expands each dropdown only if the next level is hidden. */
-  async goToPermissionsViaMenu(): Promise<void> {
-    if (!(await this.permissionsMenuButton().isVisible())) {
+  /** Expands the plugin dropdown and the Kemi group, each only if the next level is hidden, until `child` shows. */
+  private async expandChemicalsGroup(child: Locator): Promise<void> {
+    if (!(await child.isVisible())) {
       if (!(await this.chemicalsGroupButton().isVisible())) {
         await this.pluginMenuButton().click({ timeout: UI_TIMEOUT });
       }
       await this.chemicalsGroupButton().click({ timeout: UI_TIMEOUT });
     }
+    await child.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+  }
+
+  /** Opens Kemi > Rettigheder through the sidebar. */
+  async goToPermissionsViaMenu(): Promise<void> {
+    await this.expandChemicalsGroup(this.permissionsMenuButton());
     await this.permissionsMenuButton().click({ timeout: UI_TIMEOUT });
     await this.permissionsPage().waitFor({ state: 'visible', timeout: API_TIMEOUT });
+  }
+
+  /** Opens the bare Kemi root by URL (`query` e.g. `?propertyId=3`); it redirects to a screen, so nothing is awaited. */
+  async gotoRoot(query = ''): Promise<void> {
+    await this.page.goto(`${BASE_URL}/plugins/backend-configuration-pn/chemicals${query}`, { timeout: API_TIMEOUT });
   }
 
   /** Opens a Kemi screen by URL (`query` e.g. `?propertyId=3`); waits for the screen root. */
@@ -163,14 +215,9 @@ export class BackendConfigurationChemicalsPage {
     await expect(this.page.locator('#chemicalSettingsStockToggle button')).toBeEnabled({ timeout: UI_TIMEOUT });
   }
 
-  /** Opens Kemi > Indstillinger through the sidebar: expands each dropdown only if the next level is hidden. */
+  /** Opens Kemi > Indstillinger through the sidebar. */
   async goToSettingsViaMenu(): Promise<void> {
-    if (!(await this.settingsMenuButton().isVisible())) {
-      if (!(await this.chemicalsGroupButton().isVisible())) {
-        await this.pluginMenuButton().click({ timeout: UI_TIMEOUT });
-      }
-      await this.chemicalsGroupButton().click({ timeout: UI_TIMEOUT });
-    }
+    await this.expandChemicalsGroup(this.settingsMenuButton());
     await this.settingsMenuButton().click({ timeout: UI_TIMEOUT });
     await this.settingsPage().waitFor({ state: 'visible', timeout: API_TIMEOUT });
   }
@@ -264,34 +311,18 @@ export class BackendConfigurationChemicalsPage {
   }
 
   async savePermissions(): Promise<void> {
-    const saved = waitForApiResponse(
-      this.page,
-      'PUT chemicals/properties/{id}/permissions',
-      (r) =>
-        /\/api\/backend-configuration-pn\/chemicals\/properties\/\d+\/permissions$/.test(r.url()) &&
-        r.request().method() === 'PUT',
-      API_TIMEOUT
-    );
+    const saved = this.waitForChemicalsCall('PUT', /^properties\/\d+\/permissions$/);
     await this.saveButton().click({ timeout: UI_TIMEOUT });
-    const response = await saved;
-    expect((await response.json()).success).toBe(true);
+    await saved;
     await this.saveBar().waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
   }
 
   // ----- W5 -------------------------------------------------------------------
 
   async saveSettings(): Promise<void> {
-    const saved = waitForApiResponse(
-      this.page,
-      'PUT chemicals/properties/{id}/settings',
-      (r) =>
-        /\/api\/backend-configuration-pn\/chemicals\/properties\/\d+\/settings$/.test(r.url()) &&
-        r.request().method() === 'PUT',
-      API_TIMEOUT
-    );
+    const saved = this.waitForChemicalsCall('PUT', /^properties\/\d+\/settings$/);
     await this.page.locator('#chemicalSettingsSaveBtn').click({ timeout: UI_TIMEOUT });
-    const response = await saved;
-    expect((await response.json()).success).toBe(true);
+    await saved;
     await expect(this.page.locator('#chemicalSettingsSaveBtn')).toBeDisabled({ timeout: UI_TIMEOUT });
   }
 
@@ -307,15 +338,9 @@ export class BackendConfigurationChemicalsPage {
     return this.page.locator(CHEMICAL_SCREENS_IN_MENU_ORDER.map((screen) => `#backend-configuration-pn-chemicals-${screen}`).join(', '));
   }
 
-  /** Expands the plugin dropdown and the Kemi group, each only if the next level is hidden. */
+  /** Expands the plugin dropdown and the Kemi group until the Kemi children show. */
   async expandChemicalsMenu(): Promise<void> {
-    if (!(await this.screenMenuButton('inventory').isVisible())) {
-      if (!(await this.chemicalsGroupButton().isVisible())) {
-        await this.pluginMenuButton().click({ timeout: UI_TIMEOUT });
-      }
-      await this.chemicalsGroupButton().click({ timeout: UI_TIMEOUT });
-    }
-    await this.screenMenuButton('inventory').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    await this.expandChemicalsGroup(this.screenMenuButton('inventory'));
   }
 
   // ----- W1 / W2 ----------------------------------------------------------------
@@ -335,33 +360,21 @@ export class BackendConfigurationChemicalsPage {
     await expect(open).toBeEnabled({ timeout: API_TIMEOUT });
     await open.click({ timeout: UI_TIMEOUT });
     await this.page.locator('#chemicalRegisterSearchInput').fill(productName, { timeout: UI_TIMEOUT });
-    const search = waitForApiResponse(this.page, 'GET chemicals/register/search',
-      (r) => r.url().includes(`${CHEMICALS_API}/register/search`), API_TIMEOUT);
+    const search = this.waitForChemicalsCall('GET', /^register\/search$/);
     await this.page.locator('#chemicalRegisterSearchBtn').click({ timeout: UI_TIMEOUT });
-    expect((await (await search).json()).success).toBe(true);
+    await search;
     await this.page.locator('[id^="chemicalRegisterResult-"]').filter({ hasText: productName })
       .locator('input[type="radio"]').check({ timeout: UI_TIMEOUT });
     await this.selectMtxOption('#chemicalRegisterLocationSelect', locationName);
     await this.page.locator('#chemicalRegisterNote').fill(note, { timeout: UI_TIMEOUT });
-    const saved = waitForApiResponse(this.page, 'POST chemicals/placements',
-      (r) => r.url().endsWith(`${CHEMICALS_API}/placements`) && r.request().method() === 'POST', API_TIMEOUT);
-    // A save reloads the property's inventory; it must hold the new placement.
-    const reloaded = waitForApiResponse(this.page, 'GET chemicals/properties/{id}/inventory after the save',
-      (r) => /\/chemicals\/properties\/\d+\/inventory$/.test(new URL(r.url()).pathname) && r.request().method() === 'GET',
-      API_TIMEOUT);
+    const saved = this.waitForChemicalsCall('POST', /^placements$/);
     await this.page.locator('#chemicalRegisterSaveBtn').click({ timeout: UI_TIMEOUT });
-    const placement = await (await saved).json();
-    expect(placement.success, `POST placements: ${JSON.stringify(placement).slice(0, 1000)}`).toBe(true);
+    await saved;
     await this.page.locator('#chemicalRegisterSaveBtn').waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
-    const reload = await reloaded;
-    const inventory = await reload.json();
-    const names: string[] = (inventory.model?.registerEntries ?? []).map((e: { name: string }) => e.name);
-    expect(names, `inventory reload ${new URL(reload.url()).pathname}: ${JSON.stringify(inventory).slice(0, 2000)}`)
-      .toContain(productName);
     try {
       await this.inventoryRow(productName).first().waitFor({ state: 'visible', timeout: API_TIMEOUT });
     } catch (error) {
-      throw new Error(`W1 does not show ${productName} although the reloaded inventory has it: ${String(error)}\n${this.browserReport()}`);
+      throw new Error(`W1 does not show ${productName} after the save; ${this.browserReport()}`, { cause: error });
     }
   }
 
@@ -417,18 +430,15 @@ export class BackendConfigurationChemicalsPage {
     await expect(open).toBeEnabled({ timeout: API_TIMEOUT });
     await open.click({ timeout: UI_TIMEOUT });
     await this.page.locator('#chemicalLocationName').fill(name, { timeout: UI_TIMEOUT });
-    const saved = waitForApiResponse(this.page, 'POST chemicals/locations',
-      (r) => r.url().endsWith(`${CHEMICALS_API}/locations`) && r.request().method() === 'POST', API_TIMEOUT);
+    const saved = this.waitForChemicalsCall('POST', /^locations$/);
     await this.page.locator('#chemicalLocationSaveBtn').click({ timeout: UI_TIMEOUT });
-    expect((await (await saved).json()).success).toBe(true);
+    await saved;
     await this.locationRow(name).waitFor({ state: 'visible', timeout: API_TIMEOUT });
   }
 
   /** Waits for the PUT of a new location order and asserts the server took it. */
-  waitForLocationOrderSaved(): Promise<void> {
-    return waitForApiResponse(this.page, 'PUT chemicals/properties/{id}/locations/order',
-      (r) => /\/chemicals\/properties\/\d+\/locations\/order$/.test(r.url()) && r.request().method() === 'PUT', API_TIMEOUT)
-      .then(async (response) => expect((await response.json()).success).toBe(true));
+  waitForLocationOrderSaved(): Promise<unknown> {
+    return this.waitForChemicalsCall('PUT', /^properties\/\d+\/locations\/order$/);
   }
 
   // ----- W6 -------------------------------------------------------------------

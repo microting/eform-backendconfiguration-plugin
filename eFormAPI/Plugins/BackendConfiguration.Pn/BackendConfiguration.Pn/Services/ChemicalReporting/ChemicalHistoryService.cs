@@ -327,7 +327,7 @@ public class ChemicalHistoryService(
                 return string.Empty;
             }
 
-            return products.TryGetValue(chemicalId, out var product) ? product.Name : $"#{chemicalId}";
+            return products.TryGetValue(chemicalId, out var product) ? product.Name : ChemicalInventoryLookup.FallbackProductName(chemicalId);
         }
 
         string RegistrationNo(int? id) =>

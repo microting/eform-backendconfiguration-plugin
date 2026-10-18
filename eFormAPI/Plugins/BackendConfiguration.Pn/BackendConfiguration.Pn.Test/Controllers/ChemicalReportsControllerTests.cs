@@ -73,8 +73,6 @@ public class ChemicalReportsControllerTests
         };
     }
 
-    private static IEnumerable<string> RoutedActions() => ControllerTestKit.RoutedActions(typeof(ChemicalReportsController));
-
     private static void AssertStatus(IActionResult result, int status) =>
         Assert.That(result, Is.InstanceOf<ObjectResult>().With.Property(nameof(ObjectResult.StatusCode)).EqualTo(status));
 
@@ -321,30 +319,7 @@ public class ChemicalReportsControllerTests
 
     // ---- TODO(chemistry-GA): remove with the [FirstUserOnly] on the controller, like ChemicalsControllerFirstUserGateTests ----
 
-    private const int FirstUserId = 1;
-    private const int OtherAdminId = 7;
-
     [Test]
-    public void TheGateCoversEveryRoute()
-    {
-        Assert.That(RoutedActions().Count(), Is.EqualTo(ExpectedRoutes.Length), "gate-review a new route, then add it to ExpectedRoutes");
-    }
-
-    [TestCaseSource(nameof(RoutedActions))]
-    public async Task AnAdminWhoIsNotTheFirstUser_IsForbiddenOnEveryRoute(string actionName)
-    {
-        var result = await FirstUserGate.AuthorizeAsync(typeof(ChemicalReportsController), actionName,
-            FirstUserGate.Caller(OtherAdminId, FirstUserId));
-
-        FirstUserGate.AssertForbidden(result);
-    }
-
-    [TestCaseSource(nameof(RoutedActions))]
-    public async Task TheFirstUser_PassesTheGate(string actionName)
-    {
-        var result = await FirstUserGate.AuthorizeAsync(typeof(ChemicalReportsController), actionName,
-            FirstUserGate.Caller(FirstUserId, FirstUserId));
-
-        Assert.That(result, Is.Null);
-    }
+    public Task OnlyTheFirstUser_PassesTheGate_OnEveryRoute() =>
+        FirstUserGate.AssertGateOnEveryRouteAsync(typeof(ChemicalReportsController), ExpectedRoutes);
 }

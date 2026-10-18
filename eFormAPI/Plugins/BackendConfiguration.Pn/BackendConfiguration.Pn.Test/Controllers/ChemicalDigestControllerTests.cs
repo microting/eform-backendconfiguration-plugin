@@ -61,8 +61,6 @@ public class ChemicalDigestControllerTests
         return new ChemicalDigestController(_preview, localization, new FixedClock());
     }
 
-    private static IEnumerable<string> RoutedActions() => ControllerTestKit.RoutedActions(typeof(ChemicalDigestController));
-
     [Test]
     public void UsesThePluginPolicyAndTheChemicalsPrefix()
     {
@@ -126,30 +124,8 @@ public class ChemicalDigestControllerTests
 
     // ---- TODO(chemistry-GA): remove with the [FirstUserOnly] on the controller, like ChemicalsControllerFirstUserGateTests ----
 
-    private const int FirstUserId = 1;
-    private const int OtherAdminId = 7;
-
     [Test]
-    public void TheGateCoversEveryRoute()
-    {
-        Assert.That(RoutedActions().Count(), Is.EqualTo(1), "gate-review a new route, then bump this");
-    }
-
-    [TestCaseSource(nameof(RoutedActions))]
-    public async Task AnAdminWhoIsNotTheFirstUser_IsForbiddenOnEveryRoute(string actionName)
-    {
-        var result = await FirstUserGate.AuthorizeAsync(typeof(ChemicalDigestController), actionName,
-            FirstUserGate.Caller(OtherAdminId, FirstUserId));
-
-        FirstUserGate.AssertForbidden(result);
-    }
-
-    [TestCaseSource(nameof(RoutedActions))]
-    public async Task TheFirstUser_PassesTheGate(string actionName)
-    {
-        var result = await FirstUserGate.AuthorizeAsync(typeof(ChemicalDigestController), actionName,
-            FirstUserGate.Caller(FirstUserId, FirstUserId));
-
-        Assert.That(result, Is.Null);
-    }
+    public Task OnlyTheFirstUser_PassesTheGate_OnEveryRoute() =>
+        FirstUserGate.AssertGateOnEveryRouteAsync(typeof(ChemicalDigestController),
+            ["GET api/backend-configuration-pn/chemicals/properties/{propertyId:int}/digest-preview"]);
 }

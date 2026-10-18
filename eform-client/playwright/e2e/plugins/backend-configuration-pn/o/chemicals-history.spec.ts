@@ -1,10 +1,8 @@
 import { test, expect, Page } from '@playwright/test';
-import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
-import { BackendConfigurationPropertiesPage, PropertyCreateUpdate } from '../BackendConfigurationProperties.page';
-import { BackendConfigurationChemicalsPage } from '../BackendConfigurationChemicals.page';
+import { BackendConfigurationChemicalsPage, kemiProperty } from '../BackendConfigurationChemicals.page';
 import { seedRegisterChemical } from '../chemical-register-seed';
-import { API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from '../wait-helpers';
+import { API_TIMEOUT, UI_TIMEOUT } from '../wait-helpers';
 
 /**
  * W6 "Historik" (flutter-chemistry spec §5.1, §11): what the admin did shows up in the immutable log, the
@@ -12,9 +10,7 @@ import { API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from '../wait-helpers';
  * the register is seeded by SQL, everything else through the UI.
  */
 const rand = generateRandmString(6);
-const property: PropertyCreateUpdate = {
-  name: `Kemi-hist-${rand}`, chrNumber: generateRandmString(5), address: generateRandmString(5), cvrNumber: '1111111',
-};
+const property = kemiProperty('Kemi-hist', rand);
 const product = `KemiHist${rand}`;
 const location = `Lade-${rand}`;
 /** ChemicalHistoryAction (chemical-reporting.model.ts). */
@@ -24,10 +20,7 @@ const LOCATION_CREATED = 8;
 const REGISTERED_LABEL = /^\s*(Registreret|Registered)\s*$/;
 
 async function openHistory(page: Page): Promise<BackendConfigurationChemicalsPage> {
-  await page.goto('http://localhost:4200', { timeout: API_TIMEOUT });
-  await new LoginPage(page).login();
-  const kemi = new BackendConfigurationChemicalsPage(page);
-  await kemi.openScreenFor('history', property.name);
+  const kemi = await BackendConfigurationChemicalsPage.openLoggedIn(page, 'history', property.name);
   await kemi.waitForHistoryLoaded();
   return kemi;
 }
@@ -36,14 +29,8 @@ test.describe.serial('Kemi W6 - history', () => {
   test('seed: a register product, a property, a location and one registered placement', async ({ page }) => {
     test.setTimeout(180000);
     await seedRegisterChemical({ name: product, registrationNo: `3-${rand}`, status: 5 });
-    await page.goto('http://localhost:4200', { timeout: API_TIMEOUT });
-    await new LoginPage(page).login();
-    const properties = new BackendConfigurationPropertiesPage(page);
-    await properties.goToProperties();
-    await properties.createProperty(property);
-    const kemi = new BackendConfigurationChemicalsPage(page);
-    await kemi.openScreenFor('locations', property.name);
-    await kemi.createLocation(location);
+    const kemi = await BackendConfigurationChemicalsPage.login(page);
+    await kemi.createPropertyWithLocations(property, [location]);
     await kemi.openScreenFor('inventory', property.name);
     await kemi.registerPlacement(product, location, 'Shelf 2');
   });
@@ -57,11 +44,10 @@ test.describe.serial('Kemi W6 - history', () => {
     await expect(kemi.historyRows().and(page.locator(`[data-action="${LOCATION_CREATED}"]`))).toHaveCount(1, { timeout: UI_TIMEOUT });
     await expect(kemi.historyRows().and(page.locator(`[data-action="${REGISTERED}"]`))).toHaveCount(1, { timeout: UI_TIMEOUT });
 
-    const filtered = waitForApiResponse(page, 'POST history (action = Registered)',
-      (r) => /\/chemicals\/properties\/\d+\/history$/.test(r.url()) && r.request().postDataJSON()?.action === REGISTERED,
-      API_TIMEOUT);
+    const filtered = kemi.waitForChemicalsCall('POST', /^properties\/\d+\/history$/,
+      (r) => r.request().postDataJSON()?.action === REGISTERED);
     await kemi.selectMtxOption('#chemicalHistoryActionFilter', REGISTERED_LABEL);
-    expect((await (await filtered).json()).success).toBe(true);
+    await filtered;
     await kemi.waitForHistoryLoaded();
     await expect(kemi.historyRows()).toHaveCount(1, { timeout: UI_TIMEOUT });
     await expect(kemi.historyRows().first()).toHaveAttribute('data-action', String(REGISTERED), { timeout: UI_TIMEOUT });

@@ -44,12 +44,12 @@
     <mat-icon>error</mat-icon><span>{{ errorKey | translate }}</span>
   </div>
   <!-- Always present, only its text changes: a live region created together with its text is often not announced. -->
-  <div id="chemicalHistoryStatus" role="status" [class.chemicals-empty]="loading">{{ loading ? ('Chemicals: Loading history' | translate) : '' }}</div>
-  <div *ngIf="loadFailed" id="chemicalHistoryLoadFailed" class="chemicals-danger" role="alert">
+  <div id="chemicalHistoryStatus" role="status" [class.chemicals-empty]="load.loading">{{ load.loading ? ('Chemicals: Loading history' | translate) : '' }}</div>
+  <div *ngIf="load.failed" id="chemicalHistoryLoadFailed" class="chemicals-danger" role="alert">
     <mat-icon>error</mat-icon><span>{{ 'Chemicals: Could not load history' | translate }}</span>
   </div>
 
-  <ng-container *ngIf="!loading && !loadFailed && !periodError && propertyId !== null">
+  <ng-container *ngIf="!load.loading && !load.failed && !periodError && propertyId !== null">
     <table id="chemicalHistoryTable" class="chemicals-table" [attr.aria-label]="'Chemicals: History title' | translate">
       <thead>
         <tr>
@@ -75,6 +75,6 @@
     </table>
     <div *ngIf="!events.length" class="chemicals-empty" id="chemicalHistoryEmpty">{{ 'Chemicals: No history' | translate }}</div>
   </ng-container>
-  <mat-paginator *ngIf="!loadFailed && !periodError && propertyId !== null" id="chemicalHistoryPaginator" [length]="total" [pageIndex]="pageIndex" [pageSize]="pageSize"
-                 [pageSizeOptions]="pageSizeOptions" [disabled]="loading" (page)="onPage($event)"></mat-paginator>
+  <mat-paginator *ngIf="!load.failed && !periodError && propertyId !== null" id="chemicalHistoryPaginator" [length]="total" [pageIndex]="pageIndex" [pageSize]="pageSize"
+                 [pageSizeOptions]="pageSizeOptions" [disabled]="load.loading" (page)="onPage($event)"></mat-paginator>
 </div>

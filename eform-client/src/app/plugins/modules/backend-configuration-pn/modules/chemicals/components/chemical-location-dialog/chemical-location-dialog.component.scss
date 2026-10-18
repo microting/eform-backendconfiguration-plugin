@@ -1,5 +1,5 @@
 @use '../../chemicals-shared';
 
-:host { display: block; max-width: 520px; }
+:host { @include chemicals-shared.dialog-host; }
 .chemicals-location-photo { width: 96px; height: 72px; object-fit: cover; border-radius: var(--radius-sm); }
 .chemicals-location-file { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

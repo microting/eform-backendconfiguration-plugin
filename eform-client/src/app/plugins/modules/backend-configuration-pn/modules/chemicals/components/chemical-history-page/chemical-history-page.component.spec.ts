@@ -103,7 +103,7 @@ describe('ChemicalHistoryPageComponent', () => {
     component.onPage({pageIndex: 2, pageSize: 50});
 
     expect(chemicals.getHistory).toHaveBeenLastCalledWith(3, expect.objectContaining({page: 2, pageSize: 50}));
-    expect(component.loading).toBe(true);
+    expect(component.load.loading).toBe(true);
     expect(component.total).toBe(214);
   });
 
@@ -132,13 +132,13 @@ describe('ChemicalHistoryPageComponent', () => {
 
   it('shows the failed state, not an empty log, on a refusal or no answer', () => {
     const refused = build({history: of({success: false, message: 'Perioden er for lang.'})});
-    expect(refused.loadFailed).toBe(true);
-    expect(refused.loading).toBe(false);
+    expect(refused.load.failed).toBe(true);
+    expect(refused.load.loading).toBe(false);
 
     // The host interceptor ends a 5xx or a network failure with EMPTY.
     const silent = build({history: EMPTY});
-    expect(silent.loadFailed).toBe(true);
-    expect(silent.loading).toBe(false);
+    expect(silent.load.failed).toBe(true);
+    expect(silent.load.loading).toBe(false);
   });
 
   it('refuses a reversed period without calling the server', () => {

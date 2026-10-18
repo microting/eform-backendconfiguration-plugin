@@ -2,6 +2,10 @@
 // partial (view encapsulation scopes the rules to it). Colours come from the eForm new design tokens
 // (host scss/themes), tinted with color-mix, so light and dark themes both work.
 
+// The host element of every Kemi dialog: a block (so its content stays out of the dialog surface's flex column)
+// with the dialog width.
+@mixin dialog-host($max-width: 520px) { display: block; max-width: $max-width; }
+
 .chemicals-hint { color: var(--md-on-surface-variant); font-size: 12px; }
 .chemicals-empty { padding: var(--spacing-2xl) var(--spacing-md); color: var(--md-on-surface-variant); }
 

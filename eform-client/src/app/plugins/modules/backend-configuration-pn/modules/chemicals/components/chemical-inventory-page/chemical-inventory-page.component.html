@@ -61,9 +61,9 @@
     </button>
   </div>
 
-  <div *ngIf="loading" class="chemicals-empty" id="chemicalInventoryLoading">{{ 'Chemicals: Loading inventory' | translate }}</div>
-  <div *ngIf="loadFailed" class="chemicals-empty" id="chemicalInventoryLoadFailed" role="alert">
-    {{ 'Chemicals: Could not load inventory' | translate }}
+  <div *ngIf="load.loading" id="chemicalInventoryLoading" class="chemicals-empty" role="status">{{ 'Chemicals: Loading inventory' | translate }}</div>
+  <div *ngIf="load.failed" id="chemicalInventoryLoadFailed" class="chemicals-danger" role="alert">
+    <mat-icon>error</mat-icon><span>{{ 'Chemicals: Could not load inventory' | translate }}</span>
   </div>
 
   <mtx-grid

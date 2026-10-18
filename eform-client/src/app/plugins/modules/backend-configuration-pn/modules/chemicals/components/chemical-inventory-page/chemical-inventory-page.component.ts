@@ -7,10 +7,8 @@ import {ActivatedRoute, Router} from '@angular/router';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TranslateService} from '@ngx-translate/core';
 import {Store} from '@ngrx/store';
-import {saveAs} from 'file-saver';
 import {ToastrService} from 'ngx-toastr';
 import {Observable, combineLatest} from 'rxjs';
-import {finalize} from 'rxjs/operators';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {ChemicalDownload, ChemicalInventoryModel, ChemicalLocationModel} from '../../../../models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
@@ -26,7 +24,7 @@ import {
   ChemicalInventoryRow,
   ChemicalLatestLoad,
   buildInventoryRows,
-  downloadFailureText,
+  downloadFile,
   filterInventoryRows,
   isStockEnabled,
   localToday,
@@ -84,20 +82,12 @@ export class ChemicalInventoryPageComponent implements OnInit {
   columns: MtxGridColumn[] = [];
   exporting = false;
   /** The newest inventory request; nothing is shown as empty while it is in flight (I-1). */
-  private readonly load = new ChemicalLatestLoad();
+  readonly load = new ChemicalLatestLoad();
 
   readonly rowClassFormatter = {
     'chemical-row--overdue': (row: ChemicalInventoryRow) => row.severity === 'overdue',
     'chemical-row--warning': (row: ChemicalInventoryRow) => row.severity === 'warning',
   };
-
-  get loading(): boolean {
-    return this.load.loading;
-  }
-
-  get loadFailed(): boolean {
-    return this.load.failed;
-  }
 
   get stockEnabled(): boolean {
     return isStockEnabled(this.inventory, this.propertyId);
@@ -234,10 +224,7 @@ export class ChemicalInventoryPageComponent implements OnInit {
       return;
     }
     this.exporting = true;
-    download().pipe(finalize(() => (this.exporting = false))).subscribe({
-      next: (file) => saveAs(file.blob, file.fileName),
-      error: (err: unknown) => this.toastr.error(downloadFailureText(err, this.translate)),
-    });
+    downloadFile(download(), this.toastr, this.translate, () => (this.exporting = false));
   }
 
   /**

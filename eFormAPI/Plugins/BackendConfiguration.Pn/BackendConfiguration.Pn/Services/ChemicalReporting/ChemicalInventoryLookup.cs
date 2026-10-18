@@ -35,7 +35,10 @@ public sealed class ChemicalInventoryLookup(ChemicalInventoryModel model)
     public ChemicalRegisterEntryModel Entry(int chemicalId) => entries.GetValueOrDefault(chemicalId);
 
     /// <summary>The register name, or "#id" when the chemical is no longer in the register.</summary>
-    public string ProductName(int chemicalId) => Entry(chemicalId)?.Name ?? $"#{chemicalId}";
+    public string ProductName(int chemicalId) => Entry(chemicalId)?.Name ?? FallbackProductName(chemicalId);
+
+    /// <summary>A chemical missing from the register keeps its row under its id (W1 exports and W6 alike).</summary>
+    public static string FallbackProductName(int chemicalId) => $"#{chemicalId}";
 
     public string PropertyName(int propertyId) => model.Properties.FirstOrDefault(p => p.PropertyId == propertyId)?.Name ?? string.Empty;
 }

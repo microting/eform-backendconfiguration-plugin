@@ -110,14 +110,14 @@ describe('ChemicalInventoryPageComponent', () => {
       const pending = new Subject<unknown>();
       const component = build({}, {inventory: pending});
 
-      expect(component.loading).toBe(true);
-      expect(component.loadFailed).toBe(false);
+      expect(component.load.loading).toBe(true);
+      expect(component.load.failed).toBe(false);
       component.exportInventory();
       expect(chemicals.exportInventory).not.toHaveBeenCalled();
 
       pending.next({success: true, model: inventoryFor(false)});
 
-      expect(component.loading).toBe(false);
+      expect(component.load.loading).toBe(false);
       expect(component.rows).toHaveLength(2);
     });
 
@@ -129,8 +129,8 @@ describe('ChemicalInventoryPageComponent', () => {
     ])('shows the failed state after %s', (_name, answer) => {
       const component = build({}, {inventory: answer()});
 
-      expect(component.loading).toBe(false);
-      expect(component.loadFailed).toBe(true);
+      expect(component.load.loading).toBe(false);
+      expect(component.load.failed).toBe(true);
       expect(component.inventory).toBeNull();
       component.exportInventory();
       expect(chemicals.exportInventory).not.toHaveBeenCalled();
@@ -142,7 +142,7 @@ describe('ChemicalInventoryPageComponent', () => {
 
       property$.next(4);
 
-      expect(component.loadFailed).toBe(false);
+      expect(component.load.failed).toBe(false);
       expect(component.rows).toHaveLength(2);
     });
   });
