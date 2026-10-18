@@ -258,9 +258,18 @@ async function seededOrder(page: Page): Promise<{ a: number; b: number }> {
 const headerCell = (page: Page, index: number) =>
   page.locator('.compliance-overview__th').nth(index);
 
-/** `[attr.aria-sort]="null"` REMOVES the attribute, so absence is the assertion. */
-async function ariaSortOf(page: Page, index: number): Promise<string | null> {
-  return headerCell(page, index).getAttribute('aria-sort');
+/**
+ * `[attr.aria-sort]="null"` REMOVES the attribute, so absence is the assertion.
+ * Web-first (retrying): the host coalesces change detection, so the header
+ * re-renders a frame after the click, not synchronously with it.
+ */
+async function expectAriaSort(page: Page, index: number, value: 'ascending' | 'descending' | null): Promise<void> {
+  const cell = headerCell(page, index);
+  if (value === null) {
+    await expect(cell).not.toHaveAttribute('aria-sort', { timeout: UI_TIMEOUT });
+  } else {
+    await expect(cell).toHaveAttribute('aria-sort', value, { timeout: UI_TIMEOUT });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -490,7 +499,7 @@ test.describe.serial('Compliance Oversigt (#1164)', () => {
     // tie on every numeric column and `sortSummaries` breaks ties on the name
     // ascending — so the landing order already is A-then-B, and the row check
     // alone would pass just as happily if this click had never registered.
-    expect(await ariaSortOf(page, 0)).toBe('ascending');
+    await expectAriaSort(page, 0, 'ascending');
     const ascending = await seededOrder(page);
     expect(ascending.a).toBeGreaterThanOrEqual(0);
     expect(ascending.b).toBeGreaterThanOrEqual(0);
@@ -500,14 +509,14 @@ test.describe.serial('Compliance Oversigt (#1164)', () => {
     // moves the rows, name-descending being the only sort these two rows have
     // that the ascending tie-break cannot also produce.
     await page.locator('#complianceOverviewSort-propertyName').click();
-    expect(await ariaSortOf(page, 0)).toBe('descending');
+    await expectAriaSort(page, 0, 'descending');
     const descending = await seededOrder(page);
     expect(descending.b).toBeLessThan(descending.a);
 
     // Two states, never three: a third click returns to ascending rather than
     // to an unsorted column.
     await page.locator('#complianceOverviewSort-propertyName').click();
-    expect(await ariaSortOf(page, 0)).toBe('ascending');
+    await expectAriaSort(page, 0, 'ascending');
     const reAscending = await seededOrder(page);
     expect(reAscending.a).toBeLessThan(reAscending.b);
   });
@@ -519,29 +528,29 @@ test.describe.serial('Compliance Oversigt (#1164)', () => {
     await openSeededOverview(page);
 
     // Landing state: compliancePct (the third column) ascending, worst first.
-    expect(await ariaSortOf(page, 0)).toBeNull();
-    expect(await ariaSortOf(page, 1)).toBeNull();
-    expect(await ariaSortOf(page, 2)).toBe('ascending');
+    await expectAriaSort(page, 0, null);
+    await expectAriaSort(page, 1, null);
+    await expectAriaSort(page, 2, 'ascending');
 
     await page.locator('#complianceOverviewSort-propertyName').click();
-    expect(await ariaSortOf(page, 0)).toBe('ascending');
-    expect(await ariaSortOf(page, 1)).toBeNull();
-    expect(await ariaSortOf(page, 2)).toBeNull();
+    await expectAriaSort(page, 0, 'ascending');
+    await expectAriaSort(page, 1, null);
+    await expectAriaSort(page, 2, null);
 
     await page.locator('#complianceOverviewSort-propertyName').click();
-    expect(await ariaSortOf(page, 0)).toBe('descending');
+    await expectAriaSort(page, 0, 'descending');
 
     // A NEW numeric key starts descending ("most overdue first"), and takes the
     // marker with it. The rows themselves cannot be shown to move here — both
     // seeded properties have overdue 0 — see the file header.
     await page.locator('#complianceOverviewSort-overdue').click();
-    expect(await ariaSortOf(page, 0)).toBeNull();
-    expect(await ariaSortOf(page, 1)).toBe('descending');
-    expect(await ariaSortOf(page, 2)).toBeNull();
+    await expectAriaSort(page, 0, null);
+    await expectAriaSort(page, 1, 'descending');
+    await expectAriaSort(page, 2, null);
 
     // Clicking the ACTIVE key flips it rather than clearing it.
     await page.locator('#complianceOverviewSort-overdue').click();
-    expect(await ariaSortOf(page, 1)).toBe('ascending');
+    await expectAriaSort(page, 1, 'ascending');
 
     // The indicator icon is rendered in the sorted header only.
     await expect(page.locator('.compliance-overview__sort-icon')).toHaveCount(1);
