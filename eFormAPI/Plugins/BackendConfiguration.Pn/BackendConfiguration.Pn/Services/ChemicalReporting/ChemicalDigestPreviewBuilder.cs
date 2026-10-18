@@ -53,7 +53,7 @@ public class ChemicalDigestPreviewBuilder(
     /// <summary>The most recent Monday 07:00 Europe/Copenhagen at or before utcNow, as UTC.</summary>
     public static DateTime NewRegistrationsSince(DateTime utcNow)
     {
-        var local = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utcNow, DateTimeKind.Utc), ChemicalAlertRules.Copenhagen);
+        var local = ChemicalCopenhagen.ToCopenhagen(utcNow);
         var daysSinceMonday = ((int)local.DayOfWeek + 6) % 7;
         var slotLocal = local.Date.AddDays(-daysSinceMonday) + DigestSendAt;
         if (slotLocal > local)
@@ -62,13 +62,13 @@ public class ChemicalDigestPreviewBuilder(
         }
 
         // 07:00 is never inside a DST gap or overlap, so the conversion is unambiguous.
-        return TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(slotLocal, DateTimeKind.Unspecified), ChemicalAlertRules.Copenhagen);
+        return ChemicalCopenhagen.FromCopenhagenLocal(slotLocal);
     }
 
     /// <summary>The Copenhagen date of the next digest slot: the Monday 07:00 slot strictly after utcNow.</summary>
     private static DateOnly NextSlotDate(DateTime utcNow)
     {
-        var mostRecentSlot = TimeZoneInfo.ConvertTimeFromUtc(NewRegistrationsSince(utcNow), ChemicalAlertRules.Copenhagen);
+        var mostRecentSlot = ChemicalCopenhagen.ToCopenhagen(NewRegistrationsSince(utcNow));
         return DateOnly.FromDateTime(mostRecentSlot.Date.AddDays(7));
     }
 

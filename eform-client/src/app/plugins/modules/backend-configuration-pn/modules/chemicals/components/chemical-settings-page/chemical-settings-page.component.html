@@ -1,8 +1,8 @@
 <div id="chemicalSettingsPage" class="chemicals-page">
 <ng-container *ngIf="propertyId !== null">
 <div class="d-flex flex-column gap-12">
-  <div *ngIf="loadFailed" class="chemicals-empty" id="chemicalSettingsLoadFailed" role="alert">
-    {{ 'Chemicals: Could not load settings' | translate }}
+  <div *ngIf="load.failed" id="chemicalSettingsLoadFailed" class="chemicals-danger" role="alert">
+    <mat-icon>error</mat-icon><span>{{ 'Chemicals: Could not load settings' | translate }}</span>
   </div>
   <ng-container *ngIf="ready">
   <mat-card class="p-3">
