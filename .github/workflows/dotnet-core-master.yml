@@ -374,4 +374,4 @@ jobs:
       # over its own module, or nothing checks these buttons at all.
       run: cd eform-angular-frontend/eform-client && node scripts/check-button-conventions.js src/app/plugins/modules/backend-configuration-pn
     - name: Run backend-configuration-pn unit tests
-      run: cd eform-angular-frontend/eform-client && npx jest --ci --maxWorkers=2 "src/app/plugins/modules/backend-configuration-pn/"
+      run: cd eform-angular-frontend/eform-client && npx ng test --watch=false --include='src/app/plugins/modules/backend-configuration-pn/**/*.spec.ts'
