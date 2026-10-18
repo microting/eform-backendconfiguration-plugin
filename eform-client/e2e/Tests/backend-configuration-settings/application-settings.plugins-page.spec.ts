@@ -21,7 +21,7 @@ describe('Application settings page - site header section', function () {
     // Helper function to activate a plugin by index using action menu
     const activatePlugin = async (index: number, pluginName: string) => {
       // Open action menu
-      const actionMenuBtn = await $(`#action-items-${index - 1}`).$('#actionMenu');
+      const actionMenuBtn = await $(`#action-items-${index - 1}`).$('[id^="actionMenu"]');
       await actionMenuBtn.waitForDisplayed({ timeout: 40000 });
       await actionMenuBtn.waitForClickable({ timeout: 40000 });
       await actionMenuBtn.click();
@@ -50,7 +50,7 @@ describe('Application settings page - site header section', function () {
     // Helper function to check plugin status via action menu
     const checkPluginStatus = async (index: number, expectedStatus: string, pluginName: string) => {
       // Open action menu
-      const actionMenuBtn = await $(`#action-items-${index - 1}`).$('#actionMenu');
+      const actionMenuBtn = await $(`#action-items-${index - 1}`).$('[id^="actionMenu"]');
       await actionMenuBtn.waitForDisplayed({ timeout: 40000 });
       await actionMenuBtn.waitForClickable({ timeout: 40000 });
       await actionMenuBtn.click();

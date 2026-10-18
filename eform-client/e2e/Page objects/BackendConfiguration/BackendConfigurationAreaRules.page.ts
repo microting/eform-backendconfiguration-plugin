@@ -169,7 +169,7 @@ export class BackendConfigurationAreaRulesPage extends Page {
   public async updateEntityList() {
     // Open the action menu first (required for type 3 area rules where the button is in a dropdown)
     await browser.pause(1000);
-    const actionMenu = await $$('#actionMenu')[0];
+    const actionMenu = await $$('[id^="actionMenu"]')[0];
     await actionMenu.waitForDisplayed({ timeout: 40000 });
     await actionMenu.waitForClickable({ timeout: 40000 });
     await actionMenu.click();
@@ -343,7 +343,7 @@ export class BackendConfigurationAreaRulesPage extends Page {
       await (await this.entityListSaveBtn()).click();
     }
     // Wait for the action menu button to be clickable again (instead of opening the menu)
-    const actionMenu = await $$('#actionMenu')[0];
+    const actionMenu = await $$('[id^="actionMenu"]')[0];
     await actionMenu.waitForClickable({ timeout: 40000 });
   }
 
@@ -524,7 +524,7 @@ export class AreaRuleRowObject {
 
   private async clickActionsMenu() {
     await browser.pause(1000);
-    await $$('#actionMenu')[0].click();
+    await $$('[id^="actionMenu"]')[0].click();
     await browser.pause(1000);
   }
 

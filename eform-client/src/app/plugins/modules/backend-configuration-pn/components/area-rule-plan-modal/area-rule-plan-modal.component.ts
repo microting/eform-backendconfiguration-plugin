@@ -17,18 +17,27 @@ import {
 } from '../../models';
 import {add, set} from 'date-fns';
 import * as R from 'ramda';
-import {TranslateService} from '@ngx-translate/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {MtxGridColumn, MtxGridRowSelectionFormatter} from '@ng-matero/extensions/grid';
-import {MatDatepickerInputEvent} from '@angular/material/datepicker';
+import {MatDatepickerInputEvent, MatDatepicker, MatDatepickerInput} from '@angular/material/datepicker';
 import {PARSING_DATE_FORMAT} from 'src/app/common/const';
 import {generateWeeksList} from '../../helpers';
+import {NgIf, NgFor} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {MatCard, MatCardContent} from '@angular/material/card';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {MatCheckbox} from '@angular/material/checkbox';
+import {MatSlideToggle} from '@angular/material/slide-toggle';
+import {StatusBarCompactComponent} from 'src/app/common/modules/eform-shared/components';
 
 @Component({
     selector: 'app-area-rule-plan-modal',
+    imports: [NgIf, NgFor, FormsModule, TranslatePipe, MatCard, MatCardContent, MatFormField, MatLabel, MatInput, MtxSelect, MatDialogTitle, MatDialogContent, MatDialogActions, MatDatepicker, MatDatepickerInput, MatCheckbox, MatSlideToggle, StatusBarCompactComponent],
     templateUrl: './area-rule-plan-modal.component.html',
     styleUrls: ['./area-rule-plan-modal.component.scss'],
-    standalone: false
 })
 export class AreaRulePlanModalComponent implements OnInit {
   private translate = inject(TranslateService);

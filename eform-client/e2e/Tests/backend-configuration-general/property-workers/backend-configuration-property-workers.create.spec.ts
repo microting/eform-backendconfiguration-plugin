@@ -34,7 +34,7 @@ describe('Backend Configuration Property Workers - Create and edit', function ()
   it('should create worker and pair to created property', async () => {
     await backendConfigurationPropertiesPage.createProperty(property);
     const lastProperty = await backendConfigurationPropertiesPage.getLastPropertyRowObject();
-    // await $$('#actionMenu')[0].click();
+    // await $$('[id^="actionMenu"]')[0].click();
     // expect(await lastProperty.editPropertyAreasBtn.isEnabled()).eq(false);
     await backendConfigurationPropertyWorkersPage.goToPropertyWorkers();
     await backendConfigurationPropertyWorkersPage.create(workerForCreate);
@@ -77,7 +77,7 @@ describe('Backend Configuration Property Workers - Create and edit', function ()
     expect(worker.language).eq(workerForCreate.language);
     // check inputs
     await browser.pause(500);
-    await $$('#actionMenu')[0].click();
+    await $$('[id^="actionMenu"]')[0].click();
     await browser.pause(1000);
     await worker.openEditModal(null);
     expect(

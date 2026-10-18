@@ -6,12 +6,13 @@ import {translates} from './../i18n/translates';
 import {addPluginToVisited, selectPluginsVisitedPlugins} from 'src/app/state';
 import {Store} from '@ngrx/store';
 import {take} from 'rxjs';
+import {RouterOutlet} from '@angular/router';
 
 @Component({
     selector: 'app-backend-configuration-pn-layout',
+    imports: [RouterOutlet],
     template: `
     <router-outlet></router-outlet>`,
-    standalone: false
 })
 export class BackendConfigurationPnLayoutComponent implements AfterContentInit, OnInit {
   private translateService = inject(TranslateService);

@@ -2,20 +2,22 @@ import {Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, Si
   inject
 } from '@angular/core';
 import {PlannedTaskDaysModel,} from '../../../../models';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {AuthStateService} from 'src/app/common/store';
 import {format} from 'date-fns';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
 import {Store} from '@ngrx/store';
 import {selectCurrentUserLocale, selectIsDarkMode} from 'src/app/state';
+import {MatCard, MatCardContent, MatCardTitle, MatCardSubtitle} from '@angular/material/card';
+import {NgxChartsModule} from '@swimlane/ngx-charts';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-planned-task-days',
+    imports: [TranslatePipe, MatCard, MatCardContent, NgxChartsModule, MatCardTitle, MatCardSubtitle],
     templateUrl: './planned-task-days.component.html',
     styleUrls: ['./planned-task-days.component.scss'],
-    standalone: false
 })
 export class PlannedTaskDaysComponent implements OnChanges, OnDestroy {
   private store = inject(Store);

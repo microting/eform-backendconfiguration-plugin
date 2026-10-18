@@ -80,7 +80,7 @@ export class FileCreateEditFileComponent implements OnChanges, OnDestroy {
   deletePage(indexPage: number) {
     this.fileAsPdfDocument.removePage(indexPage);
     this.fileAsPdfDocument.save().then(async x => {
-      this.file.file = new File([x], this.file.file.name, {type: this.file.file.type});
+      this.file.file = new File([x as BlobPart], this.file.file.name, {type: this.file.file.type});
       this.file.src = x;
       this.fileAsPdfDocument = await PDFDocument.load(x);
       this.pagesInFile = R.range(0, this.fileAsPdfDocument.getPages().length);
@@ -121,7 +121,7 @@ export class FileCreateEditFileComponent implements OnChanges, OnDestroy {
       R.sortBy(x => x.newPosition, differentPages).forEach(x => this.fileAsPdfDocument.insertPage(x.newPosition, x.page));
       // save changes in file
       this.fileAsPdfDocument.save().then(x => {
-        this.file.file = new File([x], this.file.file.name, {type: this.file.file.type});
+        this.file.file = new File([x as BlobPart], this.file.file.name, {type: this.file.file.type});
         this.file.src = x;
         this.file.tagIds = this.selectedTags;
         this.file.propertyIds = this.selectedProperties;

@@ -160,7 +160,7 @@ describe('Area rules type 1', () => {
     // cy.get('.editBtn').click();
     cy.get('[id^=action-items]')
       .first()
-      .find('#actionMenu')
+      .find('[id^="actionMenu"]')
       .should('be.visible')
       .click({ force: true });
 
@@ -192,7 +192,7 @@ describe('Area rules type 1', () => {
     // cy.get('.editBtn').click();
     cy.get('[id^=action-items]')
       .first()
-      .find('#actionMenu')
+      .find('[id^="actionMenu"]')
       .should('be.visible')
       .click({ force: true });
 

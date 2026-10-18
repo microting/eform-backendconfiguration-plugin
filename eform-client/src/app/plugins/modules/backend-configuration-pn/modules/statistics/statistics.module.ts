@@ -19,14 +19,6 @@ import {MatFormFieldModule} from '@angular/material/form-field';
 import {MtxSelectModule} from '@ng-matero/extensions/select';
 
 @NgModule({
-  declarations: [
-    StatisticsContainerComponent,
-    PlannedTaskDaysComponent,
-    AdHocTaskPrioritiesComponent,
-    DocumentUpdatedDaysComponent,
-    PlannedTaskWorkersComponent,
-    AdHocTaskWorkersComponent,
-  ],
   imports: [
     CommonModule,
     TranslateModule,
@@ -38,6 +30,12 @@ import {MtxSelectModule} from '@ng-matero/extensions/select';
     MatCardModule,
     MatFormFieldModule,
     MtxSelectModule,
+    StatisticsContainerComponent,
+    PlannedTaskDaysComponent,
+    AdHocTaskPrioritiesComponent,
+    DocumentUpdatedDaysComponent,
+    PlannedTaskWorkersComponent,
+    AdHocTaskWorkersComponent,
   ],
   exports: [
     PlannedTaskDaysComponent,

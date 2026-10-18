@@ -1,3 +1,4 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {of} from 'rxjs';
 import {MatDialog} from '@angular/material/dialog';
@@ -6,20 +7,12 @@ import {Store} from '@ngrx/store';
 import {TranslateService} from '@ngx-translate/core';
 import {selectAuthIsAdmin} from 'src/app/state';
 
-// The plugin components barrel ('../../../components', imported by
-// report-table.component.ts for CaseDeleteComponent) re-exports
-// BackendConfigurationCaseModule, which transitively imports the host's
-// entire src/app/modules barrel — that chain reaches
-// admin-settings.component.ts and its ESM-only `uuid` dependency, which the
-// host jest transform does not process (transformIgnorePatterns only lets
-// *.mjs and an allowlist through). The component references
-// CaseDeleteComponent purely at runtime (dialog.open in
-// onShowDeletePlanningCaseModal), so mock the barrel to keep this suite's
-// module graph scoped to ReportTableComponent. jest.mock is hoisted above
-// the imports, so the real barrel is never loaded.
-jest.mock('../../../components', () => ({
-  CaseDeleteComponent: class MockCaseDeleteComponent {},
-}));
+// The plugin components barrel re-exports BackendConfigurationCaseModule, which pulls in the host's
+// eform-cases components (element-picture -> ng-gallery). ng-gallery's partially compiled bundle throws
+// "Cannot access 'GalleryItemComponent' before initialization" when the Angular test builder loads it
+// unlinked, and the gallery is not under test, so stub it (vi.mock on package specifiers works here).
+vi.mock('ng-gallery', () => ({Gallery: class {}, GalleryModule: class {}, ImageItem: class {}, GALLERY_CONFIG: 'GALLERY_CONFIG'}));
+vi.mock('ng-gallery/lightbox', () => ({Lightbox: class {}, LightboxModule: class {}}));
 
 import {ReportTableComponent} from './report-table.component';
 
@@ -38,10 +31,10 @@ describe('ReportTableComponent', () => {
       providers: [
         // A signed-in non-admin: every selector is truthy except selectAuthIsAdmin,
         // which drives isAdmin (take(1) in the constructor).
-        {provide: Store, useValue: {select: jest.fn((selector: unknown) => of(selector !== selectAuthIsAdmin))}},
+        {provide: Store, useValue: {select: vi.fn((selector: unknown) => of(selector !== selectAuthIsAdmin))}},
         {provide: TranslateService, useValue: {stream: (key: string) => of(key)}},
-        {provide: MatDialog, useValue: {open: jest.fn()}},
-        {provide: Overlay, useValue: {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}}},
+        {provide: MatDialog, useValue: {open: vi.fn()}},
+        {provide: Overlay, useValue: {scrollStrategies: {reposition: vi.fn().mockReturnValue({})}}},
       ],
     });
     component = TestBed.runInInjectionContext(() => new ReportTableComponent());

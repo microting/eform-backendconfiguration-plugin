@@ -13,7 +13,7 @@ import {
   SharedTagModel,
 } from 'src/app/common/models';
 import {TemplateFilesService} from 'src/app/common/services';
-import {ViewportScroller} from '@angular/common';
+import {ViewportScroller, NgIf, NgFor} from '@angular/common';
 import {BackendConfigurationPnReportService} from '../../../services';
 import {catchError, tap} from 'rxjs/operators';
 import {Store} from '@ngrx/store';
@@ -25,13 +25,17 @@ import {Lightbox} from 'ng-gallery/lightbox';
 import {ReportStateService} from '../store';
 import {Router} from '@angular/router';
 import {TranslateService} from "@ngx-translate/core";
+import {EformNewSubheaderComponent} from 'src/app/common/modules/eform-shared/components';
+import {ReportTableComponent} from '../report-table/report-table.component';
+import {ReportHeaderComponent} from '../report-header/report-header.component';
+import {MatAccordion, MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle} from '@angular/material/expansion';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-backend-configuration-pn-report',
+    imports: [NgIf, NgFor, EformNewSubheaderComponent, ReportTableComponent, ReportHeaderComponent, MatAccordion, MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle],
     templateUrl: './report-container.component.html',
     styleUrls: ['./report-container.component.scss'],
-    standalone: false
 })
 export class ReportContainerComponent implements OnInit, OnDestroy {
   private translateService = inject(TranslateService);

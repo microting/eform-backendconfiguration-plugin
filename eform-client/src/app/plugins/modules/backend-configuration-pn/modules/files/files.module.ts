@@ -4,7 +4,6 @@ import {TranslateModule} from '@ngx-translate/core';
 import {RouterModule} from '@angular/router';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
-import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
 import {
   FilesContainerComponent,
   FileCreateComponent,
@@ -83,7 +82,6 @@ import {ArchiveMoveFlowService} from './services/archive-move-flow.service';
     FilesRouting,
     EformSharedModule,
     ReactiveFormsModule,
-    EformImportedModule,
     FormsModule,
     MatButtonModule,
     MatTooltipModule,

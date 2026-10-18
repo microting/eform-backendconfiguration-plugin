@@ -343,7 +343,7 @@ export class FileRowObject {
 
   private async clickActionsMenu() {
     await browser.pause(1000);
-    await $$('#actionMenu')[0].click();
+    await $$('[id^="actionMenu"]')[0].click();
     await browser.pause(1000);
   }
 

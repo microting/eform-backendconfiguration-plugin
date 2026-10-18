@@ -4,7 +4,6 @@ import {TranslateModule} from '@ngx-translate/core';
 import {FormsModule} from '@angular/forms';
 import {ComplianceCaseRouting} from './compliance-case.routing';
 import {CasesModule} from 'src/app/modules';
-import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
 import {EformCasesModule} from 'src/app/common/modules/eform-cases/eform-cases.module';
 import {
@@ -30,7 +29,6 @@ import {MatDatepickerModule} from '@angular/material/datepicker';
     EformSharedModule,
     ComplianceCaseRouting,
     CommonModule,
-    EformImportedModule,
     FormsModule,
     CasesModule,
     EformCasesModule,

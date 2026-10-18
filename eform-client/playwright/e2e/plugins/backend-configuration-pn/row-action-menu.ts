@@ -29,7 +29,7 @@ export async function openRowActionMenu(
   if (!actionCellId) {
     throw new Error(`${rowDescription} action cell has no id — cannot resolve its action-menu index`);
   }
-  await actionCell.locator('#actionMenu').click({ timeout: UI_TIMEOUT });
+  await actionCell.locator('[id^="actionMenu"]').click({ timeout: UI_TIMEOUT });
   await page.locator('.mat-mdc-menu-panel').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
 
   const rowIndex = actionCellId.replace('action-items-', '');

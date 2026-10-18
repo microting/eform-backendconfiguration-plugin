@@ -2,20 +2,22 @@ import {Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChan
   inject
 } from '@angular/core';
 import {AdHocTaskPrioritiesModel,} from '../../../../models';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {AuthStateService} from 'src/app/common/store';
 import {format} from 'date-fns';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
 import {selectCurrentUserLocale, selectIsDarkMode} from 'src/app/state';
 import {Store} from '@ngrx/store';
+import {MatCard, MatCardContent, MatCardTitle, MatCardSubtitle} from '@angular/material/card';
+import {NgxChartsModule} from '@swimlane/ngx-charts';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-ad-hoc-task-priorities',
+    imports: [TranslatePipe, MatCard, MatCardContent, NgxChartsModule, MatCardTitle, MatCardSubtitle],
     templateUrl: './ad-hoc-task-priorities.component.html',
     styleUrls: ['./ad-hoc-task-priorities.component.scss'],
-    standalone: false
 })
 export class AdHocTaskPrioritiesComponent implements OnChanges, OnDestroy {
   private store = inject(Store);

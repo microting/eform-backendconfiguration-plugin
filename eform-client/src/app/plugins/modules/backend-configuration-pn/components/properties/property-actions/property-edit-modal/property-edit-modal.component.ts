@@ -5,23 +5,28 @@ import {
   OnInit,
   inject
 } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import {FormBuilder, FormGroup, Validators, ReactiveFormsModule} from '@angular/forms';
 import { applicationLanguages } from 'src/app/common/const';
 import { PropertyModel, PropertyUpdateModel } from '../../../../models';
 import { AuthStateService } from 'src/app/common/store';
 import { BackendConfigurationPnPropertiesService } from '../../../../services';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
 import { Store } from '@ngrx/store';
 import { selectAuthIsAdmin } from 'src/app/state/auth/auth.selector';
+import {NgIf, AsyncPipe} from '@angular/common';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MatSlideToggle} from '@angular/material/slide-toggle';
 
 @AutoUnsubscribe()
 @Component({
   selector: 'app-property-edit-modal',
+  imports: [NgIf, AsyncPipe, ReactiveFormsModule, TranslatePipe, MatFormField, MatLabel, MatInput, MatDialogTitle, MatDialogContent, MatDialogActions, MatSlideToggle],
   templateUrl: './property-edit-modal.component.html',
   styleUrls: ['./property-edit-modal.component.scss'],
-  standalone: false,
 })
 export class PropertyEditModalComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);

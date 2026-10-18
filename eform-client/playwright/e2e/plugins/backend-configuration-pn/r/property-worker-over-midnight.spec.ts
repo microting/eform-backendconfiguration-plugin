@@ -44,7 +44,7 @@ async function openEditModal(page: Page): Promise<void> {
   // A table refresh can re-render the row and close a just-opened action
   // menu, so retry the menu open until the edit item is actually visible.
   for (let attempt = 0; attempt < 3; attempt++) {
-    await row.locator('#actionMenu').click();
+    await row.locator('[id^="actionMenu"]').click();
     try {
       await editBtn.waitFor({ state: 'visible', timeout: 5000 });
       break;

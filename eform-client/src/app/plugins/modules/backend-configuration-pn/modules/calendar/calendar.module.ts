@@ -27,7 +27,6 @@ import {MatTooltipModule} from '@angular/material/tooltip';
 import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {MtxGridModule} from '@ng-matero/extensions/grid';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
-import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
 import {EformCasesModule} from 'src/app/common/modules/eform-cases/eform-cases.module';
 import {CasesModule} from 'src/app/modules';
 import {CALENDAR_MAT_DATE_FORMATS} from './calendar-date-formats';
@@ -106,7 +105,6 @@ export {
     OverlayModule,
     PortalModule,
     EformSharedModule,
-    EformImportedModule,
     EformCasesModule,
     CasesModule,
     MatButtonModule,

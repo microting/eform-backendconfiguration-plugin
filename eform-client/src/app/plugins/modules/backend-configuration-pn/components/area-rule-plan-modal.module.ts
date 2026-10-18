@@ -34,8 +34,6 @@ import {MatDatepickerModule} from '@angular/material/datepicker';
     MatCheckboxModule,
     MatCardModule,
     MatDatepickerModule,
-  ],
-  declarations: [
     AreaRulePlanModalComponent,
     AreaRuleEntityListModalComponent,
   ],

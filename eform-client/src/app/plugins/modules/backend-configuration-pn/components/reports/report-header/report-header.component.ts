@@ -7,23 +7,28 @@ import {
   OnDestroy,
   inject
 } from '@angular/core';
-import {FormControl, FormGroup, Validators} from '@angular/forms';
+import {FormControl, FormGroup, Validators, ReactiveFormsModule} from '@angular/forms';
 import {ReportPnGenerateModel} from '../../../models/report';
 import {SharedTagModel} from 'src/app/common/models';
 import {ReportStateService} from '../store';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
-import {MatIconRegistry} from '@angular/material/icon';
+import {MatIconRegistry, MatIcon} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
 import {ExcelIcon, PARSING_DATE_FORMAT, WordIcon, PdfIcon} from 'src/app/common/const';
 import {format, parse} from 'date-fns';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatFormField, MatLabel, MatPrefix} from '@angular/material/form-field';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {MatTooltip} from '@angular/material/tooltip';
+import {MatDatepickerToggle, MatDateRangeInput, MatDateRangePicker, MatStartDate, MatEndDate} from '@angular/material/datepicker';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-backend-pn-report-header',
+    imports: [ReactiveFormsModule, TranslatePipe, MatIcon, MatFormField, MatLabel, MatPrefix, MtxSelect, MatTooltip, MatDatepickerToggle, MatDateRangeInput, MatDateRangePicker, MatStartDate, MatEndDate],
     templateUrl: './report-header.component.html',
     styleUrls: ['./report-header.component.scss'],
-    standalone: false
 })
 export class ReportHeaderComponent implements OnInit, OnDestroy {
   private reportStateService = inject(ReportStateService);

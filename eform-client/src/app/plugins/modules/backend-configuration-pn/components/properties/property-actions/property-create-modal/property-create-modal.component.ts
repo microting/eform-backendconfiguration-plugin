@@ -1,24 +1,28 @@
 import { Component, EventEmitter, OnDestroy, OnInit,
   inject
 } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import {FormBuilder, FormGroup, Validators, ReactiveFormsModule} from '@angular/forms';
 import { applicationLanguages, applicationLanguagesTranslated } from 'src/app/common/const';
 import { PropertyCreateModel } from '../../../../models';
 import { AuthStateService } from 'src/app/common/store';
 import { BackendConfigurationPnPropertiesService } from '../../../../services';
-import { MatDialogRef } from '@angular/material/dialog';
+import {MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
 import { Subscription } from 'rxjs';
 import { AppSettingsStateService } from 'src/app/modules/application-settings/components/store';
 import { ToastrService } from 'ngx-toastr';
-import { TranslateService } from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
+import {NgIf} from '@angular/common';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MatSlideToggle} from '@angular/material/slide-toggle';
 
 @AutoUnsubscribe()
 @Component({
   selector: 'app-property-create-modal',
+  imports: [NgIf, ReactiveFormsModule, TranslatePipe, MatFormField, MatLabel, MatInput, MatDialogTitle, MatDialogContent, MatDialogActions, MatSlideToggle],
   templateUrl: './property-create-modal.component.html',
   styleUrls: ['./property-create-modal.component.scss'],
-  standalone: false
 })
 export class PropertyCreateModalComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);

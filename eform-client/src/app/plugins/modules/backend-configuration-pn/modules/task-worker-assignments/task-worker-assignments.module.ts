@@ -19,8 +19,6 @@ import {MtxGridModule} from '@ng-matero/extensions/grid';
     FormsModule,
     AreaRulePlanModalModule,
     MtxGridModule,
-  ],
-  declarations: [
     TaskWorkerAssignmentsPageComponent,
   ],
 })

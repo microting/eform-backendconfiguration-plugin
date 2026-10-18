@@ -104,7 +104,7 @@ describe('Area rules type 1', () => {
     // Open the action menu
     cy.get('.task-actions')
       .first()
-      .find('#actionMenu')
+      .find('[id^="actionMenu"]')
       .should('be.visible')
       .click({ force: true });
 
@@ -122,7 +122,7 @@ describe('Area rules type 1', () => {
     // Open the action menu again
     cy.get('.task-actions')
       .first()
-      .find('#actionMenu')
+      .find('[id^="actionMenu"]')
       .should('be.visible')
       .click({ force: true });
 

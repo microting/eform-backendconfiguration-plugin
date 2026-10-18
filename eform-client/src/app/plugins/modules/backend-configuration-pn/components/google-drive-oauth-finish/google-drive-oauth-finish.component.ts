@@ -1,4 +1,6 @@
 import {Component, OnInit} from '@angular/core';
+import {NgIf} from '@angular/common';
+import {TranslatePipe} from '@ngx-translate/core';
 
 /**
  * Tiny landing page rendered inside the Google OAuth popup after the proxy
@@ -14,8 +16,8 @@ import {Component, OnInit} from '@angular/core';
  *   - <c>?gdrive_err=&lt;reason&gt;</c>      — error path (nonce_missing, etc.)
  */
 @Component({
-  standalone: false,
   selector: 'app-google-drive-oauth-finish',
+  imports: [NgIf, TranslatePipe],
   template: `
     <div class="gd-oauth-finish">
       <h3 *ngIf="success">{{ 'Google Drive connected' | translate }}</h3>

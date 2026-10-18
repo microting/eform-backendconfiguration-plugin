@@ -12,17 +12,19 @@ import {
 import {PropertyAreasUpdateModel} from '../../../../models';
 import {AuthStateService} from 'src/app/common/store';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
-import {TranslateService} from '@ngx-translate/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogActions} from '@angular/material/dialog';
 import {selectAuthIsAdmin, selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
 import {take} from 'rxjs';
+import {NgIf, NgFor} from '@angular/common';
+import {MatCheckbox} from '@angular/material/checkbox';
 
 @Component({
     selector: 'app-property-edit-areas-modal',
+    imports: [NgIf, NgFor, TranslatePipe, MatDialogTitle, MatDialogActions, MatCheckbox],
     templateUrl: './property-areas-edit-modal.component.html',
     styleUrls: ['./property-areas-edit-modal.component.scss'],
-    standalone: false
 })
 export class PropertyAreasEditModalComponent implements OnInit {
   private store = inject(Store);

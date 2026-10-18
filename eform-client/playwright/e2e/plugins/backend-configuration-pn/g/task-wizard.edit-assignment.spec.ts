@@ -175,8 +175,8 @@ test.describe('Area rules type 1', () => {
     await page.locator('#backend-configuration-pn-task-wizard').click();
     await expect(page.locator('.cdk-row')).toHaveCount(1, { timeout: 30000 });
 
-    await expect(page.locator('[id^=action-items]').first().locator('#actionMenu')).toBeVisible();
-    await page.locator('[id^=action-items]').first().locator('#actionMenu').click({ force: true });
+    await expect(page.locator('[id^=action-items]').first().locator('[id^="actionMenu"]')).toBeVisible();
+    await page.locator('[id^=action-items]').first().locator('[id^="actionMenu"]').click({ force: true });
     await page.waitForTimeout(400); // animation settle: mat-menu open
 
     await expect(page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first()).toBeVisible();
@@ -210,8 +210,8 @@ test.describe('Area rules type 1', () => {
     await page.locator('#backend-configuration-pn-task-wizard').click();
     await expect(page.locator('.cdk-row')).toHaveCount(1, { timeout: 30000 });
 
-    await expect(page.locator('[id^=action-items]').first().locator('#actionMenu')).toBeVisible();
-    await page.locator('[id^=action-items]').first().locator('#actionMenu').click({ force: true });
+    await expect(page.locator('[id^=action-items]').first().locator('[id^="actionMenu"]')).toBeVisible();
+    await page.locator('[id^=action-items]').first().locator('[id^="actionMenu"]').click({ force: true });
     await page.waitForTimeout(400); // animation settle: mat-menu open
 
     await expect(page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first()).toBeVisible();

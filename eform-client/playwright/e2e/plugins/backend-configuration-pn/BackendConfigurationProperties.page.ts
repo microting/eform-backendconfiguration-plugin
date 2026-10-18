@@ -120,7 +120,7 @@ export class BackendConfigurationPropertiesPage {
   }
 
   navigateToPropertyArea(i: number): Locator {
-    return this.page.locator('#navigateToPropertyArea').nth(i);
+    return this.page.locator('[id^="navigateToPropertyArea"]').nth(i);
   }
 
   async rowNum(): Promise<number> {
@@ -370,7 +370,7 @@ export class PropertyRowObject {
     }
     const row = this.page.locator('.mat-mdc-row').filter({ hasText: nameBindArea });
     await row.scrollIntoViewIfNeeded();
-    const navigateBtn = row.locator('.cdk-column-book > div').locator('#navigateToPropertyArea');
+    const navigateBtn = row.locator('.cdk-column-book > div').locator('[id^="navigateToPropertyArea"]');
     await navigateBtn.click();
   }
 }

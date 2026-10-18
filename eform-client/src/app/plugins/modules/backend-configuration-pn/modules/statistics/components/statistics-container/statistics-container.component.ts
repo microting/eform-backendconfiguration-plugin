@@ -24,13 +24,23 @@ import {
   taskManagementUpdateFilters, taskWizardUpdateFilters,
   updateDocumentsFilters
 } from '../../../../state';
+import {AsyncPipe} from '@angular/common';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatCard, MatCardContent} from '@angular/material/card';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {EformNewSubheaderComponent} from 'src/app/common/modules/eform-shared/components';
+import {AdHocTaskPrioritiesComponent} from '../ad-hoc-task-priorities/ad-hoc-task-priorities.component';
+import {AdHocTaskWorkersComponent} from '../ad-hoc-task-workers/ad-hoc-task-workers.component';
+import {PlannedTaskWorkersComponent} from '../planned-task-workers/planned-task-workers.component';
+import {PlannedTaskDaysComponent} from '../planned-task-days/planned-task-days.component';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-statistics-container',
+    imports: [AsyncPipe, TranslatePipe, MatCard, MatCardContent, MatFormField, MatLabel, MtxSelect, EformNewSubheaderComponent, AdHocTaskPrioritiesComponent, AdHocTaskWorkersComponent, PlannedTaskWorkersComponent, PlannedTaskDaysComponent],
     templateUrl: './statistics-container.component.html',
     styleUrls: ['./statistics-container.component.scss'],
-    standalone: false
 })
 export class StatisticsContainerComponent implements OnInit, OnDestroy {
   private store = inject(Store);
