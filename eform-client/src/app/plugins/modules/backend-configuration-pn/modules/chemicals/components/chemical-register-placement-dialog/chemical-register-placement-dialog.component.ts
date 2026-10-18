@@ -69,6 +69,11 @@ export class ChemicalRegisterPlacementDialogComponent {
     // A new search drops the earlier pick: Save must never register a chemical the user no longer sees (I-2).
     this.selected = null;
     this.productId = null;
+    // The old results go at once: while the new search is pending none of them can be picked and saved.
+    this.results = [];
+    this.total = 0;
+    this.searched = false;
+    this.searchedBarcode = '';
     const generation = ++this.searchGeneration;
     this.chemicalsService.searchRegister(query, 0, PAGE_SIZE).subscribe((res) => {
       if (generation !== this.searchGeneration) {
