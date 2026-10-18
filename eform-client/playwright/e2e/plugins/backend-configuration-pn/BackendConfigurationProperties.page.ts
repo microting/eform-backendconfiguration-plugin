@@ -135,6 +135,12 @@ export class BackendConfigurationPropertiesPage {
   async openCreatePropertyModal(property: PropertyCreateUpdate): Promise<void> {
     await this.propertyCreateBtn().click();
     await this.propertyCreateSaveCancelBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    // The dialog's DOM exists before its first change detection (the host coalesces it to the next frame);
+    // formControlName writes the initial '' then, wiping a field typed into earlier. The title is an
+    // interpolation, so once it has text that first pass has run.
+    await expect(
+      this.page.locator('mat-dialog-container').filter({ has: this.propertyCreateSaveCancelBtn() }).locator('[mat-dialog-title]')
+    ).not.toBeEmpty({ timeout: UI_TIMEOUT });
     if (property) {
       if (property.cvrNumber) {
         await this.createCVRNumber().fill(property.cvrNumber);
