@@ -51,6 +51,8 @@ export class ChemicalLocationsPageComponent implements OnInit {
   reordering = false;
   /** The newest inventory request; nothing is shown as empty while it is in flight. */
   readonly load = new ChemicalLatestLoad();
+  /** Bumped by every reload: an order answer from before it carries older locations and is dropped. */
+  private rowsGeneration = 0;
 
   /** Rows keep their elements across a saved order or a reload, so a focused move button survives (N-I1). */
   readonly trackByLocation = (_index: number, row: ChemicalLocationRow): number => row.location.id;
@@ -85,6 +87,7 @@ export class ChemicalLocationsPageComponent implements OnInit {
   }
 
   reload(): void {
+    this.rowsGeneration++;
     this.load.reset();
     this.rows = [];
     if (this.propertyId !== null) {
@@ -144,7 +147,7 @@ export class ChemicalLocationsPageComponent implements OnInit {
   /**
    * Shows the new order at once. A refused order, or one that gets no answer (the host interceptor
    * ends a 5xx or a network failure with EMPTY), reloads the server's; a saved one takes over the
-   * locations the server returns ("Senest ændret" moves). A move from a button gives `focusId`: once
+   * locations the server returns ("Senest ændret" moves), unless the page reloaded meanwhile. A move from a button gives `focusId`: once
    * the save settled and the rows rendered, the moved row's move button gets the focus back (N-I1).
    */
   drop(event: Pick<CdkDragDrop<ChemicalLocationRow[]>, 'previousIndex' | 'currentIndex'>, focusId: number | null = null): void {
@@ -157,6 +160,7 @@ export class ChemicalLocationsPageComponent implements OnInit {
     moveItemInArray(rows, event.previousIndex, currentIndex);
     this.rows = rows;
     this.reordering = true;
+    const generation = this.rowsGeneration;
     let answered = false;
     this.chemicalsService.reorderLocations(this.propertyId, activeLocationIds(rows))
       .pipe(finalize(() => {
@@ -171,6 +175,10 @@ export class ChemicalLocationsPageComponent implements OnInit {
       }))
       .subscribe((res) => {
         answered = true;
+        if (generation !== this.rowsGeneration) {
+          // The page reloaded meanwhile (an archive or an edit): its rows are newer than this answer.
+          return;
+        }
         if (res && res.success) {
           this.takeOver(res.model ?? []);
         } else {
