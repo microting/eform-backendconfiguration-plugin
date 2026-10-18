@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {of} from 'rxjs';
 import {BackendConfigurationPnTaskListService} from './backend-configuration-pn-task-list.service';
 
@@ -8,12 +10,12 @@ import {BackendConfigurationPnTaskListService} from './backend-configuration-pn-
  */
 describe('BackendConfigurationPnTaskListService', () => {
   let service: BackendConfigurationPnTaskListService;
-  let apiBaseServiceSpy: {post: jest.Mock; postNoToast: jest.Mock};
+  let apiBaseServiceSpy: {post: Mock; postNoToast: Mock};
 
   beforeEach(() => {
     apiBaseServiceSpy = {
-      post: jest.fn().mockReturnValue(of({success: true})),
-      postNoToast: jest.fn(),
+      post: vi.fn().mockReturnValue(of({success: true})),
+      postNoToast: vi.fn(),
     };
     service = new BackendConfigurationPnTaskListService(apiBaseServiceSpy as any);
   });

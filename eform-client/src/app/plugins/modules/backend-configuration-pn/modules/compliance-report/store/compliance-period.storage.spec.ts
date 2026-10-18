@@ -1,3 +1,4 @@
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {
   compliancePeriodStorageKey,
   parseSavedComplianceDate,
@@ -11,7 +12,7 @@ describe('compliance-period.storage (#1299)', () => {
 
   beforeEach(() => window.localStorage.clear());
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
     window.localStorage.clear();
   });
 
@@ -130,7 +131,7 @@ describe('compliance-period.storage (#1299)', () => {
   });
 
   it('does not throw when reading from storage throws', () => {
-    jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('SecurityError');
     });
 
@@ -139,7 +140,7 @@ describe('compliance-period.storage (#1299)', () => {
   });
 
   it('does not throw when writing to storage throws', () => {
-    jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('QuotaExceededError');
     });
 

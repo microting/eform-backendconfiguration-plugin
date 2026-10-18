@@ -1,3 +1,7 @@
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
+vi.mock('ng-gallery', () => ({Gallery: class {}, GalleryModule: class {}, ImageItem: class {}, GALLERY_CONFIG: 'GALLERY_CONFIG'}));
+vi.mock('ng-gallery/lightbox', () => ({Lightbox: class {}, LightboxModule: class {}}));
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
@@ -10,6 +14,8 @@ import {
 } from '../../../../services';
 import {ComplianceReportStateService} from '../../store';
 import {ComplianceDetailsViewComponent} from './compliance-details-view.component';
+import {CommonModule} from '@angular/common';
+import {detectChanges} from '../../../../testing/detect-changes';
 
 /**
  * #1300 — on Detaljer an UNCOMPLETED task dated after today (Copenhagen date)
@@ -23,9 +29,9 @@ describe('ComplianceDetailsViewComponent — future tasks (#1300)', () => {
   let fixture: ComponentFixture<ComplianceDetailsViewComponent>;
   let component: ComplianceDetailsViewComponent;
   let state: ComplianceReportStateService;
-  let index: jest.Mock;
-  let dialogOpen: jest.Mock;
-  let deleteCompliance: jest.Mock;
+  let index: Mock;
+  let dialogOpen: Mock;
+  let deleteCompliance: Mock;
 
   const row = (
     complianceId: number,
@@ -59,7 +65,7 @@ describe('ComplianceDetailsViewComponent — future tasks (#1300)', () => {
   const render = (rows: ComplianceReportRowModel[]) => {
     index.mockReturnValue(of({success: true, model: {total: rows.length, entities: rows}}));
     state.requestFetch();
-    fixture.detectChanges();
+    detectChanges(fixture);
   };
 
   const rowEl = (complianceId: number): HTMLElement =>
@@ -69,15 +75,14 @@ describe('ComplianceDetailsViewComponent — future tasks (#1300)', () => {
     rowEl(complianceId)?.querySelector('.compliance-details__delete') ?? null;
 
   beforeEach(async () => {
-    jest.useFakeTimers();
-    jest.setSystemTime(new Date('2026-09-18T10:00:00Z'));
-    index = jest.fn().mockReturnValue(of({success: true, model: {total: 0, entities: []}}));
-    dialogOpen = jest.fn(() => ({afterClosed: () => new Subject<unknown>()}));
-    deleteCompliance = jest.fn().mockReturnValue(of({success: true}));
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-18T10:00:00Z'));
+    index = vi.fn().mockReturnValue(of({success: true, model: {total: 0, entities: []}}));
+    dialogOpen = vi.fn(() => ({afterClosed: () => new Subject<unknown>()}));
+    deleteCompliance = vi.fn().mockReturnValue(of({success: true}));
 
     await TestBed.configureTestingModule({
-      declarations: [ComplianceDetailsViewComponent],
-      imports: [TranslateModule.forRoot()],
+      imports: [ComplianceDetailsViewComponent, TranslateModule.forRoot()],
       providers: [
         ComplianceReportStateService,
         {provide: BackendConfigurationPnComplianceReportService, useValue: {index}},
@@ -85,7 +90,7 @@ describe('ComplianceDetailsViewComponent — future tasks (#1300)', () => {
         {provide: MatDialog, useValue: {open: dialogOpen}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
-    }).compileComponents();
+    }).overrideComponent(ComplianceDetailsViewComponent, {set: {imports: [CommonModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}}).compileComponents();
 
     fixture = TestBed.createComponent(ComplianceDetailsViewComponent);
     component = fixture.componentInstance;
@@ -93,11 +98,11 @@ describe('ComplianceDetailsViewComponent — future tasks (#1300)', () => {
     component.canDeleteLogs = true;
     state = TestBed.inject(ComplianceReportStateService);
     state.setMode('details');
-    fixture.detectChanges();
+    detectChanges(fixture);
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   describe('isRowCompletable', () => {
@@ -166,7 +171,7 @@ describe('ComplianceDetailsViewComponent — future tasks (#1300)', () => {
   });
 
   it('refuses to open the delete confirm for a future row even if called directly', () => {
-    const event = {stopPropagation: jest.fn(), currentTarget: document.createElement('button')} as unknown as MouseEvent;
+    const event = {stopPropagation: vi.fn(), currentTarget: document.createElement('button')} as unknown as MouseEvent;
     component.openDeleteConfirm(row(1, '2026-09-19'), event);
     component.confirmDelete();
     expect(deleteCompliance).not.toHaveBeenCalled();
@@ -232,9 +237,9 @@ describe('ComplianceDetailsViewComponent — future tasks (#1300)', () => {
 
   it('flips at Copenhagen midnight, not UTC midnight (CEST: 22:00 UTC)', () => {
     const tomorrow = row(1, '2026-09-19');
-    jest.setSystemTime(new Date('2026-09-18T21:59:00Z')); // 23:59 in Copenhagen
+    vi.setSystemTime(new Date('2026-09-18T21:59:00Z')); // 23:59 in Copenhagen
     expect(component.isRowCompletable(tomorrow)).toBe(false);
-    jest.setSystemTime(new Date('2026-09-18T22:00:00Z')); // 00:00 in Copenhagen, still the 18th in UTC
+    vi.setSystemTime(new Date('2026-09-18T22:00:00Z')); // 00:00 in Copenhagen, still the 18th in UTC
     expect(component.isRowCompletable(tomorrow)).toBe(true);
     expect(component.canDeleteRow(tomorrow)).toBe(true);
   });

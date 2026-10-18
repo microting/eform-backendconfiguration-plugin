@@ -13,12 +13,10 @@ import {Overlay} from '@angular/cdk/overlay';
 import {CommonDictionaryModel, SiteNameDto} from 'src/app/common/models';
 import {Sort} from '@angular/material/sort';
 import {debounceTime, map} from 'rxjs/operators';
-import {
-  PropertyWorkerCreateEditModalComponent,
-  PropertyWorkerDeleteModalComponent,
-  PropertyWorkerOtpModalComponent,
-  PropertyWorkerQrModalComponent,
-} from '../';
+import {PropertyWorkerCreateEditModalComponent} from '../property-worker-create-edit-modal/property-worker-create-edit-modal.component';
+import {PropertyWorkerDeleteModalComponent} from '../property-worker-delete-modal/property-worker-delete-modal.component';
+import {PropertyWorkerOtpModalComponent} from '../property-worker-otp-modal/property-worker-otp-modal.component';
+import {PropertyWorkerQrModalComponent} from '../property-worker-qr-modal/property-worker-qr-modal.component';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {UserSetPasswordComponent} from 'src/app/modules/account-management/components';
 import {AuthService} from 'src/app/common/services';

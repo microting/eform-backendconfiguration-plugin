@@ -11,11 +11,8 @@ import {
 import {AppMenuStateService, AuthStateService} from 'src/app/common/store';
 import {PropertyAssignWorkersModel, DeviceUserModel, TaskWizardModel,} from '../../../../models';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
-import {
-  PropertyWorkerBulkTagsModalComponent,
-  PropertyWorkerBulkTagsModalData,
-  PropertyWorkerCreateEditModalComponent
-} from '../';
+import {PropertyWorkerBulkTagsModalComponent, PropertyWorkerBulkTagsModalData} from '../property-worker-bulk-tags-modal/property-worker-bulk-tags-modal.component';
+import {PropertyWorkerCreateEditModalComponent} from '../property-worker-create-edit-modal/property-worker-create-edit-modal.component';
 import {
   TailBiteManagersDialogComponent,
   TailBiteManagersDialogData,

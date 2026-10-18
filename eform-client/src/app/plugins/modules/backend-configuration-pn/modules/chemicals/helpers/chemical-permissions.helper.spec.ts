@@ -1,3 +1,4 @@
+import {describe, it, expect} from 'vitest';
 import {
   NO_CHEMICAL_FLAGS,
   buildPermissionRows,

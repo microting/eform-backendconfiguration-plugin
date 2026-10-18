@@ -9,12 +9,14 @@ import {TaskWorkerAssignmentsRouting} from './task-worker-assignments.routing';
 import {TranslateModule} from '@ngx-translate/core';
 import {AreaRulePlanModalModule} from '../../components/area-rule-plan-modal.module';
 import {MtxGridModule} from '@ng-matero/extensions/grid';
+import {MatDialogModule} from '@angular/material/dialog';
 
 @NgModule({
   imports: [
     CommonModule,
     TaskWorkerAssignmentsRouting,
     EformSharedModule,
+    MatDialogModule,
     TranslateModule,
     FormsModule,
     AreaRulePlanModalModule,

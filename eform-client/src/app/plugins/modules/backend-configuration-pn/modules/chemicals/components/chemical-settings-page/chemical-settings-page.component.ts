@@ -3,7 +3,7 @@ import {Component, DestroyRef, HostListener, OnInit, inject} from '@angular/core
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {MatDialog} from '@angular/material/dialog';
 import {Store} from '@ngrx/store';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {Observable} from 'rxjs';
 import {finalize} from 'rxjs/operators';
 import {ChemicalDigestItemModel, ChemicalDigestModel} from '../../../../models';
@@ -11,6 +11,13 @@ import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {selectChemicalsPropertyId} from '../../../../state';
 import {ChemicalUnsavedChangesAware, confirmDiscardWhenDirty, warnBeforeUnload} from '../../chemicals-unsaved-changes';
 import {addRecipients, confirmDiscard} from '../../helpers';
+import {NgIf, NgFor, DatePipe} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {MatIcon} from '@angular/material/icon';
+import {MatCard} from '@angular/material/card';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatSlideToggle} from '@angular/material/slide-toggle';
+import {MatChipGrid, MatChipRow, MatChipInput, MatChipRemove} from '@angular/material/chips';
 
 /** The fixed alert rules (spec section 9; shown read-only, "Fast for alle kunder"). */
 export interface ChemicalAlertThresholdRow {
@@ -47,9 +54,9 @@ export interface ChemicalDigestPreviewSection {
  */
 @Component({
   selector: 'app-chemical-settings-page',
+  imports: [NgIf, NgFor, DatePipe, FormsModule, TranslatePipe, MatIcon, MatCard, MatFormField, MatLabel, MatSlideToggle, MatChipGrid, MatChipRow, MatChipInput, MatChipRemove],
   templateUrl: './chemical-settings-page.component.html',
   styleUrls: ['./chemical-settings-page.component.scss'],
-  standalone: false,
 })
 export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedChangesAware {
   private store = inject(Store);

@@ -24,7 +24,7 @@ import {generateWeeksList} from '../../../../../helpers';
 import * as R from 'ramda';
 import {MtxGridColumn, MtxGrid} from '@ng-matero/extensions/grid';
 import {MatCheckboxChange, MatCheckbox} from '@angular/material/checkbox';
-import {TaskWizardFoldersModalComponent} from '../';
+import {TaskWizardFoldersModalComponent} from '../task-wizard-folders-modal/task-wizard-folders-modal.component';
 import {findFullNameById, dialogConfigHelper} from 'src/app/common/helpers';
 import {Subscription, take} from 'rxjs';
 import {Overlay} from '@angular/cdk/overlay';

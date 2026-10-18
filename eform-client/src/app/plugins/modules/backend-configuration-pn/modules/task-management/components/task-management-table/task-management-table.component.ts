@@ -26,10 +26,8 @@ import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {BackendConfigurationPnTaskManagementService} from '../../../../services';
-import {
-  TaskManagementCreateShowModalComponent,
-  TaskManagementDeleteModalComponent
-} from '../';
+import {TaskManagementCreateShowModalComponent} from '../task-management-actions/task-management-create-show-modal/task-management-create-show-modal.component';
+import {TaskManagementDeleteModalComponent} from '../task-management-actions/task-management-delete-modal/task-management-delete-modal.component';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
 import {Gallery, GalleryItem, ImageItem} from 'ng-gallery';

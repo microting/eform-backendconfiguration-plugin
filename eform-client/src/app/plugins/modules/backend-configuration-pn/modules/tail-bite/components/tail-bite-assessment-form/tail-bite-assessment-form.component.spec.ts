@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import type {Mock, MockInstance} from 'vitest';
 import {SimpleChange} from '@angular/core';
 import {TestBed} from '@angular/core/testing';
 import {Subject, of, throwError} from 'rxjs';
@@ -11,7 +13,7 @@ describe('TailBiteAssessmentFormComponent', () => {
     summary: {id: 5, locationId: 2, openedAt: '2026-10-01T06:12:00', assessed: false, openActions: 0, bittenPigs: 0, severePigs: 0, closed: false},
     ruleId: 9, ruleVersion: 1, registrationIds: [21], answers: null, actions: [], ...over,
   });
-  let saveAssessment: jest.Mock;
+  let saveAssessment: Mock;
   let component: TailBiteAssessmentFormComponent;
 
   const create = (d: TailBiteOutbreakDetail) => {
@@ -21,7 +23,7 @@ describe('TailBiteAssessmentFormComponent', () => {
   };
 
   beforeEach(() => {
-    saveAssessment = jest.fn().mockReturnValue(of({success: true}));
+    saveAssessment = vi.fn().mockReturnValue(of({success: true}));
     TestBed.configureTestingModule({
       providers: [{provide: BackendConfigurationPnTailBiteService, useValue: {saveAssessment}}],
     });
@@ -61,7 +63,7 @@ describe('TailBiteAssessmentFormComponent', () => {
 
   it('saves a complete assessment and tells the page', () => {
     create(detail());
-    const saved = jest.fn();
+    const saved = vi.fn();
     component.saved.subscribe(saved);
     fillFeedYes();
     component.save();
@@ -100,13 +102,13 @@ describe('TailBiteAssessmentFormComponent', () => {
     // The server compares with OpenedAt.Date (UTC). Jest cannot switch the process time zone mid-run, so a browser zone
     // is emulated through the local calendar getters, the ones that read the wrong day: the test fails on code that
     // takes the day from local getters whatever zone the runner is in, UTC included.
-    let spies: jest.SpyInstance[] = [];
+    let spies: MockInstance[] = [];
     const emulateZone = (offsetHours: number) => {
       const shifted = (d: Date) => new Date(d.getTime() + offsetHours * 3600000);
       spies = [
-        jest.spyOn(Date.prototype, 'getFullYear').mockImplementation(function (this: Date) { return shifted(this).getUTCFullYear(); }),
-        jest.spyOn(Date.prototype, 'getMonth').mockImplementation(function (this: Date) { return shifted(this).getUTCMonth(); }),
-        jest.spyOn(Date.prototype, 'getDate').mockImplementation(function (this: Date) { return shifted(this).getUTCDate(); }),
+        vi.spyOn(Date.prototype, 'getFullYear').mockImplementation(function (this: Date) { return shifted(this).getUTCFullYear(); }),
+        vi.spyOn(Date.prototype, 'getMonth').mockImplementation(function (this: Date) { return shifted(this).getUTCMonth(); }),
+        vi.spyOn(Date.prototype, 'getDate').mockImplementation(function (this: Date) { return shifted(this).getUTCDate(); }),
       ];
     };
     afterEach(() => spies.forEach((s) => s.mockRestore()));
@@ -141,7 +143,7 @@ describe('TailBiteAssessmentFormComponent', () => {
   it('keeps everything entered and says so when the server refuses the save', () => {
     saveAssessment.mockReturnValue(of({success: false, message: 'nope'}));
     create(detail());
-    const saved = jest.fn();
+    const saved = vi.fn();
     component.saved.subscribe(saved);
     fillFeedYes();
     component.save();

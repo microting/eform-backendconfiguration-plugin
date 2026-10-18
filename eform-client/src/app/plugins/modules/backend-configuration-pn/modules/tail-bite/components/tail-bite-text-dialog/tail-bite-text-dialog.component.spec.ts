@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {Overlay} from '@angular/cdk/overlay';
 import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog';
@@ -5,10 +7,10 @@ import {Subject, of, throwError} from 'rxjs';
 import {TailBiteTextDialogComponent, TailBiteTextDialogData, askText} from './tail-bite-text-dialog.component';
 
 describe('TailBiteTextDialogComponent', () => {
-  let close: jest.Mock;
+  let close: Mock;
 
   const create = (data: TailBiteTextDialogData) => {
-    close = jest.fn();
+    close = vi.fn();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [{provide: MAT_DIALOG_DATA, useValue: data}, {provide: MatDialogRef, useValue: {close}}],
@@ -42,21 +44,21 @@ describe('TailBiteTextDialogComponent', () => {
     const overlay = {scrollStrategies: {reposition: () => ({})}} as unknown as Overlay;
     let saved: Subject<string>;
     let closed: Subject<void>;
-    let ref: {componentInstance: {saved: Subject<string>}; close: jest.Mock; afterClosed: () => Subject<void>};
+    let ref: {componentInstance: {saved: Subject<string>}; close: Mock; afterClosed: () => Subject<void>};
     let dialog: MatDialog;
 
     beforeEach(() => {
       saved = new Subject();
       closed = new Subject();
-      ref = {componentInstance: {saved}, close: jest.fn(), afterClosed: () => closed};
-      dialog = {open: jest.fn().mockReturnValue(ref)} as unknown as MatDialog;
+      ref = {componentInstance: {saved}, close: vi.fn(), afterClosed: () => closed};
+      dialog = {open: vi.fn().mockReturnValue(ref)} as unknown as MatDialog;
     });
 
     it('opens the text dialog, runs the action with the saved text, closes and emits once on success', () => {
-      const action = jest.fn().mockReturnValue(of({success: true}));
-      const done = jest.fn();
+      const action = vi.fn().mockReturnValue(of({success: true}));
+      const done = vi.fn();
       askText(dialog, overlay, {title: 'Ny', label: 'Name'}, action).subscribe(done);
-      expect((dialog.open as jest.Mock).mock.calls[0][0]).toBe(TailBiteTextDialogComponent);
+      expect((dialog.open as Mock).mock.calls[0][0]).toBe(TailBiteTextDialogComponent);
       saved.next('Sti 309');
       expect(action).toHaveBeenCalledWith('Sti 309');
       expect(ref.close).toHaveBeenCalled();
@@ -64,12 +66,12 @@ describe('TailBiteTextDialogComponent', () => {
     });
 
     it('keeps the dialog (and the typed text) open when the action is refused or fails, and lets the user retry', () => {
-      const action = jest.fn()
+      const action = vi.fn()
         .mockReturnValueOnce(of({success: false}))
         .mockReturnValueOnce(throwError(() => new Error('down')))
         .mockReturnValueOnce(of({success: true}));
-      const done = jest.fn();
-      const failed = jest.fn();
+      const done = vi.fn();
+      const failed = vi.fn();
       askText(dialog, overlay, {title: 'Ny', label: 'Name'}, action).subscribe({next: done, error: failed});
       saved.next('Sti 309');
       saved.next('Sti 309');
@@ -82,9 +84,9 @@ describe('TailBiteTextDialogComponent', () => {
     });
 
     it('completes without running the action when cancelled', () => {
-      const action = jest.fn();
-      const done = jest.fn();
-      const complete = jest.fn();
+      const action = vi.fn();
+      const done = vi.fn();
+      const complete = vi.fn();
       askText(dialog, overlay, {title: 'Ny', label: 'Name'}, action).subscribe({next: done, complete});
       closed.next();
       saved.next('Sti 309');

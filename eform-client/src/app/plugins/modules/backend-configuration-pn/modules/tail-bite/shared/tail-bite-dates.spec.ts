@@ -1,3 +1,4 @@
+import {describe, it, expect} from 'vitest';
 import {parseJSON} from 'date-fns';
 import {dateOnlyToLocal, isOverdue, occupancyValidFrom, openedDay, parseServerUtc, serverDay, toDateOnly, toUtcMidnightIso} from './tail-bite-dates';
 

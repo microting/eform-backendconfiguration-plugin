@@ -1,12 +1,10 @@
 import {Component, OnDestroy, OnInit,
   inject
 } from '@angular/core';
-import {
-  DocumentsDocumentCreateComponent,
-  DocumentsDocumentDeleteComponent,
-  DocumentsDocumentEditComponent,
-  DocumentsFoldersComponent
-} from '../';
+import {DocumentsDocumentCreateComponent} from '../documents-actions/document-create/documents-document-create.component';
+import {DocumentsDocumentDeleteComponent} from '../documents-actions/document-delete/documents-document-delete.component';
+import {DocumentsDocumentEditComponent} from '../documents-actions/document-edit/documents-document-edit.component';
+import {DocumentsFoldersComponent} from '../documents-folders/documents-folders/documents-folders.component';
 import {
   DocumentModel,
   DocumentSimpleFolderModel,

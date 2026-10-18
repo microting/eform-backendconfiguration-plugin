@@ -3,7 +3,7 @@ import {Component, DestroyRef, HostListener, OnInit, inject} from '@angular/core
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {MatDialog} from '@angular/material/dialog';
 import {Store} from '@ngrx/store';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {ToastrService} from 'ngx-toastr';
 import {EMPTY, Observable, of} from 'rxjs';
 import {catchError, finalize, switchMap, tap} from 'rxjs/operators';
@@ -25,6 +25,13 @@ import {
   sameFlags,
   toggleFlag,
 } from '../../helpers';
+import {NgIf, NgFor} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {MatIcon} from '@angular/material/icon';
+import {MatFormField, MatLabel, MatSuffix} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
+import {MatCheckbox} from '@angular/material/checkbox';
 
 /** Label and hint key per flag column (mockup W4 header). */
 export const CHEMICAL_FLAG_LABELS: Record<ChemicalFlagKey, {label: string; hint: string}> = {
@@ -53,9 +60,9 @@ export const CHEMICAL_FLAG_LABELS: Record<ChemicalFlagKey, {label: string; hint:
  */
 @Component({
   selector: 'app-chemical-permissions-page',
+  imports: [NgIf, NgFor, FormsModule, TranslatePipe, MatIcon, MatFormField, MatLabel, MatSuffix, MatInput, MatMenu, MatMenuItem, MatMenuTrigger, MatCheckbox],
   templateUrl: './chemical-permissions-page.component.html',
   styleUrls: ['./chemical-permissions-page.component.scss'],
-  standalone: false,
 })
 export class ChemicalPermissionsPageComponent implements OnInit, ChemicalUnsavedChangesAware {
   private store = inject(Store);

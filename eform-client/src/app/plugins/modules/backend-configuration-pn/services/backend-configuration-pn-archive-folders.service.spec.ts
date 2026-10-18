@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {of} from 'rxjs';
 import {
   BackendConfigurationPnArchiveFoldersMethods,
@@ -8,15 +10,15 @@ import {passThroughAccountDisabledHandler} from './archive-account-disabled.hand
 /** Wire contract of ArchiveFoldersController (plan 2). */
 describe('BackendConfigurationPnArchiveFoldersService', () => {
   let api: any;
-  let handle: jest.Mock;
+  let handle: Mock;
   let service: BackendConfigurationPnArchiveFoldersService;
 
   beforeEach(() => {
     api = {
-      get: jest.fn().mockReturnValue(of({success: true, model: []})),
-      post: jest.fn().mockReturnValue(of({success: true})),
-      put: jest.fn().mockReturnValue(of({success: true})),
-      delete: jest.fn().mockReturnValue(of({success: true})),
+      get: vi.fn().mockReturnValue(of({success: true, model: []})),
+      post: vi.fn().mockReturnValue(of({success: true})),
+      put: vi.fn().mockReturnValue(of({success: true})),
+      delete: vi.fn().mockReturnValue(of({success: true})),
     };
     const stub = passThroughAccountDisabledHandler();
     handle = stub.handle;

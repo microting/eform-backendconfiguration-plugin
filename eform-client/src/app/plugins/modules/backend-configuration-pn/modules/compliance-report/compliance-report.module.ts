@@ -39,15 +39,13 @@ import {ComplianceReportStateService} from './store';
  * table declares `:propertyId` first and would swallow any new literal segment.
  */
 @NgModule({
-  declarations: [
+  imports: [
     ComplianceReportPageComponent,
     ComplianceReportFiltersComponent,
     ComplianceOverviewViewComponent,
     ComplianceDetailsViewComponent,
     ComplianceReportViewComponent,
     CompliancePdfPreviewDialogComponent,
-  ],
-  imports: [
     CommonModule,
     FormsModule,
     RouterModule,

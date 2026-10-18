@@ -6,7 +6,7 @@ import {FilesCreateModel} from '../../../../../../models';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {SharedTagModel} from 'src/app/common/models';
 import {MatDialog} from '@angular/material/dialog';
-import {FileCreateZoomPageComponent} from '../../';
+import {FileCreateZoomPageComponent} from '../file-create-zoom-page/file-create-zoom-page.component';
 import {PDFDocument, PDFPage} from 'pdf-lib';
 import {Overlay} from '@angular/cdk/overlay';
 import {DragulaService, DragulaModule} from 'ng2-dragula';

@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {EventEmitter} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
@@ -10,14 +12,14 @@ describe('openConfirm', () => {
   const confirm = {headerText: 'Delete location?', itemLabel: 'Name', itemName: 'Sti 309', confirmText: 'Delete', confirmId: 'x'};
   let deleteClicks: EventEmitter<unknown>;
   let closed: Subject<void>;
-  let ref: {componentInstance: {delete: EventEmitter<unknown>}; close: jest.Mock; afterClosed: () => Subject<void>};
-  let dialog: {open: jest.Mock};
+  let ref: {componentInstance: {delete: EventEmitter<unknown>}; close: Mock; afterClosed: () => Subject<void>};
+  let dialog: {open: Mock};
 
   beforeEach(() => {
     deleteClicks = new EventEmitter();
     closed = new Subject();
-    ref = {componentInstance: {delete: deleteClicks}, close: jest.fn(), afterClosed: () => closed};
-    dialog = {open: jest.fn().mockReturnValue(ref)};
+    ref = {componentInstance: {delete: deleteClicks}, close: vi.fn(), afterClosed: () => closed};
+    dialog = {open: vi.fn().mockReturnValue(ref)};
   });
 
   it('opens the platform delete modal with the given texts', () => {
@@ -30,8 +32,8 @@ describe('openConfirm', () => {
   });
 
   it('runs the action on confirm, closes and emits once on success', () => {
-    const action = jest.fn().mockReturnValue(of({success: true}));
-    const done = jest.fn();
+    const action = vi.fn().mockReturnValue(of({success: true}));
+    const done = vi.fn();
     openConfirm(dialog as unknown as MatDialog, overlay, confirm, action).subscribe(done);
     deleteClicks.emit({});
     expect(action).toHaveBeenCalledTimes(1);
@@ -40,8 +42,8 @@ describe('openConfirm', () => {
   });
 
   it('keeps the dialog open when the server refuses, and lets the user retry', () => {
-    const action = jest.fn().mockReturnValueOnce(of({success: false})).mockReturnValueOnce(of({success: true}));
-    const done = jest.fn();
+    const action = vi.fn().mockReturnValueOnce(of({success: false})).mockReturnValueOnce(of({success: true}));
+    const done = vi.fn();
     openConfirm(dialog as unknown as MatDialog, overlay, confirm, action).subscribe(done);
     deleteClicks.emit({});
     expect(ref.close).not.toHaveBeenCalled();
@@ -50,11 +52,11 @@ describe('openConfirm', () => {
   });
 
   it('keeps the dialog working after a failed request, so the user can retry', () => {
-    const action = jest.fn()
+    const action = vi.fn()
       .mockReturnValueOnce(throwError(() => new Error('down')))
       .mockReturnValueOnce(of({success: true}));
-    const done = jest.fn();
-    const failed = jest.fn();
+    const done = vi.fn();
+    const failed = vi.fn();
     openConfirm(dialog as unknown as MatDialog, overlay, confirm, action).subscribe({next: done, error: failed});
     deleteClicks.emit({});
     expect(ref.close).not.toHaveBeenCalled();
@@ -65,8 +67,8 @@ describe('openConfirm', () => {
   });
 
   it('does nothing when cancelled', () => {
-    const action = jest.fn();
-    const done = jest.fn();
+    const action = vi.fn();
+    const done = vi.fn();
     openConfirm(dialog as unknown as MatDialog, overlay, confirm, action).subscribe(done);
     closed.next();
     deleteClicks.emit({});
@@ -77,13 +79,13 @@ describe('openConfirm', () => {
 
 describe('whenRefused', () => {
   it('runs the callback on a refusal or a failed request, not on success, and passes the outcome through', () => {
-    const refused = jest.fn();
+    const refused = vi.fn();
     const seen: unknown[] = [];
     of({success: true} as any).pipe(whenRefused(refused)).subscribe((r) => seen.push(r));
     expect(refused).not.toHaveBeenCalled();
     of({success: false} as any).pipe(whenRefused(refused)).subscribe((r) => seen.push(r));
     expect(refused).toHaveBeenCalledTimes(1);
-    const failed = jest.fn();
+    const failed = vi.fn();
     throwError(() => new Error('down')).pipe(whenRefused(refused)).subscribe({error: failed});
     expect(refused).toHaveBeenCalledTimes(2);
     expect(failed).toHaveBeenCalled();

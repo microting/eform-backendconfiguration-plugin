@@ -17,11 +17,13 @@ import {MatIconModule} from '@angular/material/icon';
 import {MatInputModule} from '@angular/material/input';
 import {MatButtonModule} from '@angular/material/button';
 import {MatDatepickerModule} from '@angular/material/datepicker';
+import {MatDialogModule} from '@angular/material/dialog';
 
 @NgModule({
   imports: [
     TranslateModule,
     EformSharedModule,
+    MatDialogModule,
     BackendConfigurationCaseRoutingModule,
     CommonModule,
     FormsModule,

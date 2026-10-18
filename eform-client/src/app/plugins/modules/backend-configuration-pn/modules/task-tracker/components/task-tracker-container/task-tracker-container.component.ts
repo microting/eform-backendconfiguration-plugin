@@ -11,10 +11,8 @@ import {
   PlannedTaskDaysModel,
 } from '../../../../models';
 import {TaskTrackerStateService} from '../store';
-import {
-  TaskTrackerCreateShowModalComponent,
-  TaskTrackerShownColumnsComponent
-} from '../';
+import {TaskTrackerCreateShowModalComponent} from '../task-tracker-actions/task-tracker-create-show-modal/task-tracker-create-show-modal.component';
+import {TaskTrackerShownColumnsComponent} from '../task-tracker-actions/task-tracker-shown-columns/task-tracker-shown-columns.component';
 import {
   BackendConfigurationPnAreasService,
   BackendConfigurationPnPropertiesService,

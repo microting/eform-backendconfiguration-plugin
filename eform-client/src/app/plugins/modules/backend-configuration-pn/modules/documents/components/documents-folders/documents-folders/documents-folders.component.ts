@@ -9,11 +9,9 @@ import {
 import {
   Paged,
 } from 'src/app/common/models';
-import {
-  DocumentsFolderCreateComponent,
-  DocumentsFolderEditComponent,
-  DocumentsFolderDeleteComponent
-} from '../';
+import {DocumentsFolderCreateComponent} from '../documents-folder-create/documents-folder-create.component';
+import {DocumentsFolderEditComponent} from '../documents-folder-edit/documents-folder-edit.component';
+import {DocumentsFolderDeleteComponent} from '../documents-folder-delete/documents-folder-delete.component';
 import {DocumentFolderModel, DocumentFolderRequestModel} from '../../../../../models';
 import {BackendConfigurationPnDocumentsService} from '../../../../../services';
 import {MatDialog, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';

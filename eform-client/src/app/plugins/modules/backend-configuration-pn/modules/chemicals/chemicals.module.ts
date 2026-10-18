@@ -17,15 +17,13 @@ import {ChemicalPermissionsPageComponent, ChemicalSettingsPageComponent, Chemica
 
 /**
  * Kemi web screens (flutter-chemistry spec section 11, W1-W6). Every Kemi component is
- * declared here; each screen task adds the modules its page needs.
+ * a standalone component imported here; each one imports what its own template uses.
  */
 @NgModule({
-  declarations: [
+  imports: [
     ChemicalsContainerComponent,
     ChemicalPermissionsPageComponent,
     ChemicalSettingsPageComponent,
-  ],
-  imports: [
     CommonModule,
     TranslateModule,
     RouterModule,

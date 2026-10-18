@@ -6,13 +6,11 @@ import {Subject, Subscription} from 'rxjs';
 import {EntityItemModel, Paged} from 'src/app/common/models';
 import {AppMenuStateService, AuthStateService} from 'src/app/common/store';
 import {Router} from '@angular/router';
-import {
-  PropertyCreateModalComponent,
-  PropertyDeleteModalComponent,
-  PropertyDocxReportModalComponent,
-  PropertyEditModalComponent,
-  AreaRuleEntityListModalComponent
-} from '../../../';
+import {PropertyCreateModalComponent} from '../../property-actions/property-create-modal/property-create-modal.component';
+import {PropertyDeleteModalComponent} from '../../property-actions/property-delete-modal/property-delete-modal.component';
+import {PropertyDocxReportModalComponent} from '../../property-actions/property-docx-report-modal/property-docx-report-modal.component';
+import {PropertyEditModalComponent} from '../../property-actions/property-edit-modal/property-edit-modal.component';
+import {AreaRuleEntityListModalComponent} from '../../../area-rule-entity-list-modal/area-rule-entity-list-modal.component';
 import {
   PropertyCreateModel,
   PropertyModel,

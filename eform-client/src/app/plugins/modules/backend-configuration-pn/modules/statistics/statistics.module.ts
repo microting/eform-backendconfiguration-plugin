@@ -17,6 +17,7 @@ import {NgxChartsModule} from '@swimlane/ngx-charts';
 import {MatCardModule} from '@angular/material/card';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MtxSelectModule} from '@ng-matero/extensions/select';
+import {MatDialogModule} from '@angular/material/dialog';
 
 @NgModule({
   imports: [
@@ -25,6 +26,7 @@ import {MtxSelectModule} from '@ng-matero/extensions/select';
     RouterModule,
     StatisticsRouting,
     EformSharedModule,
+    MatDialogModule,
     FormsModule,
     NgxChartsModule,
     MatCardModule,

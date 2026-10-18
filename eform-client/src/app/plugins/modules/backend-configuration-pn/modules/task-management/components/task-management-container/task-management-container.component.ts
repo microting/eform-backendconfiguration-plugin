@@ -5,7 +5,7 @@ import {
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {AdHocTaskPrioritiesModel, AdHocTaskWorkers, WorkOrderCaseModel} from '../../../../models';
 import {TaskManagementStateService} from '../store';
-import {TaskManagementCreateShowModalComponent} from '../';
+import {TaskManagementCreateShowModalComponent} from '../task-management-actions/task-management-create-show-modal/task-management-create-show-modal.component';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
 import {saveAs} from 'file-saver';
 import {ToastrService} from 'ngx-toastr';

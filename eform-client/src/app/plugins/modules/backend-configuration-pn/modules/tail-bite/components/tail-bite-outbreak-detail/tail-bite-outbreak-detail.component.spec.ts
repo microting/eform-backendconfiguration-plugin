@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {Overlay} from '@angular/cdk/overlay';
 import {EventEmitter} from '@angular/core';
 import {TestBed} from '@angular/core/testing';
@@ -17,9 +19,9 @@ describe('TailBiteOutbreakDetailComponent', () => {
   ]};
   const regRow = {registrationId: 21, rowId: 210, locationId: 2, effectiveAt: '2026-09-30T05:58:00Z', minor: 2, severe: 1,
     actionTypeIds: [], siteId: 7, siteName: 'Jane Doe', cancelled: false, cancelReason: null, photoCount: 0};
-  let service: Record<string, jest.Mock>;
-  let dialogOpen: jest.Mock;
-  let navigate: jest.Mock;
+  let service: Record<string, Mock>;
+  let dialogOpen: Mock;
+  let navigate: Mock;
   let params: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
   let component: TailBiteOutbreakDetailComponent;
 
@@ -27,25 +29,25 @@ describe('TailBiteOutbreakDetailComponent', () => {
     registrationIds: [21], answers: null, actions: []}});
   const confirmDialog = () => {
     const confirmed = new EventEmitter<unknown>();
-    dialogOpen.mockReturnValue({componentInstance: {delete: confirmed}, close: jest.fn(), afterClosed: () => NEVER});
+    dialogOpen.mockReturnValue({componentInstance: {delete: confirmed}, close: vi.fn(), afterClosed: () => NEVER});
     return confirmed;
   };
 
   beforeEach(() => {
     service = {
-      getOutbreak: jest.fn().mockReturnValue(detail()),
-      getOutbreakRegistrations: jest.fn().mockReturnValue(of({success: true, model: {propertyId: 3, actionTypes: [], rows: [regRow]}})),
-      getTree: jest.fn().mockReturnValue(of({success: true, model: tree})),
+      getOutbreak: vi.fn().mockReturnValue(detail()),
+      getOutbreakRegistrations: vi.fn().mockReturnValue(of({success: true, model: {propertyId: 3, actionTypes: [], rows: [regRow]}})),
+      getTree: vi.fn().mockReturnValue(of({success: true, model: tree})),
       // The managers dialog's admin list: the outbreak page must never call it (a manager may lack DeviceUsers.Update).
-      getWorkers: jest.fn(),
-      getAssignableWorkers: jest.fn().mockReturnValue(of({success: true, model: [{siteId: 7, name: 'Jane Doe', assignable: true}]})),
-      getOccupancy: jest.fn().mockReturnValue(of({success: true, model: []})),
-      getRuleHistory: jest.fn().mockReturnValue(of({success: true, model: []})),
-      closeOutbreak: jest.fn().mockReturnValue(of({success: true})),
-      cancelRegistration: jest.fn().mockReturnValue(of({success: true})),
+      getWorkers: vi.fn(),
+      getAssignableWorkers: vi.fn().mockReturnValue(of({success: true, model: [{siteId: 7, name: 'Jane Doe', assignable: true}]})),
+      getOccupancy: vi.fn().mockReturnValue(of({success: true, model: []})),
+      getRuleHistory: vi.fn().mockReturnValue(of({success: true, model: []})),
+      closeOutbreak: vi.fn().mockReturnValue(of({success: true})),
+      cancelRegistration: vi.fn().mockReturnValue(of({success: true})),
     };
-    dialogOpen = jest.fn();
-    navigate = jest.fn();
+    dialogOpen = vi.fn();
+    navigate = vi.fn();
     params = new BehaviorSubject(convertToParamMap({propertyId: '3', id: '5'}));
     TestBed.configureTestingModule({
       providers: [
@@ -263,7 +265,7 @@ describe('TailBiteOutbreakDetailComponent', () => {
     const textDialog = () => {
       const saved = new Subject<string>();
       const closed = new Subject<void>();
-      const close = jest.fn(() => closed.next());
+      const close = vi.fn(() => closed.next());
       dialogOpen.mockReturnValueOnce({componentInstance: {saved}, close, afterClosed: () => closed});
       return {save: (text: string) => saved.next(text), cancel: () => closed.next(), close};
     };

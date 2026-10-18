@@ -1,3 +1,4 @@
+import {describe, it, expect} from 'vitest';
 import {TailBiteLocationNode, TailBiteLocationTree, TailBiteOccupancySource, TailBiteRule} from '../../../models';
 import {
   ancestorsAndSelf,

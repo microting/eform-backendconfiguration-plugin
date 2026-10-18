@@ -15,7 +15,7 @@ import {
   inject
 } from '@angular/core';
 import {ReportEformItemModel} from '../../../../models';
-import {CaseDeleteComponent} from '../';
+import {CaseDeleteComponent} from '../case-delete/case-delete.component';
 import {MtxGridColumn, MtxGrid} from '@ng-matero/extensions/grid';
 import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {MatDialog} from '@angular/material/dialog';

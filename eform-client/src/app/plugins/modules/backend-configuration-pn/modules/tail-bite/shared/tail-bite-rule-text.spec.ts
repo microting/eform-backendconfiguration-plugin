@@ -1,3 +1,4 @@
+import {describe, it, expect} from 'vitest';
 import {describeRule, ruleInputFromDraft, TailBiteRuleDraft, TailBiteTranslator} from './tail-bite-rule-text';
 
 // Echoes the key with its parameters filled in, like ngx-translate with the English file.

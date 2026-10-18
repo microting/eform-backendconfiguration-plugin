@@ -27,7 +27,7 @@ import {MatCheckboxChange, MatCheckbox} from '@angular/material/checkbox';
 import {dialogConfigHelper, findFullNameById, fixTranslationsByLanguages} from 'src/app/common/helpers';
 import {Subscription, take} from 'rxjs';
 import {Overlay} from '@angular/cdk/overlay';
-import {TaskWizardFoldersModalComponent} from '../';
+import {TaskWizardFoldersModalComponent} from '../task-wizard-folders-modal/task-wizard-folders-modal.component';
 import {PlanningTagsComponent} from '../../../../../../items-planning-pn/modules/plannings/components';
 import {selectAuthIsAuth, selectCurrentUserIsAdmin} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';

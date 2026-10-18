@@ -5,11 +5,9 @@ import {ActivatedRoute} from '@angular/router';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
 import {AuthStateService} from 'src/app/common/store';
-import {
-  AreaRuleCreateModalComponent,
-  AreaRuleDeleteModalComponent,
-  AreaRuleEditModalComponent,
-} from '../';
+import {AreaRuleCreateModalComponent} from '../area-rule-create-modal/area-rule-create-modal.component';
+import {AreaRuleDeleteModalComponent} from '../area-rule-delete-modal/area-rule-delete-modal.component';
+import {AreaRuleEditModalComponent} from '../area-rule-edit-modal/area-rule-edit-modal.component';
 import {
   AreaRulePlanningModel,
   AreaRulesCreateModel,

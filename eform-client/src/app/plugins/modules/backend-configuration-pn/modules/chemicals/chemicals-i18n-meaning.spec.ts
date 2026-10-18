@@ -1,3 +1,4 @@
+import {describe, it, expect} from 'vitest';
 import {bgBG} from '../../i18n/bgBG';
 import {csCZ} from '../../i18n/csCZ';
 import {da} from '../../i18n/da';
