@@ -1,12 +1,19 @@
 import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {boardTextColor, CalendarBoardModel} from '../../../../models/calendar';
 import {getCurrentLocale} from '../../services/calendar-locale.helper';
+import {NgIf, NgFor} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {MatIcon} from '@angular/material/icon';
+import {MatFormField} from '@angular/material/form-field';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {MatTooltip} from '@angular/material/tooltip';
+import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
 
 @Component({
-  standalone: false,
   selector: 'app-calendar-header',
+  imports: [NgIf, NgFor, FormsModule, TranslatePipe, MatIcon, MatFormField, MtxSelect, MatTooltip, MatMenu, MatMenuItem, MatMenuTrigger],
   templateUrl: './calendar-header.component.html',
   styleUrls: ['./calendar-header.component.scss'],
 })

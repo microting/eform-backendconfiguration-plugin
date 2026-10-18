@@ -1,5 +1,6 @@
 import {Component} from '@angular/core';
-import {MatDialogRef} from '@angular/material/dialog';
+import {MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
+import {TranslatePipe} from '@ngx-translate/core';
 
 /**
  * "The eForm change applies to the whole series" confirmation.
@@ -17,8 +18,8 @@ import {MatDialogRef} from '@angular/material/dialog';
  * (or aborts) the save.
  */
 @Component({
-  standalone: false,
   selector: 'app-eform-change-scope-modal',
+  imports: [TranslatePipe, MatDialogTitle, MatDialogContent, MatDialogActions],
   templateUrl: './eform-change-scope-modal.component.html',
 })
 export class EformChangeScopeModalComponent {

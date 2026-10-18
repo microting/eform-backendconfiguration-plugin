@@ -18,12 +18,9 @@ import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatIconModule} from '@angular/material/icon';
 import {MatInputModule} from '@angular/material/input';
 import {MatDatepickerModule} from '@angular/material/datepicker';
+import {MatDialogModule} from '@angular/material/dialog';
 
 @NgModule({
-  declarations: [
-    ComplianceCaseHeaderComponent,
-    ComplianceCasePageComponent
-  ],
   imports: [
     TranslateModule,
     EformSharedModule,
@@ -37,7 +34,10 @@ import {MatDatepickerModule} from '@angular/material/datepicker';
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
-    MatDatepickerModule
+    MatDatepickerModule,
+    MatDialogModule,
+    ComplianceCaseHeaderComponent,
+    ComplianceCasePageComponent,
   ]
 })
 export class ComplianceCaseModule {

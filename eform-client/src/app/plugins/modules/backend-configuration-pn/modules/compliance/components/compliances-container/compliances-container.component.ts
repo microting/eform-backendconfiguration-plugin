@@ -9,15 +9,18 @@ import { ComplianceModel, PropertyModel } from '../../../../models';
 import {
   BackendConfigurationPnPropertiesService,
 } from '../../../../services';
-import { TranslateService } from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import { CompliancesStateService } from '../store';
+import {NgIf} from '@angular/common';
+import {EformNewSubheaderComponent} from 'src/app/common/modules/eform-shared/components';
+import {CompliancesTableComponent} from '../compliances-table/compliances-table.component';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-compliances-container',
+    imports: [NgIf, TranslatePipe, EformNewSubheaderComponent, CompliancesTableComponent],
     templateUrl: './compliances-container.component.html',
     styleUrls: ['./compliances-container.component.scss'],
-    standalone: false
 })
 export class CompliancesContainerComponent implements OnInit, OnDestroy {
   public authStateService = inject(AuthStateService);

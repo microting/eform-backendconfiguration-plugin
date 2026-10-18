@@ -1,3 +1,4 @@
+import {describe, it, expect, vi} from 'vitest';
 import {EMPTY, NEVER, of, throwError, Subject} from 'rxjs';
 import {
   AssigneeOption,
@@ -96,40 +97,40 @@ describe('TaskCreateEditModalComponent — merged teams/workers picker (#1295)',
   /** `configure` runs after the stubs are created and before ngOnInit, to override them. */
   function build(data: Partial<TaskCreateEditModalData> = {}, configure?: () => void): TaskCreateEditModalComponent {
     calendarService = {
-      getBoards: jest.fn().mockReturnValue(of({success: true, model: [{id: 1, name: 'Kalender', color: '#fff'}]})),
+      getBoards: vi.fn().mockReturnValue(of({success: true, model: [{id: 1, name: 'Kalender', color: '#fff'}]})),
       // A successful create (new id 1): the translation warning is only shown after one.
-      createTask: jest.fn().mockReturnValue(of({success: true, model: 1})),
-      updateTask: jest.fn().mockReturnValue(of({success: false})),
+      createTask: vi.fn().mockReturnValue(of({success: true, model: 1})),
+      updateTask: vi.fn().mockReturnValue(of({success: false})),
     };
     propertiesService = {
-      getLinkedSites: jest.fn((propertyId: number) =>
+      getLinkedSites: vi.fn((propertyId: number) =>
         of({success: true, model: propertyId === 5 ? WORKERS_P5 : WORKERS_P6})),
     };
     workerTagsService = {
-      getWorkerTags: jest.fn((propertyId: number) =>
+      getWorkerTags: vi.fn((propertyId: number) =>
         of({success: true, model: propertyId === 5 ? TEAMS_P5 : TEAMS_P6})),
     };
     repeatService = {
-      buildRepeatSelectOptions: jest.fn().mockReturnValue([]),
-      reconstructMetaFromTask: jest.fn().mockReturnValue(null),
-      reanchorMetaToDate: jest.fn((m: any) => m),
-      metaToWeekdaysCsv: jest.fn().mockReturnValue(null),
-      metaToDayOfMonth: jest.fn().mockReturnValue(null),
-      metaToRepeatOrdinalWeek: jest.fn().mockReturnValue(null),
+      buildRepeatSelectOptions: vi.fn().mockReturnValue([]),
+      reconstructMetaFromTask: vi.fn().mockReturnValue(null),
+      reanchorMetaToDate: vi.fn((m: any) => m),
+      metaToWeekdaysCsv: vi.fn().mockReturnValue(null),
+      metaToDayOfMonth: vi.fn().mockReturnValue(null),
+      metaToRepeatOrdinalWeek: vi.fn().mockReturnValue(null),
     };
-    toastr = {error: jest.fn(), warning: jest.fn()};
+    toastr = {error: vi.fn(), warning: vi.fn()};
     const translate: any = {instant: (k: string) => k, currentLang: 'da'};
     const store: any = {select: () => of(1)};
-    const eformVisualEditorService: any = {getVisualEditorTemplate: jest.fn().mockReturnValue(of({success: false}))};
+    const eformVisualEditorService: any = {getVisualEditorTemplate: vi.fn().mockReturnValue(of({success: false}))};
     translationService = {
-      translationPossible: jest.fn().mockReturnValue(of({success: true, model: false})),
-      getTranslation: jest.fn(),
+      translationPossible: vi.fn().mockReturnValue(of({success: true, model: false})),
+      getTranslation: vi.fn(),
     };
     appSettingsStateService = {
-      getLanguages: jest.fn().mockReturnValue(of({success: true, model: {languages: LANGUAGES}})),
+      getLanguages: vi.fn().mockReturnValue(of({success: true, model: {languages: LANGUAGES}})),
     };
-    dialogRef = {close: jest.fn()};
-    dialog = {open: jest.fn()};
+    dialogRef = {close: vi.fn()};
+    dialog = {open: vi.fn()};
     configure?.();
 
     const fullData: TaskCreateEditModalData = {
@@ -161,7 +162,7 @@ describe('TaskCreateEditModalComponent — merged teams/workers picker (#1295)',
       propertiesService,
       store,
       toastr,
-      {createPlanningTag: jest.fn()} as any,
+      {createPlanningTag: vi.fn()} as any,
       {} as any,
       {} as any,
       translationService,
@@ -288,20 +289,20 @@ describe('TaskCreateEditModalComponent — merged teams/workers picker (#1295)',
     });
 
     it('treats a translation call that never answers as failed and still saves', async () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
       try {
         component = buildForSave();
         configureTranslation();
         translationService.getTranslation.mockReturnValue(NEVER);
 
         const save = component.onSave();
-        await jest.advanceTimersByTimeAsync(15000);
+        await vi.advanceTimersByTimeAsync(15000);
         await save;
 
         expect(toastr.warning).toHaveBeenCalled();
         expect(calendarService.createTask).toHaveBeenCalledTimes(1);
       } finally {
-        jest.useRealTimers();
+        vi.useRealTimers();
       }
     });
 

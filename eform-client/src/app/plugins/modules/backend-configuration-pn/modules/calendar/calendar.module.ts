@@ -71,29 +71,6 @@ export {
 };
 
 @NgModule({
-  declarations: [
-    // Components
-    CalendarContainerComponent,
-    CalendarDayColumnComponent,
-    CalendarHeaderComponent,
-    CalendarWeekGridComponent,
-    CalendarTaskBlockComponent,
-    CalendarScheduleViewComponent,
-    CalendarMiniCalendarComponent,
-    CalendarMonthViewComponent,
-    // Modals
-    TaskCreateEditModalComponent,
-    TaskPreviewModalComponent,
-    TaskDeleteModalComponent,
-    RepeatScopeModalComponent,
-    EformChangeScopeModalComponent,
-    CustomRepeatModalComponent,
-    BoardCreateEditModalComponent,
-    BoardDeleteModalComponent,
-    CalendarSelectWorkerModalComponent,
-    CalendarCompleteEventModalComponent,
-    CalendarImageLightboxComponent,
-  ],
   imports: [
     CommonModule,
     FormsModule,
@@ -126,6 +103,25 @@ export {
     MatTooltipModule,
     MtxSelectModule,
     MtxGridModule,
+    CalendarContainerComponent,
+    CalendarDayColumnComponent,
+    CalendarHeaderComponent,
+    CalendarWeekGridComponent,
+    CalendarTaskBlockComponent,
+    CalendarScheduleViewComponent,
+    CalendarMiniCalendarComponent,
+    CalendarMonthViewComponent,
+    TaskCreateEditModalComponent,
+    TaskPreviewModalComponent,
+    TaskDeleteModalComponent,
+    RepeatScopeModalComponent,
+    EformChangeScopeModalComponent,
+    CustomRepeatModalComponent,
+    BoardCreateEditModalComponent,
+    BoardDeleteModalComponent,
+    CalendarSelectWorkerModalComponent,
+    CalendarCompleteEventModalComponent,
+    CalendarImageLightboxComponent,
   ],
   exports: [
     // Re-export the create/edit modal so a sibling module (the calendar

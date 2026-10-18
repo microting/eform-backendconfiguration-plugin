@@ -6,7 +6,7 @@ import {
   ViewChildren,
   inject
 } from '@angular/core';
-import {ActivatedRoute, Router} from '@angular/router';
+import {ActivatedRoute, Router, RouterLinkActive} from '@angular/router';
 import {EFormService} from 'src/app/common/services';
 import {
   TemplateDto,
@@ -16,18 +16,24 @@ import {
   ElementDto,
   DataItemDto,
 } from 'src/app/common/models';
-import {CaseEditElementComponent} from 'src/app/common/modules/eform-cases/components';
+import {CaseEditElementComponent, CaseEditNavComponent} from 'src/app/common/modules/eform-cases/components';
 import {BackendConfigurationPnCompliancesService} from '../../../../../services';
 import {parseISO} from 'date-fns';
 import * as R from 'ramda';
 import {Store} from '@ngrx/store';
 import {COMPLIANCE_PAGE_SOURCE} from '../../../../../helpers';
+import {NgIf, NgFor} from '@angular/common';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatCard, MatCardContent, MatCardFooter} from '@angular/material/card';
+import {MatFormField, MatSuffix} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MatDatepicker, MatDatepickerInput, MatDatepickerToggle} from '@angular/material/datepicker';
 
 @Component({
     selector: 'app-installation-case-page',
+    imports: [NgIf, NgFor, TranslatePipe, RouterLinkActive, MatCard, MatCardContent, MatFormField, MatSuffix, MatInput, MatDatepicker, MatDatepickerInput, MatDatepickerToggle, MatCardFooter, CaseEditElementComponent, CaseEditNavComponent],
     templateUrl: './compliance-case-page.component.html',
     styleUrls: ['./compliance-case-page.component.scss'],
-    standalone: false
 })
 export class ComplianceCasePageComponent implements OnInit {
   private activateRoute = inject(ActivatedRoute);
