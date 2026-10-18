@@ -1,4 +1,12 @@
+import {describe, it, expect, afterEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
+// ng2-pdf-viewer assigns to the pdfjs-dist module namespace when it loads, which
+// throws under the unit-test builder (ESM namespaces are not extensible), and
+// pdfjs-dist cannot be mocked from inside the package. No spec renders a PDF.
+vi.mock('ng2-pdf-viewer', () => ({PdfViewerModule: class {}, PdfViewerComponent: class {}}));
+import {CommonModule} from '@angular/common';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
+import {detectChanges} from '../../../../testing/detect-changes';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {TranslateModule} from '@ngx-translate/core';
@@ -42,21 +50,20 @@ function inboxDocument(suggestions: InboxSuggestionModel[]): InboxListItemModel 
 describe('InboxReviewDialogComponent folder and date rows', () => {
   let fixture: ComponentFixture<InboxReviewDialogComponent>;
   let component: InboxReviewDialogComponent;
-  let inboxService: {getPdf: jest.Mock; file: jest.Mock; undo: jest.Mock; reject: jest.Mock};
-  let dialogRef: {close: jest.Mock};
+  let inboxService: {getPdf: Mock; file: Mock; undo: Mock; reject: Mock};
+  let dialogRef: {close: Mock};
 
   // Folder 5 is the default folder: it must never be preselected on its own.
   function setup(suggestions: InboxSuggestionModel[], folders = [folder(3), folder(5, true), folder(9)]): void {
     inboxService = {
-      getPdf: jest.fn(() => EMPTY),
-      file: jest.fn(() => of({success: true, message: ''})),
-      undo: jest.fn(),
-      reject: jest.fn(),
+      getPdf: vi.fn(() => EMPTY),
+      file: vi.fn(() => of({success: true, message: ''})),
+      undo: vi.fn(),
+      reject: vi.fn(),
     };
-    dialogRef = {close: jest.fn()};
+    dialogRef = {close: vi.fn()};
     TestBed.configureTestingModule({
-      declarations: [InboxReviewDialogComponent],
-      imports: [TranslateModule.forRoot()],
+      imports: [InboxReviewDialogComponent, TranslateModule.forRoot()],
       schemas: [NO_ERRORS_SCHEMA],
       providers: [
         {provide: MAT_DIALOG_DATA, useValue: inboxDocument([property, ...suggestions])},
@@ -73,9 +80,13 @@ describe('InboxReviewDialogComponent folder and date rows', () => {
         },
       ],
     });
+    // Keep the scope these specs were written for (the old TestBed module had only
+    // CommonModule + these imports): the component's real Material/forms imports
+    // would make them test Material instead of this component.
+    TestBed.overrideComponent(InboxReviewDialogComponent, {set: {imports: [CommonModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}});
     fixture = TestBed.createComponent(InboxReviewDialogComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    detectChanges(fixture);
   }
 
   const el = (selector: string): HTMLElement | null => fixture.nativeElement.querySelector(selector);
@@ -108,7 +119,7 @@ describe('InboxReviewDialogComponent folder and date rows', () => {
       expect(folderToggle(3).getAttribute('aria-pressed')).toBe('false');
 
       folderToggle(3).click();
-      fixture.detectChanges();
+      detectChanges(fixture);
       expect(component.selectedFolderId).toBe(3);
       expect(folderToggle(3).getAttribute('aria-pressed')).toBe('true');
       expect(el('#inboxFolderRequired')).toBeNull();
@@ -125,7 +136,7 @@ describe('InboxReviewDialogComponent folder and date rows', () => {
       expect(inboxService.file).not.toHaveBeenCalled();
 
       component.selectedFolderId = 3;
-      fixture.detectChanges();
+      detectChanges(fixture);
       expect(component.canFile).toBe(true);
       expect(button('#inboxFileBtn').disabled).toBe(false);
       expect(el('#inboxFolderRequired')).toBeNull();
@@ -174,7 +185,7 @@ describe('InboxReviewDialogComponent folder and date rows', () => {
     it('Approve approves the suggested day', () => {
       setup([dated()]);
       button('#inboxDateApproveBtn').click();
-      fixture.detectChanges();
+      detectChanges(fixture);
       expect(el('#inboxDateApproved')).not.toBeNull();
       expect(el('#inboxDateApproveBtn')).toBeNull();
 
@@ -186,12 +197,12 @@ describe('InboxReviewDialogComponent folder and date rows', () => {
     it('Change date sets another day, which is approved', () => {
       setup([dated()]);
       button('#inboxDateEditBtn').click();
-      fixture.detectChanges();
+      detectChanges(fixture);
       expect(el('#inboxDateInput')).not.toBeNull();
 
       component.setDate('2026-09-30');
       button('#inboxDateDoneBtn').click();
-      fixture.detectChanges();
+      detectChanges(fixture);
       expect(el('#inboxDateInput')).toBeNull();
       expect(el('#inboxDateApproved')).not.toBeNull();
 
@@ -204,7 +215,7 @@ describe('InboxReviewDialogComponent folder and date rows', () => {
       setup([dated()]);
       component.dateApproved = true;
       component.setDate('');
-      fixture.detectChanges();
+      detectChanges(fixture);
       expect(el('#inboxDateValue').textContent).toContain('No date');
 
       component.selectedFolderId = 9;
@@ -215,7 +226,7 @@ describe('InboxReviewDialogComponent folder and date rows', () => {
     it('once filed, the folder toggle and the date controls are disabled', () => {
       setup([dated(), suggestion(InboxSuggestionKind.Folder, 9, 0.8)]);
       component.fileIt();
-      fixture.detectChanges();
+      detectChanges(fixture);
       expect(component.filed).toBe(true);
       expect(folderToggle(9).disabled).toBe(true);
       expect(button('#inboxDateApproveBtn').disabled).toBe(true);

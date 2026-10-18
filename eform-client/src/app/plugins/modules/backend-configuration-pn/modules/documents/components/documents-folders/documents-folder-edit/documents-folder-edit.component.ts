@@ -10,20 +10,27 @@ import {FolderDto,} from 'src/app/common/models';
 import {DocumentFolderModel} from '../../../../../models';
 import {BackendConfigurationPnDocumentsService} from '../../../../../services';
 import {ToastrService} from 'ngx-toastr';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {LocaleService} from 'src/app/common/services';
 import {Subscription} from 'rxjs';
 import {applicationLanguages2 } from 'src/app/common/const';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
+import {NgIf, NgFor} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {MatCard, MatCardContent} from '@angular/material/card';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {FormattingTextEditorComponent} from 'src/app/common/modules/eform-imported/formatting-text-editor/formatting-text-editor.component';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-documents-folder-edit',
+    imports: [NgIf, NgFor, FormsModule, TranslatePipe, MatCard, MatCardContent, MatFormField, MatLabel, MatInput, MtxSelect, MatDialogTitle, MatDialogContent, MatDialogActions, FormattingTextEditorComponent],
     templateUrl: './documents-folder-edit.component.html',
     styleUrls: ['./documents-folder-edit.component.scss'],
-    standalone: false
 })
 export class DocumentsFolderEditComponent implements OnInit, OnDestroy {
   private authStore = inject(Store);

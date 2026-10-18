@@ -8,18 +8,25 @@ import {FolderCreateModel, FolderDto,} from 'src/app/common/models';
 import {applicationLanguages2} from 'src/app/common/const';
 import {LocaleService} from 'src/app/common/services';
 import {ToastrService} from 'ngx-toastr';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {BackendConfigurationPnDocumentsService} from '../../../../../services';
 import {DocumentFolderModel} from '../../../../../models';
-import {MatDialogRef} from '@angular/material/dialog';
+import {MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
+import {NgIf, NgFor} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {MatCard, MatCardContent} from '@angular/material/card';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {FormattingTextEditorComponent} from 'src/app/common/modules/eform-imported/formatting-text-editor/formatting-text-editor.component';
 
 @Component({
     selector: 'app-documents-folder-create',
+    imports: [NgIf, NgFor, FormsModule, TranslatePipe, MatCard, MatCardContent, MatFormField, MatLabel, MatInput, MtxSelect, MatDialogTitle, MatDialogContent, MatDialogActions, FormattingTextEditorComponent],
     templateUrl: './documents-folder-create.component.html',
     styleUrls: ['./documents-folder-create.component.scss'],
-    standalone: false
 })
 export class DocumentsFolderCreateComponent implements OnInit {
   private authStore = inject(Store);

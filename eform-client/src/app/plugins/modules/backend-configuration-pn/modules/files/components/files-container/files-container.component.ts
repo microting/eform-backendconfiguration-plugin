@@ -2,9 +2,9 @@ import {Component, OnDestroy, OnInit, ViewChild, inject} from '@angular/core';
 import {BreakpointObserver} from '@angular/cdk/layout';
 import {Overlay} from '@angular/cdk/overlay';
 import {MatDialog} from '@angular/material/dialog';
-import {Router} from '@angular/router';
+import {Router, RouterLink} from '@angular/router';
 import {Store} from '@ngrx/store';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {ToastrService} from 'ngx-toastr';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {saveAs} from 'file-saver';
@@ -49,7 +49,16 @@ import {ArchiveAccessDialogComponent, ArchiveAccessDialogData, ArchiveAccessDial
 import {ArchiveFolderChooseDialogComponent, ArchiveFolderChooseDialogData} from '../archive-folder-choose-dialog/archive-folder-choose-dialog.component';
 import {ArchiveFolderNameDialogComponent, ArchiveFolderNameDialogData} from '../archive-folder-name-dialog/archive-folder-name-dialog.component';
 import {ArchivePropertiesDialogComponent, ArchivePropertiesDialogData} from '../archive-properties-dialog/archive-properties-dialog.component';
-import {ArchivePanelSaved} from '../archive-document-panel/archive-document-panel.component';
+import {ArchivePanelSaved, ArchiveDocumentPanelComponent} from '../archive-document-panel/archive-document-panel.component';
+import {NgIf, NgFor, NgSwitch, NgSwitchCase, NgSwitchDefault} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatCard} from '@angular/material/card';
+import {MatTooltip} from '@angular/material/tooltip';
+import {ArchiveSectionNavComponent} from '../archive-section-nav/archive-section-nav.component';
+import {ArchiveFolderTreeComponent} from '../archive-folder-tree/archive-folder-tree.component';
+import {FilesTableComponent} from '../files-table/files-table.component';
+import {FilesFiltersComponent} from '../files-filters/files-filters.component';
 
 type ArchiveListMode = 'folder' | 'search' | 'date';
 
@@ -60,8 +69,8 @@ type ArchiveListMode = 'folder' | 'search' | 'date';
 @AutoUnsubscribe()
 @Component({
   selector: 'app-files-container',
+  imports: [NgIf, NgFor, NgSwitch, NgSwitchCase, NgSwitchDefault, TranslatePipe, RouterLink, MatIcon, MatIconButton, MatCard, MatTooltip, ArchiveSectionNavComponent, ArchiveFolderTreeComponent, FileTagsComponent, ArchiveDocumentPanelComponent, FilesTableComponent, FilesFiltersComponent],
   templateUrl: './files-container.component.html',
-  standalone: false,
 })
 export class FilesContainerComponent implements OnInit, OnDestroy {
   /** Below this width the panel is a drawer. */

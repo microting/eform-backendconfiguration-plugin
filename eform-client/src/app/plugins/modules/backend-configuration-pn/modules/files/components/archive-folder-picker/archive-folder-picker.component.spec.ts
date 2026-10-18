@@ -1,3 +1,4 @@
+import {describe, it, expect, afterEach} from 'vitest';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {FormsModule} from '@angular/forms';
@@ -13,8 +14,7 @@ describe('ArchiveFolderPickerComponent', () => {
 
   it('puts pickerId on the mtx-select element, where the e2e specs address it', () => {
     TestBed.configureTestingModule({
-      declarations: [ArchiveFolderPickerComponent],
-      imports: [FormsModule, MtxSelectModule, NoopAnimationsModule, TranslateModule.forRoot()],
+      imports: [ArchiveFolderPickerComponent, FormsModule, MtxSelectModule, NoopAnimationsModule, TranslateModule.forRoot()],
       schemas: [NO_ERRORS_SCHEMA],
     });
     fixture = TestBed.createComponent(ArchiveFolderPickerComponent);

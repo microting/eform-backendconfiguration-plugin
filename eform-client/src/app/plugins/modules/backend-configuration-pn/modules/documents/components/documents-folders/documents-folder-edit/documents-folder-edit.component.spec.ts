@@ -1,3 +1,4 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {of} from 'rxjs';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
@@ -15,15 +16,15 @@ describe('DocumentsFolderEditComponent', () => {
   let toastrSpy: any;
 
   beforeEach(() => {
-    dialogRefSpy = {close: jest.fn()};
+    dialogRefSpy = {close: vi.fn()};
     documentsServiceSpy = {
-      getSingleFolder: jest.fn().mockReturnValue(of({success: false})),
-      updateFolder: jest.fn(),
+      getSingleFolder: vi.fn().mockReturnValue(of({success: false})),
+      updateFolder: vi.fn(),
     };
-    toastrSpy = {error: jest.fn()};
+    toastrSpy = {error: vi.fn()};
     TestBed.configureTestingModule({
       providers: [
-        {provide: Store, useValue: {select: jest.fn().mockReturnValue(of(1))}},
+        {provide: Store, useValue: {select: vi.fn().mockReturnValue(of(1))}},
         {provide: BackendConfigurationPnDocumentsService, useValue: documentsServiceSpy},
         {provide: ToastrService, useValue: toastrSpy},
         {provide: TranslateService, useValue: {instant: (key: string) => key}},

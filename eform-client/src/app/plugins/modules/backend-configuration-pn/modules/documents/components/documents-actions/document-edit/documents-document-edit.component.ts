@@ -5,7 +5,7 @@ import {
   DocumentModel,
   DocumentSimpleFolderModel
 } from '../../../../../models';
-import { FormArray, FormBuilder, FormControl, FormGroup } from '@angular/forms';
+import {FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule} from '@angular/forms';
 import {CommonDictionaryModel,} from 'src/app/common/models';
 import {Subscription} from 'rxjs';
 import {applicationLanguages2, PARSING_DATE_FORMAT} from 'src/app/common/const';
@@ -16,17 +16,29 @@ import {
 import {format, set} from 'date-fns';
 import * as R from 'ramda';
 import {LocaleService, TemplateFilesService} from 'src/app/common/services';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {saveAs} from 'file-saver';
 import {MatDatepickerInputEvent} from '@angular/material/datepicker';
 import {Store} from '@ngrx/store';
 import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
+import {NgIf, NgFor} from '@angular/common';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatCard, MatCardContent, MatCardTitle} from '@angular/material/card';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {MatTooltip} from '@angular/material/tooltip';
+import {MatSlideToggle} from '@angular/material/slide-toggle';
+import {FormattingTextEditorComponent} from 'src/app/common/modules/eform-imported/formatting-text-editor/formatting-text-editor.component';
+import {MtxCheckboxGroup} from '@ng-matero/extensions/checkbox-group';
 
 @Component({
     selector: 'app-documents-document-edit',
+    imports: [NgIf, NgFor, ReactiveFormsModule, TranslatePipe, MatIcon, MatIconButton, MatCard, MatCardContent, MatCardTitle, MatFormField, MatLabel, MatInput, MtxSelect, MatTooltip, MatDialogTitle, MatDialogContent, MatDialogActions, MatSlideToggle, FormattingTextEditorComponent, MtxCheckboxGroup],
     templateUrl: './documents-document-edit.component.html',
     styleUrls: ['./documents-document-edit.component.scss'],
-    standalone: false
 })
 export class DocumentsDocumentEditComponent implements OnInit {
   private fb = inject(FormBuilder);

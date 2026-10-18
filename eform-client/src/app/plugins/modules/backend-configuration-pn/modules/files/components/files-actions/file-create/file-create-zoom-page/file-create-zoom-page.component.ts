@@ -1,13 +1,14 @@
 import {Component,
   inject
 } from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogContent} from '@angular/material/dialog';
+import {PdfViewerModule} from 'ng2-pdf-viewer';
 
 @Component({
     selector: 'app-file-create-zoom-page',
+    imports: [MatDialogContent, PdfViewerModule],
     templateUrl: './file-create-zoom-page.component.html',
     styleUrls: ['./file-create-zoom-page.component.scss'],
-    standalone: false
 })
 export class FileCreateZoomPageComponent {
   public dialogRef = inject(MatDialogRef<FileCreateZoomPageComponent>);

@@ -1,4 +1,7 @@
+import {describe, it, expect, afterEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
+import {detectChanges} from '../../../../testing/detect-changes';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {FormsModule} from '@angular/forms';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
@@ -18,15 +21,14 @@ const bulk = (partial: Partial<ArchiveAccessDialogData> = {}): ArchiveAccessDial
 
 describe('ArchiveAccessDialogComponent', () => {
   let fixture: ComponentFixture<ArchiveAccessDialogComponent>;
-  let close: jest.Mock;
+  let close: Mock;
   const find = (selector: string): HTMLElement | null => fixture.nativeElement.querySelector(selector);
 
   function render(data: ArchiveAccessDialogData): ArchiveAccessDialogComponent {
-    close = jest.fn();
+    close = vi.fn();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      declarations: [ArchiveAccessDialogComponent],
-      imports: [FormsModule, MatRadioModule, MtxSelectModule, NoopAnimationsModule, TranslateModule.forRoot()],
+      imports: [ArchiveAccessDialogComponent, FormsModule, MatRadioModule, MtxSelectModule, NoopAnimationsModule, TranslateModule.forRoot()],
       providers: [{provide: MAT_DIALOG_DATA, useValue: data}, {provide: MatDialogRef, useValue: {close}}],
       schemas: [NO_ERRORS_SCHEMA],
     });
@@ -91,7 +93,7 @@ describe('ArchiveAccessDialogComponent', () => {
     it('the hint goes away once a group is chosen', () => {
       const c = renderTranslated(folder({inheritedFrom: {folder: 'Drift', groups: [ledelse]}}));
       c.tagIds = [6];
-      fixture.detectChanges();
+      detectChanges(fixture);
       expect(find('#archiveAccessOpenHint')).toBeNull();
     });
   });

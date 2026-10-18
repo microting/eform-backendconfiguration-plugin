@@ -9,6 +9,12 @@ import {
   readCollapsedFolderIds,
   writeCollapsedFolderIds,
 } from '../../../../helpers';
+import {NgIf, NgFor, NgTemplateOutlet} from '@angular/common';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatTooltip} from '@angular/material/tooltip';
+import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
 
 /**
  * Archive folder tree (W1, left column). Admins get create and a per-folder menu; others only navigate.
@@ -16,8 +22,8 @@ import {
  */
 @Component({
   selector: 'app-archive-folder-tree',
+  imports: [NgIf, NgFor, NgTemplateOutlet, TranslatePipe, MatIcon, MatIconButton, MatTooltip, MatMenu, MatMenuItem, MatMenuTrigger],
   templateUrl: './archive-folder-tree.component.html',
-  standalone: false,
 })
 export class ArchiveFolderTreeComponent implements OnChanges {
   @Input() folders: ArchiveFolderModel[] = [];

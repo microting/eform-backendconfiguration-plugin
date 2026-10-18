@@ -25,7 +25,7 @@ import {
   BackendConfigurationPnDocumentsService,
   BackendConfigurationPnPropertiesService,
 } from '../../../../services';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {skip, tap} from 'rxjs/operators';
 import {ActivatedRoute, Router} from '@angular/router';
 import {AppMenuStateService} from 'src/app/common/store';
@@ -36,12 +36,19 @@ import {
   selectDocumentsFilters,
   selectDocumentsFiltersPropertyId, selectDocumentsPaginationIsSortDsc
 } from '../../../../state/documents/documents.selector';
+import {NgIf} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatCard} from '@angular/material/card';
+import {MatTooltip} from '@angular/material/tooltip';
+import {DocumentUpdatedDaysComponent} from '../../../statistics/components/document-updated-days/document-updated-days.component';
+import {DocumentsTableComponent} from '../documents-table/documents-table.component';
+import {DocumentsFiltersComponent} from '../documents-filters/documents-filters.component';
 
 @Component({
     selector: 'app-documents-container',
+    imports: [NgIf, TranslatePipe, MatIcon, MatCard, MatTooltip, DocumentUpdatedDaysComponent, DocumentsTableComponent, DocumentsFiltersComponent],
     templateUrl: './documents-container.component.html',
     styleUrls: ['./documents-container.component.scss'],
-    standalone: false
 })
 export class DocumentsContainerComponent implements OnInit, OnDestroy {
   private store = inject(Store);

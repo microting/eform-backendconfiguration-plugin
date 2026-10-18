@@ -1,10 +1,17 @@
 import {Component, OnInit, inject} from '@angular/core';
 import {Store} from '@ngrx/store';
 import {ToastrService} from 'ngx-toastr';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {selectCurrentUserIsFirstUser} from 'src/app/state';
 import {BackendConfigurationPnInboxService} from '../../../../services';
 import {InboxSenderRuleKind, InboxSettingsModel} from '../../../../models';
+import {NgIf, AsyncPipe} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {MatIcon} from '@angular/material/icon';
+import {MatCard} from '@angular/material/card';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {ArchiveSectionNavComponent} from '../archive-section-nav/archive-section-nav.component';
 
 /** Splits a free-text list of addresses/domains on commas, semicolons and whitespace. */
 function parsePatterns(text: string): string[] {
@@ -20,8 +27,8 @@ function parsePatterns(text: string): string[] {
  */
 @Component({
   selector: 'app-inbox-settings',
+  imports: [NgIf, AsyncPipe, FormsModule, TranslatePipe, MatIcon, MatCard, MatFormField, MatLabel, MatInput, ArchiveSectionNavComponent],
   templateUrl: './inbox-settings.component.html',
-  standalone: false,
 })
 export class InboxSettingsComponent implements OnInit {
   private inboxService = inject(BackendConfigurationPnInboxService);

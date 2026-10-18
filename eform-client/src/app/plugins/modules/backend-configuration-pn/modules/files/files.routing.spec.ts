@@ -1,15 +1,10 @@
+import {describe, it, expect, vi} from 'vitest';
+// ng2-pdf-viewer assigns to the pdfjs-dist module namespace when it loads, which
+// throws under the unit-test builder (ESM namespaces are not extensible), and
+// pdfjs-dist cannot be mocked from inside the package. No spec renders a PDF.
+vi.mock('ng2-pdf-viewer', () => ({PdfViewerModule: class {}, PdfViewerComponent: class {}}));
 import {Route} from '@angular/router';
 import {IsAdminGuard} from 'src/app/common/guards';
-
-// The components barrel pulls in the host's module graph (see
-// backend-configuration-pn.routing.spec.ts); this spec only inspects the
-// route table, so mock it.
-jest.mock('./components', () => ({
-  FilesContainerComponent: class MockFilesContainerComponent {},
-  FileCreateComponent: class MockFileCreateComponent {},
-  InboxContainerComponent: class MockInboxContainerComponent {},
-  InboxSettingsComponent: class MockInboxSettingsComponent {},
-}));
 
 import {routes} from './files.routing';
 

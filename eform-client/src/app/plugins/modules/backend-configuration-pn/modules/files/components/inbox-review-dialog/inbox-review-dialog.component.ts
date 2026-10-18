@@ -1,5 +1,5 @@
 import {Component, OnInit, inject} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {Observable} from 'rxjs';
 import {CommonDictionaryModel, OperationResult, SharedTagModel} from 'src/app/common/models';
 import {
@@ -20,6 +20,15 @@ import {
   inboxIsUnknownSender,
   preselectedFolderId,
 } from '../../../../helpers';
+import {NgIf, NgFor, NgTemplateOutlet, DatePipe} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatIcon} from '@angular/material/icon';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {ArchiveFolderPickerComponent} from '../archive-folder-picker/archive-folder-picker.component';
+import {PdfViewerModule} from 'ng2-pdf-viewer';
 
 /**
  * Review and file one Ready document: the PDF on the left; on the right pickers over every live
@@ -33,8 +42,8 @@ import {
  */
 @Component({
   selector: 'app-inbox-review-dialog',
+  imports: [NgIf, NgFor, NgTemplateOutlet, DatePipe, FormsModule, TranslatePipe, MatIcon, MatFormField, MatLabel, MatInput, MtxSelect, MatDialogTitle, MatDialogContent, MatDialogActions, ArchiveFolderPickerComponent, PdfViewerModule],
   templateUrl: './inbox-review-dialog.component.html',
-  standalone: false,
 })
 export class InboxReviewDialogComponent implements OnInit {
   readonly data: InboxListItemModel = inject(MAT_DIALOG_DATA);

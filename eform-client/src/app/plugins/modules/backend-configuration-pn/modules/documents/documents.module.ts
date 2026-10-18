@@ -36,18 +36,6 @@ import {MatChip} from "@angular/material/chips";
 import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
 
 @NgModule({
-  declarations: [
-    DocumentsContainerComponent,
-    DocumentsTableComponent,
-    DocumentsFiltersComponent,
-    DocumentsFoldersComponent,
-    DocumentsFolderCreateComponent,
-    DocumentsFolderEditComponent,
-    DocumentsFolderDeleteComponent,
-    DocumentsDocumentCreateComponent,
-    DocumentsDocumentEditComponent,
-    DocumentsDocumentDeleteComponent
-  ],
   imports: [
     CommonModule,
     TranslateModule,
@@ -75,6 +63,16 @@ import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
     MatMenu,
     MatMenuItem,
     MatMenuTrigger,
+    DocumentsContainerComponent,
+    DocumentsTableComponent,
+    DocumentsFiltersComponent,
+    DocumentsFoldersComponent,
+    DocumentsFolderCreateComponent,
+    DocumentsFolderEditComponent,
+    DocumentsFolderDeleteComponent,
+    DocumentsDocumentCreateComponent,
+    DocumentsDocumentEditComponent,
+    DocumentsDocumentDeleteComponent,
   ],
   providers: [],
 })

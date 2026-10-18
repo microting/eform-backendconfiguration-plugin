@@ -9,16 +9,24 @@ import {MatDialog} from '@angular/material/dialog';
 import {FileCreateZoomPageComponent} from '../../';
 import {PDFDocument, PDFPage} from 'pdf-lib';
 import {Overlay} from '@angular/cdk/overlay';
-import {DragulaService} from 'ng2-dragula';
+import {DragulaService, DragulaModule} from 'ng2-dragula';
 import {Subscription} from 'rxjs';
+import {NgIf, NgFor} from '@angular/common';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton, MatButton} from '@angular/material/button';
+import {MatCard, MatCardContent, MatCardTitle, MatCardFooter} from '@angular/material/card';
+import {MatTooltip} from '@angular/material/tooltip';
+import {MtxProgress} from '@ng-matero/extensions/progress';
+import {PdfViewerModule} from 'ng2-pdf-viewer';
 import * as R from 'ramda';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-file-create-edit-file',
+    imports: [NgIf, NgFor, TranslatePipe, MatIcon, MatIconButton, MatButton, MatCard, MatCardContent, MatCardTitle, MatTooltip, MatCardFooter, MtxProgress, PdfViewerModule, DragulaModule],
     templateUrl: './file-create-edit-file.component.html',
     styleUrls: ['./file-create-edit-file.component.scss'],
-    standalone: false
 })
 export class FileCreateEditFileComponent implements OnChanges, OnDestroy {
   private dragulaService = inject(DragulaService);

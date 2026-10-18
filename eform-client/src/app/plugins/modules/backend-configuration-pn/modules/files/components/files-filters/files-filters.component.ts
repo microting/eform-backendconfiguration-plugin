@@ -6,12 +6,12 @@ import {
   Output,
   inject
 } from '@angular/core';
-import {FormControl, FormGroup} from '@angular/forms';
+import {FormControl, FormGroup, ReactiveFormsModule} from '@angular/forms';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription, merge, take} from 'rxjs';
 import {BackendConfigurationPnPropertiesService,} from '../../../../services';
 import {CommonDictionaryModel, SharedTagModel} from 'src/app/common/models';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {FilesStateService} from '../../store';
 import {format, parse} from 'date-fns';
 import {debounceTime, filter, map, skip} from 'rxjs/operators';
@@ -21,13 +21,20 @@ import {
   selectFilesNameFilters,
   FilesFiltrationModel, filesSelectFolder, filesUpdateFilters
 } from '../../../../state';
+import {NgIf} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatFormField, MatLabel, MatSuffix, MatPrefix} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {MatDatepickerToggle, MatDateRangeInput, MatDateRangePicker, MatStartDate, MatEndDate} from '@angular/material/datepicker';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-files-filters',
+    imports: [NgIf, ReactiveFormsModule, TranslatePipe, MatIcon, MatIconButton, MatFormField, MatLabel, MatSuffix, MatPrefix, MatInput, MtxSelect, MatDatepickerToggle, MatDateRangeInput, MatDateRangePicker, MatStartDate, MatEndDate],
     templateUrl: './files-filters.component.html',
     styleUrls: ['./files-filters.component.scss'],
-    standalone: false
 })
 export class FilesFiltersComponent implements OnInit, OnDestroy {
   private store = inject(Store);
