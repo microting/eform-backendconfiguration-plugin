@@ -192,6 +192,33 @@ describe('ChemicalLocationsPageComponent', () => {
       expect(component.visibleRows[0].openCount).toBe(1);
       expect(chemicals.getPropertyInventory).toHaveBeenCalledTimes(1);
     });
+
+    it('drops an order answer that arrives after a reload, so it cannot undo an archive', () => {
+      const component = build();
+      const answer = new Subject<{success: boolean; model: ReturnType<typeof location>[]}>();
+      chemicals.reorderLocations.mockReturnValue(answer);
+      component.drop({previousIndex: 1, currentIndex: 0} as never);
+
+      // While the order is saving, "Lade" is archived and the page reloads it as archived.
+      chemicals.getPropertyInventory.mockImplementation(() => {
+        const archived = inventory();
+        archived.model.locations[0] = location(1, 'Lade', {propertyId: 3, sortOrder: 1, archived: true});
+        return of(archived);
+      });
+      component.archive(component.visibleRows.find((r) => r.location.id === 1));
+      confirmed.next();
+      expect(ids(component)).toEqual([2]);
+
+      // The older order answer still carries "Lade" as active.
+      answer.next({success: true, model: [
+        location(2, 'Kemirum', {propertyId: 3, sortOrder: 1, photoFileName: 'p.jpg'}),
+        location(1, 'Lade', {propertyId: 3, sortOrder: 2}),
+      ]});
+      answer.complete();
+
+      expect(ids(component)).toEqual([2]);
+      expect(component.archivedCount).toBe(1);
+    });
   });
 
   describe('archive', () => {
