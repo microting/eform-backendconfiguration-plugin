@@ -140,17 +140,43 @@ describe('ChemicalRegisterPlacementDialogComponent', () => {
       component.query = 'karate';
       component.search();
       component.locationId = 10;
+      const old = component.results[0];
       const pending = new Subject<unknown>();
       chemicals.searchRegister.mockReturnValue(pending);
       component.query = 'virkon';
       component.search();
 
-      component.select(component.results[0]);
+      component.select(old);
       pending.next(page([{chemicalId: 300, name: 'Virkon S'}]));
 
       expect(component.selected).toBeNull();
       expect(component.productId).toBeNull();
       expect(component.canSave).toBe(false);
+    });
+
+    it('clears the old results while the new search is pending, so none of them can be picked', () => {
+      const component = build(false);
+      chemicals.searchRegister.mockReturnValue(of(page([{chemicalId: 200, name: 'Karate 2,5 WG'}], 40)));
+      component.query = 'karate';
+      component.search();
+      component.locationId = 10;
+      expect(component.results.length).toBe(1);
+      const pending = new Subject<unknown>();
+      chemicals.searchRegister.mockReturnValue(pending);
+
+      component.query = 'virkon';
+      component.search();
+
+      expect(component.results).toEqual([]);
+      expect(component.total).toBe(0);
+      expect(component.hasMore).toBe(false);
+      // Not "no match" either: the answer is still pending.
+      expect(component.searched).toBe(false);
+      expect(component.canSave).toBe(false);
+
+      pending.next(page([{chemicalId: 300, name: 'Virkon S'}]));
+      expect(component.results.map((r) => r.chemicalId)).toEqual([300]);
+      expect(component.searched).toBe(true);
     });
 
     it('ignores an older answer that arrives after a newer one', () => {

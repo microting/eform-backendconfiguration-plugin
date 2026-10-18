@@ -217,7 +217,7 @@ describe('ChemicalLocationsPageComponent', () => {
       answer.complete();
 
       expect(ids(component)).toEqual([2]);
-      expect(component.archivedCount).toBe(1);
+      expect(component.rows.find((r) => r.location.id === 1).location.archived).toBe(true);
     });
   });
 
