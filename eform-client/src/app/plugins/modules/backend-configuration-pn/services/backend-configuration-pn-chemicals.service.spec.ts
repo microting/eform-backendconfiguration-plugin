@@ -1,8 +1,10 @@
 import {HttpBackend, HttpErrorResponse, HttpHeaders, HttpRequest, HttpResponse} from '@angular/common/http';
 import {Injector, runInInjectionContext} from '@angular/core';
 import {Store} from '@ngrx/store';
-import {Observable, lastValueFrom, of, throwError} from 'rxjs';
+import {Observable, filter, lastValueFrom, map, of, throwError} from 'rxjs';
+import {DateInterceptor} from 'src/app/common/interceptors/date.interceptor';
 import {ApiBaseService} from 'src/app/common/services';
+import {governingDeadline} from '../modules/chemicals/helpers';
 import {
   BackendConfigurationPnChemicalsMethods,
   BackendConfigurationPnChemicalsService,
@@ -123,6 +125,22 @@ describe('BackendConfigurationPnChemicalsService', () => {
       expect(res.model.properties[0]).toEqual({propertyId: 3, stockEnabled: false});
     });
 
+    /** B-3: a wire body through the real host interceptor, then the service, keeps the server's day. */
+    it('keeps the day of an offset-less wire time that went through the real DateInterceptor', async () => {
+      const wire = {success: true, model: {registerEntries: [{status: 5, useAndPossessionDeadline: '2026-09-17T00:00:00', salesDeadline: null}]}};
+      const intercepted = await lastValueFrom(new DateInterceptor()
+        .intercept(new HttpRequest('GET', '/api/x'), {handle: () => of(new HttpResponse({body: wire}))})
+        .pipe(filter((event): event is HttpResponse<typeof wire> => event instanceof HttpResponse), map((event) => event.body!)));
+      expect(intercepted.model.registerEntries[0].useAndPossessionDeadline).toBeInstanceOf(Date);
+      api.get.mockReturnValue(of(intercepted));
+
+      const res = await lastValueFrom(service.getPropertyInventory(3)) as typeof wire;
+
+      const entry = res.model.registerEntries[0];
+      expect(entry.useAndPossessionDeadline).toBe('2026-09-17T00:00:00.000Z');
+      expect(governingDeadline(entry, '2026-09-01')).toEqual(expect.objectContaining({date: '2026-09-17', kind: ChemicalDeadlineKind.UseAndPossession}));
+    });
+
     it('restoreIsoDates walks objects and arrays and leaves other values alone', () => {
       expect(restoreIsoDates(new Date(Date.UTC(2026, 0, 2)))).toBe('2026-01-02T00:00:00.000Z');
       expect(restoreIsoDates([new Date(Date.UTC(2026, 0, 2)), 'x', 1, null, true]))
@@ -204,13 +222,19 @@ describe('BackendConfigurationPnChemicalsService', () => {
     });
 
     it.each([
-      ['plain text', 'Placeringen hører til en anden ejendom.'],
-      ['a JSON string', '"Placeringen hører til en anden ejendom."'],
+      ['plain text', 'The placement belongs to another property.'],
+      ['a JSON string', '"The placement belongs to another property."'],
     ])('reads the reason of a refused export (400) from the blob body as %s (m-9)', async (_name, body) => {
       backend.handle.mockReturnValue(throwError(() => new HttpErrorResponse({status: 400, error: new Blob([body])})));
 
-      const refused: ChemicalDownloadError = {status: 400, message: 'Placeringen hører til en anden ejendom.'};
+      const refused: ChemicalDownloadError = {status: 400, message: 'The placement belongs to another property.'};
       await expect(lastValueFrom(service.exportInventory(3, [7]))).rejects.toEqual(refused);
+    });
+
+    it('reads no reason from a status the Kemi file routes never answer (422)', async () => {
+      backend.handle.mockReturnValue(throwError(() => new HttpErrorResponse({status: 422, error: new Blob(['Unprocessable'])})));
+
+      await expect(lastValueFrom(service.exportRemovedPlacements(3))).rejects.toEqual({status: 422, message: null});
     });
 
     it('keeps the generic text of an unexpected server error (500) to itself', async () => {

@@ -6,6 +6,7 @@ using BackendConfiguration.Pn.Services.ChemicalInventoryService;
 using BackendConfiguration.Pn.Services.ChemicalReporting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using NSubstitute;
 
@@ -175,6 +176,50 @@ public class ChemicalExportServiceTests : ChemicalTestBase
             "ChemicalColumnTime", "ChemicalColumnUser", "ChemicalColumnAction", "ChemicalColumnProduct",
             "ChemicalColumnRegistrationNo", "ChemicalColumnLocation", "ChemicalColumnDetails",
         }));
+    }
+
+    /// <summary>
+    /// m-2, a regression guard (green against today's code): W6 and its Excel are keyed on the property. A second
+    /// property with its own location, placements, stock entries, permission, settings and alert adds nothing to
+    /// the first property's history or to its Excel.
+    /// </summary>
+    [Test]
+    public async Task Events_OfAnotherProperty_NeverAppear()
+    {
+        var first = await ArrangeAsync(stock: true);
+        var today = DateTime.UtcNow.Date;
+        var query = new ChemicalHistoryQuery(today.AddDays(-1), today.AddDays(1), null, null, null);
+        var history = new ChemicalHistoryService(BackendConfigurationPnDbContext!, new ChemicalRegisterReader(ChemicalsDbContext!), Names);
+        static (DateTime, ChemicalHistoryActionEnum, int?) Key(ChemicalHistoryEventModel e) => (e.At, e.Action, e.PlacementId);
+        var eventsBefore = (await history.GetAllAsync(first.PropertyId, query)).Select(Key).ToList();
+        var (_, rowsBefore) = XlsxTestReader.Read((await CreateSut().HistoryXlsxAsync(first.PropertyId, query)).Content);
+
+        var other = await ArrangeAsync(stock: true);
+        var inventory = CreateInventoryService();
+        await inventory.AddStockEntryAsync(Web, new ChemicalAddStockEntryCommand(other.Open1, ChemicalStockEntryKindEnum.Consumed, Liters(1)));
+        var worker = await AddWorkerAsync(other.PropertyId);
+        await inventory.SetWorkerPermissionsAsync(Web, other.PropertyId,
+            [new ChemicalSetWorkerPermissionCommand(worker, ChemicalPermissionFlagsModel.None with { View = true })]);
+        await new ChemicalAlertLog
+        {
+            PlacementId = other.Open2, Threshold = ChemicalAlertThresholdEnum.StatusChanged, Status = 6,
+            Channel = ChemicalAlertChannelEnum.Push, SentAt = DateTime.UtcNow, CreatedByUserId = 0, UpdatedByUserId = 0,
+        }.Create(BackendConfigurationPnDbContext!);
+
+        var otherEvents = await history.GetAllAsync(other.PropertyId, query);
+        Assert.That(otherEvents.Select(e => e.Action), Is.SupersetOf(new[]
+        {
+            ChemicalHistoryActionEnum.LocationCreated, ChemicalHistoryActionEnum.Registered, ChemicalHistoryActionEnum.StockReceived,
+            ChemicalHistoryActionEnum.StockConsumed, ChemicalHistoryActionEnum.Removed, ChemicalHistoryActionEnum.PermissionChanged,
+            ChemicalHistoryActionEnum.SettingsChanged, ChemicalHistoryActionEnum.StatusChanged,
+        }), "positive control: the other property has history from every source");
+
+        var eventsAfter = await history.GetAllAsync(first.PropertyId, query);
+        var otherPlacements = new int?[] { other.Open1, other.Open2, other.Closed };
+        Assert.That(eventsAfter.Where(e => otherPlacements.Contains(e.PlacementId)), Is.Empty);
+        Assert.That(eventsAfter.Select(Key), Is.EqualTo(eventsBefore));
+        var (_, rowsAfter) = XlsxTestReader.Read((await CreateSut().HistoryXlsxAsync(first.PropertyId, query)).Content);
+        Assert.That(rowsAfter, Is.EqualTo(rowsBefore));
     }
 
     [Test]

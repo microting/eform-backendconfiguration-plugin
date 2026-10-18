@@ -365,11 +365,16 @@ export class BackendConfigurationChemicalsPage {
     }
   }
 
-  /** Clicks a download trigger (menu item or button) and returns the browser's suggested file name. */
+  /**
+   * Clicks a download trigger (menu item or button), asserts the file arrived (a failed or cancelled
+   * download has a failure text) and returns the browser's suggested file name.
+   */
   async download(triggerSelector: string): Promise<string> {
-    const download = this.page.waitForEvent('download', { timeout: SLOW_API_TIMEOUT });
+    const downloaded = this.page.waitForEvent('download', { timeout: SLOW_API_TIMEOUT });
     await this.page.locator(triggerSelector).click({ timeout: UI_TIMEOUT });
-    return (await download).suggestedFilename();
+    const file = await downloaded;
+    expect(await file.failure(), `download ${file.suggestedFilename()}`).toBeNull();
+    return file.suggestedFilename();
   }
 
   /** Opens the W1 export menu (enabled once the inventory has loaded and no export runs) and downloads one item. */

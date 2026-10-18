@@ -121,7 +121,7 @@ public class ChemicalsMenuTests
     }
 
     [Test]
-    public void InventoryChildLinksToTheW1ScreenAtTheKemiRoot()
+    public void InventoryChildLinksToTheW1ScreenAtItsOwnPath()
     {
         var child = InventoryChild();
 

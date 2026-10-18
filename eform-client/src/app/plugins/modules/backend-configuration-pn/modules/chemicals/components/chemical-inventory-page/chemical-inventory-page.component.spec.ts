@@ -279,13 +279,13 @@ describe('ChemicalInventoryPageComponent', () => {
     expect(toastr.error).toHaveBeenCalledWith('Chemicals: Could not open safety data sheet');
   });
 
-  it('shows the server\'s reason for a refused export (m-9)', () => {
+  it('shows the server\'s (English) reason for a refused export after the localized prefix (m-9, E3 m-1)', () => {
     const component = build();
-    chemicals.exportInventory.mockReturnValue(throwError(() => ({status: 400, message: 'Placeringen hører til en anden ejendom.'})));
+    chemicals.exportInventory.mockReturnValue(throwError(() => ({status: 400, message: 'The placement belongs to another property.'})));
 
     component.exportInventory();
 
-    expect(toastr.error).toHaveBeenCalledWith('Placeringen hører til en anden ejendom.');
+    expect(toastr.error).toHaveBeenCalledWith('Export failed: The placement belongs to another property.');
   });
 
   it('says the user may not export when the server answers 403 (m-9)', () => {

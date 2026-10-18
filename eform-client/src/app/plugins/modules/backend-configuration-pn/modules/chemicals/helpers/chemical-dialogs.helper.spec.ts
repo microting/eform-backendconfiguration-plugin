@@ -64,7 +64,8 @@ describe('downloadFailureText (shared by the W1 exports and the W6 Excel)', () =
   const translate = {instant: (key: string) => key};
 
   it.each([
-    ['the server\'s reason for a refused file', {status: 400, message: 'Perioden er højst 366 dage.'}, 'Perioden er højst 366 dage.'],
+    ['the server\'s (English) reason for a refused file, after the localized prefix', {status: 400, message: 'The period ends before it starts.'}, 'Export failed: The period ends before it starts.'],
+    ['the server\'s reason for a conflict, after the localized prefix', {status: 409, message: 'Search for at least two characters.'}, 'Export failed: Search for at least two characters.'],
     ['a refusal without a reason', {status: 409, message: null}, 'Export failed'],
     ['a forbidden file', {status: 403, message: null}, 'Chemicals: Export not allowed'],
     ['no answer', {status: 0, message: null}, 'Export failed'],

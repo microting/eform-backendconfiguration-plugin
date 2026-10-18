@@ -339,7 +339,8 @@ public class PluginMenuSyncServiceTests : TestBaseSetup
 
         Assert.That(Run(Menu()), Is.EqualTo(0));
 
-        Assert.That(await BaseDbContext.MenuItems.CountAsync(x => x.E2EId == InventoryE2EId), Is.EqualTo(1));
+        var row = await BaseDbContext.MenuItems.AsNoTracking().SingleAsync(x => x.E2EId == InventoryE2EId);
+        Assert.That(row.Link, Is.EqualTo("/plugins/backend-configuration-pn/chemicals"), "the sync never rewrites a kept row");
         Assert.That(await BaseDbContext.MenuTemplates.CountAsync(x => x.E2EId == InventoryE2EId), Is.EqualTo(1));
     }
 

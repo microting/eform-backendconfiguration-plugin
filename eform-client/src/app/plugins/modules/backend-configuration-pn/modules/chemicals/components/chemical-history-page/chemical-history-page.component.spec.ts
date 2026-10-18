@@ -214,7 +214,7 @@ describe('ChemicalHistoryPageComponent', () => {
   });
 
   const failures: Array<[string, unknown, string]> = [
-    ['the server\'s reason (400)', {status: 400, message: 'Perioden er højst 366 dage.'}, 'Perioden er højst 366 dage.'],
+    ['the server\'s reason (400) after the localized prefix', {status: 400, message: 'The period ends before it starts.'}, 'Export failed: The period ends before it starts.'],
     ['a refusal (403)', {status: 403, message: null}, 'Chemicals: Export not allowed'],
     ['no answer (0)', {status: 0, message: null}, 'Export failed'],
     ['a raw HttpErrorResponse, never its technical text', new HttpErrorResponse({status: 500, url: '/api/x', error: 'boom'}), 'Export failed'],
