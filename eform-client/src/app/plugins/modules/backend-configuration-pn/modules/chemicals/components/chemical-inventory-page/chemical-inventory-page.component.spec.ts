@@ -1,3 +1,5 @@
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import type {Mock} from 'vitest';
 import {HttpErrorResponse} from '@angular/common/http';
 import {DestroyRef, Injector, runInInjectionContext} from '@angular/core';
 import {Overlay} from '@angular/cdk/overlay';
@@ -15,18 +17,32 @@ import {
   selectChemicalsInventoryFilters,
 } from '../../../../state';
 import {inventoryOf, location, placement} from '../../helpers/chemical-inventory.fixtures';
+import {ChemicalMoveDialogComponent} from '../chemical-move-dialog/chemical-move-dialog.component';
+import {ChemicalNoteDialogComponent} from '../chemical-note-dialog/chemical-note-dialog.component';
+import {ChemicalProductDrawerComponent} from '../chemical-product-drawer/chemical-product-drawer.component';
+import {ChemicalRemoveDialogComponent} from '../chemical-remove-dialog/chemical-remove-dialog.component';
+import {ChemicalStockDialogComponent} from '../chemical-stock-dialog/chemical-stock-dialog.component';
 import {ChemicalInventoryPageComponent} from './chemical-inventory-page.component';
 
-jest.mock('file-saver', () => ({saveAs: jest.fn()}));
-import {saveAs} from 'file-saver';
+/** The dialogs by class name: the bundled class names carry a prefix, so the specs compare the classes. */
+const DIALOGS = {ChemicalMoveDialogComponent, ChemicalNoteDialogComponent, ChemicalStockDialogComponent, ChemicalRemoveDialogComponent};
+
+import {captureSaveAs} from '../../../../testing/capture-save-as';
 
 describe('ChemicalInventoryPageComponent', () => {
+  let capture: ReturnType<typeof captureSaveAs>;
+  let saveAs: ReturnType<typeof captureSaveAs>['saveAs'];
+  beforeEach(() => {
+    capture = captureSaveAs();
+    saveAs = capture.saveAs;
+  });
+  afterEach(() => capture.restore());
   let property$: BehaviorSubject<number | null>;
   let filters$: BehaviorSubject<typeof chemicalsInitialState.inventoryFilters>;
-  let store: {select: jest.Mock; dispatch: jest.Mock};
-  let chemicals: Record<string, jest.Mock>;
-  let toastr: {error: jest.Mock};
-  let router: {navigate: jest.Mock; currentNavigation: jest.Mock};
+  let store: {select: Mock; dispatch: Mock};
+  let chemicals: Record<string, Mock>;
+  let toastr: {error: Mock};
+  let router: {navigate: Mock; currentNavigation: Mock};
 
   const inventoryFor = (stockEnabled: boolean) => inventoryOf({
     propertyId: 3, stockEnabled, locations: [location(10, 'Lade', {propertyId: 3})],
@@ -37,28 +53,28 @@ describe('ChemicalInventoryPageComponent', () => {
     queryParams: Record<string, string> = {},
     opts: {stockEnabled?: boolean; propertyId?: number | null; inventory?: Observable<unknown>} = {},
   ): ChemicalInventoryPageComponent {
-    (saveAs as unknown as jest.Mock).mockClear();
+    saveAs.mockClear();
     property$ = new BehaviorSubject<number | null>(opts.propertyId === undefined ? 3 : opts.propertyId);
     filters$ = new BehaviorSubject({...chemicalsInitialState.inventoryFilters});
     store = {
-      select: jest.fn().mockImplementation((selector) => (selector === selectChemicalsInventoryFilters ? filters$ : property$)),
-      dispatch: jest.fn(),
+      select: vi.fn().mockImplementation((selector) => (selector === selectChemicalsInventoryFilters ? filters$ : property$)),
+      dispatch: vi.fn(),
     };
     chemicals = {
-      getPropertyInventory: jest.fn().mockReturnValue(opts.inventory ?? of({success: true, model: inventoryFor(!!opts.stockEnabled)})),
-      exportInventory: jest.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Kemikalier.xlsx'})),
-      exportAuthorityList: jest.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Kemikalieliste.pdf'})),
-      exportRemovedPlacements: jest.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Fjernede.xlsx'})),
+      getPropertyInventory: vi.fn().mockReturnValue(opts.inventory ?? of({success: true, model: inventoryFor(!!opts.stockEnabled)})),
+      exportInventory: vi.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Kemikalier.xlsx'})),
+      exportAuthorityList: vi.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Kemikalieliste.pdf'})),
+      exportRemovedPlacements: vi.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Fjernede.xlsx'})),
     };
-    toastr = {error: jest.fn()};
-    router = {navigate: jest.fn().mockResolvedValue(true), currentNavigation: jest.fn().mockReturnValue(null)};
+    toastr = {error: vi.fn()};
+    router = {navigate: vi.fn().mockResolvedValue(true), currentNavigation: vi.fn().mockReturnValue(null)};
     const injector = Injector.create({providers: [
       {provide: Store, useValue: store},
       {provide: BackendConfigurationPnChemicalsService, useValue: chemicals},
       {provide: ActivatedRoute, useValue: {snapshot: {queryParamMap: convertToParamMap(queryParams)}}},
-      {provide: MatDialog, useValue: {open: jest.fn()}},
-      {provide: Overlay, useValue: {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}}},
-      {provide: DestroyRef, useValue: {onDestroy: jest.fn()}},
+      {provide: MatDialog, useValue: {open: vi.fn()}},
+      {provide: Overlay, useValue: {scrollStrategies: {reposition: vi.fn().mockReturnValue({})}}},
+      {provide: DestroyRef, useValue: {onDestroy: vi.fn()}},
       {provide: ToastrService, useValue: toastr},
       {provide: Router, useValue: router},
       {provide: TranslateService, useValue: {instant: (k: string) => k, stream: (k: string) => of(k)}},
@@ -270,7 +286,7 @@ describe('ChemicalInventoryPageComponent', () => {
 
   it('toasts when the safety data sheet cannot be fetched (the host shows nothing for a blob error)', () => {
     const component = build();
-    chemicals.getSdsBlob = jest.fn().mockReturnValue(throwError(() => new Error('404')));
+    chemicals.getSdsBlob = vi.fn().mockReturnValue(throwError(() => new Error('404')));
     const row = {...component.rows[0], entry: {products: [{productId: 1, sdsFileName: 'sds200'}]}} as unknown as typeof component.rows[0];
 
     component.openSds(row);
@@ -318,7 +334,7 @@ describe('ChemicalInventoryPageComponent', () => {
 
   describe('W2 side panel and placement actions', () => {
     const dialogOf = (component: ChemicalInventoryPageComponent) =>
-      (component as unknown as {dialog: {open: jest.Mock}}).dialog;
+      (component as unknown as {dialog: {open: Mock}}).dialog;
 
     it('opens the side panel and chains the chosen action into its dialog', () => {
       const component = build();
@@ -330,7 +346,7 @@ describe('ChemicalInventoryPageComponent', () => {
       component.openDetails(component.rows[0]);
 
       expect(dialog.open).toHaveBeenCalledTimes(2);
-      expect(dialog.open.mock.calls[1][0].name).toBe('ChemicalRemoveDialogComponent');
+      expect(dialog.open.mock.calls[1][0]).toBe(ChemicalRemoveDialogComponent);
       expect(chemicals.getPropertyInventory).toHaveBeenCalledTimes(2);
     });
 
@@ -341,7 +357,7 @@ describe('ChemicalInventoryPageComponent', () => {
 
       component.openDetails(component.rows[0]);
 
-      expect(dialog.open.mock.calls[0][0].name).toBe('ChemicalProductDrawerComponent');
+      expect(dialog.open.mock.calls[0][0]).toBe(ChemicalProductDrawerComponent);
       expect(dialog.open.mock.calls[0][1].data).toEqual({row: component.rows[0], inventory: component.inventory, stockEnabled: true});
       expect(dialog.open).toHaveBeenCalledTimes(1);
       expect(chemicals.getPropertyInventory).toHaveBeenCalledTimes(1);
@@ -372,7 +388,7 @@ describe('ChemicalInventoryPageComponent', () => {
     it.each([
       ['move', 'ChemicalMoveDialogComponent'],
       ['stock', 'ChemicalStockDialogComponent'],
-    ])('chains "%s" from the side panel into %s', (action, dialogName) => {
+    ] as const)('chains "%s" from the side panel into %s', (action, dialogName) => {
       const component = build({}, {stockEnabled: true});
       const dialog = dialogOf(component);
       dialog.open
@@ -381,7 +397,7 @@ describe('ChemicalInventoryPageComponent', () => {
 
       component.openDetails(component.rows[0]);
 
-      expect(dialog.open.mock.calls[1][0].name).toBe(dialogName);
+      expect(dialog.open.mock.calls[1][0]).toBe(DIALOGS[dialogName]);
       expect(dialog.open.mock.calls[1][1].data.row).toBe(component.rows[1]);
     });
 
@@ -397,7 +413,7 @@ describe('ChemicalInventoryPageComponent', () => {
 
       component[method](component.rows[0]);
 
-      expect(dialog.open.mock.calls[0][0].name).toBe(dialogName);
+      expect(dialog.open.mock.calls[0][0]).toBe(DIALOGS[dialogName]);
       expect(dialog.open.mock.calls[0][1].data.row).toBe(component.rows[0]);
       expect(chemicals.getPropertyInventory).toHaveBeenCalledTimes(1);
 

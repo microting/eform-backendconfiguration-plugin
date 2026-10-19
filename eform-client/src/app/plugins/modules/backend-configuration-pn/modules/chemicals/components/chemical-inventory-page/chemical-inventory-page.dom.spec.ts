@@ -1,3 +1,4 @@
+import {describe, it, expect, afterEach, vi} from 'vitest';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {FormsModule} from '@angular/forms';
@@ -15,6 +16,7 @@ import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {chemicalsInitialState, selectChemicalsInventoryFilters} from '../../../../state';
 import {entry, inventoryOf, location, placement} from '../../helpers/chemical-inventory.fixtures';
 import {ChemicalInventoryPageComponent} from './chemical-inventory-page.component';
+import {detectChanges} from '../../../../testing/detect-changes';
 
 /**
  * Template-level checks for W1: the ids the e2e specs use, the "Kræver handling" banner,
@@ -39,28 +41,27 @@ describe('ChemicalInventoryPageComponent (template)', () => {
       registerEntries: [entry(200, 'Karate 2,5 WG', {registrationNo: '1-212', status: 6, statusText: 'Produkt afmeldt', products: []})],
     });
     TestBed.configureTestingModule({
-      declarations: [ChemicalInventoryPageComponent],
       // The real mtx-select: ngModel needs its value accessor.
-      imports: [FormsModule, MatMenuModule, MtxGridModule, MtxSelectModule, NoopAnimationsModule, TranslateModule.forRoot()],
+      imports: [ChemicalInventoryPageComponent, FormsModule, MatMenuModule, MtxGridModule, MtxSelectModule, NoopAnimationsModule, TranslateModule.forRoot()],
       providers: [
         {provide: Store, useValue: {
-          select: jest.fn().mockImplementation((selector) =>
+          select: vi.fn().mockImplementation((selector) =>
             selector === selectChemicalsInventoryFilters ? filters$ : new BehaviorSubject<number | null>(3)),
-          dispatch: jest.fn(),
+          dispatch: vi.fn(),
         }},
         {provide: BackendConfigurationPnChemicalsService, useValue: {
-          getPropertyInventory: jest.fn().mockReturnValue(answer ?? of({success: true, model: inventory})),
+          getPropertyInventory: vi.fn().mockReturnValue(answer ?? of({success: true, model: inventory})),
         }},
         {provide: ActivatedRoute, useValue: {snapshot: {queryParamMap: convertToParamMap({})}}},
-        {provide: MatDialog, useValue: {open: jest.fn()}},
-        {provide: ToastrService, useValue: {error: jest.fn()}},
-        {provide: Router, useValue: {navigate: jest.fn(), currentNavigation: jest.fn().mockReturnValue(null)}},
+        {provide: MatDialog, useValue: {open: vi.fn()}},
+        {provide: ToastrService, useValue: {error: vi.fn()}},
+        {provide: Router, useValue: {navigate: vi.fn(), currentNavigation: vi.fn().mockReturnValue(null)}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
     });
     fixture = TestBed.createComponent(ChemicalInventoryPageComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    detectChanges(fixture);
   }
 
   afterEach(() => fixture?.destroy());
@@ -84,7 +85,7 @@ describe('ChemicalInventoryPageComponent (template)', () => {
     expect(find('#chemicalsShowOnlyActionBtn')).not.toBeNull();
 
     filters$.next({...chemicalsInitialState.inventoryFilters, requiresActionOnly: true});
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     expect(find('#chemicalsShowOnlyActionBtn')).toBeNull();
     expect(find('#chemicalsRequiresActionChip')?.classList.contains('chemicals-chip--active')).toBe(true);
@@ -95,7 +96,7 @@ describe('ChemicalInventoryPageComponent (template)', () => {
     expect(disabled('#chemicalsExportBtn')).toBe(false);
 
     component.exporting = true;
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     expect(disabled('#chemicalsExportBtn')).toBe(true);
   });
@@ -140,7 +141,7 @@ describe('ChemicalInventoryPageComponent (template)', () => {
   describe('row menu (W2 placement actions)', () => {
     const openRowMenu = () => {
       (find('#action-items-0 button') as HTMLButtonElement).click();
-      fixture.detectChanges();
+      detectChanges(fixture);
     };
     // The menu panel renders in the CDK overlay container, outside the fixture.
     const menuItem = (id: string) => document.querySelector(`#${id}`);

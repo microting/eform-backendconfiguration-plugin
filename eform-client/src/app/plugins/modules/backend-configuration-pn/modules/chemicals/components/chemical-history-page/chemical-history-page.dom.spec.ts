@@ -1,3 +1,5 @@
+import {describe, it, expect, afterEach, vi} from 'vitest';
+import type {MockInstance} from 'vitest';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {FormsModule} from '@angular/forms';
@@ -14,6 +16,7 @@ import {ChemicalHistoryFiltersModel, chemicalsInitialState} from '../../../../st
 import {asUtcIso} from '../../helpers/chemical-history.helper';
 import {location} from '../../helpers/chemical-inventory.fixtures';
 import {ChemicalHistoryPageComponent} from './chemical-history-page.component';
+import {detectChanges} from '../../../../testing/detect-changes';
 
 function historyEvent(partial: Partial<ChemicalHistoryEventModel>): ChemicalHistoryEventModel {
   return {
@@ -42,24 +45,23 @@ describe('ChemicalHistoryPageComponent (template)', () => {
     historyEvent({at: '2026-09-28T12:05:00Z', action: ChemicalHistoryAction.LocationCreated, productName: '', locationName: ''}),
   ];
 
-  let utc: jest.SpyInstance;
+  let utc: MockInstance;
 
   function render(answer?: Observable<unknown>, exportAnswer?: Observable<unknown>, inventory?: Observable<unknown>): void {
     view$ = new BehaviorSubject({propertyId: 3 as number | null, filters: {...chemicalsInitialState.historyFilters}});
     TestBed.configureTestingModule({
-      declarations: [ChemicalHistoryPageComponent],
-      imports: [FormsModule, MtxSelectModule, MatPaginatorModule, NoopAnimationsModule, TranslateModule.forRoot()],
+      imports: [ChemicalHistoryPageComponent, FormsModule, MtxSelectModule, MatPaginatorModule, NoopAnimationsModule, TranslateModule.forRoot()],
       providers: [
         {provide: Store, useValue: {
-          select: jest.fn().mockReturnValue(view$),
-          dispatch: jest.fn().mockImplementation((action) => view$.next({...view$.value, filters: action.payload})),
+          select: vi.fn().mockReturnValue(view$),
+          dispatch: vi.fn().mockImplementation((action) => view$.next({...view$.value, filters: action.payload})),
         }},
         {provide: BackendConfigurationPnChemicalsService, useValue: {
-          getHistory: jest.fn().mockReturnValue(answer ?? of({success: true, model: {events, total: 4, users: [{userId: 5, name: 'Mette Larsen'}]}})),
-          getPropertyInventory: jest.fn().mockReturnValue(inventory ?? of({success: true, model: {locations: [location(10, 'Lade', {propertyId: 3})]}})),
-          exportHistory: jest.fn().mockReturnValue(exportAnswer ?? NEVER),
+          getHistory: vi.fn().mockReturnValue(answer ?? of({success: true, model: {events, total: 4, users: [{userId: 5, name: 'Mette Larsen'}]}})),
+          getPropertyInventory: vi.fn().mockReturnValue(inventory ?? of({success: true, model: {locations: [location(10, 'Lade', {propertyId: 3})]}})),
+          exportHistory: vi.fn().mockReturnValue(exportAnswer ?? NEVER),
         }},
-        {provide: ToastrService, useValue: {error: jest.fn()}},
+        {provide: ToastrService, useValue: {error: vi.fn()}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
     });
@@ -67,8 +69,8 @@ describe('ChemicalHistoryPageComponent (template)', () => {
     component = fixture.componentInstance;
     component.now = () => new Date('2026-09-29T10:00:00Z');
     // Spied before the first render, so the template's own call is seen (m-1).
-    utc = jest.spyOn(component, 'utc');
-    fixture.detectChanges();
+    utc = vi.spyOn(component, 'utc');
+    detectChanges(fixture);
   }
 
   afterEach(() => fixture?.destroy());
@@ -120,7 +122,7 @@ describe('ChemicalHistoryPageComponent (template)', () => {
     render();
 
     component.updateFilters({dateFrom: '2026-09-20', dateTo: '2026-09-10'});
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     expect(find('#chemicalHistoryPeriodError')?.getAttribute('role')).toBe('alert');
     expect(find('#chemicalHistoryPeriodError')?.textContent).toContain('Chemicals: Period reversed');
@@ -152,7 +154,7 @@ describe('ChemicalHistoryPageComponent (template)', () => {
     const button = find('#chemicalHistoryExportBtn') as HTMLButtonElement;
 
     button.click();
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     expect(button.disabled).toBe(true);
     expect(button.getAttribute('aria-busy')).toBe('true');
@@ -187,7 +189,7 @@ describe('ChemicalHistoryPageComponent (template)', () => {
     render();
     expect(find('#chemicalHistoryPaginator')).not.toBeNull();
     component.updateFilters({dateFrom: '2026-09-20', dateTo: '2026-09-10'});
-    fixture.detectChanges();
+    detectChanges(fixture);
     expect(find('#chemicalHistoryPaginator')).toBeNull();
   });
 

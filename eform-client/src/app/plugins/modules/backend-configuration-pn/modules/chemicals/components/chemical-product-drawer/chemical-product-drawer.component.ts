@@ -1,6 +1,6 @@
 import {Component, ElementRef, inject} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {ToastrService} from 'ngx-toastr';
 import {ChemicalInventoryModel, ChemicalPlacementModel} from '../../../../models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
@@ -13,6 +13,10 @@ import {
   sdsFileNameFor,
   stockUnitLabel,
 } from '../../helpers';
+import {NgIf, NgFor, NgSwitch, NgSwitchCase, DatePipe, DecimalPipe} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatTooltip} from '@angular/material/tooltip';
 
 export interface ChemicalProductDrawerData {
   row: ChemicalInventoryRow;
@@ -49,9 +53,9 @@ const TABS: ChemicalDrawerTabDef[] = [
  */
 @Component({
   selector: 'app-chemical-product-drawer',
+  imports: [NgIf, NgFor, NgSwitch, NgSwitchCase, DatePipe, DecimalPipe, TranslatePipe, MatIcon, MatIconButton, MatTooltip],
   templateUrl: './chemical-product-drawer.component.html',
   styleUrls: ['./chemical-product-drawer.component.scss'],
-  standalone: false,
 })
 export class ChemicalProductDrawerComponent {
   private chemicalsService = inject(BackendConfigurationPnChemicalsService);

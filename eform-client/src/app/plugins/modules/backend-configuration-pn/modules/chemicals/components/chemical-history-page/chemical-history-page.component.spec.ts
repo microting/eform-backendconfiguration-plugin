@@ -1,3 +1,5 @@
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import type {Mock} from 'vitest';
 import {HttpErrorResponse} from '@angular/common/http';
 import {DestroyRef, Injector, runInInjectionContext} from '@angular/core';
 import {Store} from '@ngrx/store';
@@ -15,47 +17,53 @@ import {
 import {location} from '../../helpers/chemical-inventory.fixtures';
 import {ChemicalHistoryPageComponent} from './chemical-history-page.component';
 
-jest.mock('file-saver', () => ({saveAs: jest.fn()}));
-import {saveAs} from 'file-saver';
+import {captureSaveAs} from '../../../../testing/capture-save-as';
 
 type View = {propertyId: number | null; filters: ChemicalHistoryFiltersModel};
 
 describe('ChemicalHistoryPageComponent', () => {
+  let capture: ReturnType<typeof captureSaveAs>;
+  let saveAs: ReturnType<typeof captureSaveAs>['saveAs'];
+  beforeEach(() => {
+    capture = captureSaveAs();
+    saveAs = capture.saveAs;
+  });
+  afterEach(() => capture.restore());
   let view$: BehaviorSubject<View>;
-  let store: {select: jest.Mock; dispatch: jest.Mock};
-  let chemicals: Record<string, jest.Mock>;
-  let toastr: {error: jest.Mock};
+  let store: {select: Mock; dispatch: Mock};
+  let chemicals: Record<string, Mock>;
+  let toastr: {error: Mock};
 
   const page = (total = 214) => ({success: true, model: {events: [], total, users: [{userId: 5, name: 'Mette Larsen'}]}});
 
   function build(opts: {propertyId?: number | null; history?: Observable<unknown>; locations?: unknown[]; inventory?: Observable<unknown>} = {}): ChemicalHistoryPageComponent {
-    (saveAs as unknown as jest.Mock).mockClear();
+    saveAs.mockClear();
     view$ = new BehaviorSubject<View>({
       propertyId: opts.propertyId === undefined ? 3 : opts.propertyId,
       filters: {...chemicalsInitialState.historyFilters},
     });
     store = {
-      select: jest.fn().mockImplementation((selector) => {
+      select: vi.fn().mockImplementation((selector) => {
         if (selector !== selectChemicalsHistoryView) {
           throw new Error('W6 reads the property and its filters through selectChemicalsHistoryView');
         }
         return view$;
       }),
       // The reducer: the new filters for the same property.
-      dispatch: jest.fn().mockImplementation((action) => view$.next({...view$.value, filters: action.payload})),
+      dispatch: vi.fn().mockImplementation((action) => view$.next({...view$.value, filters: action.payload})),
     };
     chemicals = {
-      getHistory: jest.fn().mockReturnValue(opts.history ?? of(page())),
-      getPropertyInventory: jest.fn().mockReturnValue(opts.inventory ?? of({success: true, model: {
+      getHistory: vi.fn().mockReturnValue(opts.history ?? of(page())),
+      getPropertyInventory: vi.fn().mockReturnValue(opts.inventory ?? of({success: true, model: {
         locations: opts.locations ?? [location(10, 'Lade', {propertyId: 3}), location(11, 'Gammel', {propertyId: 3, archived: true})],
       }})),
-      exportHistory: jest.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Kemihistorik.xlsx'})),
+      exportHistory: vi.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Kemihistorik.xlsx'})),
     };
-    toastr = {error: jest.fn()};
+    toastr = {error: vi.fn()};
     const injector = Injector.create({providers: [
       {provide: Store, useValue: store},
       {provide: BackendConfigurationPnChemicalsService, useValue: chemicals},
-      {provide: DestroyRef, useValue: {onDestroy: jest.fn()}},
+      {provide: DestroyRef, useValue: {onDestroy: vi.fn()}},
       {provide: ToastrService, useValue: toastr},
       {provide: TranslateService, useValue: {instant: (k: string) => k}},
     ]});

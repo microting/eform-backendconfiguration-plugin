@@ -1,3 +1,4 @@
+import {describe, it, expect} from 'vitest';
 import {entry, inventoryOf, location, placement} from './chemical-inventory.fixtures';
 import {
   LOCATION_PHOTO_MAX_BYTES,

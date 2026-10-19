@@ -1,3 +1,4 @@
+import {describe, it, expect, vi} from 'vitest';
 import {Injector, runInInjectionContext} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {TranslateService} from '@ngx-translate/core';
@@ -9,9 +10,9 @@ import {inventoryOf, location, placement, stockEntry} from '../../helpers/chemic
 import {ChemicalProductDrawerComponent} from './chemical-product-drawer.component';
 
 describe('ChemicalProductDrawerComponent', () => {
-  function build(stockEnabled: boolean, getSdsBlob = jest.fn().mockReturnValue(of(new Blob()))) {
-    const dialogRef = {close: jest.fn()};
-    const toastr = {error: jest.fn()};
+  function build(stockEnabled: boolean, getSdsBlob = vi.fn().mockReturnValue(of(new Blob()))) {
+    const dialogRef = {close: vi.fn()};
+    const toastr = {error: vi.fn()};
     const row = {placement: {id: 7, chemicalId: 100, productId: null}, entry: {products: [{productId: 1, sdsFileName: 'abc'}]}, productName: 'Karate'};
     const inventory = inventoryOf({
       locations: [location(10, 'Lade'), location(11, 'Kemirum')],
@@ -55,7 +56,7 @@ describe('ChemicalProductDrawerComponent', () => {
 
   it('moves between the tabs with the arrow keys, Home and End, wrapping around (WAI-ARIA tabs)', () => {
     const {component} = build(true);
-    const key = (k: string) => component.onTabKeydown({key: k, preventDefault: jest.fn()} as unknown as KeyboardEvent);
+    const key = (k: string) => component.onTabKeydown({key: k, preventDefault: vi.fn()} as unknown as KeyboardEvent);
 
     key('ArrowRight');
     expect(component.tab).toBe('placements');
@@ -74,7 +75,7 @@ describe('ChemicalProductDrawerComponent', () => {
   it('never lands on the stock tab with the keyboard when stock is off', () => {
     const {component} = build(false);
 
-    component.onTabKeydown({key: 'ArrowLeft', preventDefault: jest.fn()} as unknown as KeyboardEvent);
+    component.onTabKeydown({key: 'ArrowLeft', preventDefault: vi.fn()} as unknown as KeyboardEvent);
 
     expect(component.tab).toBe('placements');
   });
@@ -88,7 +89,7 @@ describe('ChemicalProductDrawerComponent', () => {
   });
 
   it('opens the safety data sheet and toasts when it cannot be fetched', () => {
-    const failing = jest.fn().mockReturnValue(throwError(() => new Error('404')));
+    const failing = vi.fn().mockReturnValue(throwError(() => new Error('404')));
     const {component, toastr} = build(true, failing);
 
     component.openSds();

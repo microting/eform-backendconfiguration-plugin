@@ -1,9 +1,9 @@
 import {Component, DestroyRef, OnInit, inject} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
-import {CdkDragDrop, moveItemInArray} from '@angular/cdk/drag-drop';
+import {CdkDragDrop, moveItemInArray, CdkDropList, CdkDrag, CdkDragHandle} from '@angular/cdk/drag-drop';
 import {Overlay} from '@angular/cdk/overlay';
 import {MatDialog} from '@angular/material/dialog';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {Store} from '@ngrx/store';
 import {filter, finalize, switchMap} from 'rxjs/operators';
 import {dialogConfigHelper} from 'src/app/common/helpers';
@@ -22,6 +22,13 @@ import {
   ChemicalLocationDialogComponent,
   ChemicalLocationDialogData,
 } from '../chemical-location-dialog/chemical-location-dialog.component';
+import {NgIf, NgFor, AsyncPipe, DatePipe} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {AuthImagePipe} from 'src/app/common/pipes';
+import {MatCheckbox} from '@angular/material/checkbox';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatTooltip} from '@angular/material/tooltip';
 
 /**
  * W3 "Lokationer": the locations of the selected property with photo, product and action counts.
@@ -32,9 +39,9 @@ import {
  */
 @Component({
   selector: 'app-chemical-locations-page',
+  imports: [NgIf, NgFor, AsyncPipe, DatePipe, FormsModule, TranslatePipe, AuthImagePipe, MatCheckbox, MatIcon, MatIconButton, MatTooltip, CdkDropList, CdkDrag, CdkDragHandle],
   templateUrl: './chemical-locations-page.component.html',
   styleUrls: ['./chemical-locations-page.component.scss'],
-  standalone: false,
 })
 export class ChemicalLocationsPageComponent implements OnInit {
   private store = inject(Store);

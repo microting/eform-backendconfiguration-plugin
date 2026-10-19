@@ -1,21 +1,24 @@
+import {describe, it, expect, afterEach, vi} from 'vitest';
 import {CdkDrag, CdkDropList, DragDropModule} from '@angular/cdk/drag-drop';
 import {Overlay} from '@angular/cdk/overlay';
 import {NO_ERRORS_SCHEMA, Pipe, PipeTransform} from '@angular/core';
-import {ComponentFixture, TestBed, fakeAsync, tick} from '@angular/core/testing';
+import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {FormsModule} from '@angular/forms';
 import {MatCheckboxModule} from '@angular/material/checkbox';
 import {MatDialog} from '@angular/material/dialog';
 import {By} from '@angular/platform-browser';
 import {NoopAnimationsModule} from '@angular/platform-browser/animations';
 import {Store} from '@ngrx/store';
+import {AuthImagePipe} from 'src/app/common/pipes';
 import {TranslateModule} from '@ngx-translate/core';
 import {BehaviorSubject, Observable, Subject, of} from 'rxjs';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {inventoryOf, location, placement} from '../../helpers/chemical-inventory.fixtures';
 import {ChemicalLocationsPageComponent} from './chemical-locations-page.component';
+import {detectChanges} from '../../../../testing/detect-changes';
 
 /** The host's authImage pipe needs the auth store and HttpClient; the template only needs a URL back. */
-@Pipe({name: 'authImage', standalone: false})
+@Pipe({name: 'authImage'})
 class FakeAuthImagePipe implements PipeTransform {
   transform(src: string): Promise<string> {
     return Promise.resolve(src);
@@ -23,6 +26,9 @@ class FakeAuthImagePipe implements PipeTransform {
 }
 
 /** Template-level checks for W3: the ids the e2e specs use, drag and archive rules, load states. */
+/** Lets pending promises and zero-delay timers (the authImage pipe, the focus restore) run. */
+const flush = (): Promise<void> => new Promise((resolve) => setTimeout(resolve));
+
 describe('ChemicalLocationsPageComponent (template)', () => {
   let fixture: ComponentFixture<ChemicalLocationsPageComponent>;
   let component: ChemicalLocationsPageComponent;
@@ -43,23 +49,23 @@ describe('ChemicalLocationsPageComponent (template)', () => {
       placements: [placement(9, 2, 100, {propertyId: 3})],
     });
     TestBed.configureTestingModule({
-      declarations: [ChemicalLocationsPageComponent, FakeAuthImagePipe],
-      imports: [FormsModule, DragDropModule, MatCheckboxModule, NoopAnimationsModule, TranslateModule.forRoot()],
+      imports: [ChemicalLocationsPageComponent, FormsModule, DragDropModule, MatCheckboxModule, NoopAnimationsModule, TranslateModule.forRoot()],
       providers: [
-        {provide: Store, useValue: {select: jest.fn().mockReturnValue(new BehaviorSubject<number | null>(3))}},
+        {provide: Store, useValue: {select: vi.fn().mockReturnValue(new BehaviorSubject<number | null>(3))}},
         {provide: BackendConfigurationPnChemicalsService, useValue: {
-          getPropertyInventory: jest.fn().mockReturnValue(answer ?? of({success: true, model: inventory})),
+          getPropertyInventory: vi.fn().mockReturnValue(answer ?? of({success: true, model: inventory})),
           locationPhotoUrl: (id: number) => `/photo/${id}`,
-          reorderLocations: jest.fn().mockImplementation(() => reorder),
+          reorderLocations: vi.fn().mockImplementation(() => reorder),
         }},
-        {provide: MatDialog, useValue: {open: jest.fn()}},
-        {provide: Overlay, useValue: {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}}},
+        {provide: MatDialog, useValue: {open: vi.fn()}},
+        {provide: Overlay, useValue: {scrollStrategies: {reposition: vi.fn().mockReturnValue({})}}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
     });
+    TestBed.overrideComponent(ChemicalLocationsPageComponent, {remove: {imports: [AuthImagePipe]}, add: {imports: [FakeAuthImagePipe]}});
     fixture = TestBed.createComponent(ChemicalLocationsPageComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    detectChanges(fixture);
   }
 
   afterEach(() => fixture?.destroy());
@@ -93,7 +99,7 @@ describe('ChemicalLocationsPageComponent (template)', () => {
   it('shows archived rows on request, undraggable and without edit or archive', () => {
     render();
     component.showArchived = true;
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     expect(find('#chemicalLocationRow-3')?.classList).toContain('chemicals-location-row--archived');
     expect(disabled('#chemicalLocationEdit-3')).toBe(true);
@@ -110,7 +116,7 @@ describe('ChemicalLocationsPageComponent (template)', () => {
     expect(list.sortPredicate).toBe(component.canSortTo);
 
     component.reordering = true;
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     expect(list.disabled).toBe(true);
   });
@@ -129,7 +135,7 @@ describe('ChemicalLocationsPageComponent (template)', () => {
   it('offers up and down buttons on active rows, disabled at the ends and while an order is saved (I2)', () => {
     render();
     component.showArchived = true;
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     expect(disabled('#chemicalLocationUp-1')).toBe(true);
     expect(disabled('#chemicalLocationDown-1')).toBe(false);
@@ -139,7 +145,7 @@ describe('ChemicalLocationsPageComponent (template)', () => {
     expect(find('#chemicalLocationDown-3')).toBeNull();
 
     component.reordering = true;
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     // aria-disabled, not disabled, while an order saves: a disabled button would drop the keyboard focus (N-I1).
     expect(find('#chemicalLocationDown-1')?.getAttribute('aria-disabled')).toBe('true');
@@ -150,35 +156,35 @@ describe('ChemicalLocationsPageComponent (template)', () => {
   it.each([
     ['saved', {success: true, model: []}],
     ['refused', {success: false, message: 'Nej'}],
-  ])('keeps the keyboard focus on the moved row after an up press (%s) (N-I1)', fakeAsync((_name: string, answer: unknown) => {
+  ])('keeps the keyboard focus on the moved row after an up press (%s) (N-I1)', async (_name: string, answer: unknown) => {
     render();
     const up = find('#chemicalLocationUp-2') as HTMLButtonElement;
     up.focus();
 
     up.click();
-    fixture.detectChanges();
+    detectChanges(fixture);
     reorder.next(answer);
     reorder.complete();
-    fixture.detectChanges();
-    tick();
-    fixture.detectChanges();
+    detectChanges(fixture);
+    await flush();
+    detectChanges(fixture);
 
     // Kemirum is first after the save (or back at its place after a refusal): focus is on one of its move buttons.
     expect(['chemicalLocationUp-2', 'chemicalLocationDown-2']).toContain((document.activeElement as HTMLElement).id);
-  }));
+  });
 
-  it('keeps the row elements across a saved order (rows are tracked by location id)', fakeAsync(() => {
+  it('keeps the row elements across a saved order (rows are tracked by location id)', async () => {
     render();
     const before = find('#chemicalLocationRow-2');
 
     (find('#chemicalLocationUp-2') as HTMLButtonElement).click();
     reorder.next({success: true, model: [location(2, 'Kemirum', {propertyId: 3, sortOrder: 1, photoFileName: 'p.jpg'})]});
     reorder.complete();
-    fixture.detectChanges();
-    tick();
+    detectChanges(fixture);
+    await flush();
 
     expect(find('#chemicalLocationRow-2')).toBe(before);
-  }));
+  });
 
   it('shows a loading state, not an empty list, while the locations load', () => {
     render(new Subject());

@@ -1,3 +1,4 @@
+import {describe, it, expect, vi} from 'vitest';
 import {EMPTY, Subject, of, throwError} from 'rxjs';
 import {ChemicalLatestLoad} from './chemical-latest-load';
 
@@ -5,7 +6,7 @@ describe('ChemicalLatestLoad', () => {
   it('is loading until the answer arrives, then hands over the model', () => {
     const load = new ChemicalLatestLoad();
     const answer = new Subject<{success: boolean; model: number}>();
-    const loaded = jest.fn();
+    const loaded = vi.fn();
 
     load.run(answer, loaded);
     expect(load.loading).toBe(true);
@@ -26,7 +27,7 @@ describe('ChemicalLatestLoad', () => {
     ['no answer at all', () => EMPTY],
   ])('fails on %s', (_name, request) => {
     const load = new ChemicalLatestLoad();
-    const loaded = jest.fn();
+    const loaded = vi.fn();
 
     load.run(request(), loaded);
 
@@ -38,7 +39,7 @@ describe('ChemicalLatestLoad', () => {
   it('lets only the newest request deliver, whatever the older one does', () => {
     const load = new ChemicalLatestLoad();
     const older = new Subject<{success: boolean; model: string}>();
-    const loaded = jest.fn();
+    const loaded = vi.fn();
     load.run(older, loaded);
     load.run(of({success: true, model: 'new'}), loaded);
 
@@ -54,8 +55,8 @@ describe('ChemicalLatestLoad', () => {
     const load = new ChemicalLatestLoad();
     const older = new Subject<{success: boolean; model: string}>();
     const newer = new Subject<{success: boolean; model: string}>();
-    load.run(older, jest.fn());
-    load.run(newer, jest.fn());
+    load.run(older, vi.fn());
+    load.run(newer, vi.fn());
 
     older.complete();
 
@@ -66,7 +67,7 @@ describe('ChemicalLatestLoad', () => {
   it('forgets the request in flight on reset', () => {
     const load = new ChemicalLatestLoad();
     const answer = new Subject<{success: boolean; model: number}>();
-    const loaded = jest.fn();
+    const loaded = vi.fn();
     load.run(answer, loaded);
 
     load.reset();

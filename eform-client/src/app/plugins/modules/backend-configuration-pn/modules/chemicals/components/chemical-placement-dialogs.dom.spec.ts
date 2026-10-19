@@ -1,3 +1,4 @@
+import {describe, it, expect, afterEach, vi} from 'vitest';
 import {NO_ERRORS_SCHEMA, Type} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {FormsModule} from '@angular/forms';
@@ -13,6 +14,7 @@ import {ChemicalMoveDialogComponent} from './chemical-move-dialog/chemical-move-
 import {ChemicalNoteDialogComponent} from './chemical-note-dialog/chemical-note-dialog.component';
 import {ChemicalRemoveDialogComponent} from './chemical-remove-dialog/chemical-remove-dialog.component';
 import {ChemicalStockDialogComponent} from './chemical-stock-dialog/chemical-stock-dialog.component';
+import {detectChanges} from '../../../testing/detect-changes';
 
 /** Template-level checks shared by the four W2 placement dialogs: busy Cancel, named radio groups, the move empty state. */
 describe('Kemi placement dialogs (template)', () => {
@@ -27,11 +29,10 @@ describe('Kemi placement dialogs (template)', () => {
 
   function render<T extends {saving: boolean}>(component: Type<T>, data: unknown): T {
     TestBed.configureTestingModule({
-      declarations: [component],
-      imports: [FormsModule, MatRadioModule, MtxSelectModule, NoopAnimationsModule, TranslateModule.forRoot()],
+      imports: [component, FormsModule, MatRadioModule, MtxSelectModule, NoopAnimationsModule, TranslateModule.forRoot()],
       providers: [
         {provide: BackendConfigurationPnChemicalsService, useValue: {}},
-        {provide: MatDialogRef, useValue: {close: jest.fn()}},
+        {provide: MatDialogRef, useValue: {close: vi.fn()}},
         ...discardConfirmHarness({translate: false}).providers,
         {provide: MAT_DIALOG_DATA, useValue: data},
       ],
@@ -39,7 +40,7 @@ describe('Kemi placement dialogs (template)', () => {
     });
     const created = TestBed.createComponent(component);
     fixture = created;
-    created.detectChanges();
+    detectChanges(created);
     return created.componentInstance;
   }
 
@@ -57,7 +58,7 @@ describe('Kemi placement dialogs (template)', () => {
     expect((find(cancelId) as HTMLButtonElement).disabled).toBe(false);
 
     dialog.saving = true;
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     expect((find(cancelId) as HTMLButtonElement).disabled).toBe(true);
   });
@@ -88,7 +89,7 @@ describe('Kemi placement dialogs (template)', () => {
     const dialog = render(ChemicalStockDialogComponent, {row}) as unknown as {amount: number | null};
 
     dialog.amount = amount;
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     const hint = find('#chemicalStockAmountHint');
     expect(hint !== null).toBe(shown);

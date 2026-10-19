@@ -1,3 +1,4 @@
+import {describe, it, expect, afterEach, vi} from 'vitest';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
@@ -8,6 +9,7 @@ import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {buildInventoryRows} from '../../helpers';
 import {entry, inventoryOf, location, placement, stockEntry} from '../../helpers/chemical-inventory.fixtures';
 import {ChemicalProductDrawerComponent} from './chemical-product-drawer.component';
+import {detectChanges} from '../../../../testing/detect-changes';
 
 /** Template-level checks for W2: the e2e ids, stock hidden when stock is off, and the stock list labels (E-06). */
 describe('ChemicalProductDrawerComponent (template)', () => {
@@ -27,18 +29,17 @@ describe('ChemicalProductDrawerComponent (template)', () => {
       ],
     });
     TestBed.configureTestingModule({
-      declarations: [ChemicalProductDrawerComponent],
-      imports: [TranslateModule.forRoot()],
+      imports: [ChemicalProductDrawerComponent, TranslateModule.forRoot()],
       providers: [
-        {provide: BackendConfigurationPnChemicalsService, useValue: {getSdsBlob: jest.fn()}},
-        {provide: MatDialogRef, useValue: {close: jest.fn()}},
-        {provide: ToastrService, useValue: {error: jest.fn()}},
+        {provide: BackendConfigurationPnChemicalsService, useValue: {getSdsBlob: vi.fn()}},
+        {provide: MatDialogRef, useValue: {close: vi.fn()}},
+        {provide: ToastrService, useValue: {error: vi.fn()}},
         {provide: MAT_DIALOG_DATA, useValue: {row: buildInventoryRows(inventory, '2026-09-29')[0], inventory, stockEnabled}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
     });
     fixture = TestBed.createComponent(ChemicalProductDrawerComponent);
-    fixture.detectChanges();
+    detectChanges(fixture);
   }
 
   afterEach(() => fixture?.destroy());
@@ -73,7 +74,7 @@ describe('ChemicalProductDrawerComponent (template)', () => {
     render(true);
 
     find('#chemicalDrawerTabStock')?.click();
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     const rows = Array.from(fixture.nativeElement.querySelectorAll('#chemicalDrawerStockHistory tbody tr')) as HTMLElement[];
     expect(rows).toHaveLength(2);
@@ -103,7 +104,7 @@ describe('ChemicalProductDrawerComponent (template)', () => {
       render(true);
 
       find('#chemicalDrawerTabOverview')?.dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowRight', bubbles: true}));
-      fixture.detectChanges();
+      detectChanges(fixture);
 
       const placements = find('#chemicalDrawerTabPlacements') as HTMLElement;
       expect(placements.getAttribute('aria-selected')).toBe('true');

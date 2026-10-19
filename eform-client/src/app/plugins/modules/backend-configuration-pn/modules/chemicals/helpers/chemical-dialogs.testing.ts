@@ -1,3 +1,4 @@
+import {vi} from 'vitest';
 import {Overlay} from '@angular/cdk/overlay';
 import {MatDialog} from '@angular/material/dialog';
 import {TranslateService} from '@ngx-translate/core';
@@ -11,17 +12,17 @@ export function discardConfirmHarness(opts: {translate?: boolean} = {}) {
   let discarded = new Subject<void>();
   let closed = new Subject<void>();
   const dialog = {
-    open: jest.fn().mockImplementation(() => {
+    open: vi.fn().mockImplementation(() => {
       discarded = new Subject<void>();
       closed = new Subject<void>();
-      return {componentInstance: {delete: discarded}, afterClosed: () => closed, close: jest.fn()};
+      return {componentInstance: {delete: discarded}, afterClosed: () => closed, close: vi.fn()};
     }),
   };
   return {
     dialog,
     providers: [
       {provide: MatDialog, useValue: dialog},
-      {provide: Overlay, useValue: {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}}},
+      {provide: Overlay, useValue: {scrollStrategies: {reposition: vi.fn().mockReturnValue({})}}},
       // A TestBed template spec brings the real TranslateModule instead.
       ...(opts.translate === false ? [] : [{provide: TranslateService, useValue: {instant: (key: string) => key}}]),
     ],

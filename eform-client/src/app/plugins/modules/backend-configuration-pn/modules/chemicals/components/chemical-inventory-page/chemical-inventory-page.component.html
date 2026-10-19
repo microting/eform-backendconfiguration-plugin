@@ -114,7 +114,7 @@
   </ng-template>
   <ng-template #actionsTpl let-row let-i="index">
     <div id="action-items-{{i}}">
-      <button id="actionMenu" mat-icon-button [matMenuTriggerFor]="rowMenu" [matTooltip]="'Actions' | translate"
+      <button id="actionMenu{{i}}" mat-icon-button [matMenuTriggerFor]="rowMenu" [matTooltip]="'Actions' | translate"
               [attr.aria-label]="'Actions' | translate">
         <mat-icon>more_vert</mat-icon>
       </button>

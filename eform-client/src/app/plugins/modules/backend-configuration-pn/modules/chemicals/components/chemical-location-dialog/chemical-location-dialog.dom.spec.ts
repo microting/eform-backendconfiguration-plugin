@@ -1,16 +1,19 @@
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {NO_ERRORS_SCHEMA, Pipe, PipeTransform} from '@angular/core';
-import {ComponentFixture, TestBed, fakeAsync, tick} from '@angular/core/testing';
+import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {FormsModule} from '@angular/forms';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {NoopAnimationsModule} from '@angular/platform-browser/animations';
+import {AuthImagePipe} from 'src/app/common/pipes';
 import {TranslateModule} from '@ngx-translate/core';
 import {of} from 'rxjs';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {discardConfirmHarness} from '../../helpers/chemical-dialogs.testing';
 import {ChemicalLocationDialogComponent} from './chemical-location-dialog.component';
+import {detectChanges} from '../../../../testing/detect-changes';
 
 /** The host's authImage pipe needs the auth store and HttpClient; the template only needs a URL back. */
-@Pipe({name: 'authImage', standalone: false})
+@Pipe({name: 'authImage'})
 class FakeAuthImagePipe implements PipeTransform {
   transform(src: string): Promise<string> {
     return Promise.resolve(src);
@@ -18,6 +21,9 @@ class FakeAuthImagePipe implements PipeTransform {
 }
 
 /** Template-level checks for the W3 location dialog (M7). */
+/** Lets pending promises and zero-delay timers (the authImage pipe, the focus restore) run. */
+const flush = (): Promise<void> => new Promise((resolve) => setTimeout(resolve));
+
 describe('ChemicalLocationDialogComponent (template)', () => {
   let fixture: ComponentFixture<ChemicalLocationDialogComponent>;
   let component: ChemicalLocationDialogComponent;
@@ -25,28 +31,28 @@ describe('ChemicalLocationDialogComponent (template)', () => {
 
   function render(row: unknown, photoUrl: string | null = null): void {
     TestBed.configureTestingModule({
-      declarations: [ChemicalLocationDialogComponent, FakeAuthImagePipe],
-      imports: [FormsModule, NoopAnimationsModule, TranslateModule.forRoot()],
+      imports: [ChemicalLocationDialogComponent, FormsModule, NoopAnimationsModule, TranslateModule.forRoot()],
       providers: [
         {provide: BackendConfigurationPnChemicalsService, useValue: {
-          createLocation: jest.fn().mockReturnValue(of({success: true, model: {id: 44}})),
-          uploadLocationPhoto: jest.fn().mockReturnValue(of({success: false, message: 'Nej'})),
+          createLocation: vi.fn().mockReturnValue(of({success: true, model: {id: 44}})),
+          uploadLocationPhoto: vi.fn().mockReturnValue(of({success: false, message: 'Nej'})),
         }},
-        {provide: MatDialogRef, useValue: {close: jest.fn()}},
+        {provide: MatDialogRef, useValue: {close: vi.fn()}},
         ...discardConfirmHarness({translate: false}).providers,
         {provide: MAT_DIALOG_DATA, useValue: {propertyId: 3, row, photoUrl}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
     });
+    TestBed.overrideComponent(ChemicalLocationDialogComponent, {remove: {imports: [AuthImagePipe]}, add: {imports: [FakeAuthImagePipe]}});
     fixture = TestBed.createComponent(ChemicalLocationDialogComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    detectChanges(fixture);
   }
 
   beforeEach(() => {
     let next = 0;
-    URL.createObjectURL = jest.fn().mockImplementation(() => `blob:preview-${++next}`);
-    URL.revokeObjectURL = jest.fn();
+    URL.createObjectURL = vi.fn().mockImplementation(() => `blob:preview-${++next}`);
+    URL.revokeObjectURL = vi.fn();
   });
 
   afterEach(() => fixture?.destroy());
@@ -58,7 +64,7 @@ describe('ChemicalLocationDialogComponent (template)', () => {
     expect(find<HTMLButtonElement>('#chemicalLocationSaveBtn')?.disabled).toBe(true);
 
     component.name = 'Lade';
-    fixture.detectChanges();
+    detectChanges(fixture);
     await fixture.whenStable();
 
     expect(find<HTMLButtonElement>('#chemicalLocationSaveBtn')?.disabled).toBe(false);
@@ -68,7 +74,7 @@ describe('ChemicalLocationDialogComponent (template)', () => {
     render(null);
     component.name = 'Lade';
     component.onFile(new File(['x'], 'a.gif', {type: 'image/gif'}));
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     expect(find('#chemicalLocationPhotoError')?.getAttribute('role')).toBe('alert');
     expect(find('#chemicalLocationPhotoError')?.textContent).toContain('Chemicals: Photo wrong type');
@@ -88,7 +94,7 @@ describe('ChemicalLocationDialogComponent (template)', () => {
   it('opens the file picker from the photo button', () => {
     render(null);
     const input = find<HTMLInputElement>('#chemicalLocationPhotoInput');
-    const click = jest.spyOn(input as HTMLInputElement, 'click').mockImplementation(() => undefined);
+    const click = vi.spyOn(input as HTMLInputElement, 'click').mockImplementation(() => undefined);
 
     find<HTMLButtonElement>('#chemicalLocationPhotoBtn')?.click();
 
@@ -107,17 +113,17 @@ describe('ChemicalLocationDialogComponent (template)', () => {
     expect(input.value).toBe('');
   });
 
-  it('previews the picked photo instead of the stored one (M1)', fakeAsync(() => {
+  it('previews the picked photo instead of the stored one (M1)', async () => {
     render(existing, '/photo/2?v=p.jpg');
-    tick();
-    fixture.detectChanges();
+    await flush();
+    detectChanges(fixture);
     expect(find<HTMLImageElement>('#chemicalLocationPhoto')?.getAttribute('src')).toBe('/photo/2?v=p.jpg');
 
     component.onFile(new File(['x'], 'a.jpg', {type: 'image/jpeg'}));
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     expect(find<HTMLImageElement>('#chemicalLocationPhoto')?.getAttribute('src')).toBe('blob:preview-1');
-  }));
+  });
 
   it('switches the title to edit once a create is saved (M5)', () => {
     render(null);
@@ -126,7 +132,7 @@ describe('ChemicalLocationDialogComponent (template)', () => {
     component.onFile(new File(['x'], 'a.jpg', {type: 'image/jpeg'}));
 
     component.save();
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     expect(find('#chemicalLocationTitle')?.textContent).toContain('Chemicals: Edit location');
   });

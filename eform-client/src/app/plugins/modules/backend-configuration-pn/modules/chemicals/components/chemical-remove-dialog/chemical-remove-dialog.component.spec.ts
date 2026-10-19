@@ -1,3 +1,5 @@
+import {describe, it, expect, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {Injector, runInInjectionContext} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {Subject, of} from 'rxjs';
@@ -7,13 +9,13 @@ import {discardConfirmHarness} from '../../helpers/chemical-dialogs.testing';
 import {ChemicalRemoveDialogComponent} from './chemical-remove-dialog.component';
 
 describe('ChemicalRemoveDialogComponent', () => {
-  let chemicals: {removePlacement: jest.Mock};
-  let dialogRef: {close: jest.Mock};
+  let chemicals: {removePlacement: Mock};
+  let dialogRef: {close: Mock};
   let confirm: ReturnType<typeof discardConfirmHarness>;
 
   function build(useDeadline: string | null): ChemicalRemoveDialogComponent {
-    chemicals = {removePlacement: jest.fn().mockReturnValue(of({success: true, model: {}}))};
-    dialogRef = {close: jest.fn()};
+    chemicals = {removePlacement: vi.fn().mockReturnValue(of({success: true, model: {}}))};
+    dialogRef = {close: vi.fn()};
     confirm = discardConfirmHarness();
     const injector = Injector.create({providers: [
       {provide: BackendConfigurationPnChemicalsService, useValue: chemicals},

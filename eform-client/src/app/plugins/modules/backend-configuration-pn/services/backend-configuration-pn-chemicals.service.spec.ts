@@ -1,9 +1,9 @@
-import {describe, it, expect, beforeEach, vi} from 'vitest';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import type {Mock} from 'vitest';
 import {HttpBackend, HttpErrorResponse, HttpHeaders, HttpRequest, HttpResponse} from '@angular/common/http';
 import {Injector, runInInjectionContext} from '@angular/core';
 import {Store} from '@ngrx/store';
-import {Observable, filter, lastValueFrom, map, of, throwError} from 'rxjs';
+import {Observable, filter, firstValueFrom, lastValueFrom, map, of, tap, throwError} from 'rxjs';
 import {DateInterceptor} from 'src/app/common/interceptors/date.interceptor';
 import {ApiBaseService} from 'src/app/common/services';
 import {governingDeadline} from '../modules/chemicals/helpers';
@@ -33,7 +33,7 @@ describe('BackendConfigurationPnChemicalsService', () => {
   const BASE = BackendConfigurationPnChemicalsMethods.Base;
   let api: Record<string, Mock>;
   let service: BackendConfigurationPnChemicalsService;
-  let backend: {handle: jest.Mock};
+  let backend: {handle: Mock};
 
   beforeEach(() => {
     api = {
@@ -44,7 +44,7 @@ describe('BackendConfigurationPnChemicalsService', () => {
       getBlobData: vi.fn().mockReturnValue(of(new Blob([]))),
     };
     backend = {
-      handle: jest.fn().mockReturnValue(of(new HttpResponse({
+      handle: vi.fn().mockReturnValue(of(new HttpResponse({
         status: 200,
         body: new Blob(['%PDF-']),
         headers: new HttpHeaders({'Content-Disposition': "attachment; filename=\"Kemi.pdf\"; filename*=UTF-8''Kemikalieliste%20-%20%C3%86bleg%C3%A5rden.pdf"}),
@@ -53,7 +53,7 @@ describe('BackendConfigurationPnChemicalsService', () => {
     const injector = Injector.create({providers: [
       {provide: ApiBaseService, useValue: api},
       {provide: HttpBackend, useValue: backend},
-      {provide: Store, useValue: {select: jest.fn().mockReturnValue(of('token-1'))}},
+      {provide: Store, useValue: {select: vi.fn().mockReturnValue(of('token-1'))}},
     ]});
     service = runInInjectionContext(injector, () => new BackendConfigurationPnChemicalsService());
   });
@@ -167,24 +167,38 @@ describe('BackendConfigurationPnChemicalsService', () => {
   describe('downloads', () => {
     const lastRequest = (): HttpRequest<unknown> => backend.handle.mock.lastCall[0];
 
-    it('GETs the authority list PDF with the bearer token and reads the UTF-8 file name', (done) => {
-      service.exportAuthorityList(3).subscribe((file) => {
-        expect(lastRequest().method).toBe('GET');
-        expect(lastRequest().url).toBe(`${BASE}/properties/3/exports/authority-list`);
-        expect(lastRequest().headers.get('Authorization')).toBe('Bearer token-1');
-        expect(lastRequest().responseType).toBe('blob');
-        expect(file.fileName).toBe('Kemikalieliste - Æblegården.pdf');
-        done();
-      });
+    // The test environment's FileReader has no readAsText; this one reads the blob like a browser does.
+    class BlobTextReader {
+      result: string | null = null;
+      error: unknown = null;
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      readAsText(blob: Blob): void {
+        blob.text().then(
+          (text) => { this.result = text; this.onload?.(); },
+          (err) => { this.error = err; this.onerror?.(); },
+        );
+      }
+    }
+    beforeEach(() => vi.stubGlobal('FileReader', BlobTextReader));
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('GETs the authority list PDF with the bearer token and reads the UTF-8 file name', async () => {
+      const file = await firstValueFrom(service.exportAuthorityList(3));
+
+      expect(lastRequest().method).toBe('GET');
+      expect(lastRequest().url).toBe(`${BASE}/properties/3/exports/authority-list`);
+      expect(lastRequest().headers.get('Authorization')).toBe('Bearer token-1');
+      expect(lastRequest().responseType).toBe('blob');
+      expect(file.fileName).toBe('Kemikalieliste - Æblegården.pdf');
     });
 
-    it('POSTs the visible placement ids for the Excel of the current filter', (done) => {
-      service.exportInventory(3, [7, 8]).subscribe(() => {
-        expect(lastRequest().method).toBe('POST');
-        expect(lastRequest().url).toBe(`${BASE}/properties/3/exports/inventory`);
-        expect(lastRequest().body).toEqual({placementIds: [7, 8]});
-        done();
-      });
+    it('POSTs the visible placement ids for the Excel of the current filter', async () => {
+      await firstValueFrom(service.exportInventory(3, [7, 8]));
+
+      expect(lastRequest().method).toBe('POST');
+      expect(lastRequest().url).toBe(`${BASE}/properties/3/exports/inventory`);
+      expect(lastRequest().body).toEqual({placementIds: [7, 8]});
     });
 
     it('GETs removed placements and POSTs the history query with yyyy-MM-dd dates', () => {
@@ -199,28 +213,23 @@ describe('BackendConfigurationPnChemicalsService', () => {
       expect(lastRequest().body).toEqual(query);
     });
 
-    it('falls back to a client-side file name when the header is missing', (done) => {
+    it('falls back to a client-side file name when the header is missing', async () => {
       backend.handle.mockReturnValue(of(new HttpResponse({status: 200, body: new Blob(['x'])})));
 
-      service.exportRemovedPlacements(3).subscribe((file) => {
-        expect(file.fileName).toBe('removed-placements.xlsx');
-        done();
-      });
+      const file = await firstValueFrom(service.exportRemovedPlacements(3));
+
+      expect(file.fileName).toBe('removed-placements.xlsx');
     });
 
-    it('hands a refused download (403) to the caller once, with no token-refresh retry', (done) => {
+    it('hands a refused download (403) to the caller once, with no token-refresh retry', async () => {
       backend.handle.mockReturnValue(throwError(() => new HttpErrorResponse({status: 403})));
       const files: unknown[] = [];
 
-      service.exportAuthorityList(3).subscribe({
-        next: (file) => files.push(file),
-        error: (err: ChemicalDownloadError) => {
-          expect(files).toEqual([]);
-          expect(err).toEqual({status: 403, message: null});
-          expect(backend.handle).toHaveBeenCalledTimes(1);
-          done();
-        },
-      });
+      const refused = firstValueFrom(service.exportAuthorityList(3).pipe(tap((file) => files.push(file))));
+
+      await expect(refused).rejects.toEqual({status: 403, message: null} satisfies ChemicalDownloadError);
+      expect(files).toEqual([]);
+      expect(backend.handle).toHaveBeenCalledTimes(1);
     });
 
     it.each([

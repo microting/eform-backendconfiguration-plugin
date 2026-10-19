@@ -1,8 +1,18 @@
 import {Component, inject} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {ChemicalLocationModel, ChemicalRegisterEntryModel, ChemicalStockUnit} from '../../../../models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {closeWhenSaved, isValidQuantity} from '../../helpers';
+import {NgIf, NgFor} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatTooltip} from '@angular/material/tooltip';
+import {MatRadioGroup, MatRadioButton} from '@angular/material/radio';
+import {MtxSelect} from '@ng-matero/extensions/select';
 
 const MIN_QUERY_LENGTH = 2;
 const PAGE_SIZE = 25;
@@ -22,9 +32,9 @@ export interface ChemicalRegisterPlacementDialogData {
 /** W1 "Registrér placering": pick a BMD product from the register, a location, a note and (stock on) an initial amount. */
 @Component({
   selector: 'app-chemical-register-placement-dialog',
+  imports: [NgIf, NgFor, FormsModule, TranslatePipe, MatFormField, MatLabel, MatInput, MatIcon, MatIconButton, MatTooltip, MatRadioGroup, MatRadioButton, MtxSelect, MatDialogTitle, MatDialogContent, MatDialogActions],
   templateUrl: './chemical-register-placement-dialog.component.html',
   styleUrls: ['./chemical-register-placement-dialog.component.scss'],
-  standalone: false,
 })
 export class ChemicalRegisterPlacementDialogComponent {
   private chemicalsService = inject(BackendConfigurationPnChemicalsService);

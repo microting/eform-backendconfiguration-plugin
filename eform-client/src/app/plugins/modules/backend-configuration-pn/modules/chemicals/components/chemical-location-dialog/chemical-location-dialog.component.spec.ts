@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {Injector, runInInjectionContext} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {Subject, of} from 'rxjs';
@@ -6,8 +8,8 @@ import {discardConfirmHarness} from '../../helpers/chemical-dialogs.testing';
 import {ChemicalLocationDialogComponent} from './chemical-location-dialog.component';
 
 describe('ChemicalLocationDialogComponent', () => {
-  let chemicals: Record<string, jest.Mock>;
-  let dialogRef: {close: jest.Mock};
+  let chemicals: Record<string, Mock>;
+  let dialogRef: {close: Mock};
   let confirm: ReturnType<typeof discardConfirmHarness>;
 
   const existing = {location: {id: 2, name: 'Kemirum', description: 'Reoler'}, openCount: 2, actionCount: 0};
@@ -15,17 +17,17 @@ describe('ChemicalLocationDialogComponent', () => {
   beforeEach(() => {
     // jsdom has no object URLs; the dialog previews a picked photo through one (M1).
     let next = 0;
-    URL.createObjectURL = jest.fn().mockImplementation(() => `blob:preview-${++next}`);
-    URL.revokeObjectURL = jest.fn();
+    URL.createObjectURL = vi.fn().mockImplementation(() => `blob:preview-${++next}`);
+    URL.revokeObjectURL = vi.fn();
   });
 
   function build(row: unknown): ChemicalLocationDialogComponent {
     chemicals = {
-      createLocation: jest.fn().mockReturnValue(of({success: true, model: {id: 44}})),
-      updateLocation: jest.fn().mockReturnValue(of({success: true, model: {id: 2}})),
-      uploadLocationPhoto: jest.fn().mockReturnValue(of({success: true, model: {id: 44}})),
+      createLocation: vi.fn().mockReturnValue(of({success: true, model: {id: 44}})),
+      updateLocation: vi.fn().mockReturnValue(of({success: true, model: {id: 2}})),
+      uploadLocationPhoto: vi.fn().mockReturnValue(of({success: true, model: {id: 44}})),
     };
-    dialogRef = {close: jest.fn()};
+    dialogRef = {close: vi.fn()};
     confirm = discardConfirmHarness();
     const injector = Injector.create({providers: [
       {provide: BackendConfigurationPnChemicalsService, useValue: chemicals},

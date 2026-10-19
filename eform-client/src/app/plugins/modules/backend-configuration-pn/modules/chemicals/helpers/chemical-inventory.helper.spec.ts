@@ -1,3 +1,4 @@
+import {describe, it, expect} from 'vitest';
 import {ChemicalStockEntryKind, ChemicalStockEntryOrigin, ChemicalStockUnit} from '../../../models';
 import {entry, inventoryOf, location, placement, stockEntry} from './chemical-inventory.fixtures';
 import {

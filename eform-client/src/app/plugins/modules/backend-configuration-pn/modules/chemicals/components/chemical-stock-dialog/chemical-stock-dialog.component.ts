@@ -1,5 +1,5 @@
 import {Component, inject} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {ChemicalStockEntryKind, ChemicalStockUnit} from '../../../../models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {
@@ -10,6 +10,12 @@ import {
   isValidQuantity,
   stockUnitLabel,
 } from '../../helpers';
+import {NgIf, DecimalPipe} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatFormField, MatLabel, MatHint} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MatRadioGroup, MatRadioButton} from '@angular/material/radio';
 
 /**
  * "Registrér lagerbevægelse": Modtaget / Forbrugt / Justeret (spec §6 AddStockEntry).
@@ -21,9 +27,9 @@ import {
  */
 @Component({
   selector: 'app-chemical-stock-dialog',
+  imports: [NgIf, DecimalPipe, FormsModule, TranslatePipe, MatFormField, MatLabel, MatHint, MatInput, MatRadioGroup, MatRadioButton, MatDialogTitle, MatDialogContent, MatDialogActions],
   templateUrl: './chemical-stock-dialog.component.html',
   styleUrls: ['./chemical-stock-dialog.component.scss'],
-  standalone: false,
 })
 export class ChemicalStockDialogComponent {
   private chemicalsService = inject(BackendConfigurationPnChemicalsService);

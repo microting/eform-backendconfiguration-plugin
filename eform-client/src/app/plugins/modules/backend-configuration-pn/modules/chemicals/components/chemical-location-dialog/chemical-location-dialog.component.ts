@@ -1,11 +1,18 @@
 import {Component, OnDestroy, inject} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {Observable, of} from 'rxjs';
 import {switchMap} from 'rxjs/operators';
 import {OperationDataResult} from 'src/app/common/models';
 import {ChemicalLocationModel} from '../../../../models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {ChemicalLocationRow, cancelChemicalDialog, closeWhenSaved, discardContext, validateLocationPhoto} from '../../helpers';
+import {NgIf, AsyncPipe} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {TranslatePipe} from '@ngx-translate/core';
+import {AuthImagePipe} from 'src/app/common/pipes';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MatIcon} from '@angular/material/icon';
 
 export interface ChemicalLocationDialogData {
   propertyId: number;
@@ -22,9 +29,9 @@ export interface ChemicalLocationDialogData {
  */
 @Component({
   selector: 'app-chemical-location-dialog',
+  imports: [NgIf, AsyncPipe, FormsModule, TranslatePipe, AuthImagePipe, MatFormField, MatLabel, MatInput, MatIcon, MatDialogTitle, MatDialogContent, MatDialogActions],
   templateUrl: './chemical-location-dialog.component.html',
   styleUrls: ['./chemical-location-dialog.component.scss'],
-  standalone: false,
 })
 export class ChemicalLocationDialogComponent implements OnDestroy {
   private chemicalsService = inject(BackendConfigurationPnChemicalsService);

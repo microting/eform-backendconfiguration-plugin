@@ -1,8 +1,15 @@
 import {Component, inject} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {ChemicalLocationModel} from '../../../../models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {ChemicalPlacementDialogData, cancelPlacementDialog, closeWhenSaved, discardContext, isValidQuantity} from '../../helpers';
+import {NgIf, DecimalPipe} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatFormField, MatLabel, MatHint} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MatRadioGroup, MatRadioButton} from '@angular/material/radio';
+import {MtxSelect} from '@ng-matero/extensions/select';
 
 export interface ChemicalMoveDialogData extends ChemicalPlacementDialogData {
   locations: ChemicalLocationModel[];
@@ -12,9 +19,9 @@ export interface ChemicalMoveDialogData extends ChemicalPlacementDialogData {
 /** "Flyt til anden lokation": full move, or (stock on) a partial move of an amount (spec §6 MovePlacement). */
 @Component({
   selector: 'app-chemical-move-dialog',
+  imports: [NgIf, DecimalPipe, FormsModule, TranslatePipe, MatFormField, MatLabel, MatHint, MatInput, MatRadioGroup, MatRadioButton, MtxSelect, MatDialogTitle, MatDialogContent, MatDialogActions],
   templateUrl: './chemical-move-dialog.component.html',
   styleUrls: ['./chemical-move-dialog.component.scss'],
-  standalone: false,
 })
 export class ChemicalMoveDialogComponent {
   private chemicalsService = inject(BackendConfigurationPnChemicalsService);

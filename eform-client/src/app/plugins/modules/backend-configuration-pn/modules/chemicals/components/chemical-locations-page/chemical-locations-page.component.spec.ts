@@ -1,3 +1,5 @@
+import {describe, it, expect, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {DestroyRef, Injector, runInInjectionContext} from '@angular/core';
 import {Overlay} from '@angular/cdk/overlay';
 import {MatDialog} from '@angular/material/dialog';
@@ -9,8 +11,8 @@ import {inventoryOf, location, placement} from '../../helpers/chemical-inventory
 import {ChemicalLocationsPageComponent} from './chemical-locations-page.component';
 
 describe('ChemicalLocationsPageComponent', () => {
-  let chemicals: Record<string, jest.Mock>;
-  let dialog: {open: jest.Mock};
+  let chemicals: Record<string, Mock>;
+  let dialog: {open: Mock};
   let propertyId$: BehaviorSubject<number | null>;
   /** What the location dialog closes with. */
   let dialogResult: boolean;
@@ -30,30 +32,30 @@ describe('ChemicalLocationsPageComponent', () => {
 
   function build(): ChemicalLocationsPageComponent {
     chemicals = {
-      getPropertyInventory: jest.fn().mockImplementation(() => of(inventory())),
-      reorderLocations: jest.fn().mockReturnValue(of({success: true, model: []})),
-      archiveLocation: jest.fn().mockReturnValue(of({success: true, model: {}})),
-      locationPhotoUrl: jest.fn().mockImplementation((id: number) => `/photo/${id}`),
+      getPropertyInventory: vi.fn().mockImplementation(() => of(inventory())),
+      reorderLocations: vi.fn().mockReturnValue(of({success: true, model: []})),
+      archiveLocation: vi.fn().mockReturnValue(of({success: true, model: {}})),
+      locationPhotoUrl: vi.fn().mockImplementation((id: number) => `/photo/${id}`),
     };
     dialogResult = true;
     dialog = {
-      open: jest.fn().mockImplementation((_component: unknown, config: {data?: {settings?: unknown}}) => {
+      open: vi.fn().mockImplementation((_component: unknown, config: {data?: {settings?: unknown}}) => {
         if (!config.data?.settings) {
           return {afterClosed: () => of(dialogResult)};
         }
         confirmed = new Subject<void>();
         dismissed = new Subject<void>();
-        return {componentInstance: {delete: confirmed}, afterClosed: () => dismissed, close: jest.fn()};
+        return {componentInstance: {delete: confirmed}, afterClosed: () => dismissed, close: vi.fn()};
       }),
     };
     propertyId$ = new BehaviorSubject<number | null>(3);
     const injector = Injector.create({providers: [
-      {provide: Store, useValue: {select: jest.fn().mockReturnValue(propertyId$)}},
+      {provide: Store, useValue: {select: vi.fn().mockReturnValue(propertyId$)}},
       {provide: BackendConfigurationPnChemicalsService, useValue: chemicals},
       {provide: MatDialog, useValue: dialog},
-      {provide: Overlay, useValue: {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}}},
+      {provide: Overlay, useValue: {scrollStrategies: {reposition: vi.fn().mockReturnValue({})}}},
       {provide: TranslateService, useValue: {instant: (key: string) => key}},
-      {provide: DestroyRef, useValue: {onDestroy: jest.fn()}},
+      {provide: DestroyRef, useValue: {onDestroy: vi.fn()}},
     ]});
     const component = runInInjectionContext(injector, () => new ChemicalLocationsPageComponent());
     component.ngOnInit();

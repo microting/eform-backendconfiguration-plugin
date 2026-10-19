@@ -4,8 +4,8 @@ import {Overlay} from '@angular/cdk/overlay';
 import {ComponentType} from '@angular/cdk/portal';
 import {MatDialog} from '@angular/material/dialog';
 import {ActivatedRoute, Router} from '@angular/router';
-import {MtxGridColumn} from '@ng-matero/extensions/grid';
-import {TranslateService} from '@ngx-translate/core';
+import {MtxGridColumn, MtxGrid} from '@ng-matero/extensions/grid';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {Store} from '@ngrx/store';
 import {ToastrService} from 'ngx-toastr';
 import {Observable, combineLatest} from 'rxjs';
@@ -43,6 +43,15 @@ import {
 import {ChemicalRegisterPlacementDialogComponent} from '../chemical-register-placement-dialog/chemical-register-placement-dialog.component';
 import {ChemicalRemoveDialogComponent} from '../chemical-remove-dialog/chemical-remove-dialog.component';
 import {ChemicalStockDialogComponent} from '../chemical-stock-dialog/chemical-stock-dialog.component';
+import {NgIf, NgFor, DatePipe, DecimalPipe} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatTooltip} from '@angular/material/tooltip';
+import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
+import {MtxSelect} from '@ng-matero/extensions/select';
 
 /**
  * W1 "Kemikalier – beholdning": open placements of the selected property with
@@ -54,9 +63,9 @@ import {ChemicalStockDialogComponent} from '../chemical-stock-dialog/chemical-st
  */
 @Component({
   selector: 'app-chemical-inventory-page',
+  imports: [NgIf, NgFor, DatePipe, DecimalPipe, FormsModule, TranslatePipe, MatFormField, MatLabel, MatInput, MatIcon, MatIconButton, MatTooltip, MatMenu, MatMenuItem, MatMenuTrigger, MtxGrid, MtxSelect],
   templateUrl: './chemical-inventory-page.component.html',
   styleUrls: ['./chemical-inventory-page.component.scss'],
-  standalone: false,
 })
 export class ChemicalInventoryPageComponent implements OnInit {
   private store = inject(Store);

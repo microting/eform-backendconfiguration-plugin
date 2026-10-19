@@ -1,11 +1,12 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {HttpErrorResponse} from '@angular/common/http';
 import {EMPTY, Subject, of, throwError} from 'rxjs';
 import {closeWhenSaved, downloadFailureText, openSafetyDataSheet} from './chemical-dialogs.helper';
 
 describe('closeWhenSaved (shared save/busy/close of the Kemi dialogs)', () => {
   it('closes with true after a successful save and reports when the request settles', () => {
-    const dialogRef = {close: jest.fn()};
-    const settled = jest.fn();
+    const dialogRef = {close: vi.fn()};
+    const settled = vi.fn();
     const answer = new Subject<{success: boolean}>();
 
     closeWhenSaved(dialogRef, answer, settled);
@@ -21,8 +22,8 @@ describe('closeWhenSaved (shared save/busy/close of the Kemi dialogs)', () => {
     ['a refused save', of({success: false})],
     ['no answer', of(null)],
   ])('stays open after %s and still frees the dialog', (_name, answer) => {
-    const dialogRef = {close: jest.fn()};
-    const settled = jest.fn();
+    const dialogRef = {close: vi.fn()};
+    const settled = vi.fn();
 
     closeWhenSaved(dialogRef, answer, settled);
 
@@ -32,16 +33,16 @@ describe('closeWhenSaved (shared save/busy/close of the Kemi dialogs)', () => {
 });
 
 describe('openSafetyDataSheet (shared by W1 and the W2 side panel)', () => {
-  const toastr = {error: jest.fn()};
+  const toastr = {error: vi.fn()};
   const translate = {instant: (key: string) => key};
 
   beforeEach(() => toastr.error.mockClear());
 
   it('opens the fetched sheet in a new tab', () => {
-    const open = jest.spyOn(window, 'open').mockReturnValue(null);
-    const createObjectURL = jest.fn().mockReturnValue('blob:sds');
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    const createObjectURL = vi.fn().mockReturnValue('blob:sds');
     Object.defineProperty(URL, 'createObjectURL', {value: createObjectURL, configurable: true});
-    const sds = {getSdsBlob: jest.fn().mockReturnValue(of(new Blob(['%PDF'])))};
+    const sds = {getSdsBlob: vi.fn().mockReturnValue(of(new Blob(['%PDF'])))};
 
     openSafetyDataSheet(sds, toastr, translate, 'sds200');
 
@@ -52,7 +53,7 @@ describe('openSafetyDataSheet (shared by W1 and the W2 side panel)', () => {
   });
 
   it('toasts a fixed localized text when the sheet cannot be fetched (the host shows nothing for a blob error)', () => {
-    const sds = {getSdsBlob: jest.fn().mockReturnValue(throwError(() => new Error('404 technical')))};
+    const sds = {getSdsBlob: vi.fn().mockReturnValue(throwError(() => new Error('404 technical')))};
 
     openSafetyDataSheet(sds, toastr, translate, 'sds200');
 
@@ -60,8 +61,8 @@ describe('openSafetyDataSheet (shared by W1 and the W2 side panel)', () => {
   });
 
   it('toasts the same text when the request completes without a sheet (the host ends a 5xx or network failure with EMPTY)', () => {
-    const open = jest.spyOn(window, 'open').mockReturnValue(null);
-    const sds = {getSdsBlob: jest.fn().mockReturnValue(EMPTY)};
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    const sds = {getSdsBlob: vi.fn().mockReturnValue(EMPTY)};
 
     openSafetyDataSheet(sds, toastr, translate, 'sds200');
 

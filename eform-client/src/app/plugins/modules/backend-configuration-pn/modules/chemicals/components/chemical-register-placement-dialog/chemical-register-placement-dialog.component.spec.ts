@@ -1,3 +1,5 @@
+import {describe, it, expect, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {Injector, runInInjectionContext} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {Subject, of} from 'rxjs';
@@ -6,17 +8,17 @@ import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {ChemicalRegisterPlacementDialogComponent} from './chemical-register-placement-dialog.component';
 
 describe('ChemicalRegisterPlacementDialogComponent', () => {
-  let chemicals: {searchRegister: jest.Mock; registerPlacement: jest.Mock};
-  let dialogRef: {close: jest.Mock};
+  let chemicals: {searchRegister: Mock; registerPlacement: Mock};
+  let dialogRef: {close: Mock};
 
   function build(stockEnabled: boolean): ChemicalRegisterPlacementDialogComponent {
     chemicals = {
-      searchRegister: jest.fn().mockReturnValue(of({success: true, model: {total: 1, entries: [
+      searchRegister: vi.fn().mockReturnValue(of({success: true, model: {total: 1, entries: [
         {chemicalId: 200, name: 'Karate 2,5 WG', registrationNo: '1-212', products: [{productId: 2000, name: 'Karate 1 L'}]},
       ]}})),
-      registerPlacement: jest.fn().mockReturnValue(of({success: true, model: {placements: [], stockEntries: [], registerEntries: []}})),
+      registerPlacement: vi.fn().mockReturnValue(of({success: true, model: {placements: [], stockEntries: [], registerEntries: []}})),
     };
-    dialogRef = {close: jest.fn()};
+    dialogRef = {close: vi.fn()};
     const injector = Injector.create({providers: [
       {provide: BackendConfigurationPnChemicalsService, useValue: chemicals},
       {provide: MatDialogRef, useValue: dialogRef},

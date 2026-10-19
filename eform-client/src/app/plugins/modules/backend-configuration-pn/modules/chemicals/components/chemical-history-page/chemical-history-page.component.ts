@@ -1,6 +1,6 @@
 import {Component, DestroyRef, OnInit, inject} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {Store} from '@ngrx/store';
 import {ToastrService} from 'ngx-toastr';
 import {
@@ -30,6 +30,13 @@ import {
   historyActionKey,
   historyPeriodError,
 } from '../../helpers';
+import {NgIf, NgFor, DatePipe} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {MatFormField, MatLabel, MatHint} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MatIcon} from '@angular/material/icon';
+import {MatPaginator} from '@angular/material/paginator';
+import {MtxSelect, MtxOption} from '@ng-matero/extensions/select';
 
 /**
  * W6 "Historik": the immutable event log of the selected property (placements, stock, moves, locations,
@@ -39,9 +46,9 @@ import {
  */
 @Component({
   selector: 'app-chemical-history-page',
+  imports: [NgIf, NgFor, DatePipe, FormsModule, TranslatePipe, MatFormField, MatLabel, MatHint, MatInput, MatIcon, MatPaginator, MtxSelect, MtxOption],
   templateUrl: './chemical-history-page.component.html',
   styleUrls: ['./chemical-history-page.component.scss'],
-  standalone: false,
 })
 export class ChemicalHistoryPageComponent implements OnInit {
   private store = inject(Store);

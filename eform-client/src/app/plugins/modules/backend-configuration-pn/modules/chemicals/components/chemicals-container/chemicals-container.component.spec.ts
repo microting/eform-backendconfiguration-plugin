@@ -1,4 +1,4 @@
-import {describe, it, expect, beforeEach, vi} from 'vitest';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import type {Mock} from 'vitest';
 import {DestroyRef, Injector, runInInjectionContext} from '@angular/core';
 import {ActivatedRoute, convertToParamMap, NavigationCancel, NavigationEnd, NavigationStart, Router} from '@angular/router';
@@ -360,7 +360,7 @@ describe('ChemicalsContainerComponent', () => {
     const permissionsUrl = '/plugins/backend-configuration-pn/chemicals/permissions';
 
     afterEach(() => {
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('waits for the navigation to end, then writes the URL', () => {
@@ -392,7 +392,7 @@ describe('ChemicalsContainerComponent', () => {
     });
 
     it('writes the URL after a cancelled navigation once nothing else is navigating', () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
       const pending = new Subject<unknown>();
       build([], pending);
       routerEvents$.next(new NavigationStart(2, permissionsUrl));
@@ -401,12 +401,12 @@ describe('ChemicalsContainerComponent', () => {
       routerEvents$.next(new NavigationCancel(2, permissionsUrl, 'guard said no'));
 
       expect(router.navigate).not.toHaveBeenCalled();
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
       expect(router.navigate).toHaveBeenCalledWith([], urlSync(7));
     });
 
     it('leaves a superseding navigation alone and writes after it ends', () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
       const pending = new Subject<unknown>();
       build([], pending);
       routerEvents$.next(new NavigationStart(2, permissionsUrl));
@@ -414,7 +414,7 @@ describe('ChemicalsContainerComponent', () => {
 
       routerEvents$.next(new NavigationCancel(2, permissionsUrl, 'superseded'));
       routerEvents$.next(new NavigationStart(3, '/plugins/backend-configuration-pn/chemicals/settings'));
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
 
       expect(router.navigate).not.toHaveBeenCalled();
 
