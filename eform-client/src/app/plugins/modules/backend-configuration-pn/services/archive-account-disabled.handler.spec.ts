@@ -1,27 +1,55 @@
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {HttpErrorResponse} from '@angular/common/http';
 import {BehaviorSubject, concat, defer, merge, of, throwError} from 'rxjs';
 import {ArchiveAccountDisabledHandler, archiveErrorCode} from './archive-account-disabled.handler';
 
+/** Jest-style `done` callback for observable-based tests: `done()` resolves, `done(err)` rejects. */
+type DoneFn = (err?: unknown) => void;
+const withDone = (body: (done: DoneFn) => void) => (): Promise<void> =>
+  new Promise<void>((resolve, reject) => body(err => (err ? reject(err) : resolve())));
+
+/**
+ * Under `ng test` the global FileReader (jsdom, patched by zone.js) has no `readAsText`, so the handler's Blob
+ * branch would always read null. This minimal reader reads through `Blob.text()` instead, with the same events.
+ */
+class BlobTextFileReader {
+  result: string | null = null;
+  error: unknown = null;
+  onload: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+
+  readAsText(blob: Blob): void {
+    blob.text().then(
+      text => { this.result = text; this.onload?.(); },
+      err => { this.error = err; this.onerror?.(); },
+    );
+  }
+}
+
 /** D7: a resigned or deactivated user gets 403 {"error":"account_disabled"} from every archive call. */
 describe('ArchiveAccountDisabledHandler', () => {
-  let auth: {logout: jest.Mock};
-  let toastr: {error: jest.Mock};
+  let auth: {logout: Mock};
+  let toastr: {error: Mock};
   let isAuth$: BehaviorSubject<boolean>;
   let handler: ArchiveAccountDisabledHandler;
 
   beforeEach(() => {
-    auth = {logout: jest.fn()};
-    toastr = {error: jest.fn()};
+    vi.stubGlobal('FileReader', BlobTextFileReader);
+    auth = {logout: vi.fn()};
+    toastr = {error: vi.fn()};
     const translate = {instant: (key: string) => key};
     isAuth$ = new BehaviorSubject<boolean>(true);
     const store = {select: () => isAuth$};
     handler = new ArchiveAccountDisabledHandler(auth as any, toastr as any, translate as any, store as any);
   });
 
+  afterEach(() => vi.unstubAllGlobals());
+
   const failWith = (status: number, body: unknown) => throwError(() => new HttpErrorResponse({status, error: body}));
 
   /** The error reaches the subscriber unchanged and the session is left alone. */
-  const expectPassThrough = (status: number, body: unknown, done: jest.DoneCallback): void => {
+  const expectPassThrough = (status: number, body: unknown, done: DoneFn): void => {
     failWith(status, body).pipe(handler.handle()).subscribe({
       complete: () => done(new Error('completed instead of erroring')),
       error: (err: HttpErrorResponse) => {
@@ -33,8 +61,8 @@ describe('ArchiveAccountDisabledHandler', () => {
     });
   };
 
-  it('ends the session and completes without emitting on account_disabled', done => {
-    const next = jest.fn();
+  it('ends the session and completes without emitting on account_disabled', withDone(done => {
+    const next = vi.fn();
     failWith(403, {error: 'account_disabled'}).pipe(handler.handle()).subscribe({
       next,
       error: err => done(err),
@@ -45,9 +73,9 @@ describe('ArchiveAccountDisabledHandler', () => {
         done();
       },
     });
-  });
+  }));
 
-  it('reads the code from a Blob body, as get-file and get-files answer', done => {
+  it('reads the code from a Blob body, as get-file and get-files answer', withDone(done => {
     const body = new Blob([JSON.stringify({error: 'account_disabled'})], {type: 'application/json'});
     failWith(403, body).pipe(handler.handle()).subscribe({
       error: err => done(err),
@@ -57,9 +85,9 @@ describe('ArchiveAccountDisabledHandler', () => {
         done();
       },
     });
-  });
+  }));
 
-  it('logs out once when parallel calls all get account_disabled', done => {
+  it('logs out once when parallel calls all get account_disabled', withDone(done => {
     const disabled = () => failWith(403, {error: 'account_disabled'}).pipe(handler.handle());
     const blobDisabled = failWith(403, new Blob([JSON.stringify({error: 'account_disabled'})])).pipe(handler.handle());
     merge(disabled(), disabled(), blobDisabled).subscribe({
@@ -70,9 +98,9 @@ describe('ArchiveAccountDisabledHandler', () => {
         done();
       },
     });
-  });
+  }));
 
-  it('logs out again after a new login (isAuth false then true)', done => {
+  it('logs out again after a new login (isAuth false then true)', withDone(done => {
     const disabled = () => failWith(403, {error: 'account_disabled'}).pipe(handler.handle());
     concat(
       disabled(),
@@ -86,9 +114,9 @@ describe('ArchiveAccountDisabledHandler', () => {
         done();
       },
     });
-  });
+  }));
 
-  it('does not re-arm on a late successful response; a later disabled response logs out only once', done => {
+  it('does not re-arm on a late successful response; a later disabled response logs out only once', withDone(done => {
     const disabled = () => failWith(403, {error: 'account_disabled'}).pipe(handler.handle());
     concat(disabled(), of('late ok').pipe(handler.handle()), disabled()).subscribe({
       error: err => done(err),
@@ -98,26 +126,26 @@ describe('ArchiveAccountDisabledHandler', () => {
         done();
       },
     });
-  });
+  }));
 
-  it('passes a 403 with any other Blob body through untouched', done => {
+  it('passes a 403 with any other Blob body through untouched', withDone(done => {
     expectPassThrough(403, new Blob(['<html>Forbidden</html>'], {type: 'text/html'}), done);
-  });
+  }));
 
-  it('passes any other 403 through untouched (the inbox hides itself on its own 403)', done => {
+  it('passes any other 403 through untouched (the inbox hides itself on its own 403)', withDone(done => {
     expectPassThrough(403, {error: 'something_else'}, done);
-  });
+  }));
 
-  it('passes a non-admin 403 with an empty body through untouched', done => {
+  it('passes a non-admin 403 with an empty body through untouched', withDone(done => {
     expectPassThrough(403, null, done);
-  });
+  }));
 
   // In the app the host interceptor swallows a 404 before it gets here; the handler itself must not act on it.
-  it('passes other statuses through untouched', done => {
+  it('passes other statuses through untouched', withDone(done => {
     expectPassThrough(404, {error: 'account_disabled'}, done);
-  });
+  }));
 
-  it('passes a non-HTTP error through untouched', done => {
+  it('passes a non-HTTP error through untouched', withDone(done => {
     const boom = new Error('boom');
     throwError(() => boom).pipe(handler.handle()).subscribe({
       error: err => {
@@ -126,7 +154,7 @@ describe('ArchiveAccountDisabledHandler', () => {
         done();
       },
     });
-  });
+  }));
 
   it('archiveErrorCode accepts an object, a JSON string, a Blob and garbage', async () => {
     expect(await archiveErrorCode({error: 'account_disabled'})).toBe('account_disabled');

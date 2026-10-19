@@ -6,7 +6,7 @@ import {
   Output,
   inject
 } from '@angular/core';
-import {FormControl, FormGroup} from '@angular/forms';
+import {FormControl, FormGroup, ReactiveFormsModule} from '@angular/forms';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription, take} from 'rxjs';
 import {
@@ -16,7 +16,7 @@ import {
 import {CommonDictionaryModel, EntityItemModel, Paged} from 'src/app/common/models';
 import {EntitySelectService, SitesService} from 'src/app/common/services';
 import {format, parse, set} from 'date-fns';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {PARSING_DATE_FORMAT} from 'src/app/common/const';
 import {PropertyModel} from '../../../../models';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
@@ -28,13 +28,19 @@ import {
   selectTaskManagementFilters,
 } from '../../../../state';
 import {TaskManagementStateService} from '../store';
+import {NgIf} from '@angular/common';
+import {MatButton} from '@angular/material/button';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {MatTooltip} from '@angular/material/tooltip';
+import {MatDateRangeInput, MatDateRangePicker, MatStartDate, MatEndDate} from '@angular/material/datepicker';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-task-management-filters',
+    imports: [NgIf, ReactiveFormsModule, TranslatePipe, MatButton, MatFormField, MatLabel, MtxSelect, MatTooltip, MatDateRangeInput, MatDateRangePicker, MatStartDate, MatEndDate],
     templateUrl: './task-management-filters.component.html',
     styleUrls: ['./task-management-filters.component.scss'],
-    standalone: false
 })
 export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
   private store = inject(Store);

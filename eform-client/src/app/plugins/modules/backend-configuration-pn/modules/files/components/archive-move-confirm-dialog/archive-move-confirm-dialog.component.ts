@@ -1,5 +1,7 @@
 import {Component, inject} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
+import {NgIf} from '@angular/common';
+import {TranslatePipe} from '@ngx-translate/core';
 
 export interface ArchiveMoveConfirmData {
   /** "3 dokumenter kan nu læses af Ledelse" — already translated. */
@@ -11,8 +13,8 @@ export interface ArchiveMoveConfirmData {
 /** D11: a move that changes who can read the documents is confirmed first. Closes with true only on confirm. */
 @Component({
   selector: 'app-archive-move-confirm-dialog',
+  imports: [NgIf, TranslatePipe, MatDialogTitle, MatDialogContent, MatDialogActions],
   templateUrl: './archive-move-confirm-dialog.component.html',
-  standalone: false,
 })
 export class ArchiveMoveConfirmDialogComponent {
   readonly data: ArchiveMoveConfirmData = inject(MAT_DIALOG_DATA);

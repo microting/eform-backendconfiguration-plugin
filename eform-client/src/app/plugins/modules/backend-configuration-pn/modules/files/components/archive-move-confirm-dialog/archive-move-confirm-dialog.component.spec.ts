@@ -1,3 +1,5 @@
+import {describe, it, expect, afterEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
@@ -6,15 +8,14 @@ import {ArchiveMoveConfirmData, ArchiveMoveConfirmDialogComponent} from './archi
 
 describe('ArchiveMoveConfirmDialogComponent', () => {
   let fixture: ComponentFixture<ArchiveMoveConfirmDialogComponent>;
-  let close: jest.Mock;
+  let close: Mock;
   const find = (selector: string): HTMLElement | null => fixture.nativeElement.querySelector(selector);
 
   function render(data: ArchiveMoveConfirmData): void {
-    close = jest.fn();
+    close = vi.fn();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      declarations: [ArchiveMoveConfirmDialogComponent],
-      imports: [TranslateModule.forRoot()],
+      imports: [ArchiveMoveConfirmDialogComponent, TranslateModule.forRoot()],
       providers: [{provide: MAT_DIALOG_DATA, useValue: data}, {provide: MatDialogRef, useValue: {close}}],
       schemas: [NO_ERRORS_SCHEMA],
     });

@@ -12,14 +12,18 @@ import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {ToastrService} from 'ngx-toastr';
 import {catchError} from 'rxjs/operators';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
+import {FormsModule} from '@angular/forms';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MtxSelect} from '@ng-matero/extensions/select';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-property-docx-report-modal',
+    imports: [FormsModule, TranslatePipe, MatFormField, MatLabel, MtxSelect, MatDialogTitle, MatDialogContent, MatDialogActions],
     templateUrl: './property-docx-report-modal.component.html',
     styleUrls: ['./property-docx-report-modal.component.scss'],
-    standalone: false
 })
 export class PropertyDocxReportModalComponent implements OnInit, OnDestroy {
   private backendConfigurationPnPropertiesService = inject(BackendConfigurationPnPropertiesService);

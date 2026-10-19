@@ -1,3 +1,4 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {of} from 'rxjs';
 import {
   BackendConfigurationPnAdhocMethods,
@@ -11,12 +12,12 @@ describe('BackendConfigurationPnAdhocService', () => {
 
   beforeEach(() => {
     apiBaseServiceSpy = {
-      get: jest.fn(),
-      post: jest.fn(),
-      put: jest.fn(),
-      delete: jest.fn(),
-      postFormData: jest.fn(),
-      getBlobData: jest.fn(),
+      get: vi.fn(),
+      post: vi.fn(),
+      put: vi.fn(),
+      delete: vi.fn(),
+      postFormData: vi.fn(),
+      getBlobData: vi.fn(),
     };
     apiBaseServiceSpy.get.mockReturnValue(of({success: true, model: []}));
     apiBaseServiceSpy.post.mockReturnValue(of({success: true, model: {}}));

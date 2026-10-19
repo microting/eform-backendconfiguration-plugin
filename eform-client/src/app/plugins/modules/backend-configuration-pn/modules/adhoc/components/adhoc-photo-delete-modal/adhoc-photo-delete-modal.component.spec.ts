@@ -1,3 +1,4 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {AdhocPhotoDeleteModalComponent} from './adhoc-photo-delete-modal.component';
 
 /**
@@ -10,7 +11,7 @@ describe('AdhocPhotoDeleteModalComponent', () => {
   let component: AdhocPhotoDeleteModalComponent;
 
   beforeEach(() => {
-    dialogRefSpy = {close: jest.fn()};
+    dialogRefSpy = {close: vi.fn()};
     component = new AdhocPhotoDeleteModalComponent(dialogRefSpy);
   });
 

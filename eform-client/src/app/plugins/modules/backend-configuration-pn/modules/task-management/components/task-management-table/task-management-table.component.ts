@@ -14,8 +14,8 @@ import {
 import {WorkOrderCaseModel} from '../../../../models';
 import {TaskManagementStateService} from '../store';
 import {Sort} from '@angular/material/sort';
-import {MtxGridColumn} from '@ng-matero/extensions/grid';
-import {TranslateService} from '@ngx-translate/core';
+import {MtxGridColumn, MtxGrid} from '@ng-matero/extensions/grid';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {TaskManagementPrioritiesEnum} from '../../../../enums';
 import {Store} from '@ngrx/store';
 import {
@@ -26,23 +26,27 @@ import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {BackendConfigurationPnTaskManagementService} from '../../../../services';
-import {
-  TaskManagementCreateShowModalComponent,
-  TaskManagementDeleteModalComponent
-} from '../';
+import {TaskManagementCreateShowModalComponent} from '../task-management-actions/task-management-create-show-modal/task-management-create-show-modal.component';
+import {TaskManagementDeleteModalComponent} from '../task-management-actions/task-management-delete-modal/task-management-delete-modal.component';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
 import {Gallery, GalleryItem, ImageItem} from 'ng-gallery';
 import {Lightbox} from 'ng-gallery/lightbox';
 import {TemplateFilesService} from 'src/app/common/services';
 import {forkJoin} from 'rxjs';
+import {NgIf, NgClass, AsyncPipe} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatTooltip} from '@angular/material/tooltip';
+import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
+import {MatChip} from '@angular/material/chips';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-task-management-table',
+    imports: [NgIf, NgClass, AsyncPipe, TranslatePipe, MatIcon, MatIconButton, MtxGrid, MatTooltip, MatMenu, MatMenuItem, MatMenuTrigger, MatChip],
     templateUrl: './task-management-table.component.html',
     styleUrls: ['./task-management-table.component.scss'],
-    standalone: false
 })
 export class TaskManagementTableComponent implements OnInit, OnDestroy, OnChanges, AfterViewChecked {
   private store = inject(Store);

@@ -4,7 +4,6 @@ import {TranslateModule} from '@ngx-translate/core';
 import {RouterModule} from '@angular/router';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
-import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
 import {
   FilesContainerComponent,
   FileCreateComponent,
@@ -53,29 +52,6 @@ import {A11yModule} from '@angular/cdk/a11y';
 import {ArchiveMoveFlowService} from './services/archive-move-flow.service';
 
 @NgModule({
-  declarations: [
-    FilesContainerComponent,
-    FilesTableComponent,
-    FilesFiltersComponent,
-    FileCreateComponent,
-    FileTagsComponent,
-    FileCreateDropZoneComponent,
-    FileCreateEditFileComponent,
-    DownloadFilesNameArchiveComponent,
-    FileCreateZoomPageComponent,
-    ArchiveSectionNavComponent,
-    InboxContainerComponent,
-    InboxReviewDialogComponent,
-    InboxSettingsComponent,
-    ArchiveFolderPickerComponent,
-    ArchiveFolderNameDialogComponent,
-    ArchiveFolderChooseDialogComponent,
-    ArchiveAccessDialogComponent,
-    ArchiveMoveConfirmDialogComponent,
-    ArchivePropertiesDialogComponent,
-    ArchiveFolderTreeComponent,
-    ArchiveDocumentPanelComponent,
-  ],
   imports: [
     CommonModule,
     TranslateModule,
@@ -83,7 +59,6 @@ import {ArchiveMoveFlowService} from './services/archive-move-flow.service';
     FilesRouting,
     EformSharedModule,
     ReactiveFormsModule,
-    EformImportedModule,
     FormsModule,
     MatButtonModule,
     MatTooltipModule,
@@ -108,6 +83,27 @@ import {ArchiveMoveFlowService} from './services/archive-move-flow.service';
     MatSelectModule,
     MatRadioModule,
     A11yModule,
+    FilesContainerComponent,
+    FilesTableComponent,
+    FilesFiltersComponent,
+    FileCreateComponent,
+    FileTagsComponent,
+    FileCreateDropZoneComponent,
+    FileCreateEditFileComponent,
+    DownloadFilesNameArchiveComponent,
+    FileCreateZoomPageComponent,
+    ArchiveSectionNavComponent,
+    InboxContainerComponent,
+    InboxReviewDialogComponent,
+    InboxSettingsComponent,
+    ArchiveFolderPickerComponent,
+    ArchiveFolderNameDialogComponent,
+    ArchiveFolderChooseDialogComponent,
+    ArchiveAccessDialogComponent,
+    ArchiveMoveConfirmDialogComponent,
+    ArchivePropertiesDialogComponent,
+    ArchiveFolderTreeComponent,
+    ArchiveDocumentPanelComponent,
   ],
   providers: [ArchiveMoveFlowService],
 })

@@ -195,7 +195,7 @@ export class BackendConfigurationPropertiesPage extends Page {
   }
 
   public async navigateToPropertyArea(i: number) {
-    const ele = await $$(`#navigateToPropertyArea`)[i];
+    const ele = await $$(`[id^="navigateToPropertyArea"]`)[i];
     await ele.waitForDisplayed({ timeout: 40000 });
     await ele.waitForDisplayed({ timeout: 40000 });
     return ele;
@@ -514,7 +514,7 @@ export class PropertyRowObject {
 
   private async clickActionsMenu() {
     await browser.pause(1000);
-    await $$('#actionMenu')[0].click();
+    await $$('[id^="actionMenu"]')[0].click();
     await browser.pause(1000);
   }
 }

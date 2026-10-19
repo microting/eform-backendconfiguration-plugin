@@ -17,11 +17,11 @@ import {
   TaskModel
 } from '../../../../models';
 import {RepeatTypeEnum} from '../../../../enums';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import * as R from 'ramda';
 import {TaskTrackerStateService} from '../store';
 import {set} from 'date-fns';
-import {MtxGridColumn, MtxGridRowClassFormatter} from '@ng-matero/extensions/grid';
+import {MtxGridColumn, MtxGridRowClassFormatter, MtxGrid} from '@ng-matero/extensions/grid';
 import {Store} from '@ngrx/store';
 import {selectCurrentUserFullName, selectCurrentUserIsAdmin} from 'src/app/state';
 import {
@@ -32,12 +32,18 @@ import {Subscription, take} from 'rxjs';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {isFutureTask} from '../../../../helpers';
+import {NgIf, NgFor, AsyncPipe} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatTooltip} from '@angular/material/tooltip';
+import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
+import {MatChip, MatChipSet} from '@angular/material/chips';
 
 @Component({
     selector: 'app-task-tracker-table',
+    imports: [NgIf, NgFor, AsyncPipe, TranslatePipe, MatIcon, MatIconButton, MtxGrid, MatTooltip, MatMenu, MatMenuItem, MatMenuTrigger, MatChip, MatChipSet],
     templateUrl: './task-tracker-table.component.html',
     styleUrls: ['./task-tracker-table.component.scss'],
-    standalone: false
 })
 export class TaskTrackerTableComponent implements OnInit, OnChanges, AfterViewChecked {
   private dialog = inject(MatDialog);

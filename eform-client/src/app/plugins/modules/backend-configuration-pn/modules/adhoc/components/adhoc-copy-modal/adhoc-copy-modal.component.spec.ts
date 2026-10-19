@@ -1,3 +1,4 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {of} from 'rxjs';
 import {AdhocCopyModalComponent} from './adhoc-copy-modal.component';
 
@@ -7,8 +8,8 @@ describe('AdhocCopyModalComponent', () => {
   let component: AdhocCopyModalComponent;
 
   beforeEach(() => {
-    dialogRefSpy = {close: jest.fn()};
-    adhocServiceSpy = {copyTask: jest.fn()};
+    dialogRefSpy = {close: vi.fn()};
+    adhocServiceSpy = {copyTask: vi.fn()};
     component = new AdhocCopyModalComponent(dialogRefSpy, {id: 7, title: 'Fix roof'}, adhocServiceSpy);
   });
 

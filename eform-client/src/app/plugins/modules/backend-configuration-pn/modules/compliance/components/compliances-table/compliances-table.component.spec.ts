@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {Overlay} from '@angular/cdk/overlay';
 import {MatDialog} from '@angular/material/dialog';
@@ -22,25 +24,25 @@ import {CompliancesTableComponent} from './compliances-table.component';
  */
 describe('CompliancesTableComponent — future tasks (#1300)', () => {
   let component: CompliancesTableComponent;
-  let dialogOpen: jest.Mock;
+  let dialogOpen: Mock;
   let isAdmin: boolean;
 
   beforeEach(() => {
-    jest.useFakeTimers();
-    jest.setSystemTime(new Date('2026-09-18T10:00:00Z'));
-    dialogOpen = jest.fn(() => ({afterClosed: () => of(false)}));
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-18T10:00:00Z'));
+    dialogOpen = vi.fn(() => ({afterClosed: () => of(false)}));
     isAdmin = true;
 
     TestBed.configureTestingModule({
       providers: [
         // Signed in (every selector truthy) except where a case flips the admin role.
-        {provide: Store, useValue: {select: jest.fn((selector: unknown) => of(selector === selectAuthIsAdmin ? isAdmin : true))}},
+        {provide: Store, useValue: {select: vi.fn((selector: unknown) => of(selector === selectAuthIsAdmin ? isAdmin : true))}},
         {provide: CompliancesStateService, useValue: {}},
         {provide: AuthStateService, useValue: {}},
-        {provide: TranslateService, useValue: {stream: jest.fn(() => of(''))}},
-        {provide: Router, useValue: {navigate: jest.fn()}},
+        {provide: TranslateService, useValue: {stream: vi.fn(() => of(''))}},
+        {provide: Router, useValue: {navigate: vi.fn()}},
         {provide: MatDialog, useValue: {open: dialogOpen}},
-        {provide: Overlay, useValue: {scrollStrategies: {reposition: jest.fn()}}},
+        {provide: Overlay, useValue: {scrollStrategies: {reposition: vi.fn()}}},
         {provide: ActivatedRoute, useValue: {}},
       ],
     });
@@ -48,7 +50,7 @@ describe('CompliancesTableComponent — future tasks (#1300)', () => {
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it.each([
@@ -64,9 +66,9 @@ describe('CompliancesTableComponent — future tasks (#1300)', () => {
 
   it('flips at Copenhagen midnight (CEST), not UTC midnight', () => {
     const storedTomorrow = new Date('2026-09-19T00:00:00Z');
-    jest.setSystemTime(new Date('2026-09-18T21:59:00Z')); // 23:59 local
+    vi.setSystemTime(new Date('2026-09-18T21:59:00Z')); // 23:59 local
     expect(component.canEdit(storedTomorrow)).toBe(false);
-    jest.setSystemTime(new Date('2026-09-18T22:00:00Z')); // 00:00 local on the 19th
+    vi.setSystemTime(new Date('2026-09-18T22:00:00Z')); // 00:00 local on the 19th
     expect(component.canEdit(storedTomorrow)).toBe(true);
   });
 

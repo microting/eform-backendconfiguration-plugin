@@ -7,10 +7,10 @@ import {
   inject
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import {MtxGridColumn, MtxGridRowClassFormatter} from '@ng-matero/extensions/grid';
+import {MtxGridColumn, MtxGridRowClassFormatter, MtxGrid} from '@ng-matero/extensions/grid';
 import {TaskWizardModel} from '../../../../models';
 import {RepeatTypeEnum, TaskWizardStatusesEnum} from '../../../../enums';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {AuthStateService} from 'src/app/common/store';
 import {format} from 'date-fns';
 import {CommonDictionaryModel} from 'src/app/common/models';
@@ -23,13 +23,18 @@ import {
 } from '../../../../state';
 import {selectAuthIsAdmin} from "src/app/state";
 import {PlanningModel} from "src/app/plugins/modules/items-planning-pn/models";
+import {NgIf, NgFor, NgClass, AsyncPipe} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
+import {MatChip, MatChipListbox} from '@angular/material/chips';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-task-wizard-table',
+    imports: [NgIf, NgFor, NgClass, AsyncPipe, TranslatePipe, MatIcon, MatIconButton, MtxGrid, MatMenu, MatMenuItem, MatMenuTrigger, MatChip, MatChipListbox],
     templateUrl: './task-wizard-table.component.html',
     styleUrls: ['./task-wizard-table.component.scss'],
-    standalone: false
 })
 export class TaskWizardTableComponent implements OnInit, OnChanges, AfterViewChecked, OnDestroy {
   private store = inject(Store);

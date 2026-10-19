@@ -1,3 +1,4 @@
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {TranslateModule} from '@ngx-translate/core';
@@ -9,6 +10,8 @@ import {
 } from '../../../../services';
 import {ComplianceReportStateService} from '../../store';
 import {ComplianceReportFiltersComponent} from './compliance-report-filters.component';
+import {CommonModule} from '@angular/common';
+import {detectChanges} from '../../../../testing/detect-changes';
 
 /**
  * #1299 on the filter bar: the status filter ("Ikke udførte opgaver") is not
@@ -28,41 +31,40 @@ describe('ComplianceReportFiltersComponent (#1299)', () => {
 
   beforeEach(() => {
     // setFilter's debounce is a real setTimeout; nothing here needs it to run.
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     state = new ComplianceReportStateService();
 
     TestBed.configureTestingModule({
-      declarations: [ComplianceReportFiltersComponent],
-      imports: [TranslateModule.forRoot()],
+      imports: [ComplianceReportFiltersComponent, TranslateModule.forRoot()],
       providers: [
         {provide: ComplianceReportStateService, useValue: state},
         {
           provide: BackendConfigurationPnPropertiesService,
           useValue: {
-            getAllPropertiesDictionary: jest.fn().mockReturnValue(of({success: true, model: []})),
-            getDeviceUsersFiltered: jest.fn().mockReturnValue(of({success: true, model: []})),
+            getAllPropertiesDictionary: vi.fn().mockReturnValue(of({success: true, model: []})),
+            getDeviceUsersFiltered: vi.fn().mockReturnValue(of({success: true, model: []})),
           },
         },
         {
           provide: BackendConfigurationPnCalendarService,
-          useValue: {getBoards: jest.fn().mockReturnValue(of({success: true, model: []}))},
+          useValue: {getBoards: vi.fn().mockReturnValue(of({success: true, model: []}))},
         },
         {
           provide: ItemsPlanningPnTagsService,
-          useValue: {getPlanningsTags: jest.fn().mockReturnValue(of({success: true, model: []}))},
+          useValue: {getPlanningsTags: vi.fn().mockReturnValue(of({success: true, model: []}))},
         },
       ],
       schemas: [NO_ERRORS_SCHEMA],
-    });
+    }).overrideComponent(ComplianceReportFiltersComponent, {set: {imports: [CommonModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}});
 
     fixture = TestBed.createComponent(ComplianceReportFiltersComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    detectChanges(fixture);
   });
 
   afterEach(() => {
     fixture.destroy();
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it('does not render the status filter in Oversigt', () => {
@@ -74,7 +76,7 @@ describe('ComplianceReportFiltersComponent (#1299)', () => {
 
   it.each(['details', 'report'] as const)('renders the status filter in %s', (mode) => {
     state.setMode(mode);
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     expect(statusSelect()).not.toBeNull();
     expect(component.statusHidden).toBe(false);
@@ -82,12 +84,12 @@ describe('ComplianceReportFiltersComponent (#1299)', () => {
 
   it('hides it again on the way back to Oversigt, keeping its value for the drill-down', () => {
     state.setMode('details');
-    fixture.detectChanges();
+    detectChanges(fixture);
     component.onStatusChange('done');
     expect(statusSelect()).not.toBeNull();
 
     state.resetToOverview();
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     expect(statusSelect()).toBeNull();
     expect(state.filters.status).toBe('done');
@@ -112,7 +114,7 @@ describe('ComplianceReportFiltersComponent (#1299)', () => {
   });
 
   it('choosing it goes through setFilter like every other preset', () => {
-    const setFilter = jest.spyOn(state, 'setFilter');
+    const setFilter = vi.spyOn(state, 'setFilter');
 
     component.onPeriodChange('ytd1y');
 

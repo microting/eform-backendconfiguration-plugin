@@ -2,7 +2,7 @@ import {Component, OnDestroy, OnInit} from '@angular/core';
 import {Store} from '@ngrx/store';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {Subscription} from 'rxjs';
 import {format, parseISO, subDays, subMonths} from 'date-fns';
@@ -21,6 +21,16 @@ import {AdhocStateService} from '../store';
 import {AdhocTaskDrawerComponent} from '../adhoc-task-drawer/adhoc-task-drawer.component';
 import {AdhocCopyModalComponent} from '../adhoc-copy-modal/adhoc-copy-modal.component';
 import {AdhocDeleteModalComponent} from '../adhoc-delete-modal/adhoc-delete-modal.component';
+import {NgIf, NgFor, NgClass, DatePipe} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton, MatButton} from '@angular/material/button';
+import {MatFormField, MatLabel, MatSuffix} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {MatDatepicker, MatDatepickerInput, MatDatepickerToggle} from '@angular/material/datepicker';
+import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
+import {MatCheckbox} from '@angular/material/checkbox';
 
 /** Display union derived from the wire `AdhocTaskStatusFilter` - only these two occur in Historik. */
 export type AdhocTaskHistoryStatus = 'completed' | 'archived';
@@ -75,9 +85,9 @@ const ISO_DATE_FORMAT = 'yyyy-MM-dd';
 @AutoUnsubscribe()
 @Component({
   selector: 'app-adhoc-history',
+  imports: [NgIf, NgFor, NgClass, DatePipe, FormsModule, TranslatePipe, MatIcon, MatIconButton, MatButton, MatFormField, MatLabel, MatSuffix, MatInput, MtxSelect, MatDatepicker, MatDatepickerInput, MatDatepickerToggle, MatMenu, MatMenuItem, MatMenuTrigger, MatCheckbox],
   templateUrl: './adhoc-history.component.html',
   styleUrls: ['./adhoc-history.component.scss'],
-  standalone: false,
 })
 export class AdhocHistoryComponent implements OnInit, OnDestroy {
   periodPresets: AdhocHistoryFiltrationModel['periodPreset'][] =

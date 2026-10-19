@@ -1,3 +1,4 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {of, throwError} from 'rxjs';
 import {ApiBaseService} from 'src/app/common/services';
 import {
@@ -11,12 +12,12 @@ describe('BackendConfigurationPnCalendarFilesService', () => {
 
   beforeEach(() => {
     apiBaseServiceSpy = {
-      get: jest.fn(),
-      post: jest.fn(),
-      put: jest.fn(),
-      delete: jest.fn(),
-      postFormData: jest.fn(),
-      getBlobData: jest.fn(),
+      get: vi.fn(),
+      post: vi.fn(),
+      put: vi.fn(),
+      delete: vi.fn(),
+      postFormData: vi.fn(),
+      getBlobData: vi.fn(),
     };
     apiBaseServiceSpy.get.mockReturnValue(of({success: true, model: []}));
     apiBaseServiceSpy.delete.mockReturnValue(of({success: true}));
@@ -37,19 +38,19 @@ describe('BackendConfigurationPnCalendarFilesService', () => {
       expect(body).toEqual({file});
     });
 
-    it('propagates upload error responses to subscribers', (done) => {
+    it('propagates upload error responses to subscribers', () => new Promise<void>((done, fail) => {
       apiBaseServiceSpy.postFormData.mockReturnValue(throwError(() => ({status: 400, error: {message: 'File too large'}})));
       const file = new File(['x'], 'big.pdf', {type: 'application/pdf'});
 
       service.uploadFile(7, file).subscribe({
-        next: () => done(new Error('expected error')),
+        next: () => fail(new Error('expected error')),
         error: err => {
           expect(err.status).toBe(400);
           expect(err.error.message).toBe('File too large');
           done();
         },
       });
-    });
+    }));
 
     // The service hands `{file}` (lowercase) to postFormData, which calls
     // objectToFormData with needPascalStyle=true. The wire payload therefore

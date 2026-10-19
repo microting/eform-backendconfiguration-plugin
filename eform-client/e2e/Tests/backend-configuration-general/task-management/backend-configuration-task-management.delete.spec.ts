@@ -41,7 +41,7 @@ describe('Backend Configuration Task Manager Delete Task', function () {
     await backendConfigurationPropertiesPage.goToProperties();
     const createdProperty = await backendConfigurationPropertiesPage.getLastPropertyRowObject();
     await browser.pause(1000);
-    await $$('#actionMenu')[0].click();
+    await $$('[id^="actionMenu"]')[0].click();
     await browser.pause(1000);
     await createdProperty.propertyTaskAreasBtn.click();
     for (let i = 0; i < (areas).length; i++) {

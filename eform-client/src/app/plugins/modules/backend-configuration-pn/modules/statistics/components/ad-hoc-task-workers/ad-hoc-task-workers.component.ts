@@ -8,13 +8,16 @@ import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {selectIsDarkMode} from 'src/app/state';
 import {Store} from '@ngrx/store';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatCard, MatCardContent, MatCardTitle, MatCardSubtitle} from '@angular/material/card';
+import {NgxChartsModule} from '@swimlane/ngx-charts';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-ad-hoc-task-workers',
+    imports: [TranslatePipe, MatCard, MatCardContent, NgxChartsModule, MatCardTitle, MatCardSubtitle],
     templateUrl: './ad-hoc-task-workers.component.html',
     styleUrls: ['./ad-hoc-task-workers.component.scss'],
-    standalone: false
 })
 export class AdHocTaskWorkersComponent implements OnChanges, OnDestroy {
   private store = inject(Store);

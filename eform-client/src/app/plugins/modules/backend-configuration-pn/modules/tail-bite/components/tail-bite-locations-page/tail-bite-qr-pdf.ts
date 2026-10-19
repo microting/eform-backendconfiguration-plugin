@@ -93,8 +93,8 @@ export function fitTitle(text: string, font: PDFFont, maxWidth: number): {text: 
   return {text: fit(safe, font, size, maxWidth), size};
 }
 
-function drawQr(page: PDFPage, token: string, x: number, yTop: number, size: number): void {
-  const modules = QRCode.create(token, {errorCorrectionLevel: 'M'}).modules;
+function drawQr(page: PDFPage, token: string, x: number, yTop: number, size: number, createQr: typeof QRCode.create): void {
+  const modules = createQr(token, {errorCorrectionLevel: 'M'}).modules;
   const count = modules.size + QUIET_ZONE * 2;
   const unit = size / count;
   for (let r = 0; r < modules.size; r++) {
@@ -115,8 +115,14 @@ function drawQr(page: PDFPage, token: string, x: number, yTop: number, size: num
 /**
  * An A4 PDF with eight labels per page (2 × 4), each with a thin cut line. The QR codes are drawn as vector
  * squares from the raw token, so they stay sharp on any printer. `header` is printed at the top of every page.
+ * `createQr` is the QR encoder; it is a parameter only so a spec can observe the call (module mocks do not
+ * work under `ng test`), and callers leave it at its default.
  */
-export async function buildQrSheetPdf(labels: TailBiteQrLabel[], header: string): Promise<Uint8Array> {
+export async function buildQrSheetPdf(
+  labels: TailBiteQrLabel[],
+  header: string,
+  createQr: typeof QRCode.create = QRCode.create,
+): Promise<Uint8Array> {
   if (labels.length === 0) {
     throw new Error('No labels to print.');
   }
@@ -136,7 +142,7 @@ export async function buildQrSheetPdf(labels: TailBiteQrLabel[], header: string)
       const x = MARGIN + (i % COLS) * (cellW + GAP);
       const yTop = PAGE_H - MARGIN - HEADER - Math.floor(i / COLS) * (cellH + GAP);
       page.drawRectangle({x, y: yTop - cellH, width: cellW, height: cellH, borderColor: rgb(0.6, 0.6, 0.6), borderWidth: 0.5});
-      drawQr(page, label.qrCode, x + QR_INSET, yTop - (cellH - qrSize) / 2, qrSize);
+      drawQr(page, label.qrCode, x + QR_INSET, yTop - (cellH - qrSize) / 2, qrSize, createQr);
       const textX = x + TEXT_INSET + qrSize;
       let y = yTop - cellH / 2 + 12;
       const title = fitTitle(label.title, bold, textW);

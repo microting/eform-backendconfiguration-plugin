@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {Overlay} from '@angular/cdk/overlay';
 import {SimpleChange} from '@angular/core';
@@ -41,27 +43,27 @@ describe('canChangeAction', () => {
 });
 
 describe('TailBiteFollowUpsComponent', () => {
-  let service: Record<string, jest.Mock>;
-  let dialogOpen: jest.Mock;
+  let service: Record<string, Mock>;
+  let dialogOpen: Mock;
   let component: TailBiteFollowUpsComponent;
-  let changed: jest.Mock;
+  let changed: Mock;
 
   /** The next text dialog: `save(text)` presses Save with that text, `cancel()` closes it; `close` is the ref's close. */
   const textDialog = () => {
     const saved = new Subject<string>();
     const closed = new Subject<void>();
-    const close = jest.fn(() => closed.next());
+    const close = vi.fn(() => closed.next());
     dialogOpen.mockReturnValueOnce({componentInstance: {saved}, close, afterClosed: () => closed});
     return {save: (text: string) => saved.next(text), cancel: () => closed.next(), close};
   };
 
   beforeEach(() => {
     service = {
-      setActionDone: jest.fn().mockReturnValue(of({success: true})),
-      withdrawAction: jest.fn().mockReturnValue(of({success: true})),
-      reassignAction: jest.fn().mockReturnValue(of({success: true})),
+      setActionDone: vi.fn().mockReturnValue(of({success: true})),
+      withdrawAction: vi.fn().mockReturnValue(of({success: true})),
+      reassignAction: vi.fn().mockReturnValue(of({success: true})),
     };
-    dialogOpen = jest.fn();
+    dialogOpen = vi.fn();
     TestBed.configureTestingModule({
       providers: [
         {provide: BackendConfigurationPnTailBiteService, useValue: service},
@@ -79,7 +81,7 @@ describe('TailBiteFollowUpsComponent', () => {
     component.workers = [{siteId: 7, name: 'Jane Doe', assignable: true},
       {siteId: 8, name: 'John Doe', assignable: true}];
     component.today = new Date(2026, 9, 7);
-    changed = jest.fn();
+    changed = vi.fn();
     component.changed.subscribe(changed);
   });
 
@@ -297,7 +299,7 @@ describe('TailBiteFollowUpsComponent rendering', () => {
       imports: [TranslateModule.forRoot(), TailBiteFollowUpsComponent],
       providers: [
         {provide: BackendConfigurationPnTailBiteService, useValue: {}},
-        {provide: MatDialog, useValue: {open: jest.fn()}},
+        {provide: MatDialog, useValue: {open: vi.fn()}},
         {provide: Overlay, useValue: {scrollStrategies: {reposition: () => ({})}}},
       ],
     });

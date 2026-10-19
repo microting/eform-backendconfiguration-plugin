@@ -10,7 +10,7 @@
   td.mat-table-sticky-right {
     background-color: var(--surface-powder, #b3d3ea) !important;
 
-    #actionMenu {
+    [id^="actionMenu"] {
       .mat-icon {
         color: var(--text-header, #0F1316) !important;
       }
@@ -31,7 +31,7 @@
   td.mat-table-sticky-right {
     background-color: var(--surface-powder, #b3d3ea) !important;
 
-    #actionMenu {
+    [id^="actionMenu"] {
       .mat-icon {
         color: var(--text-header, #0F1316) !important;
       }

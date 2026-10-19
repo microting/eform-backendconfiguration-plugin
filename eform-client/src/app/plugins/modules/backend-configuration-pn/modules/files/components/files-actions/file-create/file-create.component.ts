@@ -13,17 +13,30 @@ import {Subscription, take} from 'rxjs';
 import {Store} from '@ngrx/store';
 import {ArchiveFolderOption, folderOptions} from '../../../../../helpers';
 import {selectFilesFolderId} from '../../../../../state';
-import {FileTagsComponent} from '../../';
+import {FileTagsComponent} from '../../file-tags/file-tags.component';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import * as R from 'ramda';
-import {ActivatedRoute, Router} from '@angular/router';
+import {ActivatedRoute, Router, RouterLink} from '@angular/router';
+import {NgIf, NgFor} from '@angular/common';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatCard, MatCardContent, MatCardTitle, MatCardFooter} from '@angular/material/card';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {MatTooltip} from '@angular/material/tooltip';
+import {EformNewSubheaderComponent} from 'src/app/common/modules/eform-shared/components';
+import {FileCreateDropZoneComponent} from './file-create-drop-zone/file-create-drop-zone.component';
+import {FileCreateEditFileComponent} from './file-create-edit-file/file-create-edit-file.component';
+import {ArchiveFolderPickerComponent} from '../../archive-folder-picker/archive-folder-picker.component';
+import {PdfViewerModule} from 'ng2-pdf-viewer';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-files-file-create',
+    imports: [NgIf, NgFor, TranslatePipe, RouterLink, MatIcon, MatIconButton, MatCard, MatCardContent, MatCardTitle, MatFormField, MatLabel, MtxSelect, MatTooltip, EformNewSubheaderComponent, FileCreateDropZoneComponent, FileCreateEditFileComponent, ArchiveFolderPickerComponent, FileTagsComponent, MatCardFooter, PdfViewerModule],
     templateUrl: './file-create.component.html',
     styleUrls: ['./file-create.component.scss'],
-    standalone: false
 })
 export class FileCreateComponent implements OnInit, OnDestroy {
   private propertiesService = inject(BackendConfigurationPnPropertiesService);

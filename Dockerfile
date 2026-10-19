@@ -2,8 +2,9 @@ FROM node:22-bookworm-slim as node-env
 WORKDIR /app
 ENV PATH /app/node_modules/.bin:$PATH
 COPY eform-angular-frontend/eform-client ./
+RUN corepack enable
 RUN yarn install
-RUN npm run build
+RUN yarn build
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0-noble AS build-env
 WORKDIR /app

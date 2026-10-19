@@ -11,22 +11,32 @@ import {
   WorkOrderCaseCreateModel,
   WorkOrderCaseForReadModel, WorkOrderCaseUpdateModel,
 } from '../../../../../models';
-import { FormControl, FormGroup, Validators } from '@angular/forms';
+import {FormControl, FormGroup, Validators, ReactiveFormsModule} from '@angular/forms';
 import { Subscription} from 'rxjs';
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
-import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialog, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {AddPictureDialogComponent} from 'src/app/common/modules/eform-cases/components';
 import {Overlay} from '@angular/cdk/overlay';
 import {Gallery, GalleryItem, ImageItem} from 'ng-gallery';
 import {Lightbox} from 'ng-gallery/lightbox';
+import {NgIf, NgFor, AsyncPipe} from '@angular/common';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatCard, MatCardContent, MatCardFooter, MatCardImage} from '@angular/material/card';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {MatTooltip} from '@angular/material/tooltip';
+import {AuthImagePipe} from 'src/app/common/pipes';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-task-management-create-show-modal',
+    imports: [NgIf, NgFor, AsyncPipe, ReactiveFormsModule, TranslatePipe, MatIcon, MatIconButton, MatCard, MatCardContent, MatFormField, MatLabel, MatInput, MtxSelect, MatTooltip, MatDialogTitle, MatDialogContent, MatDialogActions, AuthImagePipe, MatCardFooter, MatCardImage],
     templateUrl: './task-management-create-show-modal.component.html',
     styleUrls: ['./task-management-create-show-modal.component.scss'],
-    standalone: false
 })
 export class TaskManagementCreateShowModalComponent
   implements OnInit, OnDestroy {

@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {ActivatedRoute, convertToParamMap} from '@angular/router';
 import {BehaviorSubject, Subject, of, throwError} from 'rxjs';
@@ -10,14 +12,14 @@ describe('TailBiteOutbreaksPageComponent', () => {
     {id: 2, parentId: 1, name: 'Stald A', depth: 1, sortOrder: 0, qrCode: 'b', removed: false},
   ]};
   const outbreak = {id: 5, locationId: 2, openedAt: '2026-10-01T06:12:00', assessed: false, openActions: 0, closed: false};
-  let service: {getOutbreaks: jest.Mock; getTree: jest.Mock};
+  let service: {getOutbreaks: Mock; getTree: Mock};
   let params: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
   let component: TailBiteOutbreaksPageComponent;
 
   beforeEach(() => {
     service = {
-      getOutbreaks: jest.fn().mockReturnValue(of({success: true, model: [outbreak]})),
-      getTree: jest.fn().mockReturnValue(of({success: true, model: tree})),
+      getOutbreaks: vi.fn().mockReturnValue(of({success: true, model: [outbreak]})),
+      getTree: vi.fn().mockReturnValue(of({success: true, model: tree})),
     };
     params = new BehaviorSubject(convertToParamMap({propertyId: '3'}));
     TestBed.configureTestingModule({

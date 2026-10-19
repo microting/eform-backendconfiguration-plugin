@@ -14,7 +14,7 @@ import {
 // confirmation dialog. Waiting on visibility each step avoids force-clicks
 // on transitional DOM where the menu has already begun to close.
 async function openActionMenuAndClickDelete(page: Page): Promise<void> {
-  const actionMenu = page.locator('.task-actions').first().locator('#actionMenu');
+  const actionMenu = page.locator('.task-actions').first().locator('[id^="actionMenu"]');
   await expect(actionMenu).toBeVisible({ timeout: 10000 });
   await actionMenu.click();
 

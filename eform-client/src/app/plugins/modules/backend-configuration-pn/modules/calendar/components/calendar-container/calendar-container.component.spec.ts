@@ -1,3 +1,10 @@
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+// ng-gallery (reached through the eform-cases components) throws
+// "Cannot access 'GalleryItemComponent' before initialization" when the Angular test builder loads it
+// unlinked, and the gallery is not under test, so stub it (vi.mock on package specifiers works here).
+vi.mock('ng-gallery', () => ({Gallery: class {}, GalleryModule: class {}, ImageItem: class {}, GALLERY_CONFIG: 'GALLERY_CONFIG'}));
+vi.mock('ng-gallery/lightbox', () => ({Lightbox: class {}, LightboxModule: class {}}));
+import type {Mock} from 'vitest';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialog} from '@angular/material/dialog';
@@ -91,7 +98,7 @@ describe('CalendarContainerComponent', () => {
     // filters, exactly as CalendarStateService.updatePropertyId does.
     stateServiceStub = {
       filters$,
-      updatePropertyId: jest.fn((propertyId: number | null) =>
+      updatePropertyId: vi.fn((propertyId: number | null) =>
         filters$.next({
           ...filters$.value,
           propertyId,
@@ -100,35 +107,35 @@ describe('CalendarContainerComponent', () => {
           activeTeamIds: [],
           activeTagNames: [],
         })),
-      setActiveBoardIds: jest.fn((activeBoardIds: number[]) =>
+      setActiveBoardIds: vi.fn((activeBoardIds: number[]) =>
         filters$.next({...filters$.value, activeBoardIds})),
       // The restore path: writes only what it is given and clears nothing,
       // unlike updatePropertyId above (CalendarStateService.restoreFilters).
-      restoreFilters: jest.fn((partial: any) =>
+      restoreFilters: vi.fn((partial: any) =>
         filters$.next({...filters$.value, ...partial})),
       // Emit, do not just record: ngrx Store.select is synchronous on dispatch,
       // so the component's `currentDate` / `viewMode` (and therefore the
       // ngSwitch that picks the week or the month child) are already updated
       // when updateCurrentDate()/updateViewMode() return. The cross-path tests
       // below depend on exactly that.
-      updateCurrentDate: jest.fn((currentDate: string) =>
+      updateCurrentDate: vi.fn((currentDate: string) =>
         filters$.next({...filters$.value, currentDate})),
-      updateViewMode: jest.fn((viewMode: string) =>
+      updateViewMode: vi.fn((viewMode: string) =>
         filters$.next({...filters$.value, viewMode})),
-      toggleBoard: jest.fn(),
+      toggleBoard: vi.fn(),
       // Emit, like the real (ngrx-backed, synchronous) service: the container
       // dispatches and then calls loadTasks() in the same tick, relying on the
       // filters$ subscription having already written back
       // activeSiteIds/activeTeamIds. A recording-only stub would let a handler
       // that reads stale ids pass.
-      toggleSite: jest.fn((siteId: number) => {
+      toggleSite: vi.fn((siteId: number) => {
         const ids: number[] = filters$.value.activeSiteIds;
         filters$.next({
           ...filters$.value,
           activeSiteIds: ids.includes(siteId) ? ids.filter(id => id !== siteId) : [...ids, siteId],
         });
       }),
-      toggleTeam: jest.fn((teamId: number) => {
+      toggleTeam: vi.fn((teamId: number) => {
         const ids: number[] = filters$.value.activeTeamIds;
         filters$.next({
           ...filters$.value,
@@ -137,12 +144,12 @@ describe('CalendarContainerComponent', () => {
       }),
       // ONE dispatch for both lists, as CalendarStateService.clearAssignees
       // does, and scoped to the assignee filter — boards and tags survive it.
-      clearAssignees: jest.fn(() =>
+      clearAssignees: vi.fn(() =>
         filters$.next({...filters$.value, activeSiteIds: [], activeTeamIds: []})),
       // #1303: the fresh-store branch of CalendarStateService.restoreSavedFilters —
       // read the user's saved settings (real storage helper) and write them
       // through the restore path.
-      restoreSavedFilters: jest.fn((userId: number) => {
+      restoreSavedFilters: vi.fn((userId: number) => {
         const saved = readSavedCalendarFilters(userId);
         if (saved) stateServiceStub.restoreFilters(saved);
       }),
@@ -154,45 +161,44 @@ describe('CalendarContainerComponent', () => {
     weekTasksResponse = {success: true, model: [propertyATask]};
 
     calendarServiceStub = {
-      getBoards: jest.fn((propertyId: number) =>
+      getBoards: vi.fn((propertyId: number) =>
         of(boardsByProperty.get(propertyId) ?? {success: true, model: []})),
-      getTasksForWeek: jest.fn(() => of(weekTasksResponse)),
-      moveTaskWithScope: jest.fn(() => of({success: false, message: 'rejected'})),
-      resizeTask: jest.fn(() => of({success: true})),
+      getTasksForWeek: vi.fn(() => of(weekTasksResponse)),
+      moveTaskWithScope: vi.fn(() => of({success: false, message: 'rejected'})),
+      resizeTask: vi.fn(() => of({success: true})),
     };
     propertiesServiceStub = {
-      getAllPropertiesDictionary: jest.fn().mockReturnValue(of({
+      getAllPropertiesDictionary: vi.fn().mockReturnValue(of({
         success: true,
         model: [
           {id: PROPERTY_A, name: 'Property A', description: ''},
           {id: PROPERTY_B, name: 'Property B', description: ''},
         ],
       })),
-      getLinkedFolderDtos: jest.fn().mockReturnValue(of({
+      getLinkedFolderDtos: vi.fn().mockReturnValue(of({
         success: true,
         model: [{id: 77, name: 'Logbøger', children: []}],
       })),
-      getDeviceUsersFiltered: jest.fn().mockReturnValue(of({
+      getDeviceUsersFiltered: vi.fn().mockReturnValue(of({
         success: true,
         model: [{siteId: 5, fullName: 'Worker A', userFirstName: 'Worker', userLastName: 'A', siteName: 'Worker A'}],
       })),
     };
 
     await TestBed.configureTestingModule({
-      declarations: [CalendarContainerComponent],
-      imports: [TranslateModule.forRoot()],
+      imports: [CalendarContainerComponent, TranslateModule.forRoot()],
       providers: [
-        {provide: MatDialog, useValue: {open: jest.fn().mockReturnValue({afterClosed: () => of(false)})}},
-        {provide: Overlay, useValue: {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}}},
-        {provide: Router, useValue: {navigate: jest.fn()}},
-        {provide: Store, useValue: {select: jest.fn().mockReturnValue(of(false)), dispatch: jest.fn()}},
+        {provide: MatDialog, useValue: {open: vi.fn().mockReturnValue({afterClosed: () => of(false)})}},
+        {provide: Overlay, useValue: {scrollStrategies: {reposition: vi.fn().mockReturnValue({})}}},
+        {provide: Router, useValue: {navigate: vi.fn()}},
+        {provide: Store, useValue: {select: vi.fn().mockReturnValue(of(false)), dispatch: vi.fn()}},
         {provide: BackendConfigurationPnCalendarService, useValue: calendarServiceStub},
         {provide: BackendConfigurationPnPropertiesService, useValue: propertiesServiceStub},
         {provide: CalendarStateService, useValue: stateServiceStub},
         {provide: CalendarLayoutService, useValue: {computeLayout: (tasks: any[]) => tasks}},
-        {provide: ItemsPlanningPnTagsService, useValue: {getPlanningsTags: jest.fn().mockReturnValue(of({success: true, model: []}))}},
-        {provide: BackendConfigurationPnWorkerTagsService, useValue: {getWorkerTags: jest.fn().mockReturnValue(of({success: true, model: []}))}},
-        {provide: EFormService, useValue: {getAll: jest.fn().mockReturnValue(of({success: true, model: {templates: []}}))}},
+        {provide: ItemsPlanningPnTagsService, useValue: {getPlanningsTags: vi.fn().mockReturnValue(of({success: true, model: []}))}},
+        {provide: BackendConfigurationPnWorkerTagsService, useValue: {getWorkerTags: vi.fn().mockReturnValue(of({success: true, model: []}))}},
+        {provide: EFormService, useValue: {getAll: vi.fn().mockReturnValue(of({success: true, model: {templates: []}}))}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
@@ -628,12 +634,12 @@ describe('CalendarContainerComponent', () => {
   // only call it is allowed to make is createBoard.
   describe('duplicating a calendar', () => {
     beforeEach(() => {
-      calendarServiceStub.createBoard = jest.fn().mockReturnValue(of({success: true, model: 99}));
+      calendarServiceStub.createBoard = vi.fn().mockReturnValue(of({success: true, model: 99}));
       // ngx-translate returns the raw key for a key it has no translation for,
       // and does NOT interpolate it — which would make every generated name the
       // same string. Interpolate here so the assertions are on the name a user
       // would actually get.
-      jest.spyOn(TestBed.inject(TranslateService), 'instant').mockImplementation(
+      vi.spyOn(TestBed.inject(TranslateService), 'instant').mockImplementation(
         ((key: string, params?: Record<string, unknown>) =>
           params ? key.replace(/\{\{(\w+)}}/g, (_m, n) => String(params[n] ?? '')) : key) as any);
     });
@@ -685,7 +691,7 @@ describe('CalendarContainerComponent', () => {
     // dropdown, but the user only has to reopen it — the latch is the guard.
     it('ignores a second Duplicate while the first POST is still in flight', () => {
       const pendingPost = new Subject<any>();
-      calendarServiceStub.createBoard = jest.fn().mockReturnValue(pendingPost);
+      calendarServiceStub.createBoard = vi.fn().mockReturnValue(pendingPost);
       const row = {id: 10, name: 'Default', color: '#123456', propertyId: PROPERTY_A};
 
       component.onDuplicateBoard(row);
@@ -708,7 +714,7 @@ describe('CalendarContainerComponent', () => {
     });
 
     it('re-arms when the POST itself fails, so the user can retry', () => {
-      calendarServiceStub.createBoard = jest.fn().mockReturnValue(of({success: false, message: 'boom'}));
+      calendarServiceStub.createBoard = vi.fn().mockReturnValue(of({success: false, message: 'boom'}));
       const row = {id: 10, name: 'Default', color: '#123456', propertyId: PROPERTY_A};
 
       component.onDuplicateBoard(row);
@@ -741,7 +747,7 @@ describe('CalendarContainerComponent', () => {
   describe('refetching after a calendar edit or delete', () => {
     it('loads the week exactly once after a successful edit', () => {
       const dialog = TestBed.inject(MatDialog);
-      (dialog.open as jest.Mock).mockReturnValue({afterClosed: () => of(true)});
+      (dialog.open as Mock).mockReturnValue({afterClosed: () => of(true)});
       calendarServiceStub.getTasksForWeek.mockClear();
 
       component.onEditBoard({id: 10, name: 'Default', color: '#123456', propertyId: PROPERTY_A});
@@ -751,7 +757,7 @@ describe('CalendarContainerComponent', () => {
 
     it('loads the week exactly once after a successful delete', () => {
       const dialog = TestBed.inject(MatDialog);
-      (dialog.open as jest.Mock).mockReturnValue({afterClosed: () => of(true)});
+      (dialog.open as Mock).mockReturnValue({afterClosed: () => of(true)});
       calendarServiceStub.getTasksForWeek.mockClear();
 
       component.onDeleteBoard({id: 10, name: 'Default', color: '#123456', propertyId: PROPERTY_A});
@@ -875,7 +881,7 @@ describe('CalendarContainerComponent', () => {
 
       component.onCreateBoard();
 
-      const [, config] = (dialog.open as jest.Mock).mock.calls[0];
+      const [, config] = (dialog.open as Mock).mock.calls[0];
       expect(config.data.propertyId).toBe(PROPERTY_A);
       expect(config.data.boards).toBe(component.boards);
       expect(config.data.board).toBeUndefined();
@@ -887,7 +893,7 @@ describe('CalendarContainerComponent', () => {
 
       component.onEditBoard(row);
 
-      const [, config] = (dialog.open as jest.Mock).mock.calls[0];
+      const [, config] = (dialog.open as Mock).mock.calls[0];
       expect(config.data.board).toBe(row);
       expect(config.data.boards).toBe(component.boards);
     });
@@ -903,7 +909,7 @@ describe('CalendarContainerComponent', () => {
 
       component.onDeleteBoard(row);
 
-      const [, config] = (dialog.open as jest.Mock).mock.calls[0];
+      const [, config] = (dialog.open as Mock).mock.calls[0];
       expect(config.data.board).toBe(row);
       expect(config.data.boardCount).toBe(component.boards.length);
     });
@@ -913,7 +919,7 @@ describe('CalendarContainerComponent', () => {
     // set is "no filter", which is the right resting state here.
     it('drops the deleted calendar from the active filter before refetching', () => {
       const dialog = TestBed.inject(MatDialog);
-      (dialog.open as jest.Mock).mockReturnValue({afterClosed: () => of(true)});
+      (dialog.open as Mock).mockReturnValue({afterClosed: () => of(true)});
       stateServiceStub.setActiveBoardIds([10, 11]);
       stateServiceStub.setActiveBoardIds.mockClear();
 
@@ -925,7 +931,7 @@ describe('CalendarContainerComponent', () => {
 
     it('leaves the filter alone when the deleted calendar was not in it', () => {
       const dialog = TestBed.inject(MatDialog);
-      (dialog.open as jest.Mock).mockReturnValue({afterClosed: () => of(true)});
+      (dialog.open as Mock).mockReturnValue({afterClosed: () => of(true)});
       stateServiceStub.setActiveBoardIds([11]);
       stateServiceStub.setActiveBoardIds.mockClear();
 
@@ -1149,7 +1155,7 @@ describe('CalendarContainerComponent', () => {
 
     afterEach(() => {
       window.localStorage.clear();
-      jest.restoreAllMocks();
+      vi.restoreAllMocks();
     });
 
     it('restores the saved property, calendar, worker and week when all still exist', () => {
@@ -1243,7 +1249,7 @@ describe('CalendarContainerComponent', () => {
     });
 
     it('behaves as a first visit when storage throws', () => {
-      jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('SecurityError'); });
+      vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('SecurityError'); });
 
       expect(() => freshLoad()).not.toThrow();
       expect(component.currentPropertyId).toBe(PROPERTY_A);
@@ -1267,7 +1273,7 @@ describe('CalendarContainerComponent', () => {
   // ids that the property does not offer are pruned so the grid cannot be silently
   // narrowed to nothing. Team NAMES (tiles, modal fallback) stay installation-wide.
   describe('property-scoped teams (#1256)', () => {
-    let workerTags: {getWorkerTags: jest.Mock};
+    let workerTags: {getWorkerTags: Mock};
     const TEAM_ON_A = {id: 7, name: 'Team A'};
     const TEAM_ON_B = {id: 8, name: 'Team B'};
     const TEAM_ELSEWHERE = {id: 9, name: 'Team elsewhere'};
@@ -1446,21 +1452,21 @@ describe('CalendarContainerComponent', () => {
       beforeEach(() => {
         openedData = [];
         const strategy: any = {};
-        strategy.withPositions = jest.fn(() => strategy);
-        strategy.withPush = jest.fn(() => strategy);
-        strategy.withFlexibleDimensions = jest.fn(() => strategy);
-        strategy.withViewportMargin = jest.fn(() => strategy);
+        strategy.withPositions = vi.fn(() => strategy);
+        strategy.withPush = vi.fn(() => strategy);
+        strategy.withFlexibleDimensions = vi.fn(() => strategy);
+        strategy.withViewportMargin = vi.fn(() => strategy);
         const overlay = TestBed.inject(Overlay) as any;
-        overlay.position = jest.fn(() => ({flexibleConnectedTo: jest.fn(() => strategy)}));
-        overlay.create = jest.fn(() => ({
-          attach: jest.fn((portal: any) => {
+        overlay.position = vi.fn(() => ({flexibleConnectedTo: vi.fn(() => strategy)}));
+        overlay.create = vi.fn(() => ({
+          attach: vi.fn((portal: any) => {
             openedData.push(portal.injector.get(MAT_DIALOG_DATA));
             return {instance: {timeChanged: new Subject<any>(), popoverClose: new Subject<any>()}};
           }),
           backdropClick: () => new Subject<any>(),
           detachments: () => new Subject<any>(),
           overlayElement: null,
-          dispose: jest.fn(),
+          dispose: vi.fn(),
         }));
       });
 

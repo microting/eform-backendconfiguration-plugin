@@ -14,7 +14,6 @@ import {MatButtonModule} from '@angular/material/button';
 import {MatDialogModule} from '@angular/material/dialog';
 
 @NgModule({
-  declarations: [CompliancesContainerComponent, CompliancesTableComponent, ComplianceDeleteComponent],
   imports: [
     CommonModule,
     TranslateModule,
@@ -24,6 +23,9 @@ import {MatDialogModule} from '@angular/material/dialog';
     MtxGridModule,
     MatButtonModule,
     MatDialogModule,
+    CompliancesContainerComponent,
+    CompliancesTableComponent,
+    ComplianceDeleteComponent,
   ],
   providers: [],
 })

@@ -5,13 +5,14 @@ import {
   inject
 } from '@angular/core';
 import { PropertyModel } from '../../../../models';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
+import {TranslatePipe} from '@ngx-translate/core';
 
 @Component({
     selector: 'app-property-delete-modal',
+    imports: [TranslatePipe, MatDialogTitle, MatDialogContent, MatDialogActions],
     templateUrl: './property-delete-modal.component.html',
     styleUrls: ['./property-delete-modal.component.scss'],
-    standalone: false
 })
 export class PropertyDeleteModalComponent implements OnInit {
   public dialogRef = inject(MatDialogRef<PropertyDeleteModalComponent>);

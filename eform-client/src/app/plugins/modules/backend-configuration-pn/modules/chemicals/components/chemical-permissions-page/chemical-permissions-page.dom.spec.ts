@@ -1,3 +1,4 @@
+import {describe, it, expect, afterEach, vi} from 'vitest';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {FormsModule} from '@angular/forms';
@@ -12,6 +13,8 @@ import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {selectChemicalsProperties} from '../../../../state';
 import {NO_CHEMICAL_FLAGS} from '../../helpers';
 import {ChemicalPermissionsPageComponent} from './chemical-permissions-page.component';
+import {detectChanges} from '../../../../testing/detect-changes';
+import {CommonModule} from '@angular/common';
 
 /**
  * Template-level checks for W4. Material checkboxes and form fields are unknown
@@ -26,28 +29,30 @@ describe('ChemicalPermissionsPageComponent (template)', () => {
 
   function render(properties: Array<{id: number; name: string}>): void {
     TestBed.configureTestingModule({
-      declarations: [ChemicalPermissionsPageComponent],
-      imports: [FormsModule, MatMenuModule, NoopAnimationsModule, TranslateModule.forRoot()],
+      imports: [ChemicalPermissionsPageComponent, FormsModule, MatMenuModule, NoopAnimationsModule, TranslateModule.forRoot()],
       providers: [
-        {provide: Store, useValue: {select: jest.fn().mockImplementation((selector) =>
+        {provide: Store, useValue: {select: vi.fn().mockImplementation((selector) =>
           selector === selectChemicalsProperties
             ? of(properties.map((p) => ({...p, description: ''})))
             : new BehaviorSubject<number | null>(3))}},
         {provide: BackendConfigurationPnChemicalsService, useValue: {
-          getPermissions: jest.fn().mockReturnValue(of({success: true, model: [
+          getPermissions: vi.fn().mockReturnValue(of({success: true, model: [
             {workerId: 1, workerName: 'Jens Hansen', flags: flags({view: true})},
             {workerId: 2, workerName: 'Ole Nielsen', flags: flags({})},
           ]})),
-          savePermissions: jest.fn(),
+          savePermissions: vi.fn(),
         }},
-        {provide: MatDialog, useValue: {open: jest.fn()}},
-        {provide: ToastrService, useValue: {success: jest.fn(), info: jest.fn(), error: jest.fn()}},
+        {provide: MatDialog, useValue: {open: vi.fn()}},
+        {provide: ToastrService, useValue: {success: vi.fn(), info: vi.fn(), error: vi.fn()}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
-    });
+    })
+      // Keep the scope these specs were written for (the old TestBed module), not the
+      // component's own Material imports.
+      .overrideComponent(ChemicalPermissionsPageComponent, {set: {imports: [CommonModule, FormsModule, MatMenuModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}});
     fixture = TestBed.createComponent(ChemicalPermissionsPageComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    detectChanges(fixture);
   }
 
   afterEach(() => fixture?.destroy());
@@ -58,7 +63,7 @@ describe('ChemicalPermissionsPageComponent (template)', () => {
     expect(before).not.toBeNull();
 
     component.toggle(component.rows[0], 'stock');
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     expect(find('#chemicalPermissionRow-1')).toBe(before);
   });
@@ -66,14 +71,14 @@ describe('ChemicalPermissionsPageComponent (template)', () => {
   it('locks the matrix, Save and Undo while a copy is in flight (Copilot C-2)', () => {
     render([{id: 3, name: 'Hovedgården'}]);
     component.toggle(component.rows[0], 'stock');
-    fixture.detectChanges();
+    detectChanges(fixture);
     const disabled = (selector: string) => (find(selector) as unknown as {disabled: boolean}).disabled;
     expect(disabled('#chemicalPermission-view-1')).toBe(false);
     expect(disabled('#chemicalPermissionsSaveBtn')).toBe(false);
     expect(disabled('#chemicalPermissionsUndoBtn')).toBe(false);
 
     component.copying = true;
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     expect(disabled('#chemicalPermission-view-1')).toBe(true);
     expect(disabled('#chemicalPermission-admin-1')).toBe(true);
@@ -84,7 +89,7 @@ describe('ChemicalPermissionsPageComponent (template)', () => {
   it('draws implied flags with the dashed "Følger af Admin" style (m-1)', () => {
     render([{id: 3, name: 'Hovedgården'}]);
     component.toggle(component.rows[0], 'admin');
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     expect(find('#chemicalPermission-stock-1')?.classList.contains('flag-checkbox--implied')).toBe(true);
     expect(find('#chemicalPermission-admin-1')?.classList.contains('flag-checkbox--implied')).toBe(false);
@@ -95,7 +100,7 @@ describe('ChemicalPermissionsPageComponent (template)', () => {
     expect(find('#chemicalPermissionsNoMatch')).toBeNull();
 
     component.search = 'zzz';
-    fixture.detectChanges();
+    detectChanges(fixture);
 
     expect(find('#chemicalPermissionsNoMatch')).not.toBeNull();
     expect(find('#chemicalPermissionRow-1')).toBeNull();

@@ -1,10 +1,11 @@
 import {Component, EventEmitter, Input, Output,} from '@angular/core';
+import {TranslatePipe} from '@ngx-translate/core';
 
 @Component({
     selector: 'app-file-create-drop-zone',
+    imports: [TranslatePipe],
     templateUrl: './file-create-drop-zone.component.html',
     styleUrls: ['./file-create-drop-zone.component.scss'],
-    standalone: false
 })
 export class FileCreateDropZoneComponent {
   @Input() mimePdfType = 'application/pdf';

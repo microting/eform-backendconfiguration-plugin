@@ -6,19 +6,27 @@ import {FilesCreateModel} from '../../../../../../models';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {SharedTagModel} from 'src/app/common/models';
 import {MatDialog} from '@angular/material/dialog';
-import {FileCreateZoomPageComponent} from '../../';
+import {FileCreateZoomPageComponent} from '../file-create-zoom-page/file-create-zoom-page.component';
 import {PDFDocument, PDFPage} from 'pdf-lib';
 import {Overlay} from '@angular/cdk/overlay';
-import {DragulaService} from 'ng2-dragula';
+import {DragulaService, DragulaModule} from 'ng2-dragula';
 import {Subscription} from 'rxjs';
+import {NgIf, NgFor} from '@angular/common';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton, MatButton} from '@angular/material/button';
+import {MatCard, MatCardContent, MatCardTitle, MatCardFooter} from '@angular/material/card';
+import {MatTooltip} from '@angular/material/tooltip';
+import {MtxProgress} from '@ng-matero/extensions/progress';
+import {PdfViewerModule} from 'ng2-pdf-viewer';
 import * as R from 'ramda';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-file-create-edit-file',
+    imports: [NgIf, NgFor, TranslatePipe, MatIcon, MatIconButton, MatButton, MatCard, MatCardContent, MatCardTitle, MatTooltip, MatCardFooter, MtxProgress, PdfViewerModule, DragulaModule],
     templateUrl: './file-create-edit-file.component.html',
     styleUrls: ['./file-create-edit-file.component.scss'],
-    standalone: false
 })
 export class FileCreateEditFileComponent implements OnChanges, OnDestroy {
   private dragulaService = inject(DragulaService);
@@ -80,7 +88,7 @@ export class FileCreateEditFileComponent implements OnChanges, OnDestroy {
   deletePage(indexPage: number) {
     this.fileAsPdfDocument.removePage(indexPage);
     this.fileAsPdfDocument.save().then(async x => {
-      this.file.file = new File([x], this.file.file.name, {type: this.file.file.type});
+      this.file.file = new File([x as BlobPart], this.file.file.name, {type: this.file.file.type});
       this.file.src = x;
       this.fileAsPdfDocument = await PDFDocument.load(x);
       this.pagesInFile = R.range(0, this.fileAsPdfDocument.getPages().length);
@@ -121,7 +129,7 @@ export class FileCreateEditFileComponent implements OnChanges, OnDestroy {
       R.sortBy(x => x.newPosition, differentPages).forEach(x => this.fileAsPdfDocument.insertPage(x.newPosition, x.page));
       // save changes in file
       this.fileAsPdfDocument.save().then(x => {
-        this.file.file = new File([x], this.file.file.name, {type: this.file.file.type});
+        this.file.file = new File([x as BlobPart], this.file.file.name, {type: this.file.file.type});
         this.file.src = x;
         this.file.tagIds = this.selectedTags;
         this.file.propertyIds = this.selectedProperties;

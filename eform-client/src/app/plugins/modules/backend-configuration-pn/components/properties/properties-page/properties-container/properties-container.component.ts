@@ -6,13 +6,11 @@ import {Subject, Subscription} from 'rxjs';
 import {EntityItemModel, Paged} from 'src/app/common/models';
 import {AppMenuStateService, AuthStateService} from 'src/app/common/store';
 import {Router} from '@angular/router';
-import {
-  PropertyCreateModalComponent,
-  PropertyDeleteModalComponent,
-  PropertyDocxReportModalComponent,
-  PropertyEditModalComponent,
-  AreaRuleEntityListModalComponent
-} from '../../../';
+import {PropertyCreateModalComponent} from '../../property-actions/property-create-modal/property-create-modal.component';
+import {PropertyDeleteModalComponent} from '../../property-actions/property-delete-modal/property-delete-modal.component';
+import {PropertyDocxReportModalComponent} from '../../property-actions/property-docx-report-modal/property-docx-report-modal.component';
+import {PropertyEditModalComponent} from '../../property-actions/property-edit-modal/property-edit-modal.component';
+import {AreaRuleEntityListModalComponent} from '../../../area-rule-entity-list-modal/area-rule-entity-list-modal.component';
 import {
   PropertyCreateModel,
   PropertyModel,
@@ -23,19 +21,27 @@ import {PropertiesStateService} from '../../store';
 import {debounceTime} from 'rxjs/operators';
 import {EntitySelectService} from 'src/app/common/services';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {selectPropertiesNameFilters} from "src/app/plugins/modules/backend-configuration-pn/state";
 import {Store} from "@ngrx/store";
+import {NgIf, AsyncPipe} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {MatIcon} from '@angular/material/icon';
+import {MatCard} from '@angular/material/card';
+import {MatFormField, MatLabel, MatSuffix} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MatTooltip} from '@angular/material/tooltip';
+import {PropertiesTableComponent} from '../properties-table/properties-table.component';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-properties-container',
+    imports: [NgIf, AsyncPipe, FormsModule, TranslatePipe, MatIcon, MatCard, MatFormField, MatLabel, MatSuffix, MatInput, MatTooltip, PropertiesTableComponent],
     templateUrl: './properties-container.component.html',
     styleUrls: ['./properties-container.component.scss'],
-    standalone: false
 })
 export class PropertiesContainerComponent implements OnInit, OnDestroy {
   private store = inject(Store);

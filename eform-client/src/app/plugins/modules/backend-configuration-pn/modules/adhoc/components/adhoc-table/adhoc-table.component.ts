@@ -1,6 +1,6 @@
 import {Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject} from '@angular/core';
-import {MtxGridColumn} from '@ng-matero/extensions/grid';
-import {TranslateService} from '@ngx-translate/core';
+import {MtxGridColumn, MtxGrid} from '@ng-matero/extensions/grid';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {Sort} from '@angular/material/sort';
 import {Store} from '@ngrx/store';
 import {AdhocTaskModel} from '../../../../models';
@@ -21,6 +21,13 @@ import {
   resolveTagNames,
   resolveWorkerName,
 } from '../../adhoc-display.util';
+import {NgIf, NgFor, NgSwitch, NgSwitchCase, NgSwitchDefault, AsyncPipe, DatePipe} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton, MatButton} from '@angular/material/button';
+import {MatTooltip} from '@angular/material/tooltip';
+import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
+import {MatCheckbox} from '@angular/material/checkbox';
+import {MatChip} from '@angular/material/chips';
 
 /**
  * "Adhoc overblik" table (M5/F5) - mtx-grid over the current page of
@@ -38,9 +45,9 @@ import {
  */
 @Component({
   selector: 'app-adhoc-table',
+  imports: [NgIf, NgFor, NgSwitch, NgSwitchCase, NgSwitchDefault, AsyncPipe, DatePipe, TranslatePipe, MatIcon, MatIconButton, MatButton, MtxGrid, MatTooltip, MatMenu, MatMenuItem, MatMenuTrigger, MatCheckbox, MatChip],
   templateUrl: './adhoc-table.component.html',
   styleUrls: ['./adhoc-table.component.scss'],
-  standalone: false,
 })
 export class AdhocTableComponent implements OnChanges {
   private store = inject(Store);

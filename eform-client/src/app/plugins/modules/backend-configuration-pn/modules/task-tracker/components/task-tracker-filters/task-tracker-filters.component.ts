@@ -7,26 +7,28 @@ import {
   inject
 } from '@angular/core';
 import {TaskTrackerStateService} from '../store';
-import {FormControl, FormGroup} from '@angular/forms';
+import {FormControl, FormGroup, ReactiveFormsModule} from '@angular/forms';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription, take} from 'rxjs';
 import {
   BackendConfigurationPnPropertiesService,
 } from '../../../../services';
 import {CommonDictionaryModel} from 'src/app/common/models';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {tap} from 'rxjs/operators';
 import {Store} from '@ngrx/store';
 import {
   selectTaskTrackerFilters
 } from '../../../../state/task-tracker/task-tracker.selector';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MtxSelect} from '@ng-matero/extensions/select';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-task-tracker-filters',
+    imports: [ReactiveFormsModule, TranslatePipe, MatFormField, MatLabel, MtxSelect],
     templateUrl: './task-tracker-filters.component.html',
     styleUrls: ['./task-tracker-filters.component.scss'],
-    standalone: false
 })
 export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
   private store = inject(Store);

@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {Subject, of, throwError} from 'rxjs';
@@ -5,7 +7,7 @@ import {BackendConfigurationPnTailBiteService} from '../../../../services';
 import {TailBiteManagersDialogComponent} from './tail-bite-managers-dialog.component';
 
 describe('TailBiteManagersDialogComponent', () => {
-  let service: Record<string, jest.Mock>;
+  let service: Record<string, Mock>;
   let component: TailBiteManagersDialogComponent;
   let enabled: boolean;
 
@@ -13,7 +15,7 @@ describe('TailBiteManagersDialogComponent', () => {
     TestBed.configureTestingModule({
       providers: [
         {provide: BackendConfigurationPnTailBiteService, useValue: service},
-        {provide: MatDialogRef, useValue: {close: jest.fn()}},
+        {provide: MatDialogRef, useValue: {close: vi.fn()}},
         {provide: MAT_DIALOG_DATA, useValue: {propertyId}},
       ],
     });
@@ -24,18 +26,18 @@ describe('TailBiteManagersDialogComponent', () => {
   beforeEach(() => {
     enabled = false;
     service = {
-      getProperties: jest.fn().mockImplementation(() => of({success: true, model: [
+      getProperties: vi.fn().mockImplementation(() => of({success: true, model: [
         {propertyId: 1, name: 'Ejendom Nord', enabled: true},
         {propertyId: 2, name: 'Ejendom Syd', enabled},
       ]})),
-      getWorkers: jest.fn().mockReturnValue(of({success: true, model: [
+      getWorkers: vi.fn().mockReturnValue(of({success: true, model: [
         {siteId: 7, name: 'Jane Doe', isManager: false, propertyWorkerIds: [31, 32]},
       ]})),
-      enable: jest.fn().mockImplementation(() => {
+      enable: vi.fn().mockImplementation(() => {
         enabled = true;
         return of({success: true});
       }),
-      setManager: jest.fn().mockReturnValue(of({success: true})),
+      setManager: vi.fn().mockReturnValue(of({success: true})),
     };
   });
 

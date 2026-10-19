@@ -1,3 +1,4 @@
+import {describe, it, expect} from 'vitest';
 import {addRecipients, normalizeRecipient} from './chemical-recipients.helper';
 
 describe('digest recipients helper', () => {

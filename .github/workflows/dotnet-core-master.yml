@@ -90,7 +90,8 @@ jobs:
       id: pw
       run: |
         cd eform-angular-frontend/eform-client
-        VER=$(awk -F'"' '/^"@playwright\/test@/{b=1} b&&/^  version/{print $2; exit}' yarn.lock)
+        # Yarn 1: `  version "1.x.y"`; Yarn 4 (berry): `  version: 1.x.y`
+        VER=$(awk '/^"?@playwright\/test@/{b=1} b&&/^  version/{v=$0; sub(/^  version:? +/,"",v); gsub(/"/,"",v); print v; exit}' yarn.lock)
         if [ -z "$VER" ]; then
           echo "::error::Could not resolve @playwright/test version from yarn.lock"
           exit 1
@@ -209,6 +210,8 @@ jobs:
         path: ~/.cache/yarn
         key: ${{ runner.os }}-yarn-${{ hashFiles('eform-angular-frontend/eform-client/yarn.lock') }}
         restore-keys: ${{ runner.os }}-yarn-
+    - name: Enable Corepack
+      run: corepack enable
     - name: yarn install
       run: cd eform-angular-frontend/eform-client && yarn install
     - name: Cache Playwright browsers
@@ -361,6 +364,8 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: 22
+    - name: Enable Corepack
+      run: corepack enable
     - name: yarn install
       run: cd eform-angular-frontend/eform-client && yarn install
     - name: Button conventions
@@ -370,4 +375,4 @@ jobs:
       # over its own module, or nothing checks these buttons at all.
       run: cd eform-angular-frontend/eform-client && node scripts/check-button-conventions.js src/app/plugins/modules/backend-configuration-pn
     - name: Run backend-configuration-pn unit tests
-      run: cd eform-angular-frontend/eform-client && npx jest --ci --maxWorkers=2 "src/app/plugins/modules/backend-configuration-pn/"
+      run: cd eform-angular-frontend/eform-client && npx ng test --watch=false --include='src/app/plugins/modules/backend-configuration-pn/**/*.spec.ts'

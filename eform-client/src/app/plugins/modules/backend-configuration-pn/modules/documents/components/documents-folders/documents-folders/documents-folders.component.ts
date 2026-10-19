@@ -9,25 +9,28 @@ import {
 import {
   Paged,
 } from 'src/app/common/models';
-import {
-  DocumentsFolderCreateComponent,
-  DocumentsFolderEditComponent,
-  DocumentsFolderDeleteComponent
-} from '../';
+import {DocumentsFolderCreateComponent} from '../documents-folder-create/documents-folder-create.component';
+import {DocumentsFolderEditComponent} from '../documents-folder-edit/documents-folder-edit.component';
+import {DocumentsFolderDeleteComponent} from '../documents-folder-delete/documents-folder-delete.component';
 import {DocumentFolderModel, DocumentFolderRequestModel} from '../../../../../models';
 import {BackendConfigurationPnDocumentsService} from '../../../../../services';
-import {MatDialog, MatDialogRef} from '@angular/material/dialog';
+import {MatDialog, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Store} from "@ngrx/store";
+import {NgFor} from '@angular/common';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatTooltip} from '@angular/material/tooltip';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-documents-folders',
+    imports: [NgFor, TranslatePipe, MatIcon, MatIconButton, MatTooltip, MatDialogTitle, MatDialogContent, MatDialogActions],
     templateUrl: './documents-folders.component.html',
     styleUrls: ['./documents-folders.component.scss'],
-    standalone: false
 })
 export class DocumentsFoldersComponent implements OnInit, OnDestroy {
   private store = inject(Store);

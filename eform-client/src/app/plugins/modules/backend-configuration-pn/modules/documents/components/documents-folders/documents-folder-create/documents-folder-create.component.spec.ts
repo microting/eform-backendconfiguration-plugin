@@ -1,3 +1,4 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {of} from 'rxjs';
 import {MatDialogRef} from '@angular/material/dialog';
@@ -16,12 +17,12 @@ describe('DocumentsFolderCreateComponent', () => {
   let toastrSpy: any;
 
   beforeEach(() => {
-    dialogRefSpy = {close: jest.fn()};
-    documentsServiceSpy = {createFolder: jest.fn()};
-    toastrSpy = {error: jest.fn()};
+    dialogRefSpy = {close: vi.fn()};
+    documentsServiceSpy = {createFolder: vi.fn()};
+    toastrSpy = {error: vi.fn()};
     TestBed.configureTestingModule({
       providers: [
-        {provide: Store, useValue: {select: jest.fn().mockReturnValue(of(1))}},
+        {provide: Store, useValue: {select: vi.fn().mockReturnValue(of(1))}},
         {provide: BackendConfigurationPnDocumentsService, useValue: documentsServiceSpy},
         {provide: ToastrService, useValue: toastrSpy},
         {provide: TranslateService, useValue: {instant: (key: string) => key}},

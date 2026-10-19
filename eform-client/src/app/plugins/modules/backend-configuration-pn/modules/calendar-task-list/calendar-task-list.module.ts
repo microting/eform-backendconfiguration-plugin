@@ -36,8 +36,6 @@ import {
     MtxGridModule,
     MtxSelectModule,
     CalendarModule,
-  ],
-  declarations: [
     CalendarTaskListPageComponent,
     CalendarTaskListFiltersComponent,
     CalendarTaskListTableComponent,

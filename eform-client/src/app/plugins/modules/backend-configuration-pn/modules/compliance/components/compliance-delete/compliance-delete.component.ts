@@ -1,16 +1,16 @@
 import {Component, OnInit,
   inject
 } from '@angular/core';
-import {TranslateService} from '@ngx-translate/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogActions} from '@angular/material/dialog';
 import {ComplianceModel} from 'src/app/plugins/modules/backend-configuration-pn/models';
 import {BackendConfigurationPnCompliancesService} from 'src/app/plugins/modules/backend-configuration-pn/services';
 
 @Component({
     selector: 'app-compliance-delete',
+    imports: [TranslatePipe, MatDialogTitle, MatDialogActions],
     templateUrl: './compliance-delete.component.html',
     styleUrls: ['./compliance-delete.component.scss'],
-    standalone: false
 })
 export class ComplianceDeleteComponent implements OnInit {
   private service = inject(BackendConfigurationPnCompliancesService);

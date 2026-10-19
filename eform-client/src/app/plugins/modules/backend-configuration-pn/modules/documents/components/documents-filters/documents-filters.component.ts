@@ -6,7 +6,7 @@ import {
   Output,
   inject
 } from '@angular/core';
-import {FormControl, FormGroup} from '@angular/forms';
+import {FormControl, FormGroup, ReactiveFormsModule} from '@angular/forms';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
 import {CommonDictionaryModel} from 'src/app/common/models';
@@ -18,13 +18,16 @@ import {
   DocumentsFiltrationModel,
   updateDocumentsFilters
 } from '../../../../state';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MtxSelect} from '@ng-matero/extensions/select';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-documents-filters',
+    imports: [ReactiveFormsModule, TranslatePipe, MatFormField, MatLabel, MtxSelect],
     templateUrl: './documents-filters.component.html',
     styleUrls: ['./documents-filters.component.scss'],
-    standalone: false
 })
 export class DocumentsFiltersComponent implements OnInit, OnDestroy {
   private store = inject(Store);

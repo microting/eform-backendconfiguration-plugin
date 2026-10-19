@@ -1,6 +1,6 @@
 import {Component, ElementRef, HostListener, OnChanges, OnDestroy, OnInit, Input, SimpleChanges} from '@angular/core';
-import {FormControl} from '@angular/forms';
-import {TranslateService} from '@ngx-translate/core';
+import {FormControl, FormsModule, ReactiveFormsModule} from '@angular/forms';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {MatDialog} from '@angular/material/dialog';
 import {ComponentType} from '@angular/cdk/portal';
 import {Overlay} from '@angular/cdk/overlay';
@@ -13,6 +13,15 @@ import {BackendConfigurationPnAdhocService} from '../../../../services';
 import {AdhocStateService} from '../store';
 import {AdhocAreaCreateModalComponent} from '../adhoc-area-create-modal/adhoc-area-create-modal.component';
 import {AdhocAreaAdminModalComponent} from '../adhoc-area-admin-modal/adhoc-area-admin-modal.component';
+import {NgIf, NgFor} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton, MatButton} from '@angular/material/button';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {MatTooltip} from '@angular/material/tooltip';
+import {MatCheckbox} from '@angular/material/checkbox';
+import {MatButtonToggleGroup, MatButtonToggle} from '@angular/material/button-toggle';
 
 interface AdhocStatusOption {
   value: AdhocFiltrationModel['status'];
@@ -39,9 +48,9 @@ interface AdhocStatusOption {
 @AutoUnsubscribe()
 @Component({
   selector: 'app-adhoc-filters',
+  imports: [NgIf, NgFor, FormsModule, ReactiveFormsModule, TranslatePipe, MatIcon, MatIconButton, MatButton, MatFormField, MatLabel, MatInput, MtxSelect, MatTooltip, MatCheckbox, MatButtonToggleGroup, MatButtonToggle],
   templateUrl: './adhoc-filters.component.html',
   styleUrls: ['./adhoc-filters.component.scss'],
-  standalone: false,
 })
 export class AdhocFiltersComponent implements OnInit, OnChanges, OnDestroy {
   @Input() counts = {open: 0, completed: 0, archived: 0};

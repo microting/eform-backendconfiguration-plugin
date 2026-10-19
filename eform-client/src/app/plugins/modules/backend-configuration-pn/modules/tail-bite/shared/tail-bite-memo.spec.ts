@@ -1,8 +1,9 @@
+import {describe, it, expect, vi} from 'vitest';
 import {memoize} from './tail-bite-memo';
 
 describe('memoize', () => {
   it('returns the same result while the dependencies are identical, and recomputes when one changes', () => {
-    const compute = jest.fn((items: number[], id: number | null) => items.filter((n) => n !== id));
+    const compute = vi.fn((items: number[], id: number | null) => items.filter((n) => n !== id));
     const memo = memoize(compute);
     const items = [1, 2, 3];
 

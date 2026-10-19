@@ -13,19 +13,20 @@ import {
   ViewChild,
   ViewEncapsulation,
 } from '@angular/core';
-import {CdkDragEnd, CdkDragMove} from '@angular/cdk/drag-drop';
+import {CdkDragEnd, CdkDragMove, CdkDropList} from '@angular/cdk/drag-drop';
 import {interval, Subject} from 'rxjs';
 import {startWith, takeUntil} from 'rxjs/operators';
 import {boardTextColor, CalendarBoardModel, CalendarTaskLayoutModel, CalendarTaskModel} from '../../../../models/calendar';
 import {CommonDictionaryModel} from 'src/app/common/models';
-import {HOUR_HEIGHT, TaskResizePayload} from '../calendar-task-block/calendar-task-block.component';
-import {MtxGridColumn} from '@ng-matero/extensions/grid';
-import {TranslateService} from '@ngx-translate/core';
+import {HOUR_HEIGHT, TaskResizePayload, CalendarTaskBlockComponent} from '../calendar-task-block/calendar-task-block.component';
+import {MtxGridColumn, MtxGrid} from '@ng-matero/extensions/grid';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {getCurrentLocale} from '../../services/calendar-locale.helper';
+import {NgIf, NgFor, UpperCasePipe} from '@angular/common';
 
 @Component({
-  standalone: false,
   selector: 'app-calendar-week-grid',
+  imports: [NgIf, NgFor, TranslatePipe, MtxGrid, CalendarTaskBlockComponent, CdkDropList, UpperCasePipe],
   templateUrl: './calendar-week-grid.component.html',
   styleUrls: ['./calendar-week-grid.component.scss'],
   encapsulation: ViewEncapsulation.None,

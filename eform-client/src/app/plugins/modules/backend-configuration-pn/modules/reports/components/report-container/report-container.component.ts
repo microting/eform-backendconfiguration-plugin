@@ -13,7 +13,7 @@ import {Router} from '@angular/router';
 import {SharedTagModel,} from 'src/app/common/models';
 import {TemplateFilesService} from 'src/app/common/services';
 import {AuthStateService} from 'src/app/common/store';
-import {ViewportScroller} from '@angular/common';
+import {ViewportScroller, NgIf, NgFor} from '@angular/common';
 import {BackendConfigurationPnReportService} from '../../../../services';
 import {catchError, tap} from 'rxjs/operators';
 import {Store} from '@ngrx/store';
@@ -25,13 +25,15 @@ import {Lightbox} from 'ng-gallery/lightbox';
 import {ReportStateService} from '../store';
 import {TranslateService} from '@ngx-translate/core';
 import { ActivatedRoute } from '@angular/router';
+import {ReportTableComponent} from '../report-table/report-table.component';
+import {ReportHeaderComponent} from '../report-header/report-header.component';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-backend-configuration-pn-report',
+    imports: [NgIf, NgFor, ReportTableComponent, ReportHeaderComponent],
     templateUrl: './report-container.component.html',
     styleUrls: ['./report-container.component.scss'],
-    standalone: false
 })
 export class ReportContainerComponent implements OnInit, OnDestroy {
   private translateService = inject(TranslateService);

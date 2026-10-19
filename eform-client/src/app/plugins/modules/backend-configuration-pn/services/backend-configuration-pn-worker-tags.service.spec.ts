@@ -1,3 +1,4 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {of} from 'rxjs';
 import {
   BackendConfigurationWorkerTagsMethods,
@@ -24,7 +25,7 @@ describe('BackendConfigurationPnWorkerTagsService', () => {
   let apiBaseServiceSpy: any;
 
   beforeEach(() => {
-    apiBaseServiceSpy = {get: jest.fn()};
+    apiBaseServiceSpy = {get: vi.fn()};
     apiBaseServiceSpy.get.mockReturnValue(of({success: true, model: []}));
     service = new BackendConfigurationPnWorkerTagsService(apiBaseServiceSpy);
   });
@@ -39,7 +40,7 @@ describe('BackendConfigurationPnWorkerTagsService', () => {
     expect(url).not.toContain('api/tags');
   });
 
-  it('passes the server list through unchanged (no client-side filtering)', (done) => {
+  it('passes the server list through unchanged (no client-side filtering)', () => new Promise<void>((done) => {
     const model = [{id: 3, name: 'Team A'}, {id: 9, name: 'Team B'}];
     apiBaseServiceSpy.get.mockReturnValue(of({success: true, model}));
 
@@ -47,7 +48,7 @@ describe('BackendConfigurationPnWorkerTagsService', () => {
       expect(res.model).toEqual(model);
       done();
     });
-  });
+  }));
 
   // #1295: the task modal asks for the property-scoped list.
   it('sends propertyId as a query param when given', () => {

@@ -12,25 +12,29 @@ import {CommonDictionaryModel, LanguagesModel} from 'src/app/common/models';
 import {PropertyAssignmentWorkerModel, DeviceUserModel} from '../../../../models';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
 import {AuthStateService} from 'src/app/common/store';
-import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog';
-import {MtxGridColumn} from '@ng-matero/extensions/grid';
-import {MtxSelect} from '@ng-matero/extensions/select';
-import {TranslateService} from '@ngx-translate/core';
+import {MAT_DIALOG_DATA, MatDialog, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
+import {MtxGridColumn, MtxGrid} from '@ng-matero/extensions/grid';
+import {MtxSelect, MtxSelectLabelTemplate, MtxSelectOptionTemplate, MtxSelectHeaderTemplate} from '@ng-matero/extensions/select';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {debounceTime, filter, first, startWith, switchMap, tap} from 'rxjs/operators';
 import {AppSettingsStateService} from 'src/app/modules/application-settings/components/store';
 import {TimePlanningPnSettingsService, TimePlanningPnPayRuleSetsService} from 'src/app/plugins/modules/time-planning-pn/services';
-import {
-  AbstractControl,
-  FormBuilder,
-  FormControl,
-  FormGroup,
-  ValidationErrors,
-  ValidatorFn,
-  Validators
-} from '@angular/forms';
+import {AbstractControl, FormBuilder, FormControl, FormGroup, ValidationErrors, ValidatorFn, Validators, ReactiveFormsModule} from '@angular/forms';
 import validator from 'validator';
 import {AssignedSiteModel, GlobalAutoBreakSettingsModel, PayRuleSetSimpleModel} from 'src/app/plugins/modules/time-planning-pn/models';
 import {PayRuleSetsViewModalComponent} from 'src/app/plugins/modules/time-planning-pn/modules/pay-rule-sets/components/pay-rule-sets-view-modal/pay-rule-sets-view-modal.component';
+import {NgIf, NgFor} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton, MatButton} from '@angular/material/button';
+import {MatFormField, MatLabel, MatError, MatHint, MatSuffix} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MatTooltip} from '@angular/material/tooltip';
+import {MatDatepicker, MatDatepickerInput, MatDatepickerToggle} from '@angular/material/datepicker';
+import {MatCheckbox} from '@angular/material/checkbox';
+import {MatSlideToggle} from '@angular/material/slide-toggle';
+import {MatRadioGroup, MatRadioButton} from '@angular/material/radio';
+import {MatTabGroup, MatTab} from '@angular/material/tabs';
+import {NgxMaterialTimepickerModule} from 'ngx-material-timepicker';
 
 // Invisible formatting and control characters (U+200E left-to-right mark,
 // zero-width spaces, byte-order marks, ...) that copy-paste brings along. In an
@@ -44,9 +48,9 @@ export function cleanWorkerEmail(email: string | null | undefined): string {
 @AutoUnsubscribe()
 @Component({
     selector: 'app-property-worker-create-edit-modal',
+    imports: [NgIf, NgFor, ReactiveFormsModule, TranslatePipe, MatIcon, MatIconButton, MatButton, MatFormField, MatLabel, MatError, MatHint, MatSuffix, MatInput, MtxSelect, MtxSelectLabelTemplate, MtxSelectOptionTemplate, MtxGrid, MatTooltip, MatDialogTitle, MatDialogContent, MatDialogActions, MatDatepicker, MatDatepickerInput, MatDatepickerToggle, MatCheckbox, MatSlideToggle, MatRadioGroup, MatRadioButton, MatTabGroup, MatTab, NgxMaterialTimepickerModule, MtxSelectHeaderTemplate],
     templateUrl: './property-worker-create-edit-modal.component.html',
     styleUrls: ['./property-worker-create-edit-modal.component.scss'],
-    standalone: false
 })
 export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);

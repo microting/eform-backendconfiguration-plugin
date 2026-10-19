@@ -1,8 +1,8 @@
 import {Overlay} from '@angular/cdk/overlay';
 import {Component, ElementRef, Input, NgZone, OnDestroy, OnInit, TemplateRef, ViewChild} from '@angular/core';
-import {MatDialog, MatDialogRef} from '@angular/material/dialog';
-import {TranslateService} from '@ngx-translate/core';
-import {MtxGridColumn, MtxGridRowClassFormatter} from '@ng-matero/extensions/grid';
+import {MatDialog, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
+import {MtxGridColumn, MtxGridRowClassFormatter, MtxGrid} from '@ng-matero/extensions/grid';
 import {Subject, merge, of} from 'rxjs';
 import {
   catchError,
@@ -55,6 +55,10 @@ import {
   nextComplianceReportRowKey,
 } from '../../helpers';
 import {ComplianceReportStateService} from '../../store';
+import {NgIf, NgFor} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatTooltip} from '@angular/material/tooltip';
 
 /**
  * The Billeder cell's two i18n keys, held as constants because the plural one
@@ -198,8 +202,8 @@ interface ComplianceReportRowVm {
  * (`COMPLIANCE_REPORT_PAGE_ROW_BUDGET`).
  */
 @Component({
-  standalone: false,
   selector: 'app-compliance-report-view',
+  imports: [NgIf, NgFor, TranslatePipe, MatIcon, MatIconButton, MtxGrid, MatTooltip, MatDialogTitle, MatDialogContent, MatDialogActions],
   templateUrl: './compliance-report-view.component.html',
   styleUrls: ['./compliance-report-view.component.scss'],
 })

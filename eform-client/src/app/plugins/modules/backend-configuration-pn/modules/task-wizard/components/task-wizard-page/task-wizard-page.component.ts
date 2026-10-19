@@ -12,7 +12,7 @@ import {PlannedTaskWorkers, TaskWizardCreateModel, TaskWizardEditModel, TaskWiza
 import {TaskWizardStateService} from '../store';
 import {DeleteModalComponent} from 'src/app/common/modules/eform-shared/components';
 import {dialogConfigHelper, findFullNameById} from 'src/app/common/helpers';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {MatDialog, MatDialogRef, MatDialogState} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {AppSettingsStateService} from 'src/app/modules/application-settings/components/store';
@@ -33,13 +33,20 @@ import {
   selectTaskWizardPropertyIds
 } from '../../../../state';
 import {RepeatTypeEnum, TaskWizardStatusesEnum} from "src/app/plugins/modules/backend-configuration-pn/enums";
+import {NgIf, AsyncPipe} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatCard} from '@angular/material/card';
+import {MatTooltip} from '@angular/material/tooltip';
+import {PlannedTaskWorkersComponent} from '../../../statistics/components/planned-task-workers/planned-task-workers.component';
+import {TaskWizardFiltersComponent} from '../task-wizard-filters/task-wizard-filters.component';
+import {TaskWizardTableComponent} from '../task-wizard-table/task-wizard-table.component';
 
 @AutoUnsubscribe()
 @Component({
   selector: 'app-task-wizard-page',
+  imports: [NgIf, AsyncPipe, TranslatePipe, MatIcon, MatCard, MatTooltip, PlannedTaskWorkersComponent, TaskWizardFiltersComponent, TaskWizardTableComponent, PlanningTagsComponent],
   templateUrl: './task-wizard-page.component.html',
   styleUrls: ['./task-wizard-page.component.scss'],
-  standalone: false
 })
 export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit {
   private store = inject(Store);

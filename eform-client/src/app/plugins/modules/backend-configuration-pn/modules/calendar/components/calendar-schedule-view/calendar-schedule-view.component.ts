@@ -1,7 +1,9 @@
 import {Component, EventEmitter, Input, OnChanges, Output} from '@angular/core';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {CalendarBoardModel, CalendarTaskLayoutModel} from '../../../../models/calendar';
 import {getCurrentLocale} from '../../services/calendar-locale.helper';
+import {NgIf, NgFor} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
 
 interface ScheduleGroup {
   dateLabel: string;
@@ -9,8 +11,8 @@ interface ScheduleGroup {
 }
 
 @Component({
-  standalone: false,
   selector: 'app-calendar-schedule-view',
+  imports: [NgIf, NgFor, TranslatePipe, MatIcon],
   templateUrl: './calendar-schedule-view.component.html',
   styleUrls: ['./calendar-schedule-view.component.scss'],
 })

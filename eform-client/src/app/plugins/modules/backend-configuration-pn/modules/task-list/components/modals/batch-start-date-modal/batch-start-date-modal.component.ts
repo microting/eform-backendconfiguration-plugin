@@ -1,5 +1,5 @@
 import {Component, Inject, OnDestroy} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {Subject, Subscription, of} from 'rxjs';
 import {catchError, debounceTime, switchMap} from 'rxjs/operators';
 import {
@@ -7,6 +7,12 @@ import {
   TaskListBatchStartDatePreviewModel,
 } from '../../../../../services';
 import {TaskListBatchModalData} from '../../task-list-page/task-list-page.component';
+import {NgIf, NgFor} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatFormField, MatLabel, MatSuffix} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MatDatepicker, MatDatepickerInput, MatDatepickerToggle} from '@angular/material/datepicker';
 
 /**
  * Batch "change start date" modal (#1122) — re-anchors every selected task's
@@ -51,8 +57,8 @@ import {TaskListBatchModalData} from '../../task-list-page/task-list-page.compon
 type PreviewState = 'idle' | 'loading' | 'resolved' | 'failed';
 
 @Component({
-  standalone: false,
   selector: 'app-batch-start-date-modal',
+  imports: [NgIf, NgFor, FormsModule, TranslatePipe, MatFormField, MatLabel, MatSuffix, MatInput, MatDialogTitle, MatDialogContent, MatDialogActions, MatDatepicker, MatDatepickerInput, MatDatepickerToggle],
   templateUrl: './batch-start-date-modal.component.html',
 })
 export class BatchStartDateModalComponent implements OnDestroy {

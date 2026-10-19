@@ -164,7 +164,7 @@ test.describe('Area rules type 1', () => {
     await expect(page.locator('.cdk-row')).toHaveCount(1, { timeout: 30000 });
 
     // Open action menu and click Edit Task
-    const actionMenuBtn1 = page.locator('[id^=action-items]').first().locator('#actionMenu');
+    const actionMenuBtn1 = page.locator('[id^=action-items]').first().locator('[id^="actionMenu"]');
     await expect(actionMenuBtn1).toBeVisible();
     await actionMenuBtn1.click({ force: true });
     await page.waitForTimeout(400); // animation settle: mat-menu open
@@ -195,7 +195,7 @@ test.describe('Area rules type 1', () => {
     );
 
     // Open action menu and click Edit Task again
-    const actionMenuBtn2 = page.locator('[id^=action-items]').first().locator('#actionMenu');
+    const actionMenuBtn2 = page.locator('[id^=action-items]').first().locator('[id^="actionMenu"]');
     await expect(actionMenuBtn2).toBeVisible();
     await actionMenuBtn2.click({ force: true });
     await page.waitForTimeout(400); // animation settle: mat-menu open

@@ -1,3 +1,4 @@
+import {describe, it, expect} from 'vitest';
 import {computeCopyDate} from './calendar-copy-date.helper';
 
 // All `now` fixtures use local-time constructor so that getDay/getHours align

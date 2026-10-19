@@ -1,9 +1,14 @@
 import {Component, Inject, OnInit} from '@angular/core';
-import {AbstractControl, FormBuilder, FormGroup, ValidationErrors, ValidatorFn, Validators} from '@angular/forms';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {AbstractControl, FormBuilder, FormGroup, ValidationErrors, ValidatorFn, Validators, ReactiveFormsModule} from '@angular/forms';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {CalendarBoardModel, CALENDAR_COLORS} from '../../../../models/calendar';
 import {BackendConfigurationPnCalendarService} from '../../../../services';
 import {isDuplicateBoardName} from '../../services/calendar-board-name.helper';
+import {NgIf, NgFor} from '@angular/common';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatIcon} from '@angular/material/icon';
+import {MatFormField} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
 
 /**
  * `Validators.required` accepts "   " — it only rejects null/undefined/''. The
@@ -36,8 +41,8 @@ export interface BoardCreateEditModalData {
  * guard — see `calendar-board-name.helper.ts` for why that guard is UI-level.
  */
 @Component({
-  standalone: false,
   selector: 'app-board-create-edit-modal',
+  imports: [NgIf, NgFor, ReactiveFormsModule, TranslatePipe, MatIcon, MatFormField, MatInput, MatDialogTitle, MatDialogContent, MatDialogActions],
   templateUrl: './board-create-edit-modal.component.html',
   styles: [`
     .field-label {

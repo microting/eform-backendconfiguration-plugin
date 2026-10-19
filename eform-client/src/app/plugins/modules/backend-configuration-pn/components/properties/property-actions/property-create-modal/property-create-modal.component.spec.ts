@@ -1,3 +1,5 @@
+import {describe, it, expect, afterEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {FormBuilder} from '@angular/forms';
 import {MatDialogRef} from '@angular/material/dialog';
@@ -16,19 +18,19 @@ import {PropertyCreateModalComponent} from './property-create-modal.component';
  * Dansk=3, English=6, Deutsch=9, so the app-locale ids 1/2/3 must be resolved by code.
  */
 describe('PropertyCreateModalComponent — property languages (#8141)', () => {
-  let toastr: {error: jest.Mock};
+  let toastr: {error: Mock};
 
   function create(languages$: any): {component: PropertyCreateModalComponent; emitted: PropertyCreateModel[]} {
-    toastr = {error: jest.fn()};
+    toastr = {error: vi.fn()};
     TestBed.configureTestingModule({
       providers: [
         FormBuilder,
         {provide: AuthStateService, useValue: {}},
         {provide: BackendConfigurationPnPropertiesService, useValue: {}},
-        {provide: MatDialogRef, useValue: {close: jest.fn()}},
+        {provide: MatDialogRef, useValue: {close: vi.fn()}},
         {provide: ToastrService, useValue: toastr},
         {provide: TranslateService, useValue: {instant: (k: string) => k}},
-        {provide: AppSettingsStateService, useValue: {getLanguages: jest.fn().mockReturnValue(languages$)}},
+        {provide: AppSettingsStateService, useValue: {getLanguages: vi.fn().mockReturnValue(languages$)}},
       ],
     });
     const component = TestBed.runInInjectionContext(() => new PropertyCreateModalComponent());

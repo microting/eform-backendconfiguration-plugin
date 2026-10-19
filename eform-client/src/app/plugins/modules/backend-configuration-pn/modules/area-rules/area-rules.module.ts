@@ -28,13 +28,6 @@ import {MatTableModule} from '@angular/material/table';
 import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
 
 @NgModule({
-  declarations: [
-    AreaRulesContainerComponent,
-    AreaRulesTableComponent,
-    AreaRuleCreateModalComponent,
-    AreaRuleEditModalComponent,
-    AreaRuleDeleteModalComponent,
-  ],
   imports: [
     CommonModule,
     TranslateModule,
@@ -59,6 +52,11 @@ import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
     MatMenuTrigger,
     MatMenu,
     MatMenuItem,
+    AreaRulesContainerComponent,
+    AreaRulesTableComponent,
+    AreaRuleCreateModalComponent,
+    AreaRuleEditModalComponent,
+    AreaRuleDeleteModalComponent,
   ],
 })
 export class AreaRulesModule {

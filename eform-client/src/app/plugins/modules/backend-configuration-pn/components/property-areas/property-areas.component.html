@@ -30,7 +30,7 @@
 <ng-template #actionsTpl let-row let-i="index">
   <div class="">
     <button
-      id="navigateToPropertyArea"
+      id="navigateToPropertyArea{{i}}"
       mat-icon-button
       (click)="this.router.navigate(['../../area-rules/', row.id, this.selectedProperty.id], {relativeTo: this.route})"
       matTooltip="{{'Show cases' | translate}}"

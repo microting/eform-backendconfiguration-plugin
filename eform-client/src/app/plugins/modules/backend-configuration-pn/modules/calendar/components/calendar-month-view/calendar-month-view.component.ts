@@ -1,7 +1,8 @@
 import {Component, EventEmitter, Input, OnChanges, Output} from '@angular/core';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {boardTextColor, CalendarTaskLayoutModel} from '../../../../models/calendar';
 import {getCurrentLocale} from '../../services/calendar-locale.helper';
+import {NgIf, NgFor} from '@angular/common';
 
 interface MonthDay {
   dateIso: string;
@@ -22,8 +23,8 @@ interface MonthWeek {
 // gutter. Task chips are deliberately passive (spec: "KUN EN VISNING") — the
 // only interactions are the week/day/Tidsplan click-throughs.
 @Component({
-  standalone: false,
   selector: 'app-calendar-month-view',
+  imports: [NgIf, NgFor, TranslatePipe],
   templateUrl: './calendar-month-view.component.html',
   styleUrls: ['./calendar-month-view.component.scss'],
 })

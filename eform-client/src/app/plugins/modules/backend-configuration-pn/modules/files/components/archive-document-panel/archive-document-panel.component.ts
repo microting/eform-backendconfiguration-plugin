@@ -1,7 +1,7 @@
 import {
   AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild,
 } from '@angular/core';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {Observable, concat, defaultIfEmpty, defer, map, takeWhile, toArray} from 'rxjs';
 import {CommonDictionaryModel, OperationResult, SharedTagModel} from 'src/app/common/models';
 import {ArchiveFolderModel, ArchiveNamedItem, DocumentDateState, FileModel} from '../../../../models';
@@ -20,6 +20,16 @@ import {
   panelValueOf,
 } from '../../../../helpers';
 import {ArchiveMoveFlowService} from '../../services/archive-move-flow.service';
+import {NgIf, DatePipe} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {ArchiveFolderPickerComponent} from '../archive-folder-picker/archive-folder-picker.component';
+import {PdfViewerModule} from 'ng2-pdf-viewer';
+import {CdkTrapFocus} from '@angular/cdk/a11y';
 
 export interface ArchivePanelSaved {
   fileId: number;
@@ -34,8 +44,8 @@ export interface ArchivePanelSaved {
  */
 @Component({
   selector: 'app-archive-document-panel',
+  imports: [NgIf, DatePipe, FormsModule, TranslatePipe, MatIcon, MatIconButton, MatFormField, MatLabel, MatInput, MtxSelect, ArchiveFolderPickerComponent, PdfViewerModule, CdkTrapFocus],
   templateUrl: './archive-document-panel.component.html',
-  standalone: false,
 })
 export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Input() fileId!: number;

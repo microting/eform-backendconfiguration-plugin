@@ -162,8 +162,8 @@ test.describe('Area rules type 1', () => {
 
     // Open action menu and click Edit Task
     const editBtn1 = await getActionButtonForRow(page, task.translations[0], 'editTaskBtn', true);
-    await expect(page.locator('.task-actions').first().locator('#actionMenu')).toBeVisible();
-    await page.locator('.task-actions').first().locator('#actionMenu').click({ force: true });
+    await expect(page.locator('.task-actions').first().locator('[id^="actionMenu"]')).toBeVisible();
+    await page.locator('.task-actions').first().locator('[id^="actionMenu"]').click({ force: true });
     await page.waitForTimeout(400); // animation settle: mat-menu open
     await expect(editBtn1).toBeVisible();
     await editBtn1.click({ force: true });
@@ -193,8 +193,8 @@ test.describe('Area rules type 1', () => {
 
     // Open action menu and click Edit Task again
     const editBtn2 = await getActionButtonForRow(page, task.translations[0], 'editTaskBtn', true);
-    await expect(page.locator('.task-actions').first().locator('#actionMenu')).toBeVisible();
-    await page.locator('.task-actions').first().locator('#actionMenu').click({ force: true });
+    await expect(page.locator('.task-actions').first().locator('[id^="actionMenu"]')).toBeVisible();
+    await page.locator('.task-actions').first().locator('[id^="actionMenu"]').click({ force: true });
     await page.waitForTimeout(400); // animation settle: mat-menu open
     await expect(editBtn2).toBeVisible();
     await editBtn2.click({ force: true });

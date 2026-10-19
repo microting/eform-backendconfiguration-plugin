@@ -1,3 +1,4 @@
+import {describe, it, expect} from 'vitest';
 import {assigneeDisplayNames, mapRepeatType, mapResponseToCalendarTask} from './calendar-task.mapper';
 import {CalendarTaskModel} from '../../../models/calendar';
 

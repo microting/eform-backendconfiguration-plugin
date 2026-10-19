@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {TranslateModule} from '@ngx-translate/core';
@@ -10,8 +12,8 @@ describe('CalendarTaskListTableComponent', () => {
   let component: CalendarTaskListTableComponent;
   let fixture: ComponentFixture<CalendarTaskListTableComponent>;
   let repeatServiceStub: {
-    reconstructMetaFromTask: jest.Mock;
-    formatCustomRepeatLabel: jest.Mock;
+    reconstructMetaFromTask: Mock;
+    formatCustomRepeatLabel: Mock;
   };
 
   const properties: CommonDictionaryModel[] = [
@@ -50,14 +52,13 @@ describe('CalendarTaskListTableComponent', () => {
 
   beforeEach(async () => {
     repeatServiceStub = {
-      reconstructMetaFromTask: jest.fn(),
+      reconstructMetaFromTask: vi.fn(),
       // Ignore the locale arg so getCurrentLocale(translate) can't affect output.
-      formatCustomRepeatLabel: jest.fn().mockReturnValue('Ugentligt hver mandag'),
+      formatCustomRepeatLabel: vi.fn().mockReturnValue('Ugentligt hver mandag'),
     };
 
     await TestBed.configureTestingModule({
-      declarations: [CalendarTaskListTableComponent],
-      imports: [TranslateModule.forRoot()],
+      imports: [CalendarTaskListTableComponent, TranslateModule.forRoot()],
       providers: [{provide: CalendarRepeatService, useValue: repeatServiceStub}],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();

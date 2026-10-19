@@ -1,3 +1,4 @@
+import {describe, it, expect, vi} from 'vitest';
 import {FormBuilder} from '@angular/forms';
 import {of, throwError} from 'rxjs';
 import {CALENDAR_COLORS} from '../../../../models/calendar';
@@ -28,8 +29,8 @@ function make(data: Partial<BoardCreateEditModalData>, service: any) {
 
 function serviceStub(overrides: Partial<Record<'createBoard' | 'updateBoard', any>> = {}) {
   return {
-    createBoard: jest.fn().mockReturnValue(of({success: true, model: 1})),
-    updateBoard: jest.fn().mockReturnValue(of({success: true, model: 1})),
+    createBoard: vi.fn().mockReturnValue(of({success: true, model: 1})),
+    updateBoard: vi.fn().mockReturnValue(of({success: true, model: 1})),
     ...overrides,
   } as any;
 }
@@ -197,7 +198,7 @@ describe('BoardCreateEditModalComponent', () => {
 
   describe('failure and double-submit', () => {
     it('stays open and re-arms the button when the server rejects the save', () => {
-      const service = serviceStub({createBoard: jest.fn().mockReturnValue(of({success: false, message: 'nope'}))});
+      const service = serviceStub({createBoard: vi.fn().mockReturnValue(of({success: false, message: 'nope'}))});
       const {component, closed} = make({}, service);
 
       component.form.patchValue({name: 'Drift'});
@@ -208,7 +209,7 @@ describe('BoardCreateEditModalComponent', () => {
     });
 
     it('stays open and re-arms the button when the request errors', () => {
-      const service = serviceStub({createBoard: jest.fn().mockReturnValue(throwError(() => new Error('boom')))});
+      const service = serviceStub({createBoard: vi.fn().mockReturnValue(throwError(() => new Error('boom')))});
       const {component, closed} = make({}, service);
 
       component.form.patchValue({name: 'Drift'});
@@ -224,7 +225,7 @@ describe('BoardCreateEditModalComponent', () => {
     it('ignores a second click while the first request is still in flight', () => {
       let emit: ((v: unknown) => void) | null = null;
       const service = serviceStub({
-        createBoard: jest.fn().mockReturnValue({subscribe: (o: any) => {emit = o.next;}}),
+        createBoard: vi.fn().mockReturnValue({subscribe: (o: any) => {emit = o.next;}}),
       });
       const {component} = make({}, service);
 

@@ -3,7 +3,7 @@ import {Component, EventEmitter, Input, OnDestroy, OnInit, Output,
 } from '@angular/core';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import {FormControl, FormGroup} from '@angular/forms';
+import {FormControl, FormGroup, ReactiveFormsModule} from '@angular/forms';
 import {Subscription, take, tap} from 'rxjs';
 import {
   PropertyWorkersStateService
@@ -13,13 +13,17 @@ import {
   selectPropertyWorkersFilters,
   propertyWorkersUpdateFilters
 } from '../../../../state';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatFormField, MatLabel} from '@angular/material/form-field';
+import {MtxSelect} from '@ng-matero/extensions/select';
+import {MatSlideToggle} from '@angular/material/slide-toggle';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-property-worker-filters',
+    imports: [ReactiveFormsModule, TranslatePipe, MatFormField, MatLabel, MtxSelect, MatSlideToggle],
     templateUrl: './property-worker-filters.component.html',
     styleUrls: ['./property-worker-filters.component.scss'],
-    standalone: false
 })
 export class PropertyWorkerFiltersComponent implements OnInit, OnDestroy  {
   private store = inject(Store);

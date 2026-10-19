@@ -1,3 +1,4 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {of} from 'rxjs';
 import {AdhocAreaAdminModalComponent} from './adhoc-area-admin-modal.component';
 
@@ -12,12 +13,12 @@ describe('AdhocAreaAdminModalComponent', () => {
   ];
 
   beforeEach(() => {
-    dialogRefSpy = {close: jest.fn()};
+    dialogRefSpy = {close: vi.fn()};
     adhocStateServiceSpy = {
-      getAreasForProperty: jest.fn(),
-      getCachedAreas: jest.fn(),
-      renameArea: jest.fn(),
-      deleteArea: jest.fn(),
+      getAreasForProperty: vi.fn(),
+      getCachedAreas: vi.fn(),
+      renameArea: vi.fn(),
+      deleteArea: vi.fn(),
     };
     adhocStateServiceSpy.getAreasForProperty.mockReturnValue(of(areas));
     component = new AdhocAreaAdminModalComponent(dialogRefSpy, {propertyId: 1, propertyName: 'Gård Nord'}, adhocStateServiceSpy);

@@ -1,3 +1,4 @@
+import {describe, it, expect} from 'vitest';
 import {buildOutbreakView} from './tail-bite-outbreak-view';
 
 describe('buildOutbreakView', () => {

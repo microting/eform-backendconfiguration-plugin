@@ -24,7 +24,6 @@ import {MatDatepickerModule} from '@angular/material/datepicker';
 import {MatInputModule} from '@angular/material/input';
 import {MatSlideToggleModule} from '@angular/material/slide-toggle';
 import {MatCheckboxModule} from '@angular/material/checkbox';
-import {FormattingTextEditorModule} from 'src/app/common/modules/eform-imported/formatting-text-editor/formatting-text-editor.module';
 import {MatCardModule} from '@angular/material/card';
 import {PlanningsModule} from '../../../items-planning-pn/modules/plannings/plannings.module';
 import {StatisticsModule} from '../statistics/statistics.module';
@@ -53,7 +52,6 @@ import {
     MatInputModule,
     MatSlideToggleModule,
     MatCheckboxModule,
-    FormattingTextEditorModule,
     MatCardModule,
     PlanningsModule,
     StatisticsModule,
@@ -61,8 +59,6 @@ import {
     MatMenuItem,
     MatMenuTrigger,
     FolderTreeSelectComponent,
-  ],
-  declarations: [
     TaskWizardFiltersComponent,
     TaskWizardPageComponent,
     TaskWizardTableComponent,

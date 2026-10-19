@@ -1,7 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {Observable, of} from 'rxjs';
 import {defaultIfEmpty, map} from 'rxjs/operators';
 import {dialogConfigHelper} from 'src/app/common/helpers';
@@ -26,12 +26,17 @@ import {
   TaskCreateEditModalComponent,
   TaskCreateEditModalData,
 } from '../../../calendar/modals/task-create-edit-modal/task-create-edit-modal.component';
+import {MatIcon} from '@angular/material/icon';
+import {MatButton} from '@angular/material/button';
+import {MatCard, MatCardContent} from '@angular/material/card';
+import {CalendarTaskListTableComponent} from '../calendar-task-list-table/calendar-task-list-table.component';
+import {CalendarTaskListFiltersComponent} from '../calendar-task-list-filters/calendar-task-list-filters.component';
 
 @Component({
   selector: 'app-calendar-task-list-page',
+  imports: [TranslatePipe, MatIcon, MatButton, MatCard, MatCardContent, CalendarTaskListTableComponent, CalendarTaskListFiltersComponent],
   templateUrl: './calendar-task-list-page.component.html',
   styleUrls: ['./calendar-task-list-page.component.scss'],
-  standalone: false,
 })
 export class CalendarTaskListPageComponent implements OnInit {
   properties: CommonDictionaryModel[] = [];

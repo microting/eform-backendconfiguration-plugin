@@ -1,3 +1,4 @@
+import {describe, it, expect, vi} from 'vitest';
 import {of, throwError} from 'rxjs';
 import {BoardDeleteModalComponent, BoardDeleteModalData} from './board-delete-modal.component';
 
@@ -18,8 +19,8 @@ function make(data: Partial<BoardDeleteModalData>, service: any) {
 
 function serviceStub(overrides: Record<string, any> = {}) {
   return {
-    getBoardEventCount: jest.fn().mockReturnValue(of({success: true, model: 12})),
-    deleteBoard: jest.fn().mockReturnValue(of({success: true, model: 1})),
+    getBoardEventCount: vi.fn().mockReturnValue(of({success: true, model: 12})),
+    deleteBoard: vi.fn().mockReturnValue(of({success: true, model: 1})),
     ...overrides,
   } as any;
 }
@@ -44,7 +45,7 @@ describe('BoardDeleteModalComponent', () => {
 
     it('still enables Delete when the count call fails — it only annotates the dialog', () => {
       const service = serviceStub({
-        getBoardEventCount: jest.fn().mockReturnValue(throwError(() => new Error('boom'))),
+        getBoardEventCount: vi.fn().mockReturnValue(throwError(() => new Error('boom'))),
       });
       const {component} = make({}, service);
 
@@ -56,7 +57,7 @@ describe('BoardDeleteModalComponent', () => {
 
     it('leaves the count at zero when the server answers unsuccessfully', () => {
       const service = serviceStub({
-        getBoardEventCount: jest.fn().mockReturnValue(of({success: false, message: 'nope'})),
+        getBoardEventCount: vi.fn().mockReturnValue(of({success: false, message: 'nope'})),
       });
       const {component} = make({}, service);
 
@@ -105,7 +106,7 @@ describe('BoardDeleteModalComponent', () => {
   describe('when the cascade aborts', () => {
     it('keeps the dialog open, surfaces the failure and re-arms the button', () => {
       const service = serviceStub({
-        deleteBoard: jest.fn().mockReturnValue(of({success: false, message: 'series delete failed'})),
+        deleteBoard: vi.fn().mockReturnValue(of({success: false, message: 'series delete failed'})),
       });
       const {component, closed} = make({}, service);
       component.ngOnInit();
@@ -119,7 +120,7 @@ describe('BoardDeleteModalComponent', () => {
 
     it('treats a transport error the same way', () => {
       const service = serviceStub({
-        deleteBoard: jest.fn().mockReturnValue(throwError(() => new Error('boom'))),
+        deleteBoard: vi.fn().mockReturnValue(throwError(() => new Error('boom'))),
       });
       const {component, closed} = make({}, service);
       component.ngOnInit();
@@ -132,7 +133,7 @@ describe('BoardDeleteModalComponent', () => {
     });
 
     it('lets the user retry, and clears the failure notice while the retry runs', () => {
-      const deleteBoard = jest.fn()
+      const deleteBoard = vi.fn()
         .mockReturnValueOnce(of({success: false, message: 'series delete failed'}))
         .mockReturnValueOnce(of({success: true, model: 1}));
       const {component, closed} = make({}, serviceStub({deleteBoard}));
@@ -151,7 +152,7 @@ describe('BoardDeleteModalComponent', () => {
     // The cascade is synchronous and can be slow; a second click would fire a
     // second DELETE against a board the first call is still working through.
     it('ignores a second click while the delete is still in flight', () => {
-      const deleteBoard = jest.fn().mockReturnValue({subscribe: () => undefined});
+      const deleteBoard = vi.fn().mockReturnValue({subscribe: () => undefined});
       const {component} = make({}, serviceStub({deleteBoard}));
       component.ngOnInit();
 

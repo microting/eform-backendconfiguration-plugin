@@ -1,8 +1,15 @@
+import {describe, it, expect, afterEach, vi} from 'vitest';
+// ng-gallery (reached through the eform-cases components) throws
+// "Cannot access 'GalleryItemComponent' before initialization" when the Angular test builder loads it
+// unlinked, and the gallery is not under test, so stub it (vi.mock on package specifiers works here).
+vi.mock('ng-gallery', () => ({Gallery: class {}, GalleryModule: class {}, ImageItem: class {}, GALLERY_CONFIG: 'GALLERY_CONFIG'}));
+vi.mock('ng-gallery/lightbox', () => ({Lightbox: class {}, LightboxModule: class {}}));
 import {Component, Input, NO_ERRORS_SCHEMA, QueryList} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {By} from '@angular/platform-browser';
-import {TranslateModule} from '@ngx-translate/core';
+import {NgFor, NgIf} from '@angular/common';
+import {TranslateModule, TranslatePipe} from '@ngx-translate/core';
 import {of} from 'rxjs';
 import {EFormService} from 'src/app/common/services';
 import {
@@ -34,11 +41,11 @@ const WORKERS = [
  * against — delete `[caseId]` from the template and nothing complains, in this
  * suite or in the browser, until a picture upload lands on caseId 0.
  *
- * Declaring the selector makes Angular MATCH this directive instead, so the
- * bound value becomes readable. It renders nothing; the assertion is on the
+ * Putting it in the modal's imports (overrideComponent below) makes Angular
+ * MATCH this stub instead, so the bound value becomes readable. It renders nothing; the assertion is on the
  * component instance, never on the DOM.
  */
-@Component({selector: 'app-case-edit-element', template: '', standalone: false})
+@Component({selector: 'app-case-edit-element', template: ''})
 class StubCaseEditElement {
   @Input() element: any;
   @Input() showSectionTitle: any;
@@ -49,15 +56,15 @@ describe('CalendarCompleteEventModalComponent', () => {
   let fixture: ComponentFixture<CalendarCompleteEventModalComponent>;
   let component: CalendarCompleteEventModalComponent;
 
-  const dialogRef = {close: jest.fn()};
-  const propertiesService = {getLinkedSites: jest.fn()};
-  const calendarService = {prepareComplete: jest.fn()};
-  const compliancesService = {getCase: jest.fn(), updateCaseFromCalendar: jest.fn()};
-  const eFormService = {getSingle: jest.fn()};
-  const casesService = {updateCase: jest.fn()};
+  const dialogRef = {close: vi.fn()};
+  const propertiesService = {getLinkedSites: vi.fn()};
+  const calendarService = {prepareComplete: vi.fn()};
+  const compliancesService = {getCase: vi.fn(), updateCaseFromCalendar: vi.fn()};
+  const eFormService = {getSingle: vi.fn()};
+  const casesService = {updateCase: vi.fn()};
 
   async function setup(data: Partial<CalendarCompleteEventModalData> = {}, assignedSiteId: number | null = null) {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     propertiesService.getLinkedSites.mockReturnValue(of({success: true, model: WORKERS}));
     // Stop the chain right after the worker list loads: this suite is about
     // grouping and gating, not the case-loading pipeline. With an assignedSiteId,
@@ -68,7 +75,10 @@ describe('CalendarCompleteEventModalComponent', () => {
     eFormService.getSingle.mockReturnValue(of({success: false, model: null}));
 
     await TestBed.configureTestingModule({
-      declarations: [CalendarCompleteEventModalComponent, StubCaseEditElement],
+      // The modal itself is deliberately not listed: TestBed would then walk its real
+      // dependency graph, and the host's eform-cases components are circular
+      // (element-container renders the case-edit switch again), which yields an
+      // undefined import. Its imports are replaced below instead.
       imports: [TranslateModule.forRoot()],
       providers: [
         {provide: MatDialogRef, useValue: dialogRef},
@@ -89,8 +99,13 @@ describe('CalendarCompleteEventModalComponent', () => {
           } as CalendarCompleteEventModalData,
         },
       ],
-      schemas: [NO_ERRORS_SCHEMA],
-    }).compileComponents();
+    })
+      // As before standalone: only the stub is a real child; every other element
+      // stays unknown, which NO_ERRORS_SCHEMA accepts.
+      .overrideComponent(CalendarCompleteEventModalComponent, {
+        set: {imports: [NgIf, NgFor, TranslatePipe, StubCaseEditElement], schemas: [NO_ERRORS_SCHEMA]},
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(CalendarCompleteEventModalComponent);
     component = fixture.componentInstance;

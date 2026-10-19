@@ -1,6 +1,9 @@
 import {Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges} from '@angular/core';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {getCurrentLocale} from '../../services/calendar-locale.helper';
+import {NgFor} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
 
 interface CalendarDay {
   date: Date;
@@ -17,8 +20,8 @@ interface CalendarWeek {
 }
 
 @Component({
-  standalone: false,
   selector: 'app-calendar-mini-calendar',
+  imports: [NgFor, TranslatePipe, MatIcon, MatIconButton],
   templateUrl: './calendar-mini-calendar.component.html',
   styleUrls: ['./calendar-mini-calendar.component.scss'],
 })

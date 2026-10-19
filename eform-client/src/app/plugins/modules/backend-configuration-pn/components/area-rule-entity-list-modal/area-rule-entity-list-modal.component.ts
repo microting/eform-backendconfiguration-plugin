@@ -2,20 +2,23 @@ import {Component, EventEmitter, OnDestroy, OnInit,
   inject
 } from '@angular/core';
 import {EntityItemModel} from 'src/app/common/models';
-import { EntityItemEditNameComponent } from 'src/app/common/modules/eform-shared/components';
+import {EntityItemEditNameComponent, EntityListElementsComponent} from 'src/app/common/modules/eform-shared/components';
 import {EntitySelectService} from 'src/app/common/services';
 import {dialogConfigHelper, getRandomInt} from 'src/app/common/helpers';
-import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialog, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-area-rule-entity-list-modal',
+    imports: [TranslatePipe, MatIcon, MatIconButton, MatDialogTitle, MatDialogContent, MatDialogActions, EntityListElementsComponent],
     templateUrl: './area-rule-entity-list-modal.component.html',
     styleUrls: ['./area-rule-entity-list-modal.component.scss'],
-    standalone: false
 })
 export class AreaRuleEntityListModalComponent implements OnInit, OnDestroy {
   private entitySelectService = inject(EntitySelectService);

@@ -1,3 +1,4 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {Overlay} from '@angular/cdk/overlay';
 import {HttpRequest, HttpResponse} from '@angular/common/http';
 import {ErrorHandler} from '@angular/core';
@@ -69,7 +70,7 @@ describe('TailBiteOutbreakDetailComponent behind the host DateInterceptor', () =
           getOccupancy: () => served(occupancy),
           getRuleHistory: () => served(history),
         }},
-        {provide: MatDialog, useValue: {open: jest.fn()}},
+        {provide: MatDialog, useValue: {open: vi.fn()}},
         {provide: Overlay, useValue: {scrollStrategies: {reposition: () => ({})}}},
         {provide: ErrorHandler, useValue: {handleError: (e: unknown) => errors.push(e)}},
       ],

@@ -1,6 +1,6 @@
 import {Component, OnDestroy, OnInit, inject} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import {ActivatedRoute, Router} from '@angular/router';
+import {ActivatedRoute, Router, RouterOutlet} from '@angular/router';
 import {AppMenuStateService} from 'src/app/common/store';
 import {PaginationModel} from 'src/app/common/models';
 import {Store} from '@ngrx/store';
@@ -17,6 +17,16 @@ import {AdhocDeleteModalComponent} from '../adhoc-delete-modal/adhoc-delete-moda
 import {AdhocCopyModalComponent} from '../adhoc-copy-modal/adhoc-copy-modal.component';
 import {AdhocCompleteModalComponent} from '../adhoc-complete-modal/adhoc-complete-modal.component';
 import {AdhocHistoryComponent} from '../adhoc-history/adhoc-history.component';
+import {NgIf} from '@angular/common';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatCard} from '@angular/material/card';
+import {MatTooltip} from '@angular/material/tooltip';
+import {EformPaginationComponent} from 'src/app/common/modules/eform-shared/components';
+import {AdhocFiltersComponent} from '../adhoc-filters/adhoc-filters.component';
+import {AdhocTableComponent} from '../adhoc-table/adhoc-table.component';
+import {MatButtonToggleGroup, MatButtonToggle} from '@angular/material/button-toggle';
 
 export type AdhocViewMode = 'list' | 'history';
 
@@ -31,9 +41,9 @@ export type AdhocViewMode = 'list' | 'history';
 @AutoUnsubscribe()
 @Component({
   selector: 'app-adhoc-container',
+  imports: [NgIf, TranslatePipe, RouterOutlet, MatIcon, MatIconButton, MatCard, MatTooltip, EformPaginationComponent, AdhocFiltersComponent, AdhocTableComponent, MatButtonToggleGroup, MatButtonToggle],
   templateUrl: './adhoc-container.component.html',
   styleUrls: ['./adhoc-container.component.scss'],
-  standalone: false
 })
 export class AdhocContainerComponent implements OnInit, OnDestroy {
   private router = inject(Router);

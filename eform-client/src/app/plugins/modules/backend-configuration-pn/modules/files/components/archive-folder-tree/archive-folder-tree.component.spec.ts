@@ -1,3 +1,4 @@
+import {describe, it, expect, afterEach, vi} from 'vitest';
 import {ArchiveFolderTreeComponent} from './archive-folder-tree.component';
 import {ArchiveFolderModel} from '../../../../models';
 import {readCollapsedFolderIds, writeCollapsedFolderIds} from '../../../../helpers';
@@ -62,9 +63,9 @@ describe('ArchiveFolderTreeComponent', () => {
 
   it('accepts a drop only while documents are dragged', () => {
     const tree = create();
-    const dropped = jest.fn();
+    const dropped = vi.fn();
     tree.filesDropped.subscribe(dropped);
-    const event = {preventDefault: jest.fn()} as unknown as DragEvent;
+    const event = {preventDefault: vi.fn()} as unknown as DragEvent;
 
     tree.onDragOver(event, folders[2]);
     expect(event.preventDefault).not.toHaveBeenCalled();

@@ -1,6 +1,6 @@
 import {Component, OnDestroy, OnInit} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {Store} from '@ngrx/store';
 import {Observable, Subject} from 'rxjs';
 import {finalize, take, takeUntil} from 'rxjs/operators';
@@ -8,12 +8,20 @@ import {selectAuthIsAdmin, selectAuthUser} from 'src/app/state/auth/auth.selecto
 import {saveAs} from 'file-saver';
 import {ComplianceReportExportRequestModel} from '../../../../models';
 import {BackendConfigurationPnComplianceReportService} from '../../../../services';
-import {ComplianceExportFormat} from '../compliance-report-filters/compliance-report-filters.component';
+import {ComplianceExportFormat, ComplianceReportFiltersComponent} from '../compliance-report-filters/compliance-report-filters.component';
 import {
   CompliancePdfPreviewDialogComponent,
   CompliancePdfPreviewDialogData,
 } from '../compliance-pdf-preview-dialog/compliance-pdf-preview-dialog.component';
 import {ComplianceMode, ComplianceReportStateService} from '../../store';
+import {NgIf, NgFor, NgSwitch, NgSwitchCase, AsyncPipe} from '@angular/common';
+import {MatButton} from '@angular/material/button';
+import {MatProgressSpinner} from '@angular/material/progress-spinner';
+import {MatCard} from '@angular/material/card';
+import {ComplianceReportViewComponent} from '../compliance-report-view/compliance-report-view.component';
+import {ComplianceDetailsViewComponent} from '../compliance-details-view/compliance-details-view.component';
+import {ComplianceOverviewViewComponent} from '../compliance-overview-view/compliance-overview-view.component';
+import {MatButtonToggleGroup, MatButtonToggle} from '@angular/material/button-toggle';
 
 /**
  * The shell of the standalone Compliance page (#1160 / #1163): filter bar,
@@ -28,8 +36,8 @@ import {ComplianceMode, ComplianceReportStateService} from '../../store';
  * rows to show, and saying so is more honest than a fake placeholder.
  */
 @Component({
-  standalone: false,
   selector: 'app-compliance-report-page',
+  imports: [NgIf, NgFor, NgSwitch, NgSwitchCase, AsyncPipe, TranslatePipe, MatButton, MatProgressSpinner, MatCard, ComplianceReportFiltersComponent, ComplianceReportViewComponent, ComplianceDetailsViewComponent, ComplianceOverviewViewComponent, MatButtonToggleGroup, MatButtonToggle],
   templateUrl: './compliance-report-page.component.html',
   styleUrls: ['./compliance-report-page.component.scss'],
 })

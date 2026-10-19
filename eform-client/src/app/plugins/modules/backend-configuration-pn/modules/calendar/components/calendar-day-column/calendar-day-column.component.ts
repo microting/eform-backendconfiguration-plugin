@@ -1,13 +1,14 @@
 import {Component, EventEmitter, Input, Output} from '@angular/core';
-import {CdkDragDrop} from '@angular/cdk/drag-drop';
+import {CdkDragDrop, CdkDropList} from '@angular/cdk/drag-drop';
 import {CalendarBoardModel, CalendarTaskLayoutModel} from '../../../../models/calendar';
-import {HOUR_HEIGHT} from '../calendar-task-block/calendar-task-block.component';
+import {HOUR_HEIGHT, CalendarTaskBlockComponent} from '../calendar-task-block/calendar-task-block.component';
+import {NgIf, NgFor} from '@angular/common';
 
 const DAY_HEADER_PX = 40;
 
 @Component({
-  standalone: false,
   selector: 'app-calendar-day-column',
+  imports: [NgIf, NgFor, CalendarTaskBlockComponent, CdkDropList],
   templateUrl: './calendar-day-column.component.html',
   styleUrls: ['./calendar-day-column.component.scss'],
 })

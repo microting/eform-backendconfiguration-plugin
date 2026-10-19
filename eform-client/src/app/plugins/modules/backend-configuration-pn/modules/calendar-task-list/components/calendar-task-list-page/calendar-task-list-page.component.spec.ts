@@ -1,3 +1,4 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
@@ -29,42 +30,41 @@ describe('CalendarTaskListPageComponent', () => {
 
   beforeEach(async () => {
     calendarServiceStub = {
-      getTasksIndex: jest.fn().mockReturnValue(of({success: true, model: []})),
-      getBoards: jest.fn().mockReturnValue(of({success: true, model: []})),
+      getTasksIndex: vi.fn().mockReturnValue(of({success: true, model: []})),
+      getBoards: vi.fn().mockReturnValue(of({success: true, model: []})),
     };
     propertiesServiceStub = {
-      getAllPropertiesDictionary: jest.fn().mockReturnValue(of({success: true, model: []})),
-      getDeviceUsersFiltered: jest.fn().mockReturnValue(of({success: true, model: []})),
+      getAllPropertiesDictionary: vi.fn().mockReturnValue(of({success: true, model: []})),
+      getDeviceUsersFiltered: vi.fn().mockReturnValue(of({success: true, model: []})),
       // #1135 — the page resolves the property's Logbøger folder before opening
       // the edit modal. Nested one level down so the recursive search is exercised.
-      getLinkedFolderDtos: jest.fn().mockReturnValue(of({
+      getLinkedFolderDtos: vi.fn().mockReturnValue(of({
         success: true,
         model: [{id: 5, name: 'Property root', children: [{id: 77, name: 'Logbøger', children: []}]}],
       })),
     };
     tagsServiceStub = {
-      getPlanningsTags: jest.fn().mockReturnValue(of({success: true, model: []})),
+      getPlanningsTags: vi.fn().mockReturnValue(of({success: true, model: []})),
     };
     eformServiceStub = {
-      getAll: jest.fn().mockReturnValue(of({success: true, model: {templates: []}})),
+      getAll: vi.fn().mockReturnValue(of({success: true, model: {templates: []}})),
     };
     workerTagsServiceStub = {
-      getWorkerTags: jest.fn().mockReturnValue(of({success: true, model: [{id: 3, name: 'Team A'}]})),
+      getWorkerTags: vi.fn().mockReturnValue(of({success: true, model: [{id: 3, name: 'Team A'}]})),
     };
     afterClosed$ = of(false);
     dialogStub = {
-      open: jest.fn().mockReturnValue({afterClosed: () => afterClosed$}),
+      open: vi.fn().mockReturnValue({afterClosed: () => afterClosed$}),
     };
 
     await TestBed.configureTestingModule({
-      declarations: [CalendarTaskListPageComponent],
-      imports: [TranslateModule.forRoot()],
+      imports: [CalendarTaskListPageComponent, TranslateModule.forRoot()],
       providers: [
         {provide: MatDialog, useValue: dialogStub},
         {
           provide: Overlay,
           // dialogConfigHelper reads overlay.scrollStrategies.reposition().
-          useValue: {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}},
+          useValue: {scrollStrategies: {reposition: vi.fn().mockReturnValue({})}},
         },
         {provide: BackendConfigurationPnCalendarService, useValue: calendarServiceStub},
         {provide: BackendConfigurationPnPropertiesService, useValue: propertiesServiceStub},

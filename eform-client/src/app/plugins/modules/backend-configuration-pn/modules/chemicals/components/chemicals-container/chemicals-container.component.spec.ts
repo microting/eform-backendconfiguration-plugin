@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {DestroyRef, Injector, runInInjectionContext} from '@angular/core';
 import {ActivatedRoute, convertToParamMap, NavigationEnd, Router} from '@angular/router';
 import {Store} from '@ngrx/store';
@@ -13,23 +15,23 @@ describe('ChemicalsContainerComponent', () => {
   let routerEvents$: Subject<unknown>;
   let queryParams: Record<string, string>;
   let childTitleKey: string | undefined;
-  let store: {select: jest.Mock; dispatch: jest.Mock};
-  let properties: {getAllPropertiesDictionary: jest.Mock};
-  let router: {navigate: jest.Mock; events: Subject<unknown>};
+  let store: {select: Mock; dispatch: Mock};
+  let properties: {getAllPropertiesDictionary: Mock};
+  let router: {navigate: Mock; events: Subject<unknown>};
 
   function build(list: Array<{id: number; name: string}>, response?: unknown): ChemicalsContainerComponent {
     store = {
-      select: jest.fn().mockImplementation((selector) =>
+      select: vi.fn().mockImplementation((selector) =>
         selector === selectCurrentUserIsFirstUser ? isFirstUser$ : selectedProperty$),
       // The real store echoes a selection back through selectChemicalsPropertyId.
-      dispatch: jest.fn().mockImplementation((action: {type: string; payload: number | null}) => {
+      dispatch: vi.fn().mockImplementation((action: {type: string; payload: number | null}) => {
         if (action.type === chemicalsSelectProperty.type) {
           selectedProperty$.next(action.payload);
         }
       }),
     };
-    properties = {getAllPropertiesDictionary: jest.fn().mockReturnValue(response ?? of({success: true, model: list}))};
-    router = {navigate: jest.fn().mockResolvedValue(true), events: routerEvents$};
+    properties = {getAllPropertiesDictionary: vi.fn().mockReturnValue(response ?? of({success: true, model: list}))};
+    router = {navigate: vi.fn().mockResolvedValue(true), events: routerEvents$};
     const route = {
       get snapshot() {
         return {queryParamMap: convertToParamMap(queryParams)};
@@ -42,7 +44,7 @@ describe('ChemicalsContainerComponent', () => {
       providers: [
         {provide: Store, useValue: store},
         {provide: BackendConfigurationPnPropertiesService, useValue: properties},
-        {provide: DestroyRef, useValue: {onDestroy: jest.fn()}},
+        {provide: DestroyRef, useValue: {onDestroy: vi.fn()}},
         {provide: Router, useValue: router},
         {provide: ActivatedRoute, useValue: route},
       ],
@@ -228,7 +230,7 @@ describe('ChemicalsContainerComponent', () => {
   describe('a property switch with unsaved edits on the screen (I-3)', () => {
     function withScreen(answer: boolean) {
       const component = build([{id: 7, name: 'Hovedgården'}, {id: 8, name: 'Engvej 12'}]);
-      const screen = {confirmDiscardChanges: jest.fn().mockReturnValue(of(answer))};
+      const screen = {confirmDiscardChanges: vi.fn().mockReturnValue(of(answer))};
       component.onScreenActivate(screen);
       store.dispatch.mockClear();
       router.navigate.mockClear();
@@ -248,7 +250,7 @@ describe('ChemicalsContainerComponent', () => {
     it('stays on the current property and puts the picker back on cancel', () => {
       const {component} = withScreen(false);
 
-      jest.useFakeTimers();
+      vi.useFakeTimers();
 
       component.onPropertyChange(8);
 
@@ -256,8 +258,8 @@ describe('ChemicalsContainerComponent', () => {
       expect(component.propertyId).toBe(7);
       // Put back after a change-detection pass, so the select re-renders the old property.
       expect(component.pickerValue).toBe(8);
-      jest.runAllTimers();
-      jest.useRealTimers();
+      vi.runAllTimers();
+      vi.useRealTimers();
       expect(component.pickerValue).toBe(7);
       expect(router.navigate).not.toHaveBeenCalled();
     });

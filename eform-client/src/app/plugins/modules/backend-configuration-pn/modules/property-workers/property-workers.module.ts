@@ -56,8 +56,6 @@ import {NgxMaterialTimepickerModule} from 'ngx-material-timepicker';
     MatTabGroup,
     EformSharedTagsModule,
     NgxMaterialTimepickerModule,
-  ],
-  declarations: [
     PropertyWorkersPageComponent,
     PropertyWorkerOtpModalComponent,
     PropertyWorkerDeleteModalComponent,

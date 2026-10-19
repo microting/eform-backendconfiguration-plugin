@@ -1,6 +1,9 @@
 import {Component, EventEmitter, Input, Output} from '@angular/core';
-import {CdkDragEnd, CdkDragMove} from '@angular/cdk/drag-drop';
+import {CdkDragEnd, CdkDragMove, CdkDrag, CdkDragHandle, CdkDragPlaceholder} from '@angular/cdk/drag-drop';
 import {boardTextColor, CalendarTaskLayoutModel} from '../../../../models/calendar';
+import {NgIf} from '@angular/common';
+import {TranslatePipe} from '@ngx-translate/core';
+import {MatIcon} from '@angular/material/icon';
 
 export const HOUR_HEIGHT = 65; // px per hour
 
@@ -12,8 +15,8 @@ export interface TaskResizePayload {
 }
 
 @Component({
-  standalone: false,
   selector: 'app-calendar-task-block',
+  imports: [NgIf, TranslatePipe, MatIcon, CdkDrag, CdkDragHandle, CdkDragPlaceholder],
   templateUrl: './calendar-task-block.component.html',
   styleUrls: ['./calendar-task-block.component.scss'],
 })

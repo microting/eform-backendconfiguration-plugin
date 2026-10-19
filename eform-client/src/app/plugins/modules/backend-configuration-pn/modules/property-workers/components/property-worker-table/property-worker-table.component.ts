@@ -2,23 +2,21 @@ import {Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, Si
   inject, ElementRef, AfterViewChecked
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import {MtxGridColumn} from '@ng-matero/extensions/grid';
+import {MtxGridColumn, MtxGrid} from '@ng-matero/extensions/grid';
 import {AppInstallModel, DeviceUserModel, PropertyAssignWorkersModel} from '../../../../models';
 import {APP_INSTALL_STATE_CLASS, APP_INSTALL_STATE_LABEL, appInstallState, AppInstallState} from './app-install-state';
 import {PropertyWorkersStateService} from '../store';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {combineLatest, Subject, Subscription, of} from 'rxjs';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {CommonDictionaryModel, SiteNameDto} from 'src/app/common/models';
 import {Sort} from '@angular/material/sort';
 import {debounceTime, map} from 'rxjs/operators';
-import {
-  PropertyWorkerCreateEditModalComponent,
-  PropertyWorkerDeleteModalComponent,
-  PropertyWorkerOtpModalComponent,
-  PropertyWorkerQrModalComponent,
-} from '../';
+import {PropertyWorkerCreateEditModalComponent} from '../property-worker-create-edit-modal/property-worker-create-edit-modal.component';
+import {PropertyWorkerDeleteModalComponent} from '../property-worker-delete-modal/property-worker-delete-modal.component';
+import {PropertyWorkerOtpModalComponent} from '../property-worker-otp-modal/property-worker-otp-modal.component';
+import {PropertyWorkerQrModalComponent} from '../property-worker-qr-modal/property-worker-qr-modal.component';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {UserSetPasswordComponent} from 'src/app/modules/account-management/components';
 import {AuthService} from 'src/app/common/services';
@@ -37,15 +35,22 @@ import {
 import {format} from 'date-fns';
 import {AuthStateService} from 'src/app/common/store';
 import {AndroidIcon, iOSIcon, PasswordValidationIcon, PdfIcon} from 'src/app/common/const';
-import {MatIconRegistry} from '@angular/material/icon';
+import {MatIconRegistry, MatIcon} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
+import {NgIf, NgFor, NgClass, NgTemplateOutlet, AsyncPipe} from '@angular/common';
+import {RouterLink} from '@angular/router';
+import {MatIconButton} from '@angular/material/button';
+import {MatTooltip} from '@angular/material/tooltip';
+import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
+import {MatChip} from '@angular/material/chips';
+import {EformTagComponent} from 'src/app/common/modules/eform-shared/components';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-property-worker-table',
+    imports: [NgIf, NgFor, NgClass, NgTemplateOutlet, AsyncPipe, TranslatePipe, RouterLink, MatIcon, MatIconButton, MtxGrid, MatTooltip, MatMenu, MatMenuItem, MatMenuTrigger, MatChip, EformTagComponent],
     templateUrl: './property-worker-table.component.html',
     styleUrls: ['./property-worker-table.component.scss'],
-    standalone: false
 })
 export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChanges, AfterViewChecked {
   private store = inject(Store);

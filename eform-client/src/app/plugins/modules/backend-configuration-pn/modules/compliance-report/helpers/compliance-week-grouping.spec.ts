@@ -1,3 +1,4 @@
+import {describe, it, expect} from 'vitest';
 import {ComplianceReportRowModel} from '../../../models';
 import {
   COMPLIANCE_EMPTY_CELL,

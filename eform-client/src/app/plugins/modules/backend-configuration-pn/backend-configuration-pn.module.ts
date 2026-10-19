@@ -119,8 +119,6 @@ import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
     MatMenuItem,
     MatListModule,
     MatProgressSpinnerModule,
-  ],
-  declarations: [
     BackendConfigurationPnLayoutComponent,
     PropertiesContainerComponent,
     PropertyCreateModalComponent,

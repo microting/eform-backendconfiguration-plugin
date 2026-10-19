@@ -1,7 +1,9 @@
 import {Component, Inject, OnInit} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {CalendarBoardModel} from '../../../../models/calendar';
 import {BackendConfigurationPnCalendarService} from '../../../../services';
+import {NgIf} from '@angular/common';
+import {TranslatePipe} from '@ngx-translate/core';
 
 export interface BoardDeleteModalData {
   board: CalendarBoardModel;
@@ -28,8 +30,8 @@ export interface BoardDeleteModalData {
  *    worse than a short wait.
  */
 @Component({
-  standalone: false,
   selector: 'app-board-delete-modal',
+  imports: [NgIf, TranslatePipe, MatDialogTitle, MatDialogContent, MatDialogActions],
   templateUrl: './board-delete-modal.component.html',
   styles: [`
     .board-delete-hint {

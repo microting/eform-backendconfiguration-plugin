@@ -27,7 +27,6 @@ import {MatTooltipModule} from '@angular/material/tooltip';
 import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {MtxGridModule} from '@ng-matero/extensions/grid';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
-import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
 import {EformCasesModule} from 'src/app/common/modules/eform-cases/eform-cases.module';
 import {CasesModule} from 'src/app/modules';
 import {CALENDAR_MAT_DATE_FORMATS} from './calendar-date-formats';
@@ -72,29 +71,6 @@ export {
 };
 
 @NgModule({
-  declarations: [
-    // Components
-    CalendarContainerComponent,
-    CalendarDayColumnComponent,
-    CalendarHeaderComponent,
-    CalendarWeekGridComponent,
-    CalendarTaskBlockComponent,
-    CalendarScheduleViewComponent,
-    CalendarMiniCalendarComponent,
-    CalendarMonthViewComponent,
-    // Modals
-    TaskCreateEditModalComponent,
-    TaskPreviewModalComponent,
-    TaskDeleteModalComponent,
-    RepeatScopeModalComponent,
-    EformChangeScopeModalComponent,
-    CustomRepeatModalComponent,
-    BoardCreateEditModalComponent,
-    BoardDeleteModalComponent,
-    CalendarSelectWorkerModalComponent,
-    CalendarCompleteEventModalComponent,
-    CalendarImageLightboxComponent,
-  ],
   imports: [
     CommonModule,
     FormsModule,
@@ -106,7 +82,6 @@ export {
     OverlayModule,
     PortalModule,
     EformSharedModule,
-    EformImportedModule,
     EformCasesModule,
     CasesModule,
     MatButtonModule,
@@ -128,6 +103,25 @@ export {
     MatTooltipModule,
     MtxSelectModule,
     MtxGridModule,
+    CalendarContainerComponent,
+    CalendarDayColumnComponent,
+    CalendarHeaderComponent,
+    CalendarWeekGridComponent,
+    CalendarTaskBlockComponent,
+    CalendarScheduleViewComponent,
+    CalendarMiniCalendarComponent,
+    CalendarMonthViewComponent,
+    TaskCreateEditModalComponent,
+    TaskPreviewModalComponent,
+    TaskDeleteModalComponent,
+    RepeatScopeModalComponent,
+    EformChangeScopeModalComponent,
+    CustomRepeatModalComponent,
+    BoardCreateEditModalComponent,
+    BoardDeleteModalComponent,
+    CalendarSelectWorkerModalComponent,
+    CalendarCompleteEventModalComponent,
+    CalendarImageLightboxComponent,
   ],
   exports: [
     // Re-export the create/edit modal so a sibling module (the calendar

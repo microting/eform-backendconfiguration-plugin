@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {Store} from '@ngrx/store';
 import {BehaviorSubject, of} from 'rxjs';
 import {selectAuthUser} from 'src/app/state/auth/auth.selector';
@@ -5,11 +7,11 @@ import {calendarUpdateFilters, selectCalendarFilters} from '../../../../state';
 import {CalendarStateService} from './calendar.service';
 
 describe('CalendarStateService', () => {
-  let store: {select: jest.Mock; dispatch: jest.Mock};
+  let store: {select: Mock; dispatch: Mock};
   let service: CalendarStateService;
 
   beforeEach(() => {
-    store = {select: jest.fn().mockReturnValue(of({})), dispatch: jest.fn()};
+    store = {select: vi.fn().mockReturnValue(of({})), dispatch: vi.fn()};
     service = new CalendarStateService(store as unknown as Store);
   });
 
@@ -37,7 +39,7 @@ describe('CalendarStateService — saved settings (#1303)', () => {
   const KEY = (userId: number) => `bcpn.calendar.filters.${userId}`;
   let filters$: BehaviorSubject<any>;
   let user$: BehaviorSubject<any>;
-  let store: {select: jest.Mock; dispatch: jest.Mock};
+  let store: {select: Mock; dispatch: Mock};
   let service: CalendarStateService;
 
   function initialFilters() {
@@ -52,18 +54,18 @@ describe('CalendarStateService — saved settings (#1303)', () => {
     filters$ = new BehaviorSubject<any>(initialFilters());
     user$ = new BehaviorSubject<any>({id: 1});
     store = {
-      select: jest.fn((selector: any) => {
+      select: vi.fn((selector: any) => {
         if (selector === selectCalendarFilters) return filters$;
         if (selector === selectAuthUser) return user$;
         return of({});
       }),
       // Behaves like the reducer: merges the payload synchronously.
-      dispatch: jest.fn((action: any) => filters$.next({...filters$.value, ...action.payload})),
+      dispatch: vi.fn((action: any) => filters$.next({...filters$.value, ...action.payload})),
     };
     service = new CalendarStateService(store as unknown as Store);
   });
 
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => vi.restoreAllMocks());
 
   function saved(userId: number) {
     const raw = window.localStorage.getItem(KEY(userId));
@@ -185,8 +187,8 @@ describe('CalendarStateService — saved settings (#1303)', () => {
   });
 
   it('does not crash when storage throws, and behaves as a first visit', () => {
-    jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('SecurityError'); });
-    jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('SecurityError'); });
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('SecurityError'); });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('SecurityError'); });
 
     expect(() => service.restoreSavedFilters(1)).not.toThrow();
     expect(() => service.updatePropertyId(2)).not.toThrow();

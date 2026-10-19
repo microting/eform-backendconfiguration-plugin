@@ -1,9 +1,15 @@
 import {Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, inject} from '@angular/core';
-import {TranslateService} from '@ngx-translate/core';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {Paged} from 'src/app/common/models';
 import {DocumentDateState, FilesModel} from '../../../../models';
 import {BackendConfigurationPnFilesService} from '../../../../services';
 import {ARCHIVE_PATH_SEPARATOR, dateOnlyOf, whoCanRead} from '../../../../helpers';
+import {NgIf, NgFor, NgSwitch, NgSwitchCase, NgSwitchDefault, DatePipe} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatTooltip} from '@angular/material/tooltip';
+import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
+import {MatCheckbox} from '@angular/material/checkbox';
 
 /**
  * The W1 document table: Checkbox · Navn · Dokumentdato · Ejendomme · Læseadgang (admin) · Etiketter.
@@ -12,8 +18,8 @@ import {ARCHIVE_PATH_SEPARATOR, dateOnlyOf, whoCanRead} from '../../../../helper
  */
 @Component({
   selector: 'app-files-table',
+  imports: [NgIf, NgFor, NgSwitch, NgSwitchCase, NgSwitchDefault, DatePipe, TranslatePipe, MatIcon, MatIconButton, MatTooltip, MatMenu, MatMenuItem, MatMenuTrigger, MatCheckbox],
   templateUrl: './files-table.component.html',
-  standalone: false,
 })
 export class FilesTableComponent implements OnChanges, OnDestroy {
   private filesService = inject(BackendConfigurationPnFilesService);

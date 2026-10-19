@@ -1,3 +1,5 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
 import {of} from 'rxjs';
 import {BackendConfigurationPnFilesService} from './backend-configuration-pn-files.service';
 import {DocumentDateState, FileModel} from '../models';
@@ -7,18 +9,18 @@ import {passThroughAccountDisabledHandler} from './archive-account-disabled.hand
 /** Wire contract of FilesController for the archive-folder additions (plan 2). */
 describe('BackendConfigurationPnFilesService', () => {
   let api: any;
-  let handle: jest.Mock;
+  let handle: Mock;
   let service: BackendConfigurationPnFilesService;
 
   beforeEach(() => {
     api = {
-      post: jest.fn().mockReturnValue(of({success: true})),
-      put: jest.fn().mockReturnValue(of({success: true})),
-      get: jest.fn().mockReturnValue(of({success: true})),
-      delete: jest.fn().mockReturnValue(of({success: true})),
-      postFormData: jest.fn().mockReturnValue(of({success: true})),
-      getBlobData: jest.fn().mockReturnValue(of(new Blob([]))),
-      postBlobData: jest.fn().mockReturnValue(of(new Blob([]))),
+      post: vi.fn().mockReturnValue(of({success: true})),
+      put: vi.fn().mockReturnValue(of({success: true})),
+      get: vi.fn().mockReturnValue(of({success: true})),
+      delete: vi.fn().mockReturnValue(of({success: true})),
+      postFormData: vi.fn().mockReturnValue(of({success: true})),
+      getBlobData: vi.fn().mockReturnValue(of(new Blob([]))),
+      postBlobData: vi.fn().mockReturnValue(of(new Blob([]))),
     };
     const stub = passThroughAccountDisabledHandler();
     handle = stub.handle;

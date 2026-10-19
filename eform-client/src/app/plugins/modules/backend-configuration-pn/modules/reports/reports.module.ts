@@ -42,12 +42,10 @@ import {MatDatepickerModule} from '@angular/material/datepicker';
     MatMenuModule,
     ReactiveFormsModule,
     MatDatepickerModule,
-  ],
-  declarations: [
     CaseDeleteComponent,
     ReportContainerComponent,
     ReportHeaderComponent,
-    ReportTableComponent
+    ReportTableComponent,
   ],
 })
 export class ReportsModule {

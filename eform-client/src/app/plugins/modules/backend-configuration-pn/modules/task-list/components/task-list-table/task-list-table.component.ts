@@ -1,11 +1,19 @@
 import {Component, EventEmitter, Input, NgZone, OnChanges, Output, SimpleChanges} from '@angular/core';
-import {TranslateService} from '@ngx-translate/core';
-import {MtxGridColumn} from '@ng-matero/extensions/grid';
+import {TranslateService, TranslatePipe} from '@ngx-translate/core';
+import {MtxGridColumn, MtxGrid} from '@ng-matero/extensions/grid';
 import {CommonDictionaryModel, SharedTagModel} from 'src/app/common/models';
 import {CalendarBoardModel, CalendarTaskModel} from '../../../../models/calendar';
 import {CalendarRepeatService} from '../../../calendar/services/calendar-repeat.service';
 import {formatRepeatText} from '../../../calendar-task-list/calendar-task-list-repeat.util';
 import {assigneeDisplayNames} from '../../../calendar/services/calendar-task.mapper';
+import {NgIf, NgClass} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton, MatButton} from '@angular/material/button';
+import {MatProgressSpinner} from '@angular/material/progress-spinner';
+import {MatFormField} from '@angular/material/form-field';
+import {MatInput} from '@angular/material/input';
+import {MatTooltip} from '@angular/material/tooltip';
 
 /**
  * One grid row (#1193). The grid sorts client-side over `data[sortHeaderId]`,
@@ -99,9 +107,9 @@ export function buildTaskListRows(
 
 @Component({
   selector: 'app-task-list-table',
+  imports: [NgIf, NgClass, FormsModule, TranslatePipe, MatIcon, MatIconButton, MatButton, MatProgressSpinner, MatFormField, MatInput, MtxGrid, MatTooltip],
   templateUrl: './task-list-table.component.html',
   styleUrls: ['./task-list-table.component.scss'],
-  standalone: false,
 })
 export class TaskListTableComponent implements OnChanges {
   @Input() tasks: CalendarTaskModel[] = [];

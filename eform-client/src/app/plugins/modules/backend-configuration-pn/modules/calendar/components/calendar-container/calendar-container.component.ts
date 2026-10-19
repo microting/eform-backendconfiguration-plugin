@@ -35,10 +35,14 @@ import {CalendarSelectWorkerModalComponent} from '../../modals';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {RepeatEditScope} from '../../../../models/calendar';
 import {CalendarCompleteEventModalComponent, CalendarCompleteEventModalData} from '../../modals/calendar-complete-event-modal/calendar-complete-event-modal.component';
+import {NgSwitch, NgSwitchCase} from '@angular/common';
+import {CalendarMonthViewComponent} from '../calendar-month-view/calendar-month-view.component';
+import {CalendarHeaderComponent} from '../calendar-header/calendar-header.component';
+import {CalendarScheduleViewComponent} from '../calendar-schedule-view/calendar-schedule-view.component';
 
 @Component({
-  standalone: false,
   selector: 'app-calendar-container',
+  imports: [NgSwitch, NgSwitchCase, CalendarMonthViewComponent, CalendarWeekGridComponent, CalendarHeaderComponent, CalendarScheduleViewComponent],
   templateUrl: './calendar-container.component.html',
   styleUrls: ['./calendar-container.component.scss'],
 })

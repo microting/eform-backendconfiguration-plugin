@@ -169,6 +169,9 @@ export class TailBiteLocationsPageComponent implements OnInit, OnDestroy {
     this.checked = on ? new Set(this.rows.map((r) => r.node.id)) : new Set();
   }
 
+  /** The PDF builder. A field only so a spec can replace it (module mocks do not work under `ng test`). */
+  buildQrSheet: typeof buildQrSheetPdf = buildQrSheetPdf;
+
   async printQr(): Promise<void> {
     const selected = this.rows.filter((r) => this.checked.has(r.node.id) && !r.node.removed).map((r) => r.node);
     if (this.busy || !selected.length || !this.tree) {
@@ -180,7 +183,7 @@ export class TailBiteLocationsPageComponent implements OnInit, OnDestroy {
       const root = this.rows[0]?.node.name ?? '';
       const header = `${root}. ${this.translate.instant(
         'Cut along the lines. Print on waterproof label paper so the codes survive washing.')}`;
-      const bytes = await buildQrSheetPdf(qrLabels(selected, liveNodes(this.tree)), header);
+      const bytes = await this.buildQrSheet(qrLabels(selected, liveNodes(this.tree)), header);
       const url = URL.createObjectURL(new Blob([bytes as BlobPart], {type: 'application/pdf'}));
       const link = document.createElement('a');
       link.href = url;

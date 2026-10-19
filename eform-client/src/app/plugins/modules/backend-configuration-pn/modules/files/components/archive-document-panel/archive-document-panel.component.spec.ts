@@ -1,3 +1,10 @@
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import type {Mock} from 'vitest';
+// ng2-pdf-viewer assigns to the pdfjs-dist module namespace when it loads, which
+// throws under the unit-test builder (ESM namespaces are not extensible), and
+// pdfjs-dist cannot be mocked from inside the package. No spec renders a PDF.
+vi.mock('ng2-pdf-viewer', () => ({PdfViewerModule: class {}, PdfViewerComponent: class {}}));
+import {CommonModule} from '@angular/common';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {By} from '@angular/platform-browser';
@@ -28,9 +35,9 @@ const folders: ArchiveFolderModel[] = [
 
 describe('ArchiveDocumentPanelComponent', () => {
   let filesService: any;
-  let moveFlow: {move: jest.Mock};
-  let saved: jest.Mock;
-  let closed: jest.Mock;
+  let moveFlow: {move: Mock};
+  let saved: Mock;
+  let closed: Mock;
   let panel: ArchiveDocumentPanelComponent;
 
   const edit = (patch: Partial<ArchivePanelValue>) => (panel.edited = {...panel.edited!, ...patch});
@@ -41,23 +48,23 @@ describe('ArchiveDocumentPanelComponent', () => {
 
   beforeEach(() => {
     filesService = {
-      getFile: jest.fn().mockReturnValue(of({success: true, model: file})),
-      getPdfFile: jest.fn().mockReturnValue(EMPTY),
-      updateFileName: jest.fn().mockReturnValue(of({success: true})),
-      updateFileTags: jest.fn().mockReturnValue(of({success: true})),
-      setDocumentDate: jest.fn().mockReturnValue(of({success: true})),
-      setFilesAccess: jest.fn().mockReturnValue(of({success: true})),
+      getFile: vi.fn().mockReturnValue(of({success: true, model: file})),
+      getPdfFile: vi.fn().mockReturnValue(EMPTY),
+      updateFileName: vi.fn().mockReturnValue(of({success: true})),
+      updateFileTags: vi.fn().mockReturnValue(of({success: true})),
+      setDocumentDate: vi.fn().mockReturnValue(of({success: true})),
+      setFilesAccess: vi.fn().mockReturnValue(of({success: true})),
     };
-    moveFlow = {move: jest.fn().mockReturnValue(of(true))};
+    moveFlow = {move: vi.fn().mockReturnValue(of(true))};
     const translate = {instant: (key: string, params?: object) => (params ? `${key} ${JSON.stringify(params)}` : key)};
     panel = new ArchiveDocumentPanelComponent(filesService, moveFlow as any, translate as any);
     panel.fileId = 7;
     panel.folders = folders;
     panel.workerTags = [ledelseTag];
     panel.isAdmin = true;
-    saved = jest.fn();
+    saved = vi.fn();
     panel.saved.subscribe(saved);
-    closed = jest.fn();
+    closed = vi.fn();
     panel.closed.subscribe(closed);
     panel.ngOnChanges({fileId: {} as any});
   });
@@ -278,7 +285,7 @@ describe('ArchiveDocumentPanelComponent', () => {
 describe('ArchiveDocumentPanelComponent as a drawer (below 1100 px)', () => {
   let fixture: ComponentFixture<ArchiveDocumentPanelComponent>;
   let row: HTMLElement;
-  let closed: jest.Mock;
+  let closed: Mock;
   const aside = (): HTMLElement => fixture.nativeElement.querySelector('#archiveDocumentPanel');
   const closeBtn = (): HTMLElement => fixture.nativeElement.querySelector('#archivePanelCloseBtn');
 
@@ -290,18 +297,21 @@ describe('ArchiveDocumentPanelComponent as a drawer (below 1100 px)', () => {
     document.body.appendChild(row);
     row.focus();
     TestBed.configureTestingModule({
-      declarations: [ArchiveDocumentPanelComponent],
-      imports: [A11yModule, TranslateModule.forRoot()],
+      imports: [ArchiveDocumentPanelComponent, A11yModule, TranslateModule.forRoot()],
       providers: [
         {provide: BackendConfigurationPnFilesService, useValue: {getFile: () => of({success: true, model: file}), getPdfFile: () => EMPTY}},
-        {provide: ArchiveMoveFlowService, useValue: {move: jest.fn()}},
+        {provide: ArchiveMoveFlowService, useValue: {move: vi.fn()}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
     });
+    // Keep the scope these specs were written for (the old TestBed module had only
+    // CommonModule + these imports): the component's real Material/forms imports
+    // would make them test Material instead of this component.
+    TestBed.overrideComponent(ArchiveDocumentPanelComponent, {set: {imports: [CommonModule, A11yModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}});
     fixture = TestBed.createComponent(ArchiveDocumentPanelComponent);
     fixture.componentRef.setInput('fileId', 7);
     fixture.componentRef.setInput('drawer', drawer);
-    closed = jest.fn();
+    closed = vi.fn();
     fixture.componentInstance.closed.subscribe(closed);
     fixture.detectChanges();
   }

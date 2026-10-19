@@ -1,3 +1,9 @@
+import {describe, it, expect, beforeEach, vi} from 'vitest';
+// The real component graph reaches host eform-cases -> ng-gallery, which throws
+// "Cannot access 'GalleryItemComponent' before initialization" under the Angular
+// test builder; the gallery is not under test, so stub the package.
+vi.mock('ng-gallery', () => ({Gallery: class {}, GalleryModule: class {}, ImageItem: class {}, GALLERY_CONFIG: 'GALLERY_CONFIG'}));
+vi.mock('ng-gallery/lightbox', () => ({Lightbox: class {}, LightboxModule: class {}}));
 import {of} from 'rxjs';
 import {differenceInCalendarDays, parseISO} from 'date-fns';
 import {AdhocHistoryComponent} from './adhoc-history.component';
@@ -41,24 +47,24 @@ describe('AdhocHistoryComponent', () => {
 
   function buildComponent(): AdhocHistoryComponent {
     storeSpy = {
-      select: jest.fn().mockReturnValue(of({...adhocInitialState.historyFilters})),
-      dispatch: jest.fn(),
+      select: vi.fn().mockReturnValue(of({...adhocInitialState.historyFilters})),
+      dispatch: vi.fn(),
     };
-    adhocServiceSpy = {getHistory: jest.fn(), getTask: jest.fn(), archiveTask: jest.fn()};
+    adhocServiceSpy = {getHistory: vi.fn(), getTask: vi.fn(), archiveTask: vi.fn()};
     adhocServiceSpy.getHistory.mockReturnValue(of({success: true, model: {total: 0, entities: []}}));
     adhocStateServiceSpy = {
       properties: [],
       tags: [],
-      getAreasForProperty: jest.fn().mockReturnValue(of([])),
+      getAreasForProperty: vi.fn().mockReturnValue(of([])),
     };
-    dialogSpy = {open: jest.fn()};
+    dialogSpy = {open: vi.fn()};
     // dialogConfigHelper reads overlay.scrollStrategies.reposition() — a bare
     // {} makes every dialog-opening action throw before dialog.open is hit.
-    overlaySpy = {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}};
+    overlaySpy = {scrollStrategies: {reposition: vi.fn().mockReturnValue({})}};
     // Key-passthrough with naive {{param}} interpolation - keeps summary/
     // pager label assertions readable without a real TranslateService.
     translateSpy = {
-      instant: jest.fn().mockImplementation((key: string, params?: Record<string, unknown>) => {
+      instant: vi.fn().mockImplementation((key: string, params?: Record<string, unknown>) => {
         if (!params) {
           return key;
         }
@@ -117,35 +123,35 @@ describe('AdhocHistoryComponent', () => {
     });
 
     it('the "6m" preset clamps to the shorter month when the anchor day does not exist in the target month', () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
       try {
         // Mar 31 - 6 months back lands in Sep (30 days) -> clamp to Sep 30,
         // not roll over into Oct (mockup addCalendarMonthsIso behavior).
-        jest.setSystemTime(new Date(2026, 2, 31));
+        vi.setSystemTime(new Date(2026, 2, 31));
         component.currentFilters = {...component.currentFilters, periodPreset: '6m'};
         component.updateTable();
         const sentModel = lastSentModel();
         expect(sentModel.dateFrom.slice(0, 10)).toBe('2025-09-30');
         expect(sentModel.dateTo.slice(0, 10)).toBe('2026-03-31');
       } finally {
-        jest.useRealTimers();
+        vi.useRealTimers();
       }
     });
 
     it('the "12m" preset resolves the same day-of-month 12 months back (clamping identically to 6m)', () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
       try {
-        jest.setSystemTime(new Date(2026, 5, 15));
+        vi.setSystemTime(new Date(2026, 5, 15));
         component.currentFilters = {...component.currentFilters, periodPreset: '12m'};
         component.updateTable();
         expect(lastSentModel().dateFrom.slice(0, 10)).toBe('2025-06-15');
 
         // Leap-day anchor: Feb 29 2028 - 12 months -> Feb 28 2027 (clamped).
-        jest.setSystemTime(new Date(2028, 1, 29));
+        vi.setSystemTime(new Date(2028, 1, 29));
         component.updateTable();
         expect(lastSentModel().dateFrom.slice(0, 10)).toBe('2027-02-28');
       } finally {
-        jest.useRealTimers();
+        vi.useRealTimers();
       }
     });
 
