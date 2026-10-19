@@ -14,14 +14,16 @@ const screenRoutes: Route[] = CHEMICAL_SCREENS.map((screen) => ({
 /**
  * /plugins/backend-configuration-pn/chemicals/... (spec section 11 W1-W6). Each screen
  * is its own menu child and route (no in-page tabs); the container owns the page frame
- * and the property picker. The empty path redirects to the first registered screen.
+ * and the property picker. The bare Kemi root (the Plan D digest link) redirects to W1
+ * Beholdning; the redirect is relative, so ?propertyId= and ?filter= survive it, and its
+ * target has its own path, so it cannot loop (M-3).
  */
 export const routes: Routes = [
   {
     path: '',
     component: ChemicalsContainerComponent,
     children: [
-      {path: '', pathMatch: 'full', redirectTo: CHEMICAL_SCREENS[0].path},
+      {path: '', pathMatch: 'full', redirectTo: 'inventory'},
       ...screenRoutes,
     ],
   },

@@ -1,5 +1,6 @@
 import {describe, it, expect} from 'vitest';
-import {chemicalsInitialState, chemicalsReducer} from './chemicals.reducer';
+import {ChemicalsState, chemicalsInitialState, chemicalsReducer} from './chemicals.reducer';
+import {selectChemicalsHistoryView} from './chemicals.selector';
 import {chemicalsSelectProperty, chemicalsSetProperties, chemicalsUpdateHistoryFilters, chemicalsUpdateInventoryFilters} from './chemicals.actions';
 
 describe('chemicalsReducer', () => {
@@ -45,5 +46,18 @@ describe('chemicalsReducer', () => {
 
     expect(chemicalsReducer(filtered, chemicalsUpdateInventoryFilters({payload: inventory})).inventoryFilters).toEqual(inventory);
     expect(chemicalsReducer(filtered, chemicalsUpdateHistoryFilters({payload: history})).historyFilters).toEqual(history);
+  });
+
+  it('hands W6 the property and its filters as one value, once per state change', () => {
+    const root = (chemicalsState: ChemicalsState) => ({backendConfigurationPn: {chemicalsState}}) as never;
+    const switched = chemicalsReducer(filtered, chemicalsSelectProperty({payload: 2}));
+
+    const before = selectChemicalsHistoryView(root(filtered));
+    const after = selectChemicalsHistoryView(root(switched));
+
+    expect(before).toEqual({propertyId: 1, filters: filtered.historyFilters});
+    // The switch changes the property and clears the user and location in the same value: no load with the old filters.
+    expect(after).toEqual({propertyId: 2, filters: {...filtered.historyFilters, userId: null, locationId: null}});
+    expect(selectChemicalsHistoryView(root(switched))).toBe(after);
   });
 });

@@ -5,7 +5,7 @@ import {DestroyRef, EventEmitter, Injector, runInInjectionContext} from '@angula
 import {MatDialog} from '@angular/material/dialog';
 import {Store} from '@ngrx/store';
 import {TranslateService} from '@ngx-translate/core';
-import {BehaviorSubject, Subject, of, throwError} from 'rxjs';
+import {BehaviorSubject, EMPTY, Subject, of, throwError} from 'rxjs';
 import {DeleteModalComponent} from 'src/app/common/modules/eform-shared/components';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {ChemicalSettingsPageComponent} from './chemical-settings-page.component';
@@ -164,7 +164,7 @@ describe('ChemicalSettingsPageComponent', () => {
       chemicals.getSettings.mockReturnValue(pending);
       component = build();
 
-      expect(component.loading).toBe(true);
+      expect(component.load.loading).toBe(true);
       expect(component.ready).toBe(false);
       component.onStockToggle(true);
       component.recipientInput = 'second@example.com';
@@ -177,7 +177,7 @@ describe('ChemicalSettingsPageComponent', () => {
 
       pending.next(loaded(true, ['first@example.com']));
 
-      expect(component.loading).toBe(false);
+      expect(component.load.loading).toBe(false);
       expect(component.ready).toBe(true);
       expect(component.stockEnabled).toBe(true);
       expect(component.recipients).toEqual(['first@example.com']);
@@ -186,12 +186,14 @@ describe('ChemicalSettingsPageComponent', () => {
     it.each([
       ['a refused answer', () => of({success: false, message: 'Nope'})],
       ['an HTTP error', () => throwError(() => new Error('offline'))],
+      // The host interceptor gives up on a 5xx or a network failure with EMPTY (Task 14 M2).
+      ['no answer at all', () => EMPTY],
     ])('shows a load failure for %s and offers no Save from the defaults', (_name, answer) => {
       chemicals.getSettings.mockReturnValue(answer());
       component = build();
 
-      expect(component.loadFailed).toBe(true);
-      expect(component.loading).toBe(false);
+      expect(component.load.failed).toBe(true);
+      expect(component.load.loading).toBe(false);
       expect(component.ready).toBe(false);
       component.onStockToggle(true);
       component.save();
@@ -211,7 +213,7 @@ describe('ChemicalSettingsPageComponent', () => {
 
       expect(component.recipients).toEqual(['second@example.com']);
       expect(component.stockEnabled).toBe(false);
-      expect(component.loading).toBe(false);
+      expect(component.load.loading).toBe(false);
     });
   });
 
@@ -253,16 +255,16 @@ describe('ChemicalSettingsPageComponent', () => {
   });
 
   describe('switching property resets the load state', () => {
-    it('clears loadFailed and loading when the next property loads', () => {
+    it('clears the failed and loading state when the next property loads', () => {
       chemicals.getSettings.mockReturnValueOnce(throwError(() => new Error('offline')));
       property$ = new BehaviorSubject<number | null>(3);
       component = build();
-      expect(component.loadFailed).toBe(true);
+      expect(component.load.failed).toBe(true);
 
       property$.next(4);
 
-      expect(component.loadFailed).toBe(false);
-      expect(component.loading).toBe(false);
+      expect(component.load.failed).toBe(false);
+      expect(component.load.loading).toBe(false);
       expect(component.ready).toBe(true);
     });
 
@@ -274,8 +276,8 @@ describe('ChemicalSettingsPageComponent', () => {
 
       property$.next(4);
 
-      expect(component.loadFailed).toBe(false);
-      expect(component.loading).toBe(true);
+      expect(component.load.failed).toBe(false);
+      expect(component.load.loading).toBe(true);
       expect(component.ready).toBe(false);
     });
   });
@@ -422,7 +424,7 @@ describe('ChemicalSettingsPageComponent', () => {
 
       firstA.error(new Error('offline'));
 
-      expect(component.loadFailed).toBe(false);
+      expect(component.load.failed).toBe(false);
       expect(component.ready).toBe(true);
     });
 

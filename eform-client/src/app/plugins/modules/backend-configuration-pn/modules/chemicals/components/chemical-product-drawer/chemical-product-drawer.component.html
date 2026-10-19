@@ -1,0 +1,92 @@
+<div id="chemicalDrawer" class="chemicals-drawer d-flex flex-column">
+  <div class="d-flex align-items-start gap-12">
+    <div class="flex-grow-1">
+      <h2 class="m-0" id="chemicalDrawerTitle">{{ row.productName }}</h2>
+      <div class="chemicals-hint">
+        {{ 'Chemicals: Reg no short' | translate }} {{ row.registrationNo }}
+        <span *ngIf="row.entry?.authorisationHolder"> · {{ row.entry.authorisationHolder }}</span>
+      </div>
+      <div class="d-flex gap-8 mt-1 align-items-center">
+        <span class="status-chip" [class.status-chip--bad]="row.statusBad">{{ row.statusLabelKey ? (row.statusLabelKey | translate) : row.statusText }}</span>
+        <span *ngIf="row.entry?.signalWordText">{{ 'Chemicals: Signal word' | translate }}: {{ row.entry.signalWordText }}</span>
+      </div>
+    </div>
+    <button mat-icon-button id="chemicalDrawerCloseBtn" [matTooltip]="'Close' | translate" [attr.aria-label]="'Close' | translate" (click)="close()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="d-flex gap-8 my-2" role="tablist" [attr.aria-label]="'Chemicals: Product details' | translate">
+    <button *ngFor="let t of tabs" class="btn-quiet" type="button" role="tab" [id]="t.elementId"
+            [attr.aria-selected]="tab === t.id" [attr.aria-controls]="'chemicalDrawerPanel'" [attr.tabindex]="tab === t.id ? 0 : -1"
+            [class.chemicals-chip--active]="tab === t.id" (click)="tab = t.id" (keydown)="onTabKeydown($event)">
+      {{ t.labelKey | translate }}<ng-container *ngIf="t.id === 'placements'"> {{ placements.length }}</ng-container>
+    </button>
+  </div>
+
+  <div class="flex-grow-1 chemicals-drawer__body" id="chemicalDrawerPanel" role="tabpanel" tabindex="0"
+       [attr.aria-labelledby]="selectedTab.elementId" [ngSwitch]="tab">
+    <div *ngSwitchCase="'overview'" class="d-flex flex-column gap-12">
+      <div *ngIf="row.deadline" class="chemicals-banner" [class.chemicals-banner--overdue]="row.severity === 'overdue'">
+        <mat-icon>schedule</mat-icon>
+        <span>{{ row.deadlineLabelKey | translate }} {{ row.deadline.date | date: 'dd-MM-yyyy' }}</span>
+      </div>
+      <dl class="chemicals-timeline">
+        <ng-container *ngIf="row.entry?.authorisationDate"><dt>{{ 'Chemicals: Approved on' | translate }}</dt><dd>{{ row.entry.authorisationDate | date: 'dd-MM-yyyy' }}</dd></ng-container>
+        <ng-container *ngIf="row.entry?.authorisationTerminationDate"><dt>{{ 'Chemicals: Deregistered on' | translate }}</dt><dd>{{ row.entry.authorisationTerminationDate | date: 'dd-MM-yyyy' }}</dd></ng-container>
+        <ng-container *ngIf="row.entry?.salesDeadline"><dt>{{ 'Chemicals: Sales deadline' | translate }}</dt><dd>{{ row.entry.salesDeadline | date: 'dd-MM-yyyy' }}</dd></ng-container>
+        <ng-container *ngIf="row.entry?.useAndPossessionDeadline"><dt>{{ 'Chemicals: Use deadline' | translate }}</dt><dd>{{ row.entry.useAndPossessionDeadline | date: 'dd-MM-yyyy' }}</dd></ng-container>
+      </dl>
+      <section *ngIf="row.entry?.hazardStatements?.length">
+        <h4><mat-icon>warning</mat-icon> {{ 'Chemicals: Hazard statements' | translate }}</h4>
+        <div *ngFor="let h of row.entry.hazardStatements"><strong>{{ h.code }}</strong> {{ h.text }}</div>
+      </section>
+      <section>
+        <h4><mat-icon>description</mat-icon> {{ 'Chemicals: Safety data sheet' | translate }}</h4>
+        <button class="btn-quiet" id="chemicalDrawerSdsBtn" [disabled]="!sdsFileName" (click)="openSds()">
+          <mat-icon>open_in_new</mat-icon><span>{{ 'Chemicals: Open' | translate }}</span>
+        </button>
+      </section>
+      <section>
+        <h4><mat-icon>location_on</mat-icon> {{ 'Chemicals: Placement' | translate }}</h4>
+        <div>{{ row.locationName }}<ng-container *ngIf="row.placement.placementNote"> · {{ row.placement.placementNote }}</ng-container></div>
+        <div class="chemicals-hint">{{ 'Chemicals: Registered by' | translate }} {{ row.placement.registeredByName }} {{ row.placement.registeredAt | date: 'dd-MM-yyyy' }}</div>
+      </section>
+    </div>
+
+    <div *ngSwitchCase="'placements'" id="chemicalDrawerPlacements">
+      <div *ngFor="let p of placements" class="chemicals-list-item">
+        <strong>{{ locationName(p.locationId) }}</strong><ng-container *ngIf="p.placementNote"> · {{ p.placementNote }}</ng-container>
+        <span *ngIf="stockEnabled && p.unit"> · {{ p.balance | number: '1.0-3' }} {{ stockUnitLabel(p.unit) }}</span>
+      </div>
+    </div>
+
+    <table *ngSwitchCase="'stock'" id="chemicalDrawerStockHistory" class="chemicals-stock-table">
+      <thead>
+        <tr>
+          <th>{{ 'Chemicals: Date' | translate }}</th>
+          <th>{{ 'Chemicals: Type' | translate }}</th>
+          <th>{{ 'Chemicals: Amount' | translate }}</th>
+          <th>{{ 'Chemicals: Balance' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let h of stockHistory">
+          <td>{{ h.entry.at | date: 'dd-MM-yyyy' }}<div class="chemicals-hint">{{ h.entry.byName }}</div></td>
+          <td>
+            {{ h.kindLabelKey | translate }}
+            <div *ngIf="h.originLabelKey" class="chemicals-hint">{{ h.originLabelKey | translate }}</div>
+          </td>
+          <td>{{ h.entry.amount | number: '1.0-3' }} {{ stockUnitLabel(h.entry.unit) }}</td>
+          <td class="chemicals-stock-balance">{{ h.balanceAfter | number: '1.0-3' }} {{ stockUnitLabel(h.entry.unit) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="d-flex gap-8 justify-content-end pt-2">
+    <button class="btn-quiet" id="chemicalDrawerMoveBtn" (click)="act('move')"><mat-icon>move_location</mat-icon><span>{{ 'Chemicals: Move' | translate }}</span></button>
+    <button *ngIf="stockEnabled" class="btn-quiet" id="chemicalDrawerStockBtn" (click)="act('stock')"><mat-icon>inventory_2</mat-icon><span>{{ 'Chemicals: Stock movement' | translate }}</span></button>
+    <button class="btn-delete" id="chemicalDrawerRemoveBtn" (click)="act('remove')"><mat-icon>remove_circle</mat-icon><span>{{ 'Chemicals: Remove placement' | translate }}</span></button>
+  </div>
+</div>

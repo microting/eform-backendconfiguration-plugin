@@ -1,8 +1,16 @@
 import {Component, DestroyRef, OnInit, inject} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
-import {ActivatedRoute, NavigationEnd, Router, RouterOutlet} from '@angular/router';
+import {
+  ActivatedRoute,
+  NavigationCancel,
+  NavigationEnd,
+  NavigationError,
+  NavigationSkipped,
+  NavigationStart,
+  Router,
+  RouterOutlet,
+} from '@angular/router';
 import {Store} from '@ngrx/store';
-import {filter} from 'rxjs';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {selectCurrentUserIsFirstUser} from 'src/app/state';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
@@ -53,11 +61,22 @@ export class ChemicalsContainerComponent implements OnInit {
   private started = false;
   /** The routed screen, asked before a property switch drops its edits. */
   private activeScreen: unknown = null;
+  /**
+   * A router navigation is between its start and its end (R-2). The ?propertyId= write is a
+   * navigation of its own and would replace (cancel) it, e.g. the user's first menu click
+   * while the properties are still loading, so the write waits for the navigation to end.
+   */
+  private navigating = false;
+  private pendingSync: ReturnType<typeof setTimeout> | undefined;
 
   ngOnInit(): void {
+    // The container is created by a navigation that may not have ended yet.
+    this.navigating = this.router.currentNavigation() !== null;
+    // A write scheduled after a cancelled navigation must not touch the URL of a page we left.
+    this.destroyRef.onDestroy(() => clearTimeout(this.pendingSync));
     this.router.events
-      .pipe(filter((event) => event instanceof NavigationEnd), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.onNavigationEnd());
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((event) => this.onRouterEvent(event));
     this.refreshTitle();
 
     this.store.select(selectCurrentUserIsFirstUser)
@@ -158,6 +177,21 @@ export class ChemicalsContainerComponent implements OnInit {
     return this.properties.length ? this.properties[0].id : null;
   }
 
+  private onRouterEvent(event: unknown): void {
+    if (event instanceof NavigationStart) {
+      this.navigating = true;
+    } else if (event instanceof NavigationEnd) {
+      this.navigating = false;
+      this.onNavigationEnd();
+    } else if (event instanceof NavigationCancel || event instanceof NavigationError || event instanceof NavigationSkipped) {
+      this.navigating = false;
+      // A cancel is also how the router reports a navigation replaced by a newer one, whose start
+      // follows in the same tick: write after that tick, and only if nothing is navigating then.
+      clearTimeout(this.pendingSync);
+      this.pendingSync = setTimeout(() => this.syncUrl());
+    }
+  }
+
   /**
    * A later navigation carrying another known ?propertyId= (screen links, Back/Forward,
    * a deeplink) is adopted once the active screen agrees; anything else, or "keep
@@ -187,9 +221,12 @@ export class ChemicalsContainerComponent implements OnInit {
     return Number.isInteger(id) ? id : null;
   }
 
-  /** Keeps ?propertyId= equal to the selected property (menu clicks drop it). */
+  /**
+   * Keeps ?propertyId= equal to the selected property (menu clicks drop it). Never while a
+   * navigation is in flight (R-2): its NavigationEnd calls back here.
+   */
   private syncUrl(): void {
-    if (!this.isFirstUser || !this.loaded || this.propertyId === null
+    if (this.navigating || !this.isFirstUser || !this.loaded || this.propertyId === null
       || this.propertyIdFromUrl() === this.propertyId) {
       return;
     }

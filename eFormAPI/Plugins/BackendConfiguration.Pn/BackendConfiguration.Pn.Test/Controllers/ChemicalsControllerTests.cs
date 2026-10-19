@@ -322,7 +322,7 @@ public class ChemicalsControllerTests
         var result = await sut.GetSettings(1);
 
         Assert.That(result.Success, Is.False);
-        Assert.That(result.Message, Does.Contain("ErrorWhileReadingChemicalSettings").And.Contain("boom"));
+        Assert.That(result.Message, Is.EqualTo("ErrorWhileReadingChemicalSettings"));
     }
 
     // ---- a missing or malformed JSON body binds to null ----

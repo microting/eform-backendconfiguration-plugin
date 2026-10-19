@@ -1,0 +1,87 @@
+<div id="chemicalLocationsPage">
+  <div class="d-flex flex-row flex-wrap align-items-center gap-12 mb-2">
+    <mat-checkbox id="chemicalLocationsShowArchived" [(ngModel)]="showArchived" [disabled]="!archivedCount">
+      {{ 'Chemicals: Show archived' | translate: {count: archivedCount} }}
+    </mat-checkbox>
+    <span class="chemicals-hint">{{ 'Chemicals: Drag hint' | translate }}</span>
+    <button class="btn-primary btn-primary--icon-left ml-auto" id="chemicalLocationsNewBtn"
+            [disabled]="propertyId === null || load.loading || load.failed" (click)="openCreate()">
+      <mat-icon>add</mat-icon><span>{{ 'Chemicals: New location' | translate }}</span>
+    </button>
+  </div>
+
+  <div *ngIf="load.loading" id="chemicalLocationsLoading" class="chemicals-empty" role="status">{{ 'Chemicals: Loading locations' | translate }}</div>
+  <div *ngIf="load.failed" id="chemicalLocationsLoadFailed" class="chemicals-danger" role="alert">
+    <mat-icon>error</mat-icon><span>{{ 'Chemicals: Could not load locations' | translate }}</span>
+  </div>
+
+  <ng-container *ngIf="!load.loading && !load.failed && propertyId !== null">
+    <div class="chemicals-location-header d-flex align-items-center">
+      <span class="col-drag"></span><span class="col-no">{{ 'Chemicals: No.' | translate }}</span>
+      <span class="col-photo">{{ 'Chemicals: Photo' | translate }}</span><span class="col-name">{{ 'Name' | translate }}</span>
+      <span class="col-count">{{ 'Chemicals: Products' | translate }}</span><span class="col-status">{{ 'Status' | translate }}</span>
+      <span class="col-updated">{{ 'Chemicals: Last changed' | translate }}</span><span class="col-actions"></span>
+    </div>
+    <div id="chemicalLocationsList" cdkDropList [cdkDropListData]="visibleRows" [cdkDropListDisabled]="reordering"
+         [cdkDropListSortPredicate]="canSortTo" (cdkDropListDropped)="drop($event)">
+      <div
+        *ngFor="let row of visibleRows; let i = index; trackBy: trackByLocation"
+        class="chemicals-location-row d-flex align-items-center"
+        [class.chemicals-location-row--archived]="row.location.archived"
+        [id]="'chemicalLocationRow-' + row.location.id"
+        cdkDrag
+        [cdkDragDisabled]="row.location.archived"
+      >
+        <!-- The handle is for pointer users only; the up/down buttons are the keyboard and single-pointer way. -->
+        <span class="col-drag">
+          <mat-icon *ngIf="!row.location.archived" cdkDragHandle [id]="'chemicalLocationDrag-' + row.location.id"
+                    aria-hidden="true">drag_indicator</mat-icon>
+        </span>
+        <span class="col-no">{{ row.location.archived ? '–' : i + 1 }}</span>
+        <span class="col-photo">
+          <img *ngIf="photoUrl(row) as url; else noPhoto" class="chemicals-location-thumb" [src]="url | authImage | async" alt="">
+          <ng-template #noPhoto><mat-icon class="chemicals-location-nophoto">add_a_photo</mat-icon></ng-template>
+        </span>
+        <span class="col-name">
+          <span class="chemicals-location-name">{{ row.location.name }}</span>
+          <span *ngIf="row.location.description" class="chemicals-hint">{{ row.location.description }}</span>
+        </span>
+        <span class="col-count">{{ row.openCount }}</span>
+        <span class="col-status">
+          <span *ngIf="row.actionCount" class="status-chip status-chip--bad">{{ 'Chemicals: Requires action count' | translate: {count: row.actionCount} }}</span>
+          <span *ngIf="!row.actionCount">–</span>
+        </span>
+        <span class="col-updated">{{ row.location.updatedAt | date: 'dd-MM-yyyy' }}</span>
+        <span class="col-actions d-flex gap-8">
+          <ng-container *ngIf="!row.location.archived">
+            <!-- aria-disabled while an order saves: a disabled button would drop the keyboard focus. -->
+            <button mat-icon-button [id]="'chemicalLocationUp-' + row.location.id" [disabled]="isFirstActive(row)"
+                    [attr.aria-disabled]="reordering ? 'true' : null"
+                    [attr.aria-label]="'Chemicals: Move location up' | translate: {name: row.location.name}" (click)="moveUp(row)">
+              <mat-icon>arrow_upward</mat-icon>
+            </button>
+            <button mat-icon-button [id]="'chemicalLocationDown-' + row.location.id" [disabled]="isLastActive(row)"
+                    [attr.aria-disabled]="reordering ? 'true' : null"
+                    [attr.aria-label]="'Chemicals: Move location down' | translate: {name: row.location.name}" (click)="moveDown(row)">
+              <mat-icon>arrow_downward</mat-icon>
+            </button>
+          </ng-container>
+          <button mat-icon-button [id]="'chemicalLocationEdit-' + row.location.id" [disabled]="!canEdit(row)"
+                  [attr.aria-label]="'Chemicals: Edit location' | translate" [matTooltip]="'Chemicals: Edit location' | translate"
+                  (click)="openEdit(row)">
+            <mat-icon>edit_square</mat-icon>
+          </button>
+          <!-- A disabled button shows no tooltip, so the wrapper carries it (why archiving is blocked). -->
+          <span [matTooltip]="(row.openCount ? 'Chemicals: Archive blocked' : 'Chemicals: Archive') | translate: {count: row.openCount}"
+                [matTooltipDisabled]="row.location.archived">
+            <button mat-icon-button [id]="'chemicalLocationArchive-' + row.location.id" [disabled]="!canArchive(row)"
+                    [attr.aria-label]="'Chemicals: Archive' | translate" (click)="archive(row)">
+              <mat-icon>archive</mat-icon>
+            </button>
+          </span>
+        </span>
+      </div>
+    </div>
+    <div *ngIf="!visibleRows.length" class="chemicals-empty" id="chemicalLocationsEmpty">{{ 'Chemicals: No locations' | translate }}</div>
+  </ng-container>
+</div>

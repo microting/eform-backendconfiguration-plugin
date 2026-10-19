@@ -182,11 +182,27 @@ public class PluginMenuSyncService(BaseDbContext dbContext)
 
         foreach (var child in children)
         {
+            MakeRoomAt(groupId.Value, child.Position);
             AddLink(child, pluginRowId, groupId, child.Position);
             written.Add(child.E2EId);
         }
 
         return written;
+    }
+
+    /// <summary>
+    /// The host's menu editor renumbers a group's children from 0, so a new child's position may
+    /// already be taken; the host then breaks the tie by id and the new child lands after the one
+    /// it should precede. When the position is taken, the children from it on move down by one.
+    /// </summary>
+    private void MakeRoomAt(int groupId, int position)
+    {
+        var siblings = dbContext.MenuItems.Where(x => x.ParentId == groupId);
+        if (siblings.Any(x => x.Position == position))
+        {
+            siblings.Where(x => x.Position >= position)
+                .ExecuteUpdate(s => s.SetProperty(x => x.Position, x => x.Position + 1));
+        }
     }
 
     private bool TemplateExists(string e2eId, int pluginRowId) =>

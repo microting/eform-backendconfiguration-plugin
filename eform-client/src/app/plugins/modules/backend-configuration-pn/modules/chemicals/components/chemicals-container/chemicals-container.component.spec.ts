@@ -1,7 +1,7 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest';
 import type {Mock} from 'vitest';
 import {DestroyRef, Injector, runInInjectionContext} from '@angular/core';
-import {ActivatedRoute, convertToParamMap, NavigationEnd, Router} from '@angular/router';
+import {ActivatedRoute, convertToParamMap, NavigationCancel, NavigationEnd, NavigationStart, Router} from '@angular/router';
 import {Store} from '@ngrx/store';
 import {BehaviorSubject, of, Subject, throwError} from 'rxjs';
 import {selectCurrentUserIsFirstUser} from 'src/app/state';
@@ -17,7 +17,9 @@ describe('ChemicalsContainerComponent', () => {
   let childTitleKey: string | undefined;
   let store: {select: Mock; dispatch: Mock};
   let properties: {getAllPropertiesDictionary: Mock};
-  let router: {navigate: Mock; events: Subject<unknown>};
+  let router: {navigate: Mock; events: Subject<unknown>; currentNavigation: Mock};
+  /** What the Router.currentNavigation signal holds when the container starts. */
+  let navigationAtStart: unknown;
 
   function build(list: Array<{id: number; name: string}>, response?: unknown): ChemicalsContainerComponent {
     store = {
@@ -31,7 +33,11 @@ describe('ChemicalsContainerComponent', () => {
       }),
     };
     properties = {getAllPropertiesDictionary: vi.fn().mockReturnValue(response ?? of({success: true, model: list}))};
-    router = {navigate: vi.fn().mockResolvedValue(true), events: routerEvents$};
+    router = {
+      navigate: vi.fn().mockResolvedValue(true),
+      events: routerEvents$,
+      currentNavigation: vi.fn().mockReturnValue(navigationAtStart),
+    };
     const route = {
       get snapshot() {
         return {queryParamMap: convertToParamMap(queryParams)};
@@ -62,6 +68,7 @@ describe('ChemicalsContainerComponent', () => {
     routerEvents$ = new Subject<unknown>();
     queryParams = {};
     childTitleKey = undefined;
+    navigationAtStart = null;
   });
 
   it('selects the first property when none is selected yet and writes it to the URL', () => {
@@ -99,7 +106,7 @@ describe('ChemicalsContainerComponent', () => {
     expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectProperty({payload: 8}));
   });
 
-  it.each(['99', 'abc', ''])('ignores an unusable ?propertyId=%s', (value) => {
+  it.each(['99', 'abc', '', '0', '-3', '1.5'])('ignores an unusable ?propertyId=%s', (value) => {
     selectedProperty$.next(8);
     queryParams = {propertyId: value};
 
@@ -343,6 +350,85 @@ describe('ChemicalsContainerComponent', () => {
       routerEvents$.next(new NavigationEnd(2, '/a', '/a'));
 
       expect(router.navigate).not.toHaveBeenCalled();
+    });
+  });
+  /**
+   * R-2: W1 is the landing screen, so the first properties answer often lands while the user's
+   * first menu click is still navigating. A URL write then would replace (cancel) that click.
+   */
+  describe('never cancels a navigation in flight with its ?propertyId= write (R-2)', () => {
+    const permissionsUrl = '/plugins/backend-configuration-pn/chemicals/permissions';
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('waits for the navigation to end, then writes the URL', () => {
+      const pending = new Subject<unknown>();
+      build([], pending);
+
+      routerEvents$.next(new NavigationStart(2, permissionsUrl));
+      pending.next({success: true, model: [{id: 7, name: 'Hovedgården'}]});
+
+      expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectProperty({payload: 7}));
+      expect(router.navigate).not.toHaveBeenCalled();
+
+      routerEvents$.next(new NavigationEnd(2, permissionsUrl, permissionsUrl));
+
+      expect(router.navigate).toHaveBeenCalledTimes(1);
+      expect(router.navigate).toHaveBeenCalledWith([], urlSync(7));
+    });
+
+    it('also waits when the container starts inside the navigation that created it', () => {
+      navigationAtStart = {id: 1};
+
+      build([{id: 7, name: 'Hovedgården'}]);
+
+      expect(router.navigate).not.toHaveBeenCalled();
+
+      routerEvents$.next(new NavigationEnd(1, '/plugins/backend-configuration-pn/chemicals', '/plugins/backend-configuration-pn/chemicals'));
+
+      expect(router.navigate).toHaveBeenCalledWith([], urlSync(7));
+    });
+
+    it('writes the URL after a cancelled navigation once nothing else is navigating', () => {
+      jest.useFakeTimers();
+      const pending = new Subject<unknown>();
+      build([], pending);
+      routerEvents$.next(new NavigationStart(2, permissionsUrl));
+      pending.next({success: true, model: [{id: 7, name: 'Hovedgården'}]});
+
+      routerEvents$.next(new NavigationCancel(2, permissionsUrl, 'guard said no'));
+
+      expect(router.navigate).not.toHaveBeenCalled();
+      jest.runOnlyPendingTimers();
+      expect(router.navigate).toHaveBeenCalledWith([], urlSync(7));
+    });
+
+    it('leaves a superseding navigation alone and writes after it ends', () => {
+      jest.useFakeTimers();
+      const pending = new Subject<unknown>();
+      build([], pending);
+      routerEvents$.next(new NavigationStart(2, permissionsUrl));
+      pending.next({success: true, model: [{id: 7, name: 'Hovedgården'}]});
+
+      routerEvents$.next(new NavigationCancel(2, permissionsUrl, 'superseded'));
+      routerEvents$.next(new NavigationStart(3, '/plugins/backend-configuration-pn/chemicals/settings'));
+      jest.runOnlyPendingTimers();
+
+      expect(router.navigate).not.toHaveBeenCalled();
+
+      routerEvents$.next(new NavigationEnd(3, '/plugins/backend-configuration-pn/chemicals/settings', '/plugins/backend-configuration-pn/chemicals/settings'));
+      expect(router.navigate).toHaveBeenCalledWith([], urlSync(7));
+    });
+
+    it('still writes a picked property at once when nothing is navigating', () => {
+      const component = build([{id: 7, name: 'Hovedgården'}, {id: 8, name: 'Engvej 12'}]);
+      router.navigate.mockClear();
+
+      component.onPropertyChange(8);
+
+      expect(router.navigate).toHaveBeenCalledWith([], urlSync(8));
     });
   });
 });

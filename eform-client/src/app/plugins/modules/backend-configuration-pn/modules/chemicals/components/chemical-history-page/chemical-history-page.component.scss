@@ -1,0 +1,6 @@
+@use '../../chemicals-shared';
+
+.chemicals-danger { margin-bottom: var(--spacing-lg); }
+.chemicals-history-hint-error { color: var(--md-alert); }
+.col-time { white-space: nowrap; }
+.col-details { color: var(--md-on-surface-variant); }
