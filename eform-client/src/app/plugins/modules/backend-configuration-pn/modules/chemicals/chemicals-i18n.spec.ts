@@ -25,6 +25,7 @@ import {skSK} from '../../i18n/skSK';
 import {slSL} from '../../i18n/slSL';
 import {svSE} from '../../i18n/svSE';
 import {ukUA} from '../../i18n/ukUA';
+import {CHEMICAL_HISTORY_ACTIONS, HISTORY_TEXT_KEYS, historyActionKey} from './helpers/chemical-history.helper';
 import {CHEMICAL_I18N_KEYS, CHEMICAL_REUSED_I18N_KEYS} from './chemicals-i18n-keys';
 
 const LOCALES: Record<string, Record<string, unknown>> = {
@@ -62,5 +63,11 @@ describe('Kemi i18n coverage', () => {
     const raw = CHEMICAL_I18N_KEYS.filter((key) => !CHEMICAL_REUSED_I18N_KEYS.includes(key) && da[key] === key);
 
     expect(raw).toEqual([]);
+  });
+
+  it('lists every key the W6 history page builds at run time (action names, Excel detail words)', () => {
+    const built = [...CHEMICAL_HISTORY_ACTIONS.map(historyActionKey), ...Object.values(HISTORY_TEXT_KEYS)];
+
+    expect(built.filter((key) => !CHEMICAL_I18N_KEYS.includes(key))).toEqual([]);
   });
 });

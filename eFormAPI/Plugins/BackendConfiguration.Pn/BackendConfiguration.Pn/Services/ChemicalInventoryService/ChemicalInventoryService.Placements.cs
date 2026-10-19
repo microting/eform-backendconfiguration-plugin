@@ -294,16 +294,7 @@ public partial class ChemicalInventoryService
         var entries = await LiveEntries(ids).OrderBy(e => e.Id).ToListAsync().ConfigureAwait(false);
         var entriesByPlacement = entries.ToLookup(e => e.PlacementId);
 
-        var balanceAfter = new Dictionary<int, decimal>();
-        foreach (var ledger in entriesByPlacement)
-        {
-            var balance = 0m;
-            foreach (var entry in ledger)
-            {
-                balance += entry.Amount;
-                balanceAfter[entry.Id] = balance;
-            }
-        }
+        var balanceAfter = BalanceAfterByEntry(entries);
 
         var writeOffs = rows
             .Select(r => (r.Placement.Id, EntryId: FindWriteOff(r.Placement, entriesByPlacement[r.Placement.Id], balanceAfter)))
@@ -354,6 +345,26 @@ public partial class ChemicalInventoryService
     }
 
     /// <summary>
+    /// Entry id → the placement's balance right after it. A ledger is read in Id order, the
+    /// order the writes were made in and the one every balance check uses; At may be backdated.
+    /// </summary>
+    internal static Dictionary<int, decimal> BalanceAfterByEntry(IEnumerable<ChemicalStockEntry> entries)
+    {
+        var balanceAfter = new Dictionary<int, decimal>();
+        foreach (var ledger in entries.GroupBy(e => e.PlacementId))
+        {
+            var balance = 0m;
+            foreach (var entry in ledger.OrderBy(e => e.Id))
+            {
+                balance += entry.Amount;
+                balanceAfter[entry.Id] = balance;
+            }
+        }
+
+        return balanceAfter;
+    }
+
+    /// <summary>
     /// The entry RemovePlacementAsync wrote to zero the balance of a placement
     /// removed as Used or Disposed: the newest entry of the write-off kind dated
     /// exactly RemovedAt (both are written from one value) that took the balance
@@ -362,7 +373,7 @@ public partial class ChemicalInventoryService
     /// write-off's kind, zeroed the balance and carries the removal's timestamp to
     /// the microsecond.
     /// </summary>
-    private static int? FindWriteOff(ChemicalPlacement placement, IEnumerable<ChemicalStockEntry> ledger,
+    internal static int? FindWriteOff(ChemicalPlacement placement, IEnumerable<ChemicalStockEntry> ledger,
         IReadOnlyDictionary<int, decimal> balanceAfter)
     {
         if (placement.RemovedAt is not { } removedAt

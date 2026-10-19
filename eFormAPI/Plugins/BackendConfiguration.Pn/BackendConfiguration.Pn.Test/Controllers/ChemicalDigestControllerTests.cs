@@ -61,11 +61,6 @@ public class ChemicalDigestControllerTests
         return new ChemicalDigestController(_preview, localization, new FixedClock());
     }
 
-    private static IEnumerable<string> RoutedActions() => typeof(ChemicalDigestController).GetMethods()
-        .Where(m => m.GetCustomAttributes<HttpMethodAttribute>().Any())
-        .Select(m => m.Name)
-        .OrderBy(n => n, StringComparer.Ordinal);
-
     [Test]
     public void UsesThePluginPolicyAndTheChemicalsPrefix()
     {
@@ -105,33 +100,13 @@ public class ChemicalDigestControllerTests
     }
 
     // E-12: typed outcomes are answers, not Sentry events; only unexpected failures are captured.
-    private static async Task<int> CountSentryEventsAsync(Func<Task> act)
-    {
-        var captured = 0;
-        using (SentrySdk.Init(o =>
-               {
-                   o.Dsn = "https://0123456789abcdef0123456789abcdef@example.com/0";
-                   o.AutoSessionTracking = false;
-                   o.SetBeforeSend(_ =>
-                   {
-                       captured++;
-                       return null; // never leaves the process
-                   });
-               }))
-        {
-            await act();
-        }
-
-        return captured;
-    }
-
     [Test]
     public async Task Preview_TypedOutcomes_AreNotSentToSentry()
     {
         var sut = CreateSut();
         _preview.BuildAsync(9, Now).ThrowsAsync(new ChemicalNotFoundException("gone"));
 
-        var events = await CountSentryEventsAsync(() => sut.GetDigestPreview(9));
+        var events = await ControllerTestKit.CountSentryEventsAsync(() => sut.GetDigestPreview(9));
 
         Assert.That(events, Is.Zero);
     }
@@ -142,37 +117,15 @@ public class ChemicalDigestControllerTests
         var sut = CreateSut();
         _preview.BuildAsync(9, Now).ThrowsAsync(new InvalidOperationException("boom"));
 
-        var events = await CountSentryEventsAsync(() => sut.GetDigestPreview(9));
+        var events = await ControllerTestKit.CountSentryEventsAsync(() => sut.GetDigestPreview(9));
 
         Assert.That(events, Is.EqualTo(1));
     }
 
     // ---- TODO(chemistry-GA): remove with the [FirstUserOnly] on the controller, like ChemicalsControllerFirstUserGateTests ----
 
-    private const int FirstUserId = 1;
-    private const int OtherAdminId = 7;
-
     [Test]
-    public void TheGateCoversEveryRoute()
-    {
-        Assert.That(RoutedActions().Count(), Is.EqualTo(1), "gate-review a new route, then bump this");
-    }
-
-    [TestCaseSource(nameof(RoutedActions))]
-    public async Task AnAdminWhoIsNotTheFirstUser_IsForbiddenOnEveryRoute(string actionName)
-    {
-        var result = await FirstUserGate.AuthorizeAsync(typeof(ChemicalDigestController), actionName,
-            FirstUserGate.Caller(OtherAdminId, FirstUserId));
-
-        FirstUserGate.AssertForbidden(result);
-    }
-
-    [TestCaseSource(nameof(RoutedActions))]
-    public async Task TheFirstUser_PassesTheGate(string actionName)
-    {
-        var result = await FirstUserGate.AuthorizeAsync(typeof(ChemicalDigestController), actionName,
-            FirstUserGate.Caller(FirstUserId, FirstUserId));
-
-        Assert.That(result, Is.Null);
-    }
+    public Task OnlyTheFirstUser_PassesTheGate_OnEveryRoute() =>
+        FirstUserGate.AssertGateOnEveryRouteAsync(typeof(ChemicalDigestController),
+            ["GET api/backend-configuration-pn/chemicals/properties/{propertyId:int}/digest-preview"]);
 }

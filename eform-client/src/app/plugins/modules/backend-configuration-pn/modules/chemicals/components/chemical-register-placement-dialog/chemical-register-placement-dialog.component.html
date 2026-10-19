@@ -1,0 +1,56 @@
+<h3 mat-dialog-title>{{ 'Chemicals: Register placement' | translate }}</h3>
+<div mat-dialog-content class="d-flex flex-column gap-12">
+  <div class="d-flex gap-8 align-items-center">
+    <mat-form-field class="flex-grow-1">
+      <mat-label>{{ 'Chemicals: Search register' | translate }}</mat-label>
+      <input matInput id="chemicalRegisterSearchInput" [(ngModel)]="query" (keydown.enter)="search()"
+             [placeholder]="'Chemicals: Search register hint' | translate">
+    </mat-form-field>
+    <button mat-icon-button id="chemicalRegisterSearchBtn" [matTooltip]="'Search' | translate"
+            [attr.aria-label]="'Search' | translate" (click)="search()">
+      <mat-icon>search</mat-icon>
+    </button>
+  </div>
+  <mat-radio-group class="d-flex flex-column chemicals-register-results" [ngModel]="selected?.chemicalId">
+    <mat-radio-button
+      *ngFor="let entry of results"
+      [id]="'chemicalRegisterResult-' + entry.chemicalId"
+      [value]="entry.chemicalId"
+      (change)="select(entry)"
+    >
+      <strong>{{ entry.name }}</strong> · {{ 'Chemicals: Reg no short' | translate }} {{ entry.registrationNo }}
+    </mat-radio-button>
+  </mat-radio-group>
+  <div *ngIf="searched && !results.length" class="chemicals-empty">{{ 'Chemicals: No register match' | translate }}</div>
+  <div *ngIf="hasMore" class="chemicals-hint" id="chemicalRegisterMoreResults">
+    {{ 'Chemicals: More register matches' | translate: {shown: results.length, total: total} }}
+  </div>
+
+  <mat-form-field *ngIf="selected?.products?.length > 1">
+    <mat-label>{{ 'Chemicals: Product variant' | translate }}</mat-label>
+    <mtx-select id="chemicalRegisterProductSelect" [items]="selected.products" bindLabel="name" bindValue="productId"
+                [(ngModel)]="productId"></mtx-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{ 'Location' | translate }}</mat-label>
+    <mtx-select id="chemicalRegisterLocationSelect" [items]="locations" bindLabel="name" bindValue="id" [(ngModel)]="locationId" [clearable]="false"></mtx-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{ 'Chemicals: Placement note' | translate }}</mat-label>
+    <input matInput id="chemicalRegisterNote" [(ngModel)]="placementNote" maxlength="1000">
+  </mat-form-field>
+  <div *ngIf="data.stockEnabled" class="d-flex gap-12 align-items-center">
+    <mat-form-field>
+      <mat-label>{{ 'Chemicals: Initial amount' | translate }}</mat-label>
+      <input matInput type="number" min="0" step="0.001" id="chemicalRegisterAmount" [(ngModel)]="amount">
+    </mat-form-field>
+    <mat-radio-group id="chemicalRegisterUnit" [attr.aria-label]="'Chemicals: Unit' | translate" [(ngModel)]="unit">
+      <mat-radio-button id="chemicalRegisterUnitL" [value]="units.L">L</mat-radio-button>
+      <mat-radio-button id="chemicalRegisterUnitKg" [value]="units.Kg">kg</mat-radio-button>
+    </mat-radio-group>
+  </div>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button class="btn-cancel" id="chemicalRegisterCancelBtn" [disabled]="saving" (click)="cancel()">{{ 'Cancel' | translate }}</button>
+  <button class="btn-primary" id="chemicalRegisterSaveBtn" [disabled]="!canSave" (click)="save()">{{ 'Save' | translate }}</button>
+</div>

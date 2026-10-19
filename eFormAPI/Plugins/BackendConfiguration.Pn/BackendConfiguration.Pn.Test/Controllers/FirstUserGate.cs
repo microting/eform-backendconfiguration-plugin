@@ -38,6 +38,9 @@ namespace BackendConfiguration.Pn.Test.Controllers;
 /// <summary>Shared harness for [FirstUserOnly] gate tests: runs a controller's authorization filters the way MVC does.</summary>
 internal static class FirstUserGate
 {
+    public const int FirstUserId = 1;
+    public const int OtherAdminId = 7;
+
     public static IUserService Caller(int userId, int firstUserId)
     {
         var userService = Substitute.For<IUserService>();
@@ -76,6 +79,20 @@ internal static class FirstUserGate
         }
 
         return context.Result;
+    }
+
+    /// <summary>
+    /// The gate on every routed action of a [FirstUserOnly] controller: the routes are exactly <paramref name="expectedRoutes"/>
+    /// (a new route must be gate-reviewed and added), another admin is forbidden on each, and the first user passes.
+    /// </summary>
+    public static async Task AssertGateOnEveryRouteAsync(Type controller, IReadOnlyList<string> expectedRoutes)
+    {
+        Assert.That(ControllerTestKit.RoutesOf(controller), Is.EqualTo(expectedRoutes), "gate-review a new route, then add it to the expected routes");
+        foreach (var action in ControllerTestKit.RoutedActions(controller))
+        {
+            AssertForbidden(await AuthorizeAsync(controller, action, Caller(OtherAdminId, FirstUserId)));
+            Assert.That(await AuthorizeAsync(controller, action, Caller(FirstUserId, FirstUserId)), Is.Null, $"{action}: the first user passes");
+        }
     }
 
     public static void AssertForbidden(IActionResult result) =>

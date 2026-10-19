@@ -72,7 +72,9 @@ describe('ChemicalsContainerComponent (picker)', () => {
         {provide: BackendConfigurationPnPropertiesService, useValue: {
           getAllPropertiesDictionary: () => of({success: true, model: list}),
         }},
-        {provide: Router, useValue: {navigate: vi.fn().mockResolvedValue(true), events: new Subject()}},
+        {provide: Router, useValue: {
+          navigate: vi.fn().mockResolvedValue(true), events: new Subject(), currentNavigation: vi.fn().mockReturnValue(null),
+        }},
         {provide: ActivatedRoute, useValue: {snapshot: {queryParamMap: convertToParamMap({})}, firstChild: null}},
       ],
       schemas: [NO_ERRORS_SCHEMA],

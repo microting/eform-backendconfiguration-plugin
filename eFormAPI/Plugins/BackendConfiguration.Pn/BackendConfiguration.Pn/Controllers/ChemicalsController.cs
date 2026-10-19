@@ -33,6 +33,7 @@ using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.EformBackendConfigurationBase.Infrastructure.Const;
 using Sentry;
+using Services.BackendConfigurationComplianceExportService;
 using Services.BackendConfigurationLocalizationService;
 using Services.ChemicalInventoryService;
 
@@ -60,6 +61,8 @@ public class ChemicalsController(
     /// limit to 100 MB and the multipart limit to long.MaxValue, so the route sets its own.
     /// </summary>
     private const long MaxPhotoRequestBytes = ChemicalInventoryService.MaxPhotoBytes + 1024 * 1024;
+
+    private const string UnexpectedError = "An unexpected error occurred.";
 
     private const string BodyRequired = "A request body is required.";
 
@@ -191,7 +194,7 @@ public class ChemicalsController(
     };
 
     /// <summary>A JSON body that is missing or does not parse binds to null (no [ApiController]).</summary>
-    private static TBody Required<TBody>(TBody body) where TBody : class =>
+    internal static TBody Required<TBody>(TBody body) where TBody : class =>
         body ?? throw new ArgumentException(BodyRequired);
 
     private async Task<OperationDataResult<T>> ExecuteAsync<T>(Func<Task<T>> action, string errorKey)
@@ -213,35 +216,57 @@ public class ChemicalsController(
     internal static OperationDataResult<T> FailureResult<T>(
         Exception e, IBackendConfigurationLocalizationService localizationService, string errorKey)
     {
+        var message = localizationService.GetString(errorKey);
         if (ExpectedStatusCode(e) is null)
         {
             SentrySdk.CaptureException(e);
         }
+        else
+        {
+            message = $"{message}: {e.Message}";
+        }
 
-        return new OperationDataResult<T>(false, $"{localizationService.GetString(errorKey)}: {e.Message}");
+        return new OperationDataResult<T>(false, message);
     }
 
     private Task<OperationDataResult<List<T>>> ExecuteListAsync<T>(Func<Task<IReadOnlyList<T>>> action, string errorKey) =>
         ExecuteAsync(async () => (await action().ConfigureAwait(false)).ToList(), errorKey);
 
-    private async Task<IActionResult> FileAsync(Func<Task<(byte[] Content, string ContentType)>> read)
+    private Task<IActionResult> FileAsync(Func<Task<(byte[] Content, string ContentType)>> read) =>
+        FileResultAsync(this, async () =>
+        {
+            var (content, contentType) = await read().ConfigureAwait(false);
+            return new ChemicalExportFile(content, null, contentType);
+        });
+
+    /// <summary>
+    /// A file answer for the Kemi controllers: typed outcomes keep their status and message, anything
+    /// unexpected goes to Sentry and answers 500 without its raw message. A file name, when the
+    /// producer gives one, becomes a UTF-8 safe Content-Disposition.
+    /// </summary>
+    internal static async Task<IActionResult> FileResultAsync(ControllerBase controller, Func<Task<ChemicalExportFile>> produce)
     {
         try
         {
-            var (content, contentType) = await read().ConfigureAwait(false);
-            return File(content, contentType);
+            var file = await produce().ConfigureAwait(false);
+            if (!string.IsNullOrEmpty(file.FileName))
+            {
+                controller.Response.Headers["Content-Disposition"] = ComplianceExportFileNaming.BuildContentDisposition(file.FileName);
+            }
+
+            return controller.File(file.Content, file.ContentType);
         }
         catch (Exception e)
         {
             switch (ExpectedStatusCode(e))
             {
                 case StatusCodes.Status404NotFound:
-                    return NotFound();
+                    return new NotFoundResult();
                 case { } status:
-                    return StatusCode(status, e.Message);
+                    return new ObjectResult(e.Message) { StatusCode = status };
                 default:
                     SentrySdk.CaptureException(e);
-                    return StatusCode(StatusCodes.Status500InternalServerError, e.Message);
+                    return new ObjectResult(UnexpectedError) { StatusCode = StatusCodes.Status500InternalServerError };
             }
         }
     }

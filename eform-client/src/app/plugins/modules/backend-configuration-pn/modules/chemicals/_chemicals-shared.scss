@@ -1,0 +1,45 @@
+// Kemi styles shared by the Kemi pages (W1, W3, W6), the W2 side panel and the placement dialogs. Each component @use's this
+// partial (view encapsulation scopes the rules to it). Colours come from the eForm new design tokens
+// (host scss/themes), tinted with color-mix, so light and dark themes both work.
+
+// The host element of every Kemi dialog: a block (so its content stays out of the dialog surface's flex column)
+// with the dialog width.
+@mixin dialog-host($max-width: 520px) { display: block; max-width: $max-width; }
+
+.chemicals-hint { color: var(--md-on-surface-variant); font-size: 12px; }
+.chemicals-empty { padding: var(--spacing-2xl) var(--spacing-md); color: var(--md-on-surface-variant); }
+
+.chemicals-banner {
+  display: flex; align-items: center; gap: var(--spacing-md);
+  padding: 10px var(--spacing-xl); border-radius: var(--md-radius);
+  background: color-mix(in srgb, var(--status-afventer-bg) 20%, var(--md-surface));
+  color: var(--md-on-surface);
+}
+.chemicals-banner--overdue { background: color-mix(in srgb, var(--md-alert) 14%, var(--md-surface)); }
+.chemicals-danger {
+  display: flex; align-items: center; gap: var(--spacing-md);
+  padding: 10px var(--spacing-xl); border-radius: var(--md-radius);
+  background: color-mix(in srgb, var(--md-alert) 14%, var(--md-surface)); color: var(--md-alert);
+}
+
+.chemicals-chip--active { outline: 2px solid var(--md-primary); }
+.status-chip {
+  padding: 2px var(--spacing-md); border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--status-aktiv-bg) 16%, var(--md-surface)); color: var(--md-on-surface);
+}
+.status-chip--bad { background: color-mix(in srgb, var(--md-alert) 16%, var(--md-surface)); }
+.ghs-chip {
+  display: inline-block; margin-right: var(--spacing-xs); padding: 1px var(--spacing-sm);
+  border: 1px solid var(--md-alert); border-radius: var(--radius-sm); font-size: 11px;
+}
+.deadline--passed { color: var(--md-alert); font-weight: 600; }
+.deadline--soon { color: color-mix(in srgb, var(--status-afventer-bg) 70%, var(--md-on-surface)); font-weight: 600; }
+
+// A plain data table (W6 history; the next Kemi table should use it too instead of its own copy).
+.chemicals-table { width: 100%; border-collapse: collapse; }
+.chemicals-table th, .chemicals-table td {
+  padding: var(--spacing-md); text-align: left; vertical-align: top;
+  border-bottom: 1px solid color-mix(in srgb, var(--md-outline) 35%, transparent);
+}
+.chemicals-table th { font-weight: 600; color: var(--md-on-surface-variant); }
+.chemicals-table td { background: var(--md-surface); color: var(--md-on-surface); }
