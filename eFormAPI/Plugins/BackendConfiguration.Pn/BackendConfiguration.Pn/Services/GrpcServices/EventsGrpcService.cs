@@ -2168,13 +2168,16 @@ public class EventsGrpcService(
     }
 
     /// <summary>
-    /// Wraps <see cref="AlreadyCompletedOrThrowAsync"/> so BOTH callers that
-    /// hand a caller the first-completer-wins response - the
-    /// <c>compliance == null</c> branch above and the lost-claim branch
-    /// further down - flag/log a discarded submission the SAME way. One
-    /// helper, no duplicated logic (see brief: "if the claim-lost race path
-    /// returns the already-completed response while the request carried
-    /// answers, it must set the same flag and log the same way").
+    /// Wraps <see cref="AlreadyCompletedOrThrowAsync"/> so EVERY caller that
+    /// can end in a discarded submission - the <c>compliance == null</c>
+    /// branch above, the lost-claim branch further down, AND the anonymous
+    /// <c>FailedPrecondition</c> throw when no winner can be identified at
+    /// all (e.g. the Compliance row was removed WITHOUT being completed -
+    /// task deleted / worker unassigned - or no row could be resolved) -
+    /// flags/logs it the SAME way. One helper, no duplicated logic (see
+    /// brief: "if the claim-lost race path returns the already-completed
+    /// response while the request carried answers, it must set the same
+    /// flag and log the same way").
     /// </summary>
     private async Task<CompleteEventResponse> AlreadyCompletedWithDiscardTrackingAsync(
         Compliance? settled,
@@ -2183,40 +2186,55 @@ public class EventsGrpcService(
         CompleteEventRequest request,
         int sdkSiteId)
     {
-        var response = await AlreadyCompletedOrThrowAsync(settled, eventId, sdkDbContext)
-            .ConfigureAwait(false);
-        FlagAnswersDiscardedIfAny(response, request, eventId, sdkSiteId);
-        return response;
+        var hasAnswers = HasAnswers(request);
+        try
+        {
+            var response = await AlreadyCompletedOrThrowAsync(settled, eventId, sdkDbContext)
+                .ConfigureAwait(false);
+            if (hasAnswers)
+            {
+                response.AnswersDiscarded = true;
+                response.DiscardedReason = BuildDiscardedReason(response.Event);
+                LogDiscardedAnswers(request, eventId, sdkSiteId);
+            }
+            return response;
+        }
+        catch (RpcException) when (hasAnswers)
+        {
+            // No winner could be identified, so AlreadyCompletedOrThrowAsync
+            // threw the original anonymous FailedPrecondition instead of
+            // returning a response - there is no Event to flag and no
+            // CompletedBy/UpdatedAt to build a reason from, so the caller
+            // just gets that throw, same as before this fix. The answers are
+            // STILL discarded though, so log them the same way rather than
+            // losing the record silently, then let the throw continue.
+            LogDiscardedAnswers(request, eventId, sdkSiteId);
+            throw;
+        }
     }
 
     /// <summary>
-    /// Sets <c>CompleteEventResponse.answers_discarded</c> / <c>discarded_reason</c>
-    /// on a first-completer-wins response, and logs at Error (so it reaches
-    /// Sentry) the full submission so it can be recovered by hand, whenever the
-    /// request that produced <paramref name="response"/> carried answers
-    /// (incident: tenant 945, 2026-10-14 - a worker's field_values + comment
-    /// were discarded with no record anywhere). No-op when the request carried
-    /// no answers, so the unchanged existing behaviour
-    /// (<c>answers_discarded = false</c>, the proto3 default) is preserved.
+    /// True when <paramref name="request"/> carries anything that would be
+    /// lost by a first-completer-wins response: any <c>field_values</c>
+    /// entry or a non-empty <c>comment</c>.
     /// </summary>
-    private void FlagAnswersDiscardedIfAny(
-        CompleteEventResponse response,
-        CompleteEventRequest request,
-        int eventId,
-        int sdkSiteId)
+    private static bool HasAnswers(CompleteEventRequest request) =>
+        request.FieldValues.Count > 0 || !string.IsNullOrEmpty(request.Comment);
+
+    /// <summary>
+    /// Logs at Error (so it reaches Sentry) the full submission of a worker
+    /// whose answers were just discarded - either a flagged first-completer-
+    /// wins response or the anonymous throw when no winner could be
+    /// identified - so it can be recovered by hand (incident: tenant 945,
+    /// 2026-10-14 - a worker's field_values + comment were discarded with no
+    /// record anywhere). The sole call sites are the two branches of
+    /// <see cref="AlreadyCompletedWithDiscardTrackingAsync"/>.
+    /// </summary>
+    private void LogDiscardedAnswers(CompleteEventRequest request, int eventId, int sdkSiteId)
     {
-        var hasAnswers = request.FieldValues.Count > 0 || !string.IsNullOrEmpty(request.Comment);
-        if (!hasAnswers)
-        {
-            return;
-        }
-
-        response.AnswersDiscarded = true;
-        response.DiscardedReason = BuildDiscardedReason(response.Event);
-
         var fieldValuesText = string.Join(
             ", ",
-            request.FieldValues.Select(fv => $"field_id={fv.FieldId}={fv.Value}"));
+            request.FieldValues.Select(fv => $"{fv.FieldId}={fv.Value}"));
 
         logger.LogError(
             "CompleteEvent discarded a worker's answers: eventId={EventId} "

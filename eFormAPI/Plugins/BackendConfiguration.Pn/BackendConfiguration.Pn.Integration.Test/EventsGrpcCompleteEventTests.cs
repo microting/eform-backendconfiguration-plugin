@@ -232,6 +232,93 @@ public class EventsGrpcCompleteEventTests : TestBaseSetup
     }
 
     /// <summary>
+    /// The <c>Area</c> / <c>Property</c> / <c>AreaRule</c> / <c>Planning</c> /
+    /// <c>AreaRulePlanning</c> scaffold every scenario in this fixture needs —
+    /// shared by <see cref="SeedScenarioAsync"/> and
+    /// <see cref="SeedStaleComplianceScenarioAsync"/>, which otherwise built it
+    /// twice, byte-for-byte identically. Each caller still seeds its OWN
+    /// <c>Compliance</c> / SDK <c>Case</c> / <c>PlanningSite</c> rows on top —
+    /// those differ (one row vs. two, which site owns the case, etc.) and stay
+    /// where the scenario-specific seeding lives.
+    /// </summary>
+    private sealed record PlanningScaffold(
+        Area Area, BcProperty Property, AreaRule AreaRule, Planning Planning, AreaRulePlanning Arp);
+
+    private async Task<PlanningScaffold> SeedPlanningScaffoldAsync(
+        string label, string suffix, int templateId, DateTime startDate)
+    {
+        var area = new Area
+        {
+            Type = AreaTypesEnum.Type1,
+            ItemPlanningTagId = 0,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext!.Areas.AddAsync(area);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var property = new BcProperty
+        {
+            Name = $"{label}-{suffix}",
+            ItemPlanningTagId = 0,
+            ComplianceStatus = 1,
+            ComplianceStatusThirty = 1,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.Properties.AddAsync(property);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var areaRule = new AreaRule
+        {
+            AreaId = area.Id,
+            PropertyId = property.Id,
+            EformId = templateId,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.AreaRules.AddAsync(areaRule);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var planning = new Planning
+        {
+            Enabled = true,
+            RepeatEvery = 1,
+            RepeatType = RepeatType.Week,
+            StartDate = startDate,
+            RelatedEFormId = templateId,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        var arp = new AreaRulePlanning
+        {
+            AreaRuleId = areaRule.Id,
+            PropertyId = property.Id,
+            AreaId = area.Id,
+            ItemPlanningId = planning.Id,
+            StartDate = startDate,
+            Status = true,
+            RepeatType = 1,
+            RepeatEvery = 1,
+            DayOfWeek = 1,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(arp);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        return new PlanningScaffold(area, property, areaRule, planning, arp);
+    }
+
+    /// <summary>
     /// Seeds the full graph CompleteEvent walks: SDK Site (x2) + Case,
     /// Area/Property/AreaRule/AreaRulePlanning, ItemsPlanning Planning +
     /// PlanningCase + PlanningCaseSite, and the single Compliance row that
@@ -288,81 +375,19 @@ public class EventsGrpcCompleteEventTests : TestBaseSetup
         await MicrotingDbContext.Cases.AddAsync(sdkCase);
         await MicrotingDbContext.SaveChangesAsync();
 
-        var area = new Area
-        {
-            Type = AreaTypesEnum.Type1,
-            ItemPlanningTagId = 0,
-            WorkflowState = Constants.WorkflowStates.Created,
-            CreatedByUserId = 1,
-            UpdatedByUserId = 1
-        };
-        await BackendConfigurationPnDbContext!.Areas.AddAsync(area);
-        await BackendConfigurationPnDbContext.SaveChangesAsync();
-
-        // Pre-seeded, deliberately "stale" compliance dots. CompleteEvent must
-        // leave both untouched (self-documented gap, EventsGrpcService.cs:99-106).
-        var property = new BcProperty
-        {
-            Name = $"{label}-{suffix}",
-            ItemPlanningTagId = 0,
-            ComplianceStatus = 1,
-            ComplianceStatusThirty = 1,
-            WorkflowState = Constants.WorkflowStates.Created,
-            CreatedByUserId = 1,
-            UpdatedByUserId = 1
-        };
-        await BackendConfigurationPnDbContext.Properties.AddAsync(property);
-        await BackendConfigurationPnDbContext.SaveChangesAsync();
-
-        var areaRule = new AreaRule
-        {
-            AreaId = area.Id,
-            PropertyId = property.Id,
-            EformId = templateId,
-            WorkflowState = Constants.WorkflowStates.Created,
-            CreatedByUserId = 1,
-            UpdatedByUserId = 1
-        };
-        await BackendConfigurationPnDbContext.AreaRules.AddAsync(areaRule);
-        await BackendConfigurationPnDbContext.SaveChangesAsync();
-
         // Deadline three days in the past, midnight UTC — the "missed rotation"
         // shape. The DATE of this value is what DoneAt must end up carrying.
         var deadline = DateTime.SpecifyKind(DateTime.UtcNow.Date.AddDays(-3), DateTimeKind.Utc);
 
-        var planning = new Planning
-        {
-            Enabled = true,
-            RepeatEvery = 1,
-            RepeatType = RepeatType.Week,
-            StartDate = deadline,
-            RelatedEFormId = templateId,
-            WorkflowState = Constants.WorkflowStates.Created,
-            CreatedByUserId = 1,
-            UpdatedByUserId = 1
-        };
-        await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
-        await ItemsPlanningPnDbContext.SaveChangesAsync();
+        // Pre-seeded, deliberately "stale" compliance dots. CompleteEvent must
+        // leave both untouched (self-documented gap, EventsGrpcService.cs:99-106).
+        var scaffold = await SeedPlanningScaffoldAsync(label, suffix, templateId, deadline);
+        var area = scaffold.Area;
+        var property = scaffold.Property;
+        var planning = scaffold.Planning;
+        var arp = scaffold.Arp;
 
-        var arp = new AreaRulePlanning
-        {
-            AreaRuleId = areaRule.Id,
-            PropertyId = property.Id,
-            AreaId = area.Id,
-            ItemPlanningId = planning.Id,
-            StartDate = deadline,
-            Status = true,
-            RepeatType = 1,
-            RepeatEvery = 1,
-            DayOfWeek = 1,
-            WorkflowState = Constants.WorkflowStates.Created,
-            CreatedByUserId = 1,
-            UpdatedByUserId = 1
-        };
-        await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(arp);
-        await BackendConfigurationPnDbContext.SaveChangesAsync();
-
-        await BackendConfigurationPnDbContext.PlanningSites.AddAsync(new BcPlanningSite
+        await BackendConfigurationPnDbContext!.PlanningSites.AddAsync(new BcPlanningSite
         {
             AreaRulePlanningsId = arp.Id,
             SiteId = completingSite.Id,
@@ -1002,79 +1027,17 @@ public class EventsGrpcCompleteEventTests : TestBaseSetup
         await MicrotingDbContext.Cases.AddRangeAsync(caseA, caseB);
         await MicrotingDbContext.SaveChangesAsync();
 
-        var area = new Area
-        {
-            Type = AreaTypesEnum.Type1,
-            ItemPlanningTagId = 0,
-            WorkflowState = Constants.WorkflowStates.Created,
-            CreatedByUserId = 1,
-            UpdatedByUserId = 1
-        };
-        await BackendConfigurationPnDbContext!.Areas.AddAsync(area);
-        await BackendConfigurationPnDbContext.SaveChangesAsync();
-
-        var property = new BcProperty
-        {
-            Name = $"{label}-{suffix}",
-            ItemPlanningTagId = 0,
-            ComplianceStatus = 1,
-            ComplianceStatusThirty = 1,
-            WorkflowState = Constants.WorkflowStates.Created,
-            CreatedByUserId = 1,
-            UpdatedByUserId = 1
-        };
-        await BackendConfigurationPnDbContext.Properties.AddAsync(property);
-        await BackendConfigurationPnDbContext.SaveChangesAsync();
-
-        var areaRule = new AreaRule
-        {
-            AreaId = area.Id,
-            PropertyId = property.Id,
-            EformId = templateId,
-            WorkflowState = Constants.WorkflowStates.Created,
-            CreatedByUserId = 1,
-            UpdatedByUserId = 1
-        };
-        await BackendConfigurationPnDbContext.AreaRules.AddAsync(areaRule);
-        await BackendConfigurationPnDbContext.SaveChangesAsync();
-
         // A's deadline: three weeks ago (the "prior occurrence"). B's: three
         // days ago (the current, still-open one). Distinct values satisfy the
         // UNIQUE (PlanningId, Deadline) index — both rows share the planning.
         var deadlineA = DateTime.SpecifyKind(DateTime.UtcNow.Date.AddDays(-21), DateTimeKind.Utc);
         var deadlineB = DateTime.SpecifyKind(DateTime.UtcNow.Date.AddDays(-3), DateTimeKind.Utc);
 
-        var planning = new Planning
-        {
-            Enabled = true,
-            RepeatEvery = 1,
-            RepeatType = RepeatType.Week,
-            StartDate = deadlineA,
-            RelatedEFormId = templateId,
-            WorkflowState = Constants.WorkflowStates.Created,
-            CreatedByUserId = 1,
-            UpdatedByUserId = 1
-        };
-        await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
-        await ItemsPlanningPnDbContext.SaveChangesAsync();
-
-        var arp = new AreaRulePlanning
-        {
-            AreaRuleId = areaRule.Id,
-            PropertyId = property.Id,
-            AreaId = area.Id,
-            ItemPlanningId = planning.Id,
-            StartDate = deadlineA,
-            Status = true,
-            RepeatType = 1,
-            RepeatEvery = 1,
-            DayOfWeek = 1,
-            WorkflowState = Constants.WorkflowStates.Created,
-            CreatedByUserId = 1,
-            UpdatedByUserId = 1
-        };
-        await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(arp);
-        await BackendConfigurationPnDbContext.SaveChangesAsync();
+        var scaffold = await SeedPlanningScaffoldAsync(label, suffix, templateId, deadlineA);
+        var area = scaffold.Area;
+        var property = scaffold.Property;
+        var planning = scaffold.Planning;
+        var arp = scaffold.Arp;
 
         // Compliance A: created then immediately soft-deleted through
         // PnBase.Delete, mirroring how a real completion weeks earlier left
@@ -1283,6 +1246,57 @@ public class EventsGrpcCompleteEventTests : TestBaseSetup
             Assert.That(caseB.Status, Is.EqualTo(66),
                 "a caller on a different site must never complete B's case");
             Assert.That(caseB.DoneAt, Is.Null);
+        });
+    }
+
+    /// <summary>
+    /// A removed Compliance whose case was NEVER completed — the task was
+    /// deleted or the worker unassigned, not finished — is the ONE outcome of
+    /// a discarded submission that does not come back as a normal response:
+    /// <c>AlreadyCompletedOrThrowAsync</c> cannot name a winner, so it throws
+    /// the original anonymous <c>FailedPrecondition</c> (see
+    /// <see cref="CompleteEvent_ComplianceRemovedWithoutCompletion_DoesNotInventACompleter"/>,
+    /// which pins that throw itself). Round-1 review finding: that throw used
+    /// to happen BEFORE the discard was flagged/logged, so a worker's answers
+    /// sent alongside it vanished with no Sentry record at all. Pins that the
+    /// throw still happens (the client gets the same error as before — there
+    /// is no winner to report) but the submission is no longer silently lost.
+    /// </summary>
+    [Test]
+    public async Task CompleteEvent_StaleComplianceId_RemovedNotCompleted_ThrowsAndLogs()
+    {
+        var s = await SeedScenarioAsync("removed-not-completed-with-answers");
+
+        // Same arrange as CompleteEvent_ComplianceRemovedWithoutCompletion_DoesNotInventACompleter:
+        // the occurrence goes away WITHOUT anyone completing it.
+        var compliance = await BackendConfigurationPnDbContext!.Compliances
+            .FirstAsync(x => x.Id == s.ComplianceId);
+        await compliance.Delete(BackendConfigurationPnDbContext);
+
+        var fieldValue = $"FIELD-{Guid.NewGuid().ToString("N")[..8]}";
+        var request = MakeRequest(s);
+        // The exact field id does not matter — the throw happens before any
+        // field-value processing runs. Only "the request carried answers"
+        // matters for what this test pins.
+        request.FieldValues.Add(new FieldValueWrite { FieldId = 999999, Value = fieldValue });
+
+        var ex = await Assert.ThrowsAsync<GrpcCore.RpcException>(async () =>
+            await s.Service.CompleteEvent(request, new TestServerCallContext()));
+
+        Assert.That(ex!.StatusCode, Is.EqualTo(GrpcCore.StatusCode.FailedPrecondition),
+            "no winner can be identified for an occurrence that was never completed");
+
+        var sdkCase = await MicrotingDbContext!.Cases
+            .AsNoTracking().FirstAsync(x => x.Id == s.SdkCaseId);
+        var fieldValueRows = await MicrotingDbContext.FieldValues
+            .AsNoTracking().CountAsync(fv => fv.Value == fieldValue);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(sdkCase.Status, Is.EqualTo(66), "the case was never completed by this call");
+            Assert.That(sdkCase.DoneAt, Is.Null);
+            Assert.That(fieldValueRows, Is.EqualTo(0),
+                "the field value sent alongside the throw was never written anywhere");
         });
     }
 
