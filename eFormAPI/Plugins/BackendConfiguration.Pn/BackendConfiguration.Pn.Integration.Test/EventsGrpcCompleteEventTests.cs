@@ -1225,20 +1225,8 @@ public class EventsGrpcCompleteEventTests : TestBaseSetup
         // Same Error entry as the throw path (shared helper) — this is the
         // flagged-response outcome of the same discard, so it must log the
         // same way.
-        var errorEntries = recordingLogger.Entries.Where(e => e.Level == LogLevel.Error).ToList();
-        Assert.That(errorEntries, Has.Count.EqualTo(1),
-            "exactly one Error entry — the discarded-answers log, and nothing else new at Error");
-
-        var message = errorEntries[0].Message;
-        Assert.Multiple(() =>
-        {
-            Assert.That(message, Does.Contain($"eventId={s.ArpId}"));
-            Assert.That(message, Does.Contain($"requestedComplianceId={s.ComplianceAId}"));
-            Assert.That(message, Does.Contain($"microtingSdkCaseId={s.CaseAId}"));
-            Assert.That(message, Does.Contain($"sdkSiteId={s.CompletingSiteId}"));
-            Assert.That(message, Does.Contain($"{s.SharedFieldId}={fieldValue}"),
-                "each bundled field is logged as field_id=value");
-        });
+        AssertDiscardedAnswersLogged(recordingLogger, s.ArpId, s.ComplianceAId, s.CaseAId,
+            s.CompletingSiteId, $"{s.SharedFieldId}={fieldValue}");
     }
 
     /// <summary>
@@ -1324,21 +1312,8 @@ public class EventsGrpcCompleteEventTests : TestBaseSetup
                 "the field value sent alongside the throw was never written anywhere");
         });
 
-        var errorEntries = recordingLogger.Entries.Where(e => e.Level == LogLevel.Error).ToList();
-        Assert.That(errorEntries, Has.Count.EqualTo(1),
-            "exactly one Error entry — the discarded-answers log, and nothing else new at Error");
-
-        var message = errorEntries[0].Message;
-        Assert.Multiple(() =>
-        {
-            Assert.That(message, Does.Contain($"eventId={s.ArpId}"));
-            Assert.That(message, Does.Contain($"requestedComplianceId={s.ComplianceId}"));
-            Assert.That(message, Does.Contain($"microtingSdkCaseId={s.SdkCaseId}"));
-            Assert.That(message, Does.Contain($"sdkSiteId={s.CompletingSiteId}"));
-            Assert.That(message, Does.Contain($"999999={fieldValue}"),
-                "each bundled field is logged as field_id=value");
-            Assert.That(message, Does.Contain(comment));
-        });
+        AssertDiscardedAnswersLogged(recordingLogger, s.ArpId, s.ComplianceId, s.SdkCaseId,
+            s.CompletingSiteId, $"999999={fieldValue}", comment);
     }
 
     /// <summary>
@@ -1375,5 +1350,32 @@ public class EventsGrpcCompleteEventTests : TestBaseSetup
 
         Assert.That(recordingLogger.Entries.Any(e => e.Level == LogLevel.Error), Is.False,
             "no answers were sent — the discarded-answers Error log must not fire");
+    }
+
+    /// <summary>
+    /// The discarded-answers Error log is the only retained copy of the submission:
+    /// exactly one Error entry, carrying the identifiers, every field as field_id=value
+    /// and the comment when one was sent.
+    /// </summary>
+    private static void AssertDiscardedAnswersLogged(RecordingLogger<EventsGrpcService> logger,
+        int eventId, int complianceId, int sdkCaseId, int sdkSiteId, string fieldEntry, string? comment = null)
+    {
+        var errorEntries = logger.Entries.Where(e => e.Level == LogLevel.Error).ToList();
+        Assert.That(errorEntries, Has.Count.EqualTo(1),
+            "exactly one Error entry — the discarded-answers log, and nothing else new at Error");
+
+        var message = errorEntries[0].Message;
+        Assert.Multiple(() =>
+        {
+            Assert.That(message, Does.Contain($"eventId={eventId}"));
+            Assert.That(message, Does.Contain($"requestedComplianceId={complianceId}"));
+            Assert.That(message, Does.Contain($"microtingSdkCaseId={sdkCaseId}"));
+            Assert.That(message, Does.Contain($"sdkSiteId={sdkSiteId}"));
+            Assert.That(message, Does.Contain(fieldEntry), "each bundled field is logged as field_id=value");
+            if (comment != null)
+            {
+                Assert.That(message, Does.Contain(comment));
+            }
+        });
     }
 }
