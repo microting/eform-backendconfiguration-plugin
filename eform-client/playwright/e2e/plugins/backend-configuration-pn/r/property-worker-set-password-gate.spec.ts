@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { fillInDialog } from '../dialog-helpers';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
 import {
@@ -148,8 +149,8 @@ test.describe('Property-worker password affordance follows the email', () => {
       'the dialog must target the worker whose row we opened'
     ).toBeVisible({ timeout: UI_TIMEOUT });
 
-    await dialog.locator('#newPassword').fill(NEW_PASSWORD);
-    await dialog.locator('#newPasswordConfirmation').fill(NEW_PASSWORD);
+    await fillInDialog(page, dialog.locator('#newPassword'), NEW_PASSWORD);
+    await fillInDialog(page, dialog.locator('#newPasswordConfirmation'), NEW_PASSWORD);
 
     const saveBtn = dialog.locator('#userDeleteBtn');
     await expect(saveBtn, 'Save stays disabled until the form validates')

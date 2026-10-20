@@ -8,6 +8,7 @@ import {
   UI_TIMEOUT,
   waitForApiResponse,
 } from './wait-helpers';
+import { fillInDialog } from './dialog-helpers';
 
 export class BackendConfigurationPropertyWorkersPage {
   constructor(private page: Page) {}
@@ -147,13 +148,13 @@ export class BackendConfigurationPropertyWorkersPage {
     );
     if (propertyWorker) {
       if (propertyWorker.name) {
-        await this.createFirstNameInput().fill(propertyWorker.name);
+        await fillInDialog(this.page, this.createFirstNameInput(), propertyWorker.name);
       }
       if (propertyWorker.surname) {
-        await this.createLastNameInput().fill(propertyWorker.surname);
+        await fillInDialog(this.page, this.createLastNameInput(), propertyWorker.surname);
       }
       if (propertyWorker.workerEmail) {
-        await this.createEmailInput().fill(propertyWorker.workerEmail);
+        await fillInDialog(this.page, this.createEmailInput(), propertyWorker.workerEmail);
       }
       if (propertyWorker.language) {
         // Select language inline using ng-select
@@ -411,14 +412,9 @@ export class BackendConfigurationPropertyWorkersPage {
     await this.sitesManageTagsBtn().click();
     await this.page.locator('#newTagBtn').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
     await this.page.locator('#newTagBtn').click();
-    await this.page.locator('#newTagName').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
-    // The dialog's DOM is attached a frame before its first change detection (the host
-    // coalesces events). Filling before then lets ngModel's initial '' overwrite the
-    // name and Save stays disabled. The translated title only renders in that first
-    // pass, so wait for it, then fill once.
-    const createDialog = this.page.locator('mat-dialog-container', { has: this.page.locator('#newTagName') });
-    await expect(createDialog.locator('[mat-dialog-title]')).toHaveText(/\S/, { timeout: UI_TIMEOUT });
-    await this.page.locator('#newTagName').fill(tagName);
+    // Filling before the dialog's first change detection let ngModel's initial '' overwrite the
+    // name, so Save stayed disabled. See dialog-helpers.ts.
+    await fillInDialog(this.page, this.page.locator('#newTagName'), tagName);
     await expect(this.page.locator('#newTagSaveBtn')).toBeEnabled({ timeout: UI_TIMEOUT });
     await this.page.locator('#newTagSaveBtn').click();
     // The saved tag showing up in the modal's list is the post-condition. Scope

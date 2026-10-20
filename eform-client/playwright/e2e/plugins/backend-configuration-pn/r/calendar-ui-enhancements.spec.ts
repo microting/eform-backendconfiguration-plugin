@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { fillInDialog } from '../dialog-helpers';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
 import { CalendarUiEnhancementsPage } from '../calendar-ui-enhancements.page';
@@ -914,7 +915,7 @@ test.describe.serial('Calendar UI enhancements', () => {
         .locator('.custom-repeat-dialog')
         .waitFor({ state: 'visible', timeout: 10000 });
       const stepInput = page.locator('.custom-repeat-dialog .step-input input');
-      await stepInput.fill('2');
+      await fillInDialog(page, stepInput, '2');
 
       // Pick Mon+Wed+Fri. Monday is auto-active when opening fresh against
       // a Monday slot date — toggle Wednesday and Friday on, leave Monday on,
@@ -940,7 +941,7 @@ test.describe.serial('Calendar UI enhancements', () => {
         .locator('mat-radio-button')
         .click();
       await page.waitForTimeout(200);
-      await page.locator('.custom-repeat-dialog .count-input input').fill('6');
+      await fillInDialog(page, page.locator('.custom-repeat-dialog .count-input input'), '6');
 
       // Færdig (Done) — closes the modal, syncs meta back to parent.
       await page.locator('.custom-repeat-dialog .btn-done-gcal').click();

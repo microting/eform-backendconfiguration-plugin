@@ -8,6 +8,7 @@ import {
 } from '../BackendConfigurationChemicals.page';
 import { isoDateFromToday, propertyIdByName, seedRegisterChemical } from '../chemical-register-seed';
 import { API_TIMEOUT, UI_TIMEOUT } from '../wait-helpers';
+import { dialogReady, fillInDialog } from '../dialog-helpers';
 
 /**
  * W1 + W2 (flutter-chemistry spec §11): register placements from the BMD register, "Kræver handling"
@@ -106,8 +107,10 @@ test.describe.serial('Kemi W1/W2 - inventory', () => {
 
     const menuItem = await kemi.openInventoryRowMenu(approved);
     await menuItem('chemicalRowMove').click({ timeout: UI_TIMEOUT });
+    await dialogReady(page, page.locator('#chemicalMoveNote'));
     await kemi.selectMtxOption('#chemicalMoveTargetSelect', kemirum);
-    await page.locator('#chemicalMoveNote').fill('Shelf 1', { timeout: UI_TIMEOUT });
+    await fillInDialog(page, page.locator('#chemicalMoveNote'), 'Shelf 1');
+    await expect(page.locator('#chemicalMoveSaveBtn')).toBeEnabled({ timeout: UI_TIMEOUT });
     const moved = kemi.waitForChemicalsCall('POST', /^placements\/\d+\/move$/);
     await page.locator('#chemicalMoveSaveBtn').click({ timeout: UI_TIMEOUT });
     await moved;

@@ -1,4 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
+import { dialogReady } from '../dialog-helpers';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
 import {
@@ -71,6 +72,7 @@ function listedOptions(page: Page) {
 
 async function openTimeRegistrationTab(page: Page): Promise<void> {
   const tab = dialog(page).locator('.mat-mdc-tab').filter({ hasText: TIME_REGISTRATION_TAB });
+  await dialogReady(page, tab);
   await tab.click({ timeout: UI_TIMEOUT });
   await expect(tab).toHaveAttribute('aria-selected', 'true', { timeout: UI_TIMEOUT });
   await expect(dialog(page).locator('#isManager')).toBeVisible({ timeout: UI_TIMEOUT });

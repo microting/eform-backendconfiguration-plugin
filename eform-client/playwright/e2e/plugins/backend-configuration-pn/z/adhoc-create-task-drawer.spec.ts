@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { fillInDialog } from '../dialog-helpers';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
 import { BackendConfigurationPropertiesPage } from '../BackendConfigurationProperties.page';
@@ -77,7 +78,7 @@ test.describe.serial('Adhoc overblik — new task drawer (all sections)', () => 
 
     // "Ejendom og opgave" (expanded by default).
     await adhocPage.selectDrawerProperty(property.name);
-    await adhocPage.drawerTitleInput().fill(taskTitle);
+    await fillInDialog(page, adhocPage.drawerTitleInput(), taskTitle);
     await adhocPage.drawerUrgentCheckbox().click();
     await adhocPage.createDrawerTag(tagName);
     await expect(adhocPage.drawerSelectedTagChips().filter({ hasText: tagName })).toBeVisible({ timeout: 10000 });

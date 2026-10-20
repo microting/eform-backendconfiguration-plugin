@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { fillInDialog } from '../dialog-helpers';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
 import { BackendConfigurationPropertiesPage } from '../BackendConfigurationProperties.page';
@@ -56,7 +57,7 @@ test.describe.serial('Adhoc overblik — complete, archive, delete lifecycle', (
     await adhocPage.goToAdhoc();
     await adhocPage.openNewTask();
     await adhocPage.selectDrawerProperty(property.name);
-    await adhocPage.drawerTitleInput().fill(taskTitle);
+    await fillInDialog(page, adhocPage.drawerTitleInput(), taskTitle);
     await adhocPage.saveDrawer(true);
     await expect(adhocPage.row(taskTitle)).toBeVisible({ timeout: 15000 });
   });

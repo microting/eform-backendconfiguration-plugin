@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { dialogReady } from '../dialog-helpers';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
 import {
@@ -65,6 +66,8 @@ test.describe.serial('Property-worker dialog: invisible characters in the e-mail
     const generalTab = page.locator('mat-dialog-container').getByRole('tab', { name: 'Generelt', exact: true });
     await generalTab.click({ timeout: UI_TIMEOUT });
     await expect(generalTab).toHaveAttribute('aria-selected', 'true', { timeout: UI_TIMEOUT });
+    // dialogReady, not fillInDialog: the field strips the invisible characters, which the next line checks.
+    await dialogReady(page, workersPage.createEmailInput());
     await workersPage.createEmailInput().fill(markedEmail, { timeout: UI_TIMEOUT });
     await expect(workersPage.createEmailInput(), 'the field must hold the visible address only').toHaveValue(
       cleanEmail,

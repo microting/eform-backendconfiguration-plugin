@@ -1,6 +1,7 @@
 import { Page, Locator, expect } from '@playwright/test';
 import { openRowActionMenu } from './row-action-menu';
 import { API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from './wait-helpers';
+import { dialogReady, fillInDialog } from './dialog-helpers';
 
 export class BackendConfigurationPropertiesPage {
   constructor(private page: Page) {}
@@ -135,23 +136,22 @@ export class BackendConfigurationPropertiesPage {
   async openCreatePropertyModal(property: PropertyCreateUpdate): Promise<void> {
     await this.propertyCreateBtn().click();
     await this.propertyCreateSaveCancelBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
-    // The dialog's DOM exists before its first change detection (the host coalesces it to the next frame);
-    // formControlName writes the initial '' then, wiping a field typed into earlier. The title is an
-    // interpolation, so once it has text that first pass has run.
-    await expect(
-      this.page.locator('mat-dialog-container').filter({ has: this.propertyCreateSaveCancelBtn() }).locator('[mat-dialog-title]')
-    ).not.toBeEmpty({ timeout: UI_TIMEOUT });
+    // Typing before the dialog settles lost the name: a late autofocus put it into the CVR field
+    // ("1111111Kemi-loc-3cf079"), leaving the required name empty and Save disabled. See dialog-helpers.ts.
+    await dialogReady(this.page, this.createCVRNumber());
     if (property) {
       if (property.cvrNumber) {
-        await this.createCVRNumber().fill(property.cvrNumber);
+        await fillInDialog(this.page, this.createCVRNumber(), property.cvrNumber);
       }
       if (property.name) {
-        await this.createPropertyName().fill(property.name);
+        await fillInDialog(this.page, this.createPropertyName(), property.name);
       }
       if (property.chrNumber) {
-        await this.createCHRNumber().fill(property.chrNumber);
+        await fillInDialog(this.page, this.createCHRNumber(), property.chrNumber);
       }
       if (property.address) {
+        // Not fillInDialog: a numeric CHR number makes the dialog look it up and may legitimately
+        // overwrite the address afterwards.
         await this.createPropertyAddress().fill(property.address);
       }
       if (property.workOrderFlow === true) {
@@ -167,6 +167,8 @@ export class BackendConfigurationPropertiesPage {
     if (clickCancel) {
       await this.propertyCreateSaveCancelBtn().click();
     } else {
+      // A disabled Save makes click() wait silently until the response wait below times out.
+      await expect(this.propertyCreateSaveBtn()).toBeEnabled({ timeout: UI_TIMEOUT });
       await Promise.all([
         waitForApiResponse(
           this.page,

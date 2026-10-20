@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { fillInDialog } from '../dialog-helpers';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
 import { CalendarUiEnhancementsPage } from '../calendar-ui-enhancements.page';
@@ -392,7 +393,7 @@ test.describe.serial('Task list — user role + past-started series (#1302)', ()
     await expectEditableModal(page);
 
     const edited = `${userTask}-ed`;
-    await page.locator('#calendarEventTitle').fill(edited);
+    await fillInDialog(page, page.locator('#calendarEventTitle'), edited);
 
     const putResp = page.waitForResponse(
       r => r.url().endsWith('/api/backend-configuration-pn/calendar/tasks')

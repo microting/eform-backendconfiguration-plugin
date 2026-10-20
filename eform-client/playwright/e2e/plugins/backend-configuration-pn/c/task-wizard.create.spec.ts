@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { fillInDialog } from '../dialog-helpers';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { BackendConfigurationPropertiesPage, PropertyCreateUpdate } from '../BackendConfigurationProperties.page';
 import { BackendConfigurationPropertyWorkersPage, PropertyWorker } from '../BackendConfigurationPropertyWorkers.page';
@@ -99,7 +100,7 @@ test.describe('Area rules type 1', () => {
       await page.locator(`[for='createName${i}']`).scrollIntoViewIfNeeded();
       await expect(page.locator(`[for='createName${i}']`)).toBeVisible();
       await page.waitForTimeout(500);
-      await page.locator(`[for='createName${i}']`).fill(task.translations[i]);
+      await fillInDialog(page, page.locator(`[for='createName${i}']`), task.translations[i]);
     }
 
     await selectValueInNgSelector(page, '#createTemplateSelector', task.eformName, true);

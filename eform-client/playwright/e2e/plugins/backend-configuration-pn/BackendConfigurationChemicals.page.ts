@@ -4,6 +4,7 @@ import { generateRandmString } from '../../helper-functions';
 import { BackendConfigurationPropertiesPage, PropertyCreateUpdate } from './BackendConfigurationProperties.page';
 import { ActionMenuItem, openRowActionMenu } from './row-action-menu';
 import { API_TIMEOUT, SLOW_API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from './wait-helpers';
+import { fillInDialog } from './dialog-helpers';
 
 const BASE_URL = 'http://localhost:4200';
 const CHEMICALS_API = '/api/backend-configuration-pn/chemicals';
@@ -359,14 +360,15 @@ export class BackendConfigurationChemicalsPage {
     // Enabled once the inventory (and so its active locations) has loaded.
     await expect(open).toBeEnabled({ timeout: API_TIMEOUT });
     await open.click({ timeout: UI_TIMEOUT });
-    await this.page.locator('#chemicalRegisterSearchInput').fill(productName, { timeout: UI_TIMEOUT });
+    await fillInDialog(this.page, this.page.locator('#chemicalRegisterSearchInput'), productName);
     const search = this.waitForChemicalsCall('GET', /^register\/search$/);
     await this.page.locator('#chemicalRegisterSearchBtn').click({ timeout: UI_TIMEOUT });
     await search;
     await this.page.locator('[id^="chemicalRegisterResult-"]').filter({ hasText: productName })
       .locator('input[type="radio"]').check({ timeout: UI_TIMEOUT });
     await this.selectMtxOption('#chemicalRegisterLocationSelect', locationName);
-    await this.page.locator('#chemicalRegisterNote').fill(note, { timeout: UI_TIMEOUT });
+    await fillInDialog(this.page, this.page.locator('#chemicalRegisterNote'), note);
+    await expect(this.page.locator('#chemicalRegisterSaveBtn')).toBeEnabled({ timeout: UI_TIMEOUT });
     const saved = this.waitForChemicalsCall('POST', /^placements$/);
     await this.page.locator('#chemicalRegisterSaveBtn').click({ timeout: UI_TIMEOUT });
     await saved;
@@ -429,7 +431,9 @@ export class BackendConfigurationChemicalsPage {
     // Enabled once the property's locations have loaded.
     await expect(open).toBeEnabled({ timeout: API_TIMEOUT });
     await open.click({ timeout: UI_TIMEOUT });
-    await this.page.locator('#chemicalLocationName').fill(name, { timeout: UI_TIMEOUT });
+    // Typing before the dialog settles lost the name and left Save disabled. See dialog-helpers.ts.
+    await fillInDialog(this.page, this.page.locator('#chemicalLocationName'), name);
+    await expect(this.page.locator('#chemicalLocationSaveBtn')).toBeEnabled({ timeout: UI_TIMEOUT });
     const saved = this.waitForChemicalsCall('POST', /^locations$/);
     await this.page.locator('#chemicalLocationSaveBtn').click({ timeout: UI_TIMEOUT });
     await saved;

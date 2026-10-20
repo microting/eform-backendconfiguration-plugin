@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { dialogReady, fillInDialog } from '../dialog-helpers';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { BackendConfigurationPropertiesPage, PropertyCreateUpdate } from '../BackendConfigurationProperties.page';
 import { BackendConfigurationPropertyWorkersPage, PropertyWorker } from '../BackendConfigurationPropertyWorkers.page';
@@ -112,7 +113,7 @@ test.describe('Area rules type 1', () => {
       const nameField = page.locator(`[for='createName${i}']`);
       await nameField.scrollIntoViewIfNeeded();
       await expect(nameField).toBeVisible({ timeout: 10000 });
-      await nameField.fill(task.translations[i]);
+      await fillInDialog(page, nameField, task.translations[i]);
     }
 
     await selectValueInNgSelector(page, '#createTemplateSelector', task.eformName, true);
@@ -122,6 +123,8 @@ test.describe('Area rules type 1', () => {
 
     await expect(page.locator('#createRepeatEvery')).toBeVisible();
     await expect(page.locator('#createRepeatEvery input')).toBeVisible();
+    // ng-select's search box: dialogReady only, the typed text is not the control's value.
+    await dialogReady(page, page.locator('#createRepeatEvery input'));
     await page.locator('#createRepeatEvery input').clear();
     await page.locator('#createRepeatEvery input').fill(task.repeatEvery);
     await expect(page.locator('.ng-option').first()).toHaveText(task.repeatEvery);

@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { fillInDialog } from '../dialog-helpers';
 import * as path from 'path';
 import { generateRandmString } from '../../../helper-functions';
 import { BackendConfigurationPropertiesPage } from '../BackendConfigurationProperties.page';
@@ -305,7 +306,7 @@ test.describe.serial('Adhoc overblik — non-admin unrestricted access', () => {
 
     await adhocPage.openNewTask();
     await adhocPage.selectDrawerProperty(property.name);
-    await adhocPage.drawerTitleInput().fill(taskTitle);
+    await fillInDialog(page, adhocPage.drawerTitleInput(), taskTitle);
     await adhocPage.saveDrawer(true);
     await expect(adhocPage.row(taskTitle)).toBeVisible({ timeout: 15000 });
 

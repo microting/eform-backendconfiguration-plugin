@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { fillInDialog } from '../dialog-helpers';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
 import { CalendarUiEnhancementsPage } from '../calendar-ui-enhancements.page';
@@ -289,7 +290,7 @@ test.describe.serial('Calendar custom repeat — month & year scheduling (#899)'
 
   /** Set the step ("Repeat every N") number input. */
   async function setCustomStep(page: Page, step: number): Promise<void> {
-    await page.locator('.custom-repeat-dialog .step-input input').fill(String(step));
+    await fillInDialog(page, page.locator('.custom-repeat-dialog .step-input input'), String(step));
     await page.waitForTimeout(150);
   }
 
