@@ -141,6 +141,11 @@ export class BackendConfigurationPropertiesPage {
     await expect(
       this.page.locator('mat-dialog-container').filter({ has: this.propertyCreateSaveCancelBtn() }).locator('[mat-dialog-title]')
     ).not.toBeEmpty({ timeout: UI_TIMEOUT });
+    // MatDialog moves focus to its first tabbable field (CVR) only once the open animation has finished,
+    // which can be after the title has text. fill() focuses its target and then inserts the text into
+    // whatever has focus, so a late autofocus sent the name into the CVR field ("1111111Kemi-loc-3cf079"),
+    // left the required name empty and Save disabled. Wait for that focus before typing anything.
+    await expect(this.createCVRNumber()).toBeFocused({ timeout: UI_TIMEOUT });
     if (property) {
       if (property.cvrNumber) {
         await this.createCVRNumber().fill(property.cvrNumber);
@@ -160,6 +165,19 @@ export class BackendConfigurationPropertiesPage {
           this.page.locator('#propertyCreateWorkorderFlowEnableToggle button[role="switch"]')
         ).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
       }
+      // Each typed field holds exactly what was typed, so text landing in the wrong field fails here, by
+      // name, instead of as a save that never happens. The address is left out: a numeric CHR number
+      // makes the dialog look it up and may legitimately overwrite the address.
+      const typed: [Locator, string | undefined][] = [
+        [this.createCVRNumber(), property.cvrNumber],
+        [this.createPropertyName(), property.name],
+        [this.createCHRNumber(), property.chrNumber],
+      ];
+      for (const [field, value] of typed) {
+        if (value) {
+          await expect(field).toHaveValue(value, { timeout: UI_TIMEOUT });
+        }
+      }
     }
   }
 
@@ -167,6 +185,8 @@ export class BackendConfigurationPropertiesPage {
     if (clickCancel) {
       await this.propertyCreateSaveCancelBtn().click();
     } else {
+      // A disabled Save makes click() wait silently until the response wait below times out.
+      await expect(this.propertyCreateSaveBtn()).toBeEnabled({ timeout: UI_TIMEOUT });
       await Promise.all([
         waitForApiResponse(
           this.page,
