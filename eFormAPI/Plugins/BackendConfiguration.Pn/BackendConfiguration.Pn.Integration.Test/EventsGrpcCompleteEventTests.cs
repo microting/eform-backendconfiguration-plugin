@@ -38,6 +38,7 @@ using eFormCore;
 // inside this test namespace.
 using GrpcCore = global::Grpc.Core;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eForm.Infrastructure.Data.Entities;
@@ -338,7 +339,8 @@ public class EventsGrpcCompleteEventTests : TestBaseSetup
         string label,
         int caseStatus = 66,
         string caseWorkflowState = Constants.WorkflowStates.Created,
-        bool hasPropertyAccess = true)
+        bool hasPropertyAccess = true,
+        ILogger<EventsGrpcService>? logger = null)
     {
         var suffix = Guid.NewGuid().ToString("N")[..8];
         var core = await GetCore();
@@ -472,7 +474,7 @@ public class EventsGrpcCompleteEventTests : TestBaseSetup
             BackendConfigurationPnDbContext,
             ItemsPlanningPnDbContext,
             Substitute.For<IEventDeployService>(),
-            TestContextLogger<EventsGrpcService>.Instance);
+            logger ?? TestContextLogger<EventsGrpcService>.Instance);
 
         return new Scenario(
             service, property.Id, arp.Id, compliance.Id, sdkCase.Id,
@@ -969,7 +971,7 @@ public class EventsGrpcCompleteEventTests : TestBaseSetup
     /// <c>(PlanningId, Deadline)</c> index.
     /// </summary>
     private async Task<StaleScenario> SeedStaleComplianceScenarioAsync(
-        string label, bool caseBOnCallerSite = true)
+        string label, bool caseBOnCallerSite = true, ILogger<EventsGrpcService>? logger = null)
     {
         var suffix = Guid.NewGuid().ToString("N")[..8];
         var core = await GetCore();
@@ -1103,7 +1105,7 @@ public class EventsGrpcCompleteEventTests : TestBaseSetup
             BackendConfigurationPnDbContext,
             ItemsPlanningPnDbContext,
             Substitute.For<IEventDeployService>(),
-            TestContextLogger<EventsGrpcService>.Instance);
+            logger ?? TestContextLogger<EventsGrpcService>.Instance);
 
         return new StaleScenario(
             service, arp.Id, complianceA.Id, caseA.Id, complianceB.Id, caseB.Id,
@@ -1189,7 +1191,8 @@ public class EventsGrpcCompleteEventTests : TestBaseSetup
     [Test]
     public async Task CompleteEvent_StaleComplianceId_NoOpenCase_FlagsAnswersDiscarded()
     {
-        var s = await SeedStaleComplianceScenarioAsync("stale-no-open");
+        var recordingLogger = new RecordingLogger<EventsGrpcService>();
+        var s = await SeedStaleComplianceScenarioAsync("stale-no-open", logger: recordingLogger);
         var fieldValue = $"FIELD-{Guid.NewGuid().ToString("N")[..8]}";
 
         var response = await s.Service.CompleteEvent(
@@ -1217,6 +1220,24 @@ public class EventsGrpcCompleteEventTests : TestBaseSetup
             Assert.That(discardedFieldValueRows, Is.EqualTo(0),
                 "the discarded field value was never written anywhere");
             Assert.That(complianceA.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+        });
+
+        // Same Error entry as the throw path (shared helper) — this is the
+        // flagged-response outcome of the same discard, so it must log the
+        // same way.
+        var errorEntries = recordingLogger.Entries.Where(e => e.Level == LogLevel.Error).ToList();
+        Assert.That(errorEntries, Has.Count.EqualTo(1),
+            "exactly one Error entry — the discarded-answers log, and nothing else new at Error");
+
+        var message = errorEntries[0].Message;
+        Assert.Multiple(() =>
+        {
+            Assert.That(message, Does.Contain($"eventId={s.ArpId}"));
+            Assert.That(message, Does.Contain($"requestedComplianceId={s.ComplianceAId}"));
+            Assert.That(message, Does.Contain($"microtingSdkCaseId={s.CaseAId}"));
+            Assert.That(message, Does.Contain($"sdkSiteId={s.CompletingSiteId}"));
+            Assert.That(message, Does.Contain($"{s.SharedFieldId}={fieldValue}"),
+                "each bundled field is logged as field_id=value");
         });
     }
 
@@ -1260,12 +1281,14 @@ public class EventsGrpcCompleteEventTests : TestBaseSetup
     /// to happen BEFORE the discard was flagged/logged, so a worker's answers
     /// sent alongside it vanished with no Sentry record at all. Pins that the
     /// throw still happens (the client gets the same error as before — there
-    /// is no winner to report) but the submission is no longer silently lost.
+    /// is no winner to report) AND that the Error log — the only retained
+    /// copy of the submission on this path — actually captured it.
     /// </summary>
     [Test]
-    public async Task CompleteEvent_StaleComplianceId_RemovedNotCompleted_ThrowsAndWritesNothing()
+    public async Task CompleteEvent_StaleComplianceId_RemovedNotCompleted_ThrowsAndLogs()
     {
-        var s = await SeedScenarioAsync("removed-not-completed-with-answers");
+        var recordingLogger = new RecordingLogger<EventsGrpcService>();
+        var s = await SeedScenarioAsync("removed-not-completed-with-answers", logger: recordingLogger);
 
         // Same arrange as CompleteEvent_ComplianceRemovedWithoutCompletion_DoesNotInventACompleter:
         // the occurrence goes away WITHOUT anyone completing it.
@@ -1274,11 +1297,13 @@ public class EventsGrpcCompleteEventTests : TestBaseSetup
         await compliance.Delete(BackendConfigurationPnDbContext);
 
         var fieldValue = $"FIELD-{Guid.NewGuid().ToString("N")[..8]}";
+        var comment = $"COMMENT-{Guid.NewGuid().ToString("N")[..8]}";
         var request = MakeRequest(s);
         // The exact field id does not matter — the throw happens before any
         // field-value processing runs. Only "the request carried answers"
         // matters for what this test pins.
         request.FieldValues.Add(new FieldValueWrite { FieldId = 999999, Value = fieldValue });
+        request.Comment = comment;
 
         var ex = await Assert.ThrowsAsync<GrpcCore.RpcException>(async () =>
             await s.Service.CompleteEvent(request, new TestServerCallContext()));
@@ -1298,6 +1323,22 @@ public class EventsGrpcCompleteEventTests : TestBaseSetup
             Assert.That(fieldValueRows, Is.EqualTo(0),
                 "the field value sent alongside the throw was never written anywhere");
         });
+
+        var errorEntries = recordingLogger.Entries.Where(e => e.Level == LogLevel.Error).ToList();
+        Assert.That(errorEntries, Has.Count.EqualTo(1),
+            "exactly one Error entry — the discarded-answers log, and nothing else new at Error");
+
+        var message = errorEntries[0].Message;
+        Assert.Multiple(() =>
+        {
+            Assert.That(message, Does.Contain($"eventId={s.ArpId}"));
+            Assert.That(message, Does.Contain($"requestedComplianceId={s.ComplianceId}"));
+            Assert.That(message, Does.Contain($"microtingSdkCaseId={s.SdkCaseId}"));
+            Assert.That(message, Does.Contain($"sdkSiteId={s.CompletingSiteId}"));
+            Assert.That(message, Does.Contain($"999999={fieldValue}"),
+                "each bundled field is logged as field_id=value");
+            Assert.That(message, Does.Contain(comment));
+        });
     }
 
     /// <summary>
@@ -1310,7 +1351,8 @@ public class EventsGrpcCompleteEventTests : TestBaseSetup
     [Test]
     public async Task CompleteEvent_AlreadyCompleted_NoAnswers_DoesNotFlag()
     {
-        var s = await SeedScenarioAsync("already-done-no-answers");
+        var recordingLogger = new RecordingLogger<EventsGrpcService>();
+        var s = await SeedScenarioAsync("already-done-no-answers", logger: recordingLogger);
 
         var winningCase = await MicrotingDbContext!.Cases.FirstAsync(x => x.Id == s.SdkCaseId);
         winningCase.Status = 100;
@@ -1330,5 +1372,8 @@ public class EventsGrpcCompleteEventTests : TestBaseSetup
                 "no field_values and no comment were sent — unchanged behaviour");
             Assert.That(response.DiscardedReason, Is.Empty);
         });
+
+        Assert.That(recordingLogger.Entries.Any(e => e.Level == LogLevel.Error), Is.False,
+            "no answers were sent — the discarded-answers Error log must not fire");
     }
 }
