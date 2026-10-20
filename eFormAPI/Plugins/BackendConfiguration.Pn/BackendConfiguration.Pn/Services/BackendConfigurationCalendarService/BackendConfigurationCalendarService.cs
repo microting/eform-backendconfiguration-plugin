@@ -61,9 +61,11 @@ public class BackendConfigurationCalendarService(
     : IBackendConfigurationCalendarService
 {
     /// <summary>
-    /// #1300 clock seam for <see cref="PrepareComplete"/>'s compliance-page future-task
-    /// block. Instance-level on purpose so a test can pin "now" around Copenhagen midnight
-    /// without affecting fixtures that run in parallel.
+    /// #1300 clock seam. Every "now" this service acts on is read through it - week and
+    /// task-tracker rendering, upcoming occurrences, the update-task retraction gate, the
+    /// move-into-the-past guard and the compliance-page future-task block - so a test that
+    /// pins it does not depend on the real date or time of day. Instance-level on purpose
+    /// so a test can pin "now" without affecting fixtures that run in parallel.
     /// </summary>
     internal Func<DateTime> UtcNow { get; set; } = () => DateTime.UtcNow;
 
@@ -81,7 +83,7 @@ public class BackendConfigurationCalendarService(
             // worker sees Title/Description in their own language; web/REST passes
             // null and keeps the current-user language (#unchanged).
             var userLanguageId = requestModel.LanguageId ?? (await userService.GetCurrentUserLanguage()).Id;
-            var dateTimeNow = DateTime.UtcNow;
+            var dateTimeNow = UtcNow();
             var result = new List<CalendarTaskResponseModel>();
 
             // #1212 — worker-tag ("team") awareness for the assignee filter.
@@ -1603,7 +1605,7 @@ public class BackendConfigurationCalendarService(
             // Planning rows (unfiltered by WorkflowState, like GetTasksForWeek —
             // an inactive task's Planning is soft-deleted) and the occurrence
             // exceptions that take a rule date off the calendar.
-            var upcomingFrom = DateTime.UtcNow.Date.AddDays(-1);
+            var upcomingFrom = UtcNow().Date.AddDays(-1);
             var recurringArps = areaRulePlannings.Where(x => x.RepeatType is > 0).ToList();
             var recurringPlanningIds = recurringArps.Select(x => x.ItemPlanningId).Distinct().ToList();
             var recurringPlanningsById = recurringPlanningIds.Count == 0
@@ -2343,7 +2345,7 @@ public class BackendConfigurationCalendarService(
                         // (BackendConfigurationTaskWizardService.UpdateTask:821/1105),
                         // so in production the two agree by construction.
                         var newAnchor = wizardStartDate.Date;
-                        var todayUtc = DateTime.UtcNow.Date;
+                        var todayUtc = UtcNow().Date;
                         var anchorIsInThePast = newAnchor < todayUtc;
 
                         // The lower bound of the retraction, when it runs.
@@ -4016,7 +4018,7 @@ public class BackendConfigurationCalendarService(
                     .FirstOrDefaultAsync();
                 var origStartHour = oldCalConfig?.StartHour ?? 9.0;
                 var origDateTime = origDate.AddHours(origStartHour);
-                var nowUtc = DateTime.UtcNow;
+                var nowUtc = UtcNow();
                 if (origDateTime >= nowUtc && taskDateTime < nowUtc)
                 {
                     return new OperationResult(false,
@@ -7212,7 +7214,7 @@ public class BackendConfigurationCalendarService(
             // gRPC mobile-worker path passes the worker's Site.LanguageId; web
             // passes null and keeps the current-user language.
             var userLanguageId = languageId ?? (await userService.GetCurrentUserLanguage()).Id;
-            var dateTimeNow = DateTime.UtcNow;
+            var dateTimeNow = UtcNow();
             var result = new List<CalendarTaskResponseModel>();
 
             // Default board for missing-board fallback (parity with GetTasksForWeek line 53-59).
