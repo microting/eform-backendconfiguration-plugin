@@ -1263,7 +1263,7 @@ public class EventsGrpcCompleteEventTests : TestBaseSetup
     /// is no winner to report) but the submission is no longer silently lost.
     /// </summary>
     [Test]
-    public async Task CompleteEvent_StaleComplianceId_RemovedNotCompleted_ThrowsAndLogs()
+    public async Task CompleteEvent_StaleComplianceId_RemovedNotCompleted_ThrowsAndWritesNothing()
     {
         var s = await SeedScenarioAsync("removed-not-completed-with-answers");
 
