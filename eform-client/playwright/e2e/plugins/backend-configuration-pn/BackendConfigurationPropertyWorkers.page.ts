@@ -412,7 +412,14 @@ export class BackendConfigurationPropertyWorkersPage {
     await this.page.locator('#newTagBtn').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
     await this.page.locator('#newTagBtn').click();
     await this.page.locator('#newTagName').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    // The dialog's DOM is attached a frame before its first change detection (the host
+    // coalesces events). Filling before then lets ngModel's initial '' overwrite the
+    // name and Save stays disabled. The translated title only renders in that first
+    // pass, so wait for it, then fill once.
+    const createDialog = this.page.locator('mat-dialog-container', { has: this.page.locator('#newTagName') });
+    await expect(createDialog.locator('[mat-dialog-title]')).toHaveText(/\S/, { timeout: UI_TIMEOUT });
     await this.page.locator('#newTagName').fill(tagName);
+    await expect(this.page.locator('#newTagSaveBtn')).toBeEnabled({ timeout: UI_TIMEOUT });
     await this.page.locator('#newTagSaveBtn').click();
     // The saved tag showing up in the modal's list is the post-condition. Scope
     // to the dialog: the device-user table behind it also has .mat-mdc-row rows,
