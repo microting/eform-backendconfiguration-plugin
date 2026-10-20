@@ -60,6 +60,10 @@ internal static class ControllerTestKit
     /// <summary>
     /// Runs <paramref name="act"/> against a Sentry hub that counts events and sends none. The hub
     /// is process-wide, so the calling fixture must be [NonParallelizable].
+    /// Only explicit captures are counted: the default integrations also report
+    /// TaskScheduler.UnobservedTaskException and AppDomain.UnhandledException, which fire from the
+    /// finalizer thread whenever the GC happens to collect a faulted task that something earlier in
+    /// the test run left unobserved. That made the count 2 instead of 1 at random.
     /// </summary>
     public static async Task<int> CountSentryEventsAsync(Func<Task> act)
     {
@@ -68,6 +72,8 @@ internal static class ControllerTestKit
                {
                    o.Dsn = "https://0123456789abcdef0123456789abcdef@example.com/0";
                    o.AutoSessionTracking = false;
+                   o.DisableUnobservedTaskExceptionCapture();
+                   o.DisableAppDomainUnhandledExceptionCapture();
                    o.SetBeforeSend(_ =>
                    {
                        captured++;
