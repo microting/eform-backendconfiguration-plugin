@@ -1,4 +1,4 @@
-import { Page, Locator } from '@playwright/test';
+import { Page, Locator, expect } from '@playwright/test';
 import { readFileSync } from 'fs';
 import { API_TIMEOUT, UI_TIMEOUT, ignoreUnhandledRejections, waitForApiResponse } from './wait-helpers';
 
@@ -922,7 +922,12 @@ export class TaskListPage {
     const reloads = this.tagMutationReloads();
     await this.page.locator('#newTagBtn').click();
     await this.page.locator('#newTagName').waitFor({ state: 'visible', timeout: 10000 });
+    // Wait for the create dialog's first change detection (its translated title) before
+    // filling, or ngModel's initial '' overwrites the name and Save stays disabled.
+    const createDialog = this.page.locator('mat-dialog-container', { has: this.page.locator('#newTagName') });
+    await expect(createDialog.locator('[mat-dialog-title]')).toHaveText(/\S/, { timeout: 10000 });
     await this.page.locator('#newTagName').fill(name);
+    await expect(this.page.locator('#newTagSaveBtn')).toBeEnabled({ timeout: 10000 });
     await this.page.locator('#newTagSaveBtn').click();
     await this.page.locator('#newTagName').waitFor({ state: 'hidden', timeout: 20000 });
     await reloads;
