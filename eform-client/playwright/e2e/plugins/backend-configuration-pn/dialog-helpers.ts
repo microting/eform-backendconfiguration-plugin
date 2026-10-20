@@ -27,10 +27,21 @@ import { UI_TIMEOUT } from './wait-helpers';
  *  - the open animation is over (`mdc-dialog--open` set, `mdc-dialog--opening` cleared);
  *  - focus is inside the dialog, or inside an overlay opened from it such as a select panel.
  *    Every autoFocus mode ends with focus there, so this means the deferred autofocus has
- *    already happened;
+ *    already happened. The one exception: once the dialog has been open for more than
+ *    {@link AUTOFOCUS_WINDOW_FRAMES} frames, focus on <body> is accepted too. That is a dialog
+ *    open for a while whose focused element was re-rendered away, so focus fell back to <body>.
+ *    Autofocus runs only once, at open, so nothing will move focus back into the dialog;
  *  - the focused element has stayed the same for two more animation frames.
- * Once a dialog has settled it is marked, so later calls for the same dialog return at once.
+ * Once a dialog has settled it is marked, and every later call for the same dialog returns at once
+ * without waiting again. That is safe because the race only exists while the dialog opens. A field
+ * rendered later (a tab, an inline editor) still has fillInDialog's toHaveValue check behind it.
  */
+/**
+ * How long after the open animation the deferred autofocus may still land. CDK moves focus in the
+ * render after the animation ends, so this is generous.
+ */
+const AUTOFOCUS_WINDOW_FRAMES = 10;
+
 export async function dialogReady(page: Page, field: Locator): Promise<void> {
   await field.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   const handle = await field.elementHandle({ timeout: UI_TIMEOUT });
@@ -39,10 +50,11 @@ export async function dialogReady(page: Page, field: Locator): Promise<void> {
   }
   try {
     await page.waitForFunction(
-      // `arg: unknown`: typing it as Element makes waitForFunction's overloads recurse too deep (TS2589).
-      (arg: unknown) => {
+      // The handle is typed `unknown`: typing it as Element makes waitForFunction's overloads recurse too deep (TS2589).
+      ([arg, autofocusWindow]: [unknown, number]) => {
         const el = arg as Element;
-        const dialog = el.closest('mat-dialog-container') as (HTMLElement & { __pwSettle?: { frames: number; focused: Element | null } }) | null;
+        type Settle = { frames: number; openFrames: number; focused: Element | null };
+        const dialog = el.closest('mat-dialog-container') as (HTMLElement & { __pwSettle?: Settle }) | null;
         if (!dialog) {
           throw new Error('dialogReady: the field is not inside a mat-dialog-container');
         }
@@ -59,8 +71,12 @@ export async function dialogReady(page: Page, field: Locator): Promise<void> {
           const focusedPane = focused.closest('.cdk-overlay-pane');
           focusInside = !!focusedPane && panes.indexOf(focusedPane) > panes.indexOf(dialog.closest('.cdk-overlay-pane') as Element);
         }
-        const state = dialog.__pwSettle ?? (dialog.__pwSettle = { frames: 0, focused: null });
-        state.frames = rendered && opened && focusInside ? (state.focused === focused ? state.frames + 1 : 1) : 0;
+        const state = dialog.__pwSettle ?? (dialog.__pwSettle = { frames: 0, openFrames: 0, focused: null });
+        state.openFrames = rendered && opened ? state.openFrames + 1 : 0;
+        // After the autofocus window, focus on <body> means it fell out of a long-open dialog, not that autofocus is pending.
+        const onBody = !focused || focused === document.body || focused === document.documentElement;
+        const focusSettled = focusInside || (onBody && state.openFrames > autofocusWindow);
+        state.frames = rendered && opened && focusSettled ? (state.focused === focused ? state.frames + 1 : 1) : 0;
         state.focused = focused;
         if (state.frames >= 3) {
           dialog.dataset.pwSettled = 'true';
@@ -68,7 +84,7 @@ export async function dialogReady(page: Page, field: Locator): Promise<void> {
         }
         return false;
       },
-      handle,
+      [handle, AUTOFOCUS_WINDOW_FRAMES] as [unknown, number],
       { polling: 'raf', timeout: UI_TIMEOUT }
     );
   } catch (error) {

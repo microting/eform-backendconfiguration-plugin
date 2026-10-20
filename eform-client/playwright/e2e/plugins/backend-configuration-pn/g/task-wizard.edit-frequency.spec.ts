@@ -118,9 +118,9 @@ test.describe('Area rules type 1', () => {
 
     await expect(page.locator('#createRepeatEvery')).toBeVisible();
     await expect(page.locator('#createRepeatEvery input')).toBeVisible();
-    await page.locator('#createRepeatEvery input').clear();
     // ng-select's search box: dialogReady only, the typed text is not the control's value.
     await dialogReady(page, page.locator('#createRepeatEvery input'));
+    await page.locator('#createRepeatEvery input').clear();
     await page.locator('#createRepeatEvery input').fill(task.repeatEvery);
     await expect(page.locator('.ng-option').first()).toHaveText(task.repeatEvery);
     await expect(page.locator('.ng-option').first()).toBeVisible();
@@ -214,6 +214,7 @@ test.describe('Area rules type 1', () => {
     await page.locator('.folder-tree-name').filter({ hasText: newFolderName }).click();
 
     for (let i = 0; i < editedTask.translations.length; i++) {
+      await dialogReady(page, page.locator(`#updateName${i}`));
       await page.locator(`#updateName${i}`).clear();
       await fillInDialog(page, page.locator(`#updateName${i}`), editedTask.translations[i]);
     }
