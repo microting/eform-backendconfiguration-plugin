@@ -942,7 +942,12 @@ export class TaskListPage {
   async openBulkCreateTags(rawText: string): Promise<void> {
     await this.page.locator('#newTagsBtn').click();
     await this.page.locator('#newTagsName').waitFor({ state: 'visible', timeout: 10000 });
+    // Same first-render race as createTag: wait for the dialog's translated title so
+    // ngModel's initial '' can't overwrite the typed text afterwards.
+    const bulkDialog = this.page.locator('mat-dialog-container', { has: this.page.locator('#newTagsName') });
+    await expect(bulkDialog.locator('[mat-dialog-title]')).toHaveText(/\S/, { timeout: 10000 });
     await this.page.locator('#newTagsName').fill(rawText);
+    await expect(this.page.locator('#newTagsName')).toHaveValue(rawText);
     await this.page.waitForTimeout(300);
   }
 
@@ -973,7 +978,11 @@ export class TaskListPage {
     const reloads = this.tagMutationReloads();
     await this.tagRow(from).locator('#editTagBtn').click();
     await this.page.locator('#tagNameEdit').waitFor({ state: 'visible', timeout: 10000 });
+    // Same first-render race: ngModel would write the old name back over the new one.
+    const editDialog = this.page.locator('mat-dialog-container', { has: this.page.locator('#tagNameEdit') });
+    await expect(editDialog.locator('[mat-dialog-title]')).toHaveText(/\S/, { timeout: 10000 });
     await this.page.locator('#tagNameEdit').fill(to);
+    await expect(this.page.locator('#tagNameEdit')).toHaveValue(to);
     await this.page.locator('#tagEditSaveBtn').click();
     await this.page.locator('#tagNameEdit').waitFor({ state: 'hidden', timeout: 20000 });
     await reloads;
