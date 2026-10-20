@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { fillInDialog } from '../dialog-helpers';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
 import { CalendarUiEnhancementsPage } from '../calendar-ui-enhancements.page';
@@ -136,7 +137,8 @@ test.describe.serial('Calendar CRUD from the calendars dropdown (#1210)', () => 
     // create action opens, in its edit mode.
     await expect(dialog.locator('#calendarBoardName')).toHaveValue(originalName, { timeout: UI_TIMEOUT });
 
-    await dialog.locator('#calendarBoardName').fill(renamedName);
+    await fillInDialog(page, dialog.locator('#calendarBoardName'), renamedName);
+    await expect(dialog.locator('#calendarBoardSaveBtn')).toBeEnabled({ timeout: UI_TIMEOUT });
     await dialog.locator('#calendarBoardSaveBtn').click();
     await dialog.waitFor({ state: 'detached', timeout: API_TIMEOUT });
 
@@ -157,17 +159,17 @@ test.describe.serial('Calendar CRUD from the calendars dropdown (#1210)', () => 
     const dialog = calendarPage.boardDialog();
     await dialog.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
 
-    await dialog.locator('#calendarBoardName').fill(renamedName);
+    await fillInDialog(page, dialog.locator('#calendarBoardName'), renamedName);
     await expect(dialog.locator('#calendarBoardNameDuplicateError')).toBeVisible({ timeout: UI_TIMEOUT });
     await expect(dialog.locator('#calendarBoardSaveBtn')).toBeDisabled({ timeout: UI_TIMEOUT });
 
     // Same name, different case — the comparison is case-insensitive.
-    await dialog.locator('#calendarBoardName').fill(renamedName.toLowerCase());
+    await fillInDialog(page, dialog.locator('#calendarBoardName'), renamedName.toLowerCase());
     await expect(dialog.locator('#calendarBoardNameDuplicateError')).toBeVisible({ timeout: UI_TIMEOUT });
     await expect(dialog.locator('#calendarBoardSaveBtn')).toBeDisabled({ timeout: UI_TIMEOUT });
 
     // ...and clears as soon as the name is free again.
-    await dialog.locator('#calendarBoardName').fill('FREE-' + generateRandmString(5));
+    await fillInDialog(page, dialog.locator('#calendarBoardName'), 'FREE-' + generateRandmString(5));
     await expect(dialog.locator('#calendarBoardNameDuplicateError')).toHaveCount(0, { timeout: UI_TIMEOUT });
     await expect(dialog.locator('#calendarBoardSaveBtn')).toBeEnabled({ timeout: UI_TIMEOUT });
 

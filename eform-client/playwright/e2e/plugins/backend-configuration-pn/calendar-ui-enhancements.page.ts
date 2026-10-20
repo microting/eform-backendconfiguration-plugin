@@ -1,4 +1,5 @@
 import { Page, Locator, expect } from '@playwright/test';
+import { fillInDialog } from './dialog-helpers';
 import { API_TIMEOUT, UI_TIMEOUT } from './wait-helpers';
 import { assigneeTeamOptions, assigneeWorkerOptions } from './calendar-assignee.helper';
 
@@ -180,7 +181,8 @@ export class CalendarUiEnhancementsPage {
     await this.openBoardMenu();
     await this.boardMenuPanel().locator('#calendarCreateBoardBtn').click();
     await this.boardDialog().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
-    await this.boardDialog().locator('#calendarBoardName').fill(name);
+    await fillInDialog(this.page, this.boardDialog().locator('#calendarBoardName'), name);
+    await expect(this.boardDialog().locator('#calendarBoardSaveBtn')).toBeEnabled({ timeout: UI_TIMEOUT });
     await this.boardDialog().locator('#calendarBoardSaveBtn').click();
     await this.boardDialog().waitFor({ state: 'detached', timeout: API_TIMEOUT });
     await this.openBoardMenu();

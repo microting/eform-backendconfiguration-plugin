@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { dialogReady, fillInDialog } from '../dialog-helpers';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { BackendConfigurationPropertiesPage, PropertyCreateUpdate } from '../BackendConfigurationProperties.page';
 import { BackendConfigurationPropertyWorkersPage, PropertyWorker } from '../BackendConfigurationPropertyWorkers.page';
@@ -107,7 +108,7 @@ test.describe('Area rules type 1', () => {
     for (let i = 0; i < task.translations.length; i++) {
       await page.locator(`[for='createName${i}']`).scrollIntoViewIfNeeded();
       await expect(page.locator(`[for='createName${i}']`)).toBeVisible();
-      await page.locator(`[for='createName${i}']`).fill(task.translations[i]);
+      await fillInDialog(page, page.locator(`[for='createName${i}']`), task.translations[i]);
     }
 
     //selectValueInNgSelector(page, '#createTemplateSelector', task.eformName, true);
@@ -118,6 +119,8 @@ test.describe('Area rules type 1', () => {
     await expect(page.locator('#createRepeatEvery')).toBeVisible();
     await expect(page.locator('#createRepeatEvery input')).toBeVisible();
     await page.locator('#createRepeatEvery input').clear();
+    // ng-select's search box: dialogReady only, the typed text is not the control's value.
+    await dialogReady(page, page.locator('#createRepeatEvery input'));
     await page.locator('#createRepeatEvery input').fill(task.repeatEvery);
     await expect(page.locator('.ng-option').first()).toHaveText(task.repeatEvery);
     await expect(page.locator('.ng-option').first()).toBeVisible();
@@ -153,7 +156,7 @@ test.describe('Area rules type 1', () => {
     await page.locator('#createFolderChildBtn').click();
     const newFolderName = generateRandmString(10);
     await expect(page.locator('#createFolderNameTranslation_0')).toBeVisible();
-    await page.locator('#createFolderNameTranslation_0').fill(newFolderName);
+    await fillInDialog(page, page.locator('#createFolderNameTranslation_0'), newFolderName);
     await page.locator('#createFolderDescriptionTranslation_0 .NgxEditor__Content').fill(generateRandmString());
 
     await page.locator('#folderSaveBtn').click();
@@ -212,7 +215,7 @@ test.describe('Area rules type 1', () => {
 
     for (let i = 0; i < editedTask.translations.length; i++) {
       await page.locator(`#updateName${i}`).clear();
-      await page.locator(`#updateName${i}`).fill(editedTask.translations[i]);
+      await fillInDialog(page, page.locator(`#updateName${i}`), editedTask.translations[i]);
     }
 
     await selectValueInNgSelector(page, '#updateTemplateSelector', editedTask.eformName, true);

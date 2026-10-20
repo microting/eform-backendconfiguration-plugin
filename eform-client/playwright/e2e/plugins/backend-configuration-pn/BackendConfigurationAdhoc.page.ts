@@ -1,6 +1,7 @@
-import { Page, Locator } from '@playwright/test';
+import { Page, Locator, expect } from '@playwright/test';
 import { selectValueInNgSelector, selectDateOnNewDatePicker } from '../../helper-functions';
 import { API_TIMEOUT, UI_TIMEOUT, ignoreUnhandledRejections, waitForApiResponse } from './wait-helpers';
+import { fillInDialog } from './dialog-helpers';
 
 /**
  * Page object for the "Adhoc overblik" dashboard
@@ -208,7 +209,8 @@ export class BackendConfigurationAdhocPage {
 
   async createAreas(names: string[]): Promise<void> {
     await this.openAreaCreateModal();
-    await this.page.locator('#adhocAreaCreateTextarea').fill(names.join('\n'));
+    await fillInDialog(this.page, this.page.locator('#adhocAreaCreateTextarea'), names.join('\n'));
+    await expect(this.page.locator('#adhocAreaCreateSaveBtn')).toBeEnabled({ timeout: UI_TIMEOUT });
     await this.page.locator('#adhocAreaCreateSaveBtn').click();
     await this.page.locator('#adhocAreaCreateTextarea').waitFor({state: 'hidden'});
   }
@@ -249,8 +251,7 @@ export class BackendConfigurationAdhocPage {
     const areaId = btnId!.replace('adhocAreaRenameBtn-', '');
     await renameBtn.click();
     const input = this.page.locator(`#adhocAreaRenameInput-${areaId}`);
-    await input.waitFor({state: 'visible', timeout: 15000});
-    await input.fill(newName);
+    await fillInDialog(this.page, input, newName);
     await this.page.locator(`#adhocAreaRenameSaveBtn-${areaId}`).click();
   }
 
@@ -466,7 +467,7 @@ export class BackendConfigurationAdhocPage {
   }
 
   async createDrawerTag(tagName: string): Promise<void> {
-    await this.page.locator('#ny-sektion-tags input').fill(tagName);
+    await fillInDialog(this.page, this.page.locator('#ny-sektion-tags input'), tagName);
     await this.page.locator('#ny-sektion-tags button', { hasText: 'Opret tag' }).click();
     await this.page.waitForTimeout(800);
   }

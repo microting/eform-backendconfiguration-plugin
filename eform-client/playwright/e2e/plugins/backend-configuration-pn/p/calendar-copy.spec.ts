@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { fillInDialog } from '../dialog-helpers';
 import * as path from 'path';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
@@ -349,7 +350,7 @@ test.describe.serial('Calendar copy flows (#886)', () => {
 
     // Configure: step=2, weekly, Mon+Wed+Fri.
     await page.locator('.custom-repeat-dialog').waitFor({ state: 'visible', timeout: 10000 });
-    await page.locator('.custom-repeat-dialog .step-input input').fill('2');
+    await fillInDialog(page, page.locator('.custom-repeat-dialog .step-input input'), '2');
 
     const dayCircles = page.locator('.custom-repeat-dialog .day-circle');
     for (let i = 0; i < 7; i++) {
@@ -368,7 +369,7 @@ test.describe.serial('Calendar copy flows (#886)', () => {
       .locator('mat-radio-button')
       .click();
     await page.waitForTimeout(200);
-    await page.locator('.custom-repeat-dialog .count-input input').fill('6');
+    await fillInDialog(page, page.locator('.custom-repeat-dialog .count-input input'), '6');
 
     // Færdig — collapse back to the summary label.
     await page.locator('.custom-repeat-dialog .btn-done-gcal').click();

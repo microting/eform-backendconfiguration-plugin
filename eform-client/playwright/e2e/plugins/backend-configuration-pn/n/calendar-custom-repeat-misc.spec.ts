@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { fillInDialog } from '../dialog-helpers';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
 import { CalendarUiEnhancementsPage } from '../calendar-ui-enhancements.page';
@@ -233,7 +234,7 @@ test.describe.serial('Calendar custom repeat — dialog mechanics (#901)', () =>
 
   /** Set the step ("Repeat every N") number input via fill (replaces value). */
   async function setCustomStep(page: Page, step: number | string): Promise<void> {
-    await page.locator('.custom-repeat-dialog .step-input input').fill(String(step));
+    await fillInDialog(page, page.locator('.custom-repeat-dialog .step-input input'), String(step));
     await page.waitForTimeout(150);
   }
 
@@ -426,7 +427,7 @@ test.describe.serial('Calendar custom repeat — dialog mechanics (#901)', () =>
     // The HTML min="1" constraint is present, and the model now also enforces
     // it: typing "0" is clamped to 1 on confirm (#922).
     await expect(stepInput).toHaveAttribute('min', '1');
-    await stepInput.fill('0');
+    await fillInDialog(page, stepInput, '0');
     await page.locator('.custom-repeat-dialog .unit-select .ng-select-container').first().click();
     await page.keyboard.press('Escape');
     await page.waitForTimeout(200);

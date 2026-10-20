@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { dialogReady, fillInDialog } from '../dialog-helpers';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
 import { CalendarUiEnhancementsPage } from '../calendar-ui-enhancements.page';
@@ -195,7 +196,7 @@ test.describe.serial('Task list — tag management', () => {
     await expect(taskListPage.bulkCreateSubmitButton()).toBeDisabled();
 
     // Three real names, one padded, plus a blank line and a trailing newline.
-    await page.locator('#newTagsName').fill(`${bulkA}\n  ${bulkB}  \n\n${bulkC}\n`);
+    await fillInDialog(page, page.locator('#newTagsName'), `${bulkA}\n  ${bulkB}  \n\n${bulkC}\n`);
     await expect(taskListPage.bulkCreateSubmitButton()).toBeEnabled();
     await taskListPage.submitBulkCreateTags();
 
@@ -251,6 +252,7 @@ test.describe.serial('Task list — tag management', () => {
     // Escape, which ng-select consumes before the surrounding dialog sees it).
     await taskListPage.selectRow(task);
     await taskListPage.pickBatchAction(new RegExp(LABEL_ADD_TAGS));
+    await dialogReady(page, page.locator('#batchTagsSelect'));
     await page.locator('#batchTagsSelect').click();
     await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
     await page.locator('#batchTagsSelect input[type="text"]').fill(single);

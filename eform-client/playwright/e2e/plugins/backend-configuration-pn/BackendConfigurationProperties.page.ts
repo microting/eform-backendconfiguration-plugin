@@ -1,6 +1,7 @@
 import { Page, Locator, expect } from '@playwright/test';
 import { openRowActionMenu } from './row-action-menu';
 import { API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from './wait-helpers';
+import { dialogReady, fillInDialog } from './dialog-helpers';
 
 export class BackendConfigurationPropertiesPage {
   constructor(private page: Page) {}
@@ -135,28 +136,22 @@ export class BackendConfigurationPropertiesPage {
   async openCreatePropertyModal(property: PropertyCreateUpdate): Promise<void> {
     await this.propertyCreateBtn().click();
     await this.propertyCreateSaveCancelBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
-    // The dialog's DOM exists before its first change detection (the host coalesces it to the next frame);
-    // formControlName writes the initial '' then, wiping a field typed into earlier. The title is an
-    // interpolation, so once it has text that first pass has run.
-    await expect(
-      this.page.locator('mat-dialog-container').filter({ has: this.propertyCreateSaveCancelBtn() }).locator('[mat-dialog-title]')
-    ).not.toBeEmpty({ timeout: UI_TIMEOUT });
-    // MatDialog moves focus to its first tabbable field (CVR) only once the open animation has finished,
-    // which can be after the title has text. fill() focuses its target and then inserts the text into
-    // whatever has focus, so a late autofocus sent the name into the CVR field ("1111111Kemi-loc-3cf079"),
-    // left the required name empty and Save disabled. Wait for that focus before typing anything.
-    await expect(this.createCVRNumber()).toBeFocused({ timeout: UI_TIMEOUT });
+    // Typing before the dialog settles lost the name: a late autofocus put it into the CVR field
+    // ("1111111Kemi-loc-3cf079"), leaving the required name empty and Save disabled. See dialog-helpers.ts.
+    await dialogReady(this.page, this.createCVRNumber());
     if (property) {
       if (property.cvrNumber) {
-        await this.createCVRNumber().fill(property.cvrNumber);
+        await fillInDialog(this.page, this.createCVRNumber(), property.cvrNumber);
       }
       if (property.name) {
-        await this.createPropertyName().fill(property.name);
+        await fillInDialog(this.page, this.createPropertyName(), property.name);
       }
       if (property.chrNumber) {
-        await this.createCHRNumber().fill(property.chrNumber);
+        await fillInDialog(this.page, this.createCHRNumber(), property.chrNumber);
       }
       if (property.address) {
+        // Not fillInDialog: a numeric CHR number makes the dialog look it up and may legitimately
+        // overwrite the address afterwards.
         await this.createPropertyAddress().fill(property.address);
       }
       if (property.workOrderFlow === true) {
@@ -164,19 +159,6 @@ export class BackendConfigurationPropertiesPage {
         await expect(
           this.page.locator('#propertyCreateWorkorderFlowEnableToggle button[role="switch"]')
         ).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
-      }
-      // Each typed field holds exactly what was typed, so text landing in the wrong field fails here, by
-      // name, instead of as a save that never happens. The address is left out: a numeric CHR number
-      // makes the dialog look it up and may legitimately overwrite the address.
-      const typed: [Locator, string | undefined][] = [
-        [this.createCVRNumber(), property.cvrNumber],
-        [this.createPropertyName(), property.name],
-        [this.createCHRNumber(), property.chrNumber],
-      ];
-      for (const [field, value] of typed) {
-        if (value) {
-          await expect(field).toHaveValue(value, { timeout: UI_TIMEOUT });
-        }
       }
     }
   }

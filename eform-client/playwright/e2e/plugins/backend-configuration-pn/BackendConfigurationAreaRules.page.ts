@@ -1,5 +1,6 @@
 import { Page, Locator } from '@playwright/test';
 import { selectValueInNgSelector } from '../../../helper-functions';
+import { dialogReady, fillInDialog } from './dialog-helpers';
 
 export class BackendConfigurationAreaRulesPage {
   constructor(private page: Page) {}
@@ -199,10 +200,11 @@ export class BackendConfigurationAreaRulesPage {
     await this.areaRuleCreateSaveCancelBtn().waitFor({ state: 'visible' });
     if (areaRule) {
       if (areaRule.name) {
+        await dialogReady(this.page, this.createAreaRulesString());
         if (areaRule.dayOfWeek) {
           await selectValueInNgSelector(this.page, '[id^=createAreasDayOfWeek]', areaRule.dayOfWeek);
         }
-        await this.createAreaRulesString().fill(areaRule.name);
+        await fillInDialog(this.page, this.createAreaRulesString(), areaRule.name);
         await this.areaRulesGenerateBtn().click();
         if (areaRule.type) {
           await selectValueInNgSelector(this.page, '[id^=createRuleType]', areaRule.type);

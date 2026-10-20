@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { fillInDialog } from '../dialog-helpers';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
 import { CalendarUiEnhancementsPage } from '../calendar-ui-enhancements.page';
@@ -250,7 +251,7 @@ test.describe.serial('Calendar custom repeat — end modes (#900)', () => {
 
   /** Set the step ("Repeat every N") number input. */
   async function setCustomStep(page: Page, step: number): Promise<void> {
-    await page.locator('.custom-repeat-dialog .step-input input').fill(String(step));
+    await fillInDialog(page, page.locator('.custom-repeat-dialog .step-input input'), String(step));
     await page.waitForTimeout(150);
   }
 
@@ -285,7 +286,7 @@ test.describe.serial('Calendar custom repeat — end modes (#900)', () => {
 
   /** Enter the "after N occurrences" count (only meaningful when endMode='after'). */
   async function setAfterCount(page: Page, count: number): Promise<void> {
-    await page.locator('.custom-repeat-dialog .count-input input').fill(String(count));
+    await fillInDialog(page, page.locator('.custom-repeat-dialog .count-input input'), String(count));
     await page.waitForTimeout(150);
   }
 

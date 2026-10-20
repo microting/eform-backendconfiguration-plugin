@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { dialogReady } from '../dialog-helpers';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
 import { CalendarUiEnhancementsPage } from '../calendar-ui-enhancements.page';
@@ -166,6 +167,7 @@ test.describe.serial('Task list — tags in Danish alphabetical order', () => {
     // the key before the dialog sees it).
     await taskListPage.selectRow(task);
     await taskListPage.pickBatchAction(new RegExp(LABEL_ADD_TAGS));
+    await dialogReady(page, page.locator('#batchTagsSelect'));
     await page.locator('#batchTagsSelect').click();
     const panel = page.locator('.ng-dropdown-panel');
     await panel.waitFor({ state: 'visible', timeout: UI_TIMEOUT });

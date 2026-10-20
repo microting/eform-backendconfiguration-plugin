@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { dialogReady } from '../dialog-helpers';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
 import { CalendarUiEnhancementsPage } from '../calendar-ui-enhancements.page';
@@ -206,6 +207,7 @@ test.describe.serial('Task list — batch change report headline', () => {
     await taskListPage.selectRow(taskOne);
 
     await taskListPage.pickBatchAction(exactly(LABEL_CHANGE_HEADLINE));
+    await dialogReady(page, page.locator(`#${SELECT_ID}`));
     await page.locator(`#${SELECT_ID}`).click();
     await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
 

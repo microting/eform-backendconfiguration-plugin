@@ -5,6 +5,7 @@
  */
 import { expect, Locator, Page, Response } from '@playwright/test';
 import { API_TIMEOUT, ignoreUnhandledRejections, UI_TIMEOUT, waitForApiResponse } from './wait-helpers';
+import { fillInDialog } from './dialog-helpers';
 
 export const ARCHIVE_URL = 'http://localhost:4200/plugins/backend-configuration-pn/files';
 export const ARCHIVE_API = '/api/backend-configuration-pn';
@@ -127,7 +128,8 @@ export class BackendConfigurationArchivePage {
   /** Fills the open folder-name dialog, saves, and waits for the write and the tree reload. */
   async saveFolderName(name: string, what: string, method: 'POST' | 'PUT'): Promise<void> {
     await expect(this.dialog()).toHaveCount(1, { timeout: UI_TIMEOUT });
-    await this.dialog().locator('#archiveFolderNameInput').fill(name, { timeout: UI_TIMEOUT });
+    await fillInDialog(this.page, this.dialog().locator('#archiveFolderNameInput'), name);
+    await expect(this.dialog().locator('#archiveFolderNameSaveBtn')).toBeEnabled({ timeout: UI_TIMEOUT });
     const saved = this.waitForCall(what, method, /\/archive-folders(\/\d+)?$/);
     const reloaded = this.waitForCall('folder tree after the change', 'GET', FOLDERS_PATH);
     await this.clickInDialog('archiveFolderNameSaveBtn');

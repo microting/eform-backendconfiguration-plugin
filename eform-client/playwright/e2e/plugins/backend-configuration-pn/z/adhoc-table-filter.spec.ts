@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { fillInDialog } from '../dialog-helpers';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
 import { BackendConfigurationPropertiesPage } from '../BackendConfigurationProperties.page';
@@ -66,13 +67,13 @@ test.describe.serial('Adhoc overblik — table + toolbar filters', () => {
 
     await adhocPage.openNewTask();
     await adhocPage.selectDrawerProperty(propA.name);
-    await adhocPage.drawerTitleInput().fill(taskATitle);
+    await fillInDialog(page, adhocPage.drawerTitleInput(), taskATitle);
     await adhocPage.saveDrawer(true);
     await expect(adhocPage.row(taskATitle)).toBeVisible({ timeout: 15000 });
 
     await adhocPage.openNewTask();
     await adhocPage.selectDrawerProperty(propB.name);
-    await adhocPage.drawerTitleInput().fill(taskBTitle);
+    await fillInDialog(page, adhocPage.drawerTitleInput(), taskBTitle);
     await adhocPage.saveDrawer(true);
     await expect(adhocPage.row(taskBTitle)).toBeVisible({ timeout: 15000 });
 
