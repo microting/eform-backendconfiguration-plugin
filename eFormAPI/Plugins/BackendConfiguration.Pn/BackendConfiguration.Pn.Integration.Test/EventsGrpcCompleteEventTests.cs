@@ -908,4 +908,413 @@ public class EventsGrpcCompleteEventTests : TestBaseSetup
             Assert.That(property.ComplianceStatus, Is.EqualTo(1));
         });
     }
+
+    // ------------------------------------------------------------------
+    // Stale compliance_id recovery (incident: tenant 945, 2026-10-14) and
+    // the answers_discarded / discarded_reason response fields.
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// Everything the stale-<c>compliance_id</c> tests need: ONE planning with
+    /// TWO <c>Compliance</c> rows — A (soft-deleted, its case already
+    /// completed, as if finished weeks earlier for a prior occurrence) and B
+    /// (live, still open) — scoped to this test's own ids.
+    /// </summary>
+    private sealed record StaleScenario(
+        EventsGrpcService Service,
+        int ArpId,
+        int ComplianceAId,
+        int CaseAId,
+        int ComplianceBId,
+        int CaseBId,
+        int SharedFieldId,
+        int CompletingSiteId,
+        int OtherSiteId);
+
+    /// <summary>
+    /// Seeds the incident shape: planning with a removed+completed Compliance
+    /// A (its SDK case done) and a live Compliance B (open case). B's case is
+    /// homed on the calling worker's own site unless
+    /// <paramref name="caseBOnCallerSite"/> is false, in which case it is
+    /// homed on <c>OtherSiteId</c> instead — the "case belongs to someone
+    /// else's site" shape <see cref="CompleteEvent_StaleComplianceId_CaseOfOtherSite_IsNotUsed"/>
+    /// needs. A and B share the one <c>AreaRulePlanning</c> / <c>Planning</c>
+    /// (the whole point of the recovery path), but necessarily different
+    /// <c>Deadline</c> values — <c>Compliance</c> has a UNIQUE
+    /// <c>(PlanningId, Deadline)</c> index.
+    /// </summary>
+    private async Task<StaleScenario> SeedStaleComplianceScenarioAsync(
+        string label, bool caseBOnCallerSite = true)
+    {
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var core = await GetCore();
+        var language = await MicrotingDbContext!.Languages.FirstAsync();
+        var templateId = await GetOrCreateTemplateAsync(core);
+
+        // The one Comment field of the template — located through the
+        // CheckList tree, not the XML's <Id>, which TemplateCreate does not
+        // preserve. Same query shape as EventsGrpcCompleteEventRaceTests.
+        var sharedFieldId = await MicrotingDbContext.Fields
+            .Where(f => f.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(f => f.CheckListId == templateId
+                        || MicrotingDbContext.CheckLists
+                            .Any(cl => cl.Id == f.CheckListId && cl.ParentId == templateId))
+            .OrderBy(f => f.Id)
+            .Select(f => f.Id)
+            .FirstAsync();
+
+        var completingSite = new Site
+        {
+            Name = $"{label}-completing-{suffix}",
+            MicrotingUid = Random.Shared.Next(500000, 999999),
+            LanguageId = language.Id,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        var otherSite = new Site
+        {
+            Name = $"{label}-other-{suffix}",
+            MicrotingUid = Random.Shared.Next(500000, 999999),
+            LanguageId = language.Id,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext.Sites.AddRangeAsync(completingSite, otherSite);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        // Case A: already completed (weeks earlier, for a prior occurrence).
+        var caseA = new SdkCase
+        {
+            SiteId = otherSite.Id,
+            CheckListId = templateId,
+            Status = 100,
+            DoneAt = new DateTime(2026, 9, 1, 8, 0, 0, DateTimeKind.Utc),
+            MicrotingUid = null,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        // Case B: still open — the occurrence the worker actually means.
+        var caseB = new SdkCase
+        {
+            SiteId = caseBOnCallerSite ? completingSite.Id : otherSite.Id,
+            CheckListId = templateId,
+            Status = 66,
+            MicrotingUid = null,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext.Cases.AddRangeAsync(caseA, caseB);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        var area = new Area
+        {
+            Type = AreaTypesEnum.Type1,
+            ItemPlanningTagId = 0,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext!.Areas.AddAsync(area);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var property = new BcProperty
+        {
+            Name = $"{label}-{suffix}",
+            ItemPlanningTagId = 0,
+            ComplianceStatus = 1,
+            ComplianceStatusThirty = 1,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.Properties.AddAsync(property);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var areaRule = new AreaRule
+        {
+            AreaId = area.Id,
+            PropertyId = property.Id,
+            EformId = templateId,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.AreaRules.AddAsync(areaRule);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        // A's deadline: three weeks ago (the "prior occurrence"). B's: three
+        // days ago (the current, still-open one). Distinct values satisfy the
+        // UNIQUE (PlanningId, Deadline) index — both rows share the planning.
+        var deadlineA = DateTime.SpecifyKind(DateTime.UtcNow.Date.AddDays(-21), DateTimeKind.Utc);
+        var deadlineB = DateTime.SpecifyKind(DateTime.UtcNow.Date.AddDays(-3), DateTimeKind.Utc);
+
+        var planning = new Planning
+        {
+            Enabled = true,
+            RepeatEvery = 1,
+            RepeatType = RepeatType.Week,
+            StartDate = deadlineA,
+            RelatedEFormId = templateId,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        var arp = new AreaRulePlanning
+        {
+            AreaRuleId = areaRule.Id,
+            PropertyId = property.Id,
+            AreaId = area.Id,
+            ItemPlanningId = planning.Id,
+            StartDate = deadlineA,
+            Status = true,
+            RepeatType = 1,
+            RepeatEvery = 1,
+            DayOfWeek = 1,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(arp);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        // Compliance A: created then immediately soft-deleted through
+        // PnBase.Delete, mirroring how a real completion weeks earlier left
+        // it — not a direct WorkflowState assignment.
+        var complianceA = new Compliance
+        {
+            PlanningId = planning.Id,
+            PropertyId = property.Id,
+            AreaId = area.Id,
+            Deadline = deadlineA,
+            StartDate = deadlineA.AddDays(-7),
+            MicrotingSdkCaseId = caseA.Id,
+            MicrotingSdkeFormId = templateId,
+            Version = 1,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await BackendConfigurationPnDbContext.Compliances.AddAsync(complianceA);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+        await complianceA.Delete(BackendConfigurationPnDbContext);
+
+        // Compliance B: live — the occurrence the worker is actually trying
+        // to complete.
+        var complianceB = new Compliance
+        {
+            PlanningId = planning.Id,
+            PropertyId = property.Id,
+            AreaId = area.Id,
+            Deadline = deadlineB,
+            StartDate = deadlineB.AddDays(-7),
+            MicrotingSdkCaseId = caseB.Id,
+            MicrotingSdkeFormId = templateId,
+            Version = 1,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await BackendConfigurationPnDbContext.Compliances.AddAsync(complianceB);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var siteResolver = Substitute.For<IGrpcSiteResolver>();
+        siteResolver.GetSdkSiteIdAsync().Returns(Task.FromResult(completingSite.Id));
+        siteResolver.GetSiteLanguageIdAsync(Arg.Any<int?>())
+            .Returns(Task.FromResult<int?>(language.Id));
+
+        var access = Substitute.For<IBackendConfigurationUserPropertyAccess>();
+        access.HasAccessAsync(completingSite.Id, property.Id).Returns(Task.FromResult(true));
+
+        // Empty echo read — same reasoning as SeedScenarioAsync: drives
+        // CompleteEvent down its "synthesize a minimal completed Event"
+        // branch, so DB assertions observe exactly the cascade.
+        var calendar = Substitute.For<IBackendConfigurationCalendarService>();
+        calendar.GetTasksForWeek(Arg.Any<CalendarTaskRequestModel>())
+            .Returns(new OperationDataResult<List<CalendarTaskResponseModel>>(
+                true, new List<CalendarTaskResponseModel>()));
+
+        var coreHelper = Substitute.For<IEFormCoreService>();
+        coreHelper.GetCore().Returns(core);
+
+        var service = new EventsGrpcService(
+            calendar,
+            Substitute.For<IBackendConfigurationPropertiesService>(),
+            access,
+            siteResolver,
+            coreHelper,
+            BackendConfigurationPnDbContext,
+            ItemsPlanningPnDbContext,
+            Substitute.For<IEventDeployService>(),
+            TestContextLogger<EventsGrpcService>.Instance);
+
+        return new StaleScenario(
+            service, arp.Id, complianceA.Id, caseA.Id, complianceB.Id, caseB.Id,
+            sharedFieldId, completingSite.Id, otherSite.Id);
+    }
+
+    /// <summary>
+    /// Always echoes the STALE <c>compliance_id</c> (A's) — exactly what the
+    /// flutter client sent in the incident — and carries one bundled field
+    /// value so every test in this group has "answers that would be
+    /// discarded" to assert about.
+    /// </summary>
+    private static CompleteEventRequest MakeStaleRequest(
+        StaleScenario s, long microtingSdkCaseId, string fieldValue) =>
+        new()
+        {
+            EventId = s.ArpId.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            Completed = true,
+            CompletedBy = "characterization-worker",
+            ClientTsUnix = ClientTapInstant.ToUnixTimeSeconds(),
+            ComplianceId = s.ComplianceAId,
+            MicrotingSdkCaseId = microtingSdkCaseId,
+            Comment = string.Empty,
+            DoneAtUserModifiable = string.Empty,
+            FieldValues = { new FieldValueWrite { FieldId = s.SharedFieldId, Value = fieldValue } }
+        };
+
+    /// <summary>
+    /// The incident itself (tenant 945, 2026-10-14): the client echoes a
+    /// soft-deleted <c>compliance_id</c> (A, completed for a prior
+    /// occurrence), but <c>microting_sdk_case_id</c> names B — the still-open
+    /// case on the SAME planning the worker actually meant. The server must
+    /// redirect to B rather than discard the payload as "already completed".
+    /// <para>
+    /// Fails when: the recovery lookup is removed, or when it stops requiring
+    /// the recovered case to belong to the caller's own site / still be open.
+    /// </para>
+    /// </summary>
+    [Test]
+    public async Task CompleteEvent_StaleComplianceId_WithOpenCaseId_CompletesTheOpenCase()
+    {
+        var s = await SeedStaleComplianceScenarioAsync("stale-open");
+        var fieldValue = $"FIELD-{Guid.NewGuid().ToString("N")[..8]}";
+
+        var response = await s.Service.CompleteEvent(
+            MakeStaleRequest(s, s.CaseBId, fieldValue), new TestServerCallContext());
+
+        Assert.That(response.Event, Is.Not.Null);
+        Assert.That(response.AnswersDiscarded, Is.False,
+            "the stale id was redirected to B's live row — nothing was discarded");
+
+        var caseB = await MicrotingDbContext!.Cases
+            .AsNoTracking().FirstAsync(x => x.Id == s.CaseBId);
+        var fieldValueRow = await MicrotingDbContext.FieldValues
+            .AsNoTracking()
+            .FirstAsync(fv => fv.CaseId == s.CaseBId && fv.FieldId == s.SharedFieldId);
+        var complianceA = await BackendConfigurationPnDbContext!.Compliances
+            .AsNoTracking().FirstAsync(x => x.Id == s.ComplianceAId);
+        var caseA = await MicrotingDbContext.Cases
+            .AsNoTracking().FirstAsync(x => x.Id == s.CaseAId);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(caseB.Status, Is.EqualTo(100),
+                "the open case the worker actually meant is completed");
+            Assert.That(caseB.DoneAt, Is.Not.Null);
+            Assert.That(fieldValueRow.Value, Is.EqualTo(fieldValue),
+                "the bundled field value landed on the recovered case, not discarded");
+            Assert.That(complianceA.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed),
+                "A stays exactly as seeded — this call never touches it");
+            Assert.That(caseA.Status, Is.EqualTo(100), "A's own earlier completion is undisturbed");
+        });
+    }
+
+    /// <summary>
+    /// Same stale-id shape, but <c>microting_sdk_case_id</c> names A's OWN
+    /// (already-completed) case — there is no open occurrence to recover to.
+    /// The service must fall back to the first-completer-wins response AND
+    /// flag that this caller's answers were thrown away, rather than quietly
+    /// returning a "success" that hid the data loss (the incident's actual
+    /// bug).
+    /// </summary>
+    [Test]
+    public async Task CompleteEvent_StaleComplianceId_NoOpenCase_FlagsAnswersDiscarded()
+    {
+        var s = await SeedStaleComplianceScenarioAsync("stale-no-open");
+        var fieldValue = $"FIELD-{Guid.NewGuid().ToString("N")[..8]}";
+
+        var response = await s.Service.CompleteEvent(
+            MakeStaleRequest(s, s.CaseAId, fieldValue), new TestServerCallContext());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(response.AnswersDiscarded, Is.True,
+                "microting_sdk_case_id names the already-completed case — nothing to recover to");
+            Assert.That(response.DiscardedReason, Is.Not.Empty,
+                "the worker must be told their answers were not saved");
+        });
+
+        var caseB = await MicrotingDbContext!.Cases
+            .AsNoTracking().FirstAsync(x => x.Id == s.CaseBId);
+        var discardedFieldValueRows = await MicrotingDbContext.FieldValues
+            .AsNoTracking().CountAsync(fv => fv.Value == fieldValue);
+        var complianceA = await BackendConfigurationPnDbContext!.Compliances
+            .AsNoTracking().FirstAsync(x => x.Id == s.ComplianceAId);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(caseB.Status, Is.EqualTo(66), "B stays open — nothing was redirected to it");
+            Assert.That(caseB.DoneAt, Is.Null, "B was never stamped done");
+            Assert.That(discardedFieldValueRows, Is.EqualTo(0),
+                "the discarded field value was never written anywhere");
+            Assert.That(complianceA.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+        });
+    }
+
+    /// <summary>
+    /// B's case is open, but belongs to a DIFFERENT site than the caller —
+    /// the recovery path must refuse to complete another site's case just
+    /// because it happens to share the planning. Falls back to the normal
+    /// first-completer-wins response with the discard flag set.
+    /// </summary>
+    [Test]
+    public async Task CompleteEvent_StaleComplianceId_CaseOfOtherSite_IsNotUsed()
+    {
+        var s = await SeedStaleComplianceScenarioAsync("stale-wrong-site", caseBOnCallerSite: false);
+        var fieldValue = $"FIELD-{Guid.NewGuid().ToString("N")[..8]}";
+
+        var response = await s.Service.CompleteEvent(
+            MakeStaleRequest(s, s.CaseBId, fieldValue), new TestServerCallContext());
+
+        Assert.That(response.AnswersDiscarded, Is.True,
+            "B's case belongs to a different site than the caller — must not be used for recovery");
+
+        var caseB = await MicrotingDbContext!.Cases
+            .AsNoTracking().FirstAsync(x => x.Id == s.CaseBId);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(caseB.Status, Is.EqualTo(66),
+                "a caller on a different site must never complete B's case");
+            Assert.That(caseB.DoneAt, Is.Null);
+        });
+    }
+
+    /// <summary>
+    /// The ordinary already-completed answer (no stale-id recovery involved)
+    /// when the request carries NO answers at all — unchanged behaviour,
+    /// <c>answers_discarded</c> stays at its proto3 default of <c>false</c>.
+    /// Companion to <see cref="CompleteEvent_RemovedCompliance_ReportsAlreadyCompletedByWinner"/>,
+    /// which pins the rest of this response shape.
+    /// </summary>
+    [Test]
+    public async Task CompleteEvent_AlreadyCompleted_NoAnswers_DoesNotFlag()
+    {
+        var s = await SeedScenarioAsync("already-done-no-answers");
+
+        var winningCase = await MicrotingDbContext!.Cases.FirstAsync(x => x.Id == s.SdkCaseId);
+        winningCase.Status = 100;
+        winningCase.DoneAt = new DateTime(2026, 5, 4, 8, 30, 0, DateTimeKind.Utc);
+        await winningCase.Update(MicrotingDbContext);
+
+        var compliance = await BackendConfigurationPnDbContext!.Compliances
+            .FirstAsync(x => x.Id == s.ComplianceId);
+        await compliance.Delete(BackendConfigurationPnDbContext);
+
+        var response = await s.Service.CompleteEvent(MakeRequest(s), new TestServerCallContext());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(response.Event.Completed, Is.True);
+            Assert.That(response.AnswersDiscarded, Is.False,
+                "no field_values and no comment were sent — unchanged behaviour");
+            Assert.That(response.DiscardedReason, Is.Empty);
+        });
+    }
 }

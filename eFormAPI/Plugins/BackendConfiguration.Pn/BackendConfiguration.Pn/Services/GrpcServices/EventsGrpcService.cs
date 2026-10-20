@@ -1293,6 +1293,22 @@ public class EventsGrpcService(
 
         if (compliance == null)
         {
+            // Incident (tenant 945, 2026-10-14): the compliance_id the client
+            // echoed can be STALE — soft-deleted weeks earlier for a PRIOR
+            // occurrence of this same planning — while microting_sdk_case_id
+            // still points at the occurrence the worker actually meant to
+            // complete. Redirect to that case's own, still-live Compliance row
+            // before concluding "somebody else already finished this" and
+            // discarding the payload. See
+            // TryRecoverLiveComplianceForStaleRequestAsync for the full
+            // precondition set.
+            compliance = await TryRecoverLiveComplianceForStaleRequestAsync(
+                    request, arp.ItemPlanningId, sdkSiteId, sdkDbContextForCompliance, eventId)
+                .ConfigureAwait(false);
+        }
+
+        if (compliance == null)
+        {
             // First completer wins. A Compliance row is shared by every assigned
             // worker, so "no live row" usually means somebody already completed
             // this occurrence rather than that anything is wrong. Losing that race
@@ -1310,9 +1326,11 @@ public class EventsGrpcService(
                 .ConfigureAwait(false);
 
             // Arrived late: the winner had already committed before this
-            // caller's lookup even ran.
-            return await AlreadyCompletedOrThrowAsync(
-                    settled, eventId, sdkDbContextForCompliance)
+            // caller's lookup even ran. If the request carried answers, they
+            // are discarded here too — flag it so the worker is told, instead
+            // of the app silently treating this as a clean success.
+            return await AlreadyCompletedWithDiscardTrackingAsync(
+                    settled, eventId, sdkDbContextForCompliance, request, sdkSiteId)
                 .ConfigureAwait(false);
         }
 
@@ -1417,9 +1435,12 @@ public class EventsGrpcService(
         {
             // Lost a genuinely concurrent race. Same outcome as arriving late:
             // `compliance` is the shared row, so it still points at the winner's
-            // SDK case even though this caller is the one holding it.
-            return await AlreadyCompletedOrThrowAsync(
-                    compliance, eventId, sdkDbContext)
+            // SDK case even though this caller is the one holding it. Flag/log
+            // the same way as the compliance == null path above if this
+            // caller's answers are going to be discarded too (shared helper —
+            // this is not a stale-id situation, so no recovery attempt here).
+            return await AlreadyCompletedWithDiscardTrackingAsync(
+                    compliance, eventId, sdkDbContext, request, sdkSiteId)
                 .ConfigureAwait(false);
         }
 
@@ -2083,6 +2104,142 @@ public class EventsGrpcService(
         }
 
         return new CompleteEventResponse { Event = evt };
+    }
+
+    /// <summary>
+    /// Stale-<c>compliance_id</c> recovery (incident: tenant 945, 2026-10-14).
+    /// The client echoes <c>compliance_id</c> from whatever <c>Event</c> it last
+    /// cached; when that row was soft-deleted weeks earlier - completed for a
+    /// PRIOR occurrence of the same planning, not this one - the PK lookup
+    /// above correctly resolves nothing. But the request also carries
+    /// <c>microting_sdk_case_id</c>, which still names the occurrence the
+    /// worker actually meant to complete. When that case backs a DIFFERENT,
+    /// still-live <c>Compliance</c> row on the same planning, belongs to the
+    /// caller's own site, and is not already done, redirect to THAT row
+    /// instead of discarding the payload as "somebody already completed
+    /// this". Returns null when no such row exists, so the caller falls back
+    /// to the existing first-completer-wins response.
+    /// </summary>
+    private async Task<Compliance?> TryRecoverLiveComplianceForStaleRequestAsync(
+        CompleteEventRequest request,
+        int itemPlanningId,
+        int sdkSiteId,
+        Microting.eForm.Infrastructure.MicrotingDbContext sdkDbContext,
+        int eventId)
+    {
+        if (request.MicrotingSdkCaseId <= 0)
+        {
+            return null;
+        }
+
+        var recovered = await dbContext.Compliances
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
+            .Where(x => x.PlanningId == itemPlanningId)
+            .Where(x => x.MicrotingSdkCaseId == (int)request.MicrotingSdkCaseId)
+            .FirstOrDefaultAsync()
+            .ConfigureAwait(false);
+
+        if (recovered == null)
+        {
+            return null;
+        }
+
+        var recoveredCase = await sdkDbContext.Cases
+            .Where(x => x.Id == recovered.MicrotingSdkCaseId)
+            .Select(x => new { x.SiteId, x.Status, x.DoneAt })
+            .FirstOrDefaultAsync()
+            .ConfigureAwait(false);
+
+        if (recoveredCase == null
+            || recoveredCase.SiteId != sdkSiteId
+            || recoveredCase.Status == 100
+            || recoveredCase.DoneAt != null)
+        {
+            return null;
+        }
+
+        logger.LogInformation(
+            "CompleteEvent: stale complianceId redirected eventId={EventId} "
+            + "requestedComplianceId={RequestedComplianceId} usedComplianceId={UsedComplianceId} "
+            + "microtingSdkCaseId={SdkCaseId}",
+            eventId, request.ComplianceId, recovered.Id, request.MicrotingSdkCaseId);
+
+        return recovered;
+    }
+
+    /// <summary>
+    /// Wraps <see cref="AlreadyCompletedOrThrowAsync"/> so BOTH callers that
+    /// hand a caller the first-completer-wins response - the
+    /// <c>compliance == null</c> branch above and the lost-claim branch
+    /// further down - flag/log a discarded submission the SAME way. One
+    /// helper, no duplicated logic (see brief: "if the claim-lost race path
+    /// returns the already-completed response while the request carried
+    /// answers, it must set the same flag and log the same way").
+    /// </summary>
+    private async Task<CompleteEventResponse> AlreadyCompletedWithDiscardTrackingAsync(
+        Compliance? settled,
+        int eventId,
+        Microting.eForm.Infrastructure.MicrotingDbContext sdkDbContext,
+        CompleteEventRequest request,
+        int sdkSiteId)
+    {
+        var response = await AlreadyCompletedOrThrowAsync(settled, eventId, sdkDbContext)
+            .ConfigureAwait(false);
+        FlagAnswersDiscardedIfAny(response, request, eventId, sdkSiteId);
+        return response;
+    }
+
+    /// <summary>
+    /// Sets <c>CompleteEventResponse.answers_discarded</c> / <c>discarded_reason</c>
+    /// on a first-completer-wins response, and logs at Error (so it reaches
+    /// Sentry) the full submission so it can be recovered by hand, whenever the
+    /// request that produced <paramref name="response"/> carried answers
+    /// (incident: tenant 945, 2026-10-14 - a worker's field_values + comment
+    /// were discarded with no record anywhere). No-op when the request carried
+    /// no answers, so the unchanged existing behaviour
+    /// (<c>answers_discarded = false</c>, the proto3 default) is preserved.
+    /// </summary>
+    private void FlagAnswersDiscardedIfAny(
+        CompleteEventResponse response,
+        CompleteEventRequest request,
+        int eventId,
+        int sdkSiteId)
+    {
+        var hasAnswers = request.FieldValues.Count > 0 || !string.IsNullOrEmpty(request.Comment);
+        if (!hasAnswers)
+        {
+            return;
+        }
+
+        response.AnswersDiscarded = true;
+        response.DiscardedReason = BuildDiscardedReason(response.Event);
+
+        var fieldValuesText = string.Join(
+            ", ",
+            request.FieldValues.Select(fv => $"field_id={fv.FieldId}={fv.Value}"));
+
+        logger.LogError(
+            "CompleteEvent discarded a worker's answers: eventId={EventId} "
+            + "requestedComplianceId={RequestedComplianceId} microtingSdkCaseId={SdkCaseId} "
+            + "sdkSiteId={SdkSiteId} fieldValues=[{FieldValues}] comment=\"{Comment}\"",
+            eventId, request.ComplianceId, request.MicrotingSdkCaseId, sdkSiteId,
+            fieldValuesText, request.Comment);
+    }
+
+    /// <summary>
+    /// Short English text for the app to show the worker, reusing the
+    /// who/when <see cref="BuildAlreadyCompletedResponseAsync"/> already
+    /// computed onto <c>Event.CompletedBy</c> / <c>Event.UpdatedAt</c>.
+    /// </summary>
+    private static string BuildDiscardedReason(Event completedEvent)
+    {
+        var who = string.IsNullOrEmpty(completedEvent.CompletedBy)
+            ? "another worker"
+            : completedEvent.CompletedBy;
+        var when = completedEvent.UpdatedAt != null
+            ? completedEvent.UpdatedAt.ToDateTime().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+            : "an earlier date";
+        return $"Already completed by {who} on {when}; your answers were not saved.";
     }
 
     /// <summary>
