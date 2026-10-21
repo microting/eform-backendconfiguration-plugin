@@ -291,7 +291,6 @@ export const svSE = {
   Middle: 'Mitten',
   'Are you sure you want to permanently delete this case': 'Är du säker på att du vill ta bort det här ärendet permanent',
   Repeated: 'Upprepad',
-  'Upload PDF': 'Ladda upp PDF',
   'PIN code': 'Pinkod',
   'Employee no': 'Anställningsnummer',
   'Deactivate task': 'Inaktivera uppgiften',
@@ -1179,4 +1178,10 @@ export const svSE = {
   'Chemicals: Action SettingsChanged': 'Inställningar ändrade',
   'Chemicals: Action StatusChanged': 'Status ändrad',
   'Chemicals: Action AlertSent': 'Varning skickad',
+  'View image': 'Visa bild',
+  'Delete image': 'Ta bort bild',
+  'View file': 'Visa fil',
+  'Delete this file': 'Ta bort fil',
+  'No preview': 'Ingen förhandsgranskning',
+  'Upload document': 'Ladda upp dokument',
 };

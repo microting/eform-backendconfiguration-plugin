@@ -291,7 +291,6 @@ export const slSL = {
   Middle: 'Sredina',
   'Are you sure you want to permanently delete this case': 'Ali ste prepričani, da želite trajno izbrisati ta primer?',
   Repeated: 'Ponavljajo se',
-  'Upload PDF': 'Naloži PDF',
   'PIN code': 'PIN koda',
   'Employee no': 'Uslužbenec št',
   'Deactivate task': 'Deaktiviraj nalogo',
@@ -1055,4 +1054,10 @@ export const slSL = {
   'Chemicals: Action SettingsChanged': 'Nastavitve spremenjene',
   'Chemicals: Action StatusChanged': 'Stanje spremenjeno',
   'Chemicals: Action AlertSent': 'Opozorilo poslano',
+  'View image': 'Oglejte si sliko',
+  'Delete image': 'Izbriši sliko',
+  'View file': 'Oglejte si datoteko',
+  'Delete this file': 'Izbriši to datoteko',
+  'No preview': 'Brez predogleda',
+  'Upload document': 'Naloži dokument',
 };

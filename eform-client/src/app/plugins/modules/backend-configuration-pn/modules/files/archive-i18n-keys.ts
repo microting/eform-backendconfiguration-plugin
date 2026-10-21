@@ -63,4 +63,10 @@ export const ARCHIVE_I18N_KEYS: string[] = [
   'Replaces the properties of {{count}} documents.',
   'Your account is disabled',
   'No matching folder was found. Choose one before you file.',
+  'View image',
+  'Delete image',
+  'View file',
+  'Delete this file',
+  'No preview',
+  'Upload document',
 ];

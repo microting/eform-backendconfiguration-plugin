@@ -167,12 +167,22 @@ export class BackendConfigurationArchivePage {
    * open, D1); the document must then show in that folder's list.
    */
   async uploadPdf(baseName: string, pdf: Buffer, propertyName: string, folderLabel: string): Promise<void> {
+    await this.uploadFile(baseName, `${baseName}.pdf`, 'application/pdf', pdf, propertyName, folderLabel);
+  }
+
+  /** Uploads one image (jpg/png) the same way; `fileName` carries the extension. */
+  async uploadImage(baseName: string, fileName: string, mimeType: 'image/png' | 'image/jpeg', image: Buffer,
+                    propertyName: string, folderLabel: string): Promise<void> {
+    await this.uploadFile(baseName, fileName, mimeType, image, propertyName, folderLabel);
+  }
+
+  private async uploadFile(baseName: string, fileName: string, mimeType: string, buffer: Buffer,
+                           propertyName: string, folderLabel: string): Promise<void> {
     const folders = this.waitForCall('folders for the upload page', 'GET', FOLDERS_PATH);
     await this.page.locator('#addNewFileBtn').click({ timeout: UI_TIMEOUT });
     await expectSuccess(folders, 'loading the upload page folders');
     await expect(this.page.locator('#archiveUploadFolderSelect')).toContainText(folderLabel, { timeout: UI_TIMEOUT });
-    await this.page.locator('#pdfInput').setInputFiles(
-      { name: `${baseName}.pdf`, mimeType: 'application/pdf', buffer: pdf }, { timeout: UI_TIMEOUT });
+    await this.page.locator('#pdfInput').setInputFiles({ name: fileName, mimeType, buffer }, { timeout: UI_TIMEOUT });
     await this.chooseInSelect('propertyIdSelector', propertyName);
     await expect(this.page.locator('#uploadFilesBtn')).toBeEnabled({ timeout: UI_TIMEOUT });
     const created = this.waitForCall(`uploading ${baseName}`, 'POST', `${FILES_PATH}/create`);

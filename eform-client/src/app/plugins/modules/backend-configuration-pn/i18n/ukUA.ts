@@ -287,7 +287,6 @@ export const ukUA = {
   Middle: 'Середній',
   'Are you sure you want to permanently delete this case': 'Ви впевнені, що хочете назавжди видалити цю справу?',
   Repeated: 'Повторюється',
-  'Upload PDF': 'Завантажити PDF',
   'PIN code': 'PIN-код',
   'Employee no': 'Співробітник №',
   'Deactivate task': 'Деактивувати завдання',
@@ -1179,4 +1178,10 @@ export const ukUA = {
   'Chemicals: Action SettingsChanged': 'Налаштування змінено',
   'Chemicals: Action StatusChanged': 'Статус змінено',
   'Chemicals: Action AlertSent': 'Сповіщення надіслано',
+  'View image': 'Переглянути зображення',
+  'Delete image': 'Видалити зображення',
+  'View file': 'Переглянути файл',
+  'Delete this file': 'Видалити цей файл',
+  'No preview': 'Немає попереднього перегляду',
+  'Upload document': 'Завантажити документ',
 };

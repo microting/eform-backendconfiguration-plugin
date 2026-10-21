@@ -291,7 +291,6 @@ export const fiFI = {
   Middle: 'Keski',
   'Are you sure you want to permanently delete this case': 'Haluatko varmasti poistaa tämän tapauksen pysyvästi',
   Repeated: 'Toistettu',
-  'Upload PDF': 'Lataa PDF',
   'PIN code': 'Pin-koodi',
   'Employee no': 'Työntekijä nro',
   'Deactivate task': 'Poista tehtävä käytöstä',
@@ -1179,4 +1178,10 @@ export const fiFI = {
   'Chemicals: Action SettingsChanged': 'Asetukset muutettu',
   'Chemicals: Action StatusChanged': 'Tila muuttunut',
   'Chemicals: Action AlertSent': 'Varoitus lähetetty',
+  'View image': 'Näytä kuva',
+  'Delete image': 'Poista kuva',
+  'View file': 'Näytä tiedosto',
+  'Delete this file': 'Poista tämä tiedosto',
+  'No preview': 'Ei esikatselua',
+  'Upload document': 'Lataa asiakirja',
 };

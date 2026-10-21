@@ -286,7 +286,6 @@ export const itIT = {
   Middle: 'Mezzo',
   'Are you sure you want to permanently delete this case': 'Sei sicuro di voler eliminare definitivamente questo caso?',
   Repeated: 'Ripetuto',
-  'Upload PDF': 'Carica PDF',
   'PIN code': 'Codice PIN',
   'Employee no': 'Dipendente n',
   Areas: 'Aree',
@@ -1179,4 +1178,10 @@ export const itIT = {
   'Chemicals: Action SettingsChanged': 'Impostazioni modificate',
   'Chemicals: Action StatusChanged': 'Stato modificato',
   'Chemicals: Action AlertSent': 'Avviso inviato',
+  'View image': 'Visualizza immagine',
+  'Delete image': 'Elimina immagine',
+  'View file': 'Visualizza file',
+  'Delete this file': 'Elimina questo file',
+  'No preview': 'Nessuna anteprima',
+  'Upload document': 'Carica documento',
 };

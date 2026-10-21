@@ -291,7 +291,6 @@ export const etET = {
   Middle: 'Keskmine',
   'Are you sure you want to permanently delete this case': 'Kas olete kindel, et soovite selle juhtumi jäädavalt kustutada?',
   Repeated: 'Korduv',
-  'Upload PDF': 'Laadige üles PDF',
   'PIN code': 'PIN-koodi',
   'Employee no': 'Töötaja nr',
   'Deactivate task': 'Deaktiveerige ülesanne',
@@ -1055,4 +1054,10 @@ export const etET = {
   'Chemicals: Action SettingsChanged': 'Seaded muudetud',
   'Chemicals: Action StatusChanged': 'Staatus muudetud',
   'Chemicals: Action AlertSent': 'Hoiatus saadetud',
+  'View image': 'Vaata pilti',
+  'Delete image': 'Kustuta pilt',
+  'View file': 'Vaata faili',
+  'Delete this file': 'Kustuta see fail',
+  'No preview': 'Eelvaade puudub',
+  'Upload document': 'Laadige dokument üles',
 };

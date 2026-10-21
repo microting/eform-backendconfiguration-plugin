@@ -291,7 +291,6 @@ export const esES = {
   Middle: 'Medio',
   'Are you sure you want to permanently delete this case': '¿Está seguro de que desea eliminar permanentemente este caso?',
   Repeated: 'Repetido',
-  'Upload PDF': 'Subir PDF',
   'PIN code': 'Código PIN',
   'Employee no': 'Numero de empleado',
   'Deactivate task': 'Desactivar tarea',
@@ -1179,4 +1178,10 @@ export const esES = {
   'Chemicals: Action SettingsChanged': 'Ajustes cambiados',
   'Chemicals: Action StatusChanged': 'Estado cambiado',
   'Chemicals: Action AlertSent': 'Alerta enviada',
+  'View image': 'Ver imagen',
+  'Delete image': 'Eliminar imagen',
+  'View file': 'Ver archivo',
+  'Delete this file': 'Eliminar este archivo',
+  'No preview': 'Sin vista previa',
+  'Upload document': 'Subir documento',
 };

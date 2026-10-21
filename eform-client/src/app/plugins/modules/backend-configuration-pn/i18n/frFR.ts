@@ -285,7 +285,6 @@ export const frFR = {
   Middle: 'Milieu',
   'Are you sure you want to permanently delete this case': 'Êtes-vous sûr de vouloir supprimer définitivement ce cas ?',
   Repeated: 'Répété',
-  'Upload PDF': 'Télécharger le PDF',
   'PIN code': 'Code PIN',
   'Deactivate task': 'Désactiver la tâche',
   Areas: 'Zones',
@@ -1178,4 +1177,10 @@ export const frFR = {
   'Chemicals: Action SettingsChanged': 'Paramètres modifiés',
   'Chemicals: Action StatusChanged': 'Statut modifié',
   'Chemicals: Action AlertSent': 'Alerte envoyée',
+  'View image': "Voir l'image",
+  'Delete image': "Supprimer l'image",
+  'View file': 'Voir le fichier',
+  'Delete this file': 'Supprimer ce fichier',
+  'No preview': 'Aucun aperçu',
+  'Upload document': 'Téléverser un document',
 };

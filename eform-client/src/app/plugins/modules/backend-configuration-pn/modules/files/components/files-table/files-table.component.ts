@@ -10,6 +10,7 @@ import {MatIconButton} from '@angular/material/button';
 import {MatTooltip} from '@angular/material/tooltip';
 import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
 import {MatCheckbox} from '@angular/material/checkbox';
+import {ArchiveFilePresentation, archivePresentation} from '../../archive-file-kind';
 
 /**
  * The W1 document table: Checkbox · Navn · Dokumentdato · Ejendomme · Læseadgang (admin) · Etiketter.
@@ -44,7 +45,7 @@ export class FilesTableComponent implements OnChanges, OnDestroy {
 
   readonly DateState = DocumentDateState;
   rows: FilesModel[] = [];
-  /** The blob URL of the last opened PDF; revoked when the next one opens or the table goes away. */
+  /** The blob URL of the last opened file; revoked when the next one opens or the table goes away. */
   private viewUrl: string | null = null;
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -119,6 +120,10 @@ export class FilesTableComponent implements OnChanges, OnDestroy {
       event.dataTransfer.effectAllowed = 'move';
     }
     this.rowDragStart.emit(row);
+  }
+
+  presentationOf(row: FilesModel): ArchiveFilePresentation {
+    return archivePresentation(row.fileExtension);
   }
 
   onOpenView(row: FilesModel): void {

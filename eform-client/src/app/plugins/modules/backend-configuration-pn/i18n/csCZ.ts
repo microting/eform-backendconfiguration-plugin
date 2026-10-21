@@ -291,7 +291,6 @@ export const csCZ = {
   Middle: 'Střední',
   'Are you sure you want to permanently delete this case': 'Opravdu chcete tento případ trvale smazat?',
   Repeated: 'Opakované',
-  'Upload PDF': 'Nahrát PDF',
   'PIN code': 'PIN kód',
   'Employee no': 'Zaměstnanec č',
   'Deactivate task': 'Deaktivovat úkol',
@@ -1055,4 +1054,10 @@ export const csCZ = {
   'Chemicals: Action SettingsChanged': 'Nastavení změněno',
   'Chemicals: Action StatusChanged': 'Stav změněn',
   'Chemicals: Action AlertSent': 'Upozornění odesláno',
+  'View image': 'Zobrazit obrázek',
+  'Delete image': 'Smazat obrázek',
+  'View file': 'Zobrazit soubor',
+  'Delete this file': 'Smazat tento soubor',
+  'No preview': 'Žádný náhled',
+  'Upload document': 'Nahrát dokument',
 };

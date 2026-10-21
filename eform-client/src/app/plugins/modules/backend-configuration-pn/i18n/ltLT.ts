@@ -291,7 +291,6 @@ export const ltLT = {
   Middle: 'Vidurio',
   'Are you sure you want to permanently delete this case': 'Ar tikrai norite visam laikui ištrinti šį atvejį?',
   Repeated: 'Pasikartojo',
-  'Upload PDF': 'Įkelti PDF',
   'PIN code': 'PIN kodas',
   'Employee no': 'Darbuotojas Nr',
   'Deactivate task': 'Išjungti užduotį',
@@ -1055,4 +1054,10 @@ export const ltLT = {
   'Chemicals: Action SettingsChanged': 'Nustatymai pakeisti',
   'Chemicals: Action StatusChanged': 'Būsena pakeista',
   'Chemicals: Action AlertSent': 'Įspėjimas išsiųstas',
+  'View image': 'Žiūrėti vaizdą',
+  'Delete image': 'Ištrinti vaizdą',
+  'View file': 'Žiūrėti failą',
+  'Delete this file': 'Ištrinti šį failą',
+  'No preview': 'Peržiūros nėra',
+  'Upload document': 'Įkelti dokumentą',
 };

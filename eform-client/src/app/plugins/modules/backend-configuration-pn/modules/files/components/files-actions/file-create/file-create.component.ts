@@ -30,6 +30,7 @@ import {FileCreateDropZoneComponent} from './file-create-drop-zone/file-create-d
 import {FileCreateEditFileComponent} from './file-create-edit-file/file-create-edit-file.component';
 import {ArchiveFolderPickerComponent} from '../../archive-folder-picker/archive-folder-picker.component';
 import {PdfViewerModule} from 'ng2-pdf-viewer';
+import {ARCHIVE_UPLOAD_MIME_TYPES, archiveFileKind, revokeObjectUrl} from '../../../archive-file-kind';
 
 @AutoUnsubscribe()
 @Component({
@@ -53,7 +54,9 @@ export class FileCreateComponent implements OnInit, OnDestroy {
 
   @ViewChild('tagsModal') tagsModal: FileTagsComponent;
 
-  mimePdfType = 'application/pdf';
+  readonly acceptedMimeTypes = ARCHIVE_UPLOAD_MIME_TYPES;
+  /** Object URLs of the selected images' previews, revoked when the file is removed and on destroy. */
+  private imageUrls = new Map<File, string>();
   files: FilesCreateModel[] = [];
   getAllPropertiesSub$: any;
   availableProperties: { name: string; id: number }[];
@@ -158,11 +161,32 @@ export class FileCreateComponent implements OnInit, OnDestroy {
       .sort((a, b) => a.file.name < b.file.name ? -1 : a.file.name > b.file.name ? 1 : 0);
   }
 
+  isImage(file: FilesCreateModel): boolean {
+    return archiveFileKind(file.file.name.split('.').pop()) === 'image';
+  }
+
+  /** The preview URL of a selected image; created once per file. */
+  imageUrl(file: FilesCreateModel): string {
+    let url = this.imageUrls.get(file.file);
+    if (!url) {
+      url = URL.createObjectURL(file.file);
+      this.imageUrls.set(file.file, url);
+    }
+    return url;
+  }
+
+  private revokeImageUrl(file: File): void {
+    revokeObjectUrl(this.imageUrls.get(file) ?? null);
+    this.imageUrls.delete(file);
+  }
+
   deleteFile(file: FilesCreateModel) {
+    this.revokeImageUrl(file.file);
     this.files = this.files.filter(x => x.file.name !== file.file.name);
   }
 
   ngOnDestroy(): void {
+    this.imageUrls.forEach(url => revokeObjectUrl(url));
   }
 
   editFile(file: FilesCreateModel) {

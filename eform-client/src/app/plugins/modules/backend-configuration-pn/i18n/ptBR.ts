@@ -291,7 +291,6 @@ export const ptBR = {
   Middle: 'Meio',
   'Are you sure you want to permanently delete this case': 'Tem certeza de que deseja excluir permanentemente este caso',
   Repeated: 'Repetido',
-  'Upload PDF': 'Carregar PDF',
   'PIN code': 'Código PIN',
   'Employee no': 'Funcionário não',
   'Deactivate task': 'Desativar tarefa',
@@ -1179,4 +1178,10 @@ export const ptBR = {
   'Chemicals: Action SettingsChanged': 'Configurações alteradas',
   'Chemicals: Action StatusChanged': 'Status alterado',
   'Chemicals: Action AlertSent': 'Alerta enviado',
+  'View image': 'Visualizar imagem',
+  'Delete image': 'Excluir imagem',
+  'View file': 'Visualizar arquivo',
+  'Delete this file': 'Excluir este arquivo',
+  'No preview': 'Sem pré-visualização',
+  'Upload document': 'Enviar documento',
 };

@@ -291,7 +291,6 @@ export const isIS = {
   Middle: 'Miðja',
   'Are you sure you want to permanently delete this case': 'Ertu viss um að þú viljir eyða þessu máli varanlega',
   Repeated: 'Endurtekið',
-  'Upload PDF': 'Hladdu upp PDF',
   'PIN code': 'PIN númer',
   'Employee no': 'Starfsmaður nr',
   'Deactivate task': 'Slökktu á verkefni',
@@ -1055,4 +1054,10 @@ export const isIS = {
   'Chemicals: Action SettingsChanged': 'Stillingum breytt',
   'Chemicals: Action StatusChanged': 'Staða breytt',
   'Chemicals: Action AlertSent': 'Viðvörun send',
+  'View image': 'Skoða mynd',
+  'Delete image': 'Eyða mynd',
+  'View file': 'Skoða skrá',
+  'Delete this file': 'Eyða þessari skrá',
+  'No preview': 'Engin forskoðun',
+  'Upload document': 'Hladdu upp skjali',
 };

@@ -291,7 +291,6 @@ export const ptPT = {
   Middle: 'Meio',
   'Are you sure you want to permanently delete this case': 'Tem certeza de que deseja excluir permanentemente este caso',
   Repeated: 'Repetido',
-  'Upload PDF': 'Carregar PDF',
   'PIN code': 'Código PIN',
   'Employee no': 'Funcionário não',
   'Deactivate task': 'Desativar tarefa',
@@ -1179,4 +1178,10 @@ export const ptPT = {
   'Chemicals: Action SettingsChanged': 'Definições alteradas',
   'Chemicals: Action StatusChanged': 'Estado alterado',
   'Chemicals: Action AlertSent': 'Alerta enviado',
+  'View image': 'Ver imagem',
+  'Delete image': 'Eliminar imagem',
+  'View file': 'Ver ficheiro',
+  'Delete this file': 'Eliminar este ficheiro',
+  'No preview': 'Sem pré-visualização',
+  'Upload document': 'Carregar documento',
 };

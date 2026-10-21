@@ -291,7 +291,6 @@ export const lvLV = {
   Middle: 'Vidus',
   'Are you sure you want to permanently delete this case': 'Vai tiešām vēlaties neatgriezeniski dzēst šo lietu?',
   Repeated: 'Atkārtoti',
-  'Upload PDF': 'Augšupielādēt PDF',
   'PIN code': 'PIN kods',
   'Employee no': 'Darbinieks Nr',
   'Deactivate task': 'Deaktivizēt uzdevumu',
@@ -1055,4 +1054,10 @@ export const lvLV = {
   'Chemicals: Action SettingsChanged': 'Iestatījumi mainīti',
   'Chemicals: Action StatusChanged': 'Statuss mainīts',
   'Chemicals: Action AlertSent': 'Brīdinājums nosūtīts',
+  'View image': 'Skatīt attēlu',
+  'Delete image': 'Izdzēst attēlu',
+  'View file': 'Skatīt failu',
+  'Delete this file': 'Izdzēst šo failu',
+  'No preview': 'Nav priekšskatījuma',
+  'Upload document': 'Augšupielādēt dokumentu',
 };

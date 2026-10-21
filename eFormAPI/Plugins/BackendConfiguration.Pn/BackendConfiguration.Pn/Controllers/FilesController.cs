@@ -152,15 +152,20 @@ public class FilesController : Controller
 
 		if (stream != null)
 		{
-			if (uploadedData.Extension == "pdf")
-			{
-				return File(stream, "application/pdf", uploadedData.FileName);
-			}
-
-			return File(stream, $"image/{uploadedData.Extension}", uploadedData.FileName);
+			return File(stream, ContentTypeFor(uploadedData.Extension), uploadedData.FileName);
 		}
 		return new NotFoundResult();
 	}
+
+	/// <summary>The content type an archive file is served with, by its stored extension.</summary>
+	public static string ContentTypeFor(string extension) =>
+		(extension ?? "").TrimStart('.').ToLowerInvariant() switch
+		{
+			"pdf" => "application/pdf",
+			"jpg" or "jpeg" => "image/jpeg",
+			"png" => "image/png",
+			_ => "application/octet-stream",
+		};
 
 	/// <summary>
 	/// A zip entry name from a user-editable file name: only its last path segment, with no characters that

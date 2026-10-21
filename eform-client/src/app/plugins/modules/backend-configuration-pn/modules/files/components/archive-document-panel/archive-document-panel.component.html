@@ -21,7 +21,7 @@
   <!-- Every control is disabled while a save runs, so nothing typed meanwhile is silently dropped by the reload. -->
   <div class="archive-panel__body" *ngIf="edited">
     <pdf-viewer
-      *ngIf="pdfBytes"
+      *ngIf="kind === 'pdf' && pdfBytes"
       class="archive-panel__preview"
       [src]="pdfBytes"
       [show-all]="false"
@@ -29,6 +29,15 @@
       [original-size]="false"
       [render-text]="false"
     ></pdf-viewer>
+    <!-- An image is shown whole inside the same preview box (.archive-panel__preview: 220 px high). -->
+    <img
+      *ngIf="kind === 'image' && imageUrl"
+      id="archivePanelImagePreview"
+      class="archive-panel__preview"
+      [src]="imageUrl"
+      [alt]="file?.fileName"
+    />
+    <p *ngIf="file && kind === 'other'" id="archivePanelNoPreview" class="helper-text">{{ 'No preview' | translate }}</p>
 
     <mat-form-field class="w-100">
       <mat-label>{{ 'Name' | translate }} *</mat-label>

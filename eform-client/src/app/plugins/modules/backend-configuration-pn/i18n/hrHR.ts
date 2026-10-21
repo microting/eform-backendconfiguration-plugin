@@ -291,7 +291,6 @@ export const hrHR = {
   Middle: 'sredina',
   'Are you sure you want to permanently delete this case': 'Jeste li sigurni da želite trajno izbrisati ovaj slučaj?',
   Repeated: 'Ponavlja se',
-  'Upload PDF': 'Učitaj PDF',
   'PIN code': 'PIN kod',
   'Employee no': 'Zaposlenik br',
   'Deactivate task': 'Deaktiviraj zadatak',
@@ -1055,4 +1054,10 @@ export const hrHR = {
   'Chemicals: Action SettingsChanged': 'Postavke promijenjene',
   'Chemicals: Action StatusChanged': 'Status promijenjen',
   'Chemicals: Action AlertSent': 'Upozorenje poslano',
+  'View image': 'Pogledaj sliku',
+  'Delete image': 'Izbriši sliku',
+  'View file': 'Pogledaj datoteku',
+  'Delete this file': 'Izbriši ovu datoteku',
+  'No preview': 'Nema pregleda',
+  'Upload document': 'Učitaj dokument',
 };

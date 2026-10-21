@@ -291,7 +291,6 @@ export const skSK = {
   Middle: 'Stredný',
   'Are you sure you want to permanently delete this case': 'Naozaj chcete natrvalo odstrániť tento prípad?',
   Repeated: 'Opakované',
-  'Upload PDF': 'Nahrajte súbor PDF',
   'PIN code': 'PIN kód',
   'Employee no': 'Zamestnanec č',
   'Deactivate task': 'Deaktivovať úlohu',
@@ -1055,4 +1054,10 @@ export const skSK = {
   'Chemicals: Action SettingsChanged': 'Nastavenia zmenené',
   'Chemicals: Action StatusChanged': 'Stav zmenený',
   'Chemicals: Action AlertSent': 'Upozornenie odoslané',
+  'View image': 'Zobraziť obrázok',
+  'Delete image': 'Vymazať obrázok',
+  'View file': 'Zobraziť súbor',
+  'Delete this file': 'Vymazať tento súbor',
+  'No preview': 'Bez náhľadu',
+  'Upload document': 'Nahrať dokument',
 };

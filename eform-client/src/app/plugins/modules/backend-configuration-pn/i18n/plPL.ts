@@ -291,7 +291,6 @@ export const plPL = {
   Middle: 'Środek',
   'Are you sure you want to permanently delete this case': 'Czy na pewno chcesz trwale usunąć tę sprawę?',
   Repeated: 'Powtarzający się',
-  'Upload PDF': 'Prześlij plik PDF',
   'PIN code': 'Kod PIN',
   'Employee no': 'Pracownik numer',
   'Deactivate task': 'Dezaktywuj zadanie',
@@ -1179,4 +1178,10 @@ export const plPL = {
   'Chemicals: Action SettingsChanged': 'Zmieniono ustawienia',
   'Chemicals: Action StatusChanged': 'Status zmieniony',
   'Chemicals: Action AlertSent': 'Wysłano ostrzeżenie',
+  'View image': 'Wyświetl obraz',
+  'Delete image': 'Usuń obraz',
+  'View file': 'Wyświetl plik',
+  'Delete this file': 'Usuń ten plik',
+  'No preview': 'Brak podglądu',
+  'Upload document': 'Prześlij dokument',
 };

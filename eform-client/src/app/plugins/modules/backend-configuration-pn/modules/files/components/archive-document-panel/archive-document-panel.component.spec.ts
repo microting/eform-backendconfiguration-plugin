@@ -24,7 +24,7 @@ const forsyning: SharedTagModel = {id: 3, name: 'Forsyning', description: '', is
 const ledelseTag: CommonDictionaryModel = {id: 5, name: 'Ledelse', description: ''};
 // readGroups are the EFFECTIVE groups (FileModel): the folder's, since the document has no own access.
 const file: FileModel = {
-  id: 7, fileName: 'Faktura 118', properties: [1], tags: [forsyning],
+  id: 7, fileName: 'Faktura 118', fileExtension: 'pdf', properties: [1], tags: [forsyning],
   folderId: 10, folderPath: ['Drift'], documentDate: '2026-10-03T00:00:00',
   documentDateState: DocumentDateState.Suggested, readGroups: [ledelse], ownAccess: false,
 };
@@ -356,5 +356,76 @@ describe('ArchiveDocumentPanelComponent as a drawer (below 1100 px)', () => {
     row.blur();
     fixture.destroy();
     expect(document.activeElement).not.toBe(row);
+  });
+});
+
+describe('ArchiveDocumentPanelComponent preview by file kind', () => {
+  let fixture: ComponentFixture<ArchiveDocumentPanelComponent>;
+  let createObjectURL: Mock;
+  let revokeObjectURL: Mock;
+  const original = {create: URL.createObjectURL, revoke: URL.revokeObjectURL};
+  const q = (selector: string): HTMLElement | null => fixture.nativeElement.querySelector(selector);
+
+  function render(fileExtension: string, blob: Blob | null = new Blob(['x'])): void {
+    TestBed.configureTestingModule({
+      imports: [ArchiveDocumentPanelComponent, TranslateModule.forRoot()],
+      providers: [
+        {
+          provide: BackendConfigurationPnFilesService,
+          useValue: {
+            getFile: () => of({success: true, model: {...file, fileName: 'example-file', fileExtension}}),
+            getPdfFile: vi.fn().mockReturnValue(blob ? of(blob) : EMPTY),
+          },
+        },
+        {provide: ArchiveMoveFlowService, useValue: {move: vi.fn()}},
+      ],
+      schemas: [NO_ERRORS_SCHEMA],
+    });
+    TestBed.overrideComponent(ArchiveDocumentPanelComponent, {set: {imports: [CommonModule, A11yModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}});
+    fixture = TestBed.createComponent(ArchiveDocumentPanelComponent);
+    fixture.componentRef.setInput('fileId', 7);
+    fixture.detectChanges();
+  }
+
+  beforeEach(() => {
+    createObjectURL = vi.fn().mockReturnValue('blob:example-image');
+    revokeObjectURL = vi.fn();
+    Object.assign(URL, {createObjectURL, revokeObjectURL});
+  });
+
+  afterEach(() => {
+    fixture?.destroy();
+    Object.assign(URL, {createObjectURL: original.create, revokeObjectURL: original.revoke});
+  });
+
+  it('an image is shown in an img named by the file, with no PDF viewer and no "no preview" text', () => {
+    render('png');
+    const img = q('#archivePanelImagePreview') as HTMLImageElement;
+    expect(img).not.toBeNull();
+    expect(img.getAttribute('src')).toBe('blob:example-image');
+    expect(img.getAttribute('alt')).toBe('example-file');
+    expect(q('pdf-viewer')).toBeNull();
+    expect(q('#archivePanelNoPreview')).toBeNull();
+  });
+
+  it('an image URL is made once per open and revoked when the panel goes away', () => {
+    render('jpg');
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    fixture.destroy();
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:example-image');
+  });
+
+  it('a PDF is not shown as an image', () => {
+    render('pdf');
+    expect(q('#archivePanelImagePreview')).toBeNull();
+    expect(q('#archivePanelNoPreview')).toBeNull();
+    expect(createObjectURL).not.toHaveBeenCalled();
+  });
+
+  it('any other file says there is no preview', () => {
+    render('docx');
+    expect(q('#archivePanelNoPreview')?.textContent).toContain('No preview');
+    expect(q('#archivePanelImagePreview')).toBeNull();
+    expect(q('pdf-viewer')).toBeNull();
   });
 });

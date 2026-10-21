@@ -66,6 +66,16 @@ describe('FilesTableComponent', () => {
     });
   });
 
+  it.each([
+    ['pdf', 'picture_as_pdf', 'View PDF', 'Delete file'],
+    ['jpg', 'image', 'View image', 'Delete image'],
+    ['JPEG', 'image', 'View image', 'Delete image'],
+    ['png', 'image', 'View image', 'Delete image'],
+    ['docx', 'description', 'View file', 'Delete this file'],
+  ])('a .%s row shows %s, %s and %s', (fileExtension, icon, viewKey, deleteKey) => {
+    expect(table.presentationOf({...table.rows[0], fileExtension})).toEqual({icon, viewKey, deleteKey});
+  });
+
   it('tracks rows by file id', () => {
     expect(table.trackById(0, table.rows[1])).toBe(8);
   });

@@ -291,7 +291,6 @@ export const elGR = {
   Middle: 'Μέση',
   'Are you sure you want to permanently delete this case': 'Είστε βέβαιοι ότι θέλετε να διαγράψετε οριστικά αυτήν την υπόθεση',
   Repeated: 'Αλλεπάλληλος',
-  'Upload PDF': 'Ανεβάστε PDF',
   'PIN code': 'Κωδικό PIN',
   'Employee no': 'Υπάλληλος αρ',
   'Deactivate task': 'Απενεργοποίηση εργασίας',
@@ -1055,4 +1054,10 @@ export const elGR = {
   'Chemicals: Action SettingsChanged': 'Οι ρυθμίσεις άλλαξαν',
   'Chemicals: Action StatusChanged': 'Η κατάσταση άλλαξε',
   'Chemicals: Action AlertSent': 'Η ειδοποίηση στάλθηκε',
+  'View image': 'Προβολή εικόνας',
+  'Delete image': 'Διαγραφή εικόνας',
+  'View file': 'Προβολή αρχείου',
+  'Delete this file': 'Διαγραφή αυτού του αρχείου',
+  'No preview': 'Δεν υπάρχει προεπισκόπηση',
+  'Upload document': 'Ανεβάστε έγγραφο',
 };

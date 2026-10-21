@@ -5,6 +5,8 @@ import {ArchiveNamedItem, DocumentDateState} from '../archive-folders/archive-fo
 export interface FileModel {
   id: number,
   fileName: string,
+  /** Without the dot, e.g. `pdf`, `jpg`: decides how the document is previewed. */
+  fileExtension: string,
   properties: number[],
   tags: SharedTagModel[],
   folderId: number,
