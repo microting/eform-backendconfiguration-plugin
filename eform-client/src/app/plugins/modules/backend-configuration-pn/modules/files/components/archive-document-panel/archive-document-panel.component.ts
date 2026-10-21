@@ -1,10 +1,8 @@
 import {
-  AfterViewInit, Component, DestroyRef, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild,
-  inject,
+  AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild,
 } from '@angular/core';
-import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {TranslateService, TranslatePipe} from '@ngx-translate/core';
-import {Observable, concat, defaultIfEmpty, defer, map, takeWhile, toArray} from 'rxjs';
+import {Observable, Subject, concat, defaultIfEmpty, defer, map, takeUntil, takeWhile, toArray} from 'rxjs';
 import {CommonDictionaryModel, OperationResult, SharedTagModel} from 'src/app/common/models';
 import {ArchiveFolderModel, ArchiveNamedItem, DocumentDateState, FileModel} from '../../../../models';
 import {BackendConfigurationPnFilesService} from '../../../../services';
@@ -83,7 +81,7 @@ export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, 
   /** Drawer only: what had focus when the drawer opened (the row), focused again when it closes. */
   private returnFocusTo: HTMLElement | null = null;
   /** Cancels pending reads when the panel closes, so a late image reply cannot create an object URL after cleanup. */
-  private destroyRef = inject(DestroyRef);
+  private destroy$ = new Subject<void>();
 
   constructor(
     private filesService: BackendConfigurationPnFilesService,
@@ -110,6 +108,8 @@ export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, 
   }
 
   ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
     this.imageUrl = revokeObjectUrl(this.imageUrl);
     if (this.drawer && this.returnFocusTo?.isConnected) {
       this.returnFocusTo.focus();
@@ -162,7 +162,7 @@ export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, 
    */
   private loadData(): void {
     const id = this.fileId;
-    this.filesService.getFile(id).pipe(defaultIfEmpty(null), takeUntilDestroyed(this.destroyRef)).subscribe(res => {
+    this.filesService.getFile(id).pipe(defaultIfEmpty(null), takeUntil(this.destroy$)).subscribe(res => {
       if (id !== this.fileId) {
         return;
       }
@@ -184,7 +184,7 @@ export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, 
   /** One fetch per open (getPdfFile returns the file's bytes whatever its type). */
   private loadPreview(): void {
     const id = this.fileId;
-    this.filesService.getPdfFile(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.filesService.getPdfFile(id).pipe(takeUntil(this.destroy$)).subscribe({
       next: (blob: Blob | null) => {
         if (blob && id === this.fileId) {
           this.previewBlob = blob;
