@@ -2,7 +2,7 @@ import {
   AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild,
 } from '@angular/core';
 import {TranslateService, TranslatePipe} from '@ngx-translate/core';
-import {Observable, concat, defaultIfEmpty, defer, map, takeWhile, toArray} from 'rxjs';
+import {Observable, Subject, concat, defaultIfEmpty, defer, map, takeUntil, takeWhile, toArray} from 'rxjs';
 import {CommonDictionaryModel, OperationResult, SharedTagModel} from 'src/app/common/models';
 import {ArchiveFolderModel, ArchiveNamedItem, DocumentDateState, FileModel} from '../../../../models';
 import {BackendConfigurationPnFilesService} from '../../../../services';
@@ -30,6 +30,7 @@ import {MtxSelect} from '@ng-matero/extensions/select';
 import {ArchiveFolderPickerComponent} from '../archive-folder-picker/archive-folder-picker.component';
 import {PdfViewerModule} from 'ng2-pdf-viewer';
 import {CdkTrapFocus} from '@angular/cdk/a11y';
+import {ArchiveFileKind, archiveFileKind, revokeObjectUrl} from '../../archive-file-kind';
 
 export interface ArchivePanelSaved {
   fileId: number;
@@ -72,9 +73,15 @@ export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, 
   accessItems: ArchiveNamedItem[] = [];
   editingDate = false;
   pdfBytes: Uint8Array | null = null;
+  /** Object URL of an image document's blob; revoked when another document opens and on destroy. */
+  imageUrl: string | null = null;
+  /** The one fetched blob: read as PDF bytes or shown as an image, once the document's extension is known. */
+  private previewBlob: Blob | null = null;
   busy = false;
   /** Drawer only: what had focus when the drawer opened (the row), focused again when it closes. */
   private returnFocusTo: HTMLElement | null = null;
+  /** Cancels pending reads when the panel closes, so a late image reply cannot create an object URL after cleanup. */
+  private destroy$ = new Subject<void>();
 
   constructor(
     private filesService: BackendConfigurationPnFilesService,
@@ -101,6 +108,9 @@ export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, 
   }
 
   ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+    this.imageUrl = revokeObjectUrl(this.imageUrl);
     if (this.drawer && this.returnFocusTo?.isConnected) {
       this.returnFocusTo.focus();
     }
@@ -135,8 +145,15 @@ export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, 
     this.edited = null;
     this.editingDate = false;
     this.pdfBytes = null;
+    this.previewBlob = null;
+    this.imageUrl = revokeObjectUrl(this.imageUrl);
     this.loadData();
-    this.loadPdf();
+    this.loadPreview();
+  }
+
+  /** What the document is previewed as; 'other' (and a document not read yet) has no preview. */
+  get kind(): ArchiveFileKind {
+    return archiveFileKind(this.file?.fileExtension);
   }
 
   /**
@@ -145,7 +162,7 @@ export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, 
    */
   private loadData(): void {
     const id = this.fileId;
-    this.filesService.getFile(id).pipe(defaultIfEmpty(null)).subscribe(res => {
+    this.filesService.getFile(id).pipe(defaultIfEmpty(null), takeUntil(this.destroy$)).subscribe(res => {
       if (id !== this.fileId) {
         return;
       }
@@ -159,24 +176,43 @@ export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, 
         this.edited = panelValueOf(res.model);
         this.editingDate = false;
         this.refreshAccessItems();
+        this.applyPreview();
       }
     });
   }
 
-  private loadPdf(): void {
+  /** One fetch per open (getPdfFile returns the file's bytes whatever its type). */
+  private loadPreview(): void {
     const id = this.fileId;
-    this.filesService.getPdfFile(id).subscribe({
+    this.filesService.getPdfFile(id).pipe(takeUntil(this.destroy$)).subscribe({
       next: (blob: Blob | null) => {
-        if (blob) {
-          blob.arrayBuffer().then(buffer => {
-            if (id === this.fileId) {
-              this.pdfBytes = new Uint8Array(buffer);
-            }
-          });
+        if (blob && id === this.fileId) {
+          this.previewBlob = blob;
+          this.applyPreview();
         }
       },
       error: () => (this.pdfBytes = null),
     });
+  }
+
+  /** Runs when both the blob and the document's extension have arrived (in either order); consumes the blob. */
+  private applyPreview(): void {
+    const blob = this.previewBlob;
+    if (!blob || !this.file) {
+      return;
+    }
+    this.previewBlob = null;
+    const id = this.fileId;
+    const kind = this.kind;
+    if (kind === 'pdf') {
+      blob.arrayBuffer().then(buffer => {
+        if (id === this.fileId) {
+          this.pdfBytes = new Uint8Array(buffer);
+        }
+      });
+    } else if (kind === 'image') {
+      this.imageUrl = URL.createObjectURL(blob);
+    }
   }
 
   get valid(): boolean {

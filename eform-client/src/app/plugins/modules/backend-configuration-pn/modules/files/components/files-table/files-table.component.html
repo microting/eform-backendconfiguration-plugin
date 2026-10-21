@@ -43,7 +43,7 @@
       </td>
       <td>
         <div class="archive-doc-name">
-          <mat-icon>picture_as_pdf</mat-icon>
+          <mat-icon>{{ presentationOf(row).icon }}</mat-icon>
           <span class="fileName" [id]="'fileName-' + i">{{ row.fileName }}.{{ row.fileExtension }}</span>
         </div>
         <div *ngIf="showPath" class="archive-doc-path helper-text">{{ pathLabel(row) }}</div>
@@ -73,11 +73,11 @@
           <mat-menu #rowMenu="matMenu">
             <button mat-menu-item [id]="'viewPdfBtn-' + i" class="viewPdfBtn" (click)="onOpenView(row)">
               <mat-icon>visibility</mat-icon>
-              <span>{{ 'View PDF' | translate }}</span>
+              <span>{{ presentationOf(row).viewKey | translate }}</span>
             </button>
             <button mat-menu-item [id]="'deleteFileBtn-' + i" class="deleteFileBtn btn-delete-menu" (click)="openDeleteModal.emit(row)">
               <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
-              <span>{{ 'Delete file' | translate }}</span>
+              <span>{{ presentationOf(row).deleteKey | translate }}</span>
             </button>
           </mat-menu>
         </div>

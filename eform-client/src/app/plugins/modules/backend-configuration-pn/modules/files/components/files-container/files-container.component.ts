@@ -43,6 +43,7 @@ import {
 } from '../../../../state';
 import {FilesStateService} from '../../store';
 import {ArchiveMoveFlowService} from '../../services/archive-move-flow.service';
+import {archivePresentation} from '../../archive-file-kind';
 import {DownloadFilesNameArchiveComponent} from '../files-actions/download-files-name-archive/download-files-name-archive.component';
 import {FileTagsComponent} from '../file-tags/file-tags.component';
 import {ArchiveAccessDialogComponent, ArchiveAccessDialogData, ArchiveAccessDialogResult} from '../archive-access-dialog/archive-access-dialog.component';
@@ -408,7 +409,7 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
 
   showDeleteModal(file: FilesModel): void {
     this.openDeleteModal({
-      model: file, headerKey: 'Delete file', fieldKey: 'File name', field: 'fileName',
+      model: file, headerKey: archivePresentation(file.fileExtension).deleteKey, fieldKey: 'File name', field: 'fileName',
       cancelButtonId: 'cancelDeleteFileBtn', deleteButtonId: 'deleteFileBtn',
       onDelete: close => this.filesService.deleteFile(file.id).subscribe(operation => {
         if (operation?.success) {

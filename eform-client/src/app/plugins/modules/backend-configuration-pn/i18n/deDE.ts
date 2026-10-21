@@ -351,7 +351,6 @@ export const deDE = {
   Middle: 'Mitte',
   'Are you sure you want to permanently delete this case': 'Möchten Sie diesen Fall wirklich dauerhaft löschen?',
   Repeated: 'Wiederholt',
-  'Upload PDF': 'PDF hochladen',
   'PIN code': 'Geheimzahl',
   'Employee no': 'Mitarbeiter-Nr.',
   'Deactivate task': 'Aufgabe deaktivieren',
@@ -1337,4 +1336,10 @@ export const deDE = {
   'Chemicals: Action SettingsChanged': 'Einstellungen geändert',
   'Chemicals: Action StatusChanged': 'Status geändert',
   'Chemicals: Action AlertSent': 'Warnung gesendet',
+  'View image': 'Bild anzeigen',
+  'Delete image': 'Bild löschen',
+  'View file': 'Datei anzeigen',
+  'Delete this file': 'Datei löschen',
+  'No preview': 'Keine Vorschau',
+  'Upload document': 'Dokument hochladen',
 };

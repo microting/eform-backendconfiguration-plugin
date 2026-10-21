@@ -291,7 +291,6 @@ export const nlNL = {
   Middle: 'Midden',
   'Are you sure you want to permanently delete this case': 'Weet u zeker dat u deze case definitief wilt verwijderen?',
   Repeated: 'Herhaald',
-  'Upload PDF': 'Upload pdf',
   'PIN code': 'Pincode',
   'Employee no': 'Werknemer nummer',
   'Deactivate task': 'Taak deactiveren',
@@ -1179,4 +1178,10 @@ export const nlNL = {
   'Chemicals: Action SettingsChanged': 'Instellingen gewijzigd',
   'Chemicals: Action StatusChanged': 'Status gewijzigd',
   'Chemicals: Action AlertSent': 'Waarschuwing verzonden',
+  'View image': 'Afbeelding bekijken',
+  'Delete image': 'Afbeelding verwijderen',
+  'View file': 'Bestand bekijken',
+  'Delete this file': 'Dit bestand verwijderen',
+  'No preview': 'Geen voorbeeld',
+  'Upload document': 'Document uploaden',
 };

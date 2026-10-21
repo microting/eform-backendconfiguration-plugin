@@ -291,7 +291,6 @@ export const bgBG = {
   Middle: 'Среден',
   'Are you sure you want to permanently delete this case': 'Сигурни ли сте, че искате да изтриете за постоянно този случай',
   Repeated: 'Повтаря се',
-  'Upload PDF': 'Качете PDF',
   'PIN code': 'ПИН код',
   'Employee no': 'Служител №',
   'Deactivate task': 'Деактивирайте задачата',
@@ -1055,4 +1054,10 @@ export const bgBG = {
   'Chemicals: Action SettingsChanged': 'Настройките са променени',
   'Chemicals: Action StatusChanged': 'Статусът е променен',
   'Chemicals: Action AlertSent': 'Предупреждението е изпратено',
+  'View image': 'Вижте изображението',
+  'Delete image': 'Изтрий изображението',
+  'View file': 'Вижте файла',
+  'Delete this file': 'Изтрий този файл',
+  'No preview': 'Няма преглед',
+  'Upload document': 'Качете документ',
 };

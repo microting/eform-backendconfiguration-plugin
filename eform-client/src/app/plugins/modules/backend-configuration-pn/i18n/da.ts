@@ -296,7 +296,6 @@ export const da = {
   Middle: 'Middel',
   'Are you sure you want to permanently delete this case': 'Er du sikker på, at du vil slette denne sag permanent',
   Repeated: 'Gentag',
-  'Upload PDF': 'Upload PDF',
   'PIN code': 'PIN kode',
   'Employee no': 'Medarbejder nummer',
   'Deactivate task': 'Deaktiver opgave',
@@ -1312,4 +1311,10 @@ export const da = {
   'Chemicals: Action SettingsChanged': 'Indstillinger ændret',
   'Chemicals: Action StatusChanged': 'Status ændret',
   'Chemicals: Action AlertSent': 'Advarsel sendt',
+  'View image': 'Vis billede',
+  'Delete image': 'Slet billede',
+  'View file': 'Vis fil',
+  'Delete this file': 'Slet fil',
+  'No preview': 'Ingen forhåndsvisning',
+  'Upload document': 'Upload dokument',
 };

@@ -291,7 +291,6 @@ export const roRO = {
   Middle: 'Mijloc',
   'Are you sure you want to permanently delete this case': 'Sigur doriți să ștergeți definitiv acest caz',
   Repeated: 'Repetat',
-  'Upload PDF': 'Încărcați PDF',
   'PIN code': 'Cod PIN',
   'Employee no': 'Angajat nr',
   'Deactivate task': 'Dezactivați sarcina',
@@ -1055,4 +1054,10 @@ export const roRO = {
   'Chemicals: Action SettingsChanged': 'Setări modificate',
   'Chemicals: Action StatusChanged': 'Stare schimbată',
   'Chemicals: Action AlertSent': 'Alertă trimisă',
+  'View image': 'Vizualizați imaginea',
+  'Delete image': 'Ștergeți imaginea',
+  'View file': 'Vizualizați fișierul',
+  'Delete this file': 'Ștergeți acest fișier',
+  'No preview': 'Fără previzualizare',
+  'Upload document': 'Încărcați document',
 };

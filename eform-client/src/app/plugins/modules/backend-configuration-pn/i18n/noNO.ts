@@ -291,7 +291,6 @@ export const noNO = {
   Middle: 'Midten',
   'Are you sure you want to permanently delete this case': 'Er du sikker på at du vil slette denne saken permanent',
   Repeated: 'Gjentatt',
-  'Upload PDF': 'Last opp PDF',
   'PIN code': 'PIN-kode',
   'Employee no': 'Ansatt nummer',
   'Deactivate task': 'Deaktiver oppgave',
@@ -1179,4 +1178,10 @@ export const noNO = {
   'Chemicals: Action SettingsChanged': 'Innstillinger endret',
   'Chemicals: Action StatusChanged': 'Status endret',
   'Chemicals: Action AlertSent': 'Varsel sendt',
+  'View image': 'Vis bilde',
+  'Delete image': 'Slett bilde',
+  'View file': 'Vis fil',
+  'Delete this file': 'Slett fil',
+  'No preview': 'Ingen forhåndsvisning',
+  'Upload document': 'Last opp dokument',
 };

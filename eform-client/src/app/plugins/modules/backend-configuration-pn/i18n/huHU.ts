@@ -291,7 +291,6 @@ export const huHU = {
   Middle: 'Középső',
   'Are you sure you want to permanently delete this case': 'Biztosan véglegesen törölni szeretné ezt az esetet?',
   Repeated: 'Megismételt',
-  'Upload PDF': 'PDF feltöltése',
   'PIN code': 'PIN-kód',
   'Employee no': 'számú alkalmazott',
   'Deactivate task': 'Inaktiválja a feladatot',
@@ -1055,4 +1054,10 @@ export const huHU = {
   'Chemicals: Action SettingsChanged': 'Beállítások módosítva',
   'Chemicals: Action StatusChanged': 'Állapot megváltozott',
   'Chemicals: Action AlertSent': 'Figyelmeztetés elküldve',
+  'View image': 'Kép megtekintése',
+  'Delete image': 'Kép törlése',
+  'View file': 'Fájl megtekintése',
+  'Delete this file': 'A fájl törlése',
+  'No preview': 'Nincs előnézet',
+  'Upload document': 'Dokumentum feltöltése',
 };

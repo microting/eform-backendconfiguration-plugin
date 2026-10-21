@@ -7,6 +7,7 @@ import {
   ARCHIVE_URL, BackendConfigurationArchivePage, DEFAULT_FOLDER, expectSuccess, FILES_PATH, FOLDERS_PATH,
 } from '../BackendConfigurationArchive.page';
 import { fetchCatalog, seedInboxDocument, tinyPdf } from '../inbox-hub-seed';
+import { openRowActionMenu } from '../row-action-menu';
 import { API_TIMEOUT, UI_TIMEOUT } from '../wait-helpers';
 
 /**
@@ -22,7 +23,8 @@ import { API_TIMEOUT, UI_TIMEOUT } from '../wait-helpers';
  * Z7 only empty folders can be deleted (D12)
  * Z8 below 1100 px the document panel is a drawer
  * Z9 beside the panel the table scrolls inside its own frame; the page does not scroll sideways (#1450)
- * Z10 an account_disabled answer ends the session (D7) — last, it signs the page out
+ * Z10 an image can be uploaded, gets the image icon and wording, and the panel previews it
+ * Z11 an account_disabled answer ends the session (D7) — last, it signs the page out
  */
 const rand = generateRandmString(5);
 const property: PropertyCreateUpdate = {
@@ -46,6 +48,10 @@ const renamedSub = `Regninger-${rand}`;
 const emptyFolder = `Tom-${rand}`;
 const docInSub = `Faktura-${rand}`;
 const docInArkiv = `Kontrakt-${rand}`;
+const imageDoc = `example-image-${rand}`;
+/** A valid 1x1 PNG, so the browser decodes it (naturalWidth 1). */
+const TINY_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 
 test.describe.serial('Arkiv med mapper (W1)', () => {
   let page: Page;
@@ -267,7 +273,38 @@ test.describe.serial('Arkiv med mapper (W1)', () => {
     }
   });
 
-  test('Z10 an account_disabled answer ends the session', async () => {
+  test('Z10 an image can be uploaded, gets the image icon and wording, and the panel previews it', async () => {
+    // One page load, one upload with its list reload, the document panel's two calls (API_TIMEOUT each).
+    test.setTimeout(150000);
+    await archive.open();
+    await archive.selectFolder(DEFAULT_FOLDER);
+    await archive.uploadImage(imageDoc, `${imageDoc}.png`, 'image/png', TINY_PNG, property.name!, DEFAULT_FOLDER);
+
+    const row = archive.fileRow(imageDoc);
+    await expect(row.locator('.archive-doc-name mat-icon')).toHaveText('image', { timeout: UI_TIMEOUT });
+    await expect(row.locator('.fileName')).toHaveText(`${imageDoc}.png`, { timeout: UI_TIMEOUT });
+
+    const item = await openRowActionMenu(page, row, `row of ${imageDoc}`);
+    await expect(item('viewPdfBtn')).toContainText(/Vis billede|View image/, { timeout: UI_TIMEOUT });
+    await expect(item('deleteFileBtn')).toContainText(/Slet billede|Delete image/, { timeout: UI_TIMEOUT });
+    await archive.closeMenu();
+
+    const fetched = archive.waitForCall('the image bytes', 'GET', /\/files\/get-file\/\d+$/);
+    await row.locator('.fileName').click({ timeout: UI_TIMEOUT });
+    const response = await fetched;
+    expect(response.ok(), `GET get-file answered ${response.status()}`).toBe(true);
+    expect(response.headers()['content-type'], 'content type of the served image').toContain('image/png');
+    const preview = archive.panel().locator('#archivePanelImagePreview');
+    await expect(preview).toBeVisible({ timeout: UI_TIMEOUT });
+    await expect.poll(() => preview.evaluate((img: HTMLImageElement) => img.naturalWidth), {
+      message: 'the preview image is decoded', timeout: UI_TIMEOUT,
+    }).toBeGreaterThan(0);
+    await expect(archive.panel().locator('pdf-viewer')).toHaveCount(0, { timeout: UI_TIMEOUT });
+    await archive.panel().locator('#archivePanelCloseBtn').click({ timeout: UI_TIMEOUT });
+    await expect(archive.panel()).toHaveCount(0, { timeout: UI_TIMEOUT });
+  });
+
+  test('Z11 an account_disabled answer ends the session', async () => {
     // One page load whose folder call is answered 403 below (the host retries it once after a token
     // refresh), then the redirect to the login page.
     test.setTimeout(90000);

@@ -318,7 +318,6 @@ export const enUS= {
   'Middle': 'Middle',
   'Are you sure you want to permanently delete this case': 'Are you sure you want to permanently delete this case',
   'Repeated': 'Repeated',
-  'Upload PDF': 'Upload PDF',
   'PIN code': 'PIN code',
   'Employee no': 'Employee no',
   'Deactivate task': 'Deactivate task',
@@ -1412,4 +1411,10 @@ export const enUS= {
   'Chemicals: Action SettingsChanged': 'Settings changed',
   'Chemicals: Action StatusChanged': 'Status changed',
   'Chemicals: Action AlertSent': 'Alert sent',
+  'View image': 'View image',
+  'Delete image': 'Delete image',
+  'View file': 'View file',
+  'Delete this file': 'Delete this file',
+  'No preview': 'No preview',
+  'Upload document': 'Upload document',
 };
