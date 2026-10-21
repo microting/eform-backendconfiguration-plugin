@@ -10,7 +10,7 @@ import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {By} from '@angular/platform-browser';
 import {A11yModule, CdkTrapFocus} from '@angular/cdk/a11y';
 import {TranslateModule} from '@ngx-translate/core';
-import {EMPTY, Subject, of} from 'rxjs';
+import {EMPTY, Observable, Subject, of} from 'rxjs';
 import {CommonDictionaryModel, OperationResult, SharedTagModel} from 'src/app/common/models';
 import {ArchiveDocumentPanelComponent} from './archive-document-panel.component';
 import {ArchivePanelValue} from '../../../../helpers';
@@ -366,7 +366,7 @@ describe('ArchiveDocumentPanelComponent preview by file kind', () => {
   const original = {create: URL.createObjectURL, revoke: URL.revokeObjectURL};
   const q = (selector: string): HTMLElement | null => fixture.nativeElement.querySelector(selector);
 
-  function render(fileExtension: string, blob: Blob | null = new Blob(['x'])): void {
+  function render(fileExtension: string, bytes$: Observable<Blob> = of(new Blob(['x']))): void {
     TestBed.configureTestingModule({
       imports: [ArchiveDocumentPanelComponent, TranslateModule.forRoot()],
       providers: [
@@ -374,7 +374,7 @@ describe('ArchiveDocumentPanelComponent preview by file kind', () => {
           provide: BackendConfigurationPnFilesService,
           useValue: {
             getFile: () => of({success: true, model: {...file, fileName: 'example-file', fileExtension}}),
-            getPdfFile: vi.fn().mockReturnValue(blob ? of(blob) : EMPTY),
+            getPdfFile: vi.fn().mockReturnValue(bytes$),
           },
         },
         {provide: ArchiveMoveFlowService, useValue: {move: vi.fn()}},
@@ -413,6 +413,15 @@ describe('ArchiveDocumentPanelComponent preview by file kind', () => {
     expect(createObjectURL).toHaveBeenCalledTimes(1);
     fixture.destroy();
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:example-image');
+  });
+
+  it('an image that arrives after the panel closed makes no object URL', () => {
+    const bytes = new Subject<Blob>();
+    render('png', bytes);
+    fixture.destroy();
+    bytes.next(new Blob(['x']));
+    expect(bytes.observed).toBe(false);
+    expect(createObjectURL).not.toHaveBeenCalled();
   });
 
   it('a PDF is not shown as an image', () => {

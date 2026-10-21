@@ -1,6 +1,8 @@
 import {
-  AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild,
+  AfterViewInit, Component, DestroyRef, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild,
+  inject,
 } from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {Observable, concat, defaultIfEmpty, defer, map, takeWhile, toArray} from 'rxjs';
 import {CommonDictionaryModel, OperationResult, SharedTagModel} from 'src/app/common/models';
@@ -80,6 +82,8 @@ export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, 
   busy = false;
   /** Drawer only: what had focus when the drawer opened (the row), focused again when it closes. */
   private returnFocusTo: HTMLElement | null = null;
+  /** Cancels pending reads when the panel closes, so a late image reply cannot create an object URL after cleanup. */
+  private destroyRef = inject(DestroyRef);
 
   constructor(
     private filesService: BackendConfigurationPnFilesService,
@@ -158,7 +162,7 @@ export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, 
    */
   private loadData(): void {
     const id = this.fileId;
-    this.filesService.getFile(id).pipe(defaultIfEmpty(null)).subscribe(res => {
+    this.filesService.getFile(id).pipe(defaultIfEmpty(null), takeUntilDestroyed(this.destroyRef)).subscribe(res => {
       if (id !== this.fileId) {
         return;
       }
@@ -180,7 +184,7 @@ export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, 
   /** One fetch per open (getPdfFile returns the file's bytes whatever its type). */
   private loadPreview(): void {
     const id = this.fileId;
-    this.filesService.getPdfFile(id).subscribe({
+    this.filesService.getPdfFile(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (blob: Blob | null) => {
         if (blob && id === this.fileId) {
           this.previewBlob = blob;
