@@ -1024,6 +1024,48 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			Is.EqualTo(today.AddDays(2)));
 	}
 
+	/// <summary>
+	/// #1346 — a task's tags in the task tracker are alphabetical with Danish collation
+	/// (æ, ø, å after z, in that order), like the rest of the plugin since #1334.
+	/// Tags are attached out of order so attach order and name order disagree.
+	/// </summary>
+	[Test]
+	public async Task Index_Tags_AreSortedWithDanishCollation()
+	{
+		var core = await GetCore();
+		var today = DateTime.UtcNow.Date;
+		var (propertyId, planningId) = await SeedTaskWithoutCompliances(
+			complianceEnabled: true, nextExecutionTime: null);
+		var arpId = await BackendConfigurationPnDbContext!.AreaRulePlannings
+			.Where(x => x.ItemPlanningId == planningId)
+			.Select(x => x.Id)
+			.SingleAsync();
+		var suffix = Guid.NewGuid().ToString("N");
+		foreach (var prefix in new[] { "Øko", "Beta", "Åben", "Alfa", "Æble" })
+		{
+			var tag = new PlanningTag { Name = $"{prefix} {suffix}", WorkflowState = Constants.WorkflowStates.Created };
+			await ItemsPlanningPnDbContext!.PlanningTags.AddAsync(tag);
+			await ItemsPlanningPnDbContext.SaveChangesAsync();
+			await BackendConfigurationPnDbContext.AreaRulePlanningTags.AddAsync(new AreaRulePlanningTag
+			{
+				AreaRulePlanningId = arpId,
+				ItemPlanningTagId = tag.Id,
+				WorkflowState = Constants.WorkflowStates.Created
+			});
+			await BackendConfigurationPnDbContext.SaveChangesAsync();
+		}
+		var complianceId = await SeedOpenCompliance(propertyId, planningId, today.AddDays(3));
+
+		var result = await BackendConfigurationTaskTrackerHelper.Index(
+			new TaskTrackerFiltrationModel { PropertyIds = [propertyId], TagIds = [], WorkerIds = [] },
+			BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!, WorkerTagMembership(core));
+
+		Assert.That(result.Success, Is.True, result.Message);
+		var row = result.Model.Single(x => x.ComplianceId == complianceId);
+		Assert.That(row.Tags.Select(x => x.Name), Is.EqualTo(new[] { "Alfa", "Beta", "Æble", "Øko", "Åben" }
+			.Select(prefix => $"{prefix} {suffix}")).AsCollection);
+	}
+
 	private async Task SeedCalendarConfiguration(
 		int planningId, string workflowState = Constants.WorkflowStates.Created)
 	{

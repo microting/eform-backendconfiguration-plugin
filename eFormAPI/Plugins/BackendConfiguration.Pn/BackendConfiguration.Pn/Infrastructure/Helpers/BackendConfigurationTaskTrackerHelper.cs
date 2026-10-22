@@ -417,7 +417,7 @@ public static class BackendConfigurationTaskTrackerHelper
 					var complianceModel = new TaskTrackerModel
 					{
 						Property = propertyName,
-						Tags = itemPlanningTags.OrderBy(x => x.Name).ToList(), //planning.PlanningsTags.Select(x => new CommonTagModel{Id = x.PlanningTag.Id, Name = x.PlanningTag.Name}).ToList(),
+						Tags = itemPlanningTags.OrderBy(x => x.Name, TagNameComparer.Danish).ToList(), //planning.PlanningsTags.Select(x => new CommonTagModel{Id = x.PlanningTag.Id, Name = x.PlanningTag.Name}).ToList(),
 						DeadlineTask = deadlineDate,
 						ComplianceDeadline = compliance.Deadline,
 						WorkerNames = workerNames,
