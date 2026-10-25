@@ -174,11 +174,13 @@ describe('ChemicalHistoryPageComponent (template)', () => {
     expect(button.getAttribute('aria-busy')).toBe('true');
   });
 
-  it('commits a picked date on change', () => {
+  it('commits a typed date (dd-MM-yyyy, as shown) on change', () => {
     render();
     const to = find('#chemicalHistoryTo') as HTMLInputElement;
 
-    to.value = '2026-09-15';
+    to.value = '15-09-2026';
+    // The datepicker parses on input and emits dateChange on change.
+    to.dispatchEvent(new Event('input'));
     to.dispatchEvent(new Event('change'));
 
     expect(component.filters.dateTo).toBe('2026-09-15');
