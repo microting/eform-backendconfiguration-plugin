@@ -459,6 +459,20 @@ test.describe.serial('Tail biting web admin', () => {
     const tailBite = new TailBitePage(page);
     await tailBite.screenshot('switched-off');
 
+    // A bookmarked outbreak of the switched-off property: the server refuses it, and the page does not show it.
+    const refused = await page.request.get(`${API}/outbreaks/${outbreakId}`,
+      { headers: { Authorization: `Bearer ${await apiToken(page)}` } });
+    const refusedBody = await refused.json();
+    expect(refusedBody.success).toBe(false);
+    expect(refusedBody.message).toBe('Not found or no access.');
+    await page.goto(`${BASE_URL}/plugins/backend-configuration-pn/tail-bite/${seededPropertyId}/outbreaks/${outbreakId}`);
+    if (names.length === 0) {
+      await expect(page.locator('#tailBiteNoProperty')).toBeVisible({ timeout: UI_TIMEOUT });
+    } else {
+      await expect(page).not.toHaveURL(new RegExp(`/tail-bite/${seededPropertyId}/`), { timeout: UI_TIMEOUT });
+    }
+    await expect(page.locator('#tailBiteOutbreakTitle')).toHaveCount(0);
+
     await propertiesPage.goToProperties();
     await propertiesPage.getRowObjectByName(property.name).setTailBite(true);
     await tailBite.goto('locations', property.name);

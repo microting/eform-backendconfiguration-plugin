@@ -48,10 +48,14 @@ public abstract class TailBiteTestBase : TestBaseSetup
     // A manager method refuses a missing id exactly like a foreign one, so it cannot be used to probe which ids exist.
     protected static async Task AssertRefusedAlike(Func<Task> missing, Func<Task> foreign)
     {
-        var a = await Assert.ThrowsAsync<TailBiteForbiddenException>(() => missing());
-        var b = await Assert.ThrowsAsync<TailBiteForbiddenException>(() => foreign());
-        Assert.That(a!.Message, Is.EqualTo(TailBiteForbiddenException.NotFoundOrNoAccess));
-        Assert.That(b!.Message, Is.EqualTo(a.Message));
+        await AssertRefused(missing);
+        await AssertRefused(foreign);
+    }
+
+    protected static async Task AssertRefused(Func<Task> call)
+    {
+        var e = await Assert.ThrowsAsync<TailBiteForbiddenException>(() => call());
+        Assert.That(e!.Message, Is.EqualTo(TailBiteForbiddenException.NotFoundOrNoAccess));
     }
 
     /// <summary>A plugin context of its own on the fixture database, with the given execution strategy (default: retry on failure) and interceptors.</summary>

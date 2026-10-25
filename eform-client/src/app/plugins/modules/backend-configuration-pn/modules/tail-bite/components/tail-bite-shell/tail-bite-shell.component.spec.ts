@@ -68,8 +68,13 @@ describe('TailBiteShellComponent', () => {
     expect(router.navigateByUrl).toHaveBeenCalledWith(`${base}/1/locations?x=1#top`, {replaceUrl: true});
   });
 
-  it('leaves an outbreak page to correct its own property, so the two never chase each other', () => {
-    create(`${base}/9/outbreaks/12`);
+  it('redirects an outbreak page of a property that is not offered (switched off, #1477)', () => {
+    create(`${base}/2/outbreaks/12`);
+    expect(router.navigateByUrl).toHaveBeenCalledWith(`${base}/1/outbreaks/12`, {replaceUrl: true});
+  });
+
+  it('leaves an outbreak page of an offered property alone', () => {
+    create(`${base}/3/outbreaks/12`);
     expect(router.navigateByUrl).not.toHaveBeenCalled();
     expect(router.navigate).not.toHaveBeenCalled();
   });
