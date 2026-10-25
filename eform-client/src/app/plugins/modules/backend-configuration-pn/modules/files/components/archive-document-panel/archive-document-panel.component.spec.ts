@@ -7,7 +7,7 @@ vi.mock('ng2-pdf-viewer', () => ({PdfViewerModule: class {}, PdfViewerComponent:
 vi.mock('file-saver', () => ({saveAs: vi.fn()}));
 import {saveAs} from 'file-saver';
 import {CommonModule} from '@angular/common';
-import {NO_ERRORS_SCHEMA} from '@angular/core';
+import {ChangeDetectorRef, NO_ERRORS_SCHEMA} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {A11yModule} from '@angular/cdk/a11y';
 import {TranslateModule} from '@ngx-translate/core';
@@ -431,6 +431,8 @@ describe('ArchiveDocumentPanelComponent as the large view', () => {
   it('previews every page of a PDF, fitted to the width', () => {
     render();
     fixture.componentInstance.pdfBytes = new Uint8Array([37, 80, 68, 70]);
+    // Zoneless TestBed: a field set from outside is only rendered once the view is marked dirty.
+    fixture.componentRef.injector.get(ChangeDetectorRef).markForCheck();
     fixture.detectChanges();
     const viewer = fixture.nativeElement.querySelector('pdf-viewer.archive-view__pdf') as Record<string, unknown> | null;
     expect(viewer).not.toBeNull();
