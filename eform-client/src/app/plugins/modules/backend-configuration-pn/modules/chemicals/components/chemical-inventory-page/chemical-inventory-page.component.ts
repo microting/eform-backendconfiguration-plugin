@@ -100,7 +100,7 @@ export class ChemicalInventoryPageComponent implements OnInit {
     'chemical-row--warning': (row: ChemicalInventoryRow) => row.severity === 'warning',
   };
 
-  /** The grid's empty text: the property has no placements, or a filter hides all of them (855 B1). */
+  /** The grid's empty text: the property has no placements, or a filter hides all of them. */
   get emptyTextKey(): string {
     return this.rows.length ? 'Chemicals: No matching placements' : 'Chemicals: No placements';
   }

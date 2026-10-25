@@ -28,13 +28,13 @@ public sealed record ChemicalExportFile(byte[] Content, string FileName, string 
 public sealed record ChemicalInventoryExportBody(List<int> PlacementIds);
 
 public sealed record ChemicalAuthorityListRow(
-    string ProductName, string RegistrationNo, string Status, string SignalWord, string Pictograms, string HazardStatements,
+    string ProductName, string RegistrationNo, string Status, string SignalWord, string HazardStatements,
     string Location, string Placement, string Deadlines, string Quantity, string SdsUrl)
 {
     /// <summary>The printed text cells in Headers order (without the SDS column): the one column set the PDF renders.</summary>
     public IReadOnlyList<string> Cells { get; init; } = [];
 
-    /// <summary>The GHS codes of the pictogram column; the PDF draws each known one as its diamond.</summary>
+    /// <summary>The GHS codes of the pictogram column; the PDF draws each known one as its diamond (its Cells entry is empty).</summary>
     public IReadOnlyList<string> PictogramCodes { get; init; } = [];
 }
 

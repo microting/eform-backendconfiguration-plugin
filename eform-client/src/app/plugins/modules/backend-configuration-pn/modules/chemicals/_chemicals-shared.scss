@@ -6,8 +6,8 @@
 // with the dialog width.
 @mixin dialog-host($max-width: 520px) { display: block; max-width: $max-width; }
 
-// The host defines gap-4/12/24/48 only; the Kemi templates use gap-8 too (it was a no-op: 855 B7).
-.gap-8 { gap: 8px; }
+// The host defines gap-4/12/24/48 only; the Kemi templates use gap-8 too (without this it is a no-op).
+.gap-8 { gap: var(--spacing-md); }
 
 .chemicals-hint { color: var(--md-on-surface-variant); font-size: 12px; }
 .chemicals-empty { padding: var(--spacing-2xl) var(--spacing-md); color: var(--md-on-surface-variant); }

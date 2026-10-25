@@ -44,7 +44,7 @@ export function copenhagenToday(now: Date = new Date()): string {
 
 /**
  * The W6 date fields' format for the host's date-fns adapter: dd-MM-yyyy, as the table and the Excel write dates, in every
- * language (855 B2: the native date input showed the browser's MM/DD/YYYY in a Danish UI).
+ * language (a native date input showed the browser's MM/DD/YYYY in a Danish UI).
  */
 export const CHEMICAL_HISTORY_DATE_FORMATS: MatDateFormats = {
   parse: {dateInput: 'dd-MM-yyyy'},

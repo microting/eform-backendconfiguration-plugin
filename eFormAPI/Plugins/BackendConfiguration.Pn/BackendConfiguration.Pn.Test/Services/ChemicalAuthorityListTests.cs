@@ -71,7 +71,6 @@ public class ChemicalAuthorityListTests
         var row = doc.Rows.Single();
         Assert.That(row.Status, Is.EqualTo("Produkt afmeldt"));
         Assert.That(row.SignalWord, Is.EqualTo("Advarsel"));
-        Assert.That(row.Pictograms, Is.EqualTo("GHS07, GHS09"));
         Assert.That(row.HazardStatements, Is.EqualTo("H302 Farlig ved indtagelse.\nH410 Meget giftig for vandlevende organismer."));
         Assert.That(row.Deadlines, Is.EqualTo("ChemicalDeadlineSales: 01-03-2026\nChemicalDeadlineUseAndPossession: 01-03-2027"));
         Assert.That(row.Placement, Is.EqualTo("Hylde 1"));

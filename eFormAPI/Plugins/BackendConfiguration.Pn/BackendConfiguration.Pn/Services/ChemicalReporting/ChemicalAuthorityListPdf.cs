@@ -31,7 +31,7 @@ using QuestPDF.Infrastructure;
 public static class ChemicalAuthorityListPdf
 {
     /// <summary>Page margin on every side, in points (1 cm).</summary>
-    public const float MarginPoints = 28.35f;
+    private const float MarginPoints = 28.35f;
 
     /// <summary>Width the table may use: landscape A4 minus both margins, in points.</summary>
     public static readonly float ContentWidthPoints = PageSizes.A4.Landscape().Width - 2 * MarginPoints;
@@ -59,6 +59,11 @@ public static class ChemicalAuthorityListPdf
             {
                 column.Item().Text(document.Title).FontSize(14).Bold();
                 column.Item().Text(document.Subtitle);
+                // The SDS column is a link only; a printed copy still says where the sheets are.
+                if (!string.IsNullOrEmpty(document.SdsNote))
+                {
+                    column.Item().Text(document.SdsNote).Italic();
+                }
             });
 
             page.Content().Table(table =>
@@ -83,7 +88,7 @@ public static class ChemicalAuthorityListPdf
                 {
                     for (var i = 0; i < row.Cells.Count; i++)
                     {
-                        var cell = table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(CellPadding);
+                        var cell = BodyCell(table);
                         if (i == document.PictogramColumn)
                         {
                             Pictograms(cell, row.PictogramCodes);
@@ -94,8 +99,8 @@ public static class ChemicalAuthorityListPdf
                         }
                     }
 
-                    // Only the short link text: the address is in the link (855 check: it wrapped over six lines).
-                    var sds = table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(CellPadding);
+                    // Only the short link text: the address is in the link (printed, it wrapped over many lines).
+                    var sds = BodyCell(table);
                     if (string.IsNullOrEmpty(row.SdsUrl))
                     {
                         sds.Text(string.Empty);
@@ -114,6 +119,9 @@ public static class ChemicalAuthorityListPdf
                 text.TotalPages();
             });
         })).GeneratePdf();
+
+    private static IContainer BodyCell(TableDescriptor table) =>
+        table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(CellPadding);
 
     /// <summary>The official diamond of each known code; a code without artwork is printed as its code.</summary>
     private static void Pictograms(IContainer cell, IReadOnlyList<string> codes)

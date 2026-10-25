@@ -2228,8 +2228,9 @@ public class EformBackendConfigurationPlugin : IEformPlugin
     /// </summary>
     internal static readonly IReadOnlyDictionary<string, string> DefaultMenuIcons = new Dictionary<string, string>
     {
-        // A flask: the 855 check found Kemi the only top-level entry without a glyph.
-        [ChemicalsMenuE2EId] = "science"
+        // Both were seeded without a glyph, unlike their siblings: a flask for Kemi, a paw for tail biting.
+        [ChemicalsMenuE2EId] = "science",
+        ["backend-configuration-pn-tail-bite"] = "pets"
     };
 
     /// <summary>The Kemi module root; each screen's link adds <c>/{path}</c>.</summary>
