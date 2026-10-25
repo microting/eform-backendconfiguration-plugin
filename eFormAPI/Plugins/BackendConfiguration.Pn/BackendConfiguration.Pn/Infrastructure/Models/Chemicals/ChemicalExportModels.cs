@@ -47,4 +47,7 @@ public sealed record ChemicalAuthorityListDocument(
 
     /// <summary>Index of the pictogram column in Headers (and Cells).</summary>
     public int PictogramColumn { get; init; } = -1;
+
+    /// <summary>One line under the subtitle: where the safety data sheets are, for a printed copy.</summary>
+    public string SdsNote { get; init; } = string.Empty;
 }

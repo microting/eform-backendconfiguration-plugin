@@ -177,22 +177,42 @@ public class ChemicalAuthorityListTests
 
     /// <summary>A known code is drawn as its diamond (vector artwork), not printed as its code.</summary>
     [Test]
-    public void Render_DrawsTheDiamondOfAKnownPictogram()
-    {
-        static byte[] Pdf(string pictogram) => ChemicalAuthorityListPdf.Render(ChemicalAuthorityListBuilder.Build(
-            Inventory(false, [Placement(1, 11, 100)], [Entry(100, "Karate") with { HazardPictograms = [pictogram] }]), 1, Now, "https://x", Text));
-
+    public void Render_DrawsTheDiamondOfAKnownPictogram() =>
         // GHS01 (exploding bomb) is 17 kB of paths; printed as text it would be five characters.
-        Assert.That(Pdf("GHS01").Length, Is.GreaterThan(Pdf("GHS99").Length + 2000));
-    }
+        Assert.That(PdfWithPictograms("GHS01").Length, Is.GreaterThan(PdfWithPictograms("GHS99").Length + 2000));
 
+    /// <summary>A code without artwork is printed as its code: more than an empty cell, far less than a diamond.</summary>
     [Test]
     public void Render_KeepsAnUnknownPictogramAsText()
     {
-        var doc = ChemicalAuthorityListBuilder.Build(
-            Inventory(false, [Placement(1, 11, 100)], [Entry(100, "Karate") with { HazardPictograms = ["GHS07", "GHS99"] }]), 1, Now, "https://x", Text);
+        var unknown = PdfWithPictograms("GHS99").Length;
 
-        Assert.That(Encoding.ASCII.GetString(ChemicalAuthorityListPdf.Render(doc), 0, 5), Is.EqualTo("%PDF-"));
+        Assert.That(unknown, Is.GreaterThan(PdfWithPictograms().Length), "the code is printed");
+        Assert.That(unknown, Is.LessThan(PdfWithPictograms("GHS01").Length - 2000), "no artwork is drawn for it");
+    }
+
+    private static byte[] PdfWithPictograms(params string[] pictograms) => ChemicalAuthorityListPdf.Render(ChemicalAuthorityListBuilder.Build(
+        Inventory(false, [Placement(1, 11, 100)], [Entry(100, "Karate") with { HazardPictograms = pictograms }]), 1, Now, "https://x", Text));
+
+    /// <summary>
+    /// The SDS column prints only a link, so a paper copy must still say where the safety data sheets are: one line
+    /// under the subtitle.
+    /// </summary>
+    [Test]
+    public void Build_SaysWhereTheSafetyDataSheetsAre()
+    {
+        var doc = ChemicalAuthorityListBuilder.Build(Inventory(false, [], []), 1, Now, "https://x", Text);
+
+        Assert.That(doc.SdsNote, Is.EqualTo("ChemicalSdsNote"));
+    }
+
+    [Test]
+    public void Render_PrintsTheSdsNote()
+    {
+        var doc = ChemicalAuthorityListBuilder.Build(Inventory(false, [], []), 1, Now, "https://x", Text);
+
+        Assert.That(ChemicalAuthorityListPdf.Render(doc with { SdsNote = new string('x', 400) }).Length,
+            Is.GreaterThan(ChemicalAuthorityListPdf.Render(doc with { SdsNote = "" }).Length));
     }
 
     [Test]

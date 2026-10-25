@@ -257,7 +257,7 @@ public class ChemicalsMenuTests
     }
 
     /// <summary>
-    /// The 855 check: Kemi was the only top-level entry without a glyph. PluginMenuItemModel has no icon, so the
+    /// Kemi was seeded as a top-level entry without a glyph. PluginMenuItemModel has no icon, so the
     /// plugin names one per E2EId and the menu sync writes it; the glyph is a Material Symbols name like its siblings'.
     /// </summary>
     [Test]
@@ -265,6 +265,14 @@ public class ChemicalsMenuTests
     {
         Assert.That(EformBackendConfigurationPlugin.DefaultMenuIcons.TryGetValue(GroupE2EId, out var icon), Is.True);
         Assert.That(icon, Is.EqualTo("science"));
+    }
+
+    /// <summary>Halebid (tail biting) was seeded without a glyph too; a paw, like the animal-welfare topic it covers.</summary>
+    [Test]
+    public void TheTailBitingEntryHasAMaterialSymbolsIcon()
+    {
+        Assert.That(EformBackendConfigurationPlugin.DefaultMenuIcons.TryGetValue("backend-configuration-pn-tail-bite", out var icon), Is.True);
+        Assert.That(icon, Is.EqualTo("pets"));
     }
 
     [Test]
