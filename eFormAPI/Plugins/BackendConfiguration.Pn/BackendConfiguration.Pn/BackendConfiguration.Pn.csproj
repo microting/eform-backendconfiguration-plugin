@@ -35,6 +35,8 @@
       <None Remove="Resources\eForms\03. Kontrol alarmanlæg gyllebeholder.xml" />
       <None Remove="Resources\eForms\03. Kontrol flydelag.xml" />
       <EmbeddedResource Include="Resources\AppVersions\app-latest-versions.json" />
+      <None Remove="Resources\Ghs\*.svg" />
+      <EmbeddedResource Include="Resources\Ghs\*.svg" />
       <EmbeddedResource Include="Resources\eForms\03. Kontrol flydelag.xml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </EmbeddedResource>

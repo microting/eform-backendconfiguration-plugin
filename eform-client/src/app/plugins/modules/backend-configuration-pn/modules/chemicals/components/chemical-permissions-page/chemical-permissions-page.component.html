@@ -74,8 +74,9 @@
       </table>
     </div>
 
+    <!-- The trailing space inside the first sentence keeps the two apart: Angular drops whitespace between elements (855 B3). -->
     <p class="chemicals-footnote">
-      <span *ngIf="propertyName" id="chemicalPermissionsScopeNote">{{ 'Chemicals: Permissions scope note' | translate: {property: propertyName} }}</span>
+      <span *ngIf="propertyName" id="chemicalPermissionsScopeNote">{{ 'Chemicals: Permissions scope note' | translate: {property: propertyName} }} </span>
       <span id="chemicalPermissionsPushNote">{{ 'Chemicals: Push recipients note' | translate }}</span>
     </p>
 

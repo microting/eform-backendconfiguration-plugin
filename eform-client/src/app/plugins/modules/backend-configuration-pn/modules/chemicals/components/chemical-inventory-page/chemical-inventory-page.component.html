@@ -77,11 +77,11 @@
     [pageSize]="25"
     [showToolbar]="false"
     [showColumnMenuButton]="false"
-    noResultText="{{ 'Chemicals: No placements' | translate }}"
+    noResultText="{{ emptyTextKey | translate }}"
   ></mtx-grid>
 
   <ng-template #pictogramsTpl let-row>
-    <span class="ghs-chip" *ngFor="let code of row.pictograms">{{ code }}</span>
+    <app-chemical-ghs-pictograms [codes]="row.pictograms"></app-chemical-ghs-pictograms>
   </ng-template>
   <ng-template #productTpl let-row let-i="index">
     <button type="button" class="chemicals-link" id="chemicalRowProduct-{{i}}" (click)="openDetails(row)">

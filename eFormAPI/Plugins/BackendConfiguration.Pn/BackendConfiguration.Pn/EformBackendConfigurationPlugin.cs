@@ -2226,7 +2226,11 @@ public class EformBackendConfigurationPlugin : IEformPlugin
     /// Material Symbols glyph of a top-level menu entry, by E2EId. PluginMenuItemModel has no icon, so
     /// PluginMenuSyncService.ApplyDefaultIcons writes these onto the menu rows at startup.
     /// </summary>
-    internal static readonly IReadOnlyDictionary<string, string> DefaultMenuIcons = new Dictionary<string, string>();
+    internal static readonly IReadOnlyDictionary<string, string> DefaultMenuIcons = new Dictionary<string, string>
+    {
+        // A flask: the 855 check found Kemi the only top-level entry without a glyph.
+        [ChemicalsMenuE2EId] = "science"
+    };
 
     /// <summary>The Kemi module root; each screen's link adds <c>/{path}</c>.</summary>
     private const string ChemicalsLink = "/plugins/backend-configuration-pn/chemicals";
@@ -2406,7 +2410,9 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         // stop the plugin from loading.
         try
         {
-            new PluginMenuSyncService(baseDb).Run(PluginId, GetNavigationMenu(null));
+            var menuSync = new PluginMenuSyncService(baseDb);
+            menuSync.Run(PluginId, GetNavigationMenu(null));
+            menuSync.ApplyDefaultIcons(PluginId, DefaultMenuIcons);
         }
         catch (Exception e)
         {

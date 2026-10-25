@@ -4,3 +4,5 @@
 .chemicals-history-hint-error { color: var(--md-alert); }
 .col-time { white-space: nowrap; }
 .col-details { color: var(--md-on-surface-variant); }
+// The date fields sit in the filter row, as wide as a date needs (855 B2: they stretched full width and stacked).
+.chemicals-date-field { flex: 0 0 180px; width: 180px; }

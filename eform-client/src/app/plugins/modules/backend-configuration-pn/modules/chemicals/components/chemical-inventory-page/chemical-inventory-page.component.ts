@@ -43,7 +43,8 @@ import {
 import {ChemicalRegisterPlacementDialogComponent} from '../chemical-register-placement-dialog/chemical-register-placement-dialog.component';
 import {ChemicalRemoveDialogComponent} from '../chemical-remove-dialog/chemical-remove-dialog.component';
 import {ChemicalStockDialogComponent} from '../chemical-stock-dialog/chemical-stock-dialog.component';
-import {NgIf, NgFor, DatePipe, DecimalPipe} from '@angular/common';
+import {ChemicalGhsPictogramsComponent} from '../chemical-ghs-pictograms/chemical-ghs-pictograms.component';
+import {NgIf, DatePipe, DecimalPipe} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {MatFormField, MatLabel} from '@angular/material/form-field';
 import {MatInput} from '@angular/material/input';
@@ -63,7 +64,8 @@ import {MtxSelect} from '@ng-matero/extensions/select';
  */
 @Component({
   selector: 'app-chemical-inventory-page',
-  imports: [NgIf, NgFor, DatePipe, DecimalPipe, FormsModule, TranslatePipe, MatFormField, MatLabel, MatInput, MatIcon, MatIconButton, MatTooltip, MatMenu, MatMenuItem, MatMenuTrigger, MtxGrid, MtxSelect],
+  imports: [NgIf, DatePipe, DecimalPipe, FormsModule, TranslatePipe, MatFormField, MatLabel, MatInput, MatIcon, MatIconButton, MatTooltip,
+    MatMenu, MatMenuItem, MatMenuTrigger, MtxGrid, MtxSelect, ChemicalGhsPictogramsComponent],
   templateUrl: './chemical-inventory-page.component.html',
   styleUrls: ['./chemical-inventory-page.component.scss'],
 })
@@ -98,9 +100,9 @@ export class ChemicalInventoryPageComponent implements OnInit {
     'chemical-row--warning': (row: ChemicalInventoryRow) => row.severity === 'warning',
   };
 
-  /** The grid's empty text. */
+  /** The grid's empty text: the property has no placements, or a filter hides all of them (855 B1). */
   get emptyTextKey(): string {
-    return 'Chemicals: No placements';
+    return this.rows.length ? 'Chemicals: No matching placements' : 'Chemicals: No placements';
   }
 
   get stockEnabled(): boolean {

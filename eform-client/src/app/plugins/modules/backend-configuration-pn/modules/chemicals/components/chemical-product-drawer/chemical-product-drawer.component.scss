@@ -2,6 +2,8 @@
 
 .chemicals-drawer { height: 100%; padding: var(--spacing-2xl); box-sizing: border-box; width: 480px; max-width: 100vw; }
 .chemicals-drawer__body { overflow-y: auto; }
+// The status chip and the signal word, apart (855 B7).
+.chemicals-drawer__status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-md); }
 .chemicals-timeline { display: grid; grid-template-columns: auto 1fr; gap: var(--spacing-xs) var(--spacing-lg); margin: 0; }
 .chemicals-timeline dd { margin: 0; }
 .chemicals-stock-table { width: 100%; border-collapse: collapse; }

@@ -20,12 +20,31 @@ SOFTWARE.
 
 namespace BackendConfiguration.Pn.Services.ChemicalReporting;
 
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+
 /// <summary>
-/// The nine official GHS hazard pictograms (UNECE artwork, public domain; the same files as
-/// flutter-chemistry assets/ghs), embedded as SVG resources for the authority list PDF.
+/// The nine official GHS hazard pictograms (UNECE artwork, public domain; the same files flutter-chemistry pins in
+/// tool/fetch_ghs_pictograms.sh), embedded as SVG resources (Resources/Ghs) for the authority list PDF. The web admin
+/// carries the same files base64-encoded in chemical-ghs-pictograms.ts.
 /// </summary>
 public static class ChemicalGhsPictograms
 {
+    private static readonly IReadOnlyDictionary<string, string> Svgs = Enumerable.Range(1, 9)
+        .Select(n => $"GHS{n:00}")
+        .ToDictionary(code => code, Load);
+
     /// <summary>The SVG of a GHS code such as "GHS07", or null for a code without official artwork.</summary>
-    public static string Svg(string code) => null;
+    public static string Svg(string code) =>
+        Svgs.GetValueOrDefault(code?.Trim().ToUpperInvariant() ?? string.Empty);
+
+    private static string Load(string code)
+    {
+        var name = $"BackendConfiguration.Pn.Resources.Ghs.{code}.svg";
+        using var stream = typeof(ChemicalGhsPictograms).Assembly.GetManifestResourceStream(name)
+                           ?? throw new FileNotFoundException($"Embedded GHS pictogram {name} is missing");
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd();
+    }
 }
