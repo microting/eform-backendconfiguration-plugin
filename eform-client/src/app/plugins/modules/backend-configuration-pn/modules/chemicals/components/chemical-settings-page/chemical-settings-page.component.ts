@@ -100,6 +100,11 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
       });
   }
 
+  /** The preview's closing line. */
+  get digestFooterKey(): string {
+    return 'Chemicals: Digest footer';
+  }
+
   /** The form shows the stored settings and may be edited and saved. */
   get ready(): boolean {
     return this.propertyId !== null && !this.load.loading && !this.load.failed;

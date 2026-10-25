@@ -127,6 +127,18 @@ describe('ChemicalSettingsPageComponent', () => {
     expect(component.previewSections[0].items.map((i) => i.productName)).toEqual(['Karate']);
   });
 
+  it('does not tell a reader they are a recipient while the property has none (855 B6)', () => {
+    expect(component.preview?.recipients).toEqual([]);
+    expect(component.digestFooterKey).toBe('Chemicals: Digest no recipients');
+  });
+
+  it('explains why the reader gets the e-mail once the property has recipients (855 B6)', () => {
+    chemicals.getDigestPreview.mockReturnValue(of({success: true, model: {...preview, recipients: ['first@example.com']}}));
+    component = build();
+
+    expect(component.digestFooterKey).toBe('Chemicals: Digest footer');
+  });
+
   it('is busy only while a save is in flight (the container locks the property picker)', () => {
     expect(component.busy).toBe(false);
     const pending = new Subject<unknown>();

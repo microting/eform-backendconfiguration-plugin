@@ -28,11 +28,22 @@ using QuestPDF.Infrastructure;
 /// <summary>Landscape A4 table rendering of the authority list (QuestPDF, Plan E decision 6).</summary>
 public static class ChemicalAuthorityListPdf
 {
+    /// <summary>Page margin on every side, in points (1 cm).</summary>
+    public const float MarginPoints = 28.35f;
+
+    /// <summary>Width the table may use: landscape A4 minus both margins, in points.</summary>
+    public static readonly float ContentWidthPoints = PageSizes.A4.Landscape().Width - 2 * MarginPoints;
+
+    public const float HeaderFontSize = 8;
+
+    /// <summary>Padding on every side of a table cell, in points.</summary>
+    public const float CellPadding = 3;
+
     public static byte[] Render(ChemicalAuthorityListDocument document) =>
         Document.Create(container => container.Page(page =>
         {
             page.Size(PageSizes.A4.Landscape());
-            page.Margin(1, Unit.Centimetre);
+            page.Margin(MarginPoints);
             page.DefaultTextStyle(style => style.FontSize(8));
 
             page.Header().PaddingBottom(8).Column(column =>
@@ -55,7 +66,7 @@ public static class ChemicalAuthorityListPdf
                 {
                     foreach (var title in document.Headers)
                     {
-                        header.Cell().Background(Colors.Grey.Lighten3).Padding(3).Text(title).Bold();
+                        header.Cell().Background(Colors.Grey.Lighten3).Padding(CellPadding).Text(title).Bold();
                     }
                 });
 
@@ -63,10 +74,10 @@ public static class ChemicalAuthorityListPdf
                 {
                     foreach (var value in row.Cells)
                     {
-                        table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3).Text(value);
+                        table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(CellPadding).Text(value);
                     }
 
-                    var sds = table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3);
+                    var sds = table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(CellPadding);
                     if (string.IsNullOrEmpty(row.SdsUrl))
                     {
                         sds.Text(string.Empty);

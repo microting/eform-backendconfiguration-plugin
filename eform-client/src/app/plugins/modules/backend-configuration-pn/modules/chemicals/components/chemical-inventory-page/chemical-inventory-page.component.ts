@@ -98,6 +98,11 @@ export class ChemicalInventoryPageComponent implements OnInit {
     'chemical-row--warning': (row: ChemicalInventoryRow) => row.severity === 'warning',
   };
 
+  /** The grid's empty text. */
+  get emptyTextKey(): string {
+    return 'Chemicals: No placements';
+  }
+
   get stockEnabled(): boolean {
     return isStockEnabled(this.inventory, this.propertyId);
   }

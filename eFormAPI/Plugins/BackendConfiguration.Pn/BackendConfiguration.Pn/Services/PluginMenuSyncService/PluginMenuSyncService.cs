@@ -137,6 +137,12 @@ public class PluginMenuSyncService(BaseDbContext dbContext)
         return added.Count;
     }
 
+    /// <summary>
+    /// Gives each top-level menu entry in <paramref name="icons"/> (E2EId to Material Symbols glyph) its icon,
+    /// and returns how many rows it changed.
+    /// </summary>
+    public int ApplyDefaultIcons(string pluginId, IReadOnlyDictionary<string, string> icons) => 0;
+
     private List<string> AddChildren(PluginMenuItemModel group, List<PluginMenuItemModel> children, int pluginRowId,
         bool groupWasOffered)
     {

@@ -33,8 +33,18 @@ public sealed record ChemicalAuthorityListRow(
 {
     /// <summary>The printed text cells in Headers order (without the SDS column): the one column set the PDF renders.</summary>
     public IReadOnlyList<string> Cells { get; init; } = [];
+
+    /// <summary>The GHS codes of the pictogram column; the PDF draws each known one as its diamond.</summary>
+    public IReadOnlyList<string> PictogramCodes { get; init; } = [];
 }
 
 public sealed record ChemicalAuthorityListDocument(
     string Title, string Subtitle, IReadOnlyList<string> Headers, IReadOnlyList<ChemicalAuthorityListRow> Rows,
-    string SdsLinkText);
+    string SdsLinkText)
+{
+    /// <summary>Relative width of every column in Headers order, the SDS column included.</summary>
+    public IReadOnlyList<float> ColumnWeights { get; init; } = [];
+
+    /// <summary>Index of the pictogram column in Headers (and Cells).</summary>
+    public int PictogramColumn { get; init; } = -1;
+}
