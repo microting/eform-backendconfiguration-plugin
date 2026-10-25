@@ -1060,4 +1060,8 @@ export const roRO = {
   'Delete this file': 'Ștergeți acest fișier',
   'No preview': 'Fără previzualizare',
   'Upload document': 'Încărcați document',
+  'Back to the archive': 'Înapoi la arhivă',
+  'Previous document': 'Documentul anterior',
+  'Next document': 'Documentul următor',
+  '{{index}} of {{count}}': '{{index}} din {{count}}',
 };

@@ -1060,4 +1060,8 @@ export const lvLV = {
   'Delete this file': 'Izdzēst šo failu',
   'No preview': 'Nav priekšskatījuma',
   'Upload document': 'Augšupielādēt dokumentu',
+  'Back to the archive': 'Atpakaļ uz arhīvu',
+  'Previous document': 'Iepriekšējais dokuments',
+  'Next document': 'Nākamais dokuments',
+  '{{index}} of {{count}}': '{{index}} no {{count}}',
 };

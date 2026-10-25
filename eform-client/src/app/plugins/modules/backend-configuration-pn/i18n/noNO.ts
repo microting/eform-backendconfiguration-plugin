@@ -1184,4 +1184,8 @@ export const noNO = {
   'Delete this file': 'Slett fil',
   'No preview': 'Ingen forhåndsvisning',
   'Upload document': 'Last opp dokument',
+  'Back to the archive': 'Tilbake til arkivet',
+  'Previous document': 'Forrige dokument',
+  'Next document': 'Neste dokument',
+  '{{index}} of {{count}}': '{{index}} av {{count}}',
 };

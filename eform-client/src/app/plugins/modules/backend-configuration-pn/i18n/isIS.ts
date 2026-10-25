@@ -1060,4 +1060,8 @@ export const isIS = {
   'Delete this file': 'Eyða þessari skrá',
   'No preview': 'Engin forskoðun',
   'Upload document': 'Hladdu upp skjali',
+  'Back to the archive': 'Aftur í skjalasafnið',
+  'Previous document': 'Fyrra skjal',
+  'Next document': 'Næsta skjal',
+  '{{index}} of {{count}}': '{{index}} af {{count}}',
 };

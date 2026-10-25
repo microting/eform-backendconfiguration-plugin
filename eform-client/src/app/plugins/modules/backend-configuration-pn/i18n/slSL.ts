@@ -1060,4 +1060,8 @@ export const slSL = {
   'Delete this file': 'Izbriši to datoteko',
   'No preview': 'Brez predogleda',
   'Upload document': 'Naloži dokument',
+  'Back to the archive': 'Nazaj v arhiv',
+  'Previous document': 'Prejšnji dokument',
+  'Next document': 'Naslednji dokument',
+  '{{index}} of {{count}}': '{{index}} od {{count}}',
 };

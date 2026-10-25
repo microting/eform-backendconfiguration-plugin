@@ -1060,4 +1060,8 @@ export const ltLT = {
   'Delete this file': 'Ištrinti šį failą',
   'No preview': 'Peržiūros nėra',
   'Upload document': 'Įkelti dokumentą',
+  'Back to the archive': 'Atgal į archyvą',
+  'Previous document': 'Ankstesnis dokumentas',
+  'Next document': 'Kitas dokumentas',
+  '{{index}} of {{count}}': '{{index}} iš {{count}}',
 };

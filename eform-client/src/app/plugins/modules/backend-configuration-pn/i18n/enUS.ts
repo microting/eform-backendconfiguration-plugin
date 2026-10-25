@@ -1417,4 +1417,8 @@ export const enUS= {
   'Delete this file': 'Delete this file',
   'No preview': 'No preview',
   'Upload document': 'Upload document',
+  'Back to the archive': 'Back to the archive',
+  'Previous document': 'Previous document',
+  'Next document': 'Next document',
+  '{{index}} of {{count}}': '{{index}} of {{count}}',
 };

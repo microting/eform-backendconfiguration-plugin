@@ -1183,4 +1183,8 @@ export const frFR = {
   'Delete this file': 'Supprimer ce fichier',
   'No preview': 'Aucun aperçu',
   'Upload document': 'Téléverser un document',
+  'Back to the archive': 'Retour à l\'archive',
+  'Previous document': 'Document précédent',
+  'Next document': 'Document suivant',
+  '{{index}} of {{count}}': '{{index}} sur {{count}}',
 };

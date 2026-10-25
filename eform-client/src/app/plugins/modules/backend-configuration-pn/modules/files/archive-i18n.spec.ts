@@ -35,5 +35,10 @@ describe('archive folders i18n', () => {
     expect(t['The move changes who can read the documents. Only an administrator can do that.'])
       .toBe('Flytningen ændrer, hvem der kan læse dokumenterne. Kun en administrator kan gøre det.');
     expect(t['{{count}} documents can now be read by {{who}}']).toBe('{{count}} dokumenter kan nu læses af {{who}}');
+    expect(t['Folder']).toBe('Mappe');
+    expect(t['Back to the archive']).toBe('Tilbage til arkivet');
+    expect(t['Previous document']).toBe('Forrige dokument');
+    expect(t['Next document']).toBe('Næste dokument');
+    expect(t['{{index}} of {{count}}']).toBe('{{index}} af {{count}}');
   });
 });

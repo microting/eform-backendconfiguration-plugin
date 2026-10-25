@@ -1060,4 +1060,8 @@ export const huHU = {
   'Delete this file': 'A fájl törlése',
   'No preview': 'Nincs előnézet',
   'Upload document': 'Dokumentum feltöltése',
+  'Back to the archive': 'Vissza az archívumba',
+  'Previous document': 'Előző dokumentum',
+  'Next document': 'Következő dokumentum',
+  '{{index}} of {{count}}': '{{index}} / {{count}}',
 };

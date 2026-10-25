@@ -1184,4 +1184,8 @@ export const fiFI = {
   'Delete this file': 'Poista tämä tiedosto',
   'No preview': 'Ei esikatselua',
   'Upload document': 'Lataa asiakirja',
+  'Back to the archive': 'Takaisin arkistoon',
+  'Previous document': 'Edellinen asiakirja',
+  'Next document': 'Seuraava asiakirja',
+  '{{index}} of {{count}}': '{{index}}/{{count}}',
 };

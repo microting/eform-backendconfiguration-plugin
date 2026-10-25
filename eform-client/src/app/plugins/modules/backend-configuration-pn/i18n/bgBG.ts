@@ -1060,4 +1060,8 @@ export const bgBG = {
   'Delete this file': 'Изтрий този файл',
   'No preview': 'Няма преглед',
   'Upload document': 'Качете документ',
+  'Back to the archive': 'Обратно към архива',
+  'Previous document': 'Предишен документ',
+  'Next document': 'Следващ документ',
+  '{{index}} of {{count}}': '{{index}} от {{count}}',
 };

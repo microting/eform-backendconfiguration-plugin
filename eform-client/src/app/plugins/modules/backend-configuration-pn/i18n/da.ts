@@ -1317,4 +1317,8 @@ export const da = {
   'Delete this file': 'Slet fil',
   'No preview': 'Ingen forhåndsvisning',
   'Upload document': 'Upload dokument',
+  'Back to the archive': 'Tilbage til arkivet',
+  'Previous document': 'Forrige dokument',
+  'Next document': 'Næste dokument',
+  '{{index}} of {{count}}': '{{index}} af {{count}}',
 };

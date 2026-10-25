@@ -1184,4 +1184,8 @@ export const plPL = {
   'Delete this file': 'Usuń ten plik',
   'No preview': 'Brak podglądu',
   'Upload document': 'Prześlij dokument',
+  'Back to the archive': 'Powrót do archiwum',
+  'Previous document': 'Poprzedni dokument',
+  'Next document': 'Następny dokument',
+  '{{index}} of {{count}}': '{{index}} z {{count}}',
 };

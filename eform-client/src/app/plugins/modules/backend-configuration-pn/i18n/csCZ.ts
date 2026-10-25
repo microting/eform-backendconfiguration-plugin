@@ -1060,4 +1060,8 @@ export const csCZ = {
   'Delete this file': 'Smazat tento soubor',
   'No preview': 'Žádný náhled',
   'Upload document': 'Nahrát dokument',
+  'Back to the archive': 'Zpět do archivu',
+  'Previous document': 'Předchozí dokument',
+  'Next document': 'Další dokument',
+  '{{index}} of {{count}}': '{{index}} z {{count}}',
 };

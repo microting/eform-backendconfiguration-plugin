@@ -76,6 +76,39 @@ describe('FilesTableComponent', () => {
     expect(table.presentationOf({...table.rows[0], fileExtension})).toEqual({icon, viewKey, deleteKey});
   });
 
+  describe('Mappe column', () => {
+    const at = (folderPath: string[]) => ({...table.rows[0], folderPath});
+
+    it('a top-level folder shows only its name, no parent', () => {
+      const r = at(['Økonomi']);
+      expect(table.parentLabel(r)).toBe('');
+      expect(table.folderLeaf(r)).toBe('Økonomi');
+      expect(table.fullPath(r)).toBe('Økonomi');
+    });
+
+    it('a subfolder shows "Parent ›" and the leaf', () => {
+      const r = at(['Økonomi', 'Fakturaer']);
+      expect(table.parentLabel(r)).toBe('Økonomi ›');
+      expect(table.folderLeaf(r)).toBe('Fakturaer');
+      expect(table.fullPath(r)).toBe('Økonomi › Fakturaer');
+    });
+
+    it('a deeper path folds the levels above the parent into "…", the tooltip keeps them all', () => {
+      const r = at(['Drift', 'Økonomi', 'Fakturaer', '2026']);
+      expect(table.parentLabel(r)).toBe('… › Fakturaer ›');
+      expect(table.folderLeaf(r)).toBe('2026');
+      expect(table.fullPath(r)).toBe('Drift › Økonomi › Fakturaer › 2026');
+    });
+
+    it('no path shows nothing', () => {
+      for (const r of [at([]), {...table.rows[0], folderPath: undefined as unknown as string[]}]) {
+        expect(table.parentLabel(r)).toBe('');
+        expect(table.folderLeaf(r)).toBe('');
+        expect(table.fullPath(r)).toBe('');
+      }
+    });
+  });
+
   it('tracks rows by file id', () => {
     expect(table.trackById(0, table.rows[1])).toBe(8);
   });
