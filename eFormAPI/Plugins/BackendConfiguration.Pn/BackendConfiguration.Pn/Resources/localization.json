@@ -9269,6 +9269,37 @@
     }
   },
   {
+    "Key": "ChemicalSdsNote",
+    "LocalizedValue": {
+      "en-US": "Safety data sheets: use the SDS link in each row, or open Chemicals in eForm.",
+      "da": "Sikkerhedsdatablade: brug SDS-linket i hver række, eller åbn Kemi i eForm.",
+      "de": "Sicherheitsdatenblätter: Nutzen Sie den SDB-Link in jeder Zeile oder öffnen Sie Chemikalien in eForm.",
+      "uk-UA": "Паспорти безпеки: скористайтеся посиланням у кожному рядку або відкрийте «Хімікати» в eForm.",
+      "pl-PL": "Karty charakterystyki: użyj linku w każdym wierszu lub otwórz Chemikalia w eForm.",
+      "no-NO": "Sikkerhetsdatablad: bruk lenken i hver rad, eller åpne Kjemikalier i eForm.",
+      "sv-SE": "Säkerhetsdatablad: använd länken på varje rad eller öppna Kemikalier i eForm.",
+      "es-ES": "Fichas de datos de seguridad: use el enlace de cada fila o abra Productos químicos en eForm.",
+      "fr-FR": "Fiches de données de sécurité : utilisez le lien de chaque ligne ou ouvrez Produits chimiques dans eForm.",
+      "it-IT": "Schede di sicurezza: usa il link in ogni riga oppure apri Prodotti chimici in eForm.",
+      "nl-NL": "Veiligheidsinformatiebladen: gebruik de link in elke rij of open Chemicaliën in eForm.",
+      "pt-BR": "Fichas de dados de segurança: use o link em cada linha ou abra Produtos químicos no eForm.",
+      "pt-PT": "Fichas de dados de segurança: utilize a ligação em cada linha ou abra Produtos químicos no eForm.",
+      "fi-FI": "Käyttöturvallisuustiedotteet: käytä kunkin rivin linkkiä tai avaa Kemikaalit eFormissa.",
+      "et-ET": "Ohutuskaardid: kasutage iga rea linki või avage eFormis Kemikaalid.",
+      "lv-LV": "Drošības datu lapas: izmantojiet saiti katrā rindā vai atveriet eForm sadaļu Ķīmiskās vielas.",
+      "lt-LT": "Saugos duomenų lapai: naudokite nuorodą kiekvienoje eilutėje arba atidarykite eForm skiltį Cheminės medžiagos.",
+      "ro-RO": "Fișe cu date de securitate: folosiți linkul de pe fiecare rând sau deschideți Substanțe chimice în eForm.",
+      "hr-HR": "Sigurnosno-tehnički listovi: koristite poveznicu u svakom retku ili otvorite Kemikalije u eFormu.",
+      "sl-SL": "Varnostni listi: uporabite povezavo v vsaki vrstici ali odprite Kemikalije v eFormu.",
+      "cs-CZ": "Bezpečnostní listy: použijte odkaz v každém řádku nebo otevřete Chemikálie v eFormu.",
+      "sk-SK": "Karty bezpečnostných údajov: použite odkaz v každom riadku alebo otvorte Chemikálie v eForme.",
+      "hu-HU": "Biztonsági adatlapok: használja az egyes sorokban lévő hivatkozást, vagy nyissa meg a Vegyi anyagok menüt az eFormban.",
+      "bg-BG": "Информационни листове за безопасност: използвайте връзката на всеки ред или отворете „Химикали“ в eForm.",
+      "el-GR": "Δελτία δεδομένων ασφαλείας: χρησιμοποιήστε τον σύνδεσμο σε κάθε γραμμή ή ανοίξτε τα Χημικά στο eForm.",
+      "is-IS": "Öryggisblöð: notaðu tengilinn í hverri línu eða opnaðu Efni í eForm."
+    }
+  },
+  {
     "Key": "ChemicalSystemUser",
     "LocalizedValue": {
       "en-US": "System",

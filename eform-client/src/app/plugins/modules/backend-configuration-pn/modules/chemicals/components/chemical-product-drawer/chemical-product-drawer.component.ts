@@ -17,6 +17,7 @@ import {NgIf, NgFor, NgSwitch, NgSwitchCase, DatePipe, DecimalPipe} from '@angul
 import {MatIcon} from '@angular/material/icon';
 import {MatIconButton} from '@angular/material/button';
 import {MatTooltip} from '@angular/material/tooltip';
+import {ChemicalGhsPictogramsComponent} from '../chemical-ghs-pictograms/chemical-ghs-pictograms.component';
 
 export interface ChemicalProductDrawerData {
   row: ChemicalInventoryRow;
@@ -53,7 +54,8 @@ const TABS: ChemicalDrawerTabDef[] = [
  */
 @Component({
   selector: 'app-chemical-product-drawer',
-  imports: [NgIf, NgFor, NgSwitch, NgSwitchCase, DatePipe, DecimalPipe, TranslatePipe, MatIcon, MatIconButton, MatTooltip],
+  imports: [NgIf, NgFor, NgSwitch, NgSwitchCase, DatePipe, DecimalPipe, TranslatePipe, MatIcon, MatIconButton, MatTooltip,
+    ChemicalGhsPictogramsComponent],
   templateUrl: './chemical-product-drawer.component.html',
   styleUrls: ['./chemical-product-drawer.component.scss'],
 })

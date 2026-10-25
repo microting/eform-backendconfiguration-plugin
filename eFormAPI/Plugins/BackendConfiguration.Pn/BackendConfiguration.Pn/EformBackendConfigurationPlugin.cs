@@ -2222,6 +2222,17 @@ public class EformBackendConfigurationPlugin : IEformPlugin
     /// <summary>E2EId of the Kemi menu group; each screen's child adds <c>-{path}</c>.</summary>
     private const string ChemicalsMenuE2EId = "backend-configuration-pn-chemicals";
 
+    /// <summary>
+    /// Material Symbols glyph of a top-level menu entry, by E2EId. PluginMenuItemModel has no icon, so
+    /// PluginMenuSyncService.ApplyDefaultIcons writes these onto the menu rows at startup.
+    /// </summary>
+    internal static readonly IReadOnlyDictionary<string, string> DefaultMenuIcons = new Dictionary<string, string>
+    {
+        // Both were seeded without a glyph, unlike their siblings: a flask for Kemi, a paw for tail biting.
+        [ChemicalsMenuE2EId] = "science",
+        ["backend-configuration-pn-tail-bite"] = "pets"
+    };
+
     /// <summary>The Kemi module root; each screen's link adds <c>/{path}</c>.</summary>
     private const string ChemicalsLink = "/plugins/backend-configuration-pn/chemicals";
 
@@ -2400,7 +2411,9 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         // stop the plugin from loading.
         try
         {
-            new PluginMenuSyncService(baseDb).Run(PluginId, GetNavigationMenu(null));
+            var menuSync = new PluginMenuSyncService(baseDb);
+            menuSync.Run(PluginId, GetNavigationMenu(null));
+            menuSync.ApplyDefaultIcons(PluginId, DefaultMenuIcons);
         }
         catch (Exception e)
         {

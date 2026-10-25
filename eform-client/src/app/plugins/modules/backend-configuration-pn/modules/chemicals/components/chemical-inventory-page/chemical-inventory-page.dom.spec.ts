@@ -138,6 +138,35 @@ describe('ChemicalInventoryPageComponent (template)', () => {
     expect(product?.textContent).toContain('Karate 2,5 WG');
   });
 
+  it('draws the GHS diamonds in the Fare column, the code as the text alternative (855 G1)', () => {
+    render([{id: 10, archived: false}]);
+
+    const pictogram = find('#chemicalInventoryPage mtx-grid img[alt="GHS07"]');
+    expect(pictogram).not.toBeNull();
+    expect(pictogram?.getAttribute('src')).toMatch(/^data:image\/svg\+xml;base64,/);
+    expect(find('#chemicalInventoryPage mtx-grid .ghs-chip')).toBeNull();
+  });
+
+  it('says no placement matches when a filter hides every row, not that the property has none (855 B1)', () => {
+    render([{id: 10, archived: false}]);
+
+    filters$.next({...chemicalsInitialState.inventoryFilters, search: 'zzzz'});
+    detectChanges(fixture);
+
+    expect(component.visibleRows).toHaveLength(0);
+    expect(find('mtx-grid')?.textContent).toContain('Chemicals: No matching placements');
+    expect(find('mtx-grid')?.textContent).not.toContain('Chemicals: No placements');
+  });
+
+  it('still says the property has no placements when it has none (855 B1)', () => {
+    render([{id: 10, archived: false}]);
+
+    component.rows = [];
+    component.visibleRows = [];
+
+    expect(component.emptyTextKey).toBe('Chemicals: No placements');
+  });
+
   describe('row menu (W2 placement actions)', () => {
     const openRowMenu = () => {
       (find('#action-items-0 button') as HTMLButtonElement).click();

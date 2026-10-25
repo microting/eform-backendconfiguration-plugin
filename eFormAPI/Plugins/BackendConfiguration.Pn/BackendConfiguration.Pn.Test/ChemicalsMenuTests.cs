@@ -255,4 +255,31 @@ public class ChemicalsMenuTests
         Assert.That(links.Where(i => i.E2EId != i.MenuTemplate.E2EId).Select(i => i.E2EId), Is.Empty,
             "a link's E2EId must equal its template's");
     }
+
+    /// <summary>
+    /// Kemi was seeded as a top-level entry without a glyph. PluginMenuItemModel has no icon, so the
+    /// plugin names one per E2EId and the menu sync writes it; the glyph is a Material Symbols name like its siblings'.
+    /// </summary>
+    [Test]
+    public void TheKemiGroupHasAMaterialSymbolsIcon()
+    {
+        Assert.That(EformBackendConfigurationPlugin.DefaultMenuIcons.TryGetValue(GroupE2EId, out var icon), Is.True);
+        Assert.That(icon, Is.EqualTo("science"));
+    }
+
+    /// <summary>Halebid (tail biting) was seeded without a glyph too; a paw, like the animal-welfare topic it covers.</summary>
+    [Test]
+    public void TheTailBitingEntryHasAMaterialSymbolsIcon()
+    {
+        Assert.That(EformBackendConfigurationPlugin.DefaultMenuIcons.TryGetValue("backend-configuration-pn-tail-bite", out var icon), Is.True);
+        Assert.That(icon, Is.EqualTo("pets"));
+    }
+
+    [Test]
+    public void EveryDefaultIconBelongsToATopLevelEntry()
+    {
+        var topLevel = Menu().Select(i => i.E2EId).ToHashSet();
+
+        Assert.That(EformBackendConfigurationPlugin.DefaultMenuIcons.Keys, Is.SubsetOf(topLevel));
+    }
 }

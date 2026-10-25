@@ -71,7 +71,6 @@ public class ChemicalAuthorityListTests
         var row = doc.Rows.Single();
         Assert.That(row.Status, Is.EqualTo("Produkt afmeldt"));
         Assert.That(row.SignalWord, Is.EqualTo("Advarsel"));
-        Assert.That(row.Pictograms, Is.EqualTo("GHS07, GHS09"));
         Assert.That(row.HazardStatements, Is.EqualTo("H302 Farlig ved indtagelse.\nH410 Meget giftig for vandlevende organismer."));
         Assert.That(row.Deadlines, Is.EqualTo("ChemicalDeadlineSales: 01-03-2026\nChemicalDeadlineUseAndPossession: 01-03-2027"));
         Assert.That(row.Placement, Is.EqualTo("Hylde 1"));
@@ -122,6 +121,97 @@ public class ChemicalAuthorityListTests
         Assert.That(row.ProductName, Is.EqualTo("#999"));
         Assert.That(row.SdsUrl, Is.Empty);
         Assert.That(row.HazardStatements, Is.Empty);
+    }
+
+    [Test]
+    public void Build_Row_CarriesThePictogramCodesForTheDiamonds()
+    {
+        var doc = ChemicalAuthorityListBuilder.Build(Inventory(false, [Placement(1, 11, 100)], [Entry(100, "Karate")]), 1, Now, "https://x", Text);
+
+        Assert.That(doc.Rows.Single().PictogramCodes, Is.EqualTo(new[] { "GHS07", "GHS09" }));
+        Assert.That(doc.PictogramColumn, Is.EqualTo(doc.Headers.ToList().IndexOf("ChemicalColumnPictograms")));
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void Build_GivesEveryColumnAWidth(bool stock)
+    {
+        var doc = ChemicalAuthorityListBuilder.Build(Inventory(stock, [], []), 1, Now, "https://x", Text);
+
+        Assert.That(doc.ColumnWeights, Has.Count.EqualTo(doc.Headers.Count));
+        Assert.That(doc.ColumnWeights, Has.All.GreaterThan(0f));
+    }
+
+    /// <summary>The Danish column headers, as the plugin's localization.json prints them.</summary>
+    private static readonly Dictionary<string, string> Danish = new()
+    {
+        ["ChemicalColumnProduct"] = "Produkt", ["ChemicalColumnRegistrationNo"] = "Reg.nr.", ["ChemicalColumnStatus"] = "Status",
+        ["ChemicalColumnSignalWord"] = "Signalord", ["ChemicalColumnPictograms"] = "Farepiktogrammer",
+        ["ChemicalColumnHazardStatements"] = "Faresætninger", ["ChemicalColumnLocation"] = "Lokation",
+        ["ChemicalColumnPlacement"] = "Placering", ["ChemicalColumnDeadlines"] = "Frister", ["ChemicalColumnQuantity"] = "Mængde",
+        ["ChemicalColumnSds"] = "Sikkerhedsdatablad",
+    };
+
+    /// <summary>
+    /// The 855 check found "Farepiktogramme|r" and "Sikkerhedsdatabla|d": a header word wider than its column is cut.
+    /// Every Danish header word must fit its column, measured with a generous 0.6 em per bold character.
+    /// </summary>
+    [TestCase(false)]
+    [TestCase(true)]
+    public void Build_EveryDanishHeaderWordFitsItsColumn(bool stock)
+    {
+        var doc = ChemicalAuthorityListBuilder.Build(Inventory(stock, [], []), 1, Now, "https://x",
+            key => Danish.TryGetValue(key, out var da) ? da : key);
+        Assert.That(doc.ColumnWeights, Has.Count.EqualTo(doc.Headers.Count));
+        var total = doc.ColumnWeights.Sum();
+
+        for (var i = 0; i < doc.Headers.Count; i++)
+        {
+            var available = doc.ColumnWeights[i] / total * ChemicalAuthorityListPdf.ContentWidthPoints - 2 * ChemicalAuthorityListPdf.CellPadding;
+            var longestWord = doc.Headers[i].Split(' ').Max(w => w.Length);
+            Assert.That(available, Is.GreaterThanOrEqualTo(longestWord * 0.6f * ChemicalAuthorityListPdf.HeaderFontSize),
+                $"\"{doc.Headers[i]}\" does not fit its column");
+        }
+    }
+
+    /// <summary>A known code is drawn as its diamond (vector artwork), not printed as its code.</summary>
+    [Test]
+    public void Render_DrawsTheDiamondOfAKnownPictogram() =>
+        // GHS01 (exploding bomb) is 17 kB of paths; printed as text it would be five characters.
+        Assert.That(PdfWithPictograms("GHS01").Length, Is.GreaterThan(PdfWithPictograms("GHS99").Length + 2000));
+
+    /// <summary>A code without artwork is printed as its code: more than an empty cell, far less than a diamond.</summary>
+    [Test]
+    public void Render_KeepsAnUnknownPictogramAsText()
+    {
+        var unknown = PdfWithPictograms("GHS99").Length;
+
+        Assert.That(unknown, Is.GreaterThan(PdfWithPictograms().Length), "the code is printed");
+        Assert.That(unknown, Is.LessThan(PdfWithPictograms("GHS01").Length - 2000), "no artwork is drawn for it");
+    }
+
+    private static byte[] PdfWithPictograms(params string[] pictograms) => ChemicalAuthorityListPdf.Render(ChemicalAuthorityListBuilder.Build(
+        Inventory(false, [Placement(1, 11, 100)], [Entry(100, "Karate") with { HazardPictograms = pictograms }]), 1, Now, "https://x", Text));
+
+    /// <summary>
+    /// The SDS column prints only a link, so a paper copy must still say where the safety data sheets are: one line
+    /// under the subtitle.
+    /// </summary>
+    [Test]
+    public void Build_SaysWhereTheSafetyDataSheetsAre()
+    {
+        var doc = ChemicalAuthorityListBuilder.Build(Inventory(false, [], []), 1, Now, "https://x", Text);
+
+        Assert.That(doc.SdsNote, Is.EqualTo("ChemicalSdsNote"));
+    }
+
+    [Test]
+    public void Render_PrintsTheSdsNote()
+    {
+        var doc = ChemicalAuthorityListBuilder.Build(Inventory(false, [], []), 1, Now, "https://x", Text);
+
+        Assert.That(ChemicalAuthorityListPdf.Render(doc with { SdsNote = new string('x', 400) }).Length,
+            Is.GreaterThan(ChemicalAuthorityListPdf.Render(doc with { SdsNote = "" }).Length));
     }
 
     [Test]

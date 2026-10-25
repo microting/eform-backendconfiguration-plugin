@@ -100,6 +100,14 @@ export class ChemicalSettingsPageComponent implements OnInit, ChemicalUnsavedCha
       });
   }
 
+  /**
+   * The preview's closing line: why the reader gets the e-mail, or, while the property has no recipients
+   * (the server's list for the next digest), that nobody gets it yet.
+   */
+  get digestFooterKey(): string {
+    return this.preview?.recipients?.length ? 'Chemicals: Digest footer' : 'Chemicals: Digest no recipients';
+  }
+
   /** The form shows the stored settings and may be edited and saved. */
   get ready(): boolean {
     return this.propertyId !== null && !this.load.loading && !this.load.failed;

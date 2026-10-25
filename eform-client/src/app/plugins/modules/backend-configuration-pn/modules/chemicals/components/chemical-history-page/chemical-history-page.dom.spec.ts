@@ -3,12 +3,15 @@ import type {MockInstance} from 'vitest';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {FormsModule} from '@angular/forms';
+import {DateAdapter, MAT_DATE_LOCALE} from '@angular/material/core';
 import {MatPaginatorModule} from '@angular/material/paginator';
 import {NoopAnimationsModule} from '@angular/platform-browser/animations';
 import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {Store} from '@ngrx/store';
 import {TranslateModule} from '@ngx-translate/core';
+import {da} from 'date-fns/locale';
 import {ToastrService} from 'ngx-toastr';
+import {EformDateFnsDateAdapter} from 'src/app/common/modules/eform-date-adapter/eform-mat-datefns-date-adapter';
 import {BehaviorSubject, NEVER, Observable, of} from 'rxjs';
 import {ChemicalHistoryAction, ChemicalHistoryEventModel, ChemicalRemovalReason, ChemicalStockUnit} from '../../../../models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
@@ -62,6 +65,9 @@ describe('ChemicalHistoryPageComponent (template)', () => {
           exportHistory: vi.fn().mockReturnValue(exportAnswer ?? NEVER),
         }},
         {provide: ToastrService, useValue: {error: vi.fn()}},
+        // What the host app provides: its date-fns adapter, the locale as a subject.
+        {provide: DateAdapter, useClass: EformDateFnsDateAdapter},
+        {provide: MAT_DATE_LOCALE, useValue: new BehaviorSubject(da)},
       ],
       schemas: [NO_ERRORS_SCHEMA],
     });
@@ -86,11 +92,19 @@ describe('ChemicalHistoryPageComponent (template)', () => {
     expect(rows()).toHaveLength(4);
   });
 
-  it('shows the default period in the date fields', () => {
+  it('shows the default period in the date fields, written like the table dates (855 B2)', () => {
     render();
 
-    expect((find('#chemicalHistoryFrom') as HTMLInputElement).value).toBe('2026-08-31');
-    expect((find('#chemicalHistoryTo') as HTMLInputElement).value).toBe('2026-09-29');
+    expect((find('#chemicalHistoryFrom') as HTMLInputElement).value).toBe('31-08-2026');
+    expect((find('#chemicalHistoryTo') as HTMLInputElement).value).toBe('29-09-2026');
+  });
+
+  it('keeps the date fields compact in the filter row, like the selects (855 B2)', () => {
+    render();
+
+    for (const id of ['#chemicalHistoryFrom', '#chemicalHistoryTo']) {
+      expect(find(id)?.closest('mat-form-field')?.classList.contains('chemicals-date-field')).toBe(true);
+    }
   });
 
   it('reads a time without an offset as UTC, like one with "Z" or "+02:00" (E-16)', () => {
@@ -160,11 +174,13 @@ describe('ChemicalHistoryPageComponent (template)', () => {
     expect(button.getAttribute('aria-busy')).toBe('true');
   });
 
-  it('commits a picked date on change', () => {
+  it('commits a typed date (dd-MM-yyyy, as shown) on change', () => {
     render();
     const to = find('#chemicalHistoryTo') as HTMLInputElement;
 
-    to.value = '2026-09-15';
+    to.value = '15-09-2026';
+    // The datepicker parses on input and emits dateChange on change.
+    to.dispatchEvent(new Event('input'));
     to.dispatchEvent(new Event('change'));
 
     expect(component.filters.dateTo).toBe('2026-09-15');
