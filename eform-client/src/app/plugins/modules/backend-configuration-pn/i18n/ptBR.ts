@@ -1184,4 +1184,8 @@ export const ptBR = {
   'Delete this file': 'Excluir este arquivo',
   'No preview': 'Sem pré-visualização',
   'Upload document': 'Enviar documento',
+  'Back to the archive': 'Voltar ao arquivo',
+  'Previous document': 'Documento anterior',
+  'Next document': 'Próximo documento',
+  '{{index}} of {{count}}': '{{index}} de {{count}}',
 };

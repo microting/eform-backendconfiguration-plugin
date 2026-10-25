@@ -1184,4 +1184,8 @@ export const esES = {
   'Delete this file': 'Eliminar este archivo',
   'No preview': 'Sin vista previa',
   'Upload document': 'Subir documento',
+  'Back to the archive': 'Volver al archivo',
+  'Previous document': 'Documento anterior',
+  'Next document': 'Documento siguiente',
+  '{{index}} of {{count}}': '{{index}} de {{count}}',
 };

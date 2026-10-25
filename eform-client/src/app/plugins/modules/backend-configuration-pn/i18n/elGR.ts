@@ -1060,4 +1060,8 @@ export const elGR = {
   'Delete this file': 'Διαγραφή αυτού του αρχείου',
   'No preview': 'Δεν υπάρχει προεπισκόπηση',
   'Upload document': 'Ανεβάστε έγγραφο',
+  'Back to the archive': 'Επιστροφή στο αρχείο',
+  'Previous document': 'Προηγούμενο έγγραφο',
+  'Next document': 'Επόμενο έγγραφο',
+  '{{index}} of {{count}}': '{{index}} από {{count}}',
 };

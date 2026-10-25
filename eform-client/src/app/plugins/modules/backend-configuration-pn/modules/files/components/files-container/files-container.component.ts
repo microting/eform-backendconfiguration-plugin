@@ -1,5 +1,4 @@
 import {Component, OnDestroy, OnInit, ViewChild, inject} from '@angular/core';
-import {BreakpointObserver} from '@angular/cdk/layout';
 import {Overlay} from '@angular/cdk/overlay';
 import {MatDialog} from '@angular/material/dialog';
 import {Router, RouterLink} from '@angular/router';
@@ -64,7 +63,8 @@ import {FilesFiltersComponent} from '../files-filters/files-filters.component';
 type ArchiveListMode = 'folder' | 'search' | 'date';
 
 /**
- * The archive page: folder tree | documents | document panel (a drawer below 1100 px).
+ * The archive page: folder tree | documents. An opened document is a large view over both (the workspace gets
+ * `archive-workspace--viewing`, which hides the tree and the table without removing them).
  * A search or the date check lists all folders; otherwise one folder is listed.
  */
 @AutoUnsubscribe()
@@ -74,9 +74,6 @@ type ArchiveListMode = 'folder' | 'search' | 'date';
   templateUrl: './files-container.component.html',
 })
 export class FilesContainerComponent implements OnInit, OnDestroy {
-  /** Below this width the panel is a drawer. */
-  static readonly DRAWER_QUERY = '(max-width: 1099.98px)';
-
   private store = inject(Store);
   public dialog = inject(MatDialog);
   private overlay = inject(Overlay);
@@ -89,7 +86,6 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
   private propertiesService = inject(BackendConfigurationPnPropertiesService);
   private workerTagsService = inject(BackendConfigurationPnWorkerTagsService);
   private moveFlow = inject(ArchiveMoveFlowService);
-  private breakpointObserver = inject(BreakpointObserver);
   private router = inject(Router);
   private appMenuStateService = inject(AppMenuStateService);
 
@@ -99,8 +95,6 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
   // Resolved once menus hydrate — calling getTitleByUrl from the template leaks a subscription per tick.
   pageTitle = '';
   isAdmin = false;
-  /** Below 1100 px: the panel is a drawer over the page, not a third grid column. */
-  narrow = false;
   availableTags: SharedTagModel[] = [];
   properties: CommonDictionaryModel[] = [];
   workerTags: CommonDictionaryModel[] = [];
@@ -124,7 +118,6 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
   titleSub$: Subscription;
   filtersSub$: Subscription;
   paginationSub$: Subscription;
-  narrowSub$: Subscription;
   isAdminSub$: Subscription;
   translatesSub$: Subscription;
   filesDeletedSub$: Subscription;
@@ -140,7 +133,6 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
       this.sortField = p.sort;
       this.sortDesc = p.isSortDsc;
     });
-    this.narrowSub$ = this.breakpointObserver.observe(FilesContainerComponent.DRAWER_QUERY).subscribe(state => (this.narrow = state.matches));
     this.isAdminSub$ = this.store.select(selectCurrentUserIsAdmin).subscribe(isAdmin => {
       this.isAdmin = isAdmin;
       if (isAdmin && !this.workerTags.length) {
@@ -196,14 +188,22 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
     return this.currentFileId !== null && this.nextFileId(this.currentFileId) !== null;
   }
 
+  get hasPrevious(): boolean {
+    return this.currentFileId !== null && this.previousFileId(this.currentFileId) !== null;
+  }
+
+  /** "1 af 2 valgte" while the shown document is one of several selected, else its place in the list: "2 af 4". */
   get positionLabel(): string | null {
-    if (this.currentFileId === null || this.selectedFileIds.length < 2) {
+    if (this.currentFileId === null) {
       return null;
     }
-    const index = this.selectedFileIds.indexOf(this.currentFileId);
-    return index < 0
-      ? null
-      : this.translateService.instant('{{index}} of {{count}} selected', {index: index + 1, count: this.selectedFileIds.length});
+    const order = this.browseOrder(this.currentFileId);
+    const index = order.indexOf(this.currentFileId);
+    if (index < 0) {
+      return null;
+    }
+    const key = this.browsesSelection(this.currentFileId) ? '{{index}} of {{count}} selected' : '{{index}} of {{count}}';
+    return this.translateService.instant(key, {index: index + 1, count: order.length});
   }
 
   private get selectedRows(): FilesModel[] {
@@ -312,6 +312,22 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
     this.currentFileId = null;
   }
 
+  /** Previous / next in the view open that document exactly like a click on its row (unsaved edits are left). */
+  showPrevious(): void {
+    this.openFileId(this.currentFileId === null ? null : this.previousFileId(this.currentFileId));
+  }
+
+  showNext(): void {
+    this.openFileId(this.currentFileId === null ? null : this.nextFileId(this.currentFileId));
+  }
+
+  private openFileId(id: number | null): void {
+    const row = this.files.entities.find(f => f.id === id);
+    if (row) {
+      this.openFile(row);
+    }
+  }
+
   /**
    * A save for a document that is no longer the one shown (the user opened another row while it ran) only
    * reloads the list: it neither highlights nor moves the panel. "Gem og næste" advances only on `next`.
@@ -328,11 +344,28 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
 
   /** The next selected document when several are selected, else the next row. */
   private nextFileId(fileId: number): number | null {
-    const order = this.selectedFileIds.length > 1 && this.selectedFileIds.includes(fileId)
-      ? this.selectedFileIds
-      : this.files.entities.map(f => f.id);
+    return this.stepFrom(fileId, 1);
+  }
+
+  /** The previous one, in the same order as {@link nextFileId}. */
+  private previousFileId(fileId: number): number | null {
+    return this.stepFrom(fileId, -1);
+  }
+
+  private stepFrom(fileId: number, step: 1 | -1): number | null {
+    const order = this.browseOrder(fileId);
     const index = order.indexOf(fileId);
-    return index >= 0 && index + 1 < order.length ? order[index + 1] : null;
+    const target = index + step;
+    return index >= 0 && target >= 0 && target < order.length ? order[target] : null;
+  }
+
+  /** The selection (in table order) when the document is one of several selected, else every row. */
+  private browseOrder(fileId: number): number[] {
+    return this.browsesSelection(fileId) ? this.selectedFileIds : this.files.entities.map(f => f.id);
+  }
+
+  private browsesSelection(fileId: number): boolean {
+    return this.selectedFileIds.length > 1 && this.selectedFileIds.includes(fileId);
   }
 
   // ---- moving documents -------------------------------------------------------------

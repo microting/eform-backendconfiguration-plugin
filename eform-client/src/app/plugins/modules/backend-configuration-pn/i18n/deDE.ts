@@ -1342,4 +1342,8 @@ export const deDE = {
   'Delete this file': 'Datei löschen',
   'No preview': 'Keine Vorschau',
   'Upload document': 'Dokument hochladen',
+  'Back to the archive': 'Zurück zum Archiv',
+  'Previous document': 'Vorheriges Dokument',
+  'Next document': 'Nächstes Dokument',
+  '{{index}} of {{count}}': '{{index}} von {{count}}',
 };

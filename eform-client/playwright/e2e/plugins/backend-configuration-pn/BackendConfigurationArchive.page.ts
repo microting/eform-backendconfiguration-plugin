@@ -1,5 +1,5 @@
 /**
- * The Arkiv page with folders (layout W1): folder tree, document table and document panel, plus the
+ * The Arkiv page with folders (layout W1): folder tree, document table and the opened document's large view, plus the
  * Indbakke review steps the archive specs share. Folder menu items live in the CDK overlay on <body>,
  * so they are addressed by `<prefix>-<folderId>` inside `.cdk-overlay-container` (CLAUDE.md rule 7).
  */
@@ -47,8 +47,33 @@ export class BackendConfigurationArchivePage {
     return this.table().locator('tr.archive-file-row').filter({ has: this.page.locator('.fileName', { hasText: name }) });
   }
 
+  /** The opened document's large view (it covers the folder tree and the table while it is shown). */
   panel(): Locator {
     return this.page.locator('#archiveDocumentPanel');
+  }
+
+  /** The Mappe cell of a row: `#folderPath-<i>`, i being the row's place in the table. */
+  async folderCell(row: Locator): Promise<Locator> {
+    const index = await row.evaluate((tr: HTMLTableRowElement) => tr.sectionRowIndex, undefined, { timeout: UI_TIMEOUT });
+    return this.table().locator(`#folderPath-${index}`);
+  }
+
+  /** Opens a row's document in the large view and waits for its data; returns the file id. */
+  async openDocument(row: Locator, what: string): Promise<string> {
+    const fileId = await row.getAttribute('data-file-id', { timeout: UI_TIMEOUT });
+    expect(fileId, `file id of ${what}`).toMatch(/^\d+$/);
+    const loaded = this.waitForCall(`the document data of ${what}`, 'GET', `${FILES_PATH}/${fileId}`);
+    await row.locator('.fileName').click({ timeout: UI_TIMEOUT });
+    await expectSuccess(loaded, `opening ${what}`);
+    await expect(this.panel()).toBeVisible({ timeout: UI_TIMEOUT });
+    return fileId!;
+  }
+
+  /** Clicks previous/next in the large view and waits for that document's data. */
+  async stepDocument(button: 'archiveViewPrevBtn' | 'archiveViewNextBtn', fileId: string): Promise<void> {
+    const loaded = this.waitForCall(`the document data of file ${fileId}`, 'GET', `${FILES_PATH}/${fileId}`);
+    await this.panel().locator(`#${button}`).click({ timeout: UI_TIMEOUT });
+    await expectSuccess(loaded, `stepping to file ${fileId}`);
   }
 
   dialog(): Locator {

@@ -1060,4 +1060,8 @@ export const hrHR = {
   'Delete this file': 'Izbriši ovu datoteku',
   'No preview': 'Nema pregleda',
   'Upload document': 'Učitaj dokument',
+  'Back to the archive': 'Natrag u arhivu',
+  'Previous document': 'Prethodni dokument',
+  'Next document': 'Sljedeći dokument',
+  '{{index}} of {{count}}': '{{index}} od {{count}}',
 };

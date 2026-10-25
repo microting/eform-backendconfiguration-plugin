@@ -1060,4 +1060,8 @@ export const etET = {
   'Delete this file': 'Kustuta see fail',
   'No preview': 'Eelvaade puudub',
   'Upload document': 'Laadige dokument üles',
+  'Back to the archive': 'Tagasi arhiivi',
+  'Previous document': 'Eelmine dokument',
+  'Next document': 'Järgmine dokument',
+  '{{index}} of {{count}}': '{{index}} / {{count}}',
 };

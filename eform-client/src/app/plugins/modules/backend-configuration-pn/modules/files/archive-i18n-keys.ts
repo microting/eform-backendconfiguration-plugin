@@ -69,4 +69,10 @@ export const ARCHIVE_I18N_KEYS: string[] = [
   'Delete this file',
   'No preview',
   'Upload document',
+  'Folder',
+  'Back to the archive',
+  'Previous document',
+  'Next document',
+  '{{index}} of {{count}}',
+  'Download',
 ];

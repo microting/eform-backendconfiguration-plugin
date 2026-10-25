@@ -1184,4 +1184,8 @@ export const nlNL = {
   'Delete this file': 'Dit bestand verwijderen',
   'No preview': 'Geen voorbeeld',
   'Upload document': 'Document uploaden',
+  'Back to the archive': 'Terug naar het archief',
+  'Previous document': 'Vorig document',
+  'Next document': 'Volgend document',
+  '{{index}} of {{count}}': '{{index}} van {{count}}',
 };

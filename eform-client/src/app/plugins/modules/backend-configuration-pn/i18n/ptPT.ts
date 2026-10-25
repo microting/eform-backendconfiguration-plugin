@@ -1184,4 +1184,8 @@ export const ptPT = {
   'Delete this file': 'Eliminar este ficheiro',
   'No preview': 'Sem pré-visualização',
   'Upload document': 'Carregar documento',
+  'Back to the archive': 'Voltar ao arquivo',
+  'Previous document': 'Documento anterior',
+  'Next document': 'Documento seguinte',
+  '{{index}} of {{count}}': '{{index}} de {{count}}',
 };

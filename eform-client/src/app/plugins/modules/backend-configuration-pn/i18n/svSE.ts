@@ -1184,4 +1184,8 @@ export const svSE = {
   'Delete this file': 'Ta bort fil',
   'No preview': 'Ingen förhandsgranskning',
   'Upload document': 'Ladda upp dokument',
+  'Back to the archive': 'Tillbaka till arkivet',
+  'Previous document': 'Föregående dokument',
+  'Next document': 'Nästa dokument',
+  '{{index}} of {{count}}': '{{index}} av {{count}}',
 };

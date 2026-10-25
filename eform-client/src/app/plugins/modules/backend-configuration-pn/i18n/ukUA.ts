@@ -1184,4 +1184,8 @@ export const ukUA = {
   'Delete this file': 'Видалити цей файл',
   'No preview': 'Немає попереднього перегляду',
   'Upload document': 'Завантажити документ',
+  'Back to the archive': 'Назад до архіву',
+  'Previous document': 'Попередній документ',
+  'Next document': 'Наступний документ',
+  '{{index}} of {{count}}': '{{index}} з {{count}}',
 };

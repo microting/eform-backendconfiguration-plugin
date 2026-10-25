@@ -16,6 +16,7 @@
           <mat-icon *ngIf="sortField === 'FileName'">{{ sortDesc ? 'arrow_downward' : 'arrow_upward' }}</mat-icon>
         </button>
       </th>
+      <th id="archiveFolderHeader">{{ 'Folder' | translate }}</th>
       <th>{{ 'Document date' | translate }}</th>
       <th>{{ 'Properties' | translate }}</th>
       <th *ngIf="isAdmin" id="archiveAccessHeader">{{ 'Read access' | translate }}</th>
@@ -46,7 +47,11 @@
           <mat-icon>{{ presentationOf(row).icon }}</mat-icon>
           <span class="fileName" [id]="'fileName-' + i">{{ row.fileName }}.{{ row.fileExtension }}</span>
         </div>
-        <div *ngIf="showPath" class="archive-doc-path helper-text">{{ pathLabel(row) }}</div>
+      </td>
+      <td>
+        <!-- One line: the parent and the leaf sit side by side (the full path is in the tooltip). -->
+        <span *ngIf="row.folderPath?.length; else noFolder" class="archive-folder-path" [id]="'folderPath-' + i" [matTooltip]="fullPath(row)"><mat-icon>folder</mat-icon><span class="archive-folder-path__parent" *ngIf="parentLabel(row)">{{ parentLabel(row) }}</span><b class="archive-folder-path__leaf">{{ folderLeaf(row) }}</b></span>
+        <ng-template #noFolder><span class="helper-text">–</span></ng-template>
       </td>
       <td [ngSwitch]="row.documentDateState">
         <span *ngSwitchCase="DateState.Suggested" class="archive-date archive-date--suggested" [matTooltip]="'Suggested date, check it' | translate">
@@ -84,7 +89,7 @@
       </td>
     </tr>
     <tr *ngIf="loaded && !rows.length" id="archiveNoFiles">
-      <td [attr.colspan]="isAdmin ? 7 : 6">{{ 'No files found' | translate }}</td>
+      <td [attr.colspan]="isAdmin ? 8 : 7">{{ 'No files found' | translate }}</td>
     </tr>
   </tbody>
 </table>

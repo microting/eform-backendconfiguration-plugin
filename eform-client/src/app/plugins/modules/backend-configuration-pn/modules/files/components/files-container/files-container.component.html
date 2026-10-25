@@ -37,8 +37,10 @@
   </div>
 </mat-card>
 
-<!-- A drawer (narrow) floats over the page: the 360 px third column is only for the side-by-side layout. -->
-<div class="archive-workspace" [class.archive-workspace--with-panel]="currentFileId !== null && !narrow">
+<!-- An opened document covers the archive area: --viewing hides the tree and the centre column (display:none, so the
+     table keeps its DOM, scroll and selection) and the view takes their place. Hosts are display:contents, so the
+     tree's nav.archive-rail, section.archive-center and the view's aside.archive-view are the grid items. -->
+<div class="archive-workspace" [class.archive-workspace--viewing]="currentFileId !== null">
   <app-archive-folder-tree
     [folders]="folders"
     [selectedFolderId]="listMode === 'folder' ? selectedFolderId : null"
@@ -95,7 +97,6 @@
     <app-files-table
       [files]="files"
       [isAdmin]="isAdmin"
-      [showPath]="listMode !== 'folder'"
       [loaded]="filesLoaded"
       [selectedIds]="selectedFileIds"
       [currentFileId]="currentFileId"
@@ -111,7 +112,6 @@
     ></app-files-table>
   </section>
 
-  <div class="archive-panel-backdrop" *ngIf="narrow && currentFileId !== null" (click)="closePanel()"></div>
   <app-archive-document-panel
     *ngIf="currentFileId !== null"
     [fileId]="currentFileId"
@@ -121,11 +121,13 @@
     [availableTags]="availableTags"
     [workerTags]="workerTags"
     [isAdmin]="isAdmin"
-    [drawer]="narrow"
     [positionLabel]="positionLabel"
+    [hasPrevious]="hasPrevious"
     [hasNext]="hasNext"
     (saved)="onPanelSaved($event)"
     (closed)="closePanel()"
+    (previousFile)="showPrevious()"
+    (nextFile)="showNext()"
   ></app-archive-document-panel>
 </div>
 

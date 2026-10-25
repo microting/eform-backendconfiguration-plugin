@@ -1060,4 +1060,8 @@ export const skSK = {
   'Delete this file': 'Vymazať tento súbor',
   'No preview': 'Bez náhľadu',
   'Upload document': 'Nahrať dokument',
+  'Back to the archive': 'Späť do archívu',
+  'Previous document': 'Predchádzajúci dokument',
+  'Next document': 'Ďalší dokument',
+  '{{index}} of {{count}}': '{{index}} z {{count}}',
 };

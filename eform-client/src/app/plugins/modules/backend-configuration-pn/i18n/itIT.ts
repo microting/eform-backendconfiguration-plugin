@@ -1184,4 +1184,8 @@ export const itIT = {
   'Delete this file': 'Elimina questo file',
   'No preview': 'Nessuna anteprima',
   'Upload document': 'Carica documento',
+  'Back to the archive': 'Torna all\'archivio',
+  'Previous document': 'Documento precedente',
+  'Next document': 'Documento successivo',
+  '{{index}} of {{count}}': '{{index}} di {{count}}',
 };
