@@ -48,6 +48,7 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
+using BackendConfiguration.Pn.Services.TailBite;
 
 public class BackendConfigurationPropertiesService(
     IEFormCoreService coreHelper,
@@ -56,7 +57,8 @@ public class BackendConfigurationPropertiesService(
     IBackendConfigurationLocalizationService backendConfigurationLocalizationService,
     ItemsPlanningPnDbContext itemsPlanningPnDbContext,
     IPluginDbOptions<BackendConfigurationBaseSettings> options,
-    ILogger<BackendConfigurationPropertiesService> logger)
+    ILogger<BackendConfigurationPropertiesService> logger,
+    ITailBiteSetupService tailBiteSetupService)
     : IBackendConfigurationPropertiesService
 {
 
@@ -105,6 +107,8 @@ public class BackendConfigurationPropertiesService(
                         ComplianceStatus = x.ComplianceStatus,
                         ComplianceStatusThirty = x.ComplianceStatusThirty,
                         WorkorderEnable = x.WorkorderEnable,
+                        TailBiteEnabled = backendConfigurationPnDbContext.TailBiteProperties.Any(t =>
+                            t.PropertyId == x.Id && t.Enabled && t.WorkflowState != Constants.WorkflowStates.Removed),
                         WorkorderEntityListId = x.EntitySelectListAreas,
                         IsFarm = x.IsFarm,
                         IndustryCode = x.IndustryCode,
@@ -134,9 +138,50 @@ public class BackendConfigurationPropertiesService(
             await coreHelper.GetCore(), userService.UserId, backendConfigurationPnDbContext,
             itemsPlanningPnDbContext, maxChrNumbers, maxCvrNumbers).ConfigureAwait(false);
 
+        // Admins only, like the edit dialog's toggle (Update is admin-only).
+        if (result.Success && propertyCreateModel.TailBiteEnabled && userService.IsAdmin())
+        {
+            // The property stays created when this fails.
+            var error = await SetTailBiteAsync(result.Model, true).ConfigureAwait(false);
+            if (error != null)
+            {
+                return TailBiteFailed("PropertyCreatedTailBiteNotSwitchedOn", error);
+            }
+        }
+
         return new OperationResult(result.Success,
             backendConfigurationLocalizationService.GetString(result.Message));
     }
+
+    /// <summary>
+    /// Switches tail biting (Halebid) on or off for a property; off keeps all its data. Returns null on success, else the reason.
+    /// </summary>
+    private async Task<string?> SetTailBiteAsync(int propertyId, bool enabled)
+    {
+        try
+        {
+            await (enabled ? tailBiteSetupService.EnableAsync(0, propertyId) : tailBiteSetupService.DisableAsync(propertyId))
+                .ConfigureAwait(false);
+            return null;
+        }
+        catch (TailBiteException e)
+        {
+            return e.Message;
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e, "Switching tail biting {State} for property {PropertyId} failed", enabled ? "on" : "off", propertyId);
+            return e.Message;
+        }
+    }
+
+    private OperationResult TailBiteFailed(string key, string error)
+        => new(false, $"{backendConfigurationLocalizationService.GetString(key)}: {error}");
+
+    private Task<bool> IsTailBiteEnabledAsync(int propertyId)
+        => backendConfigurationPnDbContext.TailBiteProperties.AnyAsync(t =>
+            t.PropertyId == propertyId && t.Enabled && t.WorkflowState != Constants.WorkflowStates.Removed);
 
     public async Task<OperationDataResult<PropertiesModel>> Read(int id)
     {
@@ -160,7 +205,9 @@ public class BackendConfigurationPropertiesService(
                         .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
                         .Select(y => new CommonDictionaryModel { Id = y.LanguageId })
                         .ToList(),
-                    WorkorderEnable = x.WorkorderEnable
+                    WorkorderEnable = x.WorkorderEnable,
+                    TailBiteEnabled = backendConfigurationPnDbContext.TailBiteProperties.Any(t =>
+                        t.PropertyId == x.Id && t.Enabled && t.WorkflowState != Constants.WorkflowStates.Removed)
                 })
                 .FirstOrDefaultAsync().ConfigureAwait(false);
 
@@ -187,6 +234,16 @@ public class BackendConfigurationPropertiesService(
         var result = await BackendConfigurationPropertiesServiceHelper.Update(updateModel,
             await coreHelper.GetCore(), userService, backendConfigurationPnDbContext,
             itemsPlanningPnDbContext, backendConfigurationLocalizationService).ConfigureAwait(false);
+
+        if (result.Success && updateModel.TailBiteEnabled is { } tailBiteEnabled
+            && tailBiteEnabled != await IsTailBiteEnabledAsync(updateModel.Id).ConfigureAwait(false))
+        {
+            var error = await SetTailBiteAsync(updateModel.Id, tailBiteEnabled).ConfigureAwait(false);
+            if (error != null)
+            {
+                return TailBiteFailed("PropertySavedTailBiteNotChanged", error);
+            }
+        }
 
         return new OperationResult(result.Success,
             backendConfigurationLocalizationService.GetString(result.Message));

@@ -33,6 +33,14 @@
       formControlName="workorderEnable">
       {{ "Task management" | translate }}
     </mat-slide-toggle>
+
+    <mat-slide-toggle
+      *ngIf="selectAuthIsAdmin$ | async"
+      color="primary"
+      id="propertyCreateTailBiteEnableToggle"
+      formControlName="tailBiteEnabled">
+      {{ 'Tail biting' | translate }}
+    </mat-slide-toggle>
   </div>
 </div>
 

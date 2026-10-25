@@ -10724,5 +10724,67 @@
       "el-GR": "A selected worker group no longer exists",
       "is-IS": "A selected worker group no longer exists"
     }
+  },
+  {
+    "Key": "PropertyCreatedTailBiteNotSwitchedOn",
+    "LocalizedValue": {
+      "da": "Ejendommen er oprettet, men halebid kunne ikke slås til. Prøv igen under Rediger ejendom",
+      "de": "Die Immobilie wurde erstellt, aber Schwanzbeißen konnte nicht aktiviert werden. Versuchen Sie es erneut unter Eigenschaft bearbeiten",
+      "en-US": "The property was created, but tail biting could not be switched on. Try again in Edit property",
+      "uk-UA": "The property was created, but tail biting could not be switched on. Try again in Edit property",
+      "pl-PL": "The property was created, but tail biting could not be switched on. Try again in Edit property",
+      "no-NO": "The property was created, but tail biting could not be switched on. Try again in Edit property",
+      "sv-SE": "The property was created, but tail biting could not be switched on. Try again in Edit property",
+      "es-ES": "The property was created, but tail biting could not be switched on. Try again in Edit property",
+      "fr-FR": "The property was created, but tail biting could not be switched on. Try again in Edit property",
+      "it-IT": "The property was created, but tail biting could not be switched on. Try again in Edit property",
+      "nl-NL": "The property was created, but tail biting could not be switched on. Try again in Edit property",
+      "pt-BR": "The property was created, but tail biting could not be switched on. Try again in Edit property",
+      "pt-PT": "The property was created, but tail biting could not be switched on. Try again in Edit property",
+      "fi-FI": "The property was created, but tail biting could not be switched on. Try again in Edit property",
+      "et-ET": "The property was created, but tail biting could not be switched on. Try again in Edit property",
+      "lv-LV": "The property was created, but tail biting could not be switched on. Try again in Edit property",
+      "lt-LT": "The property was created, but tail biting could not be switched on. Try again in Edit property",
+      "ro-RO": "The property was created, but tail biting could not be switched on. Try again in Edit property",
+      "hr-HR": "The property was created, but tail biting could not be switched on. Try again in Edit property",
+      "sl-SL": "The property was created, but tail biting could not be switched on. Try again in Edit property",
+      "cs-CZ": "The property was created, but tail biting could not be switched on. Try again in Edit property",
+      "sk-SK": "The property was created, but tail biting could not be switched on. Try again in Edit property",
+      "hu-HU": "The property was created, but tail biting could not be switched on. Try again in Edit property",
+      "bg-BG": "The property was created, but tail biting could not be switched on. Try again in Edit property",
+      "el-GR": "The property was created, but tail biting could not be switched on. Try again in Edit property",
+      "is-IS": "The property was created, but tail biting could not be switched on. Try again in Edit property"
+    }
+  },
+  {
+    "Key": "PropertySavedTailBiteNotChanged",
+    "LocalizedValue": {
+      "da": "Ejendommen er gemt, men halebid kunne ikke slås til eller fra",
+      "de": "Die Immobilie wurde gespeichert, aber Schwanzbeißen konnte nicht ein- oder ausgeschaltet werden",
+      "en-US": "The property was saved, but tail biting could not be switched on or off",
+      "uk-UA": "The property was saved, but tail biting could not be switched on or off",
+      "pl-PL": "The property was saved, but tail biting could not be switched on or off",
+      "no-NO": "The property was saved, but tail biting could not be switched on or off",
+      "sv-SE": "The property was saved, but tail biting could not be switched on or off",
+      "es-ES": "The property was saved, but tail biting could not be switched on or off",
+      "fr-FR": "The property was saved, but tail biting could not be switched on or off",
+      "it-IT": "The property was saved, but tail biting could not be switched on or off",
+      "nl-NL": "The property was saved, but tail biting could not be switched on or off",
+      "pt-BR": "The property was saved, but tail biting could not be switched on or off",
+      "pt-PT": "The property was saved, but tail biting could not be switched on or off",
+      "fi-FI": "The property was saved, but tail biting could not be switched on or off",
+      "et-ET": "The property was saved, but tail biting could not be switched on or off",
+      "lv-LV": "The property was saved, but tail biting could not be switched on or off",
+      "lt-LT": "The property was saved, but tail biting could not be switched on or off",
+      "ro-RO": "The property was saved, but tail biting could not be switched on or off",
+      "hr-HR": "The property was saved, but tail biting could not be switched on or off",
+      "sl-SL": "The property was saved, but tail biting could not be switched on or off",
+      "cs-CZ": "The property was saved, but tail biting could not be switched on or off",
+      "sk-SK": "The property was saved, but tail biting could not be switched on or off",
+      "hu-HU": "The property was saved, but tail biting could not be switched on or off",
+      "bg-BG": "The property was saved, but tail biting could not be switched on or off",
+      "el-GR": "The property was saved, but tail biting could not be switched on or off",
+      "is-IS": "The property was saved, but tail biting could not be switched on or off"
+    }
   }
 ]

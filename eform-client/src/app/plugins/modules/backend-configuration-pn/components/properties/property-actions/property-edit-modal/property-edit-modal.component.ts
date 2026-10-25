@@ -57,6 +57,7 @@ export class PropertyEditModalComponent implements OnInit, OnDestroy {
       chr: [this.model.chr],
       address: [this.model.address],
       workorderEnable: [this.model.workorderEnable || false],
+      tailBiteEnabled: [this.model.tailBiteEnabled || false],
       isFarm: [this.model.isFarm || false],
       industryCode: [this.model.industryCode || '']
     });
