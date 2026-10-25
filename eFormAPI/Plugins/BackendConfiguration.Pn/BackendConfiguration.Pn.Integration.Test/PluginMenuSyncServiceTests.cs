@@ -30,6 +30,7 @@ public class PluginMenuSyncServiceTests : TestBaseSetup
     private const string SettingsE2EId = "backend-configuration-pn-chemicals-settings";
     private const string HistoryE2EId = "backend-configuration-pn-chemicals-history";
     private const string LaterChildE2EId = "backend-configuration-pn-chemicals-later-child";
+    private const string TailBiteE2EId = "backend-configuration-pn-tail-bite";
 
     /// <summary>The five Kemi children in menu order.</summary>
     private static readonly string[] AllChildren = [InventoryE2EId, LocationsE2EId, PermissionsE2EId, SettingsE2EId, HistoryE2EId];
@@ -392,15 +393,17 @@ public class PluginMenuSyncServiceTests : TestBaseSetup
         Assert.That(await BaseDbContext.MenuTemplates.CountAsync(x => x.E2EId == PermissionsE2EId), Is.EqualTo(1));
     }
 
-    /// <summary>The 855 check: Kemi was the only top-level entry without an icon; the sync gives it its glyph.</summary>
+    /// <summary>Kemi and tail biting were seeded without an icon; the sync gives each root its glyph.</summary>
     [Test]
     public async Task ApplyDefaultIcons_GivesTheKemiGroupItsIcon_WhenItHasNone()
     {
         await InstallAsTheHostDoesAsync(Menu());
 
-        Assert.That(ApplyIcons(), Is.EqualTo(1));
+        Assert.That(ApplyIcons(), Is.EqualTo(2), "the Kemi group and the tail-biting link");
 
         Assert.That(await IconOfTheGroupAsync(), Is.EqualTo("science"));
+        Assert.That(await BaseDbContext.MenuItems.AsNoTracking().Where(x => x.E2EId == TailBiteE2EId)
+            .Select(x => x.IconName).SingleAsync(), Is.EqualTo("pets"));
         Assert.That(ApplyIcons(), Is.EqualTo(0), "a second startup changes nothing");
     }
 
@@ -412,7 +415,7 @@ public class PluginMenuSyncServiceTests : TestBaseSetup
         await BaseDbContext.MenuItems.Where(x => x.E2EId == GroupE2EId)
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.IconName, "inventory_2"));
 
-        Assert.That(ApplyIcons(), Is.EqualTo(0));
+        Assert.That(ApplyIcons(), Is.EqualTo(1), "only the tail-biting link");
 
         Assert.That(await IconOfTheGroupAsync(), Is.EqualTo("inventory_2"));
     }
@@ -425,7 +428,7 @@ public class PluginMenuSyncServiceTests : TestBaseSetup
         await BaseDbContext.MenuItems.Where(x => x.E2EId == PermissionsE2EId)
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.E2EId, GroupE2EId));
 
-        Assert.That(ApplyIcons(), Is.EqualTo(1));
+        Assert.That(ApplyIcons(), Is.EqualTo(2), "the Kemi group and the tail-biting link, not the child");
 
         var icons = await BaseDbContext.MenuItems.AsNoTracking().Where(x => x.E2EId == GroupE2EId)
             .Select(x => new { x.Type, x.IconName }).ToListAsync();
