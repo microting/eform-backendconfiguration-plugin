@@ -12,7 +12,9 @@ import { Subscription } from 'rxjs';
 import { AppSettingsStateService } from 'src/app/modules/application-settings/components/store';
 import { ToastrService } from 'ngx-toastr';
 import {TranslateService, TranslatePipe} from '@ngx-translate/core';
-import {NgIf} from '@angular/common';
+import {NgIf, AsyncPipe} from '@angular/common';
+import { Store } from '@ngrx/store';
+import { selectAuthIsAdmin } from 'src/app/state/auth/auth.selector';
 import {MatFormField, MatLabel} from '@angular/material/form-field';
 import {MatInput} from '@angular/material/input';
 import {MatSlideToggle} from '@angular/material/slide-toggle';
@@ -20,7 +22,7 @@ import {MatSlideToggle} from '@angular/material/slide-toggle';
 @AutoUnsubscribe()
 @Component({
   selector: 'app-property-create-modal',
-  imports: [NgIf, ReactiveFormsModule, TranslatePipe, MatFormField, MatLabel, MatInput, MatDialogTitle, MatDialogContent, MatDialogActions, MatSlideToggle],
+  imports: [NgIf, AsyncPipe, ReactiveFormsModule, TranslatePipe, MatFormField, MatLabel, MatInput, MatDialogTitle, MatDialogContent, MatDialogActions, MatSlideToggle],
   templateUrl: './property-create-modal.component.html',
   styleUrls: ['./property-create-modal.component.scss'],
 })
@@ -32,6 +34,9 @@ export class PropertyCreateModalComponent implements OnInit, OnDestroy {
   private appSettingsStateService = inject(AppSettingsStateService);
   private toastr = inject(ToastrService);
   private translate = inject(TranslateService);
+  private store = inject(Store);
+  /** The Halebid toggle is for admins, as in the edit dialog. */
+  public selectAuthIsAdmin$ = this.store.select(selectAuthIsAdmin);
 
   propertyCreate: EventEmitter<PropertyCreateModel> = new EventEmitter<PropertyCreateModel>();
   newPropertyForm: FormGroup;
@@ -79,6 +84,7 @@ export class PropertyCreateModalComponent implements OnInit, OnDestroy {
       chr: [''],
       address: [''],
       workorderEnable: [false],
+      tailBiteEnabled: [false],
       isFarm: [false]
     });
 

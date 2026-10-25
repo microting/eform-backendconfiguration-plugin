@@ -43,6 +43,9 @@ public class PropertyCreateModel
 
     public bool WorkorderEnable { get; set; }
 
+    /// <summary>Switch tail biting (Halebid) on once the property exists.</summary>
+    public bool TailBiteEnabled { get; set; }
+
     public string? IndustryCode { get; set; }
 
     public bool IsFarm { get; set; }

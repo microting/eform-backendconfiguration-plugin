@@ -42,6 +42,9 @@ public class PropertiesUpdateModel
 
     public bool WorkorderEnable { get; set; }
 
+    /// <summary>Tail biting (Halebid) on or off; null leaves it as it is (a client that does not send it changes nothing).</summary>
+    public bool? TailBiteEnabled { get; set; }
+
     public string MainMailAddress { get; set; }
 
     public string FullName()
