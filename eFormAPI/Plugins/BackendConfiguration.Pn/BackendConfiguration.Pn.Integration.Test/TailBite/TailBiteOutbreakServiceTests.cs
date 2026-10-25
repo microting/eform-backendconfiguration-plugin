@@ -464,6 +464,7 @@ public class TailBiteOutbreakServiceTests : TailBiteTestBase
     {
         var sut = Sut();
         var pausedId = await SetUpManagerWithOutbreakAsync();
+        await SeedWorkerAsync(8);
         var (_, actionId) = await AssessedWithActionAsync(sut, pausedId);
         var registration = await NewRegistrationAsync(PropertyId);
 
