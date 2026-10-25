@@ -410,6 +410,22 @@ public class BackendConfigurationAssignmentWorkerService(
             requestModel.Sort = "SiteMicrotingUid";
         }
 
+        if (requestModel.Sort == "Name")
+        {
+            requestModel.Sort = "SiteName";
+        }
+
+        var safeSortFields = new List<string>
+        {
+            "SiteId", "EmployeeNo", "SiteName", "WorkerEmail", "PhoneNumber", "LanguageId", "ResignedAtDate",
+            "SiteMicrotingUid"
+        };
+
+        if (!safeSortFields.Contains(requestModel.Sort))
+        {
+            requestModel.Sort = "SiteName";
+        }
+
         try
         {
             var core = await coreHelper.GetCore().ConfigureAwait(false);
