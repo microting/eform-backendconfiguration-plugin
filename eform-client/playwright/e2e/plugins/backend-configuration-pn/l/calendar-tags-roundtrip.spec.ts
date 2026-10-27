@@ -11,6 +11,7 @@ import {
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
 import { assigneeWorkerOptions } from '../calendar-assignee.helper';
+import { API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from '../wait-helpers';
 
 // Exercises the calendar event modal's tags + report tag (Rapportoverskrift)
 // round-trip with edit. Covers:
@@ -49,6 +50,8 @@ const worker: PropertyWorker = {
 const title = `EventRT-${rand}`;
 const tagA = `RT-A-${rand}`;
 const tagB = `RT-B-${rand}`;
+// Created after tagA and tagB but sorts before both ('0' < 'A').
+const tagEarly = `RT-0-${rand}`;
 
 test.describe('Calendar tags + report tag round-trip', () => {
   test.beforeEach(async ({ page }) => {
@@ -136,6 +139,41 @@ test.describe('Calendar tags + report tag round-trip', () => {
       'After inline-create B, planning tag should display tagB'
     ).toHaveText(tagB, { timeout: 5000 });
     console.log(`Planning tag after inline-create B: OK (${tagB})`);
+
+    // ------------------------------------------------------------------
+    // Step 3b: a tag created while the modal is open lands at its
+    // alphabetical place in the dropdown, not at the bottom (#5312)
+    // ------------------------------------------------------------------
+    const createTagEarlyResponse = waitForApiResponse(
+      page,
+      'POST /api/items-planning-pn/tags (tagEarly)',
+      r =>
+        r.url().includes('/api/items-planning-pn/tags') &&
+        r.request().method() === 'POST',
+      API_TIMEOUT
+    );
+    await calendarPage.inlineCreatePlanningTag(tagEarly);
+    await createTagEarlyResponse;
+    await expect(
+      page.locator('#calendarEventPlanningTag .ng-value-label').first(),
+      'After inline-create of the early tag, planning tag should display it'
+    ).toHaveText(tagEarly, { timeout: UI_TIMEOUT });
+
+    await page.locator('#calendarEventPlanningTag').click();
+    const planningTagOptions = page.locator('.ng-dropdown-panel .ng-option');
+    await planningTagOptions.filter({ hasText: tagEarly }).waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    const optionNames = (await planningTagOptions.allTextContents()).map(s => s.trim());
+    await page.locator('#calendarEventTitle').click(); // close dropdown
+    console.log(`Rapportoverskrift options after inline-create: ${JSON.stringify(optionNames)}`);
+    const positions = [tagEarly, tagA, tagB].map(name => optionNames.indexOf(name));
+    expect(
+      positions,
+      `${tagEarly}, ${tagA} and ${tagB} should all be in the dropdown; options were ${JSON.stringify(optionNames)}`
+    ).not.toContain(-1);
+    expect(
+      positions,
+      `The newly created ${tagEarly} should sort before ${tagA} and ${tagB}; options were ${JSON.stringify(optionNames)}`
+    ).toEqual([...positions].sort((a, b) => a - b));
 
     // ------------------------------------------------------------------
     // Step 4: set Rapportoverskrift back to tagA

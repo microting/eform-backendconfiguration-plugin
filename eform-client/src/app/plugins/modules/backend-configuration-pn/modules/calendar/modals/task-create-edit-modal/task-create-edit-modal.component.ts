@@ -36,6 +36,7 @@ import {
 import {CalendarRepeatService, RepeatSelectOption, toDateOnlyString} from '../../services/calendar-repeat.service';
 import {computeCopyDate} from '../../services/calendar-copy-date.helper';
 import {getCurrentLocale} from '../../services/calendar-locale.helper';
+import {compareTagNames} from '../../services/calendar-tag-order.helper';
 import {CustomRepeatModalComponent} from '../custom-repeat-modal/custom-repeat-modal.component';
 import {RepeatScopeModalComponent} from '../repeat-scope-modal/repeat-scope-modal.component';
 import {EformChangeScopeModalComponent} from '../eform-change-scope-modal/eform-change-scope-modal.component';
@@ -356,10 +357,11 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
           if (res && res.success && res.model) {
             const newTag = {id: res.model.id, name: res.model.name};
             if (!this.data.planningTags.some(t => t.id === newTag.id)) {
-              this.data.planningTags = [...this.data.planningTags, newTag];
+              this.data.planningTags = [...this.data.planningTags, newTag]
+                .sort((a, b) => compareTagNames(a.name, b.name));
             }
             if (!this.data.tags.includes(newTag.name)) {
-              this.data.tags = [...this.data.tags, newTag.name];
+              this.data.tags = [...this.data.tags, newTag.name].sort(compareTagNames);
             }
             resolve(newTag);
           } else {
