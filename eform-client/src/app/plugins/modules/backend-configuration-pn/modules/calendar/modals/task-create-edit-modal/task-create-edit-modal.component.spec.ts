@@ -850,5 +850,18 @@ describe('TaskCreateEditModalComponent — merged teams/workers picker (#1295)',
       expect(component.data.planningTags.map(t => t.name)).toEqual(expected);
       expect(component.data.tags).toEqual(expected);
     });
+
+    it('orders accented names like the server: case-insensitive but accent-sensitive', async () => {
+      const names = ['Café'];
+      component = build({planningTags: tagList(names), tags: [...names]});
+      tagsService.createPlanningTag.mockReturnValue(created(2, 'Cafe'));
+
+      await component.addPlanningTag('Cafe');
+      await component.addTagToList('Cafe');
+
+      const expected = ['Cafe', 'Café'];
+      expect(component.data.planningTags.map(t => t.name)).toEqual(expected);
+      expect(component.data.tags).toEqual(expected);
+    });
   });
 });
