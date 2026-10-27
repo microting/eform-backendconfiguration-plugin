@@ -92,6 +92,7 @@ describe('TaskCreateEditModalComponent — merged teams/workers picker (#1295)',
   let dialogRef: any;
   let dialog: any;
   let repeatService: any;
+  let tagsService: any;
   let component: TaskCreateEditModalComponent;
 
   /** `configure` runs after the stubs are created and before ngOnInit, to override them. */
@@ -131,6 +132,7 @@ describe('TaskCreateEditModalComponent — merged teams/workers picker (#1295)',
     };
     dialogRef = {close: vi.fn()};
     dialog = {open: vi.fn()};
+    tagsService = {createPlanningTag: vi.fn()};
     configure?.();
 
     const fullData: TaskCreateEditModalData = {
@@ -162,7 +164,7 @@ describe('TaskCreateEditModalComponent — merged teams/workers picker (#1295)',
       propertiesService,
       store,
       toastr,
-      {createPlanningTag: vi.fn()} as any,
+      tagsService,
       {} as any,
       {} as any,
       translationService,
@@ -813,6 +815,40 @@ describe('TaskCreateEditModalComponent — merged teams/workers picker (#1295)',
       component = build({task: makeTask({taskDate: pastDate()})});
 
       expect(component.assigneeControl.value).toEqual(['t:7', 's:12']);
+    });
+  });
+
+  describe('tag created in the modal (#5312)', () => {
+    const tagList = (names: string[]) => names.map((name, i) => ({id: i + 1, name}));
+    const created = (id: number, name: string) => of({success: true, model: {id, name}});
+
+    it('inserts the new tag at its alphabetical place in both tag lists', async () => {
+      const names = ['Alfa', 'Siloer', 'Vandsystem'];
+      component = build({planningTags: tagList(names), tags: [...names]});
+      tagsService.createPlanningTag.mockReturnValue(created(4, 'Staldinventar'));
+
+      await component.addPlanningTag('Staldinventar');
+      await component.addTagToList('Staldinventar');
+
+      const expected = ['Alfa', 'Siloer', 'Staldinventar', 'Vandsystem'];
+      expect(component.data.planningTags.map(t => t.name)).toEqual(expected);
+      expect(component.data.tags).toEqual(expected);
+    });
+
+    it('sorts Æ, Ø and Å after Z in Danish order', async () => {
+      const names = ['Alfa', 'Zebra'];
+      component = build({planningTags: tagList(names), tags: [...names]});
+
+      tagsService.createPlanningTag.mockReturnValue(created(3, 'Åben'));
+      await component.addPlanningTag('Åben');
+      tagsService.createPlanningTag.mockReturnValue(created(4, 'Øko'));
+      await component.addTagToList('Øko');
+      tagsService.createPlanningTag.mockReturnValue(created(5, 'Æble'));
+      await component.addPlanningTag('Æble');
+
+      const expected = ['Alfa', 'Zebra', 'Æble', 'Øko', 'Åben'];
+      expect(component.data.planningTags.map(t => t.name)).toEqual(expected);
+      expect(component.data.tags).toEqual(expected);
     });
   });
 });
