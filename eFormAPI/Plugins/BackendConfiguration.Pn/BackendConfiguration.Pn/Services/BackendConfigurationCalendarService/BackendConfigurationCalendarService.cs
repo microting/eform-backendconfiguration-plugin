@@ -7425,6 +7425,7 @@ public class BackendConfigurationCalendarService(
                         .Where(x => x.AreaRulePlanningId == arp.Id)
                         .Select(x => compliancePlanningTagNames.TryGetValue(x.ItemPlanningTagId, out var name) ? name : null)
                         .Where(x => x != null)
+                        .OrderBy(n => n, TagNameComparer.Danish)
                         .ToList()
                     : [];
 

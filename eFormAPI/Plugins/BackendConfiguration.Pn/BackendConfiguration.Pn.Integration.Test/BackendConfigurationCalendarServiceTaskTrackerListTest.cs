@@ -134,7 +134,8 @@ public class BackendConfigurationCalendarServiceTaskTrackerListTest : TestBaseSe
     /// </para>
     /// </summary>
     private async Task<int> SeedEventWithDeadline(
-        DateTime deadlineUtc, bool complianceEnabled = true, int sdkCaseId = 0)
+        DateTime deadlineUtc, bool complianceEnabled = true, int sdkCaseId = 0,
+        IEnumerable<string>? tagNames = null)
     {
         var area = new Area
         {
@@ -200,6 +201,20 @@ public class BackendConfigurationCalendarServiceTaskTrackerListTest : TestBaseSe
         };
         await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(arp);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        foreach (var tagName in tagNames ?? [])
+        {
+            var tag = new PlanningTag { Name = tagName, WorkflowState = Constants.WorkflowStates.Created };
+            await ItemsPlanningPnDbContext.PlanningTags.AddAsync(tag);
+            await ItemsPlanningPnDbContext.SaveChangesAsync();
+            await BackendConfigurationPnDbContext.AreaRulePlanningTags.AddAsync(new AreaRulePlanningTag
+            {
+                AreaRulePlanningId = arp.Id,
+                ItemPlanningTagId = tag.Id,
+                WorkflowState = Constants.WorkflowStates.Created
+            });
+            await BackendConfigurationPnDbContext.SaveChangesAsync();
+        }
 
         var compliance = new Compliance
         {
@@ -276,6 +291,26 @@ public class BackendConfigurationCalendarServiceTaskTrackerListTest : TestBaseSe
         Assert.That(result.Model, Has.Count.EqualTo(1));
         Assert.That(result.Model[0].TaskIsExpired, Is.False,
             "Deadline strictly after today must not be expired.");
+    }
+
+    /// <summary>
+    /// #1346 — the app's task tracker lists a task's tags alphabetically with Danish
+    /// collation (æ, ø, å after z, in that order), like the rest of the plugin since
+    /// #1334. Tags are attached out of order so attach order and name order disagree.
+    /// </summary>
+    [Test]
+    public async Task GetTaskTrackerList_Tags_AreSortedWithDanishCollation()
+    {
+        var suffix = Guid.NewGuid().ToString("N");
+        var propertyId = await SeedEventWithDeadline(DateTime.UtcNow.Date.AddDays(1).AddHours(8),
+            tagNames: new[] { "Øko", "Beta", "Åben", "Alfa", "Æble" }.Select(prefix => $"{prefix} {suffix}"));
+
+        var result = await _calendarService.GetTaskTrackerList(propertyId, sdkSiteIdForFilter: null);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(result.Model, Has.Count.EqualTo(1));
+        Assert.That(result.Model[0].Tags, Is.EqualTo(new[] { "Alfa", "Beta", "Æble", "Øko", "Åben" }
+            .Select(prefix => $"{prefix} {suffix}")).AsCollection);
     }
 
     // ------------------------------------------------------------------
