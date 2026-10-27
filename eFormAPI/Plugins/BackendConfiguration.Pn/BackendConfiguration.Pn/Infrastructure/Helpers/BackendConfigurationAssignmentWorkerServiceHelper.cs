@@ -125,6 +125,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
     /// is what gives it an empty RedirectLink and no permission rows at all.
     /// </summary>
     public const string NoPermissionsSecurityGroupName = "none";
+    public const string EformAdminsSecurityGroupName = "eForm admins";
 
     /// <summary>
     /// The groups this plugin assigns to workers' logins: its own <c>none</c>,
@@ -191,6 +192,28 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
         ).ToListAsync().ConfigureAwait(false);
 
         return groupNames.All(allowedGroupNames.Contains);
+    }
+
+    /// <summary>
+    /// Whether <paramref name="userId"/> is an administrator: the "admin" role, or
+    /// membership of the "eForm admins" security group. Only administrators set a
+    /// worker's manager role and managing tags; the time-planning plugin applies the
+    /// same rule to its assigned-site settings. False when there is no base context.
+    /// </summary>
+    public static async Task<bool> IsAdminAsync(BaseDbContext? baseDbContext, int userId)
+    {
+        if (baseDbContext == null)
+        {
+            return false;
+        }
+
+        return await baseDbContext.UserRoles
+                   .AnyAsync(ur => ur.UserId == userId
+                       && baseDbContext.Roles.Any(r => r.Id == ur.RoleId && r.Name == EformRole.Admin))
+                   .ConfigureAwait(false)
+               || await baseDbContext.SecurityGroupUsers
+                   .AnyAsync(x => x.EformUserId == userId && x.SecurityGroup.Name == EformAdminsSecurityGroupName)
+                   .ConfigureAwait(false);
     }
 
     /// <summary>
@@ -1388,7 +1411,12 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                     assignments.First().ThirdShiftActive = deviceUserModel.ThirdShiftActive ?? false;
                                     assignments.First().FourthShiftActive = deviceUserModel.FourthShiftActive ?? false;
                                     assignments.First().FifthShiftActive = deviceUserModel.FifthShiftActive ?? false;
-                                    assignments.First().IsManager = deviceUserModel.IsManager ?? false;
+                                    // Manager settings are only changed by administrators; for
+                                    // anyone else the stored value stays as it is.
+                                    if (await IsAdminAsync(baseDbContext, userId).ConfigureAwait(false))
+                                    {
+                                        assignments.First().IsManager = deviceUserModel.IsManager ?? false;
+                                    }
                                     // PayRuleSetId intentionally not updated here — for existing sites it is owned
                                     // by TimePlanning's updateAssignedSite PUT. UseOneMinuteIntervals is never changed
                                     // from a settings save — create forces it on, the ops switch sets it with a
@@ -1482,6 +1510,11 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                         }
                                     }
 
+                                    // Manager settings are only changed by administrators; for
+                                    // anyone else the previously stored value is carried across.
+                                    var isManager = await IsAdminAsync(baseDbContext, userId).ConfigureAwait(false)
+                                        ? deviceUserModel.IsManager ?? false
+                                        : previousAssignment?.IsManager ?? false;
                                     var assignmentSite = new AssignedSite
                                     {
                                         SiteId = siteDto.SiteId,
@@ -1524,7 +1557,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                         ThirdShiftActive = deviceUserModel.ThirdShiftActive ?? false,
                                         FourthShiftActive = deviceUserModel.FourthShiftActive ?? false,
                                         FifthShiftActive = deviceUserModel.FifthShiftActive ?? false,
-                                        IsManager = deviceUserModel.IsManager ?? false,
+                                        IsManager = isManager,
                                         // Hardcoded: one-minute intervals are the standard for every new time registration
                                         // setup and the client's value is ignored (see DeviceUserModel.UseOneMinuteIntervals).
                                         // The effective date is the one carried across above.
@@ -1934,6 +1967,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 {
                     try
                     {
+                        var callerIsAdmin = await IsAdminAsync(baseDbContext, userId).ConfigureAwait(false);
                         var assignmentSite = new AssignedSite
                         {
                             SiteId = (int)site.MicrotingUid!,
@@ -1976,7 +2010,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             ThirdShiftActive = deviceUserModel.ThirdShiftActive ?? false,
                             FourthShiftActive = deviceUserModel.FourthShiftActive ?? false,
                             FifthShiftActive = deviceUserModel.FifthShiftActive ?? false,
-                            IsManager = deviceUserModel.IsManager ?? false,
+                            // Manager settings are only set by administrators.
+                            IsManager = callerIsAdmin && (deviceUserModel.IsManager ?? false),
                             // Hardcoded: one-minute intervals are the standard for every new time registration
                             // setup and the client's value is ignored (see DeviceUserModel.UseOneMinuteIntervals).
                             // UseOneMinuteIntervalsFrom is left NULL on purpose: OneMinuteModeTimeline then derives
@@ -2009,7 +2044,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         }
 
                         // Save managing tags for manager
-                        if (deviceUserModel.ManagingTagIds != null && deviceUserModel.ManagingTagIds.Any())
+                        if (callerIsAdmin && deviceUserModel.ManagingTagIds != null && deviceUserModel.ManagingTagIds.Any())
                         {
                             foreach (var tagId in deviceUserModel.ManagingTagIds)
                             {
