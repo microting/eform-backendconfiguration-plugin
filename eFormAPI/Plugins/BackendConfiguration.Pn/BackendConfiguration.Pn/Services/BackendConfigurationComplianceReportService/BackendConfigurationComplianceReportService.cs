@@ -16,6 +16,7 @@ using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
+using Microting.ItemsPlanningBase.Infrastructure.Enums;
 using Sentry;
 using CalendarService =
     BackendConfiguration.Pn.Services.BackendConfigurationCalendarService.BackendConfigurationCalendarService;
@@ -34,6 +35,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationComplianceReportS
 ///   A — SQL in the BC context: date window, the soft-removed rule, PropertyId,
 ///       TagIds and SiteIds. Projected, not materialised as entities. Completed logs
 ///       done in the window but dated outside it join by SDK case id (#1370).
+///       Completions of "no repeat" tasks, which have no Compliance row at all, are
+///       read from items-planning PlanningCases (#5467, Detaljer and Rapport only).
 ///   B — one SQL query in the SDK context: the backing cases for the candidates.
 ///   C — in memory: occurrence-exception delete/move, effective board + BoardIds,
 ///       and the status filter.
@@ -131,6 +134,8 @@ public class BackendConfigurationComplianceReportService(
                     // not-yet-deployed occurrences after today. Index is the ONLY
                     // caller that may set this; see CandidateFilter.IncludeProjected.
                     IncludeProjected = requestModel.IncludeProjected,
+                    // #5467 — Detaljer lists the completions of "no repeat" tasks.
+                    IncludeOnDemandCompletions = true,
                     Today = today,
                     ProjectionToday = today
                 },
@@ -331,7 +336,8 @@ public class BackendConfigurationComplianceReportService(
                     // AreaRule.EformId (current configuration) and not
                     // Compliance.MicrotingSdkeFormId. See #1160 finding 1.
                     CheckListId = row.SdkCase?.CheckListId,
-                    IsProjected = row.IsProjected
+                    IsProjected = row.IsProjected,
+                    IsOnDemand = row.Candidate.IsOnDemand
                 });
             }
 
@@ -510,6 +516,17 @@ public class BackendConfigurationComplianceReportService(
             candidates.AddRange(outside.Where(x => doneCaseIds.Contains(x.MicrotingSdkCaseId)));
         }
 
+        // #5467 — completions of "no repeat" (always available) tasks. They never get a
+        // Compliance row — the service plugin skips RepeatEvery 0 by design — so every
+        // half above misses them, while reportsv2 lists them off items-planning
+        // PlanningCases. They join as extra candidates, with ComplianceId 0, and from here
+        // on take the same phases B and C as a completed compliance row.
+        if (filter.IncludeOnDemandCompletions && (filter.Status is "done" or "all"))
+        {
+            candidates.AddRange(await LoadOnDemandCompletionCandidates(
+                filter, tagScopedPlanningIds, siteScopedPlanningIds, sdkDbContext));
+        }
+
         // ==========================================================
         // Phase B — one SQL query, SDK context (a DIFFERENT database).
         // ==========================================================
@@ -561,6 +578,24 @@ public class BackendConfigurationComplianceReportService(
                 CheckListId = sibling.CheckListId,
                 SiteId = sibling.SiteId
             });
+        }
+
+        // #5467 — an on-demand completion is listed once. Phase A already skipped every
+        // case a Compliance row carries; this catches a compliance candidate repointed
+        // to a sibling case just above. Then the row gets its occurrence date: a
+        // completion has no deadline, so its Deadline is its Danish done date — the same
+        // day phase C places it on, and the key an IsDeleted marker (#1290) on
+        // (ARP, date) is looked up by.
+        var complianceCaseIds = candidates
+            .Where(c => !c.IsOnDemand && c.MicrotingSdkCaseId > 0)
+            .Select(c => c.MicrotingSdkCaseId)
+            .ToHashSet();
+        candidates.RemoveAll(c => c.IsOnDemand && complianceCaseIds.Contains(c.MicrotingSdkCaseId));
+        foreach (var candidate in candidates.Where(c => c.IsOnDemand))
+        {
+            var sdkCase = casesById.GetValueOrDefault(candidate.MicrotingSdkCaseId);
+            candidate.Deadline = CompletedLogPlacement.DoneDate(sdkCase?.DoneAtUserModifiable, sdkCase?.DoneAt)
+                                 ?? DateTime.MinValue;
         }
 
         // ==========================================================
@@ -725,6 +760,9 @@ public class BackendConfigurationComplianceReportService(
             if (exception?.IsDeleted == true) continue;
 
             var done = IsDone(candidate);
+            // #5467 — an on-demand completion exists only while its SDK case IS done: one
+            // reopened since phase A's lookup is no row at all, never an open one.
+            if (candidate.IsOnDemand && !done) continue;
             var sdkCase = candidate.MicrotingSdkCaseId > 0
                 ? casesById.GetValueOrDefault(candidate.MicrotingSdkCaseId)
                 : null;
@@ -875,6 +913,132 @@ public class BackendConfigurationComplianceReportService(
                 WorkflowState = x.WorkflowState
             })
             .ToListAsync();
+
+    /// <summary>
+    /// #5467 — the completed cases of "no repeat" tasks done in the window, as phase-A
+    /// candidates. A "no repeat" (always available) task is an items-planning
+    /// <c>Planning</c> with <c>RepeatType == Day</c> and <c>RepeatEvery == 0</c>; the
+    /// service plugin never writes a Compliance row for it, so its completions exist only
+    /// as <c>PlanningCases</c> (Status 100) pointing at an SDK case.
+    ///
+    /// <para><b>Filters</b> — the ones a compliance row gets in phase A, applied the same
+    /// way: the TagIds and SiteIds scopes are the very planning-id subqueries phase A
+    /// uses, and PropertyId is read off the lowest-Id live ARP of the planning, the ARP
+    /// phase C pins (no Compliance.PropertyId exists to read). The window is the DONE
+    /// date, by the #1370 rule every completed log follows
+    /// (<see cref="CompletedLogPlacement"/>): <c>FilterCaseIdsDoneBetweenAsync</c> narrows
+    /// by primary key here, and phase C applies the exact Danish-date check. BoardIds,
+    /// the IsDeleted marker and done-ness itself are left to phase C like any candidate.</para>
+    ///
+    /// <para><b>Live ARP</b> is <c>WorkflowState != Removed</c>, which EF Core translates
+    /// with C# null semantics (<c>&lt;&gt; 'removed' OR IS NULL</c>), so an ARP whose
+    /// WorkflowState was never set still counts. The PlanningCase must be live and point
+    /// at a case; the SDK case's WorkflowState is NOT read — every completion ends with
+    /// the device case retracted (see phase C).</para>
+    ///
+    /// <para><b>Never twice:</b> a case any Compliance row carries, in any workflow state,
+    /// is left to phase A's compliance halves — including one that skipped this window or
+    /// was deleted (#1290), which must not come back through this path.</para>
+    ///
+    /// <para>Six set-based round trips at most (the SDK one chunked), across the three
+    /// databases, each led by what the previous one narrowed to.</para>
+    /// </summary>
+    private async Task<List<CandidateRow>> LoadOnDemandCompletionCandidates(
+        CandidateFilter filter, IQueryable<int> tagScopedPlanningIds, IQueryable<int> siteScopedPlanningIds,
+        SdkDbContext sdkDbContext)
+    {
+        var noRepeatPlanningIds = await itemsPlanningPnDbContext.Plannings
+            .Where(p => p.RepeatType == RepeatType.Day && p.RepeatEvery == 0)
+            .Where(p => p.WorkflowState != Constants.WorkflowStates.Removed)
+            .Select(p => p.Id)
+            .ToListAsync();
+        if (noRepeatPlanningIds.Count == 0) return [];
+
+        var arpQuery = backendConfigurationPnDbContext.AreaRulePlannings
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => noRepeatPlanningIds.Contains(x.ItemPlanningId));
+        if (tagScopedPlanningIds != null)
+        {
+            arpQuery = arpQuery.Where(x => tagScopedPlanningIds.Contains(x.ItemPlanningId));
+        }
+        if (siteScopedPlanningIds != null)
+        {
+            arpQuery = arpQuery.Where(x => siteScopedPlanningIds.Contains(x.ItemPlanningId));
+        }
+
+        // Pin first, then filter the property — the order LoadProjectionSources uses, so
+        // a planning is judged by the ARP phase C will attach to its row.
+        var propertyIdByPlanningId = (await arpQuery
+                .Select(x => new { x.Id, x.ItemPlanningId, x.PropertyId })
+                .ToListAsync())
+            .GroupBy(x => x.ItemPlanningId)
+            .Select(g => g.OrderBy(a => a.Id).First())
+            .Where(a => !filter.PropertyId.HasValue || a.PropertyId == filter.PropertyId.Value)
+            .ToDictionary(a => a.ItemPlanningId, a => a.PropertyId);
+        if (propertyIdByPlanningId.Count == 0) return [];
+
+        var scopedPlanningIds = propertyIdByPlanningId.Keys.ToList();
+        var planningIdByCaseId = (await itemsPlanningPnDbContext.PlanningCases
+                .Where(pc => scopedPlanningIds.Contains(pc.PlanningId))
+                .Where(pc => pc.Status == 100 && pc.MicrotingSdkCaseId > 0)
+                .Where(pc => pc.WorkflowState != Constants.WorkflowStates.Removed)
+                .Select(pc => new { pc.Id, pc.PlanningId, pc.MicrotingSdkCaseId })
+                .ToListAsync())
+            .GroupBy(pc => pc.MicrotingSdkCaseId)
+            .ToDictionary(g => g.Key, g => g.OrderBy(pc => pc.Id).First().PlanningId);
+        if (planningIdByCaseId.Count == 0) return [];
+
+        // SDK Status == 100 is checked here as well as in phase C, so a case reopened in
+        // the SDK never reaches the candidate set.
+        var doneInWindow = await CompletedLogPlacement
+            .FilterCaseIdsDoneBetweenAsync(sdkDbContext, planningIdByCaseId.Keys, filter.DateFrom, filter.DateTo)
+            .ConfigureAwait(false);
+        if (doneInWindow.Count == 0) return [];
+
+        var complianceCaseIds = await backendConfigurationPnDbContext.Compliances
+            .Where(c => doneInWindow.Contains(c.MicrotingSdkCaseId))
+            .Select(c => c.MicrotingSdkCaseId)
+            .ToListAsync();
+        doneInWindow.ExceptWith(complianceCaseIds);
+        if (doneInWindow.Count == 0) return [];
+
+        var itemNameByPlanningId = await LoadItemNamesByPlanningId(
+            doneInWindow.Select(id => planningIdByCaseId[id]).Distinct().ToList());
+
+        return doneInWindow
+            .Select(caseId =>
+            {
+                var planningId = planningIdByCaseId[caseId];
+                return new CandidateRow
+                {
+                    ComplianceId = 0,
+                    ItemName = itemNameByPlanningId.GetValueOrDefault(planningId),
+                    PlanningId = planningId,
+                    PropertyId = propertyIdByPlanningId[planningId],
+                    // Set to the done date once phase B has read the case.
+                    Deadline = DateTime.MinValue,
+                    MicrotingSdkCaseId = caseId,
+                    WorkflowState = Constants.WorkflowStates.Created,
+                    IsOnDemand = true
+                };
+            })
+            .ToList();
+    }
+
+    /// <summary>
+    /// A planning name per planning: the title fallback of a row no Compliance backs
+    /// (phase P's planned rows, #5467's on-demand completions). Language-agnostic on
+    /// purpose: it is only the fallback behind the task's own translation, exactly as
+    /// Compliance.ItemName is on a deployed row.
+    /// </summary>
+    private async Task<Dictionary<int, string>> LoadItemNamesByPlanningId(List<int> planningIds) =>
+        (await itemsPlanningPnDbContext.PlanningNameTranslation
+            .Where(x => planningIds.Contains(x.PlanningId))
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Select(x => new { x.Id, x.PlanningId, x.Name })
+            .ToListAsync())
+        .GroupBy(x => x.PlanningId)
+        .ToDictionary(g => g.Key, g => g.OrderBy(x => x.Id).First().Name);
 
     /// <summary>
     /// The furthest ahead the #1332 projection enumerates, counted from today. The
@@ -1094,15 +1258,7 @@ public class BackendConfigurationComplianceReportService(
             }
         }
 
-        // Language-agnostic on purpose: it is only the fallback behind the task's
-        // own translation, exactly as Compliance.ItemName is on a deployed row.
-        var itemNameByPlanningId = (await itemsPlanningPnDbContext.PlanningNameTranslation
-                .Where(x => planningIds.Contains(x.PlanningId))
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Select(x => new { x.Id, x.PlanningId, x.Name })
-                .ToListAsync())
-            .GroupBy(x => x.PlanningId)
-            .ToDictionary(g => g.Key, g => g.OrderBy(x => x.Id).First().Name);
+        var itemNameByPlanningId = await LoadItemNamesByPlanningId(planningIds);
 
         return new ProjectionSources
         {
@@ -1455,6 +1611,8 @@ public class BackendConfigurationComplianceReportService(
                     Status = requestModel.Status,
                     // DoneAt is the "Udført dato" column, so the display fields are on.
                     ComputeDisplayFields = true,
+                    // #5467 — a "no repeat" task's completion is an answered case too.
+                    IncludeOnDemandCompletions = true,
                     Today = ComplianceFutureTaskGuard.TodayInCopenhagen(UtcNow())
                 },
                 sdkDbContext);
@@ -1497,11 +1655,13 @@ public class BackendConfigurationComplianceReportService(
 
             // One deterministic order for the whole response: cases appear inside
             // every headline group in occurrence-date order, oldest first, with the
-            // compliance id as the total tiebreak. The cap is applied to that
-            // order, so it truncates the tail rather than an arbitrary slice.
+            // compliance id as the tiebreak — and the SDK case id after it, because
+            // every on-demand completion (#5467) carries ComplianceId 0. The cap is
+            // applied to that order, so it truncates the tail rather than an arbitrary slice.
             var answered = answerable
                 .OrderBy(r => r.EffectiveTaskDate)
                 .ThenBy(r => r.Candidate.ComplianceId)
+                .ThenBy(r => r.Candidate.MicrotingSdkCaseId)
                 .ToList();
 
             if (answered.Count > MaxRowsReturned)
@@ -1679,6 +1839,7 @@ public class BackendConfigurationComplianceReportService(
                 var caseModel = new ComplianceReportCaseModel
                 {
                     ComplianceId = row.Candidate.ComplianceId,
+                    IsOnDemand = row.Candidate.IsOnDemand,
                     SdkCaseId = sdkCaseId,
                     CheckListId = checkListId,
                     PropertyId = row.Candidate.PropertyId,
@@ -1883,6 +2044,15 @@ public class BackendConfigurationComplianceReportService(
         /// Rapport is a report of answers, which a planned occurrence has none of.
         /// </summary>
         public bool IncludeProjected { get; init; }
+
+        /// <summary>
+        /// #5467 — add the completed cases of "no repeat" tasks, which have no Compliance
+        /// row (see <see cref="LoadOnDemandCompletionCandidates"/>). <see cref="Index"/>
+        /// and <see cref="EformColumns"/> set it: Detaljer and Rapport list what was done.
+        /// Oversigt does NOT: an on-demand completion has no deadline, so it was never due
+        /// and must not move the compliance percentage.
+        /// </summary>
+        public bool IncludeOnDemandCompletions { get; init; }
 
         /// <summary>
         /// The Copenhagen date phase P projects AFTER — see <see cref="LoadProjectionSources"/>.
@@ -2363,11 +2533,13 @@ public class BackendConfigurationComplianceReportService(
         };
 
         // Projected rows (#1332) all carry ComplianceId 0, so they are ordered among
-        // themselves by planning and date.
+        // themselves by planning and date. On-demand completions (#5467) carry it too,
+        // and one planning may hold several on one day: the SDK case id settles them.
         return ordered
             .ThenBy(r => r.Candidate.ComplianceId)
             .ThenBy(r => r.Candidate.PlanningId)
             .ThenBy(r => r.EffectiveTaskDate)
+            .ThenBy(r => r.Candidate.MicrotingSdkCaseId)
             .ToList();
     }
 
@@ -2387,6 +2559,12 @@ public class BackendConfigurationComplianceReportService(
         public DateTime Deadline { get; set; }
         public int MicrotingSdkCaseId { get; set; }
         public string WorkflowState { get; set; }
+        /// <summary>
+        /// #5467 — a completion of a "no repeat" task, read from items-planning
+        /// PlanningCases: no Compliance row backs it (<see cref="ComplianceId"/> is 0) and
+        /// its <see cref="Deadline"/> is its done date.
+        /// </summary>
+        public bool IsOnDemand { get; set; }
     }
 
     /// <summary>The phase-B projection: the only SDK Case columns anything reads.</summary>
