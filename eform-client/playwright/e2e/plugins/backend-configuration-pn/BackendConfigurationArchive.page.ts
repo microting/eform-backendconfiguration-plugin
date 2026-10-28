@@ -114,14 +114,19 @@ export class BackendConfigurationArchivePage {
   }
 
   /**
-   * The waits are armed after `goto` commits, not before: until then a call the OLD archive document had in flight
-   * (the refresh after a folder delete) can satisfy them, and its discarded body makes `json()` fail with
-   * "No resource with given identifier found" (zb Z8).
+   * Leaves the current document before a page-load wait is armed. Otherwise a call the old archive document still had
+   * in flight (the refresh after a folder delete) can satisfy the wait, and its discarded body makes `json()` fail
+   * with "No resource with given identifier found" (zb Z8). about:blank cancels those calls and issues none.
    */
+  private async leaveCurrentDocument(): Promise<void> {
+    await this.page.goto('about:blank', { timeout: UI_TIMEOUT });
+  }
+
   async open(): Promise<void> {
-    await this.page.goto(ARCHIVE_URL, { waitUntil: 'commit', timeout: API_TIMEOUT });
+    await this.leaveCurrentDocument();
     const folders = this.waitForCall('archive folder tree', 'GET', FOLDERS_PATH);
     const files = this.waitForCall('archive documents', 'POST', FILES_PATH);
+    await this.page.goto(ARCHIVE_URL, { timeout: API_TIMEOUT });
     await expectSuccess(folders, 'loading the folder tree');
     await expectSuccess(files, 'loading the archive documents');
     await expect(this.tree()).toBeVisible({ timeout: UI_TIMEOUT });
@@ -229,10 +234,10 @@ export class BackendConfigurationArchivePage {
     return this.page.locator('#inboxTable tr.inbox-row', { hasText: fileName });
   }
 
-  /** Armed after commit, for the reason given on `open`. */
   async openInbox(): Promise<void> {
-    await this.page.goto(`${ARCHIVE_URL}/inbox`, { waitUntil: 'commit', timeout: API_TIMEOUT });
+    await this.leaveCurrentDocument();
     const listed = this.waitForCall('inbox list', 'GET', `${ARCHIVE_API}/inbox`);
+    await this.page.goto(`${ARCHIVE_URL}/inbox`, { timeout: API_TIMEOUT });
     await expectSuccess(listed, 'loading the inbox list');
     await expect(this.page.locator('#inboxTable')).toBeVisible({ timeout: UI_TIMEOUT });
   }
