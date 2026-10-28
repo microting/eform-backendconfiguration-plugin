@@ -1066,4 +1066,10 @@ export const isIS = {
   'Previous document': 'Fyrra skjal',
   'Next document': 'Næsta skjal',
   '{{index}} of {{count}}': '{{index}} af {{count}}',
+  'Leader': 'Yfirmaður',
+  'Requires web or archive access': 'Krefst vef- eða skjalasafnsaðgangs',
+  "Only an administrator can change a leader's login": "Aðeins kerfisstjóri getur breytt innskráningu yfirmanns",
+  'Only administrators and leaders can do this': 'Aðeins kerfisstjórar og yfirmenn geta gert þetta',
+  'The move changes who can read the documents. Only an administrator or a leader can do that.': 'Flutningurinn breytir því hverjir geta lesið skjölin. Aðeins kerfisstjóri eða yfirmaður getur gert það.',
+  'Save the worker with web or archive access first': 'Vistaðu starfsmanninn fyrst með vef- eða skjalasafnsaðgangi',
 };

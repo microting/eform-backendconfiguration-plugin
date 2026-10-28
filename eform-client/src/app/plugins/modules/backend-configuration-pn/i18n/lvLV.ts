@@ -1066,4 +1066,10 @@ export const lvLV = {
   'Previous document': 'Iepriekšējais dokuments',
   'Next document': 'Nākamais dokuments',
   '{{index}} of {{count}}': '{{index}} no {{count}}',
+  'Leader': 'Vadītājs',
+  'Requires web or archive access': 'Nepieciešama tīmekļa vai arhīva piekļuve',
+  "Only an administrator can change a leader's login": "Tikai administrators var mainīt vadītāja pieteikšanos",
+  'Only administrators and leaders can do this': 'To var izdarīt tikai administratori un vadītāji',
+  'The move changes who can read the documents. Only an administrator or a leader can do that.': 'Pārvietošana maina, kas var lasīt dokumentus. To var izdarīt tikai administrators vai vadītājs.',
+  'Save the worker with web or archive access first': 'Vispirms saglabājiet darbinieku ar tīmekļa vai arhīva piekļuvi',
 };

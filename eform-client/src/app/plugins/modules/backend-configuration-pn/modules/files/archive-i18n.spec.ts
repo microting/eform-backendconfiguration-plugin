@@ -32,8 +32,8 @@ describe('archive folders i18n', () => {
     expect(t['The default folder cannot be deleted']).toBe('Standardmappen kan ikke slettes');
     expect(t['Only empty folders can be deleted ({{documents}} documents, {{subfolders}} subfolders)'])
       .toBe('Kun tomme mapper kan slettes ({{documents}} dokumenter, {{subfolders}} undermapper)');
-    expect(t['The move changes who can read the documents. Only an administrator can do that.'])
-      .toBe('Flytningen ændrer, hvem der kan læse dokumenterne. Kun en administrator kan gøre det.');
+    expect(t['The move changes who can read the documents. Only an administrator or a leader can do that.'])
+      .toBe('Flytningen ændrer, hvem der kan læse dokumenterne. Kun en administrator eller en leder kan gøre det.');
     expect(t['{{count}} documents can now be read by {{who}}']).toBe('{{count}} dokumenter kan nu læses af {{who}}');
     expect(t['Folder']).toBe('Mappe');
     expect(t['Back to the archive']).toBe('Tilbage til arkivet');

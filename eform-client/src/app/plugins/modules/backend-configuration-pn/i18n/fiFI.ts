@@ -1189,4 +1189,10 @@ export const fiFI = {
   'Previous document': 'Edellinen asiakirja',
   'Next document': 'Seuraava asiakirja',
   '{{index}} of {{count}}': '{{index}}/{{count}}',
+  'Leader': 'Esihenkilö',
+  'Requires web or archive access': 'Vaatii verkko- tai arkistokäyttöoikeuden',
+  "Only an administrator can change a leader's login": "Vain ylläpitäjä voi muuttaa esihenkilön kirjautumistietoja",
+  'Only administrators and leaders can do this': 'Vain ylläpitäjät ja esihenkilöt voivat tehdä tämän',
+  'The move changes who can read the documents. Only an administrator or a leader can do that.': 'Siirto muuttaa sitä, kuka voi lukea asiakirjat. Vain ylläpitäjä tai esihenkilö voi tehdä sen.',
+  'Save the worker with web or archive access first': 'Tallenna työntekijä ensin verkko- tai arkistokäyttöoikeudella',
 };

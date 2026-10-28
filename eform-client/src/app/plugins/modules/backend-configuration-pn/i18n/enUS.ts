@@ -1422,4 +1422,10 @@ export const enUS= {
   'Previous document': 'Previous document',
   'Next document': 'Next document',
   '{{index}} of {{count}}': '{{index}} of {{count}}',
+  'Leader': 'Leader',
+  'Requires web or archive access': 'Requires web or archive access',
+  "Only an administrator can change a leader's login": "Only an administrator can change a leader's login",
+  'Only administrators and leaders can do this': 'Only administrators and leaders can do this',
+  'The move changes who can read the documents. Only an administrator or a leader can do that.': 'The move changes who can read the documents. Only an administrator or a leader can do that.',
+  'Save the worker with web or archive access first': 'Save the worker with web or archive access first',
 };

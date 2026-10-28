@@ -1066,4 +1066,10 @@ export const csCZ = {
   'Previous document': 'Předchozí dokument',
   'Next document': 'Další dokument',
   '{{index}} of {{count}}': '{{index}} z {{count}}',
+  'Leader': 'Vedoucí',
+  'Requires web or archive access': 'Vyžaduje webový nebo archivní přístup',
+  "Only an administrator can change a leader's login": "Přihlášení vedoucího může změnit pouze administrátor",
+  'Only administrators and leaders can do this': 'Toto mohou dělat pouze administrátoři a vedoucí',
+  'The move changes who can read the documents. Only an administrator or a leader can do that.': 'Přesun změní, kdo může dokumenty číst. To může udělat pouze administrátor nebo vedoucí.',
+  'Save the worker with web or archive access first': 'Nejprve uložte pracovníka s webovým nebo archivním přístupem',
 };

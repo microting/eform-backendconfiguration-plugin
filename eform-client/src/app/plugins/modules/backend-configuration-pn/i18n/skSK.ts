@@ -1066,4 +1066,10 @@ export const skSK = {
   'Previous document': 'Predchádzajúci dokument',
   'Next document': 'Ďalší dokument',
   '{{index}} of {{count}}': '{{index}} z {{count}}',
+  'Leader': 'Vedúci',
+  'Requires web or archive access': 'Vyžaduje webový alebo archívny prístup',
+  "Only an administrator can change a leader's login": "Prihlásenie vedúceho môže zmeniť iba administrátor",
+  'Only administrators and leaders can do this': 'Toto môžu robiť iba administrátori a vedúci',
+  'The move changes who can read the documents. Only an administrator or a leader can do that.': 'Presun zmení, kto môže dokumenty čítať. To môže urobiť iba administrátor alebo vedúci.',
+  'Save the worker with web or archive access first': 'Najprv uložte pracovníka s webovým alebo archívnym prístupom',
 };

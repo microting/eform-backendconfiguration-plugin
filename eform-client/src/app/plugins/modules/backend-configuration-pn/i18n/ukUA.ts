@@ -1189,4 +1189,10 @@ export const ukUA = {
   'Previous document': 'Попередній документ',
   'Next document': 'Наступний документ',
   '{{index}} of {{count}}': '{{index}} з {{count}}',
+  'Leader': 'Керівник',
+  'Requires web or archive access': 'Потрібен вебдоступ або доступ до архіву',
+  "Only an administrator can change a leader's login": "Лише адміністратор може змінити вхід керівника",
+  'Only administrators and leaders can do this': 'Це можуть робити лише адміністратори та керівники',
+  'The move changes who can read the documents. Only an administrator or a leader can do that.': 'Переміщення змінює, хто може читати документи. Це може зробити лише адміністратор або керівник.',
+  'Save the worker with web or archive access first': 'Спершу збережіть працівника з вебдоступом або доступом до архіву',
 };

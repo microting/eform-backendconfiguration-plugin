@@ -1189,4 +1189,10 @@ export const noNO = {
   'Previous document': 'Forrige dokument',
   'Next document': 'Neste dokument',
   '{{index}} of {{count}}': '{{index}} av {{count}}',
+  'Leader': 'Leder',
+  'Requires web or archive access': 'Krever web- eller arkivtilgang',
+  "Only an administrator can change a leader's login": "Bare en administrator kan endre en leders pålogging",
+  'Only administrators and leaders can do this': 'Bare administratorer og ledere kan gjøre dette',
+  'The move changes who can read the documents. Only an administrator or a leader can do that.': 'Flyttingen endrer hvem som kan lese dokumentene. Bare en administrator eller en leder kan gjøre det.',
+  'Save the worker with web or archive access first': 'Lagre først medarbeideren med web- eller arkivtilgang',
 };

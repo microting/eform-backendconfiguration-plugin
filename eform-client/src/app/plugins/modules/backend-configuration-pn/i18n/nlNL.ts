@@ -1189,4 +1189,10 @@ export const nlNL = {
   'Previous document': 'Vorig document',
   'Next document': 'Volgend document',
   '{{index}} of {{count}}': '{{index}} van {{count}}',
+  'Leader': 'Leidinggevende',
+  'Requires web or archive access': 'Vereist web- of archieftoegang',
+  "Only an administrator can change a leader's login": "Alleen een beheerder kan de login van een leidinggevende wijzigen",
+  'Only administrators and leaders can do this': 'Alleen beheerders en leidinggevenden kunnen dit doen',
+  'The move changes who can read the documents. Only an administrator or a leader can do that.': 'De verplaatsing verandert wie de documenten kan lezen. Alleen een beheerder of een leidinggevende kan dat doen.',
+  'Save the worker with web or archive access first': 'Sla de medewerker eerst op met web- of archieftoegang',
 };

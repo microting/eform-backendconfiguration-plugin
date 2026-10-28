@@ -1189,4 +1189,10 @@ export const svSE = {
   'Previous document': 'Föregående dokument',
   'Next document': 'Nästa dokument',
   '{{index}} of {{count}}': '{{index}} av {{count}}',
+  'Leader': 'Ledare',
+  'Requires web or archive access': 'Kräver webb- eller arkivåtkomst',
+  "Only an administrator can change a leader's login": "Endast en administratör kan ändra en ledares inloggning",
+  'Only administrators and leaders can do this': 'Endast administratörer och ledare kan göra detta',
+  'The move changes who can read the documents. Only an administrator or a leader can do that.': 'Flytten ändrar vem som kan läsa dokumenten. Endast en administratör eller en ledare kan göra det.',
+  'Save the worker with web or archive access first': 'Spara först medarbetaren med webb- eller arkivåtkomst',
 };

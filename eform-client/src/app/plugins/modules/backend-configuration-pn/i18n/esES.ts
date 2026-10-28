@@ -1189,4 +1189,10 @@ export const esES = {
   'Previous document': 'Documento anterior',
   'Next document': 'Documento siguiente',
   '{{index}} of {{count}}': '{{index}} de {{count}}',
+  'Leader': 'Responsable',
+  'Requires web or archive access': 'Requiere acceso web o al archivo',
+  "Only an administrator can change a leader's login": "Solo un administrador puede cambiar el inicio de sesión de un responsable",
+  'Only administrators and leaders can do this': 'Solo los administradores y los responsables pueden hacer esto',
+  'The move changes who can read the documents. Only an administrator or a leader can do that.': 'El traslado cambia quién puede leer los documentos. Solo un administrador o un responsable puede hacerlo.',
+  'Save the worker with web or archive access first': 'Guarde primero al empleado con acceso web o al archivo',
 };

@@ -1066,4 +1066,10 @@ export const huHU = {
   'Previous document': 'Előző dokumentum',
   'Next document': 'Következő dokumentum',
   '{{index}} of {{count}}': '{{index}} / {{count}}',
+  'Leader': 'Vezető',
+  'Requires web or archive access': 'Webes vagy archív hozzáférés szükséges',
+  "Only an administrator can change a leader's login": "Csak rendszergazda módosíthatja egy vezető bejelentkezését",
+  'Only administrators and leaders can do this': 'Ezt csak rendszergazdák és vezetők tehetik meg',
+  'The move changes who can read the documents. Only an administrator or a leader can do that.': 'Az áthelyezés megváltoztatja, ki olvashatja a dokumentumokat. Ezt csak rendszergazda vagy vezető teheti meg.',
+  'Save the worker with web or archive access first': 'Először mentse a munkatársat webes vagy archív hozzáféréssel',
 };

@@ -1189,4 +1189,10 @@ export const ptPT = {
   'Previous document': 'Documento anterior',
   'Next document': 'Documento seguinte',
   '{{index}} of {{count}}': '{{index}} de {{count}}',
+  'Leader': 'Líder',
+  'Requires web or archive access': 'Requer acesso web ou ao arquivo',
+  "Only an administrator can change a leader's login": "Apenas um administrador pode alterar o início de sessão de um líder",
+  'Only administrators and leaders can do this': 'Apenas administradores e líderes podem fazer isto',
+  'The move changes who can read the documents. Only an administrator or a leader can do that.': 'A mudança altera quem pode ler os documentos. Apenas um administrador ou um líder pode fazê-lo.',
+  'Save the worker with web or archive access first': 'Guarde primeiro o colaborador com acesso web ou ao arquivo',
 };

@@ -1189,4 +1189,10 @@ export const plPL = {
   'Previous document': 'Poprzedni dokument',
   'Next document': 'Następny dokument',
   '{{index}} of {{count}}': '{{index}} z {{count}}',
+  'Leader': 'Kierownik',
+  'Requires web or archive access': 'Wymaga dostępu webowego lub do archiwum',
+  "Only an administrator can change a leader's login": "Tylko administrator może zmienić login kierownika",
+  'Only administrators and leaders can do this': 'Tylko administratorzy i kierownicy mogą to zrobić',
+  'The move changes who can read the documents. Only an administrator or a leader can do that.': 'Przeniesienie zmienia, kto może czytać dokumenty. Tylko administrator lub kierownik może to zrobić.',
+  'Save the worker with web or archive access first': 'Najpierw zapisz pracownika z dostępem webowym lub do archiwum',
 };

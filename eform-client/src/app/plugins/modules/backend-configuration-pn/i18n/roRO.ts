@@ -1066,4 +1066,10 @@ export const roRO = {
   'Previous document': 'Documentul anterior',
   'Next document': 'Documentul următor',
   '{{index}} of {{count}}': '{{index}} din {{count}}',
+  'Leader': 'Responsabil',
+  'Requires web or archive access': 'Necesită acces web sau la arhivă',
+  "Only an administrator can change a leader's login": "Doar un administrator poate modifica autentificarea unui responsabil",
+  'Only administrators and leaders can do this': 'Doar administratorii și responsabilii pot face acest lucru',
+  'The move changes who can read the documents. Only an administrator or a leader can do that.': 'Mutarea schimbă cine poate citi documentele. Doar un administrator sau un responsabil poate face acest lucru.',
+  'Save the worker with web or archive access first': 'Salvați mai întâi angajatul cu acces web sau la arhivă',
 };

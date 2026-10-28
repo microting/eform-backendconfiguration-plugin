@@ -1322,4 +1322,10 @@ export const da = {
   'Previous document': 'Forrige dokument',
   'Next document': 'Næste dokument',
   '{{index}} of {{count}}': '{{index}} af {{count}}',
+  'Leader': 'Leder',
+  'Requires web or archive access': 'Kræver web- eller arkivadgang',
+  "Only an administrator can change a leader's login": "Kun en administrator kan ændre en leders login",
+  'Only administrators and leaders can do this': 'Kun administratorer og ledere kan gøre det',
+  'The move changes who can read the documents. Only an administrator or a leader can do that.': 'Flytningen ændrer, hvem der kan læse dokumenterne. Kun en administrator eller en leder kan gøre det.',
+  'Save the worker with web or archive access first': 'Gem først medarbejderen med web- eller arkivadgang',
 };
