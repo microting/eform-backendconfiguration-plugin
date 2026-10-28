@@ -113,7 +113,17 @@ export class BackendConfigurationArchivePage {
     return wait;
   }
 
+  /**
+   * Leaves the current document before a page-load wait is armed. Otherwise a call the old archive document still had
+   * in flight (the refresh after a folder delete) can satisfy the wait, and its discarded body makes `json()` fail
+   * with "No resource with given identifier found" (zb Z8). about:blank cancels those calls and issues none.
+   */
+  private async leaveCurrentDocument(): Promise<void> {
+    await this.page.goto('about:blank', { timeout: UI_TIMEOUT });
+  }
+
   async open(): Promise<void> {
+    await this.leaveCurrentDocument();
     const folders = this.waitForCall('archive folder tree', 'GET', FOLDERS_PATH);
     const files = this.waitForCall('archive documents', 'POST', FILES_PATH);
     await this.page.goto(ARCHIVE_URL, { timeout: API_TIMEOUT });
@@ -225,6 +235,7 @@ export class BackendConfigurationArchivePage {
   }
 
   async openInbox(): Promise<void> {
+    await this.leaveCurrentDocument();
     const listed = this.waitForCall('inbox list', 'GET', `${ARCHIVE_API}/inbox`);
     await this.page.goto(`${ARCHIVE_URL}/inbox`, { timeout: API_TIMEOUT });
     await expectSuccess(listed, 'loading the inbox list');
