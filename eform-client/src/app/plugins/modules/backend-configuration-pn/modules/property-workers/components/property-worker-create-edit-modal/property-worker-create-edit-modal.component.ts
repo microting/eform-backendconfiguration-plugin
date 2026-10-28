@@ -23,7 +23,9 @@ import {AbstractControl, FormBuilder, FormControl, FormGroup, ValidationErrors, 
 import validator from 'validator';
 import {AssignedSiteModel, GlobalAutoBreakSettingsModel, PayRuleSetSimpleModel} from 'src/app/plugins/modules/time-planning-pn/models';
 import {PayRuleSetsViewModalComponent} from 'src/app/plugins/modules/time-planning-pn/modules/pay-rule-sets/components/pay-rule-sets-view-modal/pay-rule-sets-view-modal.component';
-import {NgIf, NgFor} from '@angular/common';
+import {NgIf, NgFor, AsyncPipe} from '@angular/common';
+import {Store} from '@ngrx/store';
+import {selectAuthIsAdmin} from 'src/app/state/auth/auth.selector';
 import {MatIcon} from '@angular/material/icon';
 import {MatIconButton, MatButton} from '@angular/material/button';
 import {MatFormField, MatLabel, MatError, MatHint, MatSuffix} from '@angular/material/form-field';
@@ -48,7 +50,7 @@ export function cleanWorkerEmail(email: string | null | undefined): string {
 @AutoUnsubscribe()
 @Component({
     selector: 'app-property-worker-create-edit-modal',
-    imports: [NgIf, NgFor, ReactiveFormsModule, TranslatePipe, MatIcon, MatIconButton, MatButton, MatFormField, MatLabel, MatError, MatHint, MatSuffix, MatInput, MtxSelect, MtxSelectLabelTemplate, MtxSelectOptionTemplate, MtxGrid, MatTooltip, MatDialogTitle, MatDialogContent, MatDialogActions, MatDatepicker, MatDatepickerInput, MatDatepickerToggle, MatCheckbox, MatSlideToggle, MatRadioGroup, MatRadioButton, MatTabGroup, MatTab, NgxMaterialTimepickerModule, MtxSelectHeaderTemplate],
+    imports: [NgIf, NgFor, AsyncPipe, ReactiveFormsModule, TranslatePipe, MatIcon, MatIconButton, MatButton, MatFormField, MatLabel, MatError, MatHint, MatSuffix, MatInput, MtxSelect, MtxSelectLabelTemplate, MtxSelectOptionTemplate, MtxGrid, MatTooltip, MatDialogTitle, MatDialogContent, MatDialogActions, MatDatepicker, MatDatepickerInput, MatDatepickerToggle, MatCheckbox, MatSlideToggle, MatRadioGroup, MatRadioButton, MatTabGroup, MatTab, NgxMaterialTimepickerModule, MtxSelectHeaderTemplate],
     templateUrl: './property-worker-create-edit-modal.component.html',
     styleUrls: ['./property-worker-create-edit-modal.component.scss'],
 })
@@ -56,6 +58,11 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   private fb = inject(FormBuilder);
   public propertiesService = inject(BackendConfigurationPnPropertiesService);
   public authStateService = inject(AuthStateService);
+  private store = inject(Store);
+  // Manager settings are only changed by administrators (checked on the server too),
+  // so the section is shown to administrators only. For anyone else the form keeps the
+  // stored values it was loaded with.
+  public selectAuthIsAdmin$ = this.store.select(selectAuthIsAdmin);
   private translateService = inject(TranslateService);
   public dialogRef = inject(MatDialogRef<PropertyWorkerCreateEditModalComponent>);
   private appSettingsStateService = inject(AppSettingsStateService);
