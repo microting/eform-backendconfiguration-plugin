@@ -567,7 +567,9 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     if (this.form.invalid) {
       return;
     }
-    const formValue = this.form.value;
+    // A deep copy: the auto-break block below converts the day values in place, and after a refused save the
+    // dialog stays open, so the next save must start again from the form's own "HH:mm" values.
+    const formValue = structuredClone(this.form.value);
     Object.assign(this.selectedDeviceUser, formValue);
     Object.assign(this.selectedAssignedSite, formValue);
     this.applyLeaderAndTags(formValue.tags);

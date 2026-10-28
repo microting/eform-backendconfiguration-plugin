@@ -42,11 +42,13 @@ export class BackendConfigurationPnArchiveFoldersService {
    * What the caller may do in Arkiv (admin or Leder). Not cached by the server. Do NOT rely on an empty completion
    * or an error for an older plugin without the endpoint: against the host a 404 (or the SPA's HTML 200) is retried
    * 5 x 15 s and then neither emits nor completes. ArchiveCapabilitiesService bounds the wait (timeout + role fallback).
+   * `handle(false)`: like the app, the capabilities call never announces its own 403 on forbidden$ (that stream makes
+   * ArchiveCapabilitiesService reload this very call).
    */
   getCapabilities(): Observable<OperationDataResult<ArchiveCapabilitiesModel>> {
     return this.apiBaseService
       .get<ArchiveCapabilitiesModel>(BackendConfigurationPnArchiveFoldersMethods.Capabilities)
-      .pipe(this.accountDisabled.handle());
+      .pipe(this.accountDisabled.handle(false));
   }
 
   createFolder(model: ArchiveFolderCreateModel): Observable<OperationDataResult<ArchiveFolderModel>> {

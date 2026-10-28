@@ -116,6 +116,10 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
 
 
   ngOnInit() {
+    // Until index-device-user answers, the role decides (the contract's zero-row rule), so a create dialog opened
+    // before the list arrives still shows the Leder toggle and worker groups to an admin.
+    this.store.select(selectCurrentUserIsAdmin).pipe(take(1))
+      .subscribe(isAdmin => this.callerFlags$.next(readCallerFlags([], isAdmin)));
     // Resolve the page title once menus hydrate; recompute when they emit.
     // getTitleByUrl reads from the menu store internally — we drive it from
     // the menu emission instead of calling it per template change-detection.
