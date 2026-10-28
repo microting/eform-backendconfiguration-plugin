@@ -104,6 +104,15 @@ export class BackendConfigurationArchivePage {
     await this.dialog().locator(`#${id}`).click({ timeout: UI_TIMEOUT });
   }
 
+  /**
+   * Exactly one dialog, opened or opening and not closing: Material adds `mdc-dialog--open` (with `--opening`) when
+   * the open animation starts and removes it when the dialog starts to close. A second dialog fails the count.
+   */
+  async expectOneOpenDialog(what: string): Promise<void> {
+    await expect(this.dialog(), `exactly one dialog: ${what}`).toHaveCount(1, { timeout: UI_TIMEOUT });
+    await expect(this.dialog(), `${what} is opened or opening, not closing`).toHaveClass(/mdc-dialog--open/, { timeout: UI_TIMEOUT });
+  }
+
   /** Opens the etiketter dialog (Tags) from the archive list. */
   async openTagsDialog(): Promise<void> {
     await this.page.locator('#manageTagsBtn').click({ timeout: UI_TIMEOUT });

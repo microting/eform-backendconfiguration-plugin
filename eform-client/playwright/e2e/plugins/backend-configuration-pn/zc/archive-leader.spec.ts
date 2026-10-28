@@ -9,7 +9,7 @@ import {
   ADMIN_EMAIL, ADMIN_PASSWORD, apiToken, BASE_URL, call, callOk, createUserInNewGroup, loginAs,
 } from '../archive-api-helpers';
 import { tinyPdf } from '../inbox-hub-seed';
-import { openRowActionMenu } from '../row-action-menu';
+import { clickMenuItem, openRowActionMenu } from '../row-action-menu';
 import {
   API_TIMEOUT, ignoreUnhandledRejections, leaveCurrentDocument, SLOW_API_TIMEOUT, UI_TIMEOUT, waitForApiResponse,
 } from '../wait-helpers';
@@ -231,8 +231,8 @@ test.describe.serial('Leder in Arkiv and Medarbejdere', () => {
     await expect(row).toHaveCount(1, { timeout: UI_TIMEOUT });
     const fileId = await row.getAttribute('data-file-id', { timeout: UI_TIMEOUT });
     const item = await openRowActionMenu(page, row, `document ${doc}`);
-    await item('deleteFileBtn').click({ timeout: UI_TIMEOUT });
-    await expect(archive.dialog()).toHaveCount(1, { timeout: UI_TIMEOUT });
+    await clickMenuItem(page, item('deleteFileBtn'), `Slet on the row of ${doc}`);
+    await archive.expectOneOpenDialog(`the delete dialog of ${doc}`);
     const deleted = archive.waitForCall(`deleting ${doc}`, 'DELETE', `${FILES_PATH}/${fileId}`);
     const listed = archive.waitForCall('archive documents after the delete', 'POST', FILES_PATH);
     await archive.clickInDialog('deleteFileBtn');

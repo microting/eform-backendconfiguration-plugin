@@ -1,6 +1,6 @@
 import { Page, Locator, expect } from '@playwright/test';
 import { selectValueInNgSelector } from '../../helper-functions';
-import { openRowActionMenu } from './row-action-menu';
+import { clickMenuItem, openRowActionMenu } from './row-action-menu';
 import {
   API_TIMEOUT,
   ignoreUnhandledRejections,
@@ -338,7 +338,7 @@ export class BackendConfigurationPropertyWorkersPage {
   /** Opens the edit modal for `workerFullName` and waits for its form to settle. */
   async openEditModalFor(workerFullName: string): Promise<void> {
     const menuItem = await openRowActionMenu(this.page, this.workerRow(workerFullName), `Device-user row "${workerFullName}"`);
-    await menuItem('editDeviceUserBtn').click({ timeout: UI_TIMEOUT });
+    await clickMenuItem(this.page, menuItem('editDeviceUserBtn'), `Edit on the row of ${workerFullName}`);
     await this.saveEditBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
     await expect(this.page.locator('form[data-form-ready]')).toHaveAttribute('data-form-ready', 'true', {
       timeout: 30000,

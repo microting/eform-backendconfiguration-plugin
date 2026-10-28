@@ -7,7 +7,7 @@ import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {ToastrService} from 'ngx-toastr';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {saveAs} from 'file-saver';
-import {Observable, Subscription, concat, filter, toArray, zip} from 'rxjs';
+import {Observable, Subscription, concat, filter, take, toArray, zip} from 'rxjs';
 import {CommonDictionaryModel, DeleteModalSettingModel, Paged, SharedTagModel} from 'src/app/common/models';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {DeleteModalComponent} from 'src/app/common/modules/eform-shared/components';
@@ -538,7 +538,10 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** The shared delete confirmation; `onDelete` gets a function that closes it. */
+  /**
+   * The shared delete confirmation; `onDelete` gets a function that closes it.
+   * take(1): stream() re-emits on a language change and must not open a second dialog.
+   */
   private openDeleteModal(options: {
     model: FilesModel | ArchiveFolderModel; headerKey: string; fieldKey: string; field: string;
     cancelButtonId: string; deleteButtonId: string; onDelete: (close: () => void) => void;
@@ -546,7 +549,7 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
     this.translatesSub$ = zip(
       this.translateService.stream(options.headerKey),
       this.translateService.stream(options.fieldKey),
-    ).subscribe(([headerText, fieldHeader]) => {
+    ).pipe(take(1)).subscribe(([headerText, fieldHeader]) => {
       const settings: DeleteModalSettingModel = {
         model: options.model,
         settings: {
