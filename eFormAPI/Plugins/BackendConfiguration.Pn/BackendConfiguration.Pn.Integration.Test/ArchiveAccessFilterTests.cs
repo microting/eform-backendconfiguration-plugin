@@ -26,7 +26,7 @@ public class ArchiveAccessFilterTests
     private static IArchiveAccessService Access(bool disabled)
     {
         var access = Substitute.For<IArchiveAccessService>();
-        access.GetContextAsync().Returns(new ArchiveAccessContext(disabled, false, []));
+        access.GetContextAsync().Returns(disabled ? ArchiveAccessContext.Disabled : ArchiveTestData.User());
         return access;
     }
 

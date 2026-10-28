@@ -24,6 +24,7 @@ SOFTWARE.
 
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models;
+using BackendConfiguration.Pn.Services.Leder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Microting.EformAngularFrontendBase.Infrastructure.Data;
@@ -62,6 +63,7 @@ public class BackendConfigurationAssignmentWorkerService(
     BaseDbContext baseDbContext,
     ILogger<BackendConfigurationAssignmentWorkerService> logger,
     Services.CalendarAssignmentReconciliation.ICalendarAssignmentReconciliationService reconciliationService,
+    ILederService leder,
     // #1384 — optional so the fixtures that build this by hand keep working.
     Services.TaskTranslation.ITaskTranslationFiller taskTranslationFiller = null)
     : IBackendConfigurationAssignmentWorkerService
@@ -316,6 +318,11 @@ public class BackendConfigurationAssignmentWorkerService(
                         BackendConfigurationAssignmentWorkerServiceHelper.WorkerStillAssignedToEventsCannotDeleteKey));
             }
 
+            // M6: revoke after every refusal, before any delete (SiteDelete removes the SiteWorker the login is found by).
+            // Not in a transaction with the cleanup: if the delete then fails, the flag is gone and an admin re-ticks Leder.
+            var workerEmail = await ReadWorkerEmailAsync(sdkDbContext, site).ConfigureAwait(false);
+            await RevokeLederOfWorkerAsync(workerEmail).ConfigureAwait(false);
+
             foreach (var propertyAssignment in propertyWorkers)
             {
                 var property = await backendConfigurationPnDbContext.Properties
@@ -400,6 +407,32 @@ public class BackendConfigurationAssignmentWorkerService(
             logger.LogTrace(e.StackTrace);
             return new OperationResult(false,
                 $"{backendConfigurationLocalizationService.GetString("ErrorWhilDeleteAssignmentsProperties")}: {e.Message}");
+        }
+    }
+
+    /// <summary>The address of the site's live worker (lowest SiteWorker id, deterministic on legacy data); null without a site.</summary>
+    private static async Task<string> ReadWorkerEmailAsync(Microting.eForm.Infrastructure.MicrotingDbContext sdkDbContext,
+        Microting.eForm.Infrastructure.Data.Entities.Site site) =>
+        site == null
+            ? null
+            : await sdkDbContext.SiteWorkers
+                .Where(sw => sw.SiteId == site.Id && sw.WorkflowState != Constants.WorkflowStates.Removed)
+                .OrderBy(sw => sw.Id)
+                .Select(sw => sw.Worker.Email)
+                .FirstOrDefaultAsync().ConfigureAwait(false);
+
+    /// <summary>
+    /// M6: removes the Leder flag of the login <paramref name="workerEmail"/> resolves to (hygiene: liveness would ignore
+    /// it anyway). Live worker addresses are unique, so that login was this worker's only one. Its groups are untouched.
+    /// </summary>
+    private async Task RevokeLederOfWorkerAsync(string workerEmail)
+    {
+        var login = await BackendConfigurationAssignmentWorkerServiceHelper
+            .FindLoginByStoredAddressAsync(userManager, workerEmail).ConfigureAwait(false);
+        if (login != null)
+        {
+            await LederAssignmentStore.RevokeAsync(backendConfigurationPnDbContext, login.Id, userService.UserId)
+                .ConfigureAwait(false);
         }
     }
 
@@ -496,8 +529,18 @@ public class BackendConfigurationAssignmentWorkerService(
             var chemistrySiteIds = await LoadChemistryAccess(siteIds).ConfigureAwait(false);
             var halebidSiteIds = await LoadHalebidAccess(siteIds).ConfigureAwait(false);
 
+            // Leder read-back (contract "Medarbejdere"): once per page, never per row.
+            var canSetLeder = userService.IsAdmin();
+            var canEditWorkerTags = await leder.IsLederOrAdminAsync().ConfigureAwait(false);
+            var lederLoginIds = await LederAssignmentStore.LiveEformUserIdsAsync(backendConfigurationPnDbContext)
+                .ConfigureAwait(false);
+            var adminRoleLoginIds = await BackendConfigurationAssignmentWorkerServiceHelper
+                .AdminRoleUserIdsAsync(baseDbContext).ConfigureAwait(false);
+
             foreach (var deviceUserModel in deviceUsers)
             {
+                deviceUserModel.CanSetLeder = canSetLeder;
+                deviceUserModel.CanEditWorkerTags = canEditWorkerTags;
                 unitsBySiteId.TryGetValue(deviceUserModel.SiteId, out var unit);
                 if (unit != null)
                 {
@@ -589,23 +632,7 @@ public class BackendConfigurationAssignmentWorkerService(
                                                                   && workerTagIds.Contains(wt.TagId)))
                     .CountAsync().ConfigureAwait(false);
 
-                if (deviceUserModel.WorkerEmail != null && !deviceUserModel.WorkerEmail.Contains("invalid"))
-                {
-                    var user = await userService.GetByUsernameAsync(deviceUserModel.WorkerEmail!).ConfigureAwait(false);
-                    if (user != null)
-                    {
-                        // deviceUserModel.IsBackendUser = true;
-                        // lookup the security groups based on the user joined with the security group users and security groups
-                        var securityRoles = await (from eformUser in baseDbContext.Users
-                            join securityGroupUser in baseDbContext.SecurityGroupUsers on eformUser.Id equals securityGroupUser.EformUserId
-                            join securityGroup in baseDbContext.SecurityGroups on securityGroupUser.SecurityGroupId equals securityGroup.Id
-                            where eformUser.Id == user.Id && securityGroup.WorkflowState != Constants.WorkflowStates.Removed
-                            select securityGroup.Name).ToListAsync().ConfigureAwait(false);
-                        // deviceUserModel.IsBackendUser = securityRoles.Any(x => x.Contains("eForm users"));
-                        deviceUserModel.IsBackendUser = deviceUserModel.WebAccessEnabled = securityRoles.Any(x => x.Contains("eForm users"));
-                        deviceUserModel.ArchiveEnabled = securityRoles.Any(x => x.Contains("Kun arkiv"));
-                    }
-                }
+                await ReadBackLoginAsync(deviceUserModel, lederLoginIds, adminRoleLoginIds).ConfigureAwait(false);
 
                 // deviceUserModel.IsBackendUser = deviceUserModel.IsLocked;
 
@@ -684,6 +711,57 @@ public class BackendConfigurationAssignmentWorkerService(
         ILookup<string, AppUserVersions> ByEmail);
 
     /// <summary>
+    /// The login read-back of one Medarbejdere row: Web/Arkiv (live groups) and the Leder fields (contract "Medarbejdere").
+    /// One group query per row, as before; the Leder and admin-role sets are loaded once per page by the caller.
+    /// Without a listed address or a resolved login the row keeps IsLeader = null.
+    /// </summary>
+    private async Task ReadBackLoginAsync(DeviceUserModel deviceUserModel, HashSet<int> lederLoginIds,
+        HashSet<int> adminRoleLoginIds)
+    {
+        if (!LederSaveRules.IsListedLoginAddress(deviceUserModel.WorkerEmail))
+        {
+            return;
+        }
+
+        // Read-only lookup: IUserService.GetByUsernameAsync renames and saves a login it finds only by e-mail, so a list
+        // load would mutate logins (and let a non-admin rename a Leder's username).
+        var user = await BackendConfigurationAssignmentWorkerServiceHelper
+            .FindLoginByStoredAddressAsync(userManager, deviceUserModel.WorkerEmail).ConfigureAwait(false);
+        if (user == null)
+        {
+            return;
+        }
+
+        // Removed groups and memberships are read too: only the managed rule (IsPluginManagedLogin) counts them. Web/Arkiv
+        // and IsAdminLogin use live memberships (Helper.IsLiveMembership), the same rule as the save's M5/H2 decisions and IsAdminAsync.
+        var groups = await (from securityGroupUser in baseDbContext.SecurityGroupUsers
+            join securityGroup in baseDbContext.SecurityGroups on securityGroupUser.SecurityGroupId equals securityGroup.Id
+            where securityGroupUser.EformUserId == user.Id
+            select new
+            {
+                securityGroup.Name, GroupWorkflowState = securityGroup.WorkflowState,
+                MembershipWorkflowState = securityGroupUser.WorkflowState
+            }).ToListAsync().ConfigureAwait(false);
+        var liveNames = groups
+            .Where(x => BackendConfigurationAssignmentWorkerServiceHelper.IsLiveMembership(
+                x.MembershipWorkflowState, x.GroupWorkflowState))
+            .Select(x => x.Name).ToList();
+        deviceUserModel.IsBackendUser = deviceUserModel.WebAccessEnabled =
+            liveNames.Contains(BackendConfigurationAssignmentWorkerServiceHelper.EformUsersSecurityGroupName);
+        deviceUserModel.ArchiveEnabled =
+            liveNames.Contains(BackendConfigurationAssignmentWorkerServiceHelper.KunArkivSecurityGroupName);
+
+        var allNames = groups.Select(x => x.Name);
+        var hasAdminRole = adminRoleLoginIds.Contains(user.Id);
+        deviceUserModel.IsLeader = lederLoginIds.Contains(user.Id);
+        deviceUserModel.LoginIsManaged = BackendConfigurationAssignmentWorkerServiceHelper
+            .IsPluginManagedLogin(user.Id, hasAdminRole, allNames);
+        deviceUserModel.IsAdminLogin = hasAdminRole || liveNames.Contains(
+            BackendConfigurationAssignmentWorkerServiceHelper.EformAdminsSecurityGroupName,
+            StringComparer.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
     /// Loads the logins of every listed worker in one query. Matched the way
     /// <c>IUserService.GetByUsernameAsync</c> matches: UserName first, then Email,
     /// case-insensitively like the MySQL collation.
@@ -720,8 +798,8 @@ public class BackendConfigurationAssignmentWorkerService(
 
     private static AppUserVersions FindAppUser(AppUserLookup lookup, string email)
     {
-        // Same skip as the security-group lookup: an "invalid" placeholder email is no login.
-        if (string.IsNullOrWhiteSpace(email) || email.Contains("invalid"))
+        // Same skip as the security-group lookup: a placeholder email is no login.
+        if (!LederSaveRules.IsListedLoginAddress(email))
         {
             return null;
         }
@@ -831,13 +909,17 @@ public class BackendConfigurationAssignmentWorkerService(
 
     private static string NullIfBlank(string value) => string.IsNullOrWhiteSpace(value) ? null : value;
 
+    /// <summary>The caller of a Medarbejdere save (contract "Medarbejdere"); every HTTP save passes one.</summary>
+    private async Task<LederCaller> LederCallerAsync() =>
+        new(userService.IsAdmin(), await leder.IsLederOrAdminAsync().ConfigureAwait(false), userService.UserId);
+
     public async Task<OperationResult> UpdateDeviceUser(DeviceUserModel deviceUserModel)
     {
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(deviceUserModel, core,
             userService.UserId, userService, userManager, backendConfigurationPnDbContext,
             timePlanningDbContext, baseDbContext, logger, itemsPlanningPnDbContext, reconciliationService,
-            taskTranslationFiller);
+            taskTranslationFiller, await LederCallerAsync().ConfigureAwait(false));
 
         return new OperationResult(result.Success, backendConfigurationLocalizationService.GetString(result.Message));
     }
@@ -847,7 +929,8 @@ public class BackendConfigurationAssignmentWorkerService(
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core,
             userService.UserId,
-            timePlanningDbContext, baseDbContext, userService, userManager, reconciliationService, logger);
+            timePlanningDbContext, baseDbContext, userService, userManager, reconciliationService, logger,
+            await LederCallerAsync().ConfigureAwait(false), backendConfigurationPnDbContext);
 
         return new OperationDataResult<int>(result.Success,
             backendConfigurationLocalizationService.GetString(result.Message), result.Model);
@@ -865,6 +948,14 @@ public class BackendConfigurationAssignmentWorkerService(
 
     public async Task<OperationResult> BulkUpdateWorkerTags(WorkerTagsBulkUpdateModel model)
     {
+        // D-L12: changing Medarbejdergrupper is admin/Leder-only on every plugin path.
+        if (!await leder.IsLederOrAdminAsync().ConfigureAwait(false))
+        {
+            logger.LogWarning("BulkUpdateWorkerTags: refused for user {UserId}", userService.UserId);
+            return new OperationResult(false,
+                backendConfigurationLocalizationService.GetString(LederMessages.WorkerTagsRequireLeder));
+        }
+
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var result = await WorkerTagsBulkUpdateHelper.BulkUpdate(model, core.DbContextHelper.GetDbContext(),
             reconciliationService, logger).ConfigureAwait(false);

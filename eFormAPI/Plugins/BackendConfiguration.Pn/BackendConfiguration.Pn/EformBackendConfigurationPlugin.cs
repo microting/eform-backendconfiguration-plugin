@@ -199,6 +199,9 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         // Scoped, not transient: the caller's archive context (D7, groups) is resolved once per request and shared
         // by ArchiveAccessFilterAttribute and every archive service in that request.
         services.AddScoped<Services.ArchiveAccess.IArchiveAccessService, Services.ArchiveAccess.ArchiveAccessService>();
+        // Scoped: the Leder check is resolved once per request and shared by the archive access context,
+        // [ArchiveManager] and the Medarbejdere guards.
+        services.AddScoped<Services.Leder.ILederService, Services.Leder.LederService>();
         services.AddTransient<Services.ArchiveFolders.IArchiveFoldersService, Services.ArchiveFolders.ArchiveFoldersService>();
         services.AddTransient<IBackendConfigurationFilesService, BackendConfigurationFilesService>();
         // Singletons: the verifier holds the replay store, the provider caches the customer number.

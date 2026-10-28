@@ -36,7 +36,6 @@ public class BackendConfigurationFilesModel : IArchiveFileRow
 	public string FileName { get; set; }
 	public string FileExtension { get; set; }
 
-	public string FileHash { get; set; }
 	public List<string> Properties { get; set; }
 		= [];
 	public List<CommonTagModel> Tags { get; set; }

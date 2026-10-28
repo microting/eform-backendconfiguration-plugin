@@ -28,7 +28,7 @@ public class BackendConfigurationTagsServiceTests : TestBaseSetup
         var user = Substitute.For<IUserService>();
         user.UserId.Returns(UserId);
         return new BackendConfigurationTagsService(new BackendConfigurationLocalizationService(),
-            NullLogger<BackendConfigurationTagsService>.Instance, db, user);
+            NullLogger<BackendConfigurationTagsService>.Instance, db, user, new FixedArchiveAccess(ArchiveTestData.Admin, db));
     }
 
     private Task<List<FileTag>> RowsAsync(string name) =>

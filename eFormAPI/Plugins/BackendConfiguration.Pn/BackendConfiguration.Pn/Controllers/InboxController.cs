@@ -10,11 +10,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
-using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 
 namespace BackendConfiguration.Pn.Controllers;
 
-[Authorize(Roles = EformRole.Admin)]
+/// <summary>Indbakke and Indstillinger: admins and Leders (D-L3). "Lav ny adresse" stays first-user-only.</summary>
+[Authorize]
+[ArchiveManager]
 [ArchiveAccessFilter]
 [Route("api/backend-configuration-pn/inbox")]
 public class InboxController(IInboxService inbox, IInboxSettingsService settings, IUserService userService,

@@ -25,7 +25,9 @@ public class ArchiveReadableTests : TestBaseSetup
 
     private BackendConfigurationPnDbContext Db => BackendConfigurationPnDbContext!;
 
-    private static ArchiveAccessContext Ctx(int[] groups, bool admin, bool disabled) => new(disabled, admin, groups);
+    /// <summary><paramref name="manage"/> = admin or Leder (CanManage); the rules never read IsAdmin.</summary>
+    private static ArchiveAccessContext Ctx(int[] groups, bool manage, bool disabled) =>
+        new(disabled, false, groups, manage && !disabled);
 
     [SetUp]
     public async Task SeedTree()
@@ -67,20 +69,21 @@ public class ArchiveReadableTests : TestBaseSetup
         yield return new TestCaseData(new[] { G1 }, false, false, new[] { "a", "b", "c", "e", "g", "h", "i" }).SetName("G1_SeesSubfolderOwnAndInherited");
         yield return new TestCaseData(new[] { G2 }, false, false, new[] { "a", "d", "e", "f", "h", "i" }).SetName("G2_SubfolderReplacesParent_OwnAccessDoc");
         yield return new TestCaseData(Array.Empty<int>(), true, false, new[] { "a", "b", "c", "d", "e", "f", "g", "h", "i" }).SetName("Admin_SeesEverything");
+        yield return new TestCaseData(new[] { G2 }, true, false, new[] { "a", "b", "c", "d", "e", "f", "g", "h", "i" }).SetName("Leder_NonAdminWhoManages_SeesEverything");
         yield return new TestCaseData(new[] { G1, G2 }, true, true, Array.Empty<string>()).SetName("DisabledAdmin_SeesNothing");
     }
 
     [TestCaseSource(nameof(Cases))]
-    public async Task Readable_AppliesTheRule(int[] groups, bool admin, bool disabled, string[] expected)
+    public async Task Readable_AppliesTheRule(int[] groups, bool manage, bool disabled, string[] expected)
     {
-        var ctx = Ctx(groups, admin, disabled);
+        var ctx = Ctx(groups, manage, disabled);
         Assert.That(await ReadableNames(ctx), Is.EqualTo(expected.Order().ToList()));
     }
 
     [TestCaseSource(nameof(Cases))]
-    public async Task Readable_MatchesInMemoryRule_ForEveryContext(int[] groups, bool admin, bool disabled, string[] _)
+    public async Task Readable_MatchesInMemoryRule_ForEveryContext(int[] groups, bool manage, bool disabled, string[] _)
     {
-        var ctx = Ctx(groups, admin, disabled);
+        var ctx = Ctx(groups, manage, disabled);
         var folders = await ArchiveFolderSnapshot.LoadAsync(Db);
         var rows = await ArchiveAccessRules.LoadFileRowsAsync(Db, _file.Values.ToList());
         var inMemory = rows.Where(r => ArchiveAccessRules.CanRead(ctx, r.Effective(folders)))

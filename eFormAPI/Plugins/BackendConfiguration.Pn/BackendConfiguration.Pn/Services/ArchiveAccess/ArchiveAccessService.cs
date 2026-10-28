@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using BackendConfiguration.Pn.Services.Leder;
 using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -36,7 +37,7 @@ public interface IArchiveAccessService
     Task<bool> CanReadFolderOrContentsAsync(int folderId, ArchiveAccessContext ctx);
 
     /// <summary>
-    /// The folders the caller sees: all for an admin; for others a folder they can read, or one holding a readable
+    /// The folders the caller sees: all for an admin or Leder; for others a folder they can read, or one holding a readable
     /// document or a visible subfolder — so no readable document is ever unreachable in the tree.
     /// </summary>
     Task<HashSet<int>> VisibleFolderIdsAsync(ArchiveAccessContext ctx, ArchiveFolderSnapshot folders);
@@ -59,6 +60,7 @@ public class ArchiveAccessService(
     IUserService userService,
     IEFormCoreService coreService,
     IWorkerTagMembershipService membership,
+    ILederService leder,
     ILogger<ArchiveAccessService> logger) : IArchiveAccessService
 {
     private Task<ArchiveAccessContext>? _context;
@@ -75,7 +77,7 @@ public class ArchiveAccessService(
     /// D7. Disabled = no current user, <c>EformUser.IsActive == false</c>, or every non-removed SDK worker with the
     /// caller's email is resigned — the same choice as GrpcSiteResolver (#1326): workers ordered by Resigned, the
     /// best one decides, so a re-hired worker whose old resigned row remains is NOT disabled.
-    /// userGroups = live tags of the sites of the non-resigned workers, via IWorkerTagMembershipService.
+    /// userGroups = live tags of the sites CallerSites resolves, via IWorkerTagMembershipService.
     /// </summary>
     private async Task<ArchiveAccessContext> ResolveContextAsync()
     {
@@ -93,31 +95,22 @@ public class ArchiveAccessService(
         var isAdmin = userService.IsAdmin();
         if (string.IsNullOrWhiteSpace(user.Email))
         {
-            return new ArchiveAccessContext(false, isAdmin, []);
+            // No address means no live site: only an admin can manage.
+            return new ArchiveAccessContext(false, isAdmin, [], await leder.IsLederOrAdminAsync(knownLive: false));
         }
 
         var core = await coreService.GetCore();
-        var sdk = core.DbContextHelper.GetDbContext();
-        var workers = await sdk.Workers.AsNoTracking()
-            .Where(w => w.Email == user.Email && w.WorkflowState != Removed)
-            .Select(w => new { w.Id, w.Resigned })
-            .ToListAsync();
-        if (workers.Count > 0 && workers.All(w => w.Resigned))
+        await using var sdk = core.DbContextHelper.GetDbContext();
+        var sites = await CallerSites.ResolveAsync(sdk, user.Email);
+        if (sites.AllWorkersResigned)
         {
             return Disabled(user.Id, "SDK worker is resigned");
         }
 
-        var liveWorkerIds = workers.Where(w => !w.Resigned).Select(w => w.Id).ToList();
-        List<int> siteIds = liveWorkerIds.Count == 0
-            ? []
-            : await sdk.SiteWorkers.AsNoTracking()
-                .Where(sw => sw.WorkerId != null && liveWorkerIds.Contains(sw.WorkerId.Value)
-                             && sw.SiteId != null && sw.WorkflowState != Removed)
-                .Select(sw => sw.SiteId!.Value)
-                .Distinct()
-                .ToListAsync();
-        var groups = await membership.GetTagIdsForSitesAsync(siteIds);
-        return new ArchiveAccessContext(false, isAdmin, groups.ToList());
+        // Asked only for enabled callers; the live-site count we already have is the Leder check's liveness.
+        var canManage = await leder.IsLederOrAdminAsync(knownLive: sites.LiveSiteIds.Count > 0);
+        var groups = await membership.GetTagIdsForSitesAsync(sites.LiveSiteIds);
+        return new ArchiveAccessContext(false, isAdmin, groups.ToList(), canManage);
     }
 
     private ArchiveAccessContext Disabled(int userId, string reason)
@@ -134,7 +127,7 @@ public class ArchiveAccessService(
             return files.Where(_ => false);
         }
 
-        if (ctx.IsAdmin)
+        if (ctx.CanManage)
         {
             return files;
         }
@@ -177,7 +170,7 @@ public class ArchiveAccessService(
             return [];
         }
 
-        if (ctx.IsAdmin)
+        if (ctx.CanManage)
         {
             return folders.All.Select(f => f.Id).ToHashSet();
         }
