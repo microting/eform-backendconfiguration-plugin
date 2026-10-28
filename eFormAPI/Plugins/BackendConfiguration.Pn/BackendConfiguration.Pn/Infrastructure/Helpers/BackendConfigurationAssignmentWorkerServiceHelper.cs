@@ -180,11 +180,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
         UserManager<EformUser> userManager, BaseDbContext baseDbContext, EformUser login,
         IReadOnlyCollection<string> allowedGroupNames)
     {
-        if (login.Id == 1 || await userManager.IsInRoleAsync(login, EformRole.Admin).ConfigureAwait(false))
-        {
-            return false;
-        }
-
+        var hasAdminRole = await userManager.IsInRoleAsync(login, EformRole.Admin).ConfigureAwait(false);
         var groupNames = await (
             from sgu in baseDbContext.SecurityGroupUsers
             join sg in baseDbContext.SecurityGroups on sgu.SecurityGroupId equals sg.Id
@@ -192,8 +188,27 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             select sg.Name
         ).ToListAsync().ConfigureAwait(false);
 
-        return groupNames.All(allowedGroupNames.Contains);
+        return OnlyInGroups(login.Id, hasAdminRole, groupNames, allowedGroupNames);
     }
+
+    /// <summary>The rule of IsOutsideAdminAndOnlyInGroupsAsync (its one place) on data the caller already loaded.</summary>
+    private static bool OnlyInGroups(int loginId, bool hasAdminRole, IEnumerable<string> groupNames,
+        IReadOnlyCollection<string> allowedGroupNames) =>
+        loginId != 1 && !hasAdminRole && groupNames.All(allowedGroupNames.Contains);
+
+    /// <summary>
+    /// IsPluginManagedLoginAsync on data already loaded (the Medarbejdere list, no per-row query):
+    /// <paramref name="groupNames"/> = every group of the login, removed groups included, as the async rule reads them.
+    /// </summary>
+    public static bool IsPluginManagedLogin(int loginId, bool hasAdminRole, IEnumerable<string> groupNames) =>
+        OnlyInGroups(loginId, hasAdminRole, groupNames, PluginManagedSecurityGroupNames);
+
+    /// <summary>The ids of every login with the "admin" role, once per Medarbejdere page (admins are few).</summary>
+    public static async Task<HashSet<int>> AdminRoleUserIdsAsync(BaseDbContext baseDbContext) =>
+        (await baseDbContext.UserRoles
+            .Where(ur => baseDbContext.Roles.Any(r => r.Id == ur.RoleId && r.Name == EformRole.Admin))
+            .Select(ur => ur.UserId)
+            .ToListAsync().ConfigureAwait(false)).ToHashSet();
 
     /// <summary>
     /// Whether <paramref name="userId"/> is an administrator: the "admin" role, or
@@ -437,7 +452,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
     /// 36f3a82c8), so an unguarded call here would make every such worker
     /// uneditable. Returns null for a null/empty email instead of throwing.
     /// </summary>
-    private static async Task<EformUser?> FindLoginWithoutSideEffectsAsync(
+    internal static async Task<EformUser?> FindLoginWithoutSideEffectsAsync(
         UserManager<EformUser> userManager, string? email)
     {
         if (string.IsNullOrEmpty(email))

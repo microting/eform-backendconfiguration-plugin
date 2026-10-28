@@ -3,6 +3,7 @@ using BackendConfiguration.Pn.Services.Leder;
 using eFormCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microting.eForm.Infrastructure.Constants;
 using Microting.EformAngularFrontendBase.Infrastructure.Data;
 using Microting.EformAngularFrontendBase.Infrastructure.Data.Entities.Permissions;
 using Microting.eFormApi.BasePn.Abstractions;
@@ -31,9 +32,16 @@ public static class LederTestData
         await baseDb.SecurityGroups.Where(g => g.Name == name).OrderBy(g => g.Id).Select(g => (int?)g.Id)
             .FirstOrDefaultAsync() ?? await NewGroupAsync(baseDb, name);
 
-    public static async Task AddMemberAsync(BaseDbContext baseDb, int eformUserId, int groupId)
+    /// <summary>Adds the membership; <paramref name="removed"/> stores it soft-deleted (WorkflowState removed).</summary>
+    public static async Task AddMemberAsync(BaseDbContext baseDb, int eformUserId, int groupId, bool removed = false)
     {
-        baseDb.SecurityGroupUsers.Add(new SecurityGroupUser { EformUserId = eformUserId, SecurityGroupId = groupId });
+        var membership = new SecurityGroupUser { EformUserId = eformUserId, SecurityGroupId = groupId };
+        if (removed)
+        {
+            membership.WorkflowState = Constants.WorkflowStates.Removed;
+        }
+
+        baseDb.SecurityGroupUsers.Add(membership);
         await baseDb.SaveChangesAsync();
     }
 

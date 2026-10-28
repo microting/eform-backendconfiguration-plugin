@@ -1,6 +1,10 @@
 #nullable enable
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models;
+using BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker;
+using BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerService;
+using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
+using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
 using BackendConfiguration.Pn.Services.Leder;
 using eFormCore;
 using Microsoft.AspNetCore.Identity;
@@ -10,6 +14,8 @@ using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+using NSubstitute;
+using PnEntities = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
@@ -122,5 +128,68 @@ public abstract class LederWorkerTestBase : TestBaseSetup
         await MicrotingDbContext!.Tags.AddAsync(tag);
         await MicrotingDbContext.SaveChangesAsync();
         return tag.Id;
+    }
+
+    /// <summary>The service as DI builds it; localisation echoes keys so tests assert the key.</summary>
+    protected BackendConfigurationAssignmentWorkerService Service(IUserService caller, ILederService leder)
+    {
+        var localization = Substitute.For<IBackendConfigurationLocalizationService>();
+        localization.GetString(Arg.Any<string>()).Returns(ci => ci.Arg<string>());
+        return new BackendConfigurationAssignmentWorkerService(LederTestData.CoreHelper(Core), UserManager, caller,
+            BackendConfigurationPnDbContext!, localization, ItemsPlanningPnDbContext!, TimePlanningPnDbContext!,
+            CaseTemplatePnDbContext!, BaseDbContext, TestContextLogger<BackendConfigurationAssignmentWorkerService>.Instance,
+            Substitute.For<ICalendarAssignmentReconciliationService>(), leder);
+    }
+
+    /// <summary>A caller for the service: the real username lookup plus an id, a JWT admin flag and "is first user".</summary>
+    protected IUserService ServiceCaller(int userId, bool isAdmin)
+    {
+        var caller = IdentityTestUtils.CreateRealUserService(BaseDbContext, UserManager);
+        caller.UserId.Returns(userId);
+        caller.IsAdmin().Returns(isAdmin);
+        caller.GetFirstUserIdInDb().Returns(Task.FromResult(userId));
+        return caller;
+    }
+
+    /// <summary>The real Leder check for <paramref name="caller"/>.</summary>
+    protected LederService RealLeder(IUserService caller) =>
+        new(caller, BaseDbContext, BackendConfigurationPnDbContext!, LederTestData.CoreHelper(Core));
+
+    /// <summary>The service called by the actor as a JWT admin (and first user).</summary>
+    protected BackendConfigurationAssignmentWorkerService AdminService() =>
+        Service(ServiceCaller(ActorId, isAdmin: true), LederTestData.Leder(true));
+
+    /// <summary>The Medarbejdere list as the actor sees it, with the given caller flags.</summary>
+    protected async Task<List<DeviceUserModel>> ListAsync(bool callerIsAdmin = true, bool callerIsLeder = true,
+        bool showResigned = false)
+    {
+        var result = await Service(ServiceCaller(ActorId, callerIsAdmin), LederTestData.Leder(callerIsAdmin || callerIsLeder))
+            .IndexDeviceUser(new PropertyWorkersFiltrationModel { ShowResigned = showResigned });
+        Assert.That(result.Success, Is.True, result.Message);
+        return result.Model;
+    }
+
+    protected static DeviceUserModel Row(List<DeviceUserModel> rows, Worker w) => rows.Single(r => r.SiteId == w.SiteId);
+
+    protected async Task<PnEntities.Property> PropertyAsync()
+    {
+        var property = new PnEntities.Property
+        {
+            Name = $"Example Property {Guid.NewGuid()}", ItemPlanningTagId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = ActorId, UpdatedByUserId = ActorId
+        };
+        await property.Create(BackendConfigurationPnDbContext!);
+        return property;
+    }
+
+    protected async Task<PnEntities.PropertyWorker> LinkAsync(int propertyId, int siteId)
+    {
+        var link = new PnEntities.PropertyWorker
+        {
+            PropertyId = propertyId, WorkerId = siteId, TaskManagementEnabled = false,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = ActorId, UpdatedByUserId = ActorId
+        };
+        await link.Create(BackendConfigurationPnDbContext!);
+        return link;
     }
 }
