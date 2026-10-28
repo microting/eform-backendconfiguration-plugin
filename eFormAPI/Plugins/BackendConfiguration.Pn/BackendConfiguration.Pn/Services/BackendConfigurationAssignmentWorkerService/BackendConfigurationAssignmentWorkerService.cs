@@ -318,8 +318,10 @@ public class BackendConfigurationAssignmentWorkerService(
                         BackendConfigurationAssignmentWorkerServiceHelper.WorkerStillAssignedToEventsCannotDeleteKey));
             }
 
-            // M6: the worker's address, read before the SDK site (and its SiteWorker) is removed below.
+            // M6: revoke after every refusal, before any delete (SiteDelete removes the SiteWorker the login is found by).
+            // Not in a transaction with the cleanup: if the delete then fails, the flag is gone and an admin re-ticks Leder.
             var workerEmail = await ReadWorkerEmailAsync(sdkDbContext, site).ConfigureAwait(false);
+            await RevokeLederOfWorkerAsync(workerEmail).ConfigureAwait(false);
 
             foreach (var propertyAssignment in propertyWorkers)
             {
@@ -394,10 +396,6 @@ public class BackendConfigurationAssignmentWorkerService(
                     logger.LogError(siteDeleteEx, "Delete: core.SiteDelete failed for site MicrotingUid {Uid}", site.MicrotingUid);
                 }
             }
-
-            // M6, deliberately last and outside any transaction with the cleanup above: a delete that fails earlier
-            // keeps the flag, which stays inert (the worker's login is no live Leder) and is revoked on a retry.
-            await RevokeLederOfWorkerAsync(workerEmail).ConfigureAwait(false);
 
             return new OperationResult(true,
                 backendConfigurationLocalizationService.GetString("SuccessfullyDeleteAssignmentsProperties"));
@@ -725,14 +723,17 @@ public class BackendConfigurationAssignmentWorkerService(
             return;
         }
 
-        var user = await userService.GetByUsernameAsync(deviceUserModel.WorkerEmail!).ConfigureAwait(false);
+        // Read-only lookup: IUserService.GetByUsernameAsync renames and saves a login it finds only by e-mail, so a list
+        // load would mutate logins (and let a non-admin rename a Leder's username).
+        var user = await BackendConfigurationAssignmentWorkerServiceHelper
+            .FindLoginByStoredAddressAsync(userManager, deviceUserModel.WorkerEmail).ConfigureAwait(false);
         if (user == null)
         {
             return;
         }
 
-        // Removed groups and memberships are read too (the managed/admin rules count them); Web/Arkiv use the shared
-        // login-access rule (Helper.IsLiveMembership + the EformUsers/KunArkiv group-name constants), the same one the save's M5/H2 decisions use.
+        // Removed groups and memberships are read too: only the managed rule (IsPluginManagedLogin) counts them. Web/Arkiv
+        // and IsAdminLogin use live memberships (Helper.IsLiveMembership), the same rule as the save's M5/H2 decisions and IsAdminAsync.
         var groups = await (from securityGroupUser in baseDbContext.SecurityGroupUsers
             join securityGroup in baseDbContext.SecurityGroups on securityGroupUser.SecurityGroupId equals securityGroup.Id
             where securityGroupUser.EformUserId == user.Id
@@ -755,7 +756,7 @@ public class BackendConfigurationAssignmentWorkerService(
         deviceUserModel.IsLeader = lederLoginIds.Contains(user.Id);
         deviceUserModel.LoginIsManaged = BackendConfigurationAssignmentWorkerServiceHelper
             .IsPluginManagedLogin(user.Id, hasAdminRole, allNames);
-        deviceUserModel.IsAdminLogin = hasAdminRole || allNames.Contains(
+        deviceUserModel.IsAdminLogin = hasAdminRole || liveNames.Contains(
             BackendConfigurationAssignmentWorkerServiceHelper.EformAdminsSecurityGroupName,
             StringComparer.OrdinalIgnoreCase);
     }

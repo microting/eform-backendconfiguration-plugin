@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eForm.Infrastructure.Data.Entities;
+using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
@@ -191,5 +192,34 @@ public abstract class LederWorkerTestBase : TestBaseSetup
         };
         await link.Create(BackendConfigurationPnDbContext!);
         return link;
+    }
+
+    /// <summary>An active event (Status true, live) on <paramref name="propertyId"/> naming the site directly.</summary>
+    protected async Task ActiveEventNamingAsync(int propertyId, int siteId)
+    {
+        var area = new PnEntities.Area
+        {
+            Type = AreaTypesEnum.Type1, ItemPlanningTagId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = ActorId, UpdatedByUserId = ActorId
+        };
+        await area.Create(BackendConfigurationPnDbContext!);
+        var areaRule = new PnEntities.AreaRule
+        {
+            AreaId = area.Id, PropertyId = propertyId, EformId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = ActorId, UpdatedByUserId = ActorId
+        };
+        await areaRule.Create(BackendConfigurationPnDbContext!);
+        var arp = new PnEntities.AreaRulePlanning
+        {
+            AreaRuleId = areaRule.Id, PropertyId = propertyId, AreaId = area.Id, ItemPlanningId = 0,
+            StartDate = DateTime.UtcNow.Date, Status = true, RepeatType = 2, RepeatEvery = 1,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = ActorId, UpdatedByUserId = ActorId
+        };
+        await arp.Create(BackendConfigurationPnDbContext!);
+        await new PnEntities.PlanningSite
+        {
+            AreaRulePlanningsId = arp.Id, SiteId = siteId, AreaId = area.Id, AreaRuleId = areaRule.Id,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = ActorId, UpdatedByUserId = ActorId
+        }.Create(BackendConfigurationPnDbContext!);
     }
 }

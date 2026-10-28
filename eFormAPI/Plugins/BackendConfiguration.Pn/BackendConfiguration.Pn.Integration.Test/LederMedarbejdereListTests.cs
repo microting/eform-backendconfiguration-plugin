@@ -3,6 +3,7 @@ using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models;
 using BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker;
 using BackendConfiguration.Pn.Services.Leder;
+using Microsoft.EntityFrameworkCore;
 using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 
 namespace BackendConfiguration.Pn.Integration.Test;
@@ -41,15 +42,55 @@ public class LederMedarbejdereListTests : LederWorkerTestBase
         Assert.That(Row(rows, never).IsLeader, Is.False);
     }
 
-    [Test]
-    public async Task UnlistedInvalidAddress_IsNotLookedUp_ReadsUnknown()
+    private async Task<string> StoredWorkerAddressAsync(Worker w)
     {
-        // Create replaces an empty address with an "...@microting.invalid" one; the list never looks that up.
-        var invalidAddress = await CreateWorkerAsync(web: false, archive: false, email: "");
+        await using var sdkDbContext = Core.DbContextHelper.GetDbContext();
+        return await sdkDbContext.SiteWorkers.AsNoTracking()
+            .Where(sw => sw.SiteId == w.SiteId)
+            .OrderBy(sw => sw.Id)
+            .Select(sw => sw.Worker.Email)
+            .FirstAsync();
+    }
 
-        var row = Row(await ListAsync(), invalidAddress);
+    [Test]
+    public async Task EmptyAddress_IsNotLookedUp_ReadsUnknown()
+    {
+        // Create stores an empty address as it is (only UpdateDeviceUser generates "...@microting.invalid").
+        var noAddress = await CreateWorkerAsync(web: false, archive: false, email: "");
+        Assert.That(await StoredWorkerAddressAsync(noAddress), Is.Empty, "precondition: the stored SDK worker address");
 
-        Assert.That(row.WorkerEmail, Does.Contain("invalid"));
+        var row = Row(await ListAsync(), noAddress);
+
+        Assert.That(row.WorkerEmail, Is.Empty);
+        Assert.That((row.IsLeader, row.LoginIsManaged, row.IsAdminLogin), Is.EqualTo(((bool?)null, false, false)));
+    }
+
+    [Test]
+    public async Task InvalidPlaceholderAddress_IsNotLookedUp_EvenWithALoginAtIt()
+    {
+        var w = await CreateWorkerAsync(web: false, archive: false, email: "");
+        var placeholder = $"user_{Guid.NewGuid():N}@microting.invalid";
+        await using (var sdkDbContext = Core.DbContextHelper.GetDbContext())
+        {
+            var worker = await sdkDbContext.SiteWorkers.Where(sw => sw.SiteId == w.SiteId).OrderBy(sw => sw.Id)
+                .Select(sw => sw.Worker).FirstAsync();
+            worker.Email = placeholder;
+            await sdkDbContext.SaveChangesAsync();
+        }
+
+        // A Leder login at that very address: the list must still not resolve it.
+        var login = new EformUser
+        {
+            Email = placeholder, UserName = placeholder, FirstName = "Jane", LastName = "Doe", Locale = "da",
+            EmailConfirmed = true, IsActive = true, TimeZone = "Europe/Copenhagen", Formats = "de-DE"
+        };
+        Assert.That((await UserManager.CreateAsync(login)).Succeeded, Is.True);
+        await LederAssignmentStore.GrantAsync(BackendConfigurationPnDbContext!, login.Id, ActorId);
+        Assert.That(await StoredWorkerAddressAsync(w), Is.EqualTo(placeholder), "precondition: the stored SDK worker address");
+
+        var row = Row(await ListAsync(), w);
+
+        Assert.That(row.WorkerEmail, Is.EqualTo(placeholder));
         Assert.That((row.IsLeader, row.LoginIsManaged, row.IsAdminLogin), Is.EqualTo(((bool?)null, false, false)));
     }
 
@@ -82,6 +123,23 @@ public class LederMedarbejdereListTests : LederWorkerTestBase
         // Same as IsPluginManagedLoginAsync, which reads every membership regardless of WorkflowState.
         Assert.That(row.LoginIsManaged, Is.False);
         Assert.That(row.WebAccessEnabled, Is.True);
+    }
+
+    [Test]
+    public async Task RemovedEformAdminsMembership_ListsAsNotAdminLogin()
+    {
+        // IsAdminLogin follows IsAdminAsync (live memberships only); LoginIsManaged still counts the removed membership,
+        // as IsPluginManagedLoginAsync does.
+        var w = await CreateWorkerAsync(web: true);
+        await LederTestData.AddMemberAsync(BaseDbContext, (await LoginOfAsync(w)).Id,
+            await LederTestData.GroupByNameAsync(BaseDbContext,
+                BackendConfigurationAssignmentWorkerServiceHelper.EformAdminsSecurityGroupName), removed: true);
+
+        var row = Row(await ListAsync(), w);
+
+        Assert.That(row.IsAdminLogin, Is.False);
+        Assert.That(row.LoginIsManaged, Is.False, "a removed foreign membership counts against managed");
+        Assert.That((row.WebAccessEnabled, row.ArchiveEnabled, row.IsLeader), Is.EqualTo((true, false, (bool?)false)));
     }
 
     [Test]
@@ -124,5 +182,21 @@ public class LederMedarbejdereListTests : LederWorkerTestBase
         var byAdmin = await AdminService().UpdateDeviceUser(row);
         Assert.That(byAdmin.Success, Is.True, byAdmin.Message);
         Assert.That(await IsLederAsync(login.Id), Is.True);
+    }
+
+    [Test]
+    public async Task ListByNonAdmin_DoesNotRenameALederLogin_FoundOnlyByEmail()
+    {
+        // The read-back is read-only: IUserService.GetByUsernameAsync would rename and save a login matched by e-mail only.
+        var w = await CreateWorkerAsync(isLeader: true);
+        var login = await UserManager.FindByIdAsync((await LoginOfAsync(w)).Id.ToString());
+        var otherUserName = NewEmail();
+        Assert.That((await UserManager.SetUserNameAsync(login!, otherUserName)).Succeeded, Is.True);
+        Assert.That((await LoginOfAsync(w)).UserName, Is.EqualTo(otherUserName), "precondition: only the e-mail matches");
+
+        var row = Row(await ListAsync(callerIsAdmin: false, callerIsLeder: false), w);
+
+        Assert.That((await LoginOfAsync(w)).UserName, Is.EqualTo(otherUserName), "a list load never renames a login");
+        Assert.That(row.IsLeader, Is.True, "the e-mail match still resolves the login");
     }
 }

@@ -226,4 +226,34 @@ public class LederServiceTests : TestBaseSetup
         Assert.That(await BackendConfigurationAssignmentWorkerServiceHelper.IsAdminAsync(BaseDbContext, group.Id), Is.True);
         Assert.That(await BackendConfigurationAssignmentWorkerServiceHelper.IsAdminAsync(BaseDbContext, plain.Id), Is.False);
     }
+
+    [Test]
+    public async Task RemovedEformAdminsMembership_IsNotAdmin_NorLeder()
+    {
+        // IsAdminAsync applies IsLiveMembership's rule: a soft-deleted "eForm admins" membership grants nothing.
+        var login = await LederTestData.LoginAsync(BaseDbContext, _userManager);
+        await LederTestData.AddMemberAsync(BaseDbContext, login.Id,
+            await LederTestData.GroupByNameAsync(BaseDbContext,
+                BackendConfigurationAssignmentWorkerServiceHelper.EformAdminsSecurityGroupName), removed: true);
+
+        Assert.That(await BackendConfigurationAssignmentWorkerServiceHelper.IsAdminAsync(BaseDbContext, login.Id), Is.False);
+        Assert.That(await Service(login.Id).IsLederOrAdminAsync(), Is.False);
+    }
+
+    [Test]
+    public async Task LiveMembership_OfARemovedEformAdminsGroup_IsNotAdmin()
+    {
+        // The live "eForm admins" group keeps the lowest id, so the other tests' GroupByNameAsync never picks the removed one.
+        _ = await LederTestData.GroupByNameAsync(BaseDbContext,
+            BackendConfigurationAssignmentWorkerServiceHelper.EformAdminsSecurityGroupName);
+        var removedGroupId = await LederTestData.NewGroupAsync(BaseDbContext,
+            BackendConfigurationAssignmentWorkerServiceHelper.EformAdminsSecurityGroupName);
+        await BaseDbContext.SecurityGroups.Where(g => g.Id == removedGroupId)
+            .ExecuteUpdateAsync(x => x.SetProperty(g => g.WorkflowState, Constants.WorkflowStates.Removed));
+        var login = await LederTestData.LoginAsync(BaseDbContext, _userManager);
+        await LederTestData.AddMemberAsync(BaseDbContext, login.Id, removedGroupId);
+
+        Assert.That(await BackendConfigurationAssignmentWorkerServiceHelper.IsAdminAsync(BaseDbContext, login.Id), Is.False);
+        Assert.That(await Service(login.Id).IsLederOrAdminAsync(), Is.False);
+    }
 }
