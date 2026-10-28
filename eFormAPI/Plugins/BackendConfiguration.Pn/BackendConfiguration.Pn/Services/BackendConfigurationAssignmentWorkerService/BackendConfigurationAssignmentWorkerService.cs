@@ -498,6 +498,17 @@ public class BackendConfigurationAssignmentWorkerService(
             var timeRegistrationEnabledSites =await
                 timePlanningDbContext.AssignedSites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
 
+            // The Compliance app reports its version to Microting on every sync; fetch it
+            // here, as Units.eFormVersion is otherwise only written on a case event.
+            try
+            {
+                await core.Advanced_UnitsRefreshFromRemote().ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                logger.LogWarning(e, "IndexDeviceUser: refreshing the unit versions failed");
+            }
+
             // One query per source for the whole page, not one per worker (#1335).
             var siteIds = deviceUsers.Select(x => x.SiteId).ToList();
             var unitsBySiteId = (await sdkDbContext.Units
