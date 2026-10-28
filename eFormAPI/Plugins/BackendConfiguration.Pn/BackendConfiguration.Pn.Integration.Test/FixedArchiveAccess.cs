@@ -1,5 +1,6 @@
 #nullable enable
 using BackendConfiguration.Pn.Services.ArchiveAccess;
+using BackendConfiguration.Pn.Services.Leder;
 using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eFormApi.BasePn.Abstractions;
@@ -14,7 +15,8 @@ namespace BackendConfiguration.Pn.Integration.Test;
 /// </summary>
 public sealed class FixedArchiveAccess(ArchiveAccessContext ctx, BackendConfigurationPnDbContext db, params int[] liveGroups)
     : ArchiveAccessService(db, Substitute.For<IUserService>(), Substitute.For<IEFormCoreService>(),
-        Substitute.For<IWorkerTagMembershipService>(), NullLogger<ArchiveAccessService>.Instance)
+        Substitute.For<IWorkerTagMembershipService>(), Substitute.For<ILederService>(),
+        NullLogger<ArchiveAccessService>.Instance)
 {
     public ArchiveAccessContext Context { get; set; } = ctx;
 

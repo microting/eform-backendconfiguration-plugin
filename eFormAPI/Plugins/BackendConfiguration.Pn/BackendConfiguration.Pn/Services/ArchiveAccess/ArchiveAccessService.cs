@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using BackendConfiguration.Pn.Services.Leder;
 using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -36,7 +37,7 @@ public interface IArchiveAccessService
     Task<bool> CanReadFolderOrContentsAsync(int folderId, ArchiveAccessContext ctx);
 
     /// <summary>
-    /// The folders the caller sees: all for an admin; for others a folder they can read, or one holding a readable
+    /// The folders the caller sees: all for an admin or Leder; for others a folder they can read, or one holding a readable
     /// document or a visible subfolder — so no readable document is ever unreachable in the tree.
     /// </summary>
     Task<HashSet<int>> VisibleFolderIdsAsync(ArchiveAccessContext ctx, ArchiveFolderSnapshot folders);
@@ -59,6 +60,7 @@ public class ArchiveAccessService(
     IUserService userService,
     IEFormCoreService coreService,
     IWorkerTagMembershipService membership,
+    ILederService leder,
     ILogger<ArchiveAccessService> logger) : IArchiveAccessService
 {
     private Task<ArchiveAccessContext>? _context;
@@ -93,7 +95,8 @@ public class ArchiveAccessService(
         var isAdmin = userService.IsAdmin();
         if (string.IsNullOrWhiteSpace(user.Email))
         {
-            return new ArchiveAccessContext(false, isAdmin, []);
+            // No address means no live site: only an admin can manage.
+            return new ArchiveAccessContext(false, isAdmin, [], await leder.IsLederOrAdminAsync(knownLive: false));
         }
 
         var core = await coreService.GetCore();
@@ -104,8 +107,10 @@ public class ArchiveAccessService(
             return Disabled(user.Id, "SDK worker is resigned");
         }
 
+        // Asked only for enabled callers; the live-site count we already have is the Leder check's liveness.
+        var canManage = await leder.IsLederOrAdminAsync(knownLive: sites.LiveSiteIds.Count > 0);
         var groups = await membership.GetTagIdsForSitesAsync(sites.LiveSiteIds);
-        return new ArchiveAccessContext(false, isAdmin, groups.ToList());
+        return new ArchiveAccessContext(false, isAdmin, groups.ToList(), canManage);
     }
 
     private ArchiveAccessContext Disabled(int userId, string reason)
@@ -122,7 +127,7 @@ public class ArchiveAccessService(
             return files.Where(_ => false);
         }
 
-        if (ctx.IsAdmin)
+        if (ctx.CanManage)
         {
             return files;
         }
@@ -165,7 +170,7 @@ public class ArchiveAccessService(
             return [];
         }
 
-        if (ctx.IsAdmin)
+        if (ctx.CanManage)
         {
             return folders.All.Select(f => f.Id).ToHashSet();
         }

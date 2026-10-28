@@ -91,9 +91,15 @@ public static class ArchiveTestData
         yield return typeof(InboxController);
     }
 
-    public static ArchiveAccessContext Admin => new(false, true, []);
+    public static ArchiveAccessContext Admin =>
+        new(IsDisabled: false, IsAdmin: true, UserGroupIds: [], CanManage: true);
 
-    public static ArchiveAccessContext User(params int[] groups) => new(false, false, groups);
+    /// <summary>A Leder who is not an admin: can manage and read everything, belongs to no group.</summary>
+    public static ArchiveAccessContext Leder =>
+        new(IsDisabled: false, IsAdmin: false, UserGroupIds: [], CanManage: true);
+
+    public static ArchiveAccessContext User(params int[] groups) =>
+        new(IsDisabled: false, IsAdmin: false, UserGroupIds: groups, CanManage: false);
 
     public static ArchiveAccessContext Disabled => ArchiveAccessContext.Disabled;
 }

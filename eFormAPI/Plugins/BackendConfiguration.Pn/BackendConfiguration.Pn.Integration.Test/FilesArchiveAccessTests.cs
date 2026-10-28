@@ -271,4 +271,25 @@ public class FilesArchiveAccessTests : TestBaseSetup
         Assert.That(await BackendConfigurationPnDbContext!.Files.AnyAsync(f => f.FileName == "Hemmelig"), Is.False);
         await _storage.DidNotReceive().PutAsync(Arg.Any<string>(), Arg.Any<string>());
     }
+
+    [Test]
+    public async Task Create_Leder_IntoARestrictedFolder_StoresIt()
+    {
+        // A Leder may file into a folder none of their groups can read.
+        _access.Context = ArchiveTestData.Leder;
+
+        var result = await _service.Create([Upload("Ledermøde.pdf", _fakturaer)]);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        var file = await BackendConfigurationPnDbContext!.Files.AsNoTracking().SingleAsync(f => f.FileName == "Ledermøde");
+        Assert.That(file.FolderId, Is.EqualTo(_fakturaer));
+    }
+
+    [Test]
+    public async Task Index_Leder_ListsEveryDocument()
+    {
+        _access.Context = ArchiveTestData.Leder;
+
+        Assert.That((await List()).Select(f => f.Id), Is.EquivalentTo(new[] { _open, _restricted, _suggested }));
+    }
 }

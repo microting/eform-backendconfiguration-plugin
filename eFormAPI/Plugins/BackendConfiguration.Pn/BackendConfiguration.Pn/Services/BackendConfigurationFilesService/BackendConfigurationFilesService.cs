@@ -521,9 +521,9 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 			var moving = rows.Where(r => r.FolderId != model.FolderId).ToList();
 			var accessChanged = ArchiveAccessRules.CountAccessChanged(moving,
 				r => r.Effective(folders), r => r.EffectiveIn(model.FolderId, folders));
-			if (accessChanged > 0 && !ctx.IsAdmin)
+			if (accessChanged > 0 && !ctx.CanManage)
 			{
-				// D17: changing who can read a document is an administrator's decision. Nothing is written.
+				// D17: changing who can read a document is an administrator's or a Leder's decision. Nothing is written.
 				return null;
 			}
 
@@ -566,7 +566,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 		}
 
 		var ctx = await EnsureReadableAsync(ids);
-		if (!ctx.IsAdmin)
+		if (!ctx.CanManage)
 		{
 			// The controller is admin-only; this keeps any other caller to the same rule.
 			throw new ArchiveNotFoundException();
