@@ -27,7 +27,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microting.eFormApi.BasePn.Abstractions;
-using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 using Services.BackendConfigurationFilesService;
@@ -102,9 +101,9 @@ public class FilesController : Controller
 		return await _backendConfigurationFilesService.UpdateDate(id, model);
 	}
 
-	/// <summary>Own read access per document (admin).</summary>
+	/// <summary>Own read access per document (admin or Leder).</summary>
 	[HttpPut("access")]
-	[Authorize(Roles = EformRole.Admin)]
+	[ArchiveManager]
 	public async Task<OperationDataResult<AccessChangeModel>> UpdateAccess([FromBody] FilesAccessModel model)
 	{
 		return await _backendConfigurationFilesService.UpdateAccess(model);
@@ -121,8 +120,10 @@ public class FilesController : Controller
 		return await _backendConfigurationFilesService.Create(model.FilesForCreate);
 	}
 
+	/// <summary>Deleting a document is admin/Leder-only (D-L4); everyone else may upload, edit, move and download.</summary>
 	[HttpDelete]
 	[Route("{id}")]
+	[ArchiveManager]
 	public async Task<OperationResult> Delete(int id)
 	{
 		return await _backendConfigurationFilesService.Delete(id);

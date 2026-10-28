@@ -89,6 +89,7 @@ public static class ArchiveTestData
         yield return typeof(FilesController);
         yield return typeof(ArchiveFoldersController);
         yield return typeof(InboxController);
+        yield return typeof(FileTagsController);
     }
 
     public static ArchiveAccessContext Admin =>

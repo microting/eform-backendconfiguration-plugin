@@ -568,7 +568,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 		var ctx = await EnsureReadableAsync(ids);
 		if (!ctx.CanManage)
 		{
-			// The controller is admin-only; this keeps any other caller to the same rule.
+			// The route is gated by [ArchiveManager] (admin or Leder); this keeps any other caller to the same rule.
 			throw new ArchiveNotFoundException();
 		}
 
