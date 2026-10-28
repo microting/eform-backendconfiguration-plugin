@@ -58,4 +58,10 @@ describe('BackendConfigurationPnArchiveFoldersService', () => {
     service.deleteFolder(4).subscribe();
     expect(handle).toHaveBeenCalledTimes(5);
   });
+
+  it('GETs the caller\'s archive capabilities through the account-disabled handler', () => {
+    service.getCapabilities().subscribe();
+    expect(api.get).toHaveBeenCalledWith('api/backend-configuration-pn/archive/capabilities');
+    expect(handle).toHaveBeenCalledTimes(1);
+  });
 });
