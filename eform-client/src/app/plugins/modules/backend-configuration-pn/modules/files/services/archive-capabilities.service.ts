@@ -61,16 +61,16 @@ export class ArchiveCapabilitiesService {
       const isCurrent = () => generation === this.generation;
       const request: Observable<ArchiveCapabilitiesModel> = this.foldersService.getCapabilities().pipe(
         timeout(CAPABILITIES_TIMEOUT_MS),
-        map(res => (res?.success && res.model ? withDefaults(res.model) : this.lastLoaded)),
+        map((res): ArchiveCapabilitiesModel | null => (res?.success && res.model ? withDefaults(res.model) : this.lastLoaded)),
         tap(model => {
           if (model && isCurrent()) {
             this.lastLoaded = model;
           }
         }),
-        defaultIfEmpty(null),
-        catchError(() => of(this.lastLoaded)),
-        switchMap(model => (model ? of(model) : this.roleFallback())),
-        catchError(() => of(NO_ARCHIVE_CAPABILITIES)),
+        defaultIfEmpty<ArchiveCapabilitiesModel | null>(null),
+        catchError((): Observable<ArchiveCapabilitiesModel | null> => of(this.lastLoaded)),
+        switchMap((model): Observable<ArchiveCapabilitiesModel> => (model ? of(model) : this.roleFallback())),
+        catchError((): Observable<ArchiveCapabilitiesModel> => of({...NO_ARCHIVE_CAPABILITIES})),
         tap(model => {
           if (isCurrent()) {
             this.current.next(model);
@@ -95,7 +95,7 @@ export class ArchiveCapabilitiesService {
       this.store.select(selectCurrentUserIsFirstUser),
     ]).pipe(
       take(1),
-      map(([isAdmin, isFirstUser]) => ({canManage: isAdmin, canDelete: isAdmin, canUseInbox: isAdmin, isFirstUser: isFirstUser === true})),
+      map(([isAdmin, isFirstUser]): ArchiveCapabilitiesModel => ({canManage: isAdmin, canDelete: isAdmin, canUseInbox: isAdmin, isFirstUser: isFirstUser === true})),
     );
   }
 }
