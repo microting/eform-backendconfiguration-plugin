@@ -7,10 +7,17 @@ import {
   inject
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import {ReplaySubject, Subscription} from 'rxjs';
+import {ReplaySubject, Subscription, merge} from 'rxjs';
 import {CommonDictionaryModel, LanguagesModel} from 'src/app/common/models';
 import {PropertyAssignmentWorkerModel, DeviceUserModel} from '../../../../models';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
+import {
+  LeaderToggleState,
+  isLeaderLoginLocked,
+  leaderToSend,
+  leaderToggleState,
+  workerTagsToSend,
+} from '../../leader.helper';
 import {AuthStateService} from 'src/app/common/store';
 import {MAT_DIALOG_DATA, MatDialog, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {MtxGridColumn, MtxGrid} from '@ng-matero/extensions/grid';
@@ -92,6 +99,39 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   managingTagSearch: {term: string; items: CommonDictionaryModel[]} | null = null;
   @ViewChild('managingTagSelect') managingTagSelect?: MtxSelect;
   alreadyUsedEmails: string[] = [];
+  /** The row as the list sent it; the form overwrites selectedDeviceUser on save. */
+  private storedRow: Partial<DeviceUserModel> = {};
+  /** Outside `form`: the resigned rule re-enables every form control. */
+  leaderControl = new FormControl<boolean>(false, {nonNullable: true});
+  leaderState: LeaderToggleState = 'hidden';
+  /** The admin's choice while the toggle is disabled; restored when Web or Arkiv comes back on. */
+  private stashedLeaderChoice = false;
+  leaderAccessSub$: Subscription;
+
+  /** Non-admins editing a Leder: the e-mail (the login) is read-only (spec H2). */
+  get leaderLoginLocked(): boolean {
+    return isLeaderLoginLocked(this.storedRow);
+  }
+
+  /** Medarbejdergrupper is shown to admins and Leders only (D-L12). */
+  get canEditWorkerTags(): boolean {
+    return this.storedRow.canEditWorkerTags === true;
+  }
+
+  get showLeaderToggle(): boolean {
+    return this.leaderState !== 'hidden';
+  }
+
+  /** No login yet: the toggle stays disabled until the worker is saved with access. */
+  get leaderToggleHint(): string {
+    return this.storedRow.isLeader == null
+      ? 'Save the worker with web or archive access first'
+      : 'Requires web or archive access';
+  }
+
+  get showGenerateEmailButton(): boolean {
+    return this.shouldShowGenerateEmailButton() && !this.leaderLoginLocked;
+  }
   availablePayRuleSets: PayRuleSetSimpleModel[] = [];
   @Output() userUpdated: EventEmitter<void> = new EventEmitter<void>();
   tableHeaders: MtxGridColumn[] = [
@@ -195,6 +235,8 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     this.timeRegistrationEnabled = this.selectedDeviceUserCopy.timeRegistrationEnabled;
     this.availableTags = [...this.model.availableTags];
     this.alreadyUsedEmails = [...this.model.alreadyUsedEmails];
+    this.storedRow = {...this.selectedDeviceUser, tags: [...(this.selectedDeviceUser.tags ?? [])]};
+    this.leaderControl.setValue(this.storedRow.isLeader === true, {emitEvent: false});
 
     this.form = this.fb.group({
       userFirstName: [this.selectedDeviceUser.userFirstName || '', Validators.required],
@@ -403,6 +445,11 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       this.updateEmailValidation();
     });
 
+    this.syncLeaderToggle();
+    this.leaderAccessSub$ = merge(
+      this.form.get('webAccessEnabled')!.valueChanges,
+      this.form.get('archiveEnabled')!.valueChanges,
+    ).subscribe(() => this.syncLeaderToggle());
     this.updateEmailValidation();
 
     this.updateDisabledFieldsBasedOnResigned();
@@ -444,6 +491,35 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     control.markAsDirty();
     // Closing clears ng-select's search text, which setValue leaves behind.
     this.managingTagSelect?.close();
+  }
+
+  /** Disabled or hidden means off: a managed Leder whose last access goes off is sent false, as the API revokes it. */
+  private syncLeaderToggle(): void {
+    this.leaderState = leaderToggleState(
+      this.storedRow,
+      this.form.get('webAccessEnabled')?.value === true,
+      this.form.get('archiveEnabled')?.value === true,
+    );
+    if (this.leaderState === 'enabled') {
+      if (this.leaderControl.disabled) {
+        this.leaderControl.setValue(this.stashedLeaderChoice, {emitEvent: false});
+        this.leaderControl.enable({emitEvent: false});
+      }
+    } else {
+      if (this.leaderControl.enabled) {
+        this.stashedLeaderChoice = this.leaderControl.value;
+      }
+      this.leaderControl.setValue(false, {emitEvent: false});
+      this.leaderControl.disable({emitEvent: false});
+    }
+  }
+
+  /** isLeader only when changed (null = unchanged, always null when hidden); worker groups per D-L12. */
+  private applyLeaderAndTags(formTags: number[] | undefined): void {
+    this.selectedDeviceUser.isLeader = this.leaderState === 'hidden'
+      ? null
+      : leaderToSend(this.storedRow.isLeader ?? null, this.leaderControl.value);
+    this.selectedDeviceUser.tags = workerTagsToSend(this.storedRow, formTags);
   }
 
   hide(result: boolean | number = false) {
@@ -494,6 +570,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     const formValue = this.form.value;
     Object.assign(this.selectedDeviceUser, formValue);
     Object.assign(this.selectedAssignedSite, formValue);
+    this.applyLeaderAndTags(formValue.tags);
 
     // Map auto break settings from nested form group to flat model properties
     if (formValue.autoBreakSettings) {
@@ -554,18 +631,23 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     this.deviceUserCreate$ = this.propertiesService
       .updateSingleDeviceUser(this.selectedDeviceUser)
       .subscribe((operation) => {
-        if (operation && operation.success && this.assignments) {
-          if (this.timeRegistrationEnabled) {
-            this.timePlanningPnSettingsService.updateAssignedSite(this.selectedAssignedSite).subscribe(result => {
-              if (result && result.success) {
-                this.assignWorkerToPropertiesUpdate();
-              }
-            });
-          } else {
-            this.assignWorkerToPropertiesUpdate();
-          }
-        } else {
+        if (!operation?.success) {
+          // A refusal (Leder rules, worker groups) is toasted by ApiBaseService with the API's localized message;
+          // keep the dialog and the user's edits so they can see what was refused and correct it.
+          return;
+        }
+        if (!this.assignments) {
           this.hide(this.selectedDeviceUser.normalId || true);
+          return;
+        }
+        if (this.timeRegistrationEnabled) {
+          this.timePlanningPnSettingsService.updateAssignedSite(this.selectedAssignedSite).subscribe(result => {
+            if (result && result.success) {
+              this.assignWorkerToPropertiesUpdate();
+            }
+          });
+        } else {
+          this.assignWorkerToPropertiesUpdate();
         }
       });
   }
@@ -588,6 +670,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     }
     const formValue = this.form.value;
     Object.assign(this.selectedDeviceUser, formValue);
+    this.applyLeaderAndTags(formValue.tags);
     this.deviceUserCreate$ = this.propertiesService
       .createSingleDeviceUser(this.selectedDeviceUser)
       .subscribe((operation) => {

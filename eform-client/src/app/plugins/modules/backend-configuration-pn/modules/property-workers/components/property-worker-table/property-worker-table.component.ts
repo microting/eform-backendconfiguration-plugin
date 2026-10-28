@@ -5,6 +5,7 @@ import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {MtxGridColumn, MtxGrid} from '@ng-matero/extensions/grid';
 import {AppInstallModel, DeviceUserModel, PropertyAssignWorkersModel} from '../../../../models';
 import {APP_INSTALL_STATE_CLASS, APP_INSTALL_STATE_LABEL, appInstallState, AppInstallState} from './app-install-state';
+import {CallerFlags, NO_CALLER_FLAGS} from '../../leader.helper';
 import {PropertyWorkersStateService} from '../store';
 import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {combineLatest, Subject, Subscription, of} from 'rxjs';
@@ -71,6 +72,10 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
   @Input() availableTags: CommonDictionaryModel[] = [];
   @Input() alreadyUsedEmails: string[] = [];
   @Input() highlightedSiteId: number | null = null;
+  /** The caller's flags from the list response: the Leder toggle (admins) and worker groups (admins and Leders). */
+  @Input() callerFlags: CallerFlags = NO_CALLER_FLAGS;
+  /** Rows are selectable only for "Assign tags": the update claim and worker-group rights (the page computes it). */
+  @Input() canAssignTags: boolean | null = false;
   private pendingScrollToSiteId: number | null = null;
   private waitingForFreshData = false;
   @Output() updateTableWithHighlight: EventEmitter<number> = new EventEmitter<number>();
@@ -361,6 +366,11 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
     selectedSimpleSite.webAccessEnabled = simpleSiteDto.webAccessEnabled;
     selectedSimpleSite.archiveEnabled = simpleSiteDto.archiveEnabled;
     selectedSimpleSite.enableMobileAccess = simpleSiteDto.enableMobileAccess;
+    selectedSimpleSite.isLeader = simpleSiteDto.isLeader ?? null;
+    selectedSimpleSite.loginIsManaged = simpleSiteDto.loginIsManaged === true;
+    selectedSimpleSite.isAdminLogin = simpleSiteDto.isAdminLogin === true;
+    selectedSimpleSite.canSetLeder = this.callerFlags.canSetLeder;
+    selectedSimpleSite.canEditWorkerTags = this.callerFlags.canEditWorkerTags;
 
     const workersAssignments = this.workersAssignments.find(
       (x) => x.siteId === simpleSiteDto.siteId
