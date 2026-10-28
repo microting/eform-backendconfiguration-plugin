@@ -1066,4 +1066,10 @@ export const bgBG = {
   'Previous document': 'Предишен документ',
   'Next document': 'Следващ документ',
   '{{index}} of {{count}}': '{{index}} от {{count}}',
+  'Leader': 'Ръководител',
+  'Requires web or archive access': 'Изисква уеб или архивен достъп',
+  "Only an administrator can change a leader's login": "Само администратор може да промени входа на ръководител",
+  'Only administrators and leaders can do this': 'Само администратори и ръководители могат да направят това',
+  'The move changes who can read the documents. Only an administrator or a leader can do that.': 'Преместването променя кой може да чете документите. Само администратор или ръководител може да направи това.',
+  'Save the worker with web or archive access first': 'Първо запазете служителя с уеб или архивен достъп',
 };

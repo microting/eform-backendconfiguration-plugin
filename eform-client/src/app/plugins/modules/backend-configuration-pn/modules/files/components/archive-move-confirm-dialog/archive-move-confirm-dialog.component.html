@@ -2,7 +2,7 @@
 <div mat-dialog-content>
   <p id="archiveMoveImpact">{{ data.text }}</p>
   <p *ngIf="!data.canConfirm" id="archiveMoveAdminOnly" class="mb-0">
-    {{ 'The move changes who can read the documents. Only an administrator can do that.' | translate }}
+    {{ 'The move changes who can read the documents. Only an administrator or a leader can do that.' | translate }}
   </p>
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end gap-12">

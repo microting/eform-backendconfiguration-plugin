@@ -33,9 +33,10 @@
                 type="email"
                 id="workerEmail"
                 required
-                tabindex="3">
+                tabindex="3"
+                [readonly]="leaderLoginLocked">
               <button
-                *ngIf="shouldShowGenerateEmailButton()"
+                *ngIf="showGenerateEmailButton"
                 matSuffix
                 mat-icon-button
                 type="button"
@@ -50,6 +51,7 @@
               <mat-error *ngIf="form.get('workerEmail').hasError('required')">
                 {{ 'Required' | translate }}
               </mat-error>
+              <mat-hint *ngIf="leaderLoginLocked" id="leaderLoginHint">{{ "Only an administrator can change a leader's login" | translate }}</mat-hint>
             </mat-form-field>
             <mat-form-field>
               <mat-label>{{ 'Employee no' | translate }}</mat-label>
@@ -116,7 +118,7 @@
             </mat-form-field>
           </div>
         </div>
-        <div class="modal-columns">
+        <div class="modal-columns" *ngIf="canEditWorkerTags">
           <mat-form-field>
             <mat-label>{{ 'Current tags' | translate }}</mat-label>
             <mtx-select
@@ -207,6 +209,17 @@
               formControlName="archiveEnabled">
               {{ "Archive" | translate }}
             </mat-slide-toggle>
+            <ng-container *ngIf="showLeaderToggle">
+              <br>
+              <mat-slide-toggle
+                color="primary"
+                class="mb-2"
+                id="leaderToggle"
+                [formControl]="leaderControl">
+                {{ "Leader" | translate }}
+              </mat-slide-toggle>
+              <span *ngIf="leaderState === 'disabled'" class="helper-text" id="leaderToggleHint">{{ leaderToggleHint | translate }}</span>
+            </ng-container>
           </div>
         </div>
         <br>

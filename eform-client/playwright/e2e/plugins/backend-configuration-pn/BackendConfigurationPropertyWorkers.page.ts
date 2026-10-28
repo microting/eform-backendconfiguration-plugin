@@ -1,6 +1,6 @@
 import { Page, Locator, expect } from '@playwright/test';
 import { selectValueInNgSelector } from '../../helper-functions';
-import { openRowActionMenu } from './row-action-menu';
+import { clickMenuItem, openRowActionMenu } from './row-action-menu';
 import {
   API_TIMEOUT,
   ignoreUnhandledRejections,
@@ -167,6 +167,9 @@ export class BackendConfigurationPropertyWorkersPage {
         for (const tag of propertyWorker.tags) {
           await selectValueInNgSelector(this.page, '#tagSelector', tag);
         }
+      }
+      if (propertyWorker.archiveEnabled === true) {
+        await this.toggleArchive(true);
       }
       if (propertyWorker.workOrderFlow === true) {
         await this.TaskManagementEnableToggleInput().locator('button').click();
@@ -335,7 +338,7 @@ export class BackendConfigurationPropertyWorkersPage {
   /** Opens the edit modal for `workerFullName` and waits for its form to settle. */
   async openEditModalFor(workerFullName: string): Promise<void> {
     const menuItem = await openRowActionMenu(this.page, this.workerRow(workerFullName), `Device-user row "${workerFullName}"`);
-    await menuItem('editDeviceUserBtn').click({ timeout: UI_TIMEOUT });
+    await clickMenuItem(this.page, menuItem('editDeviceUserBtn'), `Edit on the row of ${workerFullName}`);
     await this.saveEditBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
     await expect(this.page.locator('form[data-form-ready]')).toHaveAttribute('data-form-ready', 'true', {
       timeout: 30000,
@@ -370,9 +373,22 @@ export class BackendConfigurationPropertyWorkersPage {
       await expect(switchBtn).toHaveAttribute('aria-checked', String(resigned), { timeout: UI_TIMEOUT });
     }
 
+    const updateBody = await this.saveEditAndWait('resign toggle save');
+    expect(updateBody.resigned).toBe(resigned);
+    if (resigned) {
+      expect(updateBody.resignedAtDate, 'resignedAtDate must accompany resigned=true').toBeTruthy();
+    }
+    await this.newDeviceUserBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+  }
+
+  /**
+   * Saves the open edit dialog: waits for update-device-user (SDK-backed) and asserts HTTP 200 with success, then
+   * for the list refresh and the dialog to close. Returns the request body that was sent.
+   */
+  private async saveEditAndWait(what: string): Promise<any> {
     const updatePromise = waitForApiResponse(
       this.page,
-      'POST /api/backend-configuration-pn/properties/assignment/update-device-user (resign toggle save)',
+      `POST /api/backend-configuration-pn/properties/assignment/update-device-user (${what})`,
       r =>
         r.url().includes('/api/backend-configuration-pn/properties/assignment/update-device-user') &&
         r.request().method() === 'POST',
@@ -380,7 +396,7 @@ export class BackendConfigurationPropertyWorkersPage {
     );
     const indexPromise = waitForApiResponse(
       this.page,
-      'POST /api/backend-configuration-pn/properties/assignment/index-device-user (list refresh after resign toggle save)',
+      `POST /api/backend-configuration-pn/properties/assignment/index-device-user (list refresh after the ${what})`,
       r =>
         r.url().includes('/api/backend-configuration-pn/properties/assignment/index-device-user') &&
         r.request().method() === 'POST',
@@ -391,21 +407,49 @@ export class BackendConfigurationPropertyWorkersPage {
     ignoreUnhandledRejections(updatePromise, indexPromise);
 
     await expect(this.saveEditBtn()).toBeEnabled({ timeout: UI_TIMEOUT });
-    await this.saveEditBtn().click();
+    await this.saveEditBtn().click({ timeout: UI_TIMEOUT });
 
     const updateResponse = await updatePromise;
-    const updateBody = JSON.parse(updateResponse.request().postData() || '{}');
-    const updateResult = await updateResponse.json().catch(() => null);
-    expect(updateResponse.status(), `update-device-user status (${JSON.stringify(updateResult)})`).toBe(200);
-    expect(updateResult?.success, `update-device-user success (${updateResult?.message ?? ''})`).toBe(true);
-    expect(updateBody.resigned).toBe(resigned);
-    if (resigned) {
-      expect(updateBody.resignedAtDate, 'resignedAtDate must accompany resigned=true').toBeTruthy();
-    }
+    const sent = JSON.parse(updateResponse.request().postData() || '{}');
+    const result = await updateResponse.json().catch(() => null);
+    expect(updateResponse.status(), `update-device-user status (${JSON.stringify(result)})`).toBe(200);
+    expect(result?.success, `update-device-user success (${result?.message ?? ''})`).toBe(true);
 
     await indexPromise;
     await this.saveEditBtn().waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
-    await this.newDeviceUserBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    return sent;
+  }
+
+  /** The Arkiv switch of the open worker dialog. */
+  archiveSwitch(): Locator {
+    return this.page.locator('mat-dialog-container #archiveEnabled button[role="switch"]');
+  }
+
+  /** The Leder switch of the open worker dialog (admins only). */
+  leaderSwitch(): Locator {
+    return this.page.locator('mat-dialog-container #leaderToggle button[role="switch"]');
+  }
+
+  /** Flips Arkiv in the open worker dialog and asserts it now reads `expected`. */
+  async toggleArchive(expected: boolean): Promise<void> {
+    await this.archiveSwitch().click({ timeout: UI_TIMEOUT });
+    await expect(this.archiveSwitch()).toHaveAttribute('aria-checked', String(expected), { timeout: UI_TIMEOUT });
+  }
+
+  /**
+   * Ticks or clears Leder (#leaderToggle, admins only) in the edit dialog and saves. Asserts that the save sent
+   * `isLeader` (it is sent only when changed) and succeeded. The caller flips the state; it is not idempotent.
+   */
+  async setLeader(workerFullName: string, isLeader: boolean): Promise<void> {
+    await this.openEditModalFor(workerFullName);
+    const switchBtn = this.leaderSwitch();
+    await expect(switchBtn).toBeEnabled({ timeout: UI_TIMEOUT });
+    await expect(switchBtn).toHaveAttribute('aria-checked', String(!isLeader), { timeout: UI_TIMEOUT });
+    await switchBtn.click({ timeout: UI_TIMEOUT });
+    await expect(switchBtn).toHaveAttribute('aria-checked', String(isLeader), { timeout: UI_TIMEOUT });
+
+    const sent = await this.saveEditAndWait('Leder toggle save');
+    expect(sent.isLeader, 'isLeader is sent because it changed').toBe(isLeader);
   }
 
   async createTag(tagName: string): Promise<void> {
@@ -522,4 +566,5 @@ export class PropertyWorker {
   isManager?: boolean;
   managingTags?: string[];
   tags?: string[];
+  archiveEnabled?: boolean;
 }

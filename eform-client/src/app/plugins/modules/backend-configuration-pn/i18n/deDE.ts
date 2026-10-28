@@ -1270,7 +1270,6 @@ export const deDE = {
   'Read access changes': 'Der Lesezugriff ändert sich',
   '{{count}} document can now be read by {{who}}': '{{count}} Dokument kann jetzt von {{who}} gelesen werden',
   '{{count}} documents can now be read by {{who}}': '{{count}} Dokumente können jetzt von {{who}} gelesen werden',
-  'The move changes who can read the documents. Only an administrator can do that.': 'Das Verschieben ändert, wer die Dokumente lesen kann. Nur ein Administrator kann das tun.',
   '{{count}} document moved': '{{count}} Dokument verschoben',
   '{{count}} documents moved': '{{count}} Dokumente verschoben',
   'Move to folder': 'In Ordner verschieben',
@@ -1347,4 +1346,10 @@ export const deDE = {
   'Previous document': 'Vorheriges Dokument',
   'Next document': 'Nächstes Dokument',
   '{{index}} of {{count}}': '{{index}} von {{count}}',
+  'Leader': 'Leiter',
+  'Requires web or archive access': 'Erfordert Web- oder Archivzugriff',
+  "Only an administrator can change a leader's login": "Nur ein Administrator kann das Login eines Leiters ändern",
+  'Only administrators and leaders can do this': 'Nur Administratoren und Leiter können das tun',
+  'The move changes who can read the documents. Only an administrator or a leader can do that.': 'Das Verschieben ändert, wer die Dokumente lesen kann. Nur ein Administrator oder ein Leiter kann das tun.',
+  'Save the worker with web or archive access first': 'Speichern Sie den Mitarbeiter zuerst mit Web- oder Archivzugriff',
 };

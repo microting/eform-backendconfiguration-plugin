@@ -1066,4 +1066,10 @@ export const elGR = {
   'Previous document': 'Προηγούμενο έγγραφο',
   'Next document': 'Επόμενο έγγραφο',
   '{{index}} of {{count}}': '{{index}} από {{count}}',
+  'Leader': 'Υπεύθυνος',
+  'Requires web or archive access': 'Απαιτεί πρόσβαση web ή αρχείου',
+  "Only an administrator can change a leader's login": "Μόνο ένας διαχειριστής μπορεί να αλλάξει τη σύνδεση ενός υπευθύνου",
+  'Only administrators and leaders can do this': 'Μόνο οι διαχειριστές και οι υπεύθυνοι μπορούν να το κάνουν αυτό',
+  'The move changes who can read the documents. Only an administrator or a leader can do that.': 'Η μετακίνηση αλλάζει ποιος μπορεί να διαβάσει τα έγγραφα. Μόνο ένας διαχειριστής ή ένας υπεύθυνος μπορεί να το κάνει.',
+  'Save the worker with web or archive access first': 'Αποθηκεύστε πρώτα τον εργαζόμενο με πρόσβαση web ή αρχείου',
 };

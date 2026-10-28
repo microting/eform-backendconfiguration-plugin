@@ -1066,4 +1066,10 @@ export const etET = {
   'Previous document': 'Eelmine dokument',
   'Next document': 'Järgmine dokument',
   '{{index}} of {{count}}': '{{index}} / {{count}}',
+  'Leader': 'Juht',
+  'Requires web or archive access': 'Nõuab veebi- või arhiivijuurdepääsu',
+  "Only an administrator can change a leader's login": "Ainult administraator saab muuta juhi sisselogimist",
+  'Only administrators and leaders can do this': 'Seda saavad teha ainult administraatorid ja juhid',
+  'The move changes who can read the documents. Only an administrator or a leader can do that.': 'Teisaldamine muudab, kes saavad dokumente lugeda. Seda saab teha ainult administraator või juht.',
+  'Save the worker with web or archive access first': 'Salvestage töötaja esmalt veebi- või arhiivijuurdepääsuga',
 };

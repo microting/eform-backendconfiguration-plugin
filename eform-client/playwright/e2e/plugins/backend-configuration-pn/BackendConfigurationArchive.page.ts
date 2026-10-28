@@ -4,13 +4,17 @@
  * so they are addressed by `<prefix>-<folderId>` inside `.cdk-overlay-container` (CLAUDE.md rule 7).
  */
 import { expect, Locator, Page, Response } from '@playwright/test';
-import { API_TIMEOUT, ignoreUnhandledRejections, UI_TIMEOUT, waitForApiResponse } from './wait-helpers';
+import { API_TIMEOUT, ignoreUnhandledRejections, leaveCurrentDocument, UI_TIMEOUT, waitForApiResponse } from './wait-helpers';
 import { fillInDialog } from './dialog-helpers';
+import { BASE_URL } from './archive-api-helpers';
 
-export const ARCHIVE_URL = 'http://localhost:4200/plugins/backend-configuration-pn/files';
+export const ARCHIVE_URL = `${BASE_URL}/plugins/backend-configuration-pn/files`;
 export const ARCHIVE_API = '/api/backend-configuration-pn';
 export const FOLDERS_PATH = `${ARCHIVE_API}/archive-folders`;
 export const FILES_PATH = `${ARCHIVE_API}/files`;
+/** GET archive/capabilities: what the signed-in user may do (admins and Leders manage the archive). */
+export const CAPABILITIES_PATH = `${ARCHIVE_API}/archive/capabilities`;
+export interface ArchiveCapabilities { canManage: boolean; canDelete: boolean; canUseInbox: boolean; isFirstUser: boolean; }
 /** Created by the base migration in every tenant; never deleted, moved or restricted (D12). */
 export const DEFAULT_FOLDER = 'Arkiv';
 /** InboxDocumentStatus, as the inbox list renders it in `data-status`. */
@@ -100,6 +104,31 @@ export class BackendConfigurationArchivePage {
     await this.dialog().locator(`#${id}`).click({ timeout: UI_TIMEOUT });
   }
 
+  /**
+   * Exactly one dialog, opened or opening and not closing: Material adds `mdc-dialog--open` (with `--opening`) when
+   * the open animation starts and removes it when the dialog starts to close. A second dialog fails the count.
+   */
+  async expectOneOpenDialog(what: string): Promise<void> {
+    await expect(this.dialog(), `exactly one dialog: ${what}`).toHaveCount(1, { timeout: UI_TIMEOUT });
+    await expect(this.dialog(), `${what} is opened or opening, not closing`).toHaveClass(/mdc-dialog--open/, { timeout: UI_TIMEOUT });
+  }
+
+  /** Opens the etiketter dialog (Tags) from the archive list. */
+  async openTagsDialog(): Promise<void> {
+    await this.page.locator('#manageTagsBtn').click({ timeout: UI_TIMEOUT });
+    await expect(this.dialog().locator('#tagsModalCloseBtn')).toBeVisible({ timeout: UI_TIMEOUT });
+  }
+
+  /** A row of the open etiketter dialog. */
+  tagRow(name: string): Locator {
+    return this.dialog().locator('.mat-mdc-row').filter({ hasText: name });
+  }
+
+  async closeTagsDialog(): Promise<void> {
+    await this.clickInDialog('tagsModalCloseBtn');
+    await expect(this.dialog()).toHaveCount(0, { timeout: UI_TIMEOUT });
+  }
+
   /** Arms a bounded wait for one API call; await it after the action that triggers it. */
   waitForCall(description: string, method: string, path: string | RegExp): Promise<Response> {
     const wait = waitForApiResponse(this.page, `${method} ${description}`, r => {
@@ -114,22 +143,21 @@ export class BackendConfigurationArchivePage {
   }
 
   /**
-   * Leaves the current document before a page-load wait is armed. Otherwise a call the old archive document still had
-   * in flight (the refresh after a folder delete) can satisfy the wait, and its discarded body makes `json()` fail
-   * with "No resource with given identifier found" (zb Z8). about:blank cancels those calls and issues none.
+   * Loads the Arkiv page and waits for the tree, the documents and the capabilities, so a "not shown" assertion
+   * after it is not satisfied by controls that simply have not arrived yet. Returns the capabilities (the first
+   * answer: for a guarded `url` that redirects to the list, CanManageGuard's).
    */
-  private async leaveCurrentDocument(): Promise<void> {
-    await this.page.goto('about:blank', { timeout: UI_TIMEOUT });
-  }
-
-  async open(): Promise<void> {
-    await this.leaveCurrentDocument();
+  async open(url: string = ARCHIVE_URL): Promise<ArchiveCapabilities> {
+    await leaveCurrentDocument(this.page);
     const folders = this.waitForCall('archive folder tree', 'GET', FOLDERS_PATH);
     const files = this.waitForCall('archive documents', 'POST', FILES_PATH);
-    await this.page.goto(ARCHIVE_URL, { timeout: API_TIMEOUT });
+    const capabilities = this.waitForCall('archive capabilities', 'GET', CAPABILITIES_PATH);
+    await this.page.goto(url, { timeout: API_TIMEOUT });
     await expectSuccess(folders, 'loading the folder tree');
     await expectSuccess(files, 'loading the archive documents');
+    const body = await expectSuccess(capabilities, 'loading the archive capabilities');
     await expect(this.tree()).toBeVisible({ timeout: UI_TIMEOUT });
+    return body.model;
   }
 
   async folderId(name: string): Promise<number> {
@@ -235,7 +263,7 @@ export class BackendConfigurationArchivePage {
   }
 
   async openInbox(): Promise<void> {
-    await this.leaveCurrentDocument();
+    await leaveCurrentDocument(this.page);
     const listed = this.waitForCall('inbox list', 'GET', `${ARCHIVE_API}/inbox`);
     await this.page.goto(`${ARCHIVE_URL}/inbox`, { timeout: API_TIMEOUT });
     await expectSuccess(listed, 'loading the inbox list');

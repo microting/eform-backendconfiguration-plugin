@@ -1066,4 +1066,10 @@ export const hrHR = {
   'Previous document': 'Prethodni dokument',
   'Next document': 'Sljedeći dokument',
   '{{index}} of {{count}}': '{{index}} od {{count}}',
+  'Leader': 'Voditelj',
+  'Requires web or archive access': 'Zahtijeva web ili arhivski pristup',
+  "Only an administrator can change a leader's login": "Samo administrator može promijeniti prijavu voditelja",
+  'Only administrators and leaders can do this': 'Samo administratori i voditelji to mogu učiniti',
+  'The move changes who can read the documents. Only an administrator or a leader can do that.': 'Premještanje mijenja tko može čitati dokumente. To može učiniti samo administrator ili voditelj.',
+  'Save the worker with web or archive access first': 'Najprije spremite djelatnika s web ili arhivskim pristupom',
 };

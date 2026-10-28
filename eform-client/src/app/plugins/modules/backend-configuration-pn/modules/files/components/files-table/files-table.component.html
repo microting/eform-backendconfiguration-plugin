@@ -19,7 +19,7 @@
       <th id="archiveFolderHeader">{{ 'Folder' | translate }}</th>
       <th>{{ 'Document date' | translate }}</th>
       <th>{{ 'Properties' | translate }}</th>
-      <th *ngIf="isAdmin" id="archiveAccessHeader">{{ 'Read access' | translate }}</th>
+      <th *ngIf="canManage" id="archiveAccessHeader">{{ 'Read access' | translate }}</th>
       <th>{{ 'Tags' | translate }}</th>
       <th class="archive-table__actions" [attr.aria-label]="'Actions' | translate"></th>
     </tr>
@@ -63,7 +63,7 @@
       <td>
         <div class="ejendom-chips"><span class="ejendom-chip" *ngFor="let property of row.properties">{{ property }}</span></div>
       </td>
-      <td *ngIf="isAdmin">
+      <td *ngIf="canManage">
         <span *ngIf="row.ownAccess; else inherits" class="archive-access archive-access--own"><mat-icon>lock</mat-icon>{{ ownAccessLabel(row) }}</span>
         <ng-template #inherits><span class="helper-text">{{ 'Inherits' | translate }}</span></ng-template>
       </td>
@@ -80,7 +80,7 @@
               <mat-icon>visibility</mat-icon>
               <span>{{ presentationOf(row).viewKey | translate }}</span>
             </button>
-            <button mat-menu-item [id]="'deleteFileBtn-' + i" class="deleteFileBtn btn-delete-menu" (click)="openDeleteModal.emit(row)">
+            <button *ngIf="canDelete" mat-menu-item [id]="'deleteFileBtn-' + i" class="deleteFileBtn btn-delete-menu" (click)="openDeleteModal.emit(row)">
               <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
               <span>{{ presentationOf(row).deleteKey | translate }}</span>
             </button>
@@ -89,7 +89,7 @@
       </td>
     </tr>
     <tr *ngIf="loaded && !rows.length" id="archiveNoFiles">
-      <td [attr.colspan]="isAdmin ? 8 : 7">{{ 'No files found' | translate }}</td>
+      <td [attr.colspan]="canManage ? 8 : 7">{{ 'No files found' | translate }}</td>
     </tr>
   </tbody>
 </table>

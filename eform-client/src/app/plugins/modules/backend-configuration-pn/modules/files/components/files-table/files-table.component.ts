@@ -13,7 +13,7 @@ import {MatCheckbox} from '@angular/material/checkbox';
 import {ArchiveFilePresentation, archivePresentation} from '../../archive-file-kind';
 
 /**
- * The W1 document table: Checkbox · Navn · Mappe · Dokumentdato · Ejendomme · Læseadgang (admin) · Etiketter.
+ * The W1 document table: Checkbox · Navn · Mappe · Dokumentdato · Ejendomme · Læseadgang (admin/Leder) · Etiketter.
  * Mappe shows every row's folder in every list mode: the last two levels, the full path in the tooltip.
  * A native table so rows can be HTML5 drag sources for the folder tree. Selection is owned by the page
  * (`selectedIds`) and emitted in table order, so "1 af 2 valgte" follows the rows.
@@ -28,7 +28,10 @@ export class FilesTableComponent implements OnChanges, OnDestroy {
   private translateService = inject(TranslateService);
 
   @Input() files: Paged<FilesModel> = new Paged<FilesModel>();
-  @Input() isAdmin = false;
+  /** Admin or Leder: the Læseadgang column. */
+  @Input() canManage = false;
+  /** "Slet" in the row menu (D-L4). */
+  @Input() canDelete = false;
   @Input() loaded = false;
   @Input() selectedIds: number[] = [];
   @Input() currentFileId: number | null = null;

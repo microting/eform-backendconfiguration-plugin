@@ -20,7 +20,7 @@ public static class CallerSites
     /// <summary>
     /// The non-removed SDK workers with <paramref name="email"/>. When there are some and every one is resigned, the
     /// login is disabled (the same choice as GrpcSiteResolver, #1326). Otherwise the distinct sites of the non-resigned
-    /// workers through live SiteWorker rows; core.SiteDelete removes those rows, so a deleted site never counts.
+    /// workers through live SiteWorker rows whose Site is not removed too.
     /// </summary>
     public static async Task<CallerSiteResolution> ResolveAsync(MicrotingDbContext sdk, string email)
     {
@@ -39,10 +39,12 @@ public static class CallerSites
             return new CallerSiteResolution(false, []);
         }
 
-        var siteIds = await sdk.SiteWorkers.AsNoTracking()
-            .Where(sw => sw.WorkerId != null && liveWorkerIds.Contains(sw.WorkerId.Value)
-                         && sw.SiteId != null && sw.WorkflowState != Removed)
-            .Select(sw => sw.SiteId!.Value)
+        var siteIds = await (
+                from sw in sdk.SiteWorkers.AsNoTracking()
+                join site in sdk.Sites.AsNoTracking() on sw.SiteId equals site.Id
+                where sw.WorkerId != null && liveWorkerIds.Contains(sw.WorkerId.Value)
+                      && sw.WorkflowState != Removed && site.WorkflowState != Removed
+                select site.Id)
             .Distinct()
             .ToListAsync();
         return new CallerSiteResolution(false, siteIds);

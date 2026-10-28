@@ -4,6 +4,7 @@ import {OperationDataResult, OperationResult} from 'src/app/common/models';
 import {ApiBaseService} from 'src/app/common/services';
 import {
   AccessChangeModel,
+  ArchiveCapabilitiesModel,
   ArchiveFolderAccessModel,
   ArchiveFolderCreateModel,
   ArchiveFolderModel,
@@ -13,10 +14,11 @@ import {ArchiveAccountDisabledHandler} from './archive-account-disabled.handler'
 
 export const BackendConfigurationPnArchiveFoldersMethods = {
   ArchiveFolders: 'api/backend-configuration-pn/archive-folders',
+  Capabilities: 'api/backend-configuration-pn/archive/capabilities',
 };
 
 /**
- * The tenant-wide archive folder tree (max 2 levels). Everything but GET is admin-only on the server.
+ * The tenant-wide archive folder tree (max 2 levels). Everything but GET is admin/Leder-only on the server ([ArchiveManager]).
  * A refusal (folder not empty, depth limit) is success=false and is toasted by ApiBaseService.
  * "May complete empty (404)": see ArchiveAccountDisabledHandler.
  */
@@ -34,6 +36,19 @@ export class BackendConfigurationPnArchiveFoldersService {
     return this.apiBaseService
       .get<ArchiveFolderModel[]>(query ? `${base}?${query}` : base)
       .pipe(this.accountDisabled.handle());
+  }
+
+  /**
+   * What the caller may do in Arkiv (admin or Leder). Not cached by the server. Do NOT rely on an empty completion
+   * or an error for an older plugin without the endpoint: against the host a 404 (or the SPA's HTML 200) is retried
+   * 5 x 15 s and then neither emits nor completes. ArchiveCapabilitiesService bounds the wait (timeout + role fallback).
+   * `handle(false)`: like the app, the capabilities call never announces its own 403 on forbidden$ (that stream makes
+   * ArchiveCapabilitiesService reload this very call).
+   */
+  getCapabilities(): Observable<OperationDataResult<ArchiveCapabilitiesModel>> {
+    return this.apiBaseService
+      .get<ArchiveCapabilitiesModel>(BackendConfigurationPnArchiveFoldersMethods.Capabilities)
+      .pipe(this.accountDisabled.handle(false));
   }
 
   createFolder(model: ArchiveFolderCreateModel): Observable<OperationDataResult<ArchiveFolderModel>> {

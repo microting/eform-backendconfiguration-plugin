@@ -44,7 +44,7 @@
   <app-archive-folder-tree
     [folders]="folders"
     [selectedFolderId]="listMode === 'folder' ? selectedFolderId : null"
-    [isAdmin]="isAdmin"
+    [canManage]="canManage"
     [dragActive]="dragActive"
     (folderSelected)="selectFolder($event)"
     (createTop)="createTopFolder()"
@@ -83,7 +83,7 @@
       <button type="button" class="btn-secondary btn-secondary--icon-left" id="archivePropertiesSelectedBtn" (click)="setSelectedProperties()">
         <mat-icon>home_work</mat-icon><span>{{ 'Properties' | translate }}</span>
       </button>
-      <button *ngIf="isAdmin" type="button" class="btn-secondary btn-secondary--icon-left" id="archiveAccessSelectedBtn" (click)="setSelectedAccess()">
+      <button *ngIf="canManage" type="button" class="btn-secondary btn-secondary--icon-left" id="archiveAccessSelectedBtn" (click)="setSelectedAccess()">
         <mat-icon>group</mat-icon><span>{{ 'Read access' | translate }}</span>
       </button>
       <button type="button" class="btn-secondary btn-secondary--icon-left" id="archiveDownloadSelectedBtn" (click)="downloadSelectedFiles()">
@@ -96,7 +96,8 @@
 
     <app-files-table
       [files]="files"
-      [isAdmin]="isAdmin"
+      [canManage]="canManage"
+      [canDelete]="canDelete"
       [loaded]="filesLoaded"
       [selectedIds]="selectedFileIds"
       [currentFileId]="currentFileId"
@@ -120,7 +121,7 @@
     [properties]="properties"
     [availableTags]="availableTags"
     [workerTags]="workerTags"
-    [isAdmin]="isAdmin"
+    [canManage]="canManage"
     [positionLabel]="positionLabel"
     [hasPrevious]="hasPrevious"
     [hasNext]="hasNext"
@@ -134,6 +135,7 @@
 <app-file-tags
   #tagsModal
   [availableTags]="availableTags"
+  [canManage]="canManage"
   (tagsChanged)="getTags()"
 >
 </app-file-tags>

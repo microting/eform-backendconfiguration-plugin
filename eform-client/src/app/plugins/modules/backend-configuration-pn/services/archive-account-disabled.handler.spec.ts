@@ -48,14 +48,17 @@ describe('ArchiveAccountDisabledHandler', () => {
 
   const failWith = (status: number, body: unknown) => throwError(() => new HttpErrorResponse({status, error: body}));
 
-  /** The error reaches the subscriber unchanged and the session is left alone. */
-  const expectPassThrough = (status: number, body: unknown, done: DoneFn): void => {
-    failWith(status, body).pipe(handler.handle()).subscribe({
+  /** The error reaches the subscriber unchanged; no logout, no toast, no forbidden$. */
+  const expectPassThrough = (status: number, body: unknown, done: DoneFn, announceForbidden = true): void => {
+    const forbidden = vi.fn();
+    handler.forbidden$.subscribe(forbidden);
+    failWith(status, body).pipe(handler.handle(announceForbidden)).subscribe({
       complete: () => done(new Error('completed instead of erroring')),
       error: (err: HttpErrorResponse) => {
         expect(err.status).toBe(status);
         expect(auth.logout).not.toHaveBeenCalled();
         expect(toastr.error).not.toHaveBeenCalled();
+        expect(forbidden).not.toHaveBeenCalled();
         done();
       },
     });
@@ -63,6 +66,8 @@ describe('ArchiveAccountDisabledHandler', () => {
 
   it('ends the session and completes without emitting on account_disabled', withDone(done => {
     const next = vi.fn();
+    const forbidden = vi.fn();
+    handler.forbidden$.subscribe(forbidden);
     failWith(403, {error: 'account_disabled'}).pipe(handler.handle()).subscribe({
       next,
       error: err => done(err),
@@ -70,6 +75,7 @@ describe('ArchiveAccountDisabledHandler', () => {
         expect(next).not.toHaveBeenCalled();
         expect(toastr.error).toHaveBeenCalledWith('Your account is disabled');
         expect(auth.logout).toHaveBeenCalledTimes(1);
+        expect(forbidden).not.toHaveBeenCalled();
         done();
       },
     });
@@ -136,9 +142,29 @@ describe('ArchiveAccountDisabledHandler', () => {
     expectPassThrough(403, {error: 'something_else'}, done);
   }));
 
-  it('passes a non-admin 403 with an empty body through untouched', withDone(done => {
-    expectPassThrough(403, null, done);
-  }));
+  /** The [ArchiveManager] refusal: 403 with an empty body. The error goes on; the user is told who may do it. */
+  const expectManagerRefusal = (body: unknown, done: DoneFn): void => {
+    const forbidden = vi.fn();
+    handler.forbidden$.subscribe(forbidden);
+    failWith(403, body).pipe(handler.handle()).subscribe({
+      complete: () => done(new Error('completed instead of erroring')),
+      error: (err: HttpErrorResponse) => {
+        expect(err.status).toBe(403);
+        expect(auth.logout).not.toHaveBeenCalled();
+        expect(toastr.error).toHaveBeenCalledWith('Only administrators and leaders can do this');
+        expect(forbidden).toHaveBeenCalledTimes(1);
+        done();
+      },
+    });
+  };
+
+  it('an empty-body 403 errors on, says only administrators and leaders may, and asks for fresh capabilities',
+    withDone(done => expectManagerRefusal(null, done)));
+
+  it('an empty Blob 403 (a download) is the same refusal', withDone(done => expectManagerRefusal(new Blob([]), done)));
+
+  it('an empty-body 403 passes through untouched when the endpoint opts out (FirstUserOnly)',
+    withDone(done => expectPassThrough(403, null, done, false)));
 
   // In the app the host interceptor swallows a 404 before it gets here; the handler itself must not act on it.
   it('passes other statuses through untouched', withDone(done => {

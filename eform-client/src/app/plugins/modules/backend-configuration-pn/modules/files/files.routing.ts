@@ -6,7 +6,7 @@ import {
   InboxSettingsComponent,
 } from './components';
 import {NgModule} from '@angular/core';
-import {IsAdminGuard} from 'src/app/common/guards';
+import {CanManageGuard} from './guards/can-manage.guard';
 
 export const routes: Routes = [
   {
@@ -20,12 +20,12 @@ export const routes: Routes = [
   {
     path: 'inbox',
     component: InboxContainerComponent,
-    canActivate: [IsAdminGuard],
+    canActivate: [CanManageGuard],
   },
   {
     path: 'settings',
     component: InboxSettingsComponent,
-    canActivate: [IsAdminGuard],
+    canActivate: [CanManageGuard],
   },
 ];
 

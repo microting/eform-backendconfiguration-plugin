@@ -52,6 +52,16 @@ export async function waitForApiResponse(
 }
 
 /**
+ * Leaves the current document before a page-load wait is armed: call it, arm the waits, then `goto`.
+ * Otherwise a call the old document still had in flight (e.g. the list refresh after a delete) can satisfy
+ * the new wait, and its discarded body makes `json()` fail with "No resource with given identifier found"
+ * (zb Z8, #1485). about:blank cancels those calls and issues none, so no timing assumption is left.
+ */
+export async function leaveCurrentDocument(page: Page): Promise<void> {
+  await page.goto('about:blank', { timeout: UI_TIMEOUT });
+}
+
+/**
  * Attaches a no-op handler to waits that are awaited later — or, on an error
  * path, never. A bounded wait can reject before the code reaches its `await`,
  * and a rejection nobody has handled yet fails the whole run; the later `await`

@@ -1066,4 +1066,10 @@ export const ltLT = {
   'Previous document': 'Ankstesnis dokumentas',
   'Next document': 'Kitas dokumentas',
   '{{index}} of {{count}}': '{{index}} iš {{count}}',
+  'Leader': 'Vadovas',
+  'Requires web or archive access': 'Reikia žiniatinklio arba archyvo prieigos',
+  "Only an administrator can change a leader's login": "Tik administratorius gali pakeisti vadovo prisijungimą",
+  'Only administrators and leaders can do this': 'Tai gali padaryti tik administratoriai ir vadovai',
+  'The move changes who can read the documents. Only an administrator or a leader can do that.': 'Perkėlimas pakeičia, kas gali skaityti dokumentus. Tai gali padaryti tik administratorius arba vadovas.',
+  'Save the worker with web or archive access first': 'Pirmiausia išsaugokite darbuotoją su žiniatinklio arba archyvo prieiga',
 };

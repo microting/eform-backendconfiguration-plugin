@@ -1066,4 +1066,10 @@ export const slSL = {
   'Previous document': 'Prejšnji dokument',
   'Next document': 'Naslednji dokument',
   '{{index}} of {{count}}': '{{index}} od {{count}}',
+  'Leader': 'Vodja',
+  'Requires web or archive access': 'Zahteva spletni ali arhivski dostop',
+  "Only an administrator can change a leader's login": "Prijavo vodje lahko spremeni samo skrbnik",
+  'Only administrators and leaders can do this': 'To lahko storijo samo skrbniki in vodje',
+  'The move changes who can read the documents. Only an administrator or a leader can do that.': 'Premik spremeni, kdo lahko bere dokumente. To lahko stori samo skrbnik ali vodja.',
+  'Save the worker with web or archive access first': 'Najprej shranite delavca s spletnim ali arhivskim dostopom',
 };

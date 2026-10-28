@@ -63,7 +63,7 @@ describe('ArchiveDocumentPanelComponent', () => {
     panel.fileId = 7;
     panel.folders = folders;
     panel.workerTags = [ledelseTag];
-    panel.isAdmin = true;
+    panel.canManage = true;
     saved = vi.fn();
     panel.saved.subscribe(saved);
     closed = vi.fn();
@@ -278,8 +278,8 @@ describe('ArchiveDocumentPanelComponent', () => {
     expect(panel.inheritedLabel).toBe('Read access: {{who}} {"who":"Ledelse"}');
   });
 
-  it('non-admins see who reads the document, without controls', () => {
-    panel.isAdmin = false;
+  it('users who cannot manage see who reads the document, without controls', () => {
+    panel.canManage = false;
     expect(panel.readAccessLabel).toBe('Read access: {{who}} {"who":"Ledelse"}');
   });
 

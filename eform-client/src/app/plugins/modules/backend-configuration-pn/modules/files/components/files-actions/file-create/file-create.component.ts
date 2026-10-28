@@ -9,7 +9,7 @@ import {
   BackendConfigurationPnFileTagsService,
   BackendConfigurationPnPropertiesService
 } from '../../../../../services';
-import {Subscription, take} from 'rxjs';
+import {Subscription, map, take} from 'rxjs';
 import {Store} from '@ngrx/store';
 import {ArchiveFolderOption, folderOptions} from '../../../../../helpers';
 import {selectFilesFolderId} from '../../../../../state';
@@ -17,7 +17,8 @@ import {FileTagsComponent} from '../../file-tags/file-tags.component';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import * as R from 'ramda';
 import {ActivatedRoute, Router, RouterLink} from '@angular/router';
-import {NgIf, NgFor} from '@angular/common';
+import {NgIf, NgFor, AsyncPipe} from '@angular/common';
+import {ArchiveCapabilitiesService} from '../../../services/archive-capabilities.service';
 import {TranslatePipe} from '@ngx-translate/core';
 import {MatIcon} from '@angular/material/icon';
 import {MatIconButton} from '@angular/material/button';
@@ -35,7 +36,7 @@ import {ARCHIVE_UPLOAD_MIME_TYPES, archiveFileKind, revokeObjectUrl} from '../..
 @AutoUnsubscribe()
 @Component({
     selector: 'app-files-file-create',
-    imports: [NgIf, NgFor, TranslatePipe, RouterLink, MatIcon, MatIconButton, MatCard, MatCardContent, MatCardTitle, MatFormField, MatLabel, MtxSelect, MatTooltip, EformNewSubheaderComponent, FileCreateDropZoneComponent, FileCreateEditFileComponent, ArchiveFolderPickerComponent, FileTagsComponent, MatCardFooter, PdfViewerModule],
+    imports: [NgIf, NgFor, AsyncPipe, TranslatePipe, RouterLink, MatIcon, MatIconButton, MatCard, MatCardContent, MatCardTitle, MatFormField, MatLabel, MtxSelect, MatTooltip, EformNewSubheaderComponent, FileCreateDropZoneComponent, FileCreateEditFileComponent, ArchiveFolderPickerComponent, FileTagsComponent, MatCardFooter, PdfViewerModule],
     templateUrl: './file-create.component.html',
     styleUrls: ['./file-create.component.scss'],
 })
@@ -47,6 +48,9 @@ export class FileCreateComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private foldersService = inject(BackendConfigurationPnArchiveFoldersService);
   private store = inject(Store);
+  /** Admin or Leder: the etiketter dialog offers rename and delete (D-L11). */
+  private capabilities = inject(ArchiveCapabilitiesService);
+  readonly canManage$ = this.capabilities.capabilities$.pipe(map(c => c.canManage));
   folderOptions: ArchiveFolderOption[] = [];
   /** Required: every archive document lies in exactly one folder (D1). */
   selectedFolderId: number | null = null;
@@ -97,6 +101,8 @@ export class FileCreateComponent implements OnInit, OnDestroy {
   
 
   ngOnInit(): void {
+    // `create` is a sibling route of the container: load the rights here too (one shared request).
+    this.capabilities.load().subscribe();
     this.getProperties();
     this.getTags();
     this.getFolders();

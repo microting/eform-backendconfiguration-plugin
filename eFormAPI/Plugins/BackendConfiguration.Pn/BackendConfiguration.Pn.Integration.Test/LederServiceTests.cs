@@ -137,6 +137,20 @@ public class LederServiceTests : TestBaseSetup
     }
 
     [Test]
+    public async Task LiveRow_SiteRemoved_SiteWorkerStillLive_IsNotLeder()
+    {
+        // Copilot finding: a non-removed SiteWorker must not count when the Site it points at is removed.
+        var (login, siteUid) = await LiveLederAsync();
+        await using var sdk = _core.DbContextHelper.GetDbContext();
+        await sdk.Sites.Where(s => s.MicrotingUid == siteUid)
+            .ExecuteUpdateAsync(x => x.SetProperty(s => s.WorkflowState, Constants.WorkflowStates.Removed));
+        Assert.That(await sdk.SiteWorkers.AnyAsync(sw => sw.Site!.MicrotingUid == siteUid
+            && sw.WorkflowState != Constants.WorkflowStates.Removed), Is.True, "precondition: SiteWorker still live");
+
+        Assert.That(await Service(login.Id).IsLederOrAdminAsync(), Is.False);
+    }
+
+    [Test]
     public async Task EformAdminsMember_NoWorker_NoRow_IsLeder()
     {
         // D-L10, found by name (no group id is assumed); not subject to liveness.

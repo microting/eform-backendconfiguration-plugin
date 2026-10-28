@@ -154,7 +154,7 @@
 
         <div class="archive-panel__field" id="archivePanelAccess">
           <div class="archive-panel__label">{{ 'Read access' | translate }}</div>
-          <ng-container *ngIf="isAdmin; else accessReadOnly">
+          <ng-container *ngIf="canManage; else accessReadOnly">
             <ng-container *ngIf="edited.ownAccess; else inherited">
               <div class="archive-access archive-access--own"><mat-icon>lock</mat-icon>{{ 'Own access' | translate }}: {{ ownGroupsLabel }}</div>
               <div class="archive-access__struck"><s>{{ inheritedLabel }}</s></div>

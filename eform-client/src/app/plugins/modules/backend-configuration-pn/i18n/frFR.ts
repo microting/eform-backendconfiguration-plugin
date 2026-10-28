@@ -1188,4 +1188,10 @@ export const frFR = {
   'Previous document': 'Document précédent',
   'Next document': 'Document suivant',
   '{{index}} of {{count}}': '{{index}} sur {{count}}',
+  'Leader': 'Responsable',
+  'Requires web or archive access': 'Nécessite un accès web ou archives',
+  "Only an administrator can change a leader's login": "Seul un administrateur peut modifier la connexion d'un responsable",
+  'Only administrators and leaders can do this': 'Seuls les administrateurs et les responsables peuvent faire cela',
+  'The move changes who can read the documents. Only an administrator or a leader can do that.': 'Le déplacement change qui peut lire les documents. Seul un administrateur ou un responsable peut le faire.',
+  "Save the worker with web or archive access first": "Enregistrez d'abord le collaborateur avec un accès web ou archives",
 };
