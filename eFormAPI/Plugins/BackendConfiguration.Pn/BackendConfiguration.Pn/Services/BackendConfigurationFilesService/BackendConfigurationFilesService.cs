@@ -158,7 +158,6 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 				CreateDate = x.CreatedAt,
 				FileName = x.FileName,
 				FileExtension = x.UploadedData.Extension,
-				FileHash = x.UploadedData.Checksum,
 				Id = x.Id,
 				Properties = x.PropertyFiles
 					.Where(y => y.WorkflowState != Removed)
@@ -453,7 +452,6 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 					CreateDate = x.CreatedAt,
 					FileName = x.FileName,
 					FileExtension = x.UploadedData.Extension,
-					FileHash = x.UploadedData.Checksum,
 					Properties = x.PropertyFiles
 						.Where(y => y.FileId == x.Id)
 						.Where(y => y.WorkflowState != Removed)

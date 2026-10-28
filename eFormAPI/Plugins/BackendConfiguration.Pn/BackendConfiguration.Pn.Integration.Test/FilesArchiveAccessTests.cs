@@ -14,6 +14,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using NSubstitute;
 
 namespace BackendConfiguration.Pn.Integration.Test;
@@ -291,5 +293,20 @@ public class FilesArchiveAccessTests : TestBaseSetup
         _access.Context = ArchiveTestData.Leder;
 
         Assert.That((await List()).Select(f => f.Id), Is.EquivalentTo(new[] { _open, _restricted, _suggested }));
+    }
+
+    [Test]
+    public async Task Index_And_GetById_SendNoFileHash()
+    {
+        // S1a: the md5 names the stored object, so it never leaves the server.
+        _access.Context = ArchiveTestData.Admin;
+        var settings = new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() };
+
+        var row = (await List()).First(f => f.Id == _open);
+        var one = await _service.GetById(_open);
+
+        Assert.That(one.Success, Is.True, one.Message);
+        Assert.That(JsonConvert.SerializeObject(row, settings), Does.Not.Contain("fileHash"));
+        Assert.That(JsonConvert.SerializeObject(one.Model, settings), Does.Not.Contain("fileHash"));
     }
 }
