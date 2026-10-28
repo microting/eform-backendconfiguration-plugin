@@ -28,9 +28,13 @@ public sealed record LoginFacts(bool Exists, bool IsManaged, bool IsLeder, bool 
 /// </summary>
 public static class LederSaveRules
 {
-    /// <summary>An empty address or one containing "invalid" (user_…@microting.invalid) shows no login in the list.</summary>
+    /// <summary>
+    /// An empty address or the synthetic placeholder user_…@microting.invalid (what UpdateDeviceUser generates) shows no
+    /// login in the list. Any other address is listed, whatever it contains.
+    /// </summary>
     public static bool IsListedLoginAddress(string? email) =>
-        !string.IsNullOrWhiteSpace(email) && !email.Contains("invalid");
+        !string.IsNullOrWhiteSpace(email) &&
+        !email.Trim().EndsWith("@microting.invalid", System.StringComparison.OrdinalIgnoreCase);
 
     public static string? UpdateRefusal(LederCaller? caller, DeviceUserModel model,
         IReadOnlyCollection<int> liveStoredTagIds, LoginFacts login)

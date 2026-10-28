@@ -798,8 +798,8 @@ public class BackendConfigurationAssignmentWorkerService(
 
     private static AppUserVersions FindAppUser(AppUserLookup lookup, string email)
     {
-        // Same skip as the security-group lookup: an "invalid" placeholder email is no login.
-        if (string.IsNullOrWhiteSpace(email) || email.Contains("invalid"))
+        // Same skip as the security-group lookup: a placeholder email is no login.
+        if (!LederSaveRules.IsListedLoginAddress(email))
         {
             return null;
         }

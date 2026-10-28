@@ -219,7 +219,9 @@ public class LederSaveRulesTests
     [TestCase("", false)]
     [TestCase("   ", false)]
     [TestCase("user_12_34@microting.invalid", false)]
+    [TestCase("USER_12_34@MICROTING.INVALID", false)]
+    [TestCase("invalid@example.com", true)]
     [TestCase("jane.doe@example.com", true)]
-    public void IsListedLoginAddress_FollowsTheListsInvalidRule(string? email, bool expected) =>
+    public void IsListedLoginAddress_OnlyThePlaceholderIsUnlisted(string? email, bool expected) =>
         Assert.That(LederSaveRules.IsListedLoginAddress(email), Is.EqualTo(expected));
 }
