@@ -113,8 +113,14 @@ interface ComplianceReportRenderedSection extends ComplianceReportSection {
  * and cell templates are interpolated instead.
  */
 interface ComplianceReportRowVm {
+  /** `0` for an on-demand row (#5467), which has no Compliance row. */
   complianceId: number;
   sdkCaseId: number;
+  /**
+   * #5467 — the case of a "no repeat" task: no Compliance row behind it, so it is
+   * keyed by `sdkCaseId`, can be edited but has no `Slet`.
+   */
+  isOnDemand: boolean;
   /**
    * The template THIS row was answered against — the `Rediger` route needs
    * it. It comes off the CASE (`ComplianceReportCaseModel.checkListId`), the
@@ -417,6 +423,7 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
     return {
       complianceId: caseModel.complianceId,
       sdkCaseId: caseModel.sdkCaseId,
+      isOnDemand: !!caseModel.isOnDemand,
       // The CASE's own template. Since #1276 it equals the table's, but the
       // route is built from the case, not from how the case was grouped.
       checkListId: caseModel.checkListId ?? 0,
@@ -680,7 +687,8 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
     return table.key;
   }
 
-  trackByRow = (_: number, row: ComplianceReportRowVm): number => row.complianceId;
+  /** On-demand rows (#5467) all carry complianceId 0, so rows are keyed as on a re-fetch. */
+  trackByRow = (_: number, row: ComplianceReportRowVm): string => complianceReportRowKey(row);
 
   // -------------------------------------------------------------------
   // Large results: reveal per eForm table
@@ -992,9 +1000,19 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
    * #1300: an UNCOMPLETED task dated after today (Copenhagen date) cannot be
    * deleted — the button stays, disabled, with a tooltip saying why. A
    * COMPLETED future row (completed early from the calendar) stays deletable.
+   * An on-demand row (#5467) is never deletable — see hasDeleteAction.
    */
   canDelete(row: ComplianceReportRowVm): boolean {
-    return row.completed || !isFutureTask(row.taskDate);
+    return this.hasDeleteAction(row) && (row.completed || !isFutureTask(row.taskDate));
+  }
+
+  /**
+   * #5467 — `Slet` deletes BY COMPLIANCE ID, and an on-demand row has none
+   * (`complianceId` 0), so it gets no delete button at all. `Rediger` works by
+   * `sdkCaseId` and stays.
+   */
+  hasDeleteAction(row: ComplianceReportRowVm): boolean {
+    return !row.isOnDemand && row.complianceId > 0;
   }
 
   /** Drives the confirm dialog's wording: a completed log loses its answers and photos. */
