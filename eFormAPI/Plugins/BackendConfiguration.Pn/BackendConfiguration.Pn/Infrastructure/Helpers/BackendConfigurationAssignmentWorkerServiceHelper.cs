@@ -233,11 +233,23 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             .ConfigureAwait(false);
     }
 
-    /// <summary>"eForm users" or "Kun arkiv" among the login's live memberships: web/archive login access (spec section 4).</summary>
+    internal const string EformUsersSecurityGroupName = "eForm users";
+    internal const string KunArkivSecurityGroupName = "Kun arkiv";
+
+    /// <summary>A membership counts when neither the membership row nor its group is removed.</summary>
+    internal static bool IsLiveMembership(string? membershipWorkflowState, string? groupWorkflowState) =>
+        membershipWorkflowState != Constants.WorkflowStates.Removed
+        && groupWorkflowState != Constants.WorkflowStates.Removed;
+
+    /// <summary>
+    /// Web/archive login access (spec section 4): a live membership of a group named exactly
+    /// "eForm users" or "Kun arkiv". The Medarbejdere list's Web/Arkiv flags apply the same rule in memory (IsLiveMembership + names); the two checks are kept in sync.
+    /// </summary>
     private static Task<bool> HasLoginAccessAsync(BaseDbContext baseDbContext, int eformUserId) =>
         baseDbContext.SecurityGroupUsers.AnyAsync(x => x.EformUserId == eformUserId
             && x.WorkflowState != Constants.WorkflowStates.Removed
-            && (x.SecurityGroup.Name == "eForm users" || x.SecurityGroup.Name == "Kun arkiv"));
+            && x.SecurityGroup.WorkflowState != Constants.WorkflowStates.Removed
+            && (x.SecurityGroup.Name == EformUsersSecurityGroupName || x.SecurityGroup.Name == KunArkivSecurityGroupName));
 
     /// <summary>LoginFacts of the login a save resolves to, read before any write; <paramref name="login"/> null = one it creates.</summary>
     /// <remarks><paramref name="willHaveLoginAccess"/>: Web || Arkiv when the plugin's membership transition runs, null = untouched.</remarks>
@@ -462,6 +474,23 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
         return await userManager.FindByNameAsync(email).ConfigureAwait(false)
                ?? await userManager.FindByEmailAsync(email).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// The login of a worker's stored address: the raw address first, then the address with invisible characters
+    /// removed (<see cref="WorkerEmailSanitizer.Clean"/>). Shared by the save and the Leder revoke on worker delete.
+    /// </summary>
+    internal static async Task<EformUser?> FindLoginByStoredAddressAsync(
+        UserManager<EformUser> userManager, string? storedEmail)
+    {
+        var login = await FindLoginWithoutSideEffectsAsync(userManager, storedEmail).ConfigureAwait(false);
+        var cleanEmail = WorkerEmailSanitizer.Clean(storedEmail);
+        if (login == null && !string.Equals(cleanEmail, storedEmail, StringComparison.Ordinal))
+        {
+            login = await FindLoginWithoutSideEffectsAsync(userManager, cleanEmail).ConfigureAwait(false);
+        }
+
+        return login;
     }
 
     /// <summary>
@@ -931,16 +960,11 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         // change, a reconciliation deployment or a login rename must
                         // never happen ahead of the checks below finding a reason to
                         // refuse the whole save either way.
-                        var user = await FindLoginWithoutSideEffectsAsync(userManager, oldEmail).ConfigureAwait(false);
                         // A worker stored before the e-mail cleanup can still carry invisible
-                        // characters while its login (created by hand, or by an earlier save)
-                        // uses the visible address. Look that login up too, so the save links
-                        // to it instead of refusing the clean address as already in use.
-                        var cleanOldEmail = WorkerEmailSanitizer.Clean(oldEmail);
-                        if (user == null && !string.Equals(cleanOldEmail, oldEmail, StringComparison.Ordinal))
-                        {
-                            user = await FindLoginWithoutSideEffectsAsync(userManager, cleanOldEmail).ConfigureAwait(false);
-                        }
+                        // characters while its login uses the visible address; the lookup tries
+                        // the clean address too, so the save links to it instead of refusing the
+                        // clean address as already in use.
+                        var user = await FindLoginByStoredAddressAsync(userManager, oldEmail).ConfigureAwait(false);
 
                         // `user` is nulled below whenever login work is skipped - for a
                         // login this plugin does not manage, and for one whose address is
@@ -1032,7 +1056,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             // Compared like the lookup above (the sanitized old address), so an address that only
                             // needed the sanitizer fallback is not a change. A login whose UserName differs from its
                             // Email is renamed by the login work below, which only an admin may do to a Leder (H2).
-                            var lederAddressChanged = !string.Equals(cleanOldEmail, deviceUserModel.WorkerEmail,
+                            var lederAddressChanged = !string.Equals(WorkerEmailSanitizer.Clean(oldEmail), deviceUserModel.WorkerEmail,
                                 StringComparison.OrdinalIgnoreCase);
                             var loginRenamed = user != null
                                 && (!string.Equals(user.Email, deviceUserModel.WorkerEmail, StringComparison.OrdinalIgnoreCase)

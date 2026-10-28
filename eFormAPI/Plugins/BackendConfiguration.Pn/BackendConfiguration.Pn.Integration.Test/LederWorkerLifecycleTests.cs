@@ -31,6 +31,39 @@ public class LederWorkerLifecycleTests : LederWorkerTestBase
     }
 
     [Test]
+    public async Task DeleteWorker_WhoseStoredAddressHasAnInvisibleMark_StillRevokesTheFlag()
+    {
+        var w = await CreateWorkerAsync(isLeader: true);
+        var login = await LoginOfAsync(w);
+        // The worker row carries the address with an invisible mark, the login the visible one (the clean-address fallback in the save finds it the same way).
+        var worker = await MicrotingDbContext!.Workers.SingleAsync(x => x.Email == w.Email);
+        worker.Email = $"\u200E{w.Email}";
+        await worker.Update(MicrotingDbContext);
+
+        var result = await AdminService().Delete(w.SiteId);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(await IsLederAsync(login.Id), Is.False);
+    }
+
+    [Test]
+    public async Task List_WebFlag_IgnoresARemovedMembership_LikeTheServerDecision()
+    {
+        var w = await CreateWorkerAsync(web: true);
+        var login = await LoginOfAsync(w);
+        Assert.That(Row(await ListAsync(), w).WebAccessEnabled, Is.True);
+
+        var membership = await BaseDbContext.SecurityGroupUsers
+            .SingleAsync(x => x.EformUserId == login.Id && x.SecurityGroup.Name == "eForm users");
+        membership.WorkflowState = Constants.WorkflowStates.Removed;
+        await BaseDbContext.SaveChangesAsync();
+
+        var row = Row(await ListAsync(), w);
+        Assert.That(row.WebAccessEnabled, Is.False, "a removed membership is no web access (same rule as HasLoginAccessAsync)");
+        Assert.That(row.ArchiveEnabled, Is.False);
+    }
+
+    [Test]
     public async Task DeleteWorker_ThatIsNotALeder_WritesNoRow()
     {
         var w = await CreateWorkerAsync();

@@ -69,7 +69,7 @@ public static class LederSaveRules
         }
 
         var login = linkTarget ?? LoginFacts.NoLogin;
-        // Linking a new worker to a Leder's login would take it over, so only an admin may (the flag stays) (H2).
+        // Linking a new worker to a Leder's login would attach the new worker to that login, so only an admin may (the flag stays) (H2).
         if (!caller.IsAdmin && login.IsLeder)
         {
             return LederMessages.LederLoginChangeRequiresAdmin;

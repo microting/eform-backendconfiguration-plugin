@@ -430,7 +430,7 @@ public class BackendConfigurationAssignmentWorkerService(
     private async Task RevokeLederOfWorkerAsync(string workerEmail)
     {
         var login = await BackendConfigurationAssignmentWorkerServiceHelper
-            .FindLoginWithoutSideEffectsAsync(userManager, workerEmail).ConfigureAwait(false);
+            .FindLoginByStoredAddressAsync(userManager, workerEmail).ConfigureAwait(false);
         if (login != null)
         {
             await LederAssignmentStore.RevokeAsync(backendConfigurationPnDbContext, login.Id, userService.UserId)
@@ -713,11 +713,6 @@ public class BackendConfigurationAssignmentWorkerService(
         ILookup<string, AppUserVersions> ByEmail);
 
     /// <summary>
-    /// Loads the logins of every listed worker in one query. Matched the way
-    /// <c>IUserService.GetByUsernameAsync</c> matches: UserName first, then Email,
-    /// case-insensitively like the MySQL collation.
-    /// </summary>
-    /// <summary>
     /// The login read-back of one Medarbejdere row: Web/Arkiv (live groups) and the Leder fields (contract "Medarbejdere").
     /// One group query per row, as before; the Leder and admin-role sets are loaded once per page by the caller.
     /// Without a listed address or a resolved login the row keeps IsLeader = null.
@@ -736,14 +731,24 @@ public class BackendConfigurationAssignmentWorkerService(
             return;
         }
 
-        // Removed groups are read too (the managed/admin rules count them) and left out of Web/Arkiv below.
+        // Removed groups and memberships are read too (the managed/admin rules count them); Web/Arkiv use the shared
+        // login-access rule (Helper.IsLiveMembership + the EformUsers/KunArkiv group-name constants), the same one the save's M5/H2 decisions use.
         var groups = await (from securityGroupUser in baseDbContext.SecurityGroupUsers
             join securityGroup in baseDbContext.SecurityGroups on securityGroupUser.SecurityGroupId equals securityGroup.Id
             where securityGroupUser.EformUserId == user.Id
-            select new { securityGroup.Name, securityGroup.WorkflowState }).ToListAsync().ConfigureAwait(false);
-        var liveNames = groups.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).Select(x => x.Name);
-        deviceUserModel.IsBackendUser = deviceUserModel.WebAccessEnabled = liveNames.Any(x => x.Contains("eForm users"));
-        deviceUserModel.ArchiveEnabled = liveNames.Any(x => x.Contains("Kun arkiv"));
+            select new
+            {
+                securityGroup.Name, GroupWorkflowState = securityGroup.WorkflowState,
+                MembershipWorkflowState = securityGroupUser.WorkflowState
+            }).ToListAsync().ConfigureAwait(false);
+        var liveNames = groups
+            .Where(x => BackendConfigurationAssignmentWorkerServiceHelper.IsLiveMembership(
+                x.MembershipWorkflowState, x.GroupWorkflowState))
+            .Select(x => x.Name).ToList();
+        deviceUserModel.IsBackendUser = deviceUserModel.WebAccessEnabled =
+            liveNames.Contains(BackendConfigurationAssignmentWorkerServiceHelper.EformUsersSecurityGroupName);
+        deviceUserModel.ArchiveEnabled =
+            liveNames.Contains(BackendConfigurationAssignmentWorkerServiceHelper.KunArkivSecurityGroupName);
 
         var allNames = groups.Select(x => x.Name);
         var hasAdminRole = adminRoleLoginIds.Contains(user.Id);
@@ -755,6 +760,11 @@ public class BackendConfigurationAssignmentWorkerService(
             StringComparer.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// Loads the logins of every listed worker in one query. Matched the way
+    /// <c>IUserService.GetByUsernameAsync</c> matches: UserName first, then Email,
+    /// case-insensitively like the MySQL collation.
+    /// </summary>
     private async Task<AppUserLookup> LoadAppUsersByEmail(List<DeviceUserModel> deviceUsers)
     {
         var emails = deviceUsers
