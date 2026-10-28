@@ -12,7 +12,7 @@ import {CommonDictionaryModel, DeleteModalSettingModel, Paged, SharedTagModel} f
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {DeleteModalComponent} from 'src/app/common/modules/eform-shared/components';
 import {AppMenuStateService} from 'src/app/common/store';
-import {selectCurrentUserIsAdmin} from 'src/app/state';
+import {ArchiveCapabilitiesService} from '../../services/archive-capabilities.service';
 import {ArchiveFolderModel, ArchiveNamedItem, FilesModel} from '../../../../models';
 import {
   BackendConfigurationPnArchiveFoldersService,
@@ -88,13 +88,17 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
   private moveFlow = inject(ArchiveMoveFlowService);
   private router = inject(Router);
   private appMenuStateService = inject(AppMenuStateService);
+  private capabilities = inject(ArchiveCapabilitiesService);
 
   readonly selectedKey = '{{count}} selected';
 
   @ViewChild('tagsModal') tagsModal: FileTagsComponent;
   // Resolved once menus hydrate — calling getTitleByUrl from the template leaks a subscription per tick.
   pageTitle = '';
-  isAdmin = false;
+  /** Admin or Leder (GET archive/capabilities): folders, Læseadgang, etiket rename/delete. */
+  canManage = false;
+  /** "Slet" on a document (D-L4). */
+  canDelete = false;
   availableTags: SharedTagModel[] = [];
   properties: CommonDictionaryModel[] = [];
   workerTags: CommonDictionaryModel[] = [];
@@ -118,7 +122,7 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
   titleSub$: Subscription;
   filtersSub$: Subscription;
   paginationSub$: Subscription;
-  isAdminSub$: Subscription;
+  capabilitiesSub$: Subscription;
   translatesSub$: Subscription;
   filesDeletedSub$: Subscription;
   clickDownloadFilesSub$: Subscription;
@@ -133,12 +137,15 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
       this.sortField = p.sort;
       this.sortDesc = p.isSortDsc;
     });
-    this.isAdminSub$ = this.store.select(selectCurrentUserIsAdmin).subscribe(isAdmin => {
-      this.isAdmin = isAdmin;
-      if (isAdmin && !this.workerTags.length) {
+    this.capabilitiesSub$ = this.capabilities.capabilities$.subscribe(capabilities => {
+      this.canManage = capabilities.canManage;
+      this.canDelete = capabilities.canDelete;
+      if (capabilities.canManage && !this.workerTags.length) {
         this.getWorkerTags();
       }
     });
+    // Module entry: fresh rights (a grant or revoke since the last visit shows now). load() emits once and completes.
+    this.capabilities.load().subscribe();
     this.getTags();
     this.getProperties();
     this.refresh();
@@ -392,7 +399,7 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
 
   /** ArchiveMoveFlowService.move emits exactly once; only a real move reloads the page. */
   private moveRows(rows: FilesModel[], targetFolderId: number): void {
-    this.moveFlow.move(rows, this.folders, targetFolderId, this.isAdmin).subscribe(moved => {
+    this.moveFlow.move(rows, this.folders, targetFolderId, this.canManage).subscribe(moved => {
       if (moved) {
         this.selectedFileIds = [];
         this.refresh();
@@ -457,7 +464,7 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
     this.tagsModal.show();
   }
 
-  // ---- folder administration (admin) -------------------------------------------------
+  // ---- folder administration (admin or Leder) ----------------------------------
   createTopFolder(): void {
     this.askFolderName({title: 'New folder'}).subscribe(name =>
       this.foldersService.createFolder({name, parentId: null}).subscribe(res => this.afterFolderChange(res?.success, res?.model?.id)));

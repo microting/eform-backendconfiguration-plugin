@@ -1270,7 +1270,6 @@ export const deDE = {
   'Read access changes': 'Der Lesezugriff ändert sich',
   '{{count}} document can now be read by {{who}}': '{{count}} Dokument kann jetzt von {{who}} gelesen werden',
   '{{count}} documents can now be read by {{who}}': '{{count}} Dokumente können jetzt von {{who}} gelesen werden',
-  'The move changes who can read the documents. Only an administrator can do that.': 'Das Verschieben ändert, wer die Dokumente lesen kann. Nur ein Administrator kann das tun.',
   '{{count}} document moved': '{{count}} Dokument verschoben',
   '{{count}} documents moved': '{{count}} Dokumente verschoben',
   'Move to folder': 'In Ordner verschieben',

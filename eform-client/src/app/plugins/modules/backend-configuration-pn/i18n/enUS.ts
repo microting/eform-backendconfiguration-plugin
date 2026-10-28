@@ -1345,7 +1345,6 @@ export const enUS= {
   'Read access changes': 'Read access changes',
   '{{count}} document can now be read by {{who}}': '{{count}} document can now be read by {{who}}',
   '{{count}} documents can now be read by {{who}}': '{{count}} documents can now be read by {{who}}',
-  'The move changes who can read the documents. Only an administrator can do that.': 'The move changes who can read the documents. Only an administrator can do that.',
   '{{count}} document moved': '{{count}} document moved',
   '{{count}} documents moved': '{{count}} documents moved',
   'Move to folder': 'Move to folder',

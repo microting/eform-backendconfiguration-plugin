@@ -139,6 +139,7 @@
 <app-file-tags
   #tagsModal
   [availableTags]="availableTags"
+  [canManage]="(canManage$ | async) === true"
   (tagsChanged)="getTags()"
 >
 </app-file-tags>

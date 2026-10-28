@@ -23,6 +23,7 @@ import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
+import {fileTagsForDialog} from '../../file-tags-access';
 
 @AutoUnsubscribe()
 @Component({
@@ -36,6 +37,8 @@ export class FileTagsComponent implements OnInit, OnDestroy, OnChanges {
   private overlay = inject(Overlay);
 
   @Input() availableTags: SharedTagModel[] = [];
+  /** Admin or Leder: rename and delete are offered (D-L11). */
+  @Input() canManage = false;
   @Output() tagsChanged: EventEmitter<void> = new EventEmitter<void>();
   dialogRef: MatDialogRef<SharedTagsComponent>;
   deleteTag$: Subscription;
@@ -55,7 +58,7 @@ export class FileTagsComponent implements OnInit, OnDestroy, OnChanges {
   ngOnInit() {}
 
   show() {
-    this.dialogRef = this.dialog.open(SharedTagsComponent, dialogConfigHelper(this.overlay, this.availableTags));
+    this.dialogRef = this.dialog.open(SharedTagsComponent, dialogConfigHelper(this.overlay, fileTagsForDialog(this.availableTags, this.canManage)));
     this.dialogRef.componentInstance.showMultipleCreateBtn = true;
     this.showCreateTagSub$ = this.dialogRef.componentInstance.showCreateTag.subscribe(() => {
       const dialogRefCreateTag = this.dialog.open(SharedTagCreateComponent, dialogConfigHelper(this.overlay));
@@ -121,8 +124,8 @@ export class FileTagsComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (!changes.availableTags.firstChange && changes.availableTags && this.dialogRef) {
-      this.dialogRef.componentInstance.availableTags = changes.availableTags.currentValue;
+    if ((changes.availableTags || changes.canManage) && this.dialogRef) {
+      this.dialogRef.componentInstance.availableTags = fileTagsForDialog(this.availableTags, this.canManage);
     }
   }
 

@@ -1,7 +1,7 @@
-import {describe, it, expect, beforeEach, vi} from 'vitest';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import type {Mock} from 'vitest';
-import {TestBed} from '@angular/core/testing';
-import {TranslateService} from '@ngx-translate/core';
+import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {TranslateModule, TranslateService} from '@ngx-translate/core';
 import {of} from 'rxjs';
 import {Paged} from 'src/app/common/models';
 import {DocumentDateState, FilesModel} from '../../../../models';
@@ -141,5 +141,56 @@ describe('FilesTableComponent', () => {
     table.ngOnDestroy();
     expect(revoke).toHaveBeenLastCalledWith('blob:second');
     open.mockRestore();
+  });
+});
+
+describe('FilesTableComponent rights (D-L4)', () => {
+  let fixture: ComponentFixture<FilesTableComponent>;
+
+  function render(canManage: boolean, canDelete: boolean): void {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [FilesTableComponent, TranslateModule.forRoot()],
+      providers: [{provide: BackendConfigurationPnFilesService, useValue: {getPdfFile: vi.fn()}}],
+    });
+    fixture = TestBed.createComponent(FilesTableComponent);
+    const files = new Paged<FilesModel>();
+    files.entities = [row(7, 'Invoice 118')];
+    fixture.componentInstance.files = files;
+    fixture.componentInstance.canManage = canManage;
+    fixture.componentInstance.canDelete = canDelete;
+    fixture.componentInstance.ngOnChanges({files: {} as any});
+    fixture.detectChanges();
+  }
+
+  const openMenu = (): void => {
+    fixture.nativeElement.querySelector('#actionMenu0').click();
+    fixture.detectChanges();
+  };
+  const inOverlay = (selector: string): HTMLElement | null => document.querySelector(`.cdk-overlay-container ${selector}`);
+
+  afterEach(() => {
+    fixture?.destroy();
+    document.querySelector('.cdk-overlay-container')?.replaceChildren();
+  });
+
+  it('offers Slet only when canDelete is true', () => {
+    render(true, false);
+    openMenu();
+    expect(inOverlay('#viewPdfBtn-0')).not.toBeNull();
+    expect(inOverlay('#deleteFileBtn-0')).toBeNull();
+    fixture.destroy();
+    document.querySelector('.cdk-overlay-container')?.replaceChildren();
+
+    render(false, true);
+    openMenu();
+    expect(inOverlay('#deleteFileBtn-0')).not.toBeNull();
+  });
+
+  it('shows the Læseadgang column only when canManage is true', () => {
+    render(true, true);
+    expect(fixture.nativeElement.querySelector('#archiveAccessHeader')).not.toBeNull();
+    render(false, true);
+    expect(fixture.nativeElement.querySelector('#archiveAccessHeader')).toBeNull();
   });
 });

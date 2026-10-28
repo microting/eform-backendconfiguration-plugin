@@ -1,8 +1,8 @@
 import {Component, OnInit, inject} from '@angular/core';
-import {Store} from '@ngrx/store';
+import {map} from 'rxjs';
 import {ToastrService} from 'ngx-toastr';
 import {TranslateService, TranslatePipe} from '@ngx-translate/core';
-import {selectCurrentUserIsFirstUser} from 'src/app/state';
+import {ArchiveCapabilitiesService} from '../../services/archive-capabilities.service';
 import {BackendConfigurationPnInboxService} from '../../../../services';
 import {InboxSenderRuleKind, InboxSettingsModel} from '../../../../models';
 import {NgIf, AsyncPipe} from '@angular/common';
@@ -34,10 +34,9 @@ export class InboxSettingsComponent implements OnInit {
   private inboxService = inject(BackendConfigurationPnInboxService);
   private toastr = inject(ToastrService);
   private translate = inject(TranslateService);
-  private store = inject(Store);
 
   /** The address is fixed: only the tenant's first user may create a new one. */
-  readonly isFirstUser$ = this.store.select(selectCurrentUserIsFirstUser);
+  readonly isFirstUser$ = inject(ArchiveCapabilitiesService).capabilities$.pipe(map(c => c.isFirstUser));
 
   loaded = false;
   address: string | null = null;

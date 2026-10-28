@@ -58,9 +58,10 @@ export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, 
   @Input() folderOptions: ArchiveFolderOption[] = [];
   @Input() properties: CommonDictionaryModel[] = [];
   @Input() availableTags: SharedTagModel[] = [];
-  /** Live medarbejdergrupper; only loaded for admins. */
+  /** Live medarbejdergrupper; only loaded for admins and Leders. */
   @Input() workerTags: CommonDictionaryModel[] = [];
-  @Input() isAdmin = false;
+  /** Admin or Leder: edit Læseadgang and move across access. */
+  @Input() canManage = false;
   /** "2 af 4" in the list, "1 af 2 valgte" while several documents are selected; null hides it. */
   @Input() positionLabel: string | null = null;
   @Input() hasPrevious = false;
@@ -291,7 +292,7 @@ export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, 
     return this.whoLabel(this.accessItems.filter(item => ids.includes(item.id)));
   }
 
-  /** Read-only line for non-admins. */
+  /** Read-only line for users who cannot manage. */
   get readAccessLabel(): string {
     if (!this.edited || !this.file) {
       return '';
@@ -379,7 +380,7 @@ export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, 
       const readGroups = this.groupsBeforeMove(file, original, edited, changes.access);
       steps.push(defer(() => this.moveFlow.move(
         [{id, folderId: original.folderId, ownAccess: edited.ownAccess, readGroups}],
-        this.folders, edited.folderId, this.isAdmin)));
+        this.folders, edited.folderId, this.canManage)));
     }
     this.busy = true;
     concat(...steps).pipe(takeWhile(ok => ok, true), toArray()).subscribe({

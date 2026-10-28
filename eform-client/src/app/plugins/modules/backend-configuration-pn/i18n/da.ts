@@ -1245,7 +1245,6 @@ export const da = {
   'Read access changes': 'Læseadgangen ændres',
   '{{count}} document can now be read by {{who}}': '{{count}} dokument kan nu læses af {{who}}',
   '{{count}} documents can now be read by {{who}}': '{{count}} dokumenter kan nu læses af {{who}}',
-  'The move changes who can read the documents. Only an administrator can do that.': 'Flytningen ændrer, hvem der kan læse dokumenterne. Kun en administrator kan gøre det.',
   '{{count}} document moved': '{{count}} dokument flyttet',
   '{{count}} documents moved': '{{count}} dokumenter flyttet',
   'Move to folder': 'Flyt til mappe',
