@@ -57,6 +57,19 @@ export function leaderToSend(original: boolean | null, current: boolean | null):
   return current === (original === true) ? null : current;
 }
 
+/**
+ * The toggle's value as a choice for leaderToSend: null ("no choice") when it is hidden, or when it is disabled now
+ * and was disabled when the dialog opened. A managed Leder whose Web and Arkiv were already off starts disabled at
+ * false; saving that untouched would revoke the role. Only switching access off in this edit (enabled at open,
+ * disabled now) sends the false, as the API revokes then.
+ */
+export function leaderChoice(state: LeaderToggleState, stateAtOpen: LeaderToggleState, value: boolean): boolean | null {
+  if (state === 'hidden' || (state === 'disabled' && stateAtOpen === 'disabled')) {
+    return null;
+  }
+  return value;
+}
+
 /** A Leder's login (e-mail) is changed by an admin only (spec H2): read-only for everyone else. */
 export function isLeaderLoginLocked(row: RowWith<'canSetLeder' | 'isLeader'>): boolean {
   return row.canSetLeder !== true && row.isLeader === true;

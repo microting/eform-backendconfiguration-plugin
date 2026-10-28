@@ -14,6 +14,7 @@ import {BackendConfigurationPnPropertiesService} from '../../../../services';
 import {
   LeaderToggleState,
   isLeaderLoginLocked,
+  leaderChoice,
   leaderToSend,
   leaderToggleState,
   workerTagsToSend,
@@ -104,6 +105,8 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   /** Outside `form`: the resigned rule re-enables every form control. */
   leaderControl = new FormControl<boolean>(false, {nonNullable: true});
   leaderState: LeaderToggleState = 'hidden';
+  /** The toggle's state when the dialog opened: disabled then and now means the admin did not touch access. */
+  private leaderStateAtOpen: LeaderToggleState = 'hidden';
   /** The admin's choice while the toggle is disabled; restored when Web or Arkiv comes back on. */
   private stashedLeaderChoice = false;
   leaderAccessSub$: Subscription;
@@ -446,6 +449,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     });
 
     this.syncLeaderToggle();
+    this.leaderStateAtOpen = this.leaderState;
     this.leaderAccessSub$ = merge(
       this.form.get('webAccessEnabled')!.valueChanges,
       this.form.get('archiveEnabled')!.valueChanges,
@@ -514,11 +518,12 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     }
   }
 
-  /** isLeader only when changed (null = unchanged, always null when hidden); worker groups per D-L12. */
+  /** isLeader only when changed (null = unchanged, also when hidden or left disabled); worker groups per D-L12. */
   private applyLeaderAndTags(formTags: number[] | undefined): void {
-    this.selectedDeviceUser.isLeader = this.leaderState === 'hidden'
-      ? null
-      : leaderToSend(this.storedRow.isLeader ?? null, this.leaderControl.value);
+    this.selectedDeviceUser.isLeader = leaderToSend(
+      this.storedRow.isLeader ?? null,
+      leaderChoice(this.leaderState, this.leaderStateAtOpen, this.leaderControl.value),
+    );
     this.selectedDeviceUser.tags = workerTagsToSend(this.storedRow, formTags);
   }
 

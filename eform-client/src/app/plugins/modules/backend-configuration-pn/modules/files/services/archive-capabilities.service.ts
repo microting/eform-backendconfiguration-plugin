@@ -27,8 +27,9 @@ function withDefaults(model: Partial<ArchiveCapabilitiesModel>): ArchiveCapabili
 /**
  * What the signed-in user may do in Arkiv (GET archive/capabilities); a Leder manages the archive without being an
  * admin. The server enforces every rule. load() emits once, shares one request, and reloads after an [ArchiveManager]
- * refusal. It is bounded by CAPABILITIES_TIMEOUT_MS; a timeout, failure or older plugin falls back to the role
- * (a failed reload keeps the last answer). Sign-out forgets everything, also an answer still in flight.
+ * refusal; a refusal during a load queues one fresh load after it, as that answer may predate the revoke. It is
+ * bounded by CAPABILITIES_TIMEOUT_MS; a timeout, failure or empty answer keeps the last answer, and only without one
+ * falls back to the role (an older plugin). Sign-out forgets everything, also an answer still in flight.
  */
 @Injectable({providedIn: 'root'})
 export class ArchiveCapabilitiesService {
@@ -37,6 +38,8 @@ export class ArchiveCapabilitiesService {
   private current = new BehaviorSubject<ArchiveCapabilitiesModel>(NO_ARCHIVE_CAPABILITIES);
   private inFlight: Observable<ArchiveCapabilitiesModel> | null = null;
   private lastLoaded: ArchiveCapabilitiesModel | null = null;
+  /** A refusal arrived during the load in flight: load once more when it completes (many refusals, one reload). */
+  private reloadQueued = false;
   /** Bumped on sign-out: an answer from an older generation belongs to the previous user and is ignored. */
   private generation = 0;
 
@@ -44,11 +47,12 @@ export class ArchiveCapabilitiesService {
 
   constructor() {
     // Root singleton: both subscriptions intentionally live for the whole app.
-    inject(ArchiveAccountDisabledHandler).forbidden$.subscribe(() => this.load().subscribe());
+    inject(ArchiveAccountDisabledHandler).forbidden$.subscribe(() => this.reloadAfterRefusal());
     this.store.select(selectAuthIsAuth).subscribe(isAuth => {
       if (!isAuth) {
         this.generation++;
         this.inFlight = null;
+        this.reloadQueued = false;
         this.lastLoaded = null;
         this.current.next(NO_ARCHIVE_CAPABILITIES);
       }
@@ -68,8 +72,13 @@ export class ArchiveCapabilitiesService {
           }
         }),
         finalize(() => {
+          // A request from before a sign-out is no longer inFlight: neither it nor a queued reload carries over.
           if (this.inFlight === request) {
             this.inFlight = null;
+            if (this.reloadQueued) {
+              this.reloadQueued = false;
+              this.load().subscribe();
+            }
           }
         }),
         shareReplay(1),
@@ -77,6 +86,18 @@ export class ArchiveCapabilitiesService {
       this.inFlight = request;
     }
     return this.inFlight;
+  }
+
+  /**
+   * getCapabilities refuses quietly (its own 403 never reaches forbidden$), so the queued reload cannot loop. A load
+   * in flight may answer from before the revoke, hence one more load after it rather than joining it.
+   */
+  private reloadAfterRefusal(): void {
+    if (this.inFlight) {
+      this.reloadQueued = true;
+    } else {
+      this.load().subscribe();
+    }
   }
 
   /** The server's answer, or the last one when there is none (empty completion, error, timeout); null if neither. */
@@ -90,6 +111,8 @@ export class ArchiveCapabilitiesService {
         }
       }),
       defaultIfEmpty(null),
+      // lastLoaded as it is when the request ends, not when it started: an empty completion keeps the last answer.
+      map(model => model ?? this.lastLoaded),
       catchError((): Observable<ArchiveCapabilitiesModel | null> => of(this.lastLoaded)),
     );
   }

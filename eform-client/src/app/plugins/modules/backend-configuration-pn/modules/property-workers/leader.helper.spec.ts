@@ -4,6 +4,7 @@ import {
   NO_CALLER_FLAGS,
   callerFlags,
   isLeaderLoginLocked,
+  leaderChoice,
   leaderToSend,
   leaderToggleState,
   newWorkerRow,
@@ -103,6 +104,27 @@ describe('leaderToSend', () => {
   it('no current value sends null', () => {
     expect(leaderToSend(true, null)).toBeNull();
     expect(leaderToSend(null, null)).toBeNull();
+  });
+});
+
+describe('leaderChoice', () => {
+  it('an enabled toggle is a choice', () => {
+    expect(leaderChoice('enabled', 'enabled', true)).toBe(true);
+    expect(leaderChoice('enabled', 'disabled', false)).toBe(false);
+  });
+
+  it('a hidden toggle is no choice', () => {
+    expect(leaderChoice('hidden', 'hidden', false)).toBeNull();
+  });
+
+  it('access already off at open and still off: unchanged, so an unrelated save keeps the Leder', () => {
+    expect(leaderChoice('disabled', 'disabled', false)).toBeNull();
+    expect(leaderToSend(true, leaderChoice('disabled', 'disabled', false))).toBeNull();
+  });
+
+  it('this edit switched Web and Arkiv off: false, so the API revokes', () => {
+    expect(leaderChoice('disabled', 'enabled', false)).toBe(false);
+    expect(leaderToSend(true, leaderChoice('disabled', 'enabled', false))).toBe(false);
   });
 });
 

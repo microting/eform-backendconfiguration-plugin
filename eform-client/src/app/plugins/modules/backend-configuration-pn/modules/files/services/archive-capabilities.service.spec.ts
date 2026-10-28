@@ -97,6 +97,14 @@ describe('ArchiveCapabilitiesService', () => {
     expect(getCapabilities).toHaveBeenCalledTimes(1);
   });
 
+  it('keeps the last answer when a reload completes empty', async () => {
+    await firstValueFrom(service.load());
+    getCapabilities.mockReturnValue(EMPTY);
+    isAdmin = true;
+    expect(await firstValueFrom(service.load())).toEqual(leder);
+    expect(await current()).toEqual(leder);
+  });
+
   it('keeps the last answer when a reload times out', async () => {
     await firstValueFrom(service.load());
     vi.useFakeTimers();
@@ -147,16 +155,47 @@ describe('ArchiveCapabilitiesService', () => {
     expect(await current()).toEqual(plain);
   });
 
-  it('a refusal during a load does not start another request', async () => {
+  it('a refusal during a load asks again once that load completes, as its answer may predate the revoke', async () => {
+    const pending = new Subject<CapabilitiesResponse>();
+    getCapabilities.mockReturnValue(pending);
+    const loading = firstValueFrom(service.load());
+    forbidden$.next();
+    expect(getCapabilities).toHaveBeenCalledTimes(1);
+    pending.next(response(leder));
+    expect(await loading).toEqual(leder);
+    getCapabilities.mockReturnValue(answer(plain));
+    pending.complete();
+    expect(getCapabilities).toHaveBeenCalledTimes(2);
+    expect(await current()).toEqual(plain);
+  });
+
+  it('several refusals during a load queue one follow-up, and it does not repeat', async () => {
     const pending = new Subject<CapabilitiesResponse>();
     getCapabilities.mockReturnValue(pending);
     const loading = firstValueFrom(service.load());
     forbidden$.next();
     forbidden$.next();
-    pending.next(response(plain));
+    forbidden$.next();
+    pending.next(response(leder));
+    getCapabilities.mockReturnValue(answer(plain));
+    pending.complete();
+    await loading;
+    expect(getCapabilities).toHaveBeenCalledTimes(2);
+    await firstValueFrom(service.load());
+    expect(getCapabilities).toHaveBeenCalledTimes(3);
+  });
+
+  it('sign-out drops a follow-up queued by a refusal', async () => {
+    const pending = new Subject<CapabilitiesResponse>();
+    getCapabilities.mockReturnValue(pending);
+    const loading = firstValueFrom(service.load());
+    forbidden$.next();
+    isAuth$.next(false);
+    pending.next(response(leder));
     pending.complete();
     await loading;
     expect(getCapabilities).toHaveBeenCalledTimes(1);
+    expect(await current()).toEqual(NO_ARCHIVE_CAPABILITIES);
   });
 
   it('sign-out forgets the previous user, including the last answer', async () => {

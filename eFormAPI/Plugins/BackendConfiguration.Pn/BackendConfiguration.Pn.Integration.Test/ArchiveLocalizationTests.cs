@@ -27,7 +27,7 @@ public class ArchiveLocalizationTests
         ["ArchiveDefaultFolderCannotRestrict"] = "Standardmappen kan ikke have begrænset læseadgang",
         ["ArchiveChooseFolder"] = "Vælg en mappe",
         ["ArchiveMoveChangesAccess"] =
-            "Flytningen ændrer, hvem der kan læse dokumenterne. Kun en administrator kan gøre det.",
+            "Flytningen ændrer, hvem der kan læse dokumenterne. Kun en administrator eller en leder kan gøre det.",
         ["ArchiveFolderNameInvalid"] = "Skriv et navn på højst 250 tegn",
         ["ArchiveFolderNotFound"] = "Mappen findes ikke",
         ["ArchiveUnknownGroup"] = "En valgt medarbejdergruppe findes ikke længere",
