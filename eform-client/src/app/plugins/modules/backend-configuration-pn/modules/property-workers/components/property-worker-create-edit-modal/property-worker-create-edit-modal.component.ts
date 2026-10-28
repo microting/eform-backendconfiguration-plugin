@@ -518,11 +518,15 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     }
   }
 
-  /** isLeader only when changed (null = unchanged, also when hidden or left disabled); worker groups per D-L12. */
+  /**
+   * isLeader only when changed (null = unchanged, also when hidden or left disabled untouched); worker groups per
+   * D-L12. `dirty` is set only by the admin's own clicks: syncLeaderToggle's programmatic setValue leaves it alone.
+   */
   private applyLeaderAndTags(formTags: number[] | undefined): void {
+    const choice = this.leaderControl.enabled ? this.leaderControl.value : this.stashedLeaderChoice;
     this.selectedDeviceUser.isLeader = leaderToSend(
       this.storedRow.isLeader ?? null,
-      leaderChoice(this.leaderState, this.leaderStateAtOpen, this.leaderControl.value),
+      leaderChoice(this.leaderState, this.leaderStateAtOpen, choice, this.leaderControl.dirty),
     );
     this.selectedDeviceUser.tags = workerTagsToSend(this.storedRow, formTags);
   }

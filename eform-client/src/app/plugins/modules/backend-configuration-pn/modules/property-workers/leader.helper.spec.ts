@@ -109,22 +109,36 @@ describe('leaderToSend', () => {
 
 describe('leaderChoice', () => {
   it('an enabled toggle is a choice', () => {
-    expect(leaderChoice('enabled', 'enabled', true)).toBe(true);
-    expect(leaderChoice('enabled', 'disabled', false)).toBe(false);
+    expect(leaderChoice('enabled', 'enabled', true, false)).toBe(true);
+    expect(leaderChoice('enabled', 'disabled', false, true)).toBe(false);
   });
 
-  it('a hidden toggle is no choice', () => {
-    expect(leaderChoice('hidden', 'hidden', false)).toBeNull();
+  it('a hidden toggle is no choice, whatever the value', () => {
+    expect(leaderChoice('hidden', 'hidden', false, false)).toBeNull();
+    expect(leaderChoice('hidden', 'hidden', true, true)).toBeNull();
   });
 
-  it('access already off at open and still off: unchanged, so an unrelated save keeps the Leder', () => {
-    expect(leaderChoice('disabled', 'disabled', false)).toBeNull();
-    expect(leaderToSend(true, leaderChoice('disabled', 'disabled', false))).toBeNull();
+  it('untouched, access already off at open and still off: unchanged, so an unrelated save keeps the Leder', () => {
+    expect(leaderChoice('disabled', 'disabled', true, false)).toBeNull();
+    expect(leaderToSend(true, leaderChoice('disabled', 'disabled', true, false))).toBeNull();
   });
 
-  it('this edit switched Web and Arkiv off: false, so the API revokes', () => {
-    expect(leaderChoice('disabled', 'enabled', false)).toBe(false);
-    expect(leaderToSend(true, leaderChoice('disabled', 'enabled', false))).toBe(false);
+  it('untouched, this edit switched Web and Arkiv off: false, so the API revokes', () => {
+    expect(leaderChoice('disabled', 'enabled', true, false)).toBe(false);
+    expect(leaderToSend(true, leaderChoice('disabled', 'enabled', true, false))).toBe(false);
+  });
+
+  it('disabled at open, Web on, Leder unticked, Web off again: the explicit revoke is sent', () => {
+    expect(leaderChoice('disabled', 'disabled', false, true)).toBe(false);
+    expect(leaderToSend(true, leaderChoice('disabled', 'disabled', false, true))).toBe(false);
+  });
+
+  it('a deliberate tick on a login that has lost Web and Arkiv goes to the API (which refuses it)', () => {
+    expect(leaderToSend(false, leaderChoice('disabled', 'enabled', true, true))).toBe(true);
+  });
+
+  it('flipped back to the stored value: nothing to send', () => {
+    expect(leaderToSend(true, leaderChoice('disabled', 'disabled', true, true))).toBeNull();
   });
 });
 

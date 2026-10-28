@@ -58,16 +58,28 @@ export function leaderToSend(original: boolean | null, current: boolean | null):
 }
 
 /**
- * The toggle's value as a choice for leaderToSend: null ("no choice") when it is hidden, or when it is disabled now
- * and was disabled when the dialog opened. A managed Leder whose Web and Arkiv were already off starts disabled at
- * false; saving that untouched would revoke the role. Only switching access off in this edit (enabled at open,
- * disabled now) sends the false, as the API revokes then.
+ * The Leder choice for leaderToSend. `choice` is the admin's last choice (the toggle's value, or the value it had
+ * before it was disabled); `changedByAdmin` says the admin flipped the toggle in this edit.
+ * - Hidden: null ("no choice").
+ * - Enabled, or changed by the admin: the choice, even if the toggle ends disabled. A deliberate untick is a revoke;
+ *   a deliberate tick on a login that has since lost Web and Arkiv goes to the API, which refuses it.
+ * - Disabled and not changed: null when it was disabled at open too (a managed Leder whose Web and Arkiv were
+ *   already off would otherwise lose the role on an unrelated save); false when this edit switched access off, as
+ *   the API revokes then.
  */
-export function leaderChoice(state: LeaderToggleState, stateAtOpen: LeaderToggleState, value: boolean): boolean | null {
-  if (state === 'hidden' || (state === 'disabled' && stateAtOpen === 'disabled')) {
+export function leaderChoice(
+  state: LeaderToggleState,
+  stateAtOpen: LeaderToggleState,
+  choice: boolean,
+  changedByAdmin: boolean,
+): boolean | null {
+  if (state === 'hidden') {
     return null;
   }
-  return value;
+  if (state === 'enabled' || changedByAdmin) {
+    return choice;
+  }
+  return stateAtOpen === 'disabled' ? null : false;
 }
 
 /** A Leder's login (e-mail) is changed by an admin only (spec H2): read-only for everyone else. */
