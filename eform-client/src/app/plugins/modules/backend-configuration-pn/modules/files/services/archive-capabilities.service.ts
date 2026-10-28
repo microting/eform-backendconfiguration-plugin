@@ -59,16 +59,7 @@ export class ArchiveCapabilitiesService {
     if (!this.inFlight) {
       const generation = this.generation;
       const isCurrent = () => generation === this.generation;
-      const request: Observable<ArchiveCapabilitiesModel> = this.foldersService.getCapabilities().pipe(
-        timeout(CAPABILITIES_TIMEOUT_MS),
-        map((res): ArchiveCapabilitiesModel | null => (res?.success && res.model ? withDefaults(res.model) : this.lastLoaded)),
-        tap(model => {
-          if (model && isCurrent()) {
-            this.lastLoaded = model;
-          }
-        }),
-        defaultIfEmpty<ArchiveCapabilitiesModel | null>(null),
-        catchError((): Observable<ArchiveCapabilitiesModel | null> => of(this.lastLoaded)),
+      const request: Observable<ArchiveCapabilitiesModel> = this.fetchAnswer(isCurrent).pipe(
         switchMap((model): Observable<ArchiveCapabilitiesModel> => (model ? of(model) : this.roleFallback())),
         catchError((): Observable<ArchiveCapabilitiesModel> => of({...NO_ARCHIVE_CAPABILITIES})),
         tap(model => {
@@ -86,6 +77,21 @@ export class ArchiveCapabilitiesService {
       this.inFlight = request;
     }
     return this.inFlight;
+  }
+
+  /** The server's answer, or the last one when there is none (empty completion, error, timeout); null if neither. */
+  private fetchAnswer(isCurrent: () => boolean): Observable<ArchiveCapabilitiesModel | null> {
+    return this.foldersService.getCapabilities().pipe(
+      timeout(CAPABILITIES_TIMEOUT_MS),
+      map((res): ArchiveCapabilitiesModel | null => (res?.success && res.model ? withDefaults(res.model) : this.lastLoaded)),
+      tap(model => {
+        if (model && isCurrent()) {
+          this.lastLoaded = model;
+        }
+      }),
+      defaultIfEmpty(null),
+      catchError((): Observable<ArchiveCapabilitiesModel | null> => of(this.lastLoaded)),
+    );
   }
 
   /** Before the Leder concept: the admin role managed the archive; the first user may rotate the address. */
