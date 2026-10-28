@@ -24,9 +24,19 @@ describe('callerFlags', () => {
     expect(callerFlags([leder], true)).toEqual(leder);
   });
 
-  it('with no rows the role decides, for both flags', () => {
+  it('with no rows and no earlier answer the role decides, for both flags', () => {
     expect(callerFlags([], true)).toEqual(admin);
     expect(callerFlags(null, false)).toEqual(staff);
+    expect(callerFlags([], false, null)).toEqual(staff);
+  });
+
+  it('with no rows the last non-empty answer still holds: a Leder keeps worker groups', () => {
+    expect(callerFlags([], false, leder)).toEqual(leder);
+    expect(callerFlags(null, true, staff)).toEqual(staff);
+  });
+
+  it('rows win over an earlier answer', () => {
+    expect(callerFlags([admin], false, leder)).toEqual(admin);
   });
 
   it('a row without the flags (older API) allows nothing', () => {

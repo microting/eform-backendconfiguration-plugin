@@ -96,6 +96,11 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   selectedWorkers: DeviceUserModel[] = [];
   /** From index-device-user (every row carries the caller's flags); the role decides while the list is empty. */
   private readonly callerFlags$ = new BehaviorSubject<CallerFlags>(NO_CALLER_FLAGS);
+  /**
+   * The flags of the last non-empty list answer, reused when a filter matches nothing. Page-scoped: a new page
+   * (after sign-out or navigating away) starts from the role again.
+   */
+  private learnedCallerFlags: CallerFlags | null = null;
   get callerFlags(): CallerFlags {
     return this.callerFlags$.value;
   }
@@ -283,7 +288,11 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
             ? site.propertyNames.split(',').map((name: string) => name.trim())
             : [])
       }));
-      this.callerFlags$.next(readCallerFlags(data.model, isAdmin));
+      const flags = readCallerFlags(data.model, isAdmin, this.learnedCallerFlags);
+      if (data.model.length > 0) {
+        this.learnedCallerFlags = flags;
+      }
+      this.callerFlags$.next(flags);
     }
   }
 

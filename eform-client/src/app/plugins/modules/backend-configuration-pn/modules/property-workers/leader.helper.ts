@@ -10,14 +10,19 @@ export interface CallerFlags {
 
 export const NO_CALLER_FLAGS: Readonly<CallerFlags> = Object.freeze({canSetLeder: false, canEditWorkerTags: false});
 
-/** Every row carries the same caller flags; with no rows the role decides (contract). */
+/**
+ * Every row carries the same caller flags. With no rows (e.g. a filter that matches nothing) the flags the last
+ * non-empty answer carried still hold; only before any such answer does the role decide (contract). The role alone
+ * would take worker groups away from a Leder, who is not an admin.
+ */
 export function callerFlags(
   rows: ReadonlyArray<Partial<DeviceUserModel>> | null | undefined,
   isAdmin: boolean,
+  previous: CallerFlags | null = null,
 ): CallerFlags {
   const first = rows?.[0];
   if (!first) {
-    return {canSetLeder: isAdmin, canEditWorkerTags: isAdmin};
+    return previous ?? {canSetLeder: isAdmin, canEditWorkerTags: isAdmin};
   }
   return {canSetLeder: first.canSetLeder === true, canEditWorkerTags: first.canEditWorkerTags === true};
 }
