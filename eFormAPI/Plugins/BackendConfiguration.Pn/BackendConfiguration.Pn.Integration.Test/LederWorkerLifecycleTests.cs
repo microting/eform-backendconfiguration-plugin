@@ -4,6 +4,7 @@ using BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker;
 using BackendConfiguration.Pn.Services.Leder;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
+using NSubstitute;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
@@ -28,6 +29,40 @@ public class LederWorkerLifecycleTests : LederWorkerTestBase
         Assert.That(await GroupNamesOfAsync(login.Id), Is.EqualTo(new[] { "eForm users" }));
         var row = await BackendConfigurationPnDbContext!.LederAssignments.AsNoTracking().SingleAsync(x => x.EformUserId == login.Id);
         Assert.That(row.UpdatedByUserId, Is.EqualTo(deleterId));
+    }
+
+    [Test]
+    public async Task DeleteWorker_RefusedAsStillAssigned_KeepsTheFlag()
+    {
+        // The revoke runs before the deleting steps but after every refusal: a refused delete leaves the flag alone.
+        var w = await CreateWorkerAsync(isLeader: true);
+        var login = await LoginOfAsync(w);
+        var property = await PropertyAsync();
+        await LinkAsync(property.Id, w.SiteId);
+        await ActiveEventNamingAsync(property.Id, w.SiteId);
+
+        var result = await AdminService().Delete(w.SiteId);
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Message,
+            Is.EqualTo(BackendConfigurationAssignmentWorkerServiceHelper.WorkerStillAssignedToEventsCannotDeleteKey));
+        Assert.That(await IsLederAsync(login.Id), Is.True, "a refused delete keeps the Leder flag");
+        Assert.That(await SiteExistsAsync(w.LastName), Is.True);
+    }
+
+    [Test]
+    public async Task DeleteWorker_RefusedForANonFirstUser_KeepsTheFlag()
+    {
+        var w = await CreateWorkerAsync(isLeader: true);
+        var login = await LoginOfAsync(w);
+        var caller = ServiceCaller(ActorId, isAdmin: true);
+        var otherId = (await LederTestData.LoginAsync(BaseDbContext, UserManager)).Id;
+        caller.GetFirstUserIdInDb().Returns(Task.FromResult(otherId));
+
+        var result = await Service(caller, LederTestData.Leder(true)).Delete(w.SiteId);
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(await IsLederAsync(login.Id), Is.True, "a refused delete keeps the Leder flag");
     }
 
     [Test]

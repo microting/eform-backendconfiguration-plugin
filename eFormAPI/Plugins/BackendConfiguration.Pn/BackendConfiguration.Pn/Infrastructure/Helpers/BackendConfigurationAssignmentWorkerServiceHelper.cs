@@ -211,8 +211,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             .ToListAsync().ConfigureAwait(false)).ToHashSet();
 
     /// <summary>
-    /// Whether <paramref name="userId"/> is an administrator: the "admin" role, or
-    /// membership of the "eForm admins" security group. Only administrators set a
+    /// Whether <paramref name="userId"/> is an administrator: the "admin" role, or a live
+    /// membership of the "eForm admins" security group (neither the row nor the group removed). Only administrators set a
     /// worker's manager role and managing tags; the time-planning plugin applies the
     /// same rule to its assigned-site settings. False when there is no base context.
     /// </summary>
@@ -223,12 +223,14 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             return false;
         }
 
-        // One round trip: the admin role, or "eForm admins" by name (D-L10, #1484).
+        // One round trip (D-L10, #1484); the membership test is IsLiveMembership's rule in SQL.
         return await baseDbContext.Users
             .AnyAsync(u => u.Id == userId
                 && (baseDbContext.UserRoles.Any(ur => ur.UserId == userId
                         && baseDbContext.Roles.Any(r => r.Id == ur.RoleId && r.Name == EformRole.Admin))
                     || baseDbContext.SecurityGroupUsers.Any(x => x.EformUserId == userId
+                        && x.WorkflowState != Constants.WorkflowStates.Removed
+                        && x.SecurityGroup.WorkflowState != Constants.WorkflowStates.Removed
                         && x.SecurityGroup.Name == EformAdminsSecurityGroupName)))
             .ConfigureAwait(false);
     }

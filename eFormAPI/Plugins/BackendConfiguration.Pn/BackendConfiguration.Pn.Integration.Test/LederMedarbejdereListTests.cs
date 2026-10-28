@@ -126,6 +126,23 @@ public class LederMedarbejdereListTests : LederWorkerTestBase
     }
 
     [Test]
+    public async Task RemovedEformAdminsMembership_ListsAsNotAdminLogin()
+    {
+        // IsAdminLogin follows IsAdminAsync (live memberships only); LoginIsManaged still counts the removed membership,
+        // as IsPluginManagedLoginAsync does.
+        var w = await CreateWorkerAsync(web: true);
+        await LederTestData.AddMemberAsync(BaseDbContext, (await LoginOfAsync(w)).Id,
+            await LederTestData.GroupByNameAsync(BaseDbContext,
+                BackendConfigurationAssignmentWorkerServiceHelper.EformAdminsSecurityGroupName), removed: true);
+
+        var row = Row(await ListAsync(), w);
+
+        Assert.That(row.IsAdminLogin, Is.False);
+        Assert.That(row.LoginIsManaged, Is.False, "a removed foreign membership counts against managed");
+        Assert.That((row.WebAccessEnabled, row.ArchiveEnabled, row.IsLeader), Is.EqualTo((true, false, (bool?)false)));
+    }
+
+    [Test]
     public async Task LoginIsManaged_AndIsAdminLogin_PerKindOfLogin()
     {
         var managed = await CreateWorkerAsync(web: true);
@@ -165,5 +182,21 @@ public class LederMedarbejdereListTests : LederWorkerTestBase
         var byAdmin = await AdminService().UpdateDeviceUser(row);
         Assert.That(byAdmin.Success, Is.True, byAdmin.Message);
         Assert.That(await IsLederAsync(login.Id), Is.True);
+    }
+
+    [Test]
+    public async Task ListByNonAdmin_DoesNotRenameALederLogin_FoundOnlyByEmail()
+    {
+        // The read-back is read-only: IUserService.GetByUsernameAsync would rename and save a login matched by e-mail only.
+        var w = await CreateWorkerAsync(isLeader: true);
+        var login = await UserManager.FindByIdAsync((await LoginOfAsync(w)).Id.ToString());
+        var otherUserName = NewEmail();
+        Assert.That((await UserManager.SetUserNameAsync(login!, otherUserName)).Succeeded, Is.True);
+        Assert.That((await LoginOfAsync(w)).UserName, Is.EqualTo(otherUserName), "precondition: only the e-mail matches");
+
+        var row = Row(await ListAsync(callerIsAdmin: false, callerIsLeder: false), w);
+
+        Assert.That((await LoginOfAsync(w)).UserName, Is.EqualTo(otherUserName), "a list load never renames a login");
+        Assert.That(row.IsLeader, Is.True, "the e-mail match still resolves the login");
     }
 }
