@@ -103,7 +103,7 @@ test.describe.serial('Leder in Arkiv and Medarbejdere', () => {
     // Cold admin login, a property, a group, two SDK workers, a folder, an upload and ~20 API calls.
     test.setTimeout(480000);
     admin = await newPage(browser);
-    await loginAs(admin, ADMIN_EMAIL, ADMIN_PASSWORD, '#newEFormBtn');
+    await loginAs(admin, ADMIN_EMAIL, ADMIN_PASSWORD, { landing: '#newEFormBtn' });
     adminToken = await apiToken(admin.request, ADMIN_EMAIL, ADMIN_PASSWORD);
 
     const properties = new BackendConfigurationPropertiesPage(admin);
@@ -244,11 +244,16 @@ test.describe.serial('Leder in Arkiv and Medarbejdere', () => {
   });
 
   test('L4 a non-admin in Medarbejdere sees the Leder chip but cannot set Leder, worker groups or the Leder\'s login', async ({ browser }) => {
-    // Cold login, a list page load, an edit and a create dialog, each with a refused SDK-backed save.
+    // Cold login onto the list, an edit and a create dialog, each with a refused SDK-backed save.
     test.setTimeout(240000);
     const page = await newPage(browser);
-    await loginAs(page, staffEmail, PASSWORD);
-    const rows = await listWorkers(page, 'a non-admin');
+    // The group lands on Medarbejdere. Its list call is taken from that landing, not from a reload: on a reload
+    // straight after sign-in the route guards cancelled the initial navigation and left a blank page (CI, zc L4).
+    const landed = await loginAs(page, staffEmail, PASSWORD, {
+      landing: '#newDeviceUserBtn',
+      landingCall: { what: 'POST index-device-user (Medarbejdere as a non-admin)', predicate: isIndex },
+    });
+    const rows = (await expectSuccess(landed!, 'listing Medarbejdere as a non-admin')).model;
     expect(rowOf(rows, leader.workerEmail!), 'the Leder row as a non-admin sees it').toMatchObject({
       isLeader: true, canSetLeder: false, canEditWorkerTags: false,
     });

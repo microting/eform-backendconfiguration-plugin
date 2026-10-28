@@ -3,10 +3,10 @@
  * Every call carries an explicit timeout and fails with its status and body (plugin CLAUDE.md, "Playwright tests
  * fail fast").
  */
-import { APIRequestContext, expect, Page } from '@playwright/test';
+import { APIRequestContext, expect, Page, Response } from '@playwright/test';
 import DatabaseConfigurationConstants from '../../Constants/DatabaseConfigurationConstants';
 import LoginConstants from '../../Constants/LoginConstants';
-import { API_TIMEOUT, ignoreUnhandledRejections, UI_TIMEOUT, waitForApiResponse } from './wait-helpers';
+import { API_TIMEOUT, ignoreUnhandledRejections, SLOW_API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from './wait-helpers';
 
 export const BASE_URL = 'http://localhost:4200';
 /** The CI admin. */
@@ -63,25 +63,40 @@ export async function callOk(request: APIRequestContext, method: 'GET' | 'POST' 
   return body;
 }
 
+export interface LoginOptions {
+  /** An element of the landing page to wait for (the app has loaded the claims and rendered the page). */
+  landing?: string;
+  /** A call the landing page makes; armed just before the login click, its response is returned. */
+  landingCall?: { what: string; predicate: (response: Response) => boolean };
+}
+
 /**
- * Signs in through the login page and waits for the app to leave it. With `landing`, also waits for that element of
- * the landing page (the app has stored the token and rendered the menu).
+ * Signs in through the login page and waits for the app to leave it, then for `options.landing`. Returns the
+ * response of `options.landingCall`, or null. Prefer the landing page over a reload right after sign-in for a group
+ * whose landing route is guarded: a guard that cancels the INITIAL navigation of a reload leaves a blank shell.
  */
-export async function loginAs(page: Page, email: string, password: string, landing?: string): Promise<void> {
+export async function loginAs(page: Page, email: string, password: string, options: LoginOptions = {}): Promise<Response | null> {
   await page.goto(BASE_URL, { timeout: COLD_APP_TIMEOUT });
   await page.locator('#loginBtn').waitFor({ state: 'visible', timeout: COLD_APP_TIMEOUT });
   await page.locator('#username').fill(email, { timeout: UI_TIMEOUT });
   await page.locator('#password').fill(password, { timeout: UI_TIMEOUT });
   const token = waitForApiResponse(page, `POST /api/auth/token for ${email}`,
     r => new URL(r.url()).pathname === '/api/auth/token', API_TIMEOUT);
+  // Sign-in, claims, the redirect and the landing module all come before this call: SLOW_API_TIMEOUT.
+  const landingCall = options.landingCall
+    ? waitForApiResponse(page, `${options.landingCall.what} on the landing page of ${email}`,
+      options.landingCall.predicate, SLOW_API_TIMEOUT)
+    : null;
   // Awaited after the click, which can throw first.
-  ignoreUnhandledRejections(token);
+  ignoreUnhandledRejections(token, ...(landingCall ? [landingCall] : []));
   await page.locator('#loginBtn').click({ timeout: UI_TIMEOUT });
   expect((await token).ok(), `login of ${email}`).toBe(true);
   await page.waitForURL(url => !url.pathname.startsWith('/auth'), { timeout: API_TIMEOUT });
-  if (landing) {
-    await expect(page.locator(landing), `the landing page of ${email}`).toBeVisible({ timeout: COLD_APP_TIMEOUT });
+  const landed = landingCall ? await landingCall : null;
+  if (options.landing) {
+    await expect(page.locator(options.landing), `the landing page of ${email}`).toBeVisible({ timeout: COLD_APP_TIMEOUT });
   }
+  return landed;
 }
 
 export interface GroupUser {
