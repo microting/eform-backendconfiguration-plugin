@@ -1,4 +1,6 @@
 #nullable enable
+using BackendConfiguration.Pn.Services.Leder;
+using eFormCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microting.EformAngularFrontendBase.Infrastructure.Data;
@@ -68,5 +70,40 @@ public static class LederTestData
         userService.IsAdmin().Returns(isAdmin);
         userService.GetFirstUserIdInDb().Returns(Task.FromResult(firstUserId));
         return userService;
+    }
+
+    /// <summary>An ILederService stub with a fixed answer, for services that only consume the check.</summary>
+    public static ILederService Leder(bool isLederOrAdmin)
+    {
+        var leder = Substitute.For<ILederService>();
+        leder.IsLederOrAdminAsync(Arg.Any<bool?>()).Returns(Task.FromResult(isLederOrAdmin));
+        return leder;
+    }
+
+    /// <summary>An IEFormCoreService whose GetCore() returns <paramref name="core"/>; with a null core it is a bare substitute.</summary>
+    public static IEFormCoreService CoreHelper(Core? core = null)
+    {
+        var coreHelper = Substitute.For<IEFormCoreService>();
+        if (core != null)
+        {
+            coreHelper.GetCore().Returns(Task.FromResult(core));
+        }
+
+        return coreHelper;
+    }
+
+    /// <summary>
+    /// A live SDK worker with <paramref name="email"/> on a new site, made the way CreateDeviceUser makes one
+    /// (core.SiteCreate, then the worker's e-mail). Returns the site's MicrotingUid.
+    /// </summary>
+    public static async Task<int> LiveWorkerAsync(Core core, string email)
+    {
+        var lastName = $"Doe {Guid.NewGuid():N}";
+        var siteDto = await core.SiteCreate($"Jane {lastName}", "Jane", lastName, email, "da");
+        await using var sdk = core.DbContextHelper.GetDbContext();
+        var worker = await sdk.Workers.SingleAsync(x => x.MicrotingUid == siteDto.WorkerUid);
+        worker.Email = email;
+        await worker.Update(sdk);
+        return siteDto.SiteId;
     }
 }

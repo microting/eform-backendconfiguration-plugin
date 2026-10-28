@@ -75,7 +75,7 @@ public class ArchiveAccessService(
     /// D7. Disabled = no current user, <c>EformUser.IsActive == false</c>, or every non-removed SDK worker with the
     /// caller's email is resigned — the same choice as GrpcSiteResolver (#1326): workers ordered by Resigned, the
     /// best one decides, so a re-hired worker whose old resigned row remains is NOT disabled.
-    /// userGroups = live tags of the sites of the non-resigned workers, via IWorkerTagMembershipService.
+    /// userGroups = live tags of the sites CallerSites resolves, via IWorkerTagMembershipService.
     /// </summary>
     private async Task<ArchiveAccessContext> ResolveContextAsync()
     {
@@ -97,26 +97,14 @@ public class ArchiveAccessService(
         }
 
         var core = await coreService.GetCore();
-        var sdk = core.DbContextHelper.GetDbContext();
-        var workers = await sdk.Workers.AsNoTracking()
-            .Where(w => w.Email == user.Email && w.WorkflowState != Removed)
-            .Select(w => new { w.Id, w.Resigned })
-            .ToListAsync();
-        if (workers.Count > 0 && workers.All(w => w.Resigned))
+        await using var sdk = core.DbContextHelper.GetDbContext();
+        var sites = await CallerSites.ResolveAsync(sdk, user.Email);
+        if (sites.AllWorkersResigned)
         {
             return Disabled(user.Id, "SDK worker is resigned");
         }
 
-        var liveWorkerIds = workers.Where(w => !w.Resigned).Select(w => w.Id).ToList();
-        List<int> siteIds = liveWorkerIds.Count == 0
-            ? []
-            : await sdk.SiteWorkers.AsNoTracking()
-                .Where(sw => sw.WorkerId != null && liveWorkerIds.Contains(sw.WorkerId.Value)
-                             && sw.SiteId != null && sw.WorkflowState != Removed)
-                .Select(sw => sw.SiteId!.Value)
-                .Distinct()
-                .ToListAsync();
-        var groups = await membership.GetTagIdsForSitesAsync(siteIds);
+        var groups = await membership.GetTagIdsForSitesAsync(sites.LiveSiteIds);
         return new ArchiveAccessContext(false, isAdmin, groups.ToList());
     }
 

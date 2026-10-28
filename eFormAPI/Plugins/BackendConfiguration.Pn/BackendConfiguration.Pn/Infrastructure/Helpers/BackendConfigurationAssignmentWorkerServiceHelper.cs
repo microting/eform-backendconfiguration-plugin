@@ -207,13 +207,14 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             return false;
         }
 
-        return await baseDbContext.UserRoles
-                   .AnyAsync(ur => ur.UserId == userId
-                       && baseDbContext.Roles.Any(r => r.Id == ur.RoleId && r.Name == EformRole.Admin))
-                   .ConfigureAwait(false)
-               || await baseDbContext.SecurityGroupUsers
-                   .AnyAsync(x => x.EformUserId == userId && x.SecurityGroup.Name == EformAdminsSecurityGroupName)
-                   .ConfigureAwait(false);
+        // One round trip: the admin role, or "eForm admins" by name (D-L10, #1484).
+        return await baseDbContext.Users
+            .AnyAsync(u => u.Id == userId
+                && (baseDbContext.UserRoles.Any(ur => ur.UserId == userId
+                        && baseDbContext.Roles.Any(r => r.Id == ur.RoleId && r.Name == EformRole.Admin))
+                    || baseDbContext.SecurityGroupUsers.Any(x => x.EformUserId == userId
+                        && x.SecurityGroup.Name == EformAdminsSecurityGroupName)))
+            .ConfigureAwait(false);
     }
 
     /// <summary>
