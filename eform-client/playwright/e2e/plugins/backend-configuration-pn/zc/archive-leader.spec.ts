@@ -266,7 +266,7 @@ test.describe.serial('Leder in Arkiv and Medarbejdere', () => {
     const dialog = page.locator('mat-dialog-container');
     await expect(dialog.locator('#leaderToggle')).toHaveCount(0, { timeout: UI_TIMEOUT });
     await expect(dialog.locator('#tagSelector')).toHaveCount(0, { timeout: UI_TIMEOUT });
-    await expect(dialog.locator('#workerEmail')).toHaveAttribute('readonly', '', { timeout: UI_TIMEOUT });
+    await expect(dialog.locator('#workerEmail'), 'the Leder\'s login is read-only for a non-admin').not.toBeEditable({ timeout: UI_TIMEOUT });
     await expect(dialog.locator('#leaderLoginHint')).toBeVisible({ timeout: UI_TIMEOUT });
 
     // Arkiv off would leave the Leder's managed login without login access: the API refuses (H2). The dialog stays
