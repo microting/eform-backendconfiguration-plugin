@@ -4,7 +4,7 @@ import {
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {BackendConfigurationPnPropertiesService, BackendConfigurationPnTaskWizardService} from '../../../../services';
-import {distinctUntilChanged, filter, tap} from 'rxjs/operators';
+import {distinctUntilChanged, filter, take, tap} from 'rxjs/operators';
 import {Subscription, zip} from 'rxjs';
 import {CommonDictionaryModel, DeleteModalSettingModel, FolderDto, LanguagesModel} from 'src/app/common/models';
 import {ItemsPlanningPnTagsService} from '../../../../../items-planning-pn/services';
@@ -453,10 +453,11 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   onDeleteTask(model: TaskWizardModel) {
+    // take(1): stream() re-emits on a language change and must not open a second dialog.
     this.translatesSub$ = zip(
       this.translateService.stream('Are you sure you want to delete'),
       this.translateService.stream('Name'),
-    ).subscribe(([headerText, name]) => {
+    ).pipe(take(1)).subscribe(([headerText, name]) => {
       const settings: DeleteModalSettingModel = {
         model: model,
         settings: {

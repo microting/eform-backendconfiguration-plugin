@@ -33,9 +33,10 @@
                 type="email"
                 id="workerEmail"
                 required
-                tabindex="3">
+                tabindex="3"
+                [readonly]="leaderLoginLocked">
               <button
-                *ngIf="shouldShowGenerateEmailButton()"
+                *ngIf="showGenerateEmailButton"
                 matSuffix
                 mat-icon-button
                 type="button"
@@ -50,6 +51,7 @@
               <mat-error *ngIf="form.get('workerEmail').hasError('required')">
                 {{ 'Required' | translate }}
               </mat-error>
+              <mat-hint *ngIf="leaderLoginLocked" id="leaderLoginHint">{{ "Only an administrator can change a leader's login" | translate }}</mat-hint>
             </mat-form-field>
             <mat-form-field>
               <mat-label>{{ 'Employee no' | translate }}</mat-label>
@@ -116,7 +118,7 @@
             </mat-form-field>
           </div>
         </div>
-        <div class="modal-columns">
+        <div class="modal-columns" *ngIf="canEditWorkerTags">
           <mat-form-field>
             <mat-label>{{ 'Current tags' | translate }}</mat-label>
             <mtx-select
@@ -207,6 +209,17 @@
               formControlName="archiveEnabled">
               {{ "Archive" | translate }}
             </mat-slide-toggle>
+            <ng-container *ngIf="showLeaderToggle">
+              <br>
+              <mat-slide-toggle
+                color="primary"
+                class="mb-2"
+                id="leaderToggle"
+                [formControl]="leaderControl">
+                {{ "Leader" | translate }}
+              </mat-slide-toggle>
+              <span *ngIf="leaderState === 'disabled'" class="helper-text" id="leaderToggleHint">{{ leaderToggleHint | translate }}</span>
+            </ng-container>
           </div>
         </div>
         <br>
@@ -417,49 +430,51 @@
                   </mat-checkbox>
                 </div>
 
-                <!-- ========= Manager settings ========= -->
-                <h3 class="section-header" *ngIf="!selectedDeviceUser.resigned">{{ 'Manager settings' | translate }}</h3>
+                <!-- ========= Manager settings (administrators only) ========= -->
+                <ng-container *ngIf="selectAuthIsAdmin$ | async">
+                  <h3 class="section-header" id="managerSettingsSection" *ngIf="!selectedDeviceUser.resigned">{{ 'Manager settings' | translate }}</h3>
 
-                <div class="d-flex flex-row" *ngIf="!selectedDeviceUser.resigned">
-                  <mat-checkbox class="p-1"
-                                id="isManager"
-                                formControlName="isManager">
-                    <div>
-                      <div>{{ 'Is manager' | translate }}</div>
-                      <small class="checkbox-description">{{ 'Set this user as a manager' | translate }}</small>
-                    </div>
-                  </mat-checkbox>
-                </div>
+                  <div class="d-flex flex-row" *ngIf="!selectedDeviceUser.resigned">
+                    <mat-checkbox class="p-1"
+                                  id="isManager"
+                                  formControlName="isManager">
+                      <div>
+                        <div>{{ 'Is manager' | translate }}</div>
+                        <small class="checkbox-description">{{ 'Set this user as a manager' | translate }}</small>
+                      </div>
+                    </mat-checkbox>
+                  </div>
 
-                <div class="d-flex flex-row" *ngIf="!selectedDeviceUser.resigned && form.value.isManager">
-                  <mat-form-field class="p-1 w-100">
-                    <mat-label>{{ 'Managing tags' | translate }}</mat-label>
-                    <mtx-select
-                      #managingTagSelect
-                      [items]="availableTags"
-                      bindLabel="name"
-                      bindValue="id"
-                      [multiple]="true"
-                      [hideSelected]="true"
-                      [closeOnSelect]="false"
-                      [placeholder]="'Select tags' | translate"
-                      (search)="managingTagSearch = $event"
-                      (close)="managingTagSearch = null"
-                      formControlName="managingTagIds">
-                      <ng-template ng-header-tmp>
-                        <button
-                          *ngIf="selectableManagingTags.length"
-                          mat-button
-                          type="button"
-                          id="managingTagsSelectAll"
-                          (click)="selectAllManagingTags()">
-                          {{ 'Select all' | translate }} ({{ selectableManagingTags.length }})
-                        </button>
-                      </ng-template>
-                    </mtx-select>
-                    <mat-hint>{{ 'Select tags that this manager is responsible for' | translate }}</mat-hint>
-                  </mat-form-field>
-                </div>
+                  <div class="d-flex flex-row" *ngIf="!selectedDeviceUser.resigned && form.value.isManager">
+                    <mat-form-field class="p-1 w-100">
+                      <mat-label>{{ 'Managing tags' | translate }}</mat-label>
+                      <mtx-select
+                        #managingTagSelect
+                        [items]="availableTags"
+                        bindLabel="name"
+                        bindValue="id"
+                        [multiple]="true"
+                        [hideSelected]="true"
+                        [closeOnSelect]="false"
+                        [placeholder]="'Select tags' | translate"
+                        (search)="managingTagSearch = $event"
+                        (close)="managingTagSearch = null"
+                        formControlName="managingTagIds">
+                        <ng-template ng-header-tmp>
+                          <button
+                            *ngIf="selectableManagingTags.length"
+                            mat-button
+                            type="button"
+                            id="managingTagsSelectAll"
+                            (click)="selectAllManagingTags()">
+                            {{ 'Select all' | translate }} ({{ selectableManagingTags.length }})
+                          </button>
+                        </ng-template>
+                      </mtx-select>
+                      <mat-hint>{{ 'Select tags that this manager is responsible for' | translate }}</mat-hint>
+                    </mat-form-field>
+                  </div>
+                </ng-container>
 
               </div>
             </div>

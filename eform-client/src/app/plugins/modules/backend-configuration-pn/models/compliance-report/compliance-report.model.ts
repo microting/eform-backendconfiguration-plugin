@@ -112,6 +112,13 @@ export interface ComplianceReportRowModel {
    * Optional so a response from an older backend reads as "not planned".
    */
   isProjected?: boolean;
+  /**
+   * #5467 — a COMPLETED case of a "no repeat" (always-available) task. Such a task
+   * gets no Compliance row, so `complianceId` is 0 and the row is identified by its
+   * `sdkCaseId` (> 0). Several can share one day. Read-only in Detaljer (completed).
+   * Optional so a response from an older backend reads as "not on demand".
+   */
+  isOnDemand?: boolean;
 }
 
 export interface ComplianceReportPagedModel {
@@ -334,6 +341,13 @@ export interface ComplianceReportCaseModel {
    */
   imagesCount: number;
   images: ComplianceReportImageModel[];
+  /**
+   * #5467 — the case of a "no repeat" (always-available) task, which has no
+   * Compliance row: `complianceId` is 0, the row is identified by `sdkCaseId`.
+   * It can be edited but not deleted from Rapport (there is no compliance to
+   * delete). Optional so a response from an older backend reads as "not on demand".
+   */
+  isOnDemand?: boolean;
 }
 
 /**

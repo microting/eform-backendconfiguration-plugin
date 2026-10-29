@@ -9,7 +9,6 @@ import {TailBiteManagersDialogComponent} from './tail-bite-managers-dialog.compo
 describe('TailBiteManagersDialogComponent', () => {
   let service: Record<string, Mock>;
   let component: TailBiteManagersDialogComponent;
-  let enabled: boolean;
 
   const create = (propertyId: number | null) => {
     TestBed.configureTestingModule({
@@ -24,19 +23,14 @@ describe('TailBiteManagersDialogComponent', () => {
   };
 
   beforeEach(() => {
-    enabled = false;
     service = {
       getProperties: vi.fn().mockImplementation(() => of({success: true, model: [
         {propertyId: 1, name: 'Ejendom Nord', enabled: true},
-        {propertyId: 2, name: 'Ejendom Syd', enabled},
+        {propertyId: 2, name: 'Ejendom Syd', enabled: false},
       ]})),
       getWorkers: vi.fn().mockReturnValue(of({success: true, model: [
         {siteId: 7, name: 'Jane Doe', isManager: false, propertyWorkerIds: [31, 32]},
       ]})),
-      enable: vi.fn().mockImplementation(() => {
-        enabled = true;
-        return of({success: true});
-      }),
       setManager: vi.fn().mockReturnValue(of({success: true})),
     };
   });
@@ -50,14 +44,6 @@ describe('TailBiteManagersDialogComponent', () => {
   it('falls back to the first property', () => {
     create(null);
     expect(component.propertyId).toBe(1);
-  });
-
-  it('enables tail biting and shows the property as enabled', () => {
-    create(2);
-    expect(component.selectedProperty!.enabled).toBe(false);
-    component.enable();
-    expect(service.enable).toHaveBeenCalledWith(2);
-    expect(component.selectedProperty!.enabled).toBe(true);
   });
 
   it('sets the flag on every PropertyWorker row of the worker and reloads', () => {
@@ -127,12 +113,4 @@ describe('TailBiteManagersDialogComponent', () => {
     expect(component.propertyId).toBeNull();
   });
 
-  it('reloads the properties after a failed enable', () => {
-    create(2);
-    service.getProperties.mockClear();
-    service.enable.mockReturnValueOnce(throwError(() => new Error('500')));
-    component.enable();
-    expect(service.getProperties).toHaveBeenCalledTimes(1);
-    expect(component.busy).toBe(false);
-  });
 });

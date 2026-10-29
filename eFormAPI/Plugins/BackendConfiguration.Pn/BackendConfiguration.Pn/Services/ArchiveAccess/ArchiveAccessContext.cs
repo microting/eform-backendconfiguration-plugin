@@ -4,11 +4,11 @@ using System.Collections.Generic;
 namespace BackendConfiguration.Pn.Services.ArchiveAccess;
 
 /// <summary>
-/// Who is calling, for archive access (spec section 3). <see cref="IsDisabled"/> wins over everything, including
-/// the admin role (D7). <see cref="UserGroupIds"/> are the live SDK tag ids (medarbejdergrupper) of the caller's
-/// sites; empty when no worker is linked to the caller's email.
+/// Who is calling. <see cref="IsDisabled"/> wins over everything, including admin. <see cref="CanManage"/> (enabled and
+/// admin or Leder) is what every access rule reads; <see cref="IsAdmin"/> is for display only.
 /// </summary>
-public sealed record ArchiveAccessContext(bool IsDisabled, bool IsAdmin, IReadOnlyCollection<int> UserGroupIds)
+public sealed record ArchiveAccessContext(bool IsDisabled, bool IsAdmin, IReadOnlyCollection<int> UserGroupIds,
+    bool CanManage)
 {
-    public static ArchiveAccessContext Disabled { get; } = new(true, false, []);
+    public static ArchiveAccessContext Disabled { get; } = new(true, false, [], false);
 }

@@ -88,7 +88,20 @@ message CompleteEventRequest {
   // ISO-8601 date (yyyy-MM-dd); empty = fall back to deadline date
   string done_at_user_modifiable = 9;
 }
-message CompleteEventResponse { Event event = 1; }
+message CompleteEventResponse {
+  Event event = 1;
+  // True when the caller lost the completion race (or echoed a stale
+  // compliance_id with no recoverable open case) AND the request carried
+  // answers (field_values and/or comment) that were discarded as a result.
+  // Older clients ignore unknown fields, so this is additive and safe to
+  // leave at its proto3 default (false) for every response that behaves as
+  // it always has.
+  bool answers_discarded = 2;
+  // Short English text for the app to show the worker when
+  // answers_discarded is true, e.g. "Already completed by <name> on <date>;
+  // your answers were not saved." Empty when answers_discarded is false.
+  string discarded_reason = 3;
+}
 
 // One field-value write bundled into CompleteEventRequest.field_values.
 // Mirrors the per-RPC SetFieldValueRequest pair (field_id + value) so the

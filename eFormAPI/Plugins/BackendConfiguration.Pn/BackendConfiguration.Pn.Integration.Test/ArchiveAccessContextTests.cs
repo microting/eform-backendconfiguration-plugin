@@ -1,5 +1,6 @@
 #nullable enable
 using BackendConfiguration.Pn.Services.ArchiveAccess;
+using BackendConfiguration.Pn.Services.Leder;
 using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using eFormCore;
 using Microsoft.EntityFrameworkCore;
@@ -61,7 +62,8 @@ public class ArchiveAccessContextTests : TestBaseSetup
         return site.Id;
     }
 
-    private ArchiveAccessService Service(string? email, bool isActive = true, bool isAdmin = false)
+    private ArchiveAccessService Service(string? email, bool isActive = true, bool isAdmin = false,
+        ILederService? leder = null)
     {
         var coreHelper = Substitute.For<IEFormCoreService>();
         coreHelper.GetCore().Returns(Task.FromResult(_core));
@@ -71,6 +73,7 @@ public class ArchiveAccessContextTests : TestBaseSetup
         userService.GetCurrentUserAsync().Returns(Task.FromResult(new EformUser { Id = 1, Email = email, IsActive = isActive }));
         return new ArchiveAccessService(BackendConfigurationPnDbContext!, userService, coreHelper,
             new WorkerTagMembershipService(coreHelper, BackendConfigurationPnDbContext),
+            leder ?? LederTestData.Leder(isAdmin),
             TestContextLogger<ArchiveAccessService>.Instance);
     }
 
@@ -88,6 +91,60 @@ public class ArchiveAccessContextTests : TestBaseSetup
         Assert.That(ctx.IsDisabled, Is.False);
         Assert.That(ctx.IsAdmin, Is.False);
         Assert.That(ctx.UserGroupIds, Is.EquivalentTo(new[] { ledelse }));
+    }
+
+    [Test]
+    public async Task Context_Leder_CanManage_ButIsNotAdmin()
+    {
+        var email = Email();
+        await WorkerAsync(email);
+
+        var ctx = await Service(email, leder: LederTestData.Leder(true)).GetContextAsync();
+
+        Assert.That(ctx.CanManage, Is.True);
+        Assert.That(ctx.IsAdmin, Is.False);
+        Assert.That(ctx.IsDisabled, Is.False);
+    }
+
+    [Test]
+    public async Task Context_NormalUser_CannotManage()
+    {
+        var ctx = await Service(Email()).GetContextAsync();
+
+        Assert.That(ctx.CanManage, Is.False);
+    }
+
+    [TestCase(true, true, TestName = "Context_LiveWorker_AsksTheLederCheckWithLivenessTrue")]
+    [TestCase(false, true, TestName = "Context_NoLinkedWorker_AsksWithLivenessFalse")]
+    [TestCase(false, false, TestName = "Context_NoEmail_AsksWithLivenessFalse")]
+    public async Task Context_PassesTheLivenessItResolved_SoTheLederCheckAddsNoSdkQuery(bool liveSite, bool hasEmail)
+    {
+        var email = hasEmail ? Email() : null;
+        if (hasEmail && liveSite)
+        {
+            await WorkerAsync(email!);
+        }
+
+        var leder = LederTestData.Leder(true);
+        var ctx = await Service(email, leder: leder).GetContextAsync();
+
+        await leder.Received(1).IsLederOrAdminAsync(liveSite);
+        Assert.That(ctx.CanManage, Is.True, "the Leder answer is passed through");
+    }
+
+    [Test]
+    public async Task Context_DisabledLeder_CannotManage_AndTheCheckIsNotAsked()
+    {
+        // A resigned Leder is disabled and manages nothing; the Leder flag is kept for a rehire.
+        var email = Email();
+        await WorkerAsync(email, resigned: true);
+        var leder = LederTestData.Leder(true);
+
+        var ctx = await Service(email, leder: leder).GetContextAsync();
+
+        Assert.That(ctx.IsDisabled, Is.True);
+        Assert.That(ctx.CanManage, Is.False);
+        await leder.DidNotReceive().IsLederOrAdminAsync(Arg.Any<bool?>());
     }
 
     [Test]

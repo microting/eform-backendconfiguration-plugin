@@ -12,9 +12,9 @@ using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 namespace BackendConfiguration.Pn.Integration.Test;
 
 /// <summary>
-/// D5/D17: folder management and read access are admin-only; reading the tree, moving and dating documents stay
-/// open to the user role. Evaluates the effective policy (class + action attributes), as
-/// PropertyAdminActionsAuthorizationTests does. No database.
+/// D5/D17, D-L6: folder management, read access, delete and the inbox are admin/Leder-only through
+/// [ArchiveManager]; reading the tree, moving and dating documents stay open to the user role.
+/// Evaluates the effective policy (class + action attributes), as PropertyAdminActionsAuthorizationTests does. No database.
 /// </summary>
 [TestFixture]
 public class ArchiveControllersAuthorizationTests
@@ -42,29 +42,37 @@ public class ArchiveControllersAuthorizationTests
         controller.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
             .Single(m => m.Name == name && m.GetCustomAttributes<TVerb>().Any());
 
-    private async Task<bool> IsAllowed(Type controller, MethodInfo action, string role)
+    private Task<bool> IsAllowed(Type controller, MethodInfo action, string role) =>
+        IsAllowed(controller, action, Principal(role));
+
+    private async Task<bool> IsAllowed(Type controller, MethodInfo action, ClaimsPrincipal principal)
     {
         var authorizeData = controller.GetCustomAttributes(true).OfType<IAuthorizeData>()
             .Concat(action.GetCustomAttributes(true).OfType<IAuthorizeData>()).ToList();
         Assert.That(authorizeData, Is.Not.Empty, $"{controller.Name}.{action.Name} would be anonymous.");
         var policy = await AuthorizationPolicy.CombineAsync(_policyProvider, authorizeData);
-        return (await _authorizationService.AuthorizeAsync(Principal(role), null, policy!)).Succeeded;
+        return (await _authorizationService.AuthorizeAsync(principal, null, policy!)).Succeeded;
     }
 
-    private static IEnumerable<TestCaseData> AdminOnly()
+    private static IEnumerable<TestCaseData> ManagerOnly()
     {
         var c = typeof(ArchiveFoldersController);
         yield return new TestCaseData(c, Action<HttpPostAttribute>(c, nameof(ArchiveFoldersController.Create)))
-            .SetName("AdminOnly_POST_archive-folders");
+            .SetName("ManagerOnly_POST_archive-folders");
         yield return new TestCaseData(c, Action<HttpPutAttribute>(c, nameof(ArchiveFoldersController.Update)))
-            .SetName("AdminOnly_PUT_archive-folders-id");
+            .SetName("ManagerOnly_PUT_archive-folders-id");
         yield return new TestCaseData(c, Action<HttpDeleteAttribute>(c, nameof(ArchiveFoldersController.Delete)))
-            .SetName("AdminOnly_DELETE_archive-folders-id");
+            .SetName("ManagerOnly_DELETE_archive-folders-id");
         yield return new TestCaseData(c, Action<HttpPutAttribute>(c, nameof(ArchiveFoldersController.UpdateAccess)))
-            .SetName("AdminOnly_PUT_archive-folders-id-access");
+            .SetName("ManagerOnly_PUT_archive-folders-id-access");
         var files = typeof(FilesController);
         yield return new TestCaseData(files, Action<HttpPutAttribute>(files, nameof(FilesController.UpdateAccess)))
-            .SetName("AdminOnly_PUT_files-access");
+            .SetName("ManagerOnly_PUT_files-access");
+        yield return new TestCaseData(files, Action<HttpDeleteAttribute>(files, nameof(FilesController.Delete)))
+            .SetName("ManagerOnly_DELETE_files-id");
+        var inbox = typeof(InboxController);
+        yield return new TestCaseData(inbox, Action<HttpGetAttribute>(inbox, nameof(InboxController.List)))
+            .SetName("ManagerOnly_GET_inbox");
     }
 
     private static IEnumerable<TestCaseData> OpenToUser()
@@ -79,12 +87,23 @@ public class ArchiveControllersAuthorizationTests
             .SetName("OpenToUser_PUT_files-id-date");
     }
 
-    [TestCaseSource(nameof(AdminOnly))]
-    public async Task AdminOnlyAction_RejectsUser_AcceptsAdmin(Type controller, MethodInfo action)
+    private static ClaimsPrincipal AnonymousPrincipal() => new(new ClaimsIdentity());
+
+    /// <summary>D-L6: the role gate is gone; any signed-in user reaches [ArchiveManager], which decides on CanManage.</summary>
+    [TestCaseSource(nameof(ManagerOnly))]
+    public async Task ManagerAction_IsOpenToTheUserRole_AndCarriesTheManagerGate(Type controller, MethodInfo action)
     {
-        Assert.That(await IsAllowed(controller, action, EformRole.User), Is.False);
+        Assert.That(await IsAllowed(controller, action, EformRole.User), Is.True);
         Assert.That(await IsAllowed(controller, action, EformRole.Admin), Is.True);
     }
+
+    /// <summary>
+    /// H4: an absent or expired token on GET inbox, POST archive-folders and DELETE files/{id} fails the [Authorize]
+    /// policy (a challenge, 401) while [ArchiveManager] does nothing for it, so the app renews its token.
+    /// </summary>
+    [TestCaseSource(nameof(ManagerOnly))]
+    public async Task ManagerAction_AnonymousCaller_IsChallenged(Type controller, MethodInfo action) =>
+        Assert.That(await IsAllowed(controller, action, AnonymousPrincipal()), Is.False);
 
     [TestCaseSource(nameof(OpenToUser))]
     public async Task UserAction_AcceptsUserAndAdmin(Type controller, MethodInfo action)

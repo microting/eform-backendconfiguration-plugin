@@ -4,13 +4,15 @@ import type {Mock} from 'vitest';
 // throws under the unit-test builder (ESM namespaces are not extensible), and
 // pdfjs-dist cannot be mocked from inside the package. No spec renders a PDF.
 vi.mock('ng2-pdf-viewer', () => ({PdfViewerModule: class {}, PdfViewerComponent: class {}}));
+vi.mock('file-saver', () => ({saveAs: vi.fn()}));
+import {saveAs} from 'file-saver';
 import {CommonModule} from '@angular/common';
-import {NO_ERRORS_SCHEMA} from '@angular/core';
+import {ChangeDetectorRef, NO_ERRORS_SCHEMA} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {By} from '@angular/platform-browser';
-import {A11yModule, CdkTrapFocus} from '@angular/cdk/a11y';
+import {A11yModule} from '@angular/cdk/a11y';
 import {TranslateModule} from '@ngx-translate/core';
-import {EMPTY, Subject, of} from 'rxjs';
+import {MatDialog} from '@angular/material/dialog';
+import {EMPTY, Observable, Subject, of} from 'rxjs';
 import {CommonDictionaryModel, OperationResult, SharedTagModel} from 'src/app/common/models';
 import {ArchiveDocumentPanelComponent} from './archive-document-panel.component';
 import {ArchivePanelValue} from '../../../../helpers';
@@ -24,7 +26,7 @@ const forsyning: SharedTagModel = {id: 3, name: 'Forsyning', description: '', is
 const ledelseTag: CommonDictionaryModel = {id: 5, name: 'Ledelse', description: ''};
 // readGroups are the EFFECTIVE groups (FileModel): the folder's, since the document has no own access.
 const file: FileModel = {
-  id: 7, fileName: 'Faktura 118', properties: [1], tags: [forsyning],
+  id: 7, fileName: 'Faktura 118', fileExtension: 'pdf', properties: [1], tags: [forsyning],
   folderId: 10, folderPath: ['Drift'], documentDate: '2026-10-03T00:00:00',
   documentDateState: DocumentDateState.Suggested, readGroups: [ledelse], ownAccess: false,
 };
@@ -61,7 +63,7 @@ describe('ArchiveDocumentPanelComponent', () => {
     panel.fileId = 7;
     panel.folders = folders;
     panel.workerTags = [ledelseTag];
-    panel.isAdmin = true;
+    panel.canManage = true;
     saved = vi.fn();
     panel.saved.subscribe(saved);
     closed = vi.fn();
@@ -276,22 +278,36 @@ describe('ArchiveDocumentPanelComponent', () => {
     expect(panel.inheritedLabel).toBe('Read access: {{who}} {"who":"Ledelse"}');
   });
 
-  it('non-admins see who reads the document, without controls', () => {
-    panel.isAdmin = false;
+  it('users who cannot manage see who reads the document, without controls', () => {
+    panel.canManage = false;
     expect(panel.readAccessLabel).toBe('Read access: {{who}} {"who":"Ledelse"}');
+  });
+
+  it('names the whole folder path under the title', () => {
+    reloadWith({...file, folderPath: ['Økonomi', 'Fakturaer']});
+    expect(panel.folderPathLabel).toBe('Økonomi › Fakturaer');
+  });
+
+  it('downloads the document\'s own file under its name and extension', () => {
+    const blob = new Blob(['%PDF']);
+    filesService.getPdfFile.mockReturnValue(of(blob));
+    panel.download();
+    expect(filesService.getPdfFile).toHaveBeenLastCalledWith(7);
+    expect(saveAs).toHaveBeenCalledWith(blob, 'Faktura 118.pdf');
   });
 });
 
-describe('ArchiveDocumentPanelComponent as a drawer (below 1100 px)', () => {
+describe('ArchiveDocumentPanelComponent as the large view', () => {
   let fixture: ComponentFixture<ArchiveDocumentPanelComponent>;
   let row: HTMLElement;
   let closed: Mock;
   const aside = (): HTMLElement => fixture.nativeElement.querySelector('#archiveDocumentPanel');
-  const closeBtn = (): HTMLElement => fixture.nativeElement.querySelector('#archivePanelCloseBtn');
+  const q = (selector: string): HTMLButtonElement => fixture.nativeElement.querySelector(selector);
+  const backBtn = (): HTMLButtonElement => q('#archivePanelCloseBtn');
 
-  /** The row that opened the panel has focus, as after a click or Enter on it. FormsModule is left out on purpose:
-   * the body's ngModel bindings stay inert, so only the panel's frame is under test. */
-  function render(drawer: boolean): void {
+  /** The row that opened the view has focus, as after a click or Enter on it. FormsModule is left out on purpose:
+   * the body's ngModel bindings stay inert, so only the view's frame is under test. */
+  function render(inputs: Record<string, unknown> = {}): void {
     row = document.createElement('div');
     row.tabIndex = 0;
     document.body.appendChild(row);
@@ -310,7 +326,9 @@ describe('ArchiveDocumentPanelComponent as a drawer (below 1100 px)', () => {
     TestBed.overrideComponent(ArchiveDocumentPanelComponent, {set: {imports: [CommonModule, A11yModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}});
     fixture = TestBed.createComponent(ArchiveDocumentPanelComponent);
     fixture.componentRef.setInput('fileId', 7);
-    fixture.componentRef.setInput('drawer', drawer);
+    for (const [name, value] of Object.entries(inputs)) {
+      fixture.componentRef.setInput(name, value);
+    }
     closed = vi.fn();
     fixture.componentInstance.closed.subscribe(closed);
     fixture.detectChanges();
@@ -321,40 +339,184 @@ describe('ArchiveDocumentPanelComponent as a drawer (below 1100 px)', () => {
     row?.remove();
   });
 
-  it('is a modal dialog named by the document, traps focus and starts on the close button', () => {
-    render(true);
-    expect(aside().getAttribute('role')).toBe('dialog');
-    expect(aside().getAttribute('aria-modal')).toBe('true');
-    expect(aside().getAttribute('aria-labelledby')).toBe('archivePanelTitle');
-    expect(fixture.debugElement.query(By.directive(CdkTrapFocus)).injector.get(CdkTrapFocus).enabled).toBe(true);
-    expect(document.activeElement).toBe(closeBtn());
+  it('is a plain region named by the document, not a modal dialog, and starts on the back button', () => {
+    render();
+    expect(aside().classList.contains('archive-view')).toBe(true);
+    expect(aside().getAttribute('role')).toBe('region');
+    expect(aside().getAttribute('aria-label')).toBe('Faktura 118');
+    expect(aside().getAttribute('aria-modal')).toBeNull();
+    expect(document.activeElement).toBe(backBtn());
   });
 
+  const escape = (): KeyboardEvent => new KeyboardEvent('keydown', {key: 'Escape', bubbles: true, cancelable: true});
+
   it('closes on Escape, but not when a control inside already handled it', () => {
-    render(true);
-    const handled = new KeyboardEvent('keydown', {key: 'Escape', bubbles: true, cancelable: true});
+    render();
+    const handled = escape();
     handled.preventDefault();
-    closeBtn().dispatchEvent(handled);
+    backBtn().dispatchEvent(handled);
     expect(closed).not.toHaveBeenCalled();
-    closeBtn().dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true, cancelable: true}));
+    backBtn().dispatchEvent(escape());
+    expect(closed).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes on Escape when focus fell to <body> (a button that disabled itself)', () => {
+    render();
+    (document.activeElement as HTMLElement).blur();
+    expect(document.activeElement).toBe(document.body);
+    document.body.dispatchEvent(escape());
+    expect(closed).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves Escape to an open dialog', () => {
+    render();
+    const dialog = TestBed.inject(MatDialog);
+    vi.spyOn(dialog, 'openDialogs', 'get').mockReturnValue([{} as any]);
+    document.body.dispatchEvent(escape());
+    expect(closed).not.toHaveBeenCalled();
+  });
+
+  it('the back button closes it', () => {
+    render();
+    backBtn().click();
     expect(closed).toHaveBeenCalledTimes(1);
   });
 
   it('gives focus back to the row that opened it when it closes', () => {
-    render(true);
+    render();
     expect(document.activeElement).not.toBe(row);
     fixture.destroy();
     expect(document.activeElement).toBe(row);
   });
 
-  it('side by side (1100 px and up) stays a plain region: no dialog role, no trap, focus stays on the row', () => {
-    render(false);
-    expect(aside().getAttribute('role')).toBeNull();
-    expect(aside().getAttribute('aria-modal')).toBeNull();
-    expect(fixture.debugElement.query(By.directive(CdkTrapFocus)).injector.get(CdkTrapFocus).enabled).toBe(false);
-    expect(document.activeElement).toBe(row);
-    row.blur();
+  it('after previous/next, gives focus to the shown document\'s row instead of the opener', () => {
+    const table = document.createElement('table');
+    table.id = 'archiveFilesTable';
+    table.innerHTML = '<tbody><tr class="archive-file-row" data-file-id="8" tabindex="0"></tr></tbody>';
+    document.body.appendChild(table);
+    try {
+      render();
+      fixture.componentRef.setInput('fileId', 8);
+      fixture.detectChanges();
+      fixture.destroy();
+      expect(document.activeElement).toBe(table.querySelector('tr'));
+    } finally {
+      table.remove();
+    }
+  });
+
+  it('previous and next ask the page for the neighbouring document', () => {
+    render({hasPrevious: true, hasNext: true});
+    const previous = vi.fn();
+    const next = vi.fn();
+    fixture.componentInstance.previousFile.subscribe(previous);
+    fixture.componentInstance.nextFile.subscribe(next);
+    q('#archiveViewPrevBtn').click();
+    expect(previous).toHaveBeenCalledTimes(1);
+    q('#archiveViewNextBtn').click();
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it('previous and next are disabled at the ends of the list', () => {
+    render({hasPrevious: false, hasNext: false});
+    expect(q('#archiveViewPrevBtn').disabled).toBe(true);
+    expect(q('#archiveViewNextBtn').disabled).toBe(true);
+  });
+
+  it('shows the position in the bar', () => {
+    render({positionLabel: '2 af 4'});
+    expect(q('.archive-view__bar #archivePanelPosition').textContent?.trim()).toBe('2 af 4');
+  });
+
+  it('previews every page of a PDF, fitted to the width', () => {
+    render();
+    fixture.componentInstance.pdfBytes = new Uint8Array([37, 80, 68, 70]);
+    // Zoneless TestBed: a field set from outside is only rendered once the view is marked dirty.
+    fixture.componentRef.injector.get(ChangeDetectorRef).markForCheck();
+    fixture.detectChanges();
+    const viewer = fixture.nativeElement.querySelector('pdf-viewer.archive-view__pdf') as Record<string, unknown> | null;
+    expect(viewer).not.toBeNull();
+    expect(viewer!['show-all']).toBe(true);
+    expect(viewer!['original-size']).toBe(false);
+  });
+});
+
+describe('ArchiveDocumentPanelComponent preview by file kind', () => {
+  let fixture: ComponentFixture<ArchiveDocumentPanelComponent>;
+  let createObjectURL: Mock;
+  let revokeObjectURL: Mock;
+  const original = {create: URL.createObjectURL, revoke: URL.revokeObjectURL};
+  const q = (selector: string): HTMLElement | null => fixture.nativeElement.querySelector(selector);
+
+  function render(fileExtension: string, bytes$: Observable<Blob> = of(new Blob(['x']))): void {
+    TestBed.configureTestingModule({
+      imports: [ArchiveDocumentPanelComponent, TranslateModule.forRoot()],
+      providers: [
+        {
+          provide: BackendConfigurationPnFilesService,
+          useValue: {
+            getFile: () => of({success: true, model: {...file, fileName: 'example-file', fileExtension}}),
+            getPdfFile: vi.fn().mockReturnValue(bytes$),
+          },
+        },
+        {provide: ArchiveMoveFlowService, useValue: {move: vi.fn()}},
+      ],
+      schemas: [NO_ERRORS_SCHEMA],
+    });
+    TestBed.overrideComponent(ArchiveDocumentPanelComponent, {set: {imports: [CommonModule, A11yModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}});
+    fixture = TestBed.createComponent(ArchiveDocumentPanelComponent);
+    fixture.componentRef.setInput('fileId', 7);
+    fixture.detectChanges();
+  }
+
+  beforeEach(() => {
+    createObjectURL = vi.fn().mockReturnValue('blob:example-image');
+    revokeObjectURL = vi.fn();
+    Object.assign(URL, {createObjectURL, revokeObjectURL});
+  });
+
+  afterEach(() => {
+    fixture?.destroy();
+    Object.assign(URL, {createObjectURL: original.create, revokeObjectURL: original.revoke});
+  });
+
+  it('an image is shown in an img named by the file, with no PDF viewer and no "no preview" text', () => {
+    render('png');
+    const img = q('#archivePanelImagePreview') as HTMLImageElement;
+    expect(img).not.toBeNull();
+    expect(img.getAttribute('src')).toBe('blob:example-image');
+    expect(img.getAttribute('alt')).toBe('example-file');
+    expect(q('pdf-viewer')).toBeNull();
+    expect(q('#archivePanelNoPreview')).toBeNull();
+  });
+
+  it('an image URL is made once per open and revoked when the panel goes away', () => {
+    render('jpg');
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
     fixture.destroy();
-    expect(document.activeElement).not.toBe(row);
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:example-image');
+  });
+
+  it('an image that arrives after the panel closed makes no object URL', () => {
+    const bytes = new Subject<Blob>();
+    render('png', bytes);
+    fixture.destroy();
+    bytes.next(new Blob(['x']));
+    expect(bytes.observed).toBe(false);
+    expect(createObjectURL).not.toHaveBeenCalled();
+  });
+
+  it('a PDF is not shown as an image', () => {
+    render('pdf');
+    expect(q('#archivePanelImagePreview')).toBeNull();
+    expect(q('#archivePanelNoPreview')).toBeNull();
+    expect(createObjectURL).not.toHaveBeenCalled();
+  });
+
+  it('any other file says there is no preview', () => {
+    render('docx');
+    expect(q('#archivePanelNoPreview')?.textContent).toContain('No preview');
+    expect(q('#archivePanelImagePreview')).toBeNull();
+    expect(q('pdf-viewer')).toBeNull();
   });
 });

@@ -4,7 +4,7 @@ import {
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {FormControl, FormGroup, FormsModule, ReactiveFormsModule} from '@angular/forms';
-import {combineLatest, forkJoin, Subscription, take} from 'rxjs';
+import {BehaviorSubject, combineLatest, forkJoin, Subscription, take} from 'rxjs';
 import {
   CommonDictionaryModel,
 } from 'src/app/common/models';
@@ -29,6 +29,7 @@ import * as R from 'ramda';
 import {
   selectCurrentUserClaimsDeviceUsersCreate,
   selectCurrentUserClaimsDeviceUsersUpdate,
+  selectCurrentUserIsAdmin,
   selectCurrentUserIsFirstUser
 } from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
@@ -47,6 +48,7 @@ import {MtxSelect} from '@ng-matero/extensions/select';
 import {MatTooltip} from '@angular/material/tooltip';
 import {MatSlideToggle} from '@angular/material/slide-toggle';
 import {PropertyWorkerTableComponent} from '../property-worker-table/property-worker-table.component';
+import {CallerFlags, NO_CALLER_FLAGS, callerFlags as readCallerFlags, newWorkerRow} from '../../leader.helper';
 
 @AutoUnsubscribe()
 @Component({
@@ -75,7 +77,6 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   alreadyUsedEmails: string[] = [];
 
   getSites$: Subscription;
-  propertyWorkerEditModalComponentAfterClosedSub$: Subscription;
   propertyWorkerCreateModalComponentAfterClosedSub$: Subscription;
   bulkTagsModalAfterClosedSub$: Subscription;
   getFiltersAsyncSub$: Subscription;
@@ -93,8 +94,21 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   highlightedSiteId: number | null = null;
   /** #1380 — workers ticked in the table, the target of "Tildel tags". */
   selectedWorkers: DeviceUserModel[] = [];
+  /** From index-device-user (every row carries the caller's flags); the role decides while the list is empty. */
+  private readonly callerFlags$ = new BehaviorSubject<CallerFlags>(NO_CALLER_FLAGS);
+  /**
+   * The flags of the last non-empty list answer, reused when a filter matches nothing. Page-scoped: a new page
+   * (after sign-out or navigating away) starts from the role again.
+   */
+  private learnedCallerFlags: CallerFlags | null = null;
+  get callerFlags(): CallerFlags {
+    return this.callerFlags$.value;
+  }
   public selectCurrentUserClaimsDeviceUsersCreate$ = this.store.select(selectCurrentUserClaimsDeviceUsersCreate);
   public selectCurrentUserClaimsDeviceUsersUpdate$ = this.store.select(selectCurrentUserClaimsDeviceUsersUpdate);
+  /** "Assign tags" (button and row selection): the update claim plus worker-group rights. */
+  public canAssignTags$ = combineLatest([this.selectCurrentUserClaimsDeviceUsersUpdate$, this.callerFlags$])
+    .pipe(map(([canUpdate, flags]) => canUpdate && flags.canEditWorkerTags));
   // #1425 - TEMPORARY: tail-bite managers is first-user only until the owner opens it up (the API enforces it too,
   // see TailBiteSetupController). Remove together with the [FirstUserOnly] attributes there.
   public canManageTailBiteManagers$ = combineLatest([
@@ -107,6 +121,10 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
 
 
   ngOnInit() {
+    // Until index-device-user answers, the role decides (the contract's zero-row rule), so a create dialog opened
+    // before the list arrives still shows the Leder toggle and worker groups to an admin.
+    this.store.select(selectCurrentUserIsAdmin).pipe(take(1))
+      .subscribe(isAdmin => this.callerFlags$.next(readCallerFlags([], isAdmin)));
     // Resolve the page title once menus hydrate; recompute when they emit.
     // getTitleByUrl reads from the menu store internally — we drive it from
     // the menu emission instead of calling it per template change-detection.
@@ -155,62 +173,11 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
     //this.getWorkerPropertiesAssignments();
   }
 
-  openEditModal(simpleSiteDto: DeviceUserModel) {
-    const selectedSimpleSite = new DeviceUserModel();
-    selectedSimpleSite.userFirstName = simpleSiteDto.userFirstName;
-    selectedSimpleSite.userLastName = simpleSiteDto.userLastName;
-    selectedSimpleSite.id = simpleSiteDto.siteUid;
-    selectedSimpleSite.languageCode = simpleSiteDto.languageCode;
-    selectedSimpleSite.normalId = simpleSiteDto.siteId;
-    selectedSimpleSite.isLocked = simpleSiteDto.isLocked;
-    selectedSimpleSite.timeRegistrationEnabled = simpleSiteDto.timeRegistrationEnabled;
-    selectedSimpleSite.taskManagementEnabled = simpleSiteDto.taskManagementEnabled;
-    selectedSimpleSite.hasWorkOrdersAssigned = simpleSiteDto.hasWorkOrdersAssigned;
-    selectedSimpleSite.isBackendUser = simpleSiteDto.isBackendUser;
-    selectedSimpleSite.startMonday = simpleSiteDto.startMonday;
-    selectedSimpleSite.endMonday = simpleSiteDto.endMonday;
-    selectedSimpleSite.breakMonday = simpleSiteDto.breakMonday;
-    selectedSimpleSite.startTuesday = simpleSiteDto.startTuesday;
-    selectedSimpleSite.endTuesday = simpleSiteDto.endTuesday;
-    selectedSimpleSite.breakTuesday = simpleSiteDto.breakTuesday;
-    selectedSimpleSite.startWednesday = simpleSiteDto.startWednesday;
-    selectedSimpleSite.endWednesday = simpleSiteDto.endWednesday;
-    selectedSimpleSite.breakWednesday = simpleSiteDto.breakWednesday;
-    selectedSimpleSite.startThursday = simpleSiteDto.startThursday;
-    selectedSimpleSite.endThursday = simpleSiteDto.endThursday;
-    selectedSimpleSite.breakThursday = simpleSiteDto.breakThursday;
-    selectedSimpleSite.startFriday = simpleSiteDto.startFriday;
-    selectedSimpleSite.endFriday = simpleSiteDto.endFriday;
-    selectedSimpleSite.breakFriday = simpleSiteDto.breakFriday;
-    selectedSimpleSite.startSaturday = simpleSiteDto.startSaturday;
-    selectedSimpleSite.endSaturday = simpleSiteDto.endSaturday;
-    selectedSimpleSite.breakSaturday = simpleSiteDto.breakSaturday;
-    selectedSimpleSite.startSunday = simpleSiteDto.startSunday;
-    selectedSimpleSite.endSunday = simpleSiteDto.endSunday;
-    selectedSimpleSite.breakSunday = simpleSiteDto.breakSunday;
-    selectedSimpleSite.webAccessEnabled = simpleSiteDto.webAccessEnabled;
-    selectedSimpleSite.archiveEnabled = simpleSiteDto.archiveEnabled;
-
-    const workersAssignments = this.workersAssignments.find(
-      (x) => x.siteId === simpleSiteDto.siteId
-    );
-
-    this.propertyWorkerEditModalComponentAfterClosedSub$ = this.dialog.open(PropertyWorkerCreateEditModalComponent,
-      {
-        ...dialogConfigHelper(this.overlay, {
-          deviceUser: selectedSimpleSite,
-          assignments: workersAssignments ? workersAssignments.assignments : [],
-          availableProperties: this.availableProperties,
-        }), minWidth: 1024
-      })
-      .afterClosed().subscribe(data => data ? this.updateTable() : undefined);
-  }
-
   openCreateModal() {
     this.propertyWorkerCreateModalComponentAfterClosedSub$ = this.dialog.open(PropertyWorkerCreateEditModalComponent,
       {
         ...dialogConfigHelper(this.overlay, {
-          deviceUser: {},
+          deviceUser: newWorkerRow(this.callerFlags),
           assignments: [],
           availableProperties: this.availableProperties,
           availableTags: this.availableTags,
@@ -301,7 +268,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
       .getDeviceUsersFiltered();
   }
 
-  private applyDeviceUsersData(data: any) {
+  private applyDeviceUsersData(data: any, isAdmin: boolean) {
     let anyIsResigned = false;
     if (data && data.model) {
       data.model.forEach(site => {
@@ -321,6 +288,11 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
             ? site.propertyNames.split(',').map((name: string) => name.trim())
             : [])
       }));
+      const flags = readCallerFlags(data.model, isAdmin, this.learnedCallerFlags);
+      if (data.model.length > 0) {
+        this.learnedCallerFlags = flags;
+      }
+      this.callerFlags$.next(flags);
     }
   }
 
@@ -331,11 +303,12 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
       this.getPropertiesDictionary(),
       this.getDeviceUsersFiltered(propertyIds),
       this.getWorkerPropertiesAssignments(propertyIds),
-    ]).subscribe(([propertiesResult, devicesResult, assignmentsResult]) => {
+      this.store.select(selectCurrentUserIsAdmin).pipe(take(1)),
+    ]).subscribe(([propertiesResult, devicesResult, assignmentsResult, isAdmin]) => {
       if (propertiesResult && propertiesResult.success) {
         this.availableProperties = propertiesResult.model;
       }
-      this.applyDeviceUsersData(devicesResult);
+      this.applyDeviceUsersData(devicesResult, isAdmin);
       if (assignmentsResult && assignmentsResult.success) {
         this.workersAssignments = [...assignmentsResult.model];
       }

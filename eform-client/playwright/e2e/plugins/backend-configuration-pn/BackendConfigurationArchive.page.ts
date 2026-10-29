@@ -1,16 +1,20 @@
 /**
- * The Arkiv page with folders (layout W1): folder tree, document table and document panel, plus the
+ * The Arkiv page with folders (layout W1): folder tree, document table and the opened document's large view, plus the
  * Indbakke review steps the archive specs share. Folder menu items live in the CDK overlay on <body>,
  * so they are addressed by `<prefix>-<folderId>` inside `.cdk-overlay-container` (CLAUDE.md rule 7).
  */
 import { expect, Locator, Page, Response } from '@playwright/test';
-import { API_TIMEOUT, ignoreUnhandledRejections, UI_TIMEOUT, waitForApiResponse } from './wait-helpers';
+import { API_TIMEOUT, ignoreUnhandledRejections, leaveCurrentDocument, UI_TIMEOUT, waitForApiResponse } from './wait-helpers';
 import { fillInDialog } from './dialog-helpers';
+import { BASE_URL } from './archive-api-helpers';
 
-export const ARCHIVE_URL = 'http://localhost:4200/plugins/backend-configuration-pn/files';
+export const ARCHIVE_URL = `${BASE_URL}/plugins/backend-configuration-pn/files`;
 export const ARCHIVE_API = '/api/backend-configuration-pn';
 export const FOLDERS_PATH = `${ARCHIVE_API}/archive-folders`;
 export const FILES_PATH = `${ARCHIVE_API}/files`;
+/** GET archive/capabilities: what the signed-in user may do (admins and Leders manage the archive). */
+export const CAPABILITIES_PATH = `${ARCHIVE_API}/archive/capabilities`;
+export interface ArchiveCapabilities { canManage: boolean; canDelete: boolean; canUseInbox: boolean; isFirstUser: boolean; }
 /** Created by the base migration in every tenant; never deleted, moved or restricted (D12). */
 export const DEFAULT_FOLDER = 'Arkiv';
 /** InboxDocumentStatus, as the inbox list renders it in `data-status`. */
@@ -47,8 +51,33 @@ export class BackendConfigurationArchivePage {
     return this.table().locator('tr.archive-file-row').filter({ has: this.page.locator('.fileName', { hasText: name }) });
   }
 
+  /** The opened document's large view (it covers the folder tree and the table while it is shown). */
   panel(): Locator {
     return this.page.locator('#archiveDocumentPanel');
+  }
+
+  /** The Mappe cell of a row: `#folderPath-<i>`, i being the row's place in the table. */
+  async folderCell(row: Locator): Promise<Locator> {
+    const index = await row.evaluate((tr: HTMLTableRowElement) => tr.sectionRowIndex, undefined, { timeout: UI_TIMEOUT });
+    return this.table().locator(`#folderPath-${index}`);
+  }
+
+  /** Opens a row's document in the large view and waits for its data; returns the file id. */
+  async openDocument(row: Locator, what: string): Promise<string> {
+    const fileId = await row.getAttribute('data-file-id', { timeout: UI_TIMEOUT });
+    expect(fileId, `file id of ${what}`).toMatch(/^\d+$/);
+    const loaded = this.waitForCall(`the document data of ${what}`, 'GET', `${FILES_PATH}/${fileId}`);
+    await row.locator('.fileName').click({ timeout: UI_TIMEOUT });
+    await expectSuccess(loaded, `opening ${what}`);
+    await expect(this.panel()).toBeVisible({ timeout: UI_TIMEOUT });
+    return fileId!;
+  }
+
+  /** Clicks previous/next in the large view and waits for that document's data. */
+  async stepDocument(button: 'archiveViewPrevBtn' | 'archiveViewNextBtn', fileId: string): Promise<void> {
+    const loaded = this.waitForCall(`the document data of file ${fileId}`, 'GET', `${FILES_PATH}/${fileId}`);
+    await this.panel().locator(`#${button}`).click({ timeout: UI_TIMEOUT });
+    await expectSuccess(loaded, `stepping to file ${fileId}`);
   }
 
   dialog(): Locator {
@@ -75,6 +104,31 @@ export class BackendConfigurationArchivePage {
     await this.dialog().locator(`#${id}`).click({ timeout: UI_TIMEOUT });
   }
 
+  /**
+   * Exactly one dialog, opened or opening and not closing: Material adds `mdc-dialog--open` (with `--opening`) when
+   * the open animation starts and removes it when the dialog starts to close. A second dialog fails the count.
+   */
+  async expectOneOpenDialog(what: string): Promise<void> {
+    await expect(this.dialog(), `exactly one dialog: ${what}`).toHaveCount(1, { timeout: UI_TIMEOUT });
+    await expect(this.dialog(), `${what} is opened or opening, not closing`).toHaveClass(/mdc-dialog--open/, { timeout: UI_TIMEOUT });
+  }
+
+  /** Opens the etiketter dialog (Tags) from the archive list. */
+  async openTagsDialog(): Promise<void> {
+    await this.page.locator('#manageTagsBtn').click({ timeout: UI_TIMEOUT });
+    await expect(this.dialog().locator('#tagsModalCloseBtn')).toBeVisible({ timeout: UI_TIMEOUT });
+  }
+
+  /** A row of the open etiketter dialog. */
+  tagRow(name: string): Locator {
+    return this.dialog().locator('.mat-mdc-row').filter({ hasText: name });
+  }
+
+  async closeTagsDialog(): Promise<void> {
+    await this.clickInDialog('tagsModalCloseBtn');
+    await expect(this.dialog()).toHaveCount(0, { timeout: UI_TIMEOUT });
+  }
+
   /** Arms a bounded wait for one API call; await it after the action that triggers it. */
   waitForCall(description: string, method: string, path: string | RegExp): Promise<Response> {
     const wait = waitForApiResponse(this.page, `${method} ${description}`, r => {
@@ -88,13 +142,22 @@ export class BackendConfigurationArchivePage {
     return wait;
   }
 
-  async open(): Promise<void> {
+  /**
+   * Loads the Arkiv page and waits for the tree, the documents and the capabilities, so a "not shown" assertion
+   * after it is not satisfied by controls that simply have not arrived yet. Returns the capabilities (the first
+   * answer: for a guarded `url` that redirects to the list, CanManageGuard's).
+   */
+  async open(url: string = ARCHIVE_URL): Promise<ArchiveCapabilities> {
+    await leaveCurrentDocument(this.page);
     const folders = this.waitForCall('archive folder tree', 'GET', FOLDERS_PATH);
     const files = this.waitForCall('archive documents', 'POST', FILES_PATH);
-    await this.page.goto(ARCHIVE_URL, { timeout: API_TIMEOUT });
+    const capabilities = this.waitForCall('archive capabilities', 'GET', CAPABILITIES_PATH);
+    await this.page.goto(url, { timeout: API_TIMEOUT });
     await expectSuccess(folders, 'loading the folder tree');
     await expectSuccess(files, 'loading the archive documents');
+    const body = await expectSuccess(capabilities, 'loading the archive capabilities');
     await expect(this.tree()).toBeVisible({ timeout: UI_TIMEOUT });
+    return body.model;
   }
 
   async folderId(name: string): Promise<number> {
@@ -167,12 +230,22 @@ export class BackendConfigurationArchivePage {
    * open, D1); the document must then show in that folder's list.
    */
   async uploadPdf(baseName: string, pdf: Buffer, propertyName: string, folderLabel: string): Promise<void> {
+    await this.uploadFile(baseName, `${baseName}.pdf`, 'application/pdf', pdf, propertyName, folderLabel);
+  }
+
+  /** Uploads one image (jpg/png) the same way; `fileName` carries the extension. */
+  async uploadImage(baseName: string, fileName: string, mimeType: 'image/png' | 'image/jpeg', image: Buffer,
+                    propertyName: string, folderLabel: string): Promise<void> {
+    await this.uploadFile(baseName, fileName, mimeType, image, propertyName, folderLabel);
+  }
+
+  private async uploadFile(baseName: string, fileName: string, mimeType: string, buffer: Buffer,
+                           propertyName: string, folderLabel: string): Promise<void> {
     const folders = this.waitForCall('folders for the upload page', 'GET', FOLDERS_PATH);
     await this.page.locator('#addNewFileBtn').click({ timeout: UI_TIMEOUT });
     await expectSuccess(folders, 'loading the upload page folders');
     await expect(this.page.locator('#archiveUploadFolderSelect')).toContainText(folderLabel, { timeout: UI_TIMEOUT });
-    await this.page.locator('#pdfInput').setInputFiles(
-      { name: `${baseName}.pdf`, mimeType: 'application/pdf', buffer: pdf }, { timeout: UI_TIMEOUT });
+    await this.page.locator('#pdfInput').setInputFiles({ name: fileName, mimeType, buffer }, { timeout: UI_TIMEOUT });
     await this.chooseInSelect('propertyIdSelector', propertyName);
     await expect(this.page.locator('#uploadFilesBtn')).toBeEnabled({ timeout: UI_TIMEOUT });
     const created = this.waitForCall(`uploading ${baseName}`, 'POST', `${FILES_PATH}/create`);
@@ -190,6 +263,7 @@ export class BackendConfigurationArchivePage {
   }
 
   async openInbox(): Promise<void> {
+    await leaveCurrentDocument(this.page);
     const listed = this.waitForCall('inbox list', 'GET', `${ARCHIVE_API}/inbox`);
     await this.page.goto(`${ARCHIVE_URL}/inbox`, { timeout: API_TIMEOUT });
     await expectSuccess(listed, 'loading the inbox list');

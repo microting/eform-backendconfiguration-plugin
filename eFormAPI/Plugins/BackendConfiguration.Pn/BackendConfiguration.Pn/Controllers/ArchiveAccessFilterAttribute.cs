@@ -11,11 +11,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Services.ArchiveAccess;
 
 /// <summary>
-/// Archive endpoints (files, archive folders, inbox): a disabled caller (D7 - resigned or IsActive=false, admins
+/// Archive endpoints (files, archive folders, inbox, file-tags): a disabled caller (D7 - resigned or IsActive=false, admins
 /// included) gets 403 <c>{"error":"account_disabled"}</c> before the action runs, so the app can sign out. A
 /// service that throws <see cref="ArchiveNotFoundException"/> becomes a plain 404 (unreadable looks like missing),
 /// and <see cref="ArchiveAccountDisabledException"/> thrown later in the request becomes the same 403.
-/// Authorization ([Authorize], roles) runs before this filter.
+/// Authorization filters ([Authorize], [ArchiveManager]) run before this filter.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
 public sealed class ArchiveAccessFilterAttribute : Attribute, IAsyncActionFilter

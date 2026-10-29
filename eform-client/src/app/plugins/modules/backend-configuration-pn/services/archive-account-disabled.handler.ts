@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {HttpErrorResponse} from '@angular/common/http';
-import {EMPTY, MonoTypeOperatorFunction, Observable, catchError, from, switchMap, throwError} from 'rxjs';
+import {EMPTY, MonoTypeOperatorFunction, Observable, Subject, catchError, from, switchMap, throwError} from 'rxjs';
 import {ToastrService} from 'ngx-toastr';
 import {TranslateService} from '@ngx-translate/core';
 import {Store} from '@ngrx/store';
@@ -9,6 +9,14 @@ import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
 
 /** The 403 body code the archive API sends for a resigned or deactivated user (spec D7). */
 export const ARCHIVE_ACCOUNT_DISABLED = 'account_disabled';
+
+/** The toast for an [ArchiveManager] refusal (403 with an empty body): admin/Leder-only actions. */
+export const ARCHIVE_MANAGER_REFUSED = 'Only administrators and leaders can do this';
+
+/** `StatusCodeResult(403)` has no body: null/'' for JSON calls, an empty Blob for downloads. */
+function isEmptyBody(body: unknown): boolean {
+  return body == null || body === '' || (body instanceof Blob && body.size === 0);
+}
 
 function blobText(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -37,8 +45,8 @@ export async function archiveErrorCode(body: unknown): Promise<string | null> {
 
 /**
  * Every archive call goes through `handle()`. It ends the session for a 403 whose body is exactly
- * `{"error": "account_disabled"}` (JSON or, for get-file / get-files, a Blob) and lets every other error through
- * (an inbox 403, a non-admin's 403 with an empty body).
+ * `{"error": "account_disabled"}` (JSON or, for get-file / get-files, a Blob). It toasts an [ArchiveManager] refusal
+ * (403 with an empty body: admin/Leder-only), emits it on `forbidden$`, and lets that and every other error through.
  *
  * This is NOT the main logout path for a disabled user. Both resign paths set EformUser.IsActive = false; the host's
  * HttpErrorInterceptor answers any 403 with a token refresh first, AuthService.RefreshToken refuses an inactive user,
@@ -51,15 +59,23 @@ export async function archiveErrorCode(body: unknown): Promise<string | null> {
  * logout does not reload the page, so a NEW authenticated session (isAuth turning true) re-arms it. A late success from a
  * request that was already in flight must not re-arm it, or a later disabled response would log out and toast twice.
  *
- * 404s: the host interceptor retries a 404 and then completes EMPTY (eform-angular-frontend#8147). A service method
- * tagged "May complete empty (404)" therefore returns an observable that COMPLETES WITHOUT A VALUE for a missing or
- * unreadable document or folder, instead of erroring. Do not rely on an `error:` callback for it; a caller that
- * chains on a result must treat an empty completion as "not done" (e.g. `defaultIfEmpty(false)`).
+ * 404s: the host interceptor retries a 404 (5 x 15 s). Some host versions then complete EMPTY (a method tagged
+ * "May complete empty (404)" returns an observable that COMPLETES WITHOUT A VALUE for a missing or unreadable
+ * document or folder), others never emit or complete at all. Do not rely on an `error:` callback or on an empty
+ * completion; a caller that chains on a result must bound the wait (e.g. `timeout`) and treat "no value" as "not
+ * done" (e.g. `defaultIfEmpty(false)`). Task-3's ArchiveCapabilitiesService does this for getCapabilities.
  */
 @Injectable({providedIn: 'root'})
 export class ArchiveAccountDisabledHandler {
   /** Set by the first account_disabled hit (later hits do nothing); cleared when a new authenticated session starts. */
   private signingOut = false;
+
+  private readonly forbidden = new Subject<void>();
+  /**
+   * Emits on every [ArchiveManager] refusal. The user's rights changed since the page loaded (a revoke) or the page
+   * offered something it should not have; ArchiveCapabilitiesService reloads on it so the controls follow.
+   */
+  readonly forbidden$: Observable<void> = this.forbidden.asObservable();
 
   constructor(
     private authStateService: AuthStateService,
@@ -75,7 +91,11 @@ export class ArchiveAccountDisabledHandler {
     });
   }
 
-  handle<T>(): MonoTypeOperatorFunction<T> {
+  /**
+   * `announceForbidden` false: an empty-body 403 is an ordinary error (no toast, no `forbidden$`). For endpoints whose
+   * empty 403 is not an [ArchiveManager] refusal, e.g. [FirstUserOnly] (inbox rotate-address).
+   */
+  handle<T>(announceForbidden = true): MonoTypeOperatorFunction<T> {
     return (source: Observable<T>) => source.pipe(
       catchError((error: unknown) => {
         if (!(error instanceof HttpErrorResponse) || error.status !== 403) {
@@ -84,6 +104,9 @@ export class ArchiveAccountDisabledHandler {
         return from(archiveErrorCode(error.error)).pipe(
           switchMap(code => {
             if (code !== ARCHIVE_ACCOUNT_DISABLED) {
+              if (announceForbidden && isEmptyBody(error.error)) {
+                this.announceManagerRefused();
+              }
               return throwError(() => error);
             }
             if (!this.signingOut) {
@@ -96,5 +119,9 @@ export class ArchiveAccountDisabledHandler {
         );
       }),
     );
+  }
+  private announceManagerRefused(): void {
+    this.toastrService.error(this.translateService.instant(ARCHIVE_MANAGER_REFUSED));
+    this.forbidden.next();
   }
 }

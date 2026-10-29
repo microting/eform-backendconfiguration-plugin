@@ -7,6 +7,7 @@ import {
   ARCHIVE_URL, BackendConfigurationArchivePage, DEFAULT_FOLDER, expectSuccess, FILES_PATH, FOLDERS_PATH,
 } from '../BackendConfigurationArchive.page';
 import { fetchCatalog, seedInboxDocument, tinyPdf } from '../inbox-hub-seed';
+import { openRowActionMenu } from '../row-action-menu';
 import { API_TIMEOUT, UI_TIMEOUT } from '../wait-helpers';
 
 /**
@@ -20,9 +21,12 @@ import { API_TIMEOUT, UI_TIMEOUT } from '../wait-helpers';
  * Z5 dragging a document into the restricted folder asks first (D11), then moves it
  * Z6 a kept date suggestion lands under "Dato skal tjekkes" and is approved from the panel (D8)
  * Z7 only empty folders can be deleted (D12)
- * Z8 below 1100 px the document panel is a drawer
- * Z9 beside the panel the table scrolls inside its own frame; the page does not scroll sideways (#1450)
- * Z10 an account_disabled answer ends the session (D7) — last, it signs the page out
+ * Z8 the Mappe column shows every document's folder: the parent and the leaf
+ * Z9 an opened document is a large view over the tree and the table; Escape and back return to the table
+ * Z10 previous and next in the large view move between the documents of the list
+ * Z11 the page does not scroll sideways, neither in the list nor in the large view (#1450)
+ * Z12 an image can be uploaded, gets the image icon and wording, and the large view previews it
+ * Z13 an account_disabled answer ends the session (D7) — last, it signs the page out
  */
 const rand = generateRandmString(5);
 const property: PropertyCreateUpdate = {
@@ -46,6 +50,10 @@ const renamedSub = `Regninger-${rand}`;
 const emptyFolder = `Tom-${rand}`;
 const docInSub = `Faktura-${rand}`;
 const docInArkiv = `Kontrakt-${rand}`;
+const imageDoc = `example-image-${rand}`;
+/** A valid 1x1 PNG, so the browser decodes it (naturalWidth 1). */
+const TINY_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 
 test.describe.serial('Arkiv med mapper (W1)', () => {
   let page: Page;
@@ -219,36 +227,103 @@ test.describe.serial('Arkiv med mapper (W1)', () => {
     await expect(archive.folderRow(emptyFolder)).toHaveCount(0, { timeout: UI_TIMEOUT });
   });
 
-  test('Z8 below 1100 px the document panel is a drawer', async () => {
-    // One page load and one folder list.
+  test('Z8 the Mappe column shows every document\'s folder: the parent and the leaf', async () => {
+    // One page load and two folder lists.
     test.setTimeout(90000);
+    await archive.open();
+    await expect(archive.table().locator('#archiveFolderHeader')).toHaveText(/Mappe|Folder/, { timeout: UI_TIMEOUT });
+
+    // A subfolder: "<parent> ›" and the subfolder; the tooltip holds the whole path.
+    await archive.selectFolder(renamedSub);
+    const inSub = await archive.folderCell(archive.fileRow(docInSub));
+    await expect(inSub.locator('.archive-folder-path__parent')).toHaveText(`${topFolder} ›`, { timeout: UI_TIMEOUT });
+    await expect(inSub.locator('.archive-folder-path__leaf')).toHaveText(renamedSub, { timeout: UI_TIMEOUT });
+
+    // A top-level folder (Z5 moved the document here): only the folder, no parent.
+    await archive.selectFolder(topFolder);
+    const inTop = await archive.folderCell(archive.fileRow(docInArkiv));
+    await expect(inTop.locator('.archive-folder-path__leaf')).toHaveText(topFolder, { timeout: UI_TIMEOUT });
+    await expect(inTop.locator('.archive-folder-path__parent')).toHaveCount(0, { timeout: UI_TIMEOUT });
+  });
+
+  test('Z9 an opened document is a large view over the tree and the table; Escape and back return', async () => {
+    // One page load, one folder list and two document opens (API_TIMEOUT each).
+    test.setTimeout(120000);
+    await archive.open();
+    await archive.selectFolder(topFolder);
+    const row = archive.fileRow(docInArkiv);
+
+    await archive.openDocument(row, docInArkiv);
+    await expect(archive.panel()).toHaveClass(/archive-view/, { timeout: UI_TIMEOUT });
+    await expect(archive.panel().locator('#archivePanelTitle')).toHaveText(docInArkiv, { timeout: UI_TIMEOUT });
+    await expect(archive.panel().locator('.archive-view__path')).toHaveText(topFolder, { timeout: UI_TIMEOUT });
+    await expect(archive.panel().locator('#archivePanelCloseBtn')).toBeFocused({ timeout: UI_TIMEOUT });
+    await expect(archive.table()).toBeHidden({ timeout: UI_TIMEOUT });
+    await expect(archive.tree()).toBeHidden({ timeout: UI_TIMEOUT });
+
+    await page.keyboard.press('Escape');
+    await expect(archive.panel()).toHaveCount(0, { timeout: UI_TIMEOUT });
+    await expect(archive.table()).toBeVisible({ timeout: UI_TIMEOUT });
+    await expect(archive.tree()).toBeVisible({ timeout: UI_TIMEOUT });
+    await expect(row, 'the row that opened the view has focus again').toBeFocused({ timeout: UI_TIMEOUT });
+
+    await archive.openDocument(row, docInArkiv);
+    await expect(archive.table()).toBeHidden({ timeout: UI_TIMEOUT });
+    await archive.panel().locator('#archivePanelCloseBtn').click({ timeout: UI_TIMEOUT });
+    await expect(archive.panel()).toHaveCount(0, { timeout: UI_TIMEOUT });
+    await expect(archive.table()).toBeVisible({ timeout: UI_TIMEOUT });
+  });
+
+  test('Z10 previous and next in the large view move between the documents of the list', async () => {
+    // One page load, one folder list and four document opens (API_TIMEOUT each).
+    test.setTimeout(180000);
+    await archive.open();
+    // Z3 uploaded one document here and Z6 filed another.
+    await archive.selectFolder(renamedSub);
+    const rows = archive.table().locator('tr.archive-file-row');
+    await expect(rows, `the two documents in ${renamedSub}`).toHaveCount(2, { timeout: UI_TIMEOUT });
+    const secondId = await rows.nth(1).getAttribute('data-file-id', { timeout: UI_TIMEOUT });
+    const firstId = await archive.openDocument(rows.nth(0), `the first document in ${renamedSub}`);
+    expect(secondId, 'file id of the second row').toMatch(/^\d+$/);
+
+    const view = archive.panel();
+    const position = view.locator('#archivePanelPosition');
+    await expect(position).toHaveText(/^1 (af|of) 2$/, { timeout: UI_TIMEOUT });
+    await expect(view.locator('#archiveViewPrevBtn')).toBeDisabled({ timeout: UI_TIMEOUT });
+    await expect(view.locator('#archiveViewNextBtn')).toBeEnabled({ timeout: UI_TIMEOUT });
+
+    await archive.stepDocument('archiveViewNextBtn', secondId!);
+    await expect(position).toHaveText(/^2 (af|of) 2$/, { timeout: UI_TIMEOUT });
+    await expect(view.locator('#archiveViewNextBtn')).toBeDisabled({ timeout: UI_TIMEOUT });
+    await expect(view.locator('#archiveViewPrevBtn')).toBeEnabled({ timeout: UI_TIMEOUT });
+    await expect(rows.nth(1)).toHaveClass(/archive-file-row--current/, { timeout: UI_TIMEOUT });
+
+    // Next disabled itself at the last document, so focus fell to <body>: Escape must still close the view, and
+    // focus goes to the row of the document shown last, not to the row that opened the view.
+    await page.keyboard.press('Escape');
+    await expect(view).toHaveCount(0, { timeout: UI_TIMEOUT });
+    await expect(archive.table()).toBeVisible({ timeout: UI_TIMEOUT });
+    await expect(rows.nth(1), 'the row of the document shown last has focus').toBeFocused({ timeout: UI_TIMEOUT });
+
+    await archive.openDocument(rows.nth(1), `the second document in ${renamedSub}`);
+    await archive.stepDocument('archiveViewPrevBtn', firstId);
+    await expect(position).toHaveText(/^1 (af|of) 2$/, { timeout: UI_TIMEOUT });
+    await expect(view.locator('#archiveViewPrevBtn')).toBeDisabled({ timeout: UI_TIMEOUT });
+    await expect(rows.nth(0)).toHaveClass(/archive-file-row--current/, { timeout: UI_TIMEOUT });
+
+    await view.locator('#archivePanelCloseBtn').click({ timeout: UI_TIMEOUT });
+    await expect(view).toHaveCount(0, { timeout: UI_TIMEOUT });
+    await expect(rows.nth(0), 'the row of the document shown last has focus').toBeFocused({ timeout: UI_TIMEOUT });
+  });
+
+  test('Z11 the page does not scroll sideways, neither in the list nor in the large view', async () => {
+    // One page load, one folder list and one document open.
+    test.setTimeout(90000);
+    // Narrower than the folder tree plus every table column need.
     await page.setViewportSize({ width: 1000, height: 800 });
     try {
       await archive.open();
       await archive.selectFolder(topFolder);
-      await archive.fileRow(docInArkiv).locator('.fileName').click({ timeout: UI_TIMEOUT });
-      await expect(archive.panel()).toHaveClass(/archive-panel--drawer/, { timeout: UI_TIMEOUT });
-      await expect(page.locator('.archive-panel-backdrop')).toBeVisible({ timeout: UI_TIMEOUT });
-      await archive.panel().locator('#archivePanelCloseBtn').click({ timeout: UI_TIMEOUT });
-      await expect(archive.panel()).toHaveCount(0, { timeout: UI_TIMEOUT });
-    } finally {
-      // playwright.config.ts use.viewport
-      await page.setViewportSize({ width: 1920, height: 1080 });
-    }
-  });
-
-  test('Z9 beside the panel the table scrolls inside its own frame', async () => {
-    // One page load and one folder list.
-    test.setTimeout(90000);
-    // At 1200 px the panel sits beside the table (side mode from 1100 px), which leaves the table far less
-    // room than its columns need.
-    await page.setViewportSize({ width: 1200, height: 900 });
-    try {
-      await archive.open();
-      await archive.selectFolder(topFolder);
-      await archive.fileRow(docInArkiv).locator('.fileName').click({ timeout: UI_TIMEOUT });
-      await expect(archive.panel()).toBeVisible({ timeout: UI_TIMEOUT });
-      await expect(archive.panel()).not.toHaveClass(/archive-panel--drawer/, { timeout: UI_TIMEOUT });
       const widths = () => page.evaluate(() => {
         const card = document.querySelector('.content-card')!;
         const table = document.querySelector('app-files-table')!;
@@ -258,16 +333,60 @@ test.describe.serial('Arkiv med mapper (W1)', () => {
           tableOverflow: table.scrollWidth - table.clientWidth,
         };
       });
+      const sideways = async () => {
+        const { cardOverflow, cardScrollLeft } = await widths();
+        return { cardOverflow, cardScrollLeft };
+      };
       // The table is wider than its column, and that overflow stays inside the table's own frame.
-      await expect.poll(async () => (await widths()).tableOverflow, { timeout: UI_TIMEOUT }).toBeGreaterThan(0);
-      expect(await widths()).toMatchObject({ cardOverflow: 0, cardScrollLeft: 0 });
+      await expect.poll(async () => (await widths()).tableOverflow, {
+        message: 'the table is wider than its frame', timeout: UI_TIMEOUT,
+      }).toBeGreaterThan(0);
+      await expect.poll(sideways, { message: 'the list does not scroll sideways', timeout: UI_TIMEOUT })
+        .toEqual({ cardOverflow: 0, cardScrollLeft: 0 });
+      await archive.openDocument(archive.fileRow(docInArkiv), docInArkiv);
+      await expect(archive.table()).toBeHidden({ timeout: UI_TIMEOUT });
+      await expect.poll(sideways, { message: 'the large view does not scroll sideways', timeout: UI_TIMEOUT })
+        .toEqual({ cardOverflow: 0, cardScrollLeft: 0 });
+      await archive.panel().locator('#archivePanelCloseBtn').click({ timeout: UI_TIMEOUT });
+      await expect(archive.panel()).toHaveCount(0, { timeout: UI_TIMEOUT });
     } finally {
       // playwright.config.ts use.viewport
       await page.setViewportSize({ width: 1920, height: 1080 });
     }
   });
 
-  test('Z10 an account_disabled answer ends the session', async () => {
+  test('Z12 an image can be uploaded, gets the image icon and wording, and the large view previews it', async () => {
+    // One page load, one upload with its list reload, the large view's two calls (API_TIMEOUT each).
+    test.setTimeout(150000);
+    await archive.open();
+    await archive.selectFolder(DEFAULT_FOLDER);
+    await archive.uploadImage(imageDoc, `${imageDoc}.png`, 'image/png', TINY_PNG, property.name!, DEFAULT_FOLDER);
+
+    const row = archive.fileRow(imageDoc);
+    await expect(row.locator('.archive-doc-name mat-icon')).toHaveText('image', { timeout: UI_TIMEOUT });
+    await expect(row.locator('.fileName')).toHaveText(`${imageDoc}.png`, { timeout: UI_TIMEOUT });
+
+    const item = await openRowActionMenu(page, row, `row of ${imageDoc}`);
+    await expect(item('viewPdfBtn')).toContainText(/Vis billede|View image/, { timeout: UI_TIMEOUT });
+    await expect(item('deleteFileBtn')).toContainText(/Slet billede|Delete image/, { timeout: UI_TIMEOUT });
+    await archive.closeMenu();
+
+    const fetched = archive.waitForCall('the image bytes', 'GET', /\/files\/get-file\/\d+$/);
+    await row.locator('.fileName').click({ timeout: UI_TIMEOUT });
+    const response = await fetched;
+    expect(response.ok(), `GET get-file answered ${response.status()}`).toBe(true);
+    expect(response.headers()['content-type'], 'content type of the served image').toContain('image/png');
+    const preview = archive.panel().locator('#archivePanelImagePreview');
+    await expect(preview).toBeVisible({ timeout: UI_TIMEOUT });
+    await expect.poll(() => preview.evaluate((img: HTMLImageElement) => img.naturalWidth), {
+      message: 'the preview image is decoded', timeout: UI_TIMEOUT,
+    }).toBeGreaterThan(0);
+    await expect(archive.panel().locator('pdf-viewer')).toHaveCount(0, { timeout: UI_TIMEOUT });
+    await archive.panel().locator('#archivePanelCloseBtn').click({ timeout: UI_TIMEOUT });
+    await expect(archive.panel()).toHaveCount(0, { timeout: UI_TIMEOUT });
+  });
+
+  test('Z13 an account_disabled answer ends the session', async () => {
     // One page load whose folder call is answered 403 below (the host retries it once after a token
     // refresh), then the redirect to the login page.
     test.setTimeout(90000);

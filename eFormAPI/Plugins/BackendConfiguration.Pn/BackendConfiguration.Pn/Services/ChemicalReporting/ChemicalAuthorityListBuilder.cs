@@ -37,20 +37,27 @@ using K = Infrastructure.Models.Chemicals.ChemicalLocalizationKeys;
 /// </summary>
 public static class ChemicalAuthorityListBuilder
 {
-    /// <summary>Text columns in print order; the SDS link column always follows.</summary>
-    private static readonly (string HeaderKey, Func<ChemicalAuthorityListRow, string> Value, bool StockOnly)[] Columns =
+    /// <summary>
+    /// Text columns in print order with their relative widths; the SDS link column always follows. The widths let the
+    /// longest Danish header word fit at the PDF's header size (no "Farepiktogramme|r", "Sikkerhedsdatabla|d") and give
+    /// the hazard statements most of the room. The pictogram column has no text: the PDF draws Row.PictogramCodes.
+    /// </summary>
+    private static readonly (string HeaderKey, Func<ChemicalAuthorityListRow, string> Value, bool StockOnly, float Weight)[] Columns =
     [
-        (K.ChemicalColumnProduct, r => r.ProductName, false),
-        (K.ChemicalColumnRegistrationNo, r => r.RegistrationNo, false),
-        (K.ChemicalColumnStatus, r => r.Status, false),
-        (K.ChemicalColumnSignalWord, r => r.SignalWord, false),
-        (K.ChemicalColumnPictograms, r => r.Pictograms, false),
-        (K.ChemicalColumnHazardStatements, r => r.HazardStatements, false),
-        (K.ChemicalColumnLocation, r => r.Location, false),
-        (K.ChemicalColumnPlacement, r => r.Placement, false),
-        (K.ChemicalColumnDeadlines, r => r.Deadlines, false),
-        (K.ChemicalColumnQuantity, r => r.Quantity, true),
+        (K.ChemicalColumnProduct, r => r.ProductName, false, 2.4f),
+        (K.ChemicalColumnRegistrationNo, r => r.RegistrationNo, false, 1.3f),
+        (K.ChemicalColumnStatus, r => r.Status, false, 1.5f),
+        (K.ChemicalColumnSignalWord, r => r.SignalWord, false, 1.3f),
+        (K.ChemicalColumnPictograms, _ => string.Empty, false, 2.2f),
+        (K.ChemicalColumnHazardStatements, r => r.HazardStatements, false, 5f),
+        (K.ChemicalColumnLocation, r => r.Location, false, 1.6f),
+        (K.ChemicalColumnPlacement, r => r.Placement, false, 1.6f),
+        (K.ChemicalColumnDeadlines, r => r.Deadlines, false, 2.2f),
+        (K.ChemicalColumnQuantity, r => r.Quantity, true, 1.1f),
     ];
+
+    /// <summary>The SDS column prints only the short link text, never the address (a long URL wrapped over many lines).</summary>
+    private const float SdsWeight = 2.4f;
 
     public static ChemicalAuthorityListDocument Build(
         ChemicalInventoryModel model, int propertyId, DateTime generatedAtUtc, string sdsBaseUrl, Func<string, string> text)
@@ -76,7 +83,12 @@ public static class ChemicalAuthorityListBuilder
             text(K.ChemicalAuthorityListTitle),
             $"{text(K.ChemicalPropertyLabel)}: {lookup.PropertyName(propertyId)} · {text(K.ChemicalGeneratedLabel)}: "
             + ChemicalCopenhagen.ToCopenhagen(generatedAtUtc).ToString("dd-MM-yyyy HH:mm", CultureInfo.InvariantCulture),
-            headers, rows, text(K.ChemicalSdsLink));
+            headers, rows, text(K.ChemicalSdsLink))
+        {
+            ColumnWeights = columns.Select(c => c.Weight).Append(SdsWeight).ToList(),
+            PictogramColumn = columns.FindIndex(c => c.HeaderKey == K.ChemicalColumnPictograms),
+            SdsNote = text(K.ChemicalSdsNote),
+        };
     }
 
     private static ChemicalAuthorityListRow Row(
@@ -102,7 +114,6 @@ public static class ChemicalAuthorityListBuilder
             entry?.RegistrationNo ?? string.Empty,
             entry?.StatusText ?? string.Empty,
             entry?.SignalWordText ?? string.Empty,
-            string.Join(", ", entry?.HazardPictograms ?? []),
             string.Join("\n", (entry?.HazardStatements ?? []).Select(h => $"{h.Code} {h.Text}".Trim())),
             location?.Name ?? string.Empty,
             placement.PlacementNote ?? string.Empty,
@@ -112,6 +123,9 @@ public static class ChemicalAuthorityListBuilder
                 : string.Empty,
             sds is null
                 ? string.Empty
-                : $"{sdsBaseUrl.TrimEnd('/')}/{ChemicalBaseClient.SdsPath}?fileName={Uri.EscapeDataString(sds.SdsFileName)}");
+                : $"{sdsBaseUrl.TrimEnd('/')}/{ChemicalBaseClient.SdsPath}?fileName={Uri.EscapeDataString(sds.SdsFileName)}")
+        {
+            PictogramCodes = entry?.HazardPictograms ?? []
+        };
     }
 }

@@ -27,22 +27,24 @@
     <button
       class="btn-primary btn-primary--icon-left"
       id="addNewFileBtn"
-      matTooltip="{{ 'Upload PDF' | translate }}"
+      matTooltip="{{ 'Upload document' | translate }}"
       routerLink="./create"
       [queryParams]="{folderId: selectedFolderId}"
     >
       <mat-icon>file_upload</mat-icon>
-      <span>{{ 'Upload PDF' | translate }}</span>
+      <span>{{ 'Upload document' | translate }}</span>
     </button>
   </div>
 </mat-card>
 
-<!-- A drawer (narrow) floats over the page: the 360 px third column is only for the side-by-side layout. -->
-<div class="archive-workspace" [class.archive-workspace--with-panel]="currentFileId !== null && !narrow">
+<!-- An opened document covers the archive area: --viewing hides the tree and the centre column (display:none, so the
+     table keeps its DOM, scroll and selection) and the view takes their place. Hosts are display:contents, so the
+     tree's nav.archive-rail, section.archive-center and the view's aside.archive-view are the grid items. -->
+<div class="archive-workspace" [class.archive-workspace--viewing]="currentFileId !== null">
   <app-archive-folder-tree
     [folders]="folders"
     [selectedFolderId]="listMode === 'folder' ? selectedFolderId : null"
-    [isAdmin]="isAdmin"
+    [canManage]="canManage"
     [dragActive]="dragActive"
     (folderSelected)="selectFolder($event)"
     (createTop)="createTopFolder()"
@@ -81,7 +83,7 @@
       <button type="button" class="btn-secondary btn-secondary--icon-left" id="archivePropertiesSelectedBtn" (click)="setSelectedProperties()">
         <mat-icon>home_work</mat-icon><span>{{ 'Properties' | translate }}</span>
       </button>
-      <button *ngIf="isAdmin" type="button" class="btn-secondary btn-secondary--icon-left" id="archiveAccessSelectedBtn" (click)="setSelectedAccess()">
+      <button *ngIf="canManage" type="button" class="btn-secondary btn-secondary--icon-left" id="archiveAccessSelectedBtn" (click)="setSelectedAccess()">
         <mat-icon>group</mat-icon><span>{{ 'Read access' | translate }}</span>
       </button>
       <button type="button" class="btn-secondary btn-secondary--icon-left" id="archiveDownloadSelectedBtn" (click)="downloadSelectedFiles()">
@@ -94,8 +96,8 @@
 
     <app-files-table
       [files]="files"
-      [isAdmin]="isAdmin"
-      [showPath]="listMode !== 'folder'"
+      [canManage]="canManage"
+      [canDelete]="canDelete"
       [loaded]="filesLoaded"
       [selectedIds]="selectedFileIds"
       [currentFileId]="currentFileId"
@@ -111,7 +113,6 @@
     ></app-files-table>
   </section>
 
-  <div class="archive-panel-backdrop" *ngIf="narrow && currentFileId !== null" (click)="closePanel()"></div>
   <app-archive-document-panel
     *ngIf="currentFileId !== null"
     [fileId]="currentFileId"
@@ -120,18 +121,21 @@
     [properties]="properties"
     [availableTags]="availableTags"
     [workerTags]="workerTags"
-    [isAdmin]="isAdmin"
-    [drawer]="narrow"
+    [canManage]="canManage"
     [positionLabel]="positionLabel"
+    [hasPrevious]="hasPrevious"
     [hasNext]="hasNext"
     (saved)="onPanelSaved($event)"
     (closed)="closePanel()"
+    (previousFile)="showPrevious()"
+    (nextFile)="showNext()"
   ></app-archive-document-panel>
 </div>
 
 <app-file-tags
   #tagsModal
   [availableTags]="availableTags"
+  [canManage]="canManage"
   (tagsChanged)="getTags()"
 >
 </app-file-tags>

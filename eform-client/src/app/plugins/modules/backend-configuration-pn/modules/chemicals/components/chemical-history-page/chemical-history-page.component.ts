@@ -18,6 +18,7 @@ import {
 } from '../../../../state';
 import {
   CHEMICAL_HISTORY_ACTIONS,
+  CHEMICAL_HISTORY_DATE_FORMATS,
   ChemicalLatestLoad,
   HISTORY_PAGE_SIZES,
   SYSTEM_USER_ID,
@@ -29,13 +30,16 @@ import {
   formatHistoryDetails,
   historyActionKey,
   historyPeriodError,
+  toYmd,
 } from '../../helpers';
 import {NgIf, NgFor, DatePipe} from '@angular/common';
 import {FormsModule} from '@angular/forms';
-import {MatFormField, MatLabel, MatHint} from '@angular/material/form-field';
+import {MatFormField, MatLabel, MatHint, MatSuffix} from '@angular/material/form-field';
 import {MatInput} from '@angular/material/input';
 import {MatIcon} from '@angular/material/icon';
 import {MatPaginator} from '@angular/material/paginator';
+import {MAT_DATE_FORMATS} from '@angular/material/core';
+import {MatDatepicker, MatDatepickerInput, MatDatepickerToggle} from '@angular/material/datepicker';
 import {MtxSelect, MtxOption} from '@ng-matero/extensions/select';
 
 /**
@@ -46,9 +50,12 @@ import {MtxSelect, MtxOption} from '@ng-matero/extensions/select';
  */
 @Component({
   selector: 'app-chemical-history-page',
-  imports: [NgIf, NgFor, DatePipe, FormsModule, TranslatePipe, MatFormField, MatLabel, MatHint, MatInput, MatIcon, MatPaginator, MtxSelect, MtxOption],
+  imports: [NgIf, NgFor, DatePipe, FormsModule, TranslatePipe, MatFormField, MatLabel, MatHint, MatSuffix, MatInput, MatIcon, MatPaginator,
+    MatDatepicker, MatDatepickerInput, MatDatepickerToggle, MtxSelect, MtxOption],
   templateUrl: './chemical-history-page.component.html',
   styleUrls: ['./chemical-history-page.component.scss'],
+  // The host provides the date-fns adapter; the fields write dates like the table (dd-MM-yyyy).
+  providers: [{provide: MAT_DATE_FORMATS, useValue: CHEMICAL_HISTORY_DATE_FORMATS}],
 })
 export class ChemicalHistoryPageComponent implements OnInit {
   private store = inject(Store);
@@ -133,11 +140,11 @@ export class ChemicalHistoryPageComponent implements OnInit {
   }
 
   /**
-   * A date field's committed value. An emptied field falls back to the default period's bound and shows it
-   * again (the [value] binding would not, since the bound value did not change).
+   * A date field's committed day (null when emptied or unreadable). Such a field falls back to the default period's
+   * bound and shows it again (the [value] binding would not, since the bound value did not change).
    */
-  setDate(bound: 'dateFrom' | 'dateTo', input: {value: string}): void {
-    const value = input.value || null;
+  setDate(bound: 'dateFrom' | 'dateTo', date: Date | null, input: {value: unknown}): void {
+    const value = date ? toYmd(date) : null;
     this.updateFilters({[bound]: value});
     if (!value) {
       const period = defaultHistoryPeriod(this.today);

@@ -17,9 +17,9 @@ export interface TailBiteManagersDialogData {
 }
 
 /**
- * "Halebid-ansvarlige": enable tail biting on a property and choose its managers (spec §5,
- * PropertyWorker.TailBiteManager). Several managers per property are allowed. Plugin-admin routes:
- * no worker identity is needed to use this dialog.
+ * "Halebid-ansvarlige": choose a property's tail-bite managers (spec §5, PropertyWorker.TailBiteManager).
+ * Several managers per property are allowed. Tail biting itself is switched on in the property's create and
+ * edit dialogs (#1477); a property without it shows where. Plugin-admin routes: no worker identity is needed.
  */
 @Component({
   selector: 'app-tail-bite-managers-dialog',
@@ -55,26 +55,6 @@ export class TailBiteManagersDialogComponent implements OnInit, OnDestroy {
   onPropertyChange(propertyId: number | null): void {
     this.propertyId = propertyId;
     this.loadWorkers();
-  }
-
-  enable(): void {
-    const id = this.propertyId;
-    if (id === null || this.busy) {
-      return;
-    }
-    this.busy = true;
-    this.service
-      .enable(id)
-      .pipe(finalize(() => (this.busy = false)))
-      .subscribe({
-        next: (res) => {
-          if (res?.success) {
-            this.loadProperties(id);
-          }
-        },
-        // A failed enable may still have gone through on the server: show the truth.
-        error: () => this.loadProperties(id),
-      });
   }
 
   /** Sets every PropertyWorker row of the worker on the property, then reloads the truth from the server. */

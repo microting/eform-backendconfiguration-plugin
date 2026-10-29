@@ -175,19 +175,19 @@ describe('ChemicalHistoryPageComponent', () => {
   it('an emptied date field falls back to the default bound and shows it again', () => {
     const component = build();
     component.updateFilters({dateFrom: '2026-09-01'});
-    const input = {value: ''};
+    const input = {value: null as unknown};
 
-    component.setDate('dateFrom', input);
+    component.setDate('dateFrom', null, input);
 
     expect(component.filters.dateFrom).toBeNull();
     expect(input.value).toBe('2026-08-31');
     expect(chemicals.getHistory).toHaveBeenLastCalledWith(3, expect.objectContaining({from: '2026-08-31'}));
   });
 
-  it('a picked date is sent as it is', () => {
+  it('a picked day is sent as yyyy-MM-dd', () => {
     const component = build();
 
-    component.setDate('dateTo', {value: '2026-09-15'});
+    component.setDate('dateTo', new Date(2026, 8, 15), {value: null});
 
     expect(chemicals.getHistory).toHaveBeenLastCalledWith(3, expect.objectContaining({from: '2026-08-31', to: '2026-09-15'}));
   });

@@ -33,10 +33,10 @@ describe('ArchiveMoveConfirmDialogComponent', () => {
     expect(close).toHaveBeenCalledWith(true);
   });
 
-  it('a non-admin is told only an administrator can do it and has no confirm button (D17)', () => {
+  it('someone who cannot manage is told an administrator or a leader can do it and has no confirm button (D17)', () => {
     render({text: '1 dokument kan nu læses af Ledelse', canConfirm: false});
     expect(find('#archiveMoveAdminOnly')?.textContent)
-      .toContain('The move changes who can read the documents. Only an administrator can do that.');
+      .toContain('The move changes who can read the documents. Only an administrator or a leader can do that.');
     expect(find('#archiveMoveConfirmBtn')).toBeNull();
     find('#archiveMoveCancelBtn')!.click();
     expect(close).toHaveBeenCalledWith(false);

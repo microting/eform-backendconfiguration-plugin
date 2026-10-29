@@ -28,6 +28,7 @@ import {
 import {
   COMPLIANCE_EMPTY_CELL,
   ComplianceWeekGroup,
+  complianceReportRowKey,
   formatComplianceDayLabel,
   formatComplianceTimeRange,
   groupRowsByWeek,
@@ -349,11 +350,15 @@ export class ComplianceDetailsViewComponent implements OnInit, OnDestroy {
    * Planned rows (#1332) all carry complianceId 0, and planning + date is not
    * unique either (an occurrence moved onto another rule date shares both), so
    * they are keyed by position as well.
+   *
+   * On-demand rows (#5467) carry complianceId 0 too, but each has its own SDK
+   * case, so they are keyed `case:{sdkCaseId}` — the Rapport row key.
    */
   trackByRow(index: number, row: ComplianceReportRowModel): string {
-    return row.isProjected
-      ? `planned:${row.planningId}:${row.taskDate}:${index}`
-      : `compliance:${row.complianceId}`;
+    if (row.isProjected) {
+      return `planned:${row.planningId}:${row.taskDate}:${index}`;
+    }
+    return row.isOnDemand ? complianceReportRowKey(row) : `compliance:${row.complianceId}`;
   }
 
   /** The status circle's accessible name. */

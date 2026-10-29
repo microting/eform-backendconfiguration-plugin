@@ -51,6 +51,66 @@ public class TailBiteSetupServiceTests : TailBiteTestBase
         Assert.That((await Db.TailBiteProperties.SingleAsync(p => p.PropertyId == PropertyId)).Enabled, Is.True);
     }
 
+    // ---------- switching off and on again (#1477) ----------
+
+    [Test]
+    public async Task Disable_KeepsAllData_HidesFromAppAndRefusesRegistrationsAndManagers()
+    {
+        await SeedManagerAsync();
+        var worker = await SeedWorkerAsync(WorkerSite);
+        await OpenOutbreakAsync(StableAId);
+        await SeedRegistrationAsync(Clock.GetUtcNow().UtcDateTime, false, (Pen309Id, 2, 0));
+        var enabledAt = (await Db.TailBiteProperties.AsNoTracking().SingleAsync(p => p.PropertyId == PropertyId)).EnabledAt;
+        var counts = await CountsAsync();
+
+        await Sut().DisableAsync(PropertyId);
+        Db.ChangeTracker.Clear();
+
+        var prop = await Db.TailBiteProperties.SingleAsync(p => p.PropertyId == PropertyId);
+        Assert.That(prop.Enabled, Is.False);
+        Assert.That(prop.EnabledAt, Is.EqualTo(enabledAt));
+        Assert.That(await CountsAsync(), Is.EqualTo(counts));
+        Assert.That(await Db.PropertyWorkers.CountAsync(pw => pw.PropertyId == PropertyId && pw.TailBiteManager), Is.EqualTo(1));
+        Assert.That(await Sut().ListEnabledPropertiesAsync(ManagerSite), Is.Empty);
+
+        var registrations = new TailBiteRegistrationService(Db, new TailBitePropertyLock(Db), new TailBiteSnapshotLoader(Db),
+            new TailBiteDecisionWriter(Db), NewAccess(), new TailBitePhotoStorage(new FakeAdhocPhotoStorage(), CoreHelper()), Clock, null);
+        await Assert.ThrowsAsync<TailBiteConflictException>(() => registrations.CreateAsync(ManagerSite,
+            new CreateRegistrationCommand(Guid.NewGuid(), PropertyId, Clock.GetUtcNow().UtcDateTime,
+                [new RegistrationLocationInput(Pen309Id, 2, 0)], [], null)));
+        await Assert.ThrowsAsync<TailBiteNotFoundException>(() => Sut().SetManagerAsync(worker.Id, true));
+    }
+
+    [Test]
+    public async Task DisableThenEnable_ResumesWithOneRootAndOneDefaultRule()
+    {
+        var sut = Sut();
+        await sut.EnableAsync(0, PropertyId);
+        await sut.DisableAsync(PropertyId);
+        await sut.DisableAsync(PropertyId); // idempotent
+        await sut.EnableAsync(0, PropertyId);
+        Db.ChangeTracker.Clear();
+
+        Assert.That((await Db.TailBiteProperties.SingleAsync(p => p.PropertyId == PropertyId)).Enabled, Is.True);
+        Assert.That(await Db.TailBiteLocations.CountAsync(l => l.PropertyId == PropertyId && l.ParentId == null), Is.EqualTo(1));
+        Assert.That(await Db.TailBiteRules.CountAsync(), Is.EqualTo(1));
+        Assert.That(await Db.TailBiteActionTypes.CountAsync(a => a.PropertyId == PropertyId), Is.EqualTo(TailBiteDefaults.ActionTypes.Length));
+    }
+
+    [Test]
+    public async Task Disable_NeverEnabled_DoesNothing()
+    {
+        await Sut().DisableAsync(PropertyId);
+        Assert.That(await Db.TailBiteProperties.AnyAsync(p => p.PropertyId == PropertyId), Is.False);
+    }
+
+    private async Task<(int Locations, int QrCodes, int Rules, int Outbreaks, int Registrations)> CountsAsync()
+        => (await Db.TailBiteLocations.CountAsync(l => l.PropertyId == PropertyId && l.WorkflowState != Constants.WorkflowStates.Removed),
+            await Db.TailBiteLocations.Where(l => l.PropertyId == PropertyId).Select(l => l.QrCode).Distinct().CountAsync(),
+            await Db.TailBiteRules.CountAsync(r => r.WorkflowState != Constants.WorkflowStates.Removed),
+            await Db.TailBiteOutbreaks.CountAsync(o => o.PropertyId == PropertyId && o.ClosedAt == null),
+            await Db.TailBiteRegistrations.CountAsync(r => r.PropertyId == PropertyId));
+
     [Test]
     public async Task ListEnabledProperties_ReturnsOnlyEnabledWithManagerFlag()
     {

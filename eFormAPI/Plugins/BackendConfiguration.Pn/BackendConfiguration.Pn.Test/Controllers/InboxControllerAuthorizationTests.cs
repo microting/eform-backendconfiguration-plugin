@@ -2,28 +2,28 @@ using System.Linq;
 using System.Reflection;
 using BackendConfiguration.Pn.Controllers;
 using Microsoft.AspNetCore.Authorization;
-using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 using NUnit.Framework;
 
 namespace BackendConfiguration.Pn.Test.Controllers;
 
 /// <summary>
-/// #1417: the inbox is admin-only. ASP.NET Core combines authorization attributes, so only [AllowAnonymous]
-/// (on the class or an action) could relax the class-level admin role.
+/// #1417, D-L6: the inbox is for admins and Leders: a plain [Authorize] plus [ArchiveManager]. ASP.NET Core combines
+/// authorization attributes, so only [AllowAnonymous] (on the class or an action) could skip the manager gate.
 /// </summary>
 [TestFixture]
 public class InboxControllerAuthorizationTests
 {
     [Test]
-    public void InboxController_IsAdminOnly()
+    public void InboxController_IsSignedInOnly_AndGatedByArchiveManager()
     {
         var attributes = typeof(InboxController).GetCustomAttributes<AuthorizeAttribute>().ToList();
 
         Assert.That(attributes, Has.Count.EqualTo(1));
-        Assert.That(attributes[0].Roles, Is.EqualTo(EformRole.Admin));
+        Assert.That(attributes[0].Roles, Is.Null.Or.Empty, "D-L6: [ArchiveManager] replaces Roles = Admin");
         Assert.That(attributes[0].Policy, Is.Null.Or.Empty);
+        Assert.That(typeof(InboxController).IsDefined(typeof(ArchiveManagerAttribute)), Is.True);
         Assert.That(typeof(InboxController).IsDefined(typeof(AllowAnonymousAttribute)), Is.False,
-            "[AllowAnonymous] on the controller would override the admin role for every action");
+            "[AllowAnonymous] on the controller would skip the gate for every action");
     }
 
     [Test]
@@ -35,7 +35,7 @@ public class InboxControllerAuthorizationTests
             .Select(m => m.Name);
 
         // An action-level [Authorize] only adds requirements (they combine with the class's), so it is allowed;
-        // [AllowAnonymous] would skip the admin role.
+        // [AllowAnonymous] would skip the manager gate.
         Assert.That(anonymousActions, Is.Empty);
     }
 }

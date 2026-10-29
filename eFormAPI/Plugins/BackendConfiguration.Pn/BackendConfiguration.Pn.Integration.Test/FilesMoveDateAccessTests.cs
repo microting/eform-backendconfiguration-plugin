@@ -92,6 +92,20 @@ public class FilesMoveDateAccessTests : TestBaseSetup
     }
 
     [Test]
+    public async Task Move_Leder_ThatChangesAccess_IsAllowed()
+    {
+        // Changing who can read a document is an admin's or a Leder's decision.
+        var a = await NewFile(_drift, "a");
+        _access.Context = ArchiveTestData.Leder;
+
+        var result = await _service.Move(new FilesMoveModel { FileIds = [a], FolderId = _ledelse });
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(result.Model.AccessChanged, Is.EqualTo(1), "the move crosses an access boundary");
+        Assert.That(await FolderOf(a), Is.EqualTo(_ledelse));
+    }
+
+    [Test]
     public async Task Move_NonAdmin_ThatChangesAccess_IsRefusedAndMovesNothing()
     {
         var a = await NewFile(_drift, "a");
@@ -263,5 +277,19 @@ public class FilesMoveDateAccessTests : TestBaseSetup
         await Assert.ThrowsAsync<ArchiveNotFoundException>(() =>
             _service.UpdateAccess(new FilesAccessModel { FileIds = [a], OwnAccess = true, TagIds = [G1] }));
         Assert.That((await AccessOf(a)).OwnAccess, Is.False);
+    }
+
+    [Test]
+    public async Task UpdateAccess_Leder_SetsOwnGroups()
+    {
+        var a = await NewFile(_drift, "a");
+        _access.Context = ArchiveTestData.Leder;
+
+        var result = await _service.UpdateAccess(new FilesAccessModel { FileIds = [a], OwnAccess = true, TagIds = [G1] });
+
+        Assert.That(result.Success, Is.True, result.Message);
+        var row = await AccessOf(a);
+        Assert.That(row.OwnAccess, Is.True);
+        Assert.That(row.OwnGroupIds, Is.EqualTo(new[] { G1 }));
     }
 }

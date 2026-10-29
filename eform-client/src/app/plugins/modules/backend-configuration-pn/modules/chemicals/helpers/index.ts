@@ -7,3 +7,4 @@ export * from './chemical-dialogs.helper';
 export * from './chemical-locations.helper';
 export * from './chemical-latest-load';
 export * from './chemical-history.helper';
+export * from './chemical-ghs-pictograms';

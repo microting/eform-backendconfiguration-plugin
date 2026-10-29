@@ -1,7 +1,7 @@
-import {describe, it, expect, beforeEach, vi} from 'vitest';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import type {Mock} from 'vitest';
-import {TestBed} from '@angular/core/testing';
-import {TranslateService} from '@ngx-translate/core';
+import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {TranslateModule, TranslateService} from '@ngx-translate/core';
 import {of} from 'rxjs';
 import {Paged} from 'src/app/common/models';
 import {DocumentDateState, FilesModel} from '../../../../models';
@@ -66,6 +66,49 @@ describe('FilesTableComponent', () => {
     });
   });
 
+  it.each([
+    ['pdf', 'picture_as_pdf', 'View PDF', 'Delete file'],
+    ['jpg', 'image', 'View image', 'Delete image'],
+    ['JPEG', 'image', 'View image', 'Delete image'],
+    ['png', 'image', 'View image', 'Delete image'],
+    ['docx', 'description', 'View file', 'Delete this file'],
+  ])('a .%s row shows %s, %s and %s', (fileExtension, icon, viewKey, deleteKey) => {
+    expect(table.presentationOf({...table.rows[0], fileExtension})).toEqual({icon, viewKey, deleteKey});
+  });
+
+  describe('Mappe column', () => {
+    const at = (folderPath: string[]) => ({...table.rows[0], folderPath});
+
+    it('a top-level folder shows only its name, no parent', () => {
+      const r = at(['Økonomi']);
+      expect(table.parentLabel(r)).toBe('');
+      expect(table.folderLeaf(r)).toBe('Økonomi');
+      expect(table.fullPath(r)).toBe('Økonomi');
+    });
+
+    it('a subfolder shows "Parent ›" and the leaf', () => {
+      const r = at(['Økonomi', 'Fakturaer']);
+      expect(table.parentLabel(r)).toBe('Økonomi ›');
+      expect(table.folderLeaf(r)).toBe('Fakturaer');
+      expect(table.fullPath(r)).toBe('Økonomi › Fakturaer');
+    });
+
+    it('a deeper path folds the levels above the parent into "…", the tooltip keeps them all', () => {
+      const r = at(['Drift', 'Økonomi', 'Fakturaer', '2026']);
+      expect(table.parentLabel(r)).toBe('… › Fakturaer ›');
+      expect(table.folderLeaf(r)).toBe('2026');
+      expect(table.fullPath(r)).toBe('Drift › Økonomi › Fakturaer › 2026');
+    });
+
+    it('no path shows nothing', () => {
+      for (const r of [at([]), {...table.rows[0], folderPath: undefined as unknown as string[]}]) {
+        expect(table.parentLabel(r)).toBe('');
+        expect(table.folderLeaf(r)).toBe('');
+        expect(table.fullPath(r)).toBe('');
+      }
+    });
+  });
+
   it('tracks rows by file id', () => {
     expect(table.trackById(0, table.rows[1])).toBe(8);
   });
@@ -98,5 +141,56 @@ describe('FilesTableComponent', () => {
     table.ngOnDestroy();
     expect(revoke).toHaveBeenLastCalledWith('blob:second');
     open.mockRestore();
+  });
+});
+
+describe('FilesTableComponent rights (D-L4)', () => {
+  let fixture: ComponentFixture<FilesTableComponent>;
+
+  function render(canManage: boolean, canDelete: boolean): void {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [FilesTableComponent, TranslateModule.forRoot()],
+      providers: [{provide: BackendConfigurationPnFilesService, useValue: {getPdfFile: vi.fn()}}],
+    });
+    fixture = TestBed.createComponent(FilesTableComponent);
+    const files = new Paged<FilesModel>();
+    files.entities = [row(7, 'Invoice 118')];
+    fixture.componentInstance.files = files;
+    fixture.componentInstance.canManage = canManage;
+    fixture.componentInstance.canDelete = canDelete;
+    fixture.componentInstance.ngOnChanges({files: {} as any});
+    fixture.detectChanges();
+  }
+
+  const openMenu = (): void => {
+    fixture.nativeElement.querySelector('#actionMenu0').click();
+    fixture.detectChanges();
+  };
+  const inOverlay = (selector: string): HTMLElement | null => document.querySelector(`.cdk-overlay-container ${selector}`);
+
+  afterEach(() => {
+    fixture?.destroy();
+    document.querySelector('.cdk-overlay-container')?.replaceChildren();
+  });
+
+  it('offers Slet only when canDelete is true', () => {
+    render(true, false);
+    openMenu();
+    expect(inOverlay('#viewPdfBtn-0')).not.toBeNull();
+    expect(inOverlay('#deleteFileBtn-0')).toBeNull();
+    fixture.destroy();
+    document.querySelector('.cdk-overlay-container')?.replaceChildren();
+
+    render(false, true);
+    openMenu();
+    expect(inOverlay('#deleteFileBtn-0')).not.toBeNull();
+  });
+
+  it('shows the Læseadgang column only when canManage is true', () => {
+    render(true, true);
+    expect(fixture.nativeElement.querySelector('#archiveAccessHeader')).not.toBeNull();
+    render(false, true);
+    expect(fixture.nativeElement.querySelector('#archiveAccessHeader')).toBeNull();
   });
 });

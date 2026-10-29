@@ -61,10 +61,6 @@ export class BackendConfigurationPnTailBiteService {
     return this.apiBaseService.get(this.url(`properties/${propertyId}/workers`));
   }
 
-  enable(propertyId: number): Observable<OperationResult> {
-    return this.apiBaseService.post(this.url(`properties/${propertyId}/enable`), {});
-  }
-
   setManager(propertyWorkerId: number, isManager: boolean): Observable<OperationResult> {
     return this.apiBaseService.put(this.url(`property-workers/${propertyWorkerId}/manager`), {isManager});
   }

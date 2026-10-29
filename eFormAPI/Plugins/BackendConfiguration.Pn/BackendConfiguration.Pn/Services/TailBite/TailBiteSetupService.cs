@@ -43,6 +43,12 @@ public interface ITailBiteSetupService
 {
     /// <summary>Web admin only (no site check): creates the lock row, root, default rule and action types. Idempotent.</summary>
     Task EnableAsync(int callerSiteId, int propertyId);
+    /// <summary>
+    /// Web admin only (no site check): switches tail biting off. Keeps every row (locations, QR codes, rules, managers,
+    /// registrations, outbreaks), so <see cref="EnableAsync"/> resumes where it stopped. Idempotent; a property that was
+    /// never enabled is left alone.
+    /// </summary>
+    Task DisableAsync(int propertyId);
     Task<IReadOnlyList<(int PropertyId, string Name, bool IsManager)>> ListEnabledPropertiesAsync(int siteId);
     Task<LocationTree> GetTreeAsync(int callerSiteId, int propertyId);
     Task<int> CreateLocationAsync(int callerSiteId, int parentId, string name);
@@ -117,6 +123,20 @@ public class TailBiteSetupService(BackendConfigurationPnDbContext db, ITailBiteP
                 prop.EnabledAt = clock.GetUtcNow().UtcDateTime;
                 await prop.Update(db);
             }
+        });
+    }
+
+    public async Task DisableAsync(int propertyId)
+    {
+        // No lock row means it was never enabled: nothing to switch off (and RunLockedAsync would refuse it).
+        if (!await db.TailBiteProperties.AnyAsync(p => p.PropertyId == propertyId)) return;
+        await propertyLock.RunLockedAsync(propertyId, async () =>
+        {
+            var prop = await db.TailBiteProperties.SingleAsync(p => p.PropertyId == propertyId);
+            if (!prop.Enabled) return;
+            // EnabledAt is kept: it records the last switch-on, and EnableAsync sets it again on the next one.
+            prop.Enabled = false;
+            await prop.Update(db);
         });
     }
 
