@@ -49,6 +49,18 @@ describe('ComplianceReportPageComponent — mode switcher', () => {
     fixture.detectChanges();
   };
 
+  /**
+   * Presses an arrow key on the focused inner `<button>`, as a keyboard user
+   * does. The group's keydown handler reads the legacy `keyCode`, so it is set
+   * explicitly. It selects the next toggle without any DOM click.
+   */
+  const pressArrow = (mode: string, key: 'ArrowRight' | 'ArrowLeft'): void => {
+    const event = new KeyboardEvent('keydown', {key, bubbles: true, cancelable: true});
+    Object.defineProperty(event, 'keyCode', {get: () => (key === 'ArrowRight' ? 39 : 37)});
+    innerButton(mode).dispatchEvent(event);
+    fixture.detectChanges();
+  };
+
   const USER_ID = 7;
 
   beforeEach(() => {
@@ -180,6 +192,55 @@ describe('ComplianceReportPageComponent — mode switcher', () => {
 
     expect(state.filters).toEqual(NON_DEFAULT);
     expect(state.mode).toBe('overview');
+  });
+
+  it('ArrowRight from Oversigt switches the view to Detaljer, then to Rapport (#1348)', () => {
+    const setMode = vi.spyOn(state, 'setMode');
+
+    pressArrow('overview', 'ArrowRight');
+
+    expect(innerButton('details').getAttribute('aria-checked')).toBe('true');
+    expect(setMode).toHaveBeenCalledTimes(1);
+    expect(setMode).toHaveBeenCalledWith('details');
+    expect(state.mode).toBe('details');
+    expect(group().value).toBe('details');
+
+    pressArrow('details', 'ArrowRight');
+
+    expect(innerButton('report').getAttribute('aria-checked')).toBe('true');
+    expect(setMode).toHaveBeenCalledTimes(2);
+    expect(setMode).toHaveBeenLastCalledWith('report');
+    expect(state.mode).toBe('report');
+  });
+
+  it('ArrowLeft back onto Oversigt fetches Oversigt once (#1348)', () => {
+    click('details');
+    const toOverview = vi.spyOn(state, 'resetToOverview');
+    const fetches: number[] = [];
+    state.fetchRequested$.subscribe(() => fetches.push(1));
+    const before = fetches.length;
+
+    pressArrow('details', 'ArrowLeft');
+
+    expect(toOverview).toHaveBeenCalledTimes(1);
+    expect(fetches.length).toBe(before + 1);
+    expect(state.mode).toBe('overview');
+  });
+
+  it('one mouse click on another mode switches exactly once, never twice (#1348)', () => {
+    const setMode = vi.spyOn(state, 'setMode');
+    const toOverview = vi.spyOn(state, 'resetToOverview');
+
+    click('details');
+    expect(setMode).toHaveBeenCalledTimes(1);
+
+    const fetches: number[] = [];
+    state.fetchRequested$.subscribe(() => fetches.push(1));
+    const before = fetches.length;
+
+    click('overview');
+    expect(toOverview).toHaveBeenCalledTimes(1);
+    expect(fetches.length).toBe(before + 1);
   });
 });
 
