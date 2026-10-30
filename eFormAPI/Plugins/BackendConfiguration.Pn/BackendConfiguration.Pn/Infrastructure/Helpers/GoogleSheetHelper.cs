@@ -83,16 +83,6 @@ public class GoogleSheetHelper
             var headerResponse = await headerRequest.ExecuteAsync();
             var existingHeaders = headerResponse.Values?.FirstOrDefault() ?? new List<object>();
 
-            // The whole sheet as formulas, not as shown: a column with a blank
-            // header can still hold data, or a formula that shows nothing yet,
-            // and new headers must not land on it. The header row is matched by
-            // name from the shown values above.
-            var sheetRequest = service.Spreadsheets.Values.Get(googleSheetId, sheetName);
-            sheetRequest.ValueRenderOption =
-                SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
-            var sheetResponse = await sheetRequest.ExecuteAsync();
-            var dataRows = sheetResponse.Values ?? new List<IList<object>>();
-
             var assignedSites = await dbContext.AssignedSites
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Select(x => x.SiteId)
@@ -121,7 +111,21 @@ public class GoogleSheetHelper
             // whenever a header had been retyped with other spacing, a different
             // dash or other capitals. The planner matches the way the import
             // does, and only ever appends.
-            var appends = PlanTimerSheetColumns.PlanAppends(existingHeaders, plannedNames, dataRows);
+            var appends = PlanTimerSheetColumns.PlanAppends(existingHeaders, plannedNames);
+            if (appends.Headers.Count > 0)
+            {
+                // Only now, when columns must be placed, the whole sheet is read,
+                // as formulas rather than as shown: a column with a blank header
+                // can still hold data, or a formula that shows nothing yet, and
+                // new headers must not land on it.
+                var sheetRequest = service.Spreadsheets.Values.Get(googleSheetId, sheetName);
+                sheetRequest.ValueRenderOption =
+                    SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
+                var sheetResponse = await sheetRequest.ExecuteAsync();
+                appends = PlanTimerSheetColumns.PlanAppends(existingHeaders, plannedNames,
+                    sheetResponse.Values ?? new List<IList<object>>());
+            }
+
             foreach (var problem in appends.Problems)
             {
                 logger.LogWarning("PlanTimer sheet: {Problem}", problem);
