@@ -18,10 +18,11 @@ import {CommonModule} from '@angular/common';
 /**
  * The Oversigt/Detaljer/Rapport switcher (#1296). It used to be three
  * hand-rolled `<button aria-pressed>`s; it is now a stock
- * `mat-button-toggle-group` with the checkmark indicator, bound with
- * `(click)` on each toggle so that clicking the ALREADY-selected Oversigt
- * still re-fetches Oversigt (`(change)` does not fire on a re-click). Since
- * #1299 that click no longer resets any filter.
+ * `mat-button-toggle-group` with the checkmark indicator, bound with each
+ * toggle's own `(change)` so that clicking the ALREADY-selected Oversigt
+ * still re-fetches Oversigt (the group's `(change)` does not fire on a
+ * re-click) and the arrow keys switch the view (they fire no DOM click,
+ * #1348). Since #1299 that click no longer resets any filter.
  *
  * Rendered through TestBed with only MatButtonToggleModule real; the filter
  * bar, the card and the three views are unknown elements under
@@ -46,6 +47,18 @@ describe('ComplianceReportPageComponent — mode switcher', () => {
   /** Clicks the inner `<button>` — what a real pointer hits — and re-renders. */
   const click = (mode: string): void => {
     innerButton(mode).click();
+    fixture.detectChanges();
+  };
+
+  /**
+   * Presses an arrow key on the focused inner `<button>`, as a keyboard user
+   * does. The group's keydown handler reads the legacy `keyCode`, so it is set
+   * explicitly. It selects the next toggle without any DOM click.
+   */
+  const pressArrow = (mode: string, key: 'ArrowRight' | 'ArrowLeft'): void => {
+    const event = new KeyboardEvent('keydown', {key, bubbles: true, cancelable: true});
+    Object.defineProperty(event, 'keyCode', {get: () => (key === 'ArrowRight' ? 39 : 37)});
+    innerButton(mode).dispatchEvent(event);
     fixture.detectChanges();
   };
 
@@ -142,7 +155,7 @@ describe('ComplianceReportPageComponent — mode switcher', () => {
     expect(group().value).toBe('report');
   });
 
-  it('clicking the ALREADY-selected Oversigt re-fetches and keeps every filter (#1299, via (click) not (change))', () => {
+  it('clicking the ALREADY-selected Oversigt re-fetches and keeps every filter (#1299, via the toggle\'s (change), not the group\'s)', () => {
     expect(state.mode).toBe('overview');
     state.setFilter(NON_DEFAULT);
     const toOverview = vi.spyOn(state, 'resetToOverview');
@@ -180,6 +193,55 @@ describe('ComplianceReportPageComponent — mode switcher', () => {
 
     expect(state.filters).toEqual(NON_DEFAULT);
     expect(state.mode).toBe('overview');
+  });
+
+  it('ArrowRight from Oversigt switches the view to Detaljer, then to Rapport (#1348)', () => {
+    const setMode = vi.spyOn(state, 'setMode');
+
+    pressArrow('overview', 'ArrowRight');
+
+    expect(innerButton('details').getAttribute('aria-checked')).toBe('true');
+    expect(setMode).toHaveBeenCalledTimes(1);
+    expect(setMode).toHaveBeenCalledWith('details');
+    expect(state.mode).toBe('details');
+    expect(group().value).toBe('details');
+
+    pressArrow('details', 'ArrowRight');
+
+    expect(innerButton('report').getAttribute('aria-checked')).toBe('true');
+    expect(setMode).toHaveBeenCalledTimes(2);
+    expect(setMode).toHaveBeenLastCalledWith('report');
+    expect(state.mode).toBe('report');
+  });
+
+  it('ArrowLeft back onto Oversigt fetches Oversigt once (#1348)', () => {
+    click('details');
+    const toOverview = vi.spyOn(state, 'resetToOverview');
+    const fetches: number[] = [];
+    state.fetchRequested$.subscribe(() => fetches.push(1));
+    const before = fetches.length;
+
+    pressArrow('details', 'ArrowLeft');
+
+    expect(toOverview).toHaveBeenCalledTimes(1);
+    expect(fetches.length).toBe(before + 1);
+    expect(state.mode).toBe('overview');
+  });
+
+  it('one mouse click on another mode switches exactly once, never twice (#1348)', () => {
+    const setMode = vi.spyOn(state, 'setMode');
+    const toOverview = vi.spyOn(state, 'resetToOverview');
+
+    click('details');
+    expect(setMode).toHaveBeenCalledTimes(1);
+
+    const fetches: number[] = [];
+    state.fetchRequested$.subscribe(() => fetches.push(1));
+    const before = fetches.length;
+
+    click('overview');
+    expect(toOverview).toHaveBeenCalledTimes(1);
+    expect(fetches.length).toBe(before + 1);
   });
 });
 

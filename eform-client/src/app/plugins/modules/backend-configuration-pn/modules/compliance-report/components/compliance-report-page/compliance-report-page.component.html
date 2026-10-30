@@ -13,7 +13,7 @@
       *ngFor="let m of modes"
       id="complianceMode-{{ m.mode }}"
       [value]="m.mode"
-      (click)="onModeChange(m.mode)"
+      (change)="onModeChange(m.mode)"
     >
       {{ m.label | translate }}
     </mat-button-toggle>

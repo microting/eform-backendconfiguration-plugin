@@ -555,6 +555,38 @@ test.describe('Compliance page shell (#1163)', () => {
     await expect(page.locator('#compliancePagination')).toHaveCount(0);
   });
 
+  test('the arrow keys switch the view, not only the checked toggle (#1348)', async ({ page }) => {
+    await goToCompliancePage(page);
+    const viewRoot = page.locator('#complianceCasesRoot');
+
+    // Arrow keys select through the group's keydown handler, which fires no
+    // DOM click, so this proves the switch hangs off the toggle's (change).
+    const detailsEntry = complianceResponse(page, 'index');
+    await page.locator('#complianceMode-overview-button').focus({ timeout: UI_TIMEOUT });
+    await page.keyboard.press('ArrowRight');
+    await expect(page.locator('#complianceMode-details-button')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
+    expect((await detailsEntry).ok()).toBeTruthy();
+    await expect(viewRoot.locator('app-compliance-details-view')).toHaveCount(1, { timeout: UI_TIMEOUT });
+    await expect(viewRoot.locator('app-compliance-overview-view')).toHaveCount(0, { timeout: UI_TIMEOUT });
+    await expect(page.locator('#compliancePagination')).toBeVisible({ timeout: UI_TIMEOUT });
+
+    const reportEntry = complianceResponse(page, 'eform-columns');
+    await page.keyboard.press('ArrowRight');
+    await expect(page.locator('#complianceMode-report-button')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
+    expect((await reportEntry).ok()).toBeTruthy();
+    await expect(viewRoot.locator('app-compliance-report-view')).toHaveCount(1, { timeout: UI_TIMEOUT });
+    await expect(viewRoot.locator('app-compliance-details-view')).toHaveCount(0, { timeout: UI_TIMEOUT });
+    await expect(page.locator('#compliancePagination')).toHaveCount(0, { timeout: UI_TIMEOUT });
+
+    // And back to Oversigt, which fetches the aggregation again.
+    const overviewEntry = complianceResponse(page, 'overview');
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('ArrowLeft');
+    await expect(page.locator('#complianceMode-overview-button')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
+    expect((await overviewEntry).ok()).toBeTruthy();
+    await expect(viewRoot.locator('app-compliance-overview-view')).toHaveCount(1, { timeout: UI_TIMEOUT });
+  });
+
   test('"Sæt periode" stages the range behind Opdater periode: placeholder, disabled-with-reason, then one fetch (#1185)', async ({ page }) => {
     // `goToCompliancePage` awaits the entry auto-fetch, so the request counter
     // attached afterwards can never see it.
