@@ -18,10 +18,11 @@ import {CommonModule} from '@angular/common';
 /**
  * The Oversigt/Detaljer/Rapport switcher (#1296). It used to be three
  * hand-rolled `<button aria-pressed>`s; it is now a stock
- * `mat-button-toggle-group` with the checkmark indicator, bound with
- * `(click)` on each toggle so that clicking the ALREADY-selected Oversigt
- * still re-fetches Oversigt (`(change)` does not fire on a re-click). Since
- * #1299 that click no longer resets any filter.
+ * `mat-button-toggle-group` with the checkmark indicator, bound with each
+ * toggle's own `(change)` so that clicking the ALREADY-selected Oversigt
+ * still re-fetches Oversigt (the group's `(change)` does not fire on a
+ * re-click) and the arrow keys switch the view (they fire no DOM click,
+ * #1348). Since #1299 that click no longer resets any filter.
  *
  * Rendered through TestBed with only MatButtonToggleModule real; the filter
  * bar, the card and the three views are unknown elements under
@@ -154,7 +155,7 @@ describe('ComplianceReportPageComponent — mode switcher', () => {
     expect(group().value).toBe('report');
   });
 
-  it('clicking the ALREADY-selected Oversigt re-fetches and keeps every filter (#1299, via (click) not (change))', () => {
+  it('clicking the ALREADY-selected Oversigt re-fetches and keeps every filter (#1299, via the toggle\'s (change), not the group\'s)', () => {
     expect(state.mode).toBe('overview');
     state.setFilter(NON_DEFAULT);
     const toOverview = vi.spyOn(state, 'resetToOverview');
