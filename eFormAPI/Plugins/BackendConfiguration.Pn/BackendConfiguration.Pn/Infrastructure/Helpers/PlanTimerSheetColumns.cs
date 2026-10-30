@@ -138,6 +138,8 @@ public static class PlanTimerSheetColumns
     /// header belongs in. It never precedes FirstWorkerColumn: on a sheet whose
     /// header row is empty or short, headers written into A/B/C would sit in the
     /// date columns the import skips, and the next push would append them again.
+    /// It is the first run of free columns after the last worker column, so a
+    /// stray cell far out in the header row no longer pushes new workers there.
     /// </summary>
     public sealed record HeaderAppends(
         IReadOnlyList<string> Headers,
@@ -156,10 +158,16 @@ public static class PlanTimerSheetColumns
     /// column; the import pairs columns by name, so it goes on reading the old
     /// one until someone moves the data over and deletes it. Problems name that
     /// column so it does not sit there unnoticed.
+    ///
+    /// <paramref name="dataRows"/> are the sheet's rows (as formulas, so a
+    /// formula that shows nothing still counts); a column with a blank header
+    /// but anything in these rows is never written into.
     /// </summary>
-    public static HeaderAppends PlanAppends(IList<object> existingHeaders, IEnumerable<string> siteNames)
+    public static HeaderAppends PlanAppends(IList<object> existingHeaders, IEnumerable<string> siteNames,
+        IList<IList<object>> dataRows = null)
     {
-        var existing = Map(existingHeaders).Workers.ToDictionary(x => x.Key);
+        var layout = Map(existingHeaders);
+        var existing = layout.Workers.ToDictionary(x => x.Key);
         var headers = new List<string>();
         var problems = new List<string>();
         var planned = new HashSet<string>();
@@ -188,8 +196,69 @@ public static class PlanTimerSheetColumns
             headers.Add(TextHeader(siteName));
         }
 
-        return new HeaderAppends(headers, Math.Max(existingHeaders.Count, FirstWorkerColumn), problems);
+        var firstColumn = headers.Count == 0
+            ? Math.Max(existingHeaders.Count, FirstWorkerColumn)
+            : FirstFreeColumns(existingHeaders, dataRows ?? [], LastWorkerColumn(existingHeaders, layout, planned) + 1,
+                headers.Count);
+        return new HeaderAppends(headers, firstColumn, problems);
     }
+
+    /// <summary>
+    /// The last column holding a worker: any "- timer"/"- tekst" header, or a
+    /// legacy header naming one of the sites. A legacy header naming no site
+    /// may be any label at all, so it does not count.
+    /// </summary>
+    private static int LastWorkerColumn(IList<object> headerRow, Layout layout, ISet<string> siteKeys)
+    {
+        var last = FirstWorkerColumn - 1;
+        for (var col = FirstWorkerColumn; col < headerRow.Count; col++)
+        {
+            if (SuffixedHeader.IsMatch(CellAt(headerRow, col).Trim()))
+            {
+                last = col;
+            }
+        }
+
+        foreach (var worker in layout.Workers.Where(x => siteKeys.Contains(x.Key)))
+        {
+            last = Math.Max(last, Math.Max(worker.HoursColumn ?? -1, worker.TextColumn ?? -1));
+        }
+
+        return last;
+    }
+
+    /// <summary>
+    /// The first of <paramref name="count"/> adjacent columns, from
+    /// <paramref name="start"/> on, that are blank in the header row and in
+    /// every data row. Past the longest row every column is blank, so there is
+    /// always an answer.
+    /// </summary>
+    private static int FirstFreeColumns(IList<object> headerRow, IList<IList<object>> dataRows, int start, int count)
+    {
+        bool IsFree(int col) =>
+            CellAt(headerRow, col).Trim().Length == 0 &&
+            dataRows.All(row => row == null || CellAt(row, col).Trim().Length == 0);
+
+        var first = Math.Max(start, FirstWorkerColumn);
+        for (var col = first; col < first + count; col++)
+        {
+            if (!IsFree(col))
+            {
+                first = col + 1;
+            }
+        }
+
+        return first;
+    }
+
+    /// <summary>
+    /// How many columns the sheet's grid must grow by to hold
+    /// <paramref name="count"/> columns from <paramref name="firstColumn"/> on.
+    /// The Sheets API refuses a write beyond the grid, so without this a full
+    /// sheet gets no new worker columns at all.
+    /// </summary>
+    public static int ColumnsToAdd(int gridColumnCount, int firstColumn, int count) =>
+        Math.Max(0, firstColumn + count - gridColumnCount);
 
     public static string TimerHeader(string siteName) => $"{siteName} - timer";
 

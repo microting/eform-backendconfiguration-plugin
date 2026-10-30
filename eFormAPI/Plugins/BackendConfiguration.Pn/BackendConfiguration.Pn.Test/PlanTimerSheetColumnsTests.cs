@@ -237,6 +237,102 @@ public class PlanTimerSheetColumnsTests
     }
 
     /// <summary>
+    /// A stray cell far out in the header row used to set where new workers
+    /// went: they were appended after it, far to the right of every other
+    /// worker, instead of right after the last worker column.
+    /// </summary>
+    [Test]
+    public void PlanAppends_StrayCellFarOutInTheHeaderRow_AppendsRightAfterTheLastWorker()
+    {
+        var headers = Headers("Worker One - timer", "Worker One - tekst");
+        headers.AddRange(Enumerable.Repeat<object>("", 40));
+        headers.Add("note");
+
+        var appends = PlanTimerSheetColumns.PlanAppends(headers, ["Worker One", "Worker Two"]);
+
+        Assert.That(appends.Headers, Is.EqualTo(new[] { "Worker Two - timer", "Worker Two - tekst" }));
+        Assert.That(appends.FirstColumn, Is.EqualTo(5));
+    }
+
+    /// <summary>
+    /// A legacy header naming no site may be any label (a total, a note), so it
+    /// does not mark where the workers end.
+    /// </summary>
+    [Test]
+    public void PlanAppends_UnsuffixedLabelFarOut_IsNotTakenForTheLastWorker()
+    {
+        var headers = Headers("Worker One - timer", "Worker One - tekst");
+        headers.AddRange(Enumerable.Repeat<object>("", 20));
+        headers.Add("Total");
+
+        var appends = PlanTimerSheetColumns.PlanAppends(headers, ["Worker One", "Worker Two"]);
+
+        Assert.That(appends.FirstColumn, Is.EqualTo(5));
+    }
+
+    /// <summary>
+    /// A column with a blank header can still hold data; new headers must
+    /// skip it, or the data under it would be read as the new worker's plan.
+    /// </summary>
+    [Test]
+    public void PlanAppends_BlankHeaderWithDataUnderIt_IsSkipped()
+    {
+        var headers = Headers("Worker One - timer", "Worker One - tekst", "", "", "", "", "note");
+        var dataRows = new List<IList<object>>
+        {
+            new List<object> { "01.10.2026", "40", "Thu", "7,5", "", "kept" },
+            new List<object> { "02.10.2026", "40", "Fri" }
+        };
+
+        var appends = PlanTimerSheetColumns.PlanAppends(headers, ["Worker One", "Worker Two"], dataRows);
+
+        Assert.That(appends.FirstColumn, Is.EqualTo(6));
+    }
+
+    /// <summary>
+    /// The push reads the rows as formulas, so a formula that shows nothing
+    /// yet still marks its column as taken.
+    /// </summary>
+    [Test]
+    public void PlanAppends_FormulaUnderABlankHeader_IsSkipped()
+    {
+        var headers = Headers("Worker One - timer", "Worker One - tekst", "", "", "", "note");
+        var rows = new List<IList<object>>
+        {
+            headers,
+            new List<object> { "01.10.2026", "40", "Thu", "7,5", "", "=IF(D2>8;D2-8;\"\")" }
+        };
+
+        var appends = PlanTimerSheetColumns.PlanAppends(headers, ["Worker One", "Worker Two"], rows);
+
+        Assert.That(appends.FirstColumn, Is.EqualTo(6));
+    }
+
+    [Test]
+    public void PlanAppends_NoFreePairInsideTheRow_AppendsAfterTheLastUsedColumn()
+    {
+        var headers = Headers("Worker One - timer", "Worker One - tekst", "", "note");
+
+        var appends = PlanTimerSheetColumns.PlanAppends(headers, ["Worker One", "Worker Two"]);
+
+        Assert.That(appends.FirstColumn, Is.EqualTo(7));
+    }
+
+    /// <summary>
+    /// The Sheets API refuses a write beyond the grid's last column, so a full
+    /// sheet must grow before the new headers are written.
+    /// </summary>
+    [TestCase(26, 24, 2, 0)]
+    [TestCase(26, 25, 2, 1)]
+    [TestCase(26, 26, 2, 2)]
+    [TestCase(0, 3, 2, 5)]
+    public void ColumnsToAdd_GrowsTheGridOnlyWhenTheHeadersDoNotFit(int gridColumns, int first, int count,
+        int expected)
+    {
+        Assert.That(PlanTimerSheetColumns.ColumnsToAdd(gridColumns, first, count), Is.EqualTo(expected));
+    }
+
+    /// <summary>
     /// The site lookup normalizes both sides with this, so a site named
     /// "Julius -" matches its "Julius - - timer" header. The old import
     /// stripped hyphens from the site name only, so those never matched.
