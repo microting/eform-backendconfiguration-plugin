@@ -289,6 +289,25 @@ public class PlanTimerSheetColumnsTests
         Assert.That(appends.FirstColumn, Is.EqualTo(6));
     }
 
+    /// <summary>
+    /// The push reads the rows as formulas, so a formula that shows nothing
+    /// yet still marks its column as taken.
+    /// </summary>
+    [Test]
+    public void PlanAppends_FormulaUnderABlankHeader_IsSkipped()
+    {
+        var headers = Headers("Worker One - timer", "Worker One - tekst", "", "", "", "note");
+        var rows = new List<IList<object>>
+        {
+            headers,
+            new List<object> { "01.10.2026", "40", "Thu", "7,5", "", "=IF(D2>8;D2-8;\"\")" }
+        };
+
+        var appends = PlanTimerSheetColumns.PlanAppends(headers, ["Worker One", "Worker Two"], rows);
+
+        Assert.That(appends.FirstColumn, Is.EqualTo(6));
+    }
+
     [Test]
     public void PlanAppends_NoFreePairInsideTheRow_AppendsAfterTheLastUsedColumn()
     {

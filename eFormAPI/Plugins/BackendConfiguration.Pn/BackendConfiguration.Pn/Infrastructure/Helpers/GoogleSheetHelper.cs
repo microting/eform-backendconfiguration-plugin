@@ -79,13 +79,19 @@ public class GoogleSheetHelper
                 ApplicationName = applicationName
             });
 
-            // The whole sheet, not just the header row: a column with a blank
-            // header can still hold data, and new headers must not land on it.
+            var headerRequest = service.Spreadsheets.Values.Get(googleSheetId, $"{sheetName}!A1:1");
+            var headerResponse = await headerRequest.ExecuteAsync();
+            var existingHeaders = headerResponse.Values?.FirstOrDefault() ?? new List<object>();
+
+            // The whole sheet as formulas, not as shown: a column with a blank
+            // header can still hold data, or a formula that shows nothing yet,
+            // and new headers must not land on it. The header row is matched by
+            // name from the shown values above.
             var sheetRequest = service.Spreadsheets.Values.Get(googleSheetId, sheetName);
+            sheetRequest.ValueRenderOption =
+                SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
             var sheetResponse = await sheetRequest.ExecuteAsync();
-            var rows = sheetResponse.Values ?? new List<IList<object>>();
-            var existingHeaders = rows.FirstOrDefault() ?? new List<object>();
-            var dataRows = rows.Skip(1).ToList();
+            var dataRows = sheetResponse.Values ?? new List<IList<object>>();
 
             var assignedSites = await dbContext.AssignedSites
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)

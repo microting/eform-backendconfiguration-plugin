@@ -159,8 +159,9 @@ public static class PlanTimerSheetColumns
     /// one until someone moves the data over and deletes it. Problems name that
     /// column so it does not sit there unnoticed.
     ///
-    /// <paramref name="dataRows"/> are the sheet's rows below the header row; a
-    /// column with a blank header but data under it is never written into.
+    /// <paramref name="dataRows"/> are the sheet's rows (as formulas, so a
+    /// formula that shows nothing still counts); a column with a blank header
+    /// but anything in these rows is never written into.
     /// </summary>
     public static HeaderAppends PlanAppends(IList<object> existingHeaders, IEnumerable<string> siteNames,
         IList<IList<object>> dataRows = null)
