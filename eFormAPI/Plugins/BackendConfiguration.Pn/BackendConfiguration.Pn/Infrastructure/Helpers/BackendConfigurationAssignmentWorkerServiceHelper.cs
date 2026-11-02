@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models;
 using BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker;
@@ -1767,6 +1768,14 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             }
         }
 
+        /// <summary>
+        /// Serialises CreateDeviceUser. Its email and site-name checks run before core.SiteCreate
+        /// with no lock, transaction or unique index behind them, so two requests arriving together
+        /// (a double click on Save) both passed them and created two workers and sites.
+        /// In-process only: the plugin runs one process per tenant, and there is still no DB unique index.
+        /// </summary>
+        private static readonly SemaphoreSlim CreateDeviceUserLock = new(1, 1);
+
         public static async Task<OperationDataResult<int>> CreateDeviceUser(DeviceUserModel deviceUserModel, Core core,
             int userId, TimePlanningPnDbContext timePlanningDbContext, BaseDbContext baseDbContext,
             IUserService userService, UserManager<EformUser> userManager,
@@ -1774,6 +1783,27 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             ILogger? logger = null,
             LederCaller? lederCaller = null,
             BackendConfigurationPnDbContext? backendConfigurationPnDbContext = null)
+        {
+            await CreateDeviceUserLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                return await CreateDeviceUserSerialised(deviceUserModel, core, userId, timePlanningDbContext,
+                    baseDbContext, userService, userManager, reconciliationService, logger, lederCaller,
+                    backendConfigurationPnDbContext).ConfigureAwait(false);
+            }
+            finally
+            {
+                CreateDeviceUserLock.Release();
+            }
+        }
+
+        private static async Task<OperationDataResult<int>> CreateDeviceUserSerialised(DeviceUserModel deviceUserModel,
+            Core core, int userId, TimePlanningPnDbContext timePlanningDbContext, BaseDbContext baseDbContext,
+            IUserService userService, UserManager<EformUser> userManager,
+            Services.CalendarAssignmentReconciliation.ICalendarAssignmentReconciliationService? reconciliationService,
+            ILogger? logger,
+            LederCaller? lederCaller,
+            BackendConfigurationPnDbContext? backendConfigurationPnDbContext)
         {
             // Optional so the existing callers keep compiling; the Google Sheet
             // push below is the only thing here that logs through it.
