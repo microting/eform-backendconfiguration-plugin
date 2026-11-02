@@ -64,6 +64,23 @@ public abstract class TestBaseSetup
         context.Database.SetCommandTimeout(CommandTimeoutSeconds);
         return context;
     }
+
+    /// <summary>A second, independent Angular base context on the same database, as a separate request has.</summary>
+    protected BaseDbContext CreateFreshBaseDbContext()
+    {
+        var context = new BaseDbContext(BuildOptions<BaseDbContext>(_connectionStr, "420_Angular"));
+        context.Database.SetCommandTimeout(CommandTimeoutSeconds);
+        return context;
+    }
+
+    /// <summary>A second, independent time-planning context on the same database, as a separate request has.</summary>
+    protected TimePlanningPnDbContext CreateFreshTimePlanningDbContext()
+    {
+        var context = new TimePlanningPnDbContext(
+            BuildOptions<TimePlanningPnDbContext>(_connectionStr, "420_eform-angular-time-planning-plugin"));
+        context.Database.SetCommandTimeout(CommandTimeoutSeconds);
+        return context;
+    }
     protected ItemsPlanningPnDbContext? ItemsPlanningPnDbContext;
     protected TimePlanningPnDbContext? TimePlanningPnDbContext;
     protected MicrotingDbContext? MicrotingDbContext;
