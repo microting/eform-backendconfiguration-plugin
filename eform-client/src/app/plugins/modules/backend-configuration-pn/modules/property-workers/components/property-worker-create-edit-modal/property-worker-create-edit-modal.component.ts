@@ -94,6 +94,9 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   assignmentsCopy: PropertyAssignmentWorkerModel[] = [];
   taskManagementEnabled: boolean = false;
   timeRegistrationEnabled: boolean = false;
+  // True while a create request (and the property assignment after it) runs, so a
+  // second click on Create cannot send the same worker twice.
+  saving: boolean = false;
   availableTags: CommonDictionaryModel[] = [];
   // ng-select's own search result while a search is typed (selected tags are
   // hidden from it), so "Select all" adds exactly what the list shows.
@@ -676,22 +679,30 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   }
 
   createDeviceUser() {
-    if (this.form.invalid) {
+    if (this.form.invalid || this.saving) {
       return;
     }
+    this.saving = true;
     const formValue = this.form.value;
     Object.assign(this.selectedDeviceUser, formValue);
     this.applyLeaderAndTags(formValue.tags);
     this.deviceUserCreate$ = this.propertiesService
       .createSingleDeviceUser(this.selectedDeviceUser)
-      .subscribe((operation) => {
-        if (operation && operation.success) {
-          if (this.assignments && this.assignments.length > 0) {
-            this.assignWorkerToProperties(operation.model);
+      .subscribe({
+        next: (operation) => {
+          if (operation && operation.success) {
+            if (this.assignments && this.assignments.length > 0) {
+              this.assignWorkerToProperties(operation.model);
+            } else {
+              this.hide(true);
+            }
           } else {
-            this.hide(true);
+            this.saving = false;
           }
-        }
+        },
+        error: () => {
+          this.saving = false;
+        },
       });
   }
 
@@ -705,10 +716,15 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
         // eslint-disable-next-line max-len
         taskManagementEnabled: this.form.value.taskManagementEnabled === undefined ? this.selectedDeviceUser.taskManagementEnabled : this.form.value.taskManagementEnabled,
       })
-      .subscribe((operation) => {
-        if (operation && operation.success) {
+      .subscribe({
+        // The worker exists by now, so a second Create would only duplicate it: close and refresh
+        // the list whatever the outcome. A failed assignment is toasted and is fixed by editing the worker.
+        next: () => {
           this.hide(true);
-        }
+        },
+        error: () => {
+          this.hide(true);
+        },
       });
   }
 

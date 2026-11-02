@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models;
 using BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker;
@@ -1767,6 +1768,15 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             }
         }
 
+        /// <summary>
+        /// Held by CreateDeviceUser from its email and site-name checks until the new worker carries
+        /// its email. Without it two requests arriving together (a double click on Save) both passed
+        /// the checks and created two workers and sites. Released before the slower follow-up work
+        /// (tag reconciliation, logins, Google Sheet), which a concurrent create need not wait for.
+        /// In-process only: the plugin runs one process per tenant, and there is still no DB unique index.
+        /// </summary>
+        private static readonly SemaphoreSlim CreateDeviceUserLock = new(1, 1);
+
         public static async Task<OperationDataResult<int>> CreateDeviceUser(DeviceUserModel deviceUserModel, Core core,
             int userId, TimePlanningPnDbContext timePlanningDbContext, BaseDbContext baseDbContext,
             IUserService userService, UserManager<EformUser> userManager,
@@ -1851,8 +1861,12 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 }
             }
 
+            var holdsCreateLock = false;
             try
             {
+                await CreateDeviceUserLock.WaitAsync().ConfigureAwait(false);
+                holdsCreateLock = true;
+
                 // An empty address cannot collide, so only a real one is checked against other live workers.
                 if (hasWorkerEmail
                     && sdkDbContext.Workers.AsNoTracking().Any(x =>
@@ -1958,6 +1972,19 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 site = await sdkDbContext.Sites.Where(x => x.MicrotingUid == siteDto.SiteId).FirstAsync()
                     .ConfigureAwait(false);
 
+                var worker = await sdkDbContext.Workers.SingleAsync(x => x.MicrotingUid == siteDto.WorkerUid)
+                    .ConfigureAwait(false);
+
+                worker.EmployeeNo = deviceUserModel.EmployeeNo;
+                worker.PinCode = deviceUserModel.PinCode;
+                worker.Email = deviceUserModel.WorkerEmail;
+                worker.PhoneNumber = deviceUserModel.PhoneNumber;
+                await worker.Update(sdkDbContext).ConfigureAwait(false);
+
+                // The site and the worker's email are saved, so a concurrent create now fails the checks above.
+                CreateDeviceUserLock.Release();
+                holdsCreateLock = false;
+
                 // Persist Tags as SiteTag entries so tag-based filtering works
                 if (deviceUserModel.Tags != null && deviceUserModel.Tags.Any())
                 {
@@ -1978,15 +2005,6 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         await reconciliationService.ReconcileEventsForWorkerTagsAsync(deviceUserModel.Tags);
                     }
                 }
-
-                var worker = await sdkDbContext.Workers.SingleAsync(x => x.MicrotingUid == siteDto.WorkerUid)
-                    .ConfigureAwait(false);
-
-                worker.EmployeeNo = deviceUserModel.EmployeeNo;
-                worker.PinCode = deviceUserModel.PinCode;
-                worker.Email = deviceUserModel.WorkerEmail;
-                worker.PhoneNumber = deviceUserModel.PhoneNumber;
-                await worker.Update(sdkDbContext).ConfigureAwait(false);
 
                 // Link the same account the checks above accepted - one
                 // CreateDeviceUser may link to, with no collision - not a fresh
@@ -2301,6 +2319,13 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 Console.WriteLine(ex.Message);
                 await CleanupOrphanSiteAsync().ConfigureAwait(false);
                 return new OperationDataResult<int>(false, DeviceUserCouldNotBeCreatedKey);
+            }
+            finally
+            {
+                if (holdsCreateLock)
+                {
+                    CreateDeviceUserLock.Release();
+                }
             }
         }
 

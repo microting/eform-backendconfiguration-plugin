@@ -5446,6 +5446,63 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         Assert.That(reloaded.UserName, Is.EqualTo(login.UserName));
         Assert.That(await GetSecurityGroupNamesAsync(login.Id), Is.EquivalentTo(groupsBefore));
     }
+
+    // Two create requests for the same worker that arrive together (a double click on
+    // Save) must not both pass the "email already in use" check before either has
+    // created its worker. Each call gets its own contexts and UserManager, as two HTTP
+    // requests do; the Core is shared, as the app's singleton Core is. Both calls are
+    // started before either is awaited, so without serialisation the second one runs
+    // its email check while the first is still awaiting its own create.
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_CreateDeviceUser_TwoConcurrentCallsSameEmail_CreatesOneWorker()
+    {
+        // Arrange
+        var core = await GetCore();
+        var workerEmail = $"{Guid.NewGuid()}@test.com";
+        var firstName = Guid.NewGuid().ToString();
+        var lastName = Guid.NewGuid().ToString();
+        DeviceUserModel NewModel() => new()
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = firstName,
+            UserLastName = lastName,
+            WorkerEmail = workerEmail
+        };
+
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        await using var firstBaseDbContext = CreateFreshBaseDbContext();
+        await using var secondBaseDbContext = CreateFreshBaseDbContext();
+        await using var firstTimePlanningDbContext = CreateFreshTimePlanningDbContext();
+        await using var secondTimePlanningDbContext = CreateFreshTimePlanningDbContext();
+        var firstUserManager = IdentityTestUtils.CreateRealUserManager(firstBaseDbContext);
+        var secondUserManager = IdentityTestUtils.CreateRealUserManager(secondBaseDbContext);
+
+        // Act
+        var results = await Task.WhenAll(
+            BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(NewModel(), core, 1,
+                firstTimePlanningDbContext, firstBaseDbContext, userService, firstUserManager),
+            BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(NewModel(), core, 1,
+                secondTimePlanningDbContext, secondBaseDbContext, userService, secondUserManager));
+
+        // Assert
+        Assert.That(results.Count(x => x.Success), Is.EqualTo(1),
+            string.Join(", ", results.Select(x => $"{x.Success}:{x.Message}")));
+        Assert.That(results.Single(x => !x.Success).Message, Is.EqualTo("EmailIsAlreadyInUse"));
+
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        Assert.That(await sdkDbContext.Workers.AsNoTracking().CountAsync(x => x.Email == workerEmail
+            && x.WorkflowState != Constants.WorkflowStates.Removed), Is.EqualTo(1),
+            "two concurrent creates with the same email must leave exactly one live worker");
+        Assert.That(await sdkDbContext.Sites.AsNoTracking().CountAsync(x => x.Name == $"{firstName} {lastName}"
+            && x.WorkflowState != Constants.WorkflowStates.Removed), Is.EqualTo(1),
+            "two concurrent creates with the same email must leave exactly one live site");
+    }
 }
 
 public class EFormCoreService : IEFormCoreService
