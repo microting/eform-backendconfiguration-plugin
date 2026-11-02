@@ -768,7 +768,7 @@
       tabindex="9"
       class="btn-primary btn-primary--icon-left"
       (click)="edit ? updateSingle() : createDeviceUser()"
-      [disabled]="form.invalid"
+      [disabled]="form.invalid || saving"
       id="{{edit ? 'saveEditBtn' : 'saveCreateBtn'}}"
     >
       <span>{{ (edit ? 'Save' : 'Create') | translate }}</span>
