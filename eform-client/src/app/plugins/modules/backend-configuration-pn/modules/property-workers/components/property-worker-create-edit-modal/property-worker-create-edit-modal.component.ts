@@ -97,6 +97,9 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   // True while a create request (and the property assignment after it) runs, so a
   // second click on Create cannot send the same worker twice.
   saving: boolean = false;
+  // The site id of a worker this dialog already created, so a retry after a failed
+  // property assignment does not create the worker a second time.
+  createdSiteId: number | null = null;
   availableTags: CommonDictionaryModel[] = [];
   // ng-select's own search result while a search is typed (selected tags are
   // hidden from it), so "Select all" adds exactly what the list shows.
@@ -683,6 +686,11 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       return;
     }
     this.saving = true;
+    if (this.createdSiteId !== null) {
+      // The worker was created and only its property assignment failed: retry just that.
+      this.assignWorkerToProperties(this.createdSiteId);
+      return;
+    }
     const formValue = this.form.value;
     Object.assign(this.selectedDeviceUser, formValue);
     this.applyLeaderAndTags(formValue.tags);
@@ -692,6 +700,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
         next: (operation) => {
           if (operation && operation.success) {
             if (this.assignments && this.assignments.length > 0) {
+              this.createdSiteId = operation.model;
               this.assignWorkerToProperties(operation.model);
             } else {
               this.hide(true);
