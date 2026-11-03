@@ -20,7 +20,7 @@ import {PropertyWorkerOtpModalComponent} from '../property-worker-otp-modal/prop
 import {PropertyWorkerQrModalComponent} from '../property-worker-qr-modal/property-worker-qr-modal.component';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {UserSetPasswordComponent} from 'src/app/modules/account-management/components';
-import {AuthService} from 'src/app/common/services';
+import {AuthService, DeviceUserService} from 'src/app/common/services';
 import {Store} from '@ngrx/store';
 import {
   selectAuthIsAdmin,
@@ -59,6 +59,7 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
   private authStateService = inject(AuthStateService);
   public propertyWorkersStateService = inject(PropertyWorkersStateService);
   private authService = inject(AuthService);
+  private deviceUserService = inject(DeviceUserService);
   private dialog = inject(MatDialog);
   private overlay = inject(Overlay);
   private el = inject(ElementRef);
@@ -91,10 +92,13 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
   propertyWorkerOtpModalComponentAfterClosedSub$: Subscription;
   propertyWorkerEditModalComponentAfterClosedSub$: Subscription;
   canDeleteWorkerSub$: Subscription;
+  skipCloudDeploySub$: Subscription;
   //availableProperties: CommonDictionaryModel[];
   searchSubject: Subject<string> = new Subject();
   canDeleteWorker: boolean = false;
   deviceUsersUpdate: boolean = false;
+  // Customer no & OTP have no function when the SDK skips cloud deploy.
+  skipCloudDeploy = false;
   // Only the first user may delete a worker, and only while also holding the device_users_delete
   // claim that core's delete endpoint requires.
   public canDeleteWorker$ = combineLatest([
@@ -247,7 +251,9 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
       });
     }
 
-    this.tableHeaders = baseHeaders;
+    this.tableHeaders = this.skipCloudDeploy
+      ? baseHeaders.filter(h => h.field !== 'customerOtp')
+      : baseHeaders;
   }
 
 
@@ -478,6 +484,12 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
     });
 
     this.buildTableHeaders();
+    this.skipCloudDeploySub$ = this.deviceUserService.getSkipCloudDeploy().subscribe(x => {
+      if (x && x.success && x.model) {
+        this.skipCloudDeploy = true;
+        this.buildTableHeaders();
+      }
+    });
     //this.getDeviceUsersFiltered();
   }
 
