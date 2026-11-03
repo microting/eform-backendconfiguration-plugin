@@ -77,14 +77,41 @@ test.describe.serial('Task list — edit modal fits the viewport', () => {
       await page.goto('http://localhost:4200');
       await new LoginPage(page).login();
 
+      // Arm the list loads before navigating, so clearTable() counts the rows
+      // only once the grid has its data (an empty list after a partial seed
+      // still resolves both waits).
       const workersPage = new BackendConfigurationPropertyWorkersPage(page);
+      const deviceUsers = waitForApiResponse(
+        page,
+        'POST /api/backend-configuration-pn/properties/assignment/index-device-user (device user list)',
+        r => r.url().includes('/api/backend-configuration-pn/properties/assignment/index-device-user')
+          && r.request().method() === 'POST',
+        API_TIMEOUT,
+      );
+      const assignments = waitForApiResponse(
+        page,
+        'GET /api/backend-configuration-pn/properties/assignment (worker property assignments)',
+        r => r.url().includes('/api/backend-configuration-pn/properties/assignment')
+          && r.request().method() === 'GET',
+        API_TIMEOUT,
+      );
+      ignoreUnhandledRejections(deviceUsers, assignments);
       await workersPage.goToPropertyWorkers();
-      await page.waitForTimeout(1000);
+      await Promise.all([deviceUsers, assignments]);
+      await workersPage.newDeviceUserBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
       await workersPage.clearTable();
 
       const propertiesPage = new BackendConfigurationPropertiesPage(page);
+      const properties = waitForApiResponse(
+        page,
+        'POST /api/backend-configuration-pn/properties/index (property list)',
+        r => r.url().includes('/api/backend-configuration-pn/properties/index')
+          && r.request().method() === 'POST',
+        API_TIMEOUT,
+      );
+      ignoreUnhandledRejections(properties);
       await propertiesPage.goToProperties();
-      await page.waitForTimeout(1000);
+      await properties;
       await propertiesPage.clearTable();
     };
     try {
