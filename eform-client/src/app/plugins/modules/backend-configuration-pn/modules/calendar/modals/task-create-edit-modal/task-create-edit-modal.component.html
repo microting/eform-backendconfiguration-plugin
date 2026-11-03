@@ -1,4 +1,4 @@
-<div [class.gcal-popover-card]="usePopoverMode">
+<div [class.gcal-popover-card]="usePopoverMode" [class.gcal-dialog-card]="!usePopoverMode">
   <div class="gcal-close-row">
     <button id="calendarEventCancelBtn" class="gcal-close-btn" (click)="onCancel()">
       <mat-icon>close</mat-icon>

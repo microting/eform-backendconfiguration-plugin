@@ -17,6 +17,14 @@
   flex-direction: column;
 }
 
+// Dialog card wrapper — used when opened as a MatDialog (task lists). Capped
+// like the popover card so the body scrolls and the actions stay in view.
+.gcal-dialog-card {
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
 
 // Scrolling middle zone — keeps close-row and actions pinned
 .gcal-scroll-body {
