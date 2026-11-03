@@ -891,6 +891,53 @@ export class CalendarRepeatService {
   }
 
   /**
+   * Every repeat field of the request payload for a custom rule, in the same
+   * wire format the task edit modal sends for its "custom" repeat option
+   * (repeat type 1=day, 2=week, 3=month, 4=year; end mode 0=never, 1=after N,
+   * 2=until a date-only "yyyy-MM-dd"). Used by the task list's batch
+   * "Sæt frekvens", which sets one custom rule on many tasks.
+   */
+  metaToRepeatFields(meta: CalendarRepeatMeta): {
+    repeatType: number;
+    repeatEvery: number;
+    repeatWeekdaysCsv: string | null;
+    dayOfMonth: number | null;
+    repeatOrdinalWeek: number | null;
+    repeatEndMode: number;
+    repeatOccurrences: number | null;
+    repeatUntilDate: string | null;
+  } {
+    const kindMap: Record<string, number> = {
+      'daily': 1, 'everyNd': 1,
+      'weeklyOne': 2, 'weeklyMulti': 2, 'everyNWeekOne': 2, 'everyNWeekMulti': 2, 'everyNWeekAll': 2,
+      'weeklyAll': 2,
+      'monthlyDom': 3, 'everyNMonthDom': 3, 'monthlyByDay': 3, 'everyNMonthByDay': 3,
+      'monthlyFirstWeekday': 3, 'everyNMonthFirstWeekday': 3,
+      'yearlyOne': 4, 'everyNYear': 4,
+    };
+    let repeatEndMode = 0;
+    let repeatOccurrences: number | null = null;
+    let repeatUntilDate: string | null = null;
+    if (meta.endMode === 'after' && meta.afterCount) {
+      repeatEndMode = 1;
+      repeatOccurrences = meta.afterCount;
+    } else if (meta.endMode === 'until' && meta.untilTs) {
+      repeatEndMode = 2;
+      repeatUntilDate = toDateOnlyString(meta.untilTs);
+    }
+    return {
+      repeatType: kindMap[meta.kind] ?? 0,
+      repeatEvery: meta.n ?? 1,
+      repeatWeekdaysCsv: this.metaToWeekdaysCsv(meta),
+      dayOfMonth: this.metaToDayOfMonth(meta),
+      repeatOrdinalWeek: this.metaToRepeatOrdinalWeek(meta),
+      repeatEndMode,
+      repeatOccurrences,
+      repeatUntilDate,
+    };
+  }
+
+  /**
    * Re-derive a repeat rule's anchor fields from a new start date (#960).
    *
    * For single-anchor recurrences the start date *is* the anchor, so when the

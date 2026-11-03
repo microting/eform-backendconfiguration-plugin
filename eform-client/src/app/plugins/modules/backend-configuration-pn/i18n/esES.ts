@@ -771,6 +771,8 @@ export const esES = {
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'El registro se ha eliminado permanentemente, incluyendo las respuestas y las fotos. Esta acción no se puede deshacer.',
   'Move to calendar': 'Mover al calendario',
   'Change report headline': 'Cambiar el encabezado del informe',
+  'Set frequency': 'Establecer frecuencia',
+  'No repeat rule chosen': 'No se ha elegido ninguna regla de repetición',
   // Custom repeat end condition appended to the Gentag label (#1293).
   '{{rule}}, until and including {{date}}': '{{rule}}, hasta el {{date}} inclusive',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} veces',

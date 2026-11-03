@@ -771,6 +771,8 @@ export const etET = {
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Logi kustutatakse jäädavalt koos vastuste ja fotodega. Seda toimingut ei saa tagasi võtta.',
   'Move to calendar': 'Teisalda kalendrisse',
   'Change report headline': 'Muuda aruande pealkirja',
+  'Set frequency': 'Määra sagedus',
+  'No repeat rule chosen': 'Kordusreeglit pole valitud',
   // Custom repeat end condition appended to the Gentag label (#1293).
   '{{rule}}, until and including {{date}}': '{{rule}}, kuni {{date}} (kaasa arvatud)',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} korda',

@@ -294,6 +294,78 @@ public class BackendConfigurationTaskListService(
         }, "Tasks updated");
     }
 
+    // ------------------------------------------------------------------
+    // Sæt frekvens — change start date and repeat rule
+    // ------------------------------------------------------------------
+
+    // ChangeStartDate plus the repeat rule: the same three overrides (StartDate,
+    // OriginalDate = null, Scope = "all") re-anchor each series to the picked
+    // date, and every repeat field of the custom-repeat dialog replaces the
+    // stored one verbatim — a null clears it, so switching e.g. monthly to
+    // weekly does not leave a stale day-of-month behind. RepeatEndMode is
+    // always sent (0 = never) because UpdateTask only rewrites the end
+    // condition when it has a value. An Nth-weekday rule takes its ordinal
+    // from the new start date, whatever ordinal was sent — the same #1289 rule
+    // ChangeStartDate and UpdateTask's date-changed path apply — so the
+    // dialog re-anchors its rule to the picked date to show what is saved.
+    // Everything else round-trips through BuildUpdateModel.
+    public async Task<OperationResult> ChangeRepeat(TaskListBatchRepeatModel model)
+    {
+        var invalidStartDate = ValidateStartDate(model);
+        if (invalidStartDate != null)
+        {
+            return invalidStartDate;
+        }
+
+        var invalidRule = ValidateRepeatRule(model);
+        if (invalidRule != null)
+        {
+            return invalidRule;
+        }
+
+        return await RunPerTask(model.TaskIds, async id =>
+        {
+            var update = await BuildUpdateModel(id);
+            if (update == null) return (false, "Task not found");
+            update.StartDate = model.StartDate;
+            update.OriginalDate = null;
+            update.Scope = "all";
+            update.RepeatType = model.RepeatType;
+            update.RepeatEvery = model.RepeatEvery;
+            update.RepeatWeekdaysCsv = model.RepeatWeekdaysCsv;
+            update.DayOfMonth = model.DayOfMonth;
+            update.RepeatOrdinalWeek = model.RepeatOrdinalWeek.HasValue
+                ? CalendarService.OrdinalWeekOf(CalendarService.NormalizeStartDateToLocalDay(model.StartDate))
+                : null;
+            update.RepeatEndMode = model.RepeatEndMode ?? 0;
+            update.RepeatOccurrences = model.RepeatOccurrences;
+            update.RepeatUntilDate = model.RepeatUntilDate;
+            var result = await calendarService.UpdateTask(update);
+            return (result.Success, result.Message);
+        }, "Tasks updated");
+    }
+
+    // Validated once, before the loop, so a bad rule never produces a partial
+    // batch. Only rules the custom-repeat dialog can produce pass: a real
+    // recurrence (day/week/month/year — 0 would silently stop every selected
+    // task from repeating), an interval of at least 1 (0 is the "always" event
+    // of #922) and a complete end condition.
+    private OperationResult ValidateRepeatRule(TaskListBatchRepeatModel model)
+    {
+        var valid = model.RepeatType is >= 1 and <= 4
+                    && model.RepeatEvery >= 1
+                    && (model.RepeatEndMode ?? 0) switch
+                    {
+                        0 => true,
+                        1 => model.RepeatOccurrences is >= 1,
+                        2 => model.RepeatUntilDate.HasValue,
+                        _ => false
+                    };
+        return valid
+            ? null
+            : new OperationResult(false, localizationService.GetString("InvalidRepeatRule"));
+    }
+
     // The ONLY batch-wide, pre-loop guard this action admits, mirroring Copy's
     // "validate once so a failure never produces a partial batch" shape.
     //

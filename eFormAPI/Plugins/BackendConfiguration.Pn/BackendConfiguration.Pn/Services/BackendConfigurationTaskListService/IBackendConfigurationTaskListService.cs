@@ -29,6 +29,12 @@ public interface IBackendConfigurationTaskListService
     /// </summary>
     Task<OperationDataResult<TaskListBatchStartDatePreviewModel>> ChangeStartDatePreview(
         TaskListBatchStartDateModel model);
+
+    /// <summary>
+    /// "Sæt frekvens" — re-anchors every selected series to the given date and
+    /// gives it the given custom repeat rule, end condition included.
+    /// </summary>
+    Task<OperationResult> ChangeRepeat(TaskListBatchRepeatModel model);
     /// <summary>
     /// #1126 — renames every task in <paramref name="model"/> (the inline
     /// grid-row rename always sends exactly one) by replacing the CALLING

@@ -891,6 +891,8 @@ export const enUS= {
   'Move to calendar': 'Move to calendar',
   // Task list batch action "Skift rapportoverskrift" (#1298).
   'Change report headline': 'Change report headline',
+  'Set frequency': 'Set frequency',
+  'No repeat rule chosen': 'No repeat rule chosen',
   // Custom repeat end condition appended to the Gentag label (#1293).
   '{{rule}}, until and including {{date}}': '{{rule}}, until and including {{date}}',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} times',

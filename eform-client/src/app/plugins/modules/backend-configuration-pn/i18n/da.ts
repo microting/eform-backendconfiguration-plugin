@@ -792,6 +792,8 @@ export const da = {
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Loggen slettes permanent, inklusive svar og billeder. Denne handling kan ikke fortrydes.',
   'Move to calendar': 'Flyt til kalender',
   'Change report headline': 'Skift rapportoverskrift',
+  'Set frequency': 'Sæt frekvens',
+  'No repeat rule chosen': 'Ingen gentagelse valgt',
   // Custom repeat end condition appended to the Gentag label (#1293).
   '{{rule}}, until and including {{date}}': '{{rule}}, til og med {{date}}',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} gange',

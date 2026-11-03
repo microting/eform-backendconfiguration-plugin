@@ -1531,3 +1531,42 @@ describe('CalendarRepeatService — conversion wire encodings (reconstructMetaFr
     expect(r?.weekday).toBe(3);
   });
 });
+
+describe('CalendarRepeatService — metaToRepeatFields (batch "Sæt frekvens")', () => {
+  let service: CalendarRepeatService;
+
+  beforeEach(() => {
+    service = new CalendarRepeatService(translateStub);
+  });
+
+  it('maps a multi-day weekly rule ending after N to the wire fields', () => {
+    const meta: CalendarRepeatMeta = {kind: 'everyNWeekMulti', n: 2, weekdays: [1, 3, 5], endMode: 'after', afterCount: 12};
+    expect(service.metaToRepeatFields(meta)).toEqual({
+      repeatType: 2, repeatEvery: 2, repeatWeekdaysCsv: '1,3,5', dayOfMonth: null,
+      repeatOrdinalWeek: null, repeatEndMode: 1, repeatOccurrences: 12, repeatUntilDate: null,
+    });
+  });
+
+  it('maps a monthly day-of-month rule ending on a date to a date-only until value', () => {
+    const until = new Date(2026, 11, 10).getTime(); // local midnight, 10 Dec 2026
+    const meta: CalendarRepeatMeta = {kind: 'monthlyDom', n: 1, dom: 15, endMode: 'until', untilTs: until};
+    expect(service.metaToRepeatFields(meta)).toEqual({
+      repeatType: 3, repeatEvery: 1, repeatWeekdaysCsv: null, dayOfMonth: 15,
+      repeatOrdinalWeek: null, repeatEndMode: 2, repeatOccurrences: null, repeatUntilDate: '2026-12-10',
+    });
+  });
+
+  it('maps a first-weekday monthly rule that never ends', () => {
+    const meta: CalendarRepeatMeta = {kind: 'monthlyFirstWeekday', n: 1, weekday: 1, ordinalWeek: 1, endMode: 'never'};
+    expect(service.metaToRepeatFields(meta)).toEqual({
+      repeatType: 3, repeatEvery: 1, repeatWeekdaysCsv: '1', dayOfMonth: 0,
+      repeatOrdinalWeek: 1, repeatEndMode: 0, repeatOccurrences: null, repeatUntilDate: null,
+    });
+  });
+
+  it.each([
+    ['everyNd', 1], ['weeklyAll', 2], ['everyNWeekAll', 2], ['yearlyOne', 4],
+  ] as [string, number][])('maps kind %s to repeat type %i', (kind, repeatType) => {
+    expect(service.metaToRepeatFields({kind, n: 1, endMode: 'never'}).repeatType).toBe(repeatType);
+  });
+});
