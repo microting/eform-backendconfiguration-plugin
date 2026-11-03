@@ -155,6 +155,14 @@ describe('CalendarTaskListPageComponent', () => {
       expect(dialogStub.open).toHaveBeenCalledTimes(1);
     });
 
+    // Same modal as the task list: without a height cap the overlay pane grows
+    // past the viewport and Save is unreachable.
+    it('caps the edit modal at the viewport height', () => {
+      component.onEditTask(buildTask());
+
+      expect(dialogStub.open.mock.calls[0][1].maxHeight).toBe('90vh');
+    });
+
     // #1135 — a null folderId made the server throw on EVERY save from this
     // page ("Nullable object must have a value"), so the modal never closed.
     it('passes the property\'s Logbøger folder id to the modal', () => {
