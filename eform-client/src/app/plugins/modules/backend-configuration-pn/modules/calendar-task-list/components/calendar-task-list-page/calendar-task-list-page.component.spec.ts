@@ -216,5 +216,52 @@ describe('CalendarTaskListPageComponent', () => {
       expect(propertiesServiceStub.getLinkedFolderDtos).not.toHaveBeenCalled();
       expect(dialogStub.open.mock.calls[0][1].data.folderId).toBeNull();
     });
+
+    // The modal can create a report headline inline; it is stored at once but
+    // only added to the modal's own list. The grid resolves the headline name
+    // from the page's `tags`, so reload them on close — saved or cancelled —
+    // or the new headline shows as "--" until the page is reloaded.
+    describe('report headline created in the modal', () => {
+      const oldTag = {id: 3, name: 'Old headline', description: '', isLocked: false};
+      const newTag = {id: 9, name: 'New headline', description: '', isLocked: false};
+
+      it.each([
+        ['saved', {saved: true}],
+        ['cancelled', undefined],
+      ])('reloads the headline list when the modal is %s', (_label, closeResult) => {
+        tagsServiceStub.getPlanningsTags.mockReturnValue(of({success: true, model: [oldTag, newTag]}));
+        afterClosed$ = of(closeResult);
+        const before = tagsServiceStub.getPlanningsTags.mock.calls.length;
+
+        component.onEditTask(buildTask());
+
+        expect(tagsServiceStub.getPlanningsTags.mock.calls.length).toBe(before + 1);
+        expect(component.tags).toEqual([oldTag, newTag]);
+      });
+
+      it('offers the headline created in one modal in the next one', () => {
+        tagsServiceStub.getPlanningsTags.mockReturnValue(of({success: true, model: [oldTag, newTag]}));
+        afterClosed$ = of(undefined);
+        component.onEditTask(buildTask());
+
+        component.onEditTask(buildTask());
+
+        expect(dialogStub.open.mock.calls[1][1].data.planningTags).toEqual([
+          {id: oldTag.id, name: oldTag.name},
+          {id: newTag.id, name: newTag.name},
+        ]);
+      });
+
+      it('reloads the tasks after a save, but not after a cancel', () => {
+        calendarServiceStub.getTasksIndex.mockClear();
+        afterClosed$ = of(undefined);
+        component.onEditTask(buildTask());
+        expect(calendarServiceStub.getTasksIndex).not.toHaveBeenCalled();
+
+        afterClosed$ = of({saved: true});
+        component.onEditTask(buildTask());
+        expect(calendarServiceStub.getTasksIndex).toHaveBeenCalledTimes(1);
+      });
+    });
   });
 });
