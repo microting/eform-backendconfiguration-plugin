@@ -425,6 +425,10 @@ export class TaskListPageComponent implements OnInit {
       maxHeight: '90vh',
     });
     ref.afterClosed().subscribe(result => {
+      // The modal can CREATE a report headline inline (`addPlanningTag`) even
+      // when it is then cancelled. The "Report headline" cell and the next
+      // modal resolve names from `tags`, so reload it either way.
+      this.loadTags();
       if (result) {
         this.loadTasks();
       }

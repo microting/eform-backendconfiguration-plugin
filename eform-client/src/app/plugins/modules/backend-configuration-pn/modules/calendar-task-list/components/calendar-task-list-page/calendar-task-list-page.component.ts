@@ -255,6 +255,9 @@ export class CalendarTaskListPageComponent implements OnInit {
       maxHeight: '90vh',
     });
     ref.afterClosed().subscribe(result => {
+      // The modal can create a report headline inline even when it is then
+      // cancelled; the grid resolves headline names from `tags`.
+      this.loadTags();
       if (result) {
         this.loadTasks();
       }
