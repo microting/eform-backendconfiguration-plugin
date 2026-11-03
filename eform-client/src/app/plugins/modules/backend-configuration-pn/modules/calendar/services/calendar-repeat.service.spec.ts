@@ -1564,6 +1564,15 @@ describe('CalendarRepeatService — metaToRepeatFields (batch "Sæt frekvens")',
     });
   });
 
+  it('keeps an incomplete end condition so the server can reject it', () => {
+    const after = service.metaToRepeatFields({kind: 'everyNd', n: 1, endMode: 'after', afterCount: 0});
+    expect(after.repeatEndMode).toBe(1);
+    expect(after.repeatOccurrences).toBe(0);
+    const until = service.metaToRepeatFields({kind: 'everyNd', n: 1, endMode: 'until'});
+    expect(until.repeatEndMode).toBe(2);
+    expect(until.repeatUntilDate).toBeNull();
+  });
+
   it.each([
     ['everyNd', 1], ['weeklyAll', 2], ['everyNWeekAll', 2], ['yearlyOne', 4],
   ] as [string, number][])('maps kind %s to repeat type %i', (kind, repeatType) => {

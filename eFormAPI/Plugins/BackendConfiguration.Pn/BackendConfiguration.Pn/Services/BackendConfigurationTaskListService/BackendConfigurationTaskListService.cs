@@ -24,6 +24,8 @@ using CalendarService =
     BackendConfiguration.Pn.Services.BackendConfigurationCalendarService.BackendConfigurationCalendarService;
 using BackfillService =
     BackendConfiguration.Pn.Services.CalendarPastSeriesBackfill.CalendarPastSeriesBackfillService;
+using TaskWizardService =
+    BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService.BackendConfigurationTaskWizardService;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationTaskListService;
 
@@ -301,13 +303,14 @@ public class BackendConfigurationTaskListService(
     // ChangeStartDate plus the repeat rule: the same three overrides (StartDate,
     // OriginalDate = null, Scope = "all") re-anchor each series to the picked
     // date, and every repeat field of the custom-repeat dialog replaces the
-    // stored one verbatim — a null clears it, so switching e.g. monthly to
-    // weekly does not leave a stale day-of-month behind. RepeatEndMode is
-    // always sent (0 = never) because UpdateTask only rewrites the end
-    // condition when it has a value. An Nth-weekday rule takes its ordinal
-    // from the new start date, whatever ordinal was sent — the same #1289 rule
-    // ChangeStartDate and UpdateTask's date-changed path apply — so the
-    // dialog re-anchors its rule to the picked date to show what is saved.
+    // stored one — a null clears it, so switching e.g. monthly to weekly does
+    // not leave a stale day-of-month behind. RepeatEndMode is always sent
+    // (0 = never) because UpdateTask only rewrites the end condition when it
+    // has a value. Two fields follow the new start date instead of the value
+    // sent: an Nth-weekday rule's ordinal (the same #1289 rule ChangeStartDate
+    // and UpdateTask's date-changed path apply) and a monthly or yearly rule's
+    // day of month (see below). The dialog re-anchors its rule to the picked
+    // date the same way, to show what is saved.
     // Everything else round-trips through BuildUpdateModel.
     public async Task<OperationResult> ChangeRepeat(TaskListBatchRepeatModel model)
     {
@@ -323,6 +326,16 @@ public class BackendConfigurationTaskListService(
             return invalidRule;
         }
 
+        var anchor = CalendarService.NormalizeStartDateToLocalDay(model.StartDate);
+        // A day-of-month rule follows the start date as well: the wizard derives
+        // Planning.DayOfMonth — what the scheduler and the calendar generate
+        // from — from the start date, so a different day stored on the
+        // AreaRulePlanning would only make the rule's label disagree with its
+        // occurrences.
+        var dayOfMonth = model.RepeatType is 3 or 4 && model.RepeatOrdinalWeek == null && model.DayOfMonth is > 0
+            ? TaskWizardService.DeriveDayOfMonth((RepeatType)model.RepeatType, anchor)
+            : model.DayOfMonth;
+
         return await RunPerTask(model.TaskIds, async id =>
         {
             var update = await BuildUpdateModel(id);
@@ -333,9 +346,9 @@ public class BackendConfigurationTaskListService(
             update.RepeatType = model.RepeatType;
             update.RepeatEvery = model.RepeatEvery;
             update.RepeatWeekdaysCsv = model.RepeatWeekdaysCsv;
-            update.DayOfMonth = model.DayOfMonth;
+            update.DayOfMonth = dayOfMonth;
             update.RepeatOrdinalWeek = model.RepeatOrdinalWeek.HasValue
-                ? CalendarService.OrdinalWeekOf(CalendarService.NormalizeStartDateToLocalDay(model.StartDate))
+                ? CalendarService.OrdinalWeekOf(anchor)
                 : null;
             update.RepeatEndMode = model.RepeatEndMode ?? 0;
             update.RepeatOccurrences = model.RepeatOccurrences;

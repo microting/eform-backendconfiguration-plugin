@@ -283,14 +283,18 @@ public class TaskListBatchRepeatTest : TestBaseSetup
     /// <summary>
     /// The "Slutter: til og med dato" branch and a monthly day-of-month rule,
     /// so every field of the dialog is carried at least once across the tests.
+    /// The day of month follows the new start date (capped at 28, as the wizard
+    /// derives Planning.DayOfMonth), not the day sent: otherwise the stored rule
+    /// would name a day the generated occurrences never fall on.
     /// </summary>
     [Test]
-    public async Task ChangeRepeat_MonthlyDayOfMonthUntilDate_IsSetVerbatim()
+    public async Task ChangeRepeat_MonthlyDayOfMonthUntilDate_DayFollowsTheStartDate()
     {
         var first = await SeedTask([100], repeatType: 2, repeatEvery: 1, repeatWeekdaysCsv: "1,2");
         var second = await SeedTask([101], repeatType: 4, repeatEvery: 1, dayOfMonth: 5);
         var newStart = DateTime.UtcNow.Date.AddDays(3);
         var until = DateTime.UtcNow.Date.AddMonths(9);
+        var expectedDay = Math.Min(newStart.Day, 28);
 
         var result = await _taskListService.ChangeRepeat(new TaskListBatchRepeatModel
         {
@@ -299,7 +303,7 @@ public class TaskListBatchRepeatTest : TestBaseSetup
             RepeatType = 3,
             RepeatEvery = 1,
             RepeatWeekdaysCsv = null,
-            DayOfMonth = 15,
+            DayOfMonth = expectedDay == 15 ? 16 : 15,
             RepeatOrdinalWeek = null,
             RepeatEndMode = 2,
             RepeatOccurrences = null,
@@ -316,13 +320,43 @@ public class TaskListBatchRepeatTest : TestBaseSetup
                 Assert.That(call.RepeatType, Is.EqualTo(3));
                 Assert.That(call.RepeatEvery, Is.EqualTo(1));
                 Assert.That(call.RepeatWeekdaysCsv, Is.Null, "stale weekdays must be cleared");
-                Assert.That(call.DayOfMonth, Is.EqualTo(15));
+                Assert.That(call.DayOfMonth, Is.EqualTo(expectedDay),
+                    "a day-of-month rule takes its day from the new start date");
                 Assert.That(call.RepeatOrdinalWeek, Is.Null);
                 Assert.That(call.RepeatEndMode, Is.EqualTo(2));
                 Assert.That(call.RepeatOccurrences, Is.Null);
                 Assert.That(call.RepeatUntilDate?.Date, Is.EqualTo(until));
             });
         }
+    }
+
+    /// <summary>
+    /// A yearly rule's day of month also follows the new start date, and is not
+    /// capped at 28 (the wizard keeps the real day for Year).
+    /// </summary>
+    [Test]
+    public async Task ChangeRepeat_Yearly_DayFollowsTheStartDate()
+    {
+        var arpId = await SeedTask([100], repeatType: 1, repeatEvery: 1);
+        var newStart = DateTime.UtcNow.Date.AddDays(5);
+
+        var result = await _taskListService.ChangeRepeat(new TaskListBatchRepeatModel
+        {
+            TaskIds = [arpId],
+            StartDate = newStart,
+            RepeatType = 4,
+            RepeatEvery = 1,
+            DayOfMonth = newStart.Day == 1 ? 2 : 1,
+            RepeatEndMode = 0
+        });
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(_updateCalls, Has.Count.EqualTo(1));
+        Assert.Multiple(() =>
+        {
+            Assert.That(_updateCalls[0].RepeatType, Is.EqualTo(4));
+            Assert.That(_updateCalls[0].DayOfMonth, Is.EqualTo(newStart.Day));
+        });
     }
 
     /// <summary>

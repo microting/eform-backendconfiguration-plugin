@@ -102,8 +102,9 @@ public class TaskListBatchStartDateModel : TaskListBatchRequestModel
 /// end condition — set on every selected task. Extends
 /// <see cref="TaskListBatchStartDateModel"/> so the same start-date guard
 /// applies. The repeat fields use the wire format of
-/// <c>CalendarTaskCreateRequestModel</c> and are sent as-is, so a null clears
-/// the stored value (e.g. a stale day-of-month when switching to weekly).
+/// <c>CalendarTaskCreateRequestModel</c>; a null clears the stored value (e.g.
+/// a stale day-of-month when switching to weekly). An Nth-weekday ordinal and a
+/// monthly or yearly day of month are taken from <c>StartDate</c>.
 /// </summary>
 public class TaskListBatchRepeatModel : TaskListBatchStartDateModel
 {

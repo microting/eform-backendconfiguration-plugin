@@ -25,10 +25,10 @@ import {MatDatepicker, MatDatepickerInput, MatDatepickerToggle} from '@angular/m
  * (CustomRepeatModalComponent), so the batch offers exactly the options of the
  * single-task edit modal, end condition ("Slutter") included. Like the edit
  * modal, a single-anchor rule (e.g. "1st Friday") follows the start date when
- * the date is changed after the rule was chosen. An Nth-weekday rule also
- * follows it when the rule is chosen after the date, because the server takes
- * its weekday and ordinal from the start date (#1289): the label must show the
- * rule that is saved.
+ * the date is changed after the rule was chosen. Monthly and yearly rules also
+ * follow it when the rule is chosen after the date, because the server takes
+ * their day of month, or weekday and ordinal (#1289), from the start date: the
+ * label must show the rule that is saved.
  *
  * Nothing is pre-filled, for the same reason as BatchStartDateModalComponent:
  * Save stays disabled until both a date and a rule are actively chosen.
@@ -40,9 +40,11 @@ import {MatDatepicker, MatDatepickerInput, MatDatepickerToggle} from '@angular/m
 })
 export class BatchRepeatModalComponent {
   startDate: Date | null = null;
-  // Rules whose weekday and ordinal the server takes from the start date.
-  private static readonly nthWeekdayKinds = new Set([
+  // Rules whose anchor (day of month, or weekday and ordinal) the server takes
+  // from the start date.
+  private static readonly dateAnchoredKinds = new Set([
     'monthlyByDay', 'everyNMonthByDay', 'monthlyFirstWeekday', 'everyNMonthFirstWeekday',
+    'monthlyDom', 'everyNMonthDom', 'yearlyOne', 'everyNYear',
   ]);
 
   repeatMeta: CalendarRepeatMeta | null = null;
@@ -69,8 +71,17 @@ export class BatchRepeatModalComponent {
 
   onDateChange(date: Date | null) {
     if (date && this.repeatMeta) {
-      this.repeatMeta = this.repeatService.reanchorMetaToDate(this.repeatMeta, date);
+      this.repeatMeta = this.anchorToDate(this.repeatMeta, date);
     }
+  }
+
+  // reanchorMetaToDate, with a monthly day capped at 28 the way the server
+  // derives it (DeriveDayOfMonth), so a start date on the 29th-31st is not
+  // labelled with a day that is never saved.
+  private anchorToDate(meta: CalendarRepeatMeta, date: Date): CalendarRepeatMeta {
+    const anchored = this.repeatService.reanchorMetaToDate(meta, date);
+    const monthlyDom = anchored.kind === 'monthlyDom' || anchored.kind === 'everyNMonthDom';
+    return monthlyDom && anchored.dom != null && anchored.dom > 28 ? {...anchored, dom: 28} : anchored;
   }
 
   openCustomRepeat() {
@@ -78,7 +89,7 @@ export class BatchRepeatModalComponent {
       CustomRepeatModalComponent,
       dialogConfigHelper(this.overlay, {
         date: this.startDate ?? new Date(),
-        meta: this.repeatMeta,
+        meta: this.repeatMeta ? toDialogMeta(this.repeatMeta) : null,
       }),
     );
     ref.afterClosed().subscribe((meta: CalendarRepeatMeta | null) => {
@@ -86,8 +97,8 @@ export class BatchRepeatModalComponent {
       if (!meta) {
         return;
       }
-      this.repeatMeta = this.startDate && BatchRepeatModalComponent.nthWeekdayKinds.has(meta.kind)
-        ? this.repeatService.reanchorMetaToDate(meta, this.startDate)
+      this.repeatMeta = this.startDate && BatchRepeatModalComponent.dateAnchoredKinds.has(meta.kind)
+        ? this.anchorToDate(meta, this.startDate)
         : meta;
     });
   }
@@ -114,5 +125,23 @@ export class BatchRepeatModalComponent {
           this.dialogRef.close(true);
         }
       });
+  }
+}
+
+/**
+ * The custom-repeat dialog only knows the "first weekday" monthly rule: it
+ * hydrates an Nth-weekday kind (what re-anchoring to a date in a later week
+ * produces) as "day of month", so confirming it unedited would silently turn
+ * the rule into day 1. Hand it the first-weekday kind instead; the
+ * re-anchoring after the dialog closes restores the ordinal from the date.
+ */
+function toDialogMeta(meta: CalendarRepeatMeta): CalendarRepeatMeta {
+  switch (meta.kind) {
+    case 'monthlyByDay':
+      return {...meta, kind: 'monthlyFirstWeekday', ordinalWeek: 1};
+    case 'everyNMonthByDay':
+      return {...meta, kind: 'everyNMonthFirstWeekday', ordinalWeek: 1};
+    default:
+      return meta;
   }
 }

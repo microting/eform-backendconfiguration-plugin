@@ -915,15 +915,18 @@ export class CalendarRepeatService {
       'monthlyFirstWeekday': 3, 'everyNMonthFirstWeekday': 3,
       'yearlyOne': 4, 'everyNYear': 4,
     };
+    // The chosen end mode is kept even without its count or date, so the
+    // server rejects an incomplete "after"/"until" instead of it silently
+    // becoming "never" on every selected task.
     let repeatEndMode = 0;
     let repeatOccurrences: number | null = null;
     let repeatUntilDate: string | null = null;
-    if (meta.endMode === 'after' && meta.afterCount) {
+    if (meta.endMode === 'after') {
       repeatEndMode = 1;
-      repeatOccurrences = meta.afterCount;
-    } else if (meta.endMode === 'until' && meta.untilTs) {
+      repeatOccurrences = meta.afterCount ?? null;
+    } else if (meta.endMode === 'until') {
       repeatEndMode = 2;
-      repeatUntilDate = toDateOnlyString(meta.untilTs);
+      repeatUntilDate = meta.untilTs ? toDateOnlyString(meta.untilTs) : null;
     }
     return {
       repeatType: kindMap[meta.kind] ?? 0,
