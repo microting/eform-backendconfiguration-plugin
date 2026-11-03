@@ -771,6 +771,8 @@ export const skSK = {
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Denník sa natrvalo odstráni vrátane odpovedí a fotografií. Túto akciu nie je možné vrátiť späť.',
   'Move to calendar': 'Presunúť do kalendára',
   'Change report headline': 'Zmeniť nadpis prehľadu',
+  'Set frequency': 'Nastaviť frekvenciu',
+  'No repeat rule chosen': 'Nie je vybrané pravidlo opakovania',
   // Custom repeat end condition appended to the Gentag label (#1293).
   '{{rule}}, until and including {{date}}': '{{rule}}, do {{date}} vrátane',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}}-krát',

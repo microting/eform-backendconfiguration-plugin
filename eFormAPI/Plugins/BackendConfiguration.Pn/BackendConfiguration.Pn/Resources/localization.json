@@ -6014,6 +6014,37 @@
     }
   },
   {
+    "Key": "InvalidRepeatRule",
+    "LocalizedValue": {
+      "en-US": "The repeat rule is incomplete or invalid",
+      "da": "Gentagelsen er ufuldstændig eller ugyldig",
+      "de": "Die Wiederholungsregel ist unvollständig oder ungültig",
+      "uk-UA": "Правило повторення неповне або недійсне",
+      "pl-PL": "Reguła powtarzania jest niekompletna lub nieprawidłowa",
+      "no-NO": "Gjentakelsen er ufullstendig eller ugyldig",
+      "sv-SE": "Upprepningsregeln är ofullständig eller ogiltig",
+      "es-ES": "La regla de repetición está incompleta o no es válida",
+      "fr-FR": "La règle de répétition est incomplète ou invalide",
+      "it-IT": "La regola di ripetizione è incompleta o non valida",
+      "nl-NL": "De herhalingsregel is onvolledig of ongeldig",
+      "pt-BR": "A regra de repetição está incompleta ou é inválida",
+      "pt-PT": "A regra de repetição está incompleta ou é inválida",
+      "fi-FI": "Toistosääntö on puutteellinen tai virheellinen",
+      "et-ET": "Kordusreegel on puudulik või kehtetu",
+      "lv-LV": "Atkārtošanas noteikums ir nepilnīgs vai nederīgs",
+      "lt-LT": "Kartojimo taisyklė yra neišsami arba netinkama",
+      "ro-RO": "Regula de repetare este incompletă sau nevalidă",
+      "hr-HR": "Pravilo ponavljanja je nepotpuno ili nevažeće",
+      "sl-SL": "Pravilo ponavljanja je nepopolno ali neveljavno",
+      "cs-CZ": "Pravidlo opakování je neúplné nebo neplatné",
+      "sk-SK": "Pravidlo opakovania je neúplné alebo neplatné",
+      "hu-HU": "Az ismétlési szabály hiányos vagy érvénytelen",
+      "bg-BG": "Правилото за повторение е непълно или невалидно",
+      "el-GR": "Ο κανόνας επανάληψης είναι ελλιπής ή μη έγκυρος",
+      "is-IS": "Endurtekningarreglan er ófullnægjandi eða ógild"
+    }
+  },
+  {
     "Key": "TaskNameIsRequired",
     "LocalizedValue": {
       "en-US": "Task name is required",

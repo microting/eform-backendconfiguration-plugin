@@ -97,6 +97,28 @@ public class TaskListBatchStartDateModel : TaskListBatchRequestModel
 }
 
 /// <summary>
+/// "Sæt frekvens": one new start date plus one custom repeat rule — every
+/// field of the "Brugerdefineret gentagelse" dialog, including the "Slutter"
+/// end condition — set on every selected task. Extends
+/// <see cref="TaskListBatchStartDateModel"/> so the same start-date guard
+/// applies. The repeat fields use the wire format of
+/// <c>CalendarTaskCreateRequestModel</c>; a null clears the stored value (e.g.
+/// a stale day-of-month when switching to weekly). An Nth-weekday ordinal and a
+/// monthly or yearly day of month are taken from <c>StartDate</c>.
+/// </summary>
+public class TaskListBatchRepeatModel : TaskListBatchStartDateModel
+{
+    public int RepeatType { get; set; }
+    public int RepeatEvery { get; set; }
+    public string? RepeatWeekdaysCsv { get; set; }
+    public int? DayOfMonth { get; set; }
+    public int? RepeatOrdinalWeek { get; set; }
+    public int? RepeatEndMode { get; set; }
+    public int? RepeatOccurrences { get; set; }
+    public DateTime? RepeatUntilDate { get; set; }
+}
+
+/// <summary>
 /// #1122 §5 — the read-only projection behind
 /// "N opgaver · M åbne forekomster tilbagekaldes · K gennemførte bevares ·
 /// L overskredne opgaver oprettes".

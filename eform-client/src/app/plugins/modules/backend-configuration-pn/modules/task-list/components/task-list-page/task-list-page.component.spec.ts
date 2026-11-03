@@ -261,8 +261,8 @@ describe('TaskListPageComponent — move to calendar batch action', () => {
     expect(option).toBeDefined();
     expect(option!.label).toBe('Move to calendar');
     expect(option!.group).toBe('Tasks');
-    // 12 since #1297, 13 since #1298 (changeReportHeadline).
-    expect(component.batchActions).toHaveLength(13);
+    // 12 since #1297, 13 since #1298 (changeReportHeadline), 14 with changeRepeat.
+    expect(component.batchActions).toHaveLength(14);
   });
 
   it.each([
@@ -383,7 +383,7 @@ describe('TaskListPageComponent — change report headline batch action', () => 
     expect(option).toBeDefined();
     expect(option!.label).toBe('Change report headline');
     expect(option!.group).toBe('Tasks');
-    expect(component.batchActions).toHaveLength(13);
+    expect(component.batchActions).toHaveLength(14);
     // Sits with the other Opgaver actions, before the Slet group.
     const ids = component.batchActions.map(a => a.id);
     expect(ids.indexOf('changeReportHeadline')).toBeLessThan(ids.indexOf('delete'));

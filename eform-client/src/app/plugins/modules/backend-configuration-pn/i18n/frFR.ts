@@ -770,6 +770,8 @@ export const frFR = {
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Le journal est définitivement supprimé, y compris les réponses et les photos. Cette action est irréversible.',
   'Move to calendar': 'Déplacer vers le calendrier',
   'Change report headline': 'Modifier le titre du rapport',
+  'Set frequency': 'Définir la fréquence',
+  'No repeat rule chosen': 'Aucune règle de répétition choisie',
   // Custom repeat end condition appended to the Gentag label (#1293).
   '{{rule}}, until and including {{date}}': '{{rule}}, jusqu’au {{date}} inclus',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} fois',

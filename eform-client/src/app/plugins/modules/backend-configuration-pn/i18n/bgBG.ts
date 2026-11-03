@@ -771,6 +771,8 @@ export const bgBG = {
   'The log is deleted permanently, including its answers and photos. This action cannot be undone.': 'Дневникът се изтрива за постоянно, включително отговорите и снимките в него. Това действие не може да бъде отменено.',
   'Move to calendar': 'Преместване в календара',
   'Change report headline': 'Промяна на заглавието на отчета',
+  'Set frequency': 'Задаване на честота',
+  'No repeat rule chosen': 'Не е избрано правило за повторение',
   // Custom repeat end condition appended to the Gentag label (#1293).
   '{{rule}}, until and including {{date}}': '{{rule}}, до и включително {{date}}',
   '{{rule}}, {{count}} times': '{{rule}}, {{count}} пъти',

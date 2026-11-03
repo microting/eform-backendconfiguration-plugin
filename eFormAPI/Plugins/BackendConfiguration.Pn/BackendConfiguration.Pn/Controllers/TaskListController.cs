@@ -74,6 +74,13 @@ public class TaskListController(
            ?? await taskListService.ChangeStartDatePreview(model);
 
     /// <summary>
+    /// "Sæt frekvens" — new start date and custom repeat rule on every selected task.
+    /// </summary>
+    [HttpPost("change-repeat")]
+    public async Task<OperationResult> ChangeRepeat([FromBody] TaskListBatchRepeatModel model)
+        => await Validated(model) ?? await taskListService.ChangeRepeat(model);
+
+    /// <summary>
     /// #1297 — "Flyt til kalender". Board existence is validated pre-loop in the
     /// service, the board/property match per task.
     /// </summary>

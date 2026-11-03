@@ -1,0 +1,32 @@
+<h3 mat-dialog-title>{{ 'Set frequency' | translate }}</h3>
+<div mat-dialog-content>
+  <ul id="batchModalTaskList">
+    <li *ngFor="let t of data.selectedTasks">{{ t.title }}; {{ t.tags?.join(', ') }}</li>
+  </ul>
+
+  <mat-form-field>
+    <mat-label>{{ 'Start date' | translate }}</mat-label>
+    <input id="batchRepeatStartDateInput"
+           matInput
+           [matDatepicker]="batchRepeatStartDatePicker"
+           [(ngModel)]="startDate"
+           (ngModelChange)="onDateChange($event)">
+    <mat-datepicker-toggle matSuffix [for]="batchRepeatStartDatePicker"></mat-datepicker-toggle>
+    <mat-datepicker #batchRepeatStartDatePicker></mat-datepicker>
+  </mat-form-field>
+
+  <div class="d-flex flex-row align-items-center">
+    <button id="batchRepeatCustomButton" class="btn-cancel" type="button" (click)="openCustomRepeat()">
+      {{ 'Custom repeat' | translate }}
+    </button>
+    <span id="batchRepeatLabel" class="ms-2">
+      {{ repeatMeta ? repeatLabel : ('No repeat rule chosen' | translate) }}
+    </span>
+  </div>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button id="batchModalCancel" class="btn-cancel" (click)="hide()">{{ 'Cancel' | translate }}</button>
+  <button id="batchModalSubmit" class="btn-primary" [disabled]="!valid" (click)="submit()">
+    {{ 'Save' | translate }}
+  </button>
+</div>
