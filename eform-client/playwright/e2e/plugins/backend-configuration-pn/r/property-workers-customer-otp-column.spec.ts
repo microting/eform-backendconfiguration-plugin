@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { BackendConfigurationPropertyWorkersPage } from '../BackendConfigurationPropertyWorkers.page';
-import { API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from '../wait-helpers';
+import { API_TIMEOUT, ignoreUnhandledRejections, UI_TIMEOUT, waitForApiResponse } from '../wait-helpers';
 
 // "Customer no & OTP" on Medarbejdere is hidden when the SDK setting
 // skipCloudDeploy is on, as on core's device-users and units pages
@@ -27,6 +27,7 @@ test.describe('Property-worker customer no & OTP column', () => {
       (r) => r.url().includes('/api/device-users/skip-cloud-deploy') && r.request().method() === 'GET',
       API_TIMEOUT,
     );
+    ignoreUnhandledRejections(skipCloudDeployResponse);
     await new BackendConfigurationPropertyWorkersPage(page).goToPropertyWorkers();
     const body = await (await skipCloudDeployResponse).json();
     expect(body.success, 'the skipCloudDeploy setting must be readable').toBe(true);
