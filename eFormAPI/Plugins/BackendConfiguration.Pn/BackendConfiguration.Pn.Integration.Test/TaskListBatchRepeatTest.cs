@@ -505,6 +505,38 @@ public class TaskListBatchRepeatTest : TestBaseSetup
     }
 
     /// <summary>
+    /// An "until" day before the new start day leaves no occurrence at all, so it
+    /// is rejected before the loop; the start day itself is a valid last day.
+    /// </summary>
+    [TestCase(-1, false, TestName = "ChangeRepeat_UntilBeforeStart_IsRejected")]
+    [TestCase(0, true, TestName = "ChangeRepeat_UntilOnStartDay_IsAccepted")]
+    public async Task ChangeRepeat_UntilDate_MustNotPrecedeTheStartDate(int untilOffsetDays, bool accepted)
+    {
+        var arpId = await SeedTask([100], repeatType: 1, repeatEvery: 1);
+        var newStart = DateTime.UtcNow.Date.AddDays(20);
+
+        var result = await _taskListService.ChangeRepeat(new TaskListBatchRepeatModel
+        {
+            TaskIds = [arpId],
+            StartDate = newStart,
+            RepeatType = 1,
+            RepeatEvery = 1,
+            RepeatEndMode = 2,
+            RepeatUntilDate = newStart.AddDays(untilOffsetDays)
+        });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.EqualTo(accepted), result.Message);
+            Assert.That(_updateCalls, Has.Count.EqualTo(accepted ? 1 : 0));
+            if (!accepted)
+            {
+                Assert.That(result.Message, Is.EqualTo("InvalidRepeatRule"));
+            }
+        });
+    }
+
+    /// <summary>
     /// An absent start date deserialises to default(DateTime). It is rejected
     /// once, before the loop, so no task is touched — the same guard as
     /// ChangeStartDate.

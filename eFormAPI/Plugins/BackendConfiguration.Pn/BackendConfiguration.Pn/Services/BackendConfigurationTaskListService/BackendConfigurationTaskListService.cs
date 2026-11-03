@@ -362,7 +362,8 @@ public class BackendConfigurationTaskListService(
     // batch. Only rules the custom-repeat dialog can produce pass: a real
     // recurrence (day/week/month/year — 0 would silently stop every selected
     // task from repeating), an interval of at least 1 (0 is the "always" event
-    // of #922) and a complete end condition.
+    // of #922) and a complete end condition — an "until" day before the start
+    // day would leave the series with no occurrence at all.
     private OperationResult ValidateRepeatRule(TaskListBatchRepeatModel model)
     {
         var valid = model.RepeatType is >= 1 and <= 4
@@ -371,7 +372,9 @@ public class BackendConfigurationTaskListService(
                     {
                         0 => true,
                         1 => model.RepeatOccurrences is >= 1,
-                        2 => model.RepeatUntilDate.HasValue,
+                        2 => model.RepeatUntilDate.HasValue
+                             && CalendarService.NormalizeRepeatUntilDate(model.RepeatUntilDate)!.Value.Date
+                             >= CalendarService.NormalizeStartDateToLocalDay(model.StartDate).Date,
                         _ => false
                     };
         return valid
