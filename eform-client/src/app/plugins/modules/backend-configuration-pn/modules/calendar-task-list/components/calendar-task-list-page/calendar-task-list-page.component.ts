@@ -252,6 +252,7 @@ export class CalendarTaskListPageComponent implements OnInit {
     const ref = this.dialog.open(TaskCreateEditModalComponent, {
       ...dialogConfigHelper(this.overlay, data),
       minWidth: 1024,
+      maxHeight: '90vh',
     });
     ref.afterClosed().subscribe(result => {
       if (result) {

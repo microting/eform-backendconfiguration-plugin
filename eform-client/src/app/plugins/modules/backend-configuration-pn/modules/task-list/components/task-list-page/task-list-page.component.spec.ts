@@ -117,6 +117,14 @@ describe('TaskListPageComponent — Logbøger folder resolution', () => {
     expect(dialogStub.open.mock.calls[0][1].data.folderId).toBe(77);
   });
 
+  // The modal is taller than a laptop screen once every row is shown; without a
+  // height cap the overlay pane grows past the viewport and Save is unreachable.
+  it('caps the edit modal at the viewport height', () => {
+    component.onEditTask(buildTask(1));
+
+    expect(dialogStub.open.mock.calls[0][1].maxHeight).toBe('90vh');
+  });
+
   // #1256: the page has no team filter; `teams` is only the edit modal's team-NAME
   // fallback (the modal loads its own property-scoped teams for the picker, and a row
   // may hold a team it cannot name), so it is the installation-wide list on purpose.
