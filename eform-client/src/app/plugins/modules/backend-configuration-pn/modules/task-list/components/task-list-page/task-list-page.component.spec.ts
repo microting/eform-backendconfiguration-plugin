@@ -496,14 +496,22 @@ describe('TaskListPageComponent — report headline created in the edit modal', 
     component.ngOnInit();
   });
 
+  // What `addPlanningTag` does: store the tag server-side and REPLACE the
+  // modal's `data.planningTags` (the page's own `data` object) with a new list.
+  const openAndCreateHeadline = (closeResult: unknown) => {
+    tagsService.getPlanningsTags.mockReturnValue(of({success: true, model: [oldTag, newTag]}));
+    dialogStub.open.mockImplementation((_modal: unknown, config: any) => {
+      config.data.planningTags = [...config.data.planningTags, {id: newTag.id, name: newTag.name}];
+      return {afterClosed: () => of(closeResult)};
+    });
+  };
+
   it.each([
     ['saved', {saved: true}],
     ['cancelled', undefined],
-  ])('reloads the headline list when the edit modal is %s', (_label, closeResult) => {
+  ])('reloads the headline list when the edit modal is %s after creating one', (_label, closeResult) => {
     expect(component.tags).toEqual([oldTag]);
-    // The modal created `newTag` server-side while it was open.
-    tagsService.getPlanningsTags.mockReturnValue(of({success: true, model: [oldTag, newTag]}));
-    dialogStub.open.mockReturnValue({afterClosed: () => of(closeResult)});
+    openAndCreateHeadline(closeResult);
     const before = tagsService.getPlanningsTags.mock.calls.length;
 
     component.onEditTask(task);
@@ -512,10 +520,21 @@ describe('TaskListPageComponent — report headline created in the edit modal', 
     expect(component.tags).toEqual([oldTag, newTag]);
   });
 
-  it('offers the headline created in one edit modal in the next one', () => {
-    tagsService.getPlanningsTags.mockReturnValue(of({success: true, model: [oldTag, newTag]}));
+  // A new `tags` reference rebuilds the grid's rows, which clears the row
+  // selection — a plain cancel must leave it alone (e2e IR6).
+  it('does not reload the headline list on a plain cancel', () => {
     dialogStub.open.mockReturnValue({afterClosed: () => of(undefined)});
+    const before = tagsService.getPlanningsTags.mock.calls.length;
+
     component.onEditTask(task);
+
+    expect(tagsService.getPlanningsTags.mock.calls.length).toBe(before);
+  });
+
+  it('offers the headline created in one edit modal in the next one', () => {
+    openAndCreateHeadline(undefined);
+    component.onEditTask(task);
+    dialogStub.open.mockReturnValue({afterClosed: () => of(undefined)});
 
     component.onEditTask(task);
 

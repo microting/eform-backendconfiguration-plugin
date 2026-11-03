@@ -419,6 +419,7 @@ export class TaskListPageComponent implements OnInit {
       folderId,
       planningTags: this.tags.map(t => ({id: t.id, name: t.name})),
     };
+    const planningTags = data.planningTags;
     const ref = this.dialog.open(TaskCreateEditModalComponent, {
       ...dialogConfigHelper(this.overlay, data),
       minWidth: 1024,
@@ -426,9 +427,13 @@ export class TaskListPageComponent implements OnInit {
     });
     ref.afterClosed().subscribe(result => {
       // The modal can CREATE a report headline inline (`addPlanningTag`) even
-      // when it is then cancelled. The "Report headline" cell and the next
-      // modal resolve names from `tags`, so reload it either way.
-      this.loadTags();
+      // when it is then cancelled; it then replaces `data.planningTags`. The
+      // "Report headline" cell and the next modal resolve names from `tags`,
+      // so reload it after a save or a create. Not on a plain cancel: a new
+      // `tags` rebuilds the grid's rows, which clears the selection.
+      if (result || data.planningTags !== planningTags) {
+        this.loadTags();
+      }
       if (result) {
         this.loadTasks();
       }

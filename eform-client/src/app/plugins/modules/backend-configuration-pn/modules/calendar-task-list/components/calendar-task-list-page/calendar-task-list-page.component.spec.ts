@@ -225,12 +225,22 @@ describe('CalendarTaskListPageComponent', () => {
       const oldTag = {id: 3, name: 'Old headline', description: '', isLocked: false};
       const newTag = {id: 9, name: 'New headline', description: '', isLocked: false};
 
+      // What `addPlanningTag` does: store the tag server-side and REPLACE the
+      // modal's `data.planningTags` (the page's own `data` object).
+      const openAndCreateHeadline = (closeResult: unknown) => {
+        tagsServiceStub.getPlanningsTags.mockReturnValue(of({success: true, model: [oldTag, newTag]}));
+        afterClosed$ = of(closeResult);
+        dialogStub.open.mockImplementation((_modal: unknown, config: any) => {
+          config.data.planningTags = [...config.data.planningTags, {id: newTag.id, name: newTag.name}];
+          return {afterClosed: () => afterClosed$};
+        });
+      };
+
       it.each([
         ['saved', {saved: true}],
         ['cancelled', undefined],
-      ])('reloads the headline list when the modal is %s', (_label, closeResult) => {
-        tagsServiceStub.getPlanningsTags.mockReturnValue(of({success: true, model: [oldTag, newTag]}));
-        afterClosed$ = of(closeResult);
+      ])('reloads the headline list when the modal is %s after creating one', (_label, closeResult) => {
+        openAndCreateHeadline(closeResult);
         const before = tagsServiceStub.getPlanningsTags.mock.calls.length;
 
         component.onEditTask(buildTask());
@@ -239,10 +249,19 @@ describe('CalendarTaskListPageComponent', () => {
         expect(component.tags).toEqual([oldTag, newTag]);
       });
 
-      it('offers the headline created in one modal in the next one', () => {
-        tagsServiceStub.getPlanningsTags.mockReturnValue(of({success: true, model: [oldTag, newTag]}));
+      it('does not reload the headline list on a plain cancel', () => {
         afterClosed$ = of(undefined);
+        const before = tagsServiceStub.getPlanningsTags.mock.calls.length;
+
         component.onEditTask(buildTask());
+
+        expect(tagsServiceStub.getPlanningsTags.mock.calls.length).toBe(before);
+      });
+
+      it('offers the headline created in one modal in the next one', () => {
+        openAndCreateHeadline(undefined);
+        component.onEditTask(buildTask());
+        dialogStub.open.mockReturnValue({afterClosed: () => afterClosed$});
 
         component.onEditTask(buildTask());
 
