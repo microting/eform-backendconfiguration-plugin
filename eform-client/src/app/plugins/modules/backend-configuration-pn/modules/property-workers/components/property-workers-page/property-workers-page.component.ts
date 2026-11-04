@@ -296,9 +296,14 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
     this.updateTable();
   }
 
+  // Only the first list request after the page loads fetches the app versions from Microting.
+  private refreshAppVersionsOnLoad = true;
+
   getDeviceUsersFiltered(propertyIds?: number[]) {
+    const refreshAppVersions = this.refreshAppVersionsOnLoad;
+    this.refreshAppVersionsOnLoad = false;
     return this.propertyWorkersStateService
-      .getDeviceUsersFiltered();
+      .getDeviceUsersFiltered(refreshAppVersions);
   }
 
   private applyDeviceUsersData(data: any) {

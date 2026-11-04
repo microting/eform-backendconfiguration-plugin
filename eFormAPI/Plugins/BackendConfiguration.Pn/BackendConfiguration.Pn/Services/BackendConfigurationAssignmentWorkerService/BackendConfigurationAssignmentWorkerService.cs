@@ -66,6 +66,61 @@ public class BackendConfigurationAssignmentWorkerService(
     Services.TaskTranslation.ITaskTranslationFiller taskTranslationFiller = null)
     : IBackendConfigurationAssignmentWorkerService
 {
+    // How long the workers list waits for Microting's unit versions; a slower refresh
+    // finishes in the background and the list shows the stored versions meanwhile.
+    internal static readonly TimeSpan UnitsRefreshTimeout = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan UnitsRefreshAbandonAfter = TimeSpan.FromMinutes(20);
+    private static readonly object UnitsRefreshLock = new();
+    private static (eFormCore.Core Core, Task Task, DateTime StartedAt)? _unitsRefresh;
+
+    private async Task RefreshUnitsFromRemote(eFormCore.Core core)
+    {
+        Task refresh;
+        DateTime startedAt;
+        lock (UnitsRefreshLock)
+        {
+            // Concurrent page loads share one refresh instead of each fetching every unit.
+            // One older than the SDK's retries (about 18 minutes) is taken as hung and replaced.
+            if (_unitsRefresh is not { } running || running.Task.IsCompleted || running.Core != core
+                || DateTime.UtcNow - running.StartedAt > UnitsRefreshAbandonAfter)
+            {
+                _unitsRefresh = (core, RunUnitsRefresh(core), DateTime.UtcNow);
+            }
+            (_, refresh, startedAt) = _unitsRefresh.Value;
+        }
+
+        // A refresh still hanging from an earlier load is not waited for again.
+        var remaining = UnitsRefreshTimeout - (DateTime.UtcNow - startedAt);
+        if (remaining <= TimeSpan.Zero)
+        {
+            logger.LogWarning("IndexDeviceUser: refreshing the unit versions takes longer than {Timeout}; showing the stored versions",
+                UnitsRefreshTimeout);
+            return;
+        }
+
+        using var delayCancellation = new System.Threading.CancellationTokenSource();
+        var delay = Task.Delay(remaining, delayCancellation.Token);
+        if (await Task.WhenAny(refresh, delay).ConfigureAwait(false) == refresh)
+        {
+            await delayCancellation.CancelAsync().ConfigureAwait(false);
+            return;
+        }
+
+        logger.LogWarning("IndexDeviceUser: refreshing the unit versions takes longer than {Timeout}; showing the stored versions",
+            UnitsRefreshTimeout);
+    }
+
+    private async Task RunUnitsRefresh(eFormCore.Core core)
+    {
+        try
+        {
+            await core.Advanced_UnitsRefreshFromRemote().ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            logger.LogWarning(e, "IndexDeviceUser: refreshing the unit versions failed");
+        }
+    }
 
     public async Task<OperationDataResult<List<PropertyAssignWorkersModel>>> GetPropertiesAssignment(List<int> propertyIds)
     {
@@ -498,15 +553,12 @@ public class BackendConfigurationAssignmentWorkerService(
             var timeRegistrationEnabledSites =await
                 timePlanningDbContext.AssignedSites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
 
-            // The Compliance app reports its version to Microting on every sync; fetch it
-            // here, as Units.eFormVersion is otherwise only written on a case event.
-            try
+            // The Compliance app reports its version to Microting on every sync; fetch it once
+            // when the workers page loads, as Units.eFormVersion is otherwise only written on a
+            // case event. Searches, sorting and the worker pickers leave RefreshAppVersions off.
+            if (requestModel.RefreshAppVersions)
             {
-                await core.Advanced_UnitsRefreshFromRemote().ConfigureAwait(false);
-            }
-            catch (Exception e)
-            {
-                logger.LogWarning(e, "IndexDeviceUser: refreshing the unit versions failed");
+                await RefreshUnitsFromRemote(core).ConfigureAwait(false);
             }
 
             // One query per source for the whole page, not one per worker (#1335).
