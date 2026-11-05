@@ -63,8 +63,11 @@ public static class CallerSites
         return siteIds;
     }
 
-    /// <summary>The distinct sites of <paramref name="workerIds"/> through live SiteWorker rows whose Site is not removed.</summary>
-    private static Task<List<int>> LiveSitesOfWorkersAsync(MicrotingDbContext sdk, IReadOnlyCollection<int> workerIds) =>
+    /// <summary>
+    /// The distinct sites of <paramref name="workerIds"/> through live SiteWorker rows whose Site is not removed. Also
+    /// the sites a worker edit touches: H2 asks whether any of them carries the Leder flag.
+    /// </summary>
+    internal static Task<List<int>> LiveSitesOfWorkersAsync(MicrotingDbContext sdk, IReadOnlyCollection<int> workerIds) =>
         (from sw in sdk.SiteWorkers.AsNoTracking()
             join site in sdk.Sites.AsNoTracking() on sw.SiteId equals site.Id
             where sw.WorkerId != null && workerIds.Contains(sw.WorkerId.Value)

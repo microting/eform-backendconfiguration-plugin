@@ -108,7 +108,7 @@ public static class LederAssignmentStore
         return (await LiveForSites(db, siteIds).Select(x => x.SiteId!.Value).ToListAsync()).ToHashSet();
     }
 
-    /// <summary>Live rows still keyed by login (SiteId null), oldest first, tracked so the conversion can retire them.</summary>
+    /// <summary>Live rows still keyed by login (SiteId null), oldest first, tracked (the conversion reads their ids, then locks and re-reads each).</summary>
     public static Task<List<LederAssignment>> LiveLegacyRowsAsync(BackendConfigurationPnDbContext db) =>
         Live(db).Where(x => x.SiteId == null).OrderBy(x => x.Id).ToListAsync();
 

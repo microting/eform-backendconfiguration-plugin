@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models;
 using BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker;
+using BackendConfiguration.Pn.Services.ArchiveAccess;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.Leder;
 using eFormCore;
@@ -252,6 +253,22 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         && x.Tag.WorkflowState != Constants.WorkflowStates.Removed)
             .Select(x => x.TagId!.Value)
             .ToListAsync();
+
+    /// <summary>
+    /// True when <paramref name="siteId"/> or any other live site of the SDK worker <paramref name="workerId"/> has a
+    /// live Leder flag (H2).
+    /// </summary>
+    private static async Task<bool> WorkerHasLederSiteAsync(BackendConfigurationPnDbContext dbContext,
+        MicrotingDbContext sdkDbContext, int workerId, int siteId)
+    {
+        var siteIds = await CallerSites.LiveSitesOfWorkersAsync(sdkDbContext, [workerId]).ConfigureAwait(false);
+        if (!siteIds.Contains(siteId))
+        {
+            siteIds.Add(siteId);
+        }
+
+        return await LederAssignmentStore.AnyLiveSiteAsync(dbContext, siteIds).ConfigureAwait(false);
+    }
 
     /// <summary>Writes an admin's Leder change (LederSaveRules.FlagChange) to the worker's site (D-L15).</summary>
     private static async Task ApplyLederChangeAsync(BackendConfigurationPnDbContext dbContext, LederCaller? caller,
@@ -1022,15 +1039,17 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         var loginRenamed = user != null
                             && (!string.Equals(user.Email, deviceUserModel.WorkerEmail, StringComparison.OrdinalIgnoreCase)
                                 || !string.Equals(user.UserName, deviceUserModel.WorkerEmail, StringComparison.OrdinalIgnoreCase));
-                        // The lookups only matter to a real caller, and H2 binds non-admins only.
-                        var siteIsLeder = lederCaller is { IsAdmin: false }
-                            && await LederAssignmentStore.IsSiteLederAsync(backendConfigurationPnDbContext, site.Id)
-                                .ConfigureAwait(false);
+                        // The lookups only matter to a real caller, and H2 binds non-admins only. The flag is per
+                        // site, but the e-mail and the login belong to the SDK worker, which can work on several
+                        // sites: any flagged one makes this a Leder's address, whichever site the edit came through.
+                        var workerIsLeder = lederCaller is { IsAdmin: false }
+                            && await WorkerHasLederSiteAsync(backendConfigurationPnDbContext, sdkDbContext, worker.Id,
+                                site.Id).ConfigureAwait(false);
                         IReadOnlyCollection<int> liveStoredTagIds = lederCaller == null || lederCaller.IsAdmin || lederCaller.IsLederOrAdmin
                             ? Array.Empty<int>()
                             : await LiveSiteTagIdsAsync(sdkDbContext, site.Id).ConfigureAwait(false);
                         var lederRefusal = LederSaveRules.UpdateRefusal(lederCaller, deviceUserModel,
-                            liveStoredTagIds, siteIsLeder, lederAddressChanged || loginRenamed);
+                            liveStoredTagIds, workerIsLeder, lederAddressChanged || loginRenamed);
                         if (lederRefusal != null)
                         {
                             logger.LogWarning("[UpdateDeviceUser] refused for site {SiteId} by user {UserId}: {Reason}",

@@ -1,6 +1,8 @@
 #nullable enable
 using BackendConfiguration.Pn.Services.Leder;
 using Microsoft.EntityFrameworkCore;
+using Microting.eForm.Infrastructure.Constants;
+using Microting.eForm.Infrastructure.Data.Entities;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
@@ -141,6 +143,33 @@ public class LederLoginProtectionTests : LederWorkerTestBase
 
         Assert.That(result.Success, Is.True, result.Message);
         Assert.That(await IsLederAsync(w), Is.True);
+    }
+
+    [Test]
+    public async Task NonAdmin_ChangesTheEmail_ThroughAnUnflaggedSite_OfAWorkerWithAFlaggedSite_IsRefused()
+    {
+        // The address belongs to the SDK worker, not the site: a second, flagged site of the same worker makes it a
+        // Leder's address whichever site the edit comes through (H2).
+        var w = await CreateWorkerAsync();
+        var workerId = await MicrotingDbContext!.SiteWorkers.AsNoTracking()
+            .Where(x => x.SiteId == w.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Select(x => x.WorkerId!.Value).SingleAsync();
+        var other = await LederTestData.LiveWorkerAsync(Core, NewEmail());
+        await MicrotingDbContext.SiteWorkers.AddAsync(new SiteWorker
+        {
+            SiteId = other.Id, WorkerId = workerId, WorkflowState = Constants.WorkflowStates.Created
+        });
+        await MicrotingDbContext.SaveChangesAsync();
+        await LederAssignmentStore.GrantSiteAsync(BackendConfigurationPnDbContext!, other.Id, ActorId);
+        Assert.That(await IsLederAsync(w), Is.False, "precondition: the edited site itself is not flagged");
+
+        var result = await UpdateAsync(w, NonAdmin, email: NewEmail("example.org"));
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Message, Is.EqualTo(LederMessages.LederLoginChangeRequiresAdmin));
+        Assert.That((await LoginOfAsync(w)).Email, Is.EqualTo(w.Email), "the login keeps its address");
+        Assert.That(await MicrotingDbContext.Workers.AsNoTracking().AnyAsync(x => x.Id == workerId && x.Email == w.Email),
+            Is.True, "the SDK worker keeps its address too");
     }
 
     [Test]

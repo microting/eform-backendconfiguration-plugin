@@ -129,6 +129,25 @@ public class LederLegacyConversionTests : TestBaseSetup
     }
 
     [Test]
+    public async Task RetiredLegacyRow_IsNotReplayed()
+    {
+        // Another pod converted and retired the row after this one listed it, and an admin may have revoked the
+        // site since: the stale id must not grant the site again.
+        var login = await LederTestData.LoginAsync(BaseDbContext, _userManager, "Kun arkiv");
+        var site = await LederTestData.LiveWorkerAsync(_core, login.Email!);
+        var legacy = await LegacyRowAsync(login.Id);
+        await BackendConfigurationPnDbContext!.LederAssignments.Where(x => x.Id == legacy.Id)
+            .ExecuteUpdateAsync(x => x.SetProperty(r => r.WorkflowState, Constants.WorkflowStates.Removed));
+
+        var handled = await Sut().ConvertAsync([legacy.Id]);
+
+        Assert.That(handled, Is.EqualTo(0));
+        Assert.That(await IsSiteLederAsync(site.Id), Is.False);
+        Assert.That(await BackendConfigurationPnDbContext.LederAssignments.AsNoTracking().AnyAsync(x => x.SiteId == site.Id),
+            Is.False, "no site row was written");
+    }
+
+    [Test]
     public async Task SecondRun_IsANoOp()
     {
         var login = await LederTestData.LoginAsync(BaseDbContext, _userManager, "Kun arkiv");

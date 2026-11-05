@@ -19,10 +19,10 @@ public static class LederSaveRules
         !string.IsNullOrWhiteSpace(email) &&
         !email.Trim().EndsWith("@microting.invalid", System.StringComparison.OrdinalIgnoreCase);
 
-    /// <param name="siteIsLeder">The worker's site has a live flag.</param>
+    /// <param name="workerIsLeder">Any live site of the edited SDK worker has a live flag.</param>
     /// <param name="emailOrUserNameChanged">This save changes the worker's e-mail or renames its login.</param>
     public static string? UpdateRefusal(LederCaller? caller, DeviceUserModel model,
-        IReadOnlyCollection<int> liveStoredTagIds, bool siteIsLeder, bool emailOrUserNameChanged)
+        IReadOnlyCollection<int> liveStoredTagIds, bool workerIsLeder, bool emailOrUserNameChanged)
     {
         if (caller == null)
         {
@@ -36,8 +36,8 @@ public static class LederSaveRules
         }
 
         // Only an admin may move a Leder worker to another address or rename its login (H2): the address decides
-        // which login holds the Leder rights of this site.
-        return !caller.IsAdmin && siteIsLeder && emailOrUserNameChanged
+        // which login holds the Leder rights of its sites.
+        return !caller.IsAdmin && workerIsLeder && emailOrUserNameChanged
             ? LederMessages.LederLoginChangeRequiresAdmin
             : null;
     }
