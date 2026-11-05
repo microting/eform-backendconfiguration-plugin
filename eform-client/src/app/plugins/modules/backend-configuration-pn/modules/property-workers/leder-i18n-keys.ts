@@ -12,7 +12,7 @@ export const LEDER_I18N_KEYS: string[] = [
   'The move changes who can read the documents. Only an administrator or a leader can do that.',
 ];
 
-/** The disabled-toggle hints, gone with the access condition (amendment §5, D-L16). */
+/** The disabled-toggle hints, gone with the access condition (D-L16). */
 export const RETIRED_LEDER_I18N_KEYS: string[] = [
   'Requires web or archive access',
   'Save the worker with web or archive access first',

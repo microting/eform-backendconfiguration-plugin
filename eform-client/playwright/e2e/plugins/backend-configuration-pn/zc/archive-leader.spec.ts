@@ -195,7 +195,7 @@ test.describe.serial('Leder in Arkiv and Medarbejdere', () => {
     await workers.expectLeaderCell(plainName, false);
     await workers.expectLeaderCell(readerName, false);
 
-    // An admin login gets the toggle too (amendment §5).
+    // An admin login gets the toggle too.
     const dialog = admin.locator('mat-dialog-container');
     await workers.openEditModalFor(bossName);
     await expect(workers.leaderSwitch()).toBeEnabled({ timeout: UI_TIMEOUT });

@@ -81,6 +81,10 @@ public static class LederAssignmentStore
     public static Task<bool> IsSiteLederAsync(BackendConfigurationPnDbContext db, int siteId) =>
         Live(db).AsNoTracking().AnyAsync(x => x.SiteId == siteId);
 
+    /// <summary>True when any site of the tenant has a live flag: lets a tenant without Leders skip the SDK lookup.</summary>
+    public static Task<bool> AnySiteLederAsync(BackendConfigurationPnDbContext db) =>
+        Live(db).AsNoTracking().AnyAsync(x => x.SiteId != null);
+
     /// <summary>True when any of <paramref name="siteIds"/> has a live row: one indexed query (D-L18).</summary>
     public static Task<bool> AnyLiveSiteAsync(BackendConfigurationPnDbContext db, IReadOnlyCollection<int> siteIds)
     {

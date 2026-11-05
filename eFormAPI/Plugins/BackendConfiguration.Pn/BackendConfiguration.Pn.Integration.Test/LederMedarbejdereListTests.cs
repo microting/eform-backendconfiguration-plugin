@@ -8,7 +8,7 @@ using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
-/// <summary>Contract "Medarbejdere": the list's Leder read-back (each row's own site, one query per list) and the caller flags.</summary>
+/// <summary>The list's Leder read-back (each row's own site, one query per list) and the caller flags.</summary>
 [Parallelizable(ParallelScope.Fixtures)]
 [TestFixture]
 public class LederMedarbejdereListTests : LederWorkerTestBase

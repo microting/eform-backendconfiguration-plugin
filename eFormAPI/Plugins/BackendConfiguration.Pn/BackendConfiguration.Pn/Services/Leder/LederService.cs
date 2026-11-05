@@ -33,10 +33,14 @@ public class LederService(IUserService userService, BaseDbContext baseDbContext,
 
         // D-L18: an active login whose live sites include a flagged one. A resigned or removed worker has no live
         // site, so its flag is inert until rehire.
-        var liveness = known ?? await ResolveLivenessAsync(userId);
-        if (liveness.IsActive && await LederAssignmentStore.AnyLiveSiteAsync(dbContext, liveness.LiveSiteIds))
+        // Without known liveness, a tenant with no flagged site skips the login and SDK lookups altogether.
+        if (known != null || await LederAssignmentStore.AnySiteLederAsync(dbContext))
         {
-            return true;
+            var liveness = known ?? await ResolveLivenessAsync(userId);
+            if (liveness.IsActive && await LederAssignmentStore.AnyLiveSiteAsync(dbContext, liveness.LiveSiteIds))
+            {
+                return true;
+            }
         }
 
         return await BackendConfigurationAssignmentWorkerServiceHelper.IsAdminAsync(baseDbContext, userId);

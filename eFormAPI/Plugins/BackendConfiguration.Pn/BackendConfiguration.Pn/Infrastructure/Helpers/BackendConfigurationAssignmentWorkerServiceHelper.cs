@@ -1007,7 +1007,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             }
                         }
 
-                        // Leder rules (amendment §4: D-L12, H2), asked before any write below, so a refusal leaves the
+                        // Leder rules (D-L12, H2), asked before any write below, so a refusal leaves the
                         // worker, its tags and its login exactly as they were. The flag belongs to the site (D-L15).
                         // Compared like the lookup above (the sanitized old address), so an address that only
                         // needed the sanitizer fallback is not a change. A switch between two unlisted addresses (blank
@@ -1880,7 +1880,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 }
 
                 // Leder rules (D-L12), before core.SiteCreate or any other write. A new site has no flag, so H2 has
-                // nothing to protect here (amendment §4).
+                // nothing to protect here.
                 var lederRefusal = LederSaveRules.CreateRefusal(lederCaller, deviceUserModel);
                 if (lederRefusal != null)
                 {

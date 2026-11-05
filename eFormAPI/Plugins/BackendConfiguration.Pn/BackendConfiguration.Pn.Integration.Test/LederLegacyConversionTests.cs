@@ -73,7 +73,7 @@ public class LederLegacyConversionTests : TestBaseSetup
     [Test]
     public async Task LegacyRow_OfAResignedWorker_MovesToItsSite()
     {
-        // Review Focus 3: a resigned Leder keeps the flag (inert) so a rehire restores it.
+        // A resigned Leder keeps the flag (inert) so a rehire restores it.
         var login = await LederTestData.LoginAsync(BaseDbContext, _userManager, "Kun arkiv");
         var site = await LederTestData.LiveWorkerAsync(_core, login.Email!);
         var workerUid = (await _core.SiteRead(site.Uid)).WorkerUid;

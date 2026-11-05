@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
-/// <summary>H2 re-stated (amendment §4): a non-admin cannot change a Leder worker's e-mail or its login's username.</summary>
+/// <summary>H2 re-stated: a non-admin cannot change a Leder worker's e-mail or its login's username.</summary>
 [Parallelizable(ParallelScope.Fixtures)]
 [TestFixture]
 public class LederLoginProtectionTests : LederWorkerTestBase
@@ -108,7 +108,7 @@ public class LederLoginProtectionTests : LederWorkerTestBase
     [Test]
     public async Task NonAdmin_TurnsWebAndArchiveOffOnALeder_IsAllowed_FlagKept()
     {
-        // The "loses access" refusal of H2 is gone (amendment §4): the flag stays and is inert while there is no access.
+        // The "loses access" refusal of H2 is gone: the flag stays and is inert while there is no access.
         var w = await CreateWorkerAsync(isLeader: true);
         var loginId = await LoginIdOfAsync(w);
 
@@ -146,7 +146,7 @@ public class LederLoginProtectionTests : LederWorkerTestBase
     [Test]
     public async Task CreateDeviceUser_ByANonAdmin_LinkingToAnExistingLogin_NeedsNoLederRule_AndTheNewSiteHasNoFlag()
     {
-        // Linking a new worker to an existing login no longer needs a rule: the new site has no flag (amendment §4).
+        // Linking a new worker to an existing login no longer needs a rule: the new site has no flag.
         var login = await LederTestData.LoginAsync(BaseDbContext, UserManager, "Kun arkiv");
         var lastName = NewLastName();
 

@@ -5,7 +5,7 @@ using BackendConfiguration.Pn.Infrastructure.Models;
 namespace BackendConfiguration.Pn.Services.Leder;
 
 /// <summary>
-/// The Leder rules of a Medarbejdere save (amendment §4), as pure functions the Helper asks before any write. A refusal
+/// The Leder rules of a Medarbejdere save, as pure functions the Helper asks before any write. A refusal
 /// is a <see cref="LederMessages"/> key, null = allowed. A null caller is an internal call: no rule applies, nothing
 /// is written. There is no access condition (D-L16): an admin may flag any worker.
 /// </summary>

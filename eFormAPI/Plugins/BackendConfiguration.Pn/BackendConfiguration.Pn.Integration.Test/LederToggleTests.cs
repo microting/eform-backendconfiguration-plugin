@@ -189,7 +189,7 @@ public class LederToggleTests : LederWorkerTestBase
     [Test]
     public async Task Admin_ChangesALedersEmail_SiteStaysLeder_AndTheLoginIsALeder()
     {
-        // Review Focus 2: the flag follows the site; the renamed login resolves to it through the new address.
+        // The flag follows the site; the renamed login resolves to it through the new address.
         var w = await CreateWorkerAsync(isLeader: true);
         var loginId = await LoginIdOfAsync(w);
 

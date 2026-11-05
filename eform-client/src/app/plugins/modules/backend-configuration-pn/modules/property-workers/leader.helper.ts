@@ -30,7 +30,7 @@ export function callerFlags(
 type RowWith<K extends keyof DeviceUserModel> = Partial<Pick<DeviceUserModel, K>>;
 
 /**
- * The Leder toggle in the worker dialog (amendment §5): admins (canSetLeder) get it on every worker, always enabled.
+ * The Leder toggle in the worker dialog: admins (canSetLeder) get it on every worker, always enabled.
  * There is no access condition (D-L16): a worker without login, Web or Arkiv can be a Leder. Non-admins never see it.
  */
 export function showLeaderToggle(row: RowWith<'canSetLeder'>): boolean {
@@ -55,7 +55,7 @@ export interface LeaderCell {
   state: 'yes' | 'no';
 }
 
-/** The Leder column (amendment §5) for every viewer: Ja only for a stored flag, anything else Nej. */
+/** The Leder column for every viewer: Ja only for a stored flag, anything else Nej. */
 export function leaderCell(row: RowWith<'isLeader'>): LeaderCell {
   return row.isLeader === true
     ? {label: 'Yes', cssClass: 'tag-success', state: 'yes'}

@@ -4,7 +4,7 @@ using BackendConfiguration.Pn.Services.Leder;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
-/// <summary>The Leder refusals and the flag decision of a Medarbejdere save, before any write (amendment §4). No database.</summary>
+/// <summary>The Leder refusals and the flag decision of a Medarbejdere save, before any write. No database.</summary>
 [TestFixture]
 public class LederSaveRulesTests
 {

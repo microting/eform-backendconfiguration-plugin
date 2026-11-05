@@ -166,6 +166,15 @@ public class LederAssignmentStoreTests : TestBaseSetup
     }
 
     [Test]
+    public async Task AnySiteLeder_TrueOnceASiteIsFlagged()
+    {
+        // The DB is shared between fixtures, so only the "true" side can be asserted here.
+        await LederAssignmentStore.GrantSiteAsync(Db, await NewSiteIdAsync(), _actorId);
+
+        Assert.That(await LederAssignmentStore.AnySiteLederAsync(Db), Is.True);
+    }
+
+    [Test]
     public async Task LegacyLoginRow_IsListedTrackedForConversion()
     {
         var login = await NewLoginAsync();

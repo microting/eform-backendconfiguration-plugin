@@ -217,7 +217,7 @@ public class LederServiceTests : TestBaseSetup
     [Test]
     public async Task Known_TwoLiveSites_OneFlagged_IsLeder()
     {
-        // Review Focus 1: a login can resolve to several live sites; one flagged site is enough.
+        // A login can resolve to several live sites; one flagged site is enough.
         var login = await LederTestData.LoginAsync(BaseDbContext, _userManager);
         var flagged = await FlaggedSiteIdAsync(login.Id);
         var unflagged = await UnflaggedSiteIdAsync();

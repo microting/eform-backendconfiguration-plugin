@@ -103,7 +103,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   alreadyUsedEmails: string[] = [];
   /** The row as the list sent it; the form overwrites selectedDeviceUser on save. */
   private storedRow: Partial<DeviceUserModel> = {};
-  /** Outside `form`: the resigned rule re-enables every form control. Shown to admins, always enabled (amendment §5). */
+  /** Outside `form`: the resigned rule re-enables every form control. Shown to admins, always enabled. */
   leaderControl = new FormControl<boolean>(false, {nonNullable: true});
 
   /** Non-admins editing a Leder: the e-mail (the login) is read-only (spec H2). */
@@ -116,7 +116,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     return this.storedRow.canEditWorkerTags === true;
   }
 
-  /** Admins only, on every worker (amendment §5). */
+  /** Admins only, on every worker. */
   get showLeaderToggle(): boolean {
     return showLeaderToggle(this.storedRow);
   }

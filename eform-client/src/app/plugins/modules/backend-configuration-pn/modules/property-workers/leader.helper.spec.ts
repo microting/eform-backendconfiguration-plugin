@@ -44,7 +44,7 @@ describe('callerFlags', () => {
   });
 });
 
-describe('showLeaderToggle (amendment §5)', () => {
+describe('showLeaderToggle', () => {
   it('admins get the toggle on every worker: no login, no access, an admin login', () => {
     expect(showLeaderToggle({...admin, isLeader: false, loginIsManaged: true, isAdminLogin: false})).toBe(true);
     expect(showLeaderToggle({...admin, isLeader: false, loginIsManaged: false, isAdminLogin: true})).toBe(true);
@@ -78,7 +78,7 @@ describe('leaderToSend', () => {
   });
 });
 
-describe('leaderCell (amendment §5)', () => {
+describe('leaderCell', () => {
   it('a Leder reads Ja with the success tag, everyone else Nej with the error tag', () => {
     expect(leaderCell({isLeader: true})).toEqual({label: 'Yes', cssClass: 'tag-success', state: 'yes'});
     expect(leaderCell({isLeader: false})).toEqual({label: 'No', cssClass: 'tag-error', state: 'no'});

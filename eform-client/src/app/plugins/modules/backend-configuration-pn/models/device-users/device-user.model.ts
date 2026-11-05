@@ -65,7 +65,7 @@ export class DeviceUserModel {
   resignedAtDate: Date;
   tags: number[];
   /**
-   * Leder (amendment §4). In: null = unchanged, applied by the API only for admins. Out: whether the worker's own site
+   * Leder. In: null = unchanged, applied by the API only for admins. Out: whether the worker's own site
    * has a live flag; always true or false (an older API may still send null, read as "Nej").
    */
   isLeader: boolean | null;
