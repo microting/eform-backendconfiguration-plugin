@@ -8,4 +8,6 @@ public class PropertyWorkersFiltrationModel : FilterAndSortModel
     public List<int> PropertyIds { get; set; }
     public bool ShowResigned { get; set; }
     public List<int> TagIds { get; set; }
+    // Set by the workers page on its first load only: fetch the app versions from Microting first.
+    public bool RefreshAppVersions { get; set; }
 }

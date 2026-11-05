@@ -28,7 +28,7 @@ export class PropertyWorkersStateService {
     this.selectPropertyWorkersFilters$.subscribe(x => this.currentFilters = x);
   }
 
-  getDeviceUsersFiltered(): Observable<OperationDataResult<DeviceUserModel[]>> {
+  getDeviceUsersFiltered(refreshAppVersions = false): Observable<OperationDataResult<DeviceUserModel[]>> {
     return this.service.getDeviceUsersFiltered({
       propertyIds: this.currentFilters.propertyIds,
       nameFilter: this.currentFilters.nameFilter,
@@ -36,6 +36,7 @@ export class PropertyWorkersStateService {
       isSortDsc: this.currentPagination.isSortDsc,
       showResigned: this.currentFilters.showResigned,
       tagIds: this.currentFilters.tagIds,
+      refreshAppVersions,
     });
   }
 

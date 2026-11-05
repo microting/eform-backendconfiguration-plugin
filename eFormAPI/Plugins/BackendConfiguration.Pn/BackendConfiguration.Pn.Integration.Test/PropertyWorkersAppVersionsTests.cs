@@ -6,6 +6,7 @@ using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
 using eFormCore;
 using Microsoft.EntityFrameworkCore;
+using Microting.eForm.Communication;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
@@ -58,7 +59,7 @@ public class PropertyWorkersAppVersionsTests : TestBaseSetup
         return result.Model;
     }
 
-    private async Task<List<DeviceUserModel>> Index(Core core)
+    private async Task<List<DeviceUserModel>> Index(Core core, bool refreshAppVersions = false)
     {
         var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
         var userService = IdentityTestUtils.CreateRealUserService(BaseDbContext!, userManager);
@@ -72,7 +73,10 @@ public class PropertyWorkersAppVersionsTests : TestBaseSetup
             TestContextLogger<BackendConfigurationAssignmentWorkerService>.Instance,
             Substitute.For<ICalendarAssignmentReconciliationService>(), LederTestData.Leder(false));
 
-        var result = await service.IndexDeviceUser(new PropertyWorkersFiltrationModel { ShowResigned = false });
+        var result = await service.IndexDeviceUser(new PropertyWorkersFiltrationModel
+        {
+            ShowResigned = false, RefreshAppVersions = refreshAppVersions
+        });
         Assert.That(result.Success, Is.True, result.Message);
         return result.Model;
     }
@@ -295,6 +299,74 @@ public class PropertyWorkersAppVersionsTests : TestBaseSetup
             Assert.That(worker.TimeApp.NeedsUpdate, Is.False, "the latest version needs no update");
             Assert.That(worker.ArchiveApp.NeedsUpdate, Is.False, "nothing reported is never flagged");
         });
+    }
+
+    [Test]
+    public async Task IndexDeviceUser_ShowsTheComplianceVersionMicrotingReports_WithoutACaseEvent()
+    {
+        // Arrange - the Unit was last written on an older version; the app has since
+        // been updated and synced, so Microting reports the latest one.
+        var core = await GetCore();
+        var email = $"u-{Guid.NewGuid():N}@example.com";
+        var site = await CreateWorker(core, email, timeRegistration: false, archive: false);
+        await SetComplianceVersion(site, "3.2.1", "iPhone 15", "18.1");
+        var unit = await MicrotingDbContext!.Units.AsNoTracking().SingleAsync(x =>
+            x.SiteId == site && x.WorkflowState != Constants.WorkflowStates.Removed);
+        var latest = AppLatestVersions.For(AppLatestVersions.Compliance);
+        HttpFake.ReportedUnits[(int)unit.MicrotingUid!] = new Microting.eForm.Infrastructure.Data.Entities.Unit
+        {
+            eFormVersion = latest, Model = "iPhone 15", Manufacturer = "iOS", OsVersion = "18.1"
+        };
+
+        List<DeviceUserModel> workers;
+        try
+        {
+            // Act - the workers page asks for the refresh on its first load.
+            workers = await Index(core, refreshAppVersions: true);
+        }
+        finally
+        {
+            HttpFake.ReportedUnits.TryRemove((int)unit.MicrotingUid!, out _);
+        }
+
+        // Assert
+        var worker = workers.Single(x => x.SiteId == site);
+        Assert.Multiple(() =>
+        {
+            Assert.That(worker.ComplianceApp.Version, Is.EqualTo(latest));
+            Assert.That(worker.ComplianceApp.NeedsUpdate, Is.False);
+        });
+    }
+
+    [Test]
+    public async Task IndexDeviceUser_WithoutRefreshAppVersions_ShowsTheStoredComplianceVersion()
+    {
+        // Arrange - searches, sorting and the worker pickers do not fetch from Microting.
+        var core = await GetCore();
+        var email = $"u-{Guid.NewGuid():N}@example.com";
+        var site = await CreateWorker(core, email, timeRegistration: false, archive: false);
+        await SetComplianceVersion(site, "3.2.1", "iPhone 15", "18.1");
+        var unit = await MicrotingDbContext!.Units.AsNoTracking().SingleAsync(x =>
+            x.SiteId == site && x.WorkflowState != Constants.WorkflowStates.Removed);
+        HttpFake.ReportedUnits[(int)unit.MicrotingUid!] = new Microting.eForm.Infrastructure.Data.Entities.Unit
+        {
+            eFormVersion = AppLatestVersions.For(AppLatestVersions.Compliance),
+            Model = "iPhone 15", Manufacturer = "iOS", OsVersion = "18.1"
+        };
+
+        List<DeviceUserModel> workers;
+        try
+        {
+            // Act
+            workers = await Index(core);
+        }
+        finally
+        {
+            HttpFake.ReportedUnits.TryRemove((int)unit.MicrotingUid!, out _);
+        }
+
+        // Assert
+        Assert.That(workers.Single(x => x.SiteId == site).ComplianceApp.Version, Is.EqualTo("3.2.1"));
     }
 
     [Test]

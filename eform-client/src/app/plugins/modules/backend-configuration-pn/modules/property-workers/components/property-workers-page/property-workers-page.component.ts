@@ -263,9 +263,13 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
     this.updateTable();
   }
 
+  // Only the list requests until the first load completes fetch the app versions from Microting
+  // (a load cancelled by a newer one does not count; the backend shares one fetch between them).
+  private refreshAppVersionsOnLoad = true;
+
   getDeviceUsersFiltered(propertyIds?: number[]) {
     return this.propertyWorkersStateService
-      .getDeviceUsersFiltered();
+      .getDeviceUsersFiltered(this.refreshAppVersionsOnLoad);
   }
 
   private applyDeviceUsersData(data: any, isAdmin: boolean) {
@@ -299,12 +303,15 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
 
 
   updateTable(propertyIds?: number[]) {
+    // A slower earlier load (the first one waits for the app versions) must not overwrite a newer one.
+    this.getSites$?.unsubscribe();
     this.getSites$ = forkJoin([
       this.getPropertiesDictionary(),
       this.getDeviceUsersFiltered(propertyIds),
       this.getWorkerPropertiesAssignments(propertyIds),
       this.store.select(selectCurrentUserIsAdmin).pipe(take(1)),
     ]).subscribe(([propertiesResult, devicesResult, assignmentsResult, isAdmin]) => {
+      this.refreshAppVersionsOnLoad = false;
       if (propertiesResult && propertiesResult.success) {
         this.availableProperties = propertiesResult.model;
       }

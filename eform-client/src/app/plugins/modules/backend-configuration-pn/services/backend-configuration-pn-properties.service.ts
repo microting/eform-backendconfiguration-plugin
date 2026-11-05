@@ -196,7 +196,8 @@ export class BackendConfigurationPnPropertiesService {
   }
 
   getDeviceUsersFiltered(
-    model: DeviceUserRequestModel
+    // refreshAppVersions: only the workers page's first load fetches the app versions from Microting.
+    model: DeviceUserRequestModel & { refreshAppVersions?: boolean }
   ): Observable<OperationDataResult<Array<DeviceUserModel>>> {
     return this.apiBaseService.post<Array<DeviceUserModel>>(
       BackendConfigurationPnPropertiesMethods.GetAll,
