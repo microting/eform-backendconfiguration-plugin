@@ -71,7 +71,6 @@ public class BackendConfigurationAssignmentWorkerService(
     // How long the workers list waits for Microting's unit versions; a slower refresh
     // finishes in the background and the list shows the stored versions meanwhile.
     internal static readonly TimeSpan UnitsRefreshTimeout = TimeSpan.FromSeconds(5);
-    private static readonly TimeSpan UnitsRefreshAbandonAfter = TimeSpan.FromMinutes(20);
     private static readonly object UnitsRefreshLock = new();
     private static (eFormCore.Core Core, Task Task, DateTime StartedAt)? _unitsRefresh;
 
@@ -81,10 +80,10 @@ public class BackendConfigurationAssignmentWorkerService(
         DateTime startedAt;
         lock (UnitsRefreshLock)
         {
-            // Concurrent page loads share one refresh instead of each fetching every unit.
-            // One older than the SDK's retries (about 18 minutes) is taken as hung and replaced.
-            if (_unitsRefresh is not { } running || running.Task.IsCompleted || running.Core != core
-                || DateTime.UtcNow - running.StartedAt > UnitsRefreshAbandonAfter)
+            // Concurrent page loads share one refresh instead of each fetching every unit. A running
+            // refresh is shared until it completes (the SDK's retries end it), so two never write
+            // units at the same time.
+            if (_unitsRefresh is not { } running || running.Task.IsCompleted || running.Core != core)
             {
                 _unitsRefresh = (core, RunUnitsRefresh(core), DateTime.UtcNow);
             }
