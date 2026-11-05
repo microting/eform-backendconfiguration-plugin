@@ -173,6 +173,55 @@ public class LederLoginProtectionTests : LederWorkerTestBase
     }
 
     [Test]
+    public async Task NonAdmin_SavingAnotherWorker_WhoseAddressIsALedersLegacyUserName_IsRefused()
+    {
+        // A Leder's login whose UserName drifted to another worker's address: saving that other (unflagged) worker
+        // finds the Leder's login by name and would rename it, a change of a Leder's login (H2).
+        var other = await CreateWorkerAsync(web: false, archive: false);
+        var leader = await CreateWorkerAsync(isLeader: true);
+        var loginId = await LoginIdOfAsync(leader);
+        // Every worker with an e-mail gets its own login: move other's away, so the address is free for the drift
+        // and the save finds the Leder's login by it (FindLoginByStoredAddressAsync looks up the UserName first).
+        var othersLogin = await UserManager.FindByIdAsync((await LoginIdOfAsync(other)).ToString());
+        var elsewhere = NewEmail();
+        othersLogin!.Email = elsewhere;
+        othersLogin.UserName = elsewhere;
+        Assert.That((await UserManager.UpdateAsync(othersLogin)).Succeeded, Is.True, "precondition");
+        var tracked = await UserManager.FindByIdAsync(loginId.ToString());
+        tracked!.UserName = other.Email;
+        Assert.That((await UserManager.UpdateAsync(tracked)).Succeeded, Is.True, "precondition");
+        Assert.That(await IsLederAsync(other), Is.False, "precondition: the edited worker is not flagged");
+
+        var result = await UpdateAsync(other, NonAdmin, web: false, archive: false, lastName: NewLastName("Roe"));
+
+        Assert.That(result.Message, Is.EqualTo(LederMessages.LederLoginChangeRequiresAdmin));
+        var login = await LoginByIdAsync(loginId);
+        Assert.That((login.Email, login.UserName), Is.EqualTo((leader.Email, other.Email)), "the Leder's login is unchanged");
+    }
+
+    [Test]
+    public async Task NonAdmin_CreatingAWorkerAtALedersLegacyUserName_IsRefused()
+    {
+        // A Leder's login (in "Kun arkiv", so a create may link to it) whose UserName drifted to an address no worker
+        // has: creating a worker there finds that login by name and would link and rename it (H2).
+        var leader = await CreateWorkerAsync(web: false, archive: true, isLeader: true);
+        var loginId = await LoginIdOfAsync(leader);
+        var drifted = NewEmail();
+        var tracked = await UserManager.FindByIdAsync(loginId.ToString());
+        tracked!.UserName = drifted;
+        Assert.That((await UserManager.UpdateAsync(tracked)).Succeeded, Is.True, "precondition");
+        var lastName = NewLastName();
+
+        var result = await TryCreateAsync(NonAdmin, lastName, drifted, web: false, archive: true);
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Message, Is.EqualTo(LederMessages.LederLoginChangeRequiresAdmin));
+        Assert.That(await SiteExistsAsync(lastName), Is.False, "nothing is created");
+        var login = await LoginByIdAsync(loginId);
+        Assert.That((login.Email, login.UserName), Is.EqualTo((leader.Email, drifted)), "the Leder's login is unchanged");
+    }
+
+    [Test]
     public async Task CreateDeviceUser_ByANonAdmin_LinkingToAnExistingLogin_NeedsNoLederRule_AndTheNewSiteHasNoFlag()
     {
         // Linking a new worker to an existing login no longer needs a rule: the new site has no flag.
