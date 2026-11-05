@@ -95,8 +95,9 @@ public class ArchiveAccessService(
         var isAdmin = userService.IsAdmin();
         if (string.IsNullOrWhiteSpace(user.Email))
         {
-            // No address means no live site: only an admin can manage.
-            return new ArchiveAccessContext(false, isAdmin, [], await leder.IsLederOrAdminAsync(knownLive: false));
+            // No address means no live site, so no site flag can apply: only an admin or "eForm admins" member manages.
+            var noSites = new LederLiveness(true, []);
+            return new ArchiveAccessContext(false, isAdmin, [], await leder.IsLederOrAdminAsync(noSites));
         }
 
         var core = await coreService.GetCore();
@@ -107,8 +108,9 @@ public class ArchiveAccessService(
             return Disabled(user.Id, "SDK worker is resigned");
         }
 
-        // Asked only for enabled callers; the live-site count we already have is the Leder check's liveness.
-        var canManage = await leder.IsLederOrAdminAsync(knownLive: sites.LiveSiteIds.Count > 0);
+        // Asked only for enabled callers (IsActive is true here); the live sites we already have are the Leder check's
+        // liveness, so it adds one plugin-DB query and no SDK query.
+        var canManage = await leder.IsLederOrAdminAsync(new LederLiveness(true, sites.LiveSiteIds));
         var groups = await membership.GetTagIdsForSitesAsync(sites.LiveSiteIds);
         return new ArchiveAccessContext(false, isAdmin, groups.ToList(), canManage);
     }

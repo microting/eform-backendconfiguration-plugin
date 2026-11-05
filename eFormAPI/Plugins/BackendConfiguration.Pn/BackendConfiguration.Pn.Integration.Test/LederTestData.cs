@@ -84,7 +84,7 @@ public static class LederTestData
     public static ILederService Leder(bool isLederOrAdmin)
     {
         var leder = Substitute.For<ILederService>();
-        leder.IsLederOrAdminAsync(Arg.Any<bool?>()).Returns(Task.FromResult(isLederOrAdmin));
+        leder.IsLederOrAdminAsync(Arg.Any<LederLiveness?>()).Returns(Task.FromResult(isLederOrAdmin));
         return leder;
     }
 
@@ -100,11 +100,14 @@ public static class LederTestData
         return coreHelper;
     }
 
+    /// <summary>A live SDK site: <see cref="Uid"/> = Sites.MicrotingUid (what SiteRead takes), <see cref="Id"/> = Sites.Id (the Leder key).</summary>
+    public sealed record LiveSite(int Uid, int Id);
+
     /// <summary>
     /// A live SDK worker with <paramref name="email"/> on a new site, made the way CreateDeviceUser makes one
-    /// (core.SiteCreate, then the worker's e-mail). Returns the site's MicrotingUid.
+    /// (core.SiteCreate, then the worker's e-mail). Both site ids are read back, never assumed.
     /// </summary>
-    public static async Task<int> LiveWorkerAsync(Core core, string email)
+    public static async Task<LiveSite> LiveWorkerAsync(Core core, string email)
     {
         var lastName = $"Doe {Guid.NewGuid():N}";
         var siteDto = await core.SiteCreate($"Jane {lastName}", "Jane", lastName, email, "da");
@@ -112,6 +115,8 @@ public static class LederTestData
         var worker = await sdk.Workers.SingleAsync(x => x.MicrotingUid == siteDto.WorkerUid);
         worker.Email = email;
         await worker.Update(sdk);
-        return siteDto.SiteId;
+        var siteId = await sdk.Sites.AsNoTracking().Where(s => s.MicrotingUid == siteDto.SiteId).Select(s => s.Id)
+            .SingleAsync();
+        return new LiveSite(siteDto.SiteId, siteId);
     }
 }

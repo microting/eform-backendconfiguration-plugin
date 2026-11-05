@@ -12,8 +12,8 @@ using NSubstitute;
 namespace BackendConfiguration.Pn.Integration.Test;
 
 /// <summary>
-/// Spec section 3 "Leder rule", D-L10, D-L13: JWT admin; or a live LederAssignments row on a live login (IsActive, a
-/// non-resigned worker with its address, a live SiteWorker); or the admin role / "eForm admins" by name.
+/// D-L18, D-L10: JWT admin; or an active login whose e-mail resolves (CallerSites) to a live site with a live flag; or
+/// the admin role / "eForm admins" by name.
 /// </summary>
 [Parallelizable(ParallelScope.Fixtures)]
 [TestFixture]
@@ -39,14 +39,28 @@ public class LederServiceTests : TestBaseSetup
         new(LederTestData.Caller(userId, isAdmin), BaseDbContext, BackendConfigurationPnDbContext!,
             coreHelper ?? _coreHelper);
 
-    /// <summary>A login with a live worker (same address) and a live flag.</summary>
-    private async Task<(EformUser Login, int SiteUid)> LiveLederAsync(params string[] groups)
+    private Task GrantAsync(int siteId, int actorId) =>
+        LederAssignmentStore.GrantSiteAsync(BackendConfigurationPnDbContext!, siteId, actorId);
+
+    /// <summary>A login with a live worker (same address) whose site is flagged.</summary>
+    private async Task<(EformUser Login, LederTestData.LiveSite Site)> LiveLederAsync(params string[] groups)
     {
         var login = await LederTestData.LoginAsync(BaseDbContext, _userManager, groups);
-        var siteUid = await LederTestData.LiveWorkerAsync(_core, login.Email!);
-        await LederAssignmentStore.GrantAsync(BackendConfigurationPnDbContext!, login.Id, login.Id);
-        return (login, siteUid);
+        var site = await LederTestData.LiveWorkerAsync(_core, login.Email!);
+        await GrantAsync(site.Id, login.Id);
+        return (login, site);
     }
+
+    /// <summary>A flagged site of some other worker, for the known-liveness cases.</summary>
+    private async Task<int> FlaggedSiteIdAsync(int actorId)
+    {
+        var site = await LederTestData.LiveWorkerAsync(_core, $"{Guid.NewGuid():N}@example.com");
+        await GrantAsync(site.Id, actorId);
+        return site.Id;
+    }
+
+    private async Task<int> UnflaggedSiteIdAsync() =>
+        (await LederTestData.LiveWorkerAsync(_core, $"{Guid.NewGuid():N}@example.com")).Id;
 
     [Test]
     public async Task JwtAdmin_IsLeder_WithoutTouchingTheSdk()
@@ -64,14 +78,22 @@ public class LederServiceTests : TestBaseSetup
         Assert.That(await Service(userId, isAdmin: true).IsLederOrAdminAsync(), Is.False);
 
     [Test]
-    public async Task LiveRow_AndLiveWorker_IsLeder()
+    public async Task FlaggedLiveSite_IsLeder()
     {
         var (login, _) = await LiveLederAsync("eForm users");
         Assert.That(await Service(login.Id).IsLederOrAdminAsync(), Is.True);
     }
 
     [Test]
-    public async Task NoRow_IsNotLeder()
+    public async Task FlaggedLiveSite_NoLoginGroupAtAll_IsLeder()
+    {
+        // D-L16: the flag needs no Web/Arkiv; a login without any group is a Leder once it can log in.
+        var (login, _) = await LiveLederAsync();
+        Assert.That(await Service(login.Id).IsLederOrAdminAsync(), Is.True);
+    }
+
+    [Test]
+    public async Task NoFlag_IsNotLeder()
     {
         var login = await LederTestData.LoginAsync(BaseDbContext, _userManager, "eForm users");
         await LederTestData.LiveWorkerAsync(_core, login.Email!);
@@ -80,16 +102,26 @@ public class LederServiceTests : TestBaseSetup
     }
 
     [Test]
-    public async Task RevokedRow_IsNotLeder()
+    public async Task FlagOnAnotherWorkersSite_IsNotLeder()
     {
-        var (login, _) = await LiveLederAsync();
-        await LederAssignmentStore.RevokeAsync(BackendConfigurationPnDbContext!, login.Id, login.Id);
+        var login = await LederTestData.LoginAsync(BaseDbContext, _userManager, "eForm users");
+        await LederTestData.LiveWorkerAsync(_core, login.Email!);
+        await FlaggedSiteIdAsync(login.Id);
 
         Assert.That(await Service(login.Id).IsLederOrAdminAsync(), Is.False);
     }
 
     [Test]
-    public async Task LiveRow_IsActiveFalse_IsNotLeder()
+    public async Task RevokedFlag_IsNotLeder()
+    {
+        var (login, site) = await LiveLederAsync();
+        await LederAssignmentStore.RevokeSiteAsync(BackendConfigurationPnDbContext!, site.Id, login.Id);
+
+        Assert.That(await Service(login.Id).IsLederOrAdminAsync(), Is.False);
+    }
+
+    [Test]
+    public async Task FlaggedSite_IsActiveFalse_IsNotLeder()
     {
         var (login, _) = await LiveLederAsync();
         await BaseDbContext.Users.Where(u => u.Id == login.Id)
@@ -99,59 +131,52 @@ public class LederServiceTests : TestBaseSetup
     }
 
     [Test]
-    public async Task LiveRow_LoginWithNoWorker_IsNotLeder()
+    public async Task FlaggedSite_WorkerResigned_IsNotLeder_AndRehireRestoresIt()
     {
-        var login = await LederTestData.LoginAsync(BaseDbContext, _userManager, "Kun arkiv");
-        await LederAssignmentStore.GrantAsync(BackendConfigurationPnDbContext!, login.Id, login.Id);
-
-        Assert.That(await Service(login.Id).IsLederOrAdminAsync(), Is.False);
-    }
-
-    [Test]
-    public async Task LiveRow_WorkerResigned_IsNotLeder()
-    {
-        var (login, siteUid) = await LiveLederAsync();
+        var (login, site) = await LiveLederAsync();
         await using var sdk = _core.DbContextHelper.GetDbContext();
-        var workerUid = (await _core.SiteRead(siteUid)).WorkerUid;
+        var workerUid = (await _core.SiteRead(site.Uid)).WorkerUid;
         await sdk.Workers.Where(w => w.MicrotingUid == workerUid)
             .ExecuteUpdateAsync(x => x.SetProperty(w => w.Resigned, true));
 
-        Assert.That(await Service(login.Id).IsLederOrAdminAsync(), Is.False);
+        Assert.That(await Service(login.Id).IsLederOrAdminAsync(), Is.False, "the flag is inert while resigned");
+
+        await sdk.Workers.Where(w => w.MicrotingUid == workerUid)
+            .ExecuteUpdateAsync(x => x.SetProperty(w => w.Resigned, false));
+
+        Assert.That(await Service(login.Id).IsLederOrAdminAsync(), Is.True, "rehire on the same site restores Leder (D-L18)");
     }
 
     [Test]
-    public async Task LiveRow_SiteRemovedBySiteDelete_WorkerRowLive_IsNotLeder()
+    public async Task FlaggedSite_RemovedBySiteDelete_WorkerRowLive_IsNotLeder()
     {
-        // Review Focus 5: the core device-users delete calls SiteDelete (Sites + SiteWorkers removed). The Workers row
-        // is forced live here, so the case holds whatever SiteDelete does to it.
-        var (login, siteUid) = await LiveLederAsync();
-        var workerUid = (await _core.SiteRead(siteUid)).WorkerUid;
-        await _core.SiteDelete(siteUid);
+        // The core device-users delete calls SiteDelete (Sites + SiteWorkers removed); the Workers row is forced live
+        // so the case holds whatever SiteDelete does to it. The row stays flagged but its site is not live (inert).
+        var (login, site) = await LiveLederAsync();
+        var workerUid = (await _core.SiteRead(site.Uid)).WorkerUid;
+        await _core.SiteDelete(site.Uid);
         await using var sdk = _core.DbContextHelper.GetDbContext();
         await sdk.Workers.Where(w => w.MicrotingUid == workerUid)
             .ExecuteUpdateAsync(x => x.SetProperty(w => w.WorkflowState, Constants.WorkflowStates.Created));
-        Assert.That(await sdk.SiteWorkers.AnyAsync(sw => sw.Worker.MicrotingUid == workerUid
-            && sw.WorkflowState != Constants.WorkflowStates.Removed), Is.False, "precondition: no live SiteWorker");
 
+        Assert.That(await LederAssignmentStore.IsSiteLederAsync(BackendConfigurationPnDbContext!, site.Id), Is.True,
+            "precondition: the flag is still stored");
         Assert.That(await Service(login.Id).IsLederOrAdminAsync(), Is.False);
     }
 
     [Test]
-    public async Task LiveRow_SiteRemoved_SiteWorkerStillLive_IsNotLeder()
+    public async Task FlaggedSite_SiteRemoved_SiteWorkerStillLive_IsNotLeder()
     {
-        // Copilot finding: a non-removed SiteWorker must not count when the Site it points at is removed.
-        var (login, siteUid) = await LiveLederAsync();
+        var (login, site) = await LiveLederAsync();
         await using var sdk = _core.DbContextHelper.GetDbContext();
-        await sdk.Sites.Where(s => s.MicrotingUid == siteUid)
+        await sdk.Sites.Where(s => s.Id == site.Id)
             .ExecuteUpdateAsync(x => x.SetProperty(s => s.WorkflowState, Constants.WorkflowStates.Removed));
-        Assert.That(await sdk.SiteWorkers.AnyAsync(sw => sw.Site!.MicrotingUid == siteUid
-            && sw.WorkflowState != Constants.WorkflowStates.Removed), Is.True, "precondition: SiteWorker still live");
 
         Assert.That(await Service(login.Id).IsLederOrAdminAsync(), Is.False);
     }
 
     [Test]
-    public async Task EformAdminsMember_NoWorker_NoRow_IsLeder()
+    public async Task EformAdminsMember_NoWorker_NoFlag_IsLeder()
     {
         // D-L10, found by name (no group id is assumed); not subject to liveness.
         var login = await LederTestData.LoginAsync(BaseDbContext, _userManager,
@@ -170,22 +195,40 @@ public class LederServiceTests : TestBaseSetup
     }
 
     [Test]
-    public async Task KnownLive_IsTrusted_WithoutSdkQueries()
+    public async Task Known_IsTrusted_WithoutSdkQueries()
     {
         var login = await LederTestData.LoginAsync(BaseDbContext, _userManager);
-        await LederAssignmentStore.GrantAsync(BackendConfigurationPnDbContext!, login.Id, login.Id);
+        var flagged = await FlaggedSiteIdAsync(login.Id);
+        var unflagged = await UnflaggedSiteIdAsync();
         var coreHelper = LederTestData.CoreHelper();
 
-        // Two services: each caches its first answer.
-        Assert.That(await Service(login.Id, coreHelper: coreHelper).IsLederOrAdminAsync(knownLive: true), Is.True);
-        Assert.That(await Service(login.Id, coreHelper: coreHelper).IsLederOrAdminAsync(knownLive: false), Is.False);
+        // One service per call: each caches its first answer.
+        Assert.That(await Service(login.Id, coreHelper: coreHelper)
+            .IsLederOrAdminAsync(new LederLiveness(true, [flagged])), Is.True);
+        Assert.That(await Service(login.Id, coreHelper: coreHelper)
+            .IsLederOrAdminAsync(new LederLiveness(true, [unflagged])), Is.False);
+        Assert.That(await Service(login.Id, coreHelper: coreHelper)
+            .IsLederOrAdminAsync(new LederLiveness(false, [flagged])), Is.False, "an inactive login is never a Leder");
+        Assert.That(await Service(login.Id, coreHelper: coreHelper)
+            .IsLederOrAdminAsync(new LederLiveness(true, [])), Is.False);
         await coreHelper.DidNotReceive().GetCore();
+    }
+
+    [Test]
+    public async Task Known_TwoLiveSites_OneFlagged_IsLeder()
+    {
+        // Review Focus 1: a login can resolve to several live sites; one flagged site is enough.
+        var login = await LederTestData.LoginAsync(BaseDbContext, _userManager);
+        var flagged = await FlaggedSiteIdAsync(login.Id);
+        var unflagged = await UnflaggedSiteIdAsync();
+
+        Assert.That(await Service(login.Id).IsLederOrAdminAsync(new LederLiveness(true, [unflagged, flagged])), Is.True);
     }
 
     [Test]
     public async Task DirectSecurityGroupRewrite_KeepsTheLeder()
     {
-        // D-L13: what the core Users page does (delete the memberships, insert one group) cannot touch the flag.
+        // What the core Users page does (delete the memberships, insert one group) cannot touch the flag.
         var (login, _) = await LiveLederAsync("eForm users");
         await BaseDbContext.SecurityGroupUsers.Where(x => x.EformUserId == login.Id).ExecuteDeleteAsync();
         await LederTestData.AddMemberAsync(BaseDbContext, login.Id,
@@ -197,39 +240,28 @@ public class LederServiceTests : TestBaseSetup
     [Test]
     public async Task Result_IsComputedOncePerService()
     {
-        // A live row, so an uncached second call with knownLive: true would answer true.
         var login = await LederTestData.LoginAsync(BaseDbContext, _userManager);
-        await LederAssignmentStore.GrantAsync(BackendConfigurationPnDbContext!, login.Id, login.Id);
+        var flagged = await FlaggedSiteIdAsync(login.Id);
         var service = Service(login.Id);
 
-        Assert.That(await service.IsLederOrAdminAsync(knownLive: false), Is.False);
-        Assert.That(await service.IsLederOrAdminAsync(knownLive: true), Is.False, "the first answer is cached");
+        Assert.That(await service.IsLederOrAdminAsync(new LederLiveness(true, [])), Is.False);
+        // Uncached, this second call would be true: it passes a site the test flagged.
+        Assert.That(await service.IsLederOrAdminAsync(new LederLiveness(true, [flagged])), Is.False,
+            "the first answer is cached");
     }
 
     [Test]
-    public async Task NoRow_KnownLiveTrue_IsNotLeder()
+    public async Task NotLive_ButEformAdminsMember_IsLeder()
     {
-        // The row check runs before knownLive: a live worker alone never makes a Leder.
-        var login = await LederTestData.LoginAsync(BaseDbContext, _userManager, "eForm users");
-
-        Assert.That(await Service(login.Id).IsLederOrAdminAsync(knownLive: true), Is.False);
-    }
-
-    [Test]
-    public async Task LiveRow_NotLive_ButEformAdminsMember_IsLeder()
-    {
-        // A flagged but not live login still falls through to the admin-by-database rule.
         var login = await LederTestData.LoginAsync(BaseDbContext, _userManager,
             BackendConfigurationAssignmentWorkerServiceHelper.EformAdminsSecurityGroupName);
-        await LederAssignmentStore.GrantAsync(BackendConfigurationPnDbContext!, login.Id, login.Id);
 
-        Assert.That(await Service(login.Id).IsLederOrAdminAsync(knownLive: false), Is.True);
+        Assert.That(await Service(login.Id).IsLederOrAdminAsync(new LederLiveness(false, [])), Is.True);
     }
 
     [Test]
     public async Task IsAdminAsync_OneQuery_KeepsItsMeaning()
     {
-        // #1484's helper after the merge into one query: role, "eForm admins" by name, nobody else.
         var role = await LederTestData.LoginAsync(BaseDbContext, _userManager);
         Assert.That((await _userManager.AddToRoleAsync(role, EformRole.Admin)).Succeeded, Is.True);
         var group = await LederTestData.LoginAsync(BaseDbContext, _userManager,
@@ -244,7 +276,6 @@ public class LederServiceTests : TestBaseSetup
     [Test]
     public async Task RemovedEformAdminsMembership_IsNotAdmin_NorLeder()
     {
-        // IsAdminAsync applies IsLiveMembership's rule: a soft-deleted "eForm admins" membership grants nothing.
         var login = await LederTestData.LoginAsync(BaseDbContext, _userManager);
         await LederTestData.AddMemberAsync(BaseDbContext, login.Id,
             await LederTestData.GroupByNameAsync(BaseDbContext,
@@ -257,7 +288,6 @@ public class LederServiceTests : TestBaseSetup
     [Test]
     public async Task LiveMembership_OfARemovedEformAdminsGroup_IsNotAdmin()
     {
-        // The live "eForm admins" group keeps the lowest id, so the other tests' GroupByNameAsync never picks the removed one.
         _ = await LederTestData.GroupByNameAsync(BaseDbContext,
             BackendConfigurationAssignmentWorkerServiceHelper.EformAdminsSecurityGroupName);
         var removedGroupId = await LederTestData.NewGroupAsync(BaseDbContext,
