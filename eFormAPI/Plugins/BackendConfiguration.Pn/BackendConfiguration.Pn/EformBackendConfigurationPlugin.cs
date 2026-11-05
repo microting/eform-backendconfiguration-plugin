@@ -99,6 +99,7 @@ using Services.WorkorderCaseGroupIdBackfillService;
 using Services.CalendarConfigurationBackfillService;
 using Services.AreaRulePlanningTagPurgeService;
 using Services.SecurityGroupBackfillService;
+using Services.Leder;
 using Services.PluginMenuSyncService;
 using System;
 using System.Collections.Generic;
@@ -241,6 +242,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             Services.DuplicatePlanningSiteRepair.DuplicatePlanningSiteRepairService>();
         services.AddTransient<AreaRulePlanningTagPurgeService>();
         services.AddTransient<SecurityGroupBackfillService>();
+        services.AddTransient<LederLegacyConversionService>();
         services.AddTransient<Services.LegacyChemicalCleanupService.ILegacyChemicalSdkOperations,
             Services.LegacyChemicalCleanupService.LegacyChemicalSdkOperations>();
         services.AddTransient<Services.LegacyChemicalCleanupService.LegacyChemicalCleanupService>();
@@ -974,6 +976,25 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         catch (Exception e)
         {
             Console.WriteLine($"SecurityGroupBackfill failed at startup: {e}");
+        }
+
+        // D-L19: per-login Leder rows written before the per-worker key move to their workers' sites. Self-narrowing,
+        // so every later boot costs one indexed SELECT. Wrapped: a failure must not stop the plugin from loading; the
+        // legacy rows stay inert meanwhile (the Leder check reads sites only) and the next boot tries again.
+        try
+        {
+            var lederLegacyConversion = scope.ServiceProvider
+                .GetRequiredService<LederLegacyConversionService>();
+            var converted = lederLegacyConversion.RunAsync().GetAwaiter().GetResult();
+            if (converted > 0)
+            {
+                Console.WriteLine($"LederLegacyConversion handled {converted} legacy row(s)");
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"LederLegacyConversion failed at startup: {e}");
+            SentrySdk.CaptureException(e);
         }
 
         // One-off removal of the legacy eForm chemical flow's folders, cases and
