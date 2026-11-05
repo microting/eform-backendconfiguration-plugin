@@ -443,7 +443,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
     /// <summary>
     /// The login of a worker's stored address: the raw address first, then the address with invisible characters
-    /// removed (<see cref="WorkerEmailSanitizer.Clean"/>). Shared by the save and the Leder revoke on worker delete.
+    /// removed (<see cref="WorkerEmailSanitizer.Clean"/>). Shared by the save and the Medarbejdere read-back.
     /// </summary>
     internal static async Task<EformUser?> FindLoginByStoredAddressAsync(
         UserManager<EformUser> userManager, string? storedEmail)
