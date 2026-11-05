@@ -94,7 +94,7 @@ public class LederWorkerLifecycleTests : LederWorkerTestBase
         await BaseDbContext.SaveChangesAsync();
 
         var row = Row(await ListAsync(), w);
-        Assert.That(row.WebAccessEnabled, Is.False, "a removed membership is no web access (same rule as HasLoginAccessAsync)");
+        Assert.That(row.WebAccessEnabled, Is.False, "a removed membership is no web access (same rule as the list's Web flag)");
         Assert.That(row.ArchiveEnabled, Is.False);
     }
 

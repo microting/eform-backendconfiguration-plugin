@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
-/// <summary>H2: a non-admin with device_users_update cannot take over, unlink or orphan a Leder's login.</summary>
+/// <summary>H2 re-stated (amendment §4): a non-admin cannot change a Leder worker's e-mail or its login's username.</summary>
 [Parallelizable(ParallelScope.Fixtures)]
 [TestFixture]
 public class LederLoginProtectionTests : LederWorkerTestBase
@@ -21,11 +21,10 @@ public class LederLoginProtectionTests : LederWorkerTestBase
         Assert.That(result.Success, Is.False);
         Assert.That(result.Message, Is.EqualTo(LederMessages.LederLoginChangeRequiresAdmin));
         var after = await LoginByIdAsync(loginId);
-        Assert.That(after.Email, Is.EqualTo(w.Email));
-        Assert.That(after.UserName, Is.EqualTo(w.Email));
+        Assert.That((after.Email, after.UserName), Is.EqualTo((w.Email, w.Email)));
         Assert.That(await MicrotingDbContext!.Workers.AsNoTracking().AnyAsync(x => x.Email == w.Email), Is.True,
             "the SDK worker keeps its address too");
-        Assert.That(await IsLederAsync(loginId), Is.True);
+        Assert.That(await IsLederAsync(w), Is.True);
     }
 
     [Test]
@@ -37,6 +36,30 @@ public class LederLoginProtectionTests : LederWorkerTestBase
         Assert.That((await UpdateAsync(w, NonAdmin, email: "")).Message,
             Is.EqualTo(LederMessages.LederLoginChangeRequiresAdmin));
         Assert.That((await LoginOfAsync(w)).Email, Is.EqualTo(w.Email));
+    }
+
+    [Test]
+    public async Task AddresslessLeder_NonAdminRename_IsSaved()
+    {
+        // Blank and the generated user_…@microting.invalid placeholder are both unlisted: no login changes hands.
+        var w = await CreateWorkerAsync(Admin, isLeader: true, email: "");
+
+        var result = await UpdateAsync(w, NonAdmin, email: "", lastName: NewLastName("Roe"));
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(await IsLederAsync(w), Is.True);
+    }
+
+    [Test]
+    public async Task NonAdmin_ChangesTheEmailOfANonLeder_IsAllowed()
+    {
+        var w = await CreateWorkerAsync();
+        var newEmail = NewEmail("example.org");
+
+        var result = await UpdateAsync(w, NonAdmin, email: newEmail);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(await BaseDbContext.Users.AsNoTracking().AnyAsync(u => u.Email == newEmail), Is.True);
     }
 
     [Test]
@@ -52,7 +75,7 @@ public class LederLoginProtectionTests : LederWorkerTestBase
         var result = await UpdateAsync(w, NonAdmin, lastName: NewLastName("Roe"));
 
         Assert.That(result.Success, Is.True, result.Message);
-        Assert.That(await IsLederAsync(loginId), Is.True);
+        Assert.That(await IsLederAsync(w), Is.True);
         Assert.That((await LoginByIdAsync(loginId)).Email, Is.EqualTo(w.Email));
     }
 
@@ -66,8 +89,7 @@ public class LederLoginProtectionTests : LederWorkerTestBase
         var legacyUserName = NewEmail();
         var tracked = await UserManager.FindByIdAsync(loginId.ToString());
         tracked!.UserName = legacyUserName;
-        var renamed = await UserManager.UpdateAsync(tracked);
-        Assert.That(renamed.Succeeded, Is.True, "precondition");
+        Assert.That((await UserManager.UpdateAsync(tracked)).Succeeded, Is.True, "precondition");
 
         var refused = await UpdateAsync(w, NonAdmin, lastName: NewLastName("Roe"));
 
@@ -80,20 +102,21 @@ public class LederLoginProtectionTests : LederWorkerTestBase
 
         var afterwards = await UpdateAsync(w, NonAdmin, lastName: NewLastName("Roe"));
         Assert.That(afterwards.Success, Is.True, afterwards.Message);
-        Assert.That(await IsLederAsync(loginId), Is.True);
+        Assert.That(await IsLederAsync(w), Is.True);
     }
 
     [Test]
-    public async Task NonAdmin_TurnsWebAndArchiveOffOnALeder_IsRefused_FlagAndGroupsKept()
+    public async Task NonAdmin_TurnsWebAndArchiveOffOnALeder_IsAllowed_FlagKept()
     {
+        // The "loses access" refusal of H2 is gone (amendment §4): the flag stays and is inert while there is no access.
         var w = await CreateWorkerAsync(isLeader: true);
         var loginId = await LoginIdOfAsync(w);
 
         var result = await UpdateAsync(w, NonAdmin, web: false, archive: false);
 
-        Assert.That(result.Message, Is.EqualTo(LederMessages.LederLoginChangeRequiresAdmin));
-        Assert.That(await GroupNamesOfAsync(loginId), Is.EqualTo(new[] { "eForm users" }));
-        Assert.That(await IsLederAsync(loginId), Is.True);
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(await GroupNamesOfAsync(loginId), Is.EqualTo(new[] { "none" }));
+        Assert.That(await IsLederAsync(w), Is.True);
     }
 
     [Test]
@@ -106,7 +129,7 @@ public class LederLoginProtectionTests : LederWorkerTestBase
 
         Assert.That(result.Success, Is.True, result.Message);
         Assert.That(await GroupNamesOfAsync(loginId), Is.EqualTo(new[] { "Kun arkiv" }));
-        Assert.That(await IsLederAsync(loginId), Is.True);
+        Assert.That(await IsLederAsync(w), Is.True);
     }
 
     [Test]
@@ -117,44 +140,21 @@ public class LederLoginProtectionTests : LederWorkerTestBase
         var result = await UpdateAsync(w, NonAdmin, lastName: NewLastName("Roe"));
 
         Assert.That(result.Success, Is.True, result.Message);
-        Assert.That(await IsLederAsync(await LoginIdOfAsync(w)), Is.True);
-    }
-
-    [TestCase(false)]
-    [TestCase(true)]
-    public async Task CreateDeviceUser_LinkingToALedersLogin_OnlyAnAdmin_AndTheFlagStays(bool byAdmin)
-    {
-        // A Leder login with no live worker, in a linkable group ("Kun arkiv"), e.g. after a core device-user delete.
-        var login = await LederTestData.LoginAsync(BaseDbContext, UserManager, "Kun arkiv");
-        await LederAssignmentStore.GrantAsync(BackendConfigurationPnDbContext!, login.Id, ActorId);
-        var lastName = NewLastName();
-
-        var result = await TryCreateAsync(byAdmin ? Admin : NonAdmin, lastName, login.Email!, web: false, archive: true);
-
-        var siteCreated = await SiteExistsAsync(lastName);
-        if (byAdmin)
-        {
-            Assert.That(result.Success, Is.True, result.Message);
-            Assert.That(siteCreated, Is.True);
-        }
-        else
-        {
-            Assert.That(result.Success, Is.False);
-            Assert.That(result.Message, Is.EqualTo(LederMessages.LederLoginChangeRequiresAdmin));
-            Assert.That(siteCreated, Is.False, "refused before core.SiteCreate");
-        }
-
-        Assert.That(await IsLederAsync(login.Id), Is.True);
-        Assert.That(await BaseDbContext.Users.CountAsync(u => u.Email == login.Email), Is.EqualTo(1));
+        Assert.That(await IsLederAsync(w), Is.True);
     }
 
     [Test]
-    public async Task CreateDeviceUser_KunArkivLoginWithoutLeder_IsStillLinkedByANonAdmin()
+    public async Task CreateDeviceUser_ByANonAdmin_LinkingToAnExistingLogin_NeedsNoLederRule_AndTheNewSiteHasNoFlag()
     {
+        // Linking a new worker to an existing login no longer needs a rule: the new site has no flag (amendment §4).
         var login = await LederTestData.LoginAsync(BaseDbContext, UserManager, "Kun arkiv");
+        var lastName = NewLastName();
 
-        var result = await TryCreateAsync(NonAdmin, NewLastName(), login.Email!, web: false, archive: true);
+        var result = await TryCreateAsync(NonAdmin, lastName, login.Email!, web: false, archive: true);
 
         Assert.That(result.Success, Is.True, result.Message);
+        var siteId = await MicrotingDbContext!.Sites.AsNoTracking().Where(x => x.Name == $"Jane {lastName}")
+            .Select(x => x.Id).SingleAsync();
+        Assert.That(await LederAssignmentStore.IsSiteLederAsync(BackendConfigurationPnDbContext!, siteId), Is.False);
     }
 }

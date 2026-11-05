@@ -10850,37 +10850,6 @@
     }
   },
   {
-    "Key": "LederRequiresLogin",
-    "LocalizedValue": {
-      "da": "Leder kræver et login med web- eller arkivadgang",
-      "de": "Leader requires a login with web or archive access",
-      "en-US": "Leader requires a login with web or archive access",
-      "uk-UA": "Leader requires a login with web or archive access",
-      "pl-PL": "Leader requires a login with web or archive access",
-      "no-NO": "Leader requires a login with web or archive access",
-      "sv-SE": "Leader requires a login with web or archive access",
-      "es-ES": "Leader requires a login with web or archive access",
-      "fr-FR": "Leader requires a login with web or archive access",
-      "it-IT": "Leader requires a login with web or archive access",
-      "nl-NL": "Leader requires a login with web or archive access",
-      "pt-BR": "Leader requires a login with web or archive access",
-      "pt-PT": "Leader requires a login with web or archive access",
-      "fi-FI": "Leader requires a login with web or archive access",
-      "et-ET": "Leader requires a login with web or archive access",
-      "lv-LV": "Leader requires a login with web or archive access",
-      "lt-LT": "Leader requires a login with web or archive access",
-      "ro-RO": "Leader requires a login with web or archive access",
-      "hr-HR": "Leader requires a login with web or archive access",
-      "sl-SL": "Leader requires a login with web or archive access",
-      "cs-CZ": "Leader requires a login with web or archive access",
-      "sk-SK": "Leader requires a login with web or archive access",
-      "hu-HU": "Leader requires a login with web or archive access",
-      "bg-BG": "Leader requires a login with web or archive access",
-      "el-GR": "Leader requires a login with web or archive access",
-      "is-IS": "Leader requires a login with web or archive access"
-    }
-  },
-  {
     "Key": "LederLoginChangeRequiresAdmin",
     "LocalizedValue": {
       "da": "Kun en administrator kan ændre en leders login",

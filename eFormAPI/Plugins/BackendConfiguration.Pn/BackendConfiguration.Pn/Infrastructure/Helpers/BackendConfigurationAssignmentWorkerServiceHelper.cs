@@ -244,33 +244,6 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
         membershipWorkflowState != Constants.WorkflowStates.Removed
         && groupWorkflowState != Constants.WorkflowStates.Removed;
 
-    /// <summary>
-    /// Web/archive login access (spec section 4): a live membership of a group named exactly
-    /// "eForm users" or "Kun arkiv". The Medarbejdere list's Web/Arkiv flags apply the same rule in memory (IsLiveMembership + names); the two checks are kept in sync.
-    /// </summary>
-    private static Task<bool> HasLoginAccessAsync(BaseDbContext baseDbContext, int eformUserId) =>
-        baseDbContext.SecurityGroupUsers.AnyAsync(x => x.EformUserId == eformUserId
-            && x.WorkflowState != Constants.WorkflowStates.Removed
-            && x.SecurityGroup.WorkflowState != Constants.WorkflowStates.Removed
-            && (x.SecurityGroup.Name == EformUsersSecurityGroupName || x.SecurityGroup.Name == KunArkivSecurityGroupName));
-
-    /// <summary>LoginFacts of the login a save resolves to, read before any write; <paramref name="login"/> null = one it creates.</summary>
-    /// <remarks><paramref name="willHaveLoginAccess"/>: Web || Arkiv when the plugin's membership transition runs, null = untouched.</remarks>
-    private static async Task<LoginFacts> LederLoginFactsAsync(BaseDbContext baseDbContext,
-        BackendConfigurationPnDbContext dbContext, EformUser? login, bool listed, bool isManaged,
-        bool? willHaveLoginAccess, bool emailOrUserNameChanged)
-    {
-        if (login == null)
-        {
-            return new LoginFacts(listed, true, false, false, willHaveLoginAccess ?? false, false);
-        }
-
-        var had = await HasLoginAccessAsync(baseDbContext, login.Id).ConfigureAwait(false);
-        return new LoginFacts(listed, isManaged,
-            await LederAssignmentStore.HasLiveRowAsync(dbContext, login.Id).ConfigureAwait(false),
-            had, willHaveLoginAccess ?? had, emailOrUserNameChanged);
-    }
-
     /// <summary>The worker's live tag ids as the list shows them: site tags of removed Tag rows left out.</summary>
     private static Task<List<int>> LiveSiteTagIdsAsync(MicrotingDbContext sdkDbContext, int siteId) =>
         sdkDbContext.SiteTags.AsNoTracking()
@@ -280,35 +253,24 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             .Select(x => x.TagId!.Value)
             .ToListAsync();
 
-    /// <summary>
-    /// Writes an admin's Leder change (LederSaveRules.FlagChange) to <paramref name="loginId"/>, the login the save
-    /// resolved to. The pre-write rules already refused a grant without a login; one that still finds none here lost an
-    /// Identity race creating it, so it is dropped with a warning (the list then shows "no login").
-    /// </summary>
+    /// <summary>Writes an admin's Leder change (LederSaveRules.FlagChange) to the worker's site (D-L15).</summary>
     private static async Task ApplyLederChangeAsync(BackendConfigurationPnDbContext dbContext, LederCaller? caller,
-        bool? change, int? loginId, ILogger logger)
+        bool? change, int siteId, ILogger logger)
     {
         if (caller == null || change == null)
         {
             return;
         }
 
-        if (loginId is not > 0)
-        {
-            logger.LogWarning("Leder change {Change} by user {UserId} dropped: the save resolved to no login",
-                change, caller.UserId);
-            return;
-        }
-
         if (change == true)
         {
-            await LederAssignmentStore.GrantAsync(dbContext, loginId.Value, caller.UserId).ConfigureAwait(false);
-            logger.LogInformation("Leder granted to login {LoginId} by user {UserId}", loginId, caller.UserId);
+            await LederAssignmentStore.GrantSiteAsync(dbContext, siteId, caller.UserId).ConfigureAwait(false);
+            logger.LogInformation("Leder granted to site {SiteId} by user {UserId}", siteId, caller.UserId);
         }
         else
         {
-            await LederAssignmentStore.RevokeAsync(dbContext, loginId.Value, caller.UserId).ConfigureAwait(false);
-            logger.LogInformation("Leder revoked from login {LoginId} by user {UserId}", loginId, caller.UserId);
+            await LederAssignmentStore.RevokeSiteAsync(dbContext, siteId, caller.UserId).ConfigureAwait(false);
+            logger.LogInformation("Leder revoked from site {SiteId} by user {UserId}", siteId, caller.UserId);
         }
     }
 
@@ -979,9 +941,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         // IsPluginManagedLoginAsync. A worker linked to any other
                         // account still saves its own fields, but the account's
                         // name, locale, address and groups are never touched.
-                        var loginIsManaged = user != null
-                            && await IsPluginManagedLoginAsync(userManager, baseDbContext, user).ConfigureAwait(false);
-                        var skipLoginWork = user != null && !loginIsManaged;
+                        var skipLoginWork = user != null
+                            && !await IsPluginManagedLoginAsync(userManager, baseDbContext, user).ConfigureAwait(false);
                         var emailChanged = !string.Equals(oldEmail, deviceUserModel.WorkerEmail,
                             StringComparison.OrdinalIgnoreCase);
                         if (skipLoginWork)
@@ -1046,43 +1007,38 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             }
                         }
 
-                        // Leder rules (spec section 4: D-L12, H2, M5), asked before any write below, so a refusal
-                        // leaves the worker, its tags and its login exactly as they were.
-                        bool? lederChange = null;
-                        if (lederCaller != null)
+                        // Leder rules (amendment §4: D-L12, H2), asked before any write below, so a refusal leaves the
+                        // worker, its tags and its login exactly as they were. The flag belongs to the site (D-L15).
+                        // Compared like the lookup above (the sanitized old address), so an address that only
+                        // needed the sanitizer fallback is not a change. A switch between two unlisted addresses (blank
+                        // and the generated placeholder) is none either: no login can change hands. A login whose
+                        // UserName differs from its Email is renamed by the login work below, which only an admin may
+                        // do to a Leder (H2).
+                        var oldCleanEmail = WorkerEmailSanitizer.Clean(oldEmail);
+                        var lederAddressChanged =
+                            (LederSaveRules.IsListedLoginAddress(oldCleanEmail)
+                             || LederSaveRules.IsListedLoginAddress(deviceUserModel.WorkerEmail))
+                            && !string.Equals(oldCleanEmail, deviceUserModel.WorkerEmail, StringComparison.OrdinalIgnoreCase);
+                        var loginRenamed = user != null
+                            && (!string.Equals(user.Email, deviceUserModel.WorkerEmail, StringComparison.OrdinalIgnoreCase)
+                                || !string.Equals(user.UserName, deviceUserModel.WorkerEmail, StringComparison.OrdinalIgnoreCase));
+                        // The lookups only matter to a real caller, and H2 binds non-admins only.
+                        var siteIsLeder = lederCaller is { IsAdmin: false }
+                            && await LederAssignmentStore.IsSiteLederAsync(backendConfigurationPnDbContext, site.Id)
+                                .ConfigureAwait(false);
+                        IReadOnlyCollection<int> liveStoredTagIds = lederCaller == null || lederCaller.IsAdmin || lederCaller.IsLederOrAdmin
+                            ? Array.Empty<int>()
+                            : await LiveSiteTagIdsAsync(sdkDbContext, site.Id).ConfigureAwait(false);
+                        var lederRefusal = LederSaveRules.UpdateRefusal(lederCaller, deviceUserModel,
+                            liveStoredTagIds, siteIsLeder, lederAddressChanged || loginRenamed);
+                        if (lederRefusal != null)
                         {
-                            // The plugin's membership transition runs on a login whose login work runs (`user`) and on
-                            // the one this save creates; it leaves "eForm users" iff Web and "Kun arkiv" iff Arkiv.
-                            bool? willHaveLoginAccess = user != null || existingLogin == null
-                                ? deviceUserModel.WebAccessEnabled || deviceUserModel.ArchiveEnabled
-                                : null;
-                            // Compared like the lookup above (the sanitized old address), so an address that only
-                            // needed the sanitizer fallback is not a change. A login whose UserName differs from its
-                            // Email is renamed by the login work below, which only an admin may do to a Leder (H2).
-                            var lederAddressChanged = !string.Equals(WorkerEmailSanitizer.Clean(oldEmail), deviceUserModel.WorkerEmail,
-                                StringComparison.OrdinalIgnoreCase);
-                            var loginRenamed = user != null
-                                && (!string.Equals(user.Email, deviceUserModel.WorkerEmail, StringComparison.OrdinalIgnoreCase)
-                                    || !string.Equals(user.UserName, deviceUserModel.WorkerEmail, StringComparison.OrdinalIgnoreCase));
-                            var lederLogin = existingLogin == null && skipLoginWork
-                                ? LoginFacts.NoLogin // invalid but unchanged address: no login is created
-                                : await LederLoginFactsAsync(baseDbContext, backendConfigurationPnDbContext, existingLogin,
-                                    LederSaveRules.IsListedLoginAddress(deviceUserModel.WorkerEmail), loginIsManaged,
-                                    willHaveLoginAccess, lederAddressChanged || loginRenamed).ConfigureAwait(false);
-                            IReadOnlyCollection<int> liveStoredTagIds = lederCaller.IsAdmin || lederCaller.IsLederOrAdmin
-                                ? Array.Empty<int>()
-                                : await LiveSiteTagIdsAsync(sdkDbContext, site.Id).ConfigureAwait(false);
-                            var lederRefusal = LederSaveRules.UpdateRefusal(lederCaller, deviceUserModel,
-                                liveStoredTagIds, lederLogin);
-                            if (lederRefusal != null)
-                            {
-                                logger.LogWarning("[UpdateDeviceUser] refused for site {SiteId} by user {UserId}: {Reason}",
-                                    site.Id, lederCaller.UserId, lederRefusal);
-                                return new OperationResult(false, lederRefusal);
-                            }
-
-                            lederChange = LederSaveRules.FlagChange(lederCaller, deviceUserModel, lederLogin);
+                            logger.LogWarning("[UpdateDeviceUser] refused for site {SiteId} by user {UserId}: {Reason}",
+                                site.Id, lederCaller?.UserId, lederRefusal);
+                            return new OperationResult(false, lederRefusal);
                         }
+
+                        var lederChange = LederSaveRules.FlagChange(lederCaller, deviceUserModel);
 
                         // Authoritative backend block: a worker still effectively assigned to an
                         // active event (explicitly or via a worker tag) cannot be resigned.
@@ -1447,10 +1403,9 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                 await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
                             }
                         }
-                        // The Leder flag (D-L13), after the login block: on the login found by the worker's OLD address,
-                        // or on the one this save just created, never on a lookup by the new address.
-                        await ApplyLederChangeAsync(backendConfigurationPnDbContext, lederCaller, lederChange,
-                            existingLogin?.Id ?? user?.Id, logger).ConfigureAwait(false);
+                        // The Leder flag of the worker's site (D-L15), after the login block.
+                        await ApplyLederChangeAsync(backendConfigurationPnDbContext, lederCaller, lederChange, site.Id,
+                            logger).ConfigureAwait(false);
 
                         if (deviceUserModel.TimeRegistrationEnabled == false && timePlanningDbContext.AssignedSites.Any(x => x.SiteId == siteDto.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed))
                         {
@@ -1912,7 +1867,6 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 // for one (see CreateDeviceUser_IdentityRejectsEmail_KeepsWorkerAndCreatesNoUser)
                 // is to still save the worker and simply skip creating a login for it,
                 // further down where CreateAsync itself refuses and clears `user`.
-                var identityAcceptsEmail = false;
                 if (hasWorkerEmail)
                 {
                     var createValidation = await ValidateCandidateEmailAsync(
@@ -1923,33 +1877,19 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             $"[CreateDeviceUser] refusing email={deviceUserModel.WorkerEmail}: {string.Join(",", createValidation.Errors.Select(e => e.Description))}");
                         return new OperationDataResult<int>(false, EmailRefusalErrorKey(createValidation, DeviceUserCouldNotBeCreatedKey));
                     }
-
-                    identityAcceptsEmail = createValidation.Succeeded;
                 }
 
-                // Leder rules (D-L12, H2, M5), before core.SiteCreate or any other write.
-                bool? lederChange = null;
-                if (lederCaller != null)
+                // Leder rules (D-L12), before core.SiteCreate or any other write. A new site has no flag, so H2 has
+                // nothing to protect here (amendment §4).
+                var lederRefusal = LederSaveRules.CreateRefusal(lederCaller, deviceUserModel);
+                if (lederRefusal != null)
                 {
-                    // The login this create links to (accepted by MayLinkNewWorkerToLoginAsync, so managed) or creates
-                    // (only for an address Identity accepts); null = no login. Its transition always runs.
-                    var linkTarget = existingAccountForEmail != null || identityAcceptsEmail
-                        ? await LederLoginFactsAsync(baseDbContext, backendConfigurationPnDbContext!, existingAccountForEmail,
-                            LederSaveRules.IsListedLoginAddress(deviceUserModel.WorkerEmail), isManaged: true,
-                            deviceUserModel.WebAccessEnabled || deviceUserModel.ArchiveEnabled,
-                            emailOrUserNameChanged: false).ConfigureAwait(false)
-                        : null;
-                    var lederRefusal = LederSaveRules.CreateRefusal(lederCaller, deviceUserModel, linkTarget);
-                    if (lederRefusal != null)
-                    {
-                        logger.LogWarning("[CreateDeviceUser] refused by user {UserId}: {Reason}", lederCaller.UserId,
-                            lederRefusal);
-                        return new OperationDataResult<int>(false, lederRefusal);
-                    }
-
-                    lederChange = LederSaveRules.FlagChange(lederCaller, deviceUserModel,
-                        linkTarget ?? LoginFacts.NoLogin);
+                    logger.LogWarning("[CreateDeviceUser] refused by user {UserId}: {Reason}", lederCaller?.UserId,
+                        lederRefusal);
+                    return new OperationDataResult<int>(false, lederRefusal);
                 }
+
+                var lederChange = LederSaveRules.FlagChange(lederCaller, deviceUserModel);
 
                 deviceUserModel.UserFirstName = deviceUserModel.UserFirstName.Trim();
                 deviceUserModel.UserLastName = deviceUserModel.UserLastName.Trim();
@@ -2167,9 +2107,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     }
                 }
 
-                // The Leder flag, after the login block: on the login this create linked or created.
-                // Non-null whenever lederCaller is (checked at the top); unused otherwise.
-                await ApplyLederChangeAsync(backendConfigurationPnDbContext!, lederCaller, lederChange, user?.Id, logger)
+                // The Leder flag on the new site (D-L15); the context is non-null whenever lederCaller is (checked at the top).
+                await ApplyLederChangeAsync(backendConfigurationPnDbContext!, lederCaller, lederChange, site.Id, logger)
                     .ConfigureAwait(false);
 
                 if (deviceUserModel.TimeRegistrationEnabled == true)
