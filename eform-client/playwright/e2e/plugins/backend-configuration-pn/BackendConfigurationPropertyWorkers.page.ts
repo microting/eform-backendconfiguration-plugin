@@ -437,8 +437,9 @@ export class BackendConfigurationPropertyWorkersPage {
   }
 
   /**
-   * Ticks or clears Leder (#leaderToggle, admins only) in the edit dialog and saves. Asserts that the save sent
-   * `isLeader` (it is sent only when changed) and succeeded. The caller flips the state; it is not idempotent.
+   * Ticks or clears Leder (#leaderToggle: admins, every worker, always enabled) in the edit dialog and saves.
+   * Asserts that the save sent `isLeader` (it is sent only when changed) and succeeded. The caller flips the state;
+   * it is not idempotent.
    */
   async setLeader(workerFullName: string, isLeader: boolean): Promise<void> {
     await this.openEditModalFor(workerFullName);
@@ -450,6 +451,18 @@ export class BackendConfigurationPropertyWorkersPage {
 
     const sent = await this.saveEditAndWait('Leder toggle save');
     expect(sent.isLeader, 'isLeader is sent because it changed').toBe(isLeader);
+  }
+
+  /** The Leder (Ja/Nej) cell of `workerFullName`'s row; its `data-leader` is "yes" or "no". */
+  leaderCell(workerFullName: string): Locator {
+    return this.workerRow(workerFullName).locator('[id^="leaderCell-"]');
+  }
+
+  /** Asserts the Leder column of `workerFullName` reads Ja (`true`) or Nej (`false`). */
+  async expectLeaderCell(workerFullName: string, isLeader: boolean): Promise<void> {
+    await expect(this.leaderCell(workerFullName)).toHaveAttribute('data-leader', isLeader ? 'yes' : 'no', {
+      timeout: UI_TIMEOUT,
+    });
   }
 
   async createTag(tagName: string): Promise<void> {
