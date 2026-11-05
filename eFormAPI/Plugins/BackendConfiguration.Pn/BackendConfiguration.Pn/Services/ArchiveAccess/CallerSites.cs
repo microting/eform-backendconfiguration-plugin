@@ -39,14 +39,40 @@ public static class CallerSites
             return new CallerSiteResolution(false, []);
         }
 
-        var siteIds = await (
-                from sw in sdk.SiteWorkers.AsNoTracking()
-                join site in sdk.Sites.AsNoTracking() on sw.SiteId equals site.Id
-                where sw.WorkerId != null && liveWorkerIds.Contains(sw.WorkerId.Value)
-                      && sw.WorkflowState != Removed && site.WorkflowState != Removed
-                select site.Id)
-            .Distinct()
-            .ToListAsync();
-        return new CallerSiteResolution(false, siteIds);
+        return new CallerSiteResolution(false, await LiveSitesOfWorkersAsync(sdk, liveWorkerIds));
     }
+
+    /// <summary>
+    /// The distinct live sites of every non-removed SDK worker with <paramref name="email"/>, resigned workers included:
+    /// where a per-login Leder flag goes when it is converted to its workers (D-L19). A resigned Leder's flag stays on
+    /// its site, inert until rehire (D-L18).
+    /// </summary>
+    public static async Task<List<int>> SitesOfWorkersAsync(MicrotingDbContext sdk, string email)
+    {
+        var workerIds = await sdk.Workers.AsNoTracking()
+            .Where(w => w.Email == email && w.WorkflowState != Removed)
+            .Select(w => w.Id)
+            .ToListAsync();
+        if (workerIds.Count == 0)
+        {
+            return [];
+        }
+
+        var siteIds = await LiveSitesOfWorkersAsync(sdk, workerIds);
+        siteIds.Sort();
+        return siteIds;
+    }
+
+    /// <summary>
+    /// The distinct sites of <paramref name="workerIds"/> through live SiteWorker rows whose Site is not removed. Also
+    /// the sites a worker edit touches: H2 asks whether any of them carries the Leder flag.
+    /// </summary>
+    internal static Task<List<int>> LiveSitesOfWorkersAsync(MicrotingDbContext sdk, IReadOnlyCollection<int> workerIds) =>
+        (from sw in sdk.SiteWorkers.AsNoTracking()
+            join site in sdk.Sites.AsNoTracking() on sw.SiteId equals site.Id
+            where sw.WorkerId != null && workerIds.Contains(sw.WorkerId.Value)
+                  && sw.WorkflowState != Removed && site.WorkflowState != Removed
+            select site.Id)
+        .Distinct()
+        .ToListAsync();
 }

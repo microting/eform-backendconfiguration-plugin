@@ -16,7 +16,8 @@
     timeApp: timeAppTpl,
     archiveApp: archiveAppTpl,
     chemistryApp: chemistryAppTpl,
-    halebidApp: halebidAppTpl
+    halebidApp: halebidAppTpl,
+    isLeader: isLeaderTpl
     }"
   [showPaginator]="false"
   [pageOnFront]="false"
@@ -72,12 +73,7 @@
 <!--</ng-template>-->
 
 <ng-template #fullNameTpl let-row let-i="index">
-  <div class="d-flex flex-row flex-wrap align-items-center gap-12">
-    <div class="deviceUserFullName" id="deviceUserFullName-{{i}}">{{ row.siteName }}</div>
-    <mat-chip color="primary" *ngIf="row.isLeader === true" id="leaderChip-{{i}}">
-      <span>{{ 'Leader' | translate }}</span>
-    </mat-chip>
-  </div>
+  <div class="deviceUserFullName" id="deviceUserFullName-{{i}}">{{ row.siteName }}</div>
 </ng-template>
 
 <ng-template #workerEmailTpl let-row let-i="index">
@@ -223,6 +219,14 @@
 
 <ng-template #halebidAppTpl let-row>
   <ng-container *ngTemplateOutlet="appInstallTpl; context: {app: row.halebidApp, appKey: 'halebid'}"></ng-container>
+</ng-template>
+
+<!-- Amendment §5: the Leder column, with the Archive column's Ja/Nej badges, for every viewer. -->
+<ng-template #isLeaderTpl let-row let-i="index">
+  @let cell = leaderCell(row);
+  <mat-chip id="leaderCell-{{i}}" [ngClass]="cell.cssClass" [attr.data-leader]="cell.state">
+    <span>{{ cell.label | translate }}</span>
+  </mat-chip>
 </ng-template>
 
 <ng-template #tagsTpl let-row let-i="index">

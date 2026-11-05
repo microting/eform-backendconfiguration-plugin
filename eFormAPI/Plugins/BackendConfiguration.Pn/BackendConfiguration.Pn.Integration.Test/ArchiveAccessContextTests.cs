@@ -114,21 +114,23 @@ public class ArchiveAccessContextTests : TestBaseSetup
         Assert.That(ctx.CanManage, Is.False);
     }
 
-    [TestCase(true, true, TestName = "Context_LiveWorker_AsksTheLederCheckWithLivenessTrue")]
-    [TestCase(false, true, TestName = "Context_NoLinkedWorker_AsksWithLivenessFalse")]
-    [TestCase(false, false, TestName = "Context_NoEmail_AsksWithLivenessFalse")]
+    [TestCase(true, true, TestName = "Context_LiveWorker_PassesItsLiveSiteToTheLederCheck")]
+    [TestCase(false, true, TestName = "Context_NoLinkedWorker_PassesNoSite")]
+    [TestCase(false, false, TestName = "Context_NoEmail_PassesNoSite")]
     public async Task Context_PassesTheLivenessItResolved_SoTheLederCheckAddsNoSdkQuery(bool liveSite, bool hasEmail)
     {
         var email = hasEmail ? Email() : null;
+        int[] expectedSites = [];
         if (hasEmail && liveSite)
         {
-            await WorkerAsync(email!);
+            expectedSites = [await WorkerAsync(email!)];
         }
 
         var leder = LederTestData.Leder(true);
         var ctx = await Service(email, leder: leder).GetContextAsync();
 
-        await leder.Received(1).IsLederOrAdminAsync(liveSite);
+        await leder.Received(1).IsLederOrAdminAsync(Arg.Is<LederLiveness?>(l =>
+            l != null && l.IsActive && l.LiveSiteIds.OrderBy(x => x).SequenceEqual(expectedSites)));
         Assert.That(ctx.CanManage, Is.True, "the Leder answer is passed through");
     }
 
@@ -144,7 +146,7 @@ public class ArchiveAccessContextTests : TestBaseSetup
 
         Assert.That(ctx.IsDisabled, Is.True);
         Assert.That(ctx.CanManage, Is.False);
-        await leder.DidNotReceive().IsLederOrAdminAsync(Arg.Any<bool?>());
+        await leder.DidNotReceive().IsLederOrAdminAsync(Arg.Any<LederLiveness?>());
     }
 
     [Test]

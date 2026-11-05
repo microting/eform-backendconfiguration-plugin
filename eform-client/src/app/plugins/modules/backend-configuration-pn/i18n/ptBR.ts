@@ -1192,9 +1192,7 @@ export const ptBR = {
   'Next document': 'Próximo documento',
   '{{index}} of {{count}}': '{{index}} de {{count}}',
   'Leader': 'Líder',
-  'Requires web or archive access': 'Requer acesso à web ou ao arquivo',
   "Only an administrator can change a leader's login": "Somente um administrador pode alterar o login de um líder",
   'Only administrators and leaders can do this': 'Somente administradores e líderes podem fazer isso',
   'The move changes who can read the documents. Only an administrator or a leader can do that.': 'A movimentação altera quem pode ler os documentos. Somente um administrador ou um líder pode fazer isso.',
-  'Save the worker with web or archive access first': 'Salve primeiro o funcionário com acesso à web ou ao arquivo',
 };

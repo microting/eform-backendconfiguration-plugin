@@ -15,12 +15,13 @@ import {
 } from '../wait-helpers';
 
 /**
- * Leder (shard zc). An admin grants Leder in Medarbejdere. The Leder (an archive-only login, not an admin, and not
- * in the folder's worker group) then manages Arkiv: sees the restricted folder, the ⋮ folder menu, Indbakke and
- * etiket rename/delete, and deletes a document. A normal archive user who is in the worker group reads that
- * document but cannot delete it or reach Indbakke. A non-admin in Medarbejdere sees the Leder chip but cannot set
- * Leder, change worker groups or the Leder's login. The flag follows the login (D-L13): an admin moving the login
- * to another group keeps the Leder. A revoke takes effect on the Leder's next request.
+ * Leder (shard zc), per worker (amendment D-L15-D-L19). An admin sets Leder on any worker in Medarbejdere: one with no
+ * Web or Arkiv (nothing else changes), and sees the toggle on a worker whose login is an admin. The archive Leder (an
+ * archive-only login, not an admin, and not in the folder's worker group) then manages Arkiv: the restricted folder,
+ * the ⋮ folder menu, Indbakke, etiket rename/delete, and deleting a document. A normal archive user in the worker group
+ * reads that document but cannot delete it or reach Indbakke. A non-admin in Medarbejdere sees the Leder column but
+ * cannot set Leder, change worker groups or move a Leder to another address. The flag follows the worker's site: an
+ * admin moving the login to another group keeps the Leder. A revoke takes effect on the Leder's next request.
  */
 const rand = generateRandmString(5);
 const lower = rand.toLowerCase();
@@ -41,16 +42,42 @@ const leader: PropertyWorker = {
   name: `Lea${rand}`, surname: 'Doe', language: 'Dansk', properties: [property.name!],
   workerEmail: `lea-${lower}@example.com`, archiveEnabled: true,
 };
+// Neither Web nor Arkiv: D-L16 lets an admin make this worker a Leder anyway.
+const plain: PropertyWorker = {
+  name: `Pia${rand}`, surname: 'Doe', language: 'Dansk', properties: [property.name!],
+  workerEmail: `pia-${lower}@example.com`,
+};
+// Its login gets the admin role in beforeAll: the toggle used to be hidden on such a worker.
+const boss: PropertyWorker = {
+  name: `Bo${rand}`, surname: 'Doe', language: 'Dansk', properties: [property.name!],
+  workerEmail: `bo-${lower}@example.com`, archiveEnabled: true,
+};
 const staffEmail = `staff-${lower}@example.com`;
 const readerName = `${reader.name} ${reader.surname}`;
 const leaderName = `${leader.name} ${leader.surname}`;
+const plainName = `${plain.name} ${plain.surname}`;
+const bossName = `${boss.name} ${boss.surname}`;
 const WORKERS_URL = `${BASE_URL}/plugins/backend-configuration-pn/property-workers`;
+const UPDATE_DEVICE_USER = '/api/backend-configuration-pn/properties/assignment/update-device-user';
 const isIndex = (r: Response) => r.url().includes('/properties/assignment/index-device-user') && r.request().method() === 'POST';
 const rowOf = (rows: any[], email: string) => rows.find(r => r.workerEmail === email);
 
 async function setPassword(request: APIRequestContext, adminToken: string, email: string): Promise<void> {
   await callOk(request, 'POST', '/api/account/change-password-admin', adminToken, `setting the password of ${email}`,
     { data: { newPassword: PASSWORD, confirmPassword: PASSWORD, email } });
+}
+
+/** Saves the login of `email` through the core Users endpoint with `changes` applied (a group or a role). */
+async function updateLogin(request: APIRequestContext, adminToken: string, email: string,
+  changes: Record<string, unknown>, what: string): Promise<void> {
+  const users = await call(request, 'POST', '/api/admin/get-users', adminToken, 'listing users',
+    { data: { sort: 'Id', isSortDsc: true, pageIndex: 0, pageSize: 10000, offset: 0 } });
+  const userId: number = (users?.model?.entities ?? []).find((u: any) => u.email === email)?.id ?? 0;
+  expect(userId, `login id of ${email}`).toBeGreaterThan(0);
+  const current = await call(request, 'GET', `/api/admin/user/${userId}`, adminToken, `reading the login of ${email}`);
+  await callOk(request, 'POST', '/api/admin/update-user', adminToken, what, {
+    data: { ...current.model, ...changes, password: '', passwordConfimation: '' }, timeout: SLOW_API_TIMEOUT,
+  });
 }
 
 /** Waits for a refused save: HTTP 200 (named with its body otherwise) and `success: false`. Returns the sent body. */
@@ -100,8 +127,9 @@ test.describe.serial('Leder in Arkiv and Medarbejdere', () => {
   }
 
   test.beforeAll(async ({ browser }) => {
-    // Cold admin login, a property, a group, two SDK workers, a folder, an upload and ~20 API calls.
-    test.setTimeout(480000);
+    // Cold admin login, a property, a group, four SDK workers (two more than before the per-worker change, ~30 s
+    // each), a folder, an upload, a core user update and ~20 API calls.
+    test.setTimeout(540000);
     admin = await newPage(browser);
     await loginAs(admin, ADMIN_EMAIL, ADMIN_PASSWORD, { landing: '#newEFormBtn' });
     adminToken = await apiToken(admin.request, ADMIN_EMAIL, ADMIN_PASSWORD);
@@ -114,8 +142,11 @@ test.describe.serial('Leder in Arkiv and Medarbejdere', () => {
     await workers.createTag(groupName);
     await workers.create(reader);
     await workers.create(leader);
+    await workers.create(plain);
+    await workers.create(boss);
     await setPassword(admin.request, adminToken, reader.workerEmail!);
     await setPassword(admin.request, adminToken, leader.workerEmail!);
+    await updateLogin(admin.request, adminToken, boss.workerEmail!, { role: 'admin' }, 'giving the boss login the admin role');
 
     // Restricted to the group only the reader carries: the Leder reads it as a manager, not as a member.
     const folder = await callOk(admin.request, 'POST', FOLDERS_PATH, adminToken, `creating folder ${restricted}`,
@@ -153,31 +184,42 @@ test.describe.serial('Leder in Arkiv and Medarbejdere', () => {
     }
   });
 
-  test('L1 the toggle needs Web or Arkiv on a managed login; an admin grants Leder and only that row shows the chip', async () => {
-    // A list page load, two edit dialogs, one SDK-backed save and its list refresh.
-    test.setTimeout(180000);
+  test('L1 an admin sets Leder on any worker: the toggle is always enabled, nothing else changes, the column shows Ja', async () => {
+    // Two list page loads, three edit dialogs, two SDK-backed saves and their list refreshes.
+    test.setTimeout(240000);
     const rows = await listWorkers(admin, 'the admin');
-    expect(rowOf(rows, reader.workerEmail!), 'the reader row as the admin sees it').toMatchObject({
-      isLeader: false, loginIsManaged: true, isAdminLogin: false, canSetLeder: true, canEditWorkerTags: true,
+    expect(rowOf(rows, plain.workerEmail!), 'the no-access worker as the admin sees it').toMatchObject({
+      isLeader: false, webAccessEnabled: false, archiveEnabled: false, canSetLeder: true, canEditWorkerTags: true,
     });
+    expect(rowOf(rows, boss.workerEmail!), 'the admin-login worker').toMatchObject({ isLeader: false, isAdminLogin: true });
+    await workers.expectLeaderCell(plainName, false);
+    await workers.expectLeaderCell(readerName, false);
 
-    // Arkiv off on a managed login: the Leder toggle is off and disabled, with the hint; back on, it is enabled.
-    await workers.openEditModalFor(readerName);
+    // An admin login gets the toggle too.
     const dialog = admin.locator('mat-dialog-container');
+    await workers.openEditModalFor(bossName);
     await expect(workers.leaderSwitch()).toBeEnabled({ timeout: UI_TIMEOUT });
-    await workers.toggleArchive(false);
-    await expect(workers.leaderSwitch()).toBeDisabled({ timeout: UI_TIMEOUT });
-    await expect(workers.leaderSwitch()).toHaveAttribute('aria-checked', 'false', { timeout: UI_TIMEOUT });
-    await expect(dialog.locator('#leaderToggleHint')).toBeVisible({ timeout: UI_TIMEOUT });
-    await workers.toggleArchive(true);
-    await expect(workers.leaderSwitch()).toBeEnabled({ timeout: UI_TIMEOUT });
-    await expect(dialog.locator('#leaderToggleHint')).toHaveCount(0, { timeout: UI_TIMEOUT });
     await dialog.locator('#cancelEditBtn').click({ timeout: UI_TIMEOUT });
     await expect(dialog).toHaveCount(0, { timeout: UI_TIMEOUT });
 
+    // Neither Web nor Arkiv: the toggle is enabled all the same (D-L16).
+    await workers.openEditModalFor(plainName);
+    await expect(workers.archiveSwitch()).toHaveAttribute('aria-checked', 'false', { timeout: UI_TIMEOUT });
+    await expect(workers.leaderSwitch()).toBeEnabled({ timeout: UI_TIMEOUT });
+    await dialog.locator('#cancelEditBtn').click({ timeout: UI_TIMEOUT });
+    await expect(dialog).toHaveCount(0, { timeout: UI_TIMEOUT });
+
+    await workers.setLeader(plainName, true);
+    await workers.expectLeaderCell(plainName, true);
+    await workers.expectLeaderCell(readerName, false);
+    const after = await listWorkers(admin, 'the admin');
+    expect(rowOf(after, plain.workerEmail!), 'Leder stored, no access switched on').toMatchObject({
+      isLeader: true, webAccessEnabled: false, archiveEnabled: false,
+    });
+
+    // The archive Leder of L2-L6.
     await workers.setLeader(leaderName, true);
-    await expect(workers.workerRow(leaderName).locator('[id^="leaderChip-"]')).toHaveCount(1, { timeout: UI_TIMEOUT });
-    await expect(workers.workerRow(readerName).locator('[id^="leaderChip-"]')).toHaveCount(0, { timeout: UI_TIMEOUT });
+    await workers.expectLeaderCell(leaderName, true);
   });
 
   test('L2 a normal archive user reads the restricted document but cannot delete it or reach Indbakke', async ({ browser }) => {
@@ -243,8 +285,8 @@ test.describe.serial('Leder in Arkiv and Medarbejdere', () => {
     leaderToken = await apiToken(page.request, leader.workerEmail!, PASSWORD);
   });
 
-  test('L4 a non-admin in Medarbejdere sees the Leder chip but cannot set Leder, worker groups or the Leder\'s login', async ({ browser }) => {
-    // Cold login onto the list, an edit and a create dialog, each with a refused SDK-backed save.
+  test('L4 a non-admin sees the Leder column but cannot set Leder, worker groups or a Leder\'s address', async ({ browser }) => {
+    // Cold login onto the list, an edit and a create dialog, one refused SDK-backed create and one refused API save.
     test.setTimeout(240000);
     const page = await newPage(browser);
     // The group lands on Medarbejdere. Its list call is taken from that landing, not from a reload: on a reload
@@ -257,9 +299,12 @@ test.describe.serial('Leder in Arkiv and Medarbejdere', () => {
     expect(rowOf(rows, leader.workerEmail!), 'the Leder row as a non-admin sees it').toMatchObject({
       isLeader: true, canSetLeder: false, canEditWorkerTags: false,
     });
+    expect(rowOf(rows, plain.workerEmail!), 'the no-access Leder').toMatchObject({ isLeader: true });
+    expect(rowOf(rows, reader.workerEmail!), 'the reader').toMatchObject({ isLeader: false });
 
     const staffWorkers = new BackendConfigurationPropertyWorkersPage(page);
-    await expect(staffWorkers.workerRow(leaderName).locator('[id^="leaderChip-"]')).toHaveCount(1, { timeout: UI_TIMEOUT });
+    await staffWorkers.expectLeaderCell(leaderName, true);
+    await staffWorkers.expectLeaderCell(readerName, false);
     await expect(page.locator('#bulkWorkerTagsBtn')).toHaveCount(0, { timeout: UI_TIMEOUT });
 
     await staffWorkers.openEditModalFor(leaderName);
@@ -268,28 +313,19 @@ test.describe.serial('Leder in Arkiv and Medarbejdere', () => {
     await expect(dialog.locator('#tagSelector')).toHaveCount(0, { timeout: UI_TIMEOUT });
     await expect(dialog.locator('#workerEmail'), 'the Leder\'s login is read-only for a non-admin').not.toBeEditable({ timeout: UI_TIMEOUT });
     await expect(dialog.locator('#leaderLoginHint')).toBeVisible({ timeout: UI_TIMEOUT });
-
-    // Arkiv off would leave the Leder's managed login without login access: the API refuses (H2). The dialog stays
-    // open and the toast carries the API's localized message.
-    await staffWorkers.toggleArchive(false);
-    const update = waitForApiResponse(page, 'POST update-device-user (refused Leder change)',
-      r => r.url().includes('/properties/assignment/update-device-user') && r.request().method() === 'POST', SLOW_API_TIMEOUT);
-    // Awaited after the click, which can throw first.
-    ignoreUnhandledRejections(update);
-    await staffWorkers.saveEditBtn().click({ timeout: UI_TIMEOUT });
-    const sent = await expectRefused(update, 'update-device-user as a non-admin');
-    expect(sent.isLeader, 'a non-admin never sends isLeader').toBeNull();
-    expect(sent.tags, 'the hidden worker groups go back unchanged').toEqual(rowOf(rows, leader.workerEmail!).tags ?? []);
-    await expect(page.locator('#toast-container .toast-error',
-      { hasText: /Kun en administrator kan ændre en leders login|Only an administrator can change a leader's login/ }))
-      .toHaveCount(1, { timeout: UI_TIMEOUT });
-    await expect(staffWorkers.saveEditBtn()).toBeVisible({ timeout: UI_TIMEOUT });
     await dialog.locator('#cancelEditBtn').click({ timeout: UI_TIMEOUT });
     await expect(dialog).toHaveCount(0, { timeout: UI_TIMEOUT });
 
-    // A refused create keeps its dialog open as well. The Leder's address already belongs to a worker, so the API
-    // refuses before any write (a non-admin cannot reach the Leder-specific create refusals through the UI: the
-    // worker groups field is hidden and the address check comes first).
+    // H2 on the server: the read-only field is only the UI. The row as listed, with another address and no isLeader.
+    const staffToken = await apiToken(page.request, staffEmail, PASSWORD);
+    const moved = { ...rowOf(rows, leader.workerEmail!), workerEmail: `moved-${lower}@example.com`, isLeader: null };
+    const refused = await call(page.request, 'POST', UPDATE_DEVICE_USER, staffToken,
+      'update-device-user moving a Leder to another address as a non-admin', { data: moved, timeout: SLOW_API_TIMEOUT });
+    expect(refused?.success, `a non-admin cannot move a Leder to another address (${refused?.message ?? ''})`).toBe(false);
+    expect(refused?.message).toMatch(/Kun en administrator kan ændre en leders login|Only an administrator can change a leader's login/);
+
+    // A refused create keeps its dialog open. The Leder's address already belongs to a worker, so the API refuses
+    // before any write.
     await staffWorkers.openCreateModal({ name: `Nina${rand}`, surname: 'Doe', language: 'Dansk', workerEmail: leader.workerEmail });
     const create = waitForApiResponse(page, 'PUT create-device-user (refused create)',
       r => r.url().includes('/properties/assignment/create-device-user') && r.request().method() === 'PUT', SLOW_API_TIMEOUT);
@@ -308,23 +344,17 @@ test.describe.serial('Leder in Arkiv and Medarbejdere', () => {
   test('L5 the Leder stays a Leder after an admin moves the login to another group on the core Users endpoint', async () => {
     // Three core admin calls (update-user is SDK-backed), one capabilities call and a list page load.
     test.setTimeout(120000);
-    const users = await call(admin.request, 'POST', '/api/admin/get-users', adminToken, 'listing users',
-      { data: { sort: 'Id', isSortDsc: true, pageIndex: 0, pageSize: 10000, offset: 0 } });
-    const userId: number = (users?.model?.entities ?? []).find((u: any) => u.email === leader.workerEmail)?.id ?? 0;
-    expect(userId, `login id of ${leader.workerEmail}`).toBeGreaterThan(0);
-    const current = await call(admin.request, 'GET', `/api/admin/user/${userId}`, adminToken, 'reading the Leder login');
-    await callOk(admin.request, 'POST', '/api/admin/update-user', adminToken, 'moving the Leder login to another group', {
-      data: { ...current.model, groupId: staffGroupId, password: '', passwordConfimation: '' }, timeout: SLOW_API_TIMEOUT,
-    });
+    await updateLogin(admin.request, adminToken, leader.workerEmail!, { groupId: staffGroupId },
+      'moving the Leder login to another group');
 
-    // D-L13: the flag belongs to the login, not to a group the core Users page can drop.
+    // The flag belongs to the worker's site, which the core Users page cannot touch.
     const capabilities = await callOk(admin.request, 'GET', CAPABILITIES_PATH, leaderToken, 'capabilities after the group change');
     expect(capabilities.model?.canManage, 'canManage after the group change').toBe(true);
     const rows = await listWorkers(admin, 'the admin');
     expect(rowOf(rows, leader.workerEmail!), 'the Leder row after the group change').toMatchObject({
       isLeader: true, loginIsManaged: false,
     });
-    await expect(workers.workerRow(leaderName).locator('[id^="leaderChip-"]')).toHaveCount(1, { timeout: UI_TIMEOUT });
+    await workers.expectLeaderCell(leaderName, true);
   });
 
   test('L6 a revoke takes effect on the Leder\'s next request, with the same token', async () => {
@@ -332,9 +362,9 @@ test.describe.serial('Leder in Arkiv and Medarbejdere', () => {
     test.setTimeout(120000);
     expect(leaderToken, 'the Leder signed in in L3').not.toBe('');
     await listWorkers(admin, 'the admin');
-    // The login is now in an owner group (unmanaged): Web and Arkiv read off, the toggle is enabled anyway.
+    // The login is now in an owner group (unmanaged); the toggle is enabled anyway.
     await workers.setLeader(leaderName, false);
-    await expect(workers.workerRow(leaderName).locator('[id^="leaderChip-"]')).toHaveCount(0, { timeout: UI_TIMEOUT });
+    await workers.expectLeaderCell(leaderName, false);
 
     // No new token: the API checks the flag on every request (D-L6).
     await call(admin.request, 'GET', `${ARCHIVE_API}/inbox`, leaderToken, 'GET inbox with the former Leder\'s token', { status: 403 });

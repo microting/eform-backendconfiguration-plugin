@@ -372,10 +372,11 @@ public class BackendConfigurationAssignmentWorkerService(
                         BackendConfigurationAssignmentWorkerServiceHelper.WorkerStillAssignedToEventsCannotDeleteKey));
             }
 
-            // M6: revoke after every refusal, before any delete (SiteDelete removes the SiteWorker the login is found by).
-            // Not in a transaction with the cleanup: if the delete then fails, the flag is gone and an admin re-ticks Leder.
-            var workerEmail = await ReadWorkerEmailAsync(sdkDbContext, site).ConfigureAwait(false);
-            await RevokeLederOfWorkerAsync(workerEmail).ConfigureAwait(false);
+            // Worker deleted: the site's Leder flag is revoked after every refusal and before any
+            // delete. Not in a transaction with the cleanup: if the delete then fails, the flag is gone and an admin
+            // re-ticks Leder.
+            await LederAssignmentStore.RevokeSiteAsync(backendConfigurationPnDbContext, deviceUserId, userService.UserId)
+                .ConfigureAwait(false);
 
             foreach (var propertyAssignment in propertyWorkers)
             {
@@ -461,32 +462,6 @@ public class BackendConfigurationAssignmentWorkerService(
             logger.LogTrace(e.StackTrace);
             return new OperationResult(false,
                 $"{backendConfigurationLocalizationService.GetString("ErrorWhilDeleteAssignmentsProperties")}: {e.Message}");
-        }
-    }
-
-    /// <summary>The address of the site's live worker (lowest SiteWorker id, deterministic on legacy data); null without a site.</summary>
-    private static async Task<string> ReadWorkerEmailAsync(Microting.eForm.Infrastructure.MicrotingDbContext sdkDbContext,
-        Microting.eForm.Infrastructure.Data.Entities.Site site) =>
-        site == null
-            ? null
-            : await sdkDbContext.SiteWorkers
-                .Where(sw => sw.SiteId == site.Id && sw.WorkflowState != Constants.WorkflowStates.Removed)
-                .OrderBy(sw => sw.Id)
-                .Select(sw => sw.Worker.Email)
-                .FirstOrDefaultAsync().ConfigureAwait(false);
-
-    /// <summary>
-    /// M6: removes the Leder flag of the login <paramref name="workerEmail"/> resolves to (hygiene: liveness would ignore
-    /// it anyway). Live worker addresses are unique, so that login was this worker's only one. Its groups are untouched.
-    /// </summary>
-    private async Task RevokeLederOfWorkerAsync(string workerEmail)
-    {
-        var login = await BackendConfigurationAssignmentWorkerServiceHelper
-            .FindLoginByStoredAddressAsync(userManager, workerEmail).ConfigureAwait(false);
-        if (login != null)
-        {
-            await LederAssignmentStore.RevokeAsync(backendConfigurationPnDbContext, login.Id, userService.UserId)
-                .ConfigureAwait(false);
         }
     }
 
@@ -607,10 +582,10 @@ public class BackendConfigurationAssignmentWorkerService(
             var chemistrySiteIds = await LoadChemistryAccess(siteIds).ConfigureAwait(false);
             var halebidSiteIds = await LoadHalebidAccess(siteIds).ConfigureAwait(false);
 
-            // Leder read-back (contract "Medarbejdere"): once per page, never per row.
+            // Leder read-back: the flag of each row's own site, one query per list.
             var canSetLeder = userService.IsAdmin();
             var canEditWorkerTags = await leder.IsLederOrAdminAsync().ConfigureAwait(false);
-            var lederLoginIds = await LederAssignmentStore.LiveEformUserIdsAsync(backendConfigurationPnDbContext)
+            var lederSiteIds = await LederAssignmentStore.LiveSiteIdsAsync(backendConfigurationPnDbContext, siteIds)
                 .ConfigureAwait(false);
             var adminRoleLoginIds = await BackendConfigurationAssignmentWorkerServiceHelper
                 .AdminRoleUserIdsAsync(baseDbContext).ConfigureAwait(false);
@@ -619,6 +594,7 @@ public class BackendConfigurationAssignmentWorkerService(
             {
                 deviceUserModel.CanSetLeder = canSetLeder;
                 deviceUserModel.CanEditWorkerTags = canEditWorkerTags;
+                deviceUserModel.IsLeader = lederSiteIds.Contains(deviceUserModel.SiteId);
                 unitsBySiteId.TryGetValue(deviceUserModel.SiteId, out var unit);
                 if (unit != null)
                 {
@@ -710,7 +686,7 @@ public class BackendConfigurationAssignmentWorkerService(
                                                                   && workerTagIds.Contains(wt.TagId)))
                     .CountAsync().ConfigureAwait(false);
 
-                await ReadBackLoginAsync(deviceUserModel, lederLoginIds, adminRoleLoginIds).ConfigureAwait(false);
+                await ReadBackLoginAsync(deviceUserModel, adminRoleLoginIds).ConfigureAwait(false);
 
                 // deviceUserModel.IsBackendUser = deviceUserModel.IsLocked;
 
@@ -789,12 +765,11 @@ public class BackendConfigurationAssignmentWorkerService(
         ILookup<string, AppUserVersions> ByEmail);
 
     /// <summary>
-    /// The login read-back of one Medarbejdere row: Web/Arkiv (live groups) and the Leder fields (contract "Medarbejdere").
-    /// One group query per row, as before; the Leder and admin-role sets are loaded once per page by the caller.
-    /// Without a listed address or a resolved login the row keeps IsLeader = null.
+    /// The login read-back of one Medarbejdere row: Web/Arkiv (live groups), LoginIsManaged and IsAdminLogin. One group
+    /// query per row, as before; the admin-role set is loaded once per page by the caller. Without a listed address or a
+    /// resolved login these stay false. IsLeader is the site's flag and is set by the caller.
     /// </summary>
-    private async Task ReadBackLoginAsync(DeviceUserModel deviceUserModel, HashSet<int> lederLoginIds,
-        HashSet<int> adminRoleLoginIds)
+    private async Task ReadBackLoginAsync(DeviceUserModel deviceUserModel, HashSet<int> adminRoleLoginIds)
     {
         if (!LederSaveRules.IsListedLoginAddress(deviceUserModel.WorkerEmail))
         {
@@ -831,7 +806,6 @@ public class BackendConfigurationAssignmentWorkerService(
 
         var allNames = groups.Select(x => x.Name);
         var hasAdminRole = adminRoleLoginIds.Contains(user.Id);
-        deviceUserModel.IsLeader = lederLoginIds.Contains(user.Id);
         deviceUserModel.LoginIsManaged = BackendConfigurationAssignmentWorkerServiceHelper
             .IsPluginManagedLogin(user.Id, hasAdminRole, allNames);
         deviceUserModel.IsAdminLogin = hasAdminRole || liveNames.Contains(
@@ -987,7 +961,7 @@ public class BackendConfigurationAssignmentWorkerService(
 
     private static string NullIfBlank(string value) => string.IsNullOrWhiteSpace(value) ? null : value;
 
-    /// <summary>The caller of a Medarbejdere save (contract "Medarbejdere"); every HTTP save passes one.</summary>
+    /// <summary>The caller of a Medarbejdere save; every HTTP save passes one.</summary>
     private async Task<LederCaller> LederCallerAsync() =>
         new(userService.IsAdmin(), await leder.IsLederOrAdminAsync().ConfigureAwait(false), userService.UserId);
 

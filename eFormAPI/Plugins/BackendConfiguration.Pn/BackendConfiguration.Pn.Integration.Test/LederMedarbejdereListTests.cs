@@ -8,7 +8,7 @@ using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
-/// <summary>Contract "Medarbejdere": the list's Leder read-back (the stored flag, by login id) and the caller flags.</summary>
+/// <summary>The list's Leder read-back (each row's own site, one query per list) and the caller flags.</summary>
 [Parallelizable(ParallelScope.Fixtures)]
 [TestFixture]
 public class LederMedarbejdereListTests : LederWorkerTestBase
@@ -28,18 +28,20 @@ public class LederMedarbejdereListTests : LederWorkerTestBase
     }
 
     [Test]
-    public async Task IsLeader_IsTheStoredFlagOfTheResolvedLogin()
+    public async Task IsLeader_IsTheFlagOfEachRowsOwnSite()
     {
         var granted = await CreateWorkerAsync(isLeader: true);
         var revoked = await CreateWorkerAsync(isLeader: true);
         Assert.That((await UpdateAsync(revoked, Admin, isLeader: false)).Success, Is.True);
         var never = await CreateWorkerAsync();
+        var noAccess = await CreateWorkerAsync(Admin, web: false, archive: false, isLeader: true);
 
         var rows = await ListAsync();
 
         Assert.That(Row(rows, granted).IsLeader, Is.True);
         Assert.That(Row(rows, revoked).IsLeader, Is.False, "a removed row reads false");
         Assert.That(Row(rows, never).IsLeader, Is.False);
+        Assert.That(Row(rows, noAccess).IsLeader, Is.True, "D-L16: a worker without access can be a Leder");
     }
 
     private async Task<string> StoredWorkerAddressAsync(Worker w)
@@ -53,16 +55,19 @@ public class LederMedarbejdereListTests : LederWorkerTestBase
     }
 
     [Test]
-    public async Task EmptyAddress_IsNotLookedUp_ReadsUnknown()
+    public async Task EmptyAddress_IsNotLookedUp_ButShowsTheSitesFlag()
     {
         // Create stores an empty address as it is (only UpdateDeviceUser generates "...@microting.invalid").
         var noAddress = await CreateWorkerAsync(web: false, archive: false, email: "");
         Assert.That(await StoredWorkerAddressAsync(noAddress), Is.Empty, "precondition: the stored SDK worker address");
 
-        var row = Row(await ListAsync(), noAddress);
+        var before = Row(await ListAsync(), noAddress);
+        Assert.That(before.WorkerEmail, Is.Empty);
+        Assert.That((before.IsLeader, before.LoginIsManaged, before.IsAdminLogin), Is.EqualTo(((bool?)false, false, false)));
 
-        Assert.That(row.WorkerEmail, Is.Empty);
-        Assert.That((row.IsLeader, row.LoginIsManaged, row.IsAdminLogin), Is.EqualTo(((bool?)null, false, false)));
+        await LederAssignmentStore.GrantSiteAsync(BackendConfigurationPnDbContext!, noAddress.SiteId, ActorId);
+        var after = Row(await ListAsync(), noAddress);
+        Assert.That((after.IsLeader, after.LoginIsManaged, after.IsAdminLogin), Is.EqualTo(((bool?)true, false, false)));
     }
 
     [Test]
@@ -78,24 +83,25 @@ public class LederMedarbejdereListTests : LederWorkerTestBase
             await sdkDbContext.SaveChangesAsync();
         }
 
-        // A Leder login at that very address: the list must still not resolve it.
+        // A login at that very address: the list must still not resolve it.
         var login = new EformUser
         {
             Email = placeholder, UserName = placeholder, FirstName = "Jane", LastName = "Doe", Locale = "da",
             EmailConfirmed = true, IsActive = true, TimeZone = "Europe/Copenhagen", Formats = "de-DE"
         };
         Assert.That((await UserManager.CreateAsync(login)).Succeeded, Is.True);
-        await LederAssignmentStore.GrantAsync(BackendConfigurationPnDbContext!, login.Id, ActorId);
+        await LederAssignmentStore.GrantSiteAsync(BackendConfigurationPnDbContext!, w.SiteId, ActorId);
         Assert.That(await StoredWorkerAddressAsync(w), Is.EqualTo(placeholder), "precondition: the stored SDK worker address");
 
         var row = Row(await ListAsync(), w);
 
         Assert.That(row.WorkerEmail, Is.EqualTo(placeholder));
-        Assert.That((row.IsLeader, row.LoginIsManaged, row.IsAdminLogin), Is.EqualTo(((bool?)null, false, false)));
+        Assert.That((row.IsLeader, row.LoginIsManaged, row.IsAdminLogin), Is.EqualTo(((bool?)true, false, false)),
+            "the site's flag shows; the placeholder login is never resolved");
     }
 
     [Test]
-    public async Task ListedAddress_WithoutALogin_ReadsUnknown()
+    public async Task ListedAddress_WithoutALogin_StillShowsTheSitesFlag()
     {
         var w = await CreateWorkerAsync(isLeader: true);
         // Move the worker's login to another address: the worker's own (valid, listed) address now resolves to no login.
@@ -107,8 +113,8 @@ public class LederMedarbejdereListTests : LederWorkerTestBase
         var row = Row(await ListAsync(), w);
 
         Assert.That(row.WorkerEmail, Is.EqualTo(w.Email));
-        Assert.That((row.IsLeader, row.LoginIsManaged, row.IsAdminLogin), Is.EqualTo(((bool?)null, false, false)),
-            "a listed address without a login: unknown, even though that login holds the flag");
+        Assert.That((row.IsLeader, row.LoginIsManaged, row.IsAdminLogin), Is.EqualTo(((bool?)true, false, false)),
+            "a listed address without a login: no login fields, but the site's flag");
     }
 
     [Test]
@@ -170,18 +176,17 @@ public class LederMedarbejdereListTests : LederWorkerTestBase
     public async Task UpdateDeviceUser_ThroughTheService_PassesTheCaller()
     {
         var w = await CreateWorkerAsync();
-        var login = await LoginOfAsync(w);
         var rows = await ListAsync();
         var row = Row(rows, w);
         row.IsLeader = true;
 
         var byNonAdmin = await Service(ServiceCaller(ActorId, isAdmin: false), LederTestData.Leder(false)).UpdateDeviceUser(row);
         Assert.That(byNonAdmin.Success, Is.True, byNonAdmin.Message);
-        Assert.That(await IsLederAsync(login.Id), Is.False, "a non-admin's isLeader is ignored");
+        Assert.That(await IsLederAsync(w), Is.False, "a non-admin's isLeader is ignored");
 
         var byAdmin = await AdminService().UpdateDeviceUser(row);
         Assert.That(byAdmin.Success, Is.True, byAdmin.Message);
-        Assert.That(await IsLederAsync(login.Id), Is.True);
+        Assert.That(await IsLederAsync(w), Is.True);
     }
 
     [Test]
@@ -197,6 +202,6 @@ public class LederMedarbejdereListTests : LederWorkerTestBase
         var row = Row(await ListAsync(callerIsAdmin: false, callerIsLeder: false), w);
 
         Assert.That((await LoginOfAsync(w)).UserName, Is.EqualTo(otherUserName), "a list load never renames a login");
-        Assert.That(row.IsLeader, Is.True, "the e-mail match still resolves the login");
+        Assert.That(row.IsLeader, Is.True, "the site's flag shows");
     }
 }

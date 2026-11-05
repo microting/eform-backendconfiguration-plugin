@@ -52,20 +52,19 @@ public class LederArchiveGateTests : TestBaseSetup
     [Test]
     public async Task EformAdminsMember_WithTheUserRole_NoFlag_NoWorker_Passes()
     {
-        // D-L10: CanManage = true and Indbakke (class-gated by [ArchiveManager]) passes, with no LederAssignments row.
+        // D-L10: CanManage = true and Indbakke (class-gated by [ArchiveManager]) passes, with no worker and no flag.
         var login = await LederTestData.LoginAsync(BaseDbContext, _userManager,
             BackendConfigurationAssignmentWorkerServiceHelper.EformAdminsSecurityGroupName);
 
         Assert.That(await GateAsync(login.Id), Is.Null);
-        Assert.That(await LederAssignmentStore.HasLiveRowAsync(BackendConfigurationPnDbContext!, login.Id), Is.False);
     }
 
     [Test]
-    public async Task Leder_WithALiveWorker_Passes()
+    public async Task Leder_WithAFlaggedLiveSite_Passes()
     {
         var login = await LederTestData.LoginAsync(BaseDbContext, _userManager, "eForm users");
-        await LederTestData.LiveWorkerAsync(_core, login.Email!);
-        await LederAssignmentStore.GrantAsync(BackendConfigurationPnDbContext!, login.Id, login.Id);
+        var site = await LederTestData.LiveWorkerAsync(_core, login.Email!);
+        await LederAssignmentStore.GrantSiteAsync(BackendConfigurationPnDbContext!, site.Id, login.Id);
 
         Assert.That(await GateAsync(login.Id), Is.Null);
     }
@@ -84,9 +83,9 @@ public class LederArchiveGateTests : TestBaseSetup
     public async Task ResignedLeder_IsAccountDisabled()
     {
         var login = await LederTestData.LoginAsync(BaseDbContext, _userManager, "eForm users");
-        var siteUid = await LederTestData.LiveWorkerAsync(_core, login.Email!);
-        await LederAssignmentStore.GrantAsync(BackendConfigurationPnDbContext!, login.Id, login.Id);
-        var workerUid = (await _core.SiteRead(siteUid)).WorkerUid;
+        var site = await LederTestData.LiveWorkerAsync(_core, login.Email!);
+        await LederAssignmentStore.GrantSiteAsync(BackendConfigurationPnDbContext!, site.Id, login.Id);
+        var workerUid = (await _core.SiteRead(site.Uid)).WorkerUid;
         await _core.DbContextHelper.GetDbContext().Workers.Where(w => w.MicrotingUid == workerUid)
             .ExecuteUpdateAsync(x => x.SetProperty(w => w.Resigned, true));
 

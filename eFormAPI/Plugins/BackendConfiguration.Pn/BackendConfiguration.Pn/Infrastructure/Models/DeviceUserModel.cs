@@ -99,17 +99,17 @@ public class DeviceUserModel
     public bool WebAccessEnabled { get; set; }
 
     /// <summary>
-    /// In: null = unchanged; true/false grant or revoke Leder, applied only for an admin caller and ignored otherwise.
-    /// Out: the stored flag of the login this row resolves to; null when there is none.
+    /// In: null = unchanged; true/false grant or revoke Leder on this worker's site, applied only for an admin caller and
+    /// ignored otherwise. Out: whether the worker's site has a live flag (always true or false).
     /// </summary>
     public bool? IsLeader { get; set; }
 
     // Out only (ignored in) from here to CanEditWorkerTags.
 
-    /// <summary>This plugin manages the resolved login's groups; false when there is none.</summary>
+    /// <summary>This plugin manages the resolved login's groups; false when there is none. Shown for context; it gates nothing.</summary>
     public bool LoginIsManaged { get; set; }
 
-    /// <summary>The resolved login is an admin; the modal hides the Leder toggle.</summary>
+    /// <summary>The resolved login has the admin role or is in "eForm admins"; shown for context, it does not gate the Leder toggle.</summary>
     public bool IsAdminLogin { get; set; }
 
     /// <summary>The caller may toggle Leder.</summary>

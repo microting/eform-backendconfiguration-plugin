@@ -1192,9 +1192,7 @@ export const itIT = {
   'Next document': 'Documento successivo',
   '{{index}} of {{count}}': '{{index}} di {{count}}',
   'Leader': 'Responsabile',
-  "Requires web or archive access": "Richiede l'accesso web o all'archivio",
   "Only an administrator can change a leader's login": "Solo un amministratore può modificare l'accesso di un responsabile",
   'Only administrators and leaders can do this': 'Solo gli amministratori e i responsabili possono farlo',
   'The move changes who can read the documents. Only an administrator or a leader can do that.': 'Lo spostamento cambia chi può leggere i documenti. Solo un amministratore o un responsabile può farlo.',
-  "Save the worker with web or archive access first": "Salva prima il collaboratore con l'accesso web o all'archivio",
 };

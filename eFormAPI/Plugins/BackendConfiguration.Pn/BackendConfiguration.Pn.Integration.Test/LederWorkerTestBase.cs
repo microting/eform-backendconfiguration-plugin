@@ -117,8 +117,9 @@ public abstract class LederWorkerTestBase : TestBaseSetup
         await LederTestData.AddMemberAsync(BaseDbContext, loginId,
             await LederTestData.NewGroupAsync(BaseDbContext, "Bogholderi"));
 
-    protected Task<bool> IsLederAsync(int eformUserId) =>
-        LederAssignmentStore.HasLiveRowAsync(BackendConfigurationPnDbContext!, eformUserId);
+    /// <summary>The worker's site has a live Leder flag (D-L15).</summary>
+    protected Task<bool> IsLederAsync(Worker w) =>
+        LederAssignmentStore.IsSiteLederAsync(BackendConfigurationPnDbContext!, w.SiteId);
 
     protected Task<List<string>> GroupNamesOfAsync(int eformUserId) =>
         LederTestData.GroupNamesOfAsync(BaseDbContext, eformUserId);
