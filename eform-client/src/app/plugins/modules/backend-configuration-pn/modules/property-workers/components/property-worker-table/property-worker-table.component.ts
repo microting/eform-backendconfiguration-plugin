@@ -5,7 +5,7 @@ import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {MtxGridColumn, MtxGrid} from '@ng-matero/extensions/grid';
 import {AppInstallModel, DeviceUserModel, PropertyAssignWorkersModel} from '../../../../models';
 import {APP_INSTALL_STATE_CLASS, APP_INSTALL_STATE_LABEL, appInstallState, AppInstallState} from './app-install-state';
-import {CallerFlags, NO_CALLER_FLAGS} from '../../leader.helper';
+import {CallerFlags, LeaderCell, NO_CALLER_FLAGS, leaderCell as leaderCellOf} from '../../leader.helper';
 import {PropertyWorkersStateService} from '../store';
 import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {combineLatest, Subject, Subscription, of} from 'rxjs';
@@ -225,6 +225,8 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
       {header: of('Archive'), field: 'archiveApp'},
       {header: of('Chemistry'), field: 'chemistryApp'},
       {header: of('Halebid'), field: 'halebidApp'},
+      // Amendment §5: who is Leder, for everyone who can open the page (the chip next to the name is gone).
+      {header: this.translateService.stream('Leader'), field: 'isLeader'},
       {
         header: this.translateService.stream('Customer no & OTP'),
         field: 'customerOtp',
@@ -272,6 +274,10 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
 
   appStateClass(app: AppInstallModel | undefined): string {
     return APP_INSTALL_STATE_CLASS[appInstallState(app)];
+  }
+
+  leaderCell(row: DeviceUserModel): LeaderCell {
+    return leaderCellOf(row);
   }
 
   /** Model and OS of the device that reported the version; empty when unknown. */

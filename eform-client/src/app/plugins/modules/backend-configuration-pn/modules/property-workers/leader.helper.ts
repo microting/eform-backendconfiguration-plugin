@@ -27,29 +27,17 @@ export function callerFlags(
   return {canSetLeder: first.canSetLeder === true, canEditWorkerTags: first.canEditWorkerTags === true};
 }
 
-export type LeaderRow = Partial<Pick<DeviceUserModel, 'canSetLeder' | 'isAdminLogin' | 'isLeader' | 'loginIsManaged'>>;
 type RowWith<K extends keyof DeviceUserModel> = Partial<Pick<DeviceUserModel, K>>;
-export type LeaderToggleState = 'hidden' | 'disabled' | 'enabled';
 
 /**
- * The Leder toggle in the worker dialog (contract "Web (Plan 3)"). Hidden for non-admins and on admin logins.
- * Disabled when the row has no login, or when the plugin manages the login and Web and Arkiv are both off (the API
- * would answer LederRequiresLogin). An owner-group login reads Web = Arkiv = off but has its own group: enabled.
+ * The Leder toggle in the worker dialog (amendment §5): admins (canSetLeder) get it on every worker, always enabled.
+ * There is no access condition (D-L16): a worker without login, Web or Arkiv can be a Leder. Non-admins never see it.
  */
-export function leaderToggleState(row: LeaderRow, webOn: boolean, archiveOn: boolean): LeaderToggleState {
-  if (row.canSetLeder !== true || row.isAdminLogin === true) {
-    return 'hidden';
-  }
-  if (row.isLeader === null || row.isLeader === undefined) {
-    return 'disabled';
-  }
-  if (row.loginIsManaged === true && !webOn && !archiveOn) {
-    return 'disabled';
-  }
-  return 'enabled';
+export function showLeaderToggle(row: RowWith<'canSetLeder'>): boolean {
+  return row.canSetLeder === true;
 }
 
-/** `isLeader` on save: the new value only when it changed, else null ("unchanged"). No login (null) counts as off. */
+/** `isLeader` on save: the new value only when it changed, else null ("unchanged"). A missing stored value counts as off. */
 export function leaderToSend(original: boolean | null, current: boolean | null): boolean | null {
   if (current === null) {
     return null;
@@ -57,32 +45,24 @@ export function leaderToSend(original: boolean | null, current: boolean | null):
   return current === (original === true) ? null : current;
 }
 
-/**
- * The Leder choice for leaderToSend. `choice` is the admin's last choice (the toggle's value, or the value it had
- * before it was disabled); `changedByAdmin` says the admin flipped the toggle in this edit.
- * - Hidden: null ("no choice").
- * - Enabled, or changed by the admin: the choice, even if the toggle ends disabled. A deliberate untick is a revoke;
- *   a deliberate tick on a login that has since lost Web and Arkiv goes to the API, which refuses it.
- * - Disabled and not changed: null when it was disabled at open too (a managed Leder whose Web and Arkiv were
- *   already off would otherwise lose the role on an unrelated save); false when this edit switched access off, as
- *   the API revokes then.
- */
-export function leaderChoice(
-  state: LeaderToggleState,
-  stateAtOpen: LeaderToggleState,
-  choice: boolean,
-  changedByAdmin: boolean,
-): boolean | null {
-  if (state === 'hidden') {
-    return null;
-  }
-  if (state === 'enabled' || changedByAdmin) {
-    return choice;
-  }
-  return stateAtOpen === 'disabled' ? null : false;
+/** One cell of the Leder column. */
+export interface LeaderCell {
+  /** Translation key: Ja / Nej. */
+  label: 'Yes' | 'No';
+  /** The Archive column's status tags (APP_INSTALL_STATE_CLASS 'installed' / 'no-access'). */
+  cssClass: 'tag-success' | 'tag-error';
+  /** `data-leader`, for e2e. */
+  state: 'yes' | 'no';
 }
 
-/** A Leder's login (e-mail) is changed by an admin only (spec H2): read-only for everyone else. */
+/** The Leder column (amendment §5) for every viewer: Ja only for a stored flag, anything else Nej. */
+export function leaderCell(row: RowWith<'isLeader'>): LeaderCell {
+  return row.isLeader === true
+    ? {label: 'Yes', cssClass: 'tag-success', state: 'yes'}
+    : {label: 'No', cssClass: 'tag-error', state: 'no'};
+}
+
+/** A Leder's login (e-mail) is changed by an admin only (H2): read-only for everyone else. */
 export function isLeaderLoginLocked(row: RowWith<'canSetLeder' | 'isLeader'>): boolean {
   return row.canSetLeder !== true && row.isLeader === true;
 }
@@ -99,10 +79,7 @@ export function workerTagsToSend(
   return row.canEditWorkerTags === true ? [...(edited ?? stored)] : [...stored];
 }
 
-/**
- * The row the create dialog starts from. The save creates a plugin-managed login when Web or Arkiv is on, so the
- * toggle follows those two; an address that links to an existing login is judged by the API (LederRequiresLogin).
- */
+/** The row the create dialog starts from: no Leder yet, the caller's flags, no worker groups. */
 export function newWorkerRow(flags: CallerFlags): Partial<DeviceUserModel> {
-  return {...flags, isLeader: false, loginIsManaged: true, isAdminLogin: false, tags: []};
+  return {...flags, isLeader: false, tags: []};
 }

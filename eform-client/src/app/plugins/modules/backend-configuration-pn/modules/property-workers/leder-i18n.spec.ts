@@ -25,7 +25,7 @@ import {skSK} from '../../i18n/skSK';
 import {slSL} from '../../i18n/slSL';
 import {svSE} from '../../i18n/svSE';
 import {ukUA} from '../../i18n/ukUA';
-import {LEDER_I18N_KEYS} from './leder-i18n-keys';
+import {LEDER_I18N_KEYS, RETIRED_LEDER_I18N_KEYS} from './leder-i18n-keys';
 
 const LOCALES: Record<string, Record<string, unknown>> = {
   bgBG, csCZ, da, deDE, elGR, enUS, esES, etET, fiFI, frFR, hrHR, huHU, isIS,
@@ -45,6 +45,10 @@ describe('Leder i18n coverage', () => {
     expect(missing).toEqual([]);
   });
 
+  it.each(Object.keys(LOCALES))('%s no longer carries the retired toggle hints', locale => {
+    expect(RETIRED_LEDER_I18N_KEYS.filter(key => key in LOCALES[locale])).toEqual([]);
+  });
+
   it('lists every key once', () => {
     expect(new Set(LEDER_I18N_KEYS).size).toBe(LEDER_I18N_KEYS.length);
   });
@@ -56,11 +60,9 @@ describe('Leder i18n coverage', () => {
   it('Danish uses the contract texts', () => {
     const t = da as Record<string, unknown>;
     expect(t['Leader']).toBe('Leder');
-    expect(t['Requires web or archive access']).toBe('Kræver web- eller arkivadgang');
     expect(t["Only an administrator can change a leader's login"]).toBe('Kun en administrator kan ændre en leders login');
     expect(t['Only administrators and leaders can do this']).toBe('Kun administratorer og ledere kan gøre det');
     expect(t['The move changes who can read the documents. Only an administrator or a leader can do that.'])
       .toBe('Flytningen ændrer, hvem der kan læse dokumenterne. Kun en administrator eller en leder kan gøre det.');
-    expect(t['Save the worker with web or archive access first']).toBe('Gem først medarbejderen med web- eller arkivadgang');
   });
 });
