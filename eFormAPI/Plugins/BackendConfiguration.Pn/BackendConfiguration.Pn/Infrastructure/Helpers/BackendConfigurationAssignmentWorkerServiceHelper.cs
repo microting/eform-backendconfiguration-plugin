@@ -270,7 +270,10 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
         return await LederAssignmentStore.AnyLiveSiteAsync(dbContext, siteIds).ConfigureAwait(false);
     }
 
-    /// <summary>The login's current e-mail resolves (as the Leder check does, D-L18) to a live site with a flag.</summary>
+    /// <summary>
+    /// The login's current e-mail belongs to a worker whose live site has a flag. Resigned workers count: their flag
+    /// is inert but comes back on rehire (D-L18), so their login stays protected (H2).
+    /// </summary>
     private static async Task<bool> LoginHasLederSiteAsync(BackendConfigurationPnDbContext dbContext,
         MicrotingDbContext sdkDbContext, string? loginEmail)
     {
@@ -279,8 +282,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             return false;
         }
 
-        var sites = await CallerSites.ResolveAsync(sdkDbContext, loginEmail).ConfigureAwait(false);
-        return await LederAssignmentStore.AnyLiveSiteAsync(dbContext, sites.LiveSiteIds).ConfigureAwait(false);
+        var siteIds = await CallerSites.SitesOfWorkersAsync(sdkDbContext, loginEmail).ConfigureAwait(false);
+        return await LederAssignmentStore.AnyLiveSiteAsync(dbContext, siteIds).ConfigureAwait(false);
     }
 
     /// <summary>Writes an admin's Leder change (LederSaveRules.FlagChange) to the worker's site (D-L15).</summary>

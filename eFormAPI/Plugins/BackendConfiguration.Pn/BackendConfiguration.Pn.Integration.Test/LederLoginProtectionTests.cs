@@ -172,8 +172,9 @@ public class LederLoginProtectionTests : LederWorkerTestBase
             Is.True, "the SDK worker keeps its address too");
     }
 
-    [Test]
-    public async Task NonAdmin_SavingAnotherWorker_WhoseAddressIsALedersLegacyUserName_IsRefused()
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task NonAdmin_SavingAnotherWorker_WhoseAddressIsALedersLegacyUserName_IsRefused(bool leaderResigned)
     {
         // A Leder's login whose UserName drifted to another worker's address: saving that other (unflagged) worker
         // finds the Leder's login by name and would rename it, a change of a Leder's login (H2).
@@ -191,6 +192,10 @@ public class LederLoginProtectionTests : LederWorkerTestBase
         tracked!.UserName = other.Email;
         Assert.That((await UserManager.UpdateAsync(tracked)).Succeeded, Is.True, "precondition");
         Assert.That(await IsLederAsync(other), Is.False, "precondition: the edited worker is not flagged");
+        if (leaderResigned)
+        {
+            await ResignSdkWorkerAsync(leader);
+        }
 
         var result = await UpdateAsync(other, NonAdmin, web: false, archive: false, lastName: NewLastName("Roe"));
 
@@ -199,8 +204,9 @@ public class LederLoginProtectionTests : LederWorkerTestBase
         Assert.That((login.Email, login.UserName), Is.EqualTo((leader.Email, other.Email)), "the Leder's login is unchanged");
     }
 
-    [Test]
-    public async Task NonAdmin_CreatingAWorkerAtALedersLegacyUserName_IsRefused()
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task NonAdmin_CreatingAWorkerAtALedersLegacyUserName_IsRefused(bool leaderResigned)
     {
         // A Leder's login (in "Kun arkiv", so a create may link to it) whose UserName drifted to an address no worker
         // has: creating a worker there finds that login by name and would link and rename it (H2).
@@ -210,6 +216,11 @@ public class LederLoginProtectionTests : LederWorkerTestBase
         var tracked = await UserManager.FindByIdAsync(loginId.ToString());
         tracked!.UserName = drifted;
         Assert.That((await UserManager.UpdateAsync(tracked)).Succeeded, Is.True, "precondition");
+        if (leaderResigned)
+        {
+            await ResignSdkWorkerAsync(leader);
+        }
+
         var lastName = NewLastName();
 
         var result = await TryCreateAsync(NonAdmin, lastName, drifted, web: false, archive: true);
@@ -234,5 +245,13 @@ public class LederLoginProtectionTests : LederWorkerTestBase
         var siteId = await MicrotingDbContext!.Sites.AsNoTracking().Where(x => x.Name == $"Jane {lastName}")
             .Select(x => x.Id).SingleAsync();
         Assert.That(await LederAssignmentStore.IsSiteLederAsync(BackendConfigurationPnDbContext!, siteId), Is.False);
+    }
+
+    /// <summary>Resigns the worker in the SDK only: its site and flag stay, the flag is inert until rehire (D-L18).</summary>
+    private async Task ResignSdkWorkerAsync(Worker w)
+    {
+        var resigned = await MicrotingDbContext!.Workers.Where(x => x.Email == w.Email)
+            .ExecuteUpdateAsync(x => x.SetProperty(y => y.Resigned, true));
+        Assert.That(resigned, Is.EqualTo(1), "precondition: one SDK worker resigned");
     }
 }
