@@ -1,4 +1,5 @@
 import {describe, it, expect} from 'vitest';
+import {DeviceUserModel} from '../../models';
 import {
   CallerFlags,
   NO_CALLER_FLAGS,
@@ -45,15 +46,18 @@ describe('callerFlags', () => {
 });
 
 describe('showLeaderToggle', () => {
+  // Whole rows, as the dialog has them: the fields the toggle ignores must not change the answer.
+  const row = (fields: Partial<DeviceUserModel>): Partial<DeviceUserModel> => fields;
+
   it('admins get the toggle on every worker: no login, no access, an admin login', () => {
-    expect(showLeaderToggle({...admin, isLeader: false, loginIsManaged: true, isAdminLogin: false})).toBe(true);
-    expect(showLeaderToggle({...admin, isLeader: false, loginIsManaged: false, isAdminLogin: true})).toBe(true);
-    expect(showLeaderToggle({...admin, isLeader: null})).toBe(true);
+    expect(showLeaderToggle(row({...admin, isLeader: false, loginIsManaged: true, isAdminLogin: false}))).toBe(true);
+    expect(showLeaderToggle(row({...admin, isLeader: false, loginIsManaged: false, isAdminLogin: true}))).toBe(true);
+    expect(showLeaderToggle(row({...admin, isLeader: null}))).toBe(true);
     expect(showLeaderToggle(newWorkerRow(admin))).toBe(true);
   });
 
   it('non-admins never see it, Leders included', () => {
-    expect(showLeaderToggle({...leder, isLeader: true})).toBe(false);
+    expect(showLeaderToggle(row({...leder, isLeader: true}))).toBe(false);
     expect(showLeaderToggle(staff)).toBe(false);
     expect(showLeaderToggle({})).toBe(false);
   });
