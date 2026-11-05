@@ -9,6 +9,10 @@ public class ComplianceReportCaseModel
 {
     public int ComplianceId { get; set; }
 
+    /// <summary>#5467 — a completion of a "no repeat" task with no Compliance row
+    /// (<see cref="ComplianceId"/> is 0); see <c>ComplianceReportRowModel.IsOnDemand</c>.</summary>
+    public bool IsOnDemand { get; set; }
+
     /// <summary>The backing SDK case. Always &gt; 0 — a row without one carries no
     /// answers and never reaches a headline group.</summary>
     public int SdkCaseId { get; set; }

@@ -61,11 +61,11 @@ export class BackendConfigurationPnInboxService {
     return this.apiBaseService.put(BackendConfigurationPnInboxMethods.Settings, model).pipe(this.accountDisabled.handle());
   }
 
-  /** Only the tenant's first user may rotate; anyone else gets 403. */
+  /** Only the tenant's first user may rotate; anyone else gets 403 (not an [ArchiveManager] refusal: no toast). */
   rotateAddress(): Observable<OperationDataResult<InboxSettingsModel>> {
     return this.apiBaseService.post<InboxSettingsModel>(
       `${BackendConfigurationPnInboxMethods.Settings}/rotate-address`,
       {}
-    ).pipe(this.accountDisabled.handle());
+    ).pipe(this.accountDisabled.handle(false));
   }
 }

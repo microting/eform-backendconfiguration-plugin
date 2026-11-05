@@ -7,6 +7,7 @@ import {
   ChemicalRemovalReason,
   ChemicalStockUnit,
 } from '../../../models';
+import {MatDateFormats} from '@angular/material/core';
 import {ChemicalHistoryFiltersModel} from '../../../state';
 
 /** The user id of the events nobody did by hand (BMD sync, alerts); the server lists real users only. */
@@ -39,6 +40,21 @@ const COPENHAGEN_DAY = new Intl.DateTimeFormat('en-CA', {timeZone: 'Europe/Copen
 /** Today as the server counts the period: the Europe/Copenhagen calendar day, yyyy-MM-dd ('en-CA' formats it so). */
 export function copenhagenToday(now: Date = new Date()): string {
   return COPENHAGEN_DAY.format(now);
+}
+
+/**
+ * The W6 date fields' format for the host's date-fns adapter: dd-MM-yyyy, as the table and the Excel write dates, in every
+ * language (a native date input showed the browser's MM/DD/YYYY in a Danish UI).
+ */
+export const CHEMICAL_HISTORY_DATE_FORMATS: MatDateFormats = {
+  parse: {dateInput: 'dd-MM-yyyy'},
+  display: {dateInput: 'dd-MM-yyyy', monthYearLabel: 'MMM yyyy', dateA11yLabel: 'PP', monthYearA11yLabel: 'MMMM yyyy'},
+};
+
+/** A picked day (the date adapter's local midnight) as yyyy-MM-dd. */
+export function toYmd(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 export function defaultHistoryPeriod(today: string): {from: string; to: string} {

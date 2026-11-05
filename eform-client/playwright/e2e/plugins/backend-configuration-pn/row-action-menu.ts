@@ -53,3 +53,13 @@ export async function openRowActionMenu(
     return page.locator('.cdk-overlay-container').locator(`#${idPrefix}-${rowIndex}`);
   };
 }
+
+/**
+ * Clicks an item of the open action menu and waits until the menu panel has left the overlay container. An item that
+ * opens a dialog would otherwise race the closing menu: the next step acts on a dialog that is still animating in.
+ */
+export async function clickMenuItem(page: Page, item: Locator, description = String(item)): Promise<void> {
+  await item.click({ timeout: UI_TIMEOUT });
+  await expect(page.locator('.cdk-overlay-container .mat-mdc-menu-panel'), `the menu closes after clicking ${description}`)
+    .toHaveCount(0, { timeout: UI_TIMEOUT });
+}

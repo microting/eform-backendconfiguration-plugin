@@ -58,4 +58,11 @@ describe('BackendConfigurationPnArchiveFoldersService', () => {
     service.deleteFolder(4).subscribe();
     expect(handle).toHaveBeenCalledTimes(5);
   });
+
+  it('GETs the caller\'s archive capabilities through the account-disabled handler, without announcing a 403', () => {
+    service.getCapabilities().subscribe();
+    expect(api.get).toHaveBeenCalledWith('api/backend-configuration-pn/archive/capabilities');
+    expect(handle).toHaveBeenCalledTimes(1);
+    expect(handle).toHaveBeenCalledWith(false);
+  });
 });

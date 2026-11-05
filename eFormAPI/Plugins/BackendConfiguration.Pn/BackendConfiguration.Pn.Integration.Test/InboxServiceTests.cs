@@ -462,6 +462,20 @@ public class InboxServiceTests : TestBaseSetup
     }
 
     [Test]
+    public async Task File_Leder_IntoARestrictedFolder_Files()
+    {
+        // Inbox filing follows the same rule, including the FileArchiver commit re-check.
+        var (doc, p) = await ReadyWithPropertyAsync();
+        var restricted = await ArchiveTestData.FolderAsync(BackendConfigurationPnDbContext!, "Ledelse", null, 41);
+        _access.Context = ArchiveTestData.Leder;
+
+        var res = await _service.FileAsync(doc.Id, Req(p, restricted.Id), 7);
+
+        Assert.That(res.Success, Is.True, res.Message);
+        Assert.That((await FiledFileAsync(doc)).FolderId, Is.EqualTo(restricted.Id));
+    }
+
+    [Test]
     public async Task File_FolderTheCallerCannotRead_IsRefusedAsNotFound()
     {
         // D17, the same rule as an upload: only into a folder the caller can read.

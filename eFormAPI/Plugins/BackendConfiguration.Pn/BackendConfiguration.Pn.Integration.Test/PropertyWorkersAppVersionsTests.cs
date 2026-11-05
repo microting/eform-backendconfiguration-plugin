@@ -71,7 +71,7 @@ public class PropertyWorkersAppVersionsTests : TestBaseSetup
             new BackendConfigurationLocalizationService(), ItemsPlanningPnDbContext!,
             TimePlanningPnDbContext!, CaseTemplatePnDbContext!, BaseDbContext!,
             TestContextLogger<BackendConfigurationAssignmentWorkerService>.Instance,
-            Substitute.For<ICalendarAssignmentReconciliationService>());
+            Substitute.For<ICalendarAssignmentReconciliationService>(), LederTestData.Leder(false));
 
         var result = await service.IndexDeviceUser(new PropertyWorkersFiltrationModel
         {

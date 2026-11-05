@@ -84,6 +84,22 @@ describe('ChemicalProductDrawerComponent (template)', () => {
     expect(rows[1].textContent).not.toContain('Chemicals: Stock origin');
   });
 
+  it('shows the GHS diamonds in the header, the code as the text alternative (855 G1)', () => {
+    render(true);
+
+    const pictograms = Array.from(fixture.nativeElement.querySelectorAll('#chemicalDrawerPictograms img')) as HTMLImageElement[];
+    expect(pictograms.map((p) => p.alt)).toEqual(['GHS07']);
+  });
+
+  it('keeps the status chip and the signal word apart in a spaced row (855 B7)', () => {
+    render(true);
+
+    const status = find('#chemicalDrawerStatus');
+    expect(status?.classList.contains('chemicals-drawer__status')).toBe(true);
+    expect(status?.querySelector('.status-chip')).not.toBeNull();
+    expect(find('#chemicalDrawerSignalWord')?.parentElement).toBe(status);
+  });
+
   describe('tabs follow the WAI-ARIA tabs pattern (M8)', () => {
     const tabIds = ['chemicalDrawerTabOverview', 'chemicalDrawerTabPlacements', 'chemicalDrawerTabStock'];
 

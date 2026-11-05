@@ -73,7 +73,8 @@
         <tr
           *ngFor="let row of group.rows; trackBy: trackByRow"
           class="compliance-details__row"
-          [attr.data-compliance-id]="row.isProjected ? null : row.complianceId"
+          [attr.data-compliance-id]="row.isProjected || row.isOnDemand ? null : row.complianceId"
+          [attr.data-on-demand]="row.isOnDemand ? true : null"
           [attr.data-planned]="row.isProjected ? true : null"
           [attr.data-task-date]="row.taskDate"
           [class.is-done]="row.completed"

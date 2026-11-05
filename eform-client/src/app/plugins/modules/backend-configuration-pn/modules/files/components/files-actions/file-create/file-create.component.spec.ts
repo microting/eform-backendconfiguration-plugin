@@ -18,6 +18,7 @@ import {
   BackendConfigurationPnPropertiesService,
 } from '../../../../../services';
 import {FileCreateComponent} from './file-create.component';
+import {ArchiveCapabilitiesService, NO_ARCHIVE_CAPABILITIES} from '../../../services/archive-capabilities.service';
 
 const folder = (id: number, isDefault = false) => ({
   id, name: `Folder ${id}`, parentId: null, isDefault, count: 0, readGroups: [], ownGroups: false, restricted: false,
@@ -33,6 +34,7 @@ describe('FileCreateComponent folder preselection', () => {
       schemas: [NO_ERRORS_SCHEMA],
       providers: [
         {provide: Store, useValue: {select: () => of(storeFolderId)}},
+        {provide: ArchiveCapabilitiesService, useValue: {capabilities$: of(NO_ARCHIVE_CAPABILITIES), load: () => of(NO_ARCHIVE_CAPABILITIES)}},
         {provide: Router, useValue: {navigate: vi.fn()}},
         {provide: ActivatedRoute, useValue: {snapshot: {queryParamMap: {get: () => requested}}}},
         {

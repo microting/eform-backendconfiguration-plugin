@@ -273,7 +273,7 @@ public class WorkerRemovalLeftoversTests : TestBaseSetup
             BackendConfigurationPnDbContext!, new BackendConfigurationLocalizationService(),
             ItemsPlanningPnDbContext!, TimePlanningPnDbContext!, CaseTemplatePnDbContext!, BaseDbContext!,
             TestContextLogger<BackendConfigurationAssignmentWorkerService>.Instance,
-            Substitute.For<ICalendarAssignmentReconciliationService>());
+            Substitute.For<ICalendarAssignmentReconciliationService>(), LederTestData.Leder(false));
     }
 
     private async Task<Microting.eFormApi.BasePn.Infrastructure.Models.API.OperationResult> UnassignAsync(

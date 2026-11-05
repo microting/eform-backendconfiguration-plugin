@@ -1,12 +1,14 @@
 import {
-  AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild,
+  AfterViewInit, Component, ElementRef, EventEmitter, HostListener, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild,
 } from '@angular/core';
+import {MatDialog} from '@angular/material/dialog';
 import {TranslateService, TranslatePipe} from '@ngx-translate/core';
-import {Observable, concat, defaultIfEmpty, defer, map, takeWhile, toArray} from 'rxjs';
+import {Observable, Subject, concat, defaultIfEmpty, defer, map, takeUntil, takeWhile, toArray} from 'rxjs';
 import {CommonDictionaryModel, OperationResult, SharedTagModel} from 'src/app/common/models';
 import {ArchiveFolderModel, ArchiveNamedItem, DocumentDateState, FileModel} from '../../../../models';
 import {BackendConfigurationPnFilesService} from '../../../../services';
 import {
+  ARCHIVE_PATH_SEPARATOR,
   ArchiveFolderOption,
   ArchivePanelValue,
   accessGroupItems,
@@ -24,12 +26,14 @@ import {NgIf, DatePipe} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {MatIcon} from '@angular/material/icon';
 import {MatIconButton} from '@angular/material/button';
+import {MatTooltip} from '@angular/material/tooltip';
 import {MatFormField, MatLabel} from '@angular/material/form-field';
 import {MatInput} from '@angular/material/input';
 import {MtxSelect} from '@ng-matero/extensions/select';
 import {ArchiveFolderPickerComponent} from '../archive-folder-picker/archive-folder-picker.component';
 import {PdfViewerModule} from 'ng2-pdf-viewer';
-import {CdkTrapFocus} from '@angular/cdk/a11y';
+import {saveAs} from 'file-saver';
+import {ArchiveFileKind, archiveFileKind, revokeObjectUrl} from '../../archive-file-kind';
 
 export interface ArchivePanelSaved {
   fileId: number;
@@ -38,13 +42,14 @@ export interface ArchivePanelSaved {
 }
 
 /**
- * The selected document (W1, right column; a drawer below 1100 px). Edits are kept locally and saved
- * together: name + properties, etiketter, document date, read access, and the folder last, because a
- * folder move may need the D11 confirmation and can be cancelled.
+ * The opened document as a large view over the archive area (folder tree and table are hidden, not removed):
+ * a bar with back, title, position, previous/next and download; all pages of the preview beside the fields.
+ * Edits are kept locally and saved together: name + properties, etiketter, document date, read access, and the
+ * folder last, because a folder move may need the D11 confirmation and can be cancelled.
  */
 @Component({
   selector: 'app-archive-document-panel',
-  imports: [NgIf, DatePipe, FormsModule, TranslatePipe, MatIcon, MatIconButton, MatFormField, MatLabel, MatInput, MtxSelect, ArchiveFolderPickerComponent, PdfViewerModule, CdkTrapFocus],
+  imports: [NgIf, DatePipe, FormsModule, TranslatePipe, MatIcon, MatIconButton, MatTooltip, MatFormField, MatLabel, MatInput, MtxSelect, ArchiveFolderPickerComponent, PdfViewerModule],
   templateUrl: './archive-document-panel.component.html',
 })
 export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, OnDestroy {
@@ -53,15 +58,19 @@ export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, 
   @Input() folderOptions: ArchiveFolderOption[] = [];
   @Input() properties: CommonDictionaryModel[] = [];
   @Input() availableTags: SharedTagModel[] = [];
-  /** Live medarbejdergrupper; only loaded for admins. */
+  /** Live medarbejdergrupper; only loaded for admins and Leders. */
   @Input() workerTags: CommonDictionaryModel[] = [];
-  @Input() isAdmin = false;
-  @Input() drawer = false;
-  /** "1 af 2 valgte" while several documents are selected. */
+  /** Admin or Leder: edit Læseadgang and move across access. */
+  @Input() canManage = false;
+  /** "2 af 4" in the list, "1 af 2 valgte" while several documents are selected; null hides it. */
   @Input() positionLabel: string | null = null;
+  @Input() hasPrevious = false;
   @Input() hasNext = false;
   @Output() saved = new EventEmitter<ArchivePanelSaved>();
   @Output() closed = new EventEmitter<void>();
+  /** The page opens the previous / next document, like a click on its row. */
+  @Output() previousFile = new EventEmitter<void>();
+  @Output() nextFile = new EventEmitter<void>();
   @ViewChild('closeButton', {read: ElementRef}) closeButton?: ElementRef<HTMLButtonElement>;
 
   readonly DateState = DocumentDateState;
@@ -72,21 +81,25 @@ export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, 
   accessItems: ArchiveNamedItem[] = [];
   editingDate = false;
   pdfBytes: Uint8Array | null = null;
+  /** Object URL of an image document's blob; revoked when another document opens and on destroy. */
+  imageUrl: string | null = null;
+  /** The one fetched blob: read as PDF bytes or shown as an image, once the document's extension is known. */
+  private previewBlob: Blob | null = null;
   busy = false;
-  /** Drawer only: what had focus when the drawer opened (the row), focused again when it closes. */
+  /** What had focus when the view opened (the row); the fallback when the shown document's row is not found on close. */
   private returnFocusTo: HTMLElement | null = null;
+  /** Cancels pending reads when the panel closes, so a late image reply cannot create an object URL after cleanup. */
+  private destroy$ = new Subject<void>();
 
   constructor(
     private filesService: BackendConfigurationPnFilesService,
     private moveFlow: ArchiveMoveFlowService,
     private translateService: TranslateService,
+    /** Optional so specs can construct the panel with `new`; Angular always injects it (providedIn root). */
+    private dialog?: MatDialog,
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    // The window narrowed while the panel was open: it is a modal drawer from now on.
-    if (changes['drawer'] && !changes['drawer'].firstChange && this.drawer) {
-      this.captureFocus();
-    }
     if (changes['fileId']) {
       this.load();
     } else if (changes['workerTags']) {
@@ -95,29 +108,40 @@ export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, 
   }
 
   ngAfterViewInit(): void {
-    if (this.drawer) {
-      this.captureFocus();
-    }
+    this.captureFocus();
   }
 
   ngOnDestroy(): void {
-    if (this.drawer && this.returnFocusTo?.isConnected) {
-      this.returnFocusTo.focus();
-    }
+    this.destroy$.next();
+    this.destroy$.complete();
+    this.imageUrl = revokeObjectUrl(this.imageUrl);
+    this.returnFocus();
   }
 
   /**
-   * Escape closes the drawer. A control that handles Escape itself (an open select list) prevents the default,
-   * so its Escape only closes that list.
+   * After previous/next the shown document is no longer the opener's: focus goes to its own row, else the opener.
+   * The tree and the table are visible again by now (the page drops --viewing before it removes the view).
    */
+  private returnFocus(): void {
+    const row = document.querySelector<HTMLElement>(`#archiveFilesTable tr.archive-file-row[data-file-id="${this.fileId}"]`);
+    const target = row ?? (this.returnFocusTo?.isConnected ? this.returnFocusTo : null);
+    target?.focus();
+  }
+
+  /**
+   * Escape closes the view, wherever focus is: a button that disables itself (next at the last document, Save while
+   * busy) drops focus to <body>. A control that handles Escape itself (an open select list) prevents the default,
+   * so its Escape only closes that list; an open dialog (the D11 move confirmation) keeps its Escape too.
+   */
+  @HostListener('document:keydown.escape', ['$event'])
   onEscape(event: Event): void {
-    if (this.drawer && !event.defaultPrevented) {
+    if (!event.defaultPrevented && !this.dialog?.openDialogs.length) {
       event.preventDefault();
       this.closed.emit();
     }
   }
 
-  /** Drawer: remembers the opener and moves focus to the close button, unless focus is already inside the panel. */
+  /** Remembers the opener and moves focus to the back button, unless focus is already inside the view. */
   private captureFocus(): void {
     const active = document.activeElement;
     const host = this.closeButton?.nativeElement.closest('aside');
@@ -135,8 +159,37 @@ export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, 
     this.edited = null;
     this.editingDate = false;
     this.pdfBytes = null;
+    this.previewBlob = null;
+    this.imageUrl = revokeObjectUrl(this.imageUrl);
     this.loadData();
-    this.loadPdf();
+    this.loadPreview();
+  }
+
+  /** The document's whole folder path ("Økonomi › Fakturaer"), as saved. */
+  get folderPathLabel(): string {
+    return (this.file?.folderPath ?? []).join(ARCHIVE_PATH_SEPARATOR);
+  }
+
+  /** Saves the document's own file ("<name>.<extension>"), the bytes the preview shows. */
+  download(): void {
+    const file = this.file;
+    if (!file) {
+      return;
+    }
+    this.filesService.getPdfFile(file.id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (blob: Blob | null) => {
+        if (blob) {
+          saveAs(blob, `${file.fileName}.${file.fileExtension}`);
+        }
+      },
+      // The host's HttpErrorInterceptor has already shown the error toast; nothing is saved.
+      error: () => undefined,
+    });
+  }
+
+  /** What the document is previewed as; 'other' (and a document not read yet) has no preview. */
+  get kind(): ArchiveFileKind {
+    return archiveFileKind(this.file?.fileExtension);
   }
 
   /**
@@ -145,7 +198,7 @@ export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, 
    */
   private loadData(): void {
     const id = this.fileId;
-    this.filesService.getFile(id).pipe(defaultIfEmpty(null)).subscribe(res => {
+    this.filesService.getFile(id).pipe(defaultIfEmpty(null), takeUntil(this.destroy$)).subscribe(res => {
       if (id !== this.fileId) {
         return;
       }
@@ -159,24 +212,43 @@ export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, 
         this.edited = panelValueOf(res.model);
         this.editingDate = false;
         this.refreshAccessItems();
+        this.applyPreview();
       }
     });
   }
 
-  private loadPdf(): void {
+  /** One fetch per open (getPdfFile returns the file's bytes whatever its type). */
+  private loadPreview(): void {
     const id = this.fileId;
-    this.filesService.getPdfFile(id).subscribe({
+    this.filesService.getPdfFile(id).pipe(takeUntil(this.destroy$)).subscribe({
       next: (blob: Blob | null) => {
-        if (blob) {
-          blob.arrayBuffer().then(buffer => {
-            if (id === this.fileId) {
-              this.pdfBytes = new Uint8Array(buffer);
-            }
-          });
+        if (blob && id === this.fileId) {
+          this.previewBlob = blob;
+          this.applyPreview();
         }
       },
       error: () => (this.pdfBytes = null),
     });
+  }
+
+  /** Runs when both the blob and the document's extension have arrived (in either order); consumes the blob. */
+  private applyPreview(): void {
+    const blob = this.previewBlob;
+    if (!blob || !this.file) {
+      return;
+    }
+    this.previewBlob = null;
+    const id = this.fileId;
+    const kind = this.kind;
+    if (kind === 'pdf') {
+      blob.arrayBuffer().then(buffer => {
+        if (id === this.fileId) {
+          this.pdfBytes = new Uint8Array(buffer);
+        }
+      });
+    } else if (kind === 'image') {
+      this.imageUrl = URL.createObjectURL(blob);
+    }
   }
 
   get valid(): boolean {
@@ -220,7 +292,7 @@ export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, 
     return this.whoLabel(this.accessItems.filter(item => ids.includes(item.id)));
   }
 
-  /** Read-only line for non-admins. */
+  /** Read-only line for users who cannot manage. */
   get readAccessLabel(): string {
     if (!this.edited || !this.file) {
       return '';
@@ -308,7 +380,7 @@ export class ArchiveDocumentPanelComponent implements OnChanges, AfterViewInit, 
       const readGroups = this.groupsBeforeMove(file, original, edited, changes.access);
       steps.push(defer(() => this.moveFlow.move(
         [{id, folderId: original.folderId, ownAccess: edited.ownAccess, readGroups}],
-        this.folders, edited.folderId, this.isAdmin)));
+        this.folders, edited.folderId, this.canManage)));
     }
     this.busy = true;
     concat(...steps).pipe(takeWhile(ok => ok, true), toArray()).subscribe({

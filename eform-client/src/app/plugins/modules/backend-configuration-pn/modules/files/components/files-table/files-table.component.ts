@@ -10,9 +10,11 @@ import {MatIconButton} from '@angular/material/button';
 import {MatTooltip} from '@angular/material/tooltip';
 import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
 import {MatCheckbox} from '@angular/material/checkbox';
+import {ArchiveFilePresentation, archivePresentation} from '../../archive-file-kind';
 
 /**
- * The W1 document table: Checkbox · Navn · Dokumentdato · Ejendomme · Læseadgang (admin) · Etiketter.
+ * The W1 document table: Checkbox · Navn · Mappe · Dokumentdato · Ejendomme · Læseadgang (admin/Leder) · Etiketter.
+ * Mappe shows every row's folder in every list mode: the last two levels, the full path in the tooltip.
  * A native table so rows can be HTML5 drag sources for the folder tree. Selection is owned by the page
  * (`selectedIds`) and emitted in table order, so "1 af 2 valgte" follows the rows.
  */
@@ -26,9 +28,10 @@ export class FilesTableComponent implements OnChanges, OnDestroy {
   private translateService = inject(TranslateService);
 
   @Input() files: Paged<FilesModel> = new Paged<FilesModel>();
-  @Input() isAdmin = false;
-  /** Search and "Dato skal tjekkes" span all folders: then each name shows its folder path. */
-  @Input() showPath = false;
+  /** Admin or Leder: the Læseadgang column. */
+  @Input() canManage = false;
+  /** "Slet" in the row menu (D-L4). */
+  @Input() canDelete = false;
   @Input() loaded = false;
   @Input() selectedIds: number[] = [];
   @Input() currentFileId: number | null = null;
@@ -44,7 +47,7 @@ export class FilesTableComponent implements OnChanges, OnDestroy {
 
   readonly DateState = DocumentDateState;
   rows: FilesModel[] = [];
-  /** The blob URL of the last opened PDF; revoked when the next one opens or the table goes away. */
+  /** The blob URL of the last opened file; revoked when the next one opens or the table goes away. */
   private viewUrl: string | null = null;
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -104,8 +107,25 @@ export class FilesTableComponent implements OnChanges, OnDestroy {
     return dateOnlyOf(row.documentDate);
   }
 
-  pathLabel(row: FilesModel): string {
+  /** The whole folder path, root to leaf ("Økonomi › Fakturaer"), for the Mappe cell's tooltip. */
+  fullPath(row: FilesModel): string {
     return (row.folderPath ?? []).join(ARCHIVE_PATH_SEPARATOR);
+  }
+
+  /** The folder the document lies in (the path's last level); '' without a path. */
+  folderLeaf(row: FilesModel): string {
+    const path = row.folderPath ?? [];
+    return path.length ? path[path.length - 1] : '';
+  }
+
+  /** The level above the leaf, "Økonomi ›"; deeper levels fold into "… › Økonomi ›". '' for a top-level folder. */
+  parentLabel(row: FilesModel): string {
+    const path = row.folderPath ?? [];
+    if (path.length < 2) {
+      return '';
+    }
+    const parent = `${path[path.length - 2]}${ARCHIVE_PATH_SEPARATOR.trimEnd()}`;
+    return path.length > 2 ? `…${ARCHIVE_PATH_SEPARATOR}${parent}` : parent;
   }
 
   ownAccessLabel(row: FilesModel): string {
@@ -119,6 +139,10 @@ export class FilesTableComponent implements OnChanges, OnDestroy {
       event.dataTransfer.effectAllowed = 'move';
     }
     this.rowDragStart.emit(row);
+  }
+
+  presentationOf(row: FilesModel): ArchiveFilePresentation {
+    return archivePresentation(row.fileExtension);
   }
 
   onOpenView(row: FilesModel): void {

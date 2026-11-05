@@ -14,6 +14,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using NSubstitute;
 
 namespace BackendConfiguration.Pn.Integration.Test;
@@ -270,5 +272,41 @@ public class FilesArchiveAccessTests : TestBaseSetup
         Assert.That(result.Message, Is.EqualTo("ArchiveFolderNotFound"));
         Assert.That(await BackendConfigurationPnDbContext!.Files.AnyAsync(f => f.FileName == "Hemmelig"), Is.False);
         await _storage.DidNotReceive().PutAsync(Arg.Any<string>(), Arg.Any<string>());
+    }
+
+    [Test]
+    public async Task Create_Leder_IntoARestrictedFolder_StoresIt()
+    {
+        // A Leder may file into a folder none of their groups can read.
+        _access.Context = ArchiveTestData.Leder;
+
+        var result = await _service.Create([Upload("Ledermøde.pdf", _fakturaer)]);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        var file = await BackendConfigurationPnDbContext!.Files.AsNoTracking().SingleAsync(f => f.FileName == "Ledermøde");
+        Assert.That(file.FolderId, Is.EqualTo(_fakturaer));
+    }
+
+    [Test]
+    public async Task Index_Leder_ListsEveryDocument()
+    {
+        _access.Context = ArchiveTestData.Leder;
+
+        Assert.That((await List()).Select(f => f.Id), Is.EquivalentTo(new[] { _open, _restricted, _suggested }));
+    }
+
+    [Test]
+    public async Task Index_And_GetById_SendNoFileHash()
+    {
+        // S1a: the md5 names the stored object, so it never leaves the server.
+        _access.Context = ArchiveTestData.Admin;
+        var settings = new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() };
+
+        var row = (await List()).First(f => f.Id == _open);
+        var one = await _service.GetById(_open);
+
+        Assert.That(one.Success, Is.True, one.Message);
+        Assert.That(JsonConvert.SerializeObject(row, settings), Does.Not.Contain("fileHash"));
+        Assert.That(JsonConvert.SerializeObject(one.Model, settings), Does.Not.Contain("fileHash"));
     }
 }

@@ -26,7 +26,7 @@
   [sortActive]="selectPropertyWorkersPaginationSort$ | async"
   [sortDirection]="selectPropertyWorkersPaginationIsSortDsc$ | async"
   [rowClassFormatter]="rowClassFormatter"
-  [rowSelectable]="selectCurrentUserClaimsDeviceUsersUpdate$ | async"
+  [rowSelectable]="canAssignTags"
   [multiSelectable]="true"
   [disableRowClickSelection]="true"
   [rowSelected]="selectedRows"
@@ -72,7 +72,12 @@
 <!--</ng-template>-->
 
 <ng-template #fullNameTpl let-row let-i="index">
-  <div class="deviceUserFullName" id="deviceUserFullName-{{i}}">{{ row.siteName }}</div>
+  <div class="d-flex flex-row flex-wrap align-items-center gap-12">
+    <div class="deviceUserFullName" id="deviceUserFullName-{{i}}">{{ row.siteName }}</div>
+    <mat-chip color="primary" *ngIf="row.isLeader === true" id="leaderChip-{{i}}">
+      <span>{{ 'Leader' | translate }}</span>
+    </mat-chip>
+  </div>
 </ng-template>
 
 <ng-template #workerEmailTpl let-row let-i="index">

@@ -1318,6 +1318,24 @@ describe('ComplianceReportViewComponent — delete returns to the next row', () 
     expect(component.highlightedRowKey).toBe('case:101');
   });
 
+  it('keys on-demand rows (#5467, complianceId 0) by their case and offers them no Slet', () => {
+    const onDemand = (sdkCaseId: number): ComplianceReportCaseModel => ({...caseModel(0, sdkCaseId), isOnDemand: true});
+    eformColumns.mockReturnValue(of({success: true, model: response([onDemand(7001), onDemand(7002), caseModel(3)])}));
+    state.requestFetch();
+
+    const rows = component.sections.flatMap((s) => s.tables).flatMap((t) => t.allRows);
+    expect(rows.map((r) => component.trackByRow(0, r))).toEqual(['case:7001', 'case:7002', 'case:103']);
+    const [first, , regular] = rows;
+    expect(first.isOnDemand).toBe(true);
+    expect(component.hasDeleteAction(first)).toBe(false);
+    expect(component.canEdit(first)).toBe(true);
+    expect(component.hasDeleteAction(regular)).toBe(true);
+
+    component.openDeleteConfirm(first);
+    component.confirmDelete();
+    expect(deleteCompliance).not.toHaveBeenCalled();
+  });
+
   it('keys a row without an SDK case by its compliance id', () => {
     deleteAndRefresh(
       response([caseModel(1), caseModel(2, 0)]),

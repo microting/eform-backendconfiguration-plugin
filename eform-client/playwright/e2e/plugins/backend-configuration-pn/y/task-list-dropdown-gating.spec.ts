@@ -187,8 +187,9 @@ test.describe('Task list — batch-action dropdown gating', () => {
 
     await taskListPage.openBatchActionPanel();
     // #1298 added the never-disabled "Skift rapportoverskrift": the TOTAL is
-    // 13 while the disabled counts below stay 0 / 5 (it is not property-scoped).
-    await expect(taskListPage.batchActionOptions()).toHaveCount(13);
+    // 13 while the disabled counts below stay 0 / 5 (it is not property-scoped);
+    // "Sæt frekvens" makes it 14, likewise never disabled.
+    await expect(taskListPage.batchActionOptions()).toHaveCount(14);
     expect(await taskListPage.countDisabledBatchActions()).toBe(0);
     await page.keyboard.press('Escape');
 
@@ -207,7 +208,7 @@ test.describe('Task list — batch-action dropdown gating', () => {
     await taskListPage.selectRow(task);
 
     await taskListPage.openBatchActionPanel();
-    await expect(taskListPage.batchActionOptions()).toHaveCount(13);
+    await expect(taskListPage.batchActionOptions()).toHaveCount(14);
     expect(await taskListPage.countDisabledBatchActions()).toBe(5);
     await page.keyboard.press('Escape');
   });

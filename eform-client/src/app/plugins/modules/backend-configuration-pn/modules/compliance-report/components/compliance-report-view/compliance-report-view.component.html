@@ -228,7 +228,7 @@
     *ngIf="row.imagesCount && canOpenGallery(row)"
     type="button"
     class="compliance-report__images compliance-report__images-btn"
-    id="complianceReportImages-{{ row.complianceId }}"
+    id="complianceReportImages-{{ row.isOnDemand ? 'case-' + row.sdkCaseId : row.complianceId }}"
     [attr.aria-label]="
       imagesLabelKey(row.imagesCount) | translate: imagesLabelParams(row.imagesCount)
     "
@@ -273,10 +273,11 @@
     <!--
       `Slet` is disabled for an uncompleted FUTURE task (#1300); as with
       `Rediger`, the tooltip sits on the wrapper so it still shows while the
-      button is disabled. Admin only.
+      button is disabled. Admin only. Not rendered at all for an on-demand row
+      (#5467): it has no compliance to delete.
     -->
     <span
-      *ngIf="canDeleteLogs"
+      *ngIf="canDeleteLogs && hasDeleteAction(row)"
       [matTooltip]="
         (canDelete(row) ? 'Delete log' : 'Future tasks cannot be completed or deleted yet') | translate
       "

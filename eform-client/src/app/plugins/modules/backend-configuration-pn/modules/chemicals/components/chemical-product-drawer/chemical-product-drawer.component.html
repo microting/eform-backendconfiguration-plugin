@@ -6,9 +6,11 @@
         {{ 'Chemicals: Reg no short' | translate }} {{ row.registrationNo }}
         <span *ngIf="row.entry?.authorisationHolder"> · {{ row.entry.authorisationHolder }}</span>
       </div>
-      <div class="d-flex gap-8 mt-1 align-items-center">
+      <app-chemical-ghs-pictograms *ngIf="row.pictograms.length" id="chemicalDrawerPictograms" class="mt-1"
+                                   [codes]="row.pictograms" [size]="40"></app-chemical-ghs-pictograms>
+      <div id="chemicalDrawerStatus" class="chemicals-drawer__status mt-1">
         <span class="status-chip" [class.status-chip--bad]="row.statusBad">{{ row.statusLabelKey ? (row.statusLabelKey | translate) : row.statusText }}</span>
-        <span *ngIf="row.entry?.signalWordText">{{ 'Chemicals: Signal word' | translate }}: {{ row.entry.signalWordText }}</span>
+        <span *ngIf="row.entry?.signalWordText" id="chemicalDrawerSignalWord">{{ 'Chemicals: Signal word' | translate }}: {{ row.entry.signalWordText }}</span>
       </div>
     </div>
     <button mat-icon-button id="chemicalDrawerCloseBtn" [matTooltip]="'Close' | translate" [attr.aria-label]="'Close' | translate" (click)="close()">

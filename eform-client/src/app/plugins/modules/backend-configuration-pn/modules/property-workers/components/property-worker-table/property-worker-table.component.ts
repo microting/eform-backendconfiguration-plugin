@@ -5,6 +5,7 @@ import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {MtxGridColumn, MtxGrid} from '@ng-matero/extensions/grid';
 import {AppInstallModel, DeviceUserModel, PropertyAssignWorkersModel} from '../../../../models';
 import {APP_INSTALL_STATE_CLASS, APP_INSTALL_STATE_LABEL, appInstallState, AppInstallState} from './app-install-state';
+import {CallerFlags, NO_CALLER_FLAGS} from '../../leader.helper';
 import {PropertyWorkersStateService} from '../store';
 import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {combineLatest, Subject, Subscription, of} from 'rxjs';
@@ -19,7 +20,7 @@ import {PropertyWorkerOtpModalComponent} from '../property-worker-otp-modal/prop
 import {PropertyWorkerQrModalComponent} from '../property-worker-qr-modal/property-worker-qr-modal.component';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {UserSetPasswordComponent} from 'src/app/modules/account-management/components';
-import {AuthService} from 'src/app/common/services';
+import {AuthService, DeviceUserService} from 'src/app/common/services';
 import {Store} from '@ngrx/store';
 import {
   selectAuthIsAdmin,
@@ -58,6 +59,7 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
   private authStateService = inject(AuthStateService);
   public propertyWorkersStateService = inject(PropertyWorkersStateService);
   private authService = inject(AuthService);
+  private deviceUserService = inject(DeviceUserService);
   private dialog = inject(MatDialog);
   private overlay = inject(Overlay);
   private el = inject(ElementRef);
@@ -71,6 +73,10 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
   @Input() availableTags: CommonDictionaryModel[] = [];
   @Input() alreadyUsedEmails: string[] = [];
   @Input() highlightedSiteId: number | null = null;
+  /** The caller's flags from the list response: the Leder toggle (admins) and worker groups (admins and Leders). */
+  @Input() callerFlags: CallerFlags = NO_CALLER_FLAGS;
+  /** Rows are selectable only for "Assign tags": the update claim and worker-group rights (the page computes it). */
+  @Input() canAssignTags: boolean | null = false;
   private pendingScrollToSiteId: number | null = null;
   private waitingForFreshData = false;
   @Output() updateTableWithHighlight: EventEmitter<number> = new EventEmitter<number>();
@@ -86,10 +92,13 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
   propertyWorkerOtpModalComponentAfterClosedSub$: Subscription;
   propertyWorkerEditModalComponentAfterClosedSub$: Subscription;
   canDeleteWorkerSub$: Subscription;
+  skipCloudDeploySub$: Subscription;
   //availableProperties: CommonDictionaryModel[];
   searchSubject: Subject<string> = new Subject();
   canDeleteWorker: boolean = false;
   deviceUsersUpdate: boolean = false;
+  // Customer no & OTP have no function when the SDK skips cloud deploy.
+  skipCloudDeploy = false;
   // Only the first user may delete a worker, and only while also holding the device_users_delete
   // claim that core's delete endpoint requires.
   public canDeleteWorker$ = combineLatest([
@@ -242,7 +251,9 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
       });
     }
 
-    this.tableHeaders = baseHeaders;
+    this.tableHeaders = this.skipCloudDeploy
+      ? baseHeaders.filter(h => h.field !== 'customerOtp')
+      : baseHeaders;
   }
 
 
@@ -361,6 +372,11 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
     selectedSimpleSite.webAccessEnabled = simpleSiteDto.webAccessEnabled;
     selectedSimpleSite.archiveEnabled = simpleSiteDto.archiveEnabled;
     selectedSimpleSite.enableMobileAccess = simpleSiteDto.enableMobileAccess;
+    selectedSimpleSite.isLeader = simpleSiteDto.isLeader ?? null;
+    selectedSimpleSite.loginIsManaged = simpleSiteDto.loginIsManaged === true;
+    selectedSimpleSite.isAdminLogin = simpleSiteDto.isAdminLogin === true;
+    selectedSimpleSite.canSetLeder = this.callerFlags.canSetLeder;
+    selectedSimpleSite.canEditWorkerTags = this.callerFlags.canEditWorkerTags;
 
     const workersAssignments = this.workersAssignments.find(
       (x) => x.siteId === simpleSiteDto.siteId
@@ -468,6 +484,12 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
     });
 
     this.buildTableHeaders();
+    this.skipCloudDeploySub$ = this.deviceUserService.getSkipCloudDeploy().subscribe(x => {
+      if (x && x.success && x.model) {
+        this.skipCloudDeploy = true;
+        this.buildTableHeaders();
+      }
+    });
     //this.getDeviceUsersFiltered();
   }
 

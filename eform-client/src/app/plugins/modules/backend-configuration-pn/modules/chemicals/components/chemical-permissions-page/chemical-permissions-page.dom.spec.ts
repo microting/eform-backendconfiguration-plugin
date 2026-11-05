@@ -57,6 +57,13 @@ describe('ChemicalPermissionsPageComponent (template)', () => {
 
   afterEach(() => fixture?.destroy());
 
+  it('separates the two footnote sentences with a space (855 B3: "ejendom.Push-besked")', () => {
+    render([{id: 3, name: 'Hovedgården'}]);
+
+    expect(find('.chemicals-footnote')?.textContent?.replace(/\s+/g, ' ').trim())
+      .toBe('Chemicals: Permissions scope note Chemicals: Push recipients note');
+  });
+
   it('keeps the row element when a flag is toggled, so keyboard focus survives (I-2)', () => {
     render([{id: 3, name: 'Hovedgården'}]);
     const before = find('#chemicalPermissionRow-1');

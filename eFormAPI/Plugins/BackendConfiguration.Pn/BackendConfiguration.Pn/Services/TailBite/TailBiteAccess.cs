@@ -40,6 +40,10 @@ public interface ITailBiteAccess
     Task<PropertyWorker> RequireWorkerAsync(int siteId, int propertyId);
     Task<PropertyWorker> RequireManagerAsync(int siteId, int propertyId);
     Task<bool> IsManagerAsync(int siteId, int propertyId);
+    /// <summary>Outbreak paths only (#1477): a switched-off property is refused like a foreign id; setup paths stay open.</summary>
+    Task RequireEnabledAsync(int propertyId);
+    /// <summary><see cref="RequireEnabledAsync"/>, then <see cref="RequireManagerAsync"/>.</summary>
+    Task<PropertyWorker> RequireEnabledManagerAsync(int siteId, int propertyId);
 }
 
 public class TailBiteAccess(BackendConfigurationPnDbContext db, IGrpcSiteResolver resolver, ITailBiteWorkerEmailCounter emailCounter) : ITailBiteAccess
@@ -69,4 +73,16 @@ public class TailBiteAccess(BackendConfigurationPnDbContext db, IGrpcSiteResolve
 
     public async Task<bool> IsManagerAsync(int siteId, int propertyId)
         => await ActiveWorkers(siteId, propertyId).AnyAsync(pw => pw.TailBiteManager);
+
+    public async Task RequireEnabledAsync(int propertyId)
+    {
+        if (!await db.TailBiteProperties.AnyAsync(t => t.PropertyId == propertyId && t.Enabled))
+            throw TailBiteForbiddenException.NoAccess();
+    }
+
+    public async Task<PropertyWorker> RequireEnabledManagerAsync(int siteId, int propertyId)
+    {
+        await RequireEnabledAsync(propertyId);
+        return await RequireManagerAsync(siteId, propertyId);
+    }
 }

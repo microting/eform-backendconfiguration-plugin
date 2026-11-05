@@ -77,3 +77,14 @@ export interface FilesUpdatePropertiesModel {
   id: number;
   properties: number[];
 }
+
+/**
+ * GET archive/capabilities (Leder contract): what the caller may do in Arkiv. `canDelete` and `canUseInbox` equal
+ * `canManage` today; they are separate so a later split needs no client change.
+ */
+export interface ArchiveCapabilitiesModel {
+  canManage: boolean;
+  canDelete: boolean;
+  canUseInbox: boolean;
+  isFirstUser: boolean;
+}

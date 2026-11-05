@@ -29,6 +29,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Files;
+using BackendConfiguration.Pn.Services.ArchiveAccess;
 using BackendConfiguration.Pn.Services.InboundMail;
 using BackendConfigurationLocalizationService;
 using Microsoft.EntityFrameworkCore;
@@ -46,41 +47,64 @@ public class BackendConfigurationTagsService : IBackendConfigurationTagsService
 	private readonly IBackendConfigurationLocalizationService _localizationService;
 	private readonly BackendConfigurationPnDbContext _dbContext;
 	private readonly IUserService _userService;
+	private readonly IArchiveAccessService _archiveAccess;
 
 	public BackendConfigurationTagsService(
 		IBackendConfigurationLocalizationService itemsPlanningLocalizationService,
 		ILogger<BackendConfigurationTagsService> logger,
 		BackendConfigurationPnDbContext dbContext,
-		IUserService userService
+		IUserService userService,
+		IArchiveAccessService archiveAccess
 	)
 	{
 		_localizationService = itemsPlanningLocalizationService;
 		_logger = logger;
 		_dbContext = dbContext;
 		_userService = userService;
+		_archiveAccess = archiveAccess;
 	}
+
+	/// <summary>
+	/// S2: the live documents the caller can read, as SQL, for the tag counts. Throws
+	/// ArchiveAccountDisabledException for a disabled caller (FileTagsController's filter turns it into the D7 403).
+	/// </summary>
+	private async Task<IQueryable<File>> ReadableFilesAsync()
+	{
+		var ctx = await _archiveAccess.GetEnabledContextAsync();
+		return _archiveAccess.Readable(
+			_dbContext.Files.Where(f => f.WorkflowState != Constants.WorkflowStates.Removed), ctx);
+	}
+
+	/// <summary>
+	/// The one count rule (S2): a tag's TagCount is its live links to the live documents in <paramref name="readable"/>.
+	/// Tag names are not filtered. Stays a single SQL query.
+	/// </summary>
+	private IQueryable<CommonTagModel> TagsWithCounts(IQueryable<File> readable) =>
+		_dbContext.FileTags
+			.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+			.Select(x => new CommonTagModel
+			{
+				Id = x.Id,
+				Name = x.Name,
+				TagCount = _dbContext.FilesTags
+					.Count(ft => ft.FileTagId == x.Id
+					             && ft.WorkflowState != Constants.WorkflowStates.Removed
+					             && readable.Any(f => f.Id == ft.FileId))
+			});
 
 	public async Task<OperationDataResult<List<CommonTagModel>>> GetTags()
 	{
 		try
 		{
-			var tags = await _dbContext.FileTags
-				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-				.Select(x => new CommonTagModel
-				{
-					Id = x.Id,
-					Name = x.Name,
-					TagCount = _dbContext.FilesTags
-						.Count(ft => ft.FileTagId == x.Id
-						             && ft.WorkflowState != Constants.WorkflowStates.Removed)
-				})
+			var readable = await ReadableFilesAsync();
+			var tags = await TagsWithCounts(readable)
 				.OrderByDescending(x => x.TagCount)
 				.ThenBy(x => x.Name)
 				.ToListAsync();
 
 			return new OperationDataResult<List<CommonTagModel>>(true, tags);
 		}
-		catch (Exception e)
+		catch (Exception e) when (ArchiveExceptions.IsUnexpected(e))
 		{
 			Console.WriteLine(e);
 			_logger.LogError(e, e.Message);
@@ -183,16 +207,8 @@ public class BackendConfigurationTagsService : IBackendConfigurationTagsService
 	{
 		try
 		{
-			var tag = await _dbContext.FileTags
-				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-				.Select(x => new CommonTagModel
-				{
-					Id = x.Id,
-					Name = x.Name,
-					TagCount = _dbContext.FilesTags
-						.Count(ft => ft.FileTagId == x.Id
-						             && ft.WorkflowState != Constants.WorkflowStates.Removed)
-				})
+			var readable = await ReadableFilesAsync();
+			var tag = await TagsWithCounts(readable)
 				.FirstOrDefaultAsync(x => x.Id == id);
 
 			if (tag == null)
@@ -203,7 +219,7 @@ public class BackendConfigurationTagsService : IBackendConfigurationTagsService
 
 			return new OperationDataResult<CommonTagModel>(true, tag);
 		}
-		catch (Exception e)
+		catch (Exception e) when (ArchiveExceptions.IsUnexpected(e))
 		{
 			Console.WriteLine(e);
 			_logger.LogError(e, e.Message);

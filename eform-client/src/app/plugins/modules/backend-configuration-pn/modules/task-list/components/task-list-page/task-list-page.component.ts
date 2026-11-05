@@ -36,6 +36,7 @@ import {BatchTagsModalComponent} from '../modals/batch-tags-modal/batch-tags-mod
 import {BatchComplianceModalComponent} from '../modals/batch-compliance-modal/batch-compliance-modal.component';
 import {BatchCopyModalComponent} from '../modals/batch-copy-modal/batch-copy-modal.component';
 import {BatchStartDateModalComponent} from '../modals/batch-start-date-modal/batch-start-date-modal.component';
+import {BatchRepeatModalComponent} from '../modals/batch-repeat-modal/batch-repeat-modal.component';
 import {BatchStatusModalComponent} from '../modals/batch-status-modal/batch-status-modal.component';
 import {BatchDeleteModalComponent} from '../modals/batch-delete-modal/batch-delete-modal.component';
 import {BatchBoardModalComponent} from '../modals/batch-board-modal/batch-board-modal.component';
@@ -65,6 +66,7 @@ export type TaskListBatchAction =
   | 'setCompliance'
   | 'copy'
   | 'changeStartDate'
+  | 'changeRepeat'
   | 'setStatus'
   | 'moveToBoard'
   | 'changeReportHeadline'
@@ -417,11 +419,21 @@ export class TaskListPageComponent implements OnInit {
       folderId,
       planningTags: this.tags.map(t => ({id: t.id, name: t.name})),
     };
+    const planningTags = data.planningTags;
     const ref = this.dialog.open(TaskCreateEditModalComponent, {
       ...dialogConfigHelper(this.overlay, data),
       minWidth: 1024,
+      maxHeight: '90vh',
     });
     ref.afterClosed().subscribe(result => {
+      // The modal can CREATE a report headline inline (`addPlanningTag`) even
+      // when it is then cancelled; it then replaces `data.planningTags`. The
+      // "Report headline" cell and the next modal resolve names from `tags`,
+      // so reload it after a save or a create. Not on a plain cancel: a new
+      // `tags` rebuilds the grid's rows, which clears the selection.
+      if (result || data.planningTags !== planningTags) {
+        this.loadTags();
+      }
       if (result) {
         this.loadTasks();
       }
@@ -530,7 +542,7 @@ export class TaskListPageComponent implements OnInit {
     const employees = this.translate.instant('Employees');
     const tasksGroup = this.translate.instant('Tasks');
     const deleteGroup = this.translate.instant('Delete');
-    // Mockup rule: all options (11 in the mockup, 12 since #1297, 13 since #1298) are always shown, grouped exactly as the mockup's
+    // Mockup rule: all options (11 in the mockup, 12 since #1297, 13 since #1298, 14 with "Sæt frekvens") are always shown, grouped exactly as the mockup's
     // three optgroups (Medarbejdere / Opgaver / Slet). Property-scoped actions
     // (assign/reassign/addWorker/copy/moveToBoard) are disabled — not removed — when no single
     // property is filtered, since their option-lists (workers, target property) are
@@ -555,6 +567,10 @@ export class TaskListPageComponent implements OnInit {
       // here — `y/task-list-dropdown-gating.spec.ts` pins the disabled counts
       // at 5 (no filter) / 0 (single property) precisely to catch that.
       {id: 'changeStartDate', label: this.translate.instant('Change start date'), group: tasksGroup, disabled: false},
+      // "Sæt frekvens" — NEVER disabled, like changeStartDate: the repeat rule
+      // is per planning and needs no single-property filter, so the disabled
+      // counts pinned by `y/task-list-dropdown-gating.spec.ts` stay 5 / 0.
+      {id: 'changeRepeat', label: this.translate.instant('Set frequency'), group: tasksGroup, disabled: false},
       // NEVER disabled either: Status is a per-planning flag like
       // setCompliance/changeStartDate, so it needs no single-property filter the
       // way assign/reassign/addWorker/copy do. Same pinning as above —
@@ -646,6 +662,11 @@ export class TaskListPageComponent implements OnInit {
         // No extra option-lists: the modal owns its own (deliberately
         // floor-free) date picker and asks the server for its preview.
         component = BatchStartDateModalComponent;
+        break;
+      case 'changeRepeat':
+        // No extra option-lists: the modal owns its date picker and opens the
+        // calendar's custom-repeat dialog itself.
+        component = BatchRepeatModalComponent;
         break;
       case 'setStatus':
         // No extra option-lists either — the modal's whole input is one

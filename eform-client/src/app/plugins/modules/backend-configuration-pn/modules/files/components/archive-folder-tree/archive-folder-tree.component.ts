@@ -17,7 +17,7 @@ import {MatTooltip} from '@angular/material/tooltip';
 import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
 
 /**
- * Archive folder tree (W1, left column). Admins get create and a per-folder menu; others only navigate.
+ * Archive folder tree (W1, left column). Admins and Leders get create and a per-folder menu; others only navigate.
  * Rows are drop targets while documents are dragged.
  */
 @Component({
@@ -28,7 +28,7 @@ import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
 export class ArchiveFolderTreeComponent implements OnChanges {
   @Input() folders: ArchiveFolderModel[] = [];
   @Input() selectedFolderId: number | null = null;
-  @Input() isAdmin = false;
+  @Input() canManage = false;
   /** True while table rows are being dragged; only then do rows accept a drop. */
   @Input() dragActive = false;
   @Output() folderSelected = new EventEmitter<number>();

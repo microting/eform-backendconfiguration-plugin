@@ -24,10 +24,10 @@ public sealed record ArchiveFileAccessRow(int FileId, int FolderId, bool OwnAcce
 /// <summary>The in-memory half of the read rule (spec section 3).</summary>
 public static class ArchiveAccessRules
 {
-    /// <summary>canRead: disabled → no; admin → yes; open → yes; else any shared group.</summary>
+    /// <summary>canRead: disabled → no; admin or Leder (CanManage) → yes; open → yes; else any shared group.</summary>
     public static bool CanRead(ArchiveAccessContext ctx, IReadOnlyCollection<int> effectiveGroups) =>
         !ctx.IsDisabled
-        && (ctx.IsAdmin || effectiveGroups.Count == 0 || effectiveGroups.Any(g => ctx.UserGroupIds.Contains(g)));
+        && (ctx.CanManage || effectiveGroups.Count == 0 || effectiveGroups.Any(g => ctx.UserGroupIds.Contains(g)));
 
     /// <summary>A live folder the caller can read: the only folders a document may be put into (D17).</summary>
     public static bool IsWritableFolder(ArchiveAccessContext ctx, ArchiveFolderSnapshot folders, int folderId) =>

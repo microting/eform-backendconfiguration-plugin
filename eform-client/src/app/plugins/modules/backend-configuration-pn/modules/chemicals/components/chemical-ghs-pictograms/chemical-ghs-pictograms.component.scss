@@ -1,0 +1,6 @@
+@use '../../chemicals-shared';
+
+:host { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-xs); }
+// The artwork carries its own red frame on white; it keeps that in dark mode too (the GHS colours are regulated).
+.ghs-pictogram { display: block; flex: none; }
+.ghs-chip { margin-right: 0; }

@@ -468,7 +468,7 @@ public class InboxHubServiceTests : TestBaseSetup
         var archive = new BackendConfigurationTagsService(
             new BackendConfigurationLocalizationService(),
             NullLogger<BackendConfigurationTagsService>.Instance,
-            db2, user);
+            db2, user, new FixedArchiveAccess(ArchiveTestData.Admin, db2));
 
         var hubTask = new InboxHubService(db1, _storage, new SenderVerdictResolver(db1), NullLogger<InboxHubService>.Instance)
             .CreateTagAsync("Skadedyr");

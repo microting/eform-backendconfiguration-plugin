@@ -3,6 +3,7 @@ import type {Mock} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {FormBuilder} from '@angular/forms';
 import {MatDialogRef} from '@angular/material/dialog';
+import {Store} from '@ngrx/store';
 import {NEVER, of, throwError} from 'rxjs';
 import {TranslateService} from '@ngx-translate/core';
 import {ToastrService} from 'ngx-toastr';
@@ -26,6 +27,7 @@ describe('PropertyCreateModalComponent — property languages (#8141)', () => {
       providers: [
         FormBuilder,
         {provide: AuthStateService, useValue: {}},
+        {provide: Store, useValue: {select: vi.fn().mockReturnValue(of(true))}},
         {provide: BackendConfigurationPnPropertiesService, useValue: {}},
         {provide: MatDialogRef, useValue: {close: vi.fn()}},
         {provide: ToastrService, useValue: toastr},
@@ -79,5 +81,17 @@ describe('PropertyCreateModalComponent — property languages (#8141)', () => {
     expect(toastr.error).toHaveBeenCalledWith('Could not load languages');
     component.onCreateProperty();
     expect(emitted).toEqual([]);
+  });
+
+  // #1477: the Halebid toggle sends tailBiteEnabled with the new property; off unless switched on.
+  it('sends tailBiteEnabled: false by default and true once the Halebid toggle is on', () => {
+    const languages = of({success: true, model: {languages: [{id: 3, languageCode: 'da', name: 'Dansk', isActive: true}]}});
+    const {component, emitted} = create(languages);
+
+    component.onCreateProperty();
+    component.newPropertyForm.patchValue({tailBiteEnabled: true});
+    component.onCreateProperty();
+
+    expect(emitted.map(p => p.tailBiteEnabled)).toEqual([false, true]);
   });
 });

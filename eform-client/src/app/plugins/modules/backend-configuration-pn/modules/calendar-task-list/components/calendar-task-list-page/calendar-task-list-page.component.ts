@@ -249,11 +249,19 @@ export class CalendarTaskListPageComponent implements OnInit {
       folderId,
       planningTags: this.tags.map(t => ({id: t.id, name: t.name})),
     };
+    const planningTags = data.planningTags;
     const ref = this.dialog.open(TaskCreateEditModalComponent, {
       ...dialogConfigHelper(this.overlay, data),
       minWidth: 1024,
+      maxHeight: '90vh',
     });
     ref.afterClosed().subscribe(result => {
+      // The modal can create a report headline inline even when it is then
+      // cancelled (it then replaces `data.planningTags`); the grid resolves
+      // headline names from `tags`.
+      if (result || data.planningTags !== planningTags) {
+        this.loadTags();
+      }
       if (result) {
         this.loadTasks();
       }

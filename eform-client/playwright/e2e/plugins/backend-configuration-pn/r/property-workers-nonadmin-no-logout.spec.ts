@@ -4,6 +4,7 @@ import {
 } from '../BackendConfigurationProperties.page';
 import { BackendConfigurationPropertyWorkersPage } from '../BackendConfigurationPropertyWorkers.page';
 import { generateRandmString } from '../../../helper-functions';
+import { API_TIMEOUT, ignoreUnhandledRejections, SLOW_API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from '../wait-helpers';
 
 // Regression for the user report: a NON-ADMIN user whose security group has
 // backend-configuration + time-planning plugin access and the core
@@ -267,6 +268,119 @@ test.describe.serial('Property-workers as non-admin (backend + timeregistration)
     // worker. The point of this spec is that it returns 200 instead of the 403
     // that used to be escalated into a logout — hence the assertions above.
     expect(payRuleSetRequests.length).toBeGreaterThan(0);
+  });
+
+  test('non-admin saves a worker with time registration on: stays logged in, keeps assignments, sees no manager settings', async ({ page }) => {
+    // Admin create (SDK-backed) + non-admin edit and save: two logins, two SDK round trips.
+    test.setTimeout(300000);
+    expect(userEmail).not.toBe('');
+    const workerFirstName = `Mgr${rand}`;
+    const workerLastName = 'Keep';
+    const workerFullName = `${workerFirstName} ${workerLastName}`;
+
+    // As admin: a worker with time registration, the property assigned and the
+    // manager role set. The admin sees the manager settings (openCreateModal
+    // waits for #isManager).
+    await page.goto(BASE_URL);
+    await loginAs(page, 'admin@admin.com', 'secretpassword');
+    await page.locator('#newEFormBtn').waitFor({ state: 'visible', timeout: 120000 });
+    const adminWorkersPage = new BackendConfigurationPropertyWorkersPage(page);
+    await adminWorkersPage.goToPropertyWorkers();
+    await adminWorkersPage.create({
+      name: workerFirstName,
+      surname: workerLastName,
+      workerEmail: `mgr-${rand}@example.com`,
+      timeRegistrationEnabled: true,
+      properties: [propertyName],
+      isManager: true,
+    });
+    await logout(page);
+
+    // As the non-admin: open the worker and save it.
+    await loginAs(page, userEmail, USER_PASSWORD);
+    expect(page.url()).not.toContain('/auth');
+    const workersPage = new BackendConfigurationPropertyWorkersPage(page);
+    if (!page.url().includes('/plugins/backend-configuration-pn/property-workers')) {
+      await page.goto(`${BASE_URL}/plugins/backend-configuration-pn/property-workers`);
+    }
+    await workersPage.newDeviceUserBtn().waitFor({ state: 'visible', timeout: 30000 });
+    await workersPage.openEditModalFor(workerFullName);
+
+    // The time registration tab is there, the manager settings are not.
+    await page.locator('mat-dialog-container .mat-mdc-tab')
+      .filter({ hasText: /Timeregistrering|Timeregistration|Time registration/ })
+      .click({ timeout: UI_TIMEOUT });
+    await page.locator('mat-dialog-container #thirdShiftActive').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    await expect(page.locator('mat-dialog-container #managerSettingsSection')).toHaveCount(0);
+    await expect(page.locator('mat-dialog-container #isManager')).toHaveCount(0);
+
+    const updatePromise = waitForApiResponse(
+      page,
+      'POST /api/backend-configuration-pn/properties/assignment/update-device-user',
+      (r) => r.url().includes('/api/backend-configuration-pn/properties/assignment/update-device-user')
+        && r.request().method() === 'POST',
+      SLOW_API_TIMEOUT,
+    );
+    const assignedSitePromise = waitForApiResponse(
+      page,
+      'PUT /api/time-planning-pn/settings/assigned-site',
+      (r) => r.url().includes('/api/time-planning-pn/settings/assigned-site')
+        && !r.url().includes('assigned-sites')
+        && r.request().method() === 'PUT',
+      API_TIMEOUT,
+    );
+    const assignmentPromise = waitForApiResponse(
+      page,
+      'PUT /api/backend-configuration-pn/properties/assignment (property assignments)',
+      (r) => new URL(r.url()).pathname.endsWith('/api/backend-configuration-pn/properties/assignment')
+        && r.request().method() === 'PUT',
+      SLOW_API_TIMEOUT,
+    );
+    ignoreUnhandledRejections(updatePromise, assignedSitePromise, assignmentPromise);
+
+    await expect(workersPage.saveEditBtn()).toBeEnabled({ timeout: UI_TIMEOUT });
+    await workersPage.saveEditBtn().click();
+
+    for (const [name, promise] of [
+      ['update-device-user', updatePromise],
+      ['assigned-site', assignedSitePromise],
+      ['property assignments', assignmentPromise],
+    ] as const) {
+      const response = await promise;
+      const body = await response.json().catch(() => null);
+      expect(response.status(), `${name} status (${JSON.stringify(body)})`).toBe(200);
+      expect(body?.success, `${name} success (${body?.message ?? ''})`).toBe(true);
+    }
+    const updateBody = JSON.parse((await updatePromise).request().postData() || '{}');
+    const assignmentBody = JSON.parse((await assignmentPromise).request().postData() || '{}');
+    const sentPropertyIds: number[] = (assignmentBody.assignments || [])
+      .filter((a: any) => a.isChecked)
+      .map((a: any) => a.propertyId);
+    expect(sentPropertyIds.length, 'the save sends the existing property assignment').toBeGreaterThan(0);
+
+    // The dialog closes and the user is still signed in.
+    await workersPage.saveEditBtn().waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
+    await expect(page).not.toHaveURL(/\/auth/, { timeout: UI_TIMEOUT });
+    await expect(page).toHaveURL(/\/plugins\/backend-configuration-pn\/property-workers/, { timeout: UI_TIMEOUT });
+
+    // Stored state, read as admin: assignments kept, manager role unchanged.
+    const adminToken = await loginViaApi(page, 'admin@admin.com', 'secretpassword');
+    const adminHeaders = { Authorization: `Bearer ${adminToken}` };
+    const assignmentsRes = await page.request.get(
+      `${BASE_URL}/api/backend-configuration-pn/properties/assignment`, { headers: adminHeaders, timeout: API_TIMEOUT });
+    expect(assignmentsRes.status(), 'GET property assignments as admin').toBe(200);
+    const workerAssignments = ((await assignmentsRes.json())?.model || [])
+      .find((x: any) => x.siteId === assignmentBody.siteId);
+    const storedPropertyIds: number[] = (workerAssignments?.assignments || [])
+      .filter((a: any) => a.isChecked)
+      .map((a: any) => a.propertyId);
+    expect(storedPropertyIds.sort()).toEqual([...sentPropertyIds].sort());
+
+    const assignedSiteRes = await page.request.get(
+      `${BASE_URL}/api/time-planning-pn/settings/assigned-sites?siteId=${updateBody.id}`,
+      { headers: adminHeaders, timeout: API_TIMEOUT });
+    expect(assignedSiteRes.status(), 'GET assigned site as admin').toBe(200);
+    expect((await assignedSiteRes.json())?.model?.isManager, 'the manager role set by the admin is kept').toBe(true);
   });
 
   test('the pay-rule-sets list returns 200 for a non-admin (no longer admin-only)', async ({ page }) => {

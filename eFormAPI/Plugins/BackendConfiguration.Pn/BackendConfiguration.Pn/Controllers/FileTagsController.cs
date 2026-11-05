@@ -30,6 +30,7 @@ using System.Collections.Generic;
 using Infrastructure.Models.Files;
 
 [Authorize]
+[ArchiveAccessFilter]
 [Route("api/backend-configuration-pn/file-tags")]
 public class FileTagsController : Controller
 {
@@ -46,7 +47,9 @@ public class FileTagsController : Controller
 		return await _backendConfigurationTagsService.GetTags();
 	}
 
+	/// <summary>Renaming an etiket is admin/Leder-only (D-L11): it changes every document carrying it.</summary>
 	[HttpPut]
+	[ArchiveManager]
 	public async Task<OperationResult> Update([FromBody] CommonTagModel tag)
 	{
 		return await _backendConfigurationTagsService.UpdateTag(tag);
@@ -58,8 +61,10 @@ public class FileTagsController : Controller
 		return await _backendConfigurationTagsService.CreateTag(tag);
 	}
 
+	/// <summary>Deleting an etiket is admin/Leder-only (D-L11).</summary>
 	[HttpDelete]
 	[Route("{id}")]
+	[ArchiveManager]
 	public async Task<OperationResult> Delete(int id)
 	{
 		return await _backendConfigurationTagsService.DeleteTag(id);

@@ -13,6 +13,8 @@ export class PropertyModel {
   complianceStatusThirty: PropertyCompliancesColorBadgesEnum;
   complianceStatusBadge: string;
   workorderEnable: boolean;
+  /** Tail biting (Halebid) is switched on for the property. */
+  tailBiteEnabled: boolean;
   workorderEntityListId: number;
   getFullName(): string {
     return `${this.cvr} - ${this.chr} - ${this.name}`;

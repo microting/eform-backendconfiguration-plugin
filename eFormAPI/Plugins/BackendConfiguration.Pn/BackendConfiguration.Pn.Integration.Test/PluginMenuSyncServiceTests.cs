@@ -30,6 +30,7 @@ public class PluginMenuSyncServiceTests : TestBaseSetup
     private const string SettingsE2EId = "backend-configuration-pn-chemicals-settings";
     private const string HistoryE2EId = "backend-configuration-pn-chemicals-history";
     private const string LaterChildE2EId = "backend-configuration-pn-chemicals-later-child";
+    private const string TailBiteE2EId = "backend-configuration-pn-tail-bite";
 
     /// <summary>The five Kemi children in menu order.</summary>
     private static readonly string[] AllChildren = [InventoryE2EId, LocationsE2EId, PermissionsE2EId, SettingsE2EId, HistoryE2EId];
@@ -391,6 +392,67 @@ public class PluginMenuSyncServiceTests : TestBaseSetup
         Assert.That(await BaseDbContext.MenuItems.CountAsync(x => x.E2EId == PermissionsE2EId), Is.EqualTo(1));
         Assert.That(await BaseDbContext.MenuTemplates.CountAsync(x => x.E2EId == PermissionsE2EId), Is.EqualTo(1));
     }
+
+    /// <summary>Kemi and tail biting were seeded without an icon; the sync gives each root its glyph.</summary>
+    [Test]
+    public async Task ApplyDefaultIcons_GivesTheKemiGroupItsIcon_WhenItHasNone()
+    {
+        await InstallAsTheHostDoesAsync(Menu());
+
+        Assert.That(ApplyIcons(), Is.EqualTo(2), "the Kemi group and the tail-biting link");
+
+        Assert.That(await IconOfTheGroupAsync(), Is.EqualTo("science"));
+        Assert.That(await BaseDbContext.MenuItems.AsNoTracking().Where(x => x.E2EId == TailBiteE2EId)
+            .Select(x => x.IconName).SingleAsync(), Is.EqualTo("pets"));
+        Assert.That(ApplyIcons(), Is.EqualTo(0), "a second startup changes nothing");
+    }
+
+    /// <summary>A glyph an admin chose in the menu editor stays.</summary>
+    [Test]
+    public async Task ApplyDefaultIcons_KeepsAnIconTheAdminChose()
+    {
+        await InstallAsTheHostDoesAsync(Menu());
+        await BaseDbContext.MenuItems.Where(x => x.E2EId == GroupE2EId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.IconName, "inventory_2"));
+
+        Assert.That(ApplyIcons(), Is.EqualTo(1), "only the tail-biting link");
+
+        Assert.That(await IconOfTheGroupAsync(), Is.EqualTo("inventory_2"));
+    }
+
+    /// <summary>The menu editor copies the group's E2EId onto its children; only the group gets the icon.</summary>
+    [Test]
+    public async Task ApplyDefaultIcons_LeavesAChildThatCarriesTheGroupE2EIdAlone()
+    {
+        await InstallAsTheHostDoesAsync(Menu());
+        await BaseDbContext.MenuItems.Where(x => x.E2EId == PermissionsE2EId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.E2EId, GroupE2EId));
+
+        Assert.That(ApplyIcons(), Is.EqualTo(2), "the Kemi group and the tail-biting link, not the child");
+
+        var icons = await BaseDbContext.MenuItems.AsNoTracking().Where(x => x.E2EId == GroupE2EId)
+            .Select(x => new { x.Type, x.IconName }).ToListAsync();
+        Assert.That(icons.Single(x => x.Type == MenuItemTypeEnum.Dropdown).IconName, Is.EqualTo("science"));
+        Assert.That(icons.Single(x => x.Type == MenuItemTypeEnum.Link).IconName, Is.Null);
+    }
+
+    [Test]
+    public async Task ApplyDefaultIcons_DoesNothingWhileThePluginIsDisabled()
+    {
+        await InstallAsTheHostDoesAsync(Menu());
+        await BaseDbContext.EformPlugins.ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, Disabled));
+
+        Assert.That(ApplyIcons(), Is.EqualTo(0));
+
+        Assert.That(await IconOfTheGroupAsync(), Is.Null);
+    }
+
+    private int ApplyIcons() =>
+        new PluginMenuSyncService(BaseDbContext).ApplyDefaultIcons(PluginId, EformBackendConfigurationPlugin.DefaultMenuIcons);
+
+    private Task<string> IconOfTheGroupAsync() =>
+        BaseDbContext.MenuItems.AsNoTracking().Where(x => x.E2EId == GroupE2EId && x.Type == MenuItemTypeEnum.Dropdown)
+            .Select(x => x.IconName).SingleAsync();
 
     private int Run(IReadOnlyList<PluginMenuItemModel> menu) => new PluginMenuSyncService(BaseDbContext).Run(PluginId, menu);
 

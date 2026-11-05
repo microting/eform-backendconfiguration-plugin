@@ -117,6 +117,14 @@ describe('TaskListPageComponent — Logbøger folder resolution', () => {
     expect(dialogStub.open.mock.calls[0][1].data.folderId).toBe(77);
   });
 
+  // The modal is taller than a laptop screen once every row is shown; without a
+  // height cap the overlay pane grows past the viewport and Save is unreachable.
+  it('caps the edit modal at the viewport height', () => {
+    component.onEditTask(buildTask(1));
+
+    expect(dialogStub.open.mock.calls[0][1].maxHeight).toBe('90vh');
+  });
+
   // #1256: the page has no team filter; `teams` is only the edit modal's team-NAME
   // fallback (the modal loads its own property-scoped teams for the picker, and a row
   // may hold a team it cannot name), so it is the installation-wide list on purpose.
@@ -253,8 +261,8 @@ describe('TaskListPageComponent — move to calendar batch action', () => {
     expect(option).toBeDefined();
     expect(option!.label).toBe('Move to calendar');
     expect(option!.group).toBe('Tasks');
-    // 12 since #1297, 13 since #1298 (changeReportHeadline).
-    expect(component.batchActions).toHaveLength(13);
+    // 12 since #1297, 13 since #1298 (changeReportHeadline), 14 with changeRepeat.
+    expect(component.batchActions).toHaveLength(14);
   });
 
   it.each([
@@ -375,7 +383,7 @@ describe('TaskListPageComponent — change report headline batch action', () => 
     expect(option).toBeDefined();
     expect(option!.label).toBe('Change report headline');
     expect(option!.group).toBe('Tasks');
-    expect(component.batchActions).toHaveLength(13);
+    expect(component.batchActions).toHaveLength(14);
     // Sits with the other Opgaver actions, before the Slet group.
     const ids = component.batchActions.map(a => a.id);
     expect(ids.indexOf('changeReportHeadline')).toBeLessThan(ids.indexOf('delete'));
@@ -415,5 +423,135 @@ describe('TaskListPageComponent — change report headline batch action', () => 
     const before = tagsService.getPlanningsTags.mock.calls.length;
     openWith(closeResult);
     expect(tagsService.getPlanningsTags.mock.calls.length).toBe(before + 1);
+  });
+});
+
+/**
+ * The edit modal (opened from the task name) can CREATE a report headline
+ * inline (`addPlanningTag`): the tag is stored server-side at once and only
+ * added to the modal's own copy of the list. The grid's "Report headline" cell
+ * resolves `itemPlanningTagId` client-side from the page's `tags`, so unless
+ * the page reloads `tags` when the modal closes, a task saved with the new
+ * headline shows "--" — and the next modal's dropdown lacks it — until the
+ * whole page is reloaded. Reload on cancel too: the tag exists either way.
+ */
+describe('TaskListPageComponent — report headline created in the edit modal', () => {
+  let component: TaskListPageComponent;
+  let dialogStub: any;
+  let tagsService: {getPlanningsTags: Mock};
+  let calendarService: {getTasksIndex: Mock; getBoards: Mock};
+
+  const oldTag = {id: 3, name: 'Old headline', description: '', isLocked: false};
+  const newTag = {id: 9, name: 'New headline', description: '', isLocked: false};
+
+  const task = {
+    id: 7,
+    boardId: 10,
+    propertyId: 1,
+    taskDate: '2026-06-09',
+    startHour: 9,
+    workerNames: [],
+    tags: [],
+  } as unknown as CalendarTaskModel;
+
+  beforeEach(async () => {
+    dialogStub = {open: vi.fn().mockReturnValue({afterClosed: () => of(false)})};
+    tagsService = {getPlanningsTags: vi.fn().mockReturnValue(of({success: true, model: [oldTag]}))};
+    calendarService = {
+      getTasksIndex: vi.fn().mockReturnValue(of({success: true, model: []})),
+      getBoards: vi.fn().mockReturnValue(of({success: true, model: []})),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [TranslateModule.forRoot()],
+      providers: [
+        {provide: MatDialog, useValue: dialogStub},
+        {provide: Overlay, useValue: {scrollStrategies: {reposition: vi.fn().mockReturnValue({})}}},
+        {provide: BackendConfigurationPnCalendarService, useValue: calendarService},
+        {
+          provide: BackendConfigurationPnPropertiesService,
+          useValue: {
+            getAllPropertiesDictionary: vi.fn().mockReturnValue(of({success: true, model: []})),
+            getDeviceUsersFiltered: vi.fn().mockReturnValue(of({success: true, model: []})),
+            getLinkedFolderDtos: vi.fn().mockReturnValue(of({success: true, model: []})),
+          },
+        },
+        {provide: ItemsPlanningPnTagsService, useValue: tagsService},
+        {
+          provide: EFormService,
+          useValue: {getAll: vi.fn().mockReturnValue(of({success: true, model: {templates: []}}))},
+        },
+        {
+          provide: BackendConfigurationPnWorkerTagsService,
+          useValue: {getWorkerTags: vi.fn().mockReturnValue(of({success: true, model: []}))},
+        },
+        {provide: CalendarRepeatService, useValue: {}},
+        {provide: BackendConfigurationPnTaskListService, useValue: {}},
+        {provide: Store, useValue: {select: vi.fn().mockReturnValue(of(true))}},
+      ],
+      schemas: [NO_ERRORS_SCHEMA],
+    }).overrideComponent(TaskListPageComponent, {set: {imports: [CommonModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}}).compileComponents();
+
+    component = TestBed.createComponent(TaskListPageComponent).componentInstance;
+    component.ngOnInit();
+  });
+
+  // What `addPlanningTag` does: store the tag server-side and REPLACE the
+  // modal's `data.planningTags` (the page's own `data` object) with a new list.
+  const openAndCreateHeadline = (closeResult: unknown) => {
+    tagsService.getPlanningsTags.mockReturnValue(of({success: true, model: [oldTag, newTag]}));
+    dialogStub.open.mockImplementation((_modal: unknown, config: any) => {
+      config.data.planningTags = [...config.data.planningTags, {id: newTag.id, name: newTag.name}];
+      return {afterClosed: () => of(closeResult)};
+    });
+  };
+
+  it.each([
+    ['saved', {saved: true}],
+    ['cancelled', undefined],
+  ])('reloads the headline list when the edit modal is %s after creating one', (_label, closeResult) => {
+    expect(component.tags).toEqual([oldTag]);
+    openAndCreateHeadline(closeResult);
+    const before = tagsService.getPlanningsTags.mock.calls.length;
+
+    component.onEditTask(task);
+
+    expect(tagsService.getPlanningsTags.mock.calls.length).toBe(before + 1);
+    expect(component.tags).toEqual([oldTag, newTag]);
+  });
+
+  // A new `tags` reference rebuilds the grid's rows, which clears the row
+  // selection — a plain cancel must leave it alone (e2e IR6).
+  it('does not reload the headline list on a plain cancel', () => {
+    dialogStub.open.mockReturnValue({afterClosed: () => of(undefined)});
+    const before = tagsService.getPlanningsTags.mock.calls.length;
+
+    component.onEditTask(task);
+
+    expect(tagsService.getPlanningsTags.mock.calls.length).toBe(before);
+  });
+
+  it('offers the headline created in one edit modal in the next one', () => {
+    openAndCreateHeadline(undefined);
+    component.onEditTask(task);
+    dialogStub.open.mockReturnValue({afterClosed: () => of(undefined)});
+
+    component.onEditTask(task);
+
+    expect(dialogStub.open.mock.calls[1][1].data.planningTags).toEqual([
+      {id: oldTag.id, name: oldTag.name},
+      {id: newTag.id, name: newTag.name},
+    ]);
+  });
+
+  it('reloads the tasks after a save, but not after a cancel', () => {
+    calendarService.getTasksIndex.mockClear();
+    dialogStub.open.mockReturnValue({afterClosed: () => of(undefined)});
+    component.onEditTask(task);
+    expect(calendarService.getTasksIndex).not.toHaveBeenCalled();
+
+    dialogStub.open.mockReturnValue({afterClosed: () => of({saved: true})});
+    component.onEditTask(task);
+    expect(calendarService.getTasksIndex).toHaveBeenCalledTimes(1);
   });
 });

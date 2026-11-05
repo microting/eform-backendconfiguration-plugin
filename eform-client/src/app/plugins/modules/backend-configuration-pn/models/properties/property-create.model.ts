@@ -4,6 +4,7 @@ export class PropertyCreateModel {
   cvr: string;
   address: string;
   workorderEnable: boolean = false;
+  tailBiteEnabled: boolean = false;
   languagesIds: number[] = [];
   industryCode: string;
   isFarm: boolean = false;

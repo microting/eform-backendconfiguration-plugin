@@ -55,14 +55,23 @@
       />
     </mat-form-field>
 
-    <mat-slide-toggle
-      *ngIf="selectAuthIsAdmin$ | async"
-      color="primary"
-      id="propertyEditWorkorderFlowEnableToggle"
-      formControlName="workorderEnable"
-    >
-      {{ 'Task management' | translate }}
-    </mat-slide-toggle>
+    <ng-container *ngIf="selectAuthIsAdmin$ | async">
+      <mat-slide-toggle
+        color="primary"
+        id="propertyEditWorkorderFlowEnableToggle"
+        formControlName="workorderEnable"
+      >
+        {{ 'Task management' | translate }}
+      </mat-slide-toggle>
+
+      <mat-slide-toggle
+        color="primary"
+        id="propertyEditTailBiteEnableToggle"
+        formControlName="tailBiteEnabled"
+      >
+        {{ 'Tail biting' | translate }}
+      </mat-slide-toggle>
+    </ng-container>
 
   </div>
 </div>

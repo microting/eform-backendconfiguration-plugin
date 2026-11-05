@@ -137,6 +137,39 @@ public class PluginMenuSyncService(BaseDbContext dbContext)
         return added.Count;
     }
 
+    /// <summary>
+    /// Gives each top-level menu entry in <paramref name="icons"/> (E2EId to Material Symbols glyph) its icon, and
+    /// returns how many rows it changed. PluginMenuItemModel carries no icon, so the host seeds every plugin entry
+    /// without one. Only a row whose IconName was never set (null) gets the glyph: an icon an admin picked in the menu
+    /// editor stays, and so does a row the editor saved without one. Only root rows: the editor copies a group's
+    /// E2EId onto its children. Runs at every startup after <see cref="Run"/>; on a fresh install the host adds the
+    /// rows later in that boot, so they get their icon at the next startup.
+    /// </summary>
+    public int ApplyDefaultIcons(string pluginId, IReadOnlyDictionary<string, string> icons)
+    {
+        var plugin = dbContext.EformPlugins.AsNoTracking().FirstOrDefault(x => x.PluginId == pluginId);
+        if (plugin is not { Status: EnabledStatus })
+        {
+            return 0;
+        }
+
+        var changed = 0;
+        foreach (var (e2eId, icon) in icons)
+        {
+            var rows = dbContext.MenuItems
+                .Where(x => x.E2EId == e2eId && x.ParentId == null && x.IconName == null)
+                .ExecuteUpdate(s => s.SetProperty(x => x.IconName, icon));
+            if (rows > 0)
+            {
+                Console.WriteLine($"PluginMenuSync set icon {icon} on menu item {e2eId}");
+            }
+
+            changed += rows;
+        }
+
+        return changed;
+    }
+
     private List<string> AddChildren(PluginMenuItemModel group, List<PluginMenuItemModel> children, int pluginRowId,
         bool groupWasOffered)
     {

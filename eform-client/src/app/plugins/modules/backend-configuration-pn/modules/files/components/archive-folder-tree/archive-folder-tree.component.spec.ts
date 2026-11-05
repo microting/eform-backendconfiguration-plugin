@@ -14,7 +14,7 @@ function create(selectedFolderId: number | null = 1): ArchiveFolderTreeComponent
   const tree = new ArchiveFolderTreeComponent();
   tree.folders = folders;
   tree.selectedFolderId = selectedFolderId;
-  tree.isAdmin = true;
+  tree.canManage = true;
   tree.ngOnChanges({folders: {} as any, selectedFolderId: {} as any});
   return tree;
 }

@@ -6,8 +6,8 @@ import { LoginPage } from '../../../Page objects/Login.page';
 import { BackendConfigurationPropertiesPage, PropertyCreateUpdate } from '../BackendConfigurationProperties.page';
 import { BackendConfigurationPropertyWorkersPage, PropertyWorker } from '../BackendConfigurationPropertyWorkers.page';
 import { customerDatabase, runMariadbSql } from '../db-helpers';
-import { API_TIMEOUT, UI_TIMEOUT } from '../wait-helpers';
-import { TailBitePage } from './tail-bite.page';
+import { API_TIMEOUT, ignoreUnhandledRejections, UI_TIMEOUT, waitForApiResponse } from '../wait-helpers';
+import { escapeRegExp, TailBitePage } from './tail-bite.page';
 
 /**
  * Tail biting (halebid) web admin, sub-project 3 of spec 2026-10-04-halebid-app-design.
@@ -154,7 +154,8 @@ test.describe.serial('Tail biting web admin', () => {
     expect(count.trim()).toBe('1');
   });
 
-  test('managers: enable tail biting on the property and make the worker a manager', async ({ page }) => {
+  // #1477: tail biting is switched on with the Halebid toggle in the property edit dialog, not in the managers dialog.
+  test('managers: switch tail biting on in the property edit dialog and make the worker a manager', async ({ page }) => {
     test.setTimeout(300000);
     const tailBite = new TailBitePage(page);
     const workersPage = new BackendConfigurationPropertyWorkersPage(page);
@@ -162,8 +163,22 @@ test.describe.serial('Tail biting web admin', () => {
     await page.locator('#tailBiteManagersBtn').click();
     await tailBite.pick('tailBiteManagersProperty', property.name);
     await expect(page.locator('#tailBiteNotEnabled')).toBeVisible({ timeout: UI_TIMEOUT });
-    await tailBite.expectApi('POST', /^\/properties\/\d+\/enable$/, () => page.locator('#tailBiteEnableBtn').click());
+    await expect(page.locator('#tailBiteEnableBtn')).toHaveCount(0);
+    await page.locator('#tailBiteManagersCloseBtn').click();
 
+    const propertiesPage = new BackendConfigurationPropertiesPage(page);
+    await propertiesPage.goToProperties();
+    const propertyRow = propertiesPage.getRowObjectByName(property.name);
+    await propertyRow.setTailBite(true);
+    await propertyRow.openEditModal();
+    await expect(propertiesPage.propertyEditTailBiteEnableToggle()).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
+    await propertiesPage.propertyEditSaveCancelBtn().click();
+    await propertiesPage.propertyEditSaveCancelBtn().waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
+
+    await workersPage.goToPropertyWorkers();
+    await page.locator('#tailBiteManagersBtn').click();
+    await tailBite.pick('tailBiteManagersProperty', property.name);
+    await expect(page.locator('#tailBiteNotEnabled')).toHaveCount(0, { timeout: UI_TIMEOUT });
     const row = page.locator('[id^="tailBiteManagerRow-"]').filter({ hasText: managerName });
     await expect(row).toHaveCount(1, { timeout: API_TIMEOUT });
     await tailBite.expectApi('PUT', /^\/property-workers\/\d+\/manager$/, () => row.locator('mat-slide-toggle button').click());
@@ -414,5 +429,56 @@ test.describe.serial('Tail biting web admin', () => {
     await expect(page.locator(`#tailBiteOutbreakRow-${outbreakId}`)).toHaveCount(0, { timeout: API_TIMEOUT });
     await page.locator('#tailBiteShowClosed button').click();
     await expect(page.locator(`#tailBiteOutbreakStatus-${outbreakId}`)).toHaveClass(/badge-success/, { timeout: API_TIMEOUT });
+  });
+
+  // #1477: switching Halebid off hides the property (its data is kept); switching it on again shows it as it was.
+  test('toggle: switched off the property leaves the tail-bite page, switched on it is back with its data', async ({ page }) => {
+    test.setTimeout(300000);
+    const propertiesPage = new BackendConfigurationPropertiesPage(page);
+    await propertiesPage.goToProperties();
+    await propertiesPage.getRowObjectByName(property.name).setTailBite(false);
+
+    const mine = waitForApiResponse(page, 'GET tail-bite my-properties',
+      (r) => r.request().method() === 'GET' && new URL(r.url()).pathname.endsWith('/tail-bite/my-properties'), API_TIMEOUT);
+    ignoreUnhandledRejections(mine);
+    await page.goto(`${BASE_URL}/plugins/backend-configuration-pn/tail-bite`);
+    const body = await (await mine).json();
+    expect(body.success, `GET my-properties -> ${body.message}`).toBe(true);
+    const names: string[] = (body.model ?? []).map((p: { name: string }) => p.name);
+    expect(names).not.toContain(property.name);
+    if (names.length === 0) {
+      await expect(page.locator('#tailBiteNoProperty')).toBeVisible({ timeout: UI_TIMEOUT });
+    } else {
+      await page.locator('#tailBitePropertySelect').click({ timeout: UI_TIMEOUT });
+      const panel = page.locator('.ng-dropdown-panel');
+      await panel.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+      await expect(panel.locator('.ng-option').filter({ hasText: new RegExp(`^\\s*${escapeRegExp(property.name)}\\s*$`) }))
+        .toHaveCount(0);
+      await page.keyboard.press('Escape');
+    }
+    const tailBite = new TailBitePage(page);
+    await tailBite.screenshot('switched-off');
+
+    // A bookmarked outbreak of the switched-off property: the server refuses it, and the page does not show it.
+    const refused = await page.request.get(`${API}/outbreaks/${outbreakId}`,
+      { headers: { Authorization: `Bearer ${await apiToken(page)}` } });
+    const refusedBody = await refused.json();
+    expect(refusedBody.success).toBe(false);
+    expect(refusedBody.message).toBe('Not found or no access.');
+    await page.goto(`${BASE_URL}/plugins/backend-configuration-pn/tail-bite/${seededPropertyId}/outbreaks/${outbreakId}`);
+    if (names.length === 0) {
+      await expect(page.locator('#tailBiteNoProperty')).toBeVisible({ timeout: UI_TIMEOUT });
+    } else {
+      await expect(page).not.toHaveURL(new RegExp(`/tail-bite/${seededPropertyId}/`), { timeout: UI_TIMEOUT });
+    }
+    await expect(page.locator('#tailBiteOutbreakTitle')).toHaveCount(0);
+
+    await propertiesPage.goToProperties();
+    await propertiesPage.getRowObjectByName(property.name).setTailBite(true);
+    await tailBite.goto('locations', property.name);
+    await expect(tailBite.locationRow(property.name)).toHaveCount(1, { timeout: API_TIMEOUT });
+    await expect(tailBite.locationRow('Sti 301')).toHaveCount(1);
+    await tailBite.goto('rules', property.name);
+    await expect(page.locator('[id^="tailBiteRuleItem-"]')).toHaveCount(2, { timeout: API_TIMEOUT });
   });
 });

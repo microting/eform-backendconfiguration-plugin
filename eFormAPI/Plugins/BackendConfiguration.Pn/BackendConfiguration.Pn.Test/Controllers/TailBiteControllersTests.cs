@@ -37,17 +37,6 @@ public class TailBiteControllersTests
     }
 
     [Test]
-    public async Task Enable_CallsServiceWithoutSite()
-    {
-        var access = Substitute.For<ITailBiteAccess>();
-        var setup = Substitute.For<ITailBiteSetupService>();
-        var res = await new TailBiteSetupController(access, setup).Enable(1);
-        Assert.That(res.Success, Is.True);
-        await setup.Received().EnableAsync(0, 1);
-        await access.DidNotReceive().RequireCallerSiteAsync();
-    }
-
-    [Test]
     public async Task SetManager_CallsServiceWithoutSite()
     {
         var access = Substitute.For<ITailBiteAccess>();
@@ -227,22 +216,22 @@ public class TailBiteControllersTests
     }
 
     [Test]
-    public void OnlyEnableAndSetManager_RequireThePluginAdminPolicy()
+    public void OnlySetManager_RequiresThePluginAdminPolicy()
     {
         var withPolicy = typeof(TailBiteSetupController).GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
             .Where(m => m.GetCustomAttributes<AuthorizeAttribute>().Any(a => a.Policy == BackendConfigurationClaims.AccessBackendConfigurationPlugin))
             .Select(m => m.Name).OrderBy(n => n).ToList();
-        Assert.That(withPolicy, Is.EqualTo(new[] { "Enable", "SetManager" }));
+        Assert.That(withPolicy, Is.EqualTo(new[] { "SetManager" }));
     }
 
     // Making someone a tail-bite manager grants rights: it needs the worker-update permission, like editing a property worker.
     [Test]
-    public void OnlyEnableAndSetManager_RequireTheWorkerUpdatePolicy()
+    public void OnlySetManager_RequiresTheWorkerUpdatePolicy()
     {
         var withPolicy = typeof(TailBiteSetupController).GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
             .Where(m => m.GetCustomAttributes<AuthorizeAttribute>().Any(a => a.Policy == AuthConsts.EformPolicies.DeviceUsers.Update))
             .Select(m => m.Name).OrderBy(n => n).ToList();
-        Assert.That(withPolicy, Is.EqualTo(new[] { "Enable", "SetManager" }));
+        Assert.That(withPolicy, Is.EqualTo(new[] { "SetManager" }));
     }
 
     [Test]

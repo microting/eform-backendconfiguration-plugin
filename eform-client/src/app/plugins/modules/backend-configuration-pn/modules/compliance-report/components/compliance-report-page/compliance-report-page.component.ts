@@ -117,9 +117,13 @@ export class ComplianceReportPageComponent implements OnInit, OnDestroy {
     // that keep the filters and `reportVisible`, so the child the ngSwitch
     // creates re-queries the same filters through the replay.
     //
-    // Bound with `(click)` on each `mat-button-toggle`, NOT the group's
-    // `(change)` (#1296): `change` does not fire when the already-selected
-    // toggle is clicked again, which would silently drop the Oversigt refetch.
+    // Bound to each `mat-button-toggle`'s own `(change)`, which fires once per
+    // activation: a click, Enter/Space, an arrow key (#1348), and a re-click
+    // on the already-selected toggle. Not the group's `(change)` (#1296): it
+    // skips the re-click and would silently drop the Oversigt refetch. Not
+    // `(click)` either: the arrow keys select through the group's keydown
+    // handler and fire no DOM click, so the toggle got checked while the view
+    // stayed put.
     if (mode === 'overview') {
       this.state.resetToOverview();
       return;

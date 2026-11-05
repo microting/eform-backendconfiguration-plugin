@@ -11,3 +11,4 @@ export * from './chemical-stock-dialog/chemical-stock-dialog.component';
 export * from './chemical-locations-page/chemical-locations-page.component';
 export * from './chemical-location-dialog/chemical-location-dialog.component';
 export * from './chemical-history-page/chemical-history-page.component';
+export * from './chemical-ghs-pictograms/chemical-ghs-pictograms.component';

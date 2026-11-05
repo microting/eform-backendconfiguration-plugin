@@ -16,10 +16,9 @@
   </mat-form-field>
 
   <ng-container *ngIf="selectedProperty as property">
-    <div *ngIf="!property.enabled" class="d-flex flex-row flex-wrap align-items-center gap-12 mb-2">
-      <span id="tailBiteNotEnabled">{{ 'Tail biting is not enabled for this property.' | translate }}</span>
-      <button id="tailBiteEnableBtn" class="btn-primary" [disabled]="busy" (click)="enable()">{{ 'Enable tail biting' | translate }}</button>
-    </div>
+    <p *ngIf="!property.enabled" id="tailBiteNotEnabled">
+      {{ 'Tail biting is not switched on for this property. It is switched on in the property settings (Edit property).' | translate }}
+    </p>
     <ng-container *ngIf="property.enabled">
       <div *ngFor="let w of workers" class="d-flex flex-row align-items-center justify-content-between py-1"
            [id]="'tailBiteManagerRow-' + w.siteId">

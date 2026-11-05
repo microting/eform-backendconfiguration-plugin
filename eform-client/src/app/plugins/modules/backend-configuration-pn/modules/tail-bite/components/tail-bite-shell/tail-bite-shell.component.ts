@@ -12,9 +12,6 @@ import {TailBitePropertyStatus} from '../../../../models';
 import {BackendConfigurationPnTailBiteService} from '../../../../services';
 import {TAIL_BITE_BASE, parseTailBiteUrl} from '../../shared/tail-bite-route';
 
-/** An outbreak page URL (…/outbreaks/<id>), whose property the page itself owns. */
-const OUTBREAK_DETAIL = /\/outbreaks\/\d+(?=[/?#;]|$)/;
-
 /**
  * The tail-bite area: property picker, the four tabs and the page below them. The property lives in the URL
  * (`tail-bite/<propertyId>/<tab>`); the picker navigates, the pages read the route. The picker offers only the
@@ -82,10 +79,8 @@ export class TailBiteShellComponent implements OnInit, OnDestroy {
     } else if (this.propertyId === null) {
       // Bare URL: open the first property on the outbreaks tab.
       this.router.navigate([this.base, this.properties[0].propertyId, 'outbreaks'], {replaceUrl: true});
-    } else if (!this.properties.some((p) => p.propertyId === this.propertyId) && !OUTBREAK_DETAIL.test(this.router.url)) {
-      // A property that is not offered (disabled, unknown): swap only the property segment, so the tab, the query and the
-      // fragment survive. An outbreak page is left alone: it corrects the URL to the outbreak's own property itself, and
-      // two corrections would chase each other when that property is not offered here.
+    } else if (!this.properties.some((p) => p.propertyId === this.propertyId)) {
+      // Not offered (switched off, unknown; outbreak pages too, #1477): swap only the property segment, keep the rest.
       const first = this.properties[0].propertyId;
       this.router.navigateByUrl(this.router.url.replace(/\/tail-bite\/\d+/, `/tail-bite/${first}`), {replaceUrl: true});
     }

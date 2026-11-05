@@ -24,7 +24,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 
 public static class BackendConfigurationPropertiesServiceHelper
 {
-    public static async Task<OperationResult> Create(PropertyCreateModel propertyCreateModel, Core core, int userId,
+    public static async Task<OperationDataResult<int>> Create(PropertyCreateModel propertyCreateModel, Core core, int userId,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
         ItemsPlanningPnDbContext itemsPlanningPnDbContext, int maxChrNumbers, int maxCvrNumbers)
     {
@@ -36,21 +36,21 @@ public static class BackendConfigurationPropertiesServiceHelper
                     x.CHR == propertyCreateModel.Chr && x.WorkflowState != Constants.WorkflowStates.Removed &&
                     x.CVR == propertyCreateModel.Cvr))
             {
-                return new OperationResult(false,
+                return new OperationDataResult<int>(false,
                     "PropertyAlreadyExists");
             }
 
             if (!currentListOfChrNumbers.Contains(propertyCreateModel.Chr) &&
                 currentListOfChrNumbers.Count >= maxChrNumbers)
             {
-                return new OperationResult(false,
+                return new OperationDataResult<int>(false,
                     "MaxChrNumbersReached");
             }
 
             if (!currentListOfCvrNumbers.Contains(propertyCreateModel.Cvr) &&
                 currentListOfCvrNumbers.Count >= maxCvrNumbers)
             {
-                return new OperationResult(false,
+                return new OperationDataResult<int>(false,
                     "MaxCvrNumbersReached");
             }
 
@@ -184,15 +184,16 @@ public static class BackendConfigurationPropertiesServiceHelper
                         backendConfigurationPnDbContext, itemsPlanningPnDbContext, userId).ConfigureAwait(false);
                 }
 
-                return new OperationResult(true,
-                    "SuccessfullyCreatingProperties");
+                // The new property's id: the caller may set up more on it (tail biting).
+                return new OperationDataResult<int>(true,
+                    "SuccessfullyCreatingProperties", property.Id);
             }
             catch (Exception e)
             {
                 SentrySdk.CaptureException(e);
                 //Log.LogException(e.Message);
                 //Log.LogException(e.StackTrace);
-                return new OperationResult(false,
+                return new OperationDataResult<int>(false,
                     "ErrorWhileCreatingProperties");
             }
     }

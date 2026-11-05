@@ -864,6 +864,14 @@ public class EventsGrpcCompleteEventRaceTests : TestBaseSetup
                 + "in the service");
             Assert.That(response.Event.UpdatedAt.ToDateTime(), Is.EqualTo(winningDoneAt),
                 "and it carries A's completion time, not B's tap 85 minutes later");
+            // B's request bundled a field value AND a comment (see MakeRequest
+            // above) — losing the claim must flag that those answers were
+            // thrown away, the same way the compliance == null branch does
+            // (shared helper, EventsGrpcService.AlreadyCompletedWithDiscardTrackingAsync).
+            Assert.That(response.AnswersDiscarded, Is.True,
+                "B's bundled field value + comment were discarded by losing the claim");
+            Assert.That(response.DiscardedReason, Is.Not.Empty,
+                "the worker must be told their answers were not saved");
         });
 
         // ---- exactly ONE claim ran ----------------------------------------

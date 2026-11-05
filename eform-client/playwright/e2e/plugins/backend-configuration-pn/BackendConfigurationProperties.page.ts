@@ -116,6 +116,16 @@ export class BackendConfigurationPropertiesPage {
     return this.page.locator("[for='propertyEditWorkorderFlowEnableToggle']");
   }
 
+  /** The Halebid (tail biting) toggle of the create dialog (#1477); shown to admins only. */
+  propertyCreateTailBiteEnableToggle(): Locator {
+    return this.page.locator('#propertyCreateTailBiteEnableToggle button[role="switch"]');
+  }
+
+  /** The Halebid (tail biting) toggle of the edit dialog (#1477); shown to admins only. */
+  propertyEditTailBiteEnableToggle(): Locator {
+    return this.page.locator('#propertyEditTailBiteEnableToggle button[role="switch"]');
+  }
+
   configurePropertyAreasBtn(): Locator {
     return this.page.locator('#configurePropertyAreasBtn');
   }
@@ -153,6 +163,10 @@ export class BackendConfigurationPropertiesPage {
         // Not fillInDialog: a numeric CHR number makes the dialog look it up and may legitimately
         // overwrite the address afterwards.
         await this.createPropertyAddress().fill(property.address);
+      }
+      if (property.tailBite === true) {
+        await this.propertyCreateTailBiteEnableToggle().click();
+        await expect(this.propertyCreateTailBiteEnableToggle()).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
       }
       if (property.workOrderFlow === true) {
         await this.propertyCreateWorkorderFlowEnableToggle().click();
@@ -284,6 +298,46 @@ export class PropertyRowObject {
     await this.parentPage.configurePropertyAreasBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   }
 
+  async openEditModal(): Promise<void> {
+    const menuItem = await openRowActionMenu(this.page, this.getRowLocator(), 'Property row');
+    await menuItem('editPropertyBtn').click({ timeout: UI_TIMEOUT });
+    await this.parentPage.propertyEditSaveCancelBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    await dialogReady(this.page, this.parentPage.editCVRNumber());
+  }
+
+  /**
+   * Switches Halebid (tail biting) on or off in the edit dialog and saves (#1477). Fails unless the PUT answers
+   * success: switching it is the point, so a refused save must not pass as done.
+   */
+  async setTailBite(enabled: boolean): Promise<void> {
+    await this.openEditModal();
+    const toggle = this.parentPage.propertyEditTailBiteEnableToggle();
+    await expect(toggle).toBeVisible({ timeout: UI_TIMEOUT });
+    if ((await toggle.getAttribute('aria-checked')) !== String(enabled)) {
+      await toggle.click();
+    }
+    await expect(toggle).toHaveAttribute('aria-checked', String(enabled), { timeout: UI_TIMEOUT });
+    // The list refresh after the save too: the next edit dialog opens from the refreshed row.
+    const [response] = await Promise.all([
+      waitForApiResponse(
+        this.page,
+        'PUT /api/backend-configuration-pn/properties (update property)',
+        r => new URL(r.url()).pathname.endsWith('/api/backend-configuration-pn/properties') && r.request().method() === 'PUT',
+        API_TIMEOUT
+      ),
+      waitForApiResponse(
+        this.page,
+        'POST /api/backend-configuration-pn/properties/index (property list refresh after save)',
+        r => r.url().includes('/api/backend-configuration-pn/properties/index') && r.request().method() === 'POST',
+        API_TIMEOUT
+      ),
+      this.parentPage.propertyEditSaveBtn().click(),
+    ]);
+    const body = await response.json();
+    expect(body.success, `PUT properties -> ${body.message}`).toBe(true);
+    await this.parentPage.propertyEditSaveCancelBtn().waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
+  }
+
   async delete(clickCancel = false): Promise<void> {
     await this.openDeleteModal();
     await this.closeDeleteModal(clickCancel);
@@ -389,4 +443,6 @@ export class PropertyCreateUpdate {
   cvrNumber?: string;
   address?: string;
   workOrderFlow?: boolean;
+  /** Switch Halebid (tail biting) on in the create dialog. */
+  tailBite?: boolean;
 }

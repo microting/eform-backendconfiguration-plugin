@@ -50,7 +50,7 @@ describe('BackendConfigurationPnFilesService', () => {
 
   it('a document date arrives as the DateInterceptor\'s Date and is sent back as its UTC day', () => {
     const file: FileModel = {
-      id: 7, fileName: 'Faktura 1001.pdf', properties: [3], tags: [], folderId: 9, folderPath: ['Drift', 'Fakturaer'],
+      id: 7, fileName: 'Faktura 1001.pdf', fileExtension: 'pdf', properties: [3], tags: [], folderId: 9, folderPath: ['Drift', 'Fakturaer'],
       // "2026-10-03T00:00:00" from the server, read by the host's DateInterceptor as midnight UTC.
       documentDate: new Date(Date.UTC(2026, 9, 3)),
       documentDateState: DocumentDateState.Suggested, readGroups: [], ownAccess: false,

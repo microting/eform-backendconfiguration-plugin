@@ -64,4 +64,17 @@ export class DeviceUserModel {
   resigned: boolean;
   resignedAtDate: Date;
   tags: number[];
+  /**
+   * Leder (contract "Medarbejdere"). In: null = unchanged, applied by the API only for admins. Out: the stored flag of
+   * the worker's login; null when the row resolves to no login (no address or an "invalid" one).
+   */
+  isLeader: boolean | null;
+  /** Out only: the plugin manages the login ("eForm users" / "Kun arkiv"); false for an owner-group login or none. */
+  loginIsManaged: boolean;
+  /** Out only: the login has the admin role or is in "eForm admins" (a Leder anyway; no toggle). */
+  isAdminLogin: boolean;
+  /** Out only. The next two are the caller's flags, the same on every row. May grant and revoke Leder (= admin). */
+  canSetLeder: boolean;
+  /** May change worker groups (admin or Leder, D-L12). */
+  canEditWorkerTags: boolean;
 }

@@ -228,6 +228,18 @@ describe('ComplianceDetailsViewComponent — future tasks (#1300)', () => {
       expect(component.trackByRow(2, row(2, '2026-09-18'))).toBe('compliance:2');
     });
 
+    it('keys on-demand rows (#5467, complianceId 0) by their SDK case, and keeps them read-only', () => {
+      const onDemand = (sdkCaseId: number): ComplianceReportRowModel => ({
+        ...row(0, '2026-09-17', true),
+        sdkCaseId,
+        isOnDemand: true,
+      });
+      expect(component.trackByRow(0, onDemand(7001))).toBe('case:7001');
+      expect(component.trackByRow(1, onDemand(7002))).toBe('case:7002');
+      expect(component.isRowCompletable(onDemand(7001))).toBe(false);
+      expect(component.canDeleteRow(onDemand(7001))).toBe(false);
+    });
+
     it('labels the status circle "Planned" for a planned row', () => {
       expect(component.statusLabelKey(planned(3, '2026-11-30'))).toBe('Planned');
       expect(component.statusLabelKey(row(2, '2026-09-18', true))).toBe('Task done');

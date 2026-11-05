@@ -9,7 +9,7 @@ import {
   BackendConfigurationPnFileTagsService,
   BackendConfigurationPnPropertiesService
 } from '../../../../../services';
-import {Subscription, take} from 'rxjs';
+import {Subscription, map, take} from 'rxjs';
 import {Store} from '@ngrx/store';
 import {ArchiveFolderOption, folderOptions} from '../../../../../helpers';
 import {selectFilesFolderId} from '../../../../../state';
@@ -17,7 +17,8 @@ import {FileTagsComponent} from '../../file-tags/file-tags.component';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import * as R from 'ramda';
 import {ActivatedRoute, Router, RouterLink} from '@angular/router';
-import {NgIf, NgFor} from '@angular/common';
+import {NgIf, NgFor, AsyncPipe} from '@angular/common';
+import {ArchiveCapabilitiesService} from '../../../services/archive-capabilities.service';
 import {TranslatePipe} from '@ngx-translate/core';
 import {MatIcon} from '@angular/material/icon';
 import {MatIconButton} from '@angular/material/button';
@@ -30,11 +31,12 @@ import {FileCreateDropZoneComponent} from './file-create-drop-zone/file-create-d
 import {FileCreateEditFileComponent} from './file-create-edit-file/file-create-edit-file.component';
 import {ArchiveFolderPickerComponent} from '../../archive-folder-picker/archive-folder-picker.component';
 import {PdfViewerModule} from 'ng2-pdf-viewer';
+import {ARCHIVE_UPLOAD_MIME_TYPES, archiveFileKind, revokeObjectUrl} from '../../../archive-file-kind';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-files-file-create',
-    imports: [NgIf, NgFor, TranslatePipe, RouterLink, MatIcon, MatIconButton, MatCard, MatCardContent, MatCardTitle, MatFormField, MatLabel, MtxSelect, MatTooltip, EformNewSubheaderComponent, FileCreateDropZoneComponent, FileCreateEditFileComponent, ArchiveFolderPickerComponent, FileTagsComponent, MatCardFooter, PdfViewerModule],
+    imports: [NgIf, NgFor, AsyncPipe, TranslatePipe, RouterLink, MatIcon, MatIconButton, MatCard, MatCardContent, MatCardTitle, MatFormField, MatLabel, MtxSelect, MatTooltip, EformNewSubheaderComponent, FileCreateDropZoneComponent, FileCreateEditFileComponent, ArchiveFolderPickerComponent, FileTagsComponent, MatCardFooter, PdfViewerModule],
     templateUrl: './file-create.component.html',
     styleUrls: ['./file-create.component.scss'],
 })
@@ -46,6 +48,9 @@ export class FileCreateComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private foldersService = inject(BackendConfigurationPnArchiveFoldersService);
   private store = inject(Store);
+  /** Admin or Leder: the etiketter dialog offers rename and delete (D-L11). */
+  private capabilities = inject(ArchiveCapabilitiesService);
+  readonly canManage$ = this.capabilities.capabilities$.pipe(map(c => c.canManage));
   folderOptions: ArchiveFolderOption[] = [];
   /** Required: every archive document lies in exactly one folder (D1). */
   selectedFolderId: number | null = null;
@@ -53,7 +58,9 @@ export class FileCreateComponent implements OnInit, OnDestroy {
 
   @ViewChild('tagsModal') tagsModal: FileTagsComponent;
 
-  mimePdfType = 'application/pdf';
+  readonly acceptedMimeTypes = ARCHIVE_UPLOAD_MIME_TYPES;
+  /** Object URLs of the selected images' previews, revoked when the file is removed and on destroy. */
+  private imageUrls = new Map<File, string>();
   files: FilesCreateModel[] = [];
   getAllPropertiesSub$: any;
   availableProperties: { name: string; id: number }[];
@@ -94,6 +101,8 @@ export class FileCreateComponent implements OnInit, OnDestroy {
   
 
   ngOnInit(): void {
+    // `create` is a sibling route of the container: load the rights here too (one shared request).
+    this.capabilities.load().subscribe();
     this.getProperties();
     this.getTags();
     this.getFolders();
@@ -158,11 +167,32 @@ export class FileCreateComponent implements OnInit, OnDestroy {
       .sort((a, b) => a.file.name < b.file.name ? -1 : a.file.name > b.file.name ? 1 : 0);
   }
 
+  isImage(file: FilesCreateModel): boolean {
+    return archiveFileKind(file.file.name.split('.').pop()) === 'image';
+  }
+
+  /** The preview URL of a selected image; created once per file. */
+  imageUrl(file: FilesCreateModel): string {
+    let url = this.imageUrls.get(file.file);
+    if (!url) {
+      url = URL.createObjectURL(file.file);
+      this.imageUrls.set(file.file, url);
+    }
+    return url;
+  }
+
+  private revokeImageUrl(file: File): void {
+    revokeObjectUrl(this.imageUrls.get(file) ?? null);
+    this.imageUrls.delete(file);
+  }
+
   deleteFile(file: FilesCreateModel) {
+    this.revokeImageUrl(file.file);
     this.files = this.files.filter(x => x.file.name !== file.file.name);
   }
 
   ngOnDestroy(): void {
+    this.imageUrls.forEach(url => revokeObjectUrl(url));
   }
 
   editFile(file: FilesCreateModel) {

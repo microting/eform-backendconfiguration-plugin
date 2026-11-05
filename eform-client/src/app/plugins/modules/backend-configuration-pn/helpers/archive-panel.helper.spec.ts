@@ -3,7 +3,7 @@ import {DocumentDateState, FileModel} from '../models';
 import {dateOnlyOf, hasPanelChanges, isPanelValid, panelChanges, panelValueOf} from './archive-panel.helper';
 
 const file: FileModel = {
-  id: 7, fileName: 'Faktura 118', properties: [1, 2], tags: [{id: 3, name: 'Forsyning'} as any],
+  id: 7, fileName: 'Faktura 118', fileExtension: 'pdf', properties: [1, 2], tags: [{id: 3, name: 'Forsyning'} as any],
   folderId: 10, folderPath: ['Drift'], documentDate: '2026-10-03T00:00:00',
   documentDateState: DocumentDateState.Suggested, readGroups: [{id: 5, name: 'Ledelse'}], ownAccess: false,
 };

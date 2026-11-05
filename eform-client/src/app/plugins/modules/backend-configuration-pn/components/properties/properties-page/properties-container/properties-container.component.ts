@@ -215,8 +215,9 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
       .subscribe((data) => {
         if (data && data.success) {
           modal.close();
-          this.getProperties();
         }
+        // Refreshed on a failure too: the property can exist although tail biting could not be switched on (#1477).
+        this.getProperties();
       });
   }
 
@@ -226,8 +227,9 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
       .subscribe((data) => {
         if (data && data.success) {
           modal.close();
-          this.getProperties();
         }
+        // Refreshed on a failure too: the fields can be saved although tail biting could not be switched (#1477).
+        this.getProperties();
       });
   }
 

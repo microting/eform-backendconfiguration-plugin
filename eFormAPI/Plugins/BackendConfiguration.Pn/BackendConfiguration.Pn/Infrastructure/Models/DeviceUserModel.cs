@@ -97,6 +97,26 @@ public class DeviceUserModel
     public List<WorkorderCase> WorkOrderCases { get; set; }
     public bool ArchiveEnabled { get; set; }
     public bool WebAccessEnabled { get; set; }
+
+    /// <summary>
+    /// In: null = unchanged; true/false grant or revoke Leder, applied only for an admin caller and ignored otherwise.
+    /// Out: the stored flag of the login this row resolves to; null when there is none.
+    /// </summary>
+    public bool? IsLeader { get; set; }
+
+    // Out only (ignored in) from here to CanEditWorkerTags.
+
+    /// <summary>This plugin manages the resolved login's groups; false when there is none.</summary>
+    public bool LoginIsManaged { get; set; }
+
+    /// <summary>The resolved login is an admin; the modal hides the Leder toggle.</summary>
+    public bool IsAdminLogin { get; set; }
+
+    /// <summary>The caller may toggle Leder.</summary>
+    public bool CanSetLeder { get; set; }
+
+    /// <summary>The caller may change worker tags.</summary>
+    public bool CanEditWorkerTags { get; set; }
     public string Manufacturer { get; set; } = "";
     public string Model { get; set; } = "";
     public string Os { get; set; } = "";

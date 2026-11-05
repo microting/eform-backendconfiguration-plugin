@@ -65,4 +65,11 @@ public class ComplianceReportRowModel
     /// no Compliance row (<see cref="ComplianceId"/> and <see cref="SdkCaseId"/> are 0),
     /// never completed. Detaljer shows it read-only with the status "Planlagt".</summary>
     public bool IsProjected { get; set; }
+
+    /// <summary>#5467 — a completion of a "no repeat" (always available) task, read from
+    /// items-planning PlanningCases: no Compliance row backs it (<see cref="ComplianceId"/>
+    /// is 0, <see cref="SdkCaseId"/> is set), always completed, dated on its done date.
+    /// Detaljer and Rapport list it; Oversigt does not count it, since it was never due.
+    /// Actions that need a Compliance row (delete log) do not apply to it.</summary>
+    public bool IsOnDemand { get; set; }
 }

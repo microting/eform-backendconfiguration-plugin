@@ -25,6 +25,24 @@ export class TaskListBatchCopyRequest extends TaskListBatchRequest {
 export class TaskListBatchStartDateRequest extends TaskListBatchRequest { startDate: string; }
 
 /**
+ * "Sæt frekvens" — one new start date plus one custom repeat rule for every
+ * selected task. The repeat fields use the same wire format as the calendar
+ * task save payload; a null clears the stored value. `repeatEndMode` is
+ * 0 = never, 1 = after `repeatOccurrences`, 2 = until `repeatUntilDate`
+ * (date-only "yyyy-MM-dd", like `startDate`).
+ */
+export class TaskListBatchRepeatRequest extends TaskListBatchStartDateRequest {
+  repeatType: number;
+  repeatEvery: number;
+  repeatWeekdaysCsv: string | null;
+  dayOfMonth: number | null;
+  repeatOrdinalWeek: number | null;
+  repeatEndMode: number;
+  repeatOccurrences: number | null;
+  repeatUntilDate: string | null;
+}
+
+/**
  * #1297 — "Flyt til kalender". `boardId` is a calendar of the SAME property as
  * the selected tasks; the server re-checks that per task.
  */
@@ -136,6 +154,14 @@ export class BackendConfigurationPnTaskListService {
     model: TaskListBatchStartDateRequest,
   ): Observable<OperationDataResult<TaskListBatchStartDatePreviewModel>> {
     return this.apiBaseService.postNoToast(`${TaskListMethods.Base}/change-start-date/preview`, model);
+  }
+
+  /**
+   * Re-anchors every selected task's series to `model.startDate` and gives it
+   * the chosen custom repeat rule, end condition included.
+   */
+  changeRepeat(model: TaskListBatchRepeatRequest): Observable<OperationResult> {
+    return this.apiBaseService.post(`${TaskListMethods.Base}/change-repeat`, model);
   }
 
   /**

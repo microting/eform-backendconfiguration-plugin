@@ -38,9 +38,8 @@ using static TailBiteRunner;
 
 /// <summary>
 /// Tail-bite (halebid) setup for the web: location tree, occupancy, action types, rules and the manager toggle.
-/// Authorization beyond being signed in is the service's (worker or manager on the entity's property); only
-/// enabling a property and the manager toggle are management routes: plugin access plus the worker-update permission
-/// (DeviceUsers.Update, the same as editing a property worker), since a manager gains tail-bite manager rights.
+/// Authorization beyond being signed in is the service's; only the manager toggle is a management route
+/// (plugin access plus DeviceUsers.Update, since a manager gains tail-bite manager rights).
 /// </summary>
 [Authorize]
 [Route("api/backend-configuration-pn/tail-bite")]
@@ -48,14 +47,6 @@ public class TailBiteSetupController(ITailBiteAccess access, ITailBiteSetupServi
 {
     // The rule dry run replays the last 90 days (the service default); the web page does not choose the window.
     private const int PreviewDays = 90;
-
-    // TEMPORARY (#1425): first user only until the owner opens tail-bite manager setup to other admins.
-    // Remove the [FirstUserOnly] here and the first-user check in TailBiteSetupControllerFirstUserGateTests then.
-    [HttpPost("properties/{propertyId:int}/enable")]
-    [FirstUserOnly]
-    [Authorize(Policy = BackendConfigurationClaims.AccessBackendConfigurationPlugin)]
-    [Authorize(Policy = AuthConsts.EformPolicies.DeviceUsers.Update)]
-    public Task<OperationResult> Enable(int propertyId) => Run(() => setup.EnableAsync(0, propertyId));
 
     // TEMPORARY (#1425): first user only until the owner opens tail-bite manager setup to other admins.
     // Remove the [FirstUserOnly] here and the first-user check in TailBiteSetupControllerFirstUserGateTests then.

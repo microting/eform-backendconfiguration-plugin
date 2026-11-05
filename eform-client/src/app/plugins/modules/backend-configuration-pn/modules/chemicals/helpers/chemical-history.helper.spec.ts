@@ -21,6 +21,7 @@ import {
   formatHistoryNumber,
   historyActionKey,
   historyPeriodError,
+  toYmd,
 } from './chemical-history.helper';
 
 /**
@@ -101,6 +102,11 @@ const VECTORS: Array<[string, Partial<ChemicalHistoryEventModel>, string]> = [
 ];
 
 describe('chemical history helper', () => {
+  it('writes a picked day as yyyy-MM-dd, from its local calendar date', () => {
+    expect(toYmd(new Date(2026, 0, 5))).toBe('2026-01-05');
+    expect(toYmd(new Date(2026, 11, 31, 23, 59))).toBe('2026-12-31');
+  });
+
   it('adds days across month and year ends', () => {
     expect(addDays('2026-03-01', -1)).toBe('2026-02-28');
     expect(addDays('2026-12-31', 1)).toBe('2027-01-01');

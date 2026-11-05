@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerService;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
+using BackendConfiguration.Pn.Services.Leder;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eFormApi.BasePn.Abstractions;
 using NSubstitute;
@@ -42,7 +43,8 @@ public class AssignmentWorkerServiceDeleteTests
             caseTemplatePnDbContext: null,
             baseDbContext: null,
             NullLogger<BackendConfigurationAssignmentWorkerService>.Instance,
-            Substitute.For<ICalendarAssignmentReconciliationService>());
+            Substitute.For<ICalendarAssignmentReconciliationService>(),
+            Substitute.For<ILederService>());
     }
 
     private static IUserService CallerWithId(int userId, int firstUserId = FirstUserId)

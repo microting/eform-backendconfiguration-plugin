@@ -22,16 +22,20 @@
         {{ 'Chemicals: Could not load locations' | translate }}
       </mat-hint>
     </mat-form-field>
-    <!-- (change), not ngModelChange: a half-typed date is '' and would snap the field back to the default. -->
-    <mat-form-field>
+    <!-- (dateChange), not ngModelChange: it fires on a picked or committed date, not on every keystroke. -->
+    <mat-form-field class="chemicals-date-field">
       <mat-label>{{ 'Chemicals: From' | translate }}</mat-label>
-      <input matInput type="date" id="chemicalHistoryFrom" [value]="query.from" [max]="query.to"
-             (change)="setDate('dateFrom', $any($event.target))">
+      <input matInput id="chemicalHistoryFrom" [matDatepicker]="fromPicker" [value]="query.from" [max]="query.to"
+             (dateChange)="setDate('dateFrom', $event.value, $event.target)">
+      <mat-datepicker-toggle matIconSuffix [for]="fromPicker"></mat-datepicker-toggle>
+      <mat-datepicker #fromPicker></mat-datepicker>
     </mat-form-field>
-    <mat-form-field>
+    <mat-form-field class="chemicals-date-field">
       <mat-label>{{ 'Chemicals: To' | translate }}</mat-label>
-      <input matInput type="date" id="chemicalHistoryTo" [value]="query.to" [min]="query.from"
-             (change)="setDate('dateTo', $any($event.target))">
+      <input matInput id="chemicalHistoryTo" [matDatepicker]="toPicker" [value]="query.to" [min]="query.from"
+             (dateChange)="setDate('dateTo', $event.value, $event.target)">
+      <mat-datepicker-toggle matIconSuffix [for]="toPicker"></mat-datepicker-toggle>
+      <mat-datepicker #toPicker></mat-datepicker>
     </mat-form-field>
     <button class="btn-quiet ml-auto" id="chemicalHistoryExportBtn" [disabled]="exporting || periodError || propertyId === null"
             [attr.aria-busy]="exporting" (click)="export()">

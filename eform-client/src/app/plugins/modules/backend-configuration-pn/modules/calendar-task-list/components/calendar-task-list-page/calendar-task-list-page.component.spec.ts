@@ -155,6 +155,14 @@ describe('CalendarTaskListPageComponent', () => {
       expect(dialogStub.open).toHaveBeenCalledTimes(1);
     });
 
+    // Same modal as the task list: without a height cap the overlay pane grows
+    // past the viewport and Save is unreachable.
+    it('caps the edit modal at the viewport height', () => {
+      component.onEditTask(buildTask());
+
+      expect(dialogStub.open.mock.calls[0][1].maxHeight).toBe('90vh');
+    });
+
     // #1135 — a null folderId made the server throw on EVERY save from this
     // page ("Nullable object must have a value"), so the modal never closed.
     it('passes the property\'s Logbøger folder id to the modal', () => {
@@ -207,6 +215,72 @@ describe('CalendarTaskListPageComponent', () => {
 
       expect(propertiesServiceStub.getLinkedFolderDtos).not.toHaveBeenCalled();
       expect(dialogStub.open.mock.calls[0][1].data.folderId).toBeNull();
+    });
+
+    // The modal can create a report headline inline; it is stored at once but
+    // only added to the modal's own list. The grid resolves the headline name
+    // from the page's `tags`, so reload them on close — saved or cancelled —
+    // or the new headline shows as "--" until the page is reloaded.
+    describe('report headline created in the modal', () => {
+      const oldTag = {id: 3, name: 'Old headline', description: '', isLocked: false};
+      const newTag = {id: 9, name: 'New headline', description: '', isLocked: false};
+
+      // What `addPlanningTag` does: store the tag server-side and REPLACE the
+      // modal's `data.planningTags` (the page's own `data` object).
+      const openAndCreateHeadline = (closeResult: unknown) => {
+        tagsServiceStub.getPlanningsTags.mockReturnValue(of({success: true, model: [oldTag, newTag]}));
+        afterClosed$ = of(closeResult);
+        dialogStub.open.mockImplementation((_modal: unknown, config: any) => {
+          config.data.planningTags = [...config.data.planningTags, {id: newTag.id, name: newTag.name}];
+          return {afterClosed: () => afterClosed$};
+        });
+      };
+
+      it.each([
+        ['saved', {saved: true}],
+        ['cancelled', undefined],
+      ])('reloads the headline list when the modal is %s after creating one', (_label, closeResult) => {
+        openAndCreateHeadline(closeResult);
+        const before = tagsServiceStub.getPlanningsTags.mock.calls.length;
+
+        component.onEditTask(buildTask());
+
+        expect(tagsServiceStub.getPlanningsTags.mock.calls.length).toBe(before + 1);
+        expect(component.tags).toEqual([oldTag, newTag]);
+      });
+
+      it('does not reload the headline list on a plain cancel', () => {
+        afterClosed$ = of(undefined);
+        const before = tagsServiceStub.getPlanningsTags.mock.calls.length;
+
+        component.onEditTask(buildTask());
+
+        expect(tagsServiceStub.getPlanningsTags.mock.calls.length).toBe(before);
+      });
+
+      it('offers the headline created in one modal in the next one', () => {
+        openAndCreateHeadline(undefined);
+        component.onEditTask(buildTask());
+        dialogStub.open.mockReturnValue({afterClosed: () => afterClosed$});
+
+        component.onEditTask(buildTask());
+
+        expect(dialogStub.open.mock.calls[1][1].data.planningTags).toEqual([
+          {id: oldTag.id, name: oldTag.name},
+          {id: newTag.id, name: newTag.name},
+        ]);
+      });
+
+      it('reloads the tasks after a save, but not after a cancel', () => {
+        calendarServiceStub.getTasksIndex.mockClear();
+        afterClosed$ = of(undefined);
+        component.onEditTask(buildTask());
+        expect(calendarServiceStub.getTasksIndex).not.toHaveBeenCalled();
+
+        afterClosed$ = of({saved: true});
+        component.onEditTask(buildTask());
+        expect(calendarServiceStub.getTasksIndex).toHaveBeenCalledTimes(1);
+      });
     });
   });
 });

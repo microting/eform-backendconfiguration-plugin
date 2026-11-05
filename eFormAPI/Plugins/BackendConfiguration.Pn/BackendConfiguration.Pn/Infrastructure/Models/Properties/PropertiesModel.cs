@@ -52,6 +52,9 @@ public class PropertiesModel
 
     public bool WorkorderEnable { get; set; }
 
+    /// <summary>Tail biting (Halebid) is switched on: its TailBiteProperty row is Enabled.</summary>
+    public bool TailBiteEnabled { get; set; }
+
     public int? WorkorderEntityListId { get; set; }
 
     public string? IndustryCode { get; set; }

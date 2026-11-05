@@ -1,13 +1,13 @@
 import {Component, inject} from '@angular/core';
-import {Store} from '@ngrx/store';
-import {selectCurrentUserIsAdmin} from 'src/app/state';
+import {map} from 'rxjs';
 import {NgIf, AsyncPipe} from '@angular/common';
 import {TranslatePipe} from '@ngx-translate/core';
 import {RouterLink, RouterLinkActive} from '@angular/router';
+import {ArchiveCapabilitiesService} from '../../services/archive-capabilities.service';
 
 /**
- * Indbakke | Arkiv | Indstillinger e-mail. The inbox tabs show only to an admin;
- * the API enforces the same admin role on every inbox route.
+ * Indbakke | Arkiv | Indstillinger e-mail. The inbox tabs show to admins and Leders (capabilities.canUseInbox);
+ * the API enforces the same with [ArchiveManager] on every inbox route.
  */
 @Component({
   selector: 'app-archive-section-nav',
@@ -15,7 +15,5 @@ import {RouterLink, RouterLinkActive} from '@angular/router';
   templateUrl: './archive-section-nav.component.html',
 })
 export class ArchiveSectionNavComponent {
-  private store = inject(Store);
-
-  readonly canUseInbox$ = this.store.select(selectCurrentUserIsAdmin);
+  readonly canUseInbox$ = inject(ArchiveCapabilitiesService).capabilities$.pipe(map(c => c.canUseInbox));
 }

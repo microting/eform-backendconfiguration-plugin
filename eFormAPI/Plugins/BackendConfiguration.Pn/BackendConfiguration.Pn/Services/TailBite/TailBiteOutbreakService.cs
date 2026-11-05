@@ -75,7 +75,7 @@ public class TailBiteOutbreakService(BackendConfigurationPnDbContext db, ITailBi
 
     public async Task<IReadOnlyList<OutbreakSummary>> ListAsync(int callerSiteId, int propertyId, bool openOnly)
     {
-        await access.RequireManagerAsync(callerSiteId, propertyId);
+        await access.RequireEnabledManagerAsync(callerSiteId, propertyId);
         var outbreaks = await db.TailBiteOutbreaks.AsNoTracking()
             .Where(o => o.PropertyId == propertyId && o.WorkflowState != Removed && (!openOnly || o.ClosedAt == null))
             .OrderByDescending(o => o.OpenedAt).ThenByDescending(o => o.Id).ToListAsync();
@@ -100,7 +100,7 @@ public class TailBiteOutbreakService(BackendConfigurationPnDbContext db, ITailBi
     public async Task<OutbreakDetail> GetAsync(int callerSiteId, int outbreakId)
     {
         var propertyId = await PropertyOfOutbreakAsync(outbreakId);
-        await access.RequireManagerAsync(callerSiteId, propertyId);
+        await access.RequireEnabledManagerAsync(callerSiteId, propertyId);
         var o = await db.TailBiteOutbreaks.AsNoTracking().SingleOrDefaultAsync(x => x.Id == outbreakId && x.WorkflowState != Removed)
                 ?? throw new TailBiteNotFoundException("Outbreak not found.");
         var assessment = await db.TailBiteRiskAssessments.AsNoTracking()
@@ -153,7 +153,7 @@ public class TailBiteOutbreakService(BackendConfigurationPnDbContext db, ITailBi
 
     public async Task<IReadOnlyList<TailBiteWorkerSite>> ListWorkerSitesAsync(int callerSiteId, int propertyId)
     {
-        await access.RequireManagerAsync(callerSiteId, propertyId);
+        await access.RequireEnabledManagerAsync(callerSiteId, propertyId);
         var siteIds = await db.PropertyWorkers.AsNoTracking()
             .Where(pw => pw.PropertyId == propertyId && pw.WorkflowState != Removed)
             .Select(pw => pw.WorkerId).Distinct().OrderBy(id => id).ToListAsync();
@@ -308,8 +308,16 @@ public class TailBiteOutbreakService(BackendConfigurationPnDbContext db, ITailBi
     private static readonly Expression<Func<TailBiteAssessmentAction, bool>> IsOpen = a => a.DoneAt == null && a.WithdrawnAt == null;
     private static readonly Func<TailBiteAssessmentAction, bool> IsOpenFunc = IsOpen.Compile();
 
-    private Task ManagerLockedAsync(int callerSiteId, int propertyId, Func<Task> work)
-        => TailBiteManagerLock.RunAsync(propertyLock, access, callerSiteId, propertyId, work);
+    // Every outbreak write: the property must have tail biting switched on, checked again on committed state in the lock.
+    private async Task ManagerLockedAsync(int callerSiteId, int propertyId, Func<Task> work)
+    {
+        await access.RequireEnabledAsync(propertyId);
+        await TailBiteManagerLock.RunAsync(propertyLock, access, callerSiteId, propertyId, async () =>
+        {
+            await access.RequireEnabledAsync(propertyId);
+            await work();
+        });
+    }
 
     // Property from the outbreak, then manager + lock, then the outbreak re-queried inside the lock.
     private async Task OutbreakLockedAsync(int callerSiteId, int outbreakId, Func<TailBiteOutbreak, Task> work)

@@ -29,9 +29,8 @@ using NUnit.Framework;
 namespace BackendConfiguration.Pn.Test.Controllers;
 
 /// <summary>
-/// TODO(#1425): remove with the [FirstUserOnly] on the two TailBiteSetupController management actions once the
-/// owner opens tail-bite manager setup to other admins. Only these two are gated: the worker lists and the rest of
-/// the tail-bite routes are used by the outbreak pages.
+/// TODO(#1425): remove with the [FirstUserOnly] on TailBiteSetupController.SetManager once the owner opens tail-bite
+/// manager setup to other admins.
 /// </summary>
 [TestFixture]
 public class TailBiteSetupControllerFirstUserGateTests
@@ -45,11 +44,10 @@ public class TailBiteSetupControllerFirstUserGateTests
         .OrderBy(n => n, StringComparer.Ordinal);
 
     [Test]
-    public void TheGatedSetIsExactlyEnableAndSetManager()
+    public void TheGatedSetIsExactlySetManager()
     {
         Assert.That(GatedActions(), Is.EquivalentTo(new[]
         {
-            nameof(TailBiteSetupController.Enable),
             nameof(TailBiteSetupController.SetManager),
         }), "adding or removing a gate needs a deliberate change here");
     }

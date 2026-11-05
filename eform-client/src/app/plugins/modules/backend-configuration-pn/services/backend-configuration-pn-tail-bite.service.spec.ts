@@ -42,7 +42,6 @@ describe('BackendConfigurationPnTailBiteService', () => {
   });
 
   it.each([
-    ['enable', () => service.enable(3), `${base}/properties/3/enable`, {}],
     ['createLocation', () => service.createLocation(1, 'Stald A'), `${base}/locations`, {parentId: 1, name: 'Stald A'}],
     ['createPenRange', () => service.createPenRange(4, 'Sti', 301, 312), `${base}/locations/range`,
       {parentId: 4, prefix: 'Sti', from: 301, to: 312}],

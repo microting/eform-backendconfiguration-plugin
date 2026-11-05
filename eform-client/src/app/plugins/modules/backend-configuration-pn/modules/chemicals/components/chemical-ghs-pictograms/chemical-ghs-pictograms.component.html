@@ -1,0 +1,5 @@
+<ng-container *ngFor="let item of items">
+  <img *ngIf="item.src; else chip" class="ghs-pictogram" [src]="item.src" [alt]="item.code" [title]="item.code"
+       [width]="size" [height]="size">
+  <ng-template #chip><span class="ghs-chip">{{ item.code }}</span></ng-template>
+</ng-container>

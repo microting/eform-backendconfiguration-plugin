@@ -457,4 +457,65 @@ public class TailBiteOutbreakServiceTests : TailBiteTestBase
             () => Sut().ListWorkerSiteIdsAsync(7, PropertyId),
             () => Sut().ListWorkerSiteIdsAsync(7, PropertyId + 1000));
     }
+
+    // #1477: a paused property's outbreaks are refused like a foreign id; the manager's other property keeps working.
+    [Test]
+    public async Task PausedProperty_OutbreakPathsRefused_OtherPropertyWorks_ReEnableRestores()
+    {
+        var sut = Sut();
+        var pausedId = await SetUpManagerWithOutbreakAsync();
+        await SeedWorkerAsync(8);
+        var (_, actionId) = await AssessedWithActionAsync(sut, pausedId);
+        var registration = await NewRegistrationAsync(PropertyId);
+
+        var (otherPropertyId, otherOutbreakId) = await SeedOtherManagedPropertyWithOutbreakAsync(7);
+
+        await SetEnabledAsync(false);
+
+        await AssertRefused(() => sut.GetAsync(7, pausedId));
+        await AssertRefused(() => sut.GetForActionAsync(7, actionId));
+        await AssertRefused(() => sut.ListAsync(7, PropertyId, openOnly: true));
+        await AssertRefused(() => sut.ListWorkerSitesAsync(7, PropertyId));
+        await AssertRefused(() => sut.SaveAssessmentAsync(7, pausedId, AllNo with { Climate = true }, []));
+        await AssertRefused(() => sut.SetActionDoneAsync(7, actionId, true));
+        await AssertRefused(() => sut.SetActionDoneAsync(7, actionId, false));
+        await AssertRefused(() => sut.WithdrawActionAsync(7, actionId, "Dublet"));
+        await AssertRefused(() => sut.ReassignActionAsync(7, actionId, 7));
+        await AssertRefused(() => sut.CloseAsync(7, pausedId));
+        await AssertRefused(() => sut.CancelRegistrationAsync(7, registration.Id, "Forkert"));
+        Assert.That((await sut.GetAsync(7, otherOutbreakId)).Summary.Id, Is.EqualTo(otherOutbreakId));
+        Assert.That(await sut.ListAsync(7, otherPropertyId, openOnly: true), Has.Count.EqualTo(1));
+
+        await SetEnabledAsync(true);
+
+        Assert.That((await sut.GetAsync(7, pausedId)).Summary.Id, Is.EqualTo(pausedId));
+        await sut.SetActionDoneAsync(7, actionId, true);
+    }
+
+    // A second enabled property with a root, its default rule and one open outbreak, managed by `managerSiteId`.
+    private async Task<(int PropertyId, int OutbreakId)> SeedOtherManagedPropertyWithOutbreakAsync(int managerSiteId)
+    {
+        var db = BackendConfigurationPnDbContext!;
+        var other = new Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.Property { Name = "Ejendom Anden" };
+        await other.Create(db);
+        await new TailBiteProperty { PropertyId = other.Id, Enabled = true, EnabledAt = Now }.Create(db);
+        var root = new TailBiteLocation { PropertyId = other.Id, Name = "Ejendom Anden", QrCode = TailBiteDefaults.NewQrCode() };
+        await root.Create(db);
+        var rule = TailBiteDefaults.DefaultRule(root.Id);
+        await rule.Create(db);
+        var outbreak = new TailBiteOutbreak { PropertyId = other.Id, LocationId = root.Id, RuleId = rule.Id,
+            RuleVersion = 1, OpenedAt = Now, OpenedByRegistrationId = 1 };
+        await outbreak.Create(db);
+        await new PropertyWorker { PropertyId = other.Id, WorkerId = managerSiteId, TailBiteManager = true }.Create(db);
+        return (other.Id, outbreak.Id);
+    }
+
+    private async Task SetEnabledAsync(bool enabled)
+    {
+        var db = BackendConfigurationPnDbContext!;
+        var prop = await db.TailBiteProperties.SingleAsync(p => p.PropertyId == PropertyId);
+        prop.Enabled = enabled;
+        await prop.Update(db);
+        db.ChangeTracker.Clear();
+    }
 }

@@ -72,7 +72,7 @@
   <app-file-create-drop-zone
     (filesChanged)="onFilesChanged($event)"
     [dropZoneHeight]="filesSelected ? '10vh' : '25vh'"
-    [mimePdfType]="mimePdfType"
+    [acceptedMimeTypes]="acceptedMimeTypes"
   >
   </app-file-create-drop-zone>
 
@@ -85,16 +85,24 @@
       >
         <mat-card-title>{{file.file.name}}</mat-card-title>
         <mat-card-content>
-          <pdf-viewer
-            [src]="file.src"
-            [render-text]="true"
-            [original-size]="false"
-            style="width: 100vh; height: 100vh; z-index: 9999;"
-            [show-all]="false"
-            [external-link-target]="'none'"
-            [page]="1"
-            [zoom]="1"
-          ></pdf-viewer>
+          <img
+            *ngIf="isImage(file); else pdfPreview"
+            class="file-create-image-preview"
+            [src]="imageUrl(file)"
+            [alt]="file.file.name"
+          />
+          <ng-template #pdfPreview>
+            <pdf-viewer
+              [src]="file.src"
+              [render-text]="true"
+              [original-size]="false"
+              style="width: 100vh; height: 100vh; z-index: 9999;"
+              [show-all]="false"
+              [external-link-target]="'none'"
+              [page]="1"
+              [zoom]="1"
+            ></pdf-viewer>
+          </ng-template>
         </mat-card-content>
         <mat-card-footer class="d-flex justify-content-end align-items-end">
 <!--          <button-->
@@ -131,6 +139,7 @@
 <app-file-tags
   #tagsModal
   [availableTags]="availableTags"
+  [canManage]="(canManage$ | async) === true"
   (tagsChanged)="getTags()"
 >
 </app-file-tags>

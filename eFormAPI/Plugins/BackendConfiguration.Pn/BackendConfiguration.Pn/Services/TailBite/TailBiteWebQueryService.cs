@@ -157,7 +157,7 @@ public class TailBiteWebQueryService(BackendConfigurationPnDbContext db, ITailBi
         var propertyId = await db.TailBiteOutbreaks.AsNoTracking().Where(o => o.Id == outbreakId && o.WorkflowState != Removed)
                              .Select(o => (int?)o.PropertyId).SingleOrDefaultAsync()
                          ?? throw TailBiteForbiddenException.NoAccess();
-        await access.RequireManagerAsync(callerSiteId, propertyId);
+        await access.RequireEnabledManagerAsync(callerSiteId, propertyId);
         var rows = await (from link in db.TailBiteOutbreakLinks.AsNoTracking()
                           join row in db.TailBiteRegistrationLocations on link.RegistrationLocationId equals row.Id
                           join reg in db.TailBiteRegistrations on row.RegistrationId equals reg.Id
