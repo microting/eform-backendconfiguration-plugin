@@ -35,9 +35,9 @@ const OLD_FIELD_WIDTH = 190;
 const rand = generateRandmString(5).toLowerCase();
 
 // Exactly 80 characters: the longest name the dropdowns have to show in full.
-const longName = `pdw-${rand} Langt ejendomsnavn med adresse og CHR-nummer 1234567890 abcdefghij`
-  .padEnd(80, 'x')
-  .slice(0, 80);
+// Heavy on wide capitals (W, M), so a field sized by character count rather
+// than by the rendered text would still cut it off.
+const longName = `pdw-${rand} `.padEnd(80, 'WM').slice(0, 80);
 
 const property: PropertyCreateUpdate = {
   name: longName,
