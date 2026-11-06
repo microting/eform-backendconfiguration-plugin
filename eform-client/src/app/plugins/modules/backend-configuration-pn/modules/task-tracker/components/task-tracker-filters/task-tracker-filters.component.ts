@@ -22,11 +22,12 @@ import {
 } from '../../../../state/task-tracker/task-tracker.selector';
 import {MatFormField, MatLabel} from '@angular/material/form-field';
 import {MtxSelect} from '@ng-matero/extensions/select';
+import {PropertySelectWidthDirective} from '../../../../directives';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-task-tracker-filters',
-    imports: [ReactiveFormsModule, TranslatePipe, MatFormField, MatLabel, MtxSelect],
+    imports: [ReactiveFormsModule, TranslatePipe, MatFormField, MatLabel, MtxSelect, PropertySelectWidthDirective],
     templateUrl: './task-tracker-filters.component.html',
     styleUrls: ['./task-tracker-filters.component.scss'],
 })

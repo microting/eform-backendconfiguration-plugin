@@ -1,7 +1,7 @@
 <mat-card class="eform-sub-header d-flex flex-column gap-12 mb-3 p-3">
   <div class="d-flex flex-row flex-wrap align-items-center justify-content-between gap-12">
     <h2 class="m-0">{{ 'Tail biting' | translate }}</h2>
-    <mat-form-field *ngIf="properties?.length">
+    <mat-form-field [appPropertySelectWidth]="properties" *ngIf="properties?.length">
       <mat-label>{{ 'Property' | translate }}</mat-label>
       <mtx-select
         id="tailBitePropertySelect"

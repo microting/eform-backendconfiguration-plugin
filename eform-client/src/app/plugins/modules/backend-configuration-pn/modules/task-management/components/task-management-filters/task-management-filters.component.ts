@@ -34,11 +34,12 @@ import {MatFormField, MatLabel} from '@angular/material/form-field';
 import {MtxSelect} from '@ng-matero/extensions/select';
 import {MatTooltip} from '@angular/material/tooltip';
 import {MatDateRangeInput, MatDateRangePicker, MatStartDate, MatEndDate} from '@angular/material/datepicker';
+import {PropertySelectWidthDirective} from '../../../../directives';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-task-management-filters',
-    imports: [NgIf, ReactiveFormsModule, TranslatePipe, MatButton, MatFormField, MatLabel, MtxSelect, MatTooltip, MatDateRangeInput, MatDateRangePicker, MatStartDate, MatEndDate],
+    imports: [NgIf, ReactiveFormsModule, TranslatePipe, MatButton, MatFormField, MatLabel, MtxSelect, MatTooltip, MatDateRangeInput, MatDateRangePicker, MatStartDate, MatEndDate, PropertySelectWidthDirective],
     templateUrl: './task-management-filters.component.html',
     styleUrls: ['./task-management-filters.component.scss'],
 })

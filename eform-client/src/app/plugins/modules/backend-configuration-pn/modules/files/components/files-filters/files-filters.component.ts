@@ -28,11 +28,12 @@ import {MatFormField, MatLabel, MatSuffix, MatPrefix} from '@angular/material/fo
 import {MatInput} from '@angular/material/input';
 import {MtxSelect} from '@ng-matero/extensions/select';
 import {MatDatepickerToggle, MatDateRangeInput, MatDateRangePicker, MatStartDate, MatEndDate} from '@angular/material/datepicker';
+import {PropertySelectWidthDirective} from '../../../../directives';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-files-filters',
-    imports: [NgIf, ReactiveFormsModule, TranslatePipe, MatIcon, MatIconButton, MatFormField, MatLabel, MatSuffix, MatPrefix, MatInput, MtxSelect, MatDatepickerToggle, MatDateRangeInput, MatDateRangePicker, MatStartDate, MatEndDate],
+    imports: [NgIf, ReactiveFormsModule, TranslatePipe, MatIcon, MatIconButton, MatFormField, MatLabel, MatSuffix, MatPrefix, MatInput, MtxSelect, MatDatepickerToggle, MatDateRangeInput, MatDateRangePicker, MatStartDate, MatEndDate, PropertySelectWidthDirective],
     templateUrl: './files-filters.component.html',
     styleUrls: ['./files-filters.component.scss'],
 })

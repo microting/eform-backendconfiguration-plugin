@@ -1,5 +1,5 @@
 <div class="ctl-filters">
-  <mat-form-field>
+  <mat-form-field [appPropertySelectWidth]="properties">
     <mat-label>{{ 'Property' | translate }}</mat-label>
     <mtx-select [items]="properties" bindValue="id" bindLabel="name" [multiple]="true"
                 [(ngModel)]="filters.propertyIds" (ngModelChange)="onPropertyChange($event)"></mtx-select>

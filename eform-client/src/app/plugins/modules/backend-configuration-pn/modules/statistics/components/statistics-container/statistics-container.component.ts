@@ -34,11 +34,12 @@ import {AdHocTaskPrioritiesComponent} from '../ad-hoc-task-priorities/ad-hoc-tas
 import {AdHocTaskWorkersComponent} from '../ad-hoc-task-workers/ad-hoc-task-workers.component';
 import {PlannedTaskWorkersComponent} from '../planned-task-workers/planned-task-workers.component';
 import {PlannedTaskDaysComponent} from '../planned-task-days/planned-task-days.component';
+import {PropertySelectWidthDirective} from '../../../../directives';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-statistics-container',
-    imports: [AsyncPipe, TranslatePipe, MatCard, MatCardContent, MatFormField, MatLabel, MtxSelect, EformNewSubheaderComponent, AdHocTaskPrioritiesComponent, AdHocTaskWorkersComponent, PlannedTaskWorkersComponent, PlannedTaskDaysComponent],
+    imports: [AsyncPipe, TranslatePipe, MatCard, MatCardContent, MatFormField, MatLabel, MtxSelect, EformNewSubheaderComponent, AdHocTaskPrioritiesComponent, AdHocTaskWorkersComponent, PlannedTaskWorkersComponent, PlannedTaskDaysComponent, PropertySelectWidthDirective],
     templateUrl: './statistics-container.component.html',
     styleUrls: ['./statistics-container.component.scss'],
 })

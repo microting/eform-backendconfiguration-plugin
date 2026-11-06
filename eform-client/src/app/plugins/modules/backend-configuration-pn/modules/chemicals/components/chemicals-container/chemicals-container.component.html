@@ -1,7 +1,7 @@
 <ng-container *ngIf="isFirstUser; else notAvailable">
   <mat-card class="chemicals-header eform-sub-header d-flex flex-column gap-12 mb-3 p-3">
     <h2 id="chemicalsTitle" class="chemicals-title">{{ titleKey | translate }}</h2>
-    <mat-form-field class="chemicals-property-picker">
+    <mat-form-field [appPropertySelectWidth]="properties" class="chemicals-property-picker">
       <mat-label>{{ 'Property' | translate }}</mat-label>
       <mtx-select
         id="chemicalsPropertySelect"

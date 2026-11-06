@@ -22,11 +22,12 @@ import {debounce, filter, tap} from 'rxjs/operators';
 import {ActivatedRoute} from '@angular/router';
 import {MatFormField, MatLabel} from '@angular/material/form-field';
 import {MtxSelect} from '@ng-matero/extensions/select';
+import {PropertySelectWidthDirective} from '../../../../directives';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-task-wizard-filters',
-    imports: [ReactiveFormsModule, TranslatePipe, MatFormField, MatLabel, MtxSelect],
+    imports: [ReactiveFormsModule, TranslatePipe, MatFormField, MatLabel, MtxSelect, PropertySelectWidthDirective],
     templateUrl: './task-wizard-filters.component.html',
     styleUrls: ['./task-wizard-filters.component.scss'],
 })

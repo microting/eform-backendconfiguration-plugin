@@ -22,6 +22,7 @@ import {TranslatePipe} from '@ngx-translate/core';
 import {MatCard} from '@angular/material/card';
 import {MatFormField, MatLabel} from '@angular/material/form-field';
 import {MtxSelect} from '@ng-matero/extensions/select';
+import {PropertySelectWidthDirective} from '../../../../directives';
 
 const DEFAULT_TITLE_KEY = 'Chemicals: Title';
 
@@ -38,7 +39,7 @@ const DEFAULT_TITLE_KEY = 'Chemicals: Title';
  */
 @Component({
   selector: 'app-chemicals-container',
-  imports: [NgIf, FormsModule, TranslatePipe, RouterOutlet, MatCard, MatFormField, MatLabel, MtxSelect],
+  imports: [NgIf, FormsModule, TranslatePipe, RouterOutlet, MatCard, MatFormField, MatLabel, MtxSelect, PropertySelectWidthDirective],
   templateUrl: './chemicals-container.component.html',
   styleUrls: ['./chemicals-container.component.scss'],
 })

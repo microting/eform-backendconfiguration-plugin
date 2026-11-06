@@ -1,5 +1,5 @@
 <div class="filters-inline" [formGroup]="filtersForm">
-    <mat-form-field>
+    <mat-form-field [appPropertySelectWidth]="properties">
       <mat-label>{{'Property' | translate}}</mat-label>
       <mtx-select
         [items]="properties"

@@ -22,6 +22,7 @@ import {MtxSelect} from '@ng-matero/extensions/select';
 import {MatTooltip} from '@angular/material/tooltip';
 import {MatCheckbox} from '@angular/material/checkbox';
 import {MatButtonToggleGroup, MatButtonToggle} from '@angular/material/button-toggle';
+import {PropertySelectWidthDirective} from '../../../../directives';
 
 interface AdhocStatusOption {
   value: AdhocFiltrationModel['status'];
@@ -48,7 +49,7 @@ interface AdhocStatusOption {
 @AutoUnsubscribe()
 @Component({
   selector: 'app-adhoc-filters',
-  imports: [NgIf, NgFor, FormsModule, ReactiveFormsModule, TranslatePipe, MatIcon, MatIconButton, MatButton, MatFormField, MatLabel, MatInput, MtxSelect, MatTooltip, MatCheckbox, MatButtonToggleGroup, MatButtonToggle],
+  imports: [NgIf, NgFor, FormsModule, ReactiveFormsModule, TranslatePipe, MatIcon, MatIconButton, MatButton, MatFormField, MatLabel, MatInput, MtxSelect, MatTooltip, MatCheckbox, MatButtonToggleGroup, MatButtonToggle, PropertySelectWidthDirective],
   templateUrl: './adhoc-filters.component.html',
   styleUrls: ['./adhoc-filters.component.scss'],
 })

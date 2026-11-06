@@ -53,6 +53,14 @@
       max-width: 220px;
     }
 
+    // The property pill shows the whole property name, like the plugin's
+    // property dropdowns (directives/property-select-width.directive.ts). The
+    // header row wraps, so only the viewport limits it; a `ch` cap would not
+    // do, as `ch` is the width of a zero and names with wide letters overrun it.
+    &.property-pill .pill-label {
+      max-width: 80vw;
+    }
+
     .pill-caret {
       font-size: 18px;
       width: 18px;
@@ -109,6 +117,15 @@
 // how every other menu item renders in that theme, and escalating to
 // `!important` here only to win a colour is not worth the next collision.
 ::ng-deep .calendar-property-menu.mat-mdc-menu-panel.mat-mdc-menu-panel {
+  // Material caps a menu at 280px, which wraps or cuts long property names;
+  // let the list grow to the widest name, as the property pill does, within
+  // the viewport.
+  max-width: 90vw;
+
+  .property-item {
+    white-space: nowrap;
+  }
+
   .property-item.active {
     background: color-mix(in srgb, var(--md-primary, #0b57d0) 10%, transparent);
   }

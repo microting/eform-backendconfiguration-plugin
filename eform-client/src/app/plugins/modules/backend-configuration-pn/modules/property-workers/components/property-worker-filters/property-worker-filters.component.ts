@@ -17,11 +17,12 @@ import {TranslatePipe} from '@ngx-translate/core';
 import {MatFormField, MatLabel} from '@angular/material/form-field';
 import {MtxSelect} from '@ng-matero/extensions/select';
 import {MatSlideToggle} from '@angular/material/slide-toggle';
+import {PropertySelectWidthDirective} from '../../../../directives';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-property-worker-filters',
-    imports: [ReactiveFormsModule, TranslatePipe, MatFormField, MatLabel, MtxSelect, MatSlideToggle],
+    imports: [ReactiveFormsModule, TranslatePipe, MatFormField, MatLabel, MtxSelect, MatSlideToggle, PropertySelectWidthDirective],
     templateUrl: './property-worker-filters.component.html',
     styleUrls: ['./property-worker-filters.component.scss'],
 })

@@ -51,6 +51,9 @@
 // `flex` alone loses to that rule — this selector needs four class-level
 // simple selectors to outrank `body.theme-eform` + two classes, which is what
 // :host + the two component classes + the two Material classes give it.
+// The property field is the exception: PropertySelectWidthDirective sizes it
+// to the longest property name (up to 80 characters) with inline style, which
+// outranks this rule, and the row wraps instead.
 :host ::ng-deep .compliance-filters .compliance-filters__field
   .mat-mdc-form-field.mat-mdc-form-field-type-mtx-select {
   width: 190px;
