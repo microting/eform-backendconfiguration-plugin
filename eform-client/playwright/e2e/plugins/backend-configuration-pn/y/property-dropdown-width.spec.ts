@@ -53,6 +53,11 @@ async function login(page: Page): Promise<void> {
   await page.waitForURL(url => !url.pathname.startsWith('/auth'), { timeout: UI_TIMEOUT });
 }
 
+/** The open ng-select list; ng-select removes the panel from the DOM when it closes. */
+function openPanel(page: Page): Locator {
+  return page.locator('.ng-dropdown-panel');
+}
+
 function fieldOf(page: Page, selectId: string): Locator {
   return page.locator(`mat-form-field:has(#${selectId})`);
 }
@@ -75,7 +80,11 @@ async function expectOpenListShowsWholeName(page: Page, selectId: string): Promi
   const field = fieldOf(page, selectId);
   await field.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   await page.locator(`#${selectId}`).click();
-  const panel = page.locator(`#${selectId} .ng-dropdown-panel`);
+  // The host app appends ng-select panels to <body>, not inside the select
+  // (ng-select then copies the select's width onto the panel), so the open
+  // list is found page-wide; only one list is open at a time.
+  const panel = openPanel(page);
+  await expect(panel).toHaveCount(1, { timeout: UI_TIMEOUT });
   await panel.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   const option = panel.locator('.ng-option', { hasText: longName });
   await option.waitFor({ state: 'visible', timeout: API_TIMEOUT });
@@ -173,6 +182,6 @@ test.describe.serial('Property dropdowns show the whole property name', () => {
 
     await expectOpenListShowsWholeName(page, 'taskListPropertyFilter');
     await page.keyboard.press('Escape');
-    await expect(page.locator('#taskListPropertyFilter .ng-dropdown-panel')).toBeHidden({ timeout: UI_TIMEOUT });
+    await expect(openPanel(page)).toHaveCount(0, { timeout: UI_TIMEOUT });
   });
 });
