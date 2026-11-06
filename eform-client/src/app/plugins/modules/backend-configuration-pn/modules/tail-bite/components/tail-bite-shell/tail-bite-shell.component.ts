@@ -11,6 +11,7 @@ import {Subscription, filter} from 'rxjs';
 import {TailBitePropertyStatus} from '../../../../models';
 import {BackendConfigurationPnTailBiteService} from '../../../../services';
 import {TAIL_BITE_BASE, parseTailBiteUrl} from '../../shared/tail-bite-route';
+import {PropertySelectWidthDirective} from '../../../../directives';
 
 /**
  * The tail-bite area: property picker, the four tabs and the page below them. The property lives in the URL
@@ -21,7 +22,7 @@ import {TAIL_BITE_BASE, parseTailBiteUrl} from '../../shared/tail-bite-route';
 @Component({
   selector: 'app-tail-bite-shell',
   templateUrl: './tail-bite-shell.component.html',
-  imports: [NgFor, NgIf, FormsModule, RouterModule, MatCardModule, MatFormFieldModule, MatTabsModule, MtxSelectModule, TranslateModule],
+  imports: [NgFor, NgIf, FormsModule, RouterModule, MatCardModule, MatFormFieldModule, MatTabsModule, MtxSelectModule, TranslateModule, PropertySelectWidthDirective],
 })
 export class TailBiteShellComponent implements OnInit, OnDestroy {
   private service = inject(BackendConfigurationPnTailBiteService);

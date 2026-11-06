@@ -54,7 +54,7 @@
     <input matInput id="search" [formControl]="searchControl">
   </mat-form-field>
 
-  <mat-form-field>
+  <mat-form-field [appPropertySelectWidth]="adhocStateService.properties">
     <mat-label>{{ 'Property' | translate }}</mat-label>
     <mtx-select
       [items]="adhocStateService.properties"

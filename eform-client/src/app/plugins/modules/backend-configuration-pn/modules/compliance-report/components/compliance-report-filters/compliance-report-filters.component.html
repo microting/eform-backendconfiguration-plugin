@@ -24,7 +24,7 @@
 <div class="compliance-filters" role="group" [attr.aria-label]="'Filtering' | translate">
   <!-- 1. Property -->
   <div class="text-field--rounded compliance-filters__field">
-    <mat-form-field>
+    <mat-form-field [appPropertySelectWidth]="properties">
       <mtx-select
         id="complianceFilterProperty"
         [aria-label]="'Property' | translate"

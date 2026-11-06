@@ -118,7 +118,7 @@
       <p class="history-period-summary" id="history-period-summary" aria-live="polite">{{ activePeriodSummaryLabel() }}</p>
 
       <div class="history-ejendom-omraade-row d-flex flex-wrap gap-12" id="history-ejendom-omraade-row">
-        <mat-form-field>
+        <mat-form-field [appPropertySelectWidth]="adhocStateService.properties">
           <mat-label>{{ 'Property' | translate }}</mat-label>
           <mtx-select
             [items]="adhocStateService.properties"

@@ -2,7 +2,7 @@
 
 <mat-card class="card--no-border px-3">
   <mat-card-content class="d-flex flex-column">
-    <mat-form-field>
+    <mat-form-field [appPropertySelectWidth]="properties">
       <mat-label>{{ 'Select property' | translate }}</mat-label>
       <mtx-select
         [multiple]="false"

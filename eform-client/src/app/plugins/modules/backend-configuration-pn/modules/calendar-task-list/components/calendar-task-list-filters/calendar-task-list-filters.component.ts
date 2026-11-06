@@ -8,10 +8,11 @@ import {TranslatePipe} from '@ngx-translate/core';
 import {MatFormField, MatLabel} from '@angular/material/form-field';
 import {MatInput} from '@angular/material/input';
 import {MtxSelect, MtxOption} from '@ng-matero/extensions/select';
+import {PropertySelectWidthDirective} from '../../../../directives';
 
 @Component({
   selector: 'app-calendar-task-list-filters',
-  imports: [FormsModule, TranslatePipe, MatFormField, MatLabel, MatInput, MtxSelect, MtxOption],
+  imports: [FormsModule, TranslatePipe, MatFormField, MatLabel, MatInput, MtxSelect, MtxOption, PropertySelectWidthDirective],
   templateUrl: './calendar-task-list-filters.component.html',
   styleUrls: ['./calendar-task-list-filters.component.scss'],
 })

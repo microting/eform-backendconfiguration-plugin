@@ -49,11 +49,12 @@ import {MatTooltip} from '@angular/material/tooltip';
 import {MatSlideToggle} from '@angular/material/slide-toggle';
 import {PropertyWorkerTableComponent} from '../property-worker-table/property-worker-table.component';
 import {CallerFlags, NO_CALLER_FLAGS, callerFlags as readCallerFlags, newWorkerRow} from '../../leader.helper';
+import {PropertySelectWidthDirective} from '../../../../directives';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-property-workers-page',
-    imports: [NgIf, AsyncPipe, FormsModule, ReactiveFormsModule, TranslatePipe, MatIcon, MatCard, MatFormField, MatLabel, MatSuffix, MatInput, MtxSelect, MatTooltip, MatSlideToggle, PropertyWorkerTableComponent, EformsTagsComponent],
+    imports: [NgIf, AsyncPipe, FormsModule, ReactiveFormsModule, TranslatePipe, MatIcon, MatCard, MatFormField, MatLabel, MatSuffix, MatInput, MtxSelect, MatTooltip, MatSlideToggle, PropertyWorkerTableComponent, EformsTagsComponent, PropertySelectWidthDirective],
     templateUrl: './property-workers-page.component.html',
 })
 export class PropertyWorkersPageComponent implements OnInit, OnDestroy {

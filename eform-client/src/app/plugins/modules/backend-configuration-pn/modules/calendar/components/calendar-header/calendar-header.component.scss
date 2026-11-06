@@ -53,6 +53,13 @@
       max-width: 220px;
     }
 
+    // The property pill shows the whole property name, up to the same
+    // 80 characters as the plugin's property dropdowns
+    // (PROPERTY_SELECT_MAX_CHARS in directives/property-select-width.directive.ts).
+    &.property-pill .pill-label {
+      max-width: 80ch;
+    }
+
     .pill-caret {
       font-size: 18px;
       width: 18px;
@@ -109,6 +116,14 @@
 // how every other menu item renders in that theme, and escalating to
 // `!important` here only to win a colour is not worth the next collision.
 ::ng-deep .calendar-property-menu.mat-mdc-menu-panel.mat-mdc-menu-panel {
+  // Material caps a menu at 280px, which wraps or cuts long property names;
+  // let the list grow to an 80-character name, as the property pill does.
+  max-width: min(calc(80ch + 32px), 90vw);
+
+  .property-item {
+    white-space: nowrap;
+  }
+
   .property-item.active {
     background: color-mix(in srgb, var(--md-primary, #0b57d0) 10%, transparent);
   }

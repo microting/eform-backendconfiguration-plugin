@@ -30,7 +30,7 @@
         </mtx-select>
       </mat-form-field>
     </div>
-    <mat-form-field>
+    <mat-form-field [appPropertySelectWidth]="availableProperties">
       <mat-label>{{ 'Location' | translate }}</mat-label>
       <mtx-select
         formControlName="propertyIds"

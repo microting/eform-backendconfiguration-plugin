@@ -31,6 +31,7 @@ import {MtxSelect} from '@ng-matero/extensions/select';
 import {MatDatepicker, MatDatepickerInput, MatDatepickerToggle} from '@angular/material/datepicker';
 import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
 import {MatCheckbox} from '@angular/material/checkbox';
+import {PropertySelectWidthDirective} from '../../../../directives';
 
 /** Display union derived from the wire `AdhocTaskStatusFilter` - only these two occur in Historik. */
 export type AdhocTaskHistoryStatus = 'completed' | 'archived';
@@ -85,7 +86,7 @@ const ISO_DATE_FORMAT = 'yyyy-MM-dd';
 @AutoUnsubscribe()
 @Component({
   selector: 'app-adhoc-history',
-  imports: [NgIf, NgFor, NgClass, DatePipe, FormsModule, TranslatePipe, MatIcon, MatIconButton, MatButton, MatFormField, MatLabel, MatSuffix, MatInput, MtxSelect, MatDatepicker, MatDatepickerInput, MatDatepickerToggle, MatMenu, MatMenuItem, MatMenuTrigger, MatCheckbox],
+  imports: [NgIf, NgFor, NgClass, DatePipe, FormsModule, TranslatePipe, MatIcon, MatIconButton, MatButton, MatFormField, MatLabel, MatSuffix, MatInput, MtxSelect, MatDatepicker, MatDatepickerInput, MatDatepickerToggle, MatMenu, MatMenuItem, MatMenuTrigger, MatCheckbox, PropertySelectWidthDirective],
   templateUrl: './adhoc-history.component.html',
   styleUrls: ['./adhoc-history.component.scss'],
 })

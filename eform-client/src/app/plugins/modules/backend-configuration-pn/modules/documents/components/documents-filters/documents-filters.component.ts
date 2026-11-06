@@ -21,11 +21,12 @@ import {
 import {TranslatePipe} from '@ngx-translate/core';
 import {MatFormField, MatLabel} from '@angular/material/form-field';
 import {MtxSelect} from '@ng-matero/extensions/select';
+import {PropertySelectWidthDirective} from '../../../../directives';
 
 @AutoUnsubscribe()
 @Component({
     selector: 'app-documents-filters',
-    imports: [ReactiveFormsModule, TranslatePipe, MatFormField, MatLabel, MtxSelect],
+    imports: [ReactiveFormsModule, TranslatePipe, MatFormField, MatLabel, MtxSelect, PropertySelectWidthDirective],
     templateUrl: './documents-filters.component.html',
     styleUrls: ['./documents-filters.component.scss'],
 })

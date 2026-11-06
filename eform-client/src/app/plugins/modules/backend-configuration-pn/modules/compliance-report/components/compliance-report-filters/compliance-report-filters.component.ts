@@ -22,6 +22,7 @@ import {MatFormField, MatSuffix} from '@angular/material/form-field';
 import {MtxSelect, MtxSelectMultiLabelTemplate} from '@ng-matero/extensions/select';
 import {MatTooltip} from '@angular/material/tooltip';
 import {MatDatepickerToggle, MatDateRangeInput, MatDateRangePicker, MatStartDate, MatEndDate} from '@angular/material/datepicker';
+import {PropertySelectWidthDirective} from '../../../../directives';
 
 /** PDF or CSV only (#1189) — the format select offers exactly these two. */
 export type ComplianceExportFormat = 'pdf' | 'csv';
@@ -48,7 +49,7 @@ export type ComplianceExportFormat = 'pdf' | 'csv';
  */
 @Component({
   selector: 'app-compliance-report-filters',
-  imports: [NgIf, FormsModule, TranslatePipe, MatButton, MatProgressSpinner, MatFormField, MtxSelect, MatTooltip, MatDatepickerToggle, MatDateRangeInput, MatDateRangePicker, MatStartDate, MatEndDate, MtxSelectMultiLabelTemplate, MatSuffix],
+  imports: [NgIf, FormsModule, TranslatePipe, MatButton, MatProgressSpinner, MatFormField, MtxSelect, MatTooltip, MatDatepickerToggle, MatDateRangeInput, MatDateRangePicker, MatStartDate, MatEndDate, MtxSelectMultiLabelTemplate, MatSuffix, PropertySelectWidthDirective],
   templateUrl: './compliance-report-filters.component.html',
   styleUrls: ['./compliance-report-filters.component.scss'],
 })
