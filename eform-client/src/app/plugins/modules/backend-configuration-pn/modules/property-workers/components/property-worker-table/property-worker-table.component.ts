@@ -99,10 +99,14 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
   deviceUsersUpdate: boolean = false;
   // Customer no & OTP have no function when the SDK skips cloud deploy.
   skipCloudDeploy = false;
-  // Only the first user may delete a worker, and only while also holding the device_users_delete
-  // claim that core's delete endpoint requires.
+  isFirstUser = false;
+  isFirstUserSub$: Subscription;
+  // Core's isFirstUser. Only the first user may delete a worker (while also holding the
+  // device_users_delete claim that core's delete endpoint requires) and sees the Chemistry
+  // and Halebid app columns (#1335).
+  public isFirstUser$ = this.store.select(selectCurrentUserIsFirstUser);
   public canDeleteWorker$ = combineLatest([
-    this.store.select(selectCurrentUserIsFirstUser),
+    this.isFirstUser$,
     this.store.select(selectCurrentUserClaimsDeviceUsersDelete),
   ]).pipe(map(([isFirstUser, deviceUsersDelete]) => isFirstUser && deviceUsersDelete));
   public selectCurrentUserClaimsDeviceUsersUpdate$ = this.store.select(selectCurrentUserClaimsDeviceUsersUpdate);
@@ -253,9 +257,15 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
       });
     }
 
-    this.tableHeaders = this.skipCloudDeploy
-      ? baseHeaders.filter(h => h.field !== 'customerOtp')
-      : baseHeaders;
+    const hidden = new Set<string>();
+    if (this.skipCloudDeploy) {
+      hidden.add('customerOtp');
+    }
+    if (!this.isFirstUser) {
+      hidden.add('chemistryApp');
+      hidden.add('halebidApp');
+    }
+    this.tableHeaders = baseHeaders.filter(h => !hidden.has(h.field));
   }
 
 
@@ -489,7 +499,10 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
       this.deviceUsersUpdate = data;
     });
 
-    this.buildTableHeaders();
+    this.isFirstUserSub$ = this.isFirstUser$.subscribe((isFirstUser) => {
+      this.isFirstUser = !!isFirstUser;
+      this.buildTableHeaders();
+    });
     this.skipCloudDeploySub$ = this.deviceUserService.getSkipCloudDeploy().subscribe(x => {
       if (x && x.success && x.model) {
         this.skipCloudDeploy = true;

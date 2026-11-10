@@ -118,6 +118,8 @@ test.describe('Property-worker app columns', () => {
     await workersPage.create(worker);
 
     // Headers: the six app columns, and the old permission / device columns gone.
+    // Chemistry and Halebid are shown to the first user only; LoginPage logs in as the
+    // installation's first user.
     for (const header of ['Compliance', 'Ad-hoc', 'Time', 'Archive', 'Chemistry', 'Halebid']) {
       await expect(headerCell(page, header), `"${header}" column header`).toHaveCount(1, { timeout: UI_TIMEOUT });
     }
