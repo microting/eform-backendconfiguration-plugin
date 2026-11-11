@@ -8,13 +8,17 @@ export function labelsOf(entry: ChemicalRegisterEntryModel | null | undefined): 
   return entry?.labels ?? NO_LABELS;
 }
 
-/** One line of the label menu: packaging (or "Mindre anvendelse") and the revision date, e.g. "Etiket (5 L) · 01-03-2026". */
+/**
+ * One line of the label menu: the kind (label with its packaging, or minor use with its packaging) and the revision
+ * date, else the revision, e.g. "Etiket (5 L) · 01-03-2026". Packaging and date keep two documents apart.
+ */
 export function labelOptionText(label: ChemicalLabelModel, translate: {instant(key: string, params?: object): string}): string {
-  const name = label.kind === ChemicalLabelKind.MinorUse
-    ? translate.instant('Chemicals: Minor use')
-    : label.packaging
-      ? translate.instant('Chemicals: Label ({{packaging}})', {packaging: label.packaging})
-      : translate.instant('Chemicals: Label');
+  const params = {packaging: label.packaging};
+  const minorUse = label.kind === ChemicalLabelKind.MinorUse;
+  const name = label.packaging
+    ? translate.instant(minorUse ? 'Chemicals: Minor use ({{packaging}})' : 'Chemicals: Label ({{packaging}})', params)
+    : translate.instant(minorUse ? 'Chemicals: Minor use' : 'Chemicals: Label');
   const date = /^(\d{4})-(\d{2})-(\d{2})/.exec(label.revisionDate ?? '');
-  return date ? `${name} · ${date[3]}-${date[2]}-${date[1]}` : name;
+  const revision = date ? `${date[3]}-${date[2]}-${date[1]}` : label.revision;
+  return revision ? `${name} · ${revision}` : name;
 }

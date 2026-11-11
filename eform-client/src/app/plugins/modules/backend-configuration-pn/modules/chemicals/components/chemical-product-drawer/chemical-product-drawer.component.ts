@@ -7,6 +7,7 @@ import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {
   ChemicalInventoryRow,
   ChemicalStockHistoryRow,
+  currentUiLocale,
   labelOptionText,
   labelsOf,
   openChemicalLabel,
@@ -79,11 +80,10 @@ export class ChemicalProductDrawerComponent {
   readonly tabs: ChemicalDrawerTabDef[] = TABS.filter((t) => t.id !== 'stock' || this.stockEnabled);
   readonly placements: ChemicalPlacementModel[] = placementsOfChemical(this.data.inventory, this.row.placement.chemicalId);
   readonly stockHistory: ChemicalStockHistoryRow[] = placementStockHistory(this.data.inventory, this.row.placement.id);
-  /** The eForm user's language (the locale ngx-translate was switched to at login). */
-  private readonly uiLocale: string = this.translate.currentLang || this.translate.defaultLang;
+  /** The eForm user's language when the panel opened (the panel is modal, so it is not followed while open). */
+  private readonly uiLocale: string = currentUiLocale(this.translate);
   /** "SDS" opens the document in the user's language; old data without documents falls back to the product's sheet. */
   readonly sdsFileName = sdsFileNameForLocale(this.row, this.uiLocale);
-  readonly hasSds = !!this.sdsFileName;
   /** The SDS languages of the "Andre sprog" menu. */
   readonly otherSdsDocuments: ChemicalSdsDocumentModel[] = otherSdsDocuments(this.row.entry?.sdsDocuments ?? [], this.uiLocale);
   readonly labels: ChemicalLabelModel[] = labelsOf(this.row.entry);

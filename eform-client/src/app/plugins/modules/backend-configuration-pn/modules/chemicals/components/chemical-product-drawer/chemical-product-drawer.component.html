@@ -46,7 +46,7 @@
       <section>
         <h4><mat-icon>description</mat-icon> {{ 'Chemicals: Safety data sheet' | translate }}</h4>
         <div class="d-flex flex-wrap gap-8">
-          <button class="btn-quiet" id="chemicalDrawerSdsBtn" [disabled]="!hasSds" (click)="openSds()">
+          <button class="btn-quiet" id="chemicalDrawerSdsBtn" [disabled]="!sdsFileName" (click)="openSds()">
             <mat-icon>open_in_new</mat-icon><span>{{ 'Chemicals: Open' | translate }}</span>
           </button>
           <button *ngIf="otherSdsDocuments.length" class="btn-quiet" id="chemicalDrawerSdsOthersBtn" [matMenuTriggerFor]="sdsLanguagesMenu">

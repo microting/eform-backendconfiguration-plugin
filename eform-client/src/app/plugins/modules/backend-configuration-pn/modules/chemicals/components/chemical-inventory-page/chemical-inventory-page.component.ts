@@ -28,6 +28,7 @@ import {
   filterInventoryRows,
   isStockEnabled,
   localToday,
+  currentUiLocale,
   labelOptionText,
   labelsOf,
   openChemicalLabel,
@@ -218,7 +219,7 @@ export class ChemicalInventoryPageComponent implements OnInit {
 
   /** The eForm user's language (the locale ngx-translate was switched to at login). */
   private get uiLocale(): string {
-    return this.translate.currentLang || this.translate.defaultLang;
+    return currentUiLocale(this.translate);
   }
 
   /** The lists a row menu shows, kept per row and language: a template must get the same array on every check. */

@@ -1,9 +1,12 @@
 import {ChemicalSdsDocumentModel} from '../../../models';
 import {ChemicalInventoryRow, sdsFileNameFor} from './chemical-inventory.helper';
 
-/** The languages of the eForm UI (ISO 639-1); a locale outside this list has no SDS language. */
+/**
+ * The languages the register harvests SDS in (the server's list, ISO 639-1); a locale outside it has no SDS language.
+ * uk is not in it (uk-UA is an open owner question), so uk-UA is unknown here as on the server.
+ */
 const KNOWN_LANGUAGES = new Set([
-  'da', 'en', 'de', 'uk', 'pl', 'fr', 'es', 'it', 'nl', 'pt', 'no', 'sv', 'fi', 'et', 'lv', 'lt', 'ro', 'hr', 'sl', 'cs', 'sk', 'hu', 'bg', 'el', 'is',
+  'da', 'en', 'de', 'pl', 'fr', 'es', 'it', 'nl', 'pt', 'no', 'sv', 'fi', 'et', 'lv', 'lt', 'ro', 'hr', 'sl', 'cs', 'sk', 'hu', 'bg', 'el', 'is',
 ]);
 
 /** "DA" -> "da", "nb-NO" / "nn" -> "no", "pt-BR" -> "pt"; null, empty or unknown -> "". */
@@ -18,19 +21,31 @@ export function toIso6391(locale: string | null | undefined): string {
   return KNOWN_LANGUAGES.has(code) ? code : '';
 }
 
-/** The SDS of the user's language; else Danish, then English, then the first one; undefined without documents. */
-export function pickSds(docs: ChemicalSdsDocumentModel[] | null | undefined, uiLocale: string | null | undefined): ChemicalSdsDocumentModel | undefined {
-  if (!docs?.length) {
-    return undefined;
+/** One document per language, the newest revision (an undated one is the oldest; on a tie the first stays), in list order. */
+function newestPerLanguage(docs: ChemicalSdsDocumentModel[] | null | undefined): ChemicalSdsDocumentModel[] {
+  const time = (d: ChemicalSdsDocumentModel) => (d.revisionDate ? Date.parse(d.revisionDate) : Number.NEGATIVE_INFINITY);
+  const byLanguage = new Map<string, ChemicalSdsDocumentModel>();
+  for (const doc of docs ?? []) {
+    const language = languagePart(doc.language);
+    const kept = byLanguage.get(language);
+    if (!kept || time(doc) > time(kept)) {
+      byLanguage.set(language, doc);
+    }
   }
-  const inLanguage = (code: string) => (code ? docs.find((d) => languagePart(d.language) === code) : undefined);
-  return inLanguage(toIso6391(uiLocale)) ?? inLanguage('da') ?? inLanguage('en') ?? docs[0];
+  return Array.from(byLanguage.values());
 }
 
-/** The documents the "Andre sprog" menu lists: every one but the picked one, by language code. */
+/** The SDS of the user's language; else Danish, then English, then the first one; undefined without documents. */
+export function pickSds(docs: ChemicalSdsDocumentModel[] | null | undefined, uiLocale: string | null | undefined): ChemicalSdsDocumentModel | undefined {
+  const perLanguage = newestPerLanguage(docs);
+  const inLanguage = (code: string) => (code ? perLanguage.find((d) => languagePart(d.language) === code) : undefined);
+  return inLanguage(toIso6391(uiLocale)) ?? inLanguage('da') ?? inLanguage('en') ?? perLanguage[0];
+}
+
+/** The "Andre sprog" documents: one per language, never the picked one (so never the user's own language), by language code. */
 export function otherSdsDocuments(docs: ChemicalSdsDocumentModel[] | null | undefined, uiLocale: string | null | undefined): ChemicalSdsDocumentModel[] {
   const picked = pickSds(docs, uiLocale);
-  return (docs ?? []).filter((d) => d !== picked).sort((a, b) => a.language.localeCompare(b.language));
+  return newestPerLanguage(docs).filter((d) => d !== picked).sort((a, b) => a.language.localeCompare(b.language));
 }
 
 /** What the SDS button opens: the document in the user's language, else (old data) the product's own sheet. */
@@ -50,7 +65,7 @@ export function sdsLanguageText(code: string, translate: {instant(key: string): 
   return text && text !== key ? text : (code ?? '').toUpperCase();
 }
 
-/** Stub: implemented after the red CI run. */
-export function currentUiLocale(_translate: {getCurrentLang(): string | undefined; getFallbackLang(): string | null}): string {
-  return undefined;
+/** The eForm user's language: the locale ngx-translate was switched to at login, else its fallback language; "" when neither is set. */
+export function currentUiLocale(translate: {getCurrentLang(): string | undefined; getFallbackLang(): string | null}): string {
+  return translate.getCurrentLang() || translate.getFallbackLang() || '';
 }
