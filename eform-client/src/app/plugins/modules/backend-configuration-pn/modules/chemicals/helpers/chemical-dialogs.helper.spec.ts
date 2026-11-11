@@ -43,7 +43,7 @@ describe.each([
   const api = (answer: unknown) => ({[method]: vi.fn().mockReturnValue(answer)});
   let createObjectURL: ReturnType<typeof vi.fn>;
   let revokeObjectURL: ReturnType<typeof vi.fn>;
-  let tab: {location: {href: string}; close: ReturnType<typeof vi.fn>};
+  let tab: {location: {href: string}; close: ReturnType<typeof vi.fn>; opener: unknown};
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -53,7 +53,7 @@ describe.each([
     revokeObjectURL = vi.fn();
     Object.defineProperty(URL, 'createObjectURL', {value: createObjectURL, configurable: true});
     Object.defineProperty(URL, 'revokeObjectURL', {value: revokeObjectURL, configurable: true});
-    tab = {location: {href: ''}, close: vi.fn()};
+    tab = {location: {href: ''}, close: vi.fn(), opener: {app: true}};
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -73,6 +73,28 @@ describe.each([
     expect(tab.location.href).toBe('blob:pdf');
     expect(toastr.error).not.toHaveBeenCalled();
     expect(toastr.info).not.toHaveBeenCalled();
+  });
+
+  it('cuts the tab off from the app (opener null) before it shows the file', () => {
+    vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
+    const answer = new Subject<Blob>();
+
+    run(api(answer), toastr, translate, 'file1');
+
+    expect(tab.opener).toBeNull();
+    answer.next(new Blob(['%PDF']));
+    answer.complete();
+    expect(tab.opener).toBeNull();
+  });
+
+  it('forces the PDF type on the blob, whatever the server answered', () => {
+    vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
+
+    run(api(of(new Blob(['<html>'], {type: 'text/html'}))), toastr, translate, 'file1');
+
+    const shown = createObjectURL.mock.calls[0][0] as Blob;
+    expect(shown.type).toBe('application/pdf');
+    expect(shown.size).toBe(6);
   });
 
   it('asks the service for the file', () => {
@@ -96,14 +118,18 @@ describe.each([
 
   it('falls back to a download with a toast when the pop-up is blocked', () => {
     vi.spyOn(window, 'open').mockReturnValue(null);
+    let download: string | undefined;
+    let href: string | undefined;
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
-      expect(this.download).toBe('file1.pdf');
-      expect(this.href).toContain('blob:pdf');
+      download = this.download;
+      href = this.href;
     });
 
     run(api(of(new Blob(['%PDF']))), toastr, translate, 'file1');
 
     expect(click).toHaveBeenCalledTimes(1);
+    expect(download).toBe('file1.pdf');
+    expect(href).toContain('blob:pdf');
     expect(toastr.info).toHaveBeenCalledWith('Chemicals: Pop-up blocked, file downloaded');
     expect(toastr.error).not.toHaveBeenCalled();
     vi.advanceTimersByTime(60_000);
@@ -140,7 +166,6 @@ describe.each([
     expect(toastr.info).not.toHaveBeenCalled();
   });
 });
-
 
 describe('downloadFailureText (shared by the W1 exports and the W6 Excel)', () => {
   const translate = {instant: (key: string) => key};

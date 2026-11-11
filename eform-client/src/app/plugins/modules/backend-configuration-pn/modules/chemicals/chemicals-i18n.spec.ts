@@ -108,6 +108,9 @@ describe('Kemi i18n coverage', () => {
     ['pt-PT', 'ptPT', 'Chemicals: Minor use', 'Utilização menor'],
     ['pt-BR', 'ptBR', 'Chemicals: Minor use', 'Uso menor'],
     ['pt-PT', 'ptPT', 'Chemicals: Label', 'Etiqueta'],
+    ['pl-PL', 'plPL', 'Chemicals: Minor use', 'Małe zastosowanie'],
+    ['pl-PL', 'plPL', 'Chemicals: Pop-up blocked, file downloaded', 'Wyskakujące okno zostało zablokowane, więc plik został pobrany.'],
+    ['de-DE', 'deDE', 'Chemicals: Pop-up blocked, file downloaded', 'Das Pop-up wurde blockiert, die Datei wurde stattdessen heruntergeladen.'],
     ['hr-HR', 'hrHR', 'Chemicals: Label', 'Etiketa'],
     ['sl-SL', 'slSL', 'Chemicals: Label', 'Etiketa'],
   ])('%s: reviewed wording of %s %s', (_tag, locale, key, expected) => {
