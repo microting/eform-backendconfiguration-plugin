@@ -90,6 +90,7 @@ describe('ChemicalProductDrawerComponent', () => {
   });
 
   it('opens the safety data sheet and toasts when it cannot be fetched', () => {
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
     const failing = vi.fn().mockReturnValue(throwError(() => new Error('404')));
     const {component, toastr} = build(true, failing);
 
@@ -97,6 +98,7 @@ describe('ChemicalProductDrawerComponent', () => {
 
     expect(failing).toHaveBeenCalledWith('abc');
     expect(toastr.error).toHaveBeenCalledWith('Chemicals: Could not open safety data sheet');
+    open.mockRestore();
   });
 
   describe('SDS in the user language and labels (Task 15, 15b)', () => {

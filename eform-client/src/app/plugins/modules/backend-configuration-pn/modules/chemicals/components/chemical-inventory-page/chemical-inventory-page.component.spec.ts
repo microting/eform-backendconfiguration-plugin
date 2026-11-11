@@ -388,6 +388,7 @@ describe('ChemicalInventoryPageComponent', () => {
   });
 
   it('toasts when the safety data sheet cannot be fetched (the host shows nothing for a blob error)', () => {
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
     const component = build();
     chemicals.getSdsBlob = vi.fn().mockReturnValue(throwError(() => new Error('404')));
     const row = {...component.rows[0], entry: {products: [{productId: 1, sdsFileName: 'sds200'}]}} as unknown as typeof component.rows[0];
@@ -396,6 +397,7 @@ describe('ChemicalInventoryPageComponent', () => {
 
     expect(chemicals.getSdsBlob).toHaveBeenCalledWith('sds200');
     expect(toastr.error).toHaveBeenCalledWith('Chemicals: Could not open safety data sheet');
+    open.mockRestore();
   });
 
   it('shows the server\'s (English) reason for a refused export after the localized prefix (m-9, E3 m-1)', () => {
