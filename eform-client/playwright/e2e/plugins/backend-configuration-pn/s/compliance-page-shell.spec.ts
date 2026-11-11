@@ -9,7 +9,7 @@ import { waitForApiResponse, ignoreUnhandledRejections, API_TIMEOUT, UI_TIMEOUT 
  * Covers only what the shell owns: the route, the filter controls (eight in
  * Oversigt, nine in Detaljer/Rapport — the status filter is not shown in
  * Oversigt since #1299 — plus `Opdater periode`, which exists ONLY while "Sæt
- * periode" is selected — #1185), the mode toggle, the auto-fetch-on-change
+ * periode" is selected — #1185), the mode switcher, the auto-fetch-on-change
  * state machine, pressing Oversigt, the remembered period (#1299) and the
  * pagination chrome.
  *
@@ -431,22 +431,50 @@ test.describe('Compliance page shell (#1163)', () => {
   test('opens in Oversigt with the three mode buttons and their checked state', async ({ page }) => {
     await goToCompliancePage(page);
 
-    await expect(page.locator('#complianceMode-overview-button')).toHaveAttribute('aria-checked', 'true');
-    await expect(page.locator('#complianceMode-details-button')).toHaveAttribute('aria-checked', 'false');
-    await expect(page.locator('#complianceMode-report-button')).toHaveAttribute('aria-checked', 'false');
+    await expect(page.locator('#complianceMode-overview')).toHaveAttribute('aria-checked', 'true');
+    await expect(page.locator('#complianceMode-details')).toHaveAttribute('aria-checked', 'false');
+    await expect(page.locator('#complianceMode-report')).toHaveAttribute('aria-checked', 'false');
 
-    // #1296: a stock single-selection mat-button-toggle-group (radiogroup,
-    // aria-checked) with the checkmark indicator on the selected toggle.
-    await expect(page.locator('mat-button-toggle-group.compliance-mode-toggle')).toHaveAttribute('role', 'radiogroup');
-    await expect(page.locator('#complianceMode-overview')).toHaveClass(/mat-button-toggle-checked/);
-    await expect(page.locator('#complianceMode-overview .mat-pseudo-checkbox')).toBeVisible();
+    // #5562: the workspace `.segmented` control (a radiogroup of buttons, the
+    // checked one carrying `.active`), no longer a mat-button-toggle-group.
+    await expect(page.locator('mat-button-toggle-group')).toHaveCount(0);
+    const switcher = page.locator('.compliance-page > .segmented.compliance-mode-toggle');
+    await expect(switcher).toHaveAttribute('role', 'radiogroup');
+    await expect(switcher.locator('button.segmented-option')).toHaveCount(3);
+    await expect(page.locator('#complianceMode-overview')).toHaveClass(/\bactive\b/);
+
+    // Still between the filter bar and the result card.
+    await expect(page.locator('app-compliance-report-filters + .compliance-mode-toggle + #complianceCasesRoot'))
+      .toHaveCount(1);
 
     await page.locator('#complianceMode-details').click();
 
-    await expect(page.locator('#complianceMode-overview-button')).toHaveAttribute('aria-checked', 'false');
-    await expect(page.locator('#complianceMode-details-button')).toHaveAttribute('aria-checked', 'true');
-    await expect(page.locator('#complianceMode-details')).toHaveClass(/mat-button-toggle-checked/);
-    await expect(page.locator('#complianceMode-overview')).not.toHaveClass(/mat-button-toggle-checked/);
+    await expect(page.locator('#complianceMode-overview')).toHaveAttribute('aria-checked', 'false');
+    await expect(page.locator('#complianceMode-details')).toHaveAttribute('aria-checked', 'true');
+    await expect(page.locator('#complianceMode-details')).toHaveClass(/\bactive\b/);
+    await expect(page.locator('#complianceMode-overview')).not.toHaveClass(/\bactive\b/);
+  });
+
+  // #5562: under theme-workspace the switcher is the outlined 4px `.segmented`
+  // control with the checked option on --md-primary-container (#d3e3fd in
+  // light mode). The body class is flipped client-side, as in the #1330 test
+  // below; the persisted theme setting is never touched.
+  test('on theme-workspace the switcher is the outlined segmented control, checked option light blue (#5562)', async ({ page }) => {
+    await goToCompliancePage(page);
+
+    await page.evaluate(() => {
+      document.body.classList.remove('theme-eform', 'theme-light', 'theme-dark');
+      document.body.classList.add('theme-workspace', 'theme-light');
+    });
+    await expect(page.locator('body')).toHaveClass(/\btheme-workspace\b/, { timeout: UI_TIMEOUT });
+
+    const switcher = page.locator('.compliance-mode-toggle');
+    await expect(switcher).toHaveCSS('border-top-style', 'solid', { timeout: UI_TIMEOUT });
+    await expect(switcher).toHaveCSS('border-top-left-radius', '4px', { timeout: UI_TIMEOUT });
+    await expect(page.locator('#complianceMode-overview'))
+      .toHaveCSS('background-color', 'rgb(211, 227, 253)', { timeout: UI_TIMEOUT });
+    await expect(page.locator('#complianceMode-details'))
+      .toHaveCSS('background-color', 'rgba(0, 0, 0, 0)', { timeout: UI_TIMEOUT });
   });
 
   test('hides the status filter in Oversigt and shows it, enabled, in Detaljer and Rapport (#1299)', async ({ page }) => {
@@ -559,12 +587,12 @@ test.describe('Compliance page shell (#1163)', () => {
     await goToCompliancePage(page);
     const viewRoot = page.locator('#complianceCasesRoot');
 
-    // Arrow keys select through the group's keydown handler, which fires no
-    // DOM click, so this proves the switch hangs off the toggle's (change).
+    // Arrow keys move the radiogroup's selection without any DOM click, so
+    // this proves they switch the view and not only the checked option.
     const detailsEntry = complianceResponse(page, 'index');
-    await page.locator('#complianceMode-overview-button').focus({ timeout: UI_TIMEOUT });
+    await page.locator('#complianceMode-overview').focus({ timeout: UI_TIMEOUT });
     await page.keyboard.press('ArrowRight');
-    await expect(page.locator('#complianceMode-details-button')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
+    await expect(page.locator('#complianceMode-details')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
     expect((await detailsEntry).ok()).toBeTruthy();
     await expect(viewRoot.locator('app-compliance-details-view')).toHaveCount(1, { timeout: UI_TIMEOUT });
     await expect(viewRoot.locator('app-compliance-overview-view')).toHaveCount(0, { timeout: UI_TIMEOUT });
@@ -572,7 +600,7 @@ test.describe('Compliance page shell (#1163)', () => {
 
     const reportEntry = complianceResponse(page, 'eform-columns');
     await page.keyboard.press('ArrowRight');
-    await expect(page.locator('#complianceMode-report-button')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
+    await expect(page.locator('#complianceMode-report')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
     expect((await reportEntry).ok()).toBeTruthy();
     await expect(viewRoot.locator('app-compliance-report-view')).toHaveCount(1, { timeout: UI_TIMEOUT });
     await expect(viewRoot.locator('app-compliance-details-view')).toHaveCount(0, { timeout: UI_TIMEOUT });
@@ -582,7 +610,7 @@ test.describe('Compliance page shell (#1163)', () => {
     const overviewEntry = complianceResponse(page, 'overview');
     await page.keyboard.press('ArrowLeft');
     await page.keyboard.press('ArrowLeft');
-    await expect(page.locator('#complianceMode-overview-button')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
+    await expect(page.locator('#complianceMode-overview')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
     expect((await overviewEntry).ok()).toBeTruthy();
     await expect(viewRoot.locator('app-compliance-overview-view')).toHaveCount(1, { timeout: UI_TIMEOUT });
   });
@@ -728,8 +756,8 @@ test.describe('Compliance page shell (#1163)', () => {
     const body = overviewResponse.request().postDataJSON();
     expect(body.tagIds).toHaveLength(1);
 
-    await expect(page.locator('#complianceMode-overview-button')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
-    await expect(page.locator('#complianceMode-details-button')).toHaveAttribute('aria-checked', 'false', { timeout: UI_TIMEOUT });
+    await expect(page.locator('#complianceMode-overview')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
+    await expect(page.locator('#complianceMode-details')).toHaveAttribute('aria-checked', 'false', { timeout: UI_TIMEOUT });
     // Nothing reset: the tag and the period are still chosen...
     await expect(page.locator('#complianceTagFilter .ng-value-label'))
       .toHaveText(new RegExp(`^\\s*${escapeRegExp(tagName)}\\s*$`), { timeout: UI_TIMEOUT });
@@ -747,7 +775,7 @@ test.describe('Compliance page shell (#1163)', () => {
     const again = complianceResponse(page, 'overview');
     await page.locator('#complianceMode-overview').click({ timeout: UI_TIMEOUT });
     expect((await again).ok()).toBeTruthy();
-    await expect(page.locator('#complianceMode-overview-button')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
+    await expect(page.locator('#complianceMode-overview')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
     await expect(page.locator('#complianceFilterPeriod .ng-value-label'))
       .toHaveText(/^\s*3 mdr\.\s*$/, { timeout: UI_TIMEOUT });
     await expect(page.locator('#complianceTagFilter .ng-value-label'))
@@ -809,7 +837,7 @@ test.describe('Compliance page shell (#1163)', () => {
     await expect(page.locator('#complianceFilterPeriod .ng-value-label'))
       .toHaveText(/^\s*År til dato \+ 1 år\s*$/, { timeout: UI_TIMEOUT });
     // Only the period is remembered: Oversigt, no status control.
-    await expect(page.locator('#complianceMode-overview-button')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
+    await expect(page.locator('#complianceMode-overview')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
     await expect(page.locator('#complianceFilterStatus')).toHaveCount(0, { timeout: UI_TIMEOUT });
   });
 
@@ -1341,7 +1369,7 @@ test.describe('Compliance page shell (#1163)', () => {
     const columns = complianceResponse(page, 'eform-columns');
     await page.locator('#complianceMode-report').click();
     expect((await columns).ok()).toBeTruthy();
-    await expect(page.locator('#complianceMode-report-button')).toHaveAttribute('aria-checked', 'true');
+    await expect(page.locator('#complianceMode-report')).toHaveAttribute('aria-checked', 'true');
     // `setTotalCount` runs when the response is APPLIED, not when it lands, so
     // the enabled Download button is what says the row reached the view.
     await expect(page.locator('#complianceCasesRoot')).toHaveAttribute('aria-busy', 'false', { timeout: API_TIMEOUT });
@@ -1463,7 +1491,7 @@ test.describe.serial('Compliance page shell — non-admin access (#1160 decision
     await expect(page.locator('#complianceShowReportBtn')).toHaveCount(0);
 
     // ...and so did the mode toggle, in Oversigt, with no admin-only branch.
-    await expect(page.locator('#complianceMode-overview-button')).toHaveAttribute('aria-checked', 'true');
+    await expect(page.locator('#complianceMode-overview')).toHaveAttribute('aria-checked', 'true');
     await expect(page.locator('#complianceMode-details')).toBeVisible();
     await expect(page.locator('#complianceMode-report')).toBeVisible();
 

@@ -144,7 +144,7 @@ async function switchMode(page: Page, mode: 'report' | 'details', endpoint: stri
   );
   ignoreUnhandledRejections(response);
   await page.locator(`#complianceMode-${mode}`).click({ timeout: UI_TIMEOUT });
-  await expect(page.locator(`#complianceMode-${mode}-button`)).toHaveAttribute('aria-checked', 'true', {
+  await expect(page.locator(`#complianceMode-${mode}`)).toHaveAttribute('aria-checked', 'true', {
     timeout: UI_TIMEOUT,
   });
   await response;
@@ -196,11 +196,31 @@ test.describe('Compliance — on-demand (no repeat) completions (#5467)', () => 
       await expect(row).toHaveCount(1, { timeout: UI_TIMEOUT });
       await expect(row).toHaveClass(/\bis-done\b/, { timeout: UI_TIMEOUT });
       await expect(row.locator('.compliance-details__check')).toHaveClass(/\bis-visible\b/, { timeout: UI_TIMEOUT });
+      // #5562: the status column's label, shown under theme-workspace.
+      await expect(row.locator('.compliance-details__status-badge.is-done')).toHaveText(/^\s*✓\s*Udført\s*$/, {
+        timeout: UI_TIMEOUT,
+      });
+      await expect(row.locator('.compliance-details__status-badge.is-overdue')).toHaveCount(0, { timeout: UI_TIMEOUT });
       // Completed: not a click target, not focusable, no delete, and no compliance id.
       await expect(row).not.toHaveClass(/\bis-clickable\b/, { timeout: UI_TIMEOUT });
       await expect(row).not.toHaveAttribute('tabindex', /.*/, { timeout: UI_TIMEOUT });
       await expect(row.locator('.compliance-details__delete')).toHaveCount(0, { timeout: UI_TIMEOUT });
       await expect(row).not.toHaveAttribute('data-compliance-id', /.*/, { timeout: UI_TIMEOUT });
     }
+
+    // #5562: under theme-workspace a done row stays white (no solid green) and
+    // carries the light-green "Udført" label instead of the circle. The body
+    // class is flipped client-side; the persisted theme setting is untouched.
+    await page.evaluate(() => {
+      document.body.classList.remove('theme-eform', 'theme-light', 'theme-dark');
+      document.body.classList.add('theme-workspace', 'theme-light');
+    });
+    await expect(page.locator('body')).toHaveClass(/\btheme-workspace\b/, { timeout: UI_TIMEOUT });
+    const doneRow = onDemand.filter({ hasText: ON_DEMAND_LOGS[0].title });
+    await expect(doneRow.locator('td.compliance-details__date'))
+      .toHaveCSS('background-color', 'rgba(0, 0, 0, 0)', { timeout: UI_TIMEOUT });
+    await expect(doneRow.locator('.compliance-details__status-badge.is-done'))
+      .toHaveCSS('background-color', 'rgb(212, 237, 218)', { timeout: UI_TIMEOUT });
+    await expect(doneRow.locator('.compliance-details__circle')).toBeHidden({ timeout: UI_TIMEOUT });
   });
 });

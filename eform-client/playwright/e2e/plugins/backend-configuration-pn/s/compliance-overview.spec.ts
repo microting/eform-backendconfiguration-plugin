@@ -469,6 +469,17 @@ test.describe.serial('Compliance Oversigt (#1164)', () => {
     const overdue = overviewRow(page, propertyA.name!).locator('.compliance-overview__overdue');
     await expect(overdue).toHaveText(/^\s*0\s*$/);
     await expect(overdue).toHaveClass(/is-calm/);
+
+    // #5562: under theme-workspace the dash is plain muted text, not an empty
+    // outlined pill. The body class is flipped client-side (the persisted
+    // theme setting is never touched), as in the shell suite's #1330 test.
+    await page.evaluate(() => {
+      document.body.classList.remove('theme-eform', 'theme-light', 'theme-dark');
+      document.body.classList.add('theme-workspace', 'theme-light');
+    });
+    await expect(page.locator('body')).toHaveClass(/\btheme-workspace\b/, { timeout: UI_TIMEOUT });
+    await expect(pill).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)', { timeout: UI_TIMEOUT });
+    await expect(pill).toHaveCSS('border-top-width', '0px', { timeout: UI_TIMEOUT });
   });
 
   // =========================================================================
@@ -572,8 +583,8 @@ test.describe.serial('Compliance Oversigt (#1164)', () => {
 
     await row.click();
 
-    await expect(page.locator('#complianceMode-details-button')).toHaveAttribute('aria-checked', 'true');
-    await expect(page.locator('#complianceMode-overview-button')).toHaveAttribute('aria-checked', 'false');
+    await expect(page.locator('#complianceMode-details')).toHaveAttribute('aria-checked', 'true');
+    await expect(page.locator('#complianceMode-overview')).toHaveAttribute('aria-checked', 'false');
     // `.ng-value-label`, never `.ng-value` — the latter's innerText carries the
     // × clear-icon glyph.
     await expect(page.locator('#complianceFilterProperty .ng-value-label'))
@@ -603,7 +614,7 @@ test.describe.serial('Compliance Oversigt (#1164)', () => {
     await row.focus();
     await page.keyboard.press('Enter');
 
-    await expect(page.locator('#complianceMode-details-button')).toHaveAttribute('aria-checked', 'true');
+    await expect(page.locator('#complianceMode-details')).toHaveAttribute('aria-checked', 'true');
     await expect(page.locator('#complianceFilterProperty .ng-value-label'))
       .toHaveText(propertyB.name!);
   });
@@ -622,7 +633,7 @@ test.describe.serial('Compliance Oversigt (#1164)', () => {
     await expect(page.locator('#complianceFilterStatus')).toHaveCount(0, { timeout: UI_TIMEOUT });
 
     await overviewRow(page, propertyA.name!).click({ timeout: UI_TIMEOUT });
-    await expect(page.locator('#complianceMode-details-button')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
+    await expect(page.locator('#complianceMode-details')).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
     await expect(page.locator('#complianceFilterProperty .ng-value-label'))
       .toHaveText(propertyA.name!, { timeout: UI_TIMEOUT });
     await expect(page.locator('#complianceFilterStatus')).toBeVisible({ timeout: UI_TIMEOUT });
@@ -669,7 +680,7 @@ test.describe.serial('Compliance Oversigt (#1164)', () => {
       .toHaveCount(0);
 
     await totals.click();
-    await expect(page.locator('#complianceMode-overview-button')).toHaveAttribute('aria-checked', 'true');
+    await expect(page.locator('#complianceMode-overview')).toHaveAttribute('aria-checked', 'true');
   });
 
   // =========================================================================

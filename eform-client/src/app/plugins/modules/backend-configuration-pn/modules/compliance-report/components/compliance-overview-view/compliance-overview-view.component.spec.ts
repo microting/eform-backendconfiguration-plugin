@@ -1,6 +1,12 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import type {Mock} from 'vitest';
+import {CommonModule} from '@angular/common';
+import {NO_ERRORS_SCHEMA} from '@angular/core';
+import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {TranslateModule} from '@ngx-translate/core';
 import {Subject, of} from 'rxjs';
+import {BackendConfigurationPnComplianceReportService} from '../../../../services';
+import {detectChanges} from '../../../../testing/detect-changes';
 import {ComplianceReportStateService} from '../../store';
 import {ComplianceOverviewViewComponent} from './compliance-overview-view.component';
 
@@ -270,5 +276,91 @@ describe('ComplianceOverviewViewComponent — the view-mode guard', () => {
     // guard the `tap` above the switchMap sets it true for a view that is not
     // even on screen.
     expect(state.loading).toBe(false);
+  });
+});
+
+/**
+ * #5562: under the workspace theme Compliance % is a light tonal badge per
+ * band and the overdue count is amber for 1-5, red from 6. The colours are the
+ * stylesheet's; what the template owes it is one class hook per band on every
+ * cell, the totals row's own class, and the en dash with its own `is-none`
+ * hook (plain muted text in the workspace, no pill).
+ */
+describe('ComplianceOverviewViewComponent — badge and count classes', () => {
+  let fixture: ComponentFixture<ComplianceOverviewViewComponent>;
+
+  const row = (propertyId: number, overdue: number, compliancePct: number | null) => ({
+    propertyId,
+    propertyName: `Ejendom ${propertyId}`,
+    total: 10,
+    done: 0,
+    overdue,
+    dueTotal: compliancePct == null ? 0 : 10,
+    dueDone: 0,
+    compliancePct,
+  });
+
+  const rowEl = (propertyId: number): HTMLElement =>
+    fixture.nativeElement.querySelector(`tr[data-property-id="${propertyId}"]`) as HTMLElement;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [ComplianceOverviewViewComponent, TranslateModule.forRoot()],
+      providers: [
+        ComplianceReportStateService,
+        {provide: BackendConfigurationPnComplianceReportService, useValue: {overview: vi.fn()}},
+      ],
+      schemas: [NO_ERRORS_SCHEMA],
+    })
+      .overrideComponent(ComplianceOverviewViewComponent, {set: {imports: [CommonModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}})
+      .compileComponents();
+
+    fixture = TestBed.createComponent(ComplianceOverviewViewComponent);
+    // `ngOnInit` is not run: the rows are handed over directly, no fetch.
+    (fixture.componentInstance as any).applyResponse({
+      rows: [row(1, 0, 49), row(2, 1, 50), row(3, 5, 79), row(4, 6, 80), row(5, 0, null)],
+      totals: {...row(0, 12, 62), propertyName: null},
+    });
+    detectChanges(fixture);
+  });
+
+  afterEach(() => fixture.destroy());
+
+  it.each([
+    [1, 'is-low', '49'],
+    [2, 'is-mid', '50'],
+    [3, 'is-mid', '79'],
+    [4, 'is-high', '80'],
+  ])('property %s gets the %s band badge', (propertyId, band, pct) => {
+    const pill = rowEl(propertyId).querySelector('.compliance-overview__pill') as HTMLElement;
+    expect(pill.classList).toContain(band);
+    expect(pill.textContent).toContain(pct);
+    for (const other of ['is-low', 'is-mid', 'is-high', 'is-none'].filter((c) => c !== band)) {
+      expect(pill.classList).not.toContain(other);
+    }
+  });
+
+  it('a row with nothing due shows the en dash on the is-none hook, never a band', () => {
+    const pill = rowEl(5).querySelector('.compliance-overview__pill') as HTMLElement;
+    expect(pill.textContent?.trim()).toBe('–');
+    expect(pill.classList).toContain('is-none');
+    expect(pill.classList).not.toContain('is-low');
+  });
+
+  it.each([
+    [1, 'is-calm'],
+    [2, 'is-mild'],
+    [3, 'is-mild'],
+    [4, 'is-urgent'],
+  ])('property %s gets the %s overdue count (amber 1-5, red from 6)', (propertyId, level) => {
+    const overdue = rowEl(propertyId).querySelector('.compliance-overview__overdue') as HTMLElement;
+    expect(overdue.classList).toContain(level);
+  });
+
+  it('the totals row keeps its own class and band hooks', () => {
+    const totals = fixture.nativeElement.querySelector('tfoot tr') as HTMLElement;
+    expect(totals.classList).toContain('compliance-overview__totals');
+    expect(totals.querySelector('.compliance-overview__pill')?.classList).toContain('is-mid');
+    expect(totals.querySelector('.compliance-overview__overdue')?.classList).toContain('is-urgent');
   });
 });
