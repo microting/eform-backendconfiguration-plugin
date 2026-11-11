@@ -343,11 +343,12 @@ describe('ChemicalInventoryPageComponent', () => {
       expect(component.otherSdsDocuments(row).map((d) => d.fileName)).toEqual(['sds200', 'sv-new']);
     });
 
-    it('has no other languages with a single SDS or without SDS documents', () => {
+    it('offers only the Danish product sheet next to a single non-Danish SDS, and nothing without SDS documents', () => {
       const component = build({}, {lang: 'en-US'});
 
-      expect(component.otherSdsDocuments(rowWith(component, {sdsDocuments: [sdsDocument('en')]}))).toEqual([]);
+      expect(component.otherSdsDocuments(rowWith(component, {sdsDocuments: [sdsDocument('en')]})).map((d) => d.fileName)).toEqual(['sds200']);
       expect(component.otherSdsDocuments(rowWith(component, {sdsDocuments: undefined}))).toEqual([]);
+      expect(component.otherSdsDocuments(rowWith(component, {sdsDocuments: [sdsDocument('en')], products: []}))).toEqual([]);
     });
 
     it('opens the one label of a row directly', () => {
