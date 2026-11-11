@@ -92,9 +92,17 @@
           <td class="compliance-details__board">{{ row.boardName || emptyCell }}</td>
 
           <!--
-            A circle that fills with a check when done. `role="img"` plus the
-            aria-label is the accessible name the component being replaced never
-            had (it used two different mat-icons and no label at all).
+            Two renderings of the same status, one per theme; the stylesheet
+            shows exactly one (display: none also takes the other out of the
+            accessibility tree).
+
+            eForm Classic: a circle that fills with a check when done.
+            `role="img"` plus the aria-label is the accessible name the
+            component being replaced never had.
+
+            Workspace: a tonal label, "✓ Udført" on a done row and "Overskredet"
+            on an open row dated before today. Every other row (open today or
+            later, planned) leaves it empty.
           -->
           <td class="compliance-details__status">
             <span
@@ -106,6 +114,14 @@
                 >check</mat-icon
               >
             </span>
+            <span
+              *ngIf="row.completed"
+              class="compliance-details__status-badge is-done"
+              ><span aria-hidden="true">✓ </span>{{ 'Task done' | translate }}</span
+            >
+            <span *ngIf="isOverdue(row)" class="compliance-details__status-badge is-overdue">{{
+              'Overdue' | translate
+            }}</span>
           </td>
 
           <!-- The cell is always rendered so the columns stay aligned; only its text is conditional. -->

@@ -4,7 +4,12 @@
 // calendar Compliance view this replaces hardcoded #fff / #e0e0e0 / #2e7d32 /
 // #1a73e8 and rendered wrong under theme-workspace and in dark mode.
 //
-// The pairings that carry the "done" state were picked for contrast; the
+// eForm Classic paints a done row solid green and the worker chip solid
+// primary (the rules at the bottom of this file). Under theme-workspace a row
+// stays white and carries a tonal status label instead, with a light worker
+// chip and outlined tags (#5562, the workspace block below).
+//
+// Classic's pairings that carry the "done" state were picked for contrast; the
 // worker chip pairing follows the design reference (#1186):
 //   --status-aktiv-bg / --status-aktiv-fg  is #1b5e20-on-white (light) and
 //     #2e7d32-on-white (dark) in BOTH themes — 7.9:1 and 5.1:1 (computed from
@@ -98,48 +103,6 @@
     &.is-done {
       // Not clickable: a completed row has nothing left to complete.
       cursor: default;
-
-      // Painted on the CELLS, like the theme's hover, so it out-specifies
-      // `tbody tr:hover > td` and a done row keeps its green under the
-      // pointer. Every cell's text inherits the colour from here.
-      > td {
-        background: var(--status-aktiv-bg);
-        color: var(--status-aktiv-fg);
-      }
-
-      .compliance-details__circle {
-        border-color: var(--status-aktiv-fg);
-      }
-
-      .compliance-details__check.is-visible {
-        color: var(--status-aktiv-fg);
-      }
-
-      // Tag chips on the green row: translucent white fill and border, white
-      // text. --status-aktiv-fg is white in every theme map, so the color-mix
-      // is white at 16% / 35% alpha over the green row — theme-independent by
-      // construction (prototype compliance.css:471-481). The :not() keeps the
-      // worker chip out of this rule regardless of rule order.
-      .compliance-details__chip:not(.compliance-details__chip--worker) {
-        background: color-mix(in srgb, var(--status-aktiv-fg) 16%, transparent);
-        border-color: color-mix(in srgb, var(--status-aktiv-fg) 35%, transparent);
-        color: var(--status-aktiv-fg);
-      }
-
-      // The worker chip keeps its primary fill on the done row too (excluded
-      // from the translucent rule above by the :not(), so this does not depend
-      // on ordering).
-      .compliance-details__chip--worker {
-        background: var(--md-primary);
-        border-color: transparent;
-        color: var(--md-on-primary);
-      }
-
-      // A blue ring would disappear into the green; the prototype switches to a
-      // light ring for the same reason (compliance.css:270-272).
-      &.is-highlighted {
-        outline-color: var(--status-aktiv-fg);
-      }
     }
   }
 
@@ -192,15 +155,19 @@
     font-size: 12px;
     line-height: 16px;
     white-space: nowrap;
+  }
 
-    // The employee chip is the filled accent pill (#1186: saturated primary
-    // with on-primary text). It keeps its own fill on a completed row, which
-    // is what keeps it readable against the green.
-    &--worker {
-      background: var(--md-primary);
-      color: var(--md-on-primary);
-      border-color: transparent;
-    }
+  // One status label per row in the workspace (see the template); Classic
+  // shows the circle instead.
+  &__status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: var(--font-weight-semibold);
+    white-space: nowrap;
   }
 
   &__delete {
@@ -223,6 +190,8 @@
   .compliance-details__week-title {
     padding: 8px 16px;
     background: var(--bg);
+    color: var(--text-secondary);
+    font-size: 12px;
     font-weight: var(--font-weight-semibold);
     text-transform: none;
     letter-spacing: normal;
@@ -235,12 +204,48 @@
     border-top: 1px solid var(--md-surface-variant);
   }
 
-  // The theme lights EVERY body row on hover. An open row that cannot be
-  // completed (no area-rule planning) has no click action, so it must not look
-  // like it has one. Done rows are excluded: they keep their green.
-  .compliance-details__row:not(.is-clickable):not(.is-done):hover > td {
+  // The theme lights EVERY body row on hover. A row that cannot be completed
+  // (done, future, or no area-rule planning) has no click action, so it must
+  // not look like it has one.
+  .compliance-details__row:not(.is-clickable):hover > td {
     background-color: transparent;
   }
+
+  // The row stays white; its status is the tonal label in the status column.
+  .compliance-details__circle {
+    display: none;
+  }
+
+  .compliance-details__status-badge {
+    &.is-done {
+      background: var(--surface-success-light);
+      color: var(--status-success);
+    }
+
+    &.is-overdue {
+      background: var(--surface-danger-light);
+      color: var(--text-error);
+    }
+  }
+
+  // Tags: grey outlined chips. The worker chip: the light primary container.
+  .compliance-details__chip {
+    background: transparent;
+    border-color: var(--md-outline);
+    color: var(--text-secondary);
+
+    &--worker {
+      background: var(--md-primary-container);
+      border-color: transparent;
+      color: var(--md-primary);
+    }
+  }
+}
+
+// --status-success is #2e7d32 in workspace dark, too dark on the dark success
+// surface; the label takes the dark theme's on-surface instead.
+:host-context(body.theme-workspace.theme-dark) .compliance-details__status-badge.is-done {
+  color: var(--md-on-surface);
 }
 
 // eForm Classic does not style `table.table` (Bootstrap is not loaded), so
@@ -267,6 +272,54 @@
 
   .compliance-details__row.is-clickable:hover > td {
     background: var(--table-row-hover);
+  }
+
+  .compliance-details__status-badge {
+    display: none;
+  }
+
+  // The employee chip is the filled accent pill (#1186: saturated primary
+  // with on-primary text). It keeps its own fill on a completed row, which
+  // is what keeps it readable against the green.
+  .compliance-details__chip--worker {
+    background: var(--md-primary);
+    color: var(--md-on-primary);
+    border-color: transparent;
+  }
+
+  .compliance-details__row.is-done {
+    // Painted on the CELLS, like the theme's hover, so it out-specifies
+    // `tbody tr:hover > td` and a done row keeps its green under the
+    // pointer. Every cell's text inherits the colour from here.
+    > td {
+      background: var(--status-aktiv-bg);
+      color: var(--status-aktiv-fg);
+    }
+
+    .compliance-details__circle {
+      border-color: var(--status-aktiv-fg);
+    }
+
+    .compliance-details__check.is-visible {
+      color: var(--status-aktiv-fg);
+    }
+
+    // Tag chips on the green row: translucent white fill and border, white
+    // text. --status-aktiv-fg is white in every theme map, so the color-mix
+    // is white at 16% / 35% alpha over the green row — theme-independent by
+    // construction (prototype compliance.css:471-481). The :not() keeps the
+    // worker chip out of this rule regardless of rule order.
+    .compliance-details__chip:not(.compliance-details__chip--worker) {
+      background: color-mix(in srgb, var(--status-aktiv-fg) 16%, transparent);
+      border-color: color-mix(in srgb, var(--status-aktiv-fg) 35%, transparent);
+      color: var(--status-aktiv-fg);
+    }
+
+    // A blue ring would disappear into the green; the prototype switches to a
+    // light ring for the same reason (compliance.css:270-272).
+    &.is-highlighted {
+      outline-color: var(--status-aktiv-fg);
+    }
   }
 }
 

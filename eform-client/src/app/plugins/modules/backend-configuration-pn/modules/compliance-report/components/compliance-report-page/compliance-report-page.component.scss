@@ -18,11 +18,51 @@
   // `.compliance-filters`, so the rule bought nothing.
 }
 
-// The mode switcher is a stock mat-button-toggle-group (#1296); it takes its
-// colours from the Material theme, so it needs only to not stretch across the
-// flex column.
+// The mode switcher is the workspace `.segmented` control
+// (_workspace-utilities.scss §5: outlined, 4px, the checked option on
+// --md-primary-container). It needs only to not stretch across the flex column.
 .compliance-mode-toggle {
   align-self: flex-start;
+}
+
+.segmented-option:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 1px;
+}
+
+// eForm Classic has no `.segmented` rule (it is scoped to theme-workspace), so
+// the same control is drawn here from Classic's own tokens.
+:host-context(body.theme-eform) {
+  .segmented {
+    display: inline-flex;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs);
+    border: 1px solid var(--md-outline);
+    border-radius: var(--radius-sm);
+  }
+
+  .segmented-option {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--md-on-surface);
+    font: inherit;
+    cursor: pointer;
+
+    &.active {
+      background: var(--md-primary-container);
+      color: var(--md-on-surface);
+    }
+  }
+}
+
+// Workspace pagination: the theme already squares outlined buttons to 4px
+// (_workspace-mat-overrides.scss); the current page sits on the light primary
+// container rather than a primary outline.
+:host-context(body.theme-workspace) .compliance-pagination__page.is-active {
+  background: var(--md-primary-container);
+  color: var(--md-primary);
 }
 
 // mat-card already carries the theme's surface, radius and border (see the
