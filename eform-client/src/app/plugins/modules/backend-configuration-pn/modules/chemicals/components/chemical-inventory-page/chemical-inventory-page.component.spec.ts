@@ -290,7 +290,7 @@ describe('ChemicalInventoryPageComponent', () => {
     const sds = (language: string) => ({language, fileName: `md5${language}`, revisionDate: null, productName: ''});
     const label = (fileName: string, kind = 1, packaging = '') => ({fileName, kind, packaging, revisionDate: null, revision: ''});
     const rowWith = (component: ChemicalInventoryPageComponent, partial: object) =>
-      ({...component.rows[0], entry: {...component.rows[0].entry, ...partial}}) as typeof component.rows[0];
+      ({...component.rows[0], entry: {products: [{productId: 1, sdsFileName: 'sds200'}], ...component.rows[0].entry, ...partial}}) as unknown as typeof component.rows[0];
 
     it('opens the SDS in the language of the eForm user', () => {
       const component = build({}, {lang: 'en-US'});
@@ -313,7 +313,7 @@ describe('ChemicalInventoryPageComponent', () => {
 
       component.openSds(rowWith(component, {sdsDocuments: undefined}));
 
-      expect(chemicals.getSdsBlob).toHaveBeenCalledWith('sds' + component.rows[0].placement.chemicalId);
+      expect(chemicals.getSdsBlob).toHaveBeenCalledWith('sds200');
     });
 
     it('lists the other languages for the "Andre sprog" menu and opens the chosen one', () => {
@@ -348,7 +348,8 @@ describe('ChemicalInventoryPageComponent', () => {
       const row = rowWith(component, {labels: [label('lab1', 1, '5 L'), label('lab2', 2)]});
 
       expect(component.labelsOf(row).map((l) => l.fileName)).toEqual(['lab1', 'lab2']);
-      expect(component.labelText(component.labelsOf(row)[0])).toContain('5 L');
+      expect(component.labelText(component.labelsOf(row)[0])).toBe('Chemicals: Label ({{packaging}})');
+      expect(component.labelText(component.labelsOf(row)[1])).toBe('Chemicals: Minor use');
       component.openLabelFile(component.labelsOf(row)[1]);
 
       expect(chemicals.getLabelBlob).toHaveBeenCalledWith('lab2');

@@ -56,22 +56,30 @@ describe('ChemicalProductDrawerComponent (template)', () => {
     }
   });
 
-  it('disables the label button without labels and enables it with one (Task 15)', () => {
-    render(true);
-    expect((find('#chemicalDrawerLabelBtn') as HTMLButtonElement).disabled).toBe(true);
-    fixture.destroy();
+  const oneLabel = {fileName: 'lab1', kind: 1, packaging: '', revisionDate: null, revision: ''};
+  const sds = (language: string) => ({language, fileName: `md5${language}`, revisionDate: null, productName: ''});
 
-    render(true, {labels: [{fileName: 'lab1', kind: 1, packaging: '', revisionDate: null, revision: ''}]});
+  it('disables the label button without labels (Task 15)', () => {
+    render(true);
+
+    expect((find('#chemicalDrawerLabelBtn') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('enables the label button with one label (Task 15)', () => {
+    render(true, {labels: [oneLabel]});
+
     expect((find('#chemicalDrawerLabelBtn') as HTMLButtonElement).disabled).toBe(false);
   });
 
-  it('shows the "other languages" button only when more than one SDS language exists (Task 15b)', () => {
-    const sds = (language: string) => ({language, fileName: `md5${language}`, revisionDate: null, productName: ''});
+  it('shows no "other languages" button with a single SDS language (Task 15b)', () => {
     render(true, {sdsDocuments: [sds('da')]});
-    expect(find('#chemicalDrawerSdsOthersBtn')).toBeNull();
-    fixture.destroy();
 
+    expect(find('#chemicalDrawerSdsOthersBtn')).toBeNull();
+  });
+
+  it('shows the "other languages" button with more than one SDS language (Task 15b)', () => {
     render(true, {sdsDocuments: [sds('da'), sds('en')]});
+
     expect(find('#chemicalDrawerSdsOthersBtn')).not.toBeNull();
   });
 
