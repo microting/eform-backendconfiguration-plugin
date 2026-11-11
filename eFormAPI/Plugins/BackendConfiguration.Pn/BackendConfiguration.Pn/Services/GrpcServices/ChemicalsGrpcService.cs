@@ -64,6 +64,9 @@ public class ChemicalsGrpcService(
         await WriteFileAsync(responseStream, content, "application/pdf", request.Offset, context.CancellationToken).ConfigureAwait(false);
     }
 
+    public override Task GetLabelPdf(ChemicalLabelPdfRequest request, IServerStreamWriter<ChemicalFileChunk> responseStream,
+        ServerCallContext context) => throw new NotImplementedException();
+
     public override async Task GetLocationPhoto(ChemicalLocationPhotoRequest request, IServerStreamWriter<ChemicalFileChunk> responseStream,
         ServerCallContext context)
     {

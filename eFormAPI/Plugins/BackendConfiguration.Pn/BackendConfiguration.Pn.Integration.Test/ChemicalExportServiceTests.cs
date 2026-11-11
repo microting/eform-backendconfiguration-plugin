@@ -5,6 +5,7 @@ using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.ChemicalInventoryService;
 using BackendConfiguration.Pn.Services.ChemicalReporting;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
@@ -67,6 +68,22 @@ public class ChemicalExportServiceTests : ChemicalTestBase
         Assert.That(Encoding.ASCII.GetString(file.Content, 0, 5), Is.EqualTo("%PDF-"));
         Assert.That(file.ContentType, Is.EqualTo(ChemicalExportService.PdfContentType));
         Assert.That(file.FileName, Is.EqualTo($"ChemicalAuthorityListTitle - {a.PropertyName} - 2026-09-29.pdf"));
+    }
+
+    [Test]
+    public async Task Authority_list_has_label_link_when_present()
+    {
+        var a = await ArrangeAsync(stock: false);
+        var chemicalId = await ChemicalsDbContext!.Chemicals.Where(c => c.RegistrationNo == "1-212").Select(c => c.Id).FirstAsync();
+        var label = Guid.NewGuid().ToString("N");
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext, chemicalId, ChemicalsBase.Infrastructure.Data.Enums.ChemicalDocumentType.Label, label);
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext, chemicalId, ChemicalsBase.Infrastructure.Data.Enums.ChemicalDocumentType.Sds, language: "en");
+
+        var withLabel = await CreateSut().AuthorityListPdfAsync(TestUserId, a.PropertyId);
+
+        var text = Encoding.Latin1.GetString(withLabel.Content);
+        Assert.That(text, Does.Contain($"get-label-file?fileName={label}"), "the label link is built from the configured base url");
+        Assert.That(text, Does.Contain("get-pdf-file?fileName=abc123"), "the Danish product SDS stays linked");
     }
 
     [Test]

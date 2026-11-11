@@ -31,6 +31,11 @@ public class ChemicalBaseClient(HttpClient httpClient, IOptions<ChemicalBaseOpti
 {
     internal const string SdsPath = "api/chemicals-pn/get-pdf-file";
 
+    internal const string LabelPath = "api/chemicals-pn/get-label-file";
+
+    public Task<byte[]> DownloadLabelAsync(string fileName, CancellationToken cancellationToken = default) =>
+        throw new NotImplementedException();
+
     public async Task<byte[]> DownloadSdsAsync(string fileName, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(fileName);

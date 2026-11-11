@@ -28,7 +28,7 @@ public class ChemicalAuthorityListTests
         new DateTime(2026, 3, 1), new DateTime(2027, 3, 1), null, null, null,
         ["GHS07", "GHS09"], 2, "Advarsel",
         [new ChemicalHazardStatementModel("H302", "Farlig ved indtagelse."), new ChemicalHazardStatementModel("H410", "Meget giftig for vandlevende organismer.")],
-        [], "Syngenta", [new ChemicalProductModel(id * 10, $"{name} 1 L", "", sds, sds)], Now);
+        [], "Syngenta", [new ChemicalProductModel(id * 10, $"{name} 1 L", "", sds, sds)], Now, [], []);
 
     private static ChemicalPlacementModel Placement(int id, int locationId, int chemicalId, DateTime? removedAt = null, decimal balance = 0, ChemicalStockUnitEnum? unit = null, int propertyId = 1) => new(
         id, locationId, propertyId, chemicalId, null, $"Hylde {id}", 5, "Jens Hansen", Now.AddDays(-30),
@@ -75,6 +75,140 @@ public class ChemicalAuthorityListTests
         Assert.That(row.Deadlines, Is.EqualTo("ChemicalDeadlineSales: 01-03-2026\nChemicalDeadlineUseAndPossession: 01-03-2027"));
         Assert.That(row.Placement, Is.EqualTo("Hylde 1"));
         Assert.That(row.SdsUrl, Is.EqualTo("https://chemicalbase.example/api/chemicals-pn/get-pdf-file?fileName=ab12%20cd"));
+    }
+
+    private const string BaseUrl = "https://chemicalbase.example/";
+
+    private static ChemicalRegisterEntryModel WithLabel(ChemicalRegisterEntryModel entry, params ChemicalLabelModel[] labels) =>
+        entry with { Labels = labels };
+
+    private static ChemicalInventoryModel OneRow(ChemicalRegisterEntryModel entry, bool stock = false) =>
+        Inventory(stock, [Placement(1, 11, entry.ChemicalId)], [entry]);
+
+    [Test]
+    public void Authority_list_has_label_link_when_present()
+    {
+        // The first Label wins; minor-use instructions (Kind 2) are never the label link, even when listed first.
+        var entry = WithLabel(Entry(100, "Karate", "ab12"),
+            new ChemicalLabelModel("minor", 2, "", null, ""), new ChemicalLabelModel("lab 1", 1, "5 L", null, "3"),
+            new ChemicalLabelModel("lab2", 1, "1 L", null, "1"));
+
+        var doc = ChemicalAuthorityListBuilder.Build(OneRow(entry), 1, Now, BaseUrl, Text);
+
+        Assert.That(doc.Rows.Single().LabelUrl, Is.EqualTo("https://chemicalbase.example/api/chemicals-pn/get-label-file?fileName=lab%201"));
+        Assert.That(doc.Headers, Has.Count.EqualTo(11));
+        Assert.That(doc.Headers[^1], Is.EqualTo("ChemicalColumnLabel"));
+        Assert.That(doc.LabelLinkText, Is.EqualTo("ChemicalLabelLink"));
+        Assert.That(doc.ColumnWeights, Has.Count.EqualTo(doc.Headers.Count));
+    }
+
+    [Test]
+    public void Authority_list_layout_unchanged_without_labels()
+    {
+        // Only minor-use instructions: no Label, so no label column.
+        var entry = WithLabel(Entry(100, "Karate", "ab12"), new ChemicalLabelModel("minor", 2, "", null, ""));
+
+        var doc = ChemicalAuthorityListBuilder.Build(OneRow(entry), 1, Now, BaseUrl, Text);
+        var none = ChemicalAuthorityListBuilder.Build(OneRow(Entry(100, "Karate", "ab12")), 1, Now, BaseUrl, Text);
+
+        Assert.That(doc.Headers, Has.Count.EqualTo(10));
+        Assert.That(doc.Headers, Does.Not.Contain("ChemicalColumnLabel"));
+        Assert.That(doc.Rows.Single().LabelUrl, Is.Empty);
+        Assert.That(doc.ColumnWeights, Is.EqualTo(none.ColumnWeights));
+        Assert.That(doc.Headers, Is.EqualTo(none.Headers));
+        Assert.That(doc.ColumnWeights.Last(), Is.EqualTo(2.4f), "the SDS column keeps its width");
+        Assert.That(doc.PictogramColumn, Is.EqualTo(none.PictogramColumn));
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void Authority_list_label_column_keeps_the_table_width_and_every_header_fits(bool stock)
+    {
+        var plain = ChemicalAuthorityListBuilder.Build(OneRow(Entry(100, "Karate"), stock), 1, Now, BaseUrl, Text);
+        var labelled = ChemicalAuthorityListBuilder.Build(
+            OneRow(WithLabel(Entry(100, "Karate"), new ChemicalLabelModel("l", 1, "", null, "")), stock), 1, Now, BaseUrl,
+            key => Danish.TryGetValue(key, out var da) ? da : key);
+
+        Assert.That(labelled.ColumnWeights.Sum(), Is.EqualTo(plain.ColumnWeights.Sum()).Within(0.001f));
+        var total = labelled.ColumnWeights.Sum();
+        for (var i = 0; i < labelled.Headers.Count; i++)
+        {
+            var available = labelled.ColumnWeights[i] / total * ChemicalAuthorityListPdf.ContentWidthPoints - 2 * ChemicalAuthorityListPdf.CellPadding;
+            var longestWord = labelled.Headers[i].Split(' ').Max(w => w.Length);
+            Assert.That(available, Is.GreaterThanOrEqualTo(longestWord * 0.6f * ChemicalAuthorityListPdf.HeaderFontSize),
+                $"\"{labelled.Headers[i]}\" does not fit its column");
+        }
+    }
+
+    [Test]
+    public void Label_link_uses_sds_base_url()
+    {
+        var entry = WithLabel(Entry(100, "Karate", "ab12"), new ChemicalLabelModel("lab", 1, "", null, ""));
+
+        var doc = ChemicalAuthorityListBuilder.Build(OneRow(entry), 1, Now, "https://tenant.example///", Text);
+
+        Assert.That(doc.Rows.Single().LabelUrl, Does.StartWith("https://tenant.example/api/chemicals-pn/get-label-file?"));
+        Assert.That(doc.Rows.Single().SdsUrl, Does.StartWith("https://tenant.example/api/chemicals-pn/get-pdf-file?"));
+    }
+
+    [Test]
+    public void Authority_list_links_danish_product_sds_first()
+    {
+        var entry = Entry(100, "Karate", "productda") with
+        {
+            SdsDocuments = [new ChemicalSdsDocumentModel("en", "docen", null, ""), new ChemicalSdsDocumentModel("da", "docda", null, "")],
+        };
+        var fallbackOnly = Entry(200, "Hussar", "") with
+        {
+            SdsDocuments = [new ChemicalSdsDocumentModel("en", "docen2", null, ""), new ChemicalSdsDocumentModel("da", "docda2", null, "")],
+        };
+
+        var doc = ChemicalAuthorityListBuilder.Build(
+            Inventory(false, [Placement(1, 11, 100), Placement(2, 11, 200)], [entry, fallbackOnly]), 1, Now, BaseUrl, Text);
+
+        Assert.That(doc.Rows.Single(r => r.ProductName == "Karate").SdsUrl, Does.EndWith("fileName=productda"));
+        Assert.That(doc.Rows.Single(r => r.ProductName == "Hussar").SdsUrl, Does.EndWith("fileName=docda2"),
+            "the chemical-level da document is only the fallback");
+    }
+
+    [Test]
+    public void Authority_list_lists_other_languages()
+    {
+        var entry = Entry(100, "Karate", "productda") with
+        {
+            SdsDocuments =
+            [
+                new ChemicalSdsDocumentModel("en", "e", null, ""), new ChemicalSdsDocumentModel("da", "d", null, ""),
+                new ChemicalSdsDocumentModel("de", "g", null, ""), new ChemicalSdsDocumentModel("en", "e2", null, ""),
+            ],
+        };
+        var inventory = OneRow(entry);
+
+        var listed = ChemicalAuthorityListBuilder.Build(inventory, 1, Now, BaseUrl, Text);
+        var hidden = ChemicalAuthorityListBuilder.Build(inventory, 1, Now, BaseUrl, Text, new ChemicalAuthorityListOptions { ListOtherLanguages = false });
+        var english = ChemicalAuthorityListBuilder.Build(inventory, 1, Now, BaseUrl, Text, new ChemicalAuthorityListOptions { SdsLanguage = "en" });
+
+        Assert.That(listed.Rows.Single().OtherSdsLanguages, Is.EqualTo("ChemicalSdsAlso: DE, EN"));
+        Assert.That(hidden.Rows.Single().OtherSdsLanguages, Is.Empty);
+        Assert.That(english.Rows.Single().SdsUrl, Does.EndWith("fileName=e"), "the language is an option");
+        Assert.That(english.Rows.Single().OtherSdsLanguages, Is.EqualTo("ChemicalSdsAlso: DA, DE"));
+        Assert.That(ChemicalAuthorityListBuilder.Build(OneRow(Entry(100, "Karate", "x")), 1, Now, BaseUrl, Text).Rows.Single().OtherSdsLanguages,
+            Is.Empty, "no other language, no line");
+    }
+
+    [Test]
+    public void Render_LabelAndLanguageLine_ProduceAPdf()
+    {
+        var entry = WithLabel(Entry(100, "Karate", "ab12") with
+        {
+            SdsDocuments = [new ChemicalSdsDocumentModel("en", "e", null, "")],
+        }, new ChemicalLabelModel("lab", 1, "", null, ""));
+
+        var withExtras = ChemicalAuthorityListPdf.Render(ChemicalAuthorityListBuilder.Build(OneRow(entry), 1, Now, BaseUrl, Text));
+        var plain = ChemicalAuthorityListPdf.Render(ChemicalAuthorityListBuilder.Build(OneRow(Entry(100, "Karate", "ab12")), 1, Now, BaseUrl, Text));
+
+        Assert.That(Encoding.ASCII.GetString(withExtras, 0, 5), Is.EqualTo("%PDF-"));
+        Assert.That(withExtras.Length, Is.GreaterThan(plain.Length));
     }
 
     [Test]

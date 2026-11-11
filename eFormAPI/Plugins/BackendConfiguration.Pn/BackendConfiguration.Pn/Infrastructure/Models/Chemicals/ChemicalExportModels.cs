@@ -36,6 +36,22 @@ public sealed record ChemicalAuthorityListRow(
 
     /// <summary>The GHS codes of the pictogram column; the PDF draws each known one as its diamond (its Cells entry is empty).</summary>
     public IReadOnlyList<string> PictogramCodes { get; init; } = [];
+
+    /// <summary>Link to the first BMD label; empty when the chemical has none.</summary>
+    public string LabelUrl { get; init; } = string.Empty;
+
+    /// <summary>"Også: EN, DE": the other SDS languages, no links; empty when there are none.</summary>
+    public string OtherSdsLanguages { get; init; } = string.Empty;
+}
+
+/// <summary>What the Arbejdstilsynet list prints about SDS languages (a default the owner can change).</summary>
+public sealed record ChemicalAuthorityListOptions
+{
+    /// <summary>The language of the SDS link; the list is a Danish legal document.</summary>
+    public string SdsLanguage { get; init; } = "da";
+
+    /// <summary>Print a line with the other languages available under the SDS link.</summary>
+    public bool ListOtherLanguages { get; init; } = true;
 }
 
 public sealed record ChemicalAuthorityListDocument(
@@ -50,4 +66,7 @@ public sealed record ChemicalAuthorityListDocument(
 
     /// <summary>One line under the subtitle: where the safety data sheets are, for a printed copy.</summary>
     public string SdsNote { get; init; } = string.Empty;
+
+    /// <summary>Text of the label link; the label column exists only when a row has a label.</summary>
+    public string LabelLinkText { get; init; } = string.Empty;
 }

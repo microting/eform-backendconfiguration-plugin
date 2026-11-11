@@ -27,4 +27,7 @@ public interface IChemicalBaseClient
 {
     /// <summary>The PDF, or null when chemicalbase has no file of that name. UNAVAILABLE on other failures.</summary>
     Task<byte[]> DownloadSdsAsync(string fileName, CancellationToken cancellationToken = default);
+
+    /// <summary>The label PDF, or null when chemicalbase has no file of that name. UNAVAILABLE on other failures.</summary>
+    Task<byte[]> DownloadLabelAsync(string fileName, CancellationToken cancellationToken = default);
 }

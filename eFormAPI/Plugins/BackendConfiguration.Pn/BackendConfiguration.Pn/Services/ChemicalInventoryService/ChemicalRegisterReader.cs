@@ -150,6 +150,8 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
         return SdsFileName(stored);
     }
 
+    public Task<string> FindLabelFileNameAsync(string fileName) => throw new NotImplementedException();
+
     private IQueryable<Product> ActiveProducts() => chemicalsDbContext.Products.AsNoTracking().Where(IsActiveProduct);
 
     /// <summary>Chemicals with an active product carrying one of the barcode spellings (a subquery, not materialised).</summary>
@@ -216,7 +218,9 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
                 .OrderBy(p => p.Id)
                 .Select(MapProduct)
                 .ToList(),
-            DateTime.SpecifyKind(chemical.UpdatedAt, DateTimeKind.Utc));
+            DateTime.SpecifyKind(chemical.UpdatedAt, DateTimeKind.Utc),
+            [],
+            []);
     }
 
     private static ChemicalProductModel MapProduct(Product product)

@@ -69,6 +69,28 @@ public class ChemicalBaseClientTests
     }
 
     [Test]
+    public async Task DownloadLabel_UsesTheLabelPath_404IsNull()
+    {
+        _server.Given(Request.Create().WithPath("/api/chemicals-pn/get-label-file").WithParam("fileName", "a1b2c3").UsingGet())
+            .RespondWith(Response.Create().WithStatusCode(200).WithBody(new byte[] { 37, 80, 68, 70 }));
+        _server.Given(Request.Create().WithPath("/api/chemicals-pn/get-label-file").WithParam("fileName", "missing").UsingGet())
+            .RespondWith(Response.Create().WithStatusCode(404));
+
+        Assert.That(await CreateSut().DownloadLabelAsync("a1b2c3"), Is.EqualTo(new byte[] { 37, 80, 68, 70 }));
+        Assert.That(await CreateSut().DownloadLabelAsync("missing"), Is.Null);
+        Assert.That(_server.LogEntries.Select(e => e.RequestMessage.Path), Has.All.EqualTo("/api/chemicals-pn/get-label-file"));
+    }
+
+    [Test]
+    public void DownloadLabel_ServerError_IsUnavailable()
+    {
+        _server.Given(Request.Create().WithPath("/api/chemicals-pn/get-label-file").UsingGet())
+            .RespondWith(Response.Create().WithStatusCode(500));
+
+        Assert.That(async () => await CreateSut().DownloadLabelAsync("a1b2c3"), Throws.InstanceOf<ChemicalUnavailableException>());
+    }
+
+    [Test]
     public void DownloadSds_ServerError_IsUnavailable()
     {
         _server.Given(Request.Create().WithPath(SdsPath).UsingGet())

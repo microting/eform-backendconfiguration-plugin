@@ -60,7 +60,8 @@ public static class ChemicalAuthorityListBuilder
     private const float SdsWeight = 2.4f;
 
     public static ChemicalAuthorityListDocument Build(
-        ChemicalInventoryModel model, int propertyId, DateTime generatedAtUtc, string sdsBaseUrl, Func<string, string> text)
+        ChemicalInventoryModel model, int propertyId, DateTime generatedAtUtc, string sdsBaseUrl, Func<string, string> text,
+        ChemicalAuthorityListOptions options = null)
     {
         var lookup = new ChemicalInventoryLookup(model);
         var showQuantity = model.Properties.FirstOrDefault(p => p.PropertyId == propertyId)?.StockEnabled ?? false;

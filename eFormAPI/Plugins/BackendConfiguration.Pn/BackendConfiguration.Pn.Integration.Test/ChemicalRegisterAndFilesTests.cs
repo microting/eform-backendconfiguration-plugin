@@ -20,6 +20,7 @@ SOFTWARE.
 
 using BackendConfiguration.Pn.Infrastructure.Models.Chemicals;
 using BackendConfiguration.Pn.Services.ChemicalInventoryService;
+using ChemicalsBase.Infrastructure.Data.Enums;
 using NSubstitute;
 
 namespace BackendConfiguration.Pn.Integration.Test;
@@ -132,5 +133,110 @@ public class ChemicalRegisterAndFilesTests : ChemicalTestBase
         await ChemicalBase.Received(1).DownloadSdsAsync(fileName, Arg.Any<CancellationToken>());
         await ChemicalBase.DidNotReceive().DownloadSdsAsync(
             Arg.Is<string>(n => n != fileName && string.Equals(n.Trim(), fileName, StringComparison.OrdinalIgnoreCase)), Arg.Any<CancellationToken>());
+    }
+
+    private static readonly byte[] Pdf = [37, 80, 68, 70];
+
+    [Test]
+    public async Task Label_pdf_only_for_known_label()
+    {
+        var caller = await WorkerAsync(view: true);
+        var chemical = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "With label", "6-001");
+        var label = Guid.NewGuid().ToString("N");
+        var minorUse = Guid.NewGuid().ToString("N");
+        var removed = Guid.NewGuid().ToString("N");
+        var superseded = Guid.NewGuid().ToString("N");
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext!, chemical.ChemicalId, ChemicalDocumentType.Label, label);
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext!, chemical.ChemicalId, ChemicalDocumentType.MinorUseInstructions, minorUse);
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext!, chemical.ChemicalId, ChemicalDocumentType.Label, removed, removed: true);
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext!, chemical.ChemicalId, ChemicalDocumentType.Label, superseded,
+            status: ChemicalDocumentStatus.Superseded);
+        ChemicalBase.DownloadLabelAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Pdf);
+        var sut = CreateInventoryService();
+
+        Assert.That(await sut.GetLabelPdfAsync(caller, label), Is.EqualTo(Pdf));
+        Assert.That(await sut.GetLabelPdfAsync(caller, minorUse), Is.EqualTo(Pdf));
+        foreach (var refused in new[] { Guid.NewGuid().ToString("N"), removed, superseded })
+        {
+            Assert.That(async () => await sut.GetLabelPdfAsync(caller, refused), Throws.InstanceOf<ChemicalNotFoundException>(), refused);
+        }
+
+        foreach (var malformed in new[] { "../../etc/passwd", "a/b", "a\\b", "..", "ab\ncd", "ab\0cd" })
+        {
+            Assert.That(async () => await sut.GetLabelPdfAsync(caller, malformed), Throws.InstanceOf<ArgumentException>(), malformed);
+        }
+
+        await ChemicalBase.DidNotReceive().DownloadLabelAsync(removed, Arg.Any<CancellationToken>());
+        await ChemicalBase.DidNotReceive().DownloadLabelAsync(superseded, Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task Label_pdf_needs_view_and_keeps_the_stored_spelling()
+    {
+        var blind = await WorkerAsync(view: false);
+        var viewer = await WorkerAsync(view: true);
+        var chemical = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Spelling", "6-002");
+        var label = Guid.NewGuid().ToString("N");
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext!, chemical.ChemicalId, ChemicalDocumentType.Label, label);
+        ChemicalBase.DownloadLabelAsync(label, Arg.Any<CancellationToken>()).Returns(Pdf);
+        var sut = CreateInventoryService();
+
+        Assert.That(async () => await sut.GetLabelPdfAsync(blind, label), Throws.InstanceOf<ChemicalPermissionDeniedException>());
+        Assert.That(await sut.GetLabelPdfAsync(viewer, $" {label.ToUpperInvariant()} "), Is.EqualTo(Pdf));
+        await ChemicalBase.Received().DownloadLabelAsync(label, Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task Label_endpoint_never_serves_sds_name()
+    {
+        var caller = await WorkerAsync(view: true);
+        var sdsName = Guid.NewGuid().ToString("N");
+        var languageSds = Guid.NewGuid().ToString("N");
+        var chemical = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Sds not label", "6-003", sdsFileName: sdsName);
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext!, chemical.ChemicalId, ChemicalDocumentType.Sds, languageSds, "en");
+        ChemicalBase.DownloadLabelAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Pdf);
+        var sut = CreateInventoryService();
+
+        Assert.That(async () => await sut.GetLabelPdfAsync(caller, sdsName), Throws.InstanceOf<ChemicalNotFoundException>());
+        Assert.That(async () => await sut.GetLabelPdfAsync(caller, languageSds), Throws.InstanceOf<ChemicalNotFoundException>());
+        await ChemicalBase.DidNotReceive().DownloadLabelAsync(sdsName, Arg.Any<CancellationToken>());
+        await ChemicalBase.DidNotReceive().DownloadLabelAsync(languageSds, Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task Sds_endpoint_serves_known_language_file()
+    {
+        var caller = await WorkerAsync(view: true);
+        var chemical = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "English SDS", "6-004");
+        var english = Guid.NewGuid().ToString("N");
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext!, chemical.ChemicalId, ChemicalDocumentType.Sds, english, "en");
+        ChemicalBase.DownloadSdsAsync(english, Arg.Any<CancellationToken>()).Returns(Pdf);
+
+        Assert.That(await CreateInventoryService().GetSdsPdfAsync(caller, english), Is.EqualTo(Pdf));
+    }
+
+    [Test]
+    public async Task Sds_endpoint_still_refuses_unknown_name()
+    {
+        var caller = await WorkerAsync(view: true);
+        var chemical = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Refusals", "6-005");
+        var removed = Guid.NewGuid().ToString("N");
+        var superseded = Guid.NewGuid().ToString("N");
+        var label = Guid.NewGuid().ToString("N");
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext!, chemical.ChemicalId, ChemicalDocumentType.Sds, removed, "de", removed: true);
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext!, chemical.ChemicalId, ChemicalDocumentType.Sds, superseded, "sv",
+            status: ChemicalDocumentStatus.Superseded);
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext!, chemical.ChemicalId, ChemicalDocumentType.Label, label);
+        ChemicalBase.DownloadSdsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Pdf);
+        var sut = CreateInventoryService();
+
+        foreach (var refused in new[] { Guid.NewGuid().ToString("N"), removed, superseded, label })
+        {
+            Assert.That(async () => await sut.GetSdsPdfAsync(caller, refused), Throws.InstanceOf<ChemicalNotFoundException>(), refused);
+        }
+
+        Assert.That(async () => await sut.GetSdsPdfAsync(caller, "../x"), Throws.InstanceOf<ArgumentException>());
+        await ChemicalBase.DidNotReceive().DownloadSdsAsync(removed, Arg.Any<CancellationToken>());
+        await ChemicalBase.DidNotReceive().DownloadSdsAsync(label, Arg.Any<CancellationToken>());
     }
 }

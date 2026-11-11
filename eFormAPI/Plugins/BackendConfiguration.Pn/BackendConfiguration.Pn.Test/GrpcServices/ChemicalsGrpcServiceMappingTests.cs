@@ -440,7 +440,7 @@ public class ChemicalsGrpcServiceMappingTests
     private static ChemicalRegisterEntryModel StoredEntry() => new(
         11, "Roundup", "1-111", 1, "", null, null, null, null, null, [], null, "", [], [], "",
         [new ChemicalProductModel(21, "Roundup 1 L", StoredEan13, "", "")],
-        new DateTime(2026, 9, 1, 8, 0, 0, DateTimeKind.Utc));
+        new DateTime(2026, 9, 1, 8, 0, 0, DateTimeKind.Utc), [], []);
 
     private static readonly string[] Gs1Scans =
     [
@@ -450,6 +450,57 @@ public class ChemicalsGrpcServiceMappingTests
     ];
 
     private static readonly string[] JunkScans = ["https://example.com/promo", "(01)05701234567892"];
+
+    [Test]
+    public void Label_kind_mapping_label_and_minor_use()
+    {
+        var revision = new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc);
+        var entry = StoredEntry() with
+        {
+            Labels =
+            [
+                new ChemicalLabelModel("aaa", 1, "5 L", revision, "3"),
+                new ChemicalLabelModel("bbb", 2, "", null, ""),
+            ],
+        };
+
+        var proto = ChemicalsProtoMapper.ToProto(entry);
+
+        Assert.That(proto.Labels.Select(l => (l.FileName, l.Kind)), Is.EqualTo(new[]
+        {
+            ("aaa", ChemicalLabelKind.Label), ("bbb", ChemicalLabelKind.MinorUse),
+        }));
+        Assert.That((int)proto.Labels[0].Kind, Is.EqualTo(1));
+        Assert.That((int)proto.Labels[1].Kind, Is.EqualTo(2));
+        Assert.That((proto.Labels[0].Packaging, proto.Labels[0].Revision), Is.EqualTo(("5 L", "3")));
+        Assert.That(proto.Labels[0].RevisionDate.ToDateTime(), Is.EqualTo(revision));
+        Assert.That(proto.Labels[1].RevisionDate, Is.Null, "unset date stays unset");
+        Assert.That(ChemicalsProtoMapper.ToProto(StoredEntry()).Labels, Is.Empty);
+    }
+
+    [Test]
+    public void Sds_documents_mapping()
+    {
+        var revision = new DateTime(2026, 5, 2, 0, 0, 0, DateTimeKind.Utc);
+        var entry = StoredEntry() with
+        {
+            SdsDocuments =
+            [
+                new ChemicalSdsDocumentModel("en", "e1", revision, "Roundup 1 L"),
+                new ChemicalSdsDocumentModel("da", "d1", null, ""),
+            ],
+        };
+
+        var proto = ChemicalsProtoMapper.ToProto(entry);
+
+        Assert.That(proto.SdsDocuments.Select(d => (d.Language, d.FileName, d.ProductName)), Is.EqualTo(new[]
+        {
+            ("en", "e1", "Roundup 1 L"), ("da", "d1", ""),
+        }));
+        Assert.That(proto.SdsDocuments[0].RevisionDate.ToDateTime(), Is.EqualTo(revision));
+        Assert.That(proto.SdsDocuments[1].RevisionDate, Is.Null);
+        Assert.That(proto.Products.Single().SdsFileName, Is.Empty, "the product fields are untouched");
+    }
 
     [TestCaseSource(nameof(Gs1Scans))]
     public async Task LookupBarcode_Gs1Scan_FindsTheProductStoredAsEan13(string scanned)

@@ -275,7 +275,7 @@
     </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="ChemicalsBase" Version="10.0.23" />
+    <PackageReference Include="ChemicalsBase" Version="10.0.25" />
     <PackageReference Include="FirebaseAdmin" Version="3.7.0" />
     <PackageReference Include="Google.Apis.Sheets.v4" Version="1.77.0.4309" />
     <PackageReference Include="Google.Protobuf" Version="3.36.2" />

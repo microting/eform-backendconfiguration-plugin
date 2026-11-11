@@ -29,6 +29,12 @@ public sealed record ChemicalActiveSubstanceModel(string Name, string CasNo, str
 
 public sealed record ChemicalProductModel(int ProductId, string Name, string Barcode, string SdsFileName, string SdsChecksum);
 
+/// <summary>A BMD label document of a chemical. <paramref name="Kind"/> uses the proto numbering: 1 = Label, 2 = MinorUse.</summary>
+public sealed record ChemicalLabelModel(string FileName, int Kind, string Packaging, DateTime? RevisionDate, string Revision);
+
+/// <summary>A per-language safety data sheet of a chemical; <paramref name="FileName"/> is the md5 of the file.</summary>
+public sealed record ChemicalSdsDocumentModel(string Language, string FileName, DateTime? RevisionDate, string ProductName);
+
 /// <summary>Register (BMD) details of one chemical as the app and web show them.</summary>
 public sealed record ChemicalRegisterEntryModel(
     int ChemicalId, string Name, string RegistrationNo, int? Status, string StatusText,
@@ -37,7 +43,8 @@ public sealed record ChemicalRegisterEntryModel(
     IReadOnlyList<string> HazardPictograms, int? SignalWord, string SignalWordText,
     IReadOnlyList<ChemicalHazardStatementModel> HazardStatements,
     IReadOnlyList<ChemicalActiveSubstanceModel> ActiveSubstances,
-    string AuthorisationHolder, IReadOnlyList<ChemicalProductModel> Products, DateTime UpdatedAt);
+    string AuthorisationHolder, IReadOnlyList<ChemicalProductModel> Products, DateTime UpdatedAt,
+    IReadOnlyList<ChemicalLabelModel> Labels, IReadOnlyList<ChemicalSdsDocumentModel> SdsDocuments);
 
 public sealed record ChemicalRegisterPageModel(IReadOnlyList<ChemicalRegisterEntryModel> Entries, int Total);
 

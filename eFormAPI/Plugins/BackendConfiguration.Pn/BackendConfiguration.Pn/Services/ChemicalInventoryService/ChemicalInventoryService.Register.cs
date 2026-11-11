@@ -43,6 +43,8 @@ public partial class ChemicalInventoryService
         return await register.SearchAsync(query, page, pageSize).ConfigureAwait(false);
     }
 
+    public Task<byte[]> GetLabelPdfAsync(ChemicalCaller caller, string fileName) => throw new NotImplementedException();
+
     public async Task<byte[]> GetSdsPdfAsync(ChemicalCaller caller, string fileName)
     {
         await permissions.RequireViewOnAnyPropertyAsync(caller).ConfigureAwait(false);

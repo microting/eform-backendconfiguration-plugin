@@ -57,4 +57,7 @@ public interface IChemicalRegisterReader
     /// (by the register's collation), or null when there is none or it means "no SDS".
     /// </summary>
     Task<string> FindSdsFileNameAsync(string fileName);
+
+    /// <summary>The stored md5 of an Active, non-removed Label or MinorUse document, or null.</summary>
+    Task<string> FindLabelFileNameAsync(string fileName);
 }
