@@ -70,4 +70,28 @@ describe('Kemi i18n coverage', () => {
 
     expect(built.filter((key) => !CHEMICAL_I18N_KEYS.includes(key))).toEqual([]);
   });
+
+  const DOCUMENT_KEYS = CHEMICAL_I18N_KEYS.filter((key) => /^Chemicals: (Open label|Could not open label|Label|Minor use|Other languages|Language )/.test(key));
+
+  it('lists the label and language keys of Task 15/15b (one name per language of the SDS menu)', () => {
+    expect(DOCUMENT_KEYS).toHaveLength(31);
+    expect(DOCUMENT_KEYS.filter((key) => key.startsWith('Chemicals: Language '))).toHaveLength(25);
+  });
+
+  it.each(Object.keys(LOCALES))('%s keeps the {{packaging}} parameter of the packaged label', (locale) => {
+    expect(String(LOCALES[locale]['Chemicals: Label ({{packaging}})'])).toContain('{{packaging}}');
+  });
+
+  it.each(Object.keys(LOCALES).filter((locale) => locale !== 'enUS'))('%s translates the label and language keys (no English left)', (locale) => {
+    const untranslated = DOCUMENT_KEYS.filter((key) => LOCALES[locale][key] === LOCALES['enUS'][key]);
+
+    expect(untranslated).toEqual([]);
+  });
+
+  it('writes Danish as the owner specified', () => {
+    expect(da['Chemicals: Open label']).toBe('Åbn etiket');
+    expect(da['Chemicals: Minor use']).toBe('Mindre anvendelse');
+    expect(da['Chemicals: Label ({{packaging}})']).toBe('Etiket ({{packaging}})');
+    expect(da['Chemicals: Other languages']).toBe('Andre sprog');
+  });
 });

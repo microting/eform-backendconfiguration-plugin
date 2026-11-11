@@ -67,6 +67,7 @@ describe('BackendConfigurationPnChemicalsService', () => {
     ['register search defaults', (s) => s.searchRegister('x'), 'get', [`${BASE}/register/search`, {query: 'x', page: 0, pageSize: 25}]],
     ['barcode lookup encodes', (s) => s.lookupBarcode('57 01'), 'get', [`${BASE}/register/barcode/57%2001`]],
     ['sds blob encodes', (s) => s.getSdsBlob('a b.pdf'), 'getBlobData', [`${BASE}/sds/a%20b.pdf`]],
+    ['label blob encodes', (s) => s.getLabelBlob('a b'), 'getBlobData', [`${BASE}/label/a%20b`]],
     ['register placement', (s) => s.registerPlacement({locationId: 1, chemicalId: 2, productId: null, placementNote: 'Hylde', initialStock: null}), 'post',
       [`${BASE}/placements`, {locationId: 1, chemicalId: 2, productId: null, placementNote: 'Hylde', initialStock: null}]],
     ['move', (s) => s.movePlacement(7, {targetLocationId: 9, targetPlacementNote: 'Reol', amount: null}), 'post',

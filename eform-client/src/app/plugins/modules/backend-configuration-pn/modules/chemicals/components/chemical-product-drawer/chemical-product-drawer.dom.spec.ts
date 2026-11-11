@@ -16,12 +16,12 @@ describe('ChemicalProductDrawerComponent (template)', () => {
   let fixture: ComponentFixture<ChemicalProductDrawerComponent>;
   const find = (selector: string): HTMLElement | null => fixture.nativeElement.querySelector(selector);
 
-  function render(stockEnabled: boolean): void {
+  function render(stockEnabled: boolean, entryPartial: Parameters<typeof entry>[2] = {}): void {
     const inventory = inventoryOf({
       stockEnabled,
       locations: [location(10, 'Lade')],
       placements: [placement(7, 10, 200, {balance: 3, unit: ChemicalStockUnit.Kg})],
-      registerEntries: [entry(200, 'Karate 2,5 WG')],
+      registerEntries: [entry(200, 'Karate 2,5 WG', entryPartial)],
       stockEntries: [
         stockEntry(1, 7, ChemicalStockEntryKind.Received, 5, '2026-08-12T08:00:00', 5),
         stockEntry(2, 7, ChemicalStockEntryKind.MovedOut, -2, '2026-09-02T08:00:00', 3,
@@ -31,7 +31,7 @@ describe('ChemicalProductDrawerComponent (template)', () => {
     TestBed.configureTestingModule({
       imports: [ChemicalProductDrawerComponent, TranslateModule.forRoot()],
       providers: [
-        {provide: BackendConfigurationPnChemicalsService, useValue: {getSdsBlob: vi.fn()}},
+        {provide: BackendConfigurationPnChemicalsService, useValue: {getSdsBlob: vi.fn(), getLabelBlob: vi.fn()}},
         {provide: MatDialogRef, useValue: {close: vi.fn()}},
         {provide: ToastrService, useValue: {error: vi.fn()}},
         {provide: MAT_DIALOG_DATA, useValue: {row: buildInventoryRows(inventory, '2026-09-29')[0], inventory, stockEnabled}},
@@ -49,10 +49,29 @@ describe('ChemicalProductDrawerComponent (template)', () => {
 
     for (const id of [
       'chemicalDrawer', 'chemicalDrawerTabOverview', 'chemicalDrawerTabPlacements', 'chemicalDrawerTabStock',
-      'chemicalDrawerMoveBtn', 'chemicalDrawerStockBtn', 'chemicalDrawerRemoveBtn', 'chemicalDrawerSdsBtn', 'chemicalDrawerCloseBtn',
+      'chemicalDrawerMoveBtn', 'chemicalDrawerStockBtn', 'chemicalDrawerRemoveBtn', 'chemicalDrawerSdsBtn', 'chemicalDrawerLabelBtn', 'chemicalDrawerCloseBtn',
     ]) {
       expect(find(`#${id}`)).not.toBeNull();
     }
+  });
+
+  it('disables the label button without labels and enables it with one (Task 15)', () => {
+    render(true);
+    expect((find('#chemicalDrawerLabelBtn') as HTMLButtonElement).disabled).toBe(true);
+    fixture.destroy();
+
+    render(true, {labels: [{fileName: 'lab1', kind: 1, packaging: '', revisionDate: null, revision: ''}]});
+    expect((find('#chemicalDrawerLabelBtn') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('shows the "other languages" button only when more than one SDS language exists (Task 15b)', () => {
+    const sds = (language: string) => ({language, fileName: `md5${language}`, revisionDate: null, productName: ''});
+    render(true, {sdsDocuments: [sds('da')]});
+    expect(find('#chemicalDrawerSdsOthersBtn')).toBeNull();
+    fixture.destroy();
+
+    render(true, {sdsDocuments: [sds('da'), sds('en')]});
+    expect(find('#chemicalDrawerSdsOthersBtn')).not.toBeNull();
   });
 
   it('hides the stock tab and the stock action when stock is off', () => {

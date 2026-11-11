@@ -1,7 +1,7 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {HttpErrorResponse} from '@angular/common/http';
 import {EMPTY, Subject, of, throwError} from 'rxjs';
-import {closeWhenSaved, downloadFailureText, openSafetyDataSheet} from './chemical-dialogs.helper';
+import {closeWhenSaved, downloadFailureText, openChemicalLabel, openSafetyDataSheet} from './chemical-dialogs.helper';
 
 describe('closeWhenSaved (shared save/busy/close of the Kemi dialogs)', () => {
   it('closes with true after a successful save and reports when the request settles', () => {
@@ -29,6 +29,44 @@ describe('closeWhenSaved (shared save/busy/close of the Kemi dialogs)', () => {
 
     expect(dialogRef.close).not.toHaveBeenCalled();
     expect(settled).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('openChemicalLabel (shared by W1 and the W2 side panel)', () => {
+  const toastr = {error: vi.fn()};
+  const translate = {instant: (key: string) => key};
+
+  beforeEach(() => toastr.error.mockClear());
+
+  it('opens the fetched label in a new tab', () => {
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    Object.defineProperty(URL, 'createObjectURL', {value: vi.fn().mockReturnValue('blob:label'), configurable: true});
+    const labels = {getLabelBlob: vi.fn().mockReturnValue(of(new Blob(['%PDF'])))};
+
+    openChemicalLabel(labels, toastr, translate, 'lab1');
+
+    expect(labels.getLabelBlob).toHaveBeenCalledWith('lab1');
+    expect(open).toHaveBeenCalledWith('blob:label', '_blank');
+    expect(toastr.error).not.toHaveBeenCalled();
+    open.mockRestore();
+  });
+
+  it('toasts a fixed localized text when the label cannot be fetched', () => {
+    const labels = {getLabelBlob: vi.fn().mockReturnValue(throwError(() => new Error('404 technical')))};
+
+    openChemicalLabel(labels, toastr, translate, 'lab1');
+
+    expect(toastr.error).toHaveBeenCalledWith('Chemicals: Could not open label');
+  });
+
+  it('toasts the same text when the request completes without a label', () => {
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+
+    openChemicalLabel({getLabelBlob: vi.fn().mockReturnValue(EMPTY)}, toastr, translate, 'lab1');
+
+    expect(open).not.toHaveBeenCalled();
+    expect(toastr.error).toHaveBeenCalledTimes(1);
+    open.mockRestore();
   });
 });
 

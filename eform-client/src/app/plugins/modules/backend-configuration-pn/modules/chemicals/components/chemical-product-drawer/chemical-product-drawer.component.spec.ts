@@ -10,10 +10,11 @@ import {inventoryOf, location, placement, stockEntry} from '../../helpers/chemic
 import {ChemicalProductDrawerComponent} from './chemical-product-drawer.component';
 
 describe('ChemicalProductDrawerComponent', () => {
-  function build(stockEnabled: boolean, getSdsBlob = vi.fn().mockReturnValue(of(new Blob()))) {
+  function build(stockEnabled: boolean, getSdsBlob = vi.fn().mockReturnValue(of(new Blob())), extra: {entry?: object; lang?: string} = {}) {
+    const getLabelBlob = vi.fn().mockReturnValue(of(new Blob()));
     const dialogRef = {close: vi.fn()};
     const toastr = {error: vi.fn()};
-    const row = {placement: {id: 7, chemicalId: 100, productId: null}, entry: {products: [{productId: 1, sdsFileName: 'abc'}]}, productName: 'Karate'};
+    const row = {placement: {id: 7, chemicalId: 100, productId: null}, entry: {products: [{productId: 1, sdsFileName: 'abc'}], ...extra.entry}, productName: 'Karate'};
     const inventory = inventoryOf({
       locations: [location(10, 'Lade'), location(11, 'Kemirum')],
       placements: [placement(7, 10, 100), placement(8, 11, 100), placement(9, 11, 100, {removedAt: '2026-09-01T00:00:00'}), placement(10, 11, 200)],
@@ -24,13 +25,13 @@ describe('ChemicalProductDrawerComponent', () => {
       ],
     });
     const injector = Injector.create({providers: [
-      {provide: BackendConfigurationPnChemicalsService, useValue: {getSdsBlob}},
+      {provide: BackendConfigurationPnChemicalsService, useValue: {getSdsBlob, getLabelBlob}},
       {provide: MatDialogRef, useValue: dialogRef},
       {provide: ToastrService, useValue: toastr},
-      {provide: TranslateService, useValue: {instant: (k: string) => k}},
+      {provide: TranslateService, useValue: {instant: (k: string) => k, currentLang: extra.lang ?? 'da'}},
       {provide: MAT_DIALOG_DATA, useValue: {row, stockEnabled, inventory}},
     ]});
-    return {component: runInInjectionContext(injector, () => new ChemicalProductDrawerComponent()), dialogRef, row, toastr};
+    return {component: runInInjectionContext(injector, () => new ChemicalProductDrawerComponent()), dialogRef, row, toastr, getLabelBlob};
   }
 
   it('hands the chosen action back to the page', () => {
@@ -96,5 +97,66 @@ describe('ChemicalProductDrawerComponent', () => {
 
     expect(failing).toHaveBeenCalledWith('abc');
     expect(toastr.error).toHaveBeenCalledWith('Chemicals: Could not open safety data sheet');
+  });
+
+  describe('SDS in the user language and labels (Task 15, 15b)', () => {
+    const sds = (language: string) => ({language, fileName: `md5${language}`, revisionDate: null, productName: ''});
+    const label = (fileName: string, kind = 1, packaging = '') => ({fileName, kind, packaging, revisionDate: null, revision: ''});
+
+    it('opens the SDS in the language of the eForm user', () => {
+      const getSds = vi.fn().mockReturnValue(of(new Blob()));
+      const {component} = build(true, getSds, {lang: 'en-US', entry: {sdsDocuments: [sds('da'), sds('en')]}});
+
+      component.openSds();
+
+      expect(getSds).toHaveBeenCalledWith('md5en');
+      expect(component.hasSds).toBe(true);
+    });
+
+    it('falls back to the product sheet for old data without SDS documents', () => {
+      const getSds = vi.fn().mockReturnValue(of(new Blob()));
+      const {component} = build(true, getSds, {lang: 'en-US'});
+
+      component.openSds();
+
+      expect(getSds).toHaveBeenCalledWith('abc');
+    });
+
+    it('lists the other languages and opens the chosen one', () => {
+      const getSds = vi.fn().mockReturnValue(of(new Blob()));
+      const {component} = build(true, getSds, {lang: 'en-US', entry: {sdsDocuments: [sds('sv'), sds('da'), sds('en')]}});
+
+      expect(component.otherSdsDocuments.map((d) => d.language)).toEqual(['da', 'sv']);
+      component.openSdsDocument(component.otherSdsDocuments[0]);
+
+      expect(getSds).toHaveBeenCalledWith('md5da');
+    });
+
+    it('opens the one label directly', () => {
+      const {component, getLabelBlob} = build(true, undefined, {entry: {labels: [label('lab1')]}});
+
+      expect(component.labels).toHaveLength(1);
+      component.openLabel();
+
+      expect(getLabelBlob).toHaveBeenCalledWith('lab1');
+    });
+
+    it('lists several labels and opens the chosen one', () => {
+      const {component, getLabelBlob} = build(true, undefined, {entry: {labels: [label('lab1', 1, '5 L'), label('lab2', 2)]}});
+
+      expect(component.labels.map((l) => l.fileName)).toEqual(['lab1', 'lab2']);
+      component.openLabelFile(component.labels[1]);
+
+      expect(getLabelBlob).toHaveBeenCalledWith('lab2');
+    });
+
+    it('has no labels for old data', () => {
+      const {component, getLabelBlob} = build(true);
+
+      expect(component.labels).toEqual([]);
+      component.openLabel();
+
+      expect(getLabelBlob).not.toHaveBeenCalled();
+    });
   });
 });

@@ -108,3 +108,51 @@ export function isoDateFromToday(days: number): string {
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().substring(0, 10);
 }
+
+export interface RegisterDocumentSeed {
+  chemicalId: number;
+  /** ChemicalDocumentType: 1 = Sds, 2 = Label, 3 = MinorUseInstructions. */
+  type: 1 | 2 | 3;
+  /** The file name the server serves it under: 32 hex digits. */
+  md5: string;
+  /** ISO 639-1; labels are Danish, like the tenant sync writes them. */
+  language?: string;
+  packaging?: string;
+  revisionDate?: string;
+}
+
+/**
+ * One Active ChemicalDocuments row of a seeded chemical, the way the tenant sync writes it (labels Source=Bmd,
+ * SDS Source=Supplier). The register serves the md5 as the document's file name; the specs stub the PDF
+ * download itself, so nothing is fetched from chemicalbase.
+ */
+export async function seedRegisterDocument(seed: RegisterDocumentSeed): Promise<void> {
+  if (!/^[0-9a-f]{32}$/.test(seed.md5)) {
+    throw new Error(`seedRegisterDocument: '${seed.md5}' is not a 32 digit hex md5`);
+  }
+  const packaging = seed.packaging === undefined ? 'NULL' : sqlText(seed.packaging);
+  const language = sqlText(seed.language ?? 'da');
+  const source = seed.type === 1 ? 3 : 2;
+  const sql =
+    `INSERT INTO ChemicalDocuments (${BASE_COLUMNS}, ChemicalId, Type, Source, Status, Language, ContentMd5, ContentSha256, ` +
+    'SizeBytes, SourcePackaging, SourceRevisionDate, RetrievedAt, LastSeenAt, StaffLocked) ' +
+    `VALUES (${BASE}, ${sqlInt(seed.chemicalId)}, ${sqlInt(seed.type)}, ${source}, 1, ${language}, '${seed.md5}', '', 0, ` +
+    `${packaging}, ${sqlDate(seed.revisionDate)}, NOW(), NOW(), 0)`;
+  await runMariadbSql(sql, `seed a register document for chemical ${seed.chemicalId}`, customerDatabase('chemical-base-plugin'));
+}
+
+/** A PDF response the specs hand to the browser in place of the chemicalbase proxy. */
+export const STUB_PDF = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n');
+
+/** Sets the UI language of the seeded admin (the user setting the SDS language follows); throws unless one login changed. */
+export async function setAdminLocale(locale: string): Promise<void> {
+  if (!/^[a-z]{2}(-[A-Z]{2})?$/.test(locale)) {
+    throw new Error(`setAdminLocale: '${locale}' is not a locale`);
+  }
+  const out = await runMariadbSql(
+    `UPDATE Users SET Locale = '${locale}' WHERE Email = 'admin@admin.com'; SELECT ROW_COUNT();`,
+    `set the admin locale to ${locale}`, customerDatabase('Angular'));
+  if (out.trim() !== '1') {
+    throw new Error(`setAdminLocale: expected one login to change, got '${out}'`);
+  }
+}
