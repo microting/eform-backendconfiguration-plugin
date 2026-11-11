@@ -104,15 +104,7 @@ public static class ChemicalAuthorityListPdf
 
                     if (!string.IsNullOrEmpty(document.LabelLinkText))
                     {
-                        var label = BodyCell(table);
-                        if (string.IsNullOrEmpty(row.LabelUrl))
-                        {
-                            label.Text(string.Empty);
-                        }
-                        else
-                        {
-                            label.Hyperlink(row.LabelUrl).Text(document.LabelLinkText).FontColor(Colors.Blue.Darken2).Underline();
-                        }
+                        LinkOrEmpty(BodyCell(table), row.LabelUrl, document.LabelLinkText);
                     }
                 }
             });
@@ -138,7 +130,7 @@ public static class ChemicalAuthorityListPdf
         {
             if (!string.IsNullOrEmpty(row.SdsUrl))
             {
-                column.Item().Hyperlink(row.SdsUrl).Text(linkText).FontColor(Colors.Blue.Darken2).Underline();
+                Link(column.Item(), row.SdsUrl, linkText);
             }
 
             if (!string.IsNullOrEmpty(row.OtherSdsLanguages))
@@ -147,6 +139,21 @@ public static class ChemicalAuthorityListPdf
             }
         });
     }
+
+    private static void LinkOrEmpty(IContainer cell, string url, string linkText)
+    {
+        if (string.IsNullOrEmpty(url))
+        {
+            cell.Text(string.Empty);
+        }
+        else
+        {
+            Link(cell, url, linkText);
+        }
+    }
+
+    private static void Link(IContainer cell, string url, string linkText) =>
+        cell.Hyperlink(url).Text(linkText).FontColor(Colors.Blue.Darken2).Underline();
 
     private static IContainer BodyCell(TableDescriptor table) =>
         table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(CellPadding);

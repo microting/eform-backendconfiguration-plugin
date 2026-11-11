@@ -34,12 +34,12 @@ public class ChemicalBaseClient(HttpClient httpClient, IOptions<ChemicalBaseOpti
     internal const string LabelPath = "api/chemicals-pn/get-label-file";
 
     public Task<byte[]> DownloadSdsAsync(string fileName, CancellationToken cancellationToken = default) =>
-        DownloadAsync(SdsPath, fileName, cancellationToken);
+        DownloadAsync(SdsPath, "SDS", fileName, cancellationToken);
 
     public Task<byte[]> DownloadLabelAsync(string fileName, CancellationToken cancellationToken = default) =>
-        DownloadAsync(LabelPath, fileName, cancellationToken);
+        DownloadAsync(LabelPath, "label", fileName, cancellationToken);
 
-    private async Task<byte[]> DownloadAsync(string path, string fileName, CancellationToken cancellationToken)
+    private async Task<byte[]> DownloadAsync(string path, string what, string fileName, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(fileName);
 
@@ -63,7 +63,7 @@ public class ChemicalBaseClient(HttpClient httpClient, IOptions<ChemicalBaseOpti
             if (!response.IsSuccessStatusCode)
             {
                 throw new ChemicalUnavailableException(
-                    $"chemicalbase answered {(int)response.StatusCode} for {path} {fileName}.");
+                    $"chemicalbase answered {(int)response.StatusCode} for {what} {fileName}.");
             }
 
             return await response.Content.ReadAsByteArrayAsync(timeoutSource.Token).ConfigureAwait(false);

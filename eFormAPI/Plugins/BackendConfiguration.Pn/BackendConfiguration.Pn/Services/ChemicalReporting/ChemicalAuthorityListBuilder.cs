@@ -69,11 +69,11 @@ public static class ChemicalAuthorityListBuilder
         ChemicalInventoryModel model, int propertyId, DateTime generatedAtUtc, string sdsBaseUrl, Func<string, string> text,
         ChemicalAuthorityListOptions options = null)
     {
+        options ??= new ChemicalAuthorityListOptions();
         var lookup = new ChemicalInventoryLookup(model);
         var showQuantity = model.Properties.FirstOrDefault(p => p.PropertyId == propertyId)?.StockEnabled ?? false;
         var columns = Columns.Where(c => showQuantity || !c.StockOnly).ToList();
 
-        options ??= new ChemicalAuthorityListOptions();
         var rows = model.Placements
             .Where(p => p.RemovedAt == null && p.PropertyId == propertyId)
             .Select(p => (Placement: p, Location: lookup.Location(p.LocationId), Entry: lookup.Entry(p.ChemicalId)))
@@ -125,8 +125,8 @@ public static class ChemicalAuthorityListBuilder
         }
 
         var baseUrl = sdsBaseUrl.TrimEnd('/');
-        var sdsFileName = SdsFileName(entry, placement.ProductId, options.SdsLanguage);
-        var label = entry?.Labels.FirstOrDefault(l => l.Kind == LabelKind && !string.IsNullOrEmpty(l.FileName));
+        var sds = SdsLink(entry, placement.ProductId, options.SdsLanguage);
+        var label = entry?.Labels.FirstOrDefault(l => l.Kind == ChemicalLabelKinds.Label && !string.IsNullOrEmpty(l.FileName));
 
         return new ChemicalAuthorityListRow(
             lookup.ProductName(placement.ChemicalId),
@@ -140,59 +140,63 @@ public static class ChemicalAuthorityListBuilder
             showQuantity && placement.Unit is { } unit
                 ? $"{ChemicalHistoryDetailsFormatter.Number(placement.Balance)} {ChemicalHistoryDetailsFormatter.Unit(unit)}"
                 : string.Empty,
-            sdsFileName is null
+            sds is null
                 ? string.Empty
-                : $"{baseUrl}/{ChemicalBaseClient.SdsPath}?fileName={Uri.EscapeDataString(sdsFileName)}")
+                : $"{baseUrl}/{ChemicalBaseClient.SdsPath}?fileName={Uri.EscapeDataString(sds.Value.FileName)}")
         {
             PictogramCodes = entry?.HazardPictograms ?? [],
             LabelUrl = label is null
                 ? string.Empty
                 : $"{baseUrl}/{ChemicalBaseClient.LabelPath}?fileName={Uri.EscapeDataString(label.FileName)}",
-            OtherSdsLanguages = options.ListOtherLanguages ? OtherLanguages(entry, options.SdsLanguage, text) : string.Empty,
+            // Only beside a link: "also" says nothing when no sheet is linked.
+            OtherSdsLanguages = options.ListOtherLanguages && sds is not null
+                ? OtherLanguages(entry, sds.Value.Language, text)
+                : string.Empty,
         };
     }
 
-    /// <summary>Proto numbering of ChemicalLabelModel.Kind: 1 = Label (minor-use instructions are never linked).</summary>
-    private const int LabelKind = 1;
-
-    private const string Danish = "da";
+    private const string Danish = ChemicalAuthorityListOptions.DefaultSdsLanguage;
 
     /// <summary>
-    /// The Danish SDS is per product, so the placement's product file comes first and the chemical-level "da" document
-    /// is only the fallback. Another language is taken from the chemical's documents, falling back to the Danish one.
+    /// The SDS to link and the language it is in. Another configured language is taken from the chemical's
+    /// documents; otherwise the Danish SDS: the placement's product file, then any product file, then the
+    /// chemical-level "da" document.
     /// </summary>
-    private static string SdsFileName(ChemicalRegisterEntryModel entry, int? productId, string language)
+    private static (string FileName, string Language)? SdsLink(ChemicalRegisterEntryModel entry, int? productId, string language)
     {
         if (entry is null)
         {
             return null;
         }
 
-        if (!IsLanguage(language, Danish))
+        if (!IsLanguage(language, Danish)
+            && entry.SdsDocuments.FirstOrDefault(d => IsLanguage(d.Language, language) && !string.IsNullOrEmpty(d.FileName)) is { } wanted)
         {
-            var wanted = entry.SdsDocuments.FirstOrDefault(d => IsLanguage(d.Language, language) && !string.IsNullOrEmpty(d.FileName));
-            if (wanted is not null)
-            {
-                return wanted.FileName;
-            }
+            return (wanted.FileName, language.Trim());
         }
 
-        return (entry.Products.FirstOrDefault(p => p.ProductId == productId && !string.IsNullOrEmpty(p.SdsFileName))
-                ?? entry.Products.FirstOrDefault(p => !string.IsNullOrEmpty(p.SdsFileName)))?.SdsFileName
-               ?? entry.SdsDocuments.FirstOrDefault(d => IsLanguage(d.Language, Danish) && !string.IsNullOrEmpty(d.FileName))?.FileName;
+        var danish = ProductSdsFileName(entry, productId) ?? DanishDocumentFileName(entry);
+        return danish is null ? null : (danish, Danish);
     }
 
+    private static string ProductSdsFileName(ChemicalRegisterEntryModel entry, int? productId) =>
+        (entry.Products.FirstOrDefault(p => p.ProductId == productId && !string.IsNullOrEmpty(p.SdsFileName))
+         ?? entry.Products.FirstOrDefault(p => !string.IsNullOrEmpty(p.SdsFileName)))?.SdsFileName;
+
+    private static string DanishDocumentFileName(ChemicalRegisterEntryModel entry) =>
+        entry.SdsDocuments.FirstOrDefault(d => IsLanguage(d.Language, Danish) && !string.IsNullOrEmpty(d.FileName))?.FileName;
+
     /// <summary>"Også: DE, EN": the languages other than the linked one, upper case and sorted; empty when there are none.</summary>
-    private static string OtherLanguages(ChemicalRegisterEntryModel entry, string language, Func<string, string> text)
+    private static string OtherLanguages(ChemicalRegisterEntryModel entry, string linkedLanguage, Func<string, string> text)
     {
-        if (entry is null)
+        var languages = entry.SdsDocuments.Where(d => !string.IsNullOrEmpty(d.FileName)).Select(d => d.Language.Trim()).ToList();
+        if (entry.Products.Any(p => !string.IsNullOrEmpty(p.SdsFileName)))
         {
-            return string.Empty;
+            languages.Add(Danish);
         }
 
-        var others = entry.SdsDocuments.Where(d => !string.IsNullOrEmpty(d.FileName)).Select(d => d.Language.Trim())
-            .Concat(entry.Products.Any(p => !string.IsNullOrEmpty(p.SdsFileName)) ? [Danish] : [])
-            .Where(l => l.Length > 0 && !IsLanguage(l, language))
+        var others = languages
+            .Where(l => l.Length > 0 && !IsLanguage(l, linkedLanguage))
             .Select(l => l.ToUpperInvariant())
             .Distinct()
             .Order(StringComparer.Ordinal)

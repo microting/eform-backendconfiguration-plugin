@@ -48,7 +48,9 @@ public sealed record ChemicalAuthorityListRow(
 public sealed record ChemicalAuthorityListOptions
 {
     /// <summary>The language of the SDS link; the list is a Danish legal document.</summary>
-    public string SdsLanguage { get; init; } = "da";
+    public string SdsLanguage { get; init; } = DefaultSdsLanguage;
+
+    public const string DefaultSdsLanguage = "da";
 
     /// <summary>Print a line with the other languages available under the SDS link.</summary>
     public bool ListOtherLanguages { get; init; } = true;

@@ -173,8 +173,8 @@ internal static class ChemicalsProtoMapper
 
     private static ChemicalLabelKind ToProtoKind(int kind) => kind switch
     {
-        1 => ChemicalLabelKind.Label,
-        2 => ChemicalLabelKind.MinorUse,
+        ChemicalLabelKinds.Label => ChemicalLabelKind.Label,
+        ChemicalLabelKinds.MinorUse => ChemicalLabelKind.MinorUse,
         _ => ChemicalLabelKind.Unspecified,
     };
 

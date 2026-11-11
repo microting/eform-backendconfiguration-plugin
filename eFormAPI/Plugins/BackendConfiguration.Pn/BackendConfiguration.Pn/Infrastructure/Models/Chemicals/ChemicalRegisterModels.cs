@@ -29,6 +29,13 @@ public sealed record ChemicalActiveSubstanceModel(string Name, string CasNo, str
 
 public sealed record ChemicalProductModel(int ProductId, string Name, string Barcode, string SdsFileName, string SdsChecksum);
 
+/// <summary>The proto numbering of <see cref="ChemicalLabelModel.Kind"/> (never the C# ChemicalDocumentType values).</summary>
+public static class ChemicalLabelKinds
+{
+    public const int Label = 1;
+    public const int MinorUse = 2;
+}
+
 /// <summary>A BMD label document of a chemical. <paramref name="Kind"/> uses the proto numbering: 1 = Label, 2 = MinorUse.</summary>
 public sealed record ChemicalLabelModel(string FileName, int Kind, string Packaging, DateTime? RevisionDate, string Revision);
 

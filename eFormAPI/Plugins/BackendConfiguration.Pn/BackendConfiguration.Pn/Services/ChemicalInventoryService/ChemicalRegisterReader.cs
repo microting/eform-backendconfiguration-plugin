@@ -80,7 +80,7 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
 
         var ids = chemicalIds.Distinct().ToArray();
         return await chemicalsDbContext.Chemicals.AsNoTracking()
-            .Where(c => ids.Contains(c.Id) && 
+            .Where(c => ids.Contains(c.Id) &&
                 (c.UpdatedAt > sinceUtc || c.Products.Any(p => p.UpdatedAt > sinceUtc)
                  || chemicalsDbContext.ChemicalDocuments.Any(d => d.ChemicalId == c.Id && d.UpdatedAt > sinceUtc)))
             .Select(c => c.Id)
@@ -146,7 +146,7 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
 
     public async Task<string> FindSdsFileNameAsync(string fileName)
     {
-        var sdsFileName = SdsFileName(fileName);
+        var sdsFileName = DocumentFileName(fileName);
         if (sdsFileName == null)
         {
             return null;
@@ -160,12 +160,12 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
         stored ??= await ServedDocuments().Where(d => d.Type == ChemicalDocumentType.Sds && d.ContentMd5 == sdsFileName)
             .Select(d => d.ContentMd5)
             .FirstOrDefaultAsync().ConfigureAwait(false);
-        return SdsFileName(stored);
+        return DocumentFileName(stored);
     }
 
     public async Task<string> FindLabelFileNameAsync(string fileName)
     {
-        var labelFileName = SdsFileName(fileName);
+        var labelFileName = DocumentFileName(fileName);
         if (labelFileName == null)
         {
             return null;
@@ -174,7 +174,7 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
         var stored = await ServedDocuments().Where(d => LabelTypes.Contains(d.Type) && d.ContentMd5 == labelFileName)
             .Select(d => d.ContentMd5)
             .FirstOrDefaultAsync().ConfigureAwait(false);
-        return SdsFileName(stored);
+        return DocumentFileName(stored);
     }
 
     /// <summary>Tenant document rows the sync keeps current: not removed and Active.</summary>
@@ -212,7 +212,7 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
                 .Where(d => ids.Contains(d.ChemicalId))
                 .OrderBy(d => d.Id)
                 .ToListAsync().ConfigureAwait(false))
-            .Where(d => SdsFileName(d.ContentMd5) != null)
+            .Where(d => DocumentFileName(d.ContentMd5) != null)
             .ToLookup(d => d.ChemicalId);
         return chemicals.Select(c => Map(c, documents[c.Id].ToList())).ToList();
     }
@@ -266,8 +266,8 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
         document.ContentMd5.Trim(),
         document.Type switch
         {
-            ChemicalDocumentType.Label => 1,
-            ChemicalDocumentType.MinorUseInstructions => 2,
+            ChemicalDocumentType.Label => ChemicalLabelKinds.Label,
+            ChemicalDocumentType.MinorUseInstructions => ChemicalLabelKinds.MinorUse,
             _ => throw new ArgumentOutOfRangeException(nameof(document), document.Type, "Not a label document."),
         },
         document.SourcePackaging ?? string.Empty,
@@ -285,7 +285,7 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
     {
         // The SDS file name is the md5 of the document, so it doubles as the
         // version key the app compares: SdsFileName and SdsChecksum are deliberately equal.
-        var sds = SdsFileName(product.FileName) ?? string.Empty;
+        var sds = DocumentFileName(product.FileName) ?? string.Empty;
         return new ChemicalProductModel(product.Id, product.Name ?? string.Empty, product.Barcode ?? string.Empty, sds, sds);
     }
 
@@ -310,8 +310,8 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
         return unit.Length == 0 ? number : $"{number} {unit}";
     }
 
-    /// <summary>The trimmed SDS file name, or null when there is none (blank, or the md5 of an empty upload).</summary>
-    private static string SdsFileName(string fileName)
+    /// <summary>The trimmed document file name (SDS or label md5), or null when there is none (blank, or the md5 of an empty upload).</summary>
+    private static string DocumentFileName(string fileName)
     {
         var name = fileName?.Trim();
         return string.IsNullOrEmpty(name) || string.Equals(name, EmptyContentMd5, StringComparison.OrdinalIgnoreCase) ? null : name;
