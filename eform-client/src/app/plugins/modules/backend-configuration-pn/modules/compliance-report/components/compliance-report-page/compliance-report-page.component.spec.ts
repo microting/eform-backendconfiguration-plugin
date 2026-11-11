@@ -242,6 +242,27 @@ describe('ComplianceReportPageComponent — mode switcher', () => {
     expect(state.mode).toBe('overview');
   });
 
+  it('Home on Oversigt and End on Rapport, already checked, switch nothing', () => {
+    click('report');
+    const setMode = vi.spyOn(state, 'setMode');
+    const toOverview = vi.spyOn(state, 'resetToOverview');
+
+    const end = press('report', 'End');
+
+    expect(end.defaultPrevented).toBe(true);
+    expect(setMode).not.toHaveBeenCalled();
+    expect(state.mode).toBe('report');
+    expect(document.activeElement).toBe(option('report'));
+
+    press('report', 'Home');
+    expect(state.mode).toBe('overview');
+    expect(toOverview).toHaveBeenCalledTimes(1);
+
+    press('overview', 'Home');
+    expect(toOverview).toHaveBeenCalledTimes(1);
+    expect(state.mode).toBe('overview');
+  });
+
   it('other keys leave the mode and the event alone', () => {
     const setMode = vi.spyOn(state, 'setMode');
     const toOverview = vi.spyOn(state, 'resetToOverview');

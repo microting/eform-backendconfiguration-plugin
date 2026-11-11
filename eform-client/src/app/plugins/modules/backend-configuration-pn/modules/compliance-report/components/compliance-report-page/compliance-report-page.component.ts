@@ -159,7 +159,12 @@ export class ComplianceReportPageComponent implements OnInit, OnDestroy {
         return;
     }
     event.preventDefault();
-    this.onModeChange(this.modes[next].mode);
+    // Home on Oversigt or End on Rapport lands on the option already checked:
+    // not a mode change. Re-entering Detaljer/Rapport through `setMode` would
+    // clear the total without a refetch, which disables Download.
+    if (this.modes[next].mode !== this.state.mode) {
+      this.onModeChange(this.modes[next].mode);
+    }
     this.modeOptions?.get(next)?.nativeElement.focus();
   }
 
