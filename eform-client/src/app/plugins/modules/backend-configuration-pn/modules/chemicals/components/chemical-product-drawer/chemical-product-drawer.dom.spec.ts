@@ -8,7 +8,7 @@ import {ToastrService} from 'ngx-toastr';
 import {ChemicalStockEntryKind, ChemicalStockEntryOrigin, ChemicalStockUnit} from '../../../../models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {buildInventoryRows} from '../../helpers';
-import {entry, inventoryOf, location, placement, stockEntry} from '../../helpers/chemical-inventory.fixtures';
+import {entry, inventoryOf, labelOf, location, placement, sdsDocument, stockEntry} from '../../helpers/chemical-inventory.fixtures';
 import {ChemicalProductDrawerComponent} from './chemical-product-drawer.component';
 import {detectChanges} from '../../../../testing/detect-changes';
 
@@ -56,9 +56,6 @@ describe('ChemicalProductDrawerComponent (template)', () => {
     }
   });
 
-  const oneLabel = {fileName: 'lab1', kind: 1, packaging: '', revisionDate: null, revision: ''};
-  const sds = (language: string) => ({language, fileName: `md5${language}`, revisionDate: null, productName: ''});
-
   it('disables the label button without labels (Task 15)', () => {
     render(true);
 
@@ -66,19 +63,19 @@ describe('ChemicalProductDrawerComponent (template)', () => {
   });
 
   it('enables the label button with one label (Task 15)', () => {
-    render(true, {labels: [oneLabel]});
+    render(true, {labels: [labelOf({fileName: 'lab1'})]});
 
     expect((find('#chemicalDrawerLabelBtn') as HTMLButtonElement).disabled).toBe(false);
   });
 
   it('shows no "other languages" button with a single SDS language (Task 15b)', () => {
-    render(true, {sdsDocuments: [sds('da')]});
+    render(true, {sdsDocuments: [sdsDocument('da')]});
 
     expect(find('#chemicalDrawerSdsOthersBtn')).toBeNull();
   });
 
   it('shows the "other languages" button with more than one SDS language (Task 15b)', () => {
-    render(true, {sdsDocuments: [sds('da'), sds('en')]});
+    render(true, {sdsDocuments: [sdsDocument('da'), sdsDocument('en')]});
 
     expect(find('#chemicalDrawerSdsOthersBtn')).not.toBeNull();
   });

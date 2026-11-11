@@ -9,6 +9,7 @@ import {Store} from '@ngrx/store';
 import {TranslateService} from '@ngx-translate/core';
 import {ToastrService} from 'ngx-toastr';
 import {BehaviorSubject, EMPTY, Observable, Subject, of, throwError} from 'rxjs';
+import {ChemicalLabelKind} from '../../../../models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {
   chemicalsInitialState,
@@ -16,7 +17,7 @@ import {
   chemicalsUpdateInventoryFilters,
   selectChemicalsInventoryFilters,
 } from '../../../../state';
-import {inventoryOf, location, placement} from '../../helpers/chemical-inventory.fixtures';
+import {inventoryOf, labelOf, location, placement, sdsDocument} from '../../helpers/chemical-inventory.fixtures';
 import {ChemicalMoveDialogComponent} from '../chemical-move-dialog/chemical-move-dialog.component';
 import {ChemicalNoteDialogComponent} from '../chemical-note-dialog/chemical-note-dialog.component';
 import {ChemicalProductDrawerComponent} from '../chemical-product-drawer/chemical-product-drawer.component';
@@ -41,7 +42,7 @@ describe('ChemicalInventoryPageComponent', () => {
   let filters$: BehaviorSubject<typeof chemicalsInitialState.inventoryFilters>;
   let store: {select: Mock; dispatch: Mock};
   let chemicals: Record<string, Mock>;
-  let toastr: {error: Mock};
+  let toastr: {error: Mock; info: Mock};
   let router: {navigate: Mock; currentNavigation: Mock};
 
   const inventoryFor = (stockEnabled: boolean) => inventoryOf({
@@ -68,7 +69,7 @@ describe('ChemicalInventoryPageComponent', () => {
       getSdsBlob: vi.fn().mockReturnValue(of(new Blob(['%PDF']))),
       getLabelBlob: vi.fn().mockReturnValue(of(new Blob(['%PDF']))),
     };
-    toastr = {error: vi.fn()};
+    toastr = {error: vi.fn(), info: vi.fn()};
     router = {navigate: vi.fn().mockResolvedValue(true), currentNavigation: vi.fn().mockReturnValue(null)};
     const injector = Injector.create({providers: [
       {provide: Store, useValue: store},
@@ -79,7 +80,7 @@ describe('ChemicalInventoryPageComponent', () => {
       {provide: DestroyRef, useValue: {onDestroy: vi.fn()}},
       {provide: ToastrService, useValue: toastr},
       {provide: Router, useValue: router},
-      {provide: TranslateService, useValue: {instant: (k: string) => k, stream: (k: string) => of(k), currentLang: opts.lang ?? 'da'}},
+      {provide: TranslateService, useValue: {instant: (k: string) => k, stream: (k: string) => of(k), getCurrentLang: () => opts.lang ?? 'da', getFallbackLang: () => 'da'}},
     ]});
     const component = runInInjectionContext(injector, () => new ChemicalInventoryPageComponent());
     component.ngOnInit();
@@ -287,15 +288,19 @@ describe('ChemicalInventoryPageComponent', () => {
   });
 
   describe('SDS in the user language and labels (Task 15, 15b)', () => {
-    const sds = (language: string) => ({language, fileName: `md5${language}`, revisionDate: null, productName: ''});
-    const label = (fileName: string, kind = 1, packaging = '') => ({fileName, kind, packaging, revisionDate: null, revision: ''});
+    // The downloads open a tab first; a stub keeps the spec off the real window.
+    beforeEach(() => {
+      vi.spyOn(window, 'open').mockReturnValue({location: {href: ''}, close: vi.fn()} as unknown as Window);
+    });
+    afterEach(() => vi.restoreAllMocks());
+
     const rowWith = (component: ChemicalInventoryPageComponent, partial: object) =>
       ({...component.rows[0], entry: {products: [{productId: 1, sdsFileName: 'sds200'}], ...component.rows[0].entry, ...partial}}) as unknown as typeof component.rows[0];
 
     it('opens the SDS in the language of the eForm user', () => {
       const component = build({}, {lang: 'en-US'});
 
-      component.openSds(rowWith(component, {sdsDocuments: [sds('da'), sds('en')]}));
+      component.openSds(rowWith(component, {sdsDocuments: [sdsDocument('da'), sdsDocument('en')]}));
 
       expect(chemicals.getSdsBlob).toHaveBeenCalledWith('md5en');
     });
@@ -303,7 +308,7 @@ describe('ChemicalInventoryPageComponent', () => {
     it('falls back to Danish when the user language has no SDS', () => {
       const component = build({}, {lang: 'de-DE'});
 
-      component.openSds(rowWith(component, {sdsDocuments: [sds('sv'), sds('da'), sds('en')]}));
+      component.openSds(rowWith(component, {sdsDocuments: [sdsDocument('sv'), sdsDocument('da'), sdsDocument('en')]}));
 
       expect(chemicals.getSdsBlob).toHaveBeenCalledWith('md5da');
     });
@@ -318,7 +323,7 @@ describe('ChemicalInventoryPageComponent', () => {
 
     it('lists the other languages for the "Andre sprog" menu and opens the chosen one', () => {
       const component = build({}, {lang: 'en-US'});
-      const row = rowWith(component, {sdsDocuments: [sds('sv'), sds('da'), sds('en')]});
+      const row = rowWith(component, {sdsDocuments: [sdsDocument('sv'), sdsDocument('da'), sdsDocument('en')]});
 
       expect(component.otherSdsDocuments(row).map((d) => d.language)).toEqual(['da', 'sv']);
       component.openSdsDocument(component.otherSdsDocuments(row)[1]);
@@ -326,16 +331,27 @@ describe('ChemicalInventoryPageComponent', () => {
       expect(chemicals.getSdsBlob).toHaveBeenCalledWith('md5sv');
     });
 
+    it('lists a language once with the newest sheet and never the user\'s own language (no duplicate menu ids)', () => {
+      const component = build({}, {lang: 'en-US'});
+      const row = rowWith(component, {sdsDocuments: [
+        sdsDocument('sv', {fileName: 'sv-old', revisionDate: '2025-01-01T00:00:00Z'}),
+        sdsDocument('sv', {fileName: 'sv-new', revisionDate: '2026-01-01T00:00:00Z'}),
+        sdsDocument('en', {fileName: 'en-a'}), sdsDocument('en', {fileName: 'en-b'}),
+      ]});
+
+      expect(component.otherSdsDocuments(row).map((d) => d.fileName)).toEqual(['sv-new']);
+    });
+
     it('has no other languages with a single SDS or without SDS documents', () => {
       const component = build({}, {lang: 'en-US'});
 
-      expect(component.otherSdsDocuments(rowWith(component, {sdsDocuments: [sds('en')]}))).toEqual([]);
+      expect(component.otherSdsDocuments(rowWith(component, {sdsDocuments: [sdsDocument('en')]}))).toEqual([]);
       expect(component.otherSdsDocuments(rowWith(component, {sdsDocuments: undefined}))).toEqual([]);
     });
 
     it('opens the one label of a row directly', () => {
       const component = build();
-      const row = rowWith(component, {labels: [label('lab1')]});
+      const row = rowWith(component, {labels: [labelOf({fileName: 'lab1'})]});
 
       expect(component.labelsOf(row)).toHaveLength(1);
       component.openLabel(row);
@@ -345,7 +361,7 @@ describe('ChemicalInventoryPageComponent', () => {
 
     it('lists several labels for a menu and opens the chosen one', () => {
       const component = build();
-      const row = rowWith(component, {labels: [label('lab1', 1, '5 L'), label('lab2', 2)]});
+      const row = rowWith(component, {labels: [labelOf({fileName: 'lab1', packaging: '5 L'}), labelOf({fileName: 'lab2', kind: ChemicalLabelKind.MinorUse})]});
 
       expect(component.labelsOf(row).map((l) => l.fileName)).toEqual(['lab1', 'lab2']);
       expect(component.labelText(component.labelsOf(row)[0])).toBe('Chemicals: Label ({{packaging}})');
@@ -365,7 +381,7 @@ describe('ChemicalInventoryPageComponent', () => {
       const component = build();
       chemicals.getLabelBlob.mockReturnValue(throwError(() => new Error('404')));
 
-      component.openLabelFile(label('lab1') as never);
+      component.openLabelFile(labelOf({fileName: 'lab1'}));
 
       expect(toastr.error).toHaveBeenCalledWith('Chemicals: Could not open label');
     });

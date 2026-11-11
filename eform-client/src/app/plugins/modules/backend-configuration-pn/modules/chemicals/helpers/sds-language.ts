@@ -13,13 +13,13 @@ function languagePart(locale: string | null | undefined): string {
 }
 
 /** UI locale "da-DK" / "en-US" / "nb-NO" -> ISO 639-1 of a language the eForm UI has, else "". */
-export function toIso6391(locale: string): string {
+export function toIso6391(locale: string | null | undefined): string {
   const code = languagePart(locale);
   return KNOWN_LANGUAGES.has(code) ? code : '';
 }
 
 /** The SDS of the user's language; else Danish, then English, then the first one; undefined without documents. */
-export function pickSds(docs: ChemicalSdsDocumentModel[], uiLocale: string): ChemicalSdsDocumentModel | undefined {
+export function pickSds(docs: ChemicalSdsDocumentModel[] | null | undefined, uiLocale: string | null | undefined): ChemicalSdsDocumentModel | undefined {
   if (!docs?.length) {
     return undefined;
   }
@@ -28,13 +28,13 @@ export function pickSds(docs: ChemicalSdsDocumentModel[], uiLocale: string): Che
 }
 
 /** The documents the "Andre sprog" menu lists: every one but the picked one, by language code. */
-export function otherSdsDocuments(docs: ChemicalSdsDocumentModel[], uiLocale: string): ChemicalSdsDocumentModel[] {
+export function otherSdsDocuments(docs: ChemicalSdsDocumentModel[] | null | undefined, uiLocale: string | null | undefined): ChemicalSdsDocumentModel[] {
   const picked = pickSds(docs, uiLocale);
   return (docs ?? []).filter((d) => d !== picked).sort((a, b) => a.language.localeCompare(b.language));
 }
 
 /** What the SDS button opens: the document in the user's language, else (old data) the product's own sheet. */
-export function sdsFileNameForLocale(row: ChemicalInventoryRow, uiLocale: string): string | null {
+export function sdsFileNameForLocale(row: ChemicalInventoryRow, uiLocale: string | null | undefined): string | null {
   return pickSds(row.entry?.sdsDocuments ?? [], uiLocale)?.fileName ?? sdsFileNameFor(row);
 }
 
@@ -48,4 +48,9 @@ export function sdsLanguageText(code: string, translate: {instant(key: string): 
   const key = sdsLanguageKey(code);
   const text = translate.instant(key);
   return text && text !== key ? text : (code ?? '').toUpperCase();
+}
+
+/** Stub: implemented after the red CI run. */
+export function currentUiLocale(_translate: {getCurrentLang(): string | undefined; getFallbackLang(): string | null}): string {
+  return undefined;
 }

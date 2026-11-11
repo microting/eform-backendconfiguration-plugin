@@ -1,14 +1,13 @@
 import {describe, it, expect} from 'vitest';
-import {ChemicalLabelKind, ChemicalLabelModel} from '../../../models';
-import {entry} from './chemical-inventory.fixtures';
+import {ChemicalLabelKind} from '../../../models';
+import {entry, labelOf} from './chemical-inventory.fixtures';
 import {labelOptionText, labelsOf} from './chemical-labels';
 
 /** Echoes the key with its parameters filled in, like ngx-translate with the English keys. */
 const translate = {
   instant: (key: string, params: Record<string, string> = {}) => key.replace(/{{(\w+)}}/g, (_m, name) => params[name]),
 };
-const label = (partial: Partial<ChemicalLabelModel> = {}): ChemicalLabelModel =>
-  ({fileName: 'md5lab', kind: ChemicalLabelKind.Label, packaging: '', revisionDate: null, revision: '', ...partial});
+const label = labelOf;
 
 describe('labelsOf', () => {
   it('lists the labels of an entry', () => {
@@ -31,7 +30,22 @@ describe('labelOptionText', () => {
   });
 
   it('names a minor-use document by its kind', () => {
-    expect(labelOptionText(label({kind: ChemicalLabelKind.MinorUse, packaging: '5 L'}), translate)).toBe('Chemicals: Minor use');
+    expect(labelOptionText(label({kind: ChemicalLabelKind.MinorUse}), translate)).toBe('Chemicals: Minor use');
+  });
+
+  it('shows the packaging of a minor-use document too, so two of them are told apart', () => {
+    expect(labelOptionText(label({kind: ChemicalLabelKind.MinorUse, packaging: '5 L'}), translate)).toBe('Chemicals: Minor use (5 L)');
+    expect(labelOptionText(label({kind: ChemicalLabelKind.MinorUse, packaging: '1 L'}), translate))
+      .not.toBe(labelOptionText(label({kind: ChemicalLabelKind.MinorUse, packaging: '5 L'}), translate));
+  });
+
+  it('falls back to the revision when there is no revision date', () => {
+    expect(labelOptionText(label({packaging: '5 L', revision: 'III'}), translate)).toBe('Chemicals: Label (5 L) · III');
+    expect(labelOptionText(label({revision: 'III'}), translate)).toBe('Chemicals: Label · III');
+  });
+
+  it('prefers the revision date over the revision', () => {
+    expect(labelOptionText(label({revisionDate: '2026-03-01T00:00:00Z', revision: 'III'}), translate)).toBe('Chemicals: Label · 01-03-2026');
   });
 
   it('appends the revision date as dd-MM-yyyy', () => {

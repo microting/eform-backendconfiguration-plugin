@@ -270,6 +270,8 @@ export const CHEMICAL_I18N_KEYS: string[] = [
   'Chemicals: Label',
   'Chemicals: Label ({{packaging}})',
   'Chemicals: Minor use',
+  'Chemicals: Minor use ({{packaging}})',
+  'Chemicals: Pop-up blocked, file downloaded',
   'Chemicals: Other languages',
   'Chemicals: Language da',
   'Chemicals: Language en',

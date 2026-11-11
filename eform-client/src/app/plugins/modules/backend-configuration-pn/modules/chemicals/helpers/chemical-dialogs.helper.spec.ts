@@ -1,4 +1,4 @@
-import {describe, it, expect, beforeEach, vi} from 'vitest';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {HttpErrorResponse} from '@angular/common/http';
 import {EMPTY, Subject, of, throwError} from 'rxjs';
 import {closeWhenSaved, downloadFailureText, openChemicalLabel, openSafetyDataSheet} from './chemical-dialogs.helper';
@@ -32,84 +32,115 @@ describe('closeWhenSaved (shared save/busy/close of the Kemi dialogs)', () => {
   });
 });
 
-describe('openChemicalLabel (shared by W1 and the W2 side panel)', () => {
-  const toastr = {error: vi.fn()};
+describe.each([
+  ['openSafetyDataSheet', 'getSdsBlob', 'Chemicals: Could not open safety data sheet',
+    (api: any, toastr: any, translate: any, name: string) => openSafetyDataSheet(api, toastr, translate, name)],
+  ['openChemicalLabel', 'getLabelBlob', 'Chemicals: Could not open label',
+    (api: any, toastr: any, translate: any, name: string) => openChemicalLabel(api, toastr, translate, name)],
+])('%s (shared by W1 and the W2 side panel)', (_name, method, failureKey, run) => {
+  const toastr = {error: vi.fn(), info: vi.fn()};
   const translate = {instant: (key: string) => key};
+  const api = (answer: unknown) => ({[method]: vi.fn().mockReturnValue(answer)});
+  let createObjectURL: ReturnType<typeof vi.fn>;
+  let revokeObjectURL: ReturnType<typeof vi.fn>;
+  let tab: {location: {href: string}; close: ReturnType<typeof vi.fn>};
 
-  beforeEach(() => toastr.error.mockClear());
-
-  it('opens the fetched label in a new tab', () => {
-    const open = vi.spyOn(window, 'open').mockReturnValue(null);
-    Object.defineProperty(URL, 'createObjectURL', {value: vi.fn().mockReturnValue('blob:label'), configurable: true});
-    const labels = {getLabelBlob: vi.fn().mockReturnValue(of(new Blob(['%PDF'])))};
-
-    openChemicalLabel(labels, toastr, translate, 'lab1');
-
-    expect(labels.getLabelBlob).toHaveBeenCalledWith('lab1');
-    expect(open).toHaveBeenCalledWith('blob:label', '_blank');
-    expect(toastr.error).not.toHaveBeenCalled();
-    open.mockRestore();
-  });
-
-  it('toasts a fixed localized text when the label cannot be fetched', () => {
-    const labels = {getLabelBlob: vi.fn().mockReturnValue(throwError(() => new Error('404 technical')))};
-
-    openChemicalLabel(labels, toastr, translate, 'lab1');
-
-    expect(toastr.error).toHaveBeenCalledWith('Chemicals: Could not open label');
-  });
-
-  it('toasts the same text when the request completes without a label', () => {
-    const open = vi.spyOn(window, 'open').mockReturnValue(null);
-
-    openChemicalLabel({getLabelBlob: vi.fn().mockReturnValue(EMPTY)}, toastr, translate, 'lab1');
-
-    expect(open).not.toHaveBeenCalled();
-    expect(toastr.error).toHaveBeenCalledTimes(1);
-    open.mockRestore();
-  });
-});
-
-describe('openSafetyDataSheet (shared by W1 and the W2 side panel)', () => {
-  const toastr = {error: vi.fn()};
-  const translate = {instant: (key: string) => key};
-
-  beforeEach(() => toastr.error.mockClear());
-
-  it('opens the fetched sheet in a new tab', () => {
-    const open = vi.spyOn(window, 'open').mockReturnValue(null);
-    const createObjectURL = vi.fn().mockReturnValue('blob:sds');
+  beforeEach(() => {
+    vi.useFakeTimers();
+    toastr.error.mockClear();
+    toastr.info.mockClear();
+    createObjectURL = vi.fn().mockReturnValue('blob:pdf');
+    revokeObjectURL = vi.fn();
     Object.defineProperty(URL, 'createObjectURL', {value: createObjectURL, configurable: true});
-    const sds = {getSdsBlob: vi.fn().mockReturnValue(of(new Blob(['%PDF'])))};
+    Object.defineProperty(URL, 'revokeObjectURL', {value: revokeObjectURL, configurable: true});
+    tab = {location: {href: ''}, close: vi.fn()};
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
 
-    openSafetyDataSheet(sds, toastr, translate, 'sds200');
+  it('opens the tab synchronously in the click, before the download answers', () => {
+    const open = vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
+    const answer = new Subject<Blob>();
 
-    expect(sds.getSdsBlob).toHaveBeenCalledWith('sds200');
-    expect(open).toHaveBeenCalledWith('blob:sds', '_blank');
+    run(api(answer), toastr, translate, 'file1');
+
+    expect(open).toHaveBeenCalledWith('', '_blank');
+    expect(tab.location.href).toBe('');
+    answer.next(new Blob(['%PDF']));
+    answer.complete();
+    expect(tab.location.href).toBe('blob:pdf');
     expect(toastr.error).not.toHaveBeenCalled();
-    open.mockRestore();
+    expect(toastr.info).not.toHaveBeenCalled();
   });
 
-  it('toasts a fixed localized text when the sheet cannot be fetched (the host shows nothing for a blob error)', () => {
-    const sds = {getSdsBlob: vi.fn().mockReturnValue(throwError(() => new Error('404 technical')))};
+  it('asks the service for the file', () => {
+    vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
+    const service = api(of(new Blob(['%PDF'])));
 
-    openSafetyDataSheet(sds, toastr, translate, 'sds200');
+    run(service, toastr, translate, 'file1');
 
-    expect(toastr.error).toHaveBeenCalledWith('Chemicals: Could not open safety data sheet');
+    expect((service as Record<string, ReturnType<typeof vi.fn>>)[method]).toHaveBeenCalledWith('file1');
   });
 
-  it('toasts the same text when the request completes without a sheet (the host ends a 5xx or network failure with EMPTY)', () => {
-    const open = vi.spyOn(window, 'open').mockReturnValue(null);
-    const sds = {getSdsBlob: vi.fn().mockReturnValue(EMPTY)};
+  it('revokes the object URL after about a minute', () => {
+    vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
 
-    openSafetyDataSheet(sds, toastr, translate, 'sds200');
+    run(api(of(new Blob(['%PDF']))), toastr, translate, 'file1');
 
-    expect(open).not.toHaveBeenCalled();
+    expect(revokeObjectURL).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(60_000);
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:pdf');
+  });
+
+  it('falls back to a download with a toast when the pop-up is blocked', () => {
+    vi.spyOn(window, 'open').mockReturnValue(null);
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      expect(this.download).toBe('file1.pdf');
+      expect(this.href).toContain('blob:pdf');
+    });
+
+    run(api(of(new Blob(['%PDF']))), toastr, translate, 'file1');
+
+    expect(click).toHaveBeenCalledTimes(1);
+    expect(toastr.info).toHaveBeenCalledWith('Chemicals: Pop-up blocked, file downloaded');
+    expect(toastr.error).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(60_000);
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:pdf');
+  });
+
+  it('closes the tab and toasts a fixed localized text when the file cannot be fetched', () => {
+    vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
+
+    run(api(throwError(() => new Error('404 technical'))), toastr, translate, 'file1');
+
+    expect(tab.close).toHaveBeenCalledTimes(1);
     expect(toastr.error).toHaveBeenCalledTimes(1);
-    expect(toastr.error).toHaveBeenCalledWith('Chemicals: Could not open safety data sheet');
-    open.mockRestore();
+    expect(toastr.error).toHaveBeenCalledWith(failureKey);
+    expect(createObjectURL).not.toHaveBeenCalled();
+  });
+
+  it('closes the tab and toasts the same text when the request completes without a file (the host ends a 5xx with EMPTY)', () => {
+    vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
+
+    run(api(EMPTY), toastr, translate, 'file1');
+
+    expect(tab.close).toHaveBeenCalledTimes(1);
+    expect(toastr.error).toHaveBeenCalledTimes(1);
+    expect(toastr.error).toHaveBeenCalledWith(failureKey);
+  });
+
+  it('toasts the failure without a tab when the pop-up was blocked and the file cannot be fetched', () => {
+    vi.spyOn(window, 'open').mockReturnValue(null);
+
+    run(api(throwError(() => new Error('404'))), toastr, translate, 'file1');
+
+    expect(toastr.error).toHaveBeenCalledWith(failureKey);
+    expect(toastr.info).not.toHaveBeenCalled();
   });
 });
+
 
 describe('downloadFailureText (shared by the W1 exports and the W6 Excel)', () => {
   const translate = {instant: (key: string) => key};

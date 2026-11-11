@@ -6,7 +6,7 @@ import {
   ChemicalScreen,
   kemiProperty,
 } from '../BackendConfigurationChemicals.page';
-import { isoDateFromToday, propertyIdByName, seedRegisterChemical, seedRegisterDocument, setAdminLocale, STUB_PDF } from '../chemical-register-seed';
+import { getAdminLocale, isoDateFromToday, propertyIdByName, seedRegisterChemical, seedRegisterDocument, setAdminLocale, STUB_PDF } from '../chemical-register-seed';
 import { API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from '../wait-helpers';
 import { clickMenuItem } from '../row-action-menu';
 import { dialogReady, fillInDialog } from '../dialog-helpers';
@@ -45,6 +45,14 @@ const documentResponse = (page: Page, kind: 'label' | 'sds', md5: string) =>
 const open = (page: Page, screen: ChemicalScreen) => BackendConfigurationChemicalsPage.openLoggedIn(page, screen, property.name);
 
 test.describe.serial('Kemi W1/W2 - inventory', () => {
+  // The en-US case changes the admin's UI language; the restore runs after the whole serial block, also when a test failed or timed out.
+  let originalLocale: string | undefined;
+  test.afterAll(async () => {
+    if (originalLocale !== undefined) {
+      await setAdminLocale(originalLocale);
+    }
+  });
+
   test('seed: two register products, a property and two locations', async ({ page }) => {
     test.setTimeout(180000);
     const approvedId = await seedRegisterChemical({ name: approved, registrationNo: `1-${rand}`, status: 5 });
@@ -137,33 +145,40 @@ test.describe.serial('Kemi W1/W2 - inventory', () => {
     const response = documentResponse(page, 'label', LABEL_MD5);
     await page.locator('#chemicalDrawerLabelBtn').click({ timeout: UI_TIMEOUT });
     expect((await response).headers()['content-type']).toContain('application/pdf');
+
+    // "Andre sprog" of the panel: the user language is Danish here, so English is the other one.
+    await page.locator('#chemicalDrawerSdsOthersBtn').click({ timeout: UI_TIMEOUT });
+    const others = page.locator('.cdk-overlay-container [id^="chemicalDrawerSdsOther-"]');
+    await expect(others).toHaveCount(1, { timeout: UI_TIMEOUT });
+    await expect(others.first()).toHaveAttribute('id', 'chemicalDrawerSdsOther-en', { timeout: UI_TIMEOUT });
+    const english = documentResponse(page, 'sds', SDS_EN_MD5);
+    await others.first().click({ timeout: UI_TIMEOUT });
+    expect((await english).headers()['content-type']).toContain('application/pdf');
     await page.locator('#chemicalDrawerCloseBtn').click({ timeout: UI_TIMEOUT });
     await page.locator('#chemicalDrawer').waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
   });
 
   test('Task 15b: with the user locale en-US the SDS opens in English; "Andre sprog" offers the Danish one', async ({ page }) => {
     test.setTimeout(180000);
+    originalLocale ??= await getAdminLocale();
     await setAdminLocale('en-US');
-    try {
-      await stubDocumentDownloads(page);
-      const kemi = await open(page, 'inventory');
+    await stubDocumentDownloads(page);
+    const kemi = await open(page, 'inventory');
 
-      const menu = await kemi.openInventoryRowMenu(approved);
-      const english = documentResponse(page, 'sds', SDS_EN_MD5);
-      await clickMenuItem(page, menu('chemicalRowSds'), 'the SDS item');
-      expect((await english).headers()['content-type']).toContain('application/pdf');
+    const menu = await kemi.openInventoryRowMenu(approved);
+    const english = documentResponse(page, 'sds', SDS_EN_MD5);
+    await clickMenuItem(page, menu('chemicalRowSds'), 'the SDS item');
+    expect((await english).headers()['content-type']).toContain('application/pdf');
 
-      const again = await kemi.openInventoryRowMenu(approved);
-      await again('chemicalRowSdsOthers').click({ timeout: UI_TIMEOUT });
-      const others = page.locator('.cdk-overlay-container [id^="chemicalRowSdsOther-"]');
-      await expect(others).toHaveCount(1, { timeout: UI_TIMEOUT });
-      await expect(others.first()).toHaveAttribute('id', /-da$/, { timeout: UI_TIMEOUT });
-      const danish = documentResponse(page, 'sds', SDS_DA_MD5);
-      await clickMenuItem(page, others.first(), 'the Danish SDS item');
-      expect((await danish).headers()['content-type']).toContain('application/pdf');
-    } finally {
-      await setAdminLocale('da');
-    }
+    const again = await kemi.openInventoryRowMenu(approved);
+    await again('chemicalRowSdsOthers').click({ timeout: UI_TIMEOUT });
+    const others = page.locator('.cdk-overlay-container [id^="chemicalRowSdsOther-"]');
+    await expect(others).toHaveCount(1, { timeout: UI_TIMEOUT });
+    await expect(others.first()).toHaveAttribute('id', /-da$/, { timeout: UI_TIMEOUT });
+    const danish = documentResponse(page, 'sds', SDS_DA_MD5);
+    await clickMenuItem(page, others.first(), 'the Danish SDS item');
+    expect((await danish).headers()['content-type']).toContain('application/pdf');
+    await setAdminLocale(originalLocale);
   });
 
   test('side panel -> remove with the hazardous-waste warning', async ({ page }) => {

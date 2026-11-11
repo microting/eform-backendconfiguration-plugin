@@ -144,15 +144,28 @@ export async function seedRegisterDocument(seed: RegisterDocumentSeed): Promise<
 /** A PDF response the specs hand to the browser in place of the chemicalbase proxy. */
 export const STUB_PDF = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n');
 
-/** Sets the UI language of the seeded admin (the user setting the SDS language follows); throws unless one login changed. */
+const ADMIN_EMAIL = 'admin@admin.com';
+
+/** The UI language (Users.Locale) of the seeded admin; throws unless exactly one login matches. */
+export async function getAdminLocale(): Promise<string> {
+  const out = await runMariadbSql(
+    `SELECT Locale FROM Users WHERE Email = '${ADMIN_EMAIL}'`, 'read the admin locale', customerDatabase('Angular'));
+  const rows = out.split('\n').filter((line) => line !== '');
+  if (rows.length !== 1) {
+    throw new Error(`getAdminLocale: expected one login ${ADMIN_EMAIL}, got '${out}'`);
+  }
+  return rows[0].trim();
+}
+
+/**
+ * Sets the UI language of the seeded admin (the user setting the SDS language follows). Idempotent: it matches the
+ * login first, so setting the value it already has (e.g. a restore after a leaked change) is not an error.
+ */
 export async function setAdminLocale(locale: string): Promise<void> {
-  if (!/^[a-z]{2}(-[A-Z]{2})?$/.test(locale)) {
+  if (!/^[A-Za-z]{2}(-[A-Za-z]{2})?$/.test(locale)) {
     throw new Error(`setAdminLocale: '${locale}' is not a locale`);
   }
-  const out = await runMariadbSql(
-    `UPDATE Users SET Locale = '${locale}' WHERE Email = 'admin@admin.com'; SELECT ROW_COUNT();`,
-    `set the admin locale to ${locale}`, customerDatabase('Angular'));
-  if (out.trim() !== '1') {
-    throw new Error(`setAdminLocale: expected one login to change, got '${out}'`);
-  }
+  await getAdminLocale();
+  await runMariadbSql(
+    `UPDATE Users SET Locale = '${locale}' WHERE Email = '${ADMIN_EMAIL}'`, `set the admin locale to ${locale}`, customerDatabase('Angular'));
 }
