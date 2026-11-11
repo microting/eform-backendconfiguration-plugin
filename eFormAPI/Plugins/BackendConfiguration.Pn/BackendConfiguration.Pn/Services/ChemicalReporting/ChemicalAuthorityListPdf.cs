@@ -100,14 +100,19 @@ public static class ChemicalAuthorityListPdf
                     }
 
                     // Only the short link text: the address is in the link (printed, it wrapped over many lines).
-                    var sds = BodyCell(table);
-                    if (string.IsNullOrEmpty(row.SdsUrl))
+                    SdsCell(BodyCell(table), row, document.SdsLinkText);
+
+                    if (!string.IsNullOrEmpty(document.LabelLinkText))
                     {
-                        sds.Text(string.Empty);
-                    }
-                    else
-                    {
-                        sds.Hyperlink(row.SdsUrl).Text(document.SdsLinkText).FontColor(Colors.Blue.Darken2).Underline();
+                        var label = BodyCell(table);
+                        if (string.IsNullOrEmpty(row.LabelUrl))
+                        {
+                            label.Text(string.Empty);
+                        }
+                        else
+                        {
+                            label.Hyperlink(row.LabelUrl).Text(document.LabelLinkText).FontColor(Colors.Blue.Darken2).Underline();
+                        }
                     }
                 }
             });
@@ -119,6 +124,29 @@ public static class ChemicalAuthorityListPdf
                 text.TotalPages();
             });
         })).GeneratePdf();
+
+    /// <summary>The SDS link, and under it a short line with the other languages available (no links).</summary>
+    private static void SdsCell(IContainer cell, ChemicalAuthorityListRow row, string linkText)
+    {
+        if (string.IsNullOrEmpty(row.SdsUrl) && string.IsNullOrEmpty(row.OtherSdsLanguages))
+        {
+            cell.Text(string.Empty);
+            return;
+        }
+
+        cell.Column(column =>
+        {
+            if (!string.IsNullOrEmpty(row.SdsUrl))
+            {
+                column.Item().Hyperlink(row.SdsUrl).Text(linkText).FontColor(Colors.Blue.Darken2).Underline();
+            }
+
+            if (!string.IsNullOrEmpty(row.OtherSdsLanguages))
+            {
+                column.Item().Text(row.OtherSdsLanguages).FontSize(7).FontColor(Colors.Grey.Darken2);
+            }
+        });
+    }
 
     private static IContainer BodyCell(TableDescriptor table) =>
         table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(CellPadding);

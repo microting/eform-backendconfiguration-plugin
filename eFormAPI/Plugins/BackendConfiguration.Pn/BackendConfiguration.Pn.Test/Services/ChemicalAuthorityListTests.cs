@@ -283,7 +283,7 @@ public class ChemicalAuthorityListTests
         ["ChemicalColumnSignalWord"] = "Signalord", ["ChemicalColumnPictograms"] = "Farepiktogrammer",
         ["ChemicalColumnHazardStatements"] = "Faresætninger", ["ChemicalColumnLocation"] = "Lokation",
         ["ChemicalColumnPlacement"] = "Placering", ["ChemicalColumnDeadlines"] = "Frister", ["ChemicalColumnQuantity"] = "Mængde",
-        ["ChemicalColumnSds"] = "Sikkerhedsdatablad",
+        ["ChemicalColumnSds"] = "Sikkerhedsdatablad", ["ChemicalColumnLabel"] = "Etiket",
     };
 
     /// <summary>

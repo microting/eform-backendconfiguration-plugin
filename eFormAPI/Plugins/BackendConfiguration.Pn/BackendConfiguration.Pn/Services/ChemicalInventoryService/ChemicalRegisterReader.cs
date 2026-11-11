@@ -29,6 +29,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ChemicalsBase.Infrastructure;
 using ChemicalsBase.Infrastructure.Data.Entities;
+using ChemicalsBase.Infrastructure.Data.Enums;
 using Infrastructure.Models.Chemicals;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
@@ -50,6 +51,12 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
     private static readonly Regex HazardCode = new(@"\s*\(((?:EU)?H\s?[0-9A-Za-z+]+)\)\s*$", RegexOptions.Compiled);
 
     private static readonly Expression<Func<Chemical, bool>> IsActiveChemical = c => c.WorkflowState != Removed;
+
+    private static readonly ChemicalDocumentType[] LabelTypes =
+        [ChemicalDocumentType.Label, ChemicalDocumentType.MinorUseInstructions];
+
+    private static readonly Expression<Func<ChemicalDocument, bool>> IsServedDocument =
+        d => d.WorkflowState != Removed && d.Status == ChemicalDocumentStatus.Active;
 
     private static readonly Expression<Func<Product, bool>> IsActiveProduct = p => p.WorkflowState != Removed;
 
@@ -73,7 +80,9 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
 
         var ids = chemicalIds.Distinct().ToArray();
         return await chemicalsDbContext.Chemicals.AsNoTracking()
-            .Where(c => ids.Contains(c.Id) && (c.UpdatedAt > sinceUtc || c.Products.Any(p => p.UpdatedAt > sinceUtc)))
+            .Where(c => ids.Contains(c.Id) && 
+                (c.UpdatedAt > sinceUtc || c.Products.Any(p => p.UpdatedAt > sinceUtc)
+                 || chemicalsDbContext.ChemicalDocuments.Any(d => d.ChemicalId == c.Id && d.UpdatedAt > sinceUtc)))
             .Select(c => c.Id)
             .ToListAsync().ConfigureAwait(false);
     }
@@ -147,10 +156,30 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
             .Where(p => p.FileName == sdsFileName)
             .Select(p => p.FileName)
             .FirstOrDefaultAsync().ConfigureAwait(false);
+        // A per-language SDS is known by its tenant document row; the product's own file stays the Danish one.
+        stored ??= await ServedDocuments().Where(d => d.Type == ChemicalDocumentType.Sds && d.ContentMd5 == sdsFileName)
+            .Select(d => d.ContentMd5)
+            .FirstOrDefaultAsync().ConfigureAwait(false);
         return SdsFileName(stored);
     }
 
-    public Task<string> FindLabelFileNameAsync(string fileName) => throw new NotImplementedException();
+    public async Task<string> FindLabelFileNameAsync(string fileName)
+    {
+        var labelFileName = SdsFileName(fileName);
+        if (labelFileName == null)
+        {
+            return null;
+        }
+
+        var stored = await ServedDocuments().Where(d => LabelTypes.Contains(d.Type) && d.ContentMd5 == labelFileName)
+            .Select(d => d.ContentMd5)
+            .FirstOrDefaultAsync().ConfigureAwait(false);
+        return SdsFileName(stored);
+    }
+
+    /// <summary>Tenant document rows the sync keeps current: not removed and Active.</summary>
+    private IQueryable<ChemicalDocument> ServedDocuments() =>
+        chemicalsDbContext.ChemicalDocuments.AsNoTracking().Where(IsServedDocument);
 
     private IQueryable<Product> ActiveProducts() => chemicalsDbContext.Products.AsNoTracking().Where(IsActiveProduct);
 
@@ -175,17 +204,25 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
     private static IOrderedQueryable<Chemical> ByName(IQueryable<Chemical> query) =>
         query.OrderBy(c => c.Name).ThenBy(c => c.Id);
 
-    private static async Task<IReadOnlyList<ChemicalRegisterEntryModel>> LoadAsync(IQueryable<Chemical> query)
+    private async Task<IReadOnlyList<ChemicalRegisterEntryModel>> LoadAsync(IQueryable<Chemical> query)
     {
         var chemicals = await ByName(query).ToListAsync().ConfigureAwait(false);
-        return chemicals.Select(Map).ToList();
+        var ids = chemicals.Select(c => c.Id).ToArray();
+        var documents = (await ServedDocuments()
+                .Where(d => ids.Contains(d.ChemicalId))
+                .OrderBy(d => d.Id)
+                .ToListAsync().ConfigureAwait(false))
+            .Where(d => SdsFileName(d.ContentMd5) != null)
+            .ToLookup(d => d.ChemicalId);
+        return chemicals.Select(c => Map(c, documents[c.Id].ToList())).ToList();
     }
 
     private static bool IsActive(BaseEntity entity) => entity.WorkflowState != Removed;
 
-    private static ChemicalRegisterEntryModel Map(Chemical chemical)
+    private static ChemicalRegisterEntryModel Map(Chemical chemical, IReadOnlyList<ChemicalDocument> documents)
     {
         var clp = chemical.ClassificationAndLabeling?.CLP;
+        var productNames = (chemical.Products ?? []).Where(IsActive).ToDictionary(p => p.Id, p => p.Name ?? string.Empty);
         return new ChemicalRegisterEntryModel(
             chemical.Id,
             chemical.Name,
@@ -219,9 +256,30 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
                 .Select(MapProduct)
                 .ToList(),
             DateTime.SpecifyKind(chemical.UpdatedAt, DateTimeKind.Utc),
-            [],
-            []);
+            documents.Where(d => LabelTypes.Contains(d.Type)).Select(MapLabel).ToList(),
+            documents.Where(d => d.Type == ChemicalDocumentType.Sds && !string.IsNullOrWhiteSpace(d.Language))
+                .Select(d => MapSds(d, productNames)).ToList());
     }
+
+    /// <summary>The proto numbering (Label 1, MinorUse 2) by an explicit switch: the C# enum values never leak.</summary>
+    private static ChemicalLabelModel MapLabel(ChemicalDocument document) => new(
+        document.ContentMd5.Trim(),
+        document.Type switch
+        {
+            ChemicalDocumentType.Label => 1,
+            ChemicalDocumentType.MinorUseInstructions => 2,
+            _ => throw new ArgumentOutOfRangeException(nameof(document), document.Type, "Not a label document."),
+        },
+        document.SourcePackaging ?? string.Empty,
+        Utc(document.SourceRevisionDate),
+        document.SourceRevision ?? string.Empty);
+
+    private static ChemicalSdsDocumentModel MapSds(ChemicalDocument document, IReadOnlyDictionary<int, string> productNames) => new(
+        document.Language.Trim(),
+        document.ContentMd5.Trim(),
+        Utc(document.SourceRevisionDate),
+        // The tenant sync keeps no product link of a language SDS (ProductId is null): the name is then unknown.
+        document.ProductId is { } productId ? productNames.GetValueOrDefault(productId, string.Empty) : string.Empty);
 
     private static ChemicalProductModel MapProduct(Product product)
     {

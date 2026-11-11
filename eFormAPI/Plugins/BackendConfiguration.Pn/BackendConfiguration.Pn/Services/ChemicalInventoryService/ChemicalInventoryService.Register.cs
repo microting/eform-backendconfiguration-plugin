@@ -43,28 +43,47 @@ public partial class ChemicalInventoryService
         return await register.SearchAsync(query, page, pageSize).ConfigureAwait(false);
     }
 
-    public Task<byte[]> GetLabelPdfAsync(ChemicalCaller caller, string fileName) => throw new NotImplementedException();
+    private enum DocumentKind
+    {
+        Sds,
+        Label,
+    }
 
-    public async Task<byte[]> GetSdsPdfAsync(ChemicalCaller caller, string fileName)
+    public Task<byte[]> GetSdsPdfAsync(ChemicalCaller caller, string fileName) =>
+        GetRegisterPdfAsync(caller, fileName, DocumentKind.Sds);
+
+    public Task<byte[]> GetLabelPdfAsync(ChemicalCaller caller, string fileName) =>
+        GetRegisterPdfAsync(caller, fileName, DocumentKind.Label);
+
+    /// <summary>
+    /// The one download path of register PDFs: name validation, "only names the register knows" (per kind) and the
+    /// proxied download. Path separators, "." and control characters never pass the name check.
+    /// </summary>
+    private async Task<byte[]> GetRegisterPdfAsync(ChemicalCaller caller, string fileName, DocumentKind kind)
     {
         await permissions.RequireViewOnAnyPropertyAsync(caller).ConfigureAwait(false);
+        var what = kind == DocumentKind.Sds ? "SDS" : "label";
         var name = fileName?.Trim() ?? string.Empty;
         if (name.Length > MaxSdsFileNameLength
             || !name.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_'))
         {
-            throw new ArgumentException("That is not an SDS file name.");
+            throw new ArgumentException($"That is not an {what} file name.");
         }
 
         // Only names the register knows: the backend is not an open proxy to chemicalbase.
-        // A blank name or the md5 of an empty upload means "no SDS" and is never found.
+        // A blank name or the md5 of an empty upload means "no document" and is never found.
         // The stored spelling is forwarded, never the caller's.
-        var stored = await register.FindSdsFileNameAsync(name).ConfigureAwait(false)
-                     ?? throw new ChemicalNotFoundException($"No product in the register has the SDS '{name}'.");
+        var stored = await (kind == DocumentKind.Sds
+                        ? register.FindSdsFileNameAsync(name)
+                        : register.FindLabelFileNameAsync(name)).ConfigureAwait(false)
+                     ?? throw new ChemicalNotFoundException($"The register has no {what} named '{name}'.");
 
         // null = 404 at chemicalbase; an empty 200 body is no PDF either.
-        var pdf = await chemicalBase.DownloadSdsAsync(stored).ConfigureAwait(false);
+        var pdf = await (kind == DocumentKind.Sds
+                     ? chemicalBase.DownloadSdsAsync(stored)
+                     : chemicalBase.DownloadLabelAsync(stored)).ConfigureAwait(false);
         return pdf is { Length: > 0 }
             ? pdf
-            : throw new ChemicalNotFoundException($"chemicalbase has no SDS named '{stored}'.");
+            : throw new ChemicalNotFoundException($"chemicalbase has no {what} named '{stored}'.");
     }
 }

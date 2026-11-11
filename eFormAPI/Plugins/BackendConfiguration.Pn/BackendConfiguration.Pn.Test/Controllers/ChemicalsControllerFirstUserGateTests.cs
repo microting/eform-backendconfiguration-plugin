@@ -107,7 +107,7 @@ public class ChemicalsControllerFirstUserGateTests
     [Test]
     public void TheTableCoversEveryRoute()
     {
-        Assert.That(RoutedActions().Count(), Is.EqualTo(19),
+        Assert.That(RoutedActions().Count(), Is.EqualTo(20),
             "add the new route to the gate review, then bump this");
     }
 

@@ -39,7 +39,7 @@ service ChemicalsGrpc {
   rpc GetMyInventory(ChemicalInventoryRequest) returns (ChemicalInventoryResponse);
   // SDS PDF proxied from chemicalbase, resumable from `offset`. Needs: view on any property.
   rpc GetSdsPdf(ChemicalSdsPdfRequest) returns (stream ChemicalFileChunk);
-  // BMD label PDF (Label or MinorUseInstructions) proxied from chemicalbase, resumable. Needs: view on any property.
+  // BMD label PDF (Label or MinorUseInstructions) proxied from chemicalbase, always from the start. Needs: view on any property.
   rpc GetLabelPdf(ChemicalLabelPdfRequest) returns (stream ChemicalFileChunk);
   // Location photo, resumable from `offset`. Needs: view.
   rpc GetLocationPhoto(ChemicalLocationPhotoRequest) returns (stream ChemicalFileChunk);
@@ -333,7 +333,6 @@ message ChemicalSdsPdfRequest {
 
 message ChemicalLabelPdfRequest {
   string file_name = 1;                     // ChemicalLabelItem.file_name
-  int64 offset = 2;                         // resume point; 0 = from the start
 }
 
 message ChemicalLocationPhotoRequest {

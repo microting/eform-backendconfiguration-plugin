@@ -85,6 +85,7 @@ public class ChemicalsControllerTests
 
         Assert.That(routes, Is.EqualTo(new[]
         {
+            "GET api/backend-configuration-pn/chemicals/label/{fileName}",
             "GET api/backend-configuration-pn/chemicals/locations/{locationId:int}/photo",
             "GET api/backend-configuration-pn/chemicals/properties/{propertyId:int}/inventory",
             "GET api/backend-configuration-pn/chemicals/properties/{propertyId:int}/permissions",
