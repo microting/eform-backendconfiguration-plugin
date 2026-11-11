@@ -48,9 +48,24 @@ export function otherSdsDocuments(docs: ChemicalSdsDocumentModel[] | null | unde
   return newestPerLanguage(docs).filter((d) => d !== picked).sort((a, b) => a.language.localeCompare(b.language));
 }
 
-/** What the SDS button opens: the document in the user's language, else (old data) the product's own sheet. */
+/**
+ * The documents a row picks from. The placement's own product sheet (sdsFileNameFor) is the Danish SDS of that product,
+ * so it takes the place of any Danish document (which may belong to another product); without a product sheet the
+ * newest Danish document stays.
+ */
+export function sdsCandidates(row: ChemicalInventoryRow): ChemicalSdsDocumentModel[] {
+  const docs = row.entry?.sdsDocuments ?? [];
+  const productSheet = sdsFileNameFor(row);
+  if (!productSheet) {
+    return docs;
+  }
+  const danish: ChemicalSdsDocumentModel = {language: 'da', fileName: productSheet, revisionDate: null, productName: ''};
+  return [danish, ...docs.filter((d) => languagePart(d.language) !== 'da')];
+}
+
+/** What the SDS button opens: the candidate in the user's language, else (old data) the product's own sheet. */
 export function sdsFileNameForLocale(row: ChemicalInventoryRow, uiLocale: string | null | undefined): string | null {
-  return pickSds(row.entry?.sdsDocuments ?? [], uiLocale)?.fileName ?? sdsFileNameFor(row);
+  return pickSds(sdsCandidates(row), uiLocale)?.fileName ?? null;
 }
 
 /** The i18n key of a language's name; a language without a key shows its upper-case code (see sdsLanguageText). */
@@ -68,9 +83,4 @@ export function sdsLanguageText(code: string, translate: {instant(key: string): 
 /** The eForm user's language: the locale ngx-translate was switched to at login, else its fallback language; "" when neither is set. */
 export function currentUiLocale(translate: {getCurrentLang(): string | undefined; getFallbackLang(): string | null}): string {
   return translate.getCurrentLang() || translate.getFallbackLang() || '';
-}
-
-/** Stub: implemented after the red CI run. */
-export function sdsCandidates(_row: ChemicalInventoryRow): ChemicalSdsDocumentModel[] {
-  return [];
 }

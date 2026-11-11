@@ -34,6 +34,7 @@ import {
   openChemicalLabel,
   openSafetyDataSheet,
   otherSdsDocuments,
+  sdsCandidates,
   sdsFileNameForLocale,
   sdsLanguageText,
   summarizeActions,
@@ -242,7 +243,7 @@ export class ChemicalInventoryPageComponent implements OnInit {
     const locale = this.uiLocale;
     let cached = this.documentsCache.get(row);
     if (cached?.locale !== locale) {
-      cached = {locale, others: otherSdsDocuments(row.entry?.sdsDocuments ?? [], locale)};
+      cached = {locale, others: otherSdsDocuments(sdsCandidates(row), locale)};
       this.documentsCache.set(row, cached);
     }
     return cached.others;

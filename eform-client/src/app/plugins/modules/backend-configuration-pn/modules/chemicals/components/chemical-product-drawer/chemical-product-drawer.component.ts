@@ -15,6 +15,7 @@ import {
   otherSdsDocuments,
   placementStockHistory,
   placementsOfChemical,
+  sdsCandidates,
   sdsFileNameForLocale,
   sdsLanguageText,
   stockUnitLabel,
@@ -85,7 +86,7 @@ export class ChemicalProductDrawerComponent {
   /** "SDS" opens the document in the user's language; old data without documents falls back to the product's sheet. */
   readonly sdsFileName = sdsFileNameForLocale(this.row, this.uiLocale);
   /** The SDS languages of the "Andre sprog" menu. */
-  readonly otherSdsDocuments: ChemicalSdsDocumentModel[] = otherSdsDocuments(this.row.entry?.sdsDocuments ?? [], this.uiLocale);
+  readonly otherSdsDocuments: ChemicalSdsDocumentModel[] = otherSdsDocuments(sdsCandidates(this.row), this.uiLocale);
   readonly labels: ChemicalLabelModel[] = labelsOf(this.row.entry);
   readonly stockUnitLabel = stockUnitLabel;
   tab: ChemicalDrawerTab = 'overview';
