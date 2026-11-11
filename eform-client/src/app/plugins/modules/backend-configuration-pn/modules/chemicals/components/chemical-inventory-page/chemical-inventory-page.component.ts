@@ -10,7 +10,7 @@ import {Store} from '@ngrx/store';
 import {ToastrService} from 'ngx-toastr';
 import {Observable, combineLatest} from 'rxjs';
 import {dialogConfigHelper} from 'src/app/common/helpers';
-import {ChemicalDownload, ChemicalInventoryModel, ChemicalLocationModel} from '../../../../models';
+import {ChemicalDownload, ChemicalInventoryModel, ChemicalLabelModel, ChemicalLocationModel, ChemicalSdsDocumentModel} from '../../../../models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {
   ChemicalInventoryFiltersModel,
@@ -28,8 +28,13 @@ import {
   filterInventoryRows,
   isStockEnabled,
   localToday,
+  labelOptionText,
+  labelsOf,
+  openChemicalLabel,
   openSafetyDataSheet,
-  sdsFileNameFor,
+  otherSdsDocuments,
+  sdsFileNameForLocale,
+  sdsLanguageText,
   summarizeActions,
 } from '../../helpers';
 import {ChemicalMoveDialogComponent} from '../chemical-move-dialog/chemical-move-dialog.component';
@@ -44,7 +49,7 @@ import {ChemicalRegisterPlacementDialogComponent} from '../chemical-register-pla
 import {ChemicalRemoveDialogComponent} from '../chemical-remove-dialog/chemical-remove-dialog.component';
 import {ChemicalStockDialogComponent} from '../chemical-stock-dialog/chemical-stock-dialog.component';
 import {ChemicalGhsPictogramsComponent} from '../chemical-ghs-pictograms/chemical-ghs-pictograms.component';
-import {NgIf, DatePipe, DecimalPipe} from '@angular/common';
+import {NgIf, NgFor, DatePipe, DecimalPipe} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {MatFormField, MatLabel} from '@angular/material/form-field';
 import {MatInput} from '@angular/material/input';
@@ -64,7 +69,7 @@ import {MtxSelect} from '@ng-matero/extensions/select';
  */
 @Component({
   selector: 'app-chemical-inventory-page',
-  imports: [NgIf, DatePipe, DecimalPipe, FormsModule, TranslatePipe, MatFormField, MatLabel, MatInput, MatIcon, MatIconButton, MatTooltip,
+  imports: [NgIf, NgFor, DatePipe, DecimalPipe, FormsModule, TranslatePipe, MatFormField, MatLabel, MatInput, MatIcon, MatIconButton, MatTooltip,
     MatMenu, MatMenuItem, MatMenuTrigger, MtxGrid, MtxSelect, ChemicalGhsPictogramsComponent],
   templateUrl: './chemical-inventory-page.component.html',
   styleUrls: ['./chemical-inventory-page.component.scss'],
@@ -211,11 +216,63 @@ export class ChemicalInventoryPageComponent implements OnInit {
       .afterClosed().subscribe((saved) => saved && this.reload());
   }
 
+  /** The eForm user's language (the locale ngx-translate was switched to at login). */
+  private get uiLocale(): string {
+    return this.translate.currentLang || this.translate.defaultLang;
+  }
+
+  /** The lists a row menu shows, kept per row and language: a template must get the same array on every check. */
+  private documentsCache = new WeakMap<ChemicalInventoryRow, {locale: string; others: ChemicalSdsDocumentModel[]}>();
+
+  /** "SDS" opens the document in the user's language; old data without documents falls back to the product's sheet. */
   openSds(row: ChemicalInventoryRow): void {
-    const fileName = sdsFileNameFor(row);
+    const fileName = sdsFileNameForLocale(row, this.uiLocale);
     if (fileName) {
       openSafetyDataSheet(this.chemicalsService, this.toastr, this.translate, fileName);
     }
+  }
+
+  hasSds(row: ChemicalInventoryRow): boolean {
+    return !!sdsFileNameForLocale(row, this.uiLocale);
+  }
+
+  /** The SDS languages of the "Andre sprog" menu. */
+  otherSdsDocuments(row: ChemicalInventoryRow): ChemicalSdsDocumentModel[] {
+    const locale = this.uiLocale;
+    let cached = this.documentsCache.get(row);
+    if (cached?.locale !== locale) {
+      cached = {locale, others: otherSdsDocuments(row.entry?.sdsDocuments ?? [], locale)};
+      this.documentsCache.set(row, cached);
+    }
+    return cached.others;
+  }
+
+  openSdsDocument(doc: ChemicalSdsDocumentModel): void {
+    openSafetyDataSheet(this.chemicalsService, this.toastr, this.translate, doc.fileName);
+  }
+
+  sdsLanguageText(doc: ChemicalSdsDocumentModel): string {
+    return sdsLanguageText(doc.language, this.translate);
+  }
+
+  labelsOf(row: ChemicalInventoryRow): ChemicalLabelModel[] {
+    return labelsOf(row.entry);
+  }
+
+  /** The one label of a row (the menu item is a plain button then). */
+  openLabel(row: ChemicalInventoryRow): void {
+    const [label] = this.labelsOf(row);
+    if (label) {
+      this.openLabelFile(label);
+    }
+  }
+
+  openLabelFile(label: ChemicalLabelModel): void {
+    openChemicalLabel(this.chemicalsService, this.toastr, this.translate, label.fileName);
+  }
+
+  labelText(label: ChemicalLabelModel): string {
+    return labelOptionText(label, this.translate);
   }
 
   exportAuthorityList(): void {

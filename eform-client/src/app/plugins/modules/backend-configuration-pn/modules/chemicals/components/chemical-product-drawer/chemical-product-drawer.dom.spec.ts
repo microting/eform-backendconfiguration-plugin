@@ -2,6 +2,7 @@ import {describe, it, expect, afterEach, vi} from 'vitest';
 import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {NoopAnimationsModule} from '@angular/platform-browser/animations';
 import {TranslateModule} from '@ngx-translate/core';
 import {ToastrService} from 'ngx-toastr';
 import {ChemicalStockEntryKind, ChemicalStockEntryOrigin, ChemicalStockUnit} from '../../../../models';
@@ -29,7 +30,7 @@ describe('ChemicalProductDrawerComponent (template)', () => {
       ],
     });
     TestBed.configureTestingModule({
-      imports: [ChemicalProductDrawerComponent, TranslateModule.forRoot()],
+      imports: [ChemicalProductDrawerComponent, NoopAnimationsModule, TranslateModule.forRoot()],
       providers: [
         {provide: BackendConfigurationPnChemicalsService, useValue: {getSdsBlob: vi.fn(), getLabelBlob: vi.fn()}},
         {provide: MatDialogRef, useValue: {close: vi.fn()}},

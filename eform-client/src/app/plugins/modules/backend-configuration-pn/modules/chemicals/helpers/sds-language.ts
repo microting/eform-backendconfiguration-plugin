@@ -1,23 +1,51 @@
 import {ChemicalSdsDocumentModel} from '../../../models';
-import {ChemicalInventoryRow} from './chemical-inventory.helper';
+import {ChemicalInventoryRow, sdsFileNameFor} from './chemical-inventory.helper';
 
-/** Stub: implemented after the red CI run. */
-export function toIso6391(_locale: string): string {
-  return undefined;
+/** The languages of the eForm UI (ISO 639-1); a locale outside this list has no SDS language. */
+const KNOWN_LANGUAGES = new Set([
+  'da', 'en', 'de', 'uk', 'pl', 'fr', 'es', 'it', 'nl', 'pt', 'no', 'sv', 'fi', 'et', 'lv', 'lt', 'ro', 'hr', 'sl', 'cs', 'sk', 'hu', 'bg', 'el', 'is',
+]);
+
+/** "DA" -> "da", "nb-NO" / "nn" -> "no", "pt-BR" -> "pt"; null, empty or unknown -> "". */
+function languagePart(locale: string | null | undefined): string {
+  const code = (locale ?? '').trim().toLowerCase().split(/[-_]/)[0];
+  return code === 'nb' || code === 'nn' ? 'no' : code;
 }
 
-export function pickSds(_docs: ChemicalSdsDocumentModel[], _uiLocale: string): ChemicalSdsDocumentModel | undefined {
-  return null;
+/** UI locale "da-DK" / "en-US" / "nb-NO" -> ISO 639-1 of a language the eForm UI has, else "". */
+export function toIso6391(locale: string): string {
+  const code = languagePart(locale);
+  return KNOWN_LANGUAGES.has(code) ? code : '';
 }
 
-export function otherSdsDocuments(_docs: ChemicalSdsDocumentModel[], _uiLocale: string): ChemicalSdsDocumentModel[] {
-  return undefined;
+/** The SDS of the user's language; else Danish, then English, then the first one; undefined without documents. */
+export function pickSds(docs: ChemicalSdsDocumentModel[], uiLocale: string): ChemicalSdsDocumentModel | undefined {
+  if (!docs?.length) {
+    return undefined;
+  }
+  const inLanguage = (code: string) => (code ? docs.find((d) => languagePart(d.language) === code) : undefined);
+  return inLanguage(toIso6391(uiLocale)) ?? inLanguage('da') ?? inLanguage('en') ?? docs[0];
 }
 
-export function sdsFileNameForLocale(_row: ChemicalInventoryRow, _uiLocale: string): string | null {
-  return undefined;
+/** The documents the "Andre sprog" menu lists: every one but the picked one, by language code. */
+export function otherSdsDocuments(docs: ChemicalSdsDocumentModel[], uiLocale: string): ChemicalSdsDocumentModel[] {
+  const picked = pickSds(docs, uiLocale);
+  return (docs ?? []).filter((d) => d !== picked).sort((a, b) => a.language.localeCompare(b.language));
 }
 
-export function sdsLanguageKey(_code: string): string {
-  return undefined;
+/** What the SDS button opens: the document in the user's language, else (old data) the product's own sheet. */
+export function sdsFileNameForLocale(row: ChemicalInventoryRow, uiLocale: string): string | null {
+  return pickSds(row.entry?.sdsDocuments ?? [], uiLocale)?.fileName ?? sdsFileNameFor(row);
+}
+
+/** The i18n key of a language's name; a language without a key shows its upper-case code (see sdsLanguageText). */
+export function sdsLanguageKey(code: string): string {
+  return `Chemicals: Language ${languagePart(code)}`;
+}
+
+/** The translated name of a language, or its upper-case code when the UI has no name for it. */
+export function sdsLanguageText(code: string, translate: {instant(key: string): string}): string {
+  const key = sdsLanguageKey(code);
+  const text = translate.instant(key);
+  return text && text !== key ? text : (code ?? '').toUpperCase();
 }

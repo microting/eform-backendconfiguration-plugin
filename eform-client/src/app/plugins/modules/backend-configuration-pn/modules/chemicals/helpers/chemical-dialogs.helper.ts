@@ -97,9 +97,28 @@ export function openSafetyDataSheet(
   translate: {instant(key: string): string},
   fileName: string,
 ): void {
-  const fail = () => toastr.error(translate.instant('Chemicals: Could not open safety data sheet'));
+  openPdfInNewTab(sds.getSdsBlob(fileName), toastr, translate, 'Chemicals: Could not open safety data sheet');
+}
+
+/** The label of a chemical (BMD label or minor-use instructions), opened the way the safety data sheet is. */
+export function openChemicalLabel(
+  labels: {getLabelBlob(fileName: string): Observable<Blob>},
+  toastr: {error(message: string): unknown},
+  translate: {instant(key: string): string},
+  fileName: string,
+): void {
+  openPdfInNewTab(labels.getLabelBlob(fileName), toastr, translate, 'Chemicals: Could not open label');
+}
+
+function openPdfInNewTab(
+  pdf: Observable<Blob>,
+  toastr: {error(message: string): unknown},
+  translate: {instant(key: string): string},
+  failureKey: string,
+): void {
+  const fail = () => toastr.error(translate.instant(failureKey));
   let opened = false;
-  sds.getSdsBlob(fileName).subscribe({
+  pdf.subscribe({
     next: (blob) => {
       opened = true;
       window.open(URL.createObjectURL(blob), '_blank');

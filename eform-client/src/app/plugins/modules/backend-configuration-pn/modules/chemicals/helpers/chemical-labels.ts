@@ -1,10 +1,20 @@
-import {ChemicalLabelModel, ChemicalRegisterEntryModel} from '../../../models';
+import {ChemicalLabelKind, ChemicalLabelModel, ChemicalRegisterEntryModel} from '../../../models';
 
-/** Stub: implemented after the red CI run. */
-export function labelsOf(_entry: ChemicalRegisterEntryModel | null | undefined): ChemicalLabelModel[] {
-  return undefined;
+/** One shared empty list: a template binding must get the same array on every change detection. */
+const NO_LABELS: ChemicalLabelModel[] = [];
+
+/** The labels of an entry; none for an entry from a server that predates the label documents. */
+export function labelsOf(entry: ChemicalRegisterEntryModel | null | undefined): ChemicalLabelModel[] {
+  return entry?.labels ?? NO_LABELS;
 }
 
-export function labelOptionText(_label: ChemicalLabelModel, _translate: {instant(key: string, params?: object): string}): string {
-  return undefined;
+/** One line of the label menu: packaging (or "Mindre anvendelse") and the revision date, e.g. "Etiket (5 L) · 01-03-2026". */
+export function labelOptionText(label: ChemicalLabelModel, translate: {instant(key: string, params?: object): string}): string {
+  const name = label.kind === ChemicalLabelKind.MinorUse
+    ? translate.instant('Chemicals: Minor use')
+    : label.packaging
+      ? translate.instant('Chemicals: Label ({{packaging}})', {packaging: label.packaging})
+      : translate.instant('Chemicals: Label');
+  const date = /^(\d{4})-(\d{2})-(\d{2})/.exec(label.revisionDate ?? '');
+  return date ? `${name} · ${date[3]}-${date[2]}-${date[1]}` : name;
 }

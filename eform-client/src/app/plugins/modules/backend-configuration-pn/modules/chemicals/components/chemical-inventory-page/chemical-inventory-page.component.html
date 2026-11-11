@@ -131,11 +131,32 @@
         <button *ngIf="stockEnabled" mat-menu-item id="chemicalRowStock-{{i}}" (click)="openStock(row)">
           <mat-icon>inventory_2</mat-icon><span>{{ 'Chemicals: Register stock movement' | translate }}</span>
         </button>
-        <button mat-menu-item id="chemicalRowSds-{{i}}" [disabled]="!row.entry?.products?.length" (click)="openSds(row)">
+        <button mat-menu-item id="chemicalRowSds-{{i}}" [disabled]="!hasSds(row)" (click)="openSds(row)">
           <mat-icon>description</mat-icon><span>{{ 'Chemicals: Open safety data sheet' | translate }}</span>
         </button>
+        <button *ngIf="otherSdsDocuments(row).length" mat-menu-item id="chemicalRowSdsOthers-{{i}}" [matMenuTriggerFor]="sdsLanguagesMenu">
+          <mat-icon>translate</mat-icon><span>{{ 'Chemicals: Other languages' | translate }}</span>
+        </button>
+        <button *ngIf="labelsOf(row).length > 1; else singleLabel" mat-menu-item id="chemicalRowLabel-{{i}}" [matMenuTriggerFor]="labelsMenu">
+          <mat-icon>label</mat-icon><span>{{ 'Chemicals: Open label' | translate }}</span>
+        </button>
+        <ng-template #singleLabel>
+          <button mat-menu-item id="chemicalRowLabel-{{i}}" [disabled]="!labelsOf(row).length" (click)="openLabel(row)">
+            <mat-icon>label</mat-icon><span>{{ 'Chemicals: Open label' | translate }}</span>
+          </button>
+        </ng-template>
         <button mat-menu-item id="chemicalRowRemove-{{i}}" (click)="openRemove(row)">
           <mat-icon color="warn">remove_circle</mat-icon><span>{{ 'Chemicals: Remove placement' | translate }}…</span>
+        </button>
+      </mat-menu>
+      <mat-menu #sdsLanguagesMenu="matMenu">
+        <button *ngFor="let doc of otherSdsDocuments(row)" mat-menu-item id="chemicalRowSdsOther-{{i}}-{{doc.language}}" (click)="openSdsDocument(doc)">
+          <span>{{ sdsLanguageText(doc) }}</span>
+        </button>
+      </mat-menu>
+      <mat-menu #labelsMenu="matMenu">
+        <button *ngFor="let label of labelsOf(row); let j = index" mat-menu-item id="chemicalRowLabelItem-{{i}}-{{j}}" (click)="openLabelFile(label)">
+          <span>{{ labelText(label) }}</span>
         </button>
       </mat-menu>
     </div>
