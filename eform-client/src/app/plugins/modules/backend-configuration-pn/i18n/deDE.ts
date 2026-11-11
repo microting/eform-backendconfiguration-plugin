@@ -1345,7 +1345,7 @@ export const deDE = {
   'Chemicals: Minor use': 'Geringfügige Verwendung',
   'Chemicals: Minor use ({{packaging}})': 'Geringfügige Verwendung ({{packaging}})',
   'Chemicals: Other languages': 'Andere Sprachen',
-  'Chemicals: Pop-up blocked, file downloaded': 'Da das Pop-up blockiert wurde, wurde stattdessen die Datei heruntergeladen.',
+  'Chemicals: Pop-up blocked, file downloaded': 'Das Pop-up wurde blockiert, die Datei wurde stattdessen heruntergeladen.',
   'Chemicals: Language da': 'Dänisch',
   'Chemicals: Language en': 'Englisch',
   'Chemicals: Language de': 'Deutsch',

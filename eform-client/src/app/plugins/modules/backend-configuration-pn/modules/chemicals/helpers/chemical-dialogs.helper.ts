@@ -133,6 +133,10 @@ function openPdfInNewTab(
   failureKey: string,
 ): void {
   const tab = window.open('', '_blank');
+  if (tab) {
+    // The blank tab is same-origin with the app: it must not reach back through window.opener.
+    tab.opener = null;
+  }
   let opened = false;
   const fail = () => {
     tab?.close();
@@ -141,7 +145,8 @@ function openPdfInNewTab(
   pdf.subscribe({
     next: (blob) => {
       opened = true;
-      const url = URL.createObjectURL(blob);
+      // The type is forced: the file shown must be a PDF whatever the proxied answer declared.
+      const url = URL.createObjectURL(new Blob([blob], {type: 'application/pdf'}));
       setTimeout(() => URL.revokeObjectURL(url), REVOKE_AFTER_MS);
       if (tab) {
         tab.location.href = url;
