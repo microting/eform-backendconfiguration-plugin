@@ -102,6 +102,10 @@ public class ChemicalsController(
     public Task<IActionResult> GetSds(string fileName) =>
         FileAsync(async () => (await inventory.GetSdsPdfAsync(Caller, fileName).ConfigureAwait(false), "application/pdf"));
 
+    [HttpGet("label/{fileName}")]
+    public Task<IActionResult> GetLabel(string fileName) =>
+        FileAsync(async () => (await inventory.GetLabelPdfAsync(Caller, fileName).ConfigureAwait(false), "application/pdf"));
+
     [HttpPost("placements")]
     public Task<OperationDataResult<ChemicalPlacementChangeModel>> RegisterPlacement([FromBody] ChemicalRegisterPlacementCommand command) =>
         ExecuteAsync(() => inventory.RegisterPlacementAsync(Caller, Required(command)), SavingPlacement);

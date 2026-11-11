@@ -100,14 +100,11 @@ public static class ChemicalAuthorityListPdf
                     }
 
                     // Only the short link text: the address is in the link (printed, it wrapped over many lines).
-                    var sds = BodyCell(table);
-                    if (string.IsNullOrEmpty(row.SdsUrl))
+                    SdsCell(BodyCell(table), row, document.SdsLinkText);
+
+                    if (!string.IsNullOrEmpty(document.LabelLinkText))
                     {
-                        sds.Text(string.Empty);
-                    }
-                    else
-                    {
-                        sds.Hyperlink(row.SdsUrl).Text(document.SdsLinkText).FontColor(Colors.Blue.Darken2).Underline();
+                        LinkOrEmpty(BodyCell(table), row.LabelUrl, document.LabelLinkText);
                     }
                 }
             });
@@ -119,6 +116,44 @@ public static class ChemicalAuthorityListPdf
                 text.TotalPages();
             });
         })).GeneratePdf();
+
+    /// <summary>The SDS link, and under it a short line with the other languages available (no links).</summary>
+    private static void SdsCell(IContainer cell, ChemicalAuthorityListRow row, string linkText)
+    {
+        if (string.IsNullOrEmpty(row.SdsUrl) && string.IsNullOrEmpty(row.OtherSdsLanguages))
+        {
+            cell.Text(string.Empty);
+            return;
+        }
+
+        cell.Column(column =>
+        {
+            if (!string.IsNullOrEmpty(row.SdsUrl))
+            {
+                Link(column.Item(), row.SdsUrl, linkText);
+            }
+
+            if (!string.IsNullOrEmpty(row.OtherSdsLanguages))
+            {
+                column.Item().Text(row.OtherSdsLanguages).FontSize(7).FontColor(Colors.Grey.Darken2);
+            }
+        });
+    }
+
+    private static void LinkOrEmpty(IContainer cell, string url, string linkText)
+    {
+        if (string.IsNullOrEmpty(url))
+        {
+            cell.Text(string.Empty);
+        }
+        else
+        {
+            Link(cell, url, linkText);
+        }
+    }
+
+    private static void Link(IContainer cell, string url, string linkText) =>
+        cell.Hyperlink(url).Text(linkText).FontColor(Colors.Blue.Darken2).Underline();
 
     private static IContainer BodyCell(TableDescriptor table) =>
         table.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(CellPadding);

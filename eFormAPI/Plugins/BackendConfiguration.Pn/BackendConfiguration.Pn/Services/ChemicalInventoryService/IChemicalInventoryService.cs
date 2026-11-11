@@ -76,4 +76,7 @@ public interface IChemicalInventoryService
     /// ArgumentException for a malformed name; NotFound for no SDS.
     /// </summary>
     Task<byte[]> GetSdsPdfAsync(ChemicalCaller caller, string fileName);
+
+    /// <summary>Label or minor-use PDF by its md5 name: ArgumentException for a malformed name, NotFound for a name the register does not know.</summary>
+    Task<byte[]> GetLabelPdfAsync(ChemicalCaller caller, string fileName);
 }

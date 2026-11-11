@@ -38,6 +38,7 @@ public class ChemicalsProtoContractTests
     [
         ("GetMyInventory", false, false),
         ("GetSdsPdf", false, true),
+        ("GetLabelPdf", false, true),
         ("GetLocationPhoto", false, true),
         ("LookupBarcode", false, false),
         ("SearchRegister", false, false),
@@ -180,6 +181,64 @@ public class ChemicalsProtoContractTests
         var locations = method.OutputType.FindFieldByNumber(1);
         Assert.That((method.OutputType.Name, locations.Name, locations.IsRepeated, locations.MessageType.Name),
             Is.EqualTo(("ChemicalReorderLocationsResponse", "locations", true, "ChemicalLocationItem")));
+    }
+
+    // 2026-11 additive change: BMD labels (19) and per-language SDS (20); the Danish SDS (4, 5) stays for old apps.
+
+    [Test]
+    public void RegisterEntry_KeepsItsFields_AndAddsLabelsAndSdsDocuments()
+    {
+        var fields = ChemicalRegisterEntry.Descriptor.Fields.InFieldNumberOrder().Select(f => (f.FieldNumber, f.Name));
+
+        Assert.That(fields.Take(18).Select(f => f.FieldNumber), Is.EqualTo(Enumerable.Range(1, 18)));
+        Assert.That(fields.Skip(18), Is.EqualTo(new[] { (19, "labels"), (20, "sds_documents") }));
+        var labels = ChemicalRegisterEntry.Descriptor.FindFieldByNumber(19);
+        var sds = ChemicalRegisterEntry.Descriptor.FindFieldByNumber(20);
+        Assert.That((labels.IsRepeated, labels.MessageType.Name), Is.EqualTo((true, "ChemicalLabelItem")));
+        Assert.That((sds.IsRepeated, sds.MessageType.Name), Is.EqualTo((true, "ChemicalSdsItem")));
+    }
+
+    [Test]
+    public void LabelItem_HasTheAgreedFields_AndKindNumbers()
+    {
+        Assert.That(ChemicalLabelItem.Descriptor.Fields.InFieldNumberOrder().Select(f => (f.FieldNumber, f.Name, f.FieldType)), Is.EqualTo(new[]
+        {
+            (1, "file_name", FieldType.String), (2, "kind", FieldType.Enum), (3, "packaging", FieldType.String),
+            (4, "revision_date", FieldType.Message), (5, "revision", FieldType.String),
+        }));
+        var kinds = ChemicalsReflection.Descriptor.EnumTypes.Single(e => e.Name == "ChemicalLabelKind").Values.Select(v => (v.Number, v.Name));
+        Assert.That(kinds, Is.EqualTo(new[]
+        {
+            (0, "CHEMICAL_LABEL_KIND_UNSPECIFIED"), (1, "CHEMICAL_LABEL_KIND_LABEL"), (2, "CHEMICAL_LABEL_KIND_MINOR_USE"),
+        }));
+    }
+
+    [Test]
+    public void SdsItem_HasTheAgreedFields()
+    {
+        Assert.That(ChemicalSdsItem.Descriptor.Fields.InFieldNumberOrder().Select(f => (f.FieldNumber, f.Name, f.FieldType)), Is.EqualTo(new[]
+        {
+            (1, "language", FieldType.String), (2, "file_name", FieldType.String), (3, "revision_date", FieldType.Message),
+            (4, "product_name", FieldType.String),
+        }));
+    }
+
+    [Test]
+    public void ProductItem_KeepsTheDanishSdsFields()
+    {
+        var fields = ChemicalProductItem.Descriptor.Fields.InFieldNumberOrder().Select(f => (f.FieldNumber, f.Name));
+
+        Assert.That(fields, Is.EqualTo(new[] { (1, "product_id"), (2, "name"), (3, "barcode"), (4, "sds_file_name"), (5, "sds_checksum") }));
+    }
+
+    [Test]
+    public void GetLabelPdf_TakesAFileName_AndStreamsFileChunks()
+    {
+        var method = ChemicalsGrpc.Descriptor.FindMethodByName("GetLabelPdf");
+
+        Assert.That(method.InputType.Name, Is.EqualTo("ChemicalLabelPdfRequest"));
+        Assert.That(method.InputType.Fields.InFieldNumberOrder().Select(f => (f.FieldNumber, f.Name)), Is.EqualTo(new[] { (1, "file_name") }));
+        Assert.That((method.OutputType.Name, method.IsServerStreaming), Is.EqualTo(("ChemicalFileChunk", true)));
     }
 
     [Test]

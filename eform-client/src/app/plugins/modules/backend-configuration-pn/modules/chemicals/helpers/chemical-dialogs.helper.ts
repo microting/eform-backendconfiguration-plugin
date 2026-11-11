@@ -85,24 +85,78 @@ export function cancelPlacementDialog(
   });
 }
 
+/** What the PDF openers toast with; `info` tells the user the pop-up was blocked. */
+interface ChemicalToaster {
+  error(message: string): unknown;
+  info(message: string): unknown;
+}
+
+/** How long the object URL of an opened PDF lives: long enough for the tab to load it, then the memory is released. */
+const REVOKE_AFTER_MS = 60_000;
+
 /**
  * Opens a safety data sheet in a new tab (W1 row menu and the W2 side panel). The blob request runs
  * through the host interceptors, which show nothing for a failed blob and end a 5xx or a network
  * failure with EMPTY, so an error or a completion without a sheet is toasted here with a fixed text
- * (never the technical error).
+ * (never the technical error). The tab is opened in the click itself, before the download: a browser
+ * blocks a pop-up opened later from the HTTP answer.
  */
 export function openSafetyDataSheet(
   sds: {getSdsBlob(fileName: string): Observable<Blob>},
-  toastr: {error(message: string): unknown},
+  toastr: ChemicalToaster,
   translate: {instant(key: string): string},
   fileName: string,
 ): void {
-  const fail = () => toastr.error(translate.instant('Chemicals: Could not open safety data sheet'));
+  openPdfInNewTab(sds.getSdsBlob(fileName), toastr, translate, fileName, 'Chemicals: Could not open safety data sheet');
+}
+
+/** The label of a chemical (BMD label or minor-use instructions), opened the way the safety data sheet is. */
+export function openChemicalLabel(
+  labels: {getLabelBlob(fileName: string): Observable<Blob>},
+  toastr: ChemicalToaster,
+  translate: {instant(key: string): string},
+  fileName: string,
+): void {
+  openPdfInNewTab(labels.getLabelBlob(fileName), toastr, translate, fileName, 'Chemicals: Could not open label');
+}
+
+/**
+ * The tab is opened synchronously (call this from the click handler). It then shows the blob URL; on a failure it is
+ * closed again and the fixed text is toasted. When the browser blocked the pop-up the file is downloaded instead and
+ * the user is told so.
+ */
+function openPdfInNewTab(
+  pdf: Observable<Blob>,
+  toastr: ChemicalToaster,
+  translate: {instant(key: string): string},
+  fileName: string,
+  failureKey: string,
+): void {
+  const tab = window.open('', '_blank');
+  if (tab) {
+    // The blank tab is same-origin with the app: it must not reach back through window.opener.
+    tab.opener = null;
+  }
   let opened = false;
-  sds.getSdsBlob(fileName).subscribe({
+  const fail = () => {
+    tab?.close();
+    toastr.error(translate.instant(failureKey));
+  };
+  pdf.subscribe({
     next: (blob) => {
       opened = true;
-      window.open(URL.createObjectURL(blob), '_blank');
+      // The type is forced: the file shown must be a PDF whatever the proxied answer declared.
+      const url = URL.createObjectURL(new Blob([blob], {type: 'application/pdf'}));
+      setTimeout(() => URL.revokeObjectURL(url), REVOKE_AFTER_MS);
+      if (tab) {
+        tab.location.href = url;
+        return;
+      }
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${fileName}.pdf`;
+      link.click();
+      toastr.info(translate.instant('Chemicals: Pop-up blocked, file downloaded'));
     },
     error: fail,
     complete: () => {

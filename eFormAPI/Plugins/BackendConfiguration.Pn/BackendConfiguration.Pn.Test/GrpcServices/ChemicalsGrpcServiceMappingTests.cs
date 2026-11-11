@@ -234,6 +234,46 @@ public class ChemicalsGrpcServiceMappingTests
     }
 
     [Test]
+    public async Task GetLabelPdf_StreamsMetaChunksAndAWholeFileMd5_FromTheStart()
+    {
+        var sut = CreateSut();
+        var content = Enumerable.Range(0, 300_000).Select(i => (byte)(i % 251)).ToArray();
+        _inventory.GetLabelPdfAsync(Caller, "abc").Returns(content);
+        var writer = new FakeServerStreamWriter<ChemicalFileChunk>();
+
+        await sut.GetLabelPdf(new ChemicalLabelPdfRequest { FileName = "abc" }, writer, Context());
+
+        await _inventory.Received(1).GetLabelPdfAsync(Caller, "abc");
+        Assert.That(writer.Written[0].Meta.TotalBytes, Is.EqualTo(300_000));
+        Assert.That(writer.Written[0].Meta.Offset, Is.EqualTo(0));
+        Assert.That(writer.Written[0].Meta.ContentType, Is.EqualTo("application/pdf"));
+        var chunks = writer.Written.Where(c => c.KindCase == ChemicalFileChunk.KindOneofCase.Chunk).Select(c => c.Chunk.Length).ToList();
+        Assert.That(chunks, Is.EqualTo(new[] { 131_072, 131_072, 37_856 }));
+        Assert.That(writer.Written[^1].Trailer.Md5, Is.EqualTo(Convert.ToHexStringLower(MD5.HashData(content))));
+    }
+
+    private static IEnumerable<TestCaseData> LabelPdfFailures()
+    {
+        yield return new TestCaseData(new ChemicalNotFoundException("no label"), StatusCode.NotFound).SetName("GetLabelPdf_NotFound");
+        yield return new TestCaseData(new ArgumentException("That is not a label file name."), StatusCode.InvalidArgument).SetName("GetLabelPdf_InvalidName");
+        yield return new TestCaseData(new ChemicalUnavailableException("chemicalbase is down"), StatusCode.Unavailable).SetName("GetLabelPdf_UpstreamFailure");
+    }
+
+    [TestCaseSource(nameof(LabelPdfFailures))]
+    public async Task GetLabelPdf_MapsFailuresToStatusCodes(Exception failure, StatusCode expected)
+    {
+        var sut = CreateSut();
+        _inventory.GetLabelPdfAsync(Caller, "abc").ThrowsAsync(failure);
+        var writer = new FakeServerStreamWriter<ChemicalFileChunk>();
+
+        var ex = await Assert.ThrowsAsync<RpcException>(async () =>
+            await sut.GetLabelPdf(new ChemicalLabelPdfRequest { FileName = "abc" }, writer, Context()));
+
+        Assert.That(ex!.StatusCode, Is.EqualTo(expected));
+        Assert.That(writer.Written, Is.Empty);
+    }
+
+    [Test]
     public async Task GetSdsPdf_ResumesFromOffset_EndOffsetSendsNoBytes_PastTheEndIsOutOfRange()
     {
         var sut = CreateSut();
@@ -440,7 +480,7 @@ public class ChemicalsGrpcServiceMappingTests
     private static ChemicalRegisterEntryModel StoredEntry() => new(
         11, "Roundup", "1-111", 1, "", null, null, null, null, null, [], null, "", [], [], "",
         [new ChemicalProductModel(21, "Roundup 1 L", StoredEan13, "", "")],
-        new DateTime(2026, 9, 1, 8, 0, 0, DateTimeKind.Utc));
+        new DateTime(2026, 9, 1, 8, 0, 0, DateTimeKind.Utc), [], []);
 
     private static readonly string[] Gs1Scans =
     [
@@ -450,6 +490,59 @@ public class ChemicalsGrpcServiceMappingTests
     ];
 
     private static readonly string[] JunkScans = ["https://example.com/promo", "(01)05701234567892"];
+
+    [Test]
+    public void Label_kind_mapping_label_and_minor_use()
+    {
+        var revision = new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc);
+        var entry = StoredEntry() with
+        {
+            Labels =
+            [
+                new ChemicalLabelModel("aaa", 1, "5 L", revision, "3"),
+                new ChemicalLabelModel("bbb", 2, "", null, ""),
+            ],
+        };
+
+        var proto = ChemicalsProtoMapper.ToProto(entry);
+
+        Assert.That(proto.Labels.Select(l => (l.FileName, l.Kind)), Is.EqualTo(new[]
+        {
+            ("aaa", ChemicalLabelKind.Label), ("bbb", ChemicalLabelKind.MinorUse),
+        }));
+        Assert.That((int)proto.Labels[0].Kind, Is.EqualTo(1));
+        Assert.That((int)proto.Labels[1].Kind, Is.EqualTo(2));
+        Assert.That((proto.Labels[0].Packaging, proto.Labels[0].Revision), Is.EqualTo(("5 L", "3")));
+        Assert.That(proto.Labels[0].RevisionDate.ToDateTime(), Is.EqualTo(revision));
+        Assert.That(proto.Labels[1].RevisionDate, Is.Null, "unset date stays unset");
+        Assert.That(ChemicalsProtoMapper.ToProto(StoredEntry()).Labels, Is.Empty);
+        var unknown = ChemicalsProtoMapper.ToProto(StoredEntry() with { Labels = [new ChemicalLabelModel("x", 9, "", null, "")] });
+        Assert.That(unknown.Labels.Single().Kind, Is.EqualTo(ChemicalLabelKind.Unspecified), "an unknown kind never leaks a number");
+    }
+
+    [Test]
+    public void Sds_documents_mapping()
+    {
+        var revision = new DateTime(2026, 5, 2, 0, 0, 0, DateTimeKind.Utc);
+        var entry = StoredEntry() with
+        {
+            SdsDocuments =
+            [
+                new ChemicalSdsDocumentModel("en", "e1", revision, "Roundup 1 L"),
+                new ChemicalSdsDocumentModel("da", "d1", null, ""),
+            ],
+        };
+
+        var proto = ChemicalsProtoMapper.ToProto(entry);
+
+        Assert.That(proto.SdsDocuments.Select(d => (d.Language, d.FileName, d.ProductName)), Is.EqualTo(new[]
+        {
+            ("en", "e1", "Roundup 1 L"), ("da", "d1", ""),
+        }));
+        Assert.That(proto.SdsDocuments[0].RevisionDate.ToDateTime(), Is.EqualTo(revision));
+        Assert.That(proto.SdsDocuments[1].RevisionDate, Is.Null);
+        Assert.That(proto.Products.Single().SdsFileName, Is.Empty, "the product fields are untouched");
+    }
 
     [TestCaseSource(nameof(Gs1Scans))]
     public async Task LookupBarcode_Gs1Scan_FindsTheProductStoredAsEan13(string scanned)

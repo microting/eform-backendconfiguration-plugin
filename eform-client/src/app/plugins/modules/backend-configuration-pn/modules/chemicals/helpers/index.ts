@@ -8,3 +8,5 @@ export * from './chemical-locations.helper';
 export * from './chemical-latest-load';
 export * from './chemical-history.helper';
 export * from './chemical-ghs-pictograms';
+export * from './sds-language';
+export * from './chemical-labels';

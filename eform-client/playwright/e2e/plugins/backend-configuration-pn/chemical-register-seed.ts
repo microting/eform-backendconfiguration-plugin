@@ -108,3 +108,64 @@ export function isoDateFromToday(days: number): string {
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().substring(0, 10);
 }
+
+export interface RegisterDocumentSeed {
+  chemicalId: number;
+  /** ChemicalDocumentType: 1 = Sds, 2 = Label, 3 = MinorUseInstructions. */
+  type: 1 | 2 | 3;
+  /** The file name the server serves it under: 32 hex digits. */
+  md5: string;
+  /** ISO 639-1; labels are Danish, like the tenant sync writes them. */
+  language?: string;
+  packaging?: string;
+  revisionDate?: string;
+}
+
+/**
+ * One Active ChemicalDocuments row of a seeded chemical, the way the tenant sync writes it (labels Source=Bmd,
+ * SDS Source=Supplier). The register serves the md5 as the document's file name; the specs stub the PDF
+ * download itself, so nothing is fetched from chemicalbase.
+ */
+export async function seedRegisterDocument(seed: RegisterDocumentSeed): Promise<void> {
+  if (!/^[0-9a-f]{32}$/.test(seed.md5)) {
+    throw new Error(`seedRegisterDocument: '${seed.md5}' is not a 32 digit hex md5`);
+  }
+  const packaging = seed.packaging === undefined ? 'NULL' : sqlText(seed.packaging);
+  const language = sqlText(seed.language ?? 'da');
+  const source = seed.type === 1 ? 3 : 2;
+  const sql =
+    `INSERT INTO ChemicalDocuments (${BASE_COLUMNS}, ChemicalId, Type, Source, Status, Language, ContentMd5, ContentSha256, ` +
+    'SizeBytes, SourcePackaging, SourceRevisionDate, RetrievedAt, LastSeenAt, StaffLocked) ' +
+    `VALUES (${BASE}, ${sqlInt(seed.chemicalId)}, ${sqlInt(seed.type)}, ${source}, 1, ${language}, '${seed.md5}', '', 0, ` +
+    `${packaging}, ${sqlDate(seed.revisionDate)}, NOW(), NOW(), 0)`;
+  await runMariadbSql(sql, `seed a register document for chemical ${seed.chemicalId}`, customerDatabase('chemical-base-plugin'));
+}
+
+/** A PDF response the specs hand to the browser in place of the chemicalbase proxy. */
+export const STUB_PDF = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n');
+
+const ADMIN_EMAIL = 'admin@admin.com';
+
+/** The UI language (Users.Locale) of the seeded admin; throws unless exactly one login matches. */
+export async function getAdminLocale(): Promise<string> {
+  const out = await runMariadbSql(
+    `SELECT Locale FROM Users WHERE Email = '${ADMIN_EMAIL}'`, 'read the admin locale', customerDatabase('Angular'));
+  const rows = out.split('\n').filter((line) => line !== '');
+  if (rows.length !== 1) {
+    throw new Error(`getAdminLocale: expected one login ${ADMIN_EMAIL}, got '${out}'`);
+  }
+  return rows[0].trim();
+}
+
+/**
+ * Sets the UI language of the seeded admin (the user setting the SDS language follows). Idempotent: it matches the
+ * login first, so setting the value it already has (e.g. a restore after a leaked change) is not an error.
+ */
+export async function setAdminLocale(locale: string): Promise<void> {
+  if (!/^[A-Za-z]{2}(-[A-Za-z]{2})?$/.test(locale)) {
+    throw new Error(`setAdminLocale: '${locale}' is not a locale`);
+  }
+  await getAdminLocale();
+  await runMariadbSql(
+    `UPDATE Users SET Locale = '${locale}' WHERE Email = '${ADMIN_EMAIL}'`, `set the admin locale to ${locale}`, customerDatabase('Angular'));
+}

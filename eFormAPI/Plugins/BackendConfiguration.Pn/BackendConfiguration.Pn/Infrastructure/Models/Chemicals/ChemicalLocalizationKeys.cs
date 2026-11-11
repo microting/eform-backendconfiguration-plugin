@@ -93,6 +93,9 @@ public static class ChemicalLocalizationKeys
     public const string ChemicalNo = "ChemicalNo";
     public const string ChemicalSdsLink = "ChemicalSdsLink";
     public const string ChemicalSdsNote = "ChemicalSdsNote";
+    public const string ChemicalColumnLabel = "ChemicalColumnLabel";
+    public const string ChemicalLabelLink = "ChemicalLabelLink";
+    public const string ChemicalSdsAlso = "ChemicalSdsAlso";
     public const string ChemicalSystemUser = "ChemicalSystemUser";
     public const string ChemicalBalance = "ChemicalBalance";
     public const string ChemicalStockOn = "ChemicalStockOn";
@@ -128,7 +131,8 @@ public static class ChemicalLocalizationKeys
         ChemicalColumnRequiresAction, ChemicalColumnRegisteredBy, ChemicalColumnRegisteredAt,
         ChemicalColumnRemovalReason, ChemicalColumnRemovedAt, ChemicalColumnRemovedBy, ChemicalColumnNote,
         ChemicalColumnTime, ChemicalColumnUser, ChemicalColumnAction, ChemicalColumnDetails, ChemicalYes, ChemicalNo,
-        ChemicalSdsLink, ChemicalSdsNote, ChemicalSystemUser, ChemicalBalance, ChemicalStockOn, ChemicalStockOff,
+        ChemicalSdsLink, ChemicalSdsNote, ChemicalColumnLabel, ChemicalLabelLink, ChemicalSdsAlso,
+        ChemicalSystemUser, ChemicalBalance, ChemicalStockOn, ChemicalStockOff,
         ChemicalDigestRecipients, ChemicalDeadlineSales, ChemicalDeadlineUseAndPossession, ChemicalReasonUsed,
         ChemicalReasonDisposed, ChemicalReasonMoved, ChemicalThresholdSixMonths, ChemicalThresholdOneMonth,
         ChemicalThresholdPassed, ChemicalThresholdStatusChanged, ChemicalFlagView, ChemicalFlagRegister,

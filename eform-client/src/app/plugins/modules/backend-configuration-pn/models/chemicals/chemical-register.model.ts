@@ -17,6 +17,29 @@ export interface ChemicalProductModel {
   sdsChecksum: string;
 }
 
+/** Proto numbering of ChemicalLabelModel.kind (never the C# ChemicalDocumentType values). */
+export enum ChemicalLabelKind {
+  Label = 1,
+  MinorUse = 2,
+}
+
+/** A BMD label document; fileName is the md5 of the file, opened through label/{fileName}. */
+export interface ChemicalLabelModel {
+  fileName: string;
+  kind: ChemicalLabelKind;
+  packaging: string;
+  revisionDate: string | null;
+  revision: string;
+}
+
+/** A per-language safety data sheet; language is ISO 639-1, fileName the md5, opened through sds/{fileName}. */
+export interface ChemicalSdsDocumentModel {
+  language: string;
+  fileName: string;
+  revisionDate: string | null;
+  productName: string;
+}
+
 /** Plugin ChemicalRegisterEntryModel: BMD details, Danish texts unchanged. Dates are ISO strings. */
 export interface ChemicalRegisterEntryModel {
   chemicalId: number;
@@ -37,6 +60,10 @@ export interface ChemicalRegisterEntryModel {
   authorisationHolder: string;
   products: ChemicalProductModel[];
   updatedAt: string;
+  /** Absent from a server that predates the label documents. */
+  labels?: ChemicalLabelModel[];
+  /** Absent from a server that predates the SDS documents: the row then falls back to products[].sdsFileName. */
+  sdsDocuments?: ChemicalSdsDocumentModel[];
 }
 
 export interface ChemicalRegisterPageModel {

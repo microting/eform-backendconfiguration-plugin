@@ -20,6 +20,7 @@ SOFTWARE.
 
 using ChemicalsBase.Infrastructure;
 using ChemicalsBase.Infrastructure.Data.Entities;
+using ChemicalsBase.Infrastructure.Data.Enums;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
@@ -82,6 +83,38 @@ public static class ChemicalRegisterSeed
         db.Chemicals.Add(chemical);
         await db.SaveChangesAsync();
         return new SeededChemical(chemical.Id, chemical.Products.Single().Id, chemical.RemoteId);
+    }
+
+    /// <summary>
+    /// A tenant ChemicalDocuments row the way the PR-4 sync writes it: labels are Source=Bmd with Language "da",
+    /// per-language SDS are Source=Supplier; ContentMd5 is the file name.
+    /// </summary>
+    public static async Task<ChemicalDocument> AddDocumentAsync(
+        ChemicalsDbContext db, int chemicalId, ChemicalDocumentType type, string? md5 = null, string language = "da",
+        string? packaging = null, DateTime? revisionDate = null, string? revision = null,
+        ChemicalDocumentStatus status = ChemicalDocumentStatus.Active, bool removed = false)
+    {
+        var document = new ChemicalDocument
+        {
+            ChemicalId = chemicalId,
+            Type = type,
+            Source = type == ChemicalDocumentType.Sds ? ChemicalDocumentSource.Supplier : ChemicalDocumentSource.Bmd,
+            Status = status,
+            Language = language,
+            ContentMd5 = md5 ?? Guid.NewGuid().ToString("N"),
+            SourcePackaging = packaging,
+            SourceRevisionDate = revisionDate,
+            SourceRevision = revision,
+            RetrievedAt = DateTime.UtcNow,
+            LastSeenAt = DateTime.UtcNow,
+        };
+        await document.Create(db);
+        if (removed)
+        {
+            await document.Delete(db);
+        }
+
+        return document;
     }
 
     /// <summary>A random GTIN of <paramref name="length"/> digits (8, 12, 13 or 14) with a valid GS1 check digit.</summary>

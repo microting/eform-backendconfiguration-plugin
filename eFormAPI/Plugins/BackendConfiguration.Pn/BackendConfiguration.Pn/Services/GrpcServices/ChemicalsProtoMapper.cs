@@ -159,8 +159,24 @@ internal static class ChemicalsProtoMapper
         {
             ProductId = p.ProductId, Name = p.Name, Barcode = p.Barcode, SdsFileName = p.SdsFileName, SdsChecksum = p.SdsChecksum,
         }));
+        entry.Labels.AddRange(model.Labels.Select(l => new ChemicalLabelItem
+        {
+            FileName = l.FileName, Kind = ToProtoKind(l.Kind), Packaging = l.Packaging,
+            RevisionDate = OptionalTs(l.RevisionDate), Revision = l.Revision,
+        }));
+        entry.SdsDocuments.AddRange(model.SdsDocuments.Select(d => new ChemicalSdsItem
+        {
+            Language = d.Language, FileName = d.FileName, RevisionDate = OptionalTs(d.RevisionDate), ProductName = d.ProductName,
+        }));
         return entry;
     }
+
+    private static ChemicalLabelKind ToProtoKind(int kind) => kind switch
+    {
+        ChemicalLabelKinds.Label => ChemicalLabelKind.Label,
+        ChemicalLabelKinds.MinorUse => ChemicalLabelKind.MinorUse,
+        _ => ChemicalLabelKind.Unspecified,
+    };
 
     public static ChemicalWorkerPermissionEntry ToProto(ChemicalWorkerPermissionModel model) => new()
     {

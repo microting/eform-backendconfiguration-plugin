@@ -20,6 +20,7 @@ SOFTWARE.
 
 using BackendConfiguration.Pn.Infrastructure.Models.Chemicals;
 using BackendConfiguration.Pn.Services.ChemicalInventoryService;
+using ChemicalsBase.Infrastructure.Data.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace BackendConfiguration.Pn.Integration.Test;
@@ -108,6 +109,87 @@ public class ChemicalRegisterReaderTests : ChemicalTestBase
 
         // The register's collation matches case-insensitively; the stored spelling is what chemicalbase knows.
         Assert.That(await CreateSut().FindSdsFileNameAsync(fileName.ToUpperInvariant()), Is.EqualTo(fileName));
+    }
+
+    [Test]
+    public async Task Entry_carries_active_labels_only()
+    {
+        var seeded = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "With labels", "7-001");
+        var label = Guid.NewGuid().ToString("N");
+        var minorUse = Guid.NewGuid().ToString("N");
+        var revisionDate = new DateTime(2026, 3, 1);
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext!, seeded.ChemicalId, ChemicalDocumentType.Label, label,
+            packaging: "5 L", revisionDate: revisionDate, revision: "3");
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext!, seeded.ChemicalId, ChemicalDocumentType.MinorUseInstructions, minorUse);
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext!, seeded.ChemicalId, ChemicalDocumentType.Label,
+            status: ChemicalDocumentStatus.Superseded);
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext!, seeded.ChemicalId, ChemicalDocumentType.Sds, language: "en");
+
+        var labels = (await CreateSut().GetByIdsAsync([seeded.ChemicalId])).Single().Labels;
+
+        Assert.That(labels.Select(l => (l.FileName, l.Kind)), Is.EquivalentTo(new[] { (label, 1), (minorUse, 2) }),
+            "proto numbering: Label 1, MinorUse 2 (never the C# enum values)");
+        var first = labels.Single(l => l.FileName == label);
+        Assert.That((first.Packaging, first.Revision), Is.EqualTo(("5 L", "3")));
+        Assert.That(first.RevisionDate, Is.EqualTo(revisionDate));
+        Assert.That(first.RevisionDate!.Value.Kind, Is.EqualTo(DateTimeKind.Utc));
+        var bare = labels.Single(l => l.FileName == minorUse);
+        Assert.That((bare.Packaging, bare.Revision, bare.RevisionDate), Is.EqualTo((string.Empty, string.Empty, (DateTime?)null)));
+    }
+
+    [Test]
+    public async Task Removed_label_not_listed()
+    {
+        var seeded = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Removed label", "7-002");
+        var kept = Guid.NewGuid().ToString("N");
+        var gone = Guid.NewGuid().ToString("N");
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext!, seeded.ChemicalId, ChemicalDocumentType.Label, kept);
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext!, seeded.ChemicalId, ChemicalDocumentType.Label, gone, removed: true);
+
+        var sut = CreateSut();
+
+        Assert.That((await sut.GetByIdsAsync([seeded.ChemicalId])).Single().Labels.Select(l => l.FileName), Is.EqualTo(new[] { kept }));
+        Assert.That(await sut.FindLabelFileNameAsync(gone), Is.Null);
+    }
+
+    [Test]
+    public async Task Label_change_counts_as_changed_since()
+    {
+        var seeded = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Label bump", "7-003");
+        var since = DateTime.UtcNow.AddDays(-1);
+        await ChemicalsDbContext!.Chemicals.Where(c => c.Id == seeded.ChemicalId)
+            .ExecuteUpdateAsync(s => s.SetProperty(c => c.UpdatedAt, since.AddDays(-30)));
+        await ChemicalsDbContext.Products.Where(p => p.ChemicalId == seeded.ChemicalId)
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.UpdatedAt, since.AddDays(-30)));
+        Assert.That(await CreateSut().ChangedSinceAsync([seeded.ChemicalId], since), Is.Empty, "positive control: nothing changed yet");
+
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext, seeded.ChemicalId, ChemicalDocumentType.Label);
+
+        Assert.That(await CreateSut().ChangedSinceAsync([seeded.ChemicalId], since), Is.EqualTo(new[] { seeded.ChemicalId }));
+    }
+
+    [Test]
+    public async Task Entry_carries_sds_per_language()
+    {
+        var seeded = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Per language", "7-004");
+        var da = Guid.NewGuid().ToString("N");
+        var en = Guid.NewGuid().ToString("N");
+        var revisionDate = new DateTime(2026, 5, 2);
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext!, seeded.ChemicalId, ChemicalDocumentType.Sds, da, "da");
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext!, seeded.ChemicalId, ChemicalDocumentType.Sds, en, "en", revisionDate: revisionDate);
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext!, seeded.ChemicalId, ChemicalDocumentType.Sds, language: "de", removed: true);
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext!, seeded.ChemicalId, ChemicalDocumentType.Sds, language: "sv",
+            status: ChemicalDocumentStatus.Superseded);
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext!, seeded.ChemicalId, ChemicalDocumentType.Sds, language: "");
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext!, seeded.ChemicalId, ChemicalDocumentType.Label);
+
+        var sds = (await CreateSut().GetByIdsAsync([seeded.ChemicalId])).Single().SdsDocuments;
+
+        Assert.That(sds.Select(d => (d.Language, d.FileName)), Is.EquivalentTo(new[] { ("da", da), ("en", en) }));
+        var english = sds.Single(d => d.Language == "en");
+        Assert.That(english.RevisionDate, Is.EqualTo(revisionDate));
+        Assert.That(english.RevisionDate!.Value.Kind, Is.EqualTo(DateTimeKind.Utc));
+        Assert.That(english.ProductName, Is.Not.Null);
     }
 
     [Test]

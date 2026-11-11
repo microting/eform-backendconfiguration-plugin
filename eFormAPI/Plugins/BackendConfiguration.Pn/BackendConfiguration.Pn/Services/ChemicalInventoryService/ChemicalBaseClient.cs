@@ -31,13 +31,21 @@ public class ChemicalBaseClient(HttpClient httpClient, IOptions<ChemicalBaseOpti
 {
     internal const string SdsPath = "api/chemicals-pn/get-pdf-file";
 
-    public async Task<byte[]> DownloadSdsAsync(string fileName, CancellationToken cancellationToken = default)
+    internal const string LabelPath = "api/chemicals-pn/get-label-file";
+
+    public Task<byte[]> DownloadSdsAsync(string fileName, CancellationToken cancellationToken = default) =>
+        DownloadAsync(SdsPath, "SDS", fileName, cancellationToken);
+
+    public Task<byte[]> DownloadLabelAsync(string fileName, CancellationToken cancellationToken = default) =>
+        DownloadAsync(LabelPath, "label", fileName, cancellationToken);
+
+    private async Task<byte[]> DownloadAsync(string path, string what, string fileName, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(fileName);
 
         // BaseUrl comes from options, so the client does not depend on HttpClient.BaseAddress being set.
         var baseUri = new Uri(options.Value.BaseUrl.TrimEnd('/') + "/");
-        var requestUri = new Uri(baseUri, $"{SdsPath}?fileName={Uri.EscapeDataString(fileName)}");
+        var requestUri = new Uri(baseUri, $"{path}?fileName={Uri.EscapeDataString(fileName)}");
         var timeout = options.Value.SdsDownloadTimeout;
 
         // The client bounds its own wait, whatever HttpClient.Timeout the registration sets.
@@ -55,7 +63,7 @@ public class ChemicalBaseClient(HttpClient httpClient, IOptions<ChemicalBaseOpti
             if (!response.IsSuccessStatusCode)
             {
                 throw new ChemicalUnavailableException(
-                    $"chemicalbase answered {(int)response.StatusCode} for SDS {fileName}.");
+                    $"chemicalbase answered {(int)response.StatusCode} for {what} {fileName}.");
             }
 
             return await response.Content.ReadAsByteArrayAsync(timeoutSource.Token).ConfigureAwait(false);

@@ -59,9 +59,17 @@ public static class ChemicalAuthorityListBuilder
     /// <summary>The SDS column prints only the short link text, never the address (a long URL wrapped over many lines).</summary>
     private const float SdsWeight = 2.4f;
 
+    /// <summary>
+    /// The label column exists only when a row has a label. Its width is taken from the hazard-statement column, so the
+    /// table keeps its width and every header still fits (the SDS column must not shrink).
+    /// </summary>
+    private const float LabelWeight = 1.4f;
+
     public static ChemicalAuthorityListDocument Build(
-        ChemicalInventoryModel model, int propertyId, DateTime generatedAtUtc, string sdsBaseUrl, Func<string, string> text)
+        ChemicalInventoryModel model, int propertyId, DateTime generatedAtUtc, string sdsBaseUrl, Func<string, string> text,
+        ChemicalAuthorityListOptions options = null)
     {
+        options ??= new ChemicalAuthorityListOptions();
         var lookup = new ChemicalInventoryLookup(model);
         var showQuantity = model.Properties.FirstOrDefault(p => p.PropertyId == propertyId)?.StockEnabled ?? false;
         var columns = Columns.Where(c => showQuantity || !c.StockOnly).ToList();
@@ -73,11 +81,19 @@ public static class ChemicalAuthorityListBuilder
             .ThenBy(x => x.Entry?.Name ?? string.Empty, TagNameComparer.Danish)
             .ThenBy(x => x.Placement.LocationId)
             .ThenBy(x => x.Placement.Id)
-            .Select(x => Row(x.Placement, x.Location, x.Entry, lookup, showQuantity, sdsBaseUrl, text))
+            .Select(x => Row(x.Placement, x.Location, x.Entry, lookup, showQuantity, sdsBaseUrl, text, options))
             .Select(row => row with { Cells = columns.Select(c => c.Value(row)).ToList() })
             .ToList();
 
+        var hasLabels = rows.Any(r => r.LabelUrl.Length > 0);
         var headers = columns.Select(c => text(c.HeaderKey)).Append(text(K.ChemicalColumnSds)).ToList();
+        var weights = columns.Select(c => c.Weight).Append(SdsWeight).ToList();
+        if (hasLabels)
+        {
+            headers.Add(text(K.ChemicalColumnLabel));
+            weights[columns.FindIndex(c => c.HeaderKey == K.ChemicalColumnHazardStatements)] -= LabelWeight;
+            weights.Add(LabelWeight);
+        }
 
         return new ChemicalAuthorityListDocument(
             text(K.ChemicalAuthorityListTitle),
@@ -85,15 +101,17 @@ public static class ChemicalAuthorityListBuilder
             + ChemicalCopenhagen.ToCopenhagen(generatedAtUtc).ToString("dd-MM-yyyy HH:mm", CultureInfo.InvariantCulture),
             headers, rows, text(K.ChemicalSdsLink))
         {
-            ColumnWeights = columns.Select(c => c.Weight).Append(SdsWeight).ToList(),
+            ColumnWeights = weights,
             PictogramColumn = columns.FindIndex(c => c.HeaderKey == K.ChemicalColumnPictograms),
             SdsNote = text(K.ChemicalSdsNote),
+            LabelLinkText = hasLabels ? text(K.ChemicalLabelLink) : string.Empty,
         };
     }
 
     private static ChemicalAuthorityListRow Row(
         ChemicalPlacementModel placement, ChemicalLocationModel location, ChemicalRegisterEntryModel entry,
-        ChemicalInventoryLookup lookup, bool showQuantity, string sdsBaseUrl, Func<string, string> text)
+        ChemicalInventoryLookup lookup, bool showQuantity, string sdsBaseUrl, Func<string, string> text,
+        ChemicalAuthorityListOptions options)
     {
         var deadlines = new List<string>();
         if (entry?.SalesDeadline is { } sales)
@@ -106,8 +124,9 @@ public static class ChemicalAuthorityListBuilder
             deadlines.Add($"{text(K.ChemicalDeadlineUseAndPossession)}: {use.ToString("dd-MM-yyyy", CultureInfo.InvariantCulture)}");
         }
 
-        var sds = entry?.Products.FirstOrDefault(p => p.ProductId == placement.ProductId && !string.IsNullOrEmpty(p.SdsFileName))
-                  ?? entry?.Products.FirstOrDefault(p => !string.IsNullOrEmpty(p.SdsFileName));
+        var baseUrl = sdsBaseUrl.TrimEnd('/');
+        var sds = SdsLink(entry, placement.ProductId, options.SdsLanguage);
+        var label = entry?.Labels.FirstOrDefault(l => l.Kind == ChemicalLabelKinds.Label && !string.IsNullOrEmpty(l.FileName));
 
         return new ChemicalAuthorityListRow(
             lookup.ProductName(placement.ChemicalId),
@@ -123,9 +142,68 @@ public static class ChemicalAuthorityListBuilder
                 : string.Empty,
             sds is null
                 ? string.Empty
-                : $"{sdsBaseUrl.TrimEnd('/')}/{ChemicalBaseClient.SdsPath}?fileName={Uri.EscapeDataString(sds.SdsFileName)}")
+                : $"{baseUrl}/{ChemicalBaseClient.SdsPath}?fileName={Uri.EscapeDataString(sds.Value.FileName)}")
         {
-            PictogramCodes = entry?.HazardPictograms ?? []
+            PictogramCodes = entry?.HazardPictograms ?? [],
+            LabelUrl = label is null
+                ? string.Empty
+                : $"{baseUrl}/{ChemicalBaseClient.LabelPath}?fileName={Uri.EscapeDataString(label.FileName)}",
+            // Only beside a link: "also" says nothing when no sheet is linked.
+            OtherSdsLanguages = options.ListOtherLanguages && sds is not null
+                ? OtherLanguages(entry, sds.Value.Language, text)
+                : string.Empty,
         };
     }
+
+    private const string Danish = ChemicalAuthorityListOptions.DefaultSdsLanguage;
+
+    /// <summary>
+    /// The SDS to link and the language it is in. Another configured language is taken from the chemical's
+    /// documents; otherwise the Danish SDS: the placement's product file, then any product file, then the
+    /// chemical-level "da" document.
+    /// </summary>
+    private static (string FileName, string Language)? SdsLink(ChemicalRegisterEntryModel entry, int? productId, string language)
+    {
+        if (entry is null)
+        {
+            return null;
+        }
+
+        if (!IsLanguage(language, Danish)
+            && entry.SdsDocuments.FirstOrDefault(d => IsLanguage(d.Language, language) && !string.IsNullOrEmpty(d.FileName)) is { } wanted)
+        {
+            return (wanted.FileName, language.Trim());
+        }
+
+        var danish = ProductSdsFileName(entry, productId) ?? DanishDocumentFileName(entry);
+        return danish is null ? null : (danish, Danish);
+    }
+
+    private static string ProductSdsFileName(ChemicalRegisterEntryModel entry, int? productId) =>
+        (entry.Products.FirstOrDefault(p => p.ProductId == productId && !string.IsNullOrEmpty(p.SdsFileName))
+         ?? entry.Products.FirstOrDefault(p => !string.IsNullOrEmpty(p.SdsFileName)))?.SdsFileName;
+
+    private static string DanishDocumentFileName(ChemicalRegisterEntryModel entry) =>
+        entry.SdsDocuments.FirstOrDefault(d => IsLanguage(d.Language, Danish) && !string.IsNullOrEmpty(d.FileName))?.FileName;
+
+    /// <summary>"Også: DE, EN": the languages other than the linked one, upper case and sorted; empty when there are none.</summary>
+    private static string OtherLanguages(ChemicalRegisterEntryModel entry, string linkedLanguage, Func<string, string> text)
+    {
+        var languages = entry.SdsDocuments.Where(d => !string.IsNullOrEmpty(d.FileName)).Select(d => d.Language.Trim()).ToList();
+        if (entry.Products.Any(p => !string.IsNullOrEmpty(p.SdsFileName)))
+        {
+            languages.Add(Danish);
+        }
+
+        var others = languages
+            .Where(l => l.Length > 0 && !IsLanguage(l, linkedLanguage))
+            .Select(l => l.ToUpperInvariant())
+            .Distinct()
+            .Order(StringComparer.Ordinal)
+            .ToList();
+        return others.Count == 0 ? string.Empty : $"{text(K.ChemicalSdsAlso)}: {string.Join(", ", others)}";
+    }
+
+    private static bool IsLanguage(string actual, string wanted) =>
+        string.Equals(actual?.Trim(), wanted?.Trim(), StringComparison.OrdinalIgnoreCase);
 }

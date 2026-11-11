@@ -64,6 +64,13 @@ public class ChemicalsGrpcService(
         await WriteFileAsync(responseStream, content, "application/pdf", request.Offset, context.CancellationToken).ConfigureAwait(false);
     }
 
+    public override async Task GetLabelPdf(ChemicalLabelPdfRequest request, IServerStreamWriter<ChemicalFileChunk> responseStream,
+        ServerCallContext context)
+    {
+        var content = await RunAsync(caller => inventory.GetLabelPdfAsync(caller, request.FileName)).ConfigureAwait(false);
+        await WriteFileAsync(responseStream, content, "application/pdf", 0, context.CancellationToken).ConfigureAwait(false);
+    }
+
     public override async Task GetLocationPhoto(ChemicalLocationPhotoRequest request, IServerStreamWriter<ChemicalFileChunk> responseStream,
         ServerCallContext context)
     {

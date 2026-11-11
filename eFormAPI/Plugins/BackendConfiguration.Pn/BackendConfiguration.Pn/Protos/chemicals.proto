@@ -39,6 +39,8 @@ service ChemicalsGrpc {
   rpc GetMyInventory(ChemicalInventoryRequest) returns (ChemicalInventoryResponse);
   // SDS PDF proxied from chemicalbase, resumable from `offset`. Needs: view on any property.
   rpc GetSdsPdf(ChemicalSdsPdfRequest) returns (stream ChemicalFileChunk);
+  // BMD label PDF (Label or MinorUseInstructions) proxied from chemicalbase, always from the start. Needs: view on any property.
+  rpc GetLabelPdf(ChemicalLabelPdfRequest) returns (stream ChemicalFileChunk);
   // Location photo, resumable from `offset`. Needs: view.
   rpc GetLocationPhoto(ChemicalLocationPhotoRequest) returns (stream ChemicalFileChunk);
   // Barcode match against the customer register copy. Needs: view on any property.
@@ -262,6 +264,32 @@ message ChemicalRegisterEntry {
   string authorisation_holder = 16;
   repeated ChemicalProductItem products = 17;
   google.protobuf.Timestamp updated_at = 18;
+  // Danish BMD labels and minor-use instructions; fetch with GetLabelPdf.
+  repeated ChemicalLabelItem labels = 19;
+  // Safety data sheets per language; fetch with GetSdsPdf. sds_file_name (4) of
+  // the products stays the Danish SDS for old apps.
+  repeated ChemicalSdsItem sds_documents = 20;
+}
+
+enum ChemicalLabelKind {
+  CHEMICAL_LABEL_KIND_UNSPECIFIED = 0;
+  CHEMICAL_LABEL_KIND_LABEL = 1;
+  CHEMICAL_LABEL_KIND_MINOR_USE = 2;
+}
+
+message ChemicalLabelItem {
+  string file_name = 1;                     // md5 of the file; the key for GetLabelPdf
+  ChemicalLabelKind kind = 2;
+  string packaging = 3;                     // "" = unknown
+  google.protobuf.Timestamp revision_date = 4;
+  string revision = 5;
+}
+
+message ChemicalSdsItem {
+  string language = 1;                      // "da", "en", ...
+  string file_name = 2;                     // md5 of the file; fetch with GetSdsPdf
+  google.protobuf.Timestamp revision_date = 3;
+  string product_name = 4;                  // "" = unknown
 }
 
 // ---------------------------------------------------------------- sync
@@ -301,6 +329,10 @@ message ChemicalInventoryResponse {
 message ChemicalSdsPdfRequest {
   string file_name = 1;                     // ChemicalProductItem.sds_file_name
   int64 offset = 2;                         // resume point; 0 = from the start
+}
+
+message ChemicalLabelPdfRequest {
+  string file_name = 1;                     // ChemicalLabelItem.file_name
 }
 
 message ChemicalLocationPhotoRequest {

@@ -70,4 +70,58 @@ describe('Kemi i18n coverage', () => {
 
     expect(built.filter((key) => !CHEMICAL_I18N_KEYS.includes(key))).toEqual([]);
   });
+
+  const DOCUMENT_KEYS = CHEMICAL_I18N_KEYS.filter((key) => /^Chemicals: (Open label|Could not open label|Label|Minor use|Other languages|Pop-up blocked|Language )/.test(key));
+
+  it('lists the label and language keys of Task 15/15b (one name per language of the SDS menu)', () => {
+    expect(DOCUMENT_KEYS).toHaveLength(33);
+    expect(DOCUMENT_KEYS.filter((key) => key.startsWith('Chemicals: Language '))).toHaveLength(25);
+  });
+
+  it.each(Object.keys(LOCALES))('%s keeps the {{packaging}} parameter of the packaged label and minor-use texts', (locale) => {
+    expect(String(LOCALES[locale]['Chemicals: Label ({{packaging}})'])).toContain('{{packaging}}');
+    expect(String(LOCALES[locale]['Chemicals: Minor use ({{packaging}})'])).toContain('{{packaging}}');
+  });
+
+  it.each(Object.keys(LOCALES).filter((locale) => locale !== 'enUS'))('%s translates the label and language keys (no English left)', (locale) => {
+    const untranslated = DOCUMENT_KEYS.filter((key) => LOCALES[locale][key] === LOCALES['enUS'][key]);
+
+    expect(untranslated).toEqual([]);
+  });
+
+  it('writes Danish as the owner specified', () => {
+    expect(da['Chemicals: Open label']).toBe('Åbn etiket');
+    expect(da['Chemicals: Minor use']).toBe('Mindre anvendelse');
+    expect(da['Chemicals: Label ({{packaging}})']).toBe('Etiket ({{packaging}})');
+    expect(da['Chemicals: Other languages']).toBe('Andre sprog');
+    expect(da['Chemicals: Minor use ({{packaging}})']).toBe('Mindre anvendelse ({{packaging}})');
+  });
+
+  it.each([
+    ['uk-UA', 'ukUA', 'Chemicals: Open label', 'Відкрити етикетку'],
+    ['fr-FR', 'frFR', 'Chemicals: Open label', 'Ouvrir l\'étiquette'],
+    ['cs-CZ', 'csCZ', 'Chemicals: Open label', 'Otevřít štítek'],
+    ['es-ES', 'esES', 'Chemicals: Open label', 'Abrir la etiqueta'],
+    ['nl-NL', 'nlNL', 'Chemicals: Open label', 'Etiket openen'],
+    ['de-DE', 'deDE', 'Chemicals: Minor use', 'Geringfügige Verwendung'],
+    ['nl-NL', 'nlNL', 'Chemicals: Minor use', 'Kleine toepassing'],
+    ['pt-PT', 'ptPT', 'Chemicals: Minor use', 'Utilização menor'],
+    ['pt-BR', 'ptBR', 'Chemicals: Minor use', 'Uso menor'],
+    ['pt-PT', 'ptPT', 'Chemicals: Label', 'Etiqueta'],
+    ['pl-PL', 'plPL', 'Chemicals: Minor use', 'Małe zastosowanie'],
+    ['pl-PL', 'plPL', 'Chemicals: Pop-up blocked, file downloaded', 'Wyskakujące okno zostało zablokowane, więc plik został pobrany.'],
+    ['de-DE', 'deDE', 'Chemicals: Pop-up blocked, file downloaded', 'Das Pop-up wurde blockiert, die Datei wurde stattdessen heruntergeladen.'],
+    ['hr-HR', 'hrHR', 'Chemicals: Label', 'Etiketa'],
+    ['sl-SL', 'slSL', 'Chemicals: Label', 'Etiketa'],
+  ])('%s: reviewed wording of %s %s', (_tag, locale, key, expected) => {
+    expect(LOCALES[locale][key]).toBe(expected);
+  });
+
+  it.each([
+    ['ptPT', 'etiqueta'], ['hrHR', 'etiket'], ['slSL', 'etiket'],
+  ])('%s uses one word for the label in the label texts', (locale, stem) => {
+    for (const key of ['Chemicals: Label', 'Chemicals: Open label', 'Chemicals: Could not open label']) {
+      expect(String(LOCALES[locale][key]).toLowerCase()).toContain(stem);
+    }
+  });
 });

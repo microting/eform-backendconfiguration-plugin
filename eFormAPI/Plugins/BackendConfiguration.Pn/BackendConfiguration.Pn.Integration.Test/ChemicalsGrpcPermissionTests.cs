@@ -44,7 +44,7 @@ namespace BackendConfiguration.Pn.Integration.Test;
 public class ChemicalsGrpcPermissionTests : ChemicalTestBase
 {
     private sealed record Scenario(int PropertyId, int WorkerId, int OtherWorkerId, int LocationId, int EmptyLocationId,
-        int PlacementId, int ChemicalId, string SdsFileName, string Barcode);
+        int PlacementId, int ChemicalId, string SdsFileName, string Barcode, string LabelFileName);
 
     private delegate Task Rpc(ChemicalsGrpcService sut, Scenario s);
 
@@ -54,6 +54,8 @@ public class ChemicalsGrpcPermissionTests : ChemicalTestBase
     {
         ["GetSdsPdf"] = (ChemicalPermission.View, (sut, s) =>
             sut.GetSdsPdf(new ChemicalSdsPdfRequest { FileName = s.SdsFileName }, new FakeServerStreamWriter<ChemicalFileChunk>(), Context())),
+        ["GetLabelPdf"] = (ChemicalPermission.View, (sut, s) =>
+            sut.GetLabelPdf(new ChemicalLabelPdfRequest { FileName = s.LabelFileName }, new FakeServerStreamWriter<ChemicalFileChunk>(), Context())),
         ["GetLocationPhoto"] = (ChemicalPermission.View, (sut, s) =>
             sut.GetLocationPhoto(new ChemicalLocationPhotoRequest { LocationId = s.LocationId }, new FakeServerStreamWriter<ChemicalFileChunk>(), Context())),
         ["LookupBarcode"] = (ChemicalPermission.View, (sut, s) =>
@@ -135,6 +137,8 @@ public class ChemicalsGrpcPermissionTests : ChemicalTestBase
         var sds = Guid.NewGuid().ToString("N");
         var barcode = ChemicalRegisterSeed.RandomGtin(13);
         var chemical = await ChemicalRegisterSeed.AddChemicalAsync(ChemicalsDbContext!, "Matrix", "8-888", barcode: barcode, sdsFileName: sds);
+        var labelName = Guid.NewGuid().ToString("N");
+        await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext!, chemical.ChemicalId, ChemicalsBase.Infrastructure.Data.Enums.ChemicalDocumentType.Label, labelName);
         var placement = await CreatePlacementAsync(location.Id, chemical.ChemicalId);
         await new ChemicalStockEntry
         {
@@ -148,8 +152,9 @@ public class ChemicalsGrpcPermissionTests : ChemicalTestBase
         await location.Update(BackendConfigurationPnDbContext!);
 
         ChemicalBase.DownloadSdsAsync(sds, Arg.Any<CancellationToken>()).Returns(new byte[] { 37, 80, 68, 70 });
+        ChemicalBase.DownloadLabelAsync(labelName, Arg.Any<CancellationToken>()).Returns(new byte[] { 37, 80, 68, 70 });
 
-        return new Scenario(property.Id, worker, other, location.Id, empty.Id, placement.Id, chemical.ChemicalId, sds, barcode);
+        return new Scenario(property.Id, worker, other, location.Id, empty.Id, placement.Id, chemical.ChemicalId, sds, barcode, labelName);
     }
 
     private ChemicalsGrpcService CreateSut(int workerId)

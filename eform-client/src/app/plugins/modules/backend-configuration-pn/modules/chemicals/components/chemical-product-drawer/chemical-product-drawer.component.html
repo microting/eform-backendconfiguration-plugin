@@ -45,9 +45,35 @@
       </section>
       <section>
         <h4><mat-icon>description</mat-icon> {{ 'Chemicals: Safety data sheet' | translate }}</h4>
-        <button class="btn-quiet" id="chemicalDrawerSdsBtn" [disabled]="!sdsFileName" (click)="openSds()">
-          <mat-icon>open_in_new</mat-icon><span>{{ 'Chemicals: Open' | translate }}</span>
+        <div class="d-flex flex-wrap gap-8">
+          <button class="btn-quiet" id="chemicalDrawerSdsBtn" [disabled]="!sdsFileName" (click)="openSds()">
+            <mat-icon>open_in_new</mat-icon><span>{{ 'Chemicals: Open' | translate }}</span>
+          </button>
+          <button *ngIf="otherSdsDocuments.length" class="btn-quiet" id="chemicalDrawerSdsOthersBtn" [matMenuTriggerFor]="sdsLanguagesMenu">
+            <mat-icon>translate</mat-icon><span>{{ 'Chemicals: Other languages' | translate }}</span>
+          </button>
+          <mat-menu #sdsLanguagesMenu="matMenu">
+            <button *ngFor="let doc of otherSdsDocuments" mat-menu-item id="chemicalDrawerSdsOther-{{doc.language}}" (click)="openSdsDocument(doc)">
+              <span>{{ sdsLanguageText(doc) }}</span>
+            </button>
+          </mat-menu>
+        </div>
+      </section>
+      <section>
+        <h4><mat-icon>label</mat-icon> {{ 'Chemicals: Label' | translate }}</h4>
+        <button *ngIf="labels.length > 1; else singleLabel" class="btn-quiet" id="chemicalDrawerLabelBtn" [matMenuTriggerFor]="labelsMenu">
+          <mat-icon>open_in_new</mat-icon><span>{{ 'Chemicals: Open label' | translate }}</span>
         </button>
+        <ng-template #singleLabel>
+          <button class="btn-quiet" id="chemicalDrawerLabelBtn" [disabled]="!labels.length" (click)="openLabel()">
+            <mat-icon>open_in_new</mat-icon><span>{{ 'Chemicals: Open label' | translate }}</span>
+          </button>
+        </ng-template>
+        <mat-menu #labelsMenu="matMenu">
+          <button *ngFor="let label of labels; let j = index" mat-menu-item id="chemicalDrawerLabelItem-{{j}}" (click)="openLabelFile(label)">
+            <span>{{ labelText(label) }}</span>
+          </button>
+        </mat-menu>
       </section>
       <section>
         <h4><mat-icon>location_on</mat-icon> {{ 'Chemicals: Placement' | translate }}</h4>

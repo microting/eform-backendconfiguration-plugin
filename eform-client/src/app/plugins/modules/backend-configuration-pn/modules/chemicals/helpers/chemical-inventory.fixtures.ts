@@ -1,8 +1,11 @@
 import {
   ChemicalInventoryModel,
+  ChemicalLabelKind,
+  ChemicalLabelModel,
   ChemicalLocationModel,
   ChemicalPlacementModel,
   ChemicalRegisterEntryModel,
+  ChemicalSdsDocumentModel,
   ChemicalStockEntryKind,
   ChemicalStockEntryModel,
   ChemicalStockEntryOrigin,
@@ -67,4 +70,14 @@ export function inventoryOf(parts: {
     syncToken: '',
     full: true,
   };
+}
+
+/** A per-language SDS document; the file name is `md5<language>` unless the partial says otherwise. */
+export function sdsDocument(language: string, partial: Partial<ChemicalSdsDocumentModel> = {}): ChemicalSdsDocumentModel {
+  return {language, fileName: `md5${language}`, revisionDate: null, productName: '', ...partial};
+}
+
+/** A label document (kind Label, no packaging, no revision) unless the partial says otherwise. */
+export function labelOf(partial: Partial<ChemicalLabelModel> = {}): ChemicalLabelModel {
+  return {fileName: 'md5label', kind: ChemicalLabelKind.Label, packaging: '', revisionDate: null, revision: '', ...partial};
 }

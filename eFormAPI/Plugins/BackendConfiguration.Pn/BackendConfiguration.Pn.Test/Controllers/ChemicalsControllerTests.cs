@@ -85,6 +85,7 @@ public class ChemicalsControllerTests
 
         Assert.That(routes, Is.EqualTo(new[]
         {
+            "GET api/backend-configuration-pn/chemicals/label/{fileName}",
             "GET api/backend-configuration-pn/chemicals/locations/{locationId:int}/photo",
             "GET api/backend-configuration-pn/chemicals/properties/{propertyId:int}/inventory",
             "GET api/backend-configuration-pn/chemicals/properties/{propertyId:int}/permissions",
@@ -153,6 +154,18 @@ public class ChemicalsControllerTests
 
         Assert.That(await sut.GetSds("missing"), Is.InstanceOf<NotFoundResult>());
         var file = (FileContentResult)await sut.GetSds("abc");
+        Assert.That(file.ContentType, Is.EqualTo("application/pdf"));
+    }
+
+    [Test]
+    public async Task Label_UnknownFileIs404_KnownIsAPdf()
+    {
+        var sut = CreateSut();
+        _inventory.GetLabelPdfAsync(Web, "missing").ThrowsAsync(new ChemicalNotFoundException("no"));
+        _inventory.GetLabelPdfAsync(Web, "abc").Returns(new byte[] { 37, 80, 68, 70 });
+
+        Assert.That(await sut.GetLabel("missing"), Is.InstanceOf<NotFoundResult>());
+        var file = (FileContentResult)await sut.GetLabel("abc");
         Assert.That(file.ContentType, Is.EqualTo("application/pdf"));
     }
 
@@ -369,7 +382,7 @@ public class ChemicalsControllerTests
     private static ChemicalRegisterEntryModel StoredEntry() => new(
         11, "Roundup", "1-111", 1, "", null, null, null, null, null, [], null, "", [], [], "",
         [new ChemicalProductModel(21, "Roundup 1 L", StoredEan13, "", "")],
-        new DateTime(2026, 9, 1, 8, 0, 0, DateTimeKind.Utc));
+        new DateTime(2026, 9, 1, 8, 0, 0, DateTimeKind.Utc), [], []);
 
     private static readonly string[] Gs1Scans =
     [

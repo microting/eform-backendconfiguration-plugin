@@ -135,6 +135,10 @@ export class BackendConfigurationPnChemicalsService {
     return this.apiBaseService.getBlobData(this.url(`sds/${encodeURIComponent(fileName)}`));
   }
 
+  getLabelBlob(fileName: string): Observable<Blob> {
+    return this.apiBaseService.getBlobData(this.url(`label/${encodeURIComponent(fileName)}`));
+  }
+
   registerPlacement(command: ChemicalRegisterPlacementCommand): Observable<OperationDataResult<ChemicalPlacementChangeModel>> {
     return this.json(this.apiBaseService.post(this.url('placements'), command));
   }
