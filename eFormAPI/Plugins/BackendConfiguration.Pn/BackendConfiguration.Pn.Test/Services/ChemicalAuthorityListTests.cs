@@ -196,19 +196,73 @@ public class ChemicalAuthorityListTests
             Is.Empty, "no other language, no line");
     }
 
+    /// <summary>
+    /// Glyphs are subset-encoded in the PDF, so the printed words cannot be read back from the bytes; the link
+    /// annotations are plain text. The words themselves are pinned on the document model in the Build tests.
+    /// </summary>
     [Test]
-    public void Render_LabelAndLanguageLine_ProduceAPdf()
+    public void Render_PrintsTheLabelLink_OnlyWhenARowHasALabel()
+    {
+        var labelled = WithLabel(Entry(100, "Karate", "ab12") with
+        {
+            SdsDocuments = [new ChemicalSdsDocumentModel("en", "e", null, "")],
+        }, new ChemicalLabelModel("lab", 1, "", null, ""));
+
+        var withLabel = Encoding.Latin1.GetString(ChemicalAuthorityListPdf.Render(
+            ChemicalAuthorityListBuilder.Build(OneRow(labelled), 1, Now, BaseUrl, Text)));
+        var without = Encoding.Latin1.GetString(ChemicalAuthorityListPdf.Render(
+            ChemicalAuthorityListBuilder.Build(OneRow(Entry(100, "Karate", "ab12")), 1, Now, BaseUrl, Text)));
+
+        Assert.That(withLabel, Does.StartWith("%PDF-"));
+        Assert.That(withLabel, Does.Contain("https://chemicalbase.example/api/chemicals-pn/get-label-file?fileName=lab"));
+        Assert.That(withLabel, Does.Contain("get-pdf-file?fileName=ab12"), "the SDS link stays");
+        Assert.That(without, Does.Not.Contain("get-label-file"));
+    }
+
+    [Test]
+    public void Build_LabelColumnAndLanguageLine_CarryTheirWords()
     {
         var entry = WithLabel(Entry(100, "Karate", "ab12") with
         {
             SdsDocuments = [new ChemicalSdsDocumentModel("en", "e", null, "")],
         }, new ChemicalLabelModel("lab", 1, "", null, ""));
 
-        var withExtras = ChemicalAuthorityListPdf.Render(ChemicalAuthorityListBuilder.Build(OneRow(entry), 1, Now, BaseUrl, Text));
-        var plain = ChemicalAuthorityListPdf.Render(ChemicalAuthorityListBuilder.Build(OneRow(Entry(100, "Karate", "ab12")), 1, Now, BaseUrl, Text));
+        var doc = ChemicalAuthorityListBuilder.Build(OneRow(entry), 1, Now, BaseUrl,
+            key => Danish.TryGetValue(key, out var da) ? da : key == "ChemicalSdsAlso" ? "Også" : key);
 
-        Assert.That(Encoding.ASCII.GetString(withExtras, 0, 5), Is.EqualTo("%PDF-"));
-        Assert.That(withExtras.Length, Is.GreaterThan(plain.Length));
+        Assert.That(doc.Headers[^1], Is.EqualTo("Etiket"));
+        Assert.That(doc.Rows.Single().OtherSdsLanguages, Is.EqualTo("Også: EN"));
+    }
+
+    // m3: the line leaves out the language that was actually linked, not the configured one.
+    [Test]
+    public void Authority_list_other_languages_exclude_the_linked_language_on_fallback()
+    {
+        // en is configured but the chemical has no English SDS: the Danish product file is linked.
+        var entry = Entry(100, "Karate", "productda") with
+        {
+            SdsDocuments = [new ChemicalSdsDocumentModel("de", "g", null, "")],
+        };
+
+        var doc = ChemicalAuthorityListBuilder.Build(OneRow(entry), 1, Now, BaseUrl, Text,
+            new ChemicalAuthorityListOptions { SdsLanguage = "en" });
+
+        var row = doc.Rows.Single();
+        Assert.That(row.SdsUrl, Does.EndWith("fileName=productda"));
+        Assert.That(row.OtherSdsLanguages, Is.EqualTo("ChemicalSdsAlso: DE"), "DA is linked, so it is not 'also'");
+    }
+
+    // m4: no SDS link, no "Også" line.
+    [Test]
+    public void Authority_list_prints_no_other_languages_without_an_sds_link()
+    {
+        var entry = Entry(100, "Karate") with { SdsDocuments = [new ChemicalSdsDocumentModel("en", "e", null, "")] };
+
+        var doc = ChemicalAuthorityListBuilder.Build(OneRow(entry), 1, Now, BaseUrl, Text);
+
+        var row = doc.Rows.Single();
+        Assert.That(row.SdsUrl, Is.Empty, "there is no Danish SDS to link");
+        Assert.That(row.OtherSdsLanguages, Is.Empty);
     }
 
     [Test]
