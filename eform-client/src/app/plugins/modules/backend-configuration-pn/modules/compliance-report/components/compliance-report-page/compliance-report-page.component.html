@@ -4,20 +4,34 @@
     (downloadRequested)="onDownloadRequested($event)"
   ></app-compliance-report-filters>
 
-  <mat-button-toggle-group
-    class="compliance-mode-toggle"
-    [value]="state.mode"
+  <!--
+    The workspace `.segmented` control (_workspace-utilities.scss §5), built as
+    a radiogroup: one tab stop on the checked option, the arrow keys move the
+    selection and the view with it (#1348), and a click on the ALREADY-checked
+    Oversigt still re-fetches it (#1296). Classic has no `.segmented` rule, so
+    the component SCSS styles it there.
+  -->
+  <div
+    class="segmented compliance-mode-toggle"
+    role="radiogroup"
     [attr.aria-label]="'View mode' | translate"
   >
-    <mat-button-toggle
-      *ngFor="let m of modes"
+    <button
+      #modeOption
+      *ngFor="let m of modes; let i = index"
+      type="button"
+      role="radio"
+      class="segmented-option"
       id="complianceMode-{{ m.mode }}"
-      [value]="m.mode"
-      (change)="onModeChange(m.mode)"
+      [class.active]="state.mode === m.mode"
+      [attr.aria-checked]="state.mode === m.mode"
+      [attr.tabindex]="state.mode === m.mode ? 0 : -1"
+      (click)="onModeChange(m.mode)"
+      (keydown)="onModeKeydown($event, i)"
     >
       {{ m.label | translate }}
-    </mat-button-toggle>
-  </mat-button-toggle-group>
+    </button>
+  </div>
 
   <mat-card
     id="complianceCasesRoot"

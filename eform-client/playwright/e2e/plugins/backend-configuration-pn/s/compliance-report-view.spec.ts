@@ -81,7 +81,7 @@ async function goToRapport(page: Page): Promise<void> {
   // Awaited after the click, which can throw first.
   ignoreUnhandledRejections(response);
   await page.locator('#complianceMode-report').click();
-  await expect(page.locator('#complianceMode-report-button')).toHaveAttribute('aria-checked', 'true', {
+  await expect(page.locator('#complianceMode-report')).toHaveAttribute('aria-checked', 'true', {
     timeout: UI_TIMEOUT,
   });
   await response;

@@ -1,4 +1,4 @@
-import {Component, OnDestroy, OnInit} from '@angular/core';
+import {Component, ElementRef, OnDestroy, OnInit, QueryList, ViewChildren} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
 import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {Store} from '@ngrx/store';
@@ -21,7 +21,6 @@ import {MatCard} from '@angular/material/card';
 import {ComplianceReportViewComponent} from '../compliance-report-view/compliance-report-view.component';
 import {ComplianceDetailsViewComponent} from '../compliance-details-view/compliance-details-view.component';
 import {ComplianceOverviewViewComponent} from '../compliance-overview-view/compliance-overview-view.component';
-import {MatButtonToggleGroup, MatButtonToggle} from '@angular/material/button-toggle';
 
 /**
  * The shell of the standalone Compliance page (#1160 / #1163): filter bar,
@@ -37,12 +36,15 @@ import {MatButtonToggleGroup, MatButtonToggle} from '@angular/material/button-to
  */
 @Component({
   selector: 'app-compliance-report-page',
-  imports: [NgIf, NgFor, NgSwitch, NgSwitchCase, AsyncPipe, TranslatePipe, MatButton, MatProgressSpinner, MatCard, ComplianceReportFiltersComponent, ComplianceReportViewComponent, ComplianceDetailsViewComponent, ComplianceOverviewViewComponent, MatButtonToggleGroup, MatButtonToggle],
+  imports: [NgIf, NgFor, NgSwitch, NgSwitchCase, AsyncPipe, TranslatePipe, MatButton, MatProgressSpinner, MatCard, ComplianceReportFiltersComponent, ComplianceReportViewComponent, ComplianceDetailsViewComponent, ComplianceOverviewViewComponent],
   templateUrl: './compliance-report-page.component.html',
   styleUrls: ['./compliance-report-page.component.scss'],
 })
 export class ComplianceReportPageComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
+
+  /** The three switcher buttons, in `modes` order; the arrow keys move focus along them. */
+  @ViewChildren('modeOption') modeOptions: QueryList<ElementRef<HTMLButtonElement>>;
 
   readonly modes: {mode: ComplianceMode; label: string}[] = [
     // Deliberately NOT the existing 'Overview' key: its Danish is 'Overblik'
@@ -117,18 +119,53 @@ export class ComplianceReportPageComponent implements OnInit, OnDestroy {
     // that keep the filters and `reportVisible`, so the child the ngSwitch
     // creates re-queries the same filters through the replay.
     //
-    // Bound to each `mat-button-toggle`'s own `(change)`, which fires once per
-    // activation: a click, Enter/Space, an arrow key (#1348), and a re-click
-    // on the already-selected toggle. Not the group's `(change)` (#1296): it
-    // skips the re-click and would silently drop the Oversigt refetch. Not
-    // `(click)` either: the arrow keys select through the group's keydown
-    // handler and fire no DOM click, so the toggle got checked while the view
-    // stayed put.
+    // Bound to each option's `(click)`, which a pointer, Enter and Space all
+    // fire, including on the already-checked option: a re-click on Oversigt
+    // must still refetch it (#1296). The arrow keys go through
+    // `onModeKeydown` instead (#1348).
     if (mode === 'overview') {
       this.state.resetToOverview();
       return;
     }
     this.state.setMode(mode);
+  }
+
+  /**
+   * Radiogroup keyboard behaviour for the switcher (#1348): ArrowRight/Down
+   * checks the next option, ArrowLeft/Up the previous one, wrapping at both
+   * ends, Home/End the first/last. Checking an option switches the view, as a
+   * click does, and focus follows the checked option (the roving tabindex in
+   * the template keeps it the only tab stop).
+   */
+  onModeKeydown(event: KeyboardEvent, index: number): void {
+    const count = this.modes.length;
+    let next: number;
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        next = (index + 1) % count;
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        next = (index - 1 + count) % count;
+        break;
+      case 'Home':
+        next = 0;
+        break;
+      case 'End':
+        next = count - 1;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    // Home on Oversigt or End on Rapport lands on the option already checked:
+    // not a mode change. Re-entering Detaljer/Rapport through `setMode` would
+    // clear the total without a refetch, which disables Download.
+    if (this.modes[next].mode !== this.state.mode) {
+      this.onModeChange(this.modes[next].mode);
+    }
+    this.modeOptions?.get(next)?.nativeElement.focus();
   }
 
   // --- pagination chrome (data owned by the active view) ---

@@ -2,6 +2,10 @@
 // Every token used here is defined in BOTH scss/themes/_eform.scss and
 // scss/themes/_workspace.scss, in both their light and dark colour maps.
 //
+// The band table below is eForm Classic's solid pills. Under theme-workspace
+// the bands are light tonal badges instead; see the rule block above the
+// Classic one at the bottom of this file.
+//
 // The mockup's literal palette (compliance.css:759-767 — #d93025 / #b06000 /
 // #188038 / neutral grey) is a reference for INTENT only. It maps onto the
 // three status pairs the app already ships, which are the only fills that come
@@ -235,42 +239,8 @@
     font-weight: var(--font-weight-semibold);
     font-variant-numeric: tabular-nums lining-nums;
 
-    &.is-high {
-      background: var(--status-aktiv-bg);
-      color: var(--status-aktiv-fg);
-    }
-
-    &.is-mid {
-      background: var(--status-afventer-bg);
-      color: var(--status-afventer-fg);
-    }
-
-    &.is-low {
-      background: var(--status-inaktiv-bg);
-      color: var(--status-inaktiv-fg);
-    }
-
-    // "Nothing has fallen due yet" — neutral on purpose. Rendering it in any of
-    // the three status colours would assert a judgement the data does not
-    // support.
-    // The fill alone is invisible in light mode: --md-surface-variant against
-    // the real card is 1.09:1 in eform light and 1.24:1 under workspace (1.04
-    // and 1.12 against Material's default surface) — a pill with no shape at
-    // all. --md-on-surface-variant gives it a boundary that clears the 3:1
-    // WCAG 1.4.11 floor for a non-text UI component in every combination:
-    //   eform  L #7F868D on #F7F9FA = 3.49 [3.33]
-    //   eform  D #C1C5C9 on #2D2F31 = 7.74 [9.88]
-    //   works. L #444746 on #ffffff = 9.39 [8.49]
-    //   works. D #c4c7c5 on #1e1f20 = 9.69 [10.07]
-    // and it also separates from the fill it encloses (3.19 / 6.38 / 7.55 /
-    // 5.51), so the outline reads as an outline rather than as a smudge. The
-    // fill and text tokens are unchanged — their internal pair is already
-    // 16.14 / 10.14 / 13.25 / 7.32.
-    &.is-none {
-      background: var(--md-surface-variant);
-      color: var(--md-on-surface);
-      border-color: var(--md-on-surface-variant);
-    }
+    // The band colours are per theme: Classic's solid fills are at the bottom
+    // of this file, the workspace's tonal badges just above them.
   }
 
   &__overdue {
@@ -293,6 +263,56 @@
       font-weight: var(--font-weight-bold);
     }
   }
+}
+
+// Workspace: light tonal badges instead of solid fills (#5562 design B). Each
+// band is the theme's light status surface with its dark status text:
+//   high  --surface-success-light / --status-success   #d4edda / #1b5e20
+//   mid   --surface-warning-light / --text-warning-dark #fef3c7 / #92400e
+//   low   --surface-danger-light  / --text-error        #f8d7da / #b3261e
+// A row with nothing due shows its dash as plain muted text, no pill at all.
+// The overdue count reads amber for 1-5 and red from 6, and the totals row
+// keeps a light grey band under its bold text.
+:host-context(body.theme-workspace) {
+  .compliance-overview__pill {
+    border: 0;
+    border-radius: var(--radius-sm);
+
+    &.is-high {
+      background: var(--surface-success-light);
+      color: var(--status-success);
+    }
+
+    &.is-mid {
+      background: var(--surface-warning-light);
+      color: var(--text-warning-dark);
+    }
+
+    &.is-low {
+      background: var(--surface-danger-light);
+      color: var(--text-error);
+    }
+
+    &.is-none {
+      background: transparent;
+      color: var(--text-child-muted);
+      font-weight: var(--font-weight-normal);
+    }
+  }
+
+  .compliance-overview__overdue.is-mild {
+    color: var(--text-warning-dark);
+  }
+
+  .compliance-overview__totals td {
+    background: var(--bg);
+  }
+}
+
+// --status-success is #2e7d32 in workspace dark, too dark on the dark success
+// surface; the badge text takes the dark theme's on-surface instead.
+:host-context(body.theme-workspace.theme-dark) .compliance-overview__pill.is-high {
+  color: var(--md-on-surface);
 }
 
 // eForm Classic does not style `table.table` (Bootstrap is not loaded), so the
@@ -348,5 +368,44 @@
   .compliance-overview__totals td {
     border-bottom: 0;
     border-top: 2px solid var(--border-primary);
+  }
+
+  .compliance-overview__pill {
+    &.is-high {
+      background: var(--status-aktiv-bg);
+      color: var(--status-aktiv-fg);
+    }
+
+    &.is-mid {
+      background: var(--status-afventer-bg);
+      color: var(--status-afventer-fg);
+    }
+
+    &.is-low {
+      background: var(--status-inaktiv-bg);
+      color: var(--status-inaktiv-fg);
+    }
+
+    // "Nothing has fallen due yet" — neutral on purpose. Rendering it in any of
+    // the three status colours would assert a judgement the data does not
+    // support.
+    // The fill alone is invisible in light mode: --md-surface-variant against
+    // the real card is 1.09:1 in eform light and 1.24:1 under workspace (1.04
+    // and 1.12 against Material's default surface) — a pill with no shape at
+    // all. --md-on-surface-variant gives it a boundary that clears the 3:1
+    // WCAG 1.4.11 floor for a non-text UI component in every combination:
+    //   eform  L #7F868D on #F7F9FA = 3.49 [3.33]
+    //   eform  D #C1C5C9 on #2D2F31 = 7.74 [9.88]
+    //   works. L #444746 on #ffffff = 9.39 [8.49]
+    //   works. D #c4c7c5 on #1e1f20 = 9.69 [10.07]
+    // and it also separates from the fill it encloses (3.19 / 6.38 / 7.55 /
+    // 5.51), so the outline reads as an outline rather than as a smudge. The
+    // fill and text tokens are unchanged — their internal pair is already
+    // 16.14 / 10.14 / 13.25 / 7.32.
+    &.is-none {
+      background: var(--md-surface-variant);
+      color: var(--md-on-surface);
+      border-color: var(--md-on-surface-variant);
+    }
   }
 }

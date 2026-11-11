@@ -4,8 +4,6 @@ vi.mock('ng-gallery/lightbox', () => ({Lightbox: class {}, LightboxModule: class
 vi.mock('ng2-pdf-viewer', () => ({PdfViewerModule: class {}, PdfViewerComponent: class {}}));
 import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {By} from '@angular/platform-browser';
-import {MatButtonToggle, MatButtonToggleGroup, MatButtonToggleModule} from '@angular/material/button-toggle';
 import {MatDialog} from '@angular/material/dialog';
 import {TranslateModule} from '@ngx-translate/core';
 import {Store} from '@ngrx/store';
@@ -16,16 +14,15 @@ import {ComplianceReportPageComponent} from './compliance-report-page.component'
 import {CommonModule} from '@angular/common';
 
 /**
- * The Oversigt/Detaljer/Rapport switcher (#1296). It used to be three
- * hand-rolled `<button aria-pressed>`s; it is now a stock
- * `mat-button-toggle-group` with the checkmark indicator, bound with each
- * toggle's own `(change)` so that clicking the ALREADY-selected Oversigt
- * still re-fetches Oversigt (the group's `(change)` does not fire on a
- * re-click) and the arrow keys switch the view (they fire no DOM click,
- * #1348). Since #1299 that click no longer resets any filter.
+ * The Oversigt/Detaljer/Rapport switcher. Since #5562 it is the workspace
+ * `.segmented` control (outlined, the checked option on the light primary
+ * container) in place of the stock `mat-button-toggle-group` of #1296, still
+ * between the filter bar and the result card. It is a radiogroup of plain
+ * buttons: a click (also on the ALREADY-checked Oversigt, which must
+ * re-fetch, #1296) switches the view, and so do the arrow keys (#1348).
+ * Since #1299 Oversigt no longer resets any filter.
  *
- * Rendered through TestBed with only MatButtonToggleModule real; the filter
- * bar, the card and the three views are unknown elements under
+ * The filter bar, the card and the three views are unknown elements under
  * NO_ERRORS_SCHEMA. The state service is the REAL one (it has no
  * dependencies), so `mode` and the reset are the actual implementation.
  */
@@ -35,31 +32,33 @@ describe('ComplianceReportPageComponent — mode switcher', () => {
 
   const MODES = ['overview', 'details', 'report'] as const;
 
-  const group = (): MatButtonToggleGroup =>
-    fixture.debugElement.query(By.directive(MatButtonToggleGroup))?.injector.get(MatButtonToggleGroup);
+  const switcher = (): HTMLElement =>
+    fixture.nativeElement.querySelector('.compliance-mode-toggle') as HTMLElement;
 
-  const toggleHost = (mode: string): HTMLElement =>
-    fixture.nativeElement.querySelector(`#complianceMode-${mode}`) as HTMLElement;
+  const option = (mode: string): HTMLButtonElement =>
+    fixture.nativeElement.querySelector(`#complianceMode-${mode}`) as HTMLButtonElement;
 
-  const innerButton = (mode: string): HTMLButtonElement =>
-    fixture.nativeElement.querySelector(`#complianceMode-${mode}-button`) as HTMLButtonElement;
-
-  /** Clicks the inner `<button>` — what a real pointer hits — and re-renders. */
+  /** Clicks the option and re-renders. */
   const click = (mode: string): void => {
-    innerButton(mode).click();
+    option(mode).click();
     fixture.detectChanges();
   };
 
-  /**
-   * Presses an arrow key on the focused inner `<button>`, as a keyboard user
-   * does. The group's keydown handler reads the legacy `keyCode`, so it is set
-   * explicitly. It selects the next toggle without any DOM click.
-   */
-  const pressArrow = (mode: string, key: 'ArrowRight' | 'ArrowLeft'): void => {
+  /** Presses a key on the option, as a keyboard user with focus on it does. */
+  const press = (mode: string, key: string): KeyboardEvent => {
     const event = new KeyboardEvent('keydown', {key, bubbles: true, cancelable: true});
-    Object.defineProperty(event, 'keyCode', {get: () => (key === 'ArrowRight' ? 39 : 37)});
-    innerButton(mode).dispatchEvent(event);
+    option(mode).dispatchEvent(event);
     fixture.detectChanges();
+    return event;
+  };
+
+  const expectChecked = (checked: string): void => {
+    for (const m of MODES) {
+      expect(option(m).getAttribute('aria-checked')).toBe(String(m === checked));
+      expect(option(m).classList.contains('active')).toBe(m === checked);
+      // Roving tabindex: the checked option is the group's only tab stop.
+      expect(option(m).getAttribute('tabindex')).toBe(m === checked ? '0' : '-1');
+    }
   };
 
   const USER_ID = 7;
@@ -69,7 +68,7 @@ describe('ComplianceReportPageComponent — mode switcher', () => {
     state = new ComplianceReportStateService();
 
     TestBed.configureTestingModule({
-      imports: [ComplianceReportPageComponent, TranslateModule.forRoot(), MatButtonToggleModule],
+      imports: [ComplianceReportPageComponent, TranslateModule.forRoot()],
       providers: [
         {provide: ComplianceReportStateService, useValue: state},
         {provide: BackendConfigurationPnComplianceReportService, useValue: {export: vi.fn()}},
@@ -77,7 +76,7 @@ describe('ComplianceReportPageComponent — mode switcher', () => {
         {provide: Store, useValue: {select: vi.fn().mockReturnValue(of({id: USER_ID}))}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
-    }).overrideComponent(ComplianceReportPageComponent, {set: {imports: [CommonModule, TranslateModule, MatButtonToggleModule], schemas: [NO_ERRORS_SCHEMA]}});
+    }).overrideComponent(ComplianceReportPageComponent, {set: {imports: [CommonModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}});
 
     fixture = TestBed.createComponent(ComplianceReportPageComponent);
     fixture.detectChanges();
@@ -100,35 +99,37 @@ describe('ComplianceReportPageComponent — mode switcher', () => {
     customTo: null,
   };
 
-  it('renders a mat-button-toggle-group whose value is the current mode', () => {
-    expect(group()).toBeTruthy();
-    expect(state.mode).toBe('overview');
-    expect(group().value).toBe('overview');
+  it('is the workspace .segmented radiogroup, not a mat-button-toggle-group', () => {
+    expect(fixture.nativeElement.querySelector('mat-button-toggle-group')).toBeNull();
+    expect(fixture.nativeElement.querySelector('mat-button-toggle')).toBeNull();
+    expect(switcher()).toBeTruthy();
+    expect(switcher().classList).toContain('segmented');
+    expect(switcher().getAttribute('role')).toBe('radiogroup');
   });
 
-  it('renders one mat-button-toggle per mode, keeping the complianceMode-<mode> ids on the host', () => {
-    const toggles = fixture.debugElement.queryAll(By.directive(MatButtonToggle));
-    expect(toggles.map((t) => t.nativeElement.id)).toEqual(MODES.map((m) => `complianceMode-${m}`));
-    for (const m of MODES) {
-      expect(toggleHost(m).tagName.toLowerCase()).toBe('mat-button-toggle');
-      // Material puts `<id>-button` on the inner button; e2e specs target it.
-      expect(innerButton(m)).toBeTruthy();
+  it('sits between the filter bar and the result card, as before', () => {
+    const children = Array.from(fixture.nativeElement.querySelector('.compliance-page').children) as Element[];
+    const filters = children.findIndex((el) => el.tagName.toLowerCase() === 'app-compliance-report-filters');
+    const toggle = children.indexOf(switcher());
+    const card = children.findIndex((el) => el.id === 'complianceCasesRoot');
+    expect(filters).toBeGreaterThanOrEqual(0);
+    expect(toggle).toBe(filters + 1);
+    expect(card).toBe(toggle + 1);
+  });
+
+  it('renders one .segmented-option button per mode, keeping the complianceMode-<mode> ids', () => {
+    const options = Array.from(switcher().querySelectorAll('.segmented-option')) as HTMLElement[];
+    expect(options.map((o) => o.id)).toEqual(MODES.map((m) => `complianceMode-${m}`));
+    for (const o of options) {
+      expect(o.tagName.toLowerCase()).toBe('button');
+      expect(o.getAttribute('type')).toBe('button');
+      expect(o.getAttribute('role')).toBe('radio');
     }
   });
 
-  it('marks only the active mode as checked (aria-checked on the inner button, class on the host)', () => {
-    expect(innerButton('overview').getAttribute('aria-checked')).toBe('true');
-    expect(innerButton('details').getAttribute('aria-checked')).toBe('false');
-    expect(innerButton('report').getAttribute('aria-checked')).toBe('false');
-    expect(toggleHost('overview').classList).toContain('mat-button-toggle-checked');
-    expect(toggleHost('details').classList).not.toContain('mat-button-toggle-checked');
-    // The single-selection group is a radiogroup — the accepted #1296 trade-off.
-    expect(fixture.nativeElement.querySelector('[aria-pressed]')).toBeNull();
-  });
-
-  it('shows the checkmark indicator (hideSingleSelectionIndicator stays false)', () => {
-    expect(group().hideSingleSelectionIndicator).toBe(false);
-    expect(toggleHost('overview').querySelector('.mat-pseudo-checkbox')).not.toBeNull();
+  it('marks only the active mode as checked: aria-checked, the active class and the tab stop', () => {
+    expect(state.mode).toBe('overview');
+    expectChecked('overview');
   });
 
   it('clicking Detaljer switches the mode without resetting', () => {
@@ -140,9 +141,7 @@ describe('ComplianceReportPageComponent — mode switcher', () => {
     expect(setMode).toHaveBeenCalledWith('details');
     expect(reset).not.toHaveBeenCalled();
     expect(state.mode).toBe('details');
-    expect(group().value).toBe('details');
-    expect(toggleHost('details').classList).toContain('mat-button-toggle-checked');
-    expect(innerButton('overview').getAttribute('aria-checked')).toBe('false');
+    expectChecked('details');
   });
 
   it('clicking Rapport switches the mode without resetting', () => {
@@ -152,10 +151,10 @@ describe('ComplianceReportPageComponent — mode switcher', () => {
 
     expect(reset).not.toHaveBeenCalled();
     expect(state.mode).toBe('report');
-    expect(group().value).toBe('report');
+    expectChecked('report');
   });
 
-  it('clicking the ALREADY-selected Oversigt re-fetches and keeps every filter (#1299, via the toggle\'s (change), not the group\'s)', () => {
+  it('clicking the ALREADY-selected Oversigt re-fetches and keeps every filter (#1296, #1299)', () => {
     expect(state.mode).toBe('overview');
     state.setFilter(NON_DEFAULT);
     const toOverview = vi.spyOn(state, 'resetToOverview');
@@ -169,7 +168,7 @@ describe('ComplianceReportPageComponent — mode switcher', () => {
     expect(fetches.length).toBe(before + 1);
     expect(state.filters).toEqual(NON_DEFAULT);
     expect(state.mode).toBe('overview');
-    expect(group().value).toBe('overview');
+    expectChecked('overview');
   });
 
   it('clicking Oversigt from Detaljer re-checks Oversigt and resets NO filter (#1299)', () => {
@@ -180,9 +179,7 @@ describe('ComplianceReportPageComponent — mode switcher', () => {
 
     expect(state.filters).toEqual(NON_DEFAULT);
     expect(state.mode).toBe('overview');
-    expect(group().value).toBe('overview');
-    expect(innerButton('overview').getAttribute('aria-checked')).toBe('true');
-    expect(innerButton('details').getAttribute('aria-checked')).toBe('false');
+    expectChecked('overview');
   });
 
   it('clicking Oversigt from Rapport resets NO filter either (#1299)', () => {
@@ -195,23 +192,25 @@ describe('ComplianceReportPageComponent — mode switcher', () => {
     expect(state.mode).toBe('overview');
   });
 
-  it('ArrowRight from Oversigt switches the view to Detaljer, then to Rapport (#1348)', () => {
+  it('ArrowRight from Oversigt switches the view to Detaljer, then to Rapport, and focus follows (#1348)', () => {
     const setMode = vi.spyOn(state, 'setMode');
 
-    pressArrow('overview', 'ArrowRight');
+    const first = press('overview', 'ArrowRight');
 
-    expect(innerButton('details').getAttribute('aria-checked')).toBe('true');
+    expect(first.defaultPrevented).toBe(true);
     expect(setMode).toHaveBeenCalledTimes(1);
     expect(setMode).toHaveBeenCalledWith('details');
     expect(state.mode).toBe('details');
-    expect(group().value).toBe('details');
+    expectChecked('details');
+    expect(document.activeElement).toBe(option('details'));
 
-    pressArrow('details', 'ArrowRight');
+    press('details', 'ArrowRight');
 
-    expect(innerButton('report').getAttribute('aria-checked')).toBe('true');
     expect(setMode).toHaveBeenCalledTimes(2);
     expect(setMode).toHaveBeenLastCalledWith('report');
     expect(state.mode).toBe('report');
+    expectChecked('report');
+    expect(document.activeElement).toBe(option('report'));
   });
 
   it('ArrowLeft back onto Oversigt fetches Oversigt once (#1348)', () => {
@@ -221,10 +220,58 @@ describe('ComplianceReportPageComponent — mode switcher', () => {
     state.fetchRequested$.subscribe(() => fetches.push(1));
     const before = fetches.length;
 
-    pressArrow('details', 'ArrowLeft');
+    press('details', 'ArrowLeft');
 
     expect(toOverview).toHaveBeenCalledTimes(1);
     expect(fetches.length).toBe(before + 1);
+    expect(state.mode).toBe('overview');
+    expect(document.activeElement).toBe(option('overview'));
+  });
+
+  it('the arrow keys wrap at both ends, and Home/End jump to the first/last mode', () => {
+    press('overview', 'ArrowLeft');
+    expect(state.mode).toBe('report');
+
+    press('report', 'ArrowRight');
+    expect(state.mode).toBe('overview');
+
+    press('overview', 'End');
+    expect(state.mode).toBe('report');
+
+    press('report', 'Home');
+    expect(state.mode).toBe('overview');
+  });
+
+  it('Home on Oversigt and End on Rapport, already checked, switch nothing', () => {
+    click('report');
+    const setMode = vi.spyOn(state, 'setMode');
+    const toOverview = vi.spyOn(state, 'resetToOverview');
+
+    const end = press('report', 'End');
+
+    expect(end.defaultPrevented).toBe(true);
+    expect(setMode).not.toHaveBeenCalled();
+    expect(state.mode).toBe('report');
+    expect(document.activeElement).toBe(option('report'));
+
+    press('report', 'Home');
+    expect(state.mode).toBe('overview');
+    expect(toOverview).toHaveBeenCalledTimes(1);
+
+    press('overview', 'Home');
+    expect(toOverview).toHaveBeenCalledTimes(1);
+    expect(state.mode).toBe('overview');
+  });
+
+  it('other keys leave the mode and the event alone', () => {
+    const setMode = vi.spyOn(state, 'setMode');
+    const toOverview = vi.spyOn(state, 'resetToOverview');
+
+    const event = press('overview', 'a');
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(setMode).not.toHaveBeenCalled();
+    expect(toOverview).not.toHaveBeenCalled();
     expect(state.mode).toBe('overview');
   });
 
@@ -255,7 +302,7 @@ describe('ComplianceReportPageComponent — remembered period on entry', () => {
   function create(userId: number | null) {
     const state = new ComplianceReportStateService();
     TestBed.configureTestingModule({
-      imports: [ComplianceReportPageComponent, TranslateModule.forRoot(), MatButtonToggleModule],
+      imports: [ComplianceReportPageComponent, TranslateModule.forRoot()],
       providers: [
         {provide: ComplianceReportStateService, useValue: state},
         {provide: BackendConfigurationPnComplianceReportService, useValue: {export: vi.fn()}},
@@ -263,7 +310,7 @@ describe('ComplianceReportPageComponent — remembered period on entry', () => {
         {provide: Store, useValue: {select: vi.fn().mockReturnValue(of(userId == null ? null : {id: userId}))}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
-    }).overrideComponent(ComplianceReportPageComponent, {set: {imports: [CommonModule, TranslateModule, MatButtonToggleModule], schemas: [NO_ERRORS_SCHEMA]}});
+    }).overrideComponent(ComplianceReportPageComponent, {set: {imports: [CommonModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}});
     return state;
   }
 

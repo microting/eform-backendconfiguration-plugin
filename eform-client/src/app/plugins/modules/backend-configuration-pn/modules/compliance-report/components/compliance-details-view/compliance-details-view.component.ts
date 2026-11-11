@@ -34,7 +34,7 @@ import {
   groupRowsByWeek,
 } from '../../helpers';
 import {ComplianceReportStateService} from '../../store';
-import {COMPLIANCE_PAGE_SOURCE, isFutureTask} from '../../../../helpers';
+import {COMPLIANCE_PAGE_SOURCE, copenhagenDateKey, isFutureTask, taskDateKey} from '../../../../helpers';
 import {NgIf, NgFor} from '@angular/common';
 import {MatIcon} from '@angular/material/icon';
 import {MatIconButton} from '@angular/material/button';
@@ -325,6 +325,19 @@ export class ComplianceDetailsViewComponent implements OnInit, OnDestroy {
    */
   isFutureUncompleted(row: ComplianceReportRowModel): boolean {
     return !!row.isProjected || (!row.completed && isFutureTask(row.taskDate));
+  }
+
+  /**
+   * An open row dated strictly before today (Copenhagen date): the same line
+   * Oversigt draws for its overdue count, where a task due today is not
+   * overdue yet. A planned row never is.
+   */
+  isOverdue(row: ComplianceReportRowModel): boolean {
+    if (row.isProjected || row.completed) {
+      return false;
+    }
+    const key = taskDateKey(row.taskDate);
+    return key !== null && key < copenhagenDateKey();
   }
 
   formatDayLabel(taskDate: string): string {

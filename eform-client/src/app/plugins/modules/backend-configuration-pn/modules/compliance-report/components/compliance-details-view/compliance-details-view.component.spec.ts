@@ -247,6 +247,56 @@ describe('ComplianceDetailsViewComponent — future tasks (#1300)', () => {
     });
   });
 
+  /**
+   * #5562: the workspace theme marks a row's status with a tonal label in the
+   * status column ("✓ Udført" / "Overskredet") instead of painting a done row
+   * solid green. Overdue is the Oversigt line: open and dated strictly before
+   * today; an open row dated today is not overdue yet.
+   */
+  describe('status label (#5562)', () => {
+    const badges = (complianceId: number): HTMLElement[] =>
+      Array.from(rowEl(complianceId).querySelectorAll('.compliance-details__status .compliance-details__status-badge'));
+
+    it.each([
+      ['done yesterday', '2026-09-17', true, false],
+      ['open yesterday', '2026-09-17', false, true],
+      ['open today', '2026-09-18', false, false],
+      ['open tomorrow', '2026-09-19', false, false],
+    ])('isOverdue: %s → %s', (_label, taskDate, completed, expected) => {
+      expect(component.isOverdue(row(1, taskDate as string, completed as boolean))).toBe(expected);
+    });
+
+    it('a planned row is never overdue, whatever its date', () => {
+      expect(component.isOverdue({...row(0, '2026-09-17'), isProjected: true})).toBe(false);
+    });
+
+    it('labels a done row "Task done" (Udført) with the check, in the status column', () => {
+      render([row(1, '2026-09-17', true)]);
+
+      const [badge, ...rest] = badges(1);
+      expect(rest).toHaveLength(0);
+      expect(badge.classList).toContain('is-done');
+      expect(badge.classList).not.toContain('is-overdue');
+      expect(badge.textContent?.replace(/\s+/g, ' ').trim()).toBe('✓ Task done');
+    });
+
+    it('labels an open row from before today "Overdue" (Overskredet)', () => {
+      render([row(2, '2026-09-17')]);
+
+      const [badge, ...rest] = badges(2);
+      expect(rest).toHaveLength(0);
+      expect(badge.classList).toContain('is-overdue');
+      expect(badge.textContent?.trim()).toBe('Overdue');
+    });
+
+    it('leaves the label out on open rows from today on', () => {
+      render([row(3, '2026-09-18'), row(4, '2026-09-19')]);
+
+      expect(badges(3)).toHaveLength(0);
+      expect(badges(4)).toHaveLength(0);
+    });
+  });
+
   it('flips at Copenhagen midnight, not UTC midnight (CEST: 22:00 UTC)', () => {
     const tomorrow = row(1, '2026-09-19');
     vi.setSystemTime(new Date('2026-09-18T21:59:00Z')); // 23:59 in Copenhagen
