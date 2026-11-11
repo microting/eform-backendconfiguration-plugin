@@ -310,7 +310,8 @@ describe('ChemicalInventoryPageComponent', () => {
 
       component.openSds(rowWith(component, {sdsDocuments: [sdsDocument('sv'), sdsDocument('da'), sdsDocument('en')]}));
 
-      expect(chemicals.getSdsBlob).toHaveBeenCalledWith('md5da');
+      // The Danish choice is the placement's own product sheet.
+      expect(chemicals.getSdsBlob).toHaveBeenCalledWith('sds200');
     });
 
     it('falls back to the product sheet when the entry has no SDS documents (old data)', () => {
@@ -339,7 +340,7 @@ describe('ChemicalInventoryPageComponent', () => {
         sdsDocument('en', {fileName: 'en-a'}), sdsDocument('en', {fileName: 'en-b'}),
       ]});
 
-      expect(component.otherSdsDocuments(row).map((d) => d.fileName)).toEqual(['sv-new']);
+      expect(component.otherSdsDocuments(row).map((d) => d.fileName)).toEqual(['sds200', 'sv-new']);
     });
 
     it('has no other languages with a single SDS or without SDS documents', () => {

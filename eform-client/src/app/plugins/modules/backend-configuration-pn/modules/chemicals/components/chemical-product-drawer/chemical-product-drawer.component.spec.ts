@@ -134,7 +134,8 @@ describe('ChemicalProductDrawerComponent', () => {
       expect(component.otherSdsDocuments.map((d) => d.language)).toEqual(['da', 'sv']);
       component.openSdsDocument(component.otherSdsDocuments[0]);
 
-      expect(getSds).toHaveBeenCalledWith('md5da');
+      // The Danish entry is the placement's own product sheet.
+      expect(getSds).toHaveBeenCalledWith('abc');
     });
 
     it('lists a language once with the newest sheet and never the user\'s own language', () => {
@@ -144,7 +145,7 @@ describe('ChemicalProductDrawerComponent', () => {
         sdsDocument('en', {fileName: 'en-a'}), sdsDocument('en', {fileName: 'en-b'}),
       ]}});
 
-      expect(component.otherSdsDocuments.map((d) => d.fileName)).toEqual(['sv-new']);
+      expect(component.otherSdsDocuments.map((d) => d.fileName)).toEqual(['abc', 'sv-new']);
     });
 
     it('opens the one label directly', () => {

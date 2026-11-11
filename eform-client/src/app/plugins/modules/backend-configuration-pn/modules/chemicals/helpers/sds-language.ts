@@ -69,3 +69,8 @@ export function sdsLanguageText(code: string, translate: {instant(key: string): 
 export function currentUiLocale(translate: {getCurrentLang(): string | undefined; getFallbackLang(): string | null}): string {
   return translate.getCurrentLang() || translate.getFallbackLang() || '';
 }
+
+/** Stub: implemented after the red CI run. */
+export function sdsCandidates(_row: ChemicalInventoryRow): ChemicalSdsDocumentModel[] {
+  return [];
+}

@@ -1,7 +1,7 @@
 import {describe, it, expect} from 'vitest';
 import {entry, inventoryOf, location, placement, sdsDocument} from './chemical-inventory.fixtures';
 import {buildInventoryRows} from './chemical-inventory.helper';
-import {currentUiLocale, otherSdsDocuments, pickSds, sdsFileNameForLocale, sdsLanguageKey, toIso6391} from './sds-language';
+import {currentUiLocale, otherSdsDocuments, pickSds, sdsCandidates, sdsFileNameForLocale, sdsLanguageKey, toIso6391} from './sds-language';
 
 const doc = (language: string) => sdsDocument(language);
 const langs = (docs: {language: string}[] | undefined) => docs?.map((d) => d.language);
@@ -126,22 +126,54 @@ describe('otherSdsDocuments', () => {
   });
 });
 
-describe('sdsFileNameForLocale', () => {
+describe('sdsFileNameForLocale and sdsCandidates (the placement\'s own product sheet is the Danish one)', () => {
   const rowOf = (partial: Parameters<typeof entry>[2]) =>
     buildInventoryRows(inventoryOf({
       locations: [location(10, 'Lade')], placements: [placement(1, 10, 200)], registerEntries: [entry(200, 'Karate', partial)],
     }), '2026-09-29')[0];
 
-  it('opens the document in the user language', () => {
+  it('opens the document in the user language when it is not Danish', () => {
     const row = rowOf({sdsDocuments: [doc('da'), doc('en')]});
 
     expect(sdsFileNameForLocale(row, 'en-US')).toBe('md5en');
+  });
+
+  it('keeps the placement\'s product sheet as the Danish choice, over a Danish document of another product', () => {
+    const row = rowOf({sdsDocuments: [doc('da'), doc('en')]});
+
+    expect(sdsFileNameForLocale(row, 'da-DK')).toBe('sds200');
+    expect(sdsFileNameForLocale(row, 'de-DE')).toBe('sds200');
+  });
+
+  it('serves the Danish product sheet rather than English when there is no Danish document', () => {
+    const row = rowOf({sdsDocuments: [doc('en'), doc('sv')]});
+
+    expect(sdsFileNameForLocale(row, 'da-DK')).toBe('sds200');
+    expect(sdsFileNameForLocale(row, 'fr-FR')).toBe('sds200');
+  });
+
+  it('keeps the newest Danish document when the product has no sheet of its own', () => {
+    const row = rowOf({sdsDocuments: [doc('da'), doc('en')], products: []});
+
     expect(sdsFileNameForLocale(row, 'da-DK')).toBe('md5da');
+  });
+
+  it('lists the product sheet as the Danish candidate, one per language', () => {
+    const candidates = sdsCandidates(rowOf({sdsDocuments: [doc('da'), doc('en'), doc('sv')]}));
+
+    expect(candidates.map((d) => [d.language, d.fileName]).sort()).toEqual([['da', 'sds200'], ['en', 'md5en'], ['sv', 'md5sv']]);
+  });
+
+  it('offers the product sheet under "other languages" for a non-Danish user', () => {
+    const candidates = sdsCandidates(rowOf({sdsDocuments: [doc('da'), doc('en')]}));
+
+    expect(otherSdsDocuments(candidates, 'en-US').map((d) => [d.language, d.fileName])).toEqual([['da', 'sds200']]);
   });
 
   it('falls back to products[].sdsFileName when the list is empty or missing (old data)', () => {
     expect(sdsFileNameForLocale(rowOf({sdsDocuments: []}), 'en-US')).toBe('sds200');
     expect(sdsFileNameForLocale(rowOf({sdsDocuments: undefined}), 'en-US')).toBe('sds200');
+    expect(otherSdsDocuments(sdsCandidates(rowOf({sdsDocuments: []})), 'en-US')).toEqual([]);
   });
 
   it('is null with neither a document nor a product sheet', () => {
