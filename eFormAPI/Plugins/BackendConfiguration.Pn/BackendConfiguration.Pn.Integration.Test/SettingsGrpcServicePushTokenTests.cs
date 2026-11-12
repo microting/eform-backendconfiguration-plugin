@@ -1,11 +1,16 @@
+using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Services.GrpcServices;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure.Constants;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.Settings.V1;
 using NSubstitute;
@@ -55,14 +60,41 @@ public class SettingsGrpcServicePushTokenTests : TestBaseSetup
         await BackendConfigurationPnDbContext.SaveChangesAsync();
     }
 
-    private SettingsGrpcService CreateSut(int resolvedSdkSiteId)
+    private SettingsGrpcService CreateSut(int resolvedSdkSiteId, BackendConfigurationPnDbContext? dbContext = null)
     {
         var resolver = Substitute.For<IGrpcSiteResolver>();
         resolver.GetSdkSiteIdAsync().Returns(resolvedSdkSiteId);
         return new SettingsGrpcService(
-            BackendConfigurationPnDbContext!,
+            dbContext ?? BackendConfigurationPnDbContext!,
             resolver,
             TestContextLogger<SettingsGrpcService>.Instance);
+    }
+
+    /// <summary>Runs an action once, right after the first command whose SQL contains the given text.</summary>
+    private sealed class AfterCommand(string sqlContains, Func<Task> action) : DbCommandInterceptor
+    {
+        private bool _done;
+
+        public override async ValueTask<int> NonQueryExecutedAsync(DbCommand command, CommandExecutedEventData eventData,
+            int result, CancellationToken cancellationToken = default)
+        {
+            if (!_done && command.CommandText.Contains(sqlContains))
+            {
+                _done = true;
+                await action();
+            }
+            return result;
+        }
+    }
+
+    private BackendConfigurationPnDbContext NewContext(params IInterceptor[] interceptors)
+    {
+        var database = BackendConfigurationPnDbContext!.Database.GetConnectionString()!;
+        var options = new DbContextOptionsBuilder<BackendConfigurationPnDbContext>()
+            .UseMySql(database, new MariaDbServerVersion(ServerVersion.AutoDetect(database)))
+            .AddInterceptors(interceptors)
+            .Options;
+        return new BackendConfigurationPnDbContext(options);
     }
 
     private static RegisterPushTokenRequest MakeRequest(
@@ -513,6 +545,30 @@ public class SettingsGrpcServicePushTokenTests : TestBaseSetup
         {
             Assert.That(row.SdkSiteId, Is.EqualTo(8));
             Assert.That(row.FcmToken, Is.Null);
+        });
+    }
+
+    [Test]
+    public async Task ReportInstall_FromAnotherOwner_ARestoreRightAfterTheClearCannotHandOverTheToken()
+    {
+        // Worker 7's register restores its token the moment worker 8's report has cleared it.
+        // The clear takes the row over in the same statement, so the restore (owner 7 only)
+        // finds nothing to refill.
+        await CreateSut(7).RegisterPushToken(MakeRequest("token-a", "inst-a"), Context());
+        var rowId = (await AllRowsAsync()).Single().Id;
+        var restore = new AfterCommand("`FcmToken` = NULL", () => BackendConfigurationPnDbContext!.DeviceTokens
+            .Where(t => t.Id == rowId && t.SdkSiteId == 7
+                        && t.WorkflowState == Constants.WorkflowStates.Created && t.FcmToken == null)
+            .ExecuteUpdateAsync(u => u.SetProperty(t => t.FcmToken, "token-a")));
+        await using var reporterDb = NewContext(restore);
+
+        await CreateSut(8, reporterDb).ReportInstall(MakeReport("inst-a"), Context());
+
+        var row = (await AllRowsAsync()).Single();
+        Assert.Multiple(() =>
+        {
+            Assert.That(row.SdkSiteId, Is.EqualTo(8));
+            Assert.That(row.FcmToken, Is.Null, "worker 8 must not end up with worker 7's token");
         });
     }
 

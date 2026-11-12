@@ -230,12 +230,17 @@ public class SettingsGrpcService(
         {
             // The token must not come back with a revived row, nor follow the install to
             // another owner. Cleared in SQL only while that is still true, so a token a
-            // concurrent RegisterPushToken just committed for this owner is never overwritten;
-            // then re-read the row so the save below does not write the stale value back.
+            // concurrent RegisterPushToken just committed for this owner is never overwritten,
+            // and in the same statement as the takeover, so the previous owner's restore can
+            // never refill it in between. Then re-read the row so the save below does not
+            // write stale values back.
             await dbContext.DeviceTokens
                 .Where(t => t.Id == row.Id
                             && (t.WorkflowState == Constants.WorkflowStates.Removed || t.SdkSiteId != sdkSiteId))
-                .ExecuteUpdateAsync(u => u.SetProperty(t => t.FcmToken, (string)null))
+                .ExecuteUpdateAsync(u => u
+                    .SetProperty(t => t.FcmToken, (string)null)
+                    .SetProperty(t => t.SdkSiteId, sdkSiteId)
+                    .SetProperty(t => t.WorkflowState, Constants.WorkflowStates.Created))
                 .ConfigureAwait(false);
             await dbContext.Entry(row).ReloadAsync().ConfigureAwait(false);
         }
