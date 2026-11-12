@@ -397,6 +397,83 @@ public class PropertyWorkersAppVersionsTests : TestBaseSetup
     public void IsOutdated_ComparesNumerically(string? reported, string? latest, bool expected)
         => Assert.That(AppLatestVersions.IsOutdated(reported, latest), Is.EqualTo(expected));
 
+    private async Task ClearDeviceTokens()
+    {
+        BackendConfigurationPnDbContext!.DeviceTokenVersions.RemoveRange(BackendConfigurationPnDbContext.DeviceTokenVersions);
+        BackendConfigurationPnDbContext.DeviceTokens.RemoveRange(BackendConfigurationPnDbContext.DeviceTokens);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+    }
+
+    private async Task SeedInstallReport(int siteId, string appId, string version, DateTime lastSeenAt,
+        string model = "Pixel 8", string workflowState = Constants.WorkflowStates.Created)
+    {
+        await BackendConfigurationPnDbContext!.DeviceTokens.AddAsync(new DeviceToken
+        {
+            AppId = appId, InstallationId = $"inst-{Guid.NewGuid():N}", SdkSiteId = siteId, Platform = "android",
+            AppVersion = version, DeviceModel = model, DeviceManufacturer = "Google", OsVersion = "15",
+            LastSeenAt = lastSeenAt, WorkflowState = workflowState, CreatedByUserId = 1, UpdatedByUserId = 1
+        });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+    }
+
+    [Test]
+    public async Task IndexDeviceUser_ReadsAdhocChemistryAndHalebidFromTheirInstallReports()
+    {
+        // Arrange (#1335 phase 2): the apps report through ReportInstall.
+        await ClearDeviceTokens();
+        var core = await GetCore();
+        var site = await CreateWorker(core, $"r-{Guid.NewGuid():N}@example.com", timeRegistration: false, archive: false);
+        var now = DateTime.UtcNow;
+        await SeedInstallReport(site, "adhoc", "1.1.0", now.AddDays(-3), model: "Old phone");
+        await SeedInstallReport(site, "adhoc", "1.1.1", now.AddHours(-1), model: "New phone");
+        await SeedInstallReport(site, "adhoc", "9.9.9", now, model: "Logged out", workflowState: Constants.WorkflowStates.Removed);
+        await SeedInstallReport(site, "chemistry", "1.0.0", now);
+        await SeedInstallReport(site, "halebid", "0.0.1", now);
+
+        // Act
+        var worker = (await Index(core)).Single(x => x.SiteId == site);
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(worker.AdHocApp.Version, Is.EqualTo("1.1.1"), "the device that reported last wins; a removed row is ignored");
+            Assert.That(worker.AdHocApp.Model, Is.EqualTo("New phone"));
+            Assert.That(worker.AdHocApp.HasAccess, Is.False, "access stays the permission, not the install");
+            Assert.That(worker.ChemistryApp.Version, Is.EqualTo("1.0.0"));
+            Assert.That(worker.HalebidApp.Version, Is.EqualTo("0.0.1"));
+            Assert.That(worker.HalebidApp.NeedsUpdate, Is.True, "a reported version is flagged like any other");
+            Assert.That(worker.TimeApp.Version, Is.Null, "Time does not report through ReportInstall");
+        });
+    }
+
+    [TestCase(true, TestName = "IndexDeviceUser_Compliance_ANewerInstallReportBeatsTheUnit")]
+    [TestCase(false, TestName = "IndexDeviceUser_Compliance_ANewerUnitBeatsTheInstallReport")]
+    public async Task IndexDeviceUser_Compliance_TheNewestReportWins(bool reportIsNewer)
+    {
+        // Arrange - the Unit (OTP pairing) and the eform install report both carry a version.
+        await ClearDeviceTokens();
+        var core = await GetCore();
+        var site = await CreateWorker(core, $"u-{Guid.NewGuid():N}@example.com", timeRegistration: false, archive: false);
+        await SetComplianceVersion(site, "3.2.1", "iPhone 15", "18.1");
+        var unit = await MicrotingDbContext!.Units.SingleAsync(x =>
+            x.SiteId == site && x.WorkflowState != Constants.WorkflowStates.Removed);
+        var unitUpdatedAt = DateTime.UtcNow.AddDays(-1);
+        unit.UpdatedAt = unitUpdatedAt;
+        await MicrotingDbContext.SaveChangesAsync();
+        await SeedInstallReport(site, "eform", "4.1.23",
+            reportIsNewer ? unitUpdatedAt.AddHours(1) : unitUpdatedAt.AddHours(-1), model: "Pixel 9");
+
+        // Act
+        var worker = (await Index(core)).Single(x => x.SiteId == site);
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(worker.ComplianceApp.Version, Is.EqualTo(reportIsNewer ? "4.1.23" : "3.2.1"));
+            Assert.That(worker.ComplianceApp.Model, Is.EqualTo(reportIsNewer ? "Pixel 9" : "iPhone 15"));
+        });
+    }
+
     [Test]
     public async Task IndexDeviceUser_MatchesTheLoginCaseInsensitively()
     {

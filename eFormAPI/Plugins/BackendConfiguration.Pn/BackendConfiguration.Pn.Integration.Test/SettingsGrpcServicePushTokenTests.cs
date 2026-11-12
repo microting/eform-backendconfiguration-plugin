@@ -381,4 +381,272 @@ public class SettingsGrpcServicePushTokenTests : TestBaseSetup
         Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.InvalidArgument));
         Assert.That(BackendConfigurationPnDbContext!.DeviceTokens.AsNoTracking().Count(), Is.EqualTo(0));
     }
+
+    // ---- ReportInstall (#1335) ---------------------------------------------
+
+    private static ReportInstallRequest MakeReport(
+        string installationId,
+        string appVersion = "1.1.1",
+        string appId = "adhoc",
+        string platform = "ios") =>
+        new()
+        {
+            AppId = appId,
+            InstallationId = installationId,
+            Platform = platform,
+            AppVersion = appVersion,
+            AppBuild = "11101",
+            DeviceModel = "iPhone 15",
+            DeviceManufacturer = "Apple",
+            OsVersion = "18.1",
+        };
+
+    [Test]
+    public async Task ReportInstall_NewInstall_CreatesRowWithoutAPushToken()
+    {
+        var sut = CreateSut(7);
+
+        await sut.ReportInstall(MakeReport("inst-r"), Context());
+
+        var rows = await AllRowsAsync();
+        Assert.That(rows, Has.Count.EqualTo(1));
+        Assert.Multiple(() =>
+        {
+            Assert.That(rows[0].SdkSiteId, Is.EqualTo(7));
+            Assert.That(rows[0].AppId, Is.EqualTo("adhoc"));
+            Assert.That(rows[0].InstallationId, Is.EqualTo("inst-r"));
+            Assert.That(rows[0].FcmToken, Is.Null, "no push permission: no token");
+            Assert.That(rows[0].Platform, Is.EqualTo("ios"));
+            Assert.That(rows[0].AppVersion, Is.EqualTo("1.1.1"));
+            Assert.That(rows[0].AppBuild, Is.EqualTo("11101"));
+            Assert.That(rows[0].DeviceModel, Is.EqualTo("iPhone 15"));
+            Assert.That(rows[0].DeviceManufacturer, Is.EqualTo("Apple"));
+            Assert.That(rows[0].OsVersion, Is.EqualTo("18.1"));
+            Assert.That(rows[0].LastSeenAt, Is.Not.Null);
+            Assert.That(rows[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
+        });
+    }
+
+    [Test]
+    public async Task ReportInstall_OnARegisteredInstall_KeepsTheTokenAndAddsTheReport()
+    {
+        var sut = CreateSut(7);
+        await sut.RegisterPushToken(MakeRequest("token-a", "inst-a", platform: "android"), Context());
+
+        await sut.ReportInstall(MakeReport("inst-a", platform: ""), Context());
+
+        var rows = await AllRowsAsync();
+        Assert.That(rows, Has.Count.EqualTo(1), "one install, one row");
+        Assert.Multiple(() =>
+        {
+            Assert.That(rows[0].FcmToken, Is.EqualTo("token-a"));
+            Assert.That(rows[0].Platform, Is.EqualTo("android"), "a blank platform keeps the registered one");
+            Assert.That(rows[0].AppVersion, Is.EqualTo("1.1.1"));
+        });
+    }
+
+    [Test]
+    public async Task RegisterPushToken_AfterReportInstall_AddsTheTokenToTheSameRow()
+    {
+        var sut = CreateSut(7);
+        await sut.ReportInstall(MakeReport("inst-a"), Context());
+
+        await sut.RegisterPushToken(MakeRequest("token-a", "inst-a"), Context());
+
+        var rows = await AllRowsAsync();
+        Assert.That(rows, Has.Count.EqualTo(1));
+        Assert.Multiple(() =>
+        {
+            Assert.That(rows[0].FcmToken, Is.EqualTo("token-a"));
+            Assert.That(rows[0].AppVersion, Is.EqualTo("1.1.1"), "the report survives a token register");
+        });
+    }
+
+    [Test]
+    public async Task ReportInstall_AgainAfterAnUpdate_OverwritesTheVersion_AndMovesTheOwner()
+    {
+        await CreateSut(7).ReportInstall(MakeReport("inst-a", appVersion: "1.1.0"), Context());
+
+        await CreateSut(8).ReportInstall(MakeReport("inst-a", appVersion: "1.1.1"), Context());
+
+        var rows = await AllRowsAsync();
+        Assert.That(rows, Has.Count.EqualTo(1));
+        Assert.Multiple(() =>
+        {
+            Assert.That(rows[0].AppVersion, Is.EqualTo("1.1.1"));
+            Assert.That(rows[0].SdkSiteId, Is.EqualTo(8), "another worker signed in on the device");
+        });
+    }
+
+    [Test]
+    public async Task ReportInstall_AfterLogout_RevivesTheRowWithoutItsOldToken()
+    {
+        var sut = CreateSut(7);
+        await sut.RegisterPushToken(MakeRequest("token-a", "inst-a"), Context());
+        var stored = await BackendConfigurationPnDbContext!.DeviceTokens.SingleAsync();
+        await stored.Delete(BackendConfigurationPnDbContext);
+
+        await CreateSut(8).ReportInstall(MakeReport("inst-a"), Context());
+
+        var rows = await AllRowsAsync();
+        Assert.That(rows, Has.Count.EqualTo(1), "revived, not duplicated");
+        Assert.Multiple(() =>
+        {
+            Assert.That(rows[0].Id, Is.EqualTo(stored.Id));
+            Assert.That(rows[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
+            Assert.That(rows[0].FcmToken, Is.Null,
+                "the old token must not reach the new owner before the app registers again");
+            Assert.That(rows[0].SdkSiteId, Is.EqualTo(8));
+        });
+    }
+
+    [Test]
+    public async Task ReportInstall_FromAnotherOwner_ClearsTheToken()
+    {
+        // The push token must not follow the install to a worker it was not minted for.
+        await CreateSut(7).RegisterPushToken(MakeRequest("token-a", "inst-a"), Context());
+
+        await CreateSut(8).ReportInstall(MakeReport("inst-a"), Context());
+
+        var row = (await AllRowsAsync()).Single();
+        Assert.Multiple(() =>
+        {
+            Assert.That(row.SdkSiteId, Is.EqualTo(8));
+            Assert.That(row.FcmToken, Is.Null);
+        });
+    }
+
+    [Test]
+    public async Task ReportInstall_SameReportAgainWithinTheHour_WritesNothing()
+    {
+        // The apps report on every start; an unchanged report must not add a version row each time.
+        var sut = CreateSut(7);
+        await sut.ReportInstall(MakeReport("inst-a"), Context());
+        var versionsBefore = await BackendConfigurationPnDbContext!.DeviceTokenVersions.AsNoTracking().CountAsync();
+
+        await sut.ReportInstall(MakeReport("inst-a"), Context());
+
+        Assert.That(await BackendConfigurationPnDbContext.DeviceTokenVersions.AsNoTracking().CountAsync(),
+            Is.EqualTo(versionsBefore));
+    }
+
+    [TestCase(true, false, TestName = "ReportInstall_AChangedReport_IsWritten")]
+    [TestCase(false, true, TestName = "ReportInstall_TheSameReportAfterAnHour_IsWritten")]
+    public async Task ReportInstall_ChangedOrStale_IsWritten(bool changed, bool stale)
+    {
+        var sut = CreateSut(7);
+        await sut.ReportInstall(MakeReport("inst-a", appVersion: "1.1.0"), Context());
+        if (stale)
+        {
+            await BackendConfigurationPnDbContext!.DeviceTokens
+                .ExecuteUpdateAsync(u => u.SetProperty(t => t.LastSeenAt, DateTime.UtcNow.AddHours(-2)));
+        }
+        var versionsBefore = await BackendConfigurationPnDbContext!.DeviceTokenVersions.AsNoTracking().CountAsync();
+
+        BackendConfigurationPnDbContext.ChangeTracker.Clear();
+        await sut.ReportInstall(MakeReport("inst-a", appVersion: changed ? "1.1.1" : "1.1.0"), Context());
+
+        var row = (await AllRowsAsync()).Single();
+        await Assert.MultipleAsync(async () =>
+        {
+            Assert.That(await BackendConfigurationPnDbContext.DeviceTokenVersions.AsNoTracking().CountAsync(),
+                Is.EqualTo(versionsBefore + 1));
+            Assert.That(row.AppVersion, Is.EqualTo(changed ? "1.1.1" : "1.1.0"));
+            Assert.That(row.LastSeenAt, Is.GreaterThan(DateTime.UtcNow.AddMinutes(-5)));
+        });
+    }
+
+    [Test]
+    public async Task RegisterPushToken_SameTokenAgain_RestoresItAfterAConcurrentClear()
+    {
+        // A concurrent ReportInstall clears the token (in SQL) after this call loaded the row;
+        // the tracked entity still holds the same token, so EF alone would not write it back.
+        var sut = CreateSut(7);
+        await sut.RegisterPushToken(MakeRequest("token-a", "inst-a"), Context());
+        await BackendConfigurationPnDbContext!.DeviceTokens
+            .ExecuteUpdateAsync(u => u.SetProperty(t => t.FcmToken, (string)null));
+
+        await sut.RegisterPushToken(MakeRequest("token-a", "inst-a"), Context());
+
+        Assert.That((await AllRowsAsync()).Single().FcmToken, Is.EqualTo("token-a"));
+    }
+
+    [Test]
+    public async Task RegisterPushToken_StaleRegisterAfterAnotherWorkerTookTheDevice_DoesNotHandBackTheToken()
+    {
+        // Worker 8 signed in on the device meanwhile (ReportInstall moved the row and cleared
+        // the token). A register from worker 7 that loaded the row before that must not move it
+        // back to 7 with 7's token; worker 8's own register restores the token.
+        var sut = CreateSut(7);
+        await sut.RegisterPushToken(MakeRequest("token-a", "inst-a"), Context());
+        await BackendConfigurationPnDbContext!.DeviceTokens.ExecuteUpdateAsync(u => u
+            .SetProperty(t => t.SdkSiteId, 8)
+            .SetProperty(t => t.FcmToken, (string)null));
+
+        await sut.RegisterPushToken(MakeRequest("token-a", "inst-a"), Context());
+
+        var row = (await AllRowsAsync()).Single();
+        Assert.Multiple(() =>
+        {
+            Assert.That(row.SdkSiteId, Is.EqualTo(8));
+            Assert.That(row.FcmToken, Is.Null);
+        });
+    }
+
+    [Test]
+    public async Task RegisterPushToken_SameRegistrationAgain_WritesNoVersionRow()
+    {
+        var sut = CreateSut(7);
+        await sut.RegisterPushToken(MakeRequest("token-a", "inst-a"), Context());
+        var versionsBefore = await BackendConfigurationPnDbContext!.DeviceTokenVersions.AsNoTracking().CountAsync();
+
+        await sut.RegisterPushToken(MakeRequest("token-a", "inst-a"), Context());
+
+        Assert.That(await BackendConfigurationPnDbContext.DeviceTokenVersions.AsNoTracking().CountAsync(),
+            Is.EqualTo(versionsBefore));
+    }
+
+    [Test]
+    public async Task ReportInstall_ValuesAreTrimmed()
+    {
+        await CreateSut(7).ReportInstall(MakeReport("inst-a", appVersion: "  1.2.3 "), Context());
+
+        Assert.That((await AllRowsAsync()).Single().AppVersion, Is.EqualTo("1.2.3"));
+    }
+
+    [Test]
+    public async Task ReportInstall_LongValues_AreCutToTheColumnLength()
+    {
+        var sut = CreateSut(7);
+        var request = MakeReport("inst-a", appVersion: new string('9', 40));
+        request.DeviceModel = new string('m', 200);
+
+        await sut.ReportInstall(request, Context());
+
+        var row = (await AllRowsAsync()).Single();
+        Assert.Multiple(() =>
+        {
+            Assert.That(row.AppVersion, Has.Length.EqualTo(32));
+            Assert.That(row.DeviceModel, Has.Length.EqualTo(128));
+        });
+    }
+
+    [Test]
+    public async Task ReportInstall_NoResolvableWorker_ThrowsUnauthenticated()
+    {
+        var ex = await Assert.ThrowsAsync<RpcException>(async () =>
+            await CreateSut(0).ReportInstall(MakeReport("inst-a"), Context()));
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.Unauthenticated));
+        Assert.That(BackendConfigurationPnDbContext!.DeviceTokens.AsNoTracking().Count(), Is.EqualTo(0));
+    }
+
+    [TestCase("  ", "inst-a", TestName = "ReportInstall_MissingAppId_ThrowsInvalidArgument")]
+    [TestCase("adhoc", "  ", TestName = "ReportInstall_MissingInstallationId_ThrowsInvalidArgument")]
+    public async Task ReportInstall_MissingIdentity_ThrowsInvalidArgument(string appId, string installationId)
+    {
+        var ex = await Assert.ThrowsAsync<RpcException>(async () =>
+            await CreateSut(7).ReportInstall(MakeReport(installationId, appId: appId), Context()));
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.InvalidArgument));
+        Assert.That(BackendConfigurationPnDbContext!.DeviceTokens.AsNoTracking().Count(), Is.EqualTo(0));
+    }
 }

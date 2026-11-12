@@ -581,6 +581,7 @@ public class BackendConfigurationAssignmentWorkerService(
             var appUsersByEmail = await LoadAppUsersByEmail(deviceUsers).ConfigureAwait(false);
             var chemistrySiteIds = await LoadChemistryAccess(siteIds).ConfigureAwait(false);
             var halebidSiteIds = await LoadHalebidAccess(siteIds).ConfigureAwait(false);
+            var installReports = await LoadInstallReports(siteIds).ConfigureAwait(false);
 
             // Leder read-back: the flag of each row's own site, one query per list.
             var canSetLeder = userService.IsAdmin();
@@ -704,6 +705,7 @@ public class BackendConfigurationAssignmentWorkerService(
                 deviceUserModel.HasWorkOrdersAssigned = workOrderCases.Count > 0;
 
                 FillAppInstalls(deviceUserModel, unit, FindAppUser(appUsersByEmail, deviceUserModel.WorkerEmail),
+                    appId => installReports.GetValueOrDefault((deviceUserModel.SiteId, appId)),
                     chemistrySiteIds.Contains(deviceUserModel.SiteId), halebidSiteIds.Contains(deviceUserModel.SiteId));
             }
 
@@ -902,35 +904,86 @@ public class BackendConfigurationAssignmentWorkerService(
         return workerIds.ToHashSet();
     }
 
+    /// <summary>The newest install report (ReportInstall, #1335) of one app on one worker.</summary>
+    private sealed record InstallReport(string Version, string Model, string Manufacturer, string OsVersion,
+        DateTime? LastSeenAt);
+
+    /// <summary>
+    /// The apps that report through ReportInstall, by the app_id they send. Time and Archive
+    /// report on the core login instead (EformUser.TimeRegistration* / Archive*).
+    /// </summary>
+    private static readonly string[] ReportingAppIds =
+        [DeviceAppIds.Eform, DeviceAppIds.Adhoc, DeviceAppIds.Chemistry, DeviceAppIds.Halebid];
+
+    /// <summary>
+    /// The newest live install report per (SDK site id, app_id) for the page's workers, in one
+    /// query. A worker with several devices shows the one that reported last.
+    /// </summary>
+    private async Task<Dictionary<(int SiteId, string AppId), InstallReport>> LoadInstallReports(List<int> siteIds)
+    {
+        var rows = await backendConfigurationPnDbContext.DeviceTokens.AsNoTracking()
+            .Where(t => siteIds.Contains(t.SdkSiteId)
+                        && ReportingAppIds.Contains(t.AppId)
+                        && t.WorkflowState != Constants.WorkflowStates.Removed
+                        && !string.IsNullOrEmpty(t.AppVersion))
+            .Select(t => new { t.SdkSiteId, t.AppId, t.AppVersion, t.DeviceModel, t.DeviceManufacturer, t.OsVersion, t.LastSeenAt })
+            .ToListAsync().ConfigureAwait(false);
+
+        return rows
+            .GroupBy(t => (t.SdkSiteId, t.AppId))
+            .ToDictionary(
+                g => g.Key,
+                g =>
+                {
+                    var t = g.MaxBy(x => x.LastSeenAt)!;
+                    return new InstallReport(t.AppVersion, t.DeviceModel, t.DeviceManufacturer, t.OsVersion, t.LastSeenAt);
+                });
+    }
+
+    private static AppInstallModel FromReport(bool hasAccess, InstallReport report) => new()
+    {
+        HasAccess = hasAccess,
+        Version = NullIfBlank(report?.Version),
+        Model = NullIfBlank(report?.Model),
+        Manufacturer = NullIfBlank(report?.Manufacturer),
+        OsVersion = NullIfBlank(report?.OsVersion)
+    };
+
+    private static AppInstallModel FromUnit(Microting.eForm.Infrastructure.Data.Entities.Unit unit) => new()
+    {
+        HasAccess = true,
+        Version = NullIfBlank(unit?.eFormVersion),
+        Model = NullIfBlank(unit?.Model),
+        Manufacturer = NullIfBlank(unit?.Manufacturer),
+        OsVersion = NullIfBlank(unit?.OsVersion)
+    };
+
     /// <summary>
     /// Fills the per-app columns. Must run after TimeRegistrationEnabled,
     /// TaskManagementEnabled and ArchiveEnabled are known - they are the access flags.
     /// </summary>
     private static void FillAppInstalls(DeviceUserModel deviceUserModel,
         Microting.eForm.Infrastructure.Data.Entities.Unit unit, AppUserVersions appUser,
-        bool chemistryAccess, bool halebidAccess)
+        Func<string, InstallReport> reportFor, bool chemistryAccess, bool halebidAccess)
     {
         // Compliance has no per-worker switch: every device user can use it, through the
         // email login (active EformUser + non-resigned Worker, see GrpcSiteResolver) or,
         // without an email, the legacy OTP pairing of the Unit every SiteCreate makes.
-        deviceUserModel.ComplianceApp = WithLatest(new AppInstallModel
-        {
-            HasAccess = true,
-            Version = NullIfBlank(unit?.eFormVersion),
-            Model = NullIfBlank(unit?.Model),
-            Manufacturer = NullIfBlank(unit?.Manufacturer),
-            OsVersion = NullIfBlank(unit?.OsVersion)
-        }, AppLatestVersions.Compliance);
+        // Both report a version; the newer report wins (a Unit with no UpdatedAt loses).
+        var complianceReport = reportFor(DeviceAppIds.Eform);
+        var unitVersion = NullIfBlank(unit?.eFormVersion);
+        var reportWins = complianceReport != null
+                         && (unitVersion == null || unit.UpdatedAt == null
+                             || complianceReport.LastSeenAt >= unit.UpdatedAt);
+        var complianceInstall = reportWins ? FromReport(true, complianceReport) : FromUnit(unit);
+        deviceUserModel.ComplianceApp = WithLatest(complianceInstall, AppLatestVersions.Compliance);
 
-        // Ad-hoc, Chemistry and Halebid report no version anywhere yet (phase 2 of #1335).
-        deviceUserModel.AdHocApp = WithLatest(new AppInstallModel
-        {
-            HasAccess = deviceUserModel.TaskManagementEnabled == true
-        }, AppLatestVersions.Adhoc);
-        deviceUserModel.ChemistryApp = WithLatest(new AppInstallModel { HasAccess = chemistryAccess },
-            AppLatestVersions.Chemistry);
-        deviceUserModel.HalebidApp = WithLatest(new AppInstallModel { HasAccess = halebidAccess },
-            AppLatestVersions.Halebid);
+        deviceUserModel.AdHocApp = WithLatest(
+            FromReport(deviceUserModel.TaskManagementEnabled == true, reportFor(DeviceAppIds.Adhoc)), AppLatestVersions.Adhoc);
+        deviceUserModel.ChemistryApp = WithLatest(
+            FromReport(chemistryAccess, reportFor(DeviceAppIds.Chemistry)), AppLatestVersions.Chemistry);
+        deviceUserModel.HalebidApp = WithLatest(
+            FromReport(halebidAccess, reportFor(DeviceAppIds.Halebid)), AppLatestVersions.Halebid);
 
         deviceUserModel.TimeApp = WithLatest(new AppInstallModel
         {

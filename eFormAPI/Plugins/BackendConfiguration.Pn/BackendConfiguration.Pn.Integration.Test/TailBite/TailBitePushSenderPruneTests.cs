@@ -35,6 +35,10 @@ public class TailBitePushSenderPruneTests : TestBaseSetup
         await SeedToken("other-site", sdkSiteId: 611);
         var dead = await SeedToken("halebid-dead", sdkSiteId: 610);
         await dead.Delete(BackendConfigurationPnDbContext!);
+        // An install that only reported itself (ReportInstall, #1335) has no token.
+        var reportOnly = await SeedToken("halebid-report-only", sdkSiteId: 610);
+        reportOnly.FcmToken = null;
+        await reportOnly.Update(BackendConfigurationPnDbContext!);
 
         var devices = await TailBitePushSender.TargetTokenQuery(BackendConfigurationPnDbContext!.DeviceTokens, 610).ToListAsync();
 

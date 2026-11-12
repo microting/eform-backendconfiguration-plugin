@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using BackendConfiguration.Pn.Infrastructure.Helpers;
 using FirebaseAdmin;
 using FirebaseAdmin.Messaging;
 using Google.Apis.Auth.OAuth2;
@@ -54,7 +55,7 @@ public interface ITailBitePushSender
 public class TailBitePushSender : ITailBitePushSender
 {
     // Client-side counterpart: the app_id the halebid app passes to SettingsGrpcService.RegisterPushToken (sub-project 2).
-    public const string HalebidAppId = "halebid";
+    public const string HalebidAppId = DeviceAppIds.Halebid;
 
     // Named, never DefaultInstance: several plugins share one host process, each with its own Firebase project.
     private const string FirebaseAppName = "microting-halebid";
@@ -76,11 +77,13 @@ public class TailBitePushSender : ITailBitePushSender
     }
 
     // INVARIANT (as in PushNotificationService): always carries the AppId equality predicate, the leading column of
-    // IX_DeviceTokens_AppId_SdkSiteId_WorkflowState.
+    // IX_DeviceTokens_AppId_SdkSiteId_WorkflowState. A row written only by ReportInstall (#1335) has no FcmToken
+    // and is skipped.
     public static IQueryable<DeviceToken> TargetTokenQuery(IQueryable<DeviceToken> deviceTokens, int targetSdkSiteId) =>
         deviceTokens.Where(dt => dt.AppId == HalebidAppId
                                  && dt.SdkSiteId == targetSdkSiteId
-                                 && dt.WorkflowState == Constants.WorkflowStates.Created);
+                                 && dt.WorkflowState == Constants.WorkflowStates.Created
+                                 && !string.IsNullOrEmpty(dt.FcmToken));
 
     public async Task SendToSiteAsync(int targetSdkSiteId, string title, string body, Dictionary<string, string> data)
     {
