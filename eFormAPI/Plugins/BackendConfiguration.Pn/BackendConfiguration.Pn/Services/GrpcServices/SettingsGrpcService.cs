@@ -136,15 +136,16 @@ public class SettingsGrpcService(
             // A device usually re-registers the same token, and EF leaves an unchanged
             // column out of the UPDATE. If a concurrent ReportInstall cleared the token after
             // the row was loaded here (a revive by this same owner), the row would stay
-            // token-less: restore the token - only while the row is still live and owned by
-            // this caller, so a row another worker has just taken over is never handed this
-            // caller's token. Not versioned; the normal case writes nothing more.
+            // token-less. Restore it only while the row is still live, owned by this caller
+            // and token-less: a row another worker has just taken over must not get this
+            // caller's token, and a token rotated meanwhile must not be overwritten by this
+            // older one. Not versioned; the normal case writes nothing more.
             var rowId = existing.Id;
             await dbContext.DeviceTokens
                 .Where(t => t.Id == rowId
                             && t.SdkSiteId == sdkSiteId
                             && t.WorkflowState == Constants.WorkflowStates.Created
-                            && (t.FcmToken == null || t.FcmToken != fcmToken))
+                            && t.FcmToken == null)
                 .ExecuteUpdateAsync(u => u.SetProperty(t => t.FcmToken, fcmToken))
                 .ConfigureAwait(false);
         }

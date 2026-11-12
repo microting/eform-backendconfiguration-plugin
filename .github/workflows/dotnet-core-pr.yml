@@ -289,6 +289,10 @@ jobs:
     - name: Get standard output
       if: ${{ failure() }}
       run: cat docker_run_log
+    - name: Get app errors
+      # docker_run_log ends at `docker restart`; docker logs also holds the restarted app.
+      if: ${{ failure() }}
+      run: docker logs my-container 2>&1 | grep -E -B5 -A40 "^(fail|crit):|Unhandled exception" | head -500 || true
     - name: Archive Playwright report
       if: failure()
       uses: actions/upload-artifact@v4

@@ -572,6 +572,21 @@ public class SettingsGrpcServicePushTokenTests : TestBaseSetup
     }
 
     [Test]
+    public async Task RegisterPushToken_StaleRegisterAfterATokenRotation_KeepsTheNewToken()
+    {
+        // The device rotated its token to token-b (written in SQL) after this call loaded the
+        // row holding token-a; the late register of token-a must not overwrite the newer token.
+        var sut = CreateSut(7);
+        await sut.RegisterPushToken(MakeRequest("token-a", "inst-a"), Context());
+        await BackendConfigurationPnDbContext!.DeviceTokens
+            .ExecuteUpdateAsync(u => u.SetProperty(t => t.FcmToken, "token-b"));
+
+        await sut.RegisterPushToken(MakeRequest("token-a", "inst-a"), Context());
+
+        Assert.That((await AllRowsAsync()).Single().FcmToken, Is.EqualTo("token-b"));
+    }
+
+    [Test]
     public async Task RegisterPushToken_StaleRegisterAfterAnotherWorkerTookTheDevice_DoesNotHandBackTheToken()
     {
         // Worker 8 signed in on the device meanwhile (ReportInstall moved the row and cleared
