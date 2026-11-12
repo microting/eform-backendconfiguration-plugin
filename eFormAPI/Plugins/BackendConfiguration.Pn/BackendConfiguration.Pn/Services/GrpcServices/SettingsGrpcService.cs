@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Grpc.Core;
@@ -35,6 +36,13 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 /// retired: one FCM token addresses one install, so a second live row carrying
 /// it would duplicate every push to that device.
 ///
+/// <c>ReportInstall</c> (#1335) records which app version runs on the install,
+/// on every start-up or login, with or without push permission. It upserts the
+/// same (AppId, InstallationId) row and never sets <c>FcmToken</c>: a row it
+/// creates has none, and a soft-deleted row it revives loses its old one, so
+/// push senders (which skip token-less rows) cannot reach a stale token or the
+/// previous owner until the app registers again.
+///
 /// <c>SetUserPrefs</c> is intentionally not overridden yet — the base class
 /// answers <c>Unimplemented</c>, which the mobile client tolerates.
 /// </summary>
@@ -57,6 +65,33 @@ public class SettingsGrpcService(
         // Platform is stored exactly as sent ("android"/"ios"/"unknown").
         var platform = request.Platform ?? string.Empty;
 
+        await UpsertRetryingOnceAsync(
+            () => UpsertPushTokenAsync(appId, installationId, fcmToken, sdkSiteId, platform)).ConfigureAwait(false);
+
+        return new RegisterPushTokenResponse();
+    }
+
+    /// <summary>
+    /// RegisterPushToken and ReportInstall run at the same app start, so both can make the
+    /// first insert for one install. The loser of the unique (AppId, InstallationId) slot
+    /// retries once and updates the winner's row.
+    /// </summary>
+    private async Task UpsertRetryingOnceAsync(Func<Task> upsert)
+    {
+        try
+        {
+            await upsert().ConfigureAwait(false);
+        }
+        catch (DbUpdateException)
+        {
+            dbContext.ChangeTracker.Clear();
+            await upsert().ConfigureAwait(false);
+        }
+    }
+
+    private async Task UpsertPushTokenAsync(string appId, string installationId, string fcmToken, int sdkSiteId,
+        string platform)
+    {
         // No WorkflowState filter here — soft-deleted rows MUST be found and
         // revived via Update(); see the class doc / the base repo's index note.
         var existing = await dbContext.DeviceTokens
@@ -97,6 +132,22 @@ public class SettingsGrpcService(
             existing.Platform = platform;
             existing.WorkflowState = Constants.WorkflowStates.Created;
             await existing.Update(dbContext).ConfigureAwait(false);
+
+            // A device usually re-registers the same token, and EF leaves an unchanged
+            // column out of the UPDATE. If a concurrent ReportInstall cleared the token after
+            // the row was loaded here (a revive by this same owner), the row would stay
+            // token-less. Restore it only while the row is still live, owned by this caller
+            // and token-less: a row another worker has just taken over must not get this
+            // caller's token, and a token rotated meanwhile must not be overwritten by this
+            // older one. Not versioned; the normal case writes nothing more.
+            var rowId = existing.Id;
+            await dbContext.DeviceTokens
+                .Where(t => t.Id == rowId
+                            && t.SdkSiteId == sdkSiteId
+                            && t.WorkflowState == Constants.WorkflowStates.Created
+                            && t.FcmToken == null)
+                .ExecuteUpdateAsync(u => u.SetProperty(t => t.FcmToken, fcmToken))
+                .ConfigureAwait(false);
         }
         else
         {
@@ -113,8 +164,109 @@ public class SettingsGrpcService(
         }
 
         await RetireStaleRowsForTokenAsync(appId, fcmToken, existing.Id).ConfigureAwait(false);
+    }
 
-        return new RegisterPushTokenResponse();
+    public override async Task<ReportInstallResponse> ReportInstall(
+        ReportInstallRequest request,
+        ServerCallContext context)
+    {
+        var sdkSiteId = await ResolveSdkSiteIdAsync().ConfigureAwait(false);
+
+        var appId = RequireNonEmpty(request.AppId, "app_id");
+        var installationId = RequireNonEmpty(request.InstallationId, "installation_id");
+
+        await UpsertRetryingOnceAsync(
+            () => UpsertInstallReportAsync(appId, installationId, sdkSiteId, request)).ConfigureAwait(false);
+
+        return new ReportInstallResponse();
+    }
+
+    /// <summary>
+    /// A report that changes nothing and comes within this interval of the last one is not
+    /// written: every write adds a DeviceTokenVersions row, and the apps report on every start.
+    /// </summary>
+    private static readonly TimeSpan LastSeenResolution = TimeSpan.FromHours(1);
+
+    private async Task UpsertInstallReportAsync(string appId, string installationId, int sdkSiteId,
+        ReportInstallRequest request)
+    {
+        var platform = ToColumn(request.Platform, 50);
+        var appVersion = ToColumn(request.AppVersion, 32);
+        var appBuild = ToColumn(request.AppBuild, 32);
+        var deviceModel = ToColumn(request.DeviceModel, 128);
+        var deviceManufacturer = ToColumn(request.DeviceManufacturer, 128);
+        var osVersion = ToColumn(request.OsVersion, 64);
+        var now = DateTime.UtcNow;
+
+        // No WorkflowState filter: a soft-deleted install row is revived, never duplicated.
+        var row = await dbContext.DeviceTokens
+            .FirstOrDefaultAsync(t => t.AppId == appId && t.InstallationId == installationId)
+            .ConfigureAwait(false);
+
+        if (row == null)
+        {
+            await new DeviceToken
+            {
+                AppId = appId, InstallationId = installationId, SdkSiteId = sdkSiteId, Platform = platform,
+                AppVersion = appVersion, AppBuild = appBuild, DeviceModel = deviceModel,
+                DeviceManufacturer = deviceManufacturer, OsVersion = osVersion, LastSeenAt = now
+            }.Create(dbContext).ConfigureAwait(false);
+            return;
+        }
+
+        var revivedOrMoved = row.WorkflowState == Constants.WorkflowStates.Removed || row.SdkSiteId != sdkSiteId;
+        var unchanged = !revivedOrMoved
+                        && (platform == null || row.Platform == platform)
+                        && row.AppVersion == appVersion && row.AppBuild == appBuild
+                        && row.DeviceModel == deviceModel && row.DeviceManufacturer == deviceManufacturer
+                        && row.OsVersion == osVersion
+                        && row.LastSeenAt > now - LastSeenResolution;
+        if (unchanged)
+        {
+            return;
+        }
+
+        if (revivedOrMoved)
+        {
+            // The token must not come back with a revived row, nor follow the install to
+            // another owner. Cleared in SQL only while that is still true, so a token a
+            // concurrent RegisterPushToken just committed for this owner is never overwritten,
+            // and in the same statement as the takeover, so the previous owner's restore can
+            // never refill it in between. Then re-read the row so the save below does not
+            // write stale values back.
+            await dbContext.DeviceTokens
+                .Where(t => t.Id == row.Id
+                            && (t.WorkflowState == Constants.WorkflowStates.Removed || t.SdkSiteId != sdkSiteId))
+                .ExecuteUpdateAsync(u => u
+                    .SetProperty(t => t.FcmToken, (string)null)
+                    .SetProperty(t => t.SdkSiteId, sdkSiteId)
+                    .SetProperty(t => t.WorkflowState, Constants.WorkflowStates.Created))
+                .ConfigureAwait(false);
+            await dbContext.Entry(row).ReloadAsync().ConfigureAwait(false);
+        }
+
+        row.SdkSiteId = sdkSiteId;
+        // A blank platform keeps what RegisterPushToken stored.
+        row.Platform = platform ?? row.Platform;
+        row.AppVersion = appVersion;
+        row.AppBuild = appBuild;
+        row.DeviceModel = deviceModel;
+        row.DeviceManufacturer = deviceManufacturer;
+        row.OsVersion = osVersion;
+        row.LastSeenAt = now;
+        row.WorkflowState = Constants.WorkflowStates.Created;
+        await row.Update(dbContext).ConfigureAwait(false);
+    }
+
+    /// <summary>Trimmed, empty as null, cut to the column length.</summary>
+    private static string ToColumn(string raw, int maxLength)
+    {
+        var value = raw?.Trim();
+        if (string.IsNullOrEmpty(value))
+        {
+            return null;
+        }
+        return value.Length <= maxLength ? value : value[..maxLength];
     }
 
     /// <summary>

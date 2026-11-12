@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using BackendConfiguration.Pn.Infrastructure.Helpers;
 using FirebaseAdmin;
 using FirebaseAdmin.Messaging;
 using Google.Apis.Auth.OAuth2;
@@ -41,7 +42,7 @@ public class PushNotificationService : IPushNotificationService
     /// (packages/microting_mobile/lib/features/settings/data/settings_repository.dart).
     /// Renaming one without the other silently empties this query.
     /// </summary>
-    private const string EformAppId = "eform";
+    private const string EformAppId = DeviceAppIds.Eform;
 
     /// <summary>
     /// Name of the FirebaseApp this sender owns, namespaced vendor-then-sender
@@ -269,12 +270,15 @@ public class PushNotificationService : IPushNotificationService
     /// eform-backendconfiguration-base
     /// (BackendConfigurationPnDbContext.OnModelCreating); re-check it there
     /// whenever the base package is bumped.
+    ///
+    /// A row written only by ReportInstall (#1335) has no FcmToken and is skipped.
     /// </summary>
     internal IQueryable<DeviceToken> TargetTokenQuery(int targetSdkSiteId) =>
         _dbContext.DeviceTokens
             .Where(dt => dt.AppId == EformAppId
                          && dt.SdkSiteId == targetSdkSiteId
-                         && dt.WorkflowState == Constants.WorkflowStates.Created);
+                         && dt.WorkflowState == Constants.WorkflowStates.Created
+                         && !string.IsNullOrEmpty(dt.FcmToken));
 
     public async Task SendToSiteAsync(
         int targetSdkSiteId,

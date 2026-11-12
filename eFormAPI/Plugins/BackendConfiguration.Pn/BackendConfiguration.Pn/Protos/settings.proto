@@ -5,6 +5,7 @@ package microting.settings.v1;
 service Settings {
   rpc RegisterPushToken(RegisterPushTokenRequest) returns (RegisterPushTokenResponse);
   rpc SetUserPrefs(SetUserPrefsRequest) returns (SetUserPrefsResponse);
+  rpc ReportInstall(ReportInstallRequest) returns (ReportInstallResponse);
 }
 
 message RegisterPushTokenRequest {
@@ -21,3 +22,17 @@ message SetUserPrefsRequest {
   bool push_enabled = 3;
 }
 message SetUserPrefsResponse {}
+
+// Sent on every app start-up and login, whether or not push permission is
+// granted, so the backend knows which version of which app a worker runs.
+message ReportInstallRequest {
+  string app_id = 1;              // "eform" | "adhoc" | "chemistry" | "halebid"
+  string installation_id = 2;     // the same per-install UUID RegisterPushToken sends
+  string platform = 3;            // "android" | "ios"
+  string app_version = 4;         // e.g. "4.1.23" (VERSION in version/version.properties)
+  string app_build = 5;           // build number, e.g. "40123"
+  string device_model = 6;
+  string device_manufacturer = 7;
+  string os_version = 8;
+}
+message ReportInstallResponse {}
