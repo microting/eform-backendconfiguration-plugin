@@ -57,27 +57,29 @@ public abstract class LederWorkerTestBase : TestBaseSetup
     protected static string NewLastName(string prefix = "Doe") => $"{prefix} {Guid.NewGuid():N}";
 
     private static DeviceUserModel BuildModel(string lastName, string email, bool web, bool archive, bool? isLeader,
-        List<int> tags, string pinCode) =>
+        List<int> tags, string pinCode, bool timeRegistration = false) =>
         new()
         {
             LanguageCode = "da", UserFirstName = "Jane", UserLastName = lastName, WorkerEmail = email,
-            WebAccessEnabled = web, ArchiveEnabled = archive, TimeRegistrationEnabled = false,
+            WebAccessEnabled = web, ArchiveEnabled = archive, TimeRegistrationEnabled = timeRegistration,
             IsLeader = isLeader, Tags = tags, PinCode = pinCode, EmployeeNo = ""
         };
 
     protected async Task<OperationDataResult<int>> TryCreateAsync(LederCaller? caller, string lastName, string email,
-        bool web = true, bool archive = false, bool? isLeader = null, List<int>? tags = null) =>
+        bool web = true, bool archive = false, bool? isLeader = null, List<int>? tags = null,
+        bool timeRegistration = false) =>
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(
-            BuildModel(lastName, email, web, archive, isLeader, tags ?? [], ""),
+            BuildModel(lastName, email, web, archive, isLeader, tags ?? [], "", timeRegistration),
             Core, ActorId, TimePlanningPnDbContext!, BaseDbContext, UserService, UserManager, null,
             TestContextLogger<LederWorkerTestBase>.Instance, caller, BackendConfigurationPnDbContext);
 
     protected async Task<Worker> CreateWorkerAsync(LederCaller? caller = null, bool web = true, bool archive = false,
-        bool? isLeader = null, List<int>? tags = null, string? email = null)
+        bool? isLeader = null, List<int>? tags = null, string? email = null, bool timeRegistration = false)
     {
         var lastName = NewLastName();
         var address = email ?? NewEmail();
-        var result = await TryCreateAsync(caller ?? Admin, lastName, address, web, archive, isLeader, tags);
+        var result = await TryCreateAsync(caller ?? Admin, lastName, address, web, archive, isLeader, tags,
+            timeRegistration);
         Assert.That(result.Success, Is.True, result.Message);
         var site = await MicrotingDbContext!.Sites.AsNoTracking().SingleAsync(x => x.Name == $"Jane {lastName}");
         return new Worker((int)site.MicrotingUid!, site.Id, address, lastName);
@@ -90,13 +92,13 @@ public abstract class LederWorkerTestBase : TestBaseSetup
 
     protected async Task<OperationResult> UpdateAsync(Worker w, LederCaller? caller, bool? isLeader = null,
         bool web = true, bool archive = false, string? email = null, List<int>? tags = null, bool resigned = false,
-        string? lastName = null)
+        string? lastName = null, bool timeRegistration = false, DateTime? resignedAtDate = null)
     {
         var model = BuildModel(lastName ?? w.LastName, email ?? w.Email, web, archive, isLeader,
-            tags ?? await StoredTagIdsAsync(w), "****");
+            tags ?? await StoredTagIdsAsync(w), "****", timeRegistration);
         model.SiteMicrotingUid = w.SiteUid;
         model.Resigned = resigned;
-        model.ResignedAtDate = resigned ? DateTime.UtcNow.Date : DateTime.MinValue;
+        model.ResignedAtDate = resignedAtDate ?? (resigned ? DateTime.UtcNow.Date : DateTime.MinValue);
         return await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(model, Core, ActorId,
             UserService, UserManager, BackendConfigurationPnDbContext!, TimePlanningPnDbContext!, BaseDbContext,
             TestContextLogger<LederWorkerTestBase>.Instance, ItemsPlanningPnDbContext!, null, null, caller);
