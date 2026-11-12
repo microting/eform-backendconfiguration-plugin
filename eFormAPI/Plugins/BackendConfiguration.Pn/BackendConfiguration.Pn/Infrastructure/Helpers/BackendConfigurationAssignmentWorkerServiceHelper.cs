@@ -1362,7 +1362,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             if (assignment != null)
                             {
                                 assignment.Resigned = deviceUserModel.Resigned;
-                                assignment.ResignedAtDate = deviceUserModel.ResignedAtDate;
+                                // A site that is not resigned has no resignation date (nullable since TimePlanningBase 10.0.67).
+                                assignment.ResignedAtDate = deviceUserModel.Resigned ? deviceUserModel.ResignedAtDate : null;
                                 await assignment.Update(timePlanningDbContext).ConfigureAwait(false);
                             }
                         }
