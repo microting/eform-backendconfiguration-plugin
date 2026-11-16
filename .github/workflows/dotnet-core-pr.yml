@@ -62,7 +62,7 @@ jobs:
   # --with-deps): system apt deps live outside the cache and are (re)installed
   # per shard in pn-playwright-test below.
   prewarm-playwright:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # Playwright cannot install chromium on ubuntu-latest (26.04) yet, see microting/eform-angular-frontend#8222
     outputs:
       version: ${{ steps.pw.outputs.version }}
     steps:
@@ -109,7 +109,7 @@ jobs:
       run: npx playwright@"$PW_VERSION" install chromium
   pn-playwright-test:
     needs: [backend-pn-build, prewarm-playwright]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # Playwright cannot install chromium on ubuntu-latest (26.04) yet, see microting/eform-angular-frontend#8222
     # Without this a hung step burns the GitHub default of 6 hours; one stall on
     # `npx playwright install --with-deps` had to be cancelled by hand. The
     # slowest shard measured ~15 min end to end (docker + MariaDB + yarn +
