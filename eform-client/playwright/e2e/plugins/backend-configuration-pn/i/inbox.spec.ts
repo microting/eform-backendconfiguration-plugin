@@ -103,10 +103,9 @@ test.describe.serial('Indbakke', () => {
     // The suggestion (confidence 0.5) is preselected, so the property requirement is already met.
     const choice = dialog().locator(`button.inbox-choice[data-kind="property"][data-target-id="${propertyId}"]`);
     await expect(choice).toHaveAttribute('aria-pressed', 'true', { timeout: UI_TIMEOUT });
-    // No folder suggestion: filing waits until a folder is chosen (D9).
-    await expect(dialog().locator('#inboxFolderRequired')).toBeVisible({ timeout: UI_TIMEOUT });
-    await expect(dialog().locator('#inboxFileBtn')).toBeDisabled({ timeout: UI_TIMEOUT });
-    await archive.chooseInSelect('inboxFolderSelect', DEFAULT_FOLDER);
+    // No folder suggestion: the default folder is preselected, so nothing blocks filing.
+    await expect(dialog().locator('#inboxFolderSelect')).toContainText(DEFAULT_FOLDER, { timeout: UI_TIMEOUT });
+    await expect(dialog().locator('#inboxFolderRequired')).toBeHidden({ timeout: UI_TIMEOUT });
     await expect(dialog().locator('#inboxFileBtn')).toBeEnabled({ timeout: UI_TIMEOUT });
 
     await archive.fileFromReview(id, 'filing the document');
@@ -150,9 +149,9 @@ test.describe.serial('Indbakke', () => {
     await seedInboxDocument(page.request, { fromAddress: ADMIN_EMAIL, fileName });
     const id = await archive.openReadyReview(fileName);
 
-    // No suggestion, so no property: filing is blocked until one is chosen.
+    // No suggestion, so no property: filing is blocked until one is chosen. The folder defaults to the default folder.
     await expect(dialog().locator('#inboxPropertyRequired')).toBeVisible({ timeout: UI_TIMEOUT });
-    await expect(dialog().locator('#inboxFolderRequired')).toBeVisible({ timeout: UI_TIMEOUT });
+    await expect(dialog().locator('#inboxFolderRequired')).toBeHidden({ timeout: UI_TIMEOUT });
     await expect(dialog().locator('#inboxFileBtn')).toBeDisabled({ timeout: UI_TIMEOUT });
 
     await clickAndExpectSuccess(dialog().locator('#inboxRejectBtn'), 'POST', `/inbox/${id}/reject`, 'rejecting the document');

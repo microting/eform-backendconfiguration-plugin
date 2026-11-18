@@ -38,8 +38,23 @@ describe('inbox classification helpers', () => {
 
   it('preselects a known folder at the preselect threshold only', () => {
     expect(preselectedFolderId(suggestion(InboxSuggestionKind.Folder, 0.5, {targetId: 4}), folders)).toBe(4);
-    expect(preselectedFolderId(suggestion(InboxSuggestionKind.Folder, 0.3, {targetId: 4}), folders)).toBeNull();
-    expect(preselectedFolderId(suggestion(InboxSuggestionKind.Folder, 0.9, {targetId: 99}), folders)).toBeNull();
-    expect(preselectedFolderId(null, folders)).toBeNull();
+  });
+
+  it('without a usable suggestion, falls back to the default folder, else the first folder', () => {
+    const withDefault = [
+      {id: 2, name: 'Drift', parentId: null, isDefault: false} as ArchiveFolderModel,
+      {id: 4, name: 'Fakturaer', parentId: 2, isDefault: false} as ArchiveFolderModel,
+      {id: 7, name: 'Arkiv', parentId: null, isDefault: true} as ArchiveFolderModel,
+    ];
+    expect(preselectedFolderId(suggestion(InboxSuggestionKind.Folder, 0.3, {targetId: 4}), withDefault)).toBe(7);
+    expect(preselectedFolderId(suggestion(InboxSuggestionKind.Folder, 0.9, {targetId: 99}), withDefault)).toBe(7);
+    expect(preselectedFolderId(null, withDefault)).toBe(7);
+    // The caller cannot see the default folder: the picker's first folder (top folders by name).
+    const noDefault = [
+      {id: 5, name: 'Økonomi', parentId: null, isDefault: false} as ArchiveFolderModel,
+      {id: 2, name: 'Drift', parentId: null, isDefault: false} as ArchiveFolderModel,
+    ];
+    expect(preselectedFolderId(null, noDefault)).toBe(2);
+    expect(preselectedFolderId(null, [])).toBeNull();
   });
 });

@@ -53,7 +53,7 @@ describe('InboxReviewDialogComponent folder and date rows', () => {
   let inboxService: {getPdf: Mock; file: Mock; undo: Mock; reject: Mock};
   let dialogRef: {close: Mock};
 
-  // Folder 5 is the default folder: it must never be preselected on its own.
+  // Folder 5 is the default folder: preselected when no usable suggestion is.
   function setup(suggestions: InboxSuggestionModel[], folders = [folder(3), folder(5, true), folder(9)]): void {
     inboxService = {
       getPdf: vi.fn(() => EMPTY),
@@ -104,42 +104,44 @@ describe('InboxReviewDialogComponent folder and date rows', () => {
       expect(el('#inboxFolderRequired')).toBeNull();
     });
 
-    it('a suggestion for a folder that no longer exists is hidden; nothing is preselected', () => {
+    it('a suggestion for a folder that no longer exists is hidden; the default folder is preselected', () => {
       setup([suggestion(InboxSuggestionKind.Folder, 42, 0.9)]);
-      expect(component.selectedFolderId).toBeNull();
+      expect(component.selectedFolderId).toBe(5);
       expect(folderToggle(42)).toBeNull();
-      expect(el('#inboxFolderRequired').textContent).toContain('No matching folder was found. Choose one before you file.');
-      expect(button('#inboxFileBtn').disabled).toBe(true);
+      expect(el('#inboxFolderRequired')).toBeNull();
     });
 
-    it('a weak suggestion is not preselected; its toggle selects it', () => {
+    it('a weak suggestion is not preselected over the default folder; its toggle selects it', () => {
       setup([suggestion(InboxSuggestionKind.Folder, 3, 0.3)]);
-      expect(component.selectedFolderId).toBeNull();
-      expect(el('#inboxFolderRequired').textContent).toContain('Choose a folder');
+      expect(component.selectedFolderId).toBe(5);
       expect(folderToggle(3).getAttribute('aria-pressed')).toBe('false');
 
       folderToggle(3).click();
       detectChanges(fixture);
       expect(component.selectedFolderId).toBe(3);
       expect(folderToggle(3).getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('without a suggestion the default folder is preselected, so the folder does not block filing', () => {
+      setup([]);
+      expect(component.selectedFolderId).toBe(5);
       expect(el('#inboxFolderRequired')).toBeNull();
     });
 
-    it('requires a folder: filing is blocked and the hint shown until one is chosen', () => {
-      setup([]);
+    it('without the default folder the first folder is preselected', () => {
+      setup([], [folder(9), folder(3)]);
+      expect(component.selectedFolderId).toBe(3);
+    });
+
+    it('requires a folder: with none to choose, filing is blocked and the hint shown', () => {
+      setup([], []);
       expect(component.selectedFolderId).toBeNull();
       expect(component.canFile).toBe(false);
       expect(button('#inboxFileBtn').disabled).toBe(true);
-      expect(el('#inboxFolderRequired')).not.toBeNull();
+      expect(el('#inboxFolderRequired').textContent).toContain('No matching folder was found. Choose one before you file.');
 
       component.fileIt();
       expect(inboxService.file).not.toHaveBeenCalled();
-
-      component.selectedFolderId = 3;
-      detectChanges(fixture);
-      expect(component.canFile).toBe(true);
-      expect(button('#inboxFileBtn').disabled).toBe(false);
-      expect(el('#inboxFolderRequired')).toBeNull();
     });
 
     it('a refused folder (success=false) keeps the dialog open and the document unfiled', () => {

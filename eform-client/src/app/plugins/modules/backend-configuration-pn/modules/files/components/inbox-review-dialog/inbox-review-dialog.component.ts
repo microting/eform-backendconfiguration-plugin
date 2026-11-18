@@ -34,9 +34,9 @@ import {PdfViewerModule} from 'ng2-pdf-viewer';
  * Review and file one Ready document: the PDF on the left; on the right pickers over every live
  * property and file tag, with the suggestions as quick toggles (preselected at confidence ≥ 0.5) and
  * their evidence text. A person always files by hand; at least one property and a folder are required.
- * The folder is preselected only from the hub's suggestion (confidence ≥ 0.5, a folder that still exists);
- * otherwise the person must choose one. The document date starts as the hub's suggestion and is filed as
- * suggested until a person approves it or sets another date.
+ * The folder is preselected from the hub's suggestion (confidence ≥ 0.5, a folder that still exists),
+ * otherwise the picker's first folder (the default folder when the caller sees it). The document date
+ * starts as the hub's suggestion and is filed as suggested until a person approves it or sets another date.
  *
  * Closes with `true` when anything changed (filed, undone or rejected), so the list reloads.
  */
@@ -120,7 +120,6 @@ export class InboxReviewDialogComponent implements OnInit {
         const folders = res.model;
         this.knownFolderIds = new Set(folders.map(f => f.id));
         this.folderOptions = folderOptions(folders);
-        // No fallback to the default folder: without a usable suggestion the person must choose one.
         this.selectedFolderId = preselectedFolderId(this.folderSuggestion, folders);
       }
     });
