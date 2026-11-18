@@ -10,25 +10,25 @@ jobs:
   backend-pn-build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         path: eform-backendconfiguration-plugin
     - name: 'Preparing Frontend checkout'
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
         repository: microting/eform-angular-frontend
         ref: ${{ github.base_ref }}
         path: eform-angular-frontend
     - name: 'Preparing items planning checkout'
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
         repository: microting/eform-angular-items-planning-plugin
         ref: ${{ github.base_ref }}
         path: eform-angular-items-planning-plugin
     - name: 'Preparing time planning checkout'
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
         repository: microting/eform-angular-timeplanning-plugin
@@ -75,7 +75,7 @@ jobs:
         fi
         echo "BRANCH=$BRANCH" >> $GITHUB_OUTPUT
     - name: 'Preparing Frontend checkout'
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 1
         repository: microting/eform-angular-frontend
@@ -122,7 +122,7 @@ jobs:
       matrix:
         test: [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,za,zb,zc]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         path: eform-backendconfiguration-plugin
     - name: Extract branch name
@@ -178,20 +178,20 @@ jobs:
       with:
         node-version: 22
     - name: 'Preparing Frontend checkout'
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
         repository: microting/eform-angular-frontend
         ref: ${{ steps.extract_branch.outputs.BRANCH }}
         path: eform-angular-frontend
     - name: 'Preparing ItemsPlanning checkout'
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         repository: microting/eform-angular-items-planning-plugin
         ref: ${{ steps.extract_branch.outputs.BRANCH }}
         path: eform-angular-items-planning-plugin
     - name: 'Preparing TimePlanning checkout'
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         repository: microting/eform-angular-timeplanning-plugin
         ref: ${{ steps.extract_branch.outputs.BRANCH }}
@@ -311,11 +311,11 @@ jobs:
   test-dotnet:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 10.0.x
+        dotnet-version: 11.0.x
     - name: Build
       run: dotnet build eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.sln
     - name: Unit Tests
@@ -325,7 +325,7 @@ jobs:
   test-angular-client:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         path: eform-backendconfiguration-plugin
     - name: i18n interpolation tokens
@@ -336,21 +336,21 @@ jobs:
       # Costs <1s and sits before the heavy steps so it fails fast.
       run: python3 eform-backendconfiguration-plugin/check_i18n_tokens.py eform-backendconfiguration-plugin/eform-client/src/app/plugins/modules/backend-configuration-pn/i18n
     - name: 'Preparing Frontend checkout'
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
         repository: microting/eform-angular-frontend
         ref: ${{ github.base_ref }}
         path: eform-angular-frontend
     - name: 'Preparing items planning checkout'
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
         repository: microting/eform-angular-items-planning-plugin
         ref: ${{ github.base_ref }}
         path: eform-angular-items-planning-plugin
     - name: 'Preparing time planning checkout'
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
         repository: microting/eform-angular-timeplanning-plugin
