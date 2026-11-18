@@ -204,9 +204,30 @@ public class ChemicalRegisterReader(ChemicalsDbContext chemicalsDbContext) : ICh
     private static IOrderedQueryable<Chemical> ByName(IQueryable<Chemical> query) =>
         query.OrderBy(c => c.Name).ThenBy(c => c.Id);
 
+    /// <summary>
+    /// The split query in <see cref="WithDetails"/> runs several statements; since EF Core 11 a register
+    /// sync changing rows between them throws <see cref="DbQueryConcurrencyException"/> (EF Core 10
+    /// silently returned empty collections instead). The change is transient, so the read is retried.
+    /// </summary>
+    private const int SplitQueryAttempts = 3;
+
+    private async Task<List<Chemical>> ReadChemicalsAsync(IQueryable<Chemical> query)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                return await ByName(query).ToListAsync().ConfigureAwait(false);
+            }
+            catch (DbQueryConcurrencyException) when (attempt < SplitQueryAttempts)
+            {
+            }
+        }
+    }
+
     private async Task<IReadOnlyList<ChemicalRegisterEntryModel>> LoadAsync(IQueryable<Chemical> query)
     {
-        var chemicals = await ByName(query).ToListAsync().ConfigureAwait(false);
+        var chemicals = await ReadChemicalsAsync(query).ConfigureAwait(false);
         var ids = chemicals.Select(c => c.Id).ToArray();
         var documents = (await ServedDocuments()
                 .Where(d => ids.Contains(d.ChemicalId))
