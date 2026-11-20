@@ -10,14 +10,18 @@ import {inventoryOf, labelOf, location, placement, sdsDocument, stockEntry} from
 import {ChemicalProductDrawerComponent} from './chemical-product-drawer.component';
 
 describe('ChemicalProductDrawerComponent', () => {
-  function build(stockEnabled: boolean, getSdsBlob = vi.fn().mockReturnValue(of(new Blob())), extra: {entry?: object; lang?: string} = {}) {
+  function build(
+    stockEnabled: boolean, getSdsBlob = vi.fn().mockReturnValue(of(new Blob())), extra: {entry?: object; lang?: string; propertyId?: number} = {},
+  ) {
     const getLabelBlob = vi.fn().mockReturnValue(of(new Blob()));
     const dialogRef = {close: vi.fn()};
     const toastr = {error: vi.fn(), info: vi.fn()};
-    const row = {placement: {id: 7, chemicalId: 100, productId: null}, entry: {products: [{productId: 1, sdsFileName: 'abc'}], ...extra.entry}, productName: 'Karate'};
+    const row = {placement: {id: 7, chemicalId: 100, productId: null, propertyId: extra.propertyId ?? 1}, entry: {products: [{productId: 1, sdsFileName: 'abc'}], ...extra.entry}, productName: 'Karate'};
     const inventory = inventoryOf({
       locations: [location(10, 'Lade'), location(11, 'Kemirum')],
-      placements: [placement(7, 10, 100), placement(8, 11, 100), placement(9, 11, 100, {removedAt: '2026-09-01T00:00:00'}), placement(10, 11, 200)],
+      placements: [placement(7, 10, 100), placement(8, 11, 100), placement(9, 11, 100, {removedAt: '2026-09-01T00:00:00'}), placement(10, 11, 200),
+        // The same chemical on another property: shown under "All" in the same inventory, never in this panel.
+        placement(11, 30, 100, {propertyId: 2})],
       stockEntries: [
         stockEntry(1, 7, ChemicalStockEntryKind.Received, 5, '2026-08-12T08:00:00', 5),
         stockEntry(2, 7, ChemicalStockEntryKind.Consumed, -1, '2026-09-02T08:00:00', 4),
@@ -87,6 +91,10 @@ describe('ChemicalProductDrawerComponent', () => {
     expect(component.placements.map((p) => p.id)).toEqual([7, 8]);
     expect(component.locationName(11)).toBe('Kemirum');
     expect(component.stockHistory.map((h) => [h.entry.id, h.balanceAfter])).toEqual([[2, 4], [1, 5]]);
+  });
+
+  it('lists the placements of the row\'s own property only, also when the inventory holds every property', () => {
+    expect(build(true, undefined, {propertyId: 2}).component.placements.map((p) => p.id)).toEqual([11]);
   });
 
   it('opens the safety data sheet and toasts when it cannot be fetched', () => {

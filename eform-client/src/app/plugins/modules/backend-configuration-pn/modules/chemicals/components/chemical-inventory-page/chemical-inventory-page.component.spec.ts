@@ -12,12 +12,15 @@ import {BehaviorSubject, EMPTY, Observable, Subject, of, throwError} from 'rxjs'
 import {ChemicalLabelKind} from '../../../../models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {
+  ChemicalsScope,
   chemicalsInitialState,
   chemicalsSelectProperty,
   chemicalsUpdateInventoryFilters,
   selectChemicalsInventoryFilters,
+  selectChemicalsScope,
 } from '../../../../state';
-import {inventoryOf, labelOf, location, placement, sdsDocument} from '../../helpers/chemical-inventory.fixtures';
+import {entry, inventoryOf, labelOf, location, placement, sdsDocument} from '../../helpers/chemical-inventory.fixtures';
+import {ChemicalRegisterPlacementDialogComponent} from '../chemical-register-placement-dialog/chemical-register-placement-dialog.component';
 import {ChemicalMoveDialogComponent} from '../chemical-move-dialog/chemical-move-dialog.component';
 import {ChemicalNoteDialogComponent} from '../chemical-note-dialog/chemical-note-dialog.component';
 import {ChemicalProductDrawerComponent} from '../chemical-product-drawer/chemical-product-drawer.component';
@@ -38,7 +41,9 @@ describe('ChemicalInventoryPageComponent', () => {
     saveAs = capture.saveAs;
   });
   afterEach(() => capture.restore());
-  let property$: BehaviorSubject<number | null>;
+  let scope$: BehaviorSubject<ChemicalsScope>;
+  /** The container selecting one property. */
+  const property$ = {next: (propertyId: number | null) => scope$.next({propertyId, allProperties: false})};
   let filters$: BehaviorSubject<typeof chemicalsInitialState.inventoryFilters>;
   let store: {select: Mock; dispatch: Mock};
   let chemicals: Record<string, Mock>;
@@ -50,19 +55,48 @@ describe('ChemicalInventoryPageComponent', () => {
     placements: [7, 8].map((id) => placement(id, 10, id * 10, {propertyId: 3})),
   });
 
+  /** "All": Engvej 12 (3, no stock, Lade) and Østergård (4, stock, Værksted), one open placement each. */
+  const twoProperties = () => ({
+    ...inventoryOf({
+      locations: [location(10, 'Lade', {propertyId: 3}), location(20, 'Værksted', {propertyId: 4})],
+      placements: [placement(7, 10, 70, {propertyId: 3}), placement(9, 20, 70, {propertyId: 4})],
+      // Afmeldt (6): requires action whatever today's date is.
+      registerEntries: [entry(70, 'Karate 2,5 WG', {status: 6, statusText: 'Produkt afmeldt'})],
+    }),
+    properties: [
+      {propertyId: 3, name: 'Engvej 12', permissions: null, stockEnabled: false, callerWorkerId: null},
+      {propertyId: 4, name: 'Østergård', permissions: null, stockEnabled: true, callerWorkerId: null},
+    ],
+  });
+
   function build(
     queryParams: Record<string, string> = {},
-    opts: {stockEnabled?: boolean; propertyId?: number | null; inventory?: Observable<unknown>; lang?: string} = {},
+    opts: {
+      stockEnabled?: boolean; propertyId?: number | null; inventory?: Observable<unknown>; lang?: string;
+      allProperties?: boolean; allInventory?: Observable<unknown>;
+    } = {},
   ): ChemicalInventoryPageComponent {
     saveAs.mockClear();
-    property$ = new BehaviorSubject<number | null>(opts.propertyId === undefined ? 3 : opts.propertyId);
+    scope$ = new BehaviorSubject<ChemicalsScope>(opts.allProperties
+      ? {propertyId: null, allProperties: true}
+      : {propertyId: opts.propertyId === undefined ? 3 : opts.propertyId, allProperties: false});
     filters$ = new BehaviorSubject({...chemicalsInitialState.inventoryFilters});
     store = {
-      select: vi.fn().mockImplementation((selector) => (selector === selectChemicalsInventoryFilters ? filters$ : property$)),
+      select: vi.fn().mockImplementation((selector) => {
+        if (selector === selectChemicalsInventoryFilters) {
+          return filters$;
+        }
+        if (selector === selectChemicalsScope) {
+          return scope$;
+        }
+        throw new Error('W1 reads the property or "All" through selectChemicalsScope');
+      }),
       dispatch: vi.fn(),
     };
     chemicals = {
       getPropertyInventory: vi.fn().mockReturnValue(opts.inventory ?? of({success: true, model: inventoryFor(!!opts.stockEnabled)})),
+      getAllPropertiesInventory: vi.fn().mockReturnValue(opts.allInventory ?? of({success: true, model: twoProperties()})),
+      exportAllPropertiesInventory: vi.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Kemikalier - Alle ejendomme.xlsx'})),
       exportInventory: vi.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Kemikalier.xlsx'})),
       exportAuthorityList: vi.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Kemikalieliste.pdf'})),
       exportRemovedPlacements: vi.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Fjernede.xlsx'})),
@@ -551,5 +585,117 @@ describe('ChemicalInventoryPageComponent', () => {
     expect(store.dispatch).toHaveBeenCalledWith(chemicalsUpdateInventoryFilters({
       payload: {...chemicalsInitialState.inventoryFilters, requiresActionOnly: true},
     }));
+  });
+  it('shows a sortable Ejendom column right before the location, also for one property', () => {
+    const fields = build().columns.map((c) => c.field);
+
+    expect(fields.indexOf('propertyName')).toBe(fields.indexOf('locationName') - 1);
+    expect(build().columns.find((c) => c.field === 'propertyName')?.sortable).toBe(true);
+    expect(build().rows.map((r) => r.propertyName)).toEqual(['Hovedgården', 'Hovedgården']);
+  });
+
+  describe('every property at once (the picker\'s "All", owner 2026-11-20)', () => {
+    const allInventory = () => build({}, {allProperties: true});
+    const dialogOf = (component: ChemicalInventoryPageComponent) =>
+      (component as unknown as {dialog: {open: Mock}}).dialog;
+
+    it('loads every property in one call and shows the rows of all of them', () => {
+      const component = allInventory();
+
+      expect(chemicals.getAllPropertiesInventory).toHaveBeenCalledTimes(1);
+      expect(chemicals.getPropertyInventory).not.toHaveBeenCalled();
+      expect(component.rows.map((r) => [r.placement.id, r.propertyName])).toEqual([[7, 'Engvej 12'], [9, 'Østergård']]);
+      expect(component.columns.map((c) => c.field)).toContain('propertyName');
+    });
+
+    it('counts "Kræver handling" over every visible row', () => {
+      expect(allInventory().summary.total).toBe(2);
+    });
+
+    it('loads the one property when the picker leaves "All"', () => {
+      allInventory();
+
+      property$.next(3);
+
+      expect(chemicals.getPropertyInventory).toHaveBeenCalledWith(3);
+    });
+
+    it('labels the location filter with the property, and filters by the location id', () => {
+      const component = allInventory();
+
+      expect(component.locationOptions).toEqual([{id: 10, name: 'Engvej 12 – Lade'}, {id: 20, name: 'Østergård – Værksted'}]);
+      filters$.next({...chemicalsInitialState.inventoryFilters, locationId: 20});
+      expect(component.visibleRows.map((r) => r.placement.id)).toEqual([9]);
+    });
+
+    it('shows the Lager column when any property has stock, and the stock actions per row', () => {
+      const component = allInventory();
+      const [engvej, oster] = component.rows;
+
+      expect(component.columns.map((c) => c.field)).toContain('stock');
+      expect(component.rowStockEnabled(engvej)).toBe(false);
+      expect(component.rowStockEnabled(oster)).toBe(true);
+    });
+
+    it('moves a placement only between the locations of its own property', () => {
+      const component = allInventory();
+      const dialog = dialogOf(component);
+      dialog.open.mockReturnValue({afterClosed: () => of(false)});
+
+      component.openMove(component.rows[1]);
+
+      expect(dialog.open.mock.calls[0][1].data).toEqual({
+        row: component.rows[1], locations: [location(20, 'Værksted', {propertyId: 4})], stockEnabled: true,
+      });
+    });
+
+    it('lets "Registrér placering" ask for the property first', () => {
+      const component = allInventory();
+      const dialog = dialogOf(component);
+      dialog.open.mockReturnValue({afterClosed: () => of(false)});
+
+      component.openRegister();
+
+      expect(dialog.open.mock.calls[0][0]).toBe(ChemicalRegisterPlacementDialogComponent);
+      expect(dialog.open.mock.calls[0][1].data).toEqual(expect.objectContaining({
+        propertyId: null, properties: component.inventory.properties, locations: component.inventory.locations,
+      }));
+    });
+
+    it('presets the property of "Registrér placering" to the selected one', () => {
+      const component = build();
+      const dialog = dialogOf(component);
+      dialog.open.mockReturnValue({afterClosed: () => of(false)});
+
+      component.openRegister();
+
+      expect(dialog.open.mock.calls[0][1].data).toEqual(expect.objectContaining({
+        propertyId: 3, properties: component.inventory.properties, stockEnabled: false,
+      }));
+    });
+
+    it('exports the visible rows of every property to Excel', () => {
+      const component = allInventory();
+      filters$.next({...chemicalsInitialState.inventoryFilters, locationId: 20});
+
+      component.exportInventory();
+
+      expect(chemicals.exportAllPropertiesInventory).toHaveBeenCalledWith([9]);
+      expect(chemicals.exportInventory).not.toHaveBeenCalled();
+      expect(saveAs).toHaveBeenCalledWith(expect.any(Blob), 'Kemikalier - Alle ejendomme.xlsx');
+    });
+
+    it('keeps the authority list and the removed placements per property', () => {
+      const component = allInventory();
+
+      expect(component.propertyExportsDisabled).toBe(true);
+      component.exportAuthorityList();
+      component.exportRemovedPlacements();
+
+      expect(chemicals.exportAuthorityList).not.toHaveBeenCalled();
+      expect(chemicals.exportRemovedPlacements).not.toHaveBeenCalled();
+      expect(component.exporting).toBe(false);
+      expect(build().propertyExportsDisabled).toBe(false);
+    });
   });
 });

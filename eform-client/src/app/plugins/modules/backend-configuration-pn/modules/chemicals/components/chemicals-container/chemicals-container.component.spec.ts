@@ -5,12 +5,22 @@ import {ActivatedRoute, convertToParamMap, NavigationCancel, NavigationEnd, Navi
 import {Store} from '@ngrx/store';
 import {BehaviorSubject, of, Subject, throwError} from 'rxjs';
 import {selectCurrentUserIsFirstUser} from 'src/app/state';
+import {TranslateService} from '@ngx-translate/core';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
-import {chemicalsSelectProperty, chemicalsSetProperties, selectChemicalsPropertyId} from '../../../../state';
-import {ChemicalsContainerComponent} from './chemicals-container.component';
+import {
+  ChemicalsScope,
+  chemicalsSelectAllProperties,
+  chemicalsSelectProperty,
+  chemicalsSetProperties,
+  selectChemicalsScope,
+} from '../../../../state';
+import {CHEMICALS_ALL_PROPERTIES, ChemicalsContainerComponent} from './chemicals-container.component';
 
 describe('ChemicalsContainerComponent', () => {
-  let selectedProperty$: BehaviorSubject<number | null>;
+  /** The store's chemicalsState scope: the selected property, or "All". */
+  let scope$: BehaviorSubject<ChemicalsScope>;
+  /** The routed screen offers "All" (route data allProperties: Beholdning, Historik). */
+  let childAllowsAll: boolean;
   let isFirstUser$: BehaviorSubject<boolean>;
   let routerEvents$: Subject<unknown>;
   let queryParams: Record<string, string>;
@@ -23,12 +33,21 @@ describe('ChemicalsContainerComponent', () => {
 
   function build(list: Array<{id: number; name: string}>, response?: unknown): ChemicalsContainerComponent {
     store = {
-      select: vi.fn().mockImplementation((selector) =>
-        selector === selectCurrentUserIsFirstUser ? isFirstUser$ : selectedProperty$),
-      // The real store echoes a selection back through selectChemicalsPropertyId.
+      select: vi.fn().mockImplementation((selector) => {
+        if (selector === selectCurrentUserIsFirstUser) {
+          return isFirstUser$;
+        }
+        if (selector === selectChemicalsScope) {
+          return scope$;
+        }
+        throw new Error('the container reads the selection through selectChemicalsScope');
+      }),
+      // The real store echoes a selection back through selectChemicalsScope.
       dispatch: vi.fn().mockImplementation((action: {type: string; payload: number | null}) => {
         if (action.type === chemicalsSelectProperty.type) {
-          selectedProperty$.next(action.payload);
+          scope$.next({propertyId: action.payload, allProperties: false});
+        } else if (action.type === chemicalsSelectAllProperties.type) {
+          scope$.next({propertyId: null, allProperties: true});
         }
       }),
     };
@@ -43,7 +62,9 @@ describe('ChemicalsContainerComponent', () => {
         return {queryParamMap: convertToParamMap(queryParams)};
       },
       get firstChild() {
-        return childTitleKey ? {snapshot: {data: {titleKey: childTitleKey}}} : null;
+        return childTitleKey || childAllowsAll
+          ? {snapshot: {data: {titleKey: childTitleKey, allProperties: childAllowsAll}}}
+          : null;
       },
     };
     const injector = Injector.create({
@@ -53,6 +74,7 @@ describe('ChemicalsContainerComponent', () => {
         {provide: DestroyRef, useValue: {onDestroy: vi.fn()}},
         {provide: Router, useValue: router},
         {provide: ActivatedRoute, useValue: route},
+        {provide: TranslateService, useValue: {stream: (key: string) => of(key)}},
       ],
     });
     const component = runInInjectionContext(injector, () => new ChemicalsContainerComponent());
@@ -60,10 +82,14 @@ describe('ChemicalsContainerComponent', () => {
     return component;
   }
 
+  /** A property the store still holds from an earlier visit. */
+  const remember = (propertyId: number) => scope$.next({propertyId, allProperties: false});
+
   const urlSync = (id: number) => ({queryParams: {propertyId: id}, queryParamsHandling: 'merge', replaceUrl: true});
 
   beforeEach(() => {
-    selectedProperty$ = new BehaviorSubject<number | null>(null);
+    scope$ = new BehaviorSubject<ChemicalsScope>({propertyId: null, allProperties: false});
+    childAllowsAll = false;
     isFirstUser$ = new BehaviorSubject<boolean>(true);
     routerEvents$ = new Subject<unknown>();
     queryParams = {};
@@ -79,7 +105,7 @@ describe('ChemicalsContainerComponent', () => {
   });
 
   it('keeps a remembered property that still exists and writes it to the URL', () => {
-    selectedProperty$.next(8);
+    remember(8);
 
     build([{id: 7, name: 'Hovedgården'}, {id: 8, name: 'Engvej 12'}]);
 
@@ -98,7 +124,7 @@ describe('ChemicalsContainerComponent', () => {
   });
 
   it('lets ?propertyId= win over the remembered property', () => {
-    selectedProperty$.next(7);
+    remember(7);
     queryParams = {propertyId: '8'};
 
     build([{id: 7, name: 'Hovedgården'}, {id: 8, name: 'Engvej 12'}]);
@@ -107,7 +133,7 @@ describe('ChemicalsContainerComponent', () => {
   });
 
   it.each(['99', 'abc', '', '0', '-3', '1.5'])('ignores an unusable ?propertyId=%s', (value) => {
-    selectedProperty$.next(8);
+    remember(8);
     queryParams = {propertyId: value};
 
     build([{id: 7, name: 'Hovedgården'}, {id: 8, name: 'Engvej 12'}]);
@@ -117,7 +143,7 @@ describe('ChemicalsContainerComponent', () => {
   });
 
   it('replaces a remembered property that no longer exists', () => {
-    selectedProperty$.next(99);
+    remember(99);
 
     build([{id: 7, name: 'Hovedgården'}]);
 
@@ -125,7 +151,7 @@ describe('ChemicalsContainerComponent', () => {
   });
 
   it('clears the selection when the customer has no properties, without touching the URL', () => {
-    selectedProperty$.next(99);
+    remember(99);
 
     const component = build([]);
 
@@ -429,6 +455,144 @@ describe('ChemicalsContainerComponent', () => {
       component.onPropertyChange(8);
 
       expect(router.navigate).toHaveBeenCalledWith([], urlSync(8));
+    });
+  });
+  it('offers no "All" on Lokationer, Rettigheder and Indstillinger', () => {
+    childTitleKey = 'Chemicals: Locations title';
+
+    const component = build([{id: 7, name: 'Hovedgården'}, {id: 8, name: 'Engvej 12'}]);
+
+    expect(component.pickerItems.map((i) => i.id)).toEqual([7, 8]);
+    expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectProperty({payload: 7}));
+    expect(store.dispatch).not.toHaveBeenCalledWith(chemicalsSelectAllProperties());
+  });
+
+  describe('"All" on Beholdning and Historik (owner 2026-11-20)', () => {
+    const list = [{id: 7, name: 'Hovedgården'}, {id: 8, name: 'Engvej 12'}];
+    const dropParam = {queryParams: {propertyId: null}, queryParamsHandling: 'merge', replaceUrl: true};
+
+    beforeEach(() => {
+      childAllowsAll = true;
+    });
+
+    it('offers "All" first and opens on it without a ?propertyId=', () => {
+      const component = build(list);
+
+      expect(component.pickerItems.map((i) => i.id)).toEqual([CHEMICALS_ALL_PROPERTIES, 7, 8]);
+      expect(component.pickerItems[0].name).toBe('Chemicals: All');
+      expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectAllProperties());
+      expect(component.allProperties).toBe(true);
+      expect(component.propertyId).toBeNull();
+      expect(component.pickerValue).toBe(CHEMICALS_ALL_PROPERTIES);
+      // "All" is the URL without ?propertyId=: nothing to write.
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
+
+    it('opens on "All" even when the store remembers a property', () => {
+      remember(8);
+
+      build(list);
+
+      expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectAllProperties());
+    });
+
+    it('still opens the one property of a ?propertyId= (the digest deeplink)', () => {
+      queryParams = {propertyId: '8', filter: 'requires-action'};
+
+      const component = build(list);
+
+      expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectProperty({payload: 8}));
+      expect(store.dispatch).not.toHaveBeenCalledWith(chemicalsSelectAllProperties());
+      expect(component.pickerValue).toBe(8);
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
+
+    it('picking "All" drops ?propertyId= from the URL; picking a property writes it again', () => {
+      queryParams = {propertyId: '7'};
+      const component = build(list);
+      store.dispatch.mockClear();
+      router.navigate.mockClear();
+
+      component.onPropertyChange(CHEMICALS_ALL_PROPERTIES);
+
+      expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectAllProperties());
+      expect(router.navigate).toHaveBeenCalledWith([], dropParam);
+
+      queryParams = {};
+      router.navigate.mockClear();
+      component.onPropertyChange(8);
+
+      expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectProperty({payload: 8}));
+      expect(router.navigate).toHaveBeenCalledWith([], urlSync(8));
+    });
+
+    it('does not ask the screen again when "All" is picked while "All" is selected', () => {
+      const component = build(list);
+      const screen = {confirmDiscardChanges: vi.fn().mockReturnValue(of(true))};
+      component.onScreenActivate(screen);
+      store.dispatch.mockClear();
+
+      component.onPropertyChange(CHEMICALS_ALL_PROPERTIES);
+
+      expect(screen.confirmDiscardChanges).not.toHaveBeenCalled();
+      expect(store.dispatch).not.toHaveBeenCalled();
+    });
+
+    it('asks the screen before switching to "All" and puts the picker back on "keep editing"', () => {
+      queryParams = {propertyId: '7'};
+      const component = build(list);
+      component.onScreenActivate({confirmDiscardChanges: () => of(false)});
+      store.dispatch.mockClear();
+      vi.useFakeTimers();
+
+      component.onPropertyChange(CHEMICALS_ALL_PROPERTIES);
+      vi.runAllTimers();
+      vi.useRealTimers();
+
+      expect(store.dispatch).not.toHaveBeenCalled();
+      expect(component.pickerValue).toBe(7);
+    });
+
+    it('keeps "All" when a menu click lands on the other screen with "All" without a query parameter', () => {
+      const component = build(list);
+      store.dispatch.mockClear();
+      router.navigate.mockClear();
+
+      routerEvents$.next(new NavigationEnd(2, '/chemicals/history', '/chemicals/history'));
+
+      expect(store.dispatch).not.toHaveBeenCalled();
+      expect(router.navigate).not.toHaveBeenCalled();
+      expect(component.pickerValue).toBe(CHEMICALS_ALL_PROPERTIES);
+    });
+
+    it('adopts the ?propertyId= of a later navigation while "All" is selected', () => {
+      build(list);
+      store.dispatch.mockClear();
+
+      queryParams = {propertyId: '8'};
+      routerEvents$.next(new NavigationEnd(2, '/chemicals/inventory?propertyId=8', '/chemicals/inventory?propertyId=8'));
+
+      expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectProperty({payload: 8}));
+    });
+
+    it('selects the first property when the user moves on to a screen without "All"', () => {
+      const component = build(list);
+      store.dispatch.mockClear();
+      router.navigate.mockClear();
+
+      childAllowsAll = false;
+      routerEvents$.next(new NavigationEnd(2, '/chemicals/locations', '/chemicals/locations'));
+
+      expect(component.pickerItems.map((i) => i.id)).toEqual([7, 8]);
+      expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectProperty({payload: 7}));
+      expect(router.navigate).toHaveBeenCalledWith([], urlSync(7));
+    });
+
+    it('selects nothing, not "All", when the customer has no properties', () => {
+      build([]);
+
+      expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectProperty({payload: null}));
+      expect(store.dispatch).not.toHaveBeenCalledWith(chemicalsSelectAllProperties());
     });
   });
 });

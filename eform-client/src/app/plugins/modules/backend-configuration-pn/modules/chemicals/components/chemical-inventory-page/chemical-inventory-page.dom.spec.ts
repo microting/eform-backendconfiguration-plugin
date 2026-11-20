@@ -13,7 +13,7 @@ import {TranslateModule} from '@ngx-translate/core';
 import {ToastrService} from 'ngx-toastr';
 import {BehaviorSubject, Observable, Subject, of, throwError} from 'rxjs';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
-import {chemicalsInitialState, selectChemicalsInventoryFilters} from '../../../../state';
+import {chemicalsInitialState, selectChemicalsInventoryFilters, selectChemicalsScope} from '../../../../state';
 import {entry, inventoryOf, location, placement} from '../../helpers/chemical-inventory.fixtures';
 import {ChemicalInventoryPageComponent} from './chemical-inventory-page.component';
 import {detectChanges} from '../../../../testing/detect-changes';
@@ -30,7 +30,9 @@ describe('ChemicalInventoryPageComponent (template)', () => {
   const find = (selector: string): HTMLElement | null => fixture.nativeElement.querySelector(selector);
   const disabled = (selector: string) => (find(selector) as HTMLButtonElement).disabled;
 
-  function render(locations: Array<{id: number; archived: boolean}>, answer?: Observable<unknown>, stockEnabled = false): void {
+  function render(
+    locations: Array<{id: number; archived: boolean}>, answer?: Observable<unknown>, stockEnabled = false, allProperties = false,
+  ): void {
     filters$ = new BehaviorSubject({...chemicalsInitialState.inventoryFilters});
     const inventory = inventoryOf({
       propertyId: 3,
@@ -45,12 +47,23 @@ describe('ChemicalInventoryPageComponent (template)', () => {
       imports: [ChemicalInventoryPageComponent, FormsModule, MatMenuModule, MtxGridModule, MtxSelectModule, NoopAnimationsModule, TranslateModule.forRoot()],
       providers: [
         {provide: Store, useValue: {
-          select: vi.fn().mockImplementation((selector) =>
-            selector === selectChemicalsInventoryFilters ? filters$ : new BehaviorSubject<number | null>(3)),
+          select: vi.fn().mockImplementation((selector) => {
+            if (selector === selectChemicalsInventoryFilters) {
+              return filters$;
+            }
+            if (selector === selectChemicalsScope) {
+              return new BehaviorSubject(allProperties ? {propertyId: null, allProperties: true} : {propertyId: 3, allProperties: false});
+            }
+            throw new Error('unexpected selector');
+          }),
           dispatch: vi.fn(),
         }},
         {provide: BackendConfigurationPnChemicalsService, useValue: {
           getPropertyInventory: vi.fn().mockReturnValue(answer ?? of({success: true, model: inventory})),
+          getAllPropertiesInventory: vi.fn().mockReturnValue(answer ?? of({success: true, model: {
+            ...inventory,
+            properties: [...inventory.properties, {propertyId: 4, name: 'Engvej 12', permissions: null, stockEnabled: false, callerWorkerId: null}],
+          }})),
         }},
         {provide: ActivatedRoute, useValue: {snapshot: {queryParamMap: convertToParamMap({})}}},
         {provide: MatDialog, useValue: {open: vi.fn()}},
@@ -192,6 +205,42 @@ describe('ChemicalInventoryPageComponent (template)', () => {
       openRowMenu();
 
       expect(menuItem('chemicalRowStock-0')).not.toBeNull();
+    });
+  });
+  it('shows the Ejendom column with the property of the row', () => {
+    render([{id: 10, archived: false}]);
+
+    expect(find('mtx-grid')?.textContent).toContain('Property');
+    expect(find('mtx-grid')?.textContent).toContain('Hovedgården');
+  });
+
+  describe('export menu', () => {
+    const openExportMenu = () => {
+      (find('#chemicalsExportBtn') as HTMLButtonElement).click();
+      detectChanges(fixture);
+    };
+    const menuItem = (id: string) => document.querySelector(`#${id}`) as HTMLButtonElement | null;
+
+    it('offers every export for one property', () => {
+      render([{id: 10, archived: false}]);
+
+      openExportMenu();
+
+      expect(menuItem('chemicalsExportAuthorityList')?.disabled).toBe(false);
+      expect(menuItem('chemicalsExportInventory')?.disabled).toBe(false);
+      expect(menuItem('chemicalsExportRemoved')?.disabled).toBe(false);
+      expect(document.querySelector('#chemicalsExportSelectPropertyHint')).toBeNull();
+    });
+
+    it('under "All" keeps the Excel of the filter and asks for a property for the per-property files', () => {
+      render([{id: 10, archived: false}], undefined, false, true);
+
+      openExportMenu();
+
+      expect(menuItem('chemicalsExportInventory')?.disabled).toBe(false);
+      expect(menuItem('chemicalsExportAuthorityList')?.disabled).toBe(true);
+      expect(menuItem('chemicalsExportRemoved')?.disabled).toBe(true);
+      expect(document.querySelector('#chemicalsExportSelectPropertyHint')?.textContent).toContain('Chemicals: Select a property to export');
     });
   });
 });

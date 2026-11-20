@@ -18,7 +18,7 @@ describe('ChemicalRegisterPlacementDialogComponent (template)', () => {
   let component: ChemicalRegisterPlacementDialogComponent;
   const find = (selector: string): HTMLElement | null => fixture.nativeElement.querySelector(selector);
 
-  function render(stockEnabled: boolean): void {
+  function render(stockEnabled: boolean, data?: Record<string, unknown>): void {
     TestBed.configureTestingModule({
       // Real radio groups and mtx-selects: ngModel needs their value accessors.
       imports: [ChemicalRegisterPlacementDialogComponent, FormsModule, MatRadioModule, MtxSelectModule, NoopAnimationsModule, TranslateModule.forRoot()],
@@ -32,7 +32,7 @@ describe('ChemicalRegisterPlacementDialogComponent (template)', () => {
           }]}})),
         }},
         {provide: MatDialogRef, useValue: {close: vi.fn()}},
-        {provide: MAT_DIALOG_DATA, useValue: {propertyId: 3, stockEnabled, locations: [{id: 10, name: 'Lade', archived: false}]}},
+        {provide: MAT_DIALOG_DATA, useValue: data ?? {propertyId: 3, stockEnabled, locations: [{id: 10, name: 'Lade', archived: false}]}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
     });
@@ -59,5 +59,32 @@ describe('ChemicalRegisterPlacementDialogComponent (template)', () => {
 
     expect(find('#chemicalRegisterProductSelect')).not.toBeNull();
     expect(find('#chemicalRegisterMoreResults')).not.toBeNull();
+  });
+  it('shows the Ejendom field first: read-only for the selected property, a choice under "All"', () => {
+    const properties = [
+      {propertyId: 3, name: 'Engvej 12', permissions: null, stockEnabled: false, callerWorkerId: null},
+      {propertyId: 4, name: 'Østergård', permissions: null, stockEnabled: false, callerWorkerId: null},
+    ];
+    const locations = [{id: 10, propertyId: 3, name: 'Lade', archived: false}, {id: 20, propertyId: 4, name: 'Værksted', archived: false}];
+    render(false, {propertyId: 3, stockEnabled: false, properties: [properties[0]], locations: [locations[0]]});
+
+    const field = find('#chemicalRegisterPropertySelect');
+    expect(field).not.toBeNull();
+    expect(field?.classList.contains('mtx-select-disabled')).toBe(true);
+    expect(field?.textContent).toContain('Engvej 12');
+    fixture.destroy();
+    TestBed.resetTestingModule();
+
+    render(false, {propertyId: null, stockEnabled: false, properties, locations});
+
+    expect(find('#chemicalRegisterPropertySelect')?.classList.contains('mtx-select-disabled')).toBe(false);
+    const fields = Array.from(fixture.nativeElement.querySelectorAll('mtx-select')).map((el) => (el as HTMLElement).id);
+    expect(fields.indexOf('chemicalRegisterPropertySelect')).toBeLessThan(fields.indexOf('chemicalRegisterLocationSelect'));
+  });
+
+  it('has no Ejendom field without a property list', () => {
+    render(false);
+
+    expect(find('#chemicalRegisterPropertySelect')).toBeNull();
   });
 });

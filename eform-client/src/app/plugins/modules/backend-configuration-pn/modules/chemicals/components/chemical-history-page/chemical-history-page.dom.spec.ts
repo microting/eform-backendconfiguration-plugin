@@ -27,7 +27,8 @@ function historyEvent(partial: Partial<ChemicalHistoryEventModel>): ChemicalHist
     placementId: 1, chemicalId: 100, productName: 'Karate 2,5 WG', registrationNo: '1-212', locationId: 10, locationName: 'Lade',
     targetLocationId: null, targetLocationName: '', amount: null, unit: null, balanceAfter: null, removalReason: null,
     note: '', field: '', oldValue: '', newValue: '', status: null, statusText: '', threshold: null, deadlineKind: null,
-    pushCount: 0, emailCount: 0, workerName: '', permissionsAdded: [], permissionsRemoved: [], ...partial,
+    pushCount: 0, emailCount: 0, workerName: '', permissionsAdded: [], permissionsRemoved: [],
+    propertyId: 3, propertyName: 'Engvej 12', ...partial,
   };
 }
 
@@ -35,7 +36,7 @@ function historyEvent(partial: Partial<ChemicalHistoryEventModel>): ChemicalHist
 describe('ChemicalHistoryPageComponent (template)', () => {
   let fixture: ComponentFixture<ChemicalHistoryPageComponent>;
   let component: ChemicalHistoryPageComponent;
-  let view$: BehaviorSubject<{propertyId: number | null; filters: ChemicalHistoryFiltersModel}>;
+  let view$: BehaviorSubject<{propertyId: number | null; allProperties: boolean; filters: ChemicalHistoryFiltersModel}>;
   const find = (selector: string): HTMLElement | null => fixture.nativeElement.querySelector(selector);
   const rows = (): HTMLElement[] => Array.from(fixture.nativeElement.querySelectorAll('#chemicalHistoryTable tbody tr'));
   const cell = (row: number, column: string) => rows()[row].querySelector(`.col-${column}`)?.textContent?.trim();
@@ -50,8 +51,10 @@ describe('ChemicalHistoryPageComponent (template)', () => {
 
   let utc: MockInstance;
 
-  function render(answer?: Observable<unknown>, exportAnswer?: Observable<unknown>, inventory?: Observable<unknown>): void {
-    view$ = new BehaviorSubject({propertyId: 3 as number | null, filters: {...chemicalsInitialState.historyFilters}});
+  function render(answer?: Observable<unknown>, exportAnswer?: Observable<unknown>, inventory?: Observable<unknown>, allProperties = false): void {
+    view$ = new BehaviorSubject({
+      propertyId: allProperties ? null : 3 as number | null, allProperties, filters: {...chemicalsInitialState.historyFilters},
+    });
     TestBed.configureTestingModule({
       imports: [ChemicalHistoryPageComponent, FormsModule, MtxSelectModule, MatPaginatorModule, NoopAnimationsModule, TranslateModule.forRoot()],
       providers: [
@@ -63,6 +66,9 @@ describe('ChemicalHistoryPageComponent (template)', () => {
           getHistory: vi.fn().mockReturnValue(answer ?? of({success: true, model: {events, total: 4, users: [{userId: 5, name: 'Mette Larsen'}]}})),
           getPropertyInventory: vi.fn().mockReturnValue(inventory ?? of({success: true, model: {locations: [location(10, 'Lade', {propertyId: 3})]}})),
           exportHistory: vi.fn().mockReturnValue(exportAnswer ?? NEVER),
+          getAllPropertiesHistory: vi.fn().mockReturnValue(answer ?? of({success: true, model: {events, total: 4, users: []}})),
+          getAllPropertiesInventory: vi.fn().mockReturnValue(of({success: true, model: {properties: [], locations: []}})),
+          exportAllPropertiesHistory: vi.fn().mockReturnValue(exportAnswer ?? NEVER),
         }},
         {provide: ToastrService, useValue: {error: vi.fn()}},
         // What the host app provides: its date-fns adapter, the locale as a subject.
@@ -226,5 +232,19 @@ describe('ChemicalHistoryPageComponent (template)', () => {
     render(undefined, undefined, of({success: false}));
 
     expect(find('#chemicalHistoryLocationsFailed')?.textContent).toContain('Chemicals: Could not load locations');
+  });
+  it('shows the Ejendom column under "All" only', () => {
+    render();
+    expect(find('#chemicalHistoryTable')?.textContent).not.toContain('Property');
+    expect(rows()[0].querySelector('.col-property')).toBeNull();
+    fixture.destroy();
+    TestBed.resetTestingModule();
+
+    render(undefined, undefined, undefined, true);
+
+    expect(find('#chemicalHistoryTable thead')?.textContent).toContain('Property');
+    expect(cell(1, 'property')).toBe('Engvej 12');
+    expect(find('#chemicalHistoryExportBtn')).not.toBeNull();
+    expect((find('#chemicalHistoryExportBtn') as HTMLButtonElement).disabled).toBe(false);
   });
 });

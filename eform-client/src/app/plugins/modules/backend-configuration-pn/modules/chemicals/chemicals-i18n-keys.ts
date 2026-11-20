@@ -117,6 +117,8 @@ export const CHEMICAL_I18N_KEYS: string[] = [
   'Chemicals: Export authority list',
   'Chemicals: Export current filter',
   'Chemicals: Export removed placements',
+  // W1 under the picker's "All": the per-property files need one property
+  'Chemicals: Select a property to export',
   'Chemicals: Register placement',
   'Chemicals: Search inventory hint',
   'Chemicals: No placements',

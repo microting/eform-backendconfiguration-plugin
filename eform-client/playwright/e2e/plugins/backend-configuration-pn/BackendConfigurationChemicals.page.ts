@@ -4,7 +4,7 @@ import { generateRandmString } from '../../helper-functions';
 import { BackendConfigurationPropertiesPage, PropertyCreateUpdate } from './BackendConfigurationProperties.page';
 import { ActionMenuItem, openRowActionMenu } from './row-action-menu';
 import { API_TIMEOUT, SLOW_API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from './wait-helpers';
-import { fillInDialog } from './dialog-helpers';
+import { dialogReady, fillInDialog } from './dialog-helpers';
 
 const BASE_URL = 'http://localhost:4200';
 const CHEMICALS_API = '/api/backend-configuration-pn/chemicals';
@@ -350,16 +350,28 @@ export class BackendConfigurationChemicalsPage {
     return this.page.locator('#chemicalInventoryPage .mat-mdc-row').filter({ hasText: productName });
   }
 
+  /** The W1 row of a product on one property (its Ejendom cell), for the picker's "All". */
+  inventoryRowOf(productName: string, propertyName: string): Locator {
+    return this.inventoryRow(productName).filter({ hasText: propertyName });
+  }
+
   async openInventoryRowMenu(productName: string): Promise<ActionMenuItem> {
     return openRowActionMenu(this.page, this.inventoryRow(productName), `inventory row ${productName}`);
   }
 
-  /** "Registrér placering": searches the register for `productName`, picks it, a location and a note, and saves. */
-  async registerPlacement(productName: string, locationName: string, note: string): Promise<void> {
+  /**
+   * "Registrér placering": searches the register for `productName`, picks it, a location and a note, and saves.
+   * Under the picker's "All" the dialog asks for the property first: pass `propertyName` then.
+   */
+  async registerPlacement(productName: string, locationName: string, note: string, propertyName?: string): Promise<void> {
     const open = this.page.locator('#chemicalsRegisterPlacementBtn');
     // Enabled once the inventory (and so its active locations) has loaded.
     await expect(open).toBeEnabled({ timeout: API_TIMEOUT });
     await open.click({ timeout: UI_TIMEOUT });
+    if (propertyName !== undefined) {
+      await dialogReady(this.page, this.page.locator('#chemicalRegisterSearchInput'));
+      await this.selectMtxOption('#chemicalRegisterPropertySelect', propertyName);
+    }
     await fillInDialog(this.page, this.page.locator('#chemicalRegisterSearchInput'), productName);
     const search = this.waitForChemicalsCall('GET', /^register\/search$/);
     await this.page.locator('#chemicalRegisterSearchBtn').click({ timeout: UI_TIMEOUT });
