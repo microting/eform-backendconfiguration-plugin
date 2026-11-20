@@ -202,7 +202,8 @@ export class ChemicalInventoryPageComponent implements OnInit {
       return;
     }
     const data: ChemicalRegisterPlacementDialogData = {
-      propertyId: this.allProperties ? null : this.propertyId,
+      // Null under "All" (the reducer's): the dialog asks for the property then.
+      propertyId: this.propertyId,
       properties: this.inventory.properties,
       locations: this.inventory.locations,
       stockEnabled: this.stockEnabled,

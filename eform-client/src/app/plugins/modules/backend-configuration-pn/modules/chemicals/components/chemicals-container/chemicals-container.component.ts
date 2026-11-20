@@ -44,9 +44,10 @@ export interface ChemicalsPickerItem {
  * A switch the user starts (picker, a ?propertyId= from Back/Forward) first asks the
  * active screen, so its unsaved edits are never dropped silently.
  *
- * Beholdning and Historik (route data allProperties) also offer "All" and open on it: the
- * URL without ?propertyId= is "All" there, a ?propertyId= (the digest deeplink) still opens
- * that property. Moving on to a screen without "All" selects the first property.
+ * Beholdning and Historik (route data allProperties) also offer "All": the URL without
+ * ?propertyId= is "All" there, whether opened, reached by a menu click or by Back; only a
+ * ?propertyId= (the digest deeplink, a picked property) opens one property. Moving on to a
+ * screen without "All" selects the first property.
  *
  * TODO(chemistry-GA): the REST controllers are first-user-only until GA, so anyone else
  * gets a notice and no chemistry call is made. Remove the gate together with the
@@ -91,6 +92,11 @@ export class ChemicalsContainerComponent implements OnInit {
    * while the properties are still loading, so the write waits for the navigation to end.
    */
   private navigating = false;
+  /**
+   * A selection made while a navigation was in flight has not reached the URL yet: that navigation's
+   * end must write it, not read the missing ?propertyId= as "All".
+   */
+  private urlBehind = false;
   private pendingSync: ReturnType<typeof setTimeout> | undefined;
 
   ngOnInit(): void {
@@ -248,15 +254,29 @@ export class ChemicalsContainerComponent implements OnInit {
     if (!this.isFirstUser || !this.loaded || this.loadFailed) {
       return;
     }
-    const fromUrl = this.propertyIdFromUrl();
-    if (this.hasProperty(fromUrl) && fromUrl !== this.selection) {
-      this.askScreen((discard) => (discard ? this.apply(fromUrl) : this.syncUrl()));
+    const wanted = this.selectionFromUrl();
+    if (wanted !== null && wanted !== this.selection) {
+      this.askScreen((discard) => (discard ? this.apply(wanted) : this.syncUrl()));
     } else if (this.allProperties && !this.screenAllowsAll) {
       // This screen shows one property: the screen that had "All" is already left.
       this.apply(this.properties.length ? this.properties[0].id : null);
     } else {
       this.syncUrl();
     }
+  }
+
+  /**
+   * What the URL of a finished navigation selects: a known ?propertyId=, or on a screen with "All" no parameter
+   * (unless a selection made during the navigation is still to be written). Null: keep the selection.
+   */
+  private selectionFromUrl(): ChemicalsPickerValue | null {
+    const urlBehind = this.urlBehind;
+    this.urlBehind = false;
+    const fromUrl = this.propertyIdFromUrl();
+    if (this.hasProperty(fromUrl)) {
+      return fromUrl;
+    }
+    return this.screenAllowsAll && fromUrl === null && !urlBehind && this.properties.length ? CHEMICALS_ALL_PROPERTIES : null;
   }
 
   private hasProperty(id: number | null): boolean {
@@ -274,11 +294,21 @@ export class ChemicalsContainerComponent implements OnInit {
    * "All". Never while a navigation is in flight (R-2): its NavigationEnd calls back here.
    */
   private syncUrl(): void {
-    if (this.navigating || !this.isFirstUser || !this.loaded) {
+    if (this.navigating) {
+      this.urlBehind = true;
       return;
     }
+    this.urlBehind = false;
+    if (!this.isFirstUser || !this.loaded) {
+      return;
+    }
+    // Nothing selected (no properties): no parameter to write.
+    if (!this.allProperties && this.propertyId === null) {
+      return;
+    }
+    // "All" is the URL without the parameter; a property is its id.
     const wanted = this.allProperties ? null : this.propertyId;
-    if ((wanted === null && !this.allProperties) || this.propertyIdFromUrl() === wanted) {
+    if (this.propertyIdFromUrl() === wanted) {
       return;
     }
     void this.router.navigate([], {

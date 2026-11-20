@@ -3,12 +3,14 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {Store} from '@ngrx/store';
 import {ToastrService} from 'ngx-toastr';
+import {Observable} from 'rxjs';
+import {OperationDataResult} from 'src/app/common/models';
 import {
   ChemicalHistoryEventModel,
   ChemicalHistoryQueryModel,
   ChemicalHistoryUserModel,
-  ChemicalInventoryModel,
   ChemicalLocationModel,
+  ChemicalPropertyLocationsModel,
 } from '../../../../models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {
@@ -29,6 +31,7 @@ import {
   defaultHistoryPeriod,
   downloadFile,
   formatHistoryDetails,
+  propertyLocationLabels,
   historyActionKey,
   historyPeriodError,
   toYmd,
@@ -130,9 +133,9 @@ export class ChemicalHistoryPageComponent implements OnInit {
     this.store.select(selectChemicalsHistoryView)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(({propertyId, allProperties, filters}) => {
-        const propertyChanged = propertyId !== this.propertyId || !!allProperties !== this.allProperties;
+        const propertyChanged = propertyId !== this.propertyId || allProperties !== this.allProperties;
         this.propertyId = propertyId;
-        this.allProperties = !!allProperties;
+        this.allProperties = allProperties;
         this.filters = filters;
         this.pageIndex = 0;
         if (propertyChanged) {
@@ -222,26 +225,28 @@ export class ChemicalHistoryPageComponent implements OnInit {
   private loadLocations(): void {
     this.locationsLoad.reset();
     this.setLocations(null);
-    const inventory = this.allProperties
-      ? this.chemicalsService.getAllPropertiesInventory()
-      : this.propertyId !== null ? this.chemicalsService.getPropertyInventory(this.propertyId) : null;
-    if (inventory) {
-      this.locationsLoad.run(inventory, (answer) => this.setLocations(answer));
+    let request: Observable<OperationDataResult<ChemicalPropertyLocationsModel>> | null = null;
+    if (this.allProperties) {
+      request = this.chemicalsService.getAllPropertiesLocations();
+    } else if (this.propertyId !== null) {
+      request = this.chemicalsService.getPropertyInventory(this.propertyId);
+    }
+    if (request) {
+      this.locationsLoad.run(request, (answer) => this.setLocations(answer));
     }
   }
 
-  private setLocations(inventory: ChemicalInventoryModel | null): void {
-    const locations = inventory?.locations ?? [];
+  /** Active locations first, in their order; archived ones marked. Under "All" by property, labelled with it. */
+  private setLocations(model: ChemicalPropertyLocationsModel | null): void {
+    const locations = model?.locations ?? [];
     this.locations = locations;
     const archived = this.translate.instant('Chemicals: Archived');
-    // Under "All" a name alone is ambiguous ("Lade" on two farms): the property goes first, and orders the list.
-    const names = new Map((inventory?.properties ?? []).map((p) => [p.propertyId, p.name]));
-    const propertyOf = (l: ChemicalLocationModel) => (this.allProperties ? names.get(l.propertyId) ?? '' : '');
+    const byProperty = this.allProperties && model ? propertyLocationLabels(model) : null;
     this.locationOptions = [...locations]
-      .sort((a, b) => Number(a.archived) - Number(b.archived) || propertyOf(a).localeCompare(propertyOf(b), 'da')
+      .sort((a, b) => Number(a.archived) - Number(b.archived) || (byProperty ? byProperty.compare(a, b) : 0)
         || a.sortOrder - b.sortOrder || a.id - b.id)
       .map((l) => {
-        const name = this.allProperties ? `${propertyOf(l)} – ${l.name}` : l.name;
+        const name = byProperty ? byProperty.label(l) : l.name;
         return {id: l.id, name: l.archived ? `${name} (${archived})` : name};
       });
   }

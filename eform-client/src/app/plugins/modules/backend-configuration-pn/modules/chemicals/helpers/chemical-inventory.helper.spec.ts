@@ -170,11 +170,11 @@ describe('placement stock history and sibling placements', () => {
 
   it('is empty without an inventory', () => {
     expect(placementStockHistory(null, 2)).toEqual([]);
-    expect(placementsOfChemical(null, 100)).toEqual([]);
+    expect(placementsOfChemical(null, 100, 1)).toEqual([]);
   });
 
   it('lists every open placement of the same chemical', () => {
-    expect(placementsOfChemical(inventory, 100).map((p) => p.id)).toEqual([1]);
+    expect(placementsOfChemical(inventory, 100, 1).map((p) => p.id)).toEqual([1]);
   });
 });
 
@@ -253,7 +253,7 @@ describe('every property at once (the picker\'s "All")', () => {
     const shared = {...two, placements: [...two.placements, placement(3, 20, 100, {propertyId: 2})]};
 
     expect(placementsOfChemical(shared, 100, 2).map((p) => p.id)).toEqual([2, 3]);
-    expect(placementsOfChemical(shared, 100).map((p) => p.id)).toEqual([1, 2, 3]);
+    expect(placementsOfChemical(shared, 100, 1).map((p) => p.id)).toEqual([1]);
   });
 
   it('gives a row the locations of its own property only', () => {

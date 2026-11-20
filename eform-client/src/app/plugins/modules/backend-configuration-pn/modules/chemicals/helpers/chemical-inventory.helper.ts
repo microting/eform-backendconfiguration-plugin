@@ -81,8 +81,24 @@ export function locationsOfProperty(inventory: ChemicalInventoryModel | null, pr
   return (inventory?.locations ?? []).filter((l) => l.propertyId === propertyId);
 }
 
-function propertyNames(inventory: ChemicalInventoryModel): Map<number, string> {
+function propertyNames(inventory: Pick<ChemicalInventoryModel, 'properties'>): Map<number, string> {
   return new Map(inventory.properties.map((p) => [p.propertyId, p.name]));
+}
+
+/**
+ * The location filters under "All" (W1 and W6): a name alone is ambiguous ("Lade" on two farms), so each option is
+ * "<Ejendom> – <Lokation>" and the list goes by property name (Danish) first. One definition for both screens.
+ */
+export function propertyLocationLabels(model: Pick<ChemicalInventoryModel, 'properties'>): {
+  label: (l: ChemicalLocationModel) => string;
+  compare: (a: ChemicalLocationModel, b: ChemicalLocationModel) => number;
+} {
+  const names = propertyNames(model);
+  const propertyOf = (l: ChemicalLocationModel) => names.get(l.propertyId) ?? '';
+  return {
+    label: (l) => `${propertyOf(l)} – ${l.name}`,
+    compare: (a, b) => propertyOf(a).localeCompare(propertyOf(b), 'da') || a.propertyId - b.propertyId,
+  };
 }
 
 /**
@@ -98,12 +114,10 @@ export function inventoryLocationOptions(
   if (!allProperties) {
     return inventory.locations.map((l) => ({id: l.id, name: l.name}));
   }
-  const names = propertyNames(inventory);
-  const propertyOf = (l: ChemicalLocationModel) => names.get(l.propertyId) ?? '';
+  const {label, compare} = propertyLocationLabels(inventory);
   return [...inventory.locations]
-    .sort((a, b) => propertyOf(a).localeCompare(propertyOf(b), 'da') || a.propertyId - b.propertyId
-      || a.sortOrder - b.sortOrder || a.id - b.id)
-    .map((l) => ({id: l.id, name: `${propertyOf(l)} – ${l.name}`}));
+    .sort((a, b) => compare(a, b) || a.sortOrder - b.sortOrder || a.id - b.id)
+    .map((l) => ({id: l.id, name: label(l)}));
 }
 
 export function buildInventoryRows(inventory: ChemicalInventoryModel | null, today: string): ChemicalInventoryRow[] {
@@ -218,14 +232,13 @@ export function placementStockHistory(inventory: ChemicalInventoryModel | null, 
 }
 
 /**
- * W2 "Placeringer": every open placement of the chemical on the property. Under "All" the inventory holds
- * every property, so the row's `propertyId` keeps the list to its own property.
+ * W2 "Placeringer": every open placement of the chemical on the row's property. Under "All" the inventory holds
+ * every property, so the property is required: the list never mixes properties.
  */
 export function placementsOfChemical(
-  inventory: ChemicalInventoryModel | null, chemicalId: number, propertyId?: number | null,
+  inventory: ChemicalInventoryModel | null, chemicalId: number, propertyId: number,
 ): ChemicalPlacementModel[] {
-  return (inventory?.placements ?? []).filter((p) => p.chemicalId === chemicalId && !p.removedAt
-    && (propertyId === undefined || propertyId === null || p.propertyId === propertyId));
+  return (inventory?.placements ?? []).filter((p) => p.chemicalId === chemicalId && !p.removedAt && p.propertyId === propertyId);
 }
 
 /** The server's ChemicalQuantity.MaxAmount: one million L/kg; anything larger is a unit mistake. */

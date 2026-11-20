@@ -19,6 +19,7 @@ import {
   ChemicalMovePlacementBody,
   ChemicalPlacementChangeModel,
   ChemicalPlacementNoteBody,
+  ChemicalPropertyLocationsModel,
   ChemicalRegisterEntryModel,
   ChemicalRegisterPageModel,
   ChemicalRegisterPlacementCommand,
@@ -126,6 +127,11 @@ export class BackendConfigurationPnChemicalsService {
   /** The picker's "All": every property the user may view, in one inventory. */
   getAllPropertiesInventory(): Observable<OperationDataResult<ChemicalInventoryModel>> {
     return this.json(this.apiBaseService.get(this.url('inventory')));
+  }
+
+  /** W6 under "All": the visible properties and their locations (archived included), without the inventory. */
+  getAllPropertiesLocations(): Observable<OperationDataResult<ChemicalPropertyLocationsModel>> {
+    return this.json(this.apiBaseService.get(this.url('locations')));
   }
 
   searchRegister(query: string, page = 0, pageSize = 25): Observable<OperationDataResult<ChemicalRegisterPageModel>> {
