@@ -33,7 +33,7 @@
       {{ shown.effectiveAt | date: 'dd.MM HH:mm' }} · {{ shown.pens }} · {{ shown.siteName }}
     </ng-container>
   </div>
-  <a *ngIf="url" id="tailBitePhotoViewerDownload" class="btn-secondary" [href]="url" [attr.download]="fileName">
+  <a *ngIf="url" id="tailBitePhotoViewerDownload" class="btn-quiet" [href]="url" [attr.download]="fileName">
     <mat-icon>download</mat-icon>
     {{ 'Download photo' | translate }}
   </a>
