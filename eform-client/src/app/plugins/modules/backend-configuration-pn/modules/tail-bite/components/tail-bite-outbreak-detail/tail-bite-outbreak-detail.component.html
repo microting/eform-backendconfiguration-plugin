@@ -49,7 +49,25 @@
       </ng-container>
       <ng-container matColumnDef="photos">
         <th mat-header-cell *matHeaderCellDef>{{ 'Photos' | translate }}</th>
-        <td mat-cell *matCellDef="let row">{{ row.photoCount }}</td>
+        <td mat-cell *matCellDef="let row">
+          <div *ngIf="row.photos.length; else noPhotos" class="d-flex flex-row align-items-center gap-4"
+               [id]="'tailBiteRegPhotos-' + row.registrationId">
+            <button
+              *ngFor="let uuid of row.photos.slice(0, photosShown); let i = index"
+              type="button"
+              class="tail-bite-photo-button tail-bite-photo-small"
+              [id]="'tailBiteRegPhoto-' + row.registrationId + '-' + i"
+              [attr.aria-label]="'Open photo {{n}}' | translate: {n: i + 1}"
+              (click)="openPhoto(uuid)"
+            >
+              <app-tail-bite-photo-thumb [photoUuid]="uuid" [blobs]="photoBlobs"></app-tail-bite-photo-thumb>
+            </button>
+            <span *ngIf="row.photos.length > photosShown" [id]="'tailBiteRegPhotosMore-' + row.registrationId">
+              +{{ row.photos.length - photosShown }}
+            </span>
+          </div>
+          <ng-template #noPhotos>–</ng-template>
+        </td>
       </ng-container>
       <ng-container matColumnDef="cancel">
         <th mat-header-cell *matHeaderCellDef></th>
@@ -76,6 +94,26 @@
         location: view.title, count: view.pigs, date: (view.pigsFrom | date: 'dd.MM.yyyy'), rate: (view.ratePer100 | number: '1.1-1')
       } }}
     </p>
+  </mat-card>
+
+  <mat-card class="p-3" *ngIf="view.gallery.length" id="tailBiteOutbreakGallery">
+    <div class="d-flex flex-row flex-wrap align-items-center justify-content-between gap-12">
+      <h3 class="m-0">{{ 'Photos from the outbreak' | translate }}</h3>
+      <span>{{ 'Newest first. Click to see full size.' | translate }}</span>
+    </div>
+    <div class="tail-bite-gallery mt-3">
+      <button
+        *ngFor="let photo of view.gallery; let i = index"
+        type="button"
+        class="tail-bite-photo-button tail-bite-gallery-item"
+        [id]="'tailBiteGalleryPhoto-' + photo.uuid"
+        [attr.aria-label]="'Open photo {{n}}' | translate: {n: i + 1}"
+        (click)="openPhoto(photo.uuid)"
+      >
+        <app-tail-bite-photo-thumb class="tail-bite-gallery-tile" [photoUuid]="photo.uuid" [blobs]="photoBlobs"></app-tail-bite-photo-thumb>
+        <span>{{ photo.effectiveAt | date: 'dd.MM HH:mm' }} · {{ photo.pens }} · {{ photo.siteName }}</span>
+      </button>
+    </div>
   </mat-card>
 
   <mat-card class="p-3">

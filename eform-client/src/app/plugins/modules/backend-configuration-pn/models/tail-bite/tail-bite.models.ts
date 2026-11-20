@@ -169,11 +169,19 @@ export interface TailBiteActionTypeName {
   name: string;
 }
 
+/** A photo a barn worker took with a registration; its bytes come from BackendConfigurationPnTailBiteService.getPhotoBlob. */
+export interface TailBitePhotoRef {
+  photoUuid: string;
+  registrationId: number;
+}
+
 export interface TailBiteOutbreakRegistrations {
   propertyId: number;
   rows: TailBiteOutbreakRegistrationRow[];
   /** Names for every action type the rows name (the tree lists live types only). */
   actionTypes: TailBiteActionTypeName[];
+  /** The photos shown, oldest first within a registration; a cancelled registration has none. */
+  photos: TailBitePhotoRef[];
 }
 
 /** followUpDate is a date-only "yyyy-MM-dd" string, so the picked day never shifts across a UTC offset. */

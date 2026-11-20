@@ -1,5 +1,5 @@
 import {Overlay} from '@angular/cdk/overlay';
-import {DatePipe, DecimalPipe, NgIf} from '@angular/common';
+import {DatePipe, DecimalPipe, NgFor, NgIf} from '@angular/common';
 import {Component, OnDestroy, OnInit, inject} from '@angular/core';
 import {MatButtonModule} from '@angular/material/button';
 import {MatCardModule} from '@angular/material/card';
@@ -10,14 +10,18 @@ import {MatTooltipModule} from '@angular/material/tooltip';
 import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {TranslateModule, TranslateService} from '@ngx-translate/core';
 import {Subscription, catchError, finalize, forkJoin, map, of, switchMap, tap} from 'rxjs';
+import {dialogConfigHelper} from 'src/app/common/helpers';
 import {TailBiteAssignableWorker, TailBiteOccupancy, TailBiteOutbreakDetail, TailBiteRuleVersion} from '../../../../models';
 import {BackendConfigurationPnTailBiteService} from '../../../../services';
 import {openConfirm, whenRefused} from '../../shared/tail-bite-confirm';
 import {OUTBREAK_STATUS_BADGE, OUTBREAK_STATUS_LABEL} from '../../shared/tail-bite-outbreak-status';
+import {TailBitePhotoBlobs} from '../../shared/tail-bite-photo-blobs';
 import {TAIL_BITE_BASE} from '../../shared/tail-bite-route';
 import {describeRule} from '../../shared/tail-bite-rule-text';
 import {TailBiteAssessmentFormComponent} from '../tail-bite-assessment-form/tail-bite-assessment-form.component';
 import {TailBiteFollowUpsComponent} from '../tail-bite-follow-ups/tail-bite-follow-ups.component';
+import {TailBitePhotoThumbComponent} from '../tail-bite-photo-thumb/tail-bite-photo-thumb.component';
+import {TailBitePhotoViewerComponent, TailBitePhotoViewerData} from '../tail-bite-photo-viewer/tail-bite-photo-viewer.component';
 import {askText} from '../tail-bite-text-dialog/tail-bite-text-dialog.component';
 import {TailBiteOutbreakRowView, TailBiteOutbreakView, buildOutbreakView} from './tail-bite-outbreak-view';
 
@@ -29,8 +33,40 @@ import {TailBiteOutbreakRowView, TailBiteOutbreakView, buildOutbreakView} from '
 @Component({
   selector: 'app-tail-bite-outbreak-detail',
   templateUrl: './tail-bite-outbreak-detail.component.html',
-  imports: [DatePipe, DecimalPipe, NgIf, RouterModule, MatButtonModule, MatCardModule, MatIconModule, MatTableModule, MatTooltipModule,
-    TranslateModule, TailBiteAssessmentFormComponent, TailBiteFollowUpsComponent],
+  imports: [DatePipe, DecimalPipe, NgFor, NgIf, RouterModule, MatButtonModule, MatCardModule, MatIconModule, MatTableModule,
+    MatTooltipModule, TranslateModule, TailBiteAssessmentFormComponent, TailBiteFollowUpsComponent, TailBitePhotoThumbComponent],
+  styles: [`
+    .tail-bite-photo-button {
+      display: block;
+      padding: 0;
+      border: 0;
+      background: none;
+      cursor: pointer;
+      font: inherit;
+      color: inherit;
+      text-align: left;
+    }
+    .tail-bite-photo-small {
+      width: 48px;
+      height: 48px;
+      flex: none;
+    }
+    .tail-bite-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: var(--spacing-md);
+    }
+    .tail-bite-gallery-item {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xs);
+    }
+    /* Square tiles: the thumbnail fills its box, so the gallery gives it a width-bound height. */
+    .tail-bite-gallery-tile {
+      height: auto;
+      aspect-ratio: 1;
+    }
+  `],
 })
 export class TailBiteOutbreakDetailComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
@@ -43,6 +79,8 @@ export class TailBiteOutbreakDetailComponent implements OnInit, OnDestroy {
   readonly statusLabel = OUTBREAK_STATUS_LABEL;
   readonly statusBadge = OUTBREAK_STATUS_BADGE;
   readonly columns = ['effectiveAt', 'location', 'minor', 'severe', 'actions', 'siteName', 'photos', 'cancel'];
+  /** The Fotos column shows this many thumbnails of a registration, then "+n". */
+  readonly photosShown = 3;
   outbreakId: number | null = null;
   propertyId: number | null = null;
   detail: TailBiteOutbreakDetail | null = null;
@@ -50,6 +88,8 @@ export class TailBiteOutbreakDetailComponent implements OnInit, OnDestroy {
   workers: TailBiteAssignableWorker[] = [];
   /** The optional enrichments of the last load; a refused or failed refresh of one keeps these. */
   private occupancy: TailBiteOccupancy[] = [];
+  /** This outbreak's fetched photos, shared by its thumbnails and the viewer; kept over a refresh, new per outbreak. */
+  photoBlobs = this.newPhotoBlobs();
   private history: TailBiteRuleVersion[] = [];
   /** Single-flight: set while a cancel (with its reason dialog) or a close is running. */
   busy = false;
@@ -87,6 +127,11 @@ export class TailBiteOutbreakDetailComponent implements OnInit, OnDestroy {
     this.occupancy = [];
     this.history = [];
     this.notFound = false;
+    this.photoBlobs = this.newPhotoBlobs();
+  }
+
+  private newPhotoBlobs(): TailBitePhotoBlobs {
+    return new TailBitePhotoBlobs((uuid) => this.service.getPhotoBlob(uuid));
   }
 
   /** Called when a load ends without a page: only a first load (nothing shown yet, no redirect under way) is a "not found". */
@@ -202,6 +247,21 @@ export class TailBiteOutbreakDetailComponent implements OnInit, OnDestroy {
         finalize(() => (this.busy = false)),
       );
     }).subscribe({next: () => this.load(), error: () => undefined});
+  }
+
+  /** Opens the viewer on a photo; previous/next walk the whole gallery. */
+  openPhoto(photoUuid: string): void {
+    const items = this.view?.gallery ?? [];
+    const index = items.findIndex((item) => item.uuid === photoUuid);
+    if (index < 0) {
+      return;
+    }
+    this.dialog.open<TailBitePhotoViewerComponent, TailBitePhotoViewerData>(TailBitePhotoViewerComponent, {
+      ...dialogConfigHelper(this.overlay, {items, index, blobs: this.photoBlobs}),
+      disableClose: false,
+      width: '880px',
+      maxWidth: '95vw',
+    });
   }
 
   /**

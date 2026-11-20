@@ -1,4 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
+import { execFileSync } from 'child_process';
 import * as fs from 'fs';
 import LoginConstants from '../../../Constants/LoginConstants';
 import { generateRandmString } from '../../../helper-functions';
@@ -67,6 +68,33 @@ async function apiGet<T>(page: Page, path: string): Promise<T> {
 function int(value: unknown, what: string): number {
   expect(Number.isInteger(value), `${what} is an integer`).toBe(true);
   return value as number;
+}
+
+/** A 1x1 PNG: the smallest image the browser decodes, so the test can tell a shown photo from a broken one. */
+const TINY_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
+
+/**
+ * Puts photo bytes where the running host reads them: the SDK UploadedData row the plugin's TailBitePhotoStorage
+ * points at, and the file in LocalAdhocPhotoStorage's folder ($TMPDIR/adhoc-photos, /tmp in the image) inside the
+ * workflow's `my-container` (dotnet-core-pr.yml, "Start the newly build Docker container"). Photos reach the server
+ * only from the app over gRPC; the za shard has no gRPC client, so it stores one the way StoreAsync does.
+ */
+async function storeTestPhoto(): Promise<number> {
+  const out = await runMariadbSql(`
+    INSERT INTO UploadedDatas (WorkflowState, Version, CreatedAt, UpdatedAt, Checksum, Extension, FileLocation, FileName)
+      VALUES ('created', 1, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6), 'tail-bite-e2e', '.png', '', 'tail-bite-e2e.png');
+    SET @u = LAST_INSERT_ID();
+    UPDATE UploadedDatas SET FileName = CONCAT(@u, '_tail-bite-e2e.png') WHERE Id = @u;
+    SELECT @u;`, 'add an UploadedData row for a test photo', customerDatabase('SDK'));
+  const uploadedDataId = int(Number(out.trim()), 'uploaded data id');
+  try {
+    execFileSync('docker', ['exec', '-i', 'my-container', 'sh', '-c',
+      `mkdir -p /tmp/adhoc-photos && cat > /tmp/adhoc-photos/${uploadedDataId}_tail-bite-e2e.png`],
+    { input: TINY_PNG, timeout: API_TIMEOUT });
+  } catch (error) {
+    throw new Error(`Could not copy the test photo into the app container via docker exec: ${String(error)}`);
+  }
+  return uploadedDataId;
 }
 
 async function tailBitePropertyId(page: Page): Promise<number> {
@@ -376,6 +404,48 @@ test.describe.serial('Tail biting web admin', () => {
     await expect(page.locator(`#tailBiteRegCancelled-${registrationIds[0]}`)).toBeVisible({ timeout: API_TIMEOUT });
     // The cancelled registration (2 minor) no longer counts: 3 bitten pigs remain.
     await expect(page.locator('#tailBiteOutbreakSummaryLine')).toContainText(/3 (bitten pigs|bidte grise)/, { timeout: API_TIMEOUT });
+  });
+
+  test('outbreak: a photo from the barn shows as a thumbnail and in the gallery, and opens in the viewer', async ({ page }) => {
+    test.setTimeout(300000);
+    // LocalAdhocPhotoStorage is the store only while S3 is off; with S3 on the bytes would have to go to a bucket.
+    const s3 = await runMariadbSql("SELECT Value FROM Settings WHERE Name = 's3Enabled';", 'read the s3Enabled setting',
+      customerDatabase('SDK'));
+    test.skip(s3.trim().toLowerCase() === 'true', 'The app stores photos in S3 here; the test can only place them in the local store.');
+    const uploadedDataId = await storeTestPhoto();
+    // On the registration that is still counted; the cancelled one shows no photos.
+    const photoUuid = (await runMariadbSql(`
+      INSERT INTO TailBiteRegistrationPhotos (PhotoUuid, PropertyId, UploadedBySiteId, RegistrationClientUuid, SdkUploadedDataId, CreatedAt, UpdatedAt, WorkflowState, CreatedByUserId, UpdatedByUserId, Version)
+        SELECT UUID(), PropertyId, SiteId, ClientUuid, ${uploadedDataId}, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6), 'created', 0, 0, 1
+        FROM TailBiteRegistrations WHERE Id = ${registrationIds[1]};
+      SELECT PhotoUuid FROM TailBiteRegistrationPhotos WHERE Id = LAST_INSERT_ID();`,
+    'link the test photo to a registration', customerDatabase('eform-backend-configuration-plugin'))).trim();
+    expect(photoUuid).toMatch(/^[0-9a-f-]{36}$/);
+
+    const tailBite = new TailBitePage(page);
+    const photoLoaded = waitForApiResponse(page, 'GET tail-bite photo',
+      (r) => r.request().method() === 'GET' && new URL(r.url()).pathname.endsWith(`/tail-bite/photos/${photoUuid}`), API_TIMEOUT);
+    ignoreUnhandledRejections(photoLoaded);
+    await page.goto(`${BASE_URL}/plugins/backend-configuration-pn/tail-bite/${seededPropertyId}/outbreaks/${outbreakId}`);
+    expect((await photoLoaded).status()).toBe(200);
+
+    const thumb = page.locator(`#tailBiteRegPhoto-${registrationIds[1]}-0 img`);
+    await expect(thumb).toBeVisible({ timeout: API_TIMEOUT });
+    // Decoded, not just present: a broken image has no natural width.
+    await expect.poll(() => thumb.evaluate((img: HTMLImageElement) => img.naturalWidth), { timeout: UI_TIMEOUT }).toBeGreaterThan(0);
+    await expect(page.locator(`#tailBiteRegPhotos-${registrationIds[0]}`)).toHaveCount(0);
+    await expect(page.locator(`#tailBiteGalleryPhoto-${photoUuid} img`)).toBeVisible();
+    await expect(page.locator(`#tailBiteGalleryPhoto-${photoUuid}`)).toContainText('Sti 302');
+
+    await page.locator(`#tailBiteRegPhoto-${registrationIds[1]}-0`).click();
+    await expect(page.locator('#tailBitePhotoViewerImg')).toBeVisible({ timeout: UI_TIMEOUT });
+    await expect(page.locator('#tailBitePhotoViewerTitle')).toContainText('1');
+    await expect(page.locator('#tailBitePhotoViewerCaption')).toContainText('Sti 302');
+    await expect(page.locator('#tailBitePhotoViewerCaption')).toContainText(managerName);
+    await expect(page.locator('#tailBitePhotoViewerDownload')).toHaveAttribute('download', `halebid-${photoUuid}.png`);
+    await tailBite.screenshot('outbreak-photo-viewer');
+    await page.locator('#tailBitePhotoViewerClose').click();
+    await expect(page.locator('#tailBitePhotoViewerImg')).toHaveCount(0, { timeout: UI_TIMEOUT });
   });
 
   test('outbreak: the risk assessment needs all six answers and an action for every yes', async ({ page }) => {

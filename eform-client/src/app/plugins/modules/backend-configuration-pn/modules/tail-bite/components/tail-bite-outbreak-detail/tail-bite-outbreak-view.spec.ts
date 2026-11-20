@@ -1,4 +1,5 @@
 import {describe, it, expect} from 'vitest';
+import {TailBiteActionTypeName, TailBitePhotoRef} from '../../../../models';
 import {buildOutbreakView} from './tail-bite-outbreak-view';
 
 describe('buildOutbreakView', () => {
@@ -16,6 +17,8 @@ describe('buildOutbreakView', () => {
     registrationId, rowId: registrationId * 10, locationId, effectiveAt: '2026-09-30T05:58:00Z', minor, severe,
     actionTypeIds: registrationId === 21 ? [30, 99] : [], siteId: 7, siteName: 'Jane Doe', cancelled, cancelReason: null, photoCount: 1,
   });
+  const regs = <R>(rows: R[], photos: TailBitePhotoRef[] = []) =>
+    ({propertyId: 3, actionTypes: [] as TailBiteActionTypeName[], photos, rows});
   const history = [
     {version: 3, locationId: 1, minBittenPigs: 5, minSevere: 1, windowDays: 7, countDepth: 1, changedAt: '2026-08-12T10:00:00Z'},
     {version: 2, locationId: 1, minBittenPigs: 8, minSevere: null, windowDays: 14, countDepth: 1, changedAt: null},
@@ -26,7 +29,7 @@ describe('buildOutbreakView', () => {
   ];
 
   it('counts locations over rows that are not cancelled, and names actions', () => {
-    const view = buildOutbreakView(detail, {propertyId: 3, actionTypes: [], rows: [row(21, 3, 2, 1), row(22, 4, 1, 0), row(23, 3, 4, 0, true)]},
+    const view = buildOutbreakView(detail, regs([row(21, 3, 2, 1), row(22, 4, 1, 0), row(23, 3, 4, 0, true)]),
       tree, occupancy, history, 'Deleted location');
     expect(view.locationCount).toBe(2);
     expect(view.rows[0].actions).toBe('Reb, #99');
@@ -37,7 +40,7 @@ describe('buildOutbreakView', () => {
   });
 
   it('names action types deleted since, from the registrations\' own list', () => {
-    const view = buildOutbreakView(detail, {propertyId: 3, actionTypes: [{id: 99, name: 'Kæder'}], rows: [row(21, 3, 2, 1)]},
+    const view = buildOutbreakView(detail, {...regs([row(21, 3, 2, 1)]), actionTypes: [{id: 99, name: 'Kæder'}]},
       tree, occupancy, history, 'Deleted location');
     expect(view.rows[0].actions).toBe('Reb, Kæder');
   });
@@ -48,19 +51,19 @@ describe('buildOutbreakView', () => {
       {locationId: 2, pigCount: 400, source: 0, validFrom: '2026-09-01T00:00:00Z'},
       {locationId: 3, pigCount: 30, source: 0, validFrom: '2026-09-20T00:00:00Z'},
     ];
-    const view = buildOutbreakView(detail, {propertyId: 3, actionTypes: [], rows: []}, tree, counts, history, 'Deleted location');
+    const view = buildOutbreakView(detail, regs([]), tree, counts, history, 'Deleted location');
     expect(view.pigs).toBe(400);
     expect(view.pigsFrom!.toISOString()).toBe('2026-09-01T00:00:00.000Z');
   });
 
   it('picks the rule version that opened the outbreak', () => {
-    const view = buildOutbreakView(detail, {propertyId: 3, actionTypes: [], rows: []}, tree, occupancy, history, 'Deleted location');
+    const view = buildOutbreakView(detail, regs([]), tree, occupancy, history, 'Deleted location');
     expect(view.rule!.version).toBe(3);
     expect(view.ruleLocation).toBe('Ejendom');
   });
 
   it('gives a rate per 100 pigs from the live counts below the summing location', () => {
-    const view = buildOutbreakView(detail, {propertyId: 3, actionTypes: [], rows: [row(21, 3, 2, 1)]}, tree, occupancy, history, 'Deleted location');
+    const view = buildOutbreakView(detail, regs([row(21, 3, 2, 1)]), tree, occupancy, history, 'Deleted location');
     expect(view.pigs).toBe(30);
     expect(view.pigsFrom!.toISOString()).toBe('2026-09-15T00:00:00.000Z');
     expect(view.ratePer100).toBe(10);
@@ -68,31 +71,65 @@ describe('buildOutbreakView', () => {
 
   it('reads every server date the same when the host DateInterceptor already turned it into a Date', () => {
     const served = {...detail, summary: {...detail.summary, openedAt: new Date(Date.UTC(2026, 9, 1, 6, 12))}};
-    const regs = {propertyId: 3, actionTypes: [], rows: [{...row(21, 3, 2, 1), effectiveAt: new Date(Date.UTC(2026, 8, 30, 5, 58))}]};
+    const dated = regs([{...row(21, 3, 2, 1), effectiveAt: new Date(Date.UTC(2026, 8, 30, 5, 58))}]);
     const counts = occupancy.map((o) => ({...o, validFrom: new Date(o.validFrom)}));
-    const view = buildOutbreakView(served, regs, tree, counts, history, 'Deleted location');
+    const view = buildOutbreakView(served, dated, tree, counts, history, 'Deleted location');
     expect(view.openedAt!.toISOString()).toBe('2026-10-01T06:12:00.000Z');
     expect(view.rows[0].effectiveAt!.toISOString()).toBe('2026-09-30T05:58:00.000Z');
     expect(view.pigsFrom!.toISOString()).toBe('2026-09-15T00:00:00.000Z');
   });
 
   it('has no rate without a pig count, and labels unknown locations', () => {
-    const view = buildOutbreakView(detail, {propertyId: 3, actionTypes: [], rows: [row(21, 77, 1, 0)]}, tree, [], [], 'Deleted location');
+    const view = buildOutbreakView(detail, regs([row(21, 77, 1, 0)]), tree, [], [], 'Deleted location');
     expect([view.pigs, view.ratePer100, view.rule]).toEqual([null, null, null]);
     expect(view.rows[0].location).toBe('Deleted location');
   });
 
   it('takes the pig count from the server summary, not from the rows, so page and list cannot disagree', () => {
     const served = {...detail, summary: {...detail.summary, bittenPigs: 9, severePigs: 2}};
-    const view = buildOutbreakView(served, {propertyId: 3, actionTypes: [], rows: [row(21, 3, 2, 1)]}, tree, occupancy, history, 'Deleted location');
+    const view = buildOutbreakView(served, regs([row(21, 3, 2, 1)]), tree, occupancy, history, 'Deleted location');
     expect(view.bittenPigs).toBe(9);
     expect(view.ratePer100).toBe(30);
   });
 
   it('marks only the first row of a registration, so per-registration controls and ids are unique', () => {
     const second = {...row(21, 4, 1, 0), rowId: 211};
-    const view = buildOutbreakView(detail, {propertyId: 3, actionTypes: [], rows: [row(21, 3, 2, 1), second, row(22, 3, 1, 0)]},
+    const view = buildOutbreakView(detail, regs([row(21, 3, 2, 1), second, row(22, 3, 1, 0)]),
       tree, occupancy, history, 'Deleted location');
     expect(view.rows.map((r) => r.firstOfRegistration)).toEqual([true, false, true]);
+  });
+
+  describe('photos', () => {
+    const at = (registrationId: number, effectiveAt: string, locationId = 3, cancelled = false) =>
+      ({...row(registrationId, locationId, 1, 0, cancelled), effectiveAt});
+    const photo = (photoUuid: string, registrationId: number) => ({photoUuid, registrationId});
+
+    it('puts a registration\'s photos on its first row only, and none on a cancelled registration', () => {
+      const second = {...at(21, '2026-09-30T05:58:00Z', 4), rowId: 211};
+      const view = buildOutbreakView(detail, regs(
+        [at(21, '2026-09-30T05:58:00Z'), second, at(22, '2026-09-30T06:00:00Z', 3, true), at(23, '2026-09-30T07:00:00Z')],
+        [photo('a', 21), photo('b', 21), photo('c', 22)]), tree, occupancy, history, 'Deleted location');
+      expect(view.rows.map((r) => r.photos)).toEqual([['a', 'b'], [], [], []]);
+    });
+
+    it('lists the gallery newest registration first, a registration\'s own photos in server order, pens joined', () => {
+      const second = {...at(21, '2026-09-29T05:58:00Z', 4), rowId: 211};
+      const view = buildOutbreakView(detail, regs(
+        [at(21, '2026-09-29T05:58:00Z'), second, at(22, '2026-09-30T06:00:00Z'), at(23, '2026-09-30T07:00:00Z', 3, true)],
+        [photo('a', 21), photo('b', 21), photo('c', 22), photo('d', 23)]), tree, occupancy, history, 'Deleted location');
+      expect(view.gallery.map((g) => [g.uuid, g.registrationId, g.pens])).toEqual([
+        ['c', 22, 'Sti 309'],
+        ['a', 21, 'Sti 309, Sti 310'],
+        ['b', 21, 'Sti 309, Sti 310'],
+      ]);
+      expect(view.gallery[0].effectiveAt!.toISOString()).toBe('2026-09-30T06:00:00.000Z');
+      expect(view.gallery[0].siteName).toBe('Jane Doe');
+    });
+
+    it('has an empty gallery without photos', () => {
+      const view = buildOutbreakView(detail, regs([row(21, 3, 2, 1)]), tree, occupancy, history, 'Deleted location');
+      expect(view.gallery).toEqual([]);
+      expect(view.rows[0].photos).toEqual([]);
+    });
   });
 });
