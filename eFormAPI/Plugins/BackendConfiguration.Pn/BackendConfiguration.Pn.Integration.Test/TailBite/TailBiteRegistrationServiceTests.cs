@@ -37,7 +37,7 @@ public class TailBiteRegistrationServiceTests : TailBiteTestBase
     {
         db ??= Db;
         return new(db, new TailBitePropertyLock(db), new TailBiteSnapshotLoader(db), new TailBiteDecisionWriter(db), NewAccess(db),
-            new TailBitePhotoStorage(storage ?? new FakeAdhocPhotoStorage(), CoreHelper()), clock ?? Clock, notifier);
+            new TailBitePhotoStorage(storage ?? new FakeAdhocPhotoStorage(), CoreHelper()), new TailBitePhotoQuery(db), clock ?? Clock, notifier);
     }
 
     /// <summary>
@@ -410,6 +410,9 @@ public class TailBiteRegistrationServiceTests : TailBiteTestBase
             SdkUploadedDataId = PhotoRow(stored).SdkUploadedDataId
         }.Create(Db);
         Db.ChangeTracker.Clear();
+        // Both photos are readable by their own workers, so the refusals below come from the caller and the switch alone.
+        await (await NewSut().GetPhotoAsync(WorkerSiteId, stored)).Content.DisposeAsync();
+        await (await NewSut().GetPhotoAsync(OtherSiteId, foreign)).Content.DisposeAsync();
 
         await AssertPhotoNotFound(() => NewSut().GetPhotoAsync(WorkerSiteId, Guid.NewGuid()));
         await AssertPhotoNotFound(() => NewSut().GetPhotoAsync(WorkerSiteId, reserved));
@@ -417,6 +420,19 @@ public class TailBiteRegistrationServiceTests : TailBiteTestBase
 
         await Db.TailBiteProperties.Where(t => t.PropertyId == PropertyId).ExecuteUpdateAsync(x => x.SetProperty(t => t.Enabled, false));
         await AssertPhotoNotFound(() => NewSut().GetPhotoAsync(WorkerSiteId, stored));
+    }
+
+    [Test]
+    public async Task GetPhoto_CancelledRegistrationsPhoto_NotFound()
+    {
+        // The app applies the rule the web and the report do: a cancelled registration's photo and an orphan are not shown.
+        var (cancelled, _) = await SeedRegistrationAsync(Clock.GetUtcNow().UtcDateTime, true, (Pen309Id, 2, 0));
+        var (photo, orphan) = (Guid.NewGuid(), Guid.NewGuid());
+        await NewSut().SavePhotoAsync(WorkerSiteId, PropertyId, photo, cancelled.ClientUuid, [1], "image/jpeg");
+        await NewSut().SavePhotoAsync(WorkerSiteId, PropertyId, orphan, Guid.NewGuid(), [2], "image/jpeg");
+
+        await AssertPhotoNotFound(() => NewSut().GetPhotoAsync(WorkerSiteId, photo));
+        await AssertPhotoNotFound(() => NewSut().GetPhotoAsync(WorkerSiteId, orphan));
     }
 
     [Test]
@@ -612,6 +628,8 @@ public class TailBiteRegistrationServiceTests : TailBiteTestBase
         var row = PhotoRow(photo);
         Assert.That(row.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed));
         Assert.That(row.SdkUploadedDataId, Is.EqualTo(expectedUploadedDataId).And.Not.Zero);
+        // A photo is shown once its registration exists.
+        await NewSut().CreateAsync(WorkerSiteId, Cmd(row.RegistrationClientUuid));
         var (content, _) = await NewSut(storage: storage).GetPhotoAsync(WorkerSiteId, photo);
         await using (content)
         {

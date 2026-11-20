@@ -138,6 +138,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<Services.TailBite.ITailBiteWorkerEmailCounter, Services.TailBite.TailBiteWorkerEmailCounter>();
         services.AddTransient<Services.TailBite.ITailBiteAccess, Services.TailBite.TailBiteAccess>();
         services.AddTransient<Services.TailBite.ITailBitePhotoStorage, Services.TailBite.TailBitePhotoStorage>();
+        services.AddTransient<Services.TailBite.ITailBitePhotoQuery, Services.TailBite.TailBitePhotoQuery>();
         services.AddTransient<Services.TailBite.ITailBiteRegistrationService, Services.TailBite.TailBiteRegistrationService>();
         services.AddTransient<Services.TailBite.ITailBiteSetupService, Services.TailBite.TailBiteSetupService>();
         services.AddTransient<Services.TailBite.ITailBiteOutbreakService, Services.TailBite.TailBiteOutbreakService>();
