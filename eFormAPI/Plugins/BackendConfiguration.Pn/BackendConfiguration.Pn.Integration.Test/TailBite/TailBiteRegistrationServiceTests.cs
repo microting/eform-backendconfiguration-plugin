@@ -387,8 +387,11 @@ public class TailBiteRegistrationServiceTests : TailBiteTestBase
     {
         // A stored photo of a live registration on the enabled tree: the caller is a worker there.
         var (reg, _) = await SeedRegistrationAsync(Clock.GetUtcNow().UtcDateTime, false, (Pen309Id, 2, 0));
+        // One photo store for the save and every read: NewSut() alone gives each call an empty one.
+        var store = new FakeAdhocPhotoStorage();
+        TailBiteRegistrationService Sut() => NewSut(storage: store);
         var stored = Guid.NewGuid();
-        await NewSut().SavePhotoAsync(WorkerSiteId, PropertyId, stored, reg.ClientUuid, [1], "image/jpeg");
+        await Sut().SavePhotoAsync(WorkerSiteId, PropertyId, stored, reg.ClientUuid, [1], "image/jpeg");
         // A reservation whose bytes were never stored.
         var reserved = Guid.NewGuid();
         await SeedPhotoAsync(reserved, reg.ClientUuid);
@@ -411,15 +414,26 @@ public class TailBiteRegistrationServiceTests : TailBiteTestBase
         }.Create(Db);
         Db.ChangeTracker.Clear();
         // Both photos are readable by their own workers, so the refusals below come from the caller and the switch alone.
-        await (await NewSut().GetPhotoAsync(WorkerSiteId, stored)).Content.DisposeAsync();
-        await (await NewSut().GetPhotoAsync(OtherSiteId, foreign)).Content.DisposeAsync();
+        await (await Sut().GetPhotoAsync(WorkerSiteId, stored)).Content.DisposeAsync();
+        await (await Sut().GetPhotoAsync(OtherSiteId, foreign)).Content.DisposeAsync();
 
-        await AssertPhotoNotFound(() => NewSut().GetPhotoAsync(WorkerSiteId, Guid.NewGuid()));
-        await AssertPhotoNotFound(() => NewSut().GetPhotoAsync(WorkerSiteId, reserved));
-        await AssertPhotoNotFound(() => NewSut().GetPhotoAsync(WorkerSiteId, foreign));
+        await AssertPhotoNotFound(() => Sut().GetPhotoAsync(WorkerSiteId, Guid.NewGuid()));
+        await AssertPhotoNotFound(() => Sut().GetPhotoAsync(WorkerSiteId, reserved));
+        await AssertPhotoNotFound(() => Sut().GetPhotoAsync(WorkerSiteId, foreign));
 
         await Db.TailBiteProperties.Where(t => t.PropertyId == PropertyId).ExecuteUpdateAsync(x => x.SetProperty(t => t.Enabled, false));
-        await AssertPhotoNotFound(() => NewSut().GetPhotoAsync(WorkerSiteId, stored));
+        await AssertPhotoNotFound(() => Sut().GetPhotoAsync(WorkerSiteId, stored));
+    }
+
+    [Test]
+    public async Task GetPhoto_BytesGoneFromTheStore_NotFound()
+    {
+        // A reset local folder or a deleted S3 object reads like any other missing photo, not as a server error.
+        var (reg, _) = await SeedRegistrationAsync(Clock.GetUtcNow().UtcDateTime, false, (Pen309Id, 2, 0));
+        var photo = Guid.NewGuid();
+        await NewSut(storage: new FakeAdhocPhotoStorage()).SavePhotoAsync(WorkerSiteId, PropertyId, photo, reg.ClientUuid, [1], "image/jpeg");
+
+        await AssertPhotoNotFound(() => NewSut(storage: new FakeAdhocPhotoStorage()).GetPhotoAsync(WorkerSiteId, photo));
     }
 
     [Test]

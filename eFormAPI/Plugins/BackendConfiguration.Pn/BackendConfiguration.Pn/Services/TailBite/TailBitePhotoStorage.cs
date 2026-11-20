@@ -29,8 +29,10 @@ namespace BackendConfiguration.Pn.Services.TailBite;
 
 using System;
 using System.IO;
+using System.Net;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using Amazon.S3;
 using BackendConfiguration.Pn.Services.BackendConfigurationAdhocService;
 using Microsoft.EntityFrameworkCore;
 using Microting.eFormApi.BasePn.Abstractions;
@@ -108,8 +110,17 @@ public class TailBitePhotoStorage(IAdhocPhotoStorage inner, IEFormCoreService co
         var core = await coreHelper.GetCore();
         var sdkDbContext = core.DbContextHelper.GetDbContext();
         var uploadedData = await sdkDbContext.UploadedDatas.AsNoTracking().FirstOrDefaultAsync(u => u.Id == uploadedDataId)
-                           ?? throw new TailBiteNotFoundException("Photo file not found.");
-        var content = await inner.GetAsync(uploadedData.FileName);
+                           ?? throw TailBiteNotFoundException.PhotoNotFound();
+        Stream content;
+        try
+        {
+            content = await inner.GetAsync(uploadedData.FileName);
+        }
+        // Bytes gone from the store (a reset local folder, a deleted S3 object) answer like any other missing photo.
+        catch (Exception e) when (e is FileNotFoundException or AmazonS3Exception { StatusCode: HttpStatusCode.NotFound })
+        {
+            throw TailBiteNotFoundException.PhotoNotFound();
+        }
         // TailBiteRegistrationPhoto has no ContentType column; StoreAsync only ever writes .jpg or .png.
         return (content, uploadedData.Extension == ".png" ? "image/png" : "image/jpeg");
     }

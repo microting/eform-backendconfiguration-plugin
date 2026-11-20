@@ -121,10 +121,10 @@ export function buildOutbreakView(
  * server's oldest-first order. A registration covering several pens is listed once, its pens joined ", ".
  */
 function buildGallery(rows: TailBiteOutbreakRowView[]): TailBiteGalleryItem[] {
+  // One row per pen of a registration, so two pens that share a name (Sti 1 in two sections) both stay.
   const pens = new Map<number, string[]>();
   for (const r of rows) {
-    const names = pens.get(r.registrationId) ?? [];
-    pens.set(r.registrationId, names.includes(r.location) ? names : [...names, r.location]);
+    pens.set(r.registrationId, [...(pens.get(r.registrationId) ?? []), r.location]);
   }
   return rows
     .filter((r) => r.photos.length > 0)
