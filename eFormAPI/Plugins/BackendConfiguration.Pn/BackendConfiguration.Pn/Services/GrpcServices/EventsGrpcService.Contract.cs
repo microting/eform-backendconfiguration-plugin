@@ -273,38 +273,115 @@ public partial class EventsGrpcService
     private async Task<(DateTime Start, DateTime End)> ResolveGetEventWindowAsync(
         int eventId, int itemPlanningId, DateTime day, EventKey key, CancellationToken ct)
     {
-        var dates = new List<DateTime> { day.Date };
+        var complianceId = key.HasComplianceId && key.ComplianceId > 0 ? (int)key.ComplianceId : 0;
+        var inputs = await LoadGetEventWindowInputsAsync(
+                [(eventId, day.Date)], complianceId > 0 ? [complianceId] : [], ct)
+            .ConfigureAwait(false);
+        return inputs.WindowFor(eventId, itemPlanningId, day, complianceId);
+    }
 
-        if (key.HasComplianceId && key.ComplianceId > 0)
+    /// <summary>
+    /// What <see cref="ResolveGetEventWindowAsync"/> reads, for many keys in
+    /// two queries at most: the deadlines of the named compliances and the
+    /// live moves onto each (task, day).
+    /// </summary>
+    private async Task<GetEventWindowInputs> LoadGetEventWindowInputsAsync(
+        IReadOnlyCollection<(int EventId, DateTime Day)> days, IReadOnlyCollection<int> complianceIds,
+        CancellationToken ct)
+    {
+        var deadlines = await LoadComplianceDeadlinesAsync(complianceIds, ct).ConfigureAwait(false);
+
+        var moves = new List<(int Id, int EventId, DateTime Day, DateTime Original)>();
+        if (days.Count > 0)
         {
-            var complianceId = (int)key.ComplianceId;
-            var deadline = await dbContext.Compliances
+            var eventIds = days.Select(d => d.EventId).Distinct().ToList();
+            var first = days.Min(d => d.Day.Date);
+            var afterLast = days.Max(d => d.Day.Date).AddDays(1);
+            var wanted = days.Select(d => (d.EventId, d.Day.Date)).ToHashSet();
+            moves = (await dbContext.CalendarOccurrenceExceptions
+                    .AsNoTracking()
+                    .Where(x => eventIds.Contains(x.AreaRulePlanningId))
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => !x.IsDeleted)
+                    .Where(x => x.NewDate.HasValue && x.NewDate.Value >= first && x.NewDate.Value < afterLast)
+                    .Select(x => new { x.Id, x.AreaRulePlanningId, NewDate = x.NewDate!.Value, x.OriginalDate })
+                    .ToListAsync(ct)
+                    .ConfigureAwait(false))
+                .Select(x => (x.Id, x.AreaRulePlanningId, x.NewDate.Date, x.OriginalDate.Date))
+                .Where(x => wanted.Contains((x.AreaRulePlanningId, x.Item3)))
+                .ToList();
+        }
+
+        return new GetEventWindowInputs(deadlines, moves);
+    }
+
+    /// <summary>The (planning, deadline) of each named compliance; no query for none.</summary>
+    private async Task<Dictionary<int, (int PlanningId, DateTime Deadline)>> LoadComplianceDeadlinesAsync(
+        IEnumerable<int> complianceIds, CancellationToken ct)
+    {
+        var ids = complianceIds.Where(id => id > 0).Distinct().ToList();
+        return ids.Count == 0
+            ? new Dictionary<int, (int PlanningId, DateTime Deadline)>()
+            : await dbContext.Compliances
                 .AsNoTracking()
-                .Where(x => x.Id == complianceId && x.PlanningId == itemPlanningId)
-                .Select(x => (DateTime?)x.Deadline)
-                .FirstOrDefaultAsync(ct)
+                .Where(x => ids.Contains(x.Id))
+                .Select(x => new { x.Id, x.PlanningId, x.Deadline })
+                .ToDictionaryAsync(x => x.Id, x => (x.PlanningId, x.Deadline), ct)
                 .ConfigureAwait(false);
-            if (deadline is { } d && d != default)
+    }
+
+    /// <summary>
+    /// The data GetEvent widens its read by, and the window rule itself: the
+    /// key's day, the key's compliance deadline (on the task's planning) and
+    /// every original date moved onto the day, each kept only when at most
+    /// <see cref="MaxGetEventWindowWideningDays"/> from the day.
+    /// </summary>
+    private sealed class GetEventWindowInputs(
+        Dictionary<int, (int PlanningId, DateTime Deadline)> deadlines,
+        List<(int Id, int EventId, DateTime Day, DateTime Original)> moves)
+    {
+        private readonly ILookup<(int EventId, DateTime Day), DateTime> _originalsOnto =
+            moves.ToLookup(x => (x.EventId, x.Day), x => x.Original);
+
+        private readonly Dictionary<int, DateTime> _originalByMoveId = moves.ToDictionary(x => x.Id, x => x.Original);
+
+        /// <summary>Loads the deadlines of the compliances not loaded yet (no query when none).</summary>
+        public async Task LoadMissingDeadlinesAsync(
+            EventsGrpcService service, IEnumerable<int> complianceIds, CancellationToken ct)
+        {
+            var loaded = await service.LoadComplianceDeadlinesAsync(
+                    complianceIds.Where(id => !deadlines.ContainsKey(id)), ct)
+                .ConfigureAwait(false);
+            foreach (var (id, deadline) in loaded)
             {
-                dates.Add(d.Date);
+                deadlines[id] = deadline;
             }
         }
 
-        var nextDay = day.Date.AddDays(1);
-        var movedFrom = await dbContext.CalendarOccurrenceExceptions
-            .AsNoTracking()
-            .Where(x => x.AreaRulePlanningId == eventId)
-            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-            .Where(x => !x.IsDeleted)
-            .Where(x => x.NewDate.HasValue && x.NewDate.Value >= day.Date && x.NewDate.Value < nextDay)
-            .Select(x => x.OriginalDate)
-            .ToListAsync(ct)
-            .ConfigureAwait(false);
-        dates.AddRange(movedFrom.Select(x => x.Date));
+        /// <summary>The original date of a live move onto a loaded day.</summary>
+        public DateTime? OriginalOf(int moveId) =>
+            _originalByMoveId.TryGetValue(moveId, out var original) ? original : null;
 
-        // Bound the read: a key can name any compliance of the planning.
-        var reachable = dates.Where(d => Math.Abs((d - day.Date).TotalDays) <= MaxGetEventWindowWideningDays).ToList();
-        return (reachable.Min(), reachable.Max());
+        /// <summary>The compliance's deadline day when it belongs to the planning.</summary>
+        public DateTime? DeadlineOf(int complianceId, int itemPlanningId) =>
+            deadlines.TryGetValue(complianceId, out var c) && c.PlanningId == itemPlanningId && c.Deadline != default
+                ? c.Deadline.Date
+                : null;
+
+        public (DateTime Start, DateTime End) WindowFor(int eventId, int itemPlanningId, DateTime day, int complianceId)
+        {
+            var dates = new List<DateTime> { day.Date };
+            if (complianceId > 0 && DeadlineOf(complianceId, itemPlanningId) is { } deadline)
+            {
+                dates.Add(deadline);
+            }
+
+            dates.AddRange(_originalsOnto[(eventId, day.Date)]);
+
+            // Bound the read: a key can name any compliance of the planning.
+            var reachable = dates.Where(d => Math.Abs((d - day.Date).TotalDays) <= MaxGetEventWindowWideningDays).ToList();
+            return (reachable.Min(), reachable.Max());
+        }
     }
 
     // ------------------------------------------------------------------

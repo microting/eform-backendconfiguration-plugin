@@ -1590,6 +1590,86 @@ public class EventsGrpcListChangesTests : TestBaseSetup
     }
 
     /// <summary>
+    /// Both directions of the GetEvent invariant over P1/P2 and every day of
+    /// the window: each served key equals GetEvent (etag included), and the
+    /// keys GetEvent finds are exactly the served keys.
+    /// </summary>
+    private async Task AssertSnapshotIsWhatGetEventFindsAsync(
+        World w, EventsGrpcService reference, ListChangesResponse snapshot, DateTime first, DateTime last)
+    {
+        foreach (var evt in Upserts(snapshot))
+        {
+            Assert.That(await GetEventAsync(reference, KeyOf(evt)), Is.EqualTo(evt),
+                $"{evt.Id}/{evt.PlanDayKey}/{evt.ComplianceId}: equals GetEvent");
+        }
+
+        var arpIds = await BackendConfigurationPnDbContext!.AreaRulePlannings
+            .Where(x => x.PropertyId == w.P1 || x.PropertyId == w.P2)
+            .Select(x => x.Id)
+            .ToListAsync();
+        var foundByGetEvent = new List<OccurrenceKey>();
+        foreach (var arpId in arpIds)
+        {
+            for (var day = first; day <= last; day = day.AddDays(1))
+            {
+                var got = await reference.GetEvent(new GetEventRequest
+                {
+                    Key = new EventKey { EventId = arpId.ToString(CultureInfo.InvariantCulture), PlanDayKey = Key(day) }
+                }, new TestServerCallContext());
+                if (got.Found)
+                {
+                    foundByGetEvent.Add(KeyOf(got.Event));
+                }
+            }
+        }
+
+        Assert.That(foundByGetEvent, Is.EquivalentTo(Upserts(snapshot).Select(KeyOf)),
+            "GetEvent finds exactly the served keys in the window");
+    }
+
+    /// <summary>
+    /// Round 5, finding 1: task A moves occurrences from day 11 and day 101
+    /// onto day 1; task B moves one from day 101 onto day 12. B widens the
+    /// shared read to day 101, which renders both of A's occurrences on day 1,
+    /// but GetEvent's 92-day bound excludes A's day-101 occurrence. Each key
+    /// is served only when its own GetEvent range holds its compliance's
+    /// original deadline.
+    /// </summary>
+    [Test]
+    public async Task MovedIn_BeyondTheKeysOwnGetEventRange_IsNotServed_ThoughAnotherMoveWidensTheSharedRead()
+    {
+        var c = await SeedCalendarAsync();
+        var w = c.W;
+        var m = c.Monday;
+        var real = NewCalendar(w, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!);
+
+        var nearA = await SeedMovedAsync(w, real, "task-a", null, m, m.AddDays(11), m.AddDays(1), retract: false);
+        var a = nearA.Series;
+        var farA = await SeedOccurrenceAsync(w, a, m.AddDays(101), "task-a-far", "task-a-far-value", w.SiteA);
+        var movedFar = await real.MoveTask(new CalendarTaskMoveRequestModel
+        {
+            Id = a.ArpId, OriginalDate = Key(m.AddDays(101)) + "T00:00:00Z",
+            NewDate = Key(m.AddDays(1)) + "T00:00:00Z", NewStartHour = 9.0, Scope = "this"
+        });
+        Assert.That(movedFar.Success, Is.True, movedFar.Message);
+        var b = await SeedMovedAsync(w, real, "task-b", null, m, m.AddDays(101), m.AddDays(12), retract: false);
+
+        var service = ServiceFor(w, w.SiteA);
+        var snapshot = await ChangesAsync(service, Key(m), Key(m.AddDays(13)));
+        var keys = Upserts(snapshot).Select(KeyOf).ToList();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(keys, Does.Contain(nearA.Key), "A's day-11 occurrence, inside its GetEvent range");
+            Assert.That(keys, Does.Contain(b.Key), "B's day-101 occurrence, 89 days from its new day");
+            Assert.That(keys, Does.Not.Contain(new OccurrenceKey(a.ArpId, Key(m.AddDays(1)), farA.ComplianceId)),
+                "A's day-101 occurrence is 100 days away: GetEvent cannot find it");
+        });
+
+        await AssertSnapshotIsWhatGetEventFindsAsync(w, ServiceFor(w, w.SiteA), snapshot, m, m.AddDays(13));
+    }
+
+    /// <summary>
     /// Round 4, finding 2: the cost of a poll with many occurrences moved in
     /// from outside the window. Calendar reads stay constant; statements are
     /// printed for the report.
