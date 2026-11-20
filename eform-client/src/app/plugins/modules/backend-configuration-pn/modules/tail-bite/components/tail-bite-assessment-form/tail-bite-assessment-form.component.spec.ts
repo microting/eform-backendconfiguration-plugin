@@ -238,4 +238,48 @@ describe('TailBiteAssessmentFormComponent', () => {
     expect(saveAssessment).toHaveBeenCalledTimes(1);
     expect(component.draft(TailBiteFactor.Feed).newActions.length).toBe(0);
   });
+
+  it('makes the checked option the tab stop, and Ja when unanswered', () => {
+    create(detail());
+    expect(component.answerTabIndex(TailBiteFactor.Water, true)).toBe(0);
+    expect(component.answerTabIndex(TailBiteFactor.Water, false)).toBe(-1);
+    component.setAnswer(TailBiteFactor.Water, false);
+    expect(component.answerTabIndex(TailBiteFactor.Water, true)).toBe(-1);
+    expect(component.answerTabIndex(TailBiteFactor.Water, false)).toBe(0);
+  });
+
+  it('moves and selects with the arrow keys', () => {
+    create(detail());
+    const key = (k: string) => {
+      const e = new KeyboardEvent('keydown', {key: k});
+      const prevent = vi.spyOn(e, 'preventDefault');
+      component.onAnswerKeydown(e, TailBiteFactor.Feed);
+      return prevent;
+    };
+    expect(key('ArrowRight')).toHaveBeenCalled();
+    expect(component.draft(TailBiteFactor.Feed).answer).toBe(false); // unanswered: right selects Nej
+    key('ArrowLeft');
+    expect(component.draft(TailBiteFactor.Feed).answer).toBe(true);
+    key('ArrowDown');
+    expect(component.draft(TailBiteFactor.Feed).answer).toBe(false);
+    expect(key('Tab')).not.toHaveBeenCalled();
+    // Unanswered counts as Ja (the tab stop), so Left/Up wrap to Nej as well.
+    component.draft(TailBiteFactor.Water).answer = null;
+    component.onAnswerKeydown(new KeyboardEvent('keydown', {key: 'ArrowUp'}), TailBiteFactor.Water);
+    expect(component.draft(TailBiteFactor.Water).answer).toBe(false);
+  });
+
+  it('answers and changes the answer by click (setAnswer)', () => {
+    create(detail());
+    component.setAnswer(TailBiteFactor.Water, true);
+    expect(component.draft(TailBiteFactor.Water).answer).toBe(true);
+    component.setAnswer(TailBiteFactor.Water, false);
+    expect(component.draft(TailBiteFactor.Water).answer).toBe(false);
+  });
+
+  it('ignores the keys when read-only or busy', () => {
+    create(detail({summary: {...detail().summary, closed: true}}));
+    component.onAnswerKeydown(new KeyboardEvent('keydown', {key: 'ArrowRight'}), TailBiteFactor.Feed);
+    expect(component.draft(TailBiteFactor.Feed).answer).toBeNull();
+  });
 });

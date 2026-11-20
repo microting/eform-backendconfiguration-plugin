@@ -390,6 +390,24 @@ test.describe.serial('Tail biting web admin', () => {
     await expect(page.locator('#tailBiteCloseBtn')).toBeDisabled();
     await expect(page.locator('#tailBiteCloseReason')).toBeVisible();
 
+    // The answers are a radiogroup: one tab stop (Ja while unanswered), the arrows and Home/End move the answer and the focus.
+    const waterYes = page.locator('#tailBiteFactor-0-yes');
+    const waterNo = page.locator('#tailBiteFactor-0-no');
+    await expect(waterYes).toHaveAttribute('tabindex', '0');
+    await expect(waterNo).toHaveAttribute('tabindex', '-1');
+    await waterYes.focus();
+    await page.keyboard.press('ArrowLeft');
+    await expect(waterNo).toBeFocused();
+    await expect(waterNo).toHaveAttribute('aria-checked', 'true');
+    await expect(waterNo).toHaveAttribute('tabindex', '0');
+    await expect(waterYes).toHaveAttribute('tabindex', '-1');
+    await page.keyboard.press('Home');
+    await expect(waterYes).toBeFocused();
+    await expect(waterYes).toHaveAttribute('aria-checked', 'true');
+    await page.keyboard.press('End');
+    await expect(waterNo).toBeFocused();
+    await expect(waterNo).toHaveAttribute('aria-checked', 'true');
+
     // Feed (factor 1) yes, the other five no.
     await page.locator('#tailBiteFactor-1-yes').click();
     for (const factor of [0, 2, 3, 4, 5]) {
@@ -424,6 +442,9 @@ test.describe.serial('Tail biting web admin', () => {
     await page.locator('#tailBiteCloseBtn').click();
     await tailBite.expectApi('PUT', /^\/outbreaks\/\d+\/close$/, () => tailBite.confirm('tailBiteCloseConfirm'));
     await expect(page.locator('#tailBiteOutbreakDetailStatus')).toHaveClass(/badge-success/, { timeout: API_TIMEOUT });
+    // A closed outbreak's assessment is read-only: the Ja|Nej options are disabled.
+    await expect(page.locator('#tailBiteFactor-1-yes')).toBeDisabled();
+    await expect(page.locator('#tailBiteFactor-1-no')).toBeDisabled();
 
     await page.locator('#tailBiteBackToOutbreaks').click();
     await expect(page.locator(`#tailBiteOutbreakRow-${outbreakId}`)).toHaveCount(0, { timeout: API_TIMEOUT });

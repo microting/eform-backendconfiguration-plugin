@@ -2,7 +2,6 @@ import {DatePipe, NgFor, NgIf} from '@angular/common';
 import {Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {MatButtonModule} from '@angular/material/button';
-import {MatButtonToggleModule} from '@angular/material/button-toggle';
 import {MatDatepickerModule} from '@angular/material/datepicker';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatIconModule} from '@angular/material/icon';
@@ -45,7 +44,7 @@ const ERROR_TEXT: Record<TailBiteFactorError, string> = {
 @Component({
   selector: 'app-tail-bite-assessment-form',
   templateUrl: './tail-bite-assessment-form.component.html',
-  imports: [DatePipe, NgFor, NgIf, FormsModule, MatButtonModule, MatButtonToggleModule, MatDatepickerModule, MatFormFieldModule,
+  imports: [DatePipe, NgFor, NgIf, FormsModule, MatButtonModule, MatDatepickerModule, MatFormFieldModule,
     MatIconModule, MatInputModule, MtxSelectModule, TranslateModule],
 })
 export class TailBiteAssessmentFormComponent implements OnChanges {
@@ -56,6 +55,10 @@ export class TailBiteAssessmentFormComponent implements OnChanges {
   @Output() saved = new EventEmitter<void>();
 
   readonly factors = TAIL_BITE_FACTORS;
+  readonly answerOptions = [
+    {id: 'yes', value: true, label: 'Yes'},
+    {id: 'no', value: false, label: 'No'},
+  ] as const;
   drafts: TailBiteFactorDraft[] = [];
   errors = new Map<TailBiteFactor, TailBiteFactorError>();
   submitted = false;
@@ -110,6 +113,41 @@ export class TailBiteAssessmentFormComponent implements OnChanges {
       d.newActions.push(emptyDraftAction());
     }
     this.refresh();
+  }
+
+  /** Roving tab stop: the checked option; Ja while the factor is unanswered. */
+  answerTabIndex(factor: TailBiteFactor, value: boolean): 0 | -1 {
+    return (this.draft(factor).answer ?? true) === value ? 0 : -1;
+  }
+
+  /** Radiogroup keys, as the compliance report's mode switcher: with two options the arrows toggle (wrap). */
+  onAnswerKeydown(event: KeyboardEvent, factor: TailBiteFactor): void {
+    if (this.readOnly || this.busy) {
+      return;
+    }
+    let next: boolean;
+    switch (event.key) {
+      // Two options: every arrow moves to the other one, wrapping; unanswered counts as Ja, the tab stop.
+      case 'ArrowRight':
+      case 'ArrowDown':
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        next = !(this.draft(factor).answer ?? true);
+        break;
+      case 'Home':
+        next = true;
+        break;
+      case 'End':
+        next = false;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    this.setAnswer(factor, next);
+    // Focus follows the checked option, picked by position: the classes update on the next change detection.
+    const group = (event.currentTarget as HTMLElement | null)?.parentElement;
+    group?.querySelectorAll<HTMLElement>('.segmented-option')[next ? 0 : 1]?.focus();
   }
 
   addAction(factor: TailBiteFactor): void {

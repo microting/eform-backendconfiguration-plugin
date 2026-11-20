@@ -7,15 +7,21 @@
       <strong>{{ f.label | translate }}</strong>
       <div>{{ f.question | translate }}</div>
     </div>
-    <mat-button-toggle-group
-      [attr.aria-label]="f.label | translate"
-      [disabled]="readOnly || busy"
-      [value]="draft(f.factor).answer"
-      (change)="setAnswer(f.factor, $event.value)"
-    >
-      <mat-button-toggle [id]="'tailBiteFactor-' + f.factor + '-yes'" [value]="true">{{ 'Yes' | translate }}</mat-button-toggle>
-      <mat-button-toggle [id]="'tailBiteFactor-' + f.factor + '-no'" [value]="false">{{ 'No' | translate }}</mat-button-toggle>
-    </mat-button-toggle-group>
+    <div class="segmented" role="radiogroup" [attr.aria-label]="f.label | translate">
+      <button
+        *ngFor="let o of answerOptions"
+        type="button"
+        role="radio"
+        class="segmented-option"
+        [id]="'tailBiteFactor-' + f.factor + '-' + o.id"
+        [class.active]="draft(f.factor).answer === o.value"
+        [attr.aria-checked]="draft(f.factor).answer === o.value"
+        [attr.tabindex]="answerTabIndex(f.factor, o.value)"
+        [disabled]="readOnly || busy"
+        (click)="setAnswer(f.factor, o.value)"
+        (keydown)="onAnswerKeydown($event, f.factor)"
+      >{{ o.label | translate }}</button>
+    </div>
   </div>
 
   <ul *ngIf="draft(f.factor).answer && existing(f.factor).length" class="m-0">
