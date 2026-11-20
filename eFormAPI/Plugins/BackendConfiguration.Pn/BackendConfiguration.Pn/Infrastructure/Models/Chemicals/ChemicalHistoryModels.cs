@@ -110,6 +110,9 @@ public sealed record ChemicalHistoryEventModel
     public string WorkerName { get; init; } = string.Empty;
     public IReadOnlyList<string> PermissionsAdded { get; init; } = [];
     public IReadOnlyList<string> PermissionsRemoved { get; init; } = [];
+    /// <summary>The property the event belongs to (the W6 Ejendom column under the picker's "All").</summary>
+    public int PropertyId { get; init; }
+    public string PropertyName { get; init; } = string.Empty;
 }
 
 public sealed record ChemicalHistoryUserModel(int UserId, string Name);

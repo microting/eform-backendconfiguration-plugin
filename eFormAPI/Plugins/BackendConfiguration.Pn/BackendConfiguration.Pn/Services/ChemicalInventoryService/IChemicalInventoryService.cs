@@ -67,6 +67,12 @@ public interface IChemicalInventoryService
     /// <summary>One property in full for the web (View); SyncToken is empty.</summary>
     Task<ChemicalInventoryModel> GetPropertyInventoryAsync(ChemicalCaller caller, int propertyId);
 
+    /// <summary>
+    /// Every property the caller may view, in full, for the web's "All" (W1/W6 picker); SyncToken is empty.
+    /// Bounded by the same visibility as the app's sync (ChemicalPermissionService.ListVisiblePropertiesAsync).
+    /// </summary>
+    Task<ChemicalInventoryModel> GetAllPropertiesInventoryAsync(ChemicalCaller caller);
+
     // ---- register-wide (View on any property) ----
     Task<IReadOnlyList<ChemicalRegisterEntryModel>> LookupBarcodeAsync(ChemicalCaller caller, string barcode);
     Task<ChemicalRegisterPageModel> SearchRegisterAsync(ChemicalCaller caller, string query, int page, int pageSize);

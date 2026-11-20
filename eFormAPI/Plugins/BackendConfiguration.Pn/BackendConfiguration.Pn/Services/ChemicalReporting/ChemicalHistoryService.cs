@@ -49,9 +49,21 @@ public class ChemicalHistoryService(
 
     private const string Removed = Constants.WorkflowStates.Removed;
 
-    public async Task<ChemicalHistoryPageModel> GetPageAsync(int propertyId, ChemicalHistoryQuery query)
+    public async Task<ChemicalHistoryPageModel> GetPageAsync(int propertyId, ChemicalHistoryQuery query) =>
+        Page(await LoadAsync(propertyId, query).ConfigureAwait(false), query);
+
+    public async Task<IReadOnlyList<ChemicalHistoryEventModel>> GetAllAsync(int propertyId, ChemicalHistoryQuery query) =>
+        Filter(await LoadAsync(propertyId, query).ConfigureAwait(false), query).ToList();
+
+    public async Task<ChemicalHistoryPageModel> GetPageForPropertiesAsync(IReadOnlyCollection<int> propertyIds, ChemicalHistoryQuery query) =>
+        Page(await LoadManyAsync(propertyIds, query).ConfigureAwait(false), query);
+
+    public async Task<IReadOnlyList<ChemicalHistoryEventModel>> GetAllForPropertiesAsync(IReadOnlyCollection<int> propertyIds, ChemicalHistoryQuery query) =>
+        Filter(await LoadManyAsync(propertyIds, query).ConfigureAwait(false), query).ToList();
+
+    /// <summary>The users of the whole period (for the filter), then the filtered events of one page.</summary>
+    private static ChemicalHistoryPageModel Page(IReadOnlyList<ChemicalHistoryEventModel> all, ChemicalHistoryQuery query)
     {
-        var all = await LoadAsync(propertyId, query).ConfigureAwait(false);
         var users = all.Where(e => e.UserId > 0)
             .GroupBy(e => e.UserId)
             .Select(g => new ChemicalHistoryUserModel(g.Key, g.First().UserName))
@@ -63,8 +75,30 @@ public class ChemicalHistoryService(
         return new ChemicalHistoryPageModel(filtered.Skip(page * size).Take(size).ToList(), filtered.Count, users);
     }
 
-    public async Task<IReadOnlyList<ChemicalHistoryEventModel>> GetAllAsync(int propertyId, ChemicalHistoryQuery query) =>
-        Filter(await LoadAsync(propertyId, query).ConfigureAwait(false), query).ToList();
+    /// <summary>
+    /// The logs of several properties merged newest first, with the same keys as one property's log. The sort is
+    /// stable and the properties are read in name order, so a tie keeps each log's own order and paging stays
+    /// deterministic. One property at a time: each log is derived per property (Plan E decision 5).
+    /// </summary>
+    private async Task<List<ChemicalHistoryEventModel>> LoadManyAsync(IReadOnlyCollection<int> propertyIds, ChemicalHistoryQuery query)
+    {
+        Period(query);
+        var ids = propertyIds.ToArray();
+        var existing = await dbContext.Properties.AsNoTracking()
+            .Where(p => ids.Contains(p.Id) && p.WorkflowState != Removed)
+            .OrderBy(p => p.Name).ThenBy(p => p.Id)
+            .Select(p => p.Id)
+            .ToListAsync().ConfigureAwait(false);
+        var events = new List<ChemicalHistoryEventModel>();
+        foreach (var propertyId in existing)
+        {
+            events.AddRange(await LoadAsync(propertyId, query).ConfigureAwait(false));
+        }
+
+        return events
+            .OrderByDescending(e => e.At).ThenByDescending(e => e.Action).ThenByDescending(e => e.PlacementId)
+            .ToList();
+    }
 
     private static IEnumerable<ChemicalHistoryEventModel> Filter(IEnumerable<ChemicalHistoryEventModel> events, ChemicalHistoryQuery query) =>
         events
@@ -99,10 +133,11 @@ public class ChemicalHistoryService(
     private async Task<List<ChemicalHistoryEventModel>> LoadAsync(int propertyId, ChemicalHistoryQuery query)
     {
         var (from, to) = Period(query);
-        if (!await dbContext.Properties.AnyAsync(p => p.Id == propertyId && p.WorkflowState != Removed).ConfigureAwait(false))
-        {
-            throw new ChemicalNotFoundException($"Property {propertyId} not found.");
-        }
+        var property = await dbContext.Properties.AsNoTracking()
+            .Where(p => p.Id == propertyId && p.WorkflowState != Removed)
+            .Select(p => new { p.Name }).FirstOrDefaultAsync().ConfigureAwait(false)
+            ?? throw new ChemicalNotFoundException($"Property {propertyId} not found.");
+        var propertyName = property.Name ?? string.Empty;
 
         bool InPeriod(DateTime? at) => at is { } value && value >= from && value < to;
 
@@ -342,6 +377,8 @@ public class ChemicalHistoryService(
                 ProductName = ProductName(e.ChemicalId),
                 RegistrationNo = RegistrationNo(e.ChemicalId),
                 UserName = UserName(e.UserId),
+                PropertyId = propertyId,
+                PropertyName = propertyName,
             }, Seq: seq))
             .OrderByDescending(x => x.Event.At).ThenByDescending(x => x.Event.Action).ThenByDescending(x => x.Event.PlacementId)
             .ThenBy(x => x.Seq)

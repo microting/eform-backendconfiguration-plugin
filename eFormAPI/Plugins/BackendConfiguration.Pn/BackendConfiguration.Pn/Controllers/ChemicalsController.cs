@@ -82,6 +82,11 @@ public class ChemicalsController(
     public Task<OperationDataResult<ChemicalInventoryModel>> GetPropertyInventory(int propertyId) =>
         ExecuteAsync(() => inventory.GetPropertyInventoryAsync(Caller, propertyId), ReadingChemicals);
 
+    /// <summary>The picker's "All" (W1): every property the caller may view, in one inventory.</summary>
+    [HttpGet("inventory")]
+    public Task<OperationDataResult<ChemicalInventoryModel>> GetAllPropertiesInventory() =>
+        ExecuteAsync(() => inventory.GetAllPropertiesInventoryAsync(Caller), ReadingChemicals);
+
     [HttpGet("register/search")]
     public Task<OperationDataResult<ChemicalRegisterPageModel>> SearchRegister(
         [FromQuery] string query, [FromQuery] int page = 0, [FromQuery] int pageSize = 25) =>

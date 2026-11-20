@@ -31,4 +31,13 @@ public interface IChemicalHistoryService
 
     /// <summary>W6 Excel: every filtered event of the period (Page/PageSize ignored).</summary>
     Task<IReadOnlyList<ChemicalHistoryEventModel>> GetAllAsync(int propertyId, ChemicalHistoryQuery query);
+
+    /// <summary>
+    /// The picker's "All": one page of the merged log of <paramref name="propertyIds"/> (the caller's visible
+    /// properties), newest first. Ids of removed or unknown properties are skipped; none gives an empty page.
+    /// </summary>
+    Task<ChemicalHistoryPageModel> GetPageForPropertiesAsync(IReadOnlyCollection<int> propertyIds, ChemicalHistoryQuery query);
+
+    /// <summary>The picker's "All" for the Excel: every filtered event of the properties (Page/PageSize ignored).</summary>
+    Task<IReadOnlyList<ChemicalHistoryEventModel>> GetAllForPropertiesAsync(IReadOnlyCollection<int> propertyIds, ChemicalHistoryQuery query);
 }

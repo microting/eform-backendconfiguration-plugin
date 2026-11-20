@@ -60,6 +60,12 @@ public partial class ChemicalInventoryService
         return await BuildInventoryAsync(access, null, UtcNow(), string.Empty).ConfigureAwait(false);
     }
 
+    public async Task<ChemicalInventoryModel> GetAllPropertiesInventoryAsync(ChemicalCaller caller)
+    {
+        var access = await permissions.ListVisiblePropertiesAsync(caller).ConfigureAwait(false);
+        return await BuildInventoryAsync(access, null, UtcNow(), string.Empty).ConfigureAwait(false);
+    }
+
     /// <summary>
     /// The visible properties (always complete), and the locations, placements,
     /// entries and register entries that changed after <paramref name="sinceUtc"/>
