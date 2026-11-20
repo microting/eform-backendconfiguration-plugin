@@ -20,6 +20,7 @@ using System.Text;
 using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 using BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportService;
 using BackendConfiguration.Pn.Services.BackendConfigurationComplianceReportService;
+using BackendConfiguration.Pn.Services.TailBite;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using NSubstitute;
@@ -301,6 +302,63 @@ public class ComplianceExportServiceTests
     }
 
     // ==================================================================
+    // The Halebid section (#1517)
+    // ==================================================================
+
+    /// <summary>
+    /// Rapport asks the tail-bite report for the caller's Halebid section with
+    /// the same unpaged, answers-only request it gives <c>EformColumns</c>, and
+    /// the section reaches the file: the CSV carries one row per outbreak after
+    /// the (here empty) eForm rows.
+    /// </summary>
+    [Test]
+    public async Task Export_Report_PassesTheHalebidSectionIntoTheFile()
+    {
+        ComplianceReportRequestModel? captured = null;
+        var tailBiteReport = Substitute.For<ITailBiteComplianceReportService>();
+        tailBiteReport.BuildAsync(Arg.Any<ComplianceReportRequestModel>()).Returns(call =>
+        {
+            captured = call.Arg<ComplianceReportRequestModel>();
+            return Task.FromResult<TailBiteComplianceReport?>(TailBiteExportTestData.MockupReport());
+        });
+
+        var requestModel = Request("report", "csv");
+        requestModel.PropertyId = null;
+        requestModel.SiteIds = [5];
+        var result = await BuildService(StubReportService(), tailBiteReport).Export(requestModel);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(captured, Is.Not.Null);
+        Assert.That(captured!.PageSize, Is.EqualTo(0));
+        Assert.That(captured.IncludeProjected, Is.False);
+        Assert.That(captured.SiteIds, Is.EqualTo(new[] { 5 }));
+        Assert.That(captured.DateFrom, Is.EqualTo(requestModel.DateFrom));
+        Assert.That(captured.DateTo, Is.EqualTo(requestModel.DateTo));
+
+        using var reader = new StreamReader(result.Model.Content, Encoding.UTF8);
+        var lines = (await reader.ReadToEndAsync()).Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
+        // The key-returning localizer: the Delrapport cell is the TailBite key.
+        Assert.That(lines.Skip(1).Select(l => l.Split(';')[0] + ";" + l.Split(';')[1]),
+            Is.EqualTo(new[] { "TailBite;41", "TailBite;42", "TailBite;43" }));
+    }
+
+    /// <summary>
+    /// Only Rapport carries the Halebid section: Oversigt and Detaljer never ask
+    /// for it, and neither does a Rapport whose eForm query failed.
+    /// </summary>
+    [Test]
+    public async Task Export_OnlyASuccessfulRapportAsksForTheHalebidSection()
+    {
+        var tailBiteReport = Substitute.For<ITailBiteComplianceReportService>();
+
+        await BuildService(StubReportService(), tailBiteReport).Export(Request("overview", "csv"));
+        await BuildService(StubReportService(), tailBiteReport).Export(Request("details", "csv"));
+        await BuildService(FailingReportService("boom"), tailBiteReport).Export(Request("report", "csv"));
+
+        await tailBiteReport.DidNotReceiveWithAnyArgs().BuildAsync(default!);
+    }
+
+    // ==================================================================
     // Failure pass-through
     // ==================================================================
 
@@ -420,8 +478,11 @@ public class ComplianceExportServiceTests
     /// that started running unconditionally — not a broken test.
     /// </summary>
     private static BackendConfigurationComplianceExportService BuildService(
-        IBackendConfigurationComplianceReportService reportService) =>
+        IBackendConfigurationComplianceReportService reportService,
+        ITailBiteComplianceReportService? tailBiteReport = null) =>
         new(reportService,
+            tailBiteReport ?? Substitute.For<ITailBiteComplianceReportService>(),
+            Substitute.For<ITailBitePhotoStorage>(),
             new BackendConfigurationLocalizationService(),
             null!,
             null!,

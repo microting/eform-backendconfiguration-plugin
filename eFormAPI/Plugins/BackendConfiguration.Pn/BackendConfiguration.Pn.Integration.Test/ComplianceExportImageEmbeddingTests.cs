@@ -19,12 +19,14 @@ namespace BackendConfiguration.Pn.Integration.Test;
 using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 using BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportService;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
+using BackendConfiguration.Pn.Services.TailBite;
 using BackendConfiguration.Pn.Services.WordService;
 using DocumentFormat.OpenXml.Packaging;
 using System.Text;
 using ImageMagick;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Dto;
+using NSubstitute;
 // Aliased for the same reason the writer aliases them: Wordprocessing defines
 // Settings, which collides with Microting.eForm.Dto.Settings (the SDK picture
 // settings this fixture writes), and the three drawing namespaces each define
@@ -616,6 +618,91 @@ public class ComplianceExportImageEmbeddingTests : TestBaseSetup
         var expectedHeightPx = (long)decodedHeight * layoutWidthPx / decodedWidth;
         Assert.That(extent.Cy?.Value, Is.EqualTo(expectedHeightPx * EmusPerInch / CssPixelsPerInch),
             "the image was scaled to the declared width without keeping its aspect ratio");
+    }
+
+    // ==================================================================
+    // Test 5 — Halebid photos from the tail-bite photo storage (#1517)
+    // ==================================================================
+
+    /// <summary>The 40x30 red sample as JPEG bytes, for a stream the storage hands back.</summary>
+    private static byte[] SampleJpegBytes()
+    {
+        using var image = new MagickImage(MagickColors.Red, 40, 30);
+        return image.ToByteArray(MagickFormat.Jpeg);
+    }
+
+    /// <summary>
+    /// The stream overload runs the SAME resize and encode as the name-based
+    /// one: the bytes are resized to the resize width, declared as the JPEG
+    /// they are, and laid out at the declared width.
+    /// </summary>
+    [Test]
+    public async Task Word_InsertImageFromAStreamResizesAndEncodesLikeTheNameBasedOverload()
+    {
+        const int resizeWidthPx = 100;
+        const int layoutWidthPx = 250;
+
+        var html = new StringBuilder();
+        await using (var source = new MemoryStream(SampleJpegBytes()))
+        {
+            await NewWordWriter().InsertImage(source, html, resizeWidthPx, layoutWidthPx);
+        }
+
+        Assert.That(html.ToString(), Does.Contain("data:image/jpeg;base64,"));
+        Assert.That(html.ToString(), Does.Contain($@"width=""{layoutWidthPx}"""));
+
+        await using var stream = ConvertBodyFragment(html.ToString());
+        using var word = WordprocessingDocument.Open(stream, false);
+        using var embeddedBytes = word.MainDocumentPart!.ImageParts.Single().GetStream();
+        using var embedded = new MagickImage(embeddedBytes);
+        Assert.That(embedded.Width, Is.EqualTo((uint)resizeWidthPx));
+    }
+
+    /// <summary>Bytes that are not an image are logged and skipped: nothing is appended, nothing throws.</summary>
+    [Test]
+    public async Task Word_InsertImageFromAStreamSkipsUndecodableBytes()
+    {
+        var html = new StringBuilder();
+        await using var source = new MemoryStream(Encoding.UTF8.GetBytes("not an image"));
+
+        await NewWordWriter().InsertImage(source, html, 100, 100);
+
+        Assert.That(html.ToString(), Is.Empty);
+    }
+
+    /// <summary>
+    /// End to end through <c>WriteAsync</c> with no SDK <c>Core</c>: a Halebid
+    /// block's photos are opened through <see cref="ITailBitePhotoStorage"/> by
+    /// their UploadedData id and embedded in the grid; a photo the storage cannot
+    /// open costs a blank cell, not the report.
+    /// </summary>
+    [Test]
+    public async Task Word_HalebidAppendixEmbedsPhotosFromTheTailBiteStorage()
+    {
+        var jpeg = SampleJpegBytes();
+        var storage = Substitute.For<ITailBitePhotoStorage>();
+        storage.OpenAsync(9001).Returns(_ => Task.FromResult<(Stream, string)>((new MemoryStream(jpeg), "image/jpeg")));
+        storage.OpenAsync(9002).Returns<Task<(Stream, string)>>(_ => throw new TailBiteNotFoundException("gone"));
+
+        var report = TailBiteExportTestData.MockupReport();
+        var outbreak = report.Outbreaks[0] with { Registrations = [report.Outbreaks[0].Registrations[0]] };
+        var document = ComplianceExportDocumentBuilder.BuildReport(
+            [], Period, includeImageAppendix: true, new AppendixLocalizer(), report with { Outbreaks = [outbreak] });
+
+        var writer = new ComplianceExportWordWriter(new AppendixLocalizer(), TestContextLogger.Instance, storage);
+        await using var stream = await writer.WriteAsync(document, core: null);
+        using var word = WordprocessingDocument.Open(stream, false);
+
+        var mainPart = word.MainDocumentPart!;
+        Assert.That(mainPart.ImageParts.Count(), Is.EqualTo(1), "the photo that opened, and only it");
+        await storage.Received(1).OpenAsync(9001);
+        await storage.Received(1).OpenAsync(9002);
+
+        var grid = mainPart.Document!.Body!.Descendants<W.Table>().Last();
+        var cells = grid.Elements<W.TableRow>().Single().Elements<W.TableCell>().ToList();
+        Assert.That(cells, Has.Count.EqualTo(ComplianceExportWordWriter.AppendixImagesPerRow));
+        Assert.That(cells[0].Descendants<W.Drawing>().Any(), Is.True);
+        Assert.That(cells[1].Descendants<W.Drawing>().Any(), Is.False);
     }
 
     /// <summary>

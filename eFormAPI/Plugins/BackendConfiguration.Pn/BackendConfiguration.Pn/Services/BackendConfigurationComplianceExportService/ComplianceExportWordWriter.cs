@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
+using BackendConfiguration.Pn.Services.TailBite;
 using BackendConfiguration.Pn.Services.WordService;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
@@ -65,12 +66,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportS
 /// it through ImageMagick into a <c>data:</c> URI. There is no
 /// <c>HttpClient</c> here and no request to
 /// <c>api/template-files/get-image/…</c>, which is exactly why server-side
-/// generation sidesteps the bearer-only image endpoint.
+/// generation sidesteps the bearer-only image endpoint. A Halebid photo (#1517)
+/// is opened through <see cref="ITailBitePhotoStorage"/> instead and goes through
+/// the same resize and encode; without a storage (the existing test
+/// constructions) its grid cell stays blank, like a missing eForm image.
 /// </para>
 /// </summary>
 public class ComplianceExportWordWriter(
     IBackendConfigurationLocalizationService localizationService,
-    ILogger logger)
+    ILogger logger,
+    ITailBitePhotoStorage tailBitePhotoStorage = null)
 {
     private const string PageResource = "BackendConfiguration.Pn.Resources.Templates.WordExport.page.html";
     /// <summary>
@@ -133,6 +138,12 @@ public class ComplianceExportWordWriter(
     /// property, which the writer tests pin.
     /// </summary>
     public const string CaptionStyle = "font-size:9pt;color:#666666;text-align:left;";
+
+    /// <summary>
+    /// A table's lead paragraph under the section headline (#1517): the Halebid
+    /// totals sentence, or its "no outbreaks" line.
+    /// </summary>
+    public const string LeadStyle = "font-size:9pt;text-align:left;";
 
     /// <summary>The bold section headline under the caption (#1192).</summary>
     public const string SectionTitleStyle = "font-size:14px;font-weight:700;text-align:left;";
@@ -255,6 +266,10 @@ public class ComplianceExportWordWriter(
         // was emitted — headlines without images keep flowing on one page.
         var section = new List<ComplianceExportTable>();
 
+        // Whether anything precedes the next table: a StartsOnNewPage table that
+        // opens the document must not begin with an empty page.
+        var bodyHasContent = !string.IsNullOrEmpty(document.Title);
+
         foreach (var table in document.Tables)
         {
             // Put on the section's FIRST heading paragraph — the caption when
@@ -268,9 +283,13 @@ public class ComplianceExportWordWriter(
                 section.Clear();
             }
 
-            section.Add(table);
+            // #1517: the Halebid section starts on a page of its own.
+            if (table.StartsOnNewPage && bodyHasContent) pageBreak = PageBreakBefore;
 
-            keepWithNext.UnionWith(new[] { table.Caption, table.Title, table.Subtitle }
+            section.Add(table);
+            bodyHasContent = true;
+
+            keepWithNext.UnionWith(new[] { table.Caption, table.Title, table.Lead, table.Subtitle }
                 .Where(heading => !string.IsNullOrEmpty(heading)));
 
             // Rapport's tags caption sits ABOVE the bold headline (#1188, PDF page
@@ -290,6 +309,16 @@ public class ComplianceExportWordWriter(
             {
                 body.Append(
                     $@"<p style='{SectionTitleStyle}{pageBreak}'>{Esc(table.Title)}</p>");
+                pageBreak = string.Empty;
+            }
+
+            // The Halebid totals sentence or "no outbreaks" line (#1517), under
+            // the headline.
+            if (!string.IsNullOrEmpty(table.Lead))
+            {
+                body.Append(
+                    $@"<p style='{LeadStyle}{pageBreak}'>{Esc(table.Lead)}</p>");
+                pageBreak = string.Empty;
             }
 
             // The eForm's name over its own table (#1276) — on EVERY Rapport
@@ -297,8 +326,12 @@ public class ComplianceExportWordWriter(
             if (!string.IsNullOrEmpty(table.Subtitle))
             {
                 body.Append(
-                    $@"<p style='{TableSubtitleStyle}'>{Esc(table.Subtitle)}</p>");
+                    $@"<p style='{TableSubtitleStyle}{pageBreak}'>{Esc(table.Subtitle)}</p>");
             }
+
+            // A table with no column to print (the Halebid empty state, #1517)
+            // is its headings alone.
+            if (!table.Columns.Any(column => !column.CsvOnly)) continue;
 
             // A CsvOnly column (Rapport's Delrapport, #1192) is skipped by INDEX
             // for both the header and the cells, so the two cannot drift apart.
@@ -610,15 +643,13 @@ public class ComplianceExportWordWriter(
         return properties;
     }
 
-    private static bool DocumentHasImages(ComplianceExportDocument document)
-    {
-        foreach (var table in document.Tables)
-        {
-            if (table.ImageBlocks.Count > 0) return true;
-        }
-
-        return false;
-    }
+    /// <summary>
+    /// Whether any appendix block carries an image to embed — an eForm image name
+    /// or a Halebid photo id (#1517).
+    /// </summary>
+    private static bool DocumentHasImages(ComplianceExportDocument document) =>
+        document.Tables.Any(table => table.ImageBlocks.Any(
+            block => block.ImageNames.Count + block.TailBitePhotos.Count > 0));
 
     /// <summary>
     /// The image appendix of one Rapport section (#1192, PDF page 9; placed per
@@ -642,8 +673,11 @@ public class ComplianceExportWordWriter(
 
             foreach (var block in table.ImageBlocks)
             {
-                var caption = block.TotalImages > block.ImageNames.Count
-                    ? $"{block.Caption} ({block.ImageNames.Count}/{block.TotalImages})"
+                // A block holds eForm image names OR Halebid photo ids (#1517),
+                // never both, so the sum is whichever list is in use.
+                var imageCount = block.ImageNames.Count + block.TailBitePhotos.Count;
+                var caption = block.TotalImages > imageCount
+                    ? $"{block.Caption} ({imageCount}/{block.TotalImages})"
                     : block.Caption;
 
                 keepWithNext.Add(caption);
@@ -662,7 +696,7 @@ public class ComplianceExportWordWriter(
                 // w:tcBorders with val="none" — and the table-level ones carry no
                 // insideH/insideV, so the cells need their own.
                 body.Append(@"<table width=""100%"" style=""border:none;"">");
-                for (var i = 0; i < block.ImageNames.Count; i += AppendixImagesPerRow)
+                for (var i = 0; i < imageCount; i += AppendixImagesPerRow)
                 {
                     body.Append(@"<tr>");
                     for (var j = 0; j < AppendixImagesPerRow; j++)
@@ -670,7 +704,12 @@ public class ComplianceExportWordWriter(
                         body.Append(@"<td style='vertical-align:top;border:none;'>");
                         var index = i + j;
                         var cellStart = body.Length;
-                        if (index < block.ImageNames.Count)
+                        if (index < block.TailBitePhotos.Count)
+                        {
+                            await InsertTailBitePhoto(block.TailBitePhotos[index], body,
+                                AppendixImageWidthPx, AppendixImageWidthPx);
+                        }
+                        else if (index < block.ImageNames.Count)
                         {
                             // Its own marker rather than cellStart: the two are
                             // equal today, and the guard below must go on meaning
@@ -775,33 +814,7 @@ public class ComplianceExportWordWriter(
 
             if (stream == null) return;
 
-            using var image = new MagickImage(stream);
-            var ratio = image.Height / (decimal)image.Width;
-            var newWidth = imageSize;
-            var newHeight = (int)Math.Round(ratio * newWidth);
-            image.Resize((uint)newWidth, (uint)newHeight);
-            image.Crop((uint)newWidth, (uint)newHeight);
-
-            // #1219, two defects on the line this replaces.
-            //
-            // (1) The mime is DECLARED, not sniffed. HtmlToOpenXml's
-            // ImagePrefetcher.ReadDataUri maps the data URI's mime straight to an
-            // ImagePartType (its byte-sniffing path is only reached by the HTTP
-            // arm), so the old hardcoded "image/png" wrote JPEG bytes into a
-            // /word/media/imageN.png part with content type image/png. Word and
-            // LibreOffice sniff and render it; a strict OOXML validator need not.
-            // The format is now chosen first and passed to BOTH the declaration
-            // and the encoder, so the two cannot diverge.
-            //
-            // (2) The HTML width ATTRIBUTE must be a bare integer. AngleSharp's
-            // IHtmlImageElement.DisplayWidth — which is what HtmlToOpenXml's
-            // ImageExpression reads — parses it with Int32.TryParse, so "300px"
-            // failed and fell back to OriginalWidth (0, no resource loader),
-            // leaving the layout width to come from the decoded bytes instead.
-            var (embedFormat, embedMimeType) = WordImageEmbedding.ResolveEmbedFormat(image.Format);
-
-            html.Append(
-                $@"<p><img src=""data:{embedMimeType};base64,{image.ToBase64(embedFormat)}"" width=""{imageWidth}"" alt="""" /></p>");
+            AppendResizedImage(stream, html, imageSize, imageWidth);
         }
         catch (Exception e)
         {
@@ -813,6 +826,99 @@ public class ComplianceExportWordWriter(
         {
             if (stream != null) await stream.DisposeAsync();
         }
+    }
+
+    /// <summary>
+    /// The same embedding for image bytes the caller already holds (#1517: a
+    /// Halebid photo from <see cref="ITailBitePhotoStorage"/>): resized and
+    /// encoded by the code the name-based overload uses, and a failure is logged
+    /// and skipped the same way. The caller owns <paramref name="stream"/>.
+    /// <c>internal</c> for <c>ComplianceExportImageEmbeddingTests</c>, like the
+    /// name-based overload.
+    /// </summary>
+    internal Task InsertImage(Stream stream, StringBuilder html, int imageSize, int imageWidth)
+    {
+        try
+        {
+            AppendResizedImage(stream, html, imageSize, imageWidth);
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogWarning(e, "ComplianceExportWordWriter.InsertImage: could not embed an image stream; skipped.");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// A Halebid photo into an appendix grid cell (#1517): opened through the
+    /// tail-bite photo storage and embedded by the stream overload. With no
+    /// storage there is nowhere to read from and the cell stays blank; a photo
+    /// that cannot be opened is logged and skipped, exactly like a missing eForm
+    /// image — one broken photograph must not fail the report.
+    /// </summary>
+    private async Task InsertTailBitePhoto(int uploadedDataId, StringBuilder html, int imageSize, int imageWidth)
+    {
+        if (tailBitePhotoStorage == null) return;
+
+        Stream content;
+        try
+        {
+            (content, _) = await tailBitePhotoStorage.OpenAsync(uploadedDataId);
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogWarning(e,
+                "ComplianceExportWordWriter.InsertTailBitePhoto: could not open tail-bite photo {UploadedDataId}; skipped.",
+                uploadedDataId);
+            return;
+        }
+
+        if (content == null) return;
+
+        await using (content)
+        {
+            await InsertImage(content, html, imageSize, imageWidth);
+        }
+    }
+
+    /// <summary>
+    /// Decodes <paramref name="stream"/>, resizes it to <paramref name="imageSize"/>
+    /// px wide and appends it as a <c>data:</c> URI laid out at
+    /// <paramref name="imageWidth"/> px — the part both <c>InsertImage</c>
+    /// overloads share. Throws on undecodable bytes; the callers log and skip.
+    /// </summary>
+    private static void AppendResizedImage(Stream stream, StringBuilder html, int imageSize, int imageWidth)
+    {
+        using var image = new MagickImage(stream);
+        var ratio = image.Height / (decimal)image.Width;
+        var newWidth = imageSize;
+        var newHeight = (int)Math.Round(ratio * newWidth);
+        image.Resize((uint)newWidth, (uint)newHeight);
+        image.Crop((uint)newWidth, (uint)newHeight);
+
+        // #1219, two defects on the line this replaces.
+        //
+        // (1) The mime is DECLARED, not sniffed. HtmlToOpenXml's
+        // ImagePrefetcher.ReadDataUri maps the data URI's mime straight to an
+        // ImagePartType (its byte-sniffing path is only reached by the HTTP
+        // arm), so the old hardcoded "image/png" wrote JPEG bytes into a
+        // /word/media/imageN.png part with content type image/png. Word and
+        // LibreOffice sniff and render it; a strict OOXML validator need not.
+        // The format is now chosen first and passed to BOTH the declaration
+        // and the encoder, so the two cannot diverge.
+        //
+        // (2) The HTML width ATTRIBUTE must be a bare integer. AngleSharp's
+        // IHtmlImageElement.DisplayWidth — which is what HtmlToOpenXml's
+        // ImageExpression reads — parses it with Int32.TryParse, so "300px"
+        // failed and fell back to OriginalWidth (0, no resource loader),
+        // leaving the layout width to come from the decoded bytes instead.
+        var (embedFormat, embedMimeType) = WordImageEmbedding.ResolveEmbedFormat(image.Format);
+
+        html.Append(
+            $@"<p><img src=""data:{embedMimeType};base64,{image.ToBase64(embedFormat)}"" width=""{imageWidth}"" alt="""" /></p>");
     }
 
     /// <summary>

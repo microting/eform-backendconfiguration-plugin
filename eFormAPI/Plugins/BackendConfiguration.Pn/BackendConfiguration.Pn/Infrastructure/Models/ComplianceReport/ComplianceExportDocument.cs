@@ -193,6 +193,30 @@ public class ComplianceExportTable
     /// <see cref="AppendixLabel"/>.
     /// </summary>
     public List<ComplianceExportImageBlock> ImageBlocks { get; set; } = [];
+
+    /// <summary>
+    /// True for a table only Word/PDF print (#1517): the Halebid section's
+    /// actions and registrations tables, and its empty state. The CSV writer
+    /// skips the table — its columns stay out of the header union and its rows
+    /// out of the file — so the flat CSV keeps one row per outbreak.
+    /// </summary>
+    public bool PdfOnly { get; set; }
+
+    /// <summary>
+    /// A paragraph Word/PDF print under <see cref="Title"/> and above
+    /// <see cref="Subtitle"/> when non-empty (#1517): the Halebid totals
+    /// sentence, or "Ingen udbrud i perioden". CSV ignores it, like the other
+    /// headings.
+    /// </summary>
+    public string Lead { get; set; } = string.Empty;
+
+    /// <summary>
+    /// True when Word/PDF must start the table's first heading on a new page
+    /// (#1517: the Halebid section follows the eForm sections on a page of its
+    /// own). Ignored for the first thing in the document, which already opens a
+    /// page. CSV ignores it.
+    /// </summary>
+    public bool StartsOnNewPage { get; set; }
 }
 
 /// <summary>How a column's cells should be typed by a renderer that has types.</summary>
@@ -253,6 +277,16 @@ public class ComplianceExportColumn
     /// its cells; the CSV writer, which has no section captions, keeps it.
     /// </summary>
     public bool CsvOnly { get; set; }
+
+    /// <summary>
+    /// The mirror of <see cref="CsvOnly"/> (#1517): a column the Word/PDF table
+    /// prints but the CSV does not — the Halebid outbreak table's <c>Lokation</c>,
+    /// <c>Regel</c>, <c>Ja-faktorer</c> and <c>Billeder</c>, whose CSV
+    /// counterparts are separate CSV-only columns in today's leading positions.
+    /// The CSV writer leaves the column out of the header union and skips its
+    /// cells by INDEX, as the Word writer skips a CSV-only one.
+    /// </summary>
+    public bool PdfOnly { get; set; }
 
     public ComplianceExportCellType Type { get; set; } = ComplianceExportCellType.Text;
 }
@@ -421,7 +455,9 @@ public class ComplianceExportCell
 /// <summary>
 /// One case's images for the Word/PDF appendix. Carries FILE NAMES only — the
 /// renderer resolves the bytes from S3 or the local picture directory through the
-/// SDK <c>Core</c>, never over HTTP.
+/// SDK <c>Core</c>, never over HTTP. A Halebid registration's block (#1517)
+/// carries <see cref="TailBitePhotos"/> instead, which the renderer opens through
+/// the tail-bite photo storage; a block holds one list or the other, never both.
 /// </summary>
 public class ComplianceExportImageBlock
 {
@@ -447,4 +483,12 @@ public class ComplianceExportImageBlock
     /// the two caused it.
     /// </summary>
     public int TotalImages { get; set; }
+
+    /// <summary>
+    /// A Halebid registration's photos (#1517): SDK <c>UploadedData</c> ids, what
+    /// <c>ITailBitePhotoStorage.OpenAsync</c> takes, already capped by the
+    /// builder. When non-empty <see cref="ImageNames"/> and <see cref="GeoLinks"/>
+    /// are empty.
+    /// </summary>
+    public List<int> TailBitePhotos { get; set; } = [];
 }

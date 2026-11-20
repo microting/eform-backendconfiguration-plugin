@@ -1625,6 +1625,277 @@ public class ComplianceExportWriterTests
         Assert.That(word.MainDocumentPart!.HeaderParts, Is.Empty);
     }
 
+    // ==================================================================
+    // Rapport — the Halebid section (#1517)
+    // ==================================================================
+
+    /// <summary>
+    /// The CSV header with eForm rows AND the Halebid section (ExportCsvHalebid
+    /// mock-up): today's fixed columns, the eForm answers, then the Halebid
+    /// columns; the Halebid rows reuse ID, Ejendom, Område and Billeder.
+    /// </summary>
+    private const string HalebidCsvHeaderWithEform =
+        "Delrapport;ID;Ejendom;Udført af;Udført dato;Område;Billeder;OK;Startet;Risikovurderet;Lukket;"
+        + "Bidte grise;Alvorlige;Vand;Foder;Legemateriale;Klima;Sundhed;Ledelse;Handlinger;Handlinger udført";
+
+    /// <summary>The mock-up's eForm section: one headline, one eForm with a checkbox answer, two cases.</summary>
+    private static List<ComplianceReportHeadlineGroupModel> HalebidMockupGroups() =>
+    [
+        new ComplianceReportHeadlineGroupModel
+        {
+            HeadlineTagId = 7, HeadlineName = "Ugentlig rengøring", TagsCaption = "Stalde - Rengøring",
+            Templates =
+            [
+                new ComplianceReportTemplateTableModel
+                {
+                    CheckListId = 509, CheckListName = "Rengøring af stier",
+                    Columns =
+                    [
+                        new ComplianceReportColumnModel
+                        {
+                            Key = "f10", Label = "OK", FieldType = Constants.FieldTypes.CheckBox
+                        }
+                    ],
+                    Cases =
+                    [
+                        new ComplianceReportCaseModel
+                        {
+                            SdkCaseId = 8812, PropertyName = TailBiteExportTestData.Farm, Title = "Stald 3",
+                            Tags = ["Ugentlig rengøring"], WorkerNames = ["Mette Holm"],
+                            DoneAt = new DateTime(2026, 11, 3, 10, 0, 0), TaskDate = "2026-11-03",
+                            ImagesCount = 0, Images = [],
+                            Cells = new Dictionary<string, string> { ["f10"] = "checked" }
+                        },
+                        new ComplianceReportCaseModel
+                        {
+                            SdkCaseId = 8840, PropertyName = TailBiteExportTestData.Farm, Title = "Stald 3",
+                            Tags = ["Ugentlig rengøring"], WorkerNames = ["Jonas Skov"],
+                            DoneAt = new DateTime(2026, 11, 10, 10, 0, 0), TaskDate = "2026-11-10",
+                            ImagesCount = 2,
+                            Images =
+                            [
+                                new ComplianceReportImageModel { FileName = "1_700_a.jpg" },
+                                new ComplianceReportImageModel { FileName = "2_700_a.jpg" }
+                            ],
+                            Cells = new Dictionary<string, string> { ["f10"] = "checked" }
+                        }
+                    ]
+                }
+            ]
+        }
+    ];
+
+    private static string CsvText(ComplianceExportDocument document)
+    {
+        using var stream = ComplianceExportCsvWriter.Write(document);
+        var bytes = ReadAll(stream);
+        return Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3);
+    }
+
+    /// <summary>
+    /// The ExportCsvHalebid mock-up, line for line: one header, the eForm rows,
+    /// then one row per outbreak — Copenhagen time, ISO dates, Ja/Nej factors
+    /// (blank when not assessed), the action counts (0 included) and the photo
+    /// count. The actions and registrations tables are PDF only and the PDF-only
+    /// columns (Lokation, Regel, Ja-faktorer, the trailing Billeder) are absent.
+    /// </summary>
+    [Test]
+    public void Csv_HalebidRowsFollowTheEformRowsUnderOneHeader()
+    {
+        var text = CsvText(ComplianceExportDocumentBuilder.BuildReport(
+            HalebidMockupGroups(), SamplePeriod, false, TailBiteExportTestData.Danish,
+            TailBiteExportTestData.MockupReport()));
+
+        Assert.That(text, Is.EqualTo(
+            HalebidCsvHeaderWithEform + "\r\n" +
+            "Ugentlig rengøring;8812;Eksempelgården I/S;Mette Holm;2026-11-03;Stald 3;;x;;;;;;;;;;;;;\r\n" +
+            "Ugentlig rengøring;8840;Eksempelgården I/S;Jonas Skov;2026-11-10;Stald 3;2;x;;;;;;;;;;;;;\r\n" +
+            "Halebid;41;Eksempelgården I/S;;;Stald 3 › Sektion 2;4;;2026-11-02 06:10;2026-11-03;2026-11-14;6;2;Nej;Ja;Ja;Nej;Nej;Nej;3;3\r\n" +
+            "Halebid;42;Eksempelgården I/S;;;Stald 5 › Sektion 1;2;;2026-11-12 05:52;2026-11-13;;5;1;Ja;Nej;Nej;Ja;Ja;Nej;3;1\r\n" +
+            "Halebid;43;Eksempelgården I/S;;;Stald 3 › Sektion 4;5;;2026-11-17 08:44;;;6;2;;;;;;;0;0\r\n"));
+
+        Assert.That(text, Does.Not.Contain("Kontrollér foderautomaten"), "no action rows");
+        Assert.That(text, Does.Not.Contain("Sti 207"), "no registration rows");
+        Assert.That(text, Does.Not.Contain("Ja-faktorer"));
+        Assert.That(text, Does.Not.Contain("Lokation"));
+        Assert.That(text, Does.Not.Contain("Halebid: udbrud i perioden"));
+    }
+
+    /// <summary>
+    /// Without eForm tables the CSV header still opens with today's Rapport
+    /// columns (ruling 7), so a spreadsheet built on the file keeps working.
+    /// </summary>
+    [Test]
+    public void Csv_HalebidOnlyReportStartsWithTodaysLeadingColumns()
+    {
+        var text = CsvText(ComplianceExportDocumentBuilder.BuildReport(
+            [], SamplePeriod, false, TailBiteExportTestData.Danish, TailBiteExportTestData.MockupReport()));
+
+        Assert.That(text.Split("\r\n")[0], Is.EqualTo(
+            "Delrapport;ID;Ejendom;Udført af;Udført dato;Område;Billeder;Startet;Risikovurderet;Lukket;"
+            + "Bidte grise;Alvorlige;Vand;Foder;Legemateriale;Klima;Sundhed;Ledelse;Handlinger;Handlinger udført"));
+        Assert.That(text.Split("\r\n", StringSplitOptions.RemoveEmptyEntries), Has.Length.EqualTo(4));
+    }
+
+    /// <summary>
+    /// The Halebid empty state is PDF only, so a report holding nothing else is
+    /// the BOM alone — no blank header line.
+    /// </summary>
+    [Test]
+    public void Csv_HalebidEmptyStateAloneIsTheBomAndNothingElse()
+    {
+        using var stream = ComplianceExportCsvWriter.Write(ComplianceExportDocumentBuilder.BuildReport(
+            [], SamplePeriod, false, TailBiteExportTestData.Danish, TailBiteExportTestData.EmptyReport()));
+
+        Assert.That(ReadAll(stream), Is.EqualTo(Encoding.UTF8.GetPreamble()));
+    }
+
+    /// <summary>
+    /// The writer rule itself: a PDF-only column is out of the header and its
+    /// cell is skipped by INDEX (the next cell lands in its own column), and a
+    /// PDF-only table contributes neither columns nor rows.
+    /// </summary>
+    [Test]
+    public void Csv_SkipsPdfOnlyColumnsByIndexAndPdfOnlyTablesWhole()
+    {
+        var document = new ComplianceExportDocument
+        {
+            Tables =
+            [
+                new ComplianceExportTable
+                {
+                    Columns =
+                    [
+                        new ComplianceExportColumn { Header = "A" },
+                        new ComplianceExportColumn { Header = "B", PdfOnly = true },
+                        new ComplianceExportColumn { Header = "C" }
+                    ],
+                    Rows =
+                    [
+                        new ComplianceExportRow
+                        {
+                            Cells =
+                            [
+                                ComplianceExportCell.FromText("a"), ComplianceExportCell.FromText("b"),
+                                ComplianceExportCell.FromText("c")
+                            ]
+                        }
+                    ]
+                },
+                new ComplianceExportTable
+                {
+                    PdfOnly = true,
+                    Columns = [new ComplianceExportColumn { Header = "D" }],
+                    Rows = [new ComplianceExportRow { Cells = [ComplianceExportCell.FromText("d")] }]
+                }
+            ]
+        };
+
+        Assert.That(CsvText(document), Is.EqualTo("A;C\r\na;c\r\n"));
+    }
+
+    private static ComplianceExportWordWriter NewHalebidWordWriter() =>
+        new(TailBiteExportTestData.Danish, TestContextLogger.Instance);
+
+    /// <summary>
+    /// The ExportPdfHalebid mock-up's page: after the eForm sections the Halebid
+    /// caption opens a NEW page, then the title, the totals sentence (the lead,
+    /// directly under the title), the "Udbrud" table and the two PDF-only
+    /// tables, each under its own subtitle.
+    /// </summary>
+    [Test]
+    public async Task Word_HalebidSectionStartsOnANewPageWithTheLeadUnderTheTitle()
+    {
+        var document = ComplianceExportDocumentBuilder.BuildReport(
+            HalebidMockupGroups(), SamplePeriod, false, TailBiteExportTestData.Danish,
+            TailBiteExportTestData.MockupReport());
+
+        Assert.That(BodySequence(await NewHalebidWordWriter().WriteAsync(document, null)), Is.EqualTo(new[]
+        {
+            "Stalde - Rengøring", "Ugentlig rengøring", "Rengøring af stier", TableToken,
+            PageBreakToken, "Halebid", "Halebid: udbrud i perioden",
+            "3 udbrud var åbne i perioden, 1 blev lukket. 17 bidte grise, heraf 5 alvorlige. 4 af 6 handlinger udført.",
+            "Udbrud", TableToken,
+            "Handlinger fra risikovurderingerne", TableToken,
+            "Registreringer bag udbruddene", TableToken
+        }));
+    }
+
+    /// <summary>
+    /// The Udbrud table on the page: the mock-up's eleven columns (no CSV-only
+    /// one), the PDF texts of the cells, and a closed outbreak's row tinted.
+    /// </summary>
+    [Test]
+    public async Task Word_HalebidOutbreakTableIsTheMockupsColumnsAndTexts()
+    {
+        var document = ComplianceExportDocumentBuilder.BuildReport(
+            [], SamplePeriod, false, TailBiteExportTestData.Danish, TailBiteExportTestData.MockupReport());
+
+        await using var stream = await NewHalebidWordWriter().WriteAsync(document, null);
+        using var word = WordprocessingDocument.Open(stream, false);
+
+        var rows = word.MainDocumentPart!.Document!.Body!.Descendants<Table>().First()
+            .Elements<TableRow>().ToList();
+        string[] Texts(TableRow row) => row.Elements<TableCell>().Select(c => c.InnerText.Trim()).ToArray();
+
+        Assert.That(Texts(rows[0]), Is.EqualTo(new[]
+        {
+            "ID", "Lokation", "Regel", "Startet", "Risikovurderet", "Lukket", "Bidte grise", "Alvorlige",
+            "Ja-faktorer", "Handlinger", "Billeder"
+        }));
+        Assert.That(Texts(rows[1]), Is.EqualTo(new[]
+        {
+            "41", "Stald 3 › Sektion 2", "v1", "02.11.2026 06:10", "03.11.2026", "14.11.2026", "6", "2",
+            "Foder, Legemateriale", "3 af 3 udført", "4 billeder"
+        }));
+        Assert.That(Texts(rows[3]), Is.EqualTo(new[]
+        {
+            "43", "Stald 3 › Sektion 4", "v1", "17.11.2026 08:44", Dash, Dash, "6", "2",
+            "Mangler vurdering", Dash, "5 billeder"
+        }));
+        Assert.That(rows[1].Descendants<Shading>().Any(), Is.True, "the closed outbreak is tinted");
+        Assert.That(rows[2].Descendants<Shading>().Any(), Is.False, "an open outbreak is not");
+    }
+
+    /// <summary>
+    /// The empty state prints its headings and the "no outbreaks" line and no
+    /// table — and, being the first thing in the document, no leading page break.
+    /// </summary>
+    [Test]
+    public async Task Word_HalebidEmptyStateIsHeadingsAndTheLeadWithNoTable()
+    {
+        var document = ComplianceExportDocumentBuilder.BuildReport(
+            [], SamplePeriod, false, TailBiteExportTestData.Danish, TailBiteExportTestData.EmptyReport());
+
+        Assert.That(BodySequence(await NewHalebidWordWriter().WriteAsync(document, null)), Is.EqualTo(new[]
+        {
+            "Halebid", "Halebid: udbrud i perioden", "Ingen udbrud i perioden"
+        }));
+    }
+
+    /// <summary>
+    /// The Halebid appendix: "Bilag – Halebid" on a new page after the section's
+    /// last table, then one captioned grid per registration. A block whose photos
+    /// all went in carries no <c>(n/total)</c>; one the cap cut does.
+    /// </summary>
+    [Test]
+    public async Task Word_HalebidAppendixFollowsTheSectionWithOneCaptionedGridPerRegistration()
+    {
+        var document = ComplianceExportDocumentBuilder.BuildReport(
+            [], SamplePeriod, true, TailBiteExportTestData.Danish, TailBiteExportTestData.MockupReport());
+        document.Tables[0].ImageBlocks[4].TotalImages = 6; // as if the cap had kept two of six
+
+        Assert.That(BodySequence(await NewHalebidWordWriter().WriteAsync(document, null)).Skip(9), Is.EqualTo(new[]
+        {
+            PageBreakToken, "Bilag – Halebid",
+            "Udbrud 41 · Sti 207 · 02.11.2026 06:10 · Mette Holm", TableToken,
+            "Udbrud 41 · Sti 208 · 02.11.2026 06:14 · Mette Holm", TableToken,
+            "Udbrud 42 · Sti 501 · 12.11.2026 05:52 · Jonas Skov", TableToken,
+            "Udbrud 43 · Sti 302 · 17.11.2026 08:44 · Mette Holm", TableToken,
+            "Udbrud 43 · Sti 303, Sti 304 · 17.11.2026 09:02 · Mette Holm (2/6)", TableToken
+        }));
+    }
+
     private static ComplianceExportWordWriter NewWordWriter() =>
         new(new DanishShellLocalizer(), TestContextLogger.Instance);
 
