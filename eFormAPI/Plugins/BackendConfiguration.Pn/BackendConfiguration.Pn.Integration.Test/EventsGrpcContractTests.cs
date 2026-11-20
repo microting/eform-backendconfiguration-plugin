@@ -52,6 +52,7 @@ using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Enums;
 using NSubstitute;
 using SdkCase = Microting.eForm.Infrastructure.Data.Entities.Case;
+using Compliance = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.Compliance;
 using BcProperty = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.Property;
 using BcPlanningSite = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.PlanningSite;
 
@@ -1536,6 +1537,270 @@ public class EventsGrpcContractTests : TestBaseSetup
             new TestServerCallContext()));
 
         Assert.That(ex!.StatusCode, Is.EqualTo(GrpcCore.StatusCode.Unauthenticated));
+    }
+
+    /// <summary>
+    /// Security: a worker assigned to property A who sends the compliance /
+    /// case ids of property B's occurrence (with A's own event id) must get a
+    /// reply that carries nothing derived from B's rows. B's rows are stamped
+    /// far in the future, so any leak shows up as version >= that stamp.
+    /// </summary>
+    [Test]
+    public async Task ForeignComplianceAndCaseIds_DoNotReachTheVersionStamp()
+    {
+        var a = await SeedAsync("scope-a");
+        var b = await SeedAsync("scope-b");
+        var future = new DateTime(2100, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        await BackendConfigurationPnDbContext!.Compliances.Where(x => x.Id == b.ComplianceId)
+            .ExecuteUpdateAsync(u => u.SetProperty(x => x.UpdatedAt, future));
+        await MicrotingDbContext!.Cases.Where(x => x.Id == b.SdkCaseId)
+            .ExecuteUpdateAsync(u => u.SetProperty(x => x.UpdatedAt, future));
+        await MicrotingDbContext.FieldValues.Where(x => x.CaseId == b.SdkCaseId)
+            .ExecuteUpdateAsync(u => u.SetProperty(x => x.UpdatedAt, future));
+        var futureMicros = (future - DateTime.UnixEpoch).Ticks / TimeSpan.TicksPerMicrosecond;
+
+        var retap = LegacyComplete(a);
+        retap.Completed = false;
+        retap.RequestId = NewRequestId();
+        retap.ComplianceId = b.ComplianceId;
+        retap.MicrotingSdkCaseId = b.SdkCaseId;
+        var retapReply = await a.Service.CompleteEvent(retap, new TestServerCallContext());
+
+        var comment = LegacyComment(a, "probe");
+        comment.RequestId = NewRequestId();
+        comment.ComplianceId = b.ComplianceId;
+        comment.MicrotingSdkCaseId = b.SdkCaseId;
+        var commentReply = await a.Service.SetComment(comment, new TestServerCallContext());
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(retapReply.Event.Version, Is.LessThan(futureMicros), "CompleteEvent(completed=false)");
+            Assert.That(retapReply.Event.ComplianceId, Is.Not.EqualTo(b.ComplianceId));
+            Assert.That(commentReply.Event.Version, Is.LessThan(futureMicros), "SetComment");
+            Assert.That(commentReply.Event.ComplianceId, Is.EqualTo(0), "B's compliance is not resolved for A");
+            Assert.That(await MicrotingDbContext.Cases.AsNoTracking().Where(c => c.Id == b.SdkCaseId)
+                .Select(c => c.Custom).FirstAsync(), Is.Empty.Or.Null, "B's case was not written");
+        });
+    }
+
+    // ---------------- PR #1516 review findings ----------------
+
+    /// <summary>
+    /// Finding 2: with request_id and compliance_id = 0, a retry after the
+    /// first delivery claimed its occurrence must replay, not fall back to the
+    /// earliest LIVE occurrence and complete the next rotation.
+    /// </summary>
+    [Test]
+    public async Task CompleteEvent_RequestIdWithoutComplianceId_RetryDoesNotCompleteNextRotation()
+    {
+        var s = await SeedAsync("next-rotation", withEchoTask: false);
+        var nextCase = new SdkCase
+        {
+            SiteId = s.SiteId, CheckListId = s.TemplateId, Status = 66,
+            WorkflowState = Constants.WorkflowStates.Created, Custom = string.Empty
+        };
+        await MicrotingDbContext!.Cases.AddAsync(nextCase);
+        await MicrotingDbContext.SaveChangesAsync();
+        var current = await BackendConfigurationPnDbContext!.Compliances.AsNoTracking()
+            .FirstAsync(x => x.Id == s.ComplianceId);
+        var next = new Compliance
+        {
+            PlanningId = s.PlanningId, PropertyId = s.PropertyId, AreaId = current.AreaId,
+            Deadline = s.Deadline.AddDays(7), StartDate = s.Deadline,
+            MicrotingSdkCaseId = nextCase.Id, MicrotingSdkeFormId = s.TemplateId,
+            Version = 1, WorkflowState = Constants.WorkflowStates.Created
+        };
+        await BackendConfigurationPnDbContext.Compliances.AddAsync(next);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var request = LegacyComplete(s);
+        request.RequestId = NewRequestId();
+        request.ComplianceId = 0;
+        request.MicrotingSdkCaseId = s.SdkCaseId;
+
+        var first = await s.Service.CompleteEvent(request, new TestServerCallContext());
+        var retry = await s.Service.CompleteEvent(request, new TestServerCallContext());
+
+        var nextAfter = await BackendConfigurationPnDbContext.Compliances.AsNoTracking()
+            .FirstAsync(x => x.Id == next.Id);
+        Assert.Multiple(() =>
+        {
+            Assert.That(first.Replayed, Is.False);
+            Assert.That(retry.Replayed, Is.True);
+            Assert.That(nextAfter.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created),
+                "the next rotation was not completed by the retry");
+        });
+    }
+
+    /// <summary>
+    /// Finding 3: the replay marker is published only after the bundled
+    /// answers. While this request is still completing a repeat answers
+    /// ABORTED (retry); if the completion stopped part-way (marker older than
+    /// the in-flight window) a repeat gets today's honest "already completed,
+    /// answers discarded" answer, never replayed=true.
+    /// </summary>
+    [Test]
+    public async Task CompleteEvent_OwnCompletionInFlight_IsAborted_StalePartialIsNotReplayed()
+    {
+        var s = await SeedAsync("in-flight", withEchoTask: false);
+        var requestId = NewRequestId();
+        var compliance = await BackendConfigurationPnDbContext!.Compliances.FirstAsync(x => x.Id == s.ComplianceId);
+        await compliance.Delete(BackendConfigurationPnDbContext);
+        var theCase = await MicrotingDbContext!.Cases.FirstAsync(c => c.Id == s.SdkCaseId);
+        theCase.Status = 100;
+        theCase.DoneAt = DateTime.UtcNow;
+        theCase.Custom = "{\"completing_request_id\":\"" + requestId + "\",\"completing_ts_unix\":"
+                         + DateTimeOffset.UtcNow.ToUnixTimeSeconds() + "}";
+        await theCase.Update(MicrotingDbContext);
+
+        var request = LegacyComplete(s);
+        request.RequestId = requestId;
+        request.FieldValues.Add(new FieldValueWrite { FieldId = s.TextFieldId, Value = "x" });
+        var aborted = await Assert.ThrowsAsync<GrpcCore.RpcException>(() =>
+            s.Service.CompleteEvent(request, new TestServerCallContext()));
+
+        await SetCaseCustomAsync(s, "{\"completing_request_id\":\"" + requestId + "\",\"completing_ts_unix\":"
+                                    + DateTimeOffset.UtcNow.AddMinutes(-10).ToUnixTimeSeconds() + "}");
+        var afterFailure = await s.Service.CompleteEvent(request, new TestServerCallContext());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(aborted!.StatusCode, Is.EqualTo(GrpcCore.StatusCode.Aborted));
+            Assert.That(afterFailure.Replayed, Is.False, "a partial completion is never reported as replayed");
+            Assert.That(afterFailure.AnswersDiscarded, Is.True, "today's honest answer");
+        });
+    }
+
+    [Test]
+    public async Task CompleteEvent_WithRequestId_PublishesReplayMarkerAndClearsInFlight()
+    {
+        var s = await SeedAsync("publish", withEchoTask: false);
+        var request = LegacyComplete(s);
+        request.RequestId = NewRequestId();
+        request.Comment = "bundled";
+        await s.Service.CompleteEvent(request, new TestServerCallContext());
+
+        var custom = await CaseCustomAsync(s);
+        Assert.Multiple(() =>
+        {
+            Assert.That(custom, Does.Contain("\"completed_request_id\":\"" + request.RequestId + "\""));
+            Assert.That(custom, Does.Not.Contain("completing_request_id"));
+            Assert.That(custom, Does.Contain("\"text\":\"bundled\""), "the bundled comment survived the publish");
+        });
+    }
+
+    /// <summary>
+    /// Finding 4: a completion that claims the occurrence after SetFieldValue's
+    /// lookup but before its lock must win: under the lock the request-id
+    /// path re-reads the state and refuses, writing nothing.
+    /// </summary>
+    [Test]
+    public async Task SetFieldValue_WithRequestId_ClosedWhileWaitingForLock_IsRefused()
+    {
+        var s = await SeedAsync("fv-lock");
+        await using var holder = NewBackendContext();
+        await using var tx = await holder.Database.BeginTransactionAsync();
+        await holder.Database.ExecuteSqlAsync(
+            $"SELECT `Id` FROM `Compliances` WHERE `Id` = {s.ComplianceId} FOR UPDATE");
+
+        var request = LegacyFieldValue(s, "must-not-land");
+        request.RequestId = NewRequestId();
+        var write = s.Service.SetFieldValue(request, new TestServerCallContext());
+
+        // Let the write pass its (non-locking) lookup and queue on the lock,
+        // then close the occurrence the way the completion claim does.
+        await Task.Delay(TimeSpan.FromSeconds(3));
+        await holder.Database.ExecuteSqlAsync(
+            $"UPDATE `Compliances` SET `WorkflowState` = 'removed' WHERE `Id` = {s.ComplianceId}");
+        await tx.CommitAsync();
+
+        var ex = await Assert.ThrowsAsync<GrpcCore.RpcException>(() => write);
+        var value = await MicrotingDbContext!.FieldValues.AsNoTracking()
+            .Where(fv => fv.CaseId == s.SdkCaseId && fv.FieldId == s.TextFieldId)
+            .Select(fv => fv.Value).FirstAsync();
+        Assert.Multiple(() =>
+        {
+            Assert.That(ex!.StatusCode, Is.EqualTo(GrpcCore.StatusCode.FailedPrecondition));
+            Assert.That(value, Is.Not.EqualTo("must-not-land"));
+        });
+    }
+
+    /// <summary>
+    /// Finding 5: bookkeeping-only writes never rewrite a Custom JSON object
+    /// that carries keys the envelope does not model.
+    /// </summary>
+    [Test]
+    public async Task Envelope_WithForeignKeys_IsNotRewrittenByBookkeeping()
+    {
+        var s = await SeedAsync("foreign-keys");
+        const string foreign = "{\"external_reference\":\"123\"}";
+        await SetCaseCustomAsync(s, foreign);
+
+        var remove = LegacyRemove(s);
+        remove.RequestId = NewRequestId();
+        await s.Service.RemovePhoto(remove, new TestServerCallContext());
+        var afterRemove = await CaseCustomAsync(s);
+
+        var fieldValue = LegacyFieldValue(s, "v");
+        fieldValue.RequestId = NewRequestId();
+        await s.Service.SetFieldValue(fieldValue, new TestServerCallContext());
+        var afterFieldValue = await CaseCustomAsync(s);
+
+        var complete = LegacyComplete(s);
+        complete.RequestId = NewRequestId();
+        await s.Service.CompleteEvent(complete, new TestServerCallContext());
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(afterRemove, Is.EqualTo(foreign));
+            Assert.That(afterFieldValue, Is.EqualTo(foreign));
+            Assert.That(await CaseCustomAsync(s), Is.EqualTo(foreign));
+        });
+    }
+
+    /// <summary>
+    /// Finding 6: a calendar row carrying a compliance id but no Deadline
+    /// (the recurrence fallback) still gets due_date_key from the compliance.
+    /// </summary>
+    [Test]
+    public async Task DueDateKey_ResolvedFromComplianceWhenCalendarRowLacksDeadline()
+    {
+        var s = await SeedAsync("due-fallback");
+        s.Tasks[0].Deadline = null;
+        s.Tasks[0].TaskDate = s.Deadline.AddDays(1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+        var evt = (await s.Service.ListEvents(new ListEventsRequest
+        {
+            PropertyId = s.PropertyId.ToString(CultureInfo.InvariantCulture),
+            FromDateKey = s.DayKey,
+            ToDateKey = s.DayKey
+        }, new TestServerCallContext())).Events.Single();
+
+        Assert.That(evt.DueDateKey, Is.EqualTo(s.DayKey), "the compliance deadline, not TaskDate");
+    }
+
+    /// <summary>
+    /// Finding 1 (residual window): if a legacy writer holding a stale copy
+    /// erases a request-id record, the repeat is applied again (today's
+    /// behaviour) - it is never reported as replayed without being applied.
+    /// </summary>
+    [Test]
+    public async Task LostRecord_DegradesToReapply_NeverToAFalseReplay()
+    {
+        var s = await SeedAsync("lost-record", withEchoTask: false);
+        var meta = LegacyPhotoMeta(s);
+        meta.RequestId = NewRequestId();
+        var first = await UploadAsync(s, meta);
+        await SetCaseCustomAsync(s, "{\"event_comment\":null,\"event_photos\":[{\"slot\":0,\"uploaded_data_id\":"
+                                    + first.StorageId + ",\"ts_unix\":1,\"content_type\":\"image/png\"}]}");
+
+        var repeat = await UploadAsync(s, meta);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(repeat.Replayed, Is.False);
+            Assert.That(repeat.StorageId, Is.Not.EqualTo(first.StorageId), "re-applied, as an old app would");
+        });
     }
 
     // ---------------- version / etag / stream ----------------

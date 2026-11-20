@@ -1190,7 +1190,7 @@ public partial class EventsGrpcService(
         }
         else
         {
-            ApplyDueFields(decorated);
+            await ApplyDueFieldsAsync(decorated).ConfigureAwait(false);
         }
 
         return output;
@@ -1249,12 +1249,15 @@ public partial class EventsGrpcService(
         // because StatusCode.Unimplemented is not in its permanent-error set.
         if (!request.Completed)
         {
-            var idempotent = await BuildIdempotentCompleteEventResponse(eventId, request, context)
+            var (idempotent, resolvedCompliance) = await BuildIdempotentCompleteEventResponse(eventId, request, context)
                 .ConfigureAwait(false);
             if (requestId.Length > 0)
             {
+                // Stamp only from the compliance the helper resolved inside the
+                // caller's authorised planning (never the raw request ids).
                 await StampWriteReplyAsync(idempotent.Event,
-                    (int)request.ComplianceId, (int)request.MicrotingSdkCaseId, null).ConfigureAwait(false);
+                    resolvedCompliance?.Id ?? 0, resolvedCompliance?.MicrotingSdkCaseId ?? 0, null)
+                    .ConfigureAwait(false);
             }
             return idempotent;
         }
@@ -1300,6 +1303,32 @@ public partial class EventsGrpcService(
         // planning 3632, site 130 vs 142).
         var coreForCompliance = await coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContextForCompliance = coreForCompliance.DbContextHelper.GetDbContext();
+
+        if (requestId.Length > 0)
+        {
+            // contract_version 1: look for this request's own record BEFORE
+            // any live lookup. Without it, a retry carrying compliance_id = 0
+            // would reach the legacy "earliest live occurrence" fallback after
+            // the first delivery claimed its occurrence, and complete the NEXT
+            // rotation. A request naming neither id has no usable identity
+            // and keeps today's semantics.
+            var (ownReplay, ownInFlight) = await ProbeOwnCompletionAsync(
+                    request, requestId, arp.ItemPlanningId, arp.PropertyId, eventId, sdkSiteId,
+                    sdkDbContextForCompliance, context.CancellationToken)
+                .ConfigureAwait(false);
+            if (ownReplay != null)
+            {
+                return ownReplay;
+            }
+
+            if (ownInFlight)
+            {
+                return await ResolveClaimedOccurrenceForRequestIdAsync(
+                        null, waitForWinner: true, request, requestId, arp.ItemPlanningId, arp.PropertyId,
+                        eventId, sdkSiteId, sdkDbContextForCompliance, context.CancellationToken)
+                    .ConfigureAwait(false);
+            }
+        }
         Compliance? compliance;
         if (request.ComplianceId > 0)
         {
@@ -1634,9 +1663,10 @@ public partial class EventsGrpcService(
             foundCase.WorkflowState = Constants.WorkflowStates.Created;
             if (requestId.Length > 0)
             {
-                // contract_version 1: recorded in the SAME update that sets
-                // Status = 100, so whoever sees the completion sees its id.
-                StampCompletionRequestId(foundCase, requestId);
+                // contract_version 1, phase 1: "this request is completing"
+                // in the SAME update that sets Status = 100. The replay marker
+                // is published only after the bundled answers (below).
+                StampCompletionInFlight(foundCase, requestId);
             }
             await foundCase.Update(sdkDbContext).ConfigureAwait(false);
 
@@ -1792,6 +1822,13 @@ public partial class EventsGrpcService(
                 };
                 foundCase.Custom = SerializeEnvelopeOrEmpty(nextEnvelope);
                 await foundCase.Update(sdkDbContext).ConfigureAwait(false);
+            }
+
+            if (requestId.Length > 0)
+            {
+                // contract_version 1, phase 2: the case update and the bundled
+                // answers succeeded, so a repeat may now be answered as replayed.
+                await PublishCompletionAppliedAsync(sdkDbContext, foundCase, requestId).ConfigureAwait(false);
             }
 
             // Mirror the post-update sequence from
@@ -2367,7 +2404,9 @@ public partial class EventsGrpcService(
     /// sends <c>completed=false</c>. This happens when the flutter UI re-taps
     /// an already-completed row (it sends <c>!o.completed</c>). Returns the
     /// current authoritative state so the client can reconcile its optimistic
-    /// flip; performs NO database writes.
+    /// flip; performs NO database writes. Also returns the Compliance it
+    /// resolved (scoped to the ARP's planning; null when none), the only ids
+    /// a contract-version-1 version stamp may use.
     /// <para>
     /// Three observable outcomes:
     /// </para>
@@ -2384,7 +2423,7 @@ public partial class EventsGrpcService(
     ///     calendar query says about that row today. No DB writes.</description></item>
     /// </list>
     /// </summary>
-    private async Task<CompleteEventResponse> BuildIdempotentCompleteEventResponse(
+    private async Task<(CompleteEventResponse Response, Compliance Resolved)> BuildIdempotentCompleteEventResponse(
         int eventId, CompleteEventRequest request, ServerCallContext context)
     {
         var arp = await dbContext.AreaRulePlannings
@@ -2473,7 +2512,7 @@ public partial class EventsGrpcService(
             await PopulateCalendarAttachments(evt, eventId, dbContext, context.CancellationToken)
                 .ConfigureAwait(false);
 
-            return new CompleteEventResponse { Event = evt };
+            return (new CompleteEventResponse { Event = evt }, compliance);
         }
 
         // Compliance still alive — anomaly: a still-actionable row is being
@@ -2570,7 +2609,7 @@ public partial class EventsGrpcService(
                 .ConfigureAwait(false);
         }
 
-        return new CompleteEventResponse { Event = evt };
+        return (new CompleteEventResponse { Event = evt }, compliance);
     }
 
     /// <summary>
@@ -3569,6 +3608,7 @@ public partial class EventsGrpcService(
         // Request-id records keep the envelope alive; they are only ever
         // present when a contract-version-1 request wrote them.
         var hasRequestRecords = !string.IsNullOrEmpty(envelope.CompletedRequestId)
+            || !string.IsNullOrEmpty(envelope.CompletingRequestId)
             || envelope.AppliedRequests is { Count: > 0 };
         if (!hasComment && !hasPhotos && !hasRequestRecords)
         {
@@ -3601,6 +3641,16 @@ public partial class EventsGrpcService(
         [JsonPropertyName("completed_request_id")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string CompletedRequestId { get; set; }
+
+        // Set while a request-id completion is between its case update and
+        // the end of its bundled answers (see StampCompletionInFlight).
+        [JsonPropertyName("completing_request_id")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string CompletingRequestId { get; set; }
+
+        [JsonPropertyName("completing_ts_unix")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public long? CompletingTsUnix { get; set; }
 
         [JsonPropertyName("applied_requests")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -3854,12 +3904,22 @@ public partial class EventsGrpcService(
             // lock on the Compliance; the SDK writes below use their own
             // connections, so they cannot deadlock against it): re-check,
             // apply, record. Two identical requests in flight serialise here.
-            var replayed = await WithOccurrenceLockAsync(compliance.Id, async () =>
+            var replayed = await WithOccurrenceLockAsync(compliance.Id, async lockedState =>
             {
                 var envelope = await ReadEnvelopeFreshAsync(sdkDbContext, caseId).ConfigureAwait(false);
                 if (FindAppliedRequest(envelope, requestId, OpSetFieldValue) != null)
                 {
                     return true;
+                }
+
+                // Re-check under the lock: a completion that claimed the
+                // occurrence after the lookup above must win; the write gets
+                // the same answer as a lookup that finds no live compliance.
+                // (The legacy path keeps its own pre-existing window.)
+                if (lockedState == Constants.WorkflowStates.Removed)
+                {
+                    throw new RpcException(new Status(StatusCode.FailedPrecondition,
+                        $"Event {eventId} has no backing Case — field values cannot be persisted yet."));
                 }
 
                 await ApplyFieldValueAsync().ConfigureAwait(false);

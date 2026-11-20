@@ -219,7 +219,35 @@ public partial class EventsGrpcService
 
         var parsed = TryParseEnvelope(custom);
         envelope = parsed ?? new EventCustomEnvelope();
-        return parsed != null;
+        return parsed != null && HasOnlyKnownEnvelopeKeys(custom);
+    }
+
+    /// <summary>The top-level keys the envelope owns; anything else belongs to someone else.</summary>
+    private static readonly HashSet<string> KnownEnvelopeKeys =
+    [
+        "event_comment", "event_photos", "completed_request_id", "completing_request_id",
+        "completing_ts_unix", "applied_requests"
+    ];
+
+    /// <summary>
+    /// False when the JSON object carries a key the envelope does not model
+    /// (e.g. <c>{"external_reference":"123"}</c>): a round-trip through
+    /// <see cref="EventCustomEnvelope"/> would drop it, so request-id
+    /// bookkeeping must not write such a case (it degrades to legacy
+    /// behaviour). Content writes keep their pre-existing semantics.
+    /// </summary>
+    private static bool HasOnlyKnownEnvelopeKeys(string custom)
+    {
+        try
+        {
+            using var document = System.Text.Json.JsonDocument.Parse(custom);
+            return document.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object
+                   && document.RootElement.EnumerateObject().All(p => KnownEnvelopeKeys.Contains(p.Name));
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return false;
+        }
     }
 
     private static AppliedRequestRecord? FindAppliedRequest(
@@ -256,16 +284,28 @@ public partial class EventsGrpcService
     /// other connections, so no SDK call can deadlock against it. Requests
     /// without a request id never take it (unchanged behaviour).
     /// </summary>
-    private async Task<T> WithOccurrenceLockAsync<T>(int complianceId, Func<Task<T>> body)
+    private Task<T> WithOccurrenceLockAsync<T>(int complianceId, Func<Task<T>> body) =>
+        WithOccurrenceLockAsync(complianceId, _ => body());
+
+    /// <summary>
+    /// As above, handing the body the Compliance <c>WorkflowState</c> read BY
+    /// the locking statement itself (current committed state, not a
+    /// snapshot), so a body can refuse an occurrence that was closed between
+    /// the caller's earlier lookup and the lock.
+    /// </summary>
+    private async Task<T> WithOccurrenceLockAsync<T>(int complianceId, Func<string?, Task<T>> body)
     {
         var strategy = dbContext.Database.CreateExecutionStrategy();
         return await strategy.ExecuteAsync(async () =>
         {
             await using var tx = await dbContext.Database.BeginTransactionAsync().ConfigureAwait(false);
-            await dbContext.Database
-                .ExecuteSqlAsync($"SELECT `Id` FROM `Compliances` WHERE `Id` = {complianceId} FOR UPDATE")
-                .ConfigureAwait(false);
-            var result = await body().ConfigureAwait(false);
+            var lockedState = (await dbContext.Database
+                    .SqlQuery<string>(
+                        $"SELECT `WorkflowState` AS `Value` FROM `Compliances` WHERE `Id` = {complianceId} FOR UPDATE")
+                    .ToListAsync()
+                    .ConfigureAwait(false))
+                .FirstOrDefault();
+            var result = await body(lockedState).ConfigureAwait(false);
             await tx.CommitAsync().ConfigureAwait(false);
             return result;
         }).ConfigureAwait(false);
@@ -340,34 +380,65 @@ public partial class EventsGrpcService
     }
 
     /// <summary>
-    /// Stamps the request id on the case in the same <c>Update</c> that sets
-    /// <c>Status = 100</c>, so any reader that sees the completion also sees
-    /// who applied it. Skipped for non-envelope legacy <c>Custom</c>.
+    /// Phase 1 of the completion record, set in the same <c>Update</c> that
+    /// sets <c>Status = 100</c>: "this request id is completing the case".
+    /// A concurrent repeat that sees it answers <c>ABORTED</c> (retry), never
+    /// <c>replayed</c>, because the bundled answers may still be pending.
+    /// Skipped for non-envelope or foreign <c>Custom</c> content.
     /// </summary>
-    private static void StampCompletionRequestId(SdkCase foundCase, string requestId)
+    private static void StampCompletionInFlight(SdkCase foundCase, string requestId)
     {
         if (!IsEnvelopeWritable(foundCase.Custom, out var envelope))
         {
             return;
         }
 
-        envelope.CompletedRequestId = requestId;
+        envelope.CompletingRequestId = requestId;
+        envelope.CompletingTsUnix = ToUnixSeconds(DateTime.UtcNow);
         foundCase.Custom = SerializeEnvelopeOrEmpty(envelope);
     }
 
     /// <summary>
-    /// The occurrence is no longer open. If this very request id completed
-    /// it (recorded on one of the cases the request names), answer success
-    /// with the current Event and <c>replayed=true</c> instead of the false
-    /// "already completed by you, answers discarded" answer. Null otherwise.
-    /// <para>
-    /// Candidate cases are those of compliance rows on this planning that the
-    /// request names by <c>compliance_id</c> or <c>microting_sdk_case_id</c>
-    /// (any workflow state, so the stale-id redirect target is covered too).
-    /// A request with neither id cannot be replayed.
-    /// </para>
+    /// Phase 2, only after the case update AND the bundled answers succeeded:
+    /// publish <c>completed_request_id</c> (the replay marker) and clear the
+    /// in-flight marker. Built from a FRESH read of <c>Custom</c>, so it never
+    /// writes back a stale copy. If the handler fails before this point the
+    /// marker stays "completing"; once it is older than
+    /// <see cref="InFlightClaimWindow"/> a repeat gets today's "already
+    /// completed" answer (answers flagged as discarded), never a false replay.
     /// </summary>
-    private async Task<CompleteEventResponse?> TryReplayCompletionAsync(
+    private static async Task PublishCompletionAppliedAsync(
+        MicrotingDbContext sdkDbContext, SdkCase foundCase, string requestId)
+    {
+        var freshCustom = await sdkDbContext.Cases
+            .AsNoTracking()
+            .Where(c => c.Id == foundCase.Id)
+            .Select(c => c.Custom)
+            .FirstOrDefaultAsync()
+            .ConfigureAwait(false);
+        if (!IsEnvelopeWritable(freshCustom, out var envelope))
+        {
+            return;
+        }
+
+        envelope.CompletedRequestId = requestId;
+        envelope.CompletingRequestId = null;
+        envelope.CompletingTsUnix = null;
+        foundCase.Custom = SerializeEnvelopeOrEmpty(envelope);
+        await foundCase.Update(sdkDbContext).ConfigureAwait(false);
+    }
+
+    private static bool IsOwnCompletionInFlight(EventCustomEnvelope? envelope, string requestId) =>
+        envelope?.CompletingRequestId == requestId
+        && envelope.CompletingTsUnix is { } startedUnix
+        && DateTimeOffset.FromUnixTimeSeconds(startedUnix).UtcDateTime >= DateTime.UtcNow - InFlightClaimWindow;
+
+    /// <summary>
+    /// Looks at every case the request names (scoped to the caller's
+    /// planning): a published record of this request id = the replay
+    /// response; this request id still completing (recently) = in flight.
+    /// </summary>
+    private async Task<(CompleteEventResponse? Replay, bool InFlight)> ProbeOwnCompletionAsync(
         CompleteEventRequest request,
         string requestId,
         int itemPlanningId,
@@ -377,34 +448,53 @@ public partial class EventsGrpcService
         MicrotingDbContext sdkDbContext,
         CancellationToken ct)
     {
+        var inFlight = false;
         var candidates = await FindNamedCompliancesAsync(
                 request.ComplianceId, request.MicrotingSdkCaseId, itemPlanningId, ct)
             .ConfigureAwait(false);
-
         foreach (var candidate in candidates)
         {
             var envelope = await ReadEnvelopeFreshAsync(sdkDbContext, candidate.MicrotingSdkCaseId)
                 .ConfigureAwait(false);
-            if (envelope?.CompletedRequestId != requestId)
+            if (envelope?.CompletedRequestId == requestId)
             {
-                continue;
+                return (await BuildCompletionReplayAsync(
+                        candidate, request, requestId, propertyId, eventId, sdkSiteId, ct)
+                    .ConfigureAwait(false), false);
             }
 
-            logger.LogInformation(
-                "CompleteEvent replay: requestId={RequestId} eventId={EventId} complianceId={ComplianceId} "
-                + "microtingSdkCaseId={SdkCaseId} was already applied; answering with the current state",
-                requestId, eventId, candidate.Id, candidate.MicrotingSdkCaseId);
-
-            var deadline = candidate.Deadline != default ? candidate.Deadline : DateTime.UtcNow;
-            var dayKey = deadline.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-            var (evt, task) = await BuildCompletionEchoAsync(
-                    propertyId, eventId, dayKey, sdkSiteId, request.CompletedBy, ct)
-                .ConfigureAwait(false);
-            await StampWriteReplyAsync(evt, candidate.Id, candidate.MicrotingSdkCaseId, task).ConfigureAwait(false);
-            return new CompleteEventResponse { Event = evt, Replayed = true };
+            inFlight |= IsOwnCompletionInFlight(envelope, requestId);
         }
 
-        return null;
+        return (null, inFlight);
+    }
+
+    /// <summary>
+    /// The replay answer for a completion this request id already applied:
+    /// success with the current Event (same echo as the success path),
+    /// <c>replayed=true</c>, <c>answers_discarded=false</c>, no Error log.
+    /// </summary>
+    private async Task<CompleteEventResponse> BuildCompletionReplayAsync(
+        Compliance candidate,
+        CompleteEventRequest request,
+        string requestId,
+        int propertyId,
+        int eventId,
+        int sdkSiteId,
+        CancellationToken ct)
+    {
+        logger.LogInformation(
+            "CompleteEvent replay: requestId={RequestId} eventId={EventId} complianceId={ComplianceId} "
+            + "microtingSdkCaseId={SdkCaseId} was already applied; answering with the current state",
+            requestId, eventId, candidate.Id, candidate.MicrotingSdkCaseId);
+
+        var deadline = candidate.Deadline != default ? candidate.Deadline : DateTime.UtcNow;
+        var dayKey = deadline.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var (evt, task) = await BuildCompletionEchoAsync(
+                propertyId, eventId, dayKey, sdkSiteId, request.CompletedBy, ct)
+            .ConfigureAwait(false);
+        await StampWriteReplyAsync(evt, candidate.Id, candidate.MicrotingSdkCaseId, task).ConfigureAwait(false);
+        return new CompleteEventResponse { Event = evt, Replayed = true };
     }
 
     /// <summary>
@@ -434,12 +524,20 @@ public partial class EventsGrpcService
     {
         for (var step = 0; step < LostClaimWaitSteps; step++)
         {
-            var replay = await TryReplayCompletionAsync(
+            var (replay, ownInFlight) = await ProbeOwnCompletionAsync(
                     request, requestId, itemPlanningId, propertyId, eventId, sdkSiteId, sdkDbContext, ct)
                 .ConfigureAwait(false);
             if (replay != null)
             {
                 return replay;
+            }
+
+            if (ownInFlight)
+            {
+                // This very request is still completing (its answers may not
+                // be saved yet): never answer replayed or discarded; wait.
+                await Task.Delay(LostClaimWaitStep, ct).ConfigureAwait(false);
+                continue;
             }
 
             var settledCase = settled == null
@@ -451,10 +549,17 @@ public partial class EventsGrpcService
                     .FirstOrDefaultAsync(ct)
                     .ConfigureAwait(false);
 
-            if (settledCase != null && TryParseEnvelope(settledCase.Custom)?.CompletedRequestId == requestId)
+            var settledEnvelope = settledCase == null ? null : TryParseEnvelope(settledCase.Custom);
+            if (settledEnvelope?.CompletedRequestId == requestId)
             {
                 // The winner's update landed between the two reads; the next
                 // replay attempt sees it.
+                continue;
+            }
+
+            if (IsOwnCompletionInFlight(settledEnvelope, requestId))
+            {
+                await Task.Delay(LostClaimWaitStep, ct).ConfigureAwait(false);
                 continue;
             }
 
@@ -585,7 +690,11 @@ public partial class EventsGrpcService
         return await WithOccurrenceLockAsync(complianceId, async () =>
         {
             await sdkDbContext.Entry(foundCase).ReloadAsync().ConfigureAwait(false);
-            var writable = IsEnvelopeWritable(foundCase.Custom, out var envelope);
+            // canRecord: bookkeeping may be written (no foreign keys, see
+            // HasOnlyKnownEnvelopeKeys). contentWritable: a photo removal may
+            // rewrite the envelope exactly as the legacy RemovePhoto does.
+            var canRecord = IsEnvelopeWritable(foundCase.Custom, out var envelope);
+            var contentWritable = canRecord || TryParseEnvelope(foundCase.Custom) != null;
 
             if (requestId.Length > 0)
             {
@@ -638,13 +747,13 @@ public partial class EventsGrpcService
                 recordedResult = RemoveResultRemoved;
             }
 
-            if (writable && requestId.Length > 0)
+            if (canRecord && requestId.Length > 0)
             {
                 AddAppliedRequest(envelope, requestId, OpRemovePhoto, recordedResult);
                 changed = true;
             }
 
-            if (changed && writable)
+            if (changed && contentWritable)
             {
                 foundCase.Custom = SerializeEnvelopeOrEmpty(envelope);
                 await foundCase.Update(sdkDbContext).ConfigureAwait(false);
@@ -689,7 +798,7 @@ public partial class EventsGrpcService
             return;
         }
 
-        ApplyDueFields(rows);
+        await ApplyDueFieldsAsync(rows).ConfigureAwait(false);
 
         await StampVersionsAsync(rows
                 .Select(r => (r.Evt, r.Task.ComplianceId ?? 0, r.Task.SdkCaseId ?? 0))
@@ -741,25 +850,48 @@ public partial class EventsGrpcService
 
         if (task != null)
         {
-            ApplyDueFields(evt, task);
+            await ApplyDueFieldsAsync([(evt, task)]).ConfigureAwait(false);
         }
 
         await StampVersionsAsync([(evt, complianceId, caseId)]).ConfigureAwait(false);
         evt.Etag = ComputeEtag(evt);
     }
 
-    private static void ApplyDueFields(IEnumerable<(Event Evt, CalendarTaskResponseModel Task)> rows)
+    /// <summary>
+    /// Due fields from the calendar row. Some calendar rows carry a backing
+    /// compliance id without its <c>Deadline</c> (the recurrence fallback in
+    /// <c>BackendConfigurationCalendarService</c> copies only the ids); those
+    /// deadlines are batch-read by compliance id here rather than changing the
+    /// calendar model other callers use. <c>TaskDate</c> is never substituted:
+    /// a moved occurrence's date differs from its deadline.
+    /// </summary>
+    private async Task ApplyDueFieldsAsync(IReadOnlyCollection<(Event Evt, CalendarTaskResponseModel Task)> rows)
     {
+        var missing = rows
+            .Where(r => r.Task.Deadline == null && r.Task.ComplianceId is > 0)
+            .Select(r => r.Task.ComplianceId!.Value)
+            .Distinct()
+            .ToList();
+        var deadlineByComplianceId = missing.Count == 0
+            ? new Dictionary<int, DateTime>()
+            : await dbContext.Compliances.AsNoTracking()
+                .Where(x => missing.Contains(x.Id))
+                .Select(x => new { x.Id, x.Deadline })
+                .ToDictionaryAsync(x => x.Id, x => x.Deadline)
+                .ConfigureAwait(false);
+
         foreach (var (evt, task) in rows)
         {
-            ApplyDueFields(evt, task);
-        }
-    }
+            DateTime? deadline = task.Deadline;
+            if (deadline == null && task.ComplianceId is { } complianceId
+                && deadlineByComplianceId.TryGetValue(complianceId, out var stored) && stored != default)
+            {
+                deadline = stored;
+            }
 
-    private static void ApplyDueFields(Event evt, CalendarTaskResponseModel task)
-    {
-        evt.DueDateKey = task.Deadline?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty;
-        evt.DueTimeLocal = task.IsAllDay ? string.Empty : FormatStartHour(task.StartHour);
+            evt.DueDateKey = deadline?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty;
+            evt.DueTimeLocal = task.IsAllDay ? string.Empty : FormatStartHour(task.StartHour);
+        }
     }
 
     /// <summary>
