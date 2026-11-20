@@ -438,6 +438,6 @@ public class ChemicalHistoryServiceTests : ChemicalTestBase
         Assert.That(page.Events, Is.Empty);
         Assert.That(page.Total, Is.Zero);
         Assert.That(page.Users, Is.Empty);
-        Assert.ThrowsAsync<ArgumentException>(() => sut.GetPageForPropertiesAsync([], OnDays(today, today.AddDays(-1))));
+        await Assert.ThrowsAsync<ArgumentException>(() => sut.GetPageForPropertiesAsync([], OnDays(today, today.AddDays(-1))));
     }
 }
