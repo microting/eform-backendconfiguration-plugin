@@ -657,6 +657,33 @@ describe('ChemicalsContainerComponent', () => {
       });
     });
 
+    it('a pick of "All" does not win on an arriving screen without "All": its ?propertyId=8 does (rereview2)', () => {
+      queryParams = {propertyId: '7'};
+      const component = build(list);
+      routerEvents$.next(new NavigationStart(2, '/chemicals/locations?propertyId=8'));
+
+      component.onPropertyChange(CHEMICALS_ALL_PROPERTIES);
+      store.dispatch.mockClear();
+      router.navigate.mockClear();
+      childAllowsAll = false;
+      queryParams = {propertyId: '8'};
+      routerEvents$.next(new NavigationEnd(2, '/chemicals/locations?propertyId=8', '/chemicals/locations?propertyId=8'));
+
+      // Not the forced first property (7): the navigation's explicit property, and the URL already says it.
+      expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectProperty({payload: 8}));
+      expect(store.dispatch).not.toHaveBeenCalledWith(chemicalsSelectProperty({payload: 7}));
+      expect(component.propertyId).toBe(8);
+      expect(router.navigate).not.toHaveBeenCalled();
+
+      // The refused pick is not left pending: a later menu click to Beholdning without ?propertyId= is "All".
+      store.dispatch.mockClear();
+      childAllowsAll = true;
+      queryParams = {};
+      routerEvents$.next(new NavigationEnd(3, '/chemicals/inventory', '/chemicals/inventory'));
+
+      expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectAllProperties());
+    });
+
     it('the first-load selection is no pick: a navigation to ?propertyId=8 that supersedes the first one wins', () => {
       vi.useFakeTimers();
       const pending = new Subject<unknown>();
