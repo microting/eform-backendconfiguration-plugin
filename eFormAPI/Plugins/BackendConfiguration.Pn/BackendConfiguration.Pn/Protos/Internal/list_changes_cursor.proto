@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+// SERVER-INTERNAL. The payload inside Events.ListChangesResponse.next_cursor.
+// Not part of the mobile contract: never copy this file to an app; clients
+// treat the cursor as opaque bytes and must never parse it. The server may
+// change it at any time by bumping `format` (old cursors then reset).
+
+package backend_configuration.internal;
+
+option csharp_namespace = "BackendConfiguration.Pn.Grpc.Internal";
+
+message ListChangesCursorPayload {
+  uint32 format = 1;
+  // First 4 bytes of the SHA-256 of the events.proto file descriptor.
+  fixed32 schema = 2;
+  int32 sdk_site_id = 3;
+  // Site language the window was rendered in; 0 = none.
+  int32 language_id = 4;
+  // DateOnly.DayNumber of the window start, and its length - 1.
+  int32 from_day = 5;
+  int32 span_days = 6;
+  repeated int32 property_ids = 7;
+  repeated ListChangesCursorEntry entries = 8;
+  // DateOnly.DayNumber (UTC) of the day the cursor was issued; a cursor
+  // from an earlier day resets, so changes that move no stamp still reach
+  // the client once a day.
+  int32 issued_day = 9;
+}
+
+message ListChangesCursorEntry {
+  // Delta to the previous entry's event id (entries are sorted).
+  sint32 event_id_delta = 1;
+  // plan_day_key as an offset from from_day ...
+  sint32 day_offset = 2;
+  // ... or verbatim when it is not yyyy-MM-dd (never expected).
+  optional string day_literal = 3;
+  int64 compliance_id = 4;
+  // First 64 bits of the Event's etag.
+  fixed64 content_hash = 5;
+  // First 64 bits of the etag of the Event without its form fields (the
+  // parts that need no SDK CaseRead).
+  fixed64 row_hash = 6;
+  // Event.version when it was set (UTC microseconds); absent = none.
+  optional int64 version = 7;
+}
