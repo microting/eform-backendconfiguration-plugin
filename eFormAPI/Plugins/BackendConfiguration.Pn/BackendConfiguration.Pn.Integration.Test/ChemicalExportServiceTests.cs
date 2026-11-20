@@ -42,7 +42,7 @@ public class ChemicalExportServiceTests : ChemicalTestBase
 
     private static ChemicalStockAmountModel Liters(decimal amount) => new(null, null, amount, ChemicalStockUnitEnum.L, null, null, null);
 
-    private async Task<(int PropertyId, string PropertyName, int Open1, int Open2, int Closed)> ArrangeAsync(bool stock, decimal amount = 2m)
+    private async Task<(int PropertyId, string PropertyName, int Open1, int Open2, int Closed, int ChemicalId)> ArrangeAsync(bool stock, decimal amount = 2m)
     {
         var property = await CreatePropertyAsync();
         var inventory = CreateInventoryService();
@@ -55,7 +55,7 @@ public class ChemicalExportServiceTests : ChemicalTestBase
         var open2 = await RegisterAsync("Hylde 2");
         var closed = await RegisterAsync("Hylde 3");
         await inventory.RemovePlacementAsync(Web, new ChemicalRemovePlacementCommand(closed, ChemicalRemovalReasonEnum.Disposed, null, "farligt affald"));
-        return (property.Id, property.Name, open1, open2, closed);
+        return (property.Id, property.Name, open1, open2, closed, chemical.ChemicalId);
     }
 
     [Test]
@@ -74,7 +74,8 @@ public class ChemicalExportServiceTests : ChemicalTestBase
     public async Task Authority_list_has_label_link_when_present()
     {
         var a = await ArrangeAsync(stock: false);
-        var chemicalId = await ChemicalsDbContext!.Chemicals.Where(c => c.RegistrationNo == "1-212").Select(c => c.Id).FirstAsync();
+        // This arrange's own chemical: every arrange of the fixture seeds "1-212", and rows accumulate per fixture.
+        var chemicalId = a.ChemicalId;
         var label = Guid.NewGuid().ToString("N");
         await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext, chemicalId, ChemicalsBase.Infrastructure.Data.Enums.ChemicalDocumentType.Label, label);
         await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext, chemicalId, ChemicalsBase.Infrastructure.Data.Enums.ChemicalDocumentType.Sds, language: "en");

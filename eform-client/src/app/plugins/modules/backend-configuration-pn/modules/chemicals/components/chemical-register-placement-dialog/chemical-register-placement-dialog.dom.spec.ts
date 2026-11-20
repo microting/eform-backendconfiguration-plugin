@@ -60,13 +60,19 @@ describe('ChemicalRegisterPlacementDialogComponent (template)', () => {
     expect(find('#chemicalRegisterProductSelect')).not.toBeNull();
     expect(find('#chemicalRegisterMoreResults')).not.toBeNull();
   });
-  it('shows the Ejendom field first: read-only for the selected property, a choice under "All"', () => {
+  it('shows the Ejendom field first: read-only for the selected property, a choice under "All"', async () => {
+    // [disabled] next to ngModel goes through NgModel, which disables the control in a microtask: settle first.
+    const settle = async () => {
+      await fixture.whenStable();
+      detectChanges(fixture);
+    };
     const properties = [
       {propertyId: 3, name: 'Engvej 12', permissions: null, stockEnabled: false, callerWorkerId: null},
       {propertyId: 4, name: 'Østergård', permissions: null, stockEnabled: false, callerWorkerId: null},
     ];
     const locations = [{id: 10, propertyId: 3, name: 'Lade', archived: false}, {id: 20, propertyId: 4, name: 'Værksted', archived: false}];
     render(false, {propertyId: 3, stockEnabled: false, properties: [properties[0]], locations: [locations[0]]});
+    await settle();
 
     const field = find('#chemicalRegisterPropertySelect');
     expect(field).not.toBeNull();
@@ -76,6 +82,7 @@ describe('ChemicalRegisterPlacementDialogComponent (template)', () => {
     TestBed.resetTestingModule();
 
     render(false, {propertyId: null, stockEnabled: false, properties, locations});
+    await settle();
 
     expect(find('#chemicalRegisterPropertySelect')?.classList.contains('mtx-select-disabled')).toBe(false);
     const fields = Array.from(fixture.nativeElement.querySelectorAll('mtx-select')).map((el) => (el as HTMLElement).id);
