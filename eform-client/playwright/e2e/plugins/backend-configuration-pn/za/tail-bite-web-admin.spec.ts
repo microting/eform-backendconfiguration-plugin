@@ -424,6 +424,9 @@ test.describe.serial('Tail biting web admin', () => {
     await page.locator('#tailBiteCloseBtn').click();
     await tailBite.expectApi('PUT', /^\/outbreaks\/\d+\/close$/, () => tailBite.confirm('tailBiteCloseConfirm'));
     await expect(page.locator('#tailBiteOutbreakDetailStatus')).toHaveClass(/badge-success/, { timeout: API_TIMEOUT });
+    // A closed outbreak's assessment is read-only: the Ja|Nej options are disabled.
+    await expect(page.locator('#tailBiteFactor-1-yes')).toBeDisabled();
+    await expect(page.locator('#tailBiteFactor-1-no')).toBeDisabled();
 
     await page.locator('#tailBiteBackToOutbreaks').click();
     await expect(page.locator(`#tailBiteOutbreakRow-${outbreakId}`)).toHaveCount(0, { timeout: API_TIMEOUT });
