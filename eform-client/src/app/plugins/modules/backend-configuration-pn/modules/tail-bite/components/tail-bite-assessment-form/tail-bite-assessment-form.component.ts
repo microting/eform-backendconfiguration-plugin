@@ -125,16 +125,14 @@ export class TailBiteAssessmentFormComponent implements OnChanges {
     if (this.readOnly || this.busy) {
       return;
     }
-    const current = this.draft(factor).answer;
     let next: boolean;
     switch (event.key) {
+      // Two options: every arrow moves to the other one, wrapping; unanswered counts as Ja, the tab stop.
       case 'ArrowRight':
       case 'ArrowDown':
-        next = current === false;
-        break;
       case 'ArrowLeft':
       case 'ArrowUp':
-        next = current !== true;
+        next = !(this.draft(factor).answer ?? true);
         break;
       case 'Home':
         next = true;

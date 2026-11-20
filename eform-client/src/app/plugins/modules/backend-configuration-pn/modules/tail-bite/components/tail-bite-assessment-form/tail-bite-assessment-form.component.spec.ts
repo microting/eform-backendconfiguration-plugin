@@ -263,6 +263,10 @@ describe('TailBiteAssessmentFormComponent', () => {
     key('ArrowDown');
     expect(component.draft(TailBiteFactor.Feed).answer).toBe(false);
     expect(key('Tab')).not.toHaveBeenCalled();
+    // Unanswered counts as Ja (the tab stop), so Left/Up wrap to Nej as well.
+    component.draft(TailBiteFactor.Water).answer = null;
+    component.onAnswerKeydown(new KeyboardEvent('keydown', {key: 'ArrowUp'}), TailBiteFactor.Water);
+    expect(component.draft(TailBiteFactor.Water).answer).toBe(false);
   });
 
   it('answers and changes the answer by click (setAnswer)', () => {
