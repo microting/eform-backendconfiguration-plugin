@@ -1466,6 +1466,213 @@ public class EventsGrpcListChangesTests : TestBaseSetup
         }
     }
 
+    // ------------------------------------------------------------------
+    // PR #1522 review, round 4
+    // ------------------------------------------------------------------
+
+    /// <summary>A retracted rotation: its SDK case pulled (Removed, status 77), its Compliance kept.</summary>
+    private async Task RetractAsync(Occurrence occurrence) =>
+        await MicrotingDbContext!.Cases
+            .Where(x => x.Id == occurrence.CaseId)
+            .ExecuteUpdateAsync(u => u
+                .SetProperty(x => x.WorkflowState, Constants.WorkflowStates.Removed)
+                .SetProperty(x => x.Status, 77));
+
+    private async Task<Occurrence> SeedMovedAsync(
+        World w, BackendConfigurationCalendarService calendar, string title, string? weekdaysCsv,
+        DateTime seriesStart, DateTime original, DateTime moveTo, bool retract)
+    {
+        var series = await SeedSeriesAsync(w, w.P2, title, seriesStart, weekdaysCsv, w.SiteA);
+        var occurrence = await SeedOccurrenceAsync(w, series, original, title, $"{title}-value", w.SiteA);
+        var moved = await calendar.MoveTask(new CalendarTaskMoveRequestModel
+        {
+            Id = series.ArpId, OriginalDate = Key(original) + "T00:00:00Z",
+            NewDate = Key(moveTo) + "T00:00:00Z", NewStartHour = 9.0, Scope = "this"
+        });
+        Assert.That(moved.Success, Is.True, $"{title}: {moved.Message}");
+        if (retract)
+        {
+            await RetractAsync(occurrence);
+        }
+
+        return occurrence with { Day = moveTo };
+    }
+
+    /// <summary>
+    /// Round 4, finding 1: occurrences moved INTO the window from original
+    /// dates in different weeks. A retracted rotation (case pulled, compliance
+    /// kept) gets its ids only from the calendar's recurrence expansion of its
+    /// original date, which a weekday rule performs for the first seven days of
+    /// a read only, so one shared read over the union of all moves loses it.
+    /// Every key served equals GetEvent, and GetEvent finds exactly the served
+    /// keys on every day of the window, for every repeat type used here.
+    /// </summary>
+    [Test]
+    public async Task MixedRangeMovedIn_RetractedOccurrences_AreServedExactlyWhenGetEventFindsThem()
+    {
+        var c = await SeedCalendarAsync();
+        var w = c.W;
+        var m = c.Monday;
+        var real = NewCalendar(w, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!);
+        var start = m.AddDays(-28);
+
+        // Open, from a Thursday four weeks before the window: the shared read starts there.
+        var farOpen = await SeedMovedAsync(w, real, "far-open-thu", "4", start, m.AddDays(-25), m.AddDays(2), retract: false);
+        // Retracted, from the Thursday after the window to the Saturday before it.
+        var lateRetracted = await SeedMovedAsync(w, real, "late-retracted-thu", "4", start, m.AddDays(17), m.AddDays(12), retract: true);
+        // Retracted, from a Friday before the window into its first week.
+        var earlyRetracted = await SeedMovedAsync(w, real, "early-retracted-fri", "5", start, m.AddDays(-10), m.AddDays(1), retract: true);
+        // Retracted, moved across the window's two chunks.
+        var crossRetracted = await SeedMovedAsync(w, real, "cross-retracted-tue", "2", start, m.AddDays(1), m.AddDays(10), retract: true);
+        // Retracted daily rotation moved 13 days earlier: a daily rule expands over any range.
+        var dailyRetracted = await SeedMovedAsync(w, real, "daily-retracted", null, start, m.AddDays(24), m.AddDays(11), retract: true);
+        // Retracted weekday rotation moved 10 days earlier: GetEvent's own read
+        // starts at the new day and its weekday expansion stops after seven
+        // days, so GetEvent does not find it; neither may ListChanges.
+        var unreachable = await SeedMovedAsync(w, real, "unreachable-retracted-mon", "1", start, m.AddDays(21), m.AddDays(11), retract: true);
+
+        var counting = Substitute.For<IBackendConfigurationCalendarService>();
+        counting.GetTasksForWeek(Arg.Any<CalendarTaskRequestModel>())
+            .Returns(ci => real.GetTasksForWeek(ci.Arg<CalendarTaskRequestModel>()));
+        counting.GetBoards(Arg.Any<int>()).Returns(ci => real.GetBoards(ci.Arg<int>()));
+        var service = ServiceFor(w, w.SiteA, calendar: counting);
+
+        var from = Key(m);
+        var to = Key(m.AddDays(13));
+        var snapshot = await ChangesAsync(service, from, to);
+        var keys = Upserts(snapshot).Select(KeyOf).ToList();
+        var reads = counting.ReceivedCalls().Count(call => call.GetMethodInfo().Name == nameof(IBackendConfigurationCalendarService.GetTasksForWeek));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(keys, Does.Contain(farOpen.Key), "open, moved in from four weeks before");
+            Assert.That(keys, Does.Contain(lateRetracted.Key), "retracted, moved in from after the window");
+            Assert.That(keys, Does.Contain(earlyRetracted.Key), "retracted, moved in from before the window");
+            Assert.That(keys, Does.Contain(crossRetracted.Key), "retracted, moved across the chunks");
+            Assert.That(keys, Does.Contain(dailyRetracted.Key), "retracted daily rotation");
+            Assert.That(keys.Where(k => k.EventId == unreachable.Series.ArpId), Is.Empty, "not found by GetEvent either");
+            Assert.That(keys, Is.Unique);
+            Assert.That(keys.Select(k => k.PlanDayKey), Is.All.InRange(from, to));
+            // 2 chunks x 2 properties, the shared read for P2, and one read per
+            // GetEvent range of a retracted occurrence the shared read could
+            // not bind (late, early, unreachable).
+            Assert.That(reads, Is.EqualTo(2 * 2 + 1 + 3), "calendar reads");
+        });
+
+        var reference = ServiceFor(w, w.SiteA);
+        foreach (var evt in Upserts(snapshot))
+        {
+            Assert.That(await GetEventAsync(reference, KeyOf(evt)), Is.EqualTo(evt),
+                $"{evt.Id}/{evt.PlanDayKey}/{evt.ComplianceId}: equals GetEvent");
+        }
+
+        var arpIds = await BackendConfigurationPnDbContext!.AreaRulePlannings
+            .Where(x => x.PropertyId == w.P1 || x.PropertyId == w.P2)
+            .Select(x => x.Id)
+            .ToListAsync();
+        var foundByGetEvent = new List<OccurrenceKey>();
+        foreach (var arpId in arpIds)
+        {
+            for (var day = m; day <= m.AddDays(13); day = day.AddDays(1))
+            {
+                var got = await reference.GetEvent(new GetEventRequest
+                {
+                    Key = new EventKey { EventId = arpId.ToString(CultureInfo.InvariantCulture), PlanDayKey = Key(day) }
+                }, new TestServerCallContext());
+                if (got.Found)
+                {
+                    foundByGetEvent.Add(KeyOf(got.Event));
+                }
+            }
+        }
+
+        Assert.That(foundByGetEvent, Is.EquivalentTo(keys), "GetEvent finds exactly the served keys in the window");
+    }
+
+    /// <summary>
+    /// Round 4, finding 2: the cost of a poll with many occurrences moved in
+    /// from outside the window. Calendar reads stay constant; statements are
+    /// printed for the report.
+    /// </summary>
+    [Test]
+    public async Task QueryCount_ManyMovedInOccurrences()
+    {
+        var c = await SeedCalendarAsync();
+        var w = c.W;
+        var m = c.Monday;
+        var real = NewCalendar(w, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!);
+
+        async Task SeedAsync(int first, int count)
+        {
+            for (var i = first; i < first + count; i++)
+            {
+                await SeedMovedAsync(w, real, $"many-{i}", "4", m, m.AddDays(17 + 7 * (i % 3)), m.AddDays(2 + i % 10),
+                    retract: false);
+            }
+        }
+
+        var plugin = new CommandCounter();
+        var planning = new CommandCounter();
+        await using var bc = NewBackendContext(plugin);
+        await using var ip = NewItemsPlanningContext(planning);
+        var counting = Substitute.For<IBackendConfigurationCalendarService>();
+        var realOnCounted = NewCalendar(w, bc, ip);
+        counting.GetTasksForWeek(Arg.Any<CalendarTaskRequestModel>())
+            .Returns(ci => realOnCounted.GetTasksForWeek(ci.Arg<CalendarTaskRequestModel>()));
+        counting.GetBoards(Arg.Any<int>()).Returns(ci => realOnCounted.GetBoards(ci.Arg<int>()));
+        var service = ServiceFor(w, w.SiteA, bc, ip, calendar: counting);
+        var from = Key(m);
+        var to = Key(m.AddDays(13));
+
+        async Task<(int Plugin, int Planning, long Total, long Ms, int Reads, int Served)> MeasureAsync(ByteString? cursor)
+        {
+            counting.ClearReceivedCalls();
+            plugin.Reset();
+            planning.Reset();
+            var before = await GlobalQuestionsAsync();
+            var watch = Stopwatch.StartNew();
+            var result = await ChangesAsync(service, from, to, cursor);
+            watch.Stop();
+            var after = await GlobalQuestionsAsync();
+            var reads = counting.ReceivedCalls().Count(call => call.GetMethodInfo().Name == nameof(IBackendConfigurationCalendarService.GetTasksForWeek));
+            return (plugin.Count, planning.Count, after - before - 1, watch.ElapsedMilliseconds, reads,
+                cursor == null ? Upserts(result).Count : result.Changes.Count);
+        }
+
+        async Task<((int Plugin, int Planning, long Total, long Ms, int Reads, int Served) Snapshot,
+            (int Plugin, int Planning, long Total, long Ms, int Reads, int Served) FollowUp)> PollAsync()
+        {
+            await AgeStampsAsync();
+            await ChangesAsync(service, from, to); // warm
+            var cursor = (await ChangesAsync(service, from, to)).NextCursor;
+            return (await MeasureAsync(null), await MeasureAsync(cursor));
+        }
+
+        await SeedAsync(0, 1);
+        var one = await PollAsync();
+        await SeedAsync(1, 29);
+        var thirty = await PollAsync();
+
+        foreach (var (label, poll) in new[] { ("1 moved-in", one), ("30 moved-in", thirty) })
+        {
+            TestContext.Out.WriteLine(
+                $"{label}: snapshot reads={poll.Snapshot.Reads} plugin={poll.Snapshot.Plugin} itemsPlanning={poll.Snapshot.Planning} " +
+                $"allStatements={poll.Snapshot.Total} ms={poll.Snapshot.Ms} served={poll.Snapshot.Served}; " +
+                $"unchanged follow-up reads={poll.FollowUp.Reads} plugin={poll.FollowUp.Plugin} itemsPlanning={poll.FollowUp.Planning} " +
+                $"allStatements={poll.FollowUp.Total} ms={poll.FollowUp.Ms} changes={poll.FollowUp.Served}");
+        }
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(thirty.Snapshot.Served - one.Snapshot.Served, Is.EqualTo(29), "every moved-in occurrence served");
+            Assert.That(thirty.FollowUp.Served, Is.Zero, "an unchanged follow-up has no changes");
+            Assert.That(thirty.Snapshot.Reads, Is.EqualTo(one.Snapshot.Reads), "calendar reads do not grow with the moves");
+            Assert.That(thirty.FollowUp.Reads, Is.EqualTo(one.FollowUp.Reads));
+            Assert.That(thirty.FollowUp.Plugin, Is.LessThanOrEqualTo(one.FollowUp.Plugin + 2),
+                "plugin statements of a poll do not grow with the moves");
+        });
+    }
+
     /// <summary>
     /// Round 3, finding 2: more assigned properties than a cursor can hold is
     /// RESOURCE_EXHAUSTED before anything is read, never a cursor that resets

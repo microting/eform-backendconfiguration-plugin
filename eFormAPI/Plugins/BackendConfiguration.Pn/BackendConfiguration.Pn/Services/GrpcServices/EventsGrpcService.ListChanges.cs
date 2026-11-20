@@ -427,12 +427,21 @@ public partial class EventsGrpcService
     /// it without its compliance and case, and the read holding the original
     /// date omits it. Such an eForm row whose original date is outside the
     /// chunk that produced it (another chunk of the window, or outside the
-    /// window) is replaced by its deployed row, read the way GetEvent reads it
-    /// (day widened to the original date, at most <see cref="MaxGetEventWindowWideningDays"/>),
-    /// so it is served once with its own ids, content and GetEvent etag. All
-    /// such rows of the property share ONE read over the union of their
-    /// ranges (bounded by the window plus the widening on each side). A move
-    /// within one chunk needs nothing: that read carries the deployed row.
+    /// window) is replaced by the rows GetEvent finds for its key, so it is
+    /// served once with its own ids, content and GetEvent etag. A move within
+    /// one chunk needs nothing: that read carries the deployed row.
+    /// <para>GetEvent reads the key's day widened to every original date moved
+    /// onto it (at most <see cref="MaxGetEventWindowWideningDays"/> away). The
+    /// calendar binds an open occurrence through its Compliance row whatever
+    /// the range, so ONE shared read over the union of those ranges binds all
+    /// of them. A retracted occurrence (case pulled, Compliance kept) is bound
+    /// only by the recurrence expansion of its original date, and a weekday
+    /// rule expands the first seven days of a read only (month and year rules
+    /// cap their candidates too): the shared read can miss it where GetEvent's
+    /// own read finds it. Each occurrence whose original date holds a
+    /// Compliance the shared read did not bind is therefore read with exactly
+    /// GetEvent's range, one read per distinct range, so it is served exactly
+    /// when GetEvent finds it.</para>
     /// </summary>
     private async Task<List<CalendarTaskResponseModel>> ResolveMovedInRowsAsync(
         IReadOnlyList<CalendarChunk> chunks, int propertyId, int sdkSiteId, int? languageId, CancellationToken ct)
@@ -460,32 +469,47 @@ public partial class EventsGrpcService
             return kept;
         }
 
-        var exceptionIds = movedIn.Select(m => m.Row.ExceptionId!.Value).Distinct().ToList();
-        var originalDates = await dbContext.CalendarOccurrenceExceptions.AsNoTracking()
-            .Where(x => exceptionIds.Contains(x.Id))
-            .Select(x => new { x.Id, x.OriginalDate })
-            .ToDictionaryAsync(x => x.Id, x => DateOnly.FromDateTime(x.OriginalDate), ct)
-            .ConfigureAwait(false);
+        // Every live move onto the moved-in days, as GetEvent widens by them.
+        var arpIds = movedIn.Select(m => m.Row.Id).Distinct().ToList();
+        var movedDays = movedIn.Select(m => ParseDayKey(m.Row.TaskDate!)).ToList();
+        var firstMovedDay = ToUtcDateTime(movedDays.Min());
+        var afterLastMovedDay = ToUtcDateTime(movedDays.Max().AddDays(1));
+        var moves = (await dbContext.CalendarOccurrenceExceptions.AsNoTracking()
+                .Where(x => arpIds.Contains(x.AreaRulePlanningId))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => !x.IsDeleted)
+                .Where(x => x.NewDate.HasValue && x.NewDate.Value >= firstMovedDay && x.NewDate.Value < afterLastMovedDay)
+                .Select(x => new { x.Id, x.AreaRulePlanningId, x.OriginalDate, NewDate = x.NewDate!.Value })
+                .ToListAsync(ct)
+                .ConfigureAwait(false))
+            .Select(x => (x.Id, ArpId: x.AreaRulePlanningId,
+                Original: DateOnly.FromDateTime(x.OriginalDate), Day: DateOnly.FromDateTime(x.NewDate)))
+            .ToList();
+        var originalById = moves.ToDictionary(x => x.Id, x => x.Original);
+        var originalsOnto = moves.ToLookup(x => (x.ArpId, x.Day), x => x.Original);
 
-        var needed = new List<CalendarTaskResponseModel>();
-        var dates = new List<DateOnly>();
+        var needed = new List<MovedInOccurrence>();
         foreach (var (row, chunk) in movedIn)
         {
-            if (!originalDates.TryGetValue(row.ExceptionId!.Value, out var original)
+            if (!originalById.TryGetValue(row.ExceptionId!.Value, out var original)
                 || (original >= chunk.Start && original <= chunk.End))
             {
                 continue; // the chunk's own read carries the deployed row
             }
 
-            var day = DateOnly.ParseExact(row.TaskDate!, DateKeyFormat, CultureInfo.InvariantCulture);
+            var day = ParseDayKey(row.TaskDate!);
             if (Math.Abs(original.DayNumber - day.DayNumber) > MaxGetEventWindowWideningDays)
             {
                 continue; // beyond GetEvent's widening: GetEvent cannot find it either
             }
 
-            needed.Add(row);
-            dates.Add(day);
-            dates.Add(original);
+            // GetEvent's range for this key (ResolveGetEventWindowAsync).
+            var reachable = originalsOnto[(row.Id, day)]
+                .Where(d => Math.Abs(d.DayNumber - day.DayNumber) <= MaxGetEventWindowWideningDays)
+                .Append(day)
+                .Append(original)
+                .ToList();
+            needed.Add(new MovedInOccurrence(row, original, reachable.Min(), reachable.Max()));
         }
 
         if (needed.Count == 0)
@@ -493,15 +517,69 @@ public partial class EventsGrpcService
             return kept;
         }
 
-        var read = await ReadCalendarAsync(propertyId, dates.Min(), dates.Max(), sdkSiteId, languageId)
+        // One shared read binds every open occurrence (through its Compliance).
+        var shared = await ReadCalendarAsync(propertyId, needed.Min(n => n.ReadFrom), needed.Max(n => n.ReadTo),
+                sdkSiteId, languageId)
             .ConfigureAwait(false);
-        foreach (var row in needed)
+        AddBoundRows(kept, needed, shared);
+
+        // A Compliance on the original date that is still unbound is a
+        // retracted occurrence the shared read did not expand: read it with
+        // GetEvent's own range.
+        var planningIds = needed.Where(n => n.Row.PlanningId.HasValue).Select(n => n.Row.PlanningId!.Value).Distinct().ToList();
+        var firstOriginal = ToUtcDateTime(needed.Min(n => n.Original));
+        var afterLastOriginal = ToUtcDateTime(needed.Max(n => n.Original).AddDays(1));
+        var compliancesOnOriginal = (await dbContext.Compliances.AsNoTracking()
+                .Where(x => x.PropertyId == propertyId && planningIds.Contains(x.PlanningId))
+                .Where(x => x.Deadline >= firstOriginal && x.Deadline < afterLastOriginal)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
+                            || x.WorkflowState == null
+                            || x.MicrotingSdkCaseId > 0)
+                .Select(x => new { x.Id, x.PlanningId, x.Deadline })
+                .ToListAsync(ct)
+                .ConfigureAwait(false))
+            .ToLookup(x => (x.PlanningId, DateOnly.FromDateTime(x.Deadline)), x => x.Id);
+        var boundIds = kept.Where(t => t.ComplianceId is > 0)
+            .ToLookup(t => (t.Id, t.TaskDate), t => t.ComplianceId!.Value);
+        var unbound = needed
+            .Where(n => n.Row.PlanningId is { } planningId
+                        && compliancesOnOriginal[(planningId, n.Original)]
+                            .Except(boundIds[(n.Row.Id, n.Row.TaskDate)])
+                            .Any())
+            .ToList();
+        foreach (var range in unbound.GroupBy(n => (n.ReadFrom, n.ReadTo)))
         {
-            kept.AddRange(read.Where(t => t.Id == row.Id && t.TaskDate == row.TaskDate && t.ComplianceId is > 0));
+            var read = await ReadCalendarAsync(propertyId, range.Key.ReadFrom, range.Key.ReadTo, sdkSiteId, languageId)
+                .ConfigureAwait(false);
+            AddBoundRows(kept, range, read);
         }
 
         return kept;
     }
+
+    /// <summary>A moved-in occurrence and the range GetEvent reads for its key.</summary>
+    private sealed record MovedInOccurrence(
+        CalendarTaskResponseModel Row, DateOnly Original, DateOnly ReadFrom, DateOnly ReadTo);
+
+    /// <summary>
+    /// Adds the compliance-backed rows of <paramref name="read"/> at each
+    /// occurrence's (task, day), via one lookup (linear, in read order).
+    /// </summary>
+    private static void AddBoundRows(
+        List<CalendarTaskResponseModel> kept, IEnumerable<MovedInOccurrence> occurrences,
+        IEnumerable<CalendarTaskResponseModel> read)
+    {
+        var bound = read.Where(t => t.ComplianceId is > 0).ToLookup(t => (t.Id, t.TaskDate));
+        foreach (var key in occurrences.Select(n => (n.Row.Id, n.Row.TaskDate)).Distinct())
+        {
+            kept.AddRange(bound[key]);
+        }
+    }
+
+    private static DateOnly ParseDayKey(string dateKey) =>
+        DateOnly.ParseExact(dateKey, DateKeyFormat, CultureInfo.InvariantCulture);
+
+    private static DateTime ToUtcDateTime(DateOnly day) => day.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
 
     /// <summary>One occurrence after hydration.</summary>
     private sealed record HydratedOccurrence(
