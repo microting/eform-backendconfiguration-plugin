@@ -5,7 +5,7 @@ import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {MatDialog} from '@angular/material/dialog';
 import {TranslateModule} from '@ngx-translate/core';
-import {EMPTY, Subject, of, throwError} from 'rxjs';
+import {EMPTY, NEVER, Subject, of, throwError} from 'rxjs';
 import {
   TailBiteComplianceReport,
   TailBiteFactor,
@@ -59,11 +59,11 @@ const report = (outbreaks: TailBiteReportOutbreak[]): TailBiteComplianceReport =
 
 describe('buildComplianceTailBiteView', () => {
   it('is null for a null model: the caller sees no Halebid section', () => {
-    expect(buildComplianceTailBiteView(null)).toBeNull();
+    expect(buildComplianceTailBiteView(null, true)).toBeNull();
   });
 
   it('lists the yes factors in display order, and every factor for the detail', () => {
-    const [row] = buildComplianceTailBiteView(report([outbreak(1)]))!.rows;
+    const [row] = buildComplianceTailBiteView(report([outbreak(1)]), false)!.rows;
 
     expect(row.assessed).toBe(true);
     expect(row.yesFactors).toEqual(['Feed and feeding', 'Rooting and activity material']);
@@ -78,7 +78,7 @@ describe('buildComplianceTailBiteView', () => {
   });
 
   it('has no factors for an outbreak that is not risk assessed', () => {
-    const [row] = buildComplianceTailBiteView(report([outbreak(1, {answers: null, assessedAt: null})]))!.rows;
+    const [row] = buildComplianceTailBiteView(report([outbreak(1, {answers: null, assessedAt: null})]), false)!.rows;
 
     expect(row.assessed).toBe(false);
     expect(row.factors).toEqual([]);
@@ -87,7 +87,7 @@ describe('buildComplianceTailBiteView', () => {
   });
 
   it('counts done actions and labels each with its factor', () => {
-    const [row] = buildComplianceTailBiteView(report([outbreak(1)]))!.rows;
+    const [row] = buildComplianceTailBiteView(report([outbreak(1)]), false)!.rows;
 
     expect(row.actionsDone).toBe(1);
     expect(row.actions.map((a) => a.factorLabel)).toEqual(['Feed and feeding', 'Rooting and activity material']);
@@ -95,7 +95,7 @@ describe('buildComplianceTailBiteView', () => {
   });
 
   it('builds one gallery item per photo from its registration: time, pens, registrant', () => {
-    const [row] = buildComplianceTailBiteView(report([outbreak(1)]))!.rows;
+    const [row] = buildComplianceTailBiteView(report([outbreak(1)]), false)!.rows;
 
     expect(row.photos.map((p) => [p.uuid, p.registrationId, p.pens, p.siteName])).toEqual([
       ['p-1', 41, 'Sti 1, Sti 2', 'Mette Holm'],
@@ -105,9 +105,9 @@ describe('buildComplianceTailBiteView', () => {
     expect(row.photos[0].effectiveAt).toEqual(new Date('2026-11-02T06:30:00Z'));
   });
 
-  it('names the property only when the section spans more than one', () => {
-    expect(buildComplianceTailBiteView(report([outbreak(1), outbreak(2)]))!.showProperty).toBe(false);
-    expect(buildComplianceTailBiteView(report([outbreak(1), outbreak(2, {propertyId: 4})]))!.showProperty).toBe(true);
+  it('names the property when the filter named none, however many properties the result holds', () => {
+    expect(buildComplianceTailBiteView(report([outbreak(1)]), true)!.showProperty).toBe(true);
+    expect(buildComplianceTailBiteView(report([outbreak(1), outbreak(2, {propertyId: 4})]), false)!.showProperty).toBe(false);
   });
 });
 
@@ -259,6 +259,49 @@ describe('ComplianceTailBiteSectionComponent', () => {
     fetchWith(of({success: true, model: report([outbreak(7)])}));
 
     expect(root().querySelector('#complianceTailBiteDetail-7')).not.toBeNull();
+  });
+
+  it('clears the previous result as soon as a new fetch starts', () => {
+    fetchWith(of({success: true, model: report([outbreak(7)])}));
+    expect(section()).not.toBeNull();
+
+    fetchWith(NEVER);
+
+    expect(section()).toBeNull();
+    expect(component.view).toBeNull();
+  });
+
+  it('starts a fresh photo cache for every fetch', () => {
+    fetchWith(of({success: true, model: report([outbreak(7)])}));
+    const first = component.photoBlobs;
+
+    fetchWith(of({success: true, model: report([outbreak(7)])}));
+
+    expect(component.photoBlobs).not.toBe(first);
+  });
+
+  it('emits the outbreak count once per answer, 0 for no section or a failure', () => {
+    const counts: number[] = [];
+    component.outbreakCount.subscribe((n) => counts.push(n));
+
+    fetchWith(of({success: true, model: report([outbreak(7), outbreak(8)])}));
+    fetchWith(of({success: true, model: null}));
+    fetchWith(throwError(() => new Error('down')));
+    fetchWith(NEVER);
+
+    expect(counts).toEqual([2, 0, 0]);
+  });
+
+  it('names each row\'s property when the filter is all properties, not when it names one', () => {
+    fetchWith(of({success: true, model: report([outbreak(7)])}));
+    expect(component.view!.showProperty).toBe(true);
+    expect(root().querySelector('#complianceTailBiteRow-7')!.textContent).toContain('Eksempelgården I/S');
+
+    state.setFilterSilently({propertyId: 3});
+    fetchWith(of({success: true, model: report([outbreak(7), outbreak(8, {propertyId: 4})])}));
+
+    expect(component.view!.showProperty).toBe(false);
+    expect(root().querySelector('#complianceTailBiteRow-7')!.textContent).not.toContain('Eksempelgården I/S');
   });
 
   it('opens the viewer on the clicked photo, walking that outbreak\'s photos', () => {

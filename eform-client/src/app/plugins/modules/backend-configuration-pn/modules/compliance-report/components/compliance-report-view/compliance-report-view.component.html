@@ -166,7 +166,11 @@
     Halebid section or its fetch failed. The caption and heading are projected,
     so they wear this view's section classes.
   -->
-  <app-compliance-tail-bite-section class="compliance-report__tail-bite" [trigger]="fetchTrigger$">
+  <app-compliance-tail-bite-section
+    class="compliance-report__tail-bite"
+    [trigger]="fetchTrigger$"
+    (outbreakCount)="onTailBiteCount($event)"
+  >
     <p class="compliance-report__tag">{{ 'Tail biting' | translate }}</p>
     <h3 class="compliance-report__heading">{{ 'Tail biting: outbreaks in the period' | translate }}</h3>
   </app-compliance-tail-bite-section>

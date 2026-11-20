@@ -1252,6 +1252,79 @@ describe('ComplianceReportViewComponent — the Halebid section', () => {
     expect(component.loadFailed).toBe(true);
     expect((fixture.nativeElement as HTMLElement).querySelector('app-compliance-tail-bite-section')).not.toBeNull();
   });
+
+  /** One headline with one eForm table of `cases` answered cases. */
+  const eformGroups = (cases: number): ComplianceReportHeadlineGroupModel[] => [{
+    headlineTagId: 7,
+    headlineName: 'Lovpligtig dokumentation',
+    tagsCaption: 'Miljøtilsyn',
+    templates: [{
+      checkListId: 509,
+      checkListName: 'Tilsyn',
+      schemaUnavailable: false,
+      columns: [],
+      cases: Array.from({length: cases}, (_, i): ComplianceReportCaseModel => ({
+        complianceId: i + 1, sdkCaseId: 100 + i, propertyId: 5, propertyName: 'Ejendom A', title: 'Område 1',
+        taskDate: '2026-08-11', completed: true, doneAt: null, workerNames: [], checkListId: 509, tags: [],
+        cells: {}, imagesCount: 0, images: [],
+      })),
+    }],
+  }];
+
+  it('counts the Halebid outbreaks into the Download gate, whichever answer arrives first', () => {
+    let eform = new Subject<any>();
+    eformColumns.mockReturnValue(eform);
+
+    state.requestFetch();
+    component.onTailBiteCount(3);
+    expect(state.total).toBe(3);
+    eform.next({success: true, model: eformGroups(2)});
+    expect(state.total).toBe(5);
+
+    eform = new Subject<any>();
+    eformColumns.mockReturnValue(eform);
+    state.requestFetch();
+    eform.next({success: true, model: eformGroups(2)});
+    expect(state.total).toBe(2);
+    component.onTailBiteCount(1);
+    expect(state.total).toBe(3);
+  });
+
+  it('lets a manager with outbreaks but no answered eForm case download', () => {
+    eformColumns.mockReturnValue(of({success: true, model: []}));
+
+    state.requestFetch();
+    component.onTailBiteCount(2);
+
+    expect(state.total).toBe(2);
+  });
+
+  it('zeroes only the Halebid half on a new trigger', () => {
+    eformColumns.mockReturnValue(of({success: true, model: eformGroups(2)}));
+    state.requestFetch();
+    component.onTailBiteCount(3);
+    expect(state.total).toBe(5);
+
+    eformColumns.mockReturnValue(new Subject<any>());
+    state.requestFetch();
+
+    expect(state.total).toBe(2);
+  });
+
+  it('keeps the previous eForm total when an eForm re-fetch fails', () => {
+    eformColumns.mockReturnValue(of({success: true, model: eformGroups(2)}));
+    state.requestFetch();
+    expect(state.total).toBe(2);
+
+    eformColumns.mockReturnValue(throwError(() => new Error('down')));
+    state.requestFetch();
+    expect(state.total).toBe(2);
+
+    eformColumns.mockReturnValue(of({success: false}));
+    state.requestFetch();
+    component.onTailBiteCount(1);
+    expect(state.total).toBe(3);
+  });
 });
 
 /**

@@ -73,13 +73,16 @@ public static class ComplianceExportTailBiteBuilder
     /// <summary>
     /// Appends the Halebid section to <paramref name="document"/>. A null
     /// <paramref name="tailBite"/> (the caller sees no Halebid section) leaves
-    /// the document untouched.
+    /// the document untouched. <paramref name="namePropertyInPdfLocations"/> —
+    /// set when the export filter names no property — prefixes every place the
+    /// PDF prints with the outbreak's property name.
     /// </summary>
     public static void Append(
         ComplianceExportDocument document,
         TailBiteComplianceReport? tailBite,
         bool includeImageAppendix,
-        IBackendConfigurationLocalizationService localizationService)
+        IBackendConfigurationLocalizationService localizationService,
+        bool namePropertyInPdfLocations = false)
     {
         if (tailBite == null) return;
 
@@ -110,7 +113,7 @@ public static class ComplianceExportTailBiteBuilder
 
         // Each column with the cell it takes from an outbreak, so the header and
         // the cells cannot drift apart.
-        var outbreakColumns = OutbreakColumns(localizationService, sectionLabel);
+        var outbreakColumns = OutbreakColumns(localizationService, sectionLabel, namePropertyInPdfLocations);
         outbreaksTable.Columns = outbreakColumns.Select(c => c.Column).ToList();
         foreach (var outbreak in outbreaks)
         {
@@ -121,20 +124,22 @@ public static class ComplianceExportTailBiteBuilder
             });
         }
 
-        var actionsTable = ActionsTable(outbreaks, localizationService);
+        var actionsTable = ActionsTable(outbreaks, localizationService, namePropertyInPdfLocations);
         if (actionsTable.Rows.Count > 0) document.Tables.Add(actionsTable);
 
-        var registrationsTable = RegistrationsTable(outbreaks, localizationService);
+        var registrationsTable = RegistrationsTable(outbreaks, localizationService, namePropertyInPdfLocations);
         if (registrationsTable.Rows.Count > 0) document.Tables.Add(registrationsTable);
 
         if (includeImageAppendix)
         {
-            AppendImageBlocks(document, outbreaksTable, outbreaks, localizationService.GetString("TailBiteOutbreak"));
+            AppendImageBlocks(document, outbreaksTable, outbreaks, localizationService.GetString("TailBiteOutbreak"),
+                namePropertyInPdfLocations);
         }
     }
 
     private static List<(ComplianceExportColumn Column, Func<TailBiteReportOutbreak, ComplianceExportCell> Cell)>
-        OutbreakColumns(IBackendConfigurationLocalizationService localizationService, string sectionLabel)
+        OutbreakColumns(IBackendConfigurationLocalizationService localizationService, string sectionLabel,
+            bool nameProperty)
     {
         var yes = localizationService.GetString("Yes");
         var no = localizationService.GetString("No");
@@ -168,7 +173,8 @@ public static class ComplianceExportTailBiteBuilder
             (Column("Area", "Area", csvOnly: true), o => ComplianceExportCell.FromText(o.LocationPath)),
             (Column("Images", "Images", ComplianceExportCellType.Number, csvOnly: true), photosCell),
 
-            (Column("TailBiteLocation", "Location", pdfOnly: true), o => ComplianceExportCell.FromText(o.LocationPath)),
+            (Column("TailBiteLocation", "Location", pdfOnly: true),
+                o => ComplianceExportCell.FromText(PdfPlace(o, o.LocationPath, nameProperty))),
             (Column("TailBiteRuleVersion", "TailBiteRule", pdfOnly: true),
                 o => ComplianceExportCell.FromText($"v{o.RuleVersion}")),
             (Column("TailBiteStarted", "TailBiteStarted"), o => DateTimeCell(o.OpenedAt, isoForCsv: true)),
@@ -223,7 +229,8 @@ public static class ComplianceExportTailBiteBuilder
 
     /// <summary>"Handlinger fra risikovurderingerne": every live action, outbreak by outbreak.</summary>
     private static ComplianceExportTable ActionsTable(
-        IReadOnlyList<TailBiteReportOutbreak> outbreaks, IBackendConfigurationLocalizationService localizationService)
+        IReadOnlyList<TailBiteReportOutbreak> outbreaks, IBackendConfigurationLocalizationService localizationService,
+        bool nameProperty)
     {
         var table = new ComplianceExportTable
         {
@@ -252,11 +259,13 @@ public static class ComplianceExportTailBiteBuilder
                     Cells =
                     [
                         ComplianceExportCell.FromNumber(outbreak.Id),
-                        ComplianceExportCell.FromText(outbreak.LocationPath),
+                        ComplianceExportCell.FromText(PdfPlace(outbreak, outbreak.LocationPath, nameProperty)),
                         ComplianceExportCell.FromText(FactorLabel(action.Factor, localizationService)),
                         ComplianceExportCell.FromText(action.Description),
                         ComplianceExportCell.FromText(action.ResponsibleName),
-                        LocalDateCell(action.FollowUpDate),
+                        // A calendar day (the web and the validation read its UTC date), not an
+                        // instant: never shifted into Copenhagen time.
+                        ComplianceExportCell.FromDate(DateTime.SpecifyKind(action.FollowUpDate, DateTimeKind.Utc).Date),
                         LocalDateCell(action.DoneAt),
                         ComplianceExportCell.FromText(action.DoneByName)
                     ]
@@ -269,7 +278,8 @@ public static class ComplianceExportTailBiteBuilder
 
     /// <summary>"Registreringer bag udbruddene": every registration, outbreak by outbreak.</summary>
     private static ComplianceExportTable RegistrationsTable(
-        IReadOnlyList<TailBiteReportOutbreak> outbreaks, IBackendConfigurationLocalizationService localizationService)
+        IReadOnlyList<TailBiteReportOutbreak> outbreaks, IBackendConfigurationLocalizationService localizationService,
+        bool nameProperty)
     {
         var table = new ComplianceExportTable
         {
@@ -298,7 +308,7 @@ public static class ComplianceExportTailBiteBuilder
                     [
                         ComplianceExportCell.FromNumber(outbreak.Id),
                         DateTimeCell(registration.EffectiveAt, isoForCsv: false),
-                        ComplianceExportCell.FromText(registration.Pens),
+                        ComplianceExportCell.FromText(PdfPlace(outbreak, registration.Pens, nameProperty)),
                         ComplianceExportCell.FromNumber(registration.Minor),
                         ComplianceExportCell.FromNumber(registration.Severe),
                         ComplianceExportCell.FromText(registration.ActionTypes),
@@ -319,7 +329,7 @@ public static class ComplianceExportTailBiteBuilder
     /// eForm case; a registration the ceiling leaves nothing for gets no block.
     /// </summary>
     private static void AppendImageBlocks(ComplianceExportDocument document, ComplianceExportTable table,
-        IReadOnlyList<TailBiteReportOutbreak> outbreaks, string outbreakLabel)
+        IReadOnlyList<TailBiteReportOutbreak> outbreaks, string outbreakLabel, bool nameProperty)
     {
         var registrationsWithABlock = new HashSet<int>();
 
@@ -342,7 +352,7 @@ public static class ComplianceExportTailBiteBuilder
                     .ToString(DisplayDateTimeFormat, CultureInfo.InvariantCulture);
                 table.ImageBlocks.Add(new ComplianceExportImageBlock
                 {
-                    Caption = $"{outbreakLabel} {outbreak.Id} · {registration.Pens} · {effectiveAt} · {registration.RegisteredByName}",
+                    Caption = $"{outbreakLabel} {outbreak.Id} · {PdfPlace(outbreak, registration.Pens, nameProperty)} · {effectiveAt} · {registration.RegisteredByName}",
                     TotalImages = registration.Photos.Count,
                     TailBitePhotos = photoIds.Take(allowed).ToList()
                 });
@@ -368,6 +378,17 @@ public static class ComplianceExportTailBiteBuilder
 
         return factor.ToString();
     }
+
+    /// <summary>
+    /// A place as the PDF prints it: with the all-properties filter the page names
+    /// no farm, so the outbreak's property leads (<c>{Property} › {place}</c>);
+    /// with one property in the filter the page header already names it. The CSV
+    /// has its own Ejendom column and never reads this.
+    /// </summary>
+    private static string PdfPlace(TailBiteReportOutbreak outbreak, string place, bool nameProperty) =>
+        nameProperty && !string.IsNullOrWhiteSpace(outbreak.PropertyName)
+            ? $"{outbreak.PropertyName}{TailBiteComplianceReportService.PathSeparator}{place}"
+            : place;
 
     private static int PhotoCount(TailBiteReportOutbreak outbreak) => outbreak.Registrations.Sum(r => r.Photos.Count);
 

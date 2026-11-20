@@ -365,6 +365,8 @@ public static class ComplianceExportDocumentBuilder
     /// <see cref="ComplianceExportTailBiteBuilder.Append"/>, sharing the
     /// document-wide appendix budget. Null — the caller sees no Halebid section —
     /// leaves the document exactly as it was without the argument.
+    /// <paramref name="namePropertyInPdfLocations"/> is passed through: with no
+    /// property in the filter the PDF's Halebid places lead with the property.
     /// </para>
     /// </summary>
     public static ComplianceExportDocument BuildReport(
@@ -372,7 +374,8 @@ public static class ComplianceExportDocumentBuilder
         string period,
         bool includeImageAppendix,
         IBackendConfigurationLocalizationService localizationService,
-        TailBiteComplianceReport tailBite = null)
+        TailBiteComplianceReport tailBite = null,
+        bool namePropertyInPdfLocations = false)
     {
         // No document Title (#1328): the Rapport PDF opens with the first report
         // headline, not a "Rapport" line — the view is already in the file name.
@@ -453,7 +456,8 @@ public static class ComplianceExportDocumentBuilder
             }
         }
 
-        ComplianceExportTailBiteBuilder.Append(document, tailBite, includeImageAppendix, localizationService);
+        ComplianceExportTailBiteBuilder.Append(
+            document, tailBite, includeImageAppendix, localizationService, namePropertyInPdfLocations);
 
         return document;
     }

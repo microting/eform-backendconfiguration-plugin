@@ -251,6 +251,15 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
    * filter set — but on its own request: either can fail without the other.
    */
   fetchTrigger$!: Observable<void>;
+  /**
+   * The two halves of this view's `state.total` (#1517): the answered eForm
+   * cases and the Halebid section's outbreaks. Each is set by its own answer.
+   * The eForm half changes ONLY in `applyResponse` — the existing contract, so
+   * a failed re-fetch keeps the previous total; the Halebid half is reset on
+   * every trigger, since the section clears itself then. See `publishTotal`.
+   */
+  private eformTotal = 0;
+  private tailBiteTotal = 0;
   private deleteDialogRef: MatDialogRef<unknown> | null = null;
   private pendingDeleteId: number | null = null;
   /** The row the open confirm dialog was opened from — its NEXT row is landed on. */
@@ -312,6 +321,9 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
           // failure is no longer the current state of the view.
           this.loadFailed = false;
           this.state.setLoading(true);
+          // The section clears itself on this trigger; its half goes with it.
+          this.tailBiteTotal = 0;
+          this.publishTotal();
         }),
         // switchMap, so a trigger landing while an earlier request is in flight
         // cancels it rather than racing it into the view.
@@ -396,7 +408,27 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
     // `[disabled]` on `#complianceDownloadBtn`. Drop it and Download stays dead
     // after a Rapport fetch. The pagination chrome is NOT a reader — the shell
     // hides the whole <nav> outside Detaljer.
-    this.state.setTotalCount(total);
+    this.eformTotal = total;
+    this.publishTotal();
+  }
+
+  /**
+   * The Halebid section's outbreak count for the current fetch (#1517): a
+   * tail-bite manager whose period has outbreaks but no answered eForm case
+   * still has a report to download.
+   */
+  onTailBiteCount(count: number): void {
+    this.tailBiteTotal = count;
+    this.publishTotal();
+  }
+
+  /**
+   * `state.total` for Rapport is eForm cases + Halebid outbreaks, the two
+   * things the Rapport export writes. Called whenever either half changes;
+   * the halves arrive in either order.
+   */
+  private publishTotal(): void {
+    this.state.setTotalCount(this.eformTotal + this.tailBiteTotal);
   }
 
   /**

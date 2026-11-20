@@ -84,11 +84,12 @@ public class TailBiteComplianceReportServiceTests : TailBiteTestBase
     public async Task Period_EdgesInCopenhagenTime()
     {
         await SeedManagerAsync();
-        await OutbreakAsync(new DateTime(2026, 11, 30, 23, 10, 0));                                     // 1 Dec 00:10 local → out
+        // IX_TailBiteOutbreaks_OpenKey allows one OPEN outbreak per location, so each open one gets its own location.
+        await OutbreakAsync(new DateTime(2026, 11, 30, 23, 10, 0), locationId: Pen501Id);               // 1 Dec 00:10 local → out
         await OutbreakAsync(new DateTime(2026, 10, 10, 8, 0, 0), new DateTime(2026, 10, 31, 22, 50, 0)); // closed 31 Oct 23:50 local → out
         var openAcross = await OutbreakAsync(new DateTime(2026, 10, 15, 8, 0, 0));
         var closedFirstDay = await OutbreakAsync(new DateTime(2026, 10, 20, 8, 0, 0), new DateTime(2026, 10, 31, 23, 5, 0));
-        var openedLastEvening = await OutbreakAsync(new DateTime(2026, 11, 30, 22, 30, 0));               // 30 Nov 23:30 local → in
+        var openedLastEvening = await OutbreakAsync(new DateTime(2026, 11, 30, 22, 30, 0), locationId: StableBId); // 30 Nov 23:30 local → in
 
         var report = await Sut().BuildAsync(Request(PropertyId));
 

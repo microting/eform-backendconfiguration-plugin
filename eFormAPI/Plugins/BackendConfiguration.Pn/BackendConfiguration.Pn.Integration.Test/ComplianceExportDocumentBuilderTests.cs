@@ -1602,6 +1602,58 @@ public class ComplianceExportDocumentBuilderTests
         Assert.That(open[7].IsEmpty, Is.True);
     }
 
+    /// <summary>
+    /// With the all-properties filter the PDF header names no farm, so every
+    /// place the PDF prints — the Udbrud table's Lokation, the actions and
+    /// registrations tables and the appendix caption — leads with the
+    /// outbreak's property. The CSV's Område keeps the bare path (it has
+    /// Ejendom).
+    /// </summary>
+    [Test]
+    public void Halebid_AllPropertiesFilterNamesThePropertyInEveryPdfPlace()
+    {
+        var document = ComplianceExportDocumentBuilder.BuildReport(
+            [], "p", true, HalebidDanish, TailBiteExportTestData.MockupReport(), namePropertyInPdfLocations: true);
+        var outbreaks = document.Tables[0];
+
+        Assert.That(CellAt(outbreaks, outbreaks.Rows[0], "TailBiteLocation").Text,
+            Is.EqualTo("Eksempelgården I/S › Stald 3 › Sektion 2"));
+        Assert.That(CellAt(outbreaks, outbreaks.Rows[0], "Area").Text, Is.EqualTo("Stald 3 › Sektion 2"),
+            "the CSV's Område is unchanged");
+        Assert.That(document.Tables[1].Rows[0].Cells[1].Text, Is.EqualTo("Eksempelgården I/S › Stald 3 › Sektion 2"));
+        Assert.That(document.Tables[2].Rows[0].Cells[2].Text, Is.EqualTo("Eksempelgården I/S › Sti 207"));
+        Assert.That(outbreaks.ImageBlocks[0].Caption,
+            Is.EqualTo("Udbrud 41 · Eksempelgården I/S › Sti 207 · 02.11.2026 06:10 · Mette Holm"));
+
+        var oneProperty = ComplianceExportDocumentBuilder.BuildReport(
+            [], "p", true, HalebidDanish, TailBiteExportTestData.MockupReport());
+        Assert.That(CellAt(oneProperty.Tables[0], oneProperty.Tables[0].Rows[0], "TailBiteLocation").Text,
+            Is.EqualTo("Stald 3 › Sektion 2"), "one property in the filter: the header names it");
+    }
+
+    /// <summary>
+    /// An action's follow-up date is a calendar day (the web and the validation
+    /// read its UTC date), so 23:30 UTC on 6 November stays 06.11.2026 — it is
+    /// not shifted into 7 November Copenhagen time like an instant would be.
+    /// </summary>
+    [Test]
+    public void Halebid_FollowUpDateIsTheUtcCalendarDay()
+    {
+        var report = TailBiteExportTestData.MockupReport();
+        var action = report.Outbreaks[0].Actions[0] with
+        {
+            FollowUpDate = new DateTime(2026, 11, 6, 23, 30, 0, DateTimeKind.Utc)
+        };
+        var outbreak = report.Outbreaks[0] with { Actions = [action] };
+
+        var document = ComplianceExportDocumentBuilder.BuildReport(
+            [], "p", false, HalebidDanish, report with { Outbreaks = [outbreak] });
+
+        var followUp = document.Tables[1].Rows[0].Cells[5];
+        Assert.That(followUp.Date, Is.EqualTo(new DateTime(2026, 11, 6)));
+        Assert.That(followUp.Text, Is.EqualTo("06.11.2026"));
+    }
+
     /// <summary>No outbreak has an action: the actions table is left out.</summary>
     [Test]
     public void Halebid_ActionsTableIsOmittedWhenNoOutbreakHasActions()

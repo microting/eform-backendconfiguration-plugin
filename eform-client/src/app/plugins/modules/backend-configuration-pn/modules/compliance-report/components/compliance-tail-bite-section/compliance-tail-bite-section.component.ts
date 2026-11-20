@@ -1,13 +1,13 @@
 import {Overlay} from '@angular/cdk/overlay';
 import {DatePipe, NgFor, NgIf} from '@angular/common';
-import {Component, Input, OnDestroy, OnInit, inject} from '@angular/core';
+import {Component, EventEmitter, Input, OnDestroy, OnInit, Output, inject} from '@angular/core';
 import {MatIconButton} from '@angular/material/button';
 import {MatDialog} from '@angular/material/dialog';
 import {MatIcon} from '@angular/material/icon';
 import {MatTooltip} from '@angular/material/tooltip';
 import {TranslatePipe} from '@ngx-translate/core';
 import {Observable, Subject, of} from 'rxjs';
-import {catchError, defaultIfEmpty, map, switchMap, takeUntil} from 'rxjs/operators';
+import {catchError, defaultIfEmpty, map, switchMap, takeUntil, tap} from 'rxjs/operators';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {TAIL_BITE_FACTORS, TailBiteComplianceReport, TailBiteReportOutbreak, TailBiteReportTotals} from '../../../../models';
 import {BackendConfigurationPnComplianceReportService, BackendConfigurationPnTailBiteService} from '../../../../services';
@@ -61,7 +61,7 @@ export interface ComplianceTailBiteRow {
 export interface ComplianceTailBiteView {
   totals: TailBiteReportTotals;
   rows: ComplianceTailBiteRow[];
-  /** More than one property in the section: each row then names its property under the location. */
+  /** The report was run for all properties: each row then names its property under the location. */
   showProperty: boolean;
 }
 
@@ -105,15 +105,22 @@ function buildRow(o: TailBiteReportOutbreak): ComplianceTailBiteRow {
   };
 }
 
-/** What the section shows for a response model: null (the caller sees no Halebid section) shows nothing. */
-export function buildComplianceTailBiteView(report: TailBiteComplianceReport | null): ComplianceTailBiteView | null {
+/**
+ * What the section shows for a response model: null (the caller sees no Halebid section) shows nothing.
+ * `allProperties`: the filter named no property, so each row names its own — decided by the filter, not by how many
+ * properties this result happens to hold.
+ */
+export function buildComplianceTailBiteView(
+  report: TailBiteComplianceReport | null,
+  allProperties: boolean,
+): ComplianceTailBiteView | null {
   if (!report) {
     return null;
   }
   return {
     totals: report.totals,
     rows: report.outbreaks.map(buildRow),
-    showProperty: new Set(report.outbreaks.map((o) => o.propertyId)).size > 1,
+    showProperty: allProperties,
   };
 }
 
@@ -134,6 +141,12 @@ export function buildComplianceTailBiteView(report: TailBiteComplianceReport | n
 export class ComplianceTailBiteSectionComponent implements OnInit, OnDestroy {
   /** Emits whenever the Rapport view fetches; the section then fetches with the state's current filter set. */
   @Input({required: true}) trigger!: Observable<unknown>;
+  /**
+   * The number of outbreaks the section shows, once per answer: 0 for a null model or a failed fetch. The Rapport
+   * view adds it to its eForm row count for the Download gate. Not emitted when a fetch starts — the view resets its
+   * own copy on the same trigger.
+   */
+  @Output() outbreakCount = new EventEmitter<number>();
 
   private state = inject(ComplianceReportStateService);
   private reportService = inject(BackendConfigurationPnComplianceReportService);
@@ -145,29 +158,43 @@ export class ComplianceTailBiteSectionComponent implements OnInit, OnDestroy {
   view: ComplianceTailBiteView | null = null;
   /** Ids of the outbreaks whose detail row is open; kept over a re-fetch. */
   readonly expanded = new Set<number>();
-  /** The section's fetched photos, shared by its thumbnails and the viewer. */
-  readonly photoBlobs = new TailBitePhotoBlobs((uuid) => this.tailBiteService.getPhotoBlob(uuid));
+  /** This fetch's photos, shared by its thumbnails and the viewer; a new cache per fetch, so it never outgrows one result. */
+  photoBlobs = this.newPhotoBlobs();
 
   ngOnInit(): void {
     this.trigger
       .pipe(
-        // switchMap: a newer trigger cancels a request still in flight.
-        switchMap(() =>
-          this.reportService.tailBite(this.state.requestModel).pipe(
-            map((res) => (res?.success ? res.model ?? null : null)),
+        // A new fetch shows nothing until it answers: the previous result's totals never sit next to new filters.
+        tap(() => {
+          this.view = null;
+          this.photoBlobs = this.newPhotoBlobs();
+        }),
+        // switchMap: a newer trigger cancels a request still in flight. The filter is read once, at fetch time.
+        switchMap(() => {
+          const request = this.state.requestModel;
+          const allProperties = request.propertyId == null;
+          return this.reportService.tailBite(request).pipe(
+            map((res) => buildComplianceTailBiteView(res?.success ? res.model ?? null : null, allProperties)),
             // The host's error interceptor may complete a failed call without a value; that is a failure too.
             defaultIfEmpty(null),
             catchError(() => of(null)),
-          ),
-        ),
+          );
+        }),
         takeUntil(this.destroy$),
       )
-      .subscribe((report) => (this.view = buildComplianceTailBiteView(report)));
+      .subscribe((view) => {
+        this.view = view;
+        this.outbreakCount.emit(view?.rows.length ?? 0);
+      });
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  private newPhotoBlobs(): TailBitePhotoBlobs {
+    return new TailBitePhotoBlobs((uuid) => this.tailBiteService.getPhotoBlob(uuid));
   }
 
   isExpanded(row: ComplianceTailBiteRow): boolean {

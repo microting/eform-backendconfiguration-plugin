@@ -56,7 +56,7 @@ public class TailBiteComplianceReportService(BackendConfigurationPnDbContext db,
     ITailBitePhotoQuery photoQuery, IGrpcSiteResolver siteResolver) : ITailBiteComplianceReportService
 {
     private const string Removed = Constants.WorkflowStates.Removed;
-    private const string PathSeparator = " › ";
+    internal const string PathSeparator = " › ";
     private const string ListSeparator = ", ";
 
     private static DateTime Utc(DateTime d) => DateTime.SpecifyKind(d, DateTimeKind.Utc);
@@ -173,18 +173,13 @@ public class TailBiteComplianceReportService(BackendConfigurationPnDbContext db,
         return new TailBiteComplianceReport(report, totals);
     }
 
-    // PropertyId (or every property when null) ∩ tail biting enabled ∩ the caller a tail-bite manager there.
-    private async Task<List<int>> ManagedEnabledPropertiesAsync(int site, int? propertyId)
-    {
-        var enabled = await db.TailBiteProperties.AsNoTracking()
+    // PropertyId (or every property when null) ∩ tail biting enabled ∩ the caller a tail-bite manager there — one query;
+    // the manager test is TailBiteAccess.IsManagerAsync's (an active PropertyWorker row with TailBiteManager).
+    private Task<List<int>> ManagedEnabledPropertiesAsync(int site, int? propertyId) =>
+        db.TailBiteProperties.AsNoTracking()
             .Where(t => t.Enabled && (propertyId == null || t.PropertyId == propertyId))
+            .Where(t => db.PropertyWorkers.Any(pw => pw.PropertyId == t.PropertyId && pw.WorkerId == site
+                                                     && pw.TailBiteManager && pw.WorkflowState != Removed))
             .Select(t => t.PropertyId).Distinct().OrderBy(id => id)
             .ToListAsync();
-        var managed = new List<int>();
-        foreach (var id in enabled)
-        {
-            if (await access.IsManagerAsync(site, id)) managed.Add(id);
-        }
-        return managed;
-    }
 }

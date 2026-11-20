@@ -187,7 +187,9 @@ public class BackendConfigurationComplianceExportService(
                     document = ComplianceExportDocumentBuilder.BuildReport(
                         result.Model, period,
                         ShouldIncludeImageAppendix(viewMode, format, requestModel.IncludeImageAppendix),
-                        localizationService, tailBite);
+                        localizationService, tailBite,
+                        // All properties: the PDF header names no farm, so its Halebid places do.
+                        namePropertyInPdfLocations: requestModel.PropertyId == null);
                     break;
                 }
             }
