@@ -624,6 +624,60 @@ describe('ChemicalsContainerComponent', () => {
       expect(router.navigate).toHaveBeenCalledWith([], urlSync(8));
     });
 
+    describe('a pick made while a navigation to ?propertyId=7 is in flight wins when it ends (Copilot 4640955472)', () => {
+      it('picking property 8', () => {
+        const component = build(list);
+        routerEvents$.next(new NavigationStart(2, '/chemicals/inventory?propertyId=7'));
+
+        component.onPropertyChange(8);
+        store.dispatch.mockClear();
+        router.navigate.mockClear();
+        queryParams = {propertyId: '7'};
+        routerEvents$.next(new NavigationEnd(2, '/chemicals/inventory?propertyId=7', '/chemicals/inventory?propertyId=7'));
+
+        expect(store.dispatch).not.toHaveBeenCalled();
+        expect(component.propertyId).toBe(8);
+        expect(router.navigate).toHaveBeenCalledWith([], urlSync(8));
+      });
+
+      it('picking "All"', () => {
+        queryParams = {propertyId: '8'};
+        const component = build(list);
+        routerEvents$.next(new NavigationStart(2, '/chemicals/inventory?propertyId=7'));
+
+        component.onPropertyChange(CHEMICALS_ALL_PROPERTIES);
+        store.dispatch.mockClear();
+        router.navigate.mockClear();
+        queryParams = {propertyId: '7'};
+        routerEvents$.next(new NavigationEnd(2, '/chemicals/inventory?propertyId=7', '/chemicals/inventory?propertyId=7'));
+
+        expect(store.dispatch).not.toHaveBeenCalled();
+        expect(component.allProperties).toBe(true);
+        expect(router.navigate).toHaveBeenCalledWith([], dropParam);
+      });
+    });
+
+    it('a cancelled navigation replaced by a newer one does not count as a pending pick (rereview)', () => {
+      vi.useFakeTimers();
+      queryParams = {propertyId: '7'};
+      const component = build(list);
+      store.dispatch.mockClear();
+      router.navigate.mockClear();
+
+      routerEvents$.next(new NavigationStart(2, '/chemicals/history?propertyId=7'));
+      routerEvents$.next(new NavigationCancel(2, '/chemicals/history?propertyId=7', 'superseded'));
+      routerEvents$.next(new NavigationStart(3, '/chemicals/history'));
+      vi.runOnlyPendingTimers();
+      queryParams = {};
+      routerEvents$.next(new NavigationEnd(3, '/chemicals/history', '/chemicals/history'));
+      vi.useRealTimers();
+
+      // The newer navigation has no ?propertyId= on a screen with "All": "All", as for any menu click.
+      expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectAllProperties());
+      expect(component.allProperties).toBe(true);
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
+
     it('adopts the ?propertyId= of a later navigation while "All" is selected', () => {
       build(list);
       store.dispatch.mockClear();
