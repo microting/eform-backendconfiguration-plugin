@@ -29,8 +29,8 @@ public partial class EventsGrpcService
     private const int DefaultListChangesWindowDays = 3;
 
     /// <summary>
-    /// The days the legacy list eager-deploys (the app asks for today..today+2);
-    /// ListChanges deploys only the part of its window inside them.
+    /// The legacy list's deploy range (the app asks for today..today+2);
+    /// ListChanges runs exactly that deploy when its window touches it.
     /// </summary>
     private const int ListDeployFutureDays = 2;
 
@@ -95,6 +95,16 @@ public partial class EventsGrpcService
 
         var propertyIds = (await userPropertyAccess.GetAccessiblePropertyIdsAsync(sdkSiteId).ConfigureAwait(false))
             .Distinct().Order().ToList();
+        if (propertyIds.Count > ListChangesCursor.MaxProperties)
+        {
+            // A cursor names at most MaxProperties; a bigger set would reset
+            // every call, so it is refused before anything is read.
+            logger.LogWarning(
+                "EventsGrpcService.ListChanges: sdkSiteId={SdkSiteId} is assigned to {Count} properties (max {Max})",
+                sdkSiteId, propertyIds.Count, ListChangesCursor.MaxProperties);
+            throw new RpcException(new Status(StatusCode.ResourceExhausted,
+                $"The worker is assigned to more than {ListChangesCursor.MaxProperties} properties."));
+        }
         var languageId = await siteResolver.GetSiteLanguageIdAsync(sdkSiteId).ConfigureAwait(false);
         var prior = ResolveCursor(request.Cursor, sdkSiteId, languageId ?? 0, from, to, today);
 
@@ -293,14 +303,19 @@ public partial class EventsGrpcService
     {
         var fromKey = from.ToString(DateKeyFormat, CultureInfo.InvariantCulture);
         var toKey = to.ToString(DateKeyFormat, CultureInfo.InvariantCulture);
-        var deployFrom = from > today ? from : today;
-        var deployTo = to < today.AddDays(ListDeployFutureDays) ? to : today.AddDays(ListDeployFutureDays);
+        // Exactly the deploy the legacy list runs for the app's window
+        // (today..today+2, all boards): switching an app from ListEvents to
+        // ListChanges must not create a case the list would not. Skipped when
+        // the served window does not touch those days.
+        var deployFrom = today;
+        var deployTo = today.AddDays(ListDeployFutureDays);
+        var deploy = from <= deployTo && to >= deployFrom;
 
         var rows = new List<CalendarTaskResponseModel>();
         foreach (var propertyId in propertyIds)
         {
             ct.ThrowIfCancellationRequested();
-            if (deployFrom <= deployTo)
+            if (deploy)
             {
                 try
                 {
@@ -322,7 +337,7 @@ public partial class EventsGrpcService
             // candidates) for one 7-day window only, so the window is read in
             // 7-day chunks. A row is served when its effective date is inside
             // the window (a scope=this move can carry it outside), once per key.
-            var propertyRows = new List<CalendarTaskResponseModel>();
+            var chunks = new List<CalendarChunk>();
             for (var chunkStart = from; chunkStart <= to; chunkStart = chunkStart.AddDays(ListChangesChunkDays))
             {
                 var chunkEnd = chunkStart.AddDays(ListChangesChunkDays - 1);
@@ -331,27 +346,48 @@ public partial class EventsGrpcService
                     chunkEnd = to;
                 }
 
-                var chunkRows = await ReadCalendarAsync(propertyId, chunkStart, chunkEnd, sdkSiteId, languageId)
-                    .ConfigureAwait(false);
-                // Per chunk: a move from another chunk of the window is "moved in" for this one.
-                propertyRows.AddRange(await ResolveMovedInRowsAsync(
-                    chunkRows, propertyId, chunkStart, chunkEnd, sdkSiteId, languageId, ct).ConfigureAwait(false));
+                chunks.Add(new CalendarChunk(
+                    await ReadCalendarAsync(propertyId, chunkStart, chunkEnd, sdkSiteId, languageId).ConfigureAwait(false),
+                    chunkStart, chunkEnd));
             }
-            rows.AddRange(propertyRows
-                .Where(r => r.Status && IsInWindow(r.TaskDate, from, to))
-                .DistinctBy(r => (r.Id, r.TaskDate, r.ComplianceId ?? 0)));
+
+            // The cap applies before the moved-in read below.
+            var inWindow = Served(chunks.SelectMany(chunk => chunk.Rows), from, to).Count;
+            if (rows.Count + inWindow > ListChangesCursor.MaxEntries)
+            {
+                throw TooManyOccurrences(sdkSiteId, fromKey, toKey);
+            }
+
+            var propertyRows = await ResolveMovedInRowsAsync(chunks, propertyId, sdkSiteId, languageId, ct)
+                .ConfigureAwait(false);
+            rows.AddRange(Served(propertyRows, from, to));
             if (rows.Count > ListChangesCursor.MaxEntries)
             {
-                logger.LogWarning(
-                    "EventsGrpcService.ListChanges: more than {Max} occurrences for sdkSiteId={SdkSiteId} in {From}..{To}",
-                    ListChangesCursor.MaxEntries, sdkSiteId, fromKey, toKey);
-                throw new RpcException(new Status(StatusCode.ResourceExhausted,
-                    $"The window holds more than {ListChangesCursor.MaxEntries} occurrences; request a narrower window."));
+                throw TooManyOccurrences(sdkSiteId, fromKey, toKey);
             }
         }
 
         return rows;
     }
+
+    private RpcException TooManyOccurrences(int sdkSiteId, string fromKey, string toKey)
+    {
+        logger.LogWarning(
+            "EventsGrpcService.ListChanges: more than {Max} occurrences for sdkSiteId={SdkSiteId} in {From}..{To}",
+            ListChangesCursor.MaxEntries, sdkSiteId, fromKey, toKey);
+        return new RpcException(new Status(StatusCode.ResourceExhausted,
+            $"The window holds more than {ListChangesCursor.MaxEntries} occurrences; request a narrower window."));
+    }
+
+    /// <summary>One 7-day calendar read of the window.</summary>
+    private sealed record CalendarChunk(List<CalendarTaskResponseModel> Rows, DateOnly Start, DateOnly End);
+
+    /// <summary>Rows that are served: active, dated inside the window, once per wire key.</summary>
+    private static List<CalendarTaskResponseModel> Served(
+        IEnumerable<CalendarTaskResponseModel> rows, DateOnly from, DateOnly to) =>
+        rows.Where(r => r.Status && IsInWindow(r.TaskDate, from, to))
+            .DistinctBy(r => (r.Id, r.TaskDate, r.ComplianceId ?? 0))
+            .ToList();
 
     private static bool IsInWindow(string? dateKey, DateOnly from, DateOnly to) =>
         DateOnly.TryParseExact(dateKey, DateKeyFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var day)
@@ -389,52 +425,82 @@ public partial class EventsGrpcService
     /// <summary>
     /// The calendar renders an occurrence moved INTO a read range from outside
     /// it without its compliance and case, and the read holding the original
-    /// date omits it. For an eForm occurrence of one chunk whose original date
-    /// is outside that chunk (another chunk of the window, or outside the
-    /// window), the deployed row is read the way GetEvent reads it (its day
-    /// widened to the original date, at most <see cref="MaxGetEventWindowWideningDays"/>),
-    /// so it is served once, with its own ids, content and GetEvent etag. A
-    /// move within the chunk needs nothing: that read carries the deployed row.
+    /// date omits it. Such an eForm row whose original date is outside the
+    /// chunk that produced it (another chunk of the window, or outside the
+    /// window) is replaced by its deployed row, read the way GetEvent reads it
+    /// (day widened to the original date, at most <see cref="MaxGetEventWindowWideningDays"/>),
+    /// so it is served once with its own ids, content and GetEvent etag. All
+    /// such rows of the property share ONE read over the union of their
+    /// ranges (bounded by the window plus the widening on each side). A move
+    /// within one chunk needs nothing: that read carries the deployed row.
     /// </summary>
     private async Task<List<CalendarTaskResponseModel>> ResolveMovedInRowsAsync(
-        List<CalendarTaskResponseModel> rows, int propertyId, DateOnly chunkStart, DateOnly chunkEnd,
-        int sdkSiteId, int? languageId, CancellationToken ct)
+        IReadOnlyList<CalendarChunk> chunks, int propertyId, int sdkSiteId, int? languageId, CancellationToken ct)
     {
-        var movedIn = rows
-            .Where(r => r.ExceptionId is > 0 && r.ComplianceId is not > 0 && r.EformId is > 0
-                        && IsInWindow(r.TaskDate, chunkStart, chunkEnd))
-            .ToList();
-        if (movedIn.Count == 0)
+        var kept = new List<CalendarTaskResponseModel>();
+        var movedIn = new List<(CalendarTaskResponseModel Row, CalendarChunk Chunk)>();
+        foreach (var chunk in chunks)
         {
-            return rows;
+            foreach (var row in chunk.Rows)
+            {
+                if (row.ExceptionId is > 0 && row.ComplianceId is not > 0 && row.EformId is > 0
+                    && IsInWindow(row.TaskDate, chunk.Start, chunk.End))
+                {
+                    movedIn.Add((row, chunk));
+                }
+                else
+                {
+                    kept.Add(row);
+                }
+            }
         }
 
-        var exceptionIds = movedIn.Select(r => r.ExceptionId!.Value).Distinct().ToList();
+        if (movedIn.Count == 0)
+        {
+            return kept;
+        }
+
+        var exceptionIds = movedIn.Select(m => m.Row.ExceptionId!.Value).Distinct().ToList();
         var originalDates = await dbContext.CalendarOccurrenceExceptions.AsNoTracking()
             .Where(x => exceptionIds.Contains(x.Id))
             .Select(x => new { x.Id, x.OriginalDate })
             .ToDictionaryAsync(x => x.Id, x => DateOnly.FromDateTime(x.OriginalDate), ct)
             .ConfigureAwait(false);
 
-        var resolved = rows.Except(movedIn).ToList();
-        foreach (var row in movedIn)
+        var needed = new List<CalendarTaskResponseModel>();
+        var dates = new List<DateOnly>();
+        foreach (var (row, chunk) in movedIn)
         {
             if (!originalDates.TryGetValue(row.ExceptionId!.Value, out var original)
-                || (original >= chunkStart && original <= chunkEnd))
+                || (original >= chunk.Start && original <= chunk.End))
             {
-                continue;
+                continue; // the chunk's own read carries the deployed row
             }
 
-            var day = DateTime.ParseExact(row.TaskDate!, DateKeyFormat, CultureInfo.InvariantCulture);
-            var (start, end) = await ResolveGetEventWindowAsync(row.Id, row.PlanningId ?? 0, day,
-                new EventKey { EventId = row.Id.ToString(CultureInfo.InvariantCulture), PlanDayKey = row.TaskDate },
-                ct).ConfigureAwait(false);
-            var read = await ReadCalendarAsync(propertyId, DateOnly.FromDateTime(start), DateOnly.FromDateTime(end),
-                sdkSiteId, languageId).ConfigureAwait(false);
-            resolved.AddRange(read.Where(t => t.Id == row.Id && t.TaskDate == row.TaskDate && t.ComplianceId is > 0));
+            var day = DateOnly.ParseExact(row.TaskDate!, DateKeyFormat, CultureInfo.InvariantCulture);
+            if (Math.Abs(original.DayNumber - day.DayNumber) > MaxGetEventWindowWideningDays)
+            {
+                continue; // beyond GetEvent's widening: GetEvent cannot find it either
+            }
+
+            needed.Add(row);
+            dates.Add(day);
+            dates.Add(original);
         }
 
-        return resolved;
+        if (needed.Count == 0)
+        {
+            return kept;
+        }
+
+        var read = await ReadCalendarAsync(propertyId, dates.Min(), dates.Max(), sdkSiteId, languageId)
+            .ConfigureAwait(false);
+        foreach (var row in needed)
+        {
+            kept.AddRange(read.Where(t => t.Id == row.Id && t.TaskDate == row.TaskDate && t.ComplianceId is > 0));
+        }
+
+        return kept;
     }
 
     /// <summary>One occurrence after hydration.</summary>

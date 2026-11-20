@@ -58,8 +58,10 @@ message ListChangesRequest {
   // Window, yyyy-MM-dd, inclusive. Both empty = today .. today+2 (UTC), the
   // app's list window. The server clamps the window to the stream's window
   // (today-7 .. today+30, UTC) and states the window it served in the reply;
-  // a window entirely outside it is INVALID_ARGUMENT. Cases are eager-deployed
-  // only for the part inside today .. today+2, as the list does.
+  // a window entirely outside it is INVALID_ARGUMENT. When the window touches
+  // today .. today+2, cases are eager-deployed exactly as ListEvents does for
+  // today .. today+2 (for weekly weekday rules that can include later days of
+  // the same week); otherwise nothing is deployed.
   string from_date_key = 2;
   string to_date_key = 3;
 }

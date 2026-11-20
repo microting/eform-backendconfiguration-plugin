@@ -402,7 +402,8 @@ public class EventsGrpcListChangesTests : TestBaseSetup
         ItemsPlanningPnDbContext? ip = null,
         IBackendConfigurationCalendarService? calendar = null,
         FormReads? forms = null,
-        int? languageId = null)
+        int? languageId = null,
+        IBackendConfigurationUserPropertyAccess? access = null)
     {
         bc ??= BackendConfigurationPnDbContext!;
         ip ??= ItemsPlanningPnDbContext!;
@@ -415,7 +416,7 @@ public class EventsGrpcListChangesTests : TestBaseSetup
         return new EventsGrpcService(
             calendar ?? NewCalendar(w, bc, ip),
             w.Properties,
-            new BackendConfigurationUserPropertyAccess(bc),
+            access ?? new BackendConfigurationUserPropertyAccess(bc),
             siteResolver,
             coreHelper,
             bc,
@@ -447,7 +448,7 @@ public class EventsGrpcListChangesTests : TestBaseSetup
 
     private async Task<Series> SeedSeriesAsync(
         World w, int propertyId, string title, DateTime start, string? weekdaysCsv, int siteId,
-        bool withEform = true)
+        bool withEform = true, int repeatEvery = 1, int? dayOfMonth = null)
     {
         var areaRule = new AreaRule
         {
@@ -463,11 +464,22 @@ public class EventsGrpcListChangesTests : TestBaseSetup
         });
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
-        var weekly = weekdaysCsv != null;
+        // Planning repeat type and the ARP's mirror of it (1 = day, 2 = week, 3 = month).
+        var (repeatType, arpRepeatType) = (RepeatType.Day, 1);
+        if (dayOfMonth != null)
+        {
+            (repeatType, arpRepeatType) = (RepeatType.Month, 3);
+        }
+        else if (weekdaysCsv != null)
+        {
+            (repeatType, arpRepeatType) = (RepeatType.Week, 2);
+        }
+
         var planning = new Planning
         {
-            Enabled = true, RepeatEvery = 1,
-            RepeatType = weekly ? RepeatType.Week : RepeatType.Day,
+            Enabled = true, RepeatEvery = repeatEvery,
+            RepeatType = repeatType,
+            DayOfMonth = dayOfMonth ?? 0,
             StartDate = start, DayOfWeek = start.DayOfWeek, RelatedEFormId = withEform ? w.TemplateId : 0,
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         };
@@ -478,7 +490,8 @@ public class EventsGrpcListChangesTests : TestBaseSetup
         {
             AreaRuleId = areaRule.Id, PropertyId = propertyId, AreaId = w.AreaId,
             ItemPlanningId = planning.Id, StartDate = start, Status = true,
-            RepeatType = weekly ? 2 : 1, RepeatEvery = 1, RepeatWeekdaysCsv = weekdaysCsv,
+            RepeatType = arpRepeatType, RepeatEvery = repeatEvery, RepeatWeekdaysCsv = weekdaysCsv,
+            DayOfMonth = dayOfMonth ?? 0,
             DayOfWeek = (int)start.DayOfWeek,
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         };
@@ -1402,6 +1415,168 @@ public class EventsGrpcListChangesTests : TestBaseSetup
     }
 
     // ------------------------------------------------------------------
+    // PR #1522 review, round 3
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// Round 3, finding 1: occurrences moved in from outside the window share
+    /// one widened calendar read per property instead of one read each.
+    /// </summary>
+    [Test]
+    public async Task MovedInOccurrences_ShareOneWidenedCalendarRead()
+    {
+        var c = await SeedCalendarAsync();
+        var w = c.W;
+        var monday = c.Monday;
+        var real = NewCalendar(w, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!);
+        var movedKeys = new List<OccurrenceKey>();
+        for (var i = 0; i < 3; i++)
+        {
+            var series = await SeedSeriesAsync(w, w.P2, $"moved-in-{i}", monday, "4", w.SiteA);
+            var occurrence = await SeedOccurrenceAsync(w, series, monday.AddDays(17), $"in-{i}", $"in-value-{i}", w.SiteA);
+            var moved = await real.MoveTask(new CalendarTaskMoveRequestModel
+            {
+                Id = series.ArpId, OriginalDate = Key(monday.AddDays(17)) + "T00:00:00Z",
+                NewDate = Key(monday.AddDays(2)) + "T00:00:00Z", NewStartHour = 9.0, Scope = "this"
+            });
+            Assert.That(moved.Success, Is.True, moved.Message);
+            movedKeys.Add(new OccurrenceKey(series.ArpId, Key(monday.AddDays(2)), occurrence.ComplianceId));
+        }
+
+        var counting = Substitute.For<IBackendConfigurationCalendarService>();
+        counting.GetTasksForWeek(Arg.Any<CalendarTaskRequestModel>())
+            .Returns(ci => real.GetTasksForWeek(ci.Arg<CalendarTaskRequestModel>()));
+        counting.GetBoards(Arg.Any<int>()).Returns(ci => real.GetBoards(ci.Arg<int>()));
+        var service = ServiceFor(w, w.SiteA, calendar: counting);
+
+        var snapshot = await ChangesAsync(service, Key(monday), Key(monday.AddDays(13)));
+        var reads = counting.ReceivedCalls().Count(call => call.GetMethodInfo().Name == nameof(IBackendConfigurationCalendarService.GetTasksForWeek));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Upserts(snapshot).Select(KeyOf), Is.SupersetOf(movedKeys), "all moved-in occurrences served");
+            Assert.That(reads, Is.EqualTo(2 * 2 + 1), "2 chunks x 2 properties + ONE widened read for P2's moved-in rows");
+        });
+
+        var reference = ServiceFor(w, w.SiteA);
+        foreach (var key in movedKeys)
+        {
+            Assert.That(await GetEventAsync(reference, key), Is.EqualTo(Upserts(snapshot).Single(e => KeyOf(e) == key)),
+                $"{key}: equals GetEvent");
+        }
+    }
+
+    /// <summary>
+    /// Round 3, finding 2: more assigned properties than a cursor can hold is
+    /// RESOURCE_EXHAUSTED before anything is read, never a cursor that resets
+    /// every call.
+    /// </summary>
+    [Test]
+    public async Task MoreAssignedPropertiesThanACursorHolds_IsResourceExhausted_BeforeAnyRead()
+    {
+        var c = await SeedCalendarAsync();
+        var access = Substitute.For<IBackendConfigurationUserPropertyAccess>();
+        access.GetAccessiblePropertyIdsAsync(c.W.SiteA)
+            .Returns(Task.FromResult(Enumerable.Range(1, ListChangesCursor.MaxProperties + 1).ToList()));
+        var calendar = Substitute.For<IBackendConfigurationCalendarService>();
+        var service = ServiceFor(c.W, c.W.SiteA, calendar: calendar, access: access);
+
+        var ex = await Assert.ThrowsAsync<GrpcCore.RpcException>(() => ChangesAsync(service, c.From, c.To));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(ex!.StatusCode, Is.EqualTo(GrpcCore.StatusCode.ResourceExhausted));
+            Assert.That(calendar.ReceivedCalls(), Is.Empty, "no calendar, board or deploy work");
+            Assert.That(c.W.Properties.ReceivedCalls(), Is.Empty, "no property read");
+        });
+        await c.W.Deploy.DidNotReceiveWithAnyArgs().EnsureDeployedAsync(default!, default!, default!, default!, default, default);
+    }
+
+    /// <summary>
+    /// Round 3, finding 3: switching from ListEvents(today..today+2) per
+    /// property to ListChanges creates exactly the same compliances and SDK
+    /// cases (real deploy service, real calendar), for daily, weekly with
+    /// CSV weekdays (today's weekday and one four days ahead), every-2-days
+    /// and monthly series, even with a ListChanges window that starts tomorrow.
+    /// P1 is deployed by the legacy list, its identical twin P2 by ListChanges.
+    /// </summary>
+    [Test]
+    public async Task Deploy_CreatesExactlyTheCasesTheLegacyListCreates()
+    {
+        var w = await SeedWorldAsync();
+        var today = DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Utc);
+        var todayCsv = ((int)today.DayOfWeek).ToString(CultureInfo.InvariantCulture);
+        var laterCsv = ((int)today.AddDays(4).DayOfWeek).ToString(CultureInfo.InvariantCulture);
+        var monthDay = today.AddDays(1).Day;
+
+        async Task<List<Series>> SeedTwinAsync(int propertyId, string prefix)
+        {
+            var list = new List<Series>
+            {
+                await SeedSeriesAsync(w, propertyId, prefix + "-daily", today.AddDays(-3), null, w.SiteA),
+                await SeedSeriesAsync(w, propertyId, prefix + "-weekly-today", today.AddDays(-14), todayCsv, w.SiteA),
+                await SeedSeriesAsync(w, propertyId, prefix + "-weekly-later", today.AddDays(-14), laterCsv, w.SiteA),
+                await SeedSeriesAsync(w, propertyId, prefix + "-every-2-days", today.AddDays(-1), null, w.SiteA, repeatEvery: 2),
+                await SeedSeriesAsync(w, propertyId, prefix + "-monthly", today.AddDays(-40), null, w.SiteA, dayOfMonth: monthDay)
+            };
+            foreach (var series in list)
+            {
+                await ItemsPlanningPnDbContext!.PlanningSites.AddAsync(new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
+                {
+                    PlanningId = series.PlanningId, SiteId = w.SiteA, WorkflowState = Constants.WorkflowStates.Created
+                });
+            }
+
+            await ItemsPlanningPnDbContext!.SaveChangesAsync();
+            return list;
+        }
+
+        var legacySeries = await SeedTwinAsync(w.P1, "legacy");
+        var changesSeries = await SeedTwinAsync(w.P2, "changes");
+
+        var coreHelper = Substitute.For<IEFormCoreService>();
+        coreHelper.GetCore().Returns(Task.FromResult(w.Core));
+        var deployCalendar = NewCalendar(w, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!);
+        var provider = new Microsoft.Extensions.DependencyInjection.ServiceCollection()
+            .AddSingletonCalendar(deployCalendar);
+        var realDeploy = new EventDeployService(BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, coreHelper,
+            provider, TestContextLogger<EventDeployService>.Instance);
+        var withRealDeploy = w with { Deploy = realDeploy };
+
+        // Legacy: what the app does today for P1. ListChanges: only P2 is assigned when it runs.
+        var legacyService = ServiceFor(withRealDeploy, w.SiteA);
+        await legacyService.ListEvents(new ListEventsRequest
+        {
+            PropertyId = w.P1.ToString(CultureInfo.InvariantCulture),
+            FromDateKey = Key(today), ToDateKey = Key(today.AddDays(2))
+        }, new TestServerCallContext());
+        var p1Worker = await BackendConfigurationPnDbContext!.PropertyWorkers
+            .SingleAsync(x => x.WorkerId == w.SiteA && x.PropertyId == w.P1);
+        await p1Worker.Delete(BackendConfigurationPnDbContext);
+        await ChangesAsync(ServiceFor(withRealDeploy, w.SiteA), Key(today.AddDays(1)), Key(today.AddDays(14)));
+
+        async Task<List<(string Day, bool HasCase)>> CreatedAsync(Series series) =>
+            (await BackendConfigurationPnDbContext.Compliances
+                .Where(x => x.PlanningId == series.PlanningId)
+                .Select(x => new { x.Deadline, x.MicrotingSdkCaseId })
+                .ToListAsync())
+            .Select(x => (Key(x.Deadline), x.MicrotingSdkCaseId > 0))
+            .OrderBy(x => x.Item1)
+            .ToList();
+
+        for (var i = 0; i < legacySeries.Count; i++)
+        {
+            var legacy = await CreatedAsync(legacySeries[i]);
+            var changes = await CreatedAsync(changesSeries[i]);
+            TestContext.Out.WriteLine($"series {i}: legacy=[{string.Join(", ", legacy)}] listChanges=[{string.Join(", ", changes)}]");
+            Assert.That(changes, Is.EqualTo(legacy), $"series {i}: the same compliances and cases");
+        }
+
+        Assert.That(await CreatedAsync(legacySeries[2]), Does.Contain((Key(today.AddDays(4)), true)),
+            "the legacy list itself deploys a CSV weekday four days ahead (beyond today+2)");
+    }
+
+    // ------------------------------------------------------------------
     // Failures
     // ------------------------------------------------------------------
 
@@ -1595,4 +1770,14 @@ public class EventsGrpcListChangesTests : TestBaseSetup
             Assert.That(followUp.Total, Is.LessThan(snapshot.Total / 2), "an unchanged follow-up costs far less");
         });
     }
+}
+
+internal static class ListChangesTestServiceCollectionExtensions
+{
+    /// <summary>The service provider EventDeployService resolves the calendar service from.</summary>
+    public static IServiceProvider AddSingletonCalendar(
+        this Microsoft.Extensions.DependencyInjection.IServiceCollection services,
+        IBackendConfigurationCalendarService calendar) =>
+        Microsoft.Extensions.DependencyInjection.ServiceCollectionContainerBuilderExtensions.BuildServiceProvider(
+            Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton(services, calendar));
 }
