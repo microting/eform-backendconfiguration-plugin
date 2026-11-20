@@ -141,8 +141,11 @@ public partial class EventsGrpcService
     /// is hydrated on its own: nothing else on the day is read, and the
     /// occurrence gets its OWN case's comment and fields (a multi-row
     /// hydration groups by event id, see <c>LoadEnvelopeByTaskIdAsync</c>).</item>
-    /// <item>A failed calendar read is <c>UNAVAILABLE</c> (retry), never
-    /// <c>found=false</c>; lists and the stream keep their empty answer.</item>
+    /// <item>A failed calendar read, or a failed SDK read of the matched
+    /// occurrence's form (<c>CaseRead</c> throwing), is <c>UNAVAILABLE</c>
+    /// (retry), never <c>found=false</c>; lists and the stream keep their
+    /// empty answer and their skip-the-task behaviour. A template that is
+    /// simply not materialised yet still answers <c>found=false</c>.</item>
     /// </list>
     /// Unknown, removed, other-property and not-assigned-to-caller tasks all
     /// answer <c>found=false</c>. Read-only: unlike ListEvents it does not
@@ -226,7 +229,7 @@ public partial class EventsGrpcService
         foreach (var candidate in candidates)
         {
             var built = await BuildEventsFromCalendarRowsAsync([candidate], context.CancellationToken,
-                    stampVersions: true)
+                    stampVersions: true, failOnReadError: true)
                 .ConfigureAwait(false);
             if (built.Count > 0)
             {
@@ -235,6 +238,24 @@ public partial class EventsGrpcService
         }
 
         return notFound;
+    }
+
+    /// <summary>
+    /// GetEvent's field read only: true when the SDK case row exists (so a
+    /// null <c>CaseRead</c> is a read failure); a failing existence check is
+    /// itself <c>UNAVAILABLE</c>.
+    /// </summary>
+    private static async Task<bool> CaseRowExistsOrUnavailableAsync(MicrotingDbContext sdkDbContext, int caseId)
+    {
+        try
+        {
+            return await sdkDbContext.Cases.AsNoTracking().AnyAsync(c => c.Id == caseId).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            throw new RpcException(new Status(StatusCode.Unavailable,
+                "The event's form could not be read right now; retry."));
+        }
     }
 
     /// <summary>
@@ -483,12 +504,15 @@ public partial class EventsGrpcService
     }
 
     /// <summary>
-    /// A request-id completion that names its SDK case but no compliance id.
-    /// Such a request acts on that case only; without a request id (or
-    /// naming neither id) the legacy "earliest live occurrence" lookup stays.
+    /// A request-id write (CompleteEvent, SetComment, SetFieldValue,
+    /// UploadPhoto, RemovePhoto, and the completed=false re-tap) that names
+    /// its SDK case but no compliance id. Such a request resolves against that
+    /// case only (<see cref="FindComplianceForNamedCaseAsync"/>), on first
+    /// delivery and on retry; without a request id, or naming neither id, the
+    /// legacy "earliest occurrence" lookup stays.
     /// </summary>
-    private static bool NamesCaseOnly(CompleteEventRequest request, string requestId) =>
-        requestId.Length > 0 && request.ComplianceId <= 0 && request.MicrotingSdkCaseId > 0;
+    private static bool NamesCaseOnly(string requestId, long complianceId, long caseId) =>
+        requestId.Length > 0 && complianceId <= 0 && caseId > 0;
 
     /// <summary>
     /// The compliance of <paramref name="itemPlanningId"/> backed by SDK case
@@ -990,6 +1014,14 @@ public partial class EventsGrpcService
     /// Write replies of request-id requests: due fields when the echo found a
     /// calendar row, then version (from the compliance / case the write
     /// touched) and etag. Never called for legacy requests.
+    /// <para>
+    /// When the echo found NO calendar row (the actionable-only read omits a
+    /// completed occurrence) the synthesised Event says <c>completed=false</c>;
+    /// the completion state is then read from the backing SDK case, so a reply
+    /// carrying a completed occurrence's ids never reports it as open. It only
+    /// ever sets <c>completed</c> to true (a "completed" answer is never
+    /// downgraded).
+    /// </para>
     /// </summary>
     private async Task StampWriteReplyAsync(
         Event? evt, int complianceId, int caseId, CalendarTaskResponseModel? task)
@@ -1002,6 +1034,15 @@ public partial class EventsGrpcService
         if (task != null)
         {
             await ApplyDueFieldsAsync([(evt, task)]).ConfigureAwait(false);
+        }
+        else if (!evt.Completed && caseId > 0)
+        {
+            var core = await coreHelper.GetCore().ConfigureAwait(false);
+            var sdkDbContext = core.DbContextHelper.GetDbContext();
+            evt.Completed = await sdkDbContext.Cases
+                .AsNoTracking()
+                .AnyAsync(c => c.Id == caseId && c.Status == 100)
+                .ConfigureAwait(false);
         }
 
         await StampVersionsAsync([(evt, complianceId, caseId)]).ConfigureAwait(false);

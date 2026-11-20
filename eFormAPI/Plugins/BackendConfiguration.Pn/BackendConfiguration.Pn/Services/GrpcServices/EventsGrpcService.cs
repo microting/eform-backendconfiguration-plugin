@@ -508,7 +508,8 @@ public partial class EventsGrpcService(
     /// nesting depth.
     /// </summary>
     private async Task<Dictionary<int, List<FormField>>> LoadFieldsByTaskIdAsync(
-        IReadOnlyCollection<CalendarTaskResponseModel> tasks)
+        IReadOnlyCollection<CalendarTaskResponseModel> tasks,
+        bool failOnReadError = false)
     {
         var taskIdToCaseId = tasks
             .Where(t => t.SdkCaseId is > 0)
@@ -539,6 +540,18 @@ public partial class EventsGrpcService(
                 var theCase = await core.CaseRead(caseId, language).ConfigureAwait(false);
                 if (theCase?.ElementList == null)
                 {
+                    if (failOnReadError
+                        && await CaseRowExistsOrUnavailableAsync(sdkDbContext, caseId).ConfigureAwait(false))
+                    {
+                        // contract_version 1, GetEvent only. Core.CaseRead
+                        // swallows its own exceptions and returns null, so
+                        // "the case exists but could not be read" is a read
+                        // FAILURE, not the create->deploy window (no case
+                        // row yet), which keeps answering not-found.
+                        throw new RpcException(new Status(StatusCode.Unavailable,
+                            "The event's form could not be read right now; retry."));
+                    }
+
                     continue;
                 }
 
@@ -549,11 +562,19 @@ public partial class EventsGrpcService(
                 }
                 result[taskId] = fields;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not RpcException)
             {
                 logger.LogWarning(ex,
                     "EventsGrpcService.LoadFieldsByTaskIdAsync: failed to load FormField for task {TaskId} (SdkCaseId={CaseId})",
                     taskId, caseId);
+                if (failOnReadError)
+                {
+                    // contract_version 1, GetEvent only: a failed read is not
+                    // an incomplete template; the client must retry rather
+                    // than conclude the occurrence is gone.
+                    throw new RpcException(new Status(StatusCode.Unavailable,
+                        "The event's form could not be read right now; retry."));
+                }
             }
         }
 
@@ -1127,14 +1148,15 @@ public partial class EventsGrpcService(
     private async Task<List<Event>> BuildEventsFromCalendarRowsAsync(
         IReadOnlyCollection<CalendarTaskResponseModel> rows,
         CancellationToken ct,
-        bool stampVersions)
+        bool stampVersions,
+        bool failOnReadError = false)
     {
         var output = new List<Event>();
 
         var envelopeByTaskId = await LoadEnvelopeByTaskIdAsync(rows)
             .ConfigureAwait(false);
 
-        var fieldsByTaskId = await LoadFieldsByTaskIdAsync(rows)
+        var fieldsByTaskId = await LoadFieldsByTaskIdAsync(rows, failOnReadError)
             .ConfigureAwait(false);
 
         // Completeness filter: drop in-flight tasks whose eForm template
@@ -1354,7 +1376,7 @@ public partial class EventsGrpcService(
                 .FirstOrDefaultAsync()
                 .ConfigureAwait(false);
         }
-        else if (NamesCaseOnly(request, requestId))
+        else if (NamesCaseOnly(requestId, request.ComplianceId, request.MicrotingSdkCaseId))
         {
             // contract_version 1: a request-id completion that names its SDK
             // case acts on THAT case only (live, on this planning and the
@@ -1422,7 +1444,7 @@ public partial class EventsGrpcService(
             // WorkflowState filter. It still points at the winner's SDK case, which
             // is where the identity lives - Compliance itself has no completed-by or
             // completed-at column.
-            var settled = NamesCaseOnly(request, requestId)
+            var settled = NamesCaseOnly(requestId, request.ComplianceId, request.MicrotingSdkCaseId)
                 ? await FindComplianceForNamedCaseAsync(
                         request.MicrotingSdkCaseId, arp.ItemPlanningId, sdkSiteId, liveOnly: false,
                         sdkDbContextForCompliance, context.CancellationToken)
@@ -2494,6 +2516,15 @@ public partial class EventsGrpcService(
                 .FirstOrDefaultAsync()
                 .ConfigureAwait(false);
         }
+        else if (NamesCaseOnly(NormalizeRequestId(request.RequestId), request.ComplianceId, request.MicrotingSdkCaseId))
+        {
+            // contract_version 1: a request-id write that names its SDK case
+            // acts on THAT case only (authorised planning, caller's site).
+            compliance = await FindComplianceForNamedCaseAsync(
+                    request.MicrotingSdkCaseId, arp.ItemPlanningId, sdkSiteId, liveOnly: true,
+                    sdkDbContextForCompliance, context.CancellationToken)
+                .ConfigureAwait(false);
+        }
         else
         {
             // Legacy fuzzy lookup — same shape as main CompleteEvent.
@@ -2777,6 +2808,15 @@ public partial class EventsGrpcService(
                 .Where(x => x.Id == (int)request.ComplianceId)
                 .Where(x => x.PlanningId == arp.ItemPlanningId)
                 .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+        }
+        else if (NamesCaseOnly(requestId, request.ComplianceId, request.MicrotingSdkCaseId))
+        {
+            // contract_version 1: a request-id write that names its SDK case
+            // acts on THAT case only (authorised planning, caller's site).
+            compliance = await FindComplianceForNamedCaseAsync(
+                    request.MicrotingSdkCaseId, arp.ItemPlanningId, sdkSiteId, liveOnly: false,
+                    sdkDbContextForCompliance, context.CancellationToken)
                 .ConfigureAwait(false);
         }
         else
@@ -3077,6 +3117,15 @@ public partial class EventsGrpcService(
                 .Where(x => x.Id == (int)meta.ComplianceId)
                 .Where(x => x.PlanningId == arp.ItemPlanningId)
                 .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+        }
+        else if (NamesCaseOnly(requestId, meta.ComplianceId, meta.MicrotingSdkCaseId))
+        {
+            // contract_version 1: a request-id write that names its SDK case
+            // acts on THAT case only (authorised planning, caller's site).
+            compliance = await FindComplianceForNamedCaseAsync(
+                    meta.MicrotingSdkCaseId, arp.ItemPlanningId, sdkSiteId, liveOnly: false,
+                    sdkDbContext, context.CancellationToken)
                 .ConfigureAwait(false);
         }
         else
@@ -3482,7 +3531,7 @@ public partial class EventsGrpcService(
         }
 
         // contract_version 1: validates request_id (only new apps send it).
-        NormalizeRequestId(request.RequestId);
+        var requestId = NormalizeRequestId(request.RequestId);
 
         var arp = await dbContext.AreaRulePlannings
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
@@ -3516,6 +3565,15 @@ public partial class EventsGrpcService(
                 .Where(x => x.Id == (int)request.ComplianceId)
                 .Where(x => x.PlanningId == arp.ItemPlanningId)
                 .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+        }
+        else if (NamesCaseOnly(requestId, request.ComplianceId, request.MicrotingSdkCaseId))
+        {
+            // contract_version 1: a request-id write that names its SDK case
+            // acts on THAT case only (authorised planning, caller's site).
+            compliance = await FindComplianceForNamedCaseAsync(
+                    request.MicrotingSdkCaseId, arp.ItemPlanningId, sdkSiteId, liveOnly: false,
+                    sdkDbContext, context.CancellationToken)
                 .ConfigureAwait(false);
         }
         else
@@ -3811,6 +3869,15 @@ public partial class EventsGrpcService(
                 .Where(x => x.Id == (int)request.ComplianceId)
                 .Where(x => x.PlanningId == arp.ItemPlanningId)
                 .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+        }
+        else if (NamesCaseOnly(requestId, request.ComplianceId, request.MicrotingSdkCaseId))
+        {
+            // contract_version 1: a request-id write that names its SDK case
+            // acts on THAT case only (authorised planning, caller's site).
+            compliance = await FindComplianceForNamedCaseAsync(
+                    request.MicrotingSdkCaseId, arp.ItemPlanningId, sdkSiteId, liveOnly: true,
+                    sdkDbContext, context.CancellationToken)
                 .ConfigureAwait(false);
         }
         else

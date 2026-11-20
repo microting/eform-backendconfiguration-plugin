@@ -2069,6 +2069,226 @@ public class EventsGrpcContractTests : TestBaseSetup
         });
     }
 
+    // ---------------- PR #1516 review round 3 ----------------
+
+    private Task<string> CaseCustomOfAsync(int caseId) =>
+        MicrotingDbContext!.Cases.AsNoTracking()
+            .Where(c => c.Id == caseId).Select(c => c.Custom ?? string.Empty).FirstAsync();
+
+    private Task<string> TextValueOfAsync(Scenario s, int caseId) =>
+        MicrotingDbContext!.FieldValues.AsNoTracking()
+            .Where(fv => fv.CaseId == caseId && fv.FieldId == s.TextFieldId)
+            .Select(fv => fv.Value ?? string.Empty).FirstAsync();
+
+    /// <summary>
+    /// Round 3, finding 1: Core.CaseRead returns null (it swallows its own
+    /// exception) for a case that EXISTS but cannot be read. GetEvent answers
+    /// UNAVAILABLE instead of found=false; ListEvents keeps skipping the task.
+    /// </summary>
+    [Test]
+    public async Task GetEvent_FormReadFailureOfTheMatchedOccurrence_IsUnavailable_ListEventsUnchanged()
+    {
+        var s = await SeedAsync("get-form-read-failure");
+        // CheckRead looks up the case's checklist with FirstAsync: a case
+        // without one makes the read fail inside the SDK.
+        await MicrotingDbContext!.Cases.Where(c => c.Id == s.SdkCaseId)
+            .ExecuteUpdateAsync(u => u.SetProperty(c => c.CheckListId, (int?)null));
+
+        var thrown = await Assert.ThrowsAsync<GrpcCore.RpcException>(() => s.Service.GetEvent(new GetEventRequest
+        {
+            Key = new EventKey { EventId = s.EventId, PlanDayKey = s.DayKey, ComplianceId = s.ComplianceId }
+        }, new TestServerCallContext()));
+        var listed = await s.Service.ListEvents(new ListEventsRequest
+        {
+            PropertyId = s.PropertyId.ToString(CultureInfo.InvariantCulture),
+            FromDateKey = s.DayKey,
+            ToDateKey = s.DayKey
+        }, new TestServerCallContext());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(thrown.StatusCode, Is.EqualTo(GrpcCore.StatusCode.Unavailable));
+            Assert.That(listed.Events, Is.Empty, "ListEvents: the task is skipped, as today");
+        });
+    }
+
+    /// <summary>
+    /// Round 3, finding 1 (unchanged half): a calendar row whose SDK case does
+    /// not exist (the create-to-deploy window) is still found=false.
+    /// </summary>
+    [Test]
+    public async Task GetEvent_CaseNotCreatedYet_IsStillNotFound()
+    {
+        var s = await SeedAsync("get-case-not-yet");
+        s.Tasks[0].SdkCaseId = 2_000_000_000;
+
+        var response = await s.Service.GetEvent(new GetEventRequest
+        {
+            Key = new EventKey { EventId = s.EventId, PlanDayKey = s.DayKey, ComplianceId = s.ComplianceId }
+        }, new TestServerCallContext());
+
+        Assert.That(response.Found, Is.False);
+    }
+
+    /// <summary>Round 3, finding 2: SetComment with a request id naming case B writes B only.</summary>
+    [Test]
+    public async Task SetComment_RequestIdNamingALaterCase_WritesOnlyThatCase()
+    {
+        var s = await SeedAsync("r3-comment", withEchoTask: false);
+        var (_, laterCase) = await SeedLaterOccurrenceAsync(s);
+        var request = LegacyComment(s, "for-b");
+        request.RequestId = NewRequestId();
+        request.ComplianceId = 0;
+        request.MicrotingSdkCaseId = laterCase.Id;
+
+        await s.Service.SetComment(request, new TestServerCallContext());
+        var retry = await s.Service.SetComment(request, new TestServerCallContext());
+
+        var earliestCustom = await CaseCustomOfAsync(s.SdkCaseId);
+        var laterCustom = await CaseCustomOfAsync(laterCase.Id);
+        Assert.Multiple(() =>
+        {
+            Assert.That(laterCustom, Does.Contain("for-b"));
+            Assert.That(earliestCustom, Is.Empty, "the earliest occurrence was not written");
+            Assert.That(retry.Replayed, Is.True);
+        });
+    }
+
+    /// <summary>
+    /// Round 3, finding 2: SetFieldValue with a request id naming case B
+    /// writes B; after the earliest occurrence A is completed, the retry is a
+    /// replay and A is never written.
+    /// </summary>
+    [Test]
+    public async Task SetFieldValue_RequestIdNamingALaterCase_WritesOnlyThatCase_RetryAfterEarliestCompletes()
+    {
+        var s = await SeedAsync("r3-field", withEchoTask: false);
+        var (_, laterCase) = await SeedLaterOccurrenceAsync(s);
+        var request = LegacyFieldValue(s, "value-b");
+        request.RequestId = NewRequestId();
+        request.ComplianceId = 0;
+        request.MicrotingSdkCaseId = laterCase.Id;
+
+        var first = await s.Service.SetFieldValue(request, new TestServerCallContext());
+        var earliestAfterFirst = await TextValueOfAsync(s, s.SdkCaseId);
+        var laterAfterFirst = await TextValueOfAsync(s, laterCase.Id);
+        await s.Service.CompleteEvent(LegacyComplete(s), new TestServerCallContext());
+        var retry = await s.Service.SetFieldValue(request, new TestServerCallContext());
+        var earliestAfterRetry = await TextValueOfAsync(s, s.SdkCaseId);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(laterAfterFirst, Is.EqualTo("value-b"), "the named case was written");
+            Assert.That(earliestAfterFirst, Is.Not.EqualTo("value-b"), "the earliest case was not written");
+            Assert.That(first.Replayed, Is.False);
+            Assert.That(retry.Replayed, Is.True, "the retry finds its record on the named case");
+            Assert.That(earliestAfterRetry, Is.Not.EqualTo("value-b"));
+            Assert.That(retry.Event.MicrotingSdkCaseId, Is.EqualTo(laterCase.Id));
+        });
+    }
+
+    /// <summary>Round 3, finding 2: UploadPhoto with a request id naming case B attaches to B only.</summary>
+    [Test]
+    public async Task UploadPhoto_RequestIdNamingALaterCase_AttachesOnlyToThatCase()
+    {
+        var s = await SeedAsync("r3-upload", withEchoTask: false);
+        var (_, laterCase) = await SeedLaterOccurrenceAsync(s);
+        var meta = LegacyPhotoMeta(s);
+        meta.RequestId = NewRequestId();
+        meta.ComplianceId = 0;
+        meta.MicrotingSdkCaseId = laterCase.Id;
+
+        var first = await UploadAsync(s, meta);
+        var retry = await UploadAsync(s, meta);
+
+        var earliestCustom = await CaseCustomOfAsync(s.SdkCaseId);
+        var laterCustom = await CaseCustomOfAsync(laterCase.Id);
+        Assert.Multiple(() =>
+        {
+            Assert.That(laterCustom, Does.Contain("event_photos"));
+            Assert.That(earliestCustom, Does.Not.Contain("event_photos"), "the earliest case got no photo");
+            Assert.That(retry.Replayed, Is.True);
+            Assert.That(retry.StorageId, Is.EqualTo(first.StorageId));
+        });
+    }
+
+    /// <summary>Round 3, finding 2: RemovePhoto with a request id naming case B removes B's photo only.</summary>
+    [Test]
+    public async Task RemovePhoto_RequestIdNamingALaterCase_RemovesOnlyThatCasesPhoto()
+    {
+        var s = await SeedAsync("r3-remove", withEchoTask: false);
+        var (later, laterCase) = await SeedLaterOccurrenceAsync(s);
+        await UploadAsync(s, LegacyPhotoMeta(s));
+        var laterMeta = LegacyPhotoMeta(s);
+        laterMeta.ComplianceId = later.Id;
+        laterMeta.MicrotingSdkCaseId = laterCase.Id;
+        await UploadAsync(s, laterMeta);
+
+        var remove = LegacyRemove(s);
+        remove.RequestId = NewRequestId();
+        remove.ComplianceId = 0;
+        remove.MicrotingSdkCaseId = laterCase.Id;
+        var reply = await s.Service.RemovePhoto(remove, new TestServerCallContext());
+
+        var earliestCustom = await CaseCustomOfAsync(s.SdkCaseId);
+        var laterCustom = await CaseCustomOfAsync(laterCase.Id);
+        Assert.Multiple(() =>
+        {
+            Assert.That(reply.Outcome, Is.EqualTo(RemovePhotoOutcome.Removed));
+            Assert.That(laterCustom, Does.Not.Contain("uploaded_data_id"), "the named case's photo was removed");
+            Assert.That(earliestCustom, Does.Contain("uploaded_data_id"), "the earliest case keeps its photo");
+        });
+    }
+
+    /// <summary>
+    /// Round 3, finding 3: a SetFieldValue replay that arrives after the
+    /// occurrence was completed (the actionable-only echo has no row) reports
+    /// completed=true with the real ids.
+    /// </summary>
+    [Test]
+    public async Task SetFieldValue_ReplayAfterCompletion_ReportsCompleted()
+    {
+        var s = await SeedAsync("r3-replay-completed", withEchoTask: false);
+        var request = LegacyFieldValue(s, "before-completion");
+        request.RequestId = NewRequestId();
+
+        await s.Service.SetFieldValue(request, new TestServerCallContext());
+        await s.Service.CompleteEvent(LegacyComplete(s), new TestServerCallContext());
+        var replay = await s.Service.SetFieldValue(request, new TestServerCallContext());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(replay.Replayed, Is.True);
+            Assert.That(replay.Event.MicrotingSdkCaseId, Is.EqualTo(s.SdkCaseId));
+            Assert.That(replay.Event.Completed, Is.True);
+        });
+    }
+
+    /// <summary>
+    /// Round 3, finding 3: the same fallback in a request-id SetComment on a
+    /// completed occurrence reports completed=true; a legacy SetComment keeps
+    /// today's reply (completed=false, ids 0).
+    /// </summary>
+    [Test]
+    public async Task SetComment_WithRequestIdOnCompletedOccurrence_ReportsCompleted_LegacyUnchanged()
+    {
+        var s = await SeedAsync("r3-comment-completed", withEchoTask: false);
+        await s.Service.CompleteEvent(LegacyComplete(s), new TestServerCallContext());
+
+        var withId = LegacyComment(s, "after");
+        withId.RequestId = NewRequestId();
+        var contractReply = await s.Service.SetComment(withId, new TestServerCallContext());
+        var legacyReply = await s.Service.SetComment(LegacyComment(s, "after-legacy"), new TestServerCallContext());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(contractReply.Event.ComplianceId, Is.EqualTo(s.ComplianceId));
+            Assert.That(contractReply.Event.Completed, Is.True);
+            Assert.That(legacyReply.Event.Completed, Is.False, "legacy reply unchanged");
+            Assert.That(legacyReply.Event.ComplianceId, Is.EqualTo(0), "legacy reply unchanged");
+        });
+    }
+
     private static async Task WaitForAsync(Func<bool> condition, TimeSpan timeout)
     {
         var deadline = DateTime.UtcNow + timeout;
