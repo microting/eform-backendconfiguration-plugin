@@ -589,10 +589,13 @@ describe('ChemicalsContainerComponent', () => {
     });
 
     it('selects nothing, not "All", when the customer has no properties', () => {
-      build([]);
+      remember(99);
+
+      const component = build([]);
 
       expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectProperty({payload: null}));
       expect(store.dispatch).not.toHaveBeenCalledWith(chemicalsSelectAllProperties());
+      expect(component.allProperties).toBe(false);
     });
   });
 });
