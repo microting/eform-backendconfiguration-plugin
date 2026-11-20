@@ -58,6 +58,7 @@ public class TailBiteGrpcService(
     ITailBiteRegistrationService registrations,
     ITailBiteSetupService setup,
     ITailBiteOutbreakService outbreaks,
+    ITailBiteOutbreakPhotoService outbreakPhotos,
     IGrpcSiteResolver siteResolver,
     ILogger<TailBiteGrpcService> logger)
     : TailBiteGrpc.TailBiteGrpcBase
@@ -202,6 +203,16 @@ public class TailBiteGrpcService(
 
     public override Task<TbOutbreakDetail> GetOutbreak(TbGetOutbreakRequest request, ServerCallContext context) => RunAsSiteAsync(context, site =>
         DetailAsync(site, Id(request.OutbreakId, "outbreak_id")));
+
+    // Manager-only (enforced by the service). The app fetches each photo's bytes with GetPhoto.
+    public override Task<TbListOutbreakPhotosResponse> ListOutbreakPhotos(TbListOutbreakPhotosRequest request, ServerCallContext context)
+        => RunAsSiteAsync(context, async site =>
+        {
+            var rows = await outbreakPhotos.ListAsync(site, Id(request.OutbreakId, "outbreak_id")).ConfigureAwait(false);
+            var response = new TbListOutbreakPhotosResponse();
+            response.Photos.AddRange(rows.Select(MapOutbreakPhoto));
+            return response;
+        });
 
     public override Task<TbOutbreakDetail> SaveRiskAssessment(TbSaveRiskAssessmentRequest request, ServerCallContext context) => RunAsSiteAsync(context, async site =>
     {

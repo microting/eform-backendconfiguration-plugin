@@ -54,7 +54,7 @@ public interface ITailBiteWebQueryService
 }
 
 public class TailBiteWebQueryService(BackendConfigurationPnDbContext db, ITailBiteAccess access, IGrpcSiteResolver siteResolver,
-    TimeProvider clock, ITailBiteOutbreakService outbreaks) : ITailBiteWebQueryService
+    TimeProvider clock, ITailBiteOutbreakService outbreaks, ITailBitePhotoQuery photoQuery) : ITailBiteWebQueryService
 {
     private const string Removed = Constants.WorkflowStates.Removed;
 
@@ -87,7 +87,7 @@ public class TailBiteWebQueryService(BackendConfigurationPnDbContext db, ITailBi
         var rows = await db.PropertyWorkers.AsNoTracking()
             .Where(pw => pw.PropertyId == propertyId && pw.WorkflowState != Removed)
             .Select(pw => new { pw.Id, pw.WorkerId, pw.TailBiteManager }).ToListAsync();
-        var names = await DisplayNamesAsync(rows.Select(r => r.WorkerId));
+        var names = await siteResolver.DisplayNamesAsync(rows.Select(r => r.WorkerId));
         return rows.GroupBy(r => r.WorkerId)
             .Select(g => new TailBiteWorker(g.Key, names[g.Key], g.Any(r => r.TailBiteManager),
                 g.Select(r => r.Id).Order().ToList()))
@@ -101,7 +101,7 @@ public class TailBiteWebQueryService(BackendConfigurationPnDbContext db, ITailBi
     public async Task<IReadOnlyList<TailBiteAssignableWorker>> ListAssignableWorkersAsync(int callerSiteId, int propertyId)
     {
         var sites = await outbreaks.ListWorkerSitesAsync(callerSiteId, propertyId);
-        var names = await DisplayNamesAsync(sites.Select(s => s.SiteId));
+        var names = await siteResolver.DisplayNamesAsync(sites.Select(s => s.SiteId));
         return sites.Select(s => new TailBiteAssignableWorker(s.SiteId, names[s.SiteId], !s.Resigned))
             .OrderBy(w => w.Name, StringComparer.CurrentCultureIgnoreCase).ThenBy(w => w.SiteId)
             .ToList();
@@ -158,13 +158,9 @@ public class TailBiteWebQueryService(BackendConfigurationPnDbContext db, ITailBi
                              .Select(o => (int?)o.PropertyId).SingleOrDefaultAsync()
                          ?? throw TailBiteForbiddenException.NoAccess();
         await access.RequireEnabledManagerAsync(callerSiteId, propertyId);
-        var rows = await (from link in db.TailBiteOutbreakLinks.AsNoTracking()
-                          join row in db.TailBiteRegistrationLocations on link.RegistrationLocationId equals row.Id
-                          join reg in db.TailBiteRegistrations on row.RegistrationId equals reg.Id
-                          where link.OutbreakId == outbreakId && link.WorkflowState != Removed && row.WorkflowState != Removed && reg.WorkflowState != Removed
-                          orderby reg.EffectiveAt, row.Id
-                          select new { row, reg }).ToListAsync();
-        var registrationIds = rows.Select(x => x.reg.Id).Distinct().ToList();
+        var rows = await TailBiteOutbreakRows.Of(db, [outbreakId])
+            .OrderBy(x => x.Registration.EffectiveAt).ThenBy(x => x.Row.Id).ToListAsync();
+        var registrationIds = rows.Select(x => x.Registration.Id).Distinct().ToList();
         var actionTypes = (await db.TailBiteRegistrationActions.AsNoTracking()
                 .Where(a => registrationIds.Contains(a.RegistrationId) && a.WorkflowState != Removed)
                 .Select(a => new { a.RegistrationId, a.ActionTypeId }).ToListAsync())
@@ -174,32 +170,14 @@ public class TailBiteWebQueryService(BackendConfigurationPnDbContext db, ITailBi
         var actionTypeNames = await db.TailBiteActionTypes.AsNoTracking()
             .Where(a => a.PropertyId == propertyId && actionTypeIds.Contains(a.Id))
             .OrderBy(a => a.Id).Select(a => new ActionTypeName(a.Id, a.Name)).ToListAsync();
-        // BelongsTo builds a predicate for one registration, which does not fit a batch over many; this applies the same rule
-        // in two steps: IsStored and the property in the query, uuid and uploading site in the lookup key. Removed photos are not counted.
-        var clientUuids = rows.Select(x => x.reg.ClientUuid).Distinct().ToList();
-        var photos = (await db.TailBiteRegistrationPhotos.AsNoTracking()
-            .Where(p => p.PropertyId == propertyId && clientUuids.Contains(p.RegistrationClientUuid) && p.WorkflowState != Removed)
-            .Where(TailBitePhotoOwnership.IsStored)
-            .Select(p => new { p.RegistrationClientUuid, p.UploadedBySiteId }).ToListAsync())
-            .ToLookup(p => (p.RegistrationClientUuid, p.UploadedBySiteId));
-        var names = await DisplayNamesAsync(rows.Select(x => x.reg.SiteId));
+        var photos = await photoQuery.ForRegistrationsAsync(rows.Select(x => x.Registration).ToList());
+        var photoCount = photos.GroupBy(p => p.RegistrationId).ToDictionary(g => g.Key, g => g.Count());
+        var names = await siteResolver.DisplayNamesAsync(rows.Select(x => x.Registration.SiteId));
         return new OutbreakRegistrations(propertyId, rows.Select(x => new OutbreakRegistrationRow(
-            x.reg.Id, x.row.Id, x.row.LocationId, Utc(x.reg.EffectiveAt), x.row.MinorCount, x.row.SevereCount,
-            actionTypes[x.reg.Id].Order().ToList(), x.reg.SiteId, names[x.reg.SiteId],
-            x.reg.CancelledAt != null, x.reg.CancelReason,
-            photos[(x.reg.ClientUuid, x.reg.SiteId)].Count())).ToList(), actionTypeNames);
-    }
-
-    // The name the app shows for a site (TailBiteGrpcService uses the same lookup), so web and app agree; "#id" when unknown.
-    private async Task<IReadOnlyDictionary<int, string>> DisplayNamesAsync(IEnumerable<int> siteIds)
-    {
-        var names = new Dictionary<int, string>();
-        foreach (var id in siteIds.Distinct())
-        {
-            var name = await siteResolver.GetDisplayNameAsync(id);
-            names[id] = string.IsNullOrEmpty(name) ? $"#{id}" : name;
-        }
-        return names;
+            x.Registration.Id, x.Row.Id, x.Row.LocationId, Utc(x.Registration.EffectiveAt), x.Row.MinorCount, x.Row.SevereCount,
+            actionTypes[x.Registration.Id].Order().ToList(), x.Registration.SiteId, names[x.Registration.SiteId],
+            x.Registration.CancelledAt != null, x.Registration.CancelReason,
+            photoCount.GetValueOrDefault(x.Registration.Id))).ToList(), actionTypeNames, photos);
     }
 
     // "Not a worker on that property" reads exactly like "no such id" (or no such property).

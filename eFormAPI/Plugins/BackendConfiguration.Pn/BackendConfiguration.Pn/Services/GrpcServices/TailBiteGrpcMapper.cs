@@ -126,6 +126,16 @@ internal static class TailBiteGrpcMapper
         BittenPigs = s.BittenPigs, SeverePigs = s.SeverePigs
     };
 
+    public static TbOutbreakPhoto MapOutbreakPhoto(OutbreakPhoto p)
+    {
+        var photo = new TbOutbreakPhoto
+        {
+            PhotoUuid = p.PhotoUuid.ToString(), RegistrationId = S(p.RegistrationId), EffectiveAt = Ts(p.EffectiveAt), SiteName = p.SiteName
+        };
+        photo.LocationIds.AddRange(p.LocationIds.Select(S));
+        return photo;
+    }
+
     public static TbOutbreakDetail MapDetail(OutbreakDetail d)
     {
         var detail = new TbOutbreakDetail

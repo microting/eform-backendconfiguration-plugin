@@ -27,6 +27,7 @@ service TailBiteGrpc {
   rpc CloseOutbreak(TbCloseOutbreakRequest) returns (TbOutbreakDetail);
   rpc CancelRegistration(TbCancelRegistrationRequest) returns (TbEmpty);
   rpc ListWorkers(TbListWorkersRequest) returns (TbListWorkersResponse);
+  rpc ListOutbreakPhotos(TbListOutbreakPhotosRequest) returns (TbListOutbreakPhotosResponse);
 }
 
 message TbEmpty {}
@@ -91,3 +92,11 @@ message TbCancelRegistrationRequest { string registration_id = 1; string reason 
 message TbListWorkersRequest { string property_id = 1; }
 message TbWorker { string site_id = 1; string display_name = 2; }
 message TbListWorkersResponse { repeated TbWorker workers = 1; }
+
+// Manager-only: the photos of an outbreak's non-cancelled registrations, newest first. Fetch bytes with GetPhoto.
+message TbListOutbreakPhotosRequest { string outbreak_id = 1; }
+message TbOutbreakPhoto {
+  string photo_uuid = 1; string registration_id = 2; repeated string location_ids = 3;
+  google.protobuf.Timestamp effective_at = 4; string site_name = 5;
+}
+message TbListOutbreakPhotosResponse { repeated TbOutbreakPhoto photos = 1; }

@@ -23,9 +23,10 @@ public class TailBiteGrpcServiceMappingTests
     private ITailBiteRegistrationService _regs = null!;
     private ITailBiteSetupService _setup = null!;
     private ITailBiteOutbreakService _outbreaks = null!;
+    private ITailBiteOutbreakPhotoService _outbreakPhotos = null!;
     private IGrpcSiteResolver _resolver = null!;
 
-    private TailBiteGrpcService Sut() => new(_access, _regs, _setup, _outbreaks, _resolver, NullLogger<TailBiteGrpcService>.Instance);
+    private TailBiteGrpcService Sut() => new(_access, _regs, _setup, _outbreaks, _outbreakPhotos, _resolver, NullLogger<TailBiteGrpcService>.Instance);
     private static ServerCallContext Ctx() => Substitute.For<ServerCallContext>();
     private static Timestamp Ts(int day) => Timestamp.FromDateTime(new DateTime(2026, 10, day, 6, 0, 0, DateTimeKind.Utc));
     private static Timestamp OutOfRange() => new() { Seconds = long.MaxValue / 4 };
@@ -53,6 +54,7 @@ public class TailBiteGrpcServiceMappingTests
         _regs = Substitute.For<ITailBiteRegistrationService>();
         _setup = Substitute.For<ITailBiteSetupService>();
         _outbreaks = Substitute.For<ITailBiteOutbreakService>();
+        _outbreakPhotos = Substitute.For<ITailBiteOutbreakPhotoService>();
         _resolver = Substitute.For<IGrpcSiteResolver>();
         _access.RequireCallerSiteAsync().Returns(7);
     }
@@ -406,4 +408,32 @@ public class TailBiteGrpcServiceMappingTests
     [Test]
     public async Task ListWorkers_BadPropertyId_InvalidArgument()
         => await AssertRpc(StatusCode.InvalidArgument, () => Sut().ListWorkers(new TbListWorkersRequest { PropertyId = "x" }, Ctx()));
+
+    [Test]
+    public async Task ListOutbreakPhotos_MapsIdsTimesAndNames()
+    {
+        var first = Guid.NewGuid();
+        var second = Guid.NewGuid();
+        _outbreakPhotos.ListAsync(7, 5).Returns([
+            new OutbreakPhoto(first, 11, [4, 6], Ts(2).ToDateTime(), 8, "Jane Doe"),
+            new OutbreakPhoto(second, 10, [4], Ts(1).ToDateTime(), 9, "#9"),
+        ]);
+
+        var resp = await Sut().ListOutbreakPhotos(new TbListOutbreakPhotosRequest { OutbreakId = "5" }, Ctx());
+
+        Assert.That(resp.Photos.Select(p => (p.PhotoUuid, p.RegistrationId, p.EffectiveAt, p.SiteName)), Is.EqualTo(new[]
+        {
+            (first.ToString(), "11", Ts(2), "Jane Doe"), (second.ToString(), "10", Ts(1), "#9"),
+        }));
+        Assert.That(resp.Photos[0].LocationIds, Is.EqualTo(new[] { "4", "6" }));
+        Assert.That(resp.Photos[1].LocationIds, Is.EqualTo(new[] { "4" }));
+    }
+
+    [Test]
+    public async Task ListOutbreakPhotos_NotManager_PermissionDenied_BadId_InvalidArgument()
+    {
+        _outbreakPhotos.ListAsync(7, 5).Throws(TailBiteForbiddenException.NoAccess());
+        await AssertRpc(StatusCode.PermissionDenied, () => Sut().ListOutbreakPhotos(new TbListOutbreakPhotosRequest { OutbreakId = "5" }, Ctx()));
+        await AssertRpc(StatusCode.InvalidArgument, () => Sut().ListOutbreakPhotos(new TbListOutbreakPhotosRequest { OutbreakId = "x" }, Ctx()));
+    }
 }
