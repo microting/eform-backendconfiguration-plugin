@@ -86,7 +86,8 @@ test.describe.serial('Kemi W1/W2 - inventory', () => {
     test.setTimeout(150000);
     const kemi = await open(page, 'inventory');
 
-    await kemi.registerPlacement(approved, lade, 'Top shelf');
+    // One property selected: the dialog's Ejendom field shows it, read-only.
+    await kemi.registerPlacement(approved, lade, 'Top shelf', undefined, property.name);
     await kemi.registerPlacement(expired, lade, 'Under the sink');
 
     await expect(kemi.inventoryRow(expired)).toHaveClass(/chemical-row--overdue/, { timeout: UI_TIMEOUT });

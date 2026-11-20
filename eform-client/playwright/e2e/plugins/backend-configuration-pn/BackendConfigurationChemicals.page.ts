@@ -361,9 +361,12 @@ export class BackendConfigurationChemicalsPage {
 
   /**
    * "Registrér placering": searches the register for `productName`, picks it, a location and a note, and saves.
-   * Under the picker's "All" the dialog asks for the property first: pass `propertyName` then.
+   * Under the picker's "All" the dialog asks for the property first: pass `propertyName` then. With one property
+   * selected, `presetPropertyName` asserts that the read-only Ejendom field shows it.
    */
-  async registerPlacement(productName: string, locationName: string, note: string, propertyName?: string): Promise<void> {
+  async registerPlacement(
+    productName: string, locationName: string, note: string, propertyName?: string, presetPropertyName?: string,
+  ): Promise<void> {
     const open = this.page.locator('#chemicalsRegisterPlacementBtn');
     // Enabled once the inventory (and so its active locations) has loaded.
     await expect(open).toBeEnabled({ timeout: API_TIMEOUT });
@@ -371,6 +374,11 @@ export class BackendConfigurationChemicalsPage {
     if (propertyName !== undefined) {
       await dialogReady(this.page, this.page.locator('#chemicalRegisterSearchInput'));
       await this.selectMtxOption('#chemicalRegisterPropertySelect', propertyName);
+    }
+    if (presetPropertyName !== undefined) {
+      const field = this.page.locator('#chemicalRegisterPropertySelect');
+      await expect(field).toContainText(presetPropertyName, { timeout: UI_TIMEOUT });
+      await expect(field).toHaveClass(/mtx-select-disabled/, { timeout: UI_TIMEOUT });
     }
     await fillInDialog(this.page, this.page.locator('#chemicalRegisterSearchInput'), productName);
     const search = this.waitForChemicalsCall('GET', /^register\/search$/);

@@ -61,10 +61,16 @@ describe('ChemicalRegisterPlacementDialogComponent (template)', () => {
     expect(find('#chemicalRegisterMoreResults')).not.toBeNull();
   });
   it('shows the Ejendom field first: read-only for the selected property, a choice under "All"', async () => {
-    // [disabled] next to ngModel goes through NgModel, which disables the control in a microtask: settle first.
+    // The value and [disabled] reach the shown label in two hops, each a microtask after a change detection:
+    // the outer NgModel writes them into mtx-select, whose template hands them on through its own
+    // [(ngModel)]/[disabled] to the inner ng-select, which then renders the selected label. One pass shows
+    // the disabled class but not yet the label, so settle like the container's picker spec does.
     const settle = async () => {
-      await fixture.whenStable();
-      detectChanges(fixture);
+      for (let pass = 0; pass < 3; pass++) {
+        detectChanges(fixture);
+        await fixture.whenStable();
+        await new Promise((resolve) => setTimeout(resolve));
+      }
     };
     const properties = [
       {propertyId: 3, name: 'Engvej 12', permissions: null, stockEnabled: false, callerWorkerId: null},
