@@ -93,8 +93,9 @@ export class ChemicalsContainerComponent implements OnInit {
    */
   private navigating = false;
   /**
-   * A selection made while a navigation was in flight has not reached the URL yet: that navigation's
-   * end must write it, not read the missing ?propertyId= as "All".
+   * The user picked in the picker while a navigation was in flight: the pick is newer than that navigation's
+   * URL, so its end writes the pick instead of reading the URL. Only picker changes set it; the container's
+   * own starting selection or a timer's sync never do.
    */
   private urlBehind = false;
   private pendingSync: ReturnType<typeof setTimeout> | undefined;
@@ -130,11 +131,13 @@ export class ChemicalsContainerComponent implements OnInit {
   onPropertyChange(value: ChemicalsPickerValue | null): void {
     this.pickerValue = value;
     if (value === this.selection) {
+      this.markPick();
       this.syncUrl();
       return;
     }
     this.askScreen((discard) => {
       if (discard) {
+        this.markPick();
         this.apply(value);
       } else {
         // Put back after the picker has been rendered with the pick: a synchronous revert
@@ -142,6 +145,13 @@ export class ChemicalsContainerComponent implements OnInit {
         setTimeout(() => (this.pickerValue = this.selection));
       }
     });
+  }
+
+  /** A pick kept while a navigation runs is newer than its URL (see urlBehind); a refused pick is not. */
+  private markPick(): void {
+    if (this.navigating) {
+      this.urlBehind = true;
+    }
   }
 
   /** The store's selection as a picker value. */
@@ -305,7 +315,6 @@ export class ChemicalsContainerComponent implements OnInit {
    */
   private syncUrl(): void {
     if (this.navigating) {
-      this.urlBehind = true;
       return;
     }
     this.urlBehind = false;
