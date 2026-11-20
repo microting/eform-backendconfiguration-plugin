@@ -26,6 +26,7 @@ internal sealed record ListChangesCursorState(
     int LanguageId,
     DateOnly From,
     DateOnly To,
+    DateOnly IssuedDay,
     IReadOnlyList<int> PropertyIds,
     IReadOnlyDictionary<OccurrenceKey, CursorEntry> Entries);
 
@@ -37,7 +38,7 @@ internal sealed record ListChangesCursorState(
 /// </summary>
 internal static class ListChangesCursor
 {
-    internal const uint FormatVersion = 2;
+    internal const uint FormatVersion = 3;
 
     /// <summary>Most occurrences one window may hold; beyond it the call is RESOURCE_EXHAUSTED.</summary>
     internal const int MaxEntries = 5000;
@@ -108,7 +109,8 @@ internal static class ListChangesCursor
             SdkSiteId = state.SdkSiteId,
             LanguageId = state.LanguageId,
             FromDay = state.From.DayNumber,
-            SpanDays = state.To.DayNumber - state.From.DayNumber
+            SpanDays = state.To.DayNumber - state.From.DayNumber,
+            IssuedDay = state.IssuedDay.DayNumber
         };
         payload.PropertyIds.AddRange(state.PropertyIds.Distinct().Order());
 
@@ -199,7 +201,8 @@ internal static class ListChangesCursor
             }
 
             return new ListChangesCursorState(payload.SdkSiteId, payload.LanguageId, from,
-                from.AddDays(payload.SpanDays), payload.PropertyIds.ToList(), entries);
+                from.AddDays(payload.SpanDays), DateOnly.FromDayNumber(payload.IssuedDay),
+                payload.PropertyIds.ToList(), entries);
         }
         catch (Exception ex) when (ex is InvalidProtocolBufferException or OverflowException
                                        or ArgumentOutOfRangeException)

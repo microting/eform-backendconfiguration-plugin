@@ -21,6 +21,10 @@ message ListChangesCursorPayload {
   int32 span_days = 6;
   repeated int32 property_ids = 7;
   repeated ListChangesCursorEntry entries = 8;
+  // DateOnly.DayNumber (UTC) of the day the cursor was issued; a cursor
+  // from an earlier day resets, so changes that move no stamp still reach
+  // the client once a day.
+  int32 issued_day = 9;
 }
 
 message ListChangesCursorEntry {

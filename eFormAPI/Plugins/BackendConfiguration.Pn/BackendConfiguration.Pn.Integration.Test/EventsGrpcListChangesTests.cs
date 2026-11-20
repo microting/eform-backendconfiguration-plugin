@@ -446,11 +446,12 @@ public class EventsGrpcListChangesTests : TestBaseSetup
     }
 
     private async Task<Series> SeedSeriesAsync(
-        World w, int propertyId, string title, DateTime start, string? weekdaysCsv, int siteId)
+        World w, int propertyId, string title, DateTime start, string? weekdaysCsv, int siteId,
+        bool withEform = true)
     {
         var areaRule = new AreaRule
         {
-            AreaId = w.AreaId, PropertyId = propertyId, EformId = w.TemplateId,
+            AreaId = w.AreaId, PropertyId = propertyId, EformId = withEform ? w.TemplateId : null,
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         };
         await BackendConfigurationPnDbContext!.AreaRules.AddAsync(areaRule);
@@ -467,7 +468,7 @@ public class EventsGrpcListChangesTests : TestBaseSetup
         {
             Enabled = true, RepeatEvery = 1,
             RepeatType = weekly ? RepeatType.Week : RepeatType.Day,
-            StartDate = start, DayOfWeek = start.DayOfWeek, RelatedEFormId = w.TemplateId,
+            StartDate = start, DayOfWeek = start.DayOfWeek, RelatedEFormId = withEform ? w.TemplateId : 0,
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         };
         await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
@@ -1226,6 +1227,153 @@ public class EventsGrpcListChangesTests : TestBaseSetup
         var inOtherLanguage = await ChangesAsync(ServiceFor(c.W, c.W.SiteA, languageId: other), c.From, c.To, cursor);
 
         Assert.That(inOtherLanguage.Reset, Is.True);
+    }
+
+    // ------------------------------------------------------------------
+    // PR #1522 review
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// Review finding 1: an unexpected read failure anywhere in the handler
+    /// (here the property dictionary throws instead of failing) is the
+    /// retryable UNAVAILABLE, not UNKNOWN; explicit statuses are kept.
+    /// </summary>
+    [Test]
+    public async Task UnexpectedReadFailure_IsUnavailable_ExplicitStatusesAreKept()
+    {
+        var c = await SeedCalendarAsync();
+        c.W.Properties.GetCommonDictionary(false)
+            .Returns<Task<OperationDataResult<List<CommonDictionaryModel>>>>(_ =>
+                throw new InvalidOperationException("connection reset"));
+        var service = ServiceFor(c.W, c.W.SiteA);
+
+        var thrown = await Assert.ThrowsAsync<GrpcCore.RpcException>(() => ChangesAsync(service, c.From, c.To));
+        var invalid = await Assert.ThrowsAsync<GrpcCore.RpcException>(() => ChangesAsync(service, "garbage", "garbage"));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(thrown!.StatusCode, Is.EqualTo(GrpcCore.StatusCode.Unavailable));
+            Assert.That(invalid!.StatusCode, Is.EqualTo(GrpcCore.StatusCode.InvalidArgument));
+        });
+    }
+
+    /// <summary>
+    /// Review finding 2: a cursor issued on an earlier UTC day is a reset even
+    /// for a fixed explicit window, so changes that move no stamp appear at
+    /// the first call of each day at the latest.
+    /// </summary>
+    [Test]
+    public async Task CursorFromAnEarlierUtcDay_IsAReset_EvenForTheSameWindow()
+    {
+        var c = await SeedCalendarAsync();
+        var cursor = (await ChangesAsync(c)).NextCursor.ToByteArray();
+        var payload = BackendConfiguration.Pn.Grpc.Internal.ListChangesCursorPayload.Parser
+            .ParseFrom(cursor[..^ListChangesCursor.ChecksumBytes]);
+        payload.IssuedDay -= 1;
+        var body = payload.ToByteArray();
+        var yesterdays = body.Concat(System.Security.Cryptography.SHA256.HashData(body)
+            .Take(ListChangesCursor.ChecksumBytes)).ToArray();
+
+        var sameDay = await ChangesAsync(c, ByteString.CopyFrom(cursor));
+        var nextDay = await ChangesAsync(c, ByteString.CopyFrom(yesterdays));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(sameDay.Reset, Is.False);
+            Assert.That(nextDay.Reset, Is.True, "a cursor from an earlier UTC day resets");
+            Assert.That(Upserts(nextDay).Select(KeyOf), Is.EquivalentTo(c.Visible.Select(o => o.Key)));
+        });
+    }
+
+    /// <summary>
+    /// Review findings 3-5 over a two-week window: a weekly (CSV weekday)
+    /// recurrence without an eForm appears in BOTH weeks; a recurrence
+    /// without an eForm moved out of the window is only gone (never upserted
+    /// outside the window); a deployed eForm occurrence moved INTO the window
+    /// from a date after it is present with its own ids and content. Every
+    /// key is inside the window and equals GetEvent, etag included.
+    /// </summary>
+    [Test]
+    public async Task WideWindow_HasEveryWeeksOccurrences_MovedInAndMovedOutRows_EachEqualToGetEvent()
+    {
+        var c = await SeedCalendarAsync();
+        var w = c.W;
+        var monday = c.Monday;
+        var from = Key(monday);
+        var to = Key(monday.AddDays(13));
+        var calendar = NewCalendar(w, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!);
+
+        var fridays = await SeedSeriesAsync(w, w.P1, "no-eform-fridays", monday, "5", w.SiteA, withEform: false);
+        var tuesdays = await SeedSeriesAsync(w, w.P1, "no-eform-tuesdays", monday, "2", w.SiteA, withEform: false);
+        var movedOut = await calendar.MoveTask(new CalendarTaskMoveRequestModel
+        {
+            Id = tuesdays.ArpId, OriginalDate = Key(monday.AddDays(1)) + "T00:00:00Z",
+            NewDate = Key(monday.AddDays(16)) + "T00:00:00Z", NewStartHour = 9.0, Scope = "this"
+        });
+        var thursdays = await SeedSeriesAsync(w, w.P2, "eform-thursdays", monday, "4", w.SiteA);
+        var lateThursday = await SeedOccurrenceAsync(w, thursdays, monday.AddDays(17), "moved-in", "moved-in-value", w.SiteA);
+        var movedIn = await calendar.MoveTask(new CalendarTaskMoveRequestModel
+        {
+            Id = thursdays.ArpId, OriginalDate = Key(monday.AddDays(17)) + "T00:00:00Z",
+            NewDate = Key(monday.AddDays(2)) + "T00:00:00Z", NewStartHour = 9.0, Scope = "this"
+        });
+        Assert.That(movedOut.Success && movedIn.Success, Is.True, "precondition: moves applied");
+
+        var service = ServiceFor(w, w.SiteA);
+        var snapshot = await ChangesAsync(service, from, to);
+        var keys = Upserts(snapshot).Select(KeyOf).ToList();
+        var movedInKey = new OccurrenceKey(thursdays.ArpId, Key(monday.AddDays(2)), lateThursday.ComplianceId);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(keys, Does.Contain(new OccurrenceKey(fridays.ArpId, Key(monday.AddDays(4)), 0)), "week 1 Friday");
+            Assert.That(keys, Does.Contain(new OccurrenceKey(fridays.ArpId, Key(monday.AddDays(11)), 0)), "week 2 Friday");
+            Assert.That(keys, Does.Contain(new OccurrenceKey(tuesdays.ArpId, Key(monday.AddDays(8)), 0)), "week 2 Tuesday");
+            Assert.That(keys.Where(k => k.EventId == tuesdays.ArpId).Select(k => k.PlanDayKey),
+                Is.EqualTo(new[] { Key(monday.AddDays(8)) }), "the moved-out Tuesday is not served");
+            Assert.That(keys, Does.Contain(movedInKey), "the deployed occurrence moved into the window");
+            Assert.That(keys.Select(k => k.PlanDayKey), Is.All.InRange(from, to), "nothing outside the window");
+            Assert.That(keys, Is.Unique);
+        });
+
+        foreach (var evt in Upserts(snapshot))
+        {
+            var got = await GetEventAsync(service, KeyOf(evt));
+            Assert.That(got, Is.EqualTo(evt), $"{evt.Id}/{evt.PlanDayKey}/{evt.ComplianceId}: equals GetEvent");
+        }
+
+        // The other direction: every occurrence GetEvent finds on a day of the
+        // window, for every task on the caller's properties, is in the snapshot.
+        var arpIds = await BackendConfigurationPnDbContext!.AreaRulePlannings
+            .Where(x => x.PropertyId == w.P1 || x.PropertyId == w.P2)
+            .Select(x => x.Id)
+            .ToListAsync();
+        var foundByGetEvent = new List<OccurrenceKey>();
+        foreach (var arpId in arpIds)
+        {
+            for (var day = monday; day <= monday.AddDays(13); day = day.AddDays(1))
+            {
+                var got = await service.GetEvent(new GetEventRequest
+                {
+                    Key = new EventKey { EventId = arpId.ToString(CultureInfo.InvariantCulture), PlanDayKey = Key(day) }
+                }, new TestServerCallContext());
+                if (got.Found)
+                {
+                    foundByGetEvent.Add(KeyOf(got.Event));
+                }
+            }
+        }
+
+        Assert.That(foundByGetEvent, Is.SubsetOf(keys), "every occurrence GetEvent finds in the window is served");
+        Assert.That(foundByGetEvent, Is.EquivalentTo(keys), "and nothing else is served");
+
+        var movedInEvent = Upserts(snapshot).Single(e => KeyOf(e) == movedInKey);
+        Assert.Multiple(() =>
+        {
+            Assert.That(movedInEvent.Comment, Is.EqualTo("moved-in"));
+            Assert.That(TextValue(movedInEvent), Is.EqualTo("moved-in-value"));
+            Assert.That(movedInEvent.MicrotingSdkCaseId, Is.EqualTo(lateThursday.CaseId));
+        });
     }
 
     // ------------------------------------------------------------------

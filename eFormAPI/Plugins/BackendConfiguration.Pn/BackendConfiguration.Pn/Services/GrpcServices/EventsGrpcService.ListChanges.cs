@@ -34,6 +34,9 @@ public partial class EventsGrpcService
     /// </summary>
     private const int ListDeployFutureDays = 2;
 
+    /// <summary>The calendar expands recurrences correctly for at most one 7-day window per read.</summary>
+    private const int ListChangesChunkDays = 7;
+
     /// <summary>
     /// A stored occurrence is only trusted as unchanged without a form read
     /// when its version stamp is older than this. SDK stamps behave as whole
@@ -62,7 +65,24 @@ public partial class EventsGrpcService
         ListChangesRequest request,
         ServerCallContext context)
     {
-        var ct = context.CancellationToken;
+        try
+        {
+            return await ListChangesCoreAsync(request, context.CancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not RpcException and not OperationCanceledException)
+        {
+            // Read-failure boundary: every status the handler chose itself
+            // (INVALID_ARGUMENT, PERMISSION_DENIED, RESOURCE_EXHAUSTED, the
+            // resolver's UNAUTHENTICATED, ...) and cancellation pass through;
+            // anything else is a failed read the client may retry.
+            logger.LogError(ex, "EventsGrpcService.ListChanges: read failed");
+            throw new RpcException(new Status(StatusCode.Unavailable,
+                "The events could not be read right now; retry."));
+        }
+    }
+
+    private async Task<ListChangesResponse> ListChangesCoreAsync(ListChangesRequest request, CancellationToken ct)
+    {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var (from, to) = ResolveListChangesWindow(request.FromDateKey, request.ToDateKey, today);
 
@@ -76,7 +96,7 @@ public partial class EventsGrpcService
         var propertyIds = (await userPropertyAccess.GetAccessiblePropertyIdsAsync(sdkSiteId).ConfigureAwait(false))
             .Distinct().Order().ToList();
         var languageId = await siteResolver.GetSiteLanguageIdAsync(sdkSiteId).ConfigureAwait(false);
-        var prior = ResolveCursor(request.Cursor, sdkSiteId, languageId ?? 0, from, to);
+        var prior = ResolveCursor(request.Cursor, sdkSiteId, languageId ?? 0, from, to, today);
 
         var response = new ListChangesResponse
         {
@@ -106,7 +126,7 @@ public partial class EventsGrpcService
         var current = DiffAgainstCursor(response, occurrences, prior);
 
         response.NextCursor = ByteString.CopyFrom(ListChangesCursor.Encode(
-            new ListChangesCursorState(sdkSiteId, languageId ?? 0, from, to, propertyIds, current)));
+            new ListChangesCursorState(sdkSiteId, languageId ?? 0, from, to, today, propertyIds, current)));
 
         logger.LogDebug(
             "EventsGrpcService.ListChanges: sdkSiteId={SdkSiteId} window={From}..{To} reset={Reset} occurrences={Count} formReads={Reads} changes={Changes}",
@@ -151,12 +171,13 @@ public partial class EventsGrpcService
     }
 
     /// <summary>The cursor's state, or null (reset) when absent or unusable for this caller and window.</summary>
-    private ListChangesCursorState? ResolveCursor(ByteString cursor, int sdkSiteId, int languageId, DateOnly from, DateOnly to)
+    private ListChangesCursorState? ResolveCursor(
+        ByteString cursor, int sdkSiteId, int languageId, DateOnly from, DateOnly to, DateOnly today)
     {
         var prior = ListChangesCursor.TryDecode(cursor.Span, out var reason);
         if (prior != null)
         {
-            reason = BindingMismatch(prior, sdkSiteId, languageId, from, to);
+            reason = BindingMismatch(prior, sdkSiteId, languageId, from, to, today);
             if (reason.Length > 0)
             {
                 prior = null;
@@ -173,10 +194,20 @@ public partial class EventsGrpcService
         return prior;
     }
 
-    /// <summary>Why a decoded cursor belongs to another caller, language or window; empty when it fits.</summary>
+    /// <summary>
+    /// Why a decoded cursor belongs to another caller, language, window or
+    /// UTC day; empty when it fits. The day binding makes every client take a
+    /// reset snapshot at its first call of a day, so changes that move no
+    /// stamp (template, translation, entity options) are never older than that.
+    /// </summary>
     private static string BindingMismatch(
-        ListChangesCursorState prior, int sdkSiteId, int languageId, DateOnly from, DateOnly to)
+        ListChangesCursorState prior, int sdkSiteId, int languageId, DateOnly from, DateOnly to, DateOnly today)
     {
+        if (prior.IssuedDay != today)
+        {
+            return "day";
+        }
+
         if (prior.SdkSiteId != sdkSiteId)
         {
             return "caller";
@@ -287,29 +318,23 @@ public partial class EventsGrpcService
                 }
             }
 
-            var result = await calendarService.GetTasksForWeek(new CalendarTaskRequestModel
+            // GetTasksForWeek expands weekly weekday rules (and caps month/year
+            // candidates) for one 7-day window only, so the window is read in
+            // 7-day chunks. A row is served when its effective date is inside
+            // the window (a scope=this move can carry it outside), once per key.
+            var propertyRows = new List<CalendarTaskResponseModel>();
+            for (var chunkStart = from; chunkStart <= to; chunkStart = chunkStart.AddDays(ListChangesChunkDays))
             {
-                PropertyId = propertyId,
-                WeekStart = fromKey,
-                WeekEnd = toKey,
-                BoardIds = [],
-                TagNames = [],
-                // #931: only events assigned to the caller's own site.
-                SiteIds = [sdkSiteId],
-                ActionableOnly = true,
-                LanguageId = languageId
-            }).ConfigureAwait(false);
-
-            if (!result.Success || result.Model == null)
-            {
-                logger.LogWarning(
-                    "EventsGrpcService.ListChanges: calendar read failed for sdkSiteId={SdkSiteId} property={PropertyId}: {Message}",
-                    sdkSiteId, propertyId, result.Message);
-                throw new RpcException(new Status(StatusCode.Unavailable,
-                    "The events could not be read right now; retry."));
+                var chunkEnd = chunkStart.AddDays(ListChangesChunkDays - 1);
+                propertyRows.AddRange(await ReadCalendarAsync(
+                    propertyId, chunkStart, chunkEnd < to ? chunkEnd : to, sdkSiteId, languageId).ConfigureAwait(false));
             }
 
-            rows.AddRange(result.Model.Where(r => r.Status));
+            propertyRows = await ResolveMovedInRowsAsync(propertyRows, propertyId, from, to, sdkSiteId, languageId, ct)
+                .ConfigureAwait(false);
+            rows.AddRange(propertyRows
+                .Where(r => r.Status && IsInWindow(r.TaskDate, from, to))
+                .DistinctBy(r => (r.Id, r.TaskDate, r.ComplianceId ?? 0)));
             if (rows.Count > ListChangesCursor.MaxEntries)
             {
                 logger.LogWarning(
@@ -321,6 +346,90 @@ public partial class EventsGrpcService
         }
 
         return rows;
+    }
+
+    private static bool IsInWindow(string? dateKey, DateOnly from, DateOnly to) =>
+        DateOnly.TryParseExact(dateKey, DateKeyFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var day)
+        && day >= from && day <= to;
+
+    /// <summary>ListEvents' calendar read for one property and range; a failed read is UNAVAILABLE.</summary>
+    private async Task<List<CalendarTaskResponseModel>> ReadCalendarAsync(
+        int propertyId, DateOnly start, DateOnly end, int sdkSiteId, int? languageId)
+    {
+        var result = await calendarService.GetTasksForWeek(new CalendarTaskRequestModel
+        {
+            PropertyId = propertyId,
+            WeekStart = start.ToString(DateKeyFormat, CultureInfo.InvariantCulture),
+            WeekEnd = end.ToString(DateKeyFormat, CultureInfo.InvariantCulture),
+            BoardIds = [],
+            TagNames = [],
+            // #931: only events assigned to the caller's own site.
+            SiteIds = [sdkSiteId],
+            ActionableOnly = true,
+            LanguageId = languageId
+        }).ConfigureAwait(false);
+
+        if (!result.Success || result.Model == null)
+        {
+            logger.LogWarning(
+                "EventsGrpcService.ListChanges: calendar read failed for sdkSiteId={SdkSiteId} property={PropertyId}: {Message}",
+                sdkSiteId, propertyId, result.Message);
+            throw new RpcException(new Status(StatusCode.Unavailable,
+                "The events could not be read right now; retry."));
+        }
+
+        return result.Model;
+    }
+
+    /// <summary>
+    /// The calendar renders an occurrence moved INTO a range from outside it
+    /// without its compliance and case. For an eForm occurrence whose original
+    /// date is outside the whole window, the deployed row is read the way
+    /// GetEvent reads it (its day widened to the original date, at most
+    /// <see cref="MaxGetEventWindowWideningDays"/>), so it is served with its
+    /// own ids and content and the same etag as GetEvent. Moves inside the
+    /// window need nothing: the chunk holding the original date carries the
+    /// deployed row, and the id-less copy is dropped as undeployed.
+    /// </summary>
+    private async Task<List<CalendarTaskResponseModel>> ResolveMovedInRowsAsync(
+        List<CalendarTaskResponseModel> rows, int propertyId, DateOnly from, DateOnly to,
+        int sdkSiteId, int? languageId, CancellationToken ct)
+    {
+        var movedIn = rows
+            .Where(r => r.ExceptionId is > 0 && r.ComplianceId is not > 0 && r.EformId is > 0
+                        && IsInWindow(r.TaskDate, from, to))
+            .ToList();
+        if (movedIn.Count == 0)
+        {
+            return rows;
+        }
+
+        var exceptionIds = movedIn.Select(r => r.ExceptionId!.Value).Distinct().ToList();
+        var originalDates = await dbContext.CalendarOccurrenceExceptions.AsNoTracking()
+            .Where(x => exceptionIds.Contains(x.Id))
+            .Select(x => new { x.Id, x.OriginalDate })
+            .ToDictionaryAsync(x => x.Id, x => DateOnly.FromDateTime(x.OriginalDate), ct)
+            .ConfigureAwait(false);
+
+        var resolved = rows.Except(movedIn).ToList();
+        foreach (var row in movedIn)
+        {
+            if (!originalDates.TryGetValue(row.ExceptionId!.Value, out var original)
+                || (original >= from && original <= to))
+            {
+                continue;
+            }
+
+            var day = DateTime.ParseExact(row.TaskDate!, DateKeyFormat, CultureInfo.InvariantCulture);
+            var (start, end) = await ResolveGetEventWindowAsync(row.Id, row.PlanningId ?? 0, day,
+                new EventKey { EventId = row.Id.ToString(CultureInfo.InvariantCulture), PlanDayKey = row.TaskDate },
+                ct).ConfigureAwait(false);
+            var read = await ReadCalendarAsync(propertyId, DateOnly.FromDateTime(start), DateOnly.FromDateTime(end),
+                sdkSiteId, languageId).ConfigureAwait(false);
+            resolved.AddRange(read.Where(t => t.Id == row.Id && t.TaskDate == row.TaskDate && t.ComplianceId is > 0));
+        }
+
+        return resolved;
     }
 
     /// <summary>One occurrence after hydration.</summary>

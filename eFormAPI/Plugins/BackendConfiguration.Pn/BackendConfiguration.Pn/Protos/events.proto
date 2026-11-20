@@ -38,10 +38,12 @@ service Events {
   // the per-property stream polls for clients that support it. Does NOT
   // include the task-tracker (overdue) rows: keep calling ListTaskTracker.
   // Poll no faster than the stream (every 5 s); recommended every 15 s while
-  // the task list is on screen and the existing 5-minute refresh otherwise.
-  // An unchanged call costs roughly a third of one per-property stream poll
-  // round, so 15 s is about a ninth of the stream's load. UNAVAILABLE: retry
-  // later; a reset snapshot is never sent while an occurrence cannot be read.
+  // the task list is on screen with the default 3-day window (an unchanged
+  // call then costs about a third of one round of per-property stream polls)
+  // and the existing 5-minute refresh otherwise. The window is read in 7-day
+  // chunks, so a stream-sized window costs about 1.5 such rounds per call:
+  // poll it at most every 30 s. UNAVAILABLE: retry later; a reset snapshot is
+  // never sent while an occurrence cannot be read.
   rpc ListChanges(ListChangesRequest) returns (ListChangesResponse);
 }
 
@@ -49,8 +51,9 @@ service Events {
 message ListChangesRequest {
   // next_cursor of the previous ListChanges reply for the same window.
   // Empty = full snapshot. A cursor the server cannot use (corrupt, from
-  // another server version, another caller or another window) is answered
-  // with a full snapshot and reset = true, never with an error.
+  // another server version, another caller, language or window, or issued
+  // on an earlier UTC day) is answered with a full snapshot and reset = true,
+  // never with an error.
   bytes cursor = 1;
   // Window, yyyy-MM-dd, inclusive. Both empty = today .. today+2 (UTC), the
   // app's list window. The server clamps the window to the stream's window

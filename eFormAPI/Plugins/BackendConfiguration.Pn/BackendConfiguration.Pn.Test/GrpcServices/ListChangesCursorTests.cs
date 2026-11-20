@@ -35,7 +35,7 @@ public class ListChangesCursorTests
                 i % 7 == 0 ? null : 1_790_000_000_000_000L + random.NextInt64(1_000_000_000_000L));
         }
 
-        return new ListChangesCursorState(siteId, 3, From, From.AddDays(span), [17, 3, 250], map);
+        return new ListChangesCursorState(siteId, 3, From, From.AddDays(span), From.AddDays(-1), [17, 3, 250], map);
     }
 
     private static ListChangesCursorState? Decode(byte[] bytes) =>
@@ -70,6 +70,7 @@ public class ListChangesCursorTests
             Assert.That(decoded.LanguageId, Is.EqualTo(3));
             Assert.That(decoded.From, Is.EqualTo(From));
             Assert.That(decoded.To, Is.EqualTo(From.AddDays(2)));
+            Assert.That(decoded.IssuedDay, Is.EqualTo(From.AddDays(-1)));
             Assert.That(decoded.PropertyIds, Is.EqualTo(new[] { 3, 17, 250 }));
             Assert.That(decoded.Entries, Is.EquivalentTo(withLiteral.Entries));
         });
