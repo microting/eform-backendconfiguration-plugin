@@ -43,7 +43,7 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 public partial class EventsGrpcService
 {
     /// <summary>Contract revision answered by <see cref="GetServerInfo"/>.</summary>
-    internal const int ContractVersion = 1;
+    internal const int ContractVersion = 2;
 
     /// <summary>The optional behaviours this revision adds, verbatim on the wire.</summary>
     internal static readonly IReadOnlyList<string> ContractCapabilities =
@@ -54,7 +54,9 @@ public partial class EventsGrpcService
         "get_event",
         "event_version",
         "event_etag",
-        "event_due_local"
+        "event_due_local",
+        // contract_version 2.
+        "list_changes"
     ];
 
     /// <summary>

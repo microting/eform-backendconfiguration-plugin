@@ -32,6 +32,74 @@ service Events {
   // shape as ListEvents. A task the caller may not read answers found=false
   // (never PERMISSION_DENIED), so ids cannot be probed.
   rpc GetEvent(GetEventRequest) returns (GetEventResponse);
+  // contract_version 2 (capability "list_changes"). Every occurrence of every
+  // property the caller is assigned to, in one window, as changes since an
+  // opaque cursor. Replaces per-property ListEvents / ListBoards calls and
+  // the per-property stream polls for clients that support it. Does NOT
+  // include the task-tracker (overdue) rows: keep calling ListTaskTracker.
+  // Poll no faster than the stream (every 5 s); recommended every 15 s while
+  // the task list is on screen and the existing 5-minute refresh otherwise.
+  // An unchanged call costs roughly a third of one per-property stream poll
+  // round, so 15 s is about a ninth of the stream's load. UNAVAILABLE: retry
+  // later; a reset snapshot is never sent while an occurrence cannot be read.
+  rpc ListChanges(ListChangesRequest) returns (ListChangesResponse);
+}
+
+// contract_version 2.
+message ListChangesRequest {
+  // next_cursor of the previous ListChanges reply for the same window.
+  // Empty = full snapshot. A cursor the server cannot use (corrupt, from
+  // another server version, another caller or another window) is answered
+  // with a full snapshot and reset = true, never with an error.
+  bytes cursor = 1;
+  // Window, yyyy-MM-dd, inclusive. Both empty = today .. today+2 (UTC), the
+  // app's list window. The server clamps the window to the stream's window
+  // (today-7 .. today+30, UTC) and states the window it served in the reply;
+  // a window entirely outside it is INVALID_ARGUMENT. Cases are eager-deployed
+  // only for the part inside today .. today+2, as the list does.
+  string from_date_key = 2;
+  string to_date_key = 3;
+}
+
+// contract_version 2. One change in a ListChangesResponse. Deliberately a
+// separate message from EventChange (which the stream sends), so a stream
+// client never meets a oneof case it does not know.
+message ListChange {
+  oneof kind {
+    // New or changed occurrence, with version and etag. etag equals the
+    // GetEvent etag of the same key; the content is the occurrence's own
+    // (its own comment and field values).
+    Event upserted = 1;
+    // The occurrence with this full key (event_id, plan_day_key,
+    // compliance_id; compliance_id is always present, 0 for recurrence-only)
+    // is no longer in the window for this caller: completed (the window is
+    // actionable-only), moved, out of the window, or its property assignment
+    // was removed.
+    EventKey removed = 2;
+  }
+}
+
+// contract_version 2.
+message ListChangesResponse {
+  // With reset = false: upserts and removals against what the cursor held.
+  // With reset = true: the complete content of the window (upserts only).
+  repeated ListChange changes = 1;
+  // Pass back on the next call for the same window. Opaque.
+  bytes next_cursor = 2;
+  // Every property the caller is assigned to now (complete list, every call).
+  repeated Property properties = 3;
+  // Every board of those properties (complete list, every call).
+  repeated Board boards = 4;
+  // Properties the cursor held that the caller is no longer assigned to.
+  // Their occurrences are also listed as removals. Empty when reset is true.
+  repeated string removed_property_ids = 5;
+  // True when changes is a full snapshot: the request had no cursor or the
+  // cursor could not be used. The client then replaces everything it holds
+  // for the window with changes (and drops the occurrences not in it).
+  bool reset = 6;
+  // The window actually served (after defaulting and capping).
+  string from_date_key = 7;
+  string to_date_key = 8;
 }
 
 // contract_version 1.
@@ -39,7 +107,7 @@ message GetServerInfoRequest {}
 // contract_version 1.
 message GetServerInfoResponse {
   // Monotonic contract revision of this server. 1 = the first revision that
-  // has this RPC.
+  // has this RPC; 2 adds ListChanges.
   int32 contract_version = 1;
   // Exactly the optional behaviours this server implements, e.g.
   // "request_id", "get_event", "event_version". Clients must test for the

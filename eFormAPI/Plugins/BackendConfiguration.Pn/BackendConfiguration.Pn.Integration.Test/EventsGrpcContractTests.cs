@@ -963,7 +963,7 @@ public class EventsGrpcContractTests : TestBaseSetup
     }
 
     [Test]
-    public async Task GetServerInfo_AnswersContractVersion1AndItsCapabilities()
+    public async Task GetServerInfo_AnswersContractVersion2AndItsCapabilities()
     {
         var s = await SeedAsync("server-info", withEchoTask: false);
 
@@ -971,11 +971,12 @@ public class EventsGrpcContractTests : TestBaseSetup
 
         Assert.Multiple(() =>
         {
-            Assert.That(info.ContractVersion, Is.EqualTo(1));
+            // contract_version 2 adds ListChanges; every version-1 capability stays.
+            Assert.That(info.ContractVersion, Is.EqualTo(2));
             Assert.That(info.Capabilities, Is.EquivalentTo(new[]
             {
                 "request_id", "remove_photo_expected_storage_id", "write_reply_compliance_id",
-                "get_event", "event_version", "event_etag", "event_due_local"
+                "get_event", "event_version", "event_etag", "event_due_local", "list_changes"
             }));
         });
     }
