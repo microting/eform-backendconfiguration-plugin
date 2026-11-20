@@ -283,13 +283,16 @@ export class ChemicalsContainerComponent implements OnInit {
 
   /**
    * What the URL of a finished navigation selects: a known ?propertyId=, or on a screen with "All" no parameter.
-   * Null: keep the selection. A pick made while the navigation ran is newer than its URL, so it always wins
-   * (the caller then writes it to the URL; that write's own end finds the URL in step, so nothing loops).
+   * Null: keep the selection. A kept pick made while the navigation ran is newer than its URL, so it wins when the
+   * arriving screen can show it (the caller then writes it to the URL; that write's own end finds the URL in step,
+   * so nothing loops).
    */
   private selectionFromUrl(): ChemicalsPickerValue | null {
-    const urlBehind = this.urlBehind;
+    // The flag is used up on every path. A pick only wins where the arriving screen can show it: "All" on a
+    // single-property screen cannot, and then that navigation's URL decides, not a forced first property.
+    const pickWins = this.urlBehind && (this.screenAllowsAll || !this.allProperties);
     this.urlBehind = false;
-    if (urlBehind) {
+    if (pickWins) {
       return null;
     }
     const fromUrl = this.propertyIdFromUrl();
