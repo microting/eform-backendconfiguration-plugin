@@ -657,6 +657,30 @@ describe('ChemicalsContainerComponent', () => {
       });
     });
 
+    it('the first-load selection is no pick: a navigation to ?propertyId=8 that supersedes the first one wins', () => {
+      vi.useFakeTimers();
+      const pending = new Subject<unknown>();
+      const component = build([], pending);
+      routerEvents$.next(new NavigationStart(2, '/chemicals/inventory'));
+      // The properties answer lands mid-navigation: the starting selection ("All") is applied then.
+      pending.next({success: true, model: list});
+      expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectAllProperties());
+      store.dispatch.mockClear();
+
+      routerEvents$.next(new NavigationCancel(2, '/chemicals/inventory', 'superseded'));
+      routerEvents$.next(new NavigationStart(3, '/chemicals/inventory?propertyId=8'));
+      vi.runOnlyPendingTimers();
+      queryParams = {propertyId: '8'};
+      routerEvents$.next(new NavigationEnd(3, '/chemicals/inventory?propertyId=8', '/chemicals/inventory?propertyId=8'));
+      vi.useRealTimers();
+
+      expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectProperty({payload: 8}));
+      expect(component.propertyId).toBe(8);
+      expect(component.allProperties).toBe(false);
+      // The URL already says 8: nothing to write.
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
+
     it('a cancelled navigation replaced by a newer one does not count as a pending pick (rereview)', () => {
       vi.useFakeTimers();
       queryParams = {propertyId: '7'};
