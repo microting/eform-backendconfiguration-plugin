@@ -1317,7 +1317,24 @@ public class EventsGrpcListChangesTests : TestBaseSetup
             Id = thursdays.ArpId, OriginalDate = Key(monday.AddDays(17)) + "T00:00:00Z",
             NewDate = Key(monday.AddDays(2)) + "T00:00:00Z", NewStartHour = 9.0, Scope = "this"
         });
-        Assert.That(movedOut.Success && movedIn.Success, Is.True, "precondition: moves applied");
+        // Deployed eForm occurrences moved inside the window: across the 7-day
+        // chunk boundary (day 2 -> day 9) and within one chunk (day 6 -> day 4).
+        var crossChunk = await SeedSeriesAsync(w, w.P2, "eform-cross-chunk", monday, "2", w.SiteA);
+        var crossChunkOccurrence = await SeedOccurrenceAsync(w, crossChunk, monday.AddDays(1), "cross", "cross-value", w.SiteA);
+        var movedAcross = await calendar.MoveTask(new CalendarTaskMoveRequestModel
+        {
+            Id = crossChunk.ArpId, OriginalDate = Key(monday.AddDays(1)) + "T00:00:00Z",
+            NewDate = Key(monday.AddDays(8)) + "T00:00:00Z", NewStartHour = 9.0, Scope = "this"
+        });
+        var withinChunk = await SeedSeriesAsync(w, w.P2, "eform-within-chunk", monday, "6", w.SiteA);
+        var withinChunkOccurrence = await SeedOccurrenceAsync(w, withinChunk, monday.AddDays(5), "within", "within-value", w.SiteA);
+        var movedWithin = await calendar.MoveTask(new CalendarTaskMoveRequestModel
+        {
+            Id = withinChunk.ArpId, OriginalDate = Key(monday.AddDays(5)) + "T00:00:00Z",
+            NewDate = Key(monday.AddDays(3)) + "T00:00:00Z", NewStartHour = 9.0, Scope = "this"
+        });
+        Assert.That(movedOut.Success && movedIn.Success && movedAcross.Success && movedWithin.Success, Is.True,
+            "precondition: moves applied");
 
         var service = ServiceFor(w, w.SiteA);
         var snapshot = await ChangesAsync(service, from, to);
@@ -1332,6 +1349,14 @@ public class EventsGrpcListChangesTests : TestBaseSetup
             Assert.That(keys.Where(k => k.EventId == tuesdays.ArpId).Select(k => k.PlanDayKey),
                 Is.EqualTo(new[] { Key(monday.AddDays(8)) }), "the moved-out Tuesday is not served");
             Assert.That(keys, Does.Contain(movedInKey), "the deployed occurrence moved into the window");
+            Assert.That(keys, Does.Contain(new OccurrenceKey(crossChunk.ArpId, Key(monday.AddDays(8)), crossChunkOccurrence.ComplianceId)),
+                "moved across the chunk boundary, at its new day");
+            Assert.That(keys.Where(k => k.EventId == crossChunk.ArpId && k.ComplianceId == crossChunkOccurrence.ComplianceId),
+                Has.Exactly(1).Items, "once, not also under its original day");
+            Assert.That(keys, Does.Contain(new OccurrenceKey(withinChunk.ArpId, Key(monday.AddDays(3)), withinChunkOccurrence.ComplianceId)),
+                "moved within one chunk, at its new day");
+            Assert.That(keys.Where(k => k.EventId == withinChunk.ArpId && k.ComplianceId == withinChunkOccurrence.ComplianceId),
+                Has.Exactly(1).Items);
             Assert.That(keys.Select(k => k.PlanDayKey), Is.All.InRange(from, to), "nothing outside the window");
             Assert.That(keys, Is.Unique);
         });

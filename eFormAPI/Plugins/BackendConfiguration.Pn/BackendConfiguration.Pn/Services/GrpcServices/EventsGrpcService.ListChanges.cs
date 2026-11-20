@@ -326,12 +326,17 @@ public partial class EventsGrpcService
             for (var chunkStart = from; chunkStart <= to; chunkStart = chunkStart.AddDays(ListChangesChunkDays))
             {
                 var chunkEnd = chunkStart.AddDays(ListChangesChunkDays - 1);
-                propertyRows.AddRange(await ReadCalendarAsync(
-                    propertyId, chunkStart, chunkEnd < to ? chunkEnd : to, sdkSiteId, languageId).ConfigureAwait(false));
-            }
+                if (chunkEnd > to)
+                {
+                    chunkEnd = to;
+                }
 
-            propertyRows = await ResolveMovedInRowsAsync(propertyRows, propertyId, from, to, sdkSiteId, languageId, ct)
-                .ConfigureAwait(false);
+                var chunkRows = await ReadCalendarAsync(propertyId, chunkStart, chunkEnd, sdkSiteId, languageId)
+                    .ConfigureAwait(false);
+                // Per chunk: a move from another chunk of the window is "moved in" for this one.
+                propertyRows.AddRange(await ResolveMovedInRowsAsync(
+                    chunkRows, propertyId, chunkStart, chunkEnd, sdkSiteId, languageId, ct).ConfigureAwait(false));
+            }
             rows.AddRange(propertyRows
                 .Where(r => r.Status && IsInWindow(r.TaskDate, from, to))
                 .DistinctBy(r => (r.Id, r.TaskDate, r.ComplianceId ?? 0)));
@@ -382,22 +387,22 @@ public partial class EventsGrpcService
     }
 
     /// <summary>
-    /// The calendar renders an occurrence moved INTO a range from outside it
-    /// without its compliance and case. For an eForm occurrence whose original
-    /// date is outside the whole window, the deployed row is read the way
-    /// GetEvent reads it (its day widened to the original date, at most
-    /// <see cref="MaxGetEventWindowWideningDays"/>), so it is served with its
-    /// own ids and content and the same etag as GetEvent. Moves inside the
-    /// window need nothing: the chunk holding the original date carries the
-    /// deployed row, and the id-less copy is dropped as undeployed.
+    /// The calendar renders an occurrence moved INTO a read range from outside
+    /// it without its compliance and case, and the read holding the original
+    /// date omits it. For an eForm occurrence of one chunk whose original date
+    /// is outside that chunk (another chunk of the window, or outside the
+    /// window), the deployed row is read the way GetEvent reads it (its day
+    /// widened to the original date, at most <see cref="MaxGetEventWindowWideningDays"/>),
+    /// so it is served once, with its own ids, content and GetEvent etag. A
+    /// move within the chunk needs nothing: that read carries the deployed row.
     /// </summary>
     private async Task<List<CalendarTaskResponseModel>> ResolveMovedInRowsAsync(
-        List<CalendarTaskResponseModel> rows, int propertyId, DateOnly from, DateOnly to,
+        List<CalendarTaskResponseModel> rows, int propertyId, DateOnly chunkStart, DateOnly chunkEnd,
         int sdkSiteId, int? languageId, CancellationToken ct)
     {
         var movedIn = rows
             .Where(r => r.ExceptionId is > 0 && r.ComplianceId is not > 0 && r.EformId is > 0
-                        && IsInWindow(r.TaskDate, from, to))
+                        && IsInWindow(r.TaskDate, chunkStart, chunkEnd))
             .ToList();
         if (movedIn.Count == 0)
         {
@@ -415,7 +420,7 @@ public partial class EventsGrpcService
         foreach (var row in movedIn)
         {
             if (!originalDates.TryGetValue(row.ExceptionId!.Value, out var original)
-                || (original >= from && original <= to))
+                || (original >= chunkStart && original <= chunkEnd))
             {
                 continue;
             }
