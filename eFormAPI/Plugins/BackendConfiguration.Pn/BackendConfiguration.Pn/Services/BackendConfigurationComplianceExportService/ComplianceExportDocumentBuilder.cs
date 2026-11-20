@@ -5,6 +5,7 @@ using System.Linq;
 using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 using BackendConfiguration.Pn.Services.BackendConfigurationComplianceReportService;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
+using BackendConfiguration.Pn.Services.TailBite;
 using Microting.eForm.Infrastructure.Constants;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportService;
@@ -357,12 +358,24 @@ public static class ComplianceExportDocumentBuilder
     /// bounding the Word writer's base64 accumulation) was reasoned about with,
     /// and it costs a hash set.
     /// </para>
+    ///
+    /// <para>
+    /// <b>Halebid (#1517).</b> When <paramref name="tailBite"/> is non-null its
+    /// section is appended AFTER the eForm sections by
+    /// <see cref="ComplianceExportTailBiteBuilder.Append"/>, sharing the
+    /// document-wide appendix budget. Null — the caller sees no Halebid section —
+    /// leaves the document exactly as it was without the argument.
+    /// <paramref name="namePropertyInPdfLocations"/> is passed through: with no
+    /// property in the filter the PDF's Halebid places lead with the property.
+    /// </para>
     /// </summary>
     public static ComplianceExportDocument BuildReport(
         List<ComplianceReportHeadlineGroupModel> groups,
         string period,
         bool includeImageAppendix,
-        IBackendConfigurationLocalizationService localizationService)
+        IBackendConfigurationLocalizationService localizationService,
+        TailBiteComplianceReport tailBite = null,
+        bool namePropertyInPdfLocations = false)
     {
         // No document Title (#1328): the Rapport PDF opens with the first report
         // headline, not a "Rapport" line — the view is already in the file name.
@@ -435,20 +448,16 @@ public static class ComplianceExportDocumentBuilder
                     // is kept although a case is now in exactly one table.
                     if (!casesWithAnAppendixBlock.Add(caseModel.SdkCaseId)) continue;
 
-                    var (block, wanted) = BuildImageBlock(
-                        caseModel, caseLabel,
-                        MaxAppendixImages - document.AppendixImagesEmbedded);
-
-                    document.AppendixImagesRequested += wanted;
-                    if (block == null) continue;
-
-                    document.AppendixImagesEmbedded += block.ImageNames.Count;
-                    headingTable.ImageBlocks.Add(block);
+                    var block = BuildImageBlock(caseModel, caseLabel, document);
+                    if (block != null) headingTable.ImageBlocks.Add(block);
                 }
 
                 document.Tables.Add(table);
             }
         }
+
+        ComplianceExportTailBiteBuilder.Append(
+            document, tailBite, includeImageAppendix, localizationService, namePropertyInPdfLocations);
 
         return document;
     }
@@ -649,8 +658,10 @@ public static class ComplianceExportDocumentBuilder
     /// carry the <c>{0}</c> placeholder. Exactly one image reads the singular
     /// <c>ImagesCountOne</c> (<c>1 billede</c>, no placeholder) rather than
     /// <c>1 billeder</c>; the plural key serves every count from two up.
+    /// <c>internal</c> because the Halebid section (#1517) prints its photo
+    /// counts the same way.
     /// </summary>
-    private static ComplianceExportCell ImagesCell(
+    internal static ComplianceExportCell ImagesCell(
         int imagesCount, IBackendConfigurationLocalizationService localizationService) =>
         imagesCount switch
         {
@@ -699,29 +710,24 @@ public static class ComplianceExportDocumentBuilder
     /// </para>
     ///
     /// <para>
-    /// Returns the block (<c>null</c> when nothing can be embedded for this case)
-    /// AND how many images the per-case cap would have embedded had the document
-    /// budget been unlimited. The caller adds that second number up so the document
-    /// can state the ceiling's own truncation — including for the cases that got no
-    /// block at all.
+    /// Returns the block, or <c>null</c> when nothing can be embedded for this
+    /// case. The document's two counters are kept by
+    /// <see cref="ReserveAppendixImages"/>, so a case the ceiling leaves nothing
+    /// for still counts towards the requested total.
     /// </para>
     /// </summary>
-    private static (ComplianceExportImageBlock Block, int Wanted) BuildImageBlock(
-        ComplianceReportCaseModel caseModel, string caseLabel, int documentBudget)
+    private static ComplianceExportImageBlock BuildImageBlock(
+        ComplianceReportCaseModel caseModel, string caseLabel, ComplianceExportDocument document)
     {
         var usable = (caseModel.Images ?? [])
             .Where(i => !string.IsNullOrWhiteSpace(i.FileName))
             .ToList();
 
-        var wanted = Math.Min(usable.Count, MaxAppendixImagesPerCase);
-        if (wanted == 0) return (null, 0);
-
-        var allowed = Math.Min(wanted, Math.Max(documentBudget, 0));
-        // The document ceiling is already spent. The case still counts towards the
-        // requested total — that is what makes the document's "n of m" honest — but
-        // it gets no block, because a captioned block with no image in it is a page
-        // break carrying nothing.
-        if (allowed == 0) return (null, wanted);
+        var allowed = ReserveAppendixImages(document, usable.Count);
+        // Nothing to embed, or the document ceiling is already spent: no block,
+        // because a captioned block with no image in it is a page break carrying
+        // nothing.
+        if (allowed == 0) return null;
 
         var date = AppendixDate(caseModel);
         var block = new ComplianceExportImageBlock
@@ -744,7 +750,26 @@ public static class ComplianceExportDocumentBuilder
             block.GeoLinks.Add(image.GeoLink);
         }
 
-        return (block, wanted);
+        return block;
+    }
+
+    /// <summary>
+    /// The appendix budget, shared by the eForm cases and the Halebid
+    /// registrations (#1517): of <paramref name="available"/> images, the
+    /// per-case cap <see cref="MaxAppendixImagesPerCase"/> selects some
+    /// ("wanted", added to <see cref="ComplianceExportDocument.AppendixImagesRequested"/>
+    /// — that is what makes the document's "n of m" honest), and what is left of
+    /// the document-wide <see cref="MaxAppendixImages"/> lets through some or all
+    /// of those (added to <see cref="ComplianceExportDocument.AppendixImagesEmbedded"/>
+    /// and returned). The caller embeds exactly the returned number.
+    /// </summary>
+    internal static int ReserveAppendixImages(ComplianceExportDocument document, int available)
+    {
+        var wanted = Math.Min(Math.Max(available, 0), MaxAppendixImagesPerCase);
+        var allowed = Math.Min(wanted, Math.Max(MaxAppendixImages - document.AppendixImagesEmbedded, 0));
+        document.AppendixImagesRequested += wanted;
+        document.AppendixImagesEmbedded += allowed;
+        return allowed;
     }
 
     /// <summary>

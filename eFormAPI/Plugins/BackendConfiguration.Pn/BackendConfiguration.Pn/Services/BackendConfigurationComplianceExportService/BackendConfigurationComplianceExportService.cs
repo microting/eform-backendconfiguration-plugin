@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 using BackendConfiguration.Pn.Services.BackendConfigurationComplianceReportService;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
+using BackendConfiguration.Pn.Services.TailBite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure.Constants;
@@ -46,9 +47,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportS
 /// are display-only and resolved ONCE; the first two are reused for the file
 /// name and the Word/PDF page header (#1189), the third is header-only.
 /// </para>
+///
+/// <para>
+/// <b>Halebid (#1517).</b> Rapport also asks
+/// <see cref="ITailBiteComplianceReportService"/> for the caller's Halebid
+/// section — the same call the screen makes — and the PDF arm hands the Word
+/// writer the <see cref="ITailBitePhotoStorage"/> its appendix photos are read
+/// from.
+/// </para>
 /// </summary>
 public class BackendConfigurationComplianceExportService(
     IBackendConfigurationComplianceReportService complianceReportService,
+    ITailBiteComplianceReportService tailBiteReport,
+    ITailBitePhotoStorage tailBitePhotoStorage,
     IBackendConfigurationLocalizationService localizationService,
     IEFormCoreService coreHelper,
     BackendConfigurationPnDbContext backendConfigurationPnDbContext,
@@ -169,10 +180,16 @@ public class BackendConfigurationComplianceExportService(
                         return new OperationDataResult<ComplianceExportFileModel>(false, result.Message);
                     }
 
+                    // The Halebid section (#1517), null when the caller sees none.
+                    var tailBite = await tailBiteReport.BuildAsync(
+                        BuildReportRequest(requestModel, includeProjected: false));
+
                     document = ComplianceExportDocumentBuilder.BuildReport(
                         result.Model, period,
                         ShouldIncludeImageAppendix(viewMode, format, requestModel.IncludeImageAppendix),
-                        localizationService);
+                        localizationService, tailBite,
+                        // All properties: the PDF header names no farm, so its Halebid places do.
+                        namePropertyInPdfLocations: requestModel.PropertyId == null);
                     break;
                 }
             }
@@ -193,7 +210,7 @@ public class BackendConfigurationComplianceExportService(
                     // Only the Word/PDF page header prints the employees, so only
                     // this arm pays for the SDK lookup; the CSV writer has no header.
                     document.WorkerLabel = await ResolveWorkerLabel(requestModel.SiteIds, core);
-                    var writer = new ComplianceExportWordWriter(localizationService, logger);
+                    var writer = new ComplianceExportWordWriter(localizationService, logger, tailBitePhotoStorage);
                     await using var docx = await writer.WriteAsync(document, core);
 
                     var pdfBytes = await ComplianceExportPdfConverter.ConvertAsync(

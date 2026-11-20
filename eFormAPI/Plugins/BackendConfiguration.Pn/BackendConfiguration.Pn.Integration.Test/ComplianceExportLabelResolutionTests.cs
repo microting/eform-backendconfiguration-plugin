@@ -20,6 +20,7 @@ using System.Reflection;
 using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 using BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportService;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
+using BackendConfiguration.Pn.Services.TailBite;
 using DocumentFormat.OpenXml.Packaging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -459,6 +460,8 @@ public class ComplianceExportLabelResolutionTests : TestBaseSetup
     /// </summary>
     private BackendConfigurationComplianceExportService BuildService() =>
         new(StubReportService(),
+            Substitute.For<ITailBiteComplianceReportService>(),
+            Substitute.For<ITailBitePhotoStorage>(),
             new DanishShellLocalizer(),
             null!,
             BackendConfigurationPnDbContext!,

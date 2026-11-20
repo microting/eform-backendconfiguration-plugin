@@ -7,7 +7,7 @@ import { LoginPage } from '../../../Page objects/Login.page';
 import { BackendConfigurationPropertiesPage, PropertyCreateUpdate } from '../BackendConfigurationProperties.page';
 import { BackendConfigurationPropertyWorkersPage, PropertyWorker } from '../BackendConfigurationPropertyWorkers.page';
 import { customerDatabase, runMariadbSql } from '../db-helpers';
-import { API_TIMEOUT, ignoreUnhandledRejections, UI_TIMEOUT, waitForApiResponse } from '../wait-helpers';
+import { API_TIMEOUT, ignoreUnhandledRejections, SLOW_API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from '../wait-helpers';
 import { escapeRegExp, TailBitePage } from './tail-bite.page';
 
 /**
@@ -520,6 +520,32 @@ test.describe.serial('Tail biting web admin', () => {
     await expect(page.locator(`#tailBiteOutbreakRow-${outbreakId}`)).toHaveCount(0, { timeout: API_TIMEOUT });
     await page.locator('#tailBiteShowClosed button').click();
     await expect(page.locator(`#tailBiteOutbreakStatus-${outbreakId}`)).toHaveClass(/badge-success/, { timeout: API_TIMEOUT });
+  });
+
+  // #1517: the compliance report's Rapport lists the period's outbreaks of the properties the caller manages.
+  test('compliance report: Rapport shows the outbreak in the Halebid section', async ({ page }) => {
+    test.setTimeout(300000);
+    // Reached by URL: the plugin's menu seeding does not add the page on an existing database.
+    await page.goto(`${BASE_URL}/plugins/backend-configuration-pn/compliance-report`);
+    await page.locator('#complianceFilterProperty').waitFor({ state: 'visible', timeout: SLOW_API_TIMEOUT });
+    // The default period ("År til dato") covers today, when the outbreak opened and was closed.
+    const section = waitForApiResponse(page, 'POST compliance-report tail-bite',
+      (r) => r.request().method() === 'POST' && new URL(r.url()).pathname.endsWith('/compliance-report/tail-bite'),
+      SLOW_API_TIMEOUT);
+    ignoreUnhandledRejections(section);
+    await page.locator('#complianceMode-report').click();
+    const body = await (await section).json();
+    expect(body.success, `POST compliance-report/tail-bite -> ${body.message}`).toBe(true);
+
+    await expect(page.locator('#complianceTailBiteSection')).toBeVisible({ timeout: UI_TIMEOUT });
+    const row = page.locator(`#complianceTailBiteRow-${outbreakId}`);
+    await expect(row).toContainText('Stald A', { timeout: UI_TIMEOUT });
+    // Assessed with Feed yes, its one action done, and closed (the tests above).
+    await expect(row).toContainText(/1 (of|af) 1/);
+
+    await page.locator(`#complianceTailBiteToggle-${outbreakId}`).click();
+    await expect(page.locator(`#complianceTailBiteDetail-${outbreakId}`)).toContainText('Kontrollér foderautomaten', { timeout: UI_TIMEOUT });
+    await new TailBitePage(page).screenshot('compliance-report-halebid');
   });
 
   // #1477: switching Halebid off hides the property (its data is kept); switching it on again shows it as it was.

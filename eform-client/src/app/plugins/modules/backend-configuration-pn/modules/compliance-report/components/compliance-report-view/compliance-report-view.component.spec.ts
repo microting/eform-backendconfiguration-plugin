@@ -1177,6 +1177,157 @@ describe('ComplianceReportViewComponent — the view-mode guard', () => {
 });
 
 /**
+ * The Halebid section (#1517) rides on this view's fetch trigger: it is handed
+ * `fetchTrigger$` — the same mode-guarded stream the eForm fetch runs on — and
+ * fetches on its own. Its own rendering is pinned by
+ * compliance-tail-bite-section.component.spec.ts; here: it is placed after the
+ * sections, it is given the trigger, and an eForm failure neither stops the
+ * trigger nor removes it. The section itself stays out of this TestBed
+ * (`NO_ERRORS_SCHEMA`, imports overridden), like mtx-grid.
+ */
+describe('ComplianceReportViewComponent — the Halebid section', () => {
+  let fixture: ComponentFixture<ComplianceReportViewComponent>;
+  let component: ComplianceReportViewComponent;
+  let state: ComplianceReportStateService;
+  let eformColumns: Mock;
+
+  beforeEach(async () => {
+    eformColumns = vi.fn().mockReturnValue(of({success: true, model: []}));
+
+    await TestBed.configureTestingModule({
+      imports: [ComplianceReportViewComponent, TranslateModule.forRoot()],
+      providers: [
+        ComplianceReportStateService,
+        {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns}},
+        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: vi.fn()}},
+        {provide: BackendConfigurationPnPropertiesService, useValue: referenceDataPropertiesService()},
+        {provide: BackendConfigurationPnCalendarService, useValue: referenceDataCalendarService()},
+        {provide: MatDialog, useValue: {open: vi.fn()}},
+      ],
+      schemas: [NO_ERRORS_SCHEMA],
+    }).overrideComponent(ComplianceReportViewComponent, {set: {imports: [CommonModule, TranslateModule], schemas: [NO_ERRORS_SCHEMA]}}).compileComponents();
+
+    fixture = TestBed.createComponent(ComplianceReportViewComponent);
+    component = fixture.componentInstance;
+    state = TestBed.inject(ComplianceReportStateService);
+    state.setMode('report');
+    detectChanges(fixture);
+  });
+
+  it('renders the section after the eForm sections, with the Halebid heading projected into it', () => {
+    const root: HTMLElement = fixture.nativeElement;
+    const host = root.querySelector('.compliance-report > app-compliance-tail-bite-section')!;
+
+    expect(host).not.toBeNull();
+    expect(host.nextElementSibling).toBeNull();
+    expect(host.querySelector('.compliance-report__heading')!.textContent!.trim()).toBe(
+      'Tail biting: outbreaks in the period',
+    );
+  });
+
+  it('hands the section the view\'s own trigger, mode guard included', () => {
+    let fired = 0;
+    component.fetchTrigger$.subscribe(() => fired++);
+    const before = fired;
+
+    state.requestFetch();
+    expect(fired - before).toBe(1);
+    expect(eformColumns).toHaveBeenCalledTimes(1);
+
+    // A trigger for another view reaches neither the eForm fetch nor the section.
+    state.resetToOverview();
+    expect(fired - before).toBe(1);
+  });
+
+  it('keeps triggering the section, and keeps it on the page, when the eForm fetch fails', () => {
+    let fired = 0;
+    component.fetchTrigger$.subscribe(() => fired++);
+    const before = fired;
+    eformColumns.mockReturnValue(throwError(() => new Error('down')));
+
+    state.requestFetch();
+    detectChanges(fixture);
+
+    expect(fired - before).toBe(1);
+    expect(component.loadFailed).toBe(true);
+    expect((fixture.nativeElement as HTMLElement).querySelector('app-compliance-tail-bite-section')).not.toBeNull();
+  });
+
+  /** One headline with one eForm table of `cases` answered cases. */
+  const eformGroups = (cases: number): ComplianceReportHeadlineGroupModel[] => [{
+    headlineTagId: 7,
+    headlineName: 'Lovpligtig dokumentation',
+    tagsCaption: 'Miljøtilsyn',
+    templates: [{
+      checkListId: 509,
+      checkListName: 'Tilsyn',
+      schemaUnavailable: false,
+      columns: [],
+      cases: Array.from({length: cases}, (_, i): ComplianceReportCaseModel => ({
+        complianceId: i + 1, sdkCaseId: 100 + i, propertyId: 5, propertyName: 'Ejendom A', title: 'Område 1',
+        taskDate: '2026-08-11', completed: true, doneAt: null, workerNames: [], checkListId: 509, tags: [],
+        cells: {}, imagesCount: 0, images: [],
+      })),
+    }],
+  }];
+
+  it('counts the Halebid outbreaks into the Download gate, whichever answer arrives first', () => {
+    let eform = new Subject<any>();
+    eformColumns.mockReturnValue(eform);
+
+    state.requestFetch();
+    component.onTailBiteCount(3);
+    expect(state.total).toBe(3);
+    eform.next({success: true, model: eformGroups(2)});
+    expect(state.total).toBe(5);
+
+    eform = new Subject<any>();
+    eformColumns.mockReturnValue(eform);
+    state.requestFetch();
+    eform.next({success: true, model: eformGroups(2)});
+    expect(state.total).toBe(2);
+    component.onTailBiteCount(1);
+    expect(state.total).toBe(3);
+  });
+
+  it('lets a manager with outbreaks but no answered eForm case download', () => {
+    eformColumns.mockReturnValue(of({success: true, model: []}));
+
+    state.requestFetch();
+    component.onTailBiteCount(2);
+
+    expect(state.total).toBe(2);
+  });
+
+  it('zeroes only the Halebid half on a new trigger', () => {
+    eformColumns.mockReturnValue(of({success: true, model: eformGroups(2)}));
+    state.requestFetch();
+    component.onTailBiteCount(3);
+    expect(state.total).toBe(5);
+
+    eformColumns.mockReturnValue(new Subject<any>());
+    state.requestFetch();
+
+    expect(state.total).toBe(2);
+  });
+
+  it('keeps the previous eForm total when an eForm re-fetch fails', () => {
+    eformColumns.mockReturnValue(of({success: true, model: eformGroups(2)}));
+    state.requestFetch();
+    expect(state.total).toBe(2);
+
+    eformColumns.mockReturnValue(throwError(() => new Error('down')));
+    state.requestFetch();
+    expect(state.total).toBe(2);
+
+    eformColumns.mockReturnValue(of({success: false}));
+    state.requestFetch();
+    component.onTailBiteCount(1);
+    expect(state.total).toBe(3);
+  });
+});
+
+/**
  * #1290 — "Slet log" must return the user to the NEXT log: the key of the row
  * that followed the deleted one is taken from the page BEFORE the refresh
  * replaces it, handed to the state service, and applied — scroll + a ~3 s

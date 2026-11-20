@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 using BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportService;
 using BackendConfiguration.Pn.Services.BackendConfigurationComplianceReportService;
+using BackendConfiguration.Pn.Services.TailBite;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -26,13 +27,16 @@ public class ComplianceReportController : Controller
 {
     private readonly IBackendConfigurationComplianceReportService _complianceReportService;
     private readonly IBackendConfigurationComplianceExportService _complianceExportService;
+    private readonly ITailBiteComplianceReportService _tailBiteReport;
 
     public ComplianceReportController(
         IBackendConfigurationComplianceReportService complianceReportService,
-        IBackendConfigurationComplianceExportService complianceExportService)
+        IBackendConfigurationComplianceExportService complianceExportService,
+        ITailBiteComplianceReportService tailBiteReport)
     {
         _complianceReportService = complianceReportService;
         _complianceExportService = complianceExportService;
+        _tailBiteReport = tailBiteReport;
     }
 
     [HttpPost("index")]
@@ -72,6 +76,17 @@ public class ComplianceReportController : Controller
     {
         return await _complianceReportService.EformColumns(requestModel);
     }
+
+    /// <summary>
+    /// The Halebid section of Rapport (#1517): the period's outbreaks on the properties where the caller is a tail-bite
+    /// manager. Model null = the caller sees no Halebid section. The service never throws for access; anything else is the
+    /// host's 500, as for the other report endpoints.
+    /// </summary>
+    [HttpPost("tail-bite")]
+    public async Task<OperationDataResult<TailBiteComplianceReport>> TailBite([FromBody] ComplianceReportRequestModel requestModel)
+        => requestModel is null
+            ? new OperationDataResult<TailBiteComplianceReport>(false, "Request body is required.")
+            : new OperationDataResult<TailBiteComplianceReport>(true, await _tailBiteReport.BuildAsync(requestModel));
 
     /// <summary>
     /// Server-side CSV / PDF export for all three view modes (#1169; the xlsx

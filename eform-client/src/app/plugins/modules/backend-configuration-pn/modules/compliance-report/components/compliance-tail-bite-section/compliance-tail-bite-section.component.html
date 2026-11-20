@@ -1,0 +1,160 @@
+<!--
+  Nothing at all while there is no model: before the first answer, when the
+  caller sees no Halebid section (null model) and when the fetch failed.
+-->
+<section *ngIf="view" id="complianceTailBiteSection" class="compliance-tail-bite">
+  <!-- The caption and the heading, projected by the Rapport view in its own section classes. -->
+  <ng-content></ng-content>
+
+  <div class="kpi-grid compliance-tail-bite__stats">
+    <div class="kpi-card" id="complianceTailBiteTotalOutbreaks">
+      <strong>{{ view.totals.outbreaks }}</strong>
+      <span class="helper-text">{{ 'Outbreaks in the period' | translate }}</span>
+    </div>
+    <div class="kpi-card" id="complianceTailBiteTotalClosed">
+      <strong>{{ view.totals.closedInPeriod }}</strong>
+      <span class="helper-text">{{ 'Closed in the period' | translate }}</span>
+    </div>
+    <div class="kpi-card" id="complianceTailBiteTotalPigs">
+      <strong>{{ view.totals.bittenPigs }}</strong>
+      <span class="helper-text">
+        {{ 'Bitten pigs' | translate }} ({{ 'of which {{n}} severe' | translate: {n: view.totals.severePigs} }})
+      </span>
+    </div>
+    <div class="kpi-card" id="complianceTailBiteTotalActions">
+      <strong>{{ view.totals.actionsDone }} {{ 'of' | translate }} {{ view.totals.actionsTotal }}</strong>
+      <span class="helper-text">{{ 'Actions done' | translate }}</span>
+    </div>
+  </div>
+
+  <p *ngIf="view.rows.length === 0" id="complianceTailBiteEmpty" class="helper-text compliance-tail-bite__empty">
+    {{ 'No outbreaks in the period' | translate }}
+  </p>
+
+  <!-- Its own horizontal scroller, so a narrow viewport scrolls the table, not the page. -->
+  <div *ngIf="view.rows.length > 0" class="compliance-tail-bite__scroll">
+    <table class="table compliance-tail-bite__table" id="complianceTailBiteTable">
+      <thead>
+        <tr>
+          <th scope="col" class="compliance-tail-bite__toggle-col">
+            <span class="cdk-visually-hidden">{{ 'Show details' | translate }}</span>
+          </th>
+          <th scope="col">{{ 'ID' | translate }}</th>
+          <th scope="col">{{ 'Location' | translate }}</th>
+          <th scope="col">{{ 'Started' | translate }}</th>
+          <th scope="col">{{ 'Risk assessed' | translate }}</th>
+          <th scope="col">{{ 'Closed' | translate }}</th>
+          <th scope="col">{{ 'Bitten pigs' | translate }}</th>
+          <th scope="col">{{ 'Yes factors' | translate }}</th>
+          <th scope="col">{{ 'Actions' | translate }}</th>
+          <th scope="col">{{ 'Photos' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-container *ngFor="let row of view.rows; trackBy: trackByRow">
+          <tr [id]="'complianceTailBiteRow-' + row.id">
+            <td class="compliance-tail-bite__toggle-col">
+              <button
+                mat-icon-button
+                type="button"
+                [id]="'complianceTailBiteToggle-' + row.id"
+                [attr.aria-expanded]="isExpanded(row)"
+                [attr.aria-controls]="'complianceTailBiteDetail-' + row.id"
+                [attr.aria-label]="(isExpanded(row) ? 'Hide details' : 'Show details') | translate"
+                [matTooltip]="(isExpanded(row) ? 'Hide details' : 'Show details') | translate"
+                (click)="toggle(row)"
+              >
+                <mat-icon>{{ isExpanded(row) ? 'expand_less' : 'expand_more' }}</mat-icon>
+              </button>
+            </td>
+            <td class="mono">{{ row.id }}</td>
+            <td>
+              <span>{{ row.locationPath }}</span>
+              <span *ngIf="view.showProperty" class="helper-text compliance-tail-bite__sub">{{ row.propertyName }}</span>
+            </td>
+            <td class="mono">{{ row.openedAt | date: 'dd.MM.yyyy' }}</td>
+            <td class="mono">{{ row.assessedAt ? (row.assessedAt | date: 'dd.MM.yyyy') : '–' }}</td>
+            <td class="mono">{{ row.closedAt ? (row.closedAt | date: 'dd.MM.yyyy') : '–' }}</td>
+            <td>
+              {{ row.bittenPigs }}
+              <span *ngIf="row.severePigs > 0" class="helper-text">
+                ({{ 'of which {{n}} severe' | translate: {n: row.severePigs} }})
+              </span>
+            </td>
+            <td [id]="'complianceTailBiteYes-' + row.id">
+              <ng-container *ngIf="row.assessed; else notAssessed">
+                <ng-container *ngIf="row.yesFactors.length; else noYes">
+                  <ng-container *ngFor="let label of row.yesFactors; let last = last">{{ label | translate }}{{ last ? '' : ', ' }}</ng-container>
+                </ng-container>
+                <ng-template #noYes>{{ 'None' | translate }}</ng-template>
+              </ng-container>
+              <ng-template #notAssessed>{{ 'Not assessed' | translate }}</ng-template>
+            </td>
+            <td>
+              {{ row.actions.length
+                ? ('{{done}} of {{total}} done' | translate: {done: row.actionsDone, total: row.actions.length})
+                : '–' }}
+            </td>
+            <td>{{ row.photos.length }}</td>
+          </tr>
+
+          <tr *ngIf="isExpanded(row)" [id]="'complianceTailBiteDetail-' + row.id" class="compliance-tail-bite__detail-row">
+            <td></td>
+            <td colspan="9">
+              <div class="compliance-tail-bite__detail">
+                <div class="compliance-tail-bite__detail-col">
+                  <strong>{{ 'Risk assessment' | translate }}</strong>
+                  <div *ngIf="row.assessed; else detailNotAssessed" class="compliance-tail-bite__chips">
+                    <span
+                      *ngFor="let f of row.factors"
+                      class="badge"
+                      [class.badge-warning]="f.yes"
+                      [class.badge-neutral]="!f.yes"
+                    >{{ f.label | translate }}: {{ (f.yes ? 'Yes' : 'No') | translate }}</span>
+                  </div>
+                  <ng-template #detailNotAssessed><span class="helper-text">{{ 'Not assessed' | translate }}</span></ng-template>
+
+                  <strong>{{ 'Photos' | translate }} ({{ row.photos.length }})</strong>
+                  <div *ngIf="row.photos.length; else noPhotos" class="compliance-tail-bite__photos">
+                    <button
+                      *ngFor="let photo of row.photos; let i = index"
+                      type="button"
+                      class="compliance-tail-bite__photo"
+                      [id]="'complianceTailBitePhoto-' + row.id + '-' + i"
+                      [attr.aria-label]="'Open photo {{n}}' | translate: {n: i + 1}"
+                      [matTooltip]="(photo.effectiveAt | date: 'dd.MM.yyyy HH:mm') + ' · ' + photo.pens + ' · ' + photo.siteName"
+                      (click)="openPhoto(row, i)"
+                    >
+                      <app-tail-bite-photo-thumb [photoUuid]="photo.uuid" [blobs]="photoBlobs"></app-tail-bite-photo-thumb>
+                    </button>
+                  </div>
+                  <ng-template #noPhotos><span class="helper-text">–</span></ng-template>
+                </div>
+
+                <div class="compliance-tail-bite__detail-col">
+                  <strong>{{ 'Actions' | translate }}</strong>
+                  <ul *ngIf="row.actions.length; else noActions" class="compliance-tail-bite__actions">
+                    <li *ngFor="let a of row.actions" class="compliance-tail-bite__action">
+                      <mat-icon aria-hidden="true">{{ a.doneAt ? 'check_circle' : 'schedule' }}</mat-icon>
+                      <span class="compliance-tail-bite__action-text">
+                        {{ a.description }}
+                        <span class="helper-text">· {{ a.factorLabel | translate }} · {{ a.responsibleName }}</span>
+                      </span>
+                      <span class="mono">
+                        <ng-container *ngIf="a.doneAt; else deadline">
+                          {{ 'Done' | translate }} {{ a.doneAt | date: 'dd.MM.yyyy' }}<ng-container *ngIf="a.doneByName"> · {{ a.doneByName }}</ng-container>
+                        </ng-container>
+                        <ng-template #deadline>{{ 'Deadline' | translate }} {{ a.followUpDate | date: 'dd.MM.yyyy' }}</ng-template>
+                      </span>
+                    </li>
+                  </ul>
+                  <ng-template #noActions><span class="helper-text">–</span></ng-template>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+</section>

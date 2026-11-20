@@ -1,0 +1,104 @@
+// Layout only. Colours, type and surfaces come from the theme's shared classes:
+// `kpi-grid` / `kpi-card` (the stat tiles), `table` (the data table), `badge-*`
+// (the factor chips), `helper-text` and `mono` — see
+// eform-angular-frontend scss/components/_workspace-utilities.scss. The caption
+// and heading are projected by the Rapport view in its own section classes.
+
+.compliance-tail-bite {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+
+  // display/gap repeat kpi-grid's so the tiles also lay out under theme-eform, which has no kpi-* rules.
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: var(--spacing-md);
+
+    .helper-text {
+      display: block;
+    }
+  }
+
+  &__empty {
+    margin: 0;
+  }
+
+  // The table scrolls inside its own box on a narrow viewport.
+  &__scroll {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  &__table {
+    min-width: 900px;
+    margin: 0;
+  }
+
+  &__toggle-col {
+    width: 48px;
+  }
+
+  // The property name under the location, when the section spans several properties.
+  &__sub {
+    display: block;
+  }
+
+  &__detail {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+    gap: var(--spacing-xl);
+    padding: var(--spacing-xs) 0 var(--spacing-sm);
+  }
+
+  &__detail-col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+
+  &__chips,
+  &__photos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+  }
+
+  // A thumbnail as a plain button: the thumbnail component fills the box it is given.
+  &__photo {
+    display: block;
+    width: 56px;
+    height: 56px;
+    flex: none;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+  }
+
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__action {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+
+  &__action-text {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .compliance-tail-bite__detail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

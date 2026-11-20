@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 
@@ -87,6 +88,17 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportS
 /// </para>
 ///
 /// <para>
+/// <b>PDF-only tables and columns (#1517).</b> A table marked
+/// <see cref="ComplianceExportTable.PdfOnly"/> is skipped whole — its columns
+/// stay out of the union and its rows out of the file — and a column marked
+/// <see cref="ComplianceExportColumn.PdfOnly"/> is left out of the union and
+/// its cells skipped by INDEX, the way the Word writer skips a CsvOnly one. The
+/// header line is written only when some table is not PDF-only, so a document
+/// holding nothing but the Halebid empty state is the BOM alone, as a document
+/// with no table at all always was.
+/// </para>
+///
+/// <para>
 /// <c>Udført dato</c> stays ISO like every other date here — the Rapport CSV
 /// mock-up's <c>13.05.2026</c> is read as a mock-up slip, inconsistent with the
 /// Detaljer CSV on the page before it (p8) and with #1169 §2's "the CSV date
@@ -123,12 +135,14 @@ public static class ComplianceExportCsvWriter
         // (or Header). The first table to introduce a key supplies its header
         // text; a later table's header for the same key is by construction the
         // same localised string.
+        var tables = document.Tables.Where(table => !table.PdfOnly).ToList();
         var columns = new List<ComplianceExportColumn>();
         var positionByKey = new Dictionary<string, int>();
-        foreach (var table in document.Tables)
+        foreach (var table in tables)
         {
             foreach (var column in table.Columns)
             {
+                if (column.PdfOnly) continue;
                 var key = ColumnKey(column);
                 if (positionByKey.ContainsKey(key)) continue;
                 positionByKey[key] = columns.Count;
@@ -137,9 +151,9 @@ public static class ComplianceExportCsvWriter
         }
 
         // No preamble: the header row is line 1, and the only header. See the
-        // type comment. A document with no table at all writes nothing but the
-        // BOM, as before.
-        if (document.Tables.Count > 0)
+        // type comment. A document with no table the CSV carries writes nothing
+        // but the BOM, as before.
+        if (tables.Count > 0)
         {
             for (var i = 0; i < columns.Count; i++)
             {
@@ -150,13 +164,14 @@ public static class ComplianceExportCsvWriter
             sb.Append(LineEnding);
         }
 
-        foreach (var table in document.Tables)
+        foreach (var table in tables)
         {
-            // Where each of this table's columns lands in the union.
+            // Where each of this table's columns lands in the union; -1 for a
+            // PDF-only column, whose cells are skipped.
             var positions = new int[table.Columns.Count];
             for (var i = 0; i < table.Columns.Count; i++)
             {
-                positions[i] = positionByKey[ColumnKey(table.Columns[i])];
+                positions[i] = table.Columns[i].PdfOnly ? -1 : positionByKey[ColumnKey(table.Columns[i])];
             }
 
             foreach (var row in table.Rows)
@@ -164,6 +179,7 @@ public static class ComplianceExportCsvWriter
                 var fields = new string[columns.Count];
                 for (var i = 0; i < row.Cells.Count && i < positions.Length; i++)
                 {
+                    if (positions[i] < 0) continue;
                     fields[positions[i]] = Render(row.Cells[i], table.Columns[i].Type);
                 }
 

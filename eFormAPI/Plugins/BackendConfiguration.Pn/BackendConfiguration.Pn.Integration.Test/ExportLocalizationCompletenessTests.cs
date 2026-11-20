@@ -179,8 +179,63 @@ public class ExportLocalizationCompletenessTests
         "Period",
         "Employees",
         "Appendix",
-        "ImageAppendixDocumentLimit"
+        "ImageAppendixDocumentLimit",
+
+        // ComplianceExportTailBiteBuilder — the Halebid section (#1517). The
+        // section also reads Rapport's SubReport / CaseId / Property / DoneBy /
+        // CompletedDate / Area / Images / ImagesCount(One) and Detaljer's Date /
+        // Done, listed above, and reuses Location ("Lokation"). No key of another
+        // module is borrowed: Handling and Registreret af have their own.
+        "Location",
+        "TailBiteAction",
+        "TailBiteActionType",
+        "TailBiteRegisteredBy",
+        "Yes",
+        "No",
+        "TailBite",
+        "TailBiteReportTitle",
+        "TailBiteTotals",
+        "TailBiteNoOutbreaks",
+        "TailBiteOutbreaks",
+        "TailBiteActionsTable",
+        "TailBiteRegistrationsTable",
+        "TailBiteOutbreak",
+        "TailBiteRule",
+        "TailBiteStarted",
+        "TailBiteAssessed",
+        "TailBiteClosed",
+        "TailBiteBitten",
+        "TailBiteSevere",
+        "TailBiteYesFactors",
+        "TailBiteNotAssessed",
+        "TailBiteNoYesFactors",
+        "TailBiteWater",
+        "TailBiteFeed",
+        "TailBiteActivityMaterial",
+        "TailBiteClimate",
+        "TailBiteHealth",
+        "TailBiteManagement",
+        "TailBiteActions",
+        "TailBiteActionsDone",
+        "TailBiteActionsOf",
+        "TailBiteFactor",
+        "TailBiteResponsible",
+        "TailBiteFollowUp",
+        "TailBiteMinor"
     ];
+
+    /// <summary>
+    /// The Halebid export keys formatted with several arguments (#1517), and how
+    /// many placeholders each must keep: <c>TailBiteTotals</c> is the totals
+    /// sentence (<c>{0}</c> … <c>{5}</c>), <c>TailBiteActionsOf</c> the
+    /// "d af t udført" cell. A lost placeholder drops its number silently, as
+    /// for <see cref="FormattedExportKey"/>.
+    /// </summary>
+    private static readonly Dictionary<string, int> FormattedTailBiteKeys = new()
+    {
+        ["TailBiteTotals"] = 6,
+        ["TailBiteActionsOf"] = 2
+    };
 
     /// <summary>
     /// The one export key the builder passes through <c>string.Format</c>
@@ -280,6 +335,27 @@ public class ExportLocalizationCompletenessTests
         Assert.That(gaps, Is.Empty,
             $"'{FormattedExportKey}' has lost its {{0}} placeholder, so the image count is dropped "
             + "silently from the rendered cell. Offenders (key / locale): " + string.Join(", ", gaps));
+    }
+
+    /// <summary>
+    /// Every placeholder of the multi-argument Halebid keys survives in every
+    /// locale (#1517).
+    /// </summary>
+    [Test]
+    public void TheFormattedTailBiteKeysKeepEveryPlaceholderInEveryLocale()
+    {
+        var entries = Entries();
+
+        var gaps = (from pair in FormattedTailBiteKeys
+                from locale in Locales()
+                let value = Resolve(entries, pair.Key, locale)
+                where value == null || Enumerable.Range(0, pair.Value).Any(i => !value.Contains($"{{{i}}}"))
+                select $"{pair.Key} / {locale}")
+            .ToList();
+
+        Assert.That(gaps, Is.Empty,
+            "A Halebid export value lost a placeholder, so a number is dropped silently from the PDF. "
+            + "Offenders (key / locale): " + string.Join(", ", gaps));
     }
 
     // ==================================================================

@@ -19,6 +19,7 @@ namespace BackendConfiguration.Pn.Integration.Test;
 using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 using BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportService;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
+using BackendConfiguration.Pn.Services.TailBite;
 using Microting.eForm.Infrastructure.Constants;
 
 /// <summary>
@@ -1398,6 +1399,439 @@ public class ComplianceExportDocumentBuilderTests
             [Group(null, null, "Aa tag", 509, 511)], "p", false, _localization);
 
         Assert.That(document.Tables, Is.Empty);
+    }
+
+    // ==================================================================
+    // Rapport — the Halebid section (#1517)
+    // ==================================================================
+
+    private static readonly IBackendConfigurationLocalizationService HalebidDanish = TailBiteExportTestData.Danish;
+
+    /// <summary>The cell of <paramref name="row"/> under the column keyed <paramref name="key"/>.</summary>
+    private static ComplianceExportCell CellAt(ComplianceExportTable table, ComplianceExportRow row, string key) =>
+        row.Cells[table.Columns.FindIndex(c => c.Key == key)];
+
+    /// <summary>
+    /// A null section — the caller sees no Halebid — adds nothing: the document
+    /// is the one <c>BuildReport</c> made before the parameter existed.
+    /// </summary>
+    [Test]
+    public void Halebid_NullSectionAddsNothing()
+    {
+        var group = Group(7, "Ugentlig rengøring", "Stalde - Rengøring", 509);
+
+        var without = ComplianceExportDocumentBuilder.BuildReport([group], "p", true, HalebidDanish);
+        var withNull = ComplianceExportDocumentBuilder.BuildReport([group], "p", true, HalebidDanish, null);
+
+        Assert.That(withNull.Tables, Has.Count.EqualTo(without.Tables.Count));
+        Assert.That(withNull.Tables.Any(t => t.PdfOnly || t.StartsOnNewPage || t.Lead.Length > 0), Is.False);
+        Assert.That(withNull.AppendixImagesRequested, Is.EqualTo(without.AppendixImagesRequested));
+    }
+
+    /// <summary>
+    /// The section comes AFTER the eForm sections as three tables: Udbrud
+    /// (carrying the caption, title, totals sentence and appendix label, and
+    /// starting a new page), then the two PDF-only tables.
+    /// </summary>
+    [Test]
+    public void Halebid_SectionFollowsTheEformSectionsWithItsHeadingsOnTheFirstTable()
+    {
+        var group = Group(7, "Ugentlig rengøring", "Stalde - Rengøring", 509);
+
+        var document = ComplianceExportDocumentBuilder.BuildReport(
+            [group], "p", false, HalebidDanish, TailBiteExportTestData.MockupReport());
+
+        Assert.That(document.Tables, Has.Count.EqualTo(4));
+        Assert.That(document.Tables[0].Title, Is.EqualTo("Ugentlig rengøring"));
+
+        var outbreaks = document.Tables[1];
+        Assert.That(outbreaks.Caption, Is.EqualTo("Halebid"));
+        Assert.That(outbreaks.Title, Is.EqualTo("Halebid: udbrud i perioden"));
+        Assert.That(outbreaks.AppendixLabel, Is.EqualTo("Halebid"));
+        Assert.That(outbreaks.StartsOnNewPage, Is.True);
+        Assert.That(outbreaks.PdfOnly, Is.False);
+        Assert.That(outbreaks.Lead, Is.EqualTo(
+            "3 udbrud var åbne i perioden, 1 blev lukket. 17 bidte grise, heraf 5 alvorlige. 4 af 6 handlinger udført."));
+        Assert.That(outbreaks.Subtitle, Is.EqualTo("Udbrud"));
+
+        Assert.That(document.Tables[2].PdfOnly, Is.True);
+        Assert.That(document.Tables[2].Subtitle, Is.EqualTo("Handlinger fra risikovurderingerne"));
+        Assert.That(document.Tables[3].PdfOnly, Is.True);
+        Assert.That(document.Tables[3].Subtitle, Is.EqualTo("Registreringer bag udbruddene"));
+        Assert.That(document.Tables.Skip(2).Any(t => t.Title.Length > 0 || t.Caption.Length > 0), Is.False,
+            "the later tables carry only their own subtitle");
+    }
+
+    /// <summary>
+    /// One table, two layouts (rulings 1 and 7): what Word/PDF print (every
+    /// column but the CSV-only ones) is the mock-up's row, and what the CSV
+    /// carries (every column but the PDF-only ones) starts with today's Rapport
+    /// columns under today's keys.
+    /// </summary>
+    [Test]
+    public void Halebid_OutbreakTableCarriesThePdfAndTheCsvColumnSets()
+    {
+        var document = ComplianceExportDocumentBuilder.BuildReport(
+            [], "p", false, HalebidDanish, TailBiteExportTestData.MockupReport());
+        var columns = document.Tables[0].Columns;
+
+        Assert.That(columns.Where(c => !c.CsvOnly).Select(c => c.Header), Is.EqualTo(new[]
+        {
+            "ID", "Lokation", "Regel", "Startet", "Risikovurderet", "Lukket", "Bidte grise", "Alvorlige",
+            "Ja-faktorer", "Handlinger", "Billeder"
+        }));
+        Assert.That(columns.Where(c => !c.PdfOnly).Select(c => c.Header), Is.EqualTo(new[]
+        {
+            "Delrapport", "ID", "Ejendom", "Udført af", "Udført dato", "Område", "Billeder",
+            "Startet", "Risikovurderet", "Lukket", "Bidte grise", "Alvorlige",
+            "Vand", "Foder", "Legemateriale", "Klima", "Sundhed", "Ledelse", "Handlinger", "Handlinger udført"
+        }));
+        Assert.That(columns.Take(7).Select(c => c.Key), Is.EqualTo(new[]
+        {
+            "SubReport", "CaseId", "Property", "DoneBy", "CompletedDate", "Area", "Images"
+        }), "the CSV-only leading columns union with the eForm tables' fixed columns");
+        Assert.That(columns.Any(c => c.CsvOnly && c.PdfOnly), Is.False);
+        Assert.That(columns.Select(c => c.Key).Distinct().Count(), Is.EqualTo(columns.Count),
+            "keys are unique within the table");
+    }
+
+    /// <summary>
+    /// The outbreak rows: Copenhagen times (05:10 UTC in November is 06:10),
+    /// local dates, the rule version, the yes factors (ruling 6), the actions as
+    /// "d af t udført" over the total, the photo count, and a closed outbreak
+    /// marked done.
+    /// </summary>
+    [Test]
+    public void Halebid_OutbreakRowsCarryLocalTimesFactorsActionsAndPhotos()
+    {
+        var document = ComplianceExportDocumentBuilder.BuildReport(
+            [], "p", false, HalebidDanish, TailBiteExportTestData.MockupReport());
+        var table = document.Tables[0];
+        var closed = table.Rows[0];
+        var notAssessed = table.Rows[2];
+
+        Assert.That(table.Rows, Has.Count.EqualTo(3));
+        Assert.That(closed.IsDone, Is.True);
+        Assert.That(table.Rows[1].IsDone, Is.False);
+
+        Assert.That(CellAt(table, closed, "SubReport").Text, Is.EqualTo("Halebid"));
+        Assert.That(CellAt(table, closed, "CaseId").Number, Is.EqualTo(41));
+        Assert.That(CellAt(table, closed, "Property").Text, Is.EqualTo(TailBiteExportTestData.Farm));
+        Assert.That(CellAt(table, closed, "DoneBy").IsEmpty, Is.True);
+        Assert.That(CellAt(table, closed, "CompletedDate").IsEmpty, Is.True);
+        Assert.That(CellAt(table, closed, "Area").Text, Is.EqualTo("Stald 3 › Sektion 2"));
+        Assert.That(CellAt(table, closed, "TailBiteLocation").Text, Is.EqualTo("Stald 3 › Sektion 2"));
+        Assert.That(CellAt(table, closed, "TailBiteRuleVersion").Text, Is.EqualTo("v1"));
+
+        var started = CellAt(table, closed, "TailBiteStarted");
+        Assert.That(started.Text, Is.EqualTo("2026-11-02 06:10"), "the CSV's text");
+        Assert.That(started.DisplayText, Is.EqualTo("02.11.2026 06:10"), "the PDF's text");
+
+        Assert.That(CellAt(table, closed, "TailBiteAssessed").Date, Is.EqualTo(new DateTime(2026, 11, 3)));
+        Assert.That(CellAt(table, closed, "TailBiteClosed").Date, Is.EqualTo(new DateTime(2026, 11, 14)));
+        Assert.That(CellAt(table, closed, "TailBiteBitten").Number, Is.EqualTo(6));
+        Assert.That(CellAt(table, closed, "TailBiteSevere").Number, Is.EqualTo(2));
+        Assert.That(CellAt(table, closed, "TailBiteYesFactors").Text, Is.EqualTo("Foder, Legemateriale"));
+        Assert.That(CellAt(table, closed, "TailBiteWater").Text, Is.EqualTo("Nej"));
+        Assert.That(CellAt(table, closed, "TailBiteFeed").Text, Is.EqualTo("Ja"));
+
+        var actions = CellAt(table, closed, "TailBiteActions");
+        Assert.That(actions.Text, Is.EqualTo("3 af 3 udført"));
+        Assert.That(actions.Number, Is.EqualTo(3));
+        Assert.That(CellAt(table, closed, "TailBiteActionsDone").Number, Is.EqualTo(3));
+        Assert.That(CellAt(table, table.Rows[1], "TailBiteActions").Text, Is.EqualTo("1 af 3 udført"));
+
+        Assert.That(CellAt(table, closed, "Images").Number, Is.EqualTo(4));
+        Assert.That(CellAt(table, closed, "TailBitePhotos").Text, Is.EqualTo("4 billeder"));
+
+        // Not assessed: "Mangler vurdering", blank factors, no closing date, and
+        // no actions — the en dash on the page, the total 0 in the CSV.
+        Assert.That(CellAt(table, notAssessed, "TailBiteYesFactors").Text, Is.EqualTo("Mangler vurdering"));
+        Assert.That(CellAt(table, notAssessed, "TailBiteWater").IsEmpty, Is.True);
+        Assert.That(CellAt(table, notAssessed, "TailBiteAssessed").IsEmpty, Is.True);
+        var noActions = CellAt(table, notAssessed, "TailBiteActions");
+        Assert.That(noActions.Text, Is.EqualTo(Dash));
+        Assert.That(noActions.Number, Is.EqualTo(0));
+        Assert.That(noActions.IsEmpty, Is.False);
+    }
+
+    /// <summary>Ruling 6: an outbreak assessed with no "yes" reads "Ingen".</summary>
+    [Test]
+    public void Halebid_AssessedWithNoYesFactorReadsIngen()
+    {
+        var report = TailBiteExportTestData.MockupReport();
+        var allNo = report.Outbreaks[0] with { Answers = new FactorAnswers(false, false, false, false, false, false) };
+
+        var document = ComplianceExportDocumentBuilder.BuildReport(
+            [], "p", false, HalebidDanish, report with { Outbreaks = [allNo] });
+        var table = document.Tables[0];
+
+        Assert.That(CellAt(table, table.Rows[0], "TailBiteYesFactors").Text, Is.EqualTo("Ingen"));
+        Assert.That(CellAt(table, table.Rows[0], "TailBiteManagement").Text, Is.EqualTo("Nej"));
+    }
+
+    /// <summary>
+    /// "Handlinger fra risikovurderingerne": every action, outbreak by outbreak,
+    /// with the factor's label, Copenhagen dates and the done ones marked.
+    /// </summary>
+    [Test]
+    public void Halebid_ActionsTableListsEveryActionAndMarksTheDoneOnes()
+    {
+        var document = ComplianceExportDocumentBuilder.BuildReport(
+            [], "p", false, HalebidDanish, TailBiteExportTestData.MockupReport());
+        var table = document.Tables[1];
+
+        Assert.That(table.Columns.Select(c => c.Header), Is.EqualTo(new[]
+        {
+            "Udbrud", "Lokation", "Faktor", "Handling", "Ansvarlig", "Frist", "Udført", "Udført af"
+        }));
+        Assert.That(table.Rows, Has.Count.EqualTo(6));
+        Assert.That(table.Rows.Select(r => r.IsDone), Is.EqualTo(new[] { true, true, true, true, false, false }));
+
+        var first = table.Rows[0].Cells;
+        Assert.That(first.Select(c => c.Text), Is.EqualTo(new[]
+        {
+            "41", "Stald 3 › Sektion 2", "Foder", "Kontrollér foderautomaten", "Jonas Skov",
+            "06.11.2026", "06.11.2026", "Jonas Skov"
+        }));
+
+        var open = table.Rows[4].Cells;
+        Assert.That(open[2].Text, Is.EqualTo("Klima"));
+        Assert.That(open[5].Date, Is.EqualTo(new DateTime(2026, 11, 22)));
+        Assert.That(open[6].IsEmpty, Is.True);
+        Assert.That(open[7].IsEmpty, Is.True);
+    }
+
+    /// <summary>
+    /// With the all-properties filter the PDF header names no farm, so every
+    /// place the PDF prints — the Udbrud table's Lokation, the actions and
+    /// registrations tables and the appendix caption — leads with the
+    /// outbreak's property. The CSV's Område keeps the bare path (it has
+    /// Ejendom).
+    /// </summary>
+    [Test]
+    public void Halebid_AllPropertiesFilterNamesThePropertyInEveryPdfPlace()
+    {
+        var document = ComplianceExportDocumentBuilder.BuildReport(
+            [], "p", true, HalebidDanish, TailBiteExportTestData.MockupReport(), namePropertyInPdfLocations: true);
+        var outbreaks = document.Tables[0];
+
+        Assert.That(CellAt(outbreaks, outbreaks.Rows[0], "TailBiteLocation").Text,
+            Is.EqualTo("Eksempelgården I/S › Stald 3 › Sektion 2"));
+        Assert.That(CellAt(outbreaks, outbreaks.Rows[0], "Area").Text, Is.EqualTo("Stald 3 › Sektion 2"),
+            "the CSV's Område is unchanged");
+        Assert.That(document.Tables[1].Rows[0].Cells[1].Text, Is.EqualTo("Eksempelgården I/S › Stald 3 › Sektion 2"));
+        Assert.That(document.Tables[2].Rows[0].Cells[2].Text, Is.EqualTo("Eksempelgården I/S › Sti 207"));
+        Assert.That(outbreaks.ImageBlocks[0].Caption,
+            Is.EqualTo("Udbrud 41 · Eksempelgården I/S › Sti 207 · 02.11.2026 06:10 · Mette Holm"));
+
+        var oneProperty = ComplianceExportDocumentBuilder.BuildReport(
+            [], "p", true, HalebidDanish, TailBiteExportTestData.MockupReport());
+        Assert.That(CellAt(oneProperty.Tables[0], oneProperty.Tables[0].Rows[0], "TailBiteLocation").Text,
+            Is.EqualTo("Stald 3 › Sektion 2"), "one property in the filter: the header names it");
+    }
+
+    /// <summary>
+    /// An action's follow-up date is a calendar day (the web and the validation
+    /// read its UTC date), so 23:30 UTC on 6 November stays 06.11.2026 — it is
+    /// not shifted into 7 November Copenhagen time like an instant would be.
+    /// </summary>
+    [Test]
+    public void Halebid_FollowUpDateIsTheUtcCalendarDay()
+    {
+        var report = TailBiteExportTestData.MockupReport();
+        var action = report.Outbreaks[0].Actions[0] with
+        {
+            FollowUpDate = new DateTime(2026, 11, 6, 23, 30, 0, DateTimeKind.Utc)
+        };
+        var outbreak = report.Outbreaks[0] with { Actions = [action] };
+
+        var document = ComplianceExportDocumentBuilder.BuildReport(
+            [], "p", false, HalebidDanish, report with { Outbreaks = [outbreak] });
+
+        var followUp = document.Tables[1].Rows[0].Cells[5];
+        Assert.That(followUp.Date, Is.EqualTo(new DateTime(2026, 11, 6)));
+        Assert.That(followUp.Text, Is.EqualTo("06.11.2026"));
+    }
+
+    /// <summary>No outbreak has an action: the actions table is left out.</summary>
+    [Test]
+    public void Halebid_ActionsTableIsOmittedWhenNoOutbreakHasActions()
+    {
+        var report = TailBiteExportTestData.MockupReport();
+
+        var document = ComplianceExportDocumentBuilder.BuildReport(
+            [], "p", false, HalebidDanish, report with { Outbreaks = [report.Outbreaks[2]] });
+
+        Assert.That(document.Tables.Select(t => t.Subtitle), Is.EqualTo(new[]
+        {
+            "Udbrud", "Registreringer bag udbruddene"
+        }));
+    }
+
+    /// <summary>
+    /// "Registreringer bag udbruddene": one row per registration per outbreak,
+    /// local date and time, the pens, the counts, the action types (blank when
+    /// none) and the photo count.
+    /// </summary>
+    [Test]
+    public void Halebid_RegistrationsTableListsTheRegistrationsBehindEachOutbreak()
+    {
+        var document = ComplianceExportDocumentBuilder.BuildReport(
+            [], "p", false, HalebidDanish, TailBiteExportTestData.MockupReport());
+        var table = document.Tables[2];
+
+        Assert.That(table.Columns.Select(c => c.Header), Is.EqualTo(new[]
+        {
+            "Udbrud", "Dato", "Lokation", "Mindre", "Alvorlige", "Handling", "Registreret af", "Billeder"
+        }));
+        Assert.That(table.Rows, Has.Count.EqualTo(5));
+        Assert.That(table.Rows[0].Cells.Select(c => c.Text), Is.EqualTo(new[]
+        {
+            "41", "02.11.2026 06:10", "Sti 207", "1", "1", "Reb", "Mette Holm", "2 billeder"
+        }));
+        Assert.That(table.Rows[4].Cells[2].Text, Is.EqualTo("Sti 303, Sti 304"));
+        Assert.That(table.Rows[4].Cells[5].IsEmpty, Is.True, "no action types is the empty cell");
+    }
+
+    /// <summary>
+    /// No outbreak in the period: the first table alone, PDF only, no columns,
+    /// "Ingen udbrud i perioden" as its lead.
+    /// </summary>
+    [Test]
+    public void Halebid_EmptyStateIsOnePdfOnlyTableWithNoColumns()
+    {
+        var document = ComplianceExportDocumentBuilder.BuildReport(
+            [], "p", true, HalebidDanish, TailBiteExportTestData.EmptyReport());
+
+        Assert.That(document.Tables, Has.Count.EqualTo(1));
+        var table = document.Tables[0];
+        Assert.That(table.PdfOnly, Is.True);
+        Assert.That(table.Columns, Is.Empty);
+        Assert.That(table.Rows, Is.Empty);
+        Assert.That(table.Caption, Is.EqualTo("Halebid"));
+        Assert.That(table.Title, Is.EqualTo("Halebid: udbrud i perioden"));
+        Assert.That(table.Lead, Is.EqualTo("Ingen udbrud i perioden"));
+        Assert.That(table.ImageBlocks, Is.Empty);
+    }
+
+    /// <summary>
+    /// The appendix: one block per registration with photos, in outbreak then
+    /// registration order, captioned <c>Udbrud {id} · {pens} · {time} · {name}</c>,
+    /// carrying the SDK UploadedData ids and no image names, all on the
+    /// section's first table — and nothing at all when the appendix is off.
+    /// </summary>
+    [Test]
+    public void Halebid_AppendixIsOneBlockPerRegistrationWithPhotos()
+    {
+        var withAppendix = ComplianceExportDocumentBuilder.BuildReport(
+            [], "p", true, HalebidDanish, TailBiteExportTestData.MockupReport());
+        var blocks = withAppendix.Tables[0].ImageBlocks;
+
+        Assert.That(blocks.Select(b => b.Caption), Is.EqualTo(new[]
+        {
+            "Udbrud 41 · Sti 207 · 02.11.2026 06:10 · Mette Holm",
+            "Udbrud 41 · Sti 208 · 02.11.2026 06:14 · Mette Holm",
+            "Udbrud 42 · Sti 501 · 12.11.2026 05:52 · Jonas Skov",
+            "Udbrud 43 · Sti 302 · 17.11.2026 08:44 · Mette Holm",
+            "Udbrud 43 · Sti 303, Sti 304 · 17.11.2026 09:02 · Mette Holm"
+        }));
+        Assert.That(blocks[0].TailBitePhotos, Is.EqualTo(new[] { 9001, 9002 }));
+        Assert.That(blocks[3].TotalImages, Is.EqualTo(3));
+        Assert.That(blocks.All(b => b.ImageNames.Count == 0 && b.GeoLinks.Count == 0), Is.True);
+        Assert.That(withAppendix.Tables.Skip(1).All(t => t.ImageBlocks.Count == 0), Is.True);
+        Assert.That(withAppendix.AppendixImagesRequested, Is.EqualTo(11));
+        Assert.That(withAppendix.AppendixImagesEmbedded, Is.EqualTo(11));
+
+        var withoutAppendix = ComplianceExportDocumentBuilder.BuildReport(
+            [], "p", false, HalebidDanish, TailBiteExportTestData.MockupReport());
+        Assert.That(withoutAppendix.Tables.SelectMany(t => t.ImageBlocks), Is.Empty);
+        Assert.That(withoutAppendix.AppendixImagesRequested, Is.EqualTo(0));
+    }
+
+    /// <summary>
+    /// A registration behind two outbreaks is ONE appendix block, under the
+    /// first; it is still a row under each outbreak in the registrations table.
+    /// </summary>
+    [Test]
+    public void Halebid_ARegistrationBehindTwoOutbreaksGetsOneBlock()
+    {
+        var report = TailBiteExportTestData.MockupReport();
+        var shared = report.Outbreaks[0].Registrations[0];
+        var first = report.Outbreaks[0] with { Registrations = [shared] };
+        var second = report.Outbreaks[1] with { Registrations = [shared] };
+
+        var document = ComplianceExportDocumentBuilder.BuildReport(
+            [], "p", true, HalebidDanish, report with { Outbreaks = [first, second] });
+
+        Assert.That(document.Tables[0].ImageBlocks.Select(b => b.Caption), Is.EqualTo(new[]
+        {
+            "Udbrud 41 · Sti 207 · 02.11.2026 06:10 · Mette Holm"
+        }));
+        Assert.That(document.AppendixImagesRequested, Is.EqualTo(2));
+        Assert.That(document.Tables[2].Rows, Has.Count.EqualTo(2));
+    }
+
+    /// <summary>
+    /// The per-block cap is the eForm one, applied per registration: six photos
+    /// give a block of four whose total still says six.
+    /// </summary>
+    [Test]
+    public void Halebid_AppendixBlockIsCappedPerRegistration()
+    {
+        var report = TailBiteExportTestData.MockupReport();
+        var registration = report.Outbreaks[0].Registrations[0] with
+        {
+            Photos = TailBiteExportTestData.Photos(701, 1, 2, 3, 4, 5, 6)
+        };
+        var outbreak = report.Outbreaks[0] with { Registrations = [registration] };
+
+        var document = ComplianceExportDocumentBuilder.BuildReport(
+            [], "p", true, HalebidDanish, report with { Outbreaks = [outbreak] });
+
+        var block = document.Tables[0].ImageBlocks.Single();
+        Assert.That(block.TailBitePhotos, Is.EqualTo(new[] { 1, 2, 3, 4 }));
+        Assert.That(block.TotalImages, Is.EqualTo(6));
+        Assert.That(document.AppendixImagesRequested, Is.EqualTo(ComplianceExportDocumentBuilder.MaxAppendixImagesPerCase));
+    }
+
+    /// <summary>
+    /// One budget for the whole document: eForm cases have already embedded 196
+    /// of the 200 images, so two registrations of three photos each get 3 and 1;
+    /// requested grows by 6 and embedded stops at the ceiling.
+    /// </summary>
+    [Test]
+    public void Halebid_AppendixSharesTheDocumentWideBudgetWithTheEformCases()
+    {
+        var group = Group(1, "Overskrift", "Miljø", 509);
+        group.Templates[0].Cases = Enumerable.Range(1, 49)
+            .Select(c => new ComplianceReportCaseModel
+            {
+                SdkCaseId = c, Title = "Vand", TaskDate = "2026-11-09", ImagesCount = 4,
+                Images = Enumerable.Range(1, 4)
+                    .Select(i => new ComplianceReportImageModel { FileName = $"{c}_{i}_700_x.jpg" })
+                    .ToList()
+            })
+            .ToList();
+
+        var report = TailBiteExportTestData.MockupReport();
+        var outbreak = report.Outbreaks[0] with
+        {
+            Registrations =
+            [
+                report.Outbreaks[0].Registrations[0] with { Photos = TailBiteExportTestData.Photos(701, 1, 2, 3) },
+                report.Outbreaks[0].Registrations[1] with { Photos = TailBiteExportTestData.Photos(702, 4, 5, 6) }
+            ]
+        };
+
+        var document = ComplianceExportDocumentBuilder.BuildReport(
+            [group], "p", true, HalebidDanish, report with { Outbreaks = [outbreak] });
+
+        var halebidBlocks = document.Tables.Single(t => t.Caption == "Halebid").ImageBlocks;
+        Assert.That(halebidBlocks.Select(b => b.TailBitePhotos.Count), Is.EqualTo(new[] { 3, 1 }));
+        Assert.That(halebidBlocks[1].TotalImages, Is.EqualTo(3));
+        Assert.That(document.AppendixImagesRequested, Is.EqualTo(49 * 4 + 6));
+        Assert.That(document.AppendixImagesEmbedded, Is.EqualTo(ComplianceExportDocumentBuilder.MaxAppendixImages));
     }
 
     // ==================================================================
