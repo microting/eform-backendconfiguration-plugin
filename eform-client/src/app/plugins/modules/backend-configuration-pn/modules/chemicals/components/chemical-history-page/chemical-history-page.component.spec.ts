@@ -62,7 +62,9 @@ describe('ChemicalHistoryPageComponent', () => {
       }})),
       exportHistory: vi.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Kemihistorik.xlsx'})),
       getAllPropertiesHistory: vi.fn().mockReturnValue(opts.history ?? of(page())),
-      getAllPropertiesInventory: vi.fn().mockReturnValue(of({success: true, model: {
+      // W6 never needs the placements of every property: the light locations route is enough.
+      getAllPropertiesInventory: vi.fn(),
+      getAllPropertiesLocations: vi.fn().mockReturnValue(of({success: true, model: {
         properties: [
           {propertyId: 3, name: 'Engvej 12', permissions: null, stockEnabled: false, callerWorkerId: null},
           {propertyId: 4, name: 'Østergård', permissions: null, stockEnabled: false, callerWorkerId: null},
@@ -323,6 +325,8 @@ describe('ChemicalHistoryPageComponent', () => {
       expect(chemicals.getAllPropertiesHistory).toHaveBeenLastCalledWith(expect.objectContaining({from: '2026-08-31', to: '2026-09-29', page: 0}));
       expect(chemicals.getHistory).not.toHaveBeenCalled();
       expect(chemicals.getPropertyInventory).not.toHaveBeenCalled();
+      expect(chemicals.getAllPropertiesLocations).toHaveBeenCalledTimes(1);
+      expect(chemicals.getAllPropertiesInventory).not.toHaveBeenCalled();
       expect(component.allProperties).toBe(true);
       expect(component.total).toBe(214);
       expect(component.locationOptions).toEqual([
@@ -357,7 +361,7 @@ describe('ChemicalHistoryPageComponent', () => {
 
       view$.next({propertyId: null, allProperties: true, filters: {...chemicalsInitialState.historyFilters}});
 
-      expect(chemicals.getAllPropertiesInventory).toHaveBeenCalledTimes(1);
+      expect(chemicals.getAllPropertiesLocations).toHaveBeenCalledTimes(1);
       expect(component.users).toEqual([]);
       expect(component.total).toBe(0);
     });

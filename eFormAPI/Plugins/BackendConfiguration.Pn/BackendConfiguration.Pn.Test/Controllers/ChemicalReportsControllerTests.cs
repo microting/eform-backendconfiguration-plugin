@@ -393,7 +393,7 @@ public class ChemicalReportsControllerTests
     }
 
     [Test]
-    public async Task ExportAllPropertiesInventory_PassesTheCallerAndTheVisibleIds()
+    public async Task ExportAllPropertiesInventory_PassesTheCallerAndTheRequestedIds()
     {
         var sut = CreateSut();
         _exports.AllPropertiesInventoryXlsxAsync(UserId, Arg.Any<IReadOnlyCollection<int>>())

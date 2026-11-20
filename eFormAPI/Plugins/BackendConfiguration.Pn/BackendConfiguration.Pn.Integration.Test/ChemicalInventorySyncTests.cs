@@ -223,4 +223,29 @@ public class ChemicalInventorySyncTests : ChemicalTestBase
         Assert.That(inventory.Properties, Is.Empty);
         Assert.That(inventory.Placements, Is.Empty);
     }
+
+    [Test]
+    public async Task AllPropertiesLocations_ForAWorker_HoldsTheLocationsOfTheVisiblePropertiesOnly_ArchivedIncluded()
+    {
+        var w = await ArrangeAsync();
+
+        var model = await CreateInventoryService().GetAllPropertiesLocationsAsync(w.Caller);
+
+        Assert.That(model.Properties.Select(p => p.PropertyId), Is.EqualTo(new[] { w.PropertyId }));
+        Assert.That(model.Locations.Select(l => l.Id), Is.EquivalentTo(new[] { w.LocationId, w.ArchivedLocationId }));
+        Assert.That(model.Locations.Single(l => l.Id == w.ArchivedLocationId).Archived, Is.True);
+    }
+
+    [Test]
+    public async Task AllPropertiesLocations_ForAWebAdmin_HoldsEveryProperty_WithItsName()
+    {
+        var w = await ArrangeAsync();
+        var hiddenLocation = await CreateLocationAsync(w.HiddenPropertyId, "Skur", 2);
+
+        var model = await CreateInventoryService().GetAllPropertiesLocationsAsync(ChemicalCaller.Web(TestUserId));
+
+        Assert.That(model.Properties.Select(p => p.PropertyId), Is.SupersetOf(new[] { w.PropertyId, w.HiddenPropertyId }));
+        Assert.That(model.Properties.Single(p => p.PropertyId == w.HiddenPropertyId).Name, Does.StartWith("Property "));
+        Assert.That(model.Locations.Single(l => l.Id == hiddenLocation.Id).PropertyId, Is.EqualTo(w.HiddenPropertyId));
+    }
 }

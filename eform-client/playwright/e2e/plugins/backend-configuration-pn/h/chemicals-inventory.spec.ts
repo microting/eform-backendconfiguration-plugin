@@ -273,7 +273,8 @@ test.describe.serial('Kemi W1/W2 - inventory', () => {
     await page.keyboard.press('Escape');
     await page.locator('.cdk-overlay-container #chemicalsExportInventory').waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
     const excel = await kemi.exportFromInventory('chemicalsExportInventory');
-    expect(excel).toMatch(/ - \d{4}-\d{2}-\d{2}\.xlsx$/);
+    // "<title> - <all properties> - <yyyy-MM-dd>.xlsx": the server's ChemicalAllProperties text in the user's language (da or en-US).
+    expect(excel).toMatch(/ - (Alle ejendomme|All properties) - \d{4}-\d{2}-\d{2}\.xlsx$/);
     expect(excel).not.toContain(property.name);
     expect(excel).not.toContain(second.name);
 

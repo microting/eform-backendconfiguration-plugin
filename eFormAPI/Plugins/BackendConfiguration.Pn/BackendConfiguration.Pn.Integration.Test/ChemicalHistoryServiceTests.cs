@@ -440,4 +440,36 @@ public class ChemicalHistoryServiceTests : ChemicalTestBase
         Assert.That(page.Users, Is.Empty);
         await Assert.ThrowsAsync<ArgumentException>(() => sut.GetPageForPropertiesAsync([], OnDays(today, today.AddDays(-1))));
     }
+
+    [Test]
+    public async Task PageForProperties_ReadsEachPropertysSettingsHistoryOnItsOwn()
+    {
+        var first = await ArrangeStockedPropertyAsync();
+        var second = await ArrangeStockedPropertyAsync();
+        var query = Around(DateTime.UtcNow);
+
+        var events = await CreateSut().GetAllForPropertiesAsync([first.Property.Id, second.Property.Id], query);
+
+        var stock = events.Where(e => e.Action == ChemicalHistoryActionEnum.SettingsChanged && e.Field == "StockEnabled").ToList();
+        Assert.That(stock.Select(e => e.PropertyId), Is.EquivalentTo(new[] { first.Property.Id, second.Property.Id }));
+        Assert.That(stock.Select(e => (e.OldValue, e.NewValue)), Is.All.EqualTo(("false", "true")),
+            "the second property's first version is compared with nothing, not with the first property's");
+    }
+
+    [Test]
+    public async Task PageForProperties_TagsEveryEventWithTheLocationsProperty()
+    {
+        var first = await ArrangeAsync();
+        var second = await ArrangeAsync();
+        var query = Around(DateTime.UtcNow);
+        var sut = CreateSut();
+        var single = await sut.GetAllAsync(second.PropertyId, query);
+
+        var merged = await sut.GetAllForPropertiesAsync([first.PropertyId, second.PropertyId], query);
+
+        Assert.That(merged.Where(e => e.PropertyId == second.PropertyId).Select(Key), Is.EqualTo(single.Select(Key)),
+            "one property's events keep their order inside the merged log");
+        Assert.That(merged.Where(e => e.PlacementId == second.Target).Select(e => e.PropertyId), Is.All.EqualTo(second.PropertyId));
+        Assert.That(merged.Where(e => e.LocationId == first.Kemirum).Select(e => e.PropertyId), Is.All.EqualTo(first.PropertyId));
+    }
 }

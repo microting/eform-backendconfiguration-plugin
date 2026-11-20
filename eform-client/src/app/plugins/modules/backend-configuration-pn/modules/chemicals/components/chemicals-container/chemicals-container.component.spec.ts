@@ -565,6 +565,65 @@ describe('ChemicalsContainerComponent', () => {
       expect(component.pickerValue).toBe(CHEMICALS_ALL_PROPERTIES);
     });
 
+    it('returns to "All" when a menu click or Back lands on Beholdning/Historik without ?propertyId= (brief: no param = All)', () => {
+      queryParams = {propertyId: '7'};
+      const component = build(list);
+      store.dispatch.mockClear();
+      router.navigate.mockClear();
+
+      queryParams = {};
+      routerEvents$.next(new NavigationEnd(2, '/chemicals/history', '/chemicals/history'));
+
+      expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectAllProperties());
+      expect(component.pickerValue).toBe(CHEMICALS_ALL_PROPERTIES);
+      // "All" is the URL without the parameter: nothing to write back.
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
+
+    it('returns to "All" when coming back from a screen without it', () => {
+      const component = build(list);
+      childAllowsAll = false;
+      routerEvents$.next(new NavigationEnd(2, '/chemicals/locations', '/chemicals/locations'));
+      expect(component.propertyId).toBe(7);
+      store.dispatch.mockClear();
+
+      childAllowsAll = true;
+      queryParams = {};
+      routerEvents$.next(new NavigationEnd(3, '/chemicals/inventory', '/chemicals/inventory'));
+
+      expect(store.dispatch).toHaveBeenCalledWith(chemicalsSelectAllProperties());
+    });
+
+    it('asks the screen before a navigation without ?propertyId= switches to "All", and keeps the property on "keep editing"', () => {
+      queryParams = {propertyId: '7'};
+      const component = build(list);
+      component.onScreenActivate({confirmDiscardChanges: () => of(false)});
+      store.dispatch.mockClear();
+      router.navigate.mockClear();
+
+      queryParams = {};
+      routerEvents$.next(new NavigationEnd(2, '/chemicals/inventory', '/chemicals/inventory'));
+
+      expect(store.dispatch).not.toHaveBeenCalled();
+      expect(component.propertyId).toBe(7);
+      expect(router.navigate).toHaveBeenCalledWith([], urlSync(7));
+    });
+
+    it('keeps a property picked while a navigation was in flight, and writes it once the navigation ends (R-2)', () => {
+      const component = build(list);
+      routerEvents$.next(new NavigationStart(2, '/chemicals/history'));
+      router.navigate.mockClear();
+
+      component.onPropertyChange(8);
+      expect(router.navigate).not.toHaveBeenCalled();
+      store.dispatch.mockClear();
+      routerEvents$.next(new NavigationEnd(2, '/chemicals/history', '/chemicals/history'));
+
+      expect(store.dispatch).not.toHaveBeenCalledWith(chemicalsSelectAllProperties());
+      expect(component.propertyId).toBe(8);
+      expect(router.navigate).toHaveBeenCalledWith([], urlSync(8));
+    });
+
     it('adopts the ?propertyId= of a later navigation while "All" is selected', () => {
       build(list);
       store.dispatch.mockClear();

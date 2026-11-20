@@ -64,6 +64,7 @@ describe('BackendConfigurationPnChemicalsService', () => {
   const cases: Array<[string, (s: BackendConfigurationPnChemicalsService) => Observable<unknown>, string, unknown[]]> = [
     ['inventory', (s) => s.getPropertyInventory(3), 'get', [`${BASE}/properties/3/inventory`]],
     ['inventory of every property', (s) => s.getAllPropertiesInventory(), 'get', [`${BASE}/inventory`]],
+    ['locations of every property', (s) => s.getAllPropertiesLocations(), 'get', [`${BASE}/locations`]],
     ['register search', (s) => s.searchRegister('round', 1, 10), 'get', [`${BASE}/register/search`, {query: 'round', page: 1, pageSize: 10}]],
     ['register search defaults', (s) => s.searchRegister('x'), 'get', [`${BASE}/register/search`, {query: 'x', page: 0, pageSize: 25}]],
     ['barcode lookup encodes', (s) => s.lookupBarcode('57 01'), 'get', [`${BASE}/register/barcode/57%2001`]],

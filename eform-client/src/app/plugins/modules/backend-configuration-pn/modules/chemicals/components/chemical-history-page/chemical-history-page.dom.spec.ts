@@ -67,7 +67,7 @@ describe('ChemicalHistoryPageComponent (template)', () => {
           getPropertyInventory: vi.fn().mockReturnValue(inventory ?? of({success: true, model: {locations: [location(10, 'Lade', {propertyId: 3})]}})),
           exportHistory: vi.fn().mockReturnValue(exportAnswer ?? NEVER),
           getAllPropertiesHistory: vi.fn().mockReturnValue(answer ?? of({success: true, model: {events, total: 4, users: []}})),
-          getAllPropertiesInventory: vi.fn().mockReturnValue(of({success: true, model: {properties: [], locations: []}})),
+          getAllPropertiesLocations: vi.fn().mockReturnValue(of({success: true, model: {properties: [], locations: []}})),
           exportAllPropertiesHistory: vi.fn().mockReturnValue(exportAnswer ?? NEVER),
         }},
         {provide: ToastrService, useValue: {error: vi.fn()}},
