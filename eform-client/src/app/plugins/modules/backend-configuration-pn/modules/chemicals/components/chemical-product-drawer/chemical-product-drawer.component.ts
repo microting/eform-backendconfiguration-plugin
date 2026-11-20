@@ -79,7 +79,8 @@ export class ChemicalProductDrawerComponent {
   readonly stockEnabled = this.data.stockEnabled;
   /** The stock tab exists only with stock on (spec §11). */
   readonly tabs: ChemicalDrawerTabDef[] = TABS.filter((t) => t.id !== 'stock' || this.stockEnabled);
-  readonly placements: ChemicalPlacementModel[] = placementsOfChemical(this.data.inventory, this.row.placement.chemicalId);
+  readonly placements: ChemicalPlacementModel[] =
+    placementsOfChemical(this.data.inventory, this.row.placement.chemicalId, this.row.placement.propertyId);
   readonly stockHistory: ChemicalStockHistoryRow[] = placementStockHistory(this.data.inventory, this.row.placement.id);
   /** The eForm user's language when the panel opened (the panel is modal, so it is not followed while open). */
   private readonly uiLocale: string = currentUiLocale(this.translate);

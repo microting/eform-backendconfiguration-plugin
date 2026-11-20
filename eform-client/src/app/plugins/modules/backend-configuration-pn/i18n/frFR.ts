@@ -1042,6 +1042,7 @@ export const frFR = {
   'Chemicals: Export authority list': 'Liste des produits chimiques pour l\'Autorité de l\'environnement de travail (PDF)',
   'Chemicals: Export current filter': 'Fichier Excel (.xlsx) du filtre actuel',
   'Chemicals: Export removed placements': 'Produits chimiques retirés au cours des 12 derniers mois (Excel)',
+  'Chemicals: Select a property to export': 'Sélectionnez une propriété à exporter',
   'Chemicals: Register placement': 'Enregistrez un produit chimique à un endroit',
   'Chemicals: Search inventory hint': 'Produit, numéro d\'enregistrement, lieu de stockage',
   'Chemicals: No placements': 'Aucun produit chimique n\'est encore enregistré ici.',

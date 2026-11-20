@@ -29,6 +29,8 @@ export interface ChemicalInventoryRow {
   location: ChemicalLocationModel | null;
   productName: string;
   registrationNo: string;
+  /** The Ejendom column (W1 under the picker's "All", and for one property). */
+  propertyName: string;
   locationName: string;
   statusLabelKey: string | null;
   statusText: string;
@@ -69,12 +71,48 @@ export function isStockEnabled(inventory: ChemicalInventoryModel | null, propert
   return !!inventory?.properties.find((p) => p.propertyId === propertyId)?.stockEnabled;
 }
 
+/** The Lager column under "All": shown when any property of the inventory keeps stock. */
+export function anyStockEnabled(inventory: ChemicalInventoryModel | null): boolean {
+  return !!inventory?.properties.some((p) => p.stockEnabled);
+}
+
+/** The locations of one property, archived ones included (a move or a registration filters those itself). */
+export function locationsOfProperty(inventory: ChemicalInventoryModel | null, propertyId: number): ChemicalLocationModel[] {
+  return (inventory?.locations ?? []).filter((l) => l.propertyId === propertyId);
+}
+
+function propertyNames(inventory: ChemicalInventoryModel): Map<number, string> {
+  return new Map(inventory.properties.map((p) => [p.propertyId, p.name]));
+}
+
+/**
+ * The W1 location filter. Under "All" a name alone is ambiguous ("Lade" on two farms), so each option is
+ * "<Ejendom> – <Lokation>", by property name then location order; for one property the plain names as sent.
+ */
+export function inventoryLocationOptions(
+  inventory: ChemicalInventoryModel | null, allProperties: boolean,
+): Array<{id: number; name: string}> {
+  if (!inventory) {
+    return [];
+  }
+  if (!allProperties) {
+    return inventory.locations.map((l) => ({id: l.id, name: l.name}));
+  }
+  const names = propertyNames(inventory);
+  const propertyOf = (l: ChemicalLocationModel) => names.get(l.propertyId) ?? '';
+  return [...inventory.locations]
+    .sort((a, b) => propertyOf(a).localeCompare(propertyOf(b), 'da') || a.propertyId - b.propertyId
+      || a.sortOrder - b.sortOrder || a.id - b.id)
+    .map((l) => ({id: l.id, name: `${propertyOf(l)} – ${l.name}`}));
+}
+
 export function buildInventoryRows(inventory: ChemicalInventoryModel | null, today: string): ChemicalInventoryRow[] {
   if (!inventory) {
     return [];
   }
   const locations = new Map(inventory.locations.map((l) => [l.id, l]));
   const entries = new Map(inventory.registerEntries.map((e) => [e.chemicalId, e]));
+  const properties = propertyNames(inventory);
   return inventory.placements
     .filter((p) => !p.removedAt)
     .map((placement) => {
@@ -85,6 +123,7 @@ export function buildInventoryRows(inventory: ChemicalInventoryModel | null, tod
         placement, entry, location,
         productName: entry?.name ?? `#${placement.chemicalId}`,
         registrationNo: entry?.registrationNo ?? '',
+        propertyName: properties.get(placement.propertyId) ?? '',
         locationName: location?.name ?? '',
         statusLabelKey: chemicalStatusLabelKey(entry?.status ?? null),
         statusText: entry?.statusText ?? '',
@@ -98,7 +137,8 @@ export function buildInventoryRows(inventory: ChemicalInventoryModel | null, tod
       };
     })
     .sort((a, b) =>
-      (a.location?.sortOrder ?? Number.MAX_SAFE_INTEGER) - (b.location?.sortOrder ?? Number.MAX_SAFE_INTEGER)
+      a.propertyName.localeCompare(b.propertyName, 'da') || a.placement.propertyId - b.placement.propertyId
+      || (a.location?.sortOrder ?? Number.MAX_SAFE_INTEGER) - (b.location?.sortOrder ?? Number.MAX_SAFE_INTEGER)
       || a.productName.localeCompare(b.productName, 'da')
       || a.placement.id - b.placement.id);
 }
@@ -112,7 +152,7 @@ const STATUS_BY_FILTER: Record<string, number> = {
 export function filterInventoryRows(rows: ChemicalInventoryRow[], filters: ChemicalInventoryFiltersModel): ChemicalInventoryRow[] {
   const needle = (filters.search ?? '').trim().toLowerCase();
   return rows.filter((row) =>
-    (!needle || [row.productName, row.registrationNo, row.placement.placementNote, row.locationName]
+    (!needle || [row.productName, row.registrationNo, row.placement.placementNote, row.locationName, row.propertyName]
       .some((text) => (text ?? '').toLowerCase().includes(needle)))
     && (filters.locationId === null || row.placement.locationId === filters.locationId)
     && (filters.status === 'all' || row.entry?.status === STATUS_BY_FILTER[filters.status])
@@ -177,9 +217,15 @@ export function placementStockHistory(inventory: ChemicalInventoryModel | null, 
     }));
 }
 
-/** W2 "Placeringer": every open placement of the chemical on the property. */
-export function placementsOfChemical(inventory: ChemicalInventoryModel | null, chemicalId: number): ChemicalPlacementModel[] {
-  return (inventory?.placements ?? []).filter((p) => p.chemicalId === chemicalId && !p.removedAt);
+/**
+ * W2 "Placeringer": every open placement of the chemical on the property. Under "All" the inventory holds
+ * every property, so the row's `propertyId` keeps the list to its own property.
+ */
+export function placementsOfChemical(
+  inventory: ChemicalInventoryModel | null, chemicalId: number, propertyId?: number | null,
+): ChemicalPlacementModel[] {
+  return (inventory?.placements ?? []).filter((p) => p.chemicalId === chemicalId && !p.removedAt
+    && (propertyId === undefined || propertyId === null || p.propertyId === propertyId));
 }
 
 /** The server's ChemicalQuantity.MaxAmount: one million L/kg; anything larger is a unit mistake. */

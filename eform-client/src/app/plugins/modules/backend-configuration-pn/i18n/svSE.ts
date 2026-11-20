@@ -1043,6 +1043,7 @@ export const svSE = {
   'Chemicals: Export authority list': 'Kemikalielista för Arbetsmiljöverket (PDF)',
   'Chemicals: Export current filter': 'Excel (.xlsx) för det aktuella filtret',
   'Chemicals: Export removed placements': 'Kemikalier borttagna under de senaste 12 månaderna (Excel)',
+  'Chemicals: Select a property to export': 'Välj en fastighet att exportera',
   'Chemicals: Register placement': 'Registrera en kemikalie på en plats',
   'Chemicals: Search inventory hint': 'Produkt, registreringsnummer, förvaringsplats',
   'Chemicals: No placements': 'Inga kemikalier är registrerade här ännu.',

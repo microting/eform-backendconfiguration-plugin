@@ -920,6 +920,7 @@ export const hrHR = {
   'Chemicals: Export authority list': 'Popis kemikalija za Agenciju za radno okruženje (PDF)',
   'Chemicals: Export current filter': 'Excel (.xlsx) trenutnog filtera',
   'Chemicals: Export removed placements': 'Kemikalije uklonjene u posljednjih 12 mjeseci (Excel)',
+  'Chemicals: Select a property to export': 'Odaberite nekretninu za izvoz',
   'Chemicals: Register placement': 'Registrirajte kemikaliju na lokaciji',
   'Chemicals: Search inventory hint': 'Proizvod, registracijski broj, mjesto skladištenja',
   'Chemicals: No placements': 'Ovdje još nisu registrirane kemikalije.',

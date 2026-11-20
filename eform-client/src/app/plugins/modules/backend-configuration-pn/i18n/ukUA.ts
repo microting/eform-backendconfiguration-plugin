@@ -1043,6 +1043,7 @@ export const ukUA = {
   'Chemicals: Export authority list': 'Список хімічних речовин для Управління з питань робочого середовища (PDF)',
   'Chemicals: Export current filter': 'Excel (.xlsx) поточного фільтра',
   'Chemicals: Export removed placements': 'Хімікати, видалені за останні 12 місяців (Excel)',
+  'Chemicals: Select a property to export': 'Виберіть об’єкт нерухомості для експорту',
   'Chemicals: Register placement': 'Зареєструйте хімічну речовину в певному місці',
   'Chemicals: Search inventory hint': 'Продукт, реєстраційний номер, місце зберігання',
   'Chemicals: No placements': 'Тут ще не зареєстровано жодних хімікатів.',

@@ -1043,6 +1043,7 @@ export const ptPT = {
   'Chemicals: Export authority list': 'Lista de produtos químicos para a Autoridade do Ambiente de Trabalho (PDF)',
   'Chemicals: Export current filter': 'Arquivo Excel (.xlsx) do filtro atual',
   'Chemicals: Export removed placements': 'Produtos químicos removidos nos últimos 12 meses (Excel)',
+  'Chemicals: Select a property to export': 'Selecione uma propriedade para exportar',
   'Chemicals: Register placement': 'Registar produto químico num local',
   'Chemicals: Search inventory hint': 'Produto, número de registro, local de armazenamento',
   'Chemicals: No placements': 'Ainda não há nenhum produto químico registrado aqui.',

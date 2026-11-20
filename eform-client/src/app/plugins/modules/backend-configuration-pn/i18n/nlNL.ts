@@ -1043,6 +1043,7 @@ export const nlNL = {
   'Chemicals: Export authority list': 'Chemische lijst voor de Arbeidsinspectie (PDF)',
   'Chemicals: Export current filter': 'Excel-bestand (.xlsx) van het huidige filter',
   'Chemicals: Export removed placements': 'Verwijderde chemicaliën in de afgelopen 12 maanden (Excel)',
+  'Chemicals: Select a property to export': 'Selecteer een woning om te exporteren',
   'Chemicals: Register placement': 'Chemische stof op een locatie registreren',
   'Chemicals: Search inventory hint': 'Product, registratienummer, opslagplaats',
   'Chemicals: No placements': 'Er zijn hier nog geen chemicaliën geregistreerd.',

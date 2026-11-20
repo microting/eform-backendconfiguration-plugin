@@ -37,7 +37,7 @@
       <mat-datepicker-toggle matIconSuffix [for]="toPicker"></mat-datepicker-toggle>
       <mat-datepicker #toPicker></mat-datepicker>
     </mat-form-field>
-    <button class="btn-quiet ml-auto" id="chemicalHistoryExportBtn" [disabled]="exporting || periodError || propertyId === null"
+    <button class="btn-quiet ml-auto" id="chemicalHistoryExportBtn" [disabled]="exporting || periodError || !hasScope"
             [attr.aria-busy]="exporting" (click)="export()">
       <mat-icon>{{ exporting ? 'hourglass_empty' : 'download' }}</mat-icon>
       <span>{{ 'Chemicals: Export as Excel' | translate }}</span>
@@ -53,7 +53,7 @@
     <mat-icon>error</mat-icon><span>{{ 'Chemicals: Could not load history' | translate }}</span>
   </div>
 
-  <ng-container *ngIf="!load.loading && !load.failed && !periodError && propertyId !== null">
+  <ng-container *ngIf="!load.loading && !load.failed && !periodError && hasScope">
     <table id="chemicalHistoryTable" class="chemicals-table" [attr.aria-label]="'Chemicals: History title' | translate">
       <thead>
         <tr>
@@ -61,6 +61,7 @@
           <th scope="col">{{ 'Chemicals: User' | translate }}</th>
           <th scope="col">{{ 'Chemicals: Action' | translate }}</th>
           <th scope="col">{{ 'Chemicals: Product' | translate }}</th>
+          <th scope="col" *ngIf="allProperties">{{ 'Property' | translate }}</th>
           <th scope="col">{{ 'Location' | translate }}</th>
           <th scope="col">{{ 'Chemicals: Details' | translate }}</th>
         </tr>
@@ -71,6 +72,7 @@
           <td class="col-user">{{ e.userId === systemUserId ? ('Chemicals: System' | translate) : e.userName }}</td>
           <td class="col-action">{{ actionKey(e.action) | translate }}</td>
           <td class="col-product">{{ e.productName || '–' }}</td>
+          <td class="col-property" *ngIf="allProperties">{{ e.propertyName || '–' }}</td>
           <!-- The event's location, as in the Excel; a move's route is in Details. -->
           <td class="col-location">{{ e.locationName || '–' }}</td>
           <td class="col-details">{{ details(e) }}</td>
@@ -79,6 +81,6 @@
     </table>
     <div *ngIf="!events.length" class="chemicals-empty" id="chemicalHistoryEmpty">{{ 'Chemicals: No history' | translate }}</div>
   </ng-container>
-  <mat-paginator *ngIf="!load.failed && !periodError && propertyId !== null" id="chemicalHistoryPaginator" [length]="total" [pageIndex]="pageIndex" [pageSize]="pageSize"
+  <mat-paginator *ngIf="!load.failed && !periodError && hasScope" id="chemicalHistoryPaginator" [length]="total" [pageIndex]="pageIndex" [pageSize]="pageSize"
                  [pageSizeOptions]="pageSizeOptions" [disabled]="load.loading" (page)="onPage($event)"></mat-paginator>
 </div>

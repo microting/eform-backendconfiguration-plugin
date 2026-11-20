@@ -1043,6 +1043,7 @@ export const itIT = {
   'Chemicals: Export authority list': 'Elenco delle sostanze chimiche per l\'Autorità per la tutela dell\'ambiente di lavoro (PDF)',
   'Chemicals: Export current filter': 'File Excel (.xlsx) del filtro corrente',
   'Chemicals: Export removed placements': 'Sostanze chimiche rimosse negli ultimi 12 mesi (Excel)',
+  'Chemicals: Select a property to export': 'Seleziona una proprietà da esportare',
   'Chemicals: Register placement': 'Registrare una sostanza chimica in un luogo',
   'Chemicals: Search inventory hint': 'Prodotto, numero di registrazione, luogo di conservazione',
   'Chemicals: No placements': 'Al momento qui non è registrato alcun prodotto chimico.',

@@ -1112,6 +1112,7 @@ export const da = {
   'Chemicals: Export authority list': 'Kemikalieliste til Arbejdstilsynet (PDF)',
   'Chemicals: Export current filter': 'Excel (.xlsx) af den aktuelle filtrering',
   'Chemicals: Export removed placements': 'Fjernede placeringer (12 mdr) som Excel',
+  'Chemicals: Select a property to export': 'Vælg en ejendom',
   'Chemicals: Register placement': 'Registrér placering',
   'Chemicals: Search inventory hint': 'Produkt, reg.nr, placering',
   'Chemicals: No placements': 'Ingen placeringer på ejendommen endnu.',

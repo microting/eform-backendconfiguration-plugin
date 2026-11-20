@@ -1212,6 +1212,7 @@ export const enUS= {
   'Chemicals: Export authority list': 'Chemical list for the Working Environment Authority (PDF)',
   'Chemicals: Export current filter': 'Excel (.xlsx) of the current filter',
   'Chemicals: Export removed placements': 'Removed placements (12 months) as Excel',
+  'Chemicals: Select a property to export': 'Select a property to export',
   'Chemicals: Register placement': 'Register placement',
   'Chemicals: Search inventory hint': 'Product, reg. no., placement',
   'Chemicals: No placements': 'No placements on this property yet.',

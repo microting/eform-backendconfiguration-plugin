@@ -1043,6 +1043,7 @@ export const noNO = {
   'Chemicals: Export authority list': 'Kjemikalieliste for Arbeidstilsynet (PDF)',
   'Chemicals: Export current filter': 'Excel (.xlsx) for gjeldende filter',
   'Chemicals: Export removed placements': 'Kjemikalier fjernet i løpet av de siste 12 månedene (Excel)',
+  'Chemicals: Select a property to export': 'Velg en eiendom for å eksportere',
   'Chemicals: Register placement': 'Registrer et kjemikalie på et sted',
   'Chemicals: Search inventory hint': 'Produkt, registreringsnummer, lagringssted',
   'Chemicals: No placements': 'Ingen kjemikalier er registrert her ennå.',

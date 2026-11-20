@@ -1,6 +1,6 @@
 import {Component, inject} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
-import {ChemicalLocationModel, ChemicalRegisterEntryModel, ChemicalStockUnit} from '../../../../models';
+import {ChemicalLocationModel, ChemicalPropertyAccessModel, ChemicalRegisterEntryModel, ChemicalStockUnit} from '../../../../models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {closeWhenSaved, isValidQuantity} from '../../helpers';
 import {NgIf, NgFor} from '@angular/common';
@@ -24,12 +24,22 @@ function barcodeDigits(value: string | null | undefined): string {
 }
 
 export interface ChemicalRegisterPlacementDialogData {
-  propertyId: number;
+  /** The property to register on; null under the picker's "All", where the dialog asks for it first. */
+  propertyId: number | null;
   locations: ChemicalLocationModel[];
+  /** Stock of the property (no `properties`); with `properties` each property's own flag counts. */
   stockEnabled: boolean;
+  /**
+   * The properties of the inventory (name, stock flag). Given, the dialog shows an Ejendom field: preset and
+   * read-only for a selected property, a choice under "All"; the locations then come from the chosen property.
+   */
+  properties?: ChemicalPropertyAccessModel[];
 }
 
-/** W1 "Registrér placering": pick a BMD product from the register, a location, a note and (stock on) an initial amount. */
+/**
+ * W1 "Registrér placering": pick a BMD product from the register, a location, a note and (stock on) an initial
+ * amount. The server takes the property from the location, so "All" only narrows the locations to the chosen property.
+ */
 @Component({
   selector: 'app-chemical-register-placement-dialog',
   imports: [NgIf, NgFor, FormsModule, TranslatePipe, MatFormField, MatLabel, MatInput, MatIcon, MatIconButton, MatTooltip, MatRadioGroup, MatRadioButton, MtxSelect, MatDialogTitle, MatDialogContent, MatDialogActions],
@@ -42,7 +52,17 @@ export class ChemicalRegisterPlacementDialogComponent {
   readonly data: ChemicalRegisterPlacementDialogData = inject(MAT_DIALOG_DATA);
 
   readonly units = ChemicalStockUnit;
-  readonly locations = this.data.locations.filter((l) => !l.archived);
+  /** The Ejendom field is shown (the page gave the properties). */
+  readonly hasPropertyField = !!this.data.properties?.length;
+  /** Under "All": the user picks the property; otherwise it is preset (read-only). */
+  readonly choosesProperty = this.hasPropertyField && this.data.propertyId === null;
+  /** The properties a placement can go to: those with an active location. */
+  readonly propertyOptions: ChemicalPropertyAccessModel[] = (this.data.properties ?? [])
+    .filter((p) => this.data.locations.some((l) => l.propertyId === p.propertyId && !l.archived));
+  chosenPropertyId: number | null = this.data.propertyId
+    ?? (this.choosesProperty && this.propertyOptions.length === 1 ? this.propertyOptions[0].propertyId : null);
+  /** The active locations of the chosen property (all active ones without an Ejendom field). */
+  locations: ChemicalLocationModel[] = this.activeLocationsOf(this.chosenPropertyId);
   query = '';
   results: ChemicalRegisterEntryModel[] = [];
   /** Matches the register has in all; it answers the first PAGE_SIZE. */
@@ -60,9 +80,24 @@ export class ChemicalRegisterPlacementDialogComponent {
   /** The query of the shown results, digits only: a barcode picks its own package (m-5). */
   private searchedBarcode = '';
 
+  /** The chosen property keeps stock (its own flag under "All"). */
+  get stockEnabled(): boolean {
+    if (!this.hasPropertyField) {
+      return this.data.stockEnabled;
+    }
+    return !!this.data.properties.find((p) => p.propertyId === this.chosenPropertyId)?.stockEnabled;
+  }
+
+  /** The Ejendom field's choice: its active locations, the one location picked for the user as before. */
+  chooseProperty(propertyId: number | null): void {
+    this.chosenPropertyId = propertyId;
+    this.locations = this.activeLocationsOf(propertyId);
+    this.locationId = this.locations.length === 1 ? this.locations[0].id : null;
+  }
+
   get canSave(): boolean {
     // No initial stock, or one within the server's ChemicalQuantity rules (M3).
-    const amountValid = !this.data.stockEnabled || this.amount === null || isValidQuantity(this.amount, false);
+    const amountValid = !this.stockEnabled || this.amount === null || isValidQuantity(this.amount, false);
     return !!this.selected && this.locationId !== null && amountValid && !this.saving;
   }
 
@@ -125,9 +160,13 @@ export class ChemicalRegisterPlacementDialogComponent {
       chemicalId: this.selected.chemicalId,
       productId: this.productId,
       placementNote: this.placementNote.trim(),
-      initialStock: this.data.stockEnabled && this.amount
+      initialStock: this.stockEnabled && this.amount
         ? {containerSize: null, containerCount: null, amount: this.amount, unit: this.unit, batchLot: null, note: null, at: null}
         : null,
     }), () => (this.saving = false));
+  }
+
+  private activeLocationsOf(propertyId: number | null): ChemicalLocationModel[] {
+    return this.data.locations.filter((l) => !l.archived && (!this.hasPropertyField || l.propertyId === propertyId));
   }
 }

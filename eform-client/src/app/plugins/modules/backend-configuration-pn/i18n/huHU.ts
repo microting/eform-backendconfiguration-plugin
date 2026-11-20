@@ -920,6 +920,7 @@ export const huHU = {
   'Chemicals: Export authority list': 'Vegyi anyagok listája a Munkakörnyezeti Hatóság számára (PDF)',
   'Chemicals: Export current filter': 'Az aktuális szűrő Excel (.xlsx) fájlja',
   'Chemicals: Export removed placements': 'Az elmúlt 12 hónapban eltávolított vegyszerek (Excel)',
+  'Chemicals: Select a property to export': 'Válasszon egy ingatlant az exportáláshoz',
   'Chemicals: Register placement': 'Vegyi anyag regisztrálása egy helyszínen',
   'Chemicals: Search inventory hint': 'Termék, regisztrációs szám, tárolási hely',
   'Chemicals: No placements': 'Itt még nincsenek regisztrált vegyi anyagok.',

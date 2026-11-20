@@ -1043,6 +1043,7 @@ export const plPL = {
   'Chemicals: Export authority list': 'Lista substancji chemicznych dla Urzędu ds. Środowiska Pracy (PDF)',
   'Chemicals: Export current filter': 'Plik Excel (.xlsx) bieżącego filtra',
   'Chemicals: Export removed placements': 'Substancje chemiczne usunięte w ciągu ostatnich 12 miesięcy (Excel)',
+  'Chemicals: Select a property to export': 'Wybierz nieruchomość do eksportu',
   'Chemicals: Register placement': 'Zarejestruj substancję chemiczną w lokalizacji',
   'Chemicals: Search inventory hint': 'Produkt, numer rejestracyjny, miejsce przechowywania',
   'Chemicals: No placements': 'Nie zarejestrowano tu jeszcze żadnych substancji chemicznych.',

@@ -123,6 +123,11 @@ export class BackendConfigurationPnChemicalsService {
     return this.json(this.apiBaseService.get(this.url(`properties/${propertyId}/inventory`)));
   }
 
+  /** The picker's "All": every property the user may view, in one inventory. */
+  getAllPropertiesInventory(): Observable<OperationDataResult<ChemicalInventoryModel>> {
+    return this.json(this.apiBaseService.get(this.url('inventory')));
+  }
+
   searchRegister(query: string, page = 0, pageSize = 25): Observable<OperationDataResult<ChemicalRegisterPageModel>> {
     return this.json(this.apiBaseService.get(this.url('register/search'), {query, page, pageSize}));
   }
@@ -211,6 +216,11 @@ export class BackendConfigurationPnChemicalsService {
     return this.json(this.apiBaseService.post(this.url(`properties/${propertyId}/history`), query));
   }
 
+  /** W6 under the picker's "All": one server page of the merged history of every property the user may view. */
+  getAllPropertiesHistory(query: ChemicalHistoryQueryModel): Observable<OperationDataResult<ChemicalHistoryPageModel>> {
+    return this.json(this.apiBaseService.post(this.url('history'), query));
+  }
+
   exportAuthorityList(propertyId: number): Observable<ChemicalDownload> {
     return this.download('GET', `properties/${propertyId}/exports/authority-list`, null, 'chemicals.pdf');
   }
@@ -220,12 +230,21 @@ export class BackendConfigurationPnChemicalsService {
     return this.download('POST', `properties/${propertyId}/exports/inventory`, {placementIds}, 'chemicals.xlsx');
   }
 
+  /** The Excel of the current filter under "All": placementIds = the rows the page shows; null = every open placement. */
+  exportAllPropertiesInventory(placementIds: number[] | null): Observable<ChemicalDownload> {
+    return this.download('POST', 'exports/inventory', {placementIds}, 'chemicals.xlsx');
+  }
+
   exportRemovedPlacements(propertyId: number): Observable<ChemicalDownload> {
     return this.download('GET', `properties/${propertyId}/exports/removed-placements`, null, 'removed-placements.xlsx');
   }
 
   exportHistory(propertyId: number, query: ChemicalHistoryQueryModel): Observable<ChemicalDownload> {
     return this.download('POST', `properties/${propertyId}/history/export`, query, 'chemical-history.xlsx');
+  }
+
+  exportAllPropertiesHistory(query: ChemicalHistoryQueryModel): Observable<ChemicalDownload> {
+    return this.download('POST', 'history/export', query, 'chemical-history.xlsx');
   }
 
   private download(method: 'GET' | 'POST', path: string, body: unknown, fallbackFileName: string): Observable<ChemicalDownload> {

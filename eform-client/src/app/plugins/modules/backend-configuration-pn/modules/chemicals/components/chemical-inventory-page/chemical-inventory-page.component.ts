@@ -17,16 +17,19 @@ import {
   chemicalsInitialState,
   chemicalsUpdateInventoryFilters,
   selectChemicalsInventoryFilters,
-  selectChemicalsPropertyId,
+  selectChemicalsScope,
 } from '../../../../state';
 import {
   ChemicalActionSummary,
   ChemicalInventoryRow,
   ChemicalLatestLoad,
+  anyStockEnabled,
   buildInventoryRows,
   downloadFile,
   filterInventoryRows,
+  inventoryLocationOptions,
   isStockEnabled,
+  locationsOfProperty,
   localToday,
   currentUiLocale,
   labelOptionText,
@@ -47,7 +50,10 @@ import {
   ChemicalProductDrawerComponent,
   ChemicalProductDrawerData,
 } from '../chemical-product-drawer/chemical-product-drawer.component';
-import {ChemicalRegisterPlacementDialogComponent} from '../chemical-register-placement-dialog/chemical-register-placement-dialog.component';
+import {
+  ChemicalRegisterPlacementDialogComponent,
+  ChemicalRegisterPlacementDialogData,
+} from '../chemical-register-placement-dialog/chemical-register-placement-dialog.component';
 import {ChemicalRemoveDialogComponent} from '../chemical-remove-dialog/chemical-remove-dialog.component';
 import {ChemicalStockDialogComponent} from '../chemical-stock-dialog/chemical-stock-dialog.component';
 import {ChemicalGhsPictogramsComponent} from '../chemical-ghs-pictograms/chemical-ghs-pictograms.component';
@@ -68,6 +74,11 @@ import {MtxSelect} from '@ng-matero/extensions/select';
  * placements) and "Registrér placering". Honours the filter of the digest deeplink
  * ?propertyId=<id>&filter=requires-action (Plan D Contract C4); the property is the
  * container's (it checks the id against the known properties).
+ *
+ * Under the picker's "All" (owner 2026-11-20) the page shows every property the user may view: the
+ * Ejendom column and the "<Ejendom> – <Lokation>" filter tell them apart, stock and moves follow each
+ * row's own property, "Registrér placering" asks for the property first and the Excel covers them all;
+ * the authority list and the removed placements stay per property.
  */
 @Component({
   selector: 'app-chemical-inventory-page',
@@ -88,6 +99,8 @@ export class ChemicalInventoryPageComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
 
   propertyId: number | null = null;
+  /** The picker's "All": every property at once (propertyId is null then). */
+  allProperties = false;
   inventory: ChemicalInventoryModel | null = null;
   filters: ChemicalInventoryFiltersModel = {...chemicalsInitialState.inventoryFilters};
   rows: ChemicalInventoryRow[] = [];
@@ -96,6 +109,8 @@ export class ChemicalInventoryPageComponent implements OnInit {
   summary: ChemicalActionSummary = summarizeActions([]);
   /** Where a placement can be registered; set with the inventory. */
   activeLocations: ChemicalLocationModel[] = [];
+  /** The location filter ("<Ejendom> – <Lokation>" under "All"); set with the inventory. */
+  locationOptions: Array<{id: number; name: string}> = [];
   /** Rebuilt when the inventory loads (the Lager column depends on the property's stock flag), not per change detection. */
   columns: MtxGridColumn[] = [];
   exporting = false;
@@ -112,8 +127,19 @@ export class ChemicalInventoryPageComponent implements OnInit {
     return this.rows.length ? 'Chemicals: No matching placements' : 'Chemicals: No placements';
   }
 
+  /** The Lager column: the property keeps stock, or under "All" any of them does. */
   get stockEnabled(): boolean {
-    return isStockEnabled(this.inventory, this.propertyId);
+    return this.allProperties ? anyStockEnabled(this.inventory) : isStockEnabled(this.inventory, this.propertyId);
+  }
+
+  /** Stock actions and the Lager cell follow the row's own property. */
+  rowStockEnabled(row: ChemicalInventoryRow): boolean {
+    return isStockEnabled(this.inventory, row.placement.propertyId);
+  }
+
+  /** The authority list and the removed placements are per property: off under "All". */
+  get propertyExportsDisabled(): boolean {
+    return this.allProperties;
   }
 
   private buildColumns(): MtxGridColumn[] {
@@ -122,6 +148,7 @@ export class ChemicalInventoryPageComponent implements OnInit {
       {header: header('Chemicals: Hazard'), field: 'pictograms'},
       {header: header('Chemicals: Product'), field: 'productName', sortable: true},
       {header: header('Status'), field: 'status'},
+      {header: header('Property'), field: 'propertyName', sortable: true},
       {header: header('Location'), field: 'locationName', sortable: true},
       {header: header('Chemicals: Placement'), field: 'placementNote'},
       ...(this.stockEnabled ? [{header: header('Chemicals: Stock'), field: 'stock'}] : []),
@@ -133,12 +160,13 @@ export class ChemicalInventoryPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.applyDeeplink();
-    combineLatest([this.store.select(selectChemicalsPropertyId), this.store.select(selectChemicalsInventoryFilters)])
+    combineLatest([this.store.select(selectChemicalsScope), this.store.select(selectChemicalsInventoryFilters)])
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(([propertyId, filters]) => {
+      .subscribe(([scope, filters]) => {
         this.filters = filters;
-        if (propertyId !== this.propertyId) {
-          this.propertyId = propertyId;
+        if (scope.propertyId !== this.propertyId || scope.allProperties !== this.allProperties) {
+          this.propertyId = scope.propertyId;
+          this.allProperties = scope.allProperties;
           this.reload();
         } else {
           this.applyFilters();
@@ -149,7 +177,9 @@ export class ChemicalInventoryPageComponent implements OnInit {
   reload(): void {
     this.load.reset();
     this.setInventory(null);
-    if (this.propertyId !== null) {
+    if (this.allProperties) {
+      this.load.run(this.chemicalsService.getAllPropertiesInventory(), (inventory) => this.setInventory(inventory));
+    } else if (this.propertyId !== null) {
       this.load.run(this.chemicalsService.getPropertyInventory(this.propertyId), (inventory) => this.setInventory(inventory));
     }
   }
@@ -166,13 +196,19 @@ export class ChemicalInventoryPageComponent implements OnInit {
     }
   }
 
+  /** Under "All" the dialog asks for the property; for one property it is preset. */
   openRegister(): void {
-    if (this.propertyId === null) {
+    if (!this.inventory) {
       return;
     }
-    this.dialog.open(ChemicalRegisterPlacementDialogComponent, dialogConfigHelper(this.overlay, {
-      propertyId: this.propertyId, locations: this.inventory?.locations ?? [], stockEnabled: this.stockEnabled,
-    })).afterClosed().subscribe((saved) => saved && this.reload());
+    const data: ChemicalRegisterPlacementDialogData = {
+      propertyId: this.allProperties ? null : this.propertyId,
+      properties: this.inventory.properties,
+      locations: this.inventory.locations,
+      stockEnabled: this.stockEnabled,
+    };
+    this.dialog.open(ChemicalRegisterPlacementDialogComponent, dialogConfigHelper(this.overlay, data))
+      .afterClosed().subscribe((saved) => saved && this.reload());
   }
 
   /** W2 side panel (read-only, so Esc and a backdrop click close it); the action chosen there opens its dialog. */
@@ -183,7 +219,7 @@ export class ChemicalInventoryPageComponent implements OnInit {
       remove: (target) => this.openRemove(target),
     };
     this.dialog.open<ChemicalProductDrawerComponent, ChemicalProductDrawerData, ChemicalDrawerResult>(ChemicalProductDrawerComponent, {
-      ...dialogConfigHelper(this.overlay, {row, inventory: this.inventory, stockEnabled: this.stockEnabled}),
+      ...dialogConfigHelper(this.overlay, {row, inventory: this.inventory, stockEnabled: this.rowStockEnabled(row)}),
       disableClose: false,
       ariaLabel: row.productName,
       position: {top: '0', right: '0'},
@@ -194,7 +230,10 @@ export class ChemicalInventoryPageComponent implements OnInit {
   }
 
   openMove(row: ChemicalInventoryRow): void {
-    this.openAndReload(ChemicalMoveDialogComponent, {row, locations: this.inventory?.locations ?? [], stockEnabled: this.stockEnabled});
+    // A placement moves within its own property.
+    this.openAndReload(ChemicalMoveDialogComponent, {
+      row, locations: locationsOfProperty(this.inventory, row.placement.propertyId), stockEnabled: this.rowStockEnabled(row),
+    });
   }
 
   openNote(row: ChemicalInventoryRow): void {
@@ -278,15 +317,22 @@ export class ChemicalInventoryPageComponent implements OnInit {
   }
 
   exportAuthorityList(): void {
-    this.save(() => this.chemicalsService.exportAuthorityList(this.propertyId));
+    if (!this.propertyExportsDisabled) {
+      this.save(() => this.chemicalsService.exportAuthorityList(this.propertyId));
+    }
   }
 
   exportInventory(): void {
-    this.save(() => this.chemicalsService.exportInventory(this.propertyId, this.visibleRows.map((r) => r.placement.id)));
+    const ids = this.visibleRows.map((r) => r.placement.id);
+    this.save(() => this.allProperties
+      ? this.chemicalsService.exportAllPropertiesInventory(ids)
+      : this.chemicalsService.exportInventory(this.propertyId, ids));
   }
 
   exportRemovedPlacements(): void {
-    this.save(() => this.chemicalsService.exportRemovedPlacements(this.propertyId));
+    if (!this.propertyExportsDisabled) {
+      this.save(() => this.chemicalsService.exportRemovedPlacements(this.propertyId));
+    }
   }
 
   /**
@@ -295,7 +341,7 @@ export class ChemicalInventoryPageComponent implements OnInit {
    */
   private save(download: () => Observable<ChemicalDownload>): void {
     // Nothing to export before the inventory has loaded (the Excel would hold no rows).
-    if (this.propertyId === null || !this.inventory || this.exporting) {
+    if (!this.inventory || this.exporting) {
       return;
     }
     this.exporting = true;
@@ -320,6 +366,7 @@ export class ChemicalInventoryPageComponent implements OnInit {
     this.rows = inventory ? buildInventoryRows(inventory, localToday()) : [];
     this.summary = summarizeActions(this.rows);
     this.activeLocations = (inventory?.locations ?? []).filter((l) => !l.archived);
+    this.locationOptions = inventoryLocationOptions(inventory, this.allProperties);
     if (inventory) {
       this.columns = this.buildColumns();
     }

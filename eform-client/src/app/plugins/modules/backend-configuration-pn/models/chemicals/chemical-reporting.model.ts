@@ -110,6 +110,9 @@ export interface ChemicalHistoryEventModel {
   /** Flag names: View, Register, Remove, Stock, ManageLocations, Admin. */
   permissionsAdded: string[];
   permissionsRemoved: string[];
+  /** The property of the event (W6 Ejendom column under the picker's "All"). */
+  propertyId: number;
+  propertyName: string;
 }
 
 export interface ChemicalHistoryUserModel {
